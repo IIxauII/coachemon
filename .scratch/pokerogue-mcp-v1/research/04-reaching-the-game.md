@@ -129,8 +129,34 @@ first only because it reaches the `Game` (and therefore `game.config.gameVersion
 needed by [#2](https://github.com/IIxauII/pokerogue-mcp/issues/2)'s drift check) in
 one hop. Layer both; see §5.
 
-Caveat worth stating: route B is empty **before the first text renders**, and route A
-is empty before the `TextureManager` boots. Both are therefore lazy — see §6.
+Two caveats, the second of which is a correctness trap:
+
+1. Route B is empty **before the first text renders**, and route A is empty before the
+   `TextureManager` boots — the TextureManager entry exists from `Game` *construction*,
+   so route A is the one that resolves earliest. Both are lazy; see §6.
+2. **Used standalone, route B must guard on the scene key.** `.parent.scene` is whichever
+   scene owns that GameObject, and during boot that can be the **`LoadingScene`**
+   (§7.5) — a scene with no `.ui`. Taking the first match blindly is the same class of
+   bug as trusting `scenes[0]`.
+
+   Measured: **post-boot the hazard is absent** — of 1677 entries, 1669 have a
+   `.parent.scene`, every one of them keyed `battle`, and all 1669 are the **same single
+   scene object** (`distinctSceneObjects: 1`). So this is a boot-window trap only, not a
+   live one; the guard costs nothing and closes it:
+
+   ```js
+   for (const c of Phaser.Display.Canvas.CanvasPool.pool) {
+     const s = c && c.parent && c.parent.scene;
+     if (s && s.sys && s.sys.settings.key === 'battle') return s;   // === globalScene
+   }
+   ```
+
+   §5's locator sidesteps this without the guard, because it uses route B only to reach
+   the **`Game`** (`p.scene.game`) and then keys the scene with `getScene('battle')`. It
+   also keeps the `Game` handle, which route B alone discards — and that handle is what
+   [#2](https://github.com/IIxauII/pokerogue-mcp/issues/2)'s `game.config.gameVersion`
+   drift check needs. That is why §5 resolves the Game first rather than grabbing the
+   scene directly, despite route B's 1662-to-1 redundancy advantage.
 
 ## 4. Mechanisms measured and ranked
 
@@ -383,11 +409,15 @@ constructor runs `this.textures = new TextureManager(this)`, whose constructor c
 `parent.game` resolving: `TextureManager` sets `this.game = game`. It is **never freed**
 until the game is destroyed.
 
-So the route is sound but the *index* is incidental, and the companion file names the
-ways it can drift: an async blend-mode feature test whose `onload` can land either side
-of `Game` construction, `Text`/`TileSprite`/rex-plugin canvases appending and reclaiming
-freed slots, a `selfParent: true` path whose `parent` is the canvas element itself, and
-a hypothetical second `Phaser.Game` sharing the pool. **Scan, don't index** — §5.
+So index 0 is **incidental but deterministic — not contractual.** Nothing in Phaser
+documents, asserts or tests it, and the companion file names four ways the ordering can
+shift with no API change: the **async** blend-mode feature test, whose `onload` can land
+either side of `Game` construction and append a second entry; a host page constructing a
+`Phaser.Text` or a second `Game` first and taking the slot; a browser without
+`WebGLRenderingContext`, which skips the WebGL feature test entirely; and a
+`selfParent: true` path whose `parent` is the canvas element itself. Plus ordinary churn
+— `Text`/`TileSprite`/rex-plugin canvases appending and reclaiming freed slots.
+**Scan, don't index** — §5.
 
 One sharper correction than my §2. Had the game canvas been pooled, `parent` would be
 the **`Game`** (`CreateRenderer` passes `game`), and `Phaser.Game` has **no `.game`
