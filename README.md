@@ -12,13 +12,27 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 
 ### Reading state
 
-- `window.gameInfo` → `{ gameInfoVersion, playTime, gameMode, biome, wave, luck, party }`. Live, JSON-serialisable, zero cost. (`gameInfoVersion` is this payload's schema version, hardcoded in `battle-scene.ts` — it is not a build id. The build is `game.config.gameVersion`.)
-- The Phaser `Game` instance is not on `window`, but is reachable:
+- `window.gameInfo` → `{ gameInfoVersion, playTime, gameMode, biome, wave, luck, party }`. JSON-serialisable, and the only thing the game deliberately puts on `window`. (`gameInfoVersion` is this payload's schema version, hardcoded in `battle-scene.ts` — it is not a build id. The build is `game.config.gameVersion`.) **Not** a state source, though: it is written on wave transitions and turn init only, so it is *stale* at settled decision points — at a reward screen it has been observed a full turn's damage plus a level-up behind. And it is no cheaper than reading the whole scene (0.18 ms vs 0.21 ms, measured). `get_state` is built on the scene; `gameInfo` keeps only a liveness check. See [#9](https://github.com/IIxauII/pokerogue-mcp/issues/9) and [#10](https://github.com/IIxauII/pokerogue-mcp/issues/10).
+- The Phaser `Game` instance is not on `window`, but is reachable — via Phaser's
+  module-level `CanvasPool`, the only module-level object in Phaser 3.90.0 that retains a
+  live `Game`. **Scan the pool; never index it:**
 
   ```js
-  const game = Phaser.Display.Canvas.CanvasPool.pool[0].parent.game;
-  const scene = game.scene.getScene('battle'); // BattleScene
+  // pool[i].parent is the TextureManager (which carries .game) — NOT the Game itself.
+  const entry = Phaser.Display.Canvas.CanvasPool.pool.find(e => e && e.parent && e.parent.game);
+  const game = entry.parent.game;
+  const scene = game.scene.getScene('battle'); // BattleScene — === the globalScene singleton
   ```
+
+  A lean settled read through this costs **0.21 ms / 338 bytes**, measured. The production
+  form is layered and guarded; see
+  [#9](https://github.com/IIxauII/pokerogue-mcp/issues/9) for it, the measurements, and
+  the ruled-out alternatives.
+
+  Two things not to do, both of which look fine until they aren't: don't write
+  `pool[0].parent.game` — only 1 of ~1670 entries has a `.game`, so the bare index is
+  load-bearing and incidental. And don't fall back to `game.scene.scenes[0]` — that is the
+  **`LoadingScene`** until `battle-scene.ts` removes it. Key by `'battle'`.
 
 - `BattleScene` exposes the full run:
   `party`, `currentBattle`, `money`, `score`, `pokeballCounts`, `gameData`,
@@ -31,7 +45,7 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 ### Acting
 
 - `scene.ui.processInput(button)` is a live function → drive the game by **button enum**, no synthetic keystrokes, no clicking canvas coordinates.
-- Raw keyboard (`ArrowUp/Down/Left/Right`, `z`, `x`, `Enter`) also works as a fallback; Phaser listens on the document.
+- Raw keyboard (`ArrowUp/Down/Left/Right`, `z`, `x`, `Enter`) also works as a fallback. Phaser binds its keyboard listeners to **`window`**, not the document — `getEventListeners(document)` has no `keydown` at all. Dispatched keys still arrive, because they bubble to `window`.
 
 **Consequence:** a whole wave costs text, not images. Screenshots become an optional sanity check rather than the control loop.
 
@@ -63,4 +77,4 @@ One correction the research forced on the tool surface above: `ACTION` is button
 ## Non-goals
 
 - Reimplementing game rules.
-- Any kind of multiplayer, ranking, or account farming. One throwaway account, one agent, playing the game as a player would.
+- Any kind of multiplayer, ranking, or account farming. One account, one agent, playing the game as a player would. (v1 uses the dev's own existing account, decided in [#5](https://github.com/IIxauII/pokerogue-mcp/issues/5) — so agent mistakes land on a real save. The server never handles credentials; the session rides on a persisted cookie.)
