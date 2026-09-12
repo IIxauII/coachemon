@@ -32,7 +32,7 @@ The wipe column is **measured**, not reasoned: a real run ended during this sess
 **Two things I got wrong in an earlier draft, both corrected by reading the game's own live function bodies (§7).** I am stating them up front because I had already reported both as findings:
 
 - **`sessionData_<user>` presence is not the signal.** `saveAll` writes `localStorage` **before** it calls the network and never rolls back, so a failed save leaves the session key written *fresh*, not stale — and two of the four teardown paths delete it anyway, cutting across the wipe/failure line. The measurement (a wipe deleted the key) stands; what it *proves* does not.
-- **`lastSavePlayTime` is not a save-*failure* canary — [disputed], see §6.** In the deployed bundle `B.lastSavePlayTime = 0` runs after the `await`, gated only on the `sync` flag and **not on the outcome**, so a failed sync save resets it just like a successful one; it measures time since the last save *attempt*. My two live verifications of the reset stand — but both were against saves that succeeded, so they could not tell the two readings apart. **The companion source read reaches the opposite conclusion**, and §6 quotes the deployed bytes so the disagreement can be settled rather than averaged. Until it is, do not build the early-warning alarm on it.
+- **`lastSavePlayTime` is not a save-failure canary.** `B.lastSavePlayTime = 0` runs after the `await`, gated only on the `sync` flag and **not on the outcome**, so a failed sync save resets it just like a successful one; it measures time since the last sync save *attempt*. My two live verifications of the reset stand — but both were against saves that succeeded, so they could not tell the two readings apart. **Both halves of this ticket confirm this independently**, from opposite directions: the deployed bytes (§6) and the source at the pinned ref (`game-data.ts:1379-1387`). And §6 gives the stronger reason no such alarm can exist at all — there is no state in which a save has failed and the run is still playable.
 
 **The live signal is `phaseManager.getCurrentPhase().phaseName`**, which the companion source read establishes and which I costed here at **0.21 ms / 21 bytes** (§9) — 0.2 % of a 100 ms settle poll. `"GameOverPhase"` means wipe; `"LoginPhase"` mid-session means a `reset(true)` teardown. It is a **settle-loop** signal: the phase is gone by the time the title screen settles, so a server that only looks afterwards has missed it, and falls back to run history.
 
@@ -59,20 +59,21 @@ Going from a settled title screen to *in a battle taking damage* requires pressi
 
 So **two sessions were on the dev's real account at once** — this one read-only, the prototype pressing buttons — while this ticket had been told the run was parked. That is a coordination bug, and it is the reason the run is gone.
 
-### A caveat that applies to everything below
-
-**Every measurement in this document was taken on a contended tab.** Two peer sessions drove it during my probing: #6 through the wipe, then #8 starting a fresh run. So:
-
-- Any two readings taken apart in time may have had the game moved under them. Where a claim depends on a before/after pair I say so and say what could have moved between.
-- The before/after across the wipe (§3, §4, §5) is sound *because* the peer's actions are what produced the transition — I am measuring its effects, not racing it.
-- The idle windows in §10 are not controlled idles. They are "what the game did while someone else was using it", and I label them that way rather than claiming the game was quiet.
-- Single-shot reads were preferred throughout over anything assuming stability across calls.
-
 Ground truth for the ending, from `Page.captureScreenshot`: the title menu reads **"New Game / Load Game / Run History / Settings"**. There is no "Continue". The session is gone and is not recoverable.
 
-Later in the session the tab moved to `ui.mode 10` / `SelectStarterPhase` (**STARTER_SELECT**) — someone starting a fresh run. So the tab remained in use throughout; treat the passive-listener windows below as "what the game did while someone else was using it", not as a controlled idle.
+Later the tab moved to `ui.mode 10` / `SelectStarterPhase` (**STARTER_SELECT**) as the #8 session began a fresh run, so it was in use throughout.
 
 **The upside, stated plainly:** the ticket asked what a wipe leaves behind, and said the title screen could not be reached without destroying the run. The run was destroyed by someone else, so I got the measurement for free and did not have to spend it. Everything in §3, §4 and §5 is a real before/after across a real wipe.
+
+### A caveat that applies to everything below
+
+**Every measurement in this document was taken on a contended tab** — #6 through the wipe, then #8 starting a fresh run. So:
+
+- Any two readings taken apart in time may have had the game moved under them. Where a claim depends on a before/after pair I say so, and say what could have moved between.
+- The before/after across the wipe (§3, §4, §5) is sound *because* the peer's actions are what produced the transition — I am measuring its effects, not racing it.
+- The listener windows in §10 are **not** controlled idles. They are "what the game did while someone else was using it", and are labelled that way rather than as a quiet game.
+- Single-shot reads were preferred throughout over anything assuming stability across calls.
+- One measurement was **too short because of the contention**, and it cost an inference: §6's 330 s window never crossed a wave boundary, which is exactly what would have separated a one-wave sawtooth from a five-wave one.
 
 ## 2. The `localStorage` inventory
 
@@ -136,7 +137,7 @@ Three things in there are load-bearing:
 
 **[verified] The in-memory copy is not a substitute.** `scene.gameData.runHistory` read `{}` at the title screen *while* `localStorage["runHistoryData_xauyxau2"]` held 5 996 bytes. It is lazily populated (`GameData.getRunHistoryData()` is on the prototype and was not called). **Read the `localStorage` key, not the scene field.** A server that checked `gameData.runHistory` would have concluded no run had ever ended.
 
-**[inferred] Why this separates the two cases.** A wipe ends through `GameOverPhase`, which is presumably what archives the run; the per-wave save-failure path at `encounter-phase.ts:304` calls `globalScene.reset(true)` directly, with no game over, so there would be nothing to archive. **From the live side I can only assert the measured half** — a wipe writes an entry. Whether the save-failure path reaches `saveRunHistory` is a source question, and the companion document owns it — its answer is that `GameOverPhase` (`game-over-phase.ts:215`) is the only writer repo-wide, which makes the asymmetry real. §7 adds the live half of the argument: the write path is **local-only**, so the network condition that causes a save failure cannot also suppress the history entry.
+**[inferred] Why this separates the two cases.** A wipe ends through `GameOverPhase`, which is presumably what archives the run; the save-failure path at `encounter-phase.ts:304` calls `globalScene.reset(true)` directly, with no game over, so there would be nothing to archive. **From the live side I can only assert the measured half** — a wipe writes an entry. Whether the save-failure path reaches `saveRunHistory` is a source question, and the companion document owns it — its answer is that `GameOverPhase` (`game-over-phase.ts:215`) is the only writer repo-wide, which makes the asymmetry real. §7 adds the live half of the argument: the write path is **local-only**, so the network condition that causes a save failure cannot also suppress the history entry.
 
 **A caveat the server must handle.** The key existed and held the **empty string** before any run had ended. `''` is not valid ciphertext — decryption throws on the `Salted__` check. So the presence of the key proves nothing; the server must treat empty-or-unparseable as "no history" rather than as an error. §7 gives the cause: `getRunHistoryData()` *creates* the key empty when it is absent.
 
@@ -252,13 +253,15 @@ The counter tracks the real age of the last successful save to within 1.3 s over
 
 **`lastSavePlayTime` goes 555 → 0 across an observed successful save**, at the same instant `sessionData_<user>` reappears in `localStorage`. That is the reset behaviour, verified mid-run against ground truth rather than inferred from the field name. (`sessionPlayTime` also zeroes there — it is per-*run*, and the run had just begun.)
 
-**[verified] Saves are per-wave, not periodic.** Across the following **330 s sitting inside wave 1** — through `CheckSwitchPhase`, `SwitchPhase`, a long idle at `CommandPhase`, the battle itself, and a long idle at `SelectModifierPhase` — `lastSavePlayTime` climbed `0 → 329` monotonically with **no reset and no second `updateall`**. So the counter's natural sawtooth is one full wave *cycle* long, reward screen included, and its baseline is "however long a wave takes", not a fixed interval.
+**[verified] It does not reset within a wave, and it is not on a timer.** Across **330 s sitting inside wave 1** — through `CheckSwitchPhase`, `SwitchPhase`, a long idle at `CommandPhase`, the battle itself, and a long idle at `SelectModifierPhase` — `lastSavePlayTime` climbed `0 → 329` monotonically with **no reset and no second `updateall`**.
+
+I originally read that as "the sawtooth is one wave long". **It is five** — see the correction below. The observation above cannot distinguish the two, because it never crossed a wave boundary.
 
 ### What it does on a *failed* save — refuted
 
 I inferred here, and reported, that "the reset sits in the success path, so a failed `saveAll` leaves the counter running", making this an early-warning canary for save failures. **Reading `saveAll`'s live body (§7) refutes that.**
 
-> ⚠️ **The two halves of this ticket disagree here, and this is the live half's evidence.** The companion source read concludes the reset is success-path-only. Against the deployed bundle it is not. I am recording the bytes so the disagreement can be adjudicated rather than split.
+**Both halves of this ticket reached this independently, from opposite directions** — the deployed bytes below, and the source at the pinned ref (`game-data.ts:1379-1387`), where the reset sits above the `if (!saveError)` check under an `if (sync)` of its own. The pinned ref and the deployed build agree. The bytes are kept here because they are how the live half established it, and because the mechanical checks are reusable.
 
 The deployed tail of `saveAll`, read with `String(scene.gameData.saveAll)` and quoted verbatim:
 
@@ -286,21 +289,30 @@ return true;
 
 **A sync save that the server rejects resets the counter exactly like one that succeeds**, so this cannot detect a save that was attempted and failed — which is precisely this ticket's case.
 
-Two readings would reconcile the disagreement, and both are worth someone checking: the pinned ref `v1.12.0.11` may genuinely differ from what is deployed at `pokerogue.net` (in which case the *deployed* behaviour is what the server must handle), or the source read may have attributed the reset to the `if (err)` branch it precedes. **Until that is settled, treat the canary as [disputed] and do not build the early-warning alarm on it.**
+### And the stronger reason: no such alarm can exist
 
-What survives:
+Even if the reset *were* success-gated, the early-warning alarm I proposed could never fire, for a structural reason **[from source]**: **there is no state in which a save has failed and the run is still playable.** A failed `saveAll` returns `false`, and `EncounterPhase` tears the run down in the same tick — single attempt, no retry (§10). So on any run that is still alive, "time since the last attempt" and "time since the last success" are necessarily the same instant.
 
-- **[verified]** the 1 Hz tick, the reset-on-success (twice, independently), and the one-wave sawtooth. Those are measurements and they hold.
-- **What the counter actually measures is time since the last sync save *attempt*.** That still detects saves that stopped being *attempted* — a stuck phase queue, a run that is no longer reaching its per-wave save — which is a real failure mode, just not this one.
-- **One residue worth testing:** if the request *throws* rather than resolving to an error string, line (4) never runs and the counter would keep climbing. So an offline failure may behave differently from a server-rejected one. Whether `z.savedata.updateAll` catches is unestablished (§12).
+That closes the idea for good, and it closes it more cleanly than the code reading does. The counter cannot warn of a save failure because a save failure does not leave anything to warn.
 
-This is the clearest case in this document for doing both halves of a research ticket: the live measurements were all correct, and the conclusion drawn from them was still wrong until the code was read.
+### What survives, and what it is actually good for
+
+**[verified] measurements, all unaffected:** the 1 Hz tick, the reset on an observed successful save (twice, independently), and the monotone climb across 330 s inside one wave.
+
+**A correction to my own claim.** I wrote that the sawtooth is one wave long. **[from source]** it is **five**: the non-sync branch returns before ever reaching the reset, so four waves in five never zero it. It zeroes on waves ≡ 1 (mod 5), and on any wave start where it has already reached 300. My 330 s observation was taken entirely *inside* wave 1 and is consistent with both readings — **a climb across two or three wave boundaries would have separated them**, and that is the measurement I should have taken. It is the one place in this document where a slightly longer observation would have replaced an inference with a fact.
+
+The counter's real uses, both worth carrying into #7:
+
+- **A sync-wave predictor.** `nextWave % 5 === 1 || lastSavePlayTime >= 300` tells the server, *before* advancing, whether the coming transition will touch the network. That is when to arm the network watch and allow a longer settle budget — and only then, which keeps the other four waves in five cheap.
+- **A staleness bound.** `seconds_since_last_sync` is what makes a reported `last_saved_wave` honest, because `saveAll` writes `localStorage` every wave but only POSTs on sync waves (§7) — **the local key runs ahead of the server**, and without this number the server would report progress the server-side save does not have.
+
+**One residue, now minor:** if the request *throws* rather than resolving to an error string, the reset never runs. Given the structural argument above it changes nothing about alarms, but it is still unestablished whether `z.savedata.updateAll` catches (§13).
+
+This section is the clearest case in this document for doing both halves of a research ticket — and for doing them independently. Every live measurement here was correct; the conclusion drawn from them was wrong until the code was read, and the *reason* it was wrong turned out to be structural rather than a code-reading detail.
 
 Two things it is not. It is **not** a per-session signal: at the title screen `sessionPlayTime - lastSavePlayTime` held constant at 917 because both counters tick together, so the *difference* is inert — read `lastSavePlayTime` on its own.
 
-And — **whatever the dispute above resolves to** — it is **emphatically not** a wall-clock threshold. The 330 s above was mostly a human idling at a reward screen, and the counter climbed the whole time with nothing wrong. An agent that pauses to think does the same. **A fixed "`lastSavePlayTime > N` ⇒ fault" rule would fire on every slow turn**, and is the kind of thing that gets built wrong by default.
-
-If the counter is ever used, the shape is: pair it with `currentBattle.waveIndex` and alarm only when **the wave has advanced and the counter has not zeroed** — a settle-loop concern carrying one remembered pair, not a stateless `get_state` field. That rule is correct for "saves stopped being attempted" regardless of how the dispute lands; it only detects *failed* saves if the source read's version of the reset is the right one.
+And it is **emphatically not** a wall-clock threshold — which matters even now that it is a predictor rather than an alarm. The 330 s above was mostly a human idling at a reward screen, and the counter climbed the whole time with nothing wrong. An agent that pauses to think does the same. **A fixed "`lastSavePlayTime > N` ⇒ fault" rule would fire on every slow turn**, and it is the kind of thing that gets built wrong by default. The `>= 300` term in the sync-wave predictor above is not that rule: it predicts *that a save will happen*, it does not diagnose that one failed.
 
 ## 7. Reading the game's own function bodies, live
 
@@ -490,11 +502,15 @@ Request headers: `Authorization`, `PKR-Client-Version`, `Content-Type`, `Referer
 
 **[verified] It is slow.** 1042 ms for the round trip — four orders of magnitude more than any state read in §9. That is the window in which a save can fail, and it is easily long enough for a 100 ms settle poll to observe an intermediate state.
 
-**[verified] Cadence is per-wave, not periodic.** Exactly one `updateall` fired, at the start of wave 1. Over the following 330 s inside wave 1 — battle, reward screen and all — there was no second one (§6). The game also does **not** save on a timer while idle at the title screen.
+**[verified] Not periodic; [from source] every fifth wave, not every wave.** Exactly one `updateall` fired, at the start of wave 1, and over the following 330 s inside wave 1 — battle, reward screen and all — there was no second one (§6). The game also does **not** save on a timer while idle at the title screen.
+
+I first wrote this up as "per-wave". **It is per *sync* wave — waves ≡ 1 (mod 5)**, plus any wave start where `lastSavePlayTime >= 300`. On the other four waves in five, `saveAll` takes the non-sync branch: it writes `localStorage` and returns without touching the network (§7). My window covered exactly one wave and so could not tell the two apart. **The consequence for a network watcher is real: four wave transitions in five produce no save traffic at all**, so absence of a POST at a wave boundary is not evidence of anything.
+
+It also means **the local session key runs ahead of the server** between sync waves — which is what the staleness bound in §6 exists to report.
 
 **[not exercised] The request body was not captured.** `postLen` came back `0` with `maxPostDataSize` set to 128 KB, so the payload is not exposed as `postData` — most likely sent as a `Blob`/typed array rather than a string. Reading it would need `Fetch.getRequestPostData` or request interception, which the safety constraints rule out. **What the server sends is therefore unknown**; only the endpoint, method, headers, status and timing are established.
 
-**Retry behaviour: there is none.** **[from source]** No retry anywhere in the codebase — `EncounterPhase` makes **one** save attempt and tears the run down; the only backoff is a login-recovery loop. **[verified]** consistent with `saveAll`'s live body (§7): a single `await`, then straight into the error branch. **One dropped packet at a wave boundary ends the run.** That is worth stating plainly, because it sets how seriously the server should treat signal 1 in §11 — there is no second chance to catch.
+**Retry behaviour: there is none.** **[from source]** No retry anywhere in the codebase — `EncounterPhase` makes **one** save attempt and tears the run down; the only backoff is a login-recovery loop. **[verified]** consistent with `saveAll`'s live body (§7): a single `await`, then straight into the error branch. **One dropped packet at a sync-wave boundary ends the run.** That is worth stating plainly for two reasons: it is why no early-warning signal can exist (§6, §11) — the failure and the teardown are the same tick — and it is why the `phaseName` trace has to be watched continuously rather than sampled on suspicion. There is no second chance to catch.
 
 **[verified] What counts as success, and it is not the status code.** My captured save returned `200` with a **completely empty body** (0 bytes), and `saveAll` branches on `C ? failure : success` where `C` is the response *body* (§7) — it never reads `response.status`. So **an empty body is success and a non-empty body is failure**, which is exactly what the source read says. Two consequences: a server watching the wire must key on the body, not the status; and any middlebox that injects a body into a `200` would look to the game like a failed save.
 
@@ -536,11 +552,12 @@ Pulling §3, §7 and §10 into one shape. Naming the reports is the source half'
 
 | # | Signal | When it fires | Exactness | Needs |
 |---|---|---|---|---|
-| 1 | **`lastSavePlayTime`** — **[disputed]**, see §6 | **earliest** — while the run is still alive and savable | a health indicator at best; on the deployed bundle it does **not** detect a failed save | the settle loop, plus one remembered `(wave, counter)` pair |
-| 2 | **`phaseName` trace** | at the transition | **exact** — names which ending it was | having been watching |
-| 3 | **`runHistoryData_<user>`** | after the fact, durably | good enough to reconcile | nothing — locator-free, survives a reconnect |
+| 1 | **`phaseName` trace** | at the transition | **exact** — names which ending it was | having been watching |
+| 2 | **`runHistoryData_<user>`** | after the fact, durably | good enough to reconcile | nothing — locator-free, survives a reconnect |
 
-**Signals 2 and 3 are what v1 should be built on**: 2 to classify, 3 to recover when the server was not watching. Signal 1 would be the earliest warning and is the only one that could save a run rather than explain its loss — but the two halves of this ticket disagree about whether it works at all (§6), so it should not be built until that is settled.
+**These two are what v1 should be built on**: 1 to classify, 2 to recover when the server was not watching.
+
+**There is no third, earlier signal, and there cannot be one.** I proposed `lastSavePlayTime` as an early warning; it does not work, for a structural reason rather than an implementation detail — a failed `saveAll` tears the run down in the same tick, so there is no window in which a save has failed and the run is still alive to be warned about (§6). The counter keeps two other jobs — predicting which wave transitions touch the network, and bounding how stale the server-side save is — but neither is a fault detector.
 
 ### 1. In the settle loop — `phaseName`
 
@@ -618,8 +635,7 @@ The test is cheaper to specify than when this ticket was written, because §10 p
 - **The entire save-failure column of §0.** Everything about that path is inferred from the wipe measurements plus the source read. The human has ruled out the destructive test, so it stays inferred. See §12.
 - **`phaseName` on the two endings, seen live.** The values and dwell times come from the companion source read. I verified the *mechanism* — `getCurrentPhase()`, the own-property `phaseName`, and its cost — but never observed `"GameOverPhase"` or `"LoginPhase"`, because the one wipe in this session happened before I was polling phases.
 - **The save request's body.** Not exposed as `postData`; reading it needs interception, which is ruled out. (The failure predicate and retry behaviour, previously on this list, are resolved in §10.)
-- **Whether `z.savedata.updateAll` catches a thrown request** rather than resolving to an error string. This is the one thing that decides whether an *offline* failure behaves differently from a *server-rejected* one — see §6.
-- **Whether a request that throws behaves differently from one the server rejects** — the one residue of the `lastSavePlayTime` question (§6).
+- **Whether `z.savedata.updateAll` catches a thrown request** rather than resolving to an error string — i.e. whether an *offline* failure behaves differently from a *server-rejected* one (§6). Now a minor question: the structural argument in §6 means it changes nothing about what the server can detect.
 - **The `localStorage` key names for save slots 1–4** (§7.1). Five slots are confirmed from `clearLocalData`; the name helper is module-scoped and unreachable, and no suffixed key exists on this account, so absence proves nothing.
 - **Whether a save failure surfaces in the UI** beyond the `savingIcon` that `saveAll` shows and hides.
 - **Whether `isVictory: true` looks how I assume.** Only the `false` case was observed; nobody has won a run on this account (`sessionsWon: 0`).
