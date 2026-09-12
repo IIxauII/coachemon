@@ -85,3 +85,14 @@ This is #19's stall and its cure on the same code path, without pressing anythin
 | `lab.jsonl`, `fade.jsonl` | raw rows |
 
 Chrome is left **not running**, as it was found.
+
+## Decided with the dev
+
+1. **Fix:** focus emulation on the held page session, re-applied on every (re)attach, on both paths.
+   Owned Chrome stays **headed** (the dev can watch). No launch flags, no headless.
+2. **Detection:** `game.loop.frame` read on every settle poll; unchanged across two polls ⇒ busy
+   reason **`loop-frozen`**, outranking `ui-transition`, with `visibilityState` attached as a
+   diagnostic label. Supersedes #19's proposed `page-hidden`.
+3. **Pressing while frozen:** re-apply emulation (not a press), re-check frames; still frozen ⇒ refuse
+   the press and return the diagnostic. Never `Page.bringToFront`.
+4. **Screen lock / display sleep:** not driven; left unmeasured. `loop-frozen` catches it if it freezes.
