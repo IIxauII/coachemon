@@ -71,7 +71,7 @@ Live shape of the pool (measured):
 | entries whose `parent` is a `BBCodeText` | 36 |
 | entries whose `parent` is `null` (freed slot) | 1–5 |
 | entries whose `canvas` is in the DOM | **0** |
-| `type` of every entry | `1` (CANVAS/2D) |
+| `type` of every entry | `1`, i.e. `Phaser.CANVAS` (live: `[AUTO, CANVAS, WEBGL, HEADLESS] === [0, 1, 2, 3]`) |
 
 Two things follow:
 
@@ -79,9 +79,14 @@ Two things follow:
   few minutes of menu navigation added 13. Freed slots are nulled in place and
   reused rather than spliced, so indices are stable.
 - **The game's own display canvas is not in the pool.** The single DOM canvas is
-  1920x1080 and *absent* from the pool — as expected for a `WebGLRenderer`, which
-  creates its canvas directly. Confirmed `game.canvas === document.querySelector('canvas')`,
-  and the DOM canvas carries **no** expando properties (own-property scan: empty).
+  1920x1080 and *absent* from the pool. The source reason (§7.1) is sharper than
+  "WebGL makes its own canvas": `CreateRenderer` *does* call
+  `CanvasPool.create(game, …, config.renderType)`, but `CanvasPool` only
+  `pool.push`es when the type is `CONST.CANVAS`. PokéRogue runs
+  `renderType === 2` (`Phaser.WEBGL`, confirmed live), so the container is built,
+  returned and discarded, never pooled. Confirmed
+  `game.canvas === document.querySelector('canvas')`, and the DOM canvas carries
+  **no** expando properties (own-property scan: empty).
 
 ## 2. Correction to `README.md`
 
@@ -138,7 +143,7 @@ to worst.
 | M1b | discovery expression alone, no payload | 0.11 ms | Discovery is free; the payload is the cost. |
 | M2 | `Runtime.evaluate` once -> keep `objectId` -> `Runtime.callFunctionOn` | 0.16 ms | **No faster than M1** (0.16 vs 0.20 ms, inside the noise) and adds a handle that dies on navigation/context destroy. Complexity for nothing. |
 | M4 | `window.gameInfo` only | 0.18 ms | **Not cheaper than reading the whole scene.** Partial data at full price. |
-| M3 | `Runtime.queryObjects` on `Phaser.Game.prototype` | **470 ms** | Works — finds exactly **1** `Game` — but ~2500x slower (heap scan), and `experimental`. Unusable for polling; only a diagnostic. |
+| M3 | `Runtime.queryObjects` on `Phaser.Game.prototype` | **470 ms** | Works — finds exactly **1** `Game` — but ~2500x slower (heap scan). Unusable for polling; the right **fallback** if the `CanvasPool` route ever breaks, since it needs only the nameable `Phaser.Game` constructor. (The ticket called it `experimental`; §7.6 shows it is **not** — no experimental flag in `js_protocol.json`.) |
 | M5 | `Debugger.pause` + `Debugger.evaluateOnCallFrame` | 16 ms **and freezes the game** | **Dead end**, see §4.1. |
 | M6 | `Runtime.globalLexicalScopeNames` | — | Returns `[]`. Nothing to find. |
 
@@ -199,28 +204,48 @@ than raising, so the server can distinguish "game not up yet" from a real fault.
 
 ```js
 (() => {
-  const P = globalThis.Phaser;
-  if (!P?.Display?.Canvas?.CanvasPool) return { ready: false, why: 'no-phaser' };
-  const pool = P.Display.Canvas.CanvasPool.pool;
-  if (!Array.isArray(pool) || pool.length === 0) return { ready: false, why: 'empty-pool' };
+  const isGame = g => !!g && typeof g === 'object'
+    && 'isBooted' in g && g.scene && Array.isArray(g.scene.scenes) && g.textures && g.loop;
 
-  let game = null;
-  for (let i = 0; i < pool.length; i++) {              // route A: TextureManager -> .game
-    const p = pool[i] && pool[i].parent;
-    if (p && p.game && p.game.scene) { game = p.game; break; }
-  }
-  if (!game) for (let i = 0; i < pool.length; i++) {   // route B: any GameObject -> .scene.sys.game
-    const p = pool[i] && pool[i].parent;
-    if (p && p.scene && p.scene.sys && p.scene.sys.game) { game = p.scene.sys.game; break; }
+  // route 0: free, and absent on pokerogue.net — but it costs one typeof, and it is
+  // the cleanest handle in any build that bundles Phaser from source. See §7.3.
+  let game = typeof globalThis.PHASER_GAME !== 'undefined' && isGame(globalThis.PHASER_GAME)
+    ? globalThis.PHASER_GAME : null;
+
+  const P = globalThis.Phaser;
+  if (!game) {
+    if (!P?.Display?.Canvas?.CanvasPool) return { ready: false, why: 'no-phaser' };
+    const pool = P.Display.Canvas.CanvasPool.pool;
+    if (!Array.isArray(pool) || pool.length === 0) return { ready: false, why: 'empty-pool' };
+    for (let i = 0; i < pool.length; i++) {
+      const p = pool[i] && pool[i].parent;
+      if (!p || typeof p !== 'object') continue;
+      // p           — a Canvas-renderer game (CreateRenderer passes the Game as parent)
+      // p.game      — route A: TextureManager
+      // p.scene     — route B: any GameObject (Text, BBCodeText, TileSprite)
+      // p.manager / p.renderer — DynamicTexture
+      for (const cand of [p, p.game, p.scene && p.scene.game,
+                          p.manager && p.manager.game, p.renderer && p.renderer.game]) {
+        if (isGame(cand)) { game = cand; break; }
+      }
+      if (game) break;
+    }
   }
   if (!game) return { ready: false, why: 'no-game-in-pool' };
   if (!game.isBooted || !game.isRunning) return { ready: false, why: 'not-booted' };
 
-  const scene = game.scene.getScene('battle') ?? game.scene.scenes[0] ?? null;
+  const scene = game.scene.getScene('battle');   // key it; NEVER index scenes[0] — see below
   if (!scene || !scene.ui) return { ready: false, why: 'no-battle-scene' };
   return { ready: true, game, scene };
 })()
 ```
+
+The `parent` shapes come from §7.1's exhaustive call-site table, not from guessing: a
+pooled entry's `parent` can be a `TextureManager` (`.game`), a GameObject
+(`.scene`), a `DynamicTexture` (`.manager` / `.renderer`, **no `.game`**), the `Game`
+itself (canvas renderer only), `undefined` (transient feature-test canvases), or even
+the canvas element (`selfParent: true`). `isGame` duck-types rather than trusting
+`constructor.name` — though names *are* reliable here, see §7.4.
 
 Measured on the live tab, returning a small summary instead of the raw objects:
 **0.20 ms p50** (min 0.12, p90 0.34, max 2.75 over 50 evaluates) ->
@@ -239,13 +264,21 @@ Degradation verified by simulating each failure against the live page:
 straight off this, so [#2](https://github.com/IIxauII/pokerogue-mcp/issues/2)'s two
 free drift checks come along for nothing.
 
-### Scene accessor
+### Scene accessor — key it, never index it
 
-`game.scene.scenes` contains **exactly one** scene, key `"battle"`, ctor
-`BattleScene`, `active: true`, `visible: true`, `status: 5`. So
-`getScene('battle') === scenes[0]` — confirmed `true` live. No `LoadingScene`
-remains registered after boot, so the index cannot shift, but `getScene('battle')`
-with a `scenes[0]` fallback costs nothing and survives a future second scene.
+Live, `game.scene.scenes` contains **exactly one** scene: key `"battle"`, ctor
+`BattleScene`, `active: true`, `visible: true`, `status: 5`, and
+`getScene('battle') === scenes[0]` is `true`.
+
+**That equality is a post-boot coincidence and must not be relied on.** The source
+(§7.5) shows PokéRogue registers **two** scenes — `scene: [LoadingScene, BattleScene]`
+— so `scenes[0]` is the **`LoadingScene`** until `battle-scene.ts` removes it, at which
+point `SceneManager.remove` splices the array and `battle` slides into index 0. A
+`scenes[0]` fallback is therefore not a harmless safety net: during boot it hands back
+the wrong scene, one with no `.ui`, which is exactly when a locator is most likely to
+run. **An earlier draft of this document recommended that fallback; it is wrong and has
+been removed.** `getScene('battle')` is a plain key-map lookup that returns `null`
+before the scene exists — gate on `null` and retry.
 
 ### Do not cache
 
@@ -281,5 +314,246 @@ stateless.** Do not write to `window`; do not hold an `objectId`.
     prototype. `phaseManager.currentPhase.constructor.name` reads cleanly
     (observed `SelectModifierPhase`) and is the better signal.
 - **`window.gameInfo` keeps a narrow job.** Not a fallback and not a cost saving. Its
-  one real advantage is that it needs no locator at all, which makes it a useful
-  liveness check.
+  one real advantage is that it needs no locator at all — see §8, where the parallel
+  work on [#10](https://github.com/IIxauII/pokerogue-mcp/issues/10) narrows that job
+  further still.
+
+### 6.1 What a read costs, by payload
+
+Same locator, three payload sizes, plus a screenshot for scale. All measured on the
+live tab.
+
+| Payload | p50 | bytes |
+|---|---|---|
+| locator only (`ready`, version, mode, handler count) | 0.20 ms | ~80 |
+| **lean** — #3's settle predicate + wave/money/biome/party/enemy | **0.21 ms** | **338** |
+| **fat** — full party (IVs, stats, moveset + PP), full enemy party, held modifiers, pokéball counts, score | **0.27 ms** | **950** |
+| `Page.captureScreenshot` (JPEG q70) | **29 ms** | **86,452** (base64) |
+
+The text path is **~100x faster and ~91x smaller than a single screenshot**, which
+settles the map's "screenshots stay an optional sanity check" decision on measured
+grounds rather than intuition.
+
+It also means **CDP cost is not what tiering is for.** Fat costs 0.06 ms more than
+lean; the transport difference is noise. The map's tiered-verbosity decision is
+justified by *Claude's* token budget, not by the wire — worth keeping straight when
+[#7](https://github.com/IIxauII/pokerogue-mcp/issues/7) shapes the tool surface, and
+worth re-measuring against a full party of six rather than the one-pokémon party
+available here.
+
+---
+
+## 7. Source corroboration
+
+The live probes above say *that* the route works. This section says *why*, from source,
+and it corrected three things the probes alone got wrong. Full citations — file, line,
+permalink, quoted code — are in the companion file **[`04-sources.md`](./04-sources.md)**,
+read from the Phaser `v3.90.0` tarball, the PokéRogue `v1.12.0.11` tarball, all nine
+live `pokerogue.net` chunks, the canonical CDP `js_protocol.json`, and V8's
+`src/inspector` where the CDP docs are silent. Section numbers below match it.
+
+### 7.1 `CanvasPool` — why the route exists, and why index 0 is incidental
+
+`var pool = []` is module-scoped and created at import; Phaser's own comment calls it a
+singleton *"instantiated as soon as Phaser loads, before a Phaser.Game instance has even
+been created"*. It is exported as `pool` on the namespace, which is what makes it
+nameable.
+
+Two mechanics decide everything:
+
+- **`pool.push` happens only for `CONST.CANVAS`.** A WebGL canvas is created, returned
+  and discarded — never pooled. `Phaser.CANVAS` is `1` and `Phaser.WEBGL` is `2`
+  (verified live), PokéRogue runs `renderType: 2`, and every live pool entry is `type: 1`.
+  Consistent both ways.
+- **`remove`/`free` never splice** — they null `container.parent` and shrink the canvas
+  to 1x1, leaving the entry forever. Entries are then **re-owned in place**
+  (`container.parent = parent` on the reuse branch), so a given `pool[i]` outlives many
+  owners.
+
+Why index 0 is the `TextureManager`: Phaser's `Device` modules eagerly feature-test at
+import (before any `Game` exists), pooling a 2D canvas and then freeing it. `Game`'s
+constructor runs `this.textures = new TextureManager(this)`, whose constructor calls
+`CanvasPool.create2D(this)` — which takes that one free slot. Hence index 0, and hence
+`parent.game` resolving: `TextureManager` sets `this.game = game`. It is **never freed**
+until the game is destroyed.
+
+So the route is sound but the *index* is incidental, and the companion file names the
+ways it can drift: an async blend-mode feature test whose `onload` can land either side
+of `Game` construction, `Text`/`TileSprite`/rex-plugin canvases appending and reclaiming
+freed slots, a `selfParent: true` path whose `parent` is the canvas element itself, and
+a hypothetical second `Phaser.Game` sharing the pool. **Scan, don't index** — §5.
+
+One sharper correction than my §2. Had the game canvas been pooled, `parent` would be
+the **`Game`** (`CreateRenderer` passes `game`), and `Phaser.Game` has **no `.game`
+property** — so `.parent.game` would be `undefined` and the correct expression would be
+`pool[i].parent` alone. The README's expression conflates the two cases. §5's locator
+accepts both shapes.
+
+### 7.2 `Phaser.GAMES` does not exist in Phaser 3 at all
+
+Not a bundling artifact, not an ESM-vs-UMD difference: `grep -rn "GAMES"` over the whole
+`v3.90.0` tarball — `src/`, `dist/`, `types/`, `config/` — returns **nothing**. It was a
+Phaser 2 / Phaser-CE feature. The namespace is an object literal in `src/phaser.js`
+extended with `src/const.js`; nothing anywhere pushes a `Game` into a module-level
+collection. This retires the question rather than answering it, and it refines #5's note:
+`Phaser.GAMES` being absent said nothing about bundling.
+
+`window.Phaser` exists under Vite only because `src/phaser.js` ends with
+`global.Phaser = Phaser` (and the UMD wrapper does `root["Phaser"] = factory()`), which
+is exactly why the namespace is reachable but "bare".
+
+### 7.3 `window.PHASER_GAME` — real in source, dead-coded out of the build
+
+`Game.boot()` ends with:
+
+```js
+if (typeof WEBGL_DEBUG && window) { window.PHASER_GAME = this; }
+```
+
+Read from source you would conclude it always fires — `typeof X` is a non-empty string,
+hence truthy. It does not, because Phaser's build replaces the whole token
+`"typeof WEBGL_DEBUG"` via webpack `DefinePlugin`, and the **dist** config sets it to
+`false`, eliminating the branch. `grep -c PHASER_GAME` over `dist/phaser.js`,
+`phaser.min.js` and `phaser.esm.js` is `0 0 0`, and it is absent from all nine live
+chunks. PokéRogue's Vite has no `resolve.mainFields` override, so a prebuilt `dist`
+entry is what ships.
+
+**Verified live: `typeof window.PHASER_GAME === 'undefined'`.** It costs one `typeof`, so
+§5's locator probes it anyway — it would be the cleanest possible handle in any build
+that bundled Phaser from source.
+
+### 7.4 `globalScene` — module-scoped, and our handle is identity-equal to it
+
+`src/global-scene.ts` is four lines: `export let globalScene: BattleScene` plus an
+`initGlobalScene(scene)` setter. `BattleScene`'s constructor calls
+`super("battle"); … initGlobalScene(this)`. So it is a module-scoped `export let`
+singleton — a live binding inside the bundle's module closure, **never** attached to
+`window` in any build configuration.
+
+A grep of the whole `src/` tree for `window.<ident> =`, `window["…"] =`,
+`globalThis.<ident> =` and `(window as any)` returns four hits, of which exactly one
+assigns game state:
+
+```
+src/battle-scene.ts:3264:    window["gameInfo"] = gameInfo;      // with a `// TODO: Don't store it here`
+```
+
+The rest are a Phaser container's `.width` and two UA sniffs. **No `import.meta.env.DEV`
+exposure, no `window.game`, no `window.scene`, no `__PHASER__` hook, no devtools bridge.**
+So the ticket's question "does the game deliberately expose anything else" is answered:
+no, `window.gameInfo` is the only deliberate export, and it carries no object references.
+
+The payoff: because `BattleScene` is constructed exactly once and calls
+`initGlobalScene(this)`, **`game.scene.getScene('battle') === globalScene` by object
+identity**. We are not approximating the module singleton; we hold it.
+
+Two supporting facts from `vite.config.ts`, both verified live:
+
+- **`keepNames: true`** across minify/mangle/compress, so class and function names
+  survive. Live: `Game`, `BattleScene`, `UI`, `BattleMessageUiHandler`, `TextureManager`,
+  `PhaseManager` all read back correctly from `constructor.name`. Usable as runtime
+  discriminators — §5's locator duck-types anyway, but the probes rely on this.
+- **No production sourcemaps**, and `console.log`/`console.debug` are dropped as pure.
+  So there is no name recovery and no lifecycle logging to lean on — which is what makes
+  the `Debugger.setBreakpointByUrl` fallback impractical (§7.6).
+
+### 7.5 The scene key, and the `scenes[0]` trap
+
+`super("battle")` in `BattleScene`; `LoadingScene.KEY = "loading"`. `main.ts` passes
+`scene: [LoadingScene, BattleScene]` — **two** classes, LoadingScene first.
+`LoadingScene` starts `"battle"` when assets finish, then `battle-scene.ts` removes
+`LoadingScene`, and `SceneManager.remove` deletes the key and **splices the array**.
+
+Hence: `scenes[0]` is the LoadingScene before that point, the BattleScene after.
+`getScene(key)` is a plain lookup in `this.keys`, returning `null` when absent. This is
+the correction folded into §5.
+
+Also: `globalScene.game` works because Phaser injects `game` onto the Scene via its
+Injection Map; `scene.sys.game` is the belt-and-braces form, which is what route B uses.
+
+### 7.6 CDP, from the protocol and from V8
+
+- **The `Debugger` sequence** (`enable` → `pause` → `paused` event → `callFrameId` →
+  `evaluateOnCallFrame` → `resume`) is confirmed, and `Debugger.Scope.type` does include
+  `module` and `closure` as first-class scope types. So `evaluateOnCallFrame` resolves
+  `globalScene` **if and only if** you pause in a frame whose scope chain includes
+  PokéRogue's `global-scene` module — which a blind `pause`, landing in Phaser's rAF
+  tick, does not. That is precisely what §4.1 measured. Don't pass
+  `terminateOnResume`; it kills the running script.
+- **Pause cost is not documented.** The CDP docs say nothing about rAF or lost time;
+  the companion file marks that UNDETERMINED rather than inventing a citation, and
+  reasons from Phaser's `TimeStep` instead: after a long stall `smoothDelta` discards the
+  huge delta, so *game-world* time does not jump, though the real-world accumulator,
+  tweens, timers and audio scheduling all drift. My measured 47 ms freeze is the reason
+  to avoid it regardless.
+- 🔴 **`Runtime.queryObjects` is not experimental** — no flag in `js_protocol.json`.
+  Corrects the ticket's premise. It needs a prototype `RemoteObjectId`, which is free
+  because `Phaser.Game` is nameable. Note it matches the *exact* prototype, so the same
+  trick on `Phaser.Scene.prototype` will **not** find `BattleScene` (whose chain is
+  `BattleScene → SceneBase → Phaser.Scene`); go via the Game.
+- 🔴 **The command-line `queryObjects()` is not a shortcut.** `includeCommandLineAPI`
+  does expose it (live: `typeof queryObjects === 'function'`), but V8's
+  `v8-console.cc` shows the callback sets **no return value** — it only emits a
+  `Runtime.inspectRequested` notification with a `{queryObjects: true}` hint, and the
+  DevTools *frontend* is what then issues the real command. **Verified live:
+  `String(queryObjects(Phaser.Game))` → `"undefined"`.** A prediction from V8 source that
+  the live tab confirmed exactly. Use the `Runtime.queryObjects` command, never the
+  helper.
+- **`Runtime.globalLexicalScopeNames`** returns global `let`/`const`/`class` only, so a
+  module-scoped `export let` is invisible to it. Live: `[]`. Worth stating because it is
+  the obvious-looking answer and it is wrong.
+- 🟢 **A non-freezing closure route exists**, unused but worth recording:
+  `Runtime.getProperties` exposes `[[Scopes]]` on function objects (V8's
+  `v8-debugger.cc` creates it with no `enabled()` guard), so
+  `DOMDebugger.getEventListeners(window)` → the `keydown` handler → `[[Scopes]]` →
+  `_this.manager.game` reaches the Game **without stopping the page**. Phaser also
+  assigns `window.onblur` / `window.onfocus` as plain properties (verified live: both
+  `function`), whose closure holds `game.events` — and which double as a nameable
+  "a Phaser game is running here" probe. Strictly better than `Debugger.pause` if the
+  primary route ever dies. Not verified end to end here.
+
+### 7.7 Where source and live probing disagreed
+
+Worth recording, because it is the argument for doing both:
+
+| Claim | Source said | Live said | Resolution |
+|---|---|---|---|
+| Render-type constants | `CANVAS: 0`, `WEBGL: 1` | `[AUTO, CANVAS, WEBGL, HEADLESS] === [0,1,2,3]`; pool entries `type: 1`; `renderType: 2` | **Live is right.** The *conclusion* (WebGL canvases aren't pooled) holds either way. |
+| `scenes[0]` | a boot-time race — LoadingScene first | one scene, `getScene('battle') === scenes[0]` | **Source is right**; live only looks safe because boot finished. Fallback removed from §5. |
+| `queryObjects` experimental? | not experimental | n/a | Source; ticket's premise corrected. |
+| Command-line `queryObjects()` usable? | returns `undefined`, fires `inspectRequested` | `"undefined"` | Agreed — source predicted, live confirmed. |
+| `window.PHASER_GAME` | stripped from dist | `undefined` | Agreed. |
+
+## 8. Confirmed independently, and one finding that strengthens the verdict
+
+While this ticket was in flight, the session working
+[#10](https://github.com/IIxauII/pokerogue-mcp/issues/10) reproduced the locator from a
+bare `Runtime.evaluate` on the same live run at wave 4 — 1677 pool entries, **exactly
+one** with `parent.constructor.name === "TextureManager"`, reaching
+`gameVersion "1.12.0.11"`, one `BattleScene`, `ui.mode`, `money`,
+`currentBattle.waveIndex 4`, `enemyParty`, `modifiers.length`. Independent confirmation
+on a different wave, by a different session. **The locator holds.**
+
+It also reported a result that settles the `gameInfo` question on grounds stronger than
+cost: **`window.gameInfo` is stale at settled decision points.** Updates are
+event-driven and coarse — none observed across menu navigation, 30 s idle at a command
+menu, a full turn that dealt damage, the faint/EXP/level-up chain, or the reward screen;
+only at wave transitions and turn init. At the wave-3 reward screen the screen read
+Fuecoco Lv.6 6/24 while `gameInfo` still read L5 9/22 — level, currentHP **and** maxHP
+all stale by a turn's damage plus a level-up.
+
+So `gameInfo` is a **wave/turn-boundary snapshot, not a settled-state snapshot**, and it
+was never viable for `get_state` regardless of the 0.03 ms it saves. That session also
+verified it is write-safe to clobber (nulled mid-battle, no errors, repopulated on the
+next update) — consistent with the `// TODO: Don't store it here` in §7.4 and with
+nothing reading it back.
+
+**One caveat on my own "useful liveness check" line above**, raised by that session and
+worth carrying forward: `gameInfo` does read `gameMode: "Title"` on the title screen, but
+because updates are event-driven it is **not established** that a mid-run
+`globalScene.reset(true)` rewrites it. If it doesn't, a `gameInfo`-based liveness check
+would report `Classic`/wave N for a run that no longer exists — exactly the map's
+"Losing a run without wiping" failure. **So: use `gameInfo` at most as an "is the page
+alive" probe, and determine run-over from the scene, not from `gameInfo`.** For a pure
+liveness probe, `typeof window.onblur === 'function'` (§7.6) is narrower and cheaper
+still, since it says "a Phaser game is running" without asserting anything about the run.
