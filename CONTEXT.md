@@ -33,3 +33,17 @@ One of the game's own input actions (UP, DOWN, LEFT, RIGHT, ACTION, CANCEL, MENU
 ## Option
 
 A single selectable entry in a menu, with a visible **label**. Selecting an option by label is a decision; the cursor movement it takes is an implementation detail the server hides.
+
+## Progress fingerprint
+
+A short, deliberately coarse summary of what the game is showing, read at each settled moment. Two moments with the same fingerprint are treated as the same place. It answers "have we been here before", which is a different question from **settled**'s "has the game stopped moving" — so the two are kept apart even where they read the same things.
+
+## Stuck
+
+The game is **settled**, presses are being delivered, and the **progress fingerprint** keeps returning to where it has already been. The run is alive; the agent is lost. Three shapes, named separately because their escapes differ: a **dead end**, where no press moves the fingerprint at all; a **loop**, where presses do move it but only around a cycle; and a **hang**, where the game is waiting on something that will never arrive and no input exists that reaches it.
+
+Stuck is reported, never escaped unilaterally.
+
+## Escape ladder
+
+The ordered ways out of a given **menu**, from the safest to the most costly, each labelled with what it destroys. There is no ladder that fits every menu: the same **button** commits on one screen, discards a choice on another, and abandons the **run** on a third. A menu with no rung at all is **no-escape**, and is reported on sight rather than pressed at.
