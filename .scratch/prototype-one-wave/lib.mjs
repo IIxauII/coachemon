@@ -82,6 +82,8 @@ var __txt = function(o){ return o && typeof o.text === 'string' ? o.text : null;
 var __kids = function(c){ return (c && c.list) ? c.list : []; };
 var __texts = function(c){ var out=[]; __kids(c).forEach(function(k){ if (typeof k.text === 'string') out.push(k.text); }); return out; };
 var __named = function(c, n){ var f=null; __kids(c).forEach(function(k){ if (k.name === n) f = k; }); return f; };
+// Several handlers render option labels as BBCode: "[shadow]Apply[/shadow]".
+var __strip = function(s){ return typeof s === 'string' ? s.replace(/\\[\\/?[^\\]]*\\]/g, '').trim() : s; };
 `;
 
 export const B = { UP: 0, DOWN: 1, LEFT: 2, RIGHT: 3, SUBMIT: 4, ACTION: 5, CANCEL: 6, MENU: 7, STATS: 8 };

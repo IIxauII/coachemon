@@ -172,9 +172,12 @@ try {
     out.extra.partyUiMode = h.partyUiMode;        // 1 === FAINT_SWITCH, i.e. forced
     out.extra.optionsScroll = h.optionsScroll === true;   // #4: setCursor unsafe while true
     if (h.optionsMode === true) {
+      // #4 says "sort by y DESCENDING". Measured live, that is backwards: with descending
+      // order, optionsCursor 1 pointed at "Pause Evolution" but ACTION opened SUMMARY.
+      // ASCENDING y matches the cursor ("Apply" first, "Cancel" last). Labels are BBCode.
       var kids = __kids(h.optionsContainer).filter(function(k){ return typeof k.text === 'string'; });
-      kids.sort(function(a,b){ return b.y - a.y; });
-      out.options = kids.map(function(k,i){ return { i:i, label:k.text }; });
+      kids.sort(function(a,b){ return a.y - b.y; });
+      out.options = kids.map(function(k,i){ return { i:i, label:__strip(k.text), raw:k.text, y:k.y }; });
       out.cursor = h.optionsCursor;
     } else {
       var party = scene.getPlayerParty ? scene.getPlayerParty() : [];
@@ -191,6 +194,15 @@ try {
     out.family = 'F11';
     out.options = [];
     out.extra.awaitingActionInput = h.awaitingActionInput === true;
+    out.readable = true;
+  }
+  // F10 paged viewers: SUMMARY 9, GAME_STATS 26, POKEDEX_PAGE 31, RUN_INFO 41.
+  // cursor is a PAGE index, not an option. ACTION is rejected; CANCEL is the only exit.
+  else if (mode === 9 || mode === 26 || mode === 31 || mode === 41) {
+    out.family = 'F10';
+    out.cursor = h.cursor;
+    out.extra.page = h.cursor;
+    out.extra.exitWith = 'CANCEL';
     out.readable = true;
   }
   // F12 modal / form
