@@ -1,7 +1,7 @@
 # Reading menus generically
 
 Type: research
-Status: claimed
+Status: resolved
 
 ## Question
 
@@ -16,3 +16,7 @@ Against the PokéRogue source:
 - Is calling something like `handler.setCursor(n)` from outside safe, or does it skip side effects that pressing would trigger?
 
 Deliver a per-family table (handler family → how to read labels, how to read cursor, how to move the cursor) and a recommendation for the generic fallback when a handler matches no known family.
+
+## Answer
+
+Resolved on branch `research/reading-menus` (commit `410a607`). Full findings at `.scratch/pokerogue-mcp-v1/research/03-reading-menus.md` on that branch; the answer section on the ticket there carries the summary. Gist is recorded in the map under Decisions so far.

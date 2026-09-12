@@ -30,7 +30,7 @@ A working `pokerogue-mcp` in this repo that Claude Code connects to over stdio a
 
 <!-- one line per closed ticket -->
 
-_(none yet)_
+- [Reading menus generically](issues/03-reading-menus.md): No uniform base class — `cursor` means a different thing per handler. `UI.handlers` is positionally indexed by `UiMode`, so `ui.mode` identifies the handler exactly. 48 handlers → **13 families**, only 7 on a run's critical path. The modal/form family (10 modes, incl. login) has **no cursor and ignores `processInput` entirely** — raw `press` is not a universal escape hatch. `setCursor` is safe from outside for 5 families, unsafe for party-list scrolling and settings. Recommendation: press-driven `select_option` by default. Findings on branch `research/reading-menus` at `.scratch/pokerogue-mcp-v1/research/03-reading-menus.md`, pinned to upstream `da1d0eff`.
 
 ## Not yet specified
 
@@ -40,6 +40,7 @@ _(none yet)_
 - **Timeout and error model** — what "settle timed out" returns, how a stuck run is reported, whether retries are automatic.
 - **Packaging and registration** — how Claude Code is pointed at the server (`.mcp.json`, `npx`, local path), and the one-command start story.
 - **Unattended soak and cost** — measuring tokens per wave and calls per decision; whether more semantic tools are needed to make a full run affordable.
+- **Driving the modal/form family** — 10 modes that ignore `processInput` and need DOM text entry or a direct `config.buttonActions[i]()` call. Manual login dodges most of them; whether an unattended run hits any of the rest is unknown until the prototype logs its modes.
 - **Recovery from stuck states** — the run is alive but the agent is lost. Detection and escape.
 
 ## Out of scope
