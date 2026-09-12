@@ -4,6 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { appendFileSync } from "node:fs";
 import { z } from "zod";
 import { Button } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
@@ -39,14 +40,30 @@ function json(value: unknown, isError = false) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value) }], isError };
 }
 
-async function run(fn: () => Promise<Record<string, unknown>>) {
+/** Optional per-call JSONL log (`POKEROGUE_MCP_LOG=path`): the soak's calls-per-wave count comes from here (#25). */
+const LOG = process.env.POKEROGUE_MCP_LOG;
+const t0 = Date.now();
+function logCall(tool: string, args: unknown, ms: number, result: Record<string, unknown>): void {
+  if (!LOG) return;
+  const line = { t: Date.now() - t0, tool, args, ms, status: result.status ?? result.error, screen: result.screen, wave: result.wave, selected: result.selected, messages: result.messages };
+  try {
+    appendFileSync(LOG, JSON.stringify(line) + "\n");
+  } catch {
+    // logging never fails a call
+  }
+}
+
+async function run(tool: string, args: unknown, fn: () => Promise<Record<string, unknown>>) {
+  const t = Date.now();
   try {
     const result = await fn();
+    logCall(tool, args, Date.now() - t, result);
     // run_interrupted is an error by contract (#7 §3): the run may still exist server-side.
     return json(result, result.status === "run_interrupted");
   } catch (e) {
-    if (e instanceof Refusal) return json({ error: e.code, message: e.message, ...e.detail }, true);
-    return json({ error: "internal", message: (e as Error).message ?? String(e) }, true);
+    const body = e instanceof Refusal ? { error: e.code, message: e.message, ...e.detail } : { error: "internal", message: (e as Error).message ?? String(e) };
+    logCall(tool, args, Date.now() - t, body);
+    return json(body, true);
   }
 }
 
@@ -59,7 +76,7 @@ server.registerTool(
       "Is the server attached to a PokéRogue tab and is a run live. The only tool meaningful before a run exists. Attaches lazily (launching Chrome if needed).",
     inputSchema: {},
   },
-  async () => run(() => driver.status()),
+  async () => run("status", {}, () => driver.status()),
 );
 
 server.registerTool(
@@ -69,7 +86,7 @@ server.registerTool(
       "The settled snapshot: wave, turn, money, biome, active pokémon, enemy, party. detail widens it: party (movesets, IVs, stats), items (held modifiers, best-effort), full. Waits for the game to settle; if a previous call timed out, this resumes the wait without pressing anything.",
     inputSchema: { detail: z.enum(["lean", "party", "items", "full"]).optional() },
   },
-  async ({ detail }, extra) => run(() => driver.getState(detail ?? "lean", context(extra as Extra))),
+  async ({ detail }, extra) => run("get_state", { detail }, () => driver.getState(detail ?? "lean", context(extra as Extra))),
 );
 
 server.registerTool(
@@ -79,7 +96,7 @@ server.registerTool(
       "What the game is asking right now: composite screen id, option labels in cursor order, cursor, message text, and what CANCEL would do here (cancel_effect). Labels are read fresh each call; pass them back verbatim to select_option.",
     inputSchema: {},
   },
-  async (_args, extra) => run(() => driver.readMenu(context(extra as Extra))),
+  async (_args, extra) => run("read_menu", {}, () => driver.readMenu(context(extra as Extra))),
 );
 
 server.registerTool(
@@ -92,7 +109,7 @@ server.registerTool(
       expect_screen: z.string().optional().describe("Composite screen id from read_menu; refused with screen_changed if the live screen differs"),
     },
   },
-  async ({ label, expect_screen }, extra) => run(() => driver.selectOption(label, expect_screen, context(extra as Extra))),
+  async ({ label, expect_screen }, extra) => run("select_option", { label, expect_screen }, () => driver.selectOption(label, expect_screen, context(extra as Extra))),
 );
 
 server.registerTool(
@@ -102,7 +119,7 @@ server.registerTool(
       "Deliver one raw button — the escape hatch for unmodelled screens. CANCEL is not 'back': it consents on messages, selects the last option on option lists, abandons a run on the save-slot screen and pops a team member on the starter grid; check read_menu's cancel_effect first. Never repeat a button because the last one seemed to fail; judge by the returned state.",
     inputSchema: { button: z.enum(Object.keys(Button) as [string, ...string[]]) },
   },
-  async ({ button }, extra) => run(() => driver.press(button, context(extra as Extra))),
+  async ({ button }, extra) => run("press", { button }, () => driver.press(button, context(extra as Extra))),
 );
 
 server.registerTool(
@@ -116,7 +133,7 @@ server.registerTool(
       overwrite: z.boolean().optional(),
     },
   },
-  async ({ species, slot, overwrite }, extra) => run(() => driver.startRun(species, slot, overwrite ?? false, context(extra as Extra))),
+  async ({ species, slot, overwrite }, extra) => run("start_run", { species, slot, overwrite }, () => driver.startRun(species, slot, overwrite ?? false, context(extra as Extra))),
 );
 
 server.registerTool(
