@@ -24,11 +24,15 @@ The structured, text-only view of the game at a settled moment. **Lean** by defa
 
 ## Menu
 
-Whatever the game is currently asking the player to choose between. Identified by its **UiMode** (an int from the game's own enum) and served by a **handler** — the game object that owns the menu's options and cursor. A menu is **known** when the server can read its labels and move its cursor, and **unknown** otherwise; unknown menus degrade to raw presses rather than blocking.
+Whatever the game is currently asking the player to choose between. Presented by a **screen**, and served by a **handler** — the game object that owns the menu's options and cursor. A menu is **known** when the server can read its labels and move its cursor, and **unknown** otherwise; unknown menus degrade to raw presses rather than blocking.
 
 ## Button
 
 One of the game's own input actions (UP, DOWN, LEFT, RIGHT, ACTION, CANCEL, MENU, …), identified by an int from the game's `Button` enum. A **press** delivers exactly one button to the game.
+
+## Escape ladder
+
+For a given menu, the ordered **rungs** that leave it, safest first. Each rung is a press, a pick among options not yet tried, a wait, or, last of all, a page **reload**. Each carries a risk: **safe** (nothing lost), **lossy** (gives up an in-run choice such as a reward, a move or an evolution) or **destructive** (loses something lasting: a team member, a save slot, saved preferences, or progress since the last save). A **must-answer** menu is one the game won't release until an option is chosen, so backing out is the wrong move. A **no-escape** menu can't be left by any input at all. The ladder is only offered for the game version it was reviewed against.
 
 ## Option
 
@@ -44,6 +48,10 @@ The game is **settled**, presses are being delivered, and the **progress fingerp
 
 Stuck is reported, never escaped unilaterally.
 
-## Escape ladder
+## Screen
 
-The ordered ways out of a given **menu**, from the safest to the most costly, each labelled with what it destroys. There is no ladder that fits every menu: the same **button** commits on one screen, discards a choice on another, and abandons the **run** on a third. A menu with no rung at all is **no-escape**, and is reported on sight rather than pressed at.
+What the game is actually asking, as a whole. A screen is *not* the same as a **UiMode**: one UiMode can serve several screens that differ in what they mean and in how they can be left, so a screen is identified by the UiMode together with whatever discriminates it. The **menu** is the choice a screen presents; the screen is the thing Claude is looking at.
+
+## Interrupted run
+
+A run that ended without the party wiping — the game tore itself down and dropped back to the title. Distinct from a **wipe**: a wipe is an ending the agent played its way into, while an interrupted run is a failure, and the run may still exist server-side. The two are never reported as the same thing, because treating an interruption as a wipe invites starting a new run over a run that is still alive.
