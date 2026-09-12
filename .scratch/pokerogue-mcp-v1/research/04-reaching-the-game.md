@@ -247,18 +247,24 @@ itself (canvas renderer only), `undefined` (transient feature-test canvases), or
 the canvas element (`selfParent: true`). `isGame` duck-types rather than trusting
 `constructor.name` — though names *are* reliable here, see §7.4.
 
-Measured on the live tab, returning a small summary instead of the raw objects:
-**0.20 ms p50** (min 0.12, p90 0.34, max 2.75 over 50 evaluates) ->
-`{ready: true, version: "1.12.0.11", sceneCtor: "BattleScene", mode: 6, handlers: 48}`.
+**This exact block was then run verbatim against the live tab** (with `game`/`scene`
+swapped for a serialisable summary so it could cross the wire; the discovery logic
+byte-for-byte as above) — **0.15 ms p50** (min 0.11, p90 0.39, max 4.03 over 50
+evaluates) ->
+`{ready: true, version: "1.12.0.11", sceneCtor: "BattleScene", mode: 2, handlers: 48, handler: "CommandUiHandler", wave: 5}`.
 
-Degradation verified by simulating each failure against the live page:
+Degradation verified by forcing each failure against the live page:
 
-| Simulated | Returns |
+| Forced | Returns |
 |---|---|
 | `Phaser` absent | `{ready: false, why: 'no-phaser'}` |
 | pool empty | `{ready: false, why: 'empty-pool'}` |
 | every entry freed (`parent: null`) | `{ready: false, why: 'no-game-in-pool'}` |
-| route A disabled | `{ready: true, ...}` — **falls through to B and still works** |
+| route A (`p.game`) removed | `{ready: true, sceneCtor: 'BattleScene'}` |
+| routes A **and** B removed | `{ready: true, sceneCtor: 'BattleScene'}` — still resolves, via the `DynamicTexture` `.manager`/`.renderer` branches |
+
+Nothing throws, and the candidate list is genuinely triply redundant rather than
+nominally so.
 
 `ui.handlers.length === 48` and `game.config.gameVersion === "1.12.0.11"` both read
 straight off this, so [#2](https://github.com/IIxauII/pokerogue-mcp/issues/2)'s two
