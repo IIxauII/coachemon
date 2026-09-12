@@ -1,0 +1,229 @@
+wave 1 (CONFIRM)
+trial 0 cancel-list    414 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 1 cancel-list    409 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 2 cancel-list    413 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 3 cancel-list    412 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 4 cancel-list    411 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 5 cancel-list    414 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 6 cancel-list    412 ms  overlay 105 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 7 cancel-list    412 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 8 cancel-list    410 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 9 cancel-list    409 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 10 cancel-list    408 ms  overlay 101 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 11 cancel-list    412 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 12 cancel-list    413 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 13 cancel-list    409 ms  overlay 100 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 14 cancel-list    411 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 15 cancel-list    416 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 16 cancel-list    412 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 17 cancel-list    408 ms  overlay 101 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 18 cancel-list    414 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 19 cancel-list    410 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases the holder’s base Defense by 10%. The higher
+your IVs, the higher the stack limit.
+trial 20 apply         2272 ms  overlay 102 ms  CheckSwitchPhase|14||0|Will you switch
+Pokémon?
+wave 2 (CONFIRM)
+trial 21 cancel-list    412 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 22 cancel-list    412 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 23 cancel-list    413 ms  overlay 104 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 24 cancel-list    411 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 25 cancel-list    413 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 26 cancel-list    411 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 27 cancel-list    410 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 28 cancel-list    416 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 29 cancel-list    410 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 30 cancel-list    416 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 31 cancel-list    412 ms  overlay 104 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 32 cancel-list    410 ms  overlay 101 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 33 cancel-list    413 ms  overlay 101 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 34 cancel-list    412 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 35 cancel-list    411 ms  overlay 104 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 36 cancel-list    409 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 37 cancel-list    413 ms  overlay 104 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 38 cancel-list    411 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 39 cancel-list    410 ms  overlay 102 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 40 cancel-list    412 ms  overlay 103 ms  SelectModifierPhase|6||0|Increases a Pokémon’s level by 1.
+trial 41 apply          617 ms  overlay 103 ms  LevelUpPhase|0||0|Bulbasaur grew to
+Lv. 6!
+wave 3 (CONFIRM)
+trial 42 cancel-list    415 ms  overlay 104 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 43 cancel-list    414 ms  overlay 102 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 44 cancel-list    416 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 45 cancel-list    412 ms  overlay 102 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 46 cancel-list    410 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 47 cancel-list    413 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 48 cancel-list    412 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 49 cancel-list    417 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 50 cancel-list    408 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 51 cancel-list    413 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 52 cancel-list    418 ms  overlay 104 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 53 cancel-list    417 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 54 cancel-list    414 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 55 cancel-list    414 ms  overlay 102 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 56 cancel-list    411 ms  overlay 102 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 57 cancel-list    413 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 58 cancel-list    412 ms  overlay 102 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 59 cancel-list    414 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 60 cancel-list    412 ms  overlay 103 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 61 cancel-list    412 ms  overlay 104 ms  SelectModifierPhase|6||2|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+trial 62 apply         3071 ms  overlay 0 ms  SelectModifierPhase|8||0|Teach Whirlpool to a Pokémon
+(Hold C or Shift for more info).
+{
+ "stop": "oscillating:SelectModifierPhase|8||0|Teach Whirlpool to a Pokémon\n(Hold C or Shift for more info).",
+ "wallMs": 159256,
+ "shopsSeen": 3,
+ "trials": 63,
+ "cancelList": {
+  "n": 60,
+  "censored": 0,
+  "p50": 412,
+  "p95": 417,
+  "max": 418,
+  "overlayMax": 105,
+  "over6s": 0,
+  "over20s": 0
+ },
+ "apply": {
+  "n": 3,
+  "censored": 0,
+  "p50": 2272,
+  "p95": 3071,
+  "max": 3071,
+  "overlayMax": 103,
+  "over6s": 0,
+  "over20s": 0
+ },
+ "slowest": [
+  {
+   "n": 62,
+   "kind": "apply",
+   "why": "Apply TM098 - Whirlpool to slot 0",
+   "returned": true,
+   "settleMs": 3071,
+   "polls": 31,
+   "maxOverlayMs": 0,
+   "fpMoved": false,
+   "reasons": {
+    "pending-prompt": 2,
+    "menu-open": 29
+   },
+   "framesAdvanced": 441,
+   "exceptionsSoFar": 0
+  },
+  {
+   "n": 20,
+   "kind": "apply",
+   "why": "Apply Iron to slot 0",
+   "returned": true,
+   "settleMs": 2272,
+   "polls": 23,
+   "maxOverlayMs": 102,
+   "fpMoved": true,
+   "reasons": {
+    "ui-transition": 2,
+    "resolving": 14,
+    "text-animating": 4,
+    "menu-open": 3
+   },
+   "framesAdvanced": 317,
+   "exceptionsSoFar": 0
+  },
+  {
+   "n": 41,
+   "kind": "apply",
+   "why": "Apply Rare Candy to slot 0",
+   "returned": true,
+   "settleMs": 617,
+   "polls": 7,
+   "maxOverlayMs": 103,
+   "fpMoved": true,
+   "reasons": {
+    "ui-transition": 2,
+    "pending-prompt": 2,
+    "awaiting-action": 3
+   },
+   "framesAdvanced": 89,
+   "exceptionsSoFar": 0
+  },
+  {
+   "n": 52,
+   "kind": "cancel-list",
+   "why": "party list CANCEL after TM098 - Whirlpool",
+   "returned": true,
+   "settleMs": 418,
+   "polls": 5,
+   "maxOverlayMs": 104,
+   "fpMoved": true,
+   "reasons": {
+    "ui-transition": 2,
+    "awaiting-action": 3
+   },
+   "framesAdvanced": 59,
+   "exceptionsSoFar": 0
+  },
+  {
+   "n": 49,
+   "kind": "cancel-list",
+   "why": "party list CANCEL after TM098 - Whirlpool",
+   "returned": true,
+   "settleMs": 417,
+   "polls": 5,
+   "maxOverlayMs": 103,
+   "fpMoved": true,
+   "reasons": {
+    "ui-transition": 2,
+    "awaiting-action": 3
+   },
+   "framesAdvanced": 59,
+   "exceptionsSoFar": 0
+  }
+ ],
+ "pageExceptions": 0,
+ "cdp": {
+  "calls": 2099,
+  "bytesIn": 693412,
+  "bytesOut": 9383993,
+  "p50": 0.99,
+  "p90": 2.18,
+  "max": 56.72
+ }
+}
