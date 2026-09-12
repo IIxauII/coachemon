@@ -176,7 +176,7 @@ export class Driver {
     });
   }
 
-  async selectOption(label: string, expectScreen: string | undefined, ctx: CallContext): Promise<Record<string, unknown>> {
+  async selectOption(label: string | undefined, index: string | number | undefined, expectScreen: string | undefined, ctx: CallContext): Promise<Record<string, unknown>> {
     await this.session.ensure();
     const pre = await this.#settleRead(ctx);
     if (!pre.settled) return this.#timedOut(pre, "select_option");
@@ -192,10 +192,25 @@ export class Driver {
     if (menu.options.length === 0) {
       throw new Refusal("no_options", `${screen} presents no options to select; use press (ACTION acknowledges a message, CANCEL leaves a viewer).`, echo);
     }
-    const m = matchLabel(menu.options, label);
-    if (m.kind === "none") throw new Refusal("no_match", `No option labelled ${JSON.stringify(label)} on ${screen}.`, echo);
-    if (m.kind === "many") throw new Refusal("ambiguous", `${m.options.length} options match ${JSON.stringify(label)} on ${screen}.`, echo);
-    const target = m.option;
+    let target: MenuOption;
+    if (index !== undefined) {
+      // The option's `i` as read_menu returned it this call — the way past a duplicated label (soak #25: "Revive" as
+      // both a free reward and a shop item). Still a value read this call, never a remembered position.
+      const hit = menu.options.find(o => String(o.i) === String(index));
+      if (!hit) throw new Refusal("no_match", `No option at index ${JSON.stringify(index)} on ${screen}.`, { ...echo, indices: menu.options.map(o => o.i) });
+      if (label !== undefined && normalizeLabel(hit.label) !== normalizeLabel(label)) {
+        throw new Refusal("screen_changed", `Option ${JSON.stringify(index)} is ${JSON.stringify(hit.label)}, not ${JSON.stringify(label)}. Nothing was pressed.`, echo);
+      }
+      target = hit;
+    } else {
+      if (label === undefined) throw new Refusal("bad_args", "select_option needs a label or an index.", echo);
+      const m = matchLabel(menu.options, label);
+      if (m.kind === "none") throw new Refusal("no_match", `No option labelled ${JSON.stringify(label)} on ${screen}.`, echo);
+      if (m.kind === "many") {
+        throw new Refusal("ambiguous", `${m.options.length} options match ${JSON.stringify(label)} on ${screen}; pass index to pick one.`, { ...echo, matches: m.options.map(o => ({ index: o.i, label: o.label, ...("cost" in o ? { cost: o.cost } : {}), ...("kind" in o ? { kind: o.kind } : {}) })) });
+      }
+      target = m.option;
+    }
 
     this.#menuActionInFlight = MENU_MODES.has(ready.mode);
     const before = progressFingerprint(this.#progress(ready));

@@ -105,11 +105,12 @@ server.registerTool(
     description:
       "Make one decision: move the cursor to the option with this label (exact match after trimming/case-folding) and commit with ACTION. Returns messages crossed while auto-advancing text, the lean snapshot and the next menu. Refuses (nothing pressed) on no_match, ambiguous, screen_changed, settings screens, the starter filter bar, a contended tab or a frozen loop. To leave a screen, select the option that leaves it (Cancel, No): there is no back button.",
     inputSchema: {
-      label: z.string().describe("An option label as read_menu returned it"),
+      label: z.string().optional().describe("An option label as read_menu returned it"),
+      index: z.union([z.string(), z.number()]).optional().describe("The option's `i` as read_menu returned it this call — use when a label is duplicated (e.g. the same item as a free reward and in the shop). With label too, both must agree."),
       expect_screen: z.string().optional().describe("Composite screen id from read_menu; refused with screen_changed if the live screen differs"),
     },
   },
-  async ({ label, expect_screen }, extra) => run("select_option", { label, expect_screen }, () => driver.selectOption(label, expect_screen, context(extra as Extra))),
+  async ({ label, index, expect_screen }, extra) => run("select_option", { label, index, expect_screen }, () => driver.selectOption(label, index, expect_screen, context(extra as Extra))),
 );
 
 server.registerTool(

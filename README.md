@@ -38,7 +38,7 @@ Seven tools, three of which act. The contract is [`docs/spec/v1-tool-surface.md`
 
 Every result carries `status` ∈ `ok` / `timed_out` / `stuck` / `run_over` / `run_interrupted` plus `wave` and `screen`. `timed_out` is not fatal — the next `get_state` or `read_menu` resumes the wait. `stuck` names a `dead_end` / `loop` / `hang` verdict and hands over the per-screen escape ladder; the server never escapes on its own. There is no `back()`: CANCEL means four different things across screens, so the agent leaves a screen by selecting the option that leaves it.
 
-Measured with the dumb policy in `scripts/autoplay.ts`: a decision costs ~0.6 s wall clock when the game is idle, ~6–9 s when a turn resolves; a wave is 10–20 acting calls.
+Measured: with the dumb policy in `scripts/autoplay.ts`, a decision costs ~0.6 s wall clock when the game is idle, ~6–9 s when a turn resolves, and a wave is 10–20 acting calls. **Played unattended by Claude Sonnet** (headless Claude Code through this `.mcp.json`): waves 1–8 to a wipe in 106 calls, 450 s, $2.07 — ~13 calls and $0.26 a wave, one `ambiguous` label, no stuck, no timeout. Details in [`docs/soak/2026-09-13-sonnet.md`](docs/soak/2026-09-13-sonnet.md).
 
 ## Why it's feasible (verified 2026-09-12)
 
