@@ -56,7 +56,9 @@ Later, if the loop proves too chatty: `select_option(label)` (move cursor to a n
 
 ## Open questions
 
-Superseded. The effort is mapped at `.scratch/pokerogue-mcp-v1/map.md` — decisions made so far, live tickets, and what is still fog. The enum tables, the settled-game predicate and the menu-handler families are all answered there, each pointing at findings on a `research/*` branch.
+Superseded. The effort is mapped as [#1 Map: pokerogue-mcp v1](https://github.com/IIxauII/pokerogue-mcp/issues/1) — the destination, the decisions locked so far, the live tickets, and what is still fog. The enum tables ([#2](https://github.com/IIxauII/pokerogue-mcp/issues/2)), the settled-game predicate ([#3](https://github.com/IIxauII/pokerogue-mcp/issues/3)) and the menu-handler families ([#4](https://github.com/IIxauII/pokerogue-mcp/issues/4)) are answered and closed, each linking to its findings on a `research/*` branch.
+
+One correction the research forced on the tool surface above: `ACTION` is button **5**, not 4 — `SUBMIT` sits at 4.
 
 ## Non-goals
 
