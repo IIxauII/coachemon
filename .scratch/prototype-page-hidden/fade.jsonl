@@ -1,0 +1,6 @@
+{"test":"fade","emulate":false,"visWhileMinimized":"hidden","mode":1,"overlayClearedMs":null,"heldAtRestoreMs":8011,"framesWhileHeld":0,"clearedAfterRestoreMs":812}
+{"test":"fade","emulate":true,"visWhileMinimized":"visible","mode":1,"overlayClearedMs":157,"heldAtRestoreMs":null,"framesWhileHeld":22,"clearedAfterRestoreMs":null}
+{"test":"fade","emulate":false,"visWhileMinimized":"hidden","mode":1,"overlayClearedMs":null,"heldAtRestoreMs":8037,"framesWhileHeld":0,"clearedAfterRestoreMs":789}
+{"test":"fade","emulate":true,"visWhileMinimized":"visible","mode":1,"overlayClearedMs":157,"heldAtRestoreMs":null,"framesWhileHeld":23,"clearedAfterRestoreMs":null}
+{"test":"lifetime","note":"emulation set on a closed session","vis":"hidden","fps":0}
+{"test":"long","holdMs":360000,"vis":"visible","fpsEvery10s":[143.9,141,144,144.1,142.4,144,143,144,143.5,144,144,143.9,144,143.4,144,140.6,144,143.9,143.9,144,144,144,143.9,144,144,144,143.8,144,143,143.5,144,144,144,144,142,143.4]}
