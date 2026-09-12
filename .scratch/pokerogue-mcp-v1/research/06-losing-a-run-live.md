@@ -256,14 +256,37 @@ The counter tracks the real age of the last successful save to within 1.3 s over
 
 ### What it does on a *failed* save — refuted
 
-I inferred here, and reported, that "the reset sits in the success path, so a failed `saveAll` leaves the counter running", making this an early-warning canary for save failures. **Reading `saveAll`'s live body (§7) refutes that.** The assignment is:
+I inferred here, and reported, that "the reset sits in the success path, so a failed `saveAll` leaves the counter running", making this an early-warning canary for save failures. **Reading `saveAll`'s live body (§7) refutes that.**
+
+> ⚠️ **The two halves of this ticket disagree here, and this is the live half's evidence.** The companion source read concludes the reset is success-path-only. Against the deployed bundle it is not. I am recording the bytes so the disagreement can be adjudicated rather than split.
+
+The deployed tail of `saveAll`, read with `String(scene.gameData.saveAll)` and quoted verbatim:
+
+```
+let C=await z.savedata.updateAll(S);return t&&(B.lastSavePlayTime=0,B.ui.savingIcon.hide()),C?(C.startsWith(`session out of date`)&&(B.phaseManager.clearPhaseQueue(),await this.reinitializeSaveData()),console.error(C),!1):!0
+```
+
+Mechanically checked on that string, not eyeballed:
+
+| Check | Result |
+|---|---|
+| characters between `updateAll(` and `lastSavePlayTime=0` | `` `updateAll(S);return t&&(B.` `` |
+| an `if` between them? | **no** |
+| a ternary `?` between them? | **no** |
+| does the reset precede the first `console.error`? | **yes** |
+
+So it is `return (t && (reset, hide)), (C ? failure : success)` — a comma expression. The reset runs **after the request resolves and before `C` is examined at all**; its only guard is the `sync` flag `t`. Deminified:
 
 ```js
 const err = await z.savedata.updateAll(payload);
-sync && (B.lastSavePlayTime = 0, B.ui.savingIcon.hide());   // guarded on `sync`, not on `err`
+if (sync) { globalScene.lastSavePlayTime = 0; globalScene.ui.savingIcon.hide(); }  // not in the err branch
+if (err) { …; console.error(err); return false; }
+return true;
 ```
 
-The reset runs **after the request resolves and before the error is examined**. Its only guard is the `sync` flag. **A sync save that the server rejects resets the counter exactly like one that succeeds**, so this cannot detect a save that was attempted and failed — which is precisely this ticket's case.
+**A sync save that the server rejects resets the counter exactly like one that succeeds**, so this cannot detect a save that was attempted and failed — which is precisely this ticket's case.
+
+Two readings would reconcile the disagreement, and both are worth someone checking: the pinned ref `v1.12.0.11` may genuinely differ from what is deployed at `pokerogue.net` (in which case the *deployed* behaviour is what the server must handle), or the source read may have attributed the reset to the `if (err)` branch it precedes. **Until that is settled, treat the canary as [disputed] and do not build the early-warning alarm on it.**
 
 What survives:
 
@@ -469,7 +492,11 @@ Request headers: `Authorization`, `PKR-Client-Version`, `Content-Type`, `Referer
 
 **[not exercised] The request body was not captured.** `postLen` came back `0` with `maxPostDataSize` set to 128 KB, so the payload is not exposed as `postData` — most likely sent as a `Blob`/typed array rather than a string. Reading it would need `Fetch.getRequestPostData` or request interception, which the safety constraints rule out. **What the server sends is therefore unknown**; only the endpoint, method, headers, status and timing are established.
 
-**[not exercised] Retry behaviour.** No save failed, so I saw no retry. Whether `saveAll` retries, how often, and whether `encounter-phase.ts:304` fires on the first failure or the last, is unestablished.
+**Retry behaviour: there is none.** **[from source]** No retry anywhere in the codebase — `EncounterPhase` makes **one** save attempt and tears the run down; the only backoff is a login-recovery loop. **[verified]** consistent with `saveAll`'s live body (§7): a single `await`, then straight into the error branch. **One dropped packet at a wave boundary ends the run.** That is worth stating plainly, because it sets how seriously the server should treat signal 1 in §11 — there is no second chance to catch.
+
+**[verified] What counts as success, and it is not the status code.** My captured save returned `200` with a **completely empty body** (0 bytes), and `saveAll` branches on `C ? failure : success` where `C` is the response *body* (§7) — it never reads `response.status`. So **an empty body is success and a non-empty body is failure**, which is exactly what the source read says. Two consequences: a server watching the wire must key on the body, not the status; and any middlebox that injects a body into a `200` would look to the game like a failed save.
+
+**[verified] The deployed API base is `https://api.pokerogue.net`** — observed on every request in both listener windows, distinct from the `https://pokerogue.net` asset origin.
 
 ### The Load Game path, and a false-positive trap
 
@@ -574,7 +601,7 @@ Watch the **length** in the settle loop; **decrypt only on a change** (0.02 ms) 
 3. ~~That `sessionData_<user>` survives a save-failure teardown.~~ **Withdrawn** — §7 shows `saveAll` writes `localStorage` before the network call, so the key is written regardless, and the source read shows it is cleared on two of the four endings. It is not a discriminator and the test need not ask about it.
 4. ~~That `lastSavePlayTime` is not reset by a failed save.~~ **Answered, negatively, from the live function body** (§7): the reset is gated on `sync`, not on the outcome. One residue worth testing: whether a request that *throws* (offline) skips the reset, where a server-returned error does not.
 5. ~~What the failure path logs.~~ **Answered from the live function body** (§7): `console.error(<server error string>)`, which survives the production build and is observable. What remains is the exact text for a non-`"session out of date"` failure.
-6. **Whether it retries**, and what the client counts as failure — status code vs thrown vs timeout. `saveAll` itself does not retry (§7: one `await`, then the error branch), but whether `z.savedata.updateAll` retries internally is unestablished, and the request *body* is still unobserved.
+6. ~~Whether it retries, and what the client counts as failure.~~ **Answered** (§10): no retry anywhere, and failure is a **non-empty response body**, not a status code. Only the request *body* remains unobserved.
 7. **Whether anything appears in the UI** before the teardown runs. `saveAll` shows and hides a `savingIcon`, so there is at least an icon; whether a failure surfaces anything more is unknown.
 8. **How much of a window there is** between the failed request and the title screen settling — whether a 100 ms settle poll can see the intermediate state. The measured 1042 ms save round trip (§10) says the window is at least that wide on the request side, which is encouraging.
 
@@ -588,7 +615,8 @@ The test is cheaper to specify than when this ticket was written, because §10 p
 
 - **The entire save-failure column of §0.** Everything about that path is inferred from the wipe measurements plus the source read. The human has ruled out the destructive test, so it stays inferred. See §12.
 - **`phaseName` on the two endings, seen live.** The values and dwell times come from the companion source read. I verified the *mechanism* — `getCurrentPhase()`, the own-property `phaseName`, and its cost — but never observed `"GameOverPhase"` or `"LoginPhase"`, because the one wipe in this session happened before I was polling phases.
-- **The save request's body**, the client's failure predicate, and whether `z.savedata.updateAll` retries or catches internally (§7, §10). `saveAll` itself does not retry. The payload is not exposed as `postData`.
+- **The save request's body.** Not exposed as `postData`; reading it needs interception, which is ruled out. (The failure predicate and retry behaviour, previously on this list, are resolved in §10.)
+- **Whether `z.savedata.updateAll` catches a thrown request** rather than resolving to an error string. This is the one thing that decides whether an *offline* failure behaves differently from a *server-rejected* one — see §6.
 - **Whether a request that throws behaves differently from one the server rejects** — the one residue of the `lastSavePlayTime` question (§6).
 - **The `localStorage` key names for save slots 1–4** (§7.1). Five slots are confirmed from `clearLocalData`; the name helper is module-scoped and unreachable, and no suffixed key exists on this account, so absence proves nothing.
 - **Whether a save failure surfaces in the UI** beyond the `savingIcon` that `saveAll` shows and hides.
