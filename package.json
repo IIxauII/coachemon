@@ -9,7 +9,8 @@
   "scripts": {
     "test": "node --test \"src/**/*.test.ts\"",
     "typecheck": "tsc",
-    "ladder:drift": "node scripts/ladder-drift.ts"
+    "ladder:drift": "node scripts/ladder-drift.ts",
+    "stuck:replay": "node scripts/stuck-replay.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
