@@ -27,3 +27,5 @@ What must be settled:
 - What is deliberately *not* in v1?
 
 Output a written v1 spec that the build tickets are cut from.
+
+Two constraints from the enum research that v1 must answer for: `UiMode.PARTY` (8) is five different screens distinguished only by `PartyUiMode`, so `read_menu` cannot describe it from `ui.mode` alone; and `FAINT_SWITCH` / `REVIVAL_BLESSING` **cannot be cancelled**, so a reflexive `CANCEL` escape hatch will hang an unattended run. Decide how the tool surface exposes which menus refuse CANCEL.

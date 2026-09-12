@@ -12,7 +12,7 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 
 ### Reading state
 
-- `window.gameInfo` → `{ gameInfoVersion, playTime, gameMode, biome, wave, luck, party }`. Live, JSON-serialisable, zero cost.
+- `window.gameInfo` → `{ gameInfoVersion, playTime, gameMode, biome, wave, luck, party }`. Live, JSON-serialisable, zero cost. (`gameInfoVersion` is this payload's schema version, hardcoded in `battle-scene.ts` — it is not a build id. The build is `game.config.gameVersion`.)
 - The Phaser `Game` instance is not on `window`, but is reachable:
 
   ```js
@@ -56,11 +56,7 @@ Later, if the loop proves too chatty: `select_option(label)` (move cursor to a n
 
 ## Open questions
 
-- **Button enum values.** `ui.processInput` takes ints from PokéRogue's `Button` enum; the mapping wasn't dumped during recon. Read it off the source repo or derive from `inputController.configs`.
-- **UiMode enum.** Same — need the int→name table to make `read_menu` legible.
-- **Account.** pokerogue.net has no guest mode: *"Log in or create an account to start. No email required!"* Only `Login` / `Register`. Plan is a throwaway account (random username + password, no email). Not yet created.
-- **Phase timing.** Battles are async (animations, `phaseManager`). The server likely needs a "settled" check before returning state, or `press` will race the animation queue.
-- **Chrome lifecycle.** Attach to an existing tab, or launch and own one?
+Superseded. The effort is mapped at `.scratch/pokerogue-mcp-v1/map.md` — decisions made so far, live tickets, and what is still fog. The enum tables, the settled-game predicate and the menu-handler families are all answered there, each pointing at findings on a `research/*` branch.
 
 ## Non-goals
 

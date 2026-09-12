@@ -1,7 +1,7 @@
 # Button and UiMode enum tables
 
 Type: research
-Status: claimed
+Status: resolved
 
 ## Question
 
@@ -16,3 +16,7 @@ Find, in the public PokéRogue source (`pagefaultgames/pokerogue`):
 - Whether anything else the server will need is enum-shaped and worth generating at the same time (e.g. `BattlerIndex`, `PokemonType`, `StatusEffect`, `Biome`).
 
 Report the enums as data plus a recommendation for how a codegen script should extract them (parse TS source at a pinned ref vs. import from a published package, if one exists).
+
+## Answer
+
+Resolved on branch `research/enum-tables` (commit `b1f991b`). Full tables and the codegen recommendation at `.scratch/pokerogue-mcp-v1/research/01-enum-tables.md` on that branch. Gist is recorded in the map under Decisions so far.
