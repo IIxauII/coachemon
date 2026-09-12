@@ -6,6 +6,40 @@ MCP server that lets Claude play [PokéRogue](https://pokerogue.net) — a brows
 
 Give an agent a **text-first** control loop over a live PokéRogue run. No pixel reading, no screenshot-per-action. Structured state in, button presses out.
 
+## Running it
+
+Requirements: Node ≥ 23.6 (runs `.ts` directly), Google Chrome, and a PokéRogue account already logged in inside the server's own Chrome profile (`~/.pokerogue-mcp/chrome-profile`; log in by hand once — the server never touches credentials, see [#5](https://github.com/IIxauII/pokerogue-mcp/issues/5)).
+
+```bash
+npm install
+npm run smoke -- status          # attaches (launching Chrome if no debug port answers) and reports
+npm run smoke -- read_menu       # what the game is asking right now
+```
+
+Claude Code picks the server up from the checked-in [`.mcp.json`](.mcp.json) when started in this directory. Its `"timeout": 60000` is a documented requirement, not a tuning knob ([#20](https://github.com/IIxauII/pokerogue-mcp/issues/20)): the settle budget is 30 s and progress notifications do not extend the client's per-call limit.
+
+The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (#5's command). It never closes the tab or Chrome. One driver per tab: a lock at `~/.pokerogue-mcp/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/pokerogue-mcp/issues/6) had three sessions interleaving presses on one live save.
+
+Dev scripts: `npm run smoke -- <tool> '<json args>'` calls tools over real stdio; `node scripts/autoplay.ts --waves N` drives waves with a dumb policy and logs every call to `.cache/autoplay.jsonl` (the soak driver for [#25](https://github.com/IIxauII/pokerogue-mcp/issues/25)); `node scripts/eval.ts '<js body>'` evaluates against the live scene; `npm run enums:gen` regenerates the enum tables from the pinned game tag; `npm run ladder:drift` checks the escape ladder against a candidate build.
+
+## Tool surface
+
+Seven tools, three of which act. The contract is [`docs/spec/v1-tool-surface.md`](docs/spec/v1-tool-surface.md).
+
+| Tool | Acts? | Does |
+|---|---|---|
+| `status()` | no | Attached? Run live? Game version vs the pinned one, tab contention |
+| `get_state(detail?)` | no | The settled snapshot: wave, turn, money, biome, active, enemy, party; `party` / `items` / `full` widen it |
+| `read_menu()` | no | Composite screen id, option labels in cursor order, cursor, message text, `cancel_effect` |
+| `select_option(label, expect_screen?)` | **yes** | Move the cursor to that label and commit with ACTION; returns messages crossed, the lean snapshot and the next menu |
+| `press(button)` | **yes** | One raw button — the escape hatch |
+| `start_run(species, slot?, overwrite?)` | **yes** | Cold `TITLE` → live wave 1 with those starters, refusing an occupied slot |
+| `screenshot()` | no | A PNG for the human |
+
+Every result carries `status` ∈ `ok` / `timed_out` / `stuck` / `run_over` / `run_interrupted` plus `wave` and `screen`. `timed_out` is not fatal — the next `get_state` or `read_menu` resumes the wait. `stuck` names a `dead_end` / `loop` / `hang` verdict and hands over the per-screen escape ladder; the server never escapes on its own. There is no `back()`: CANCEL means four different things across screens, so the agent leaves a screen by selecting the option that leaves it.
+
+Measured with the dumb policy in `scripts/autoplay.ts`: a decision costs ~0.6 s wall clock when the game is idle, ~6–9 s when a turn resolves; a wave is 10–20 acting calls.
+
 ## Why it's feasible (verified 2026-09-12)
 
 Recon against the live site, Phaser 3.90.0. Everything below was confirmed working in a real browser session via CDP.
@@ -25,8 +59,8 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
   ```
 
   A lean settled read through this costs **0.21 ms / 338 bytes**, measured. The production
-  form is layered and guarded; see
-  [#9](https://github.com/IIxauII/pokerogue-mcp/issues/9) for it, the measurements, and
+  form is `src/game/js.ts`; see
+  [#9](https://github.com/IIxauII/pokerogue-mcp/issues/9) for the measurements and
   the ruled-out alternatives.
 
   Two things not to do, both of which look fine until they aren't: don't write
@@ -36,7 +70,7 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 
 - `BattleScene` exposes the full run:
   `party`, `currentBattle`, `money`, `score`, `pokeballCounts`, `gameData`,
-  `arena`, `modifierBar`, `enemyModifierBar`, `phaseManager`, `gameMode`, `trainer`
+  `arena` (its biome is `arena.biomeId`), `modifierBar`, `enemyModifierBar`, `phaseManager`, `gameMode`, `trainer`
 - Current menu is readable as **text**, not pixels:
   - `scene.ui.mode` — UiMode enum int (e.g. `32` = login/register)
   - `scene.ui.modeChain` — the mode stack
@@ -44,7 +78,7 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 
 ### Acting
 
-- `scene.ui.processInput(button)` is a live function → drive the game by **button enum**, no synthetic keystrokes, no clicking canvas coordinates.
+- `scene.ui.processInput(button)` is a live function → drive the game by **button enum**, no synthetic keystrokes, no clicking canvas coordinates. Its return value lies in both directions, so nothing judges a press by it.
 - Raw keyboard (`ArrowUp/Down/Left/Right`, `z`, `x`, `Enter`) also works as a fallback. Phaser binds its keyboard listeners to **`window`**, not the document — `getEventListeners(document)` has no `keydown` at all. Dispatched keys still arrive, because they bubble to `window`.
 
 **Consequence:** a whole wave costs text, not images. Screenshots become an optional sanity check rather than the control loop.
@@ -55,26 +89,26 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 Claude  ──MCP──>  pokerogue-mcp  ──CDP──>  Chrome  ──>  pokerogue.net
 ```
 
-Thin wrapper. The server holds no game logic — the game is the source of truth. It connects to a Chrome instance over the DevTools Protocol and does `Runtime.evaluate` against the page.
+Thin wrapper. The server holds no game logic — the game is the source of truth. It holds one CDP page session against the tab and does `Runtime.evaluate` against the page, rediscovering the scene on every call. Focus emulation is re-applied on every attach so a hidden or minimised window keeps the Phaser loop running ([#23](https://github.com/IIxauII/pokerogue-mcp/issues/23)).
 
-## Tool surface (first cut)
+```
+src/server.ts        MCP entry: seven tools over stdio
+src/driver.ts        settle → press → auto-advance → detect → envelope
+src/settle.ts        the settle loop and its budgets (#14)
+src/game/js.ts       the JavaScript injected into the tab: locator, predicate, menu reader, snapshot
+src/cdp/             the page session (attach-else-launch) and the driver lock
+src/screen.ts        composite screen ids
+src/enums/           generated from the pinned game tag (scripts/gen-enums.ts)
+src/escape-ladder/   the hand-curated per-screen escape ladder and its drift check (#15)
+src/stuck/           the stuck detector and hang watch (#16)
+```
 
-| Tool | Does |
-|---|---|
-| `get_state` | Structured snapshot: wave, biome, mode, money, party (species/level/HP/moves/status), enemy field, held items |
-| `read_menu` | Active UI mode + option labels + cursor position — "what can I press right now" |
-| `press` | Send one button (`UP`/`DOWN`/`LEFT`/`RIGHT`/`ACTION`/`CANCEL`/`MENU`/…) |
-| `screenshot` | Optional visual check, for when text state is ambiguous |
+## Map
 
-Later, if the loop proves too chatty: `select_option(label)` (move cursor to a named option and confirm in one call), `wait_for_mode(mode)`.
-
-## Open questions
-
-Superseded. The effort is mapped as [#1 Map: pokerogue-mcp v1](https://github.com/IIxauII/pokerogue-mcp/issues/1) — the destination, the decisions locked so far, the live tickets, and what is still fog. The enum tables ([#2](https://github.com/IIxauII/pokerogue-mcp/issues/2)), the settled-game predicate ([#3](https://github.com/IIxauII/pokerogue-mcp/issues/3)) and the menu-handler families ([#4](https://github.com/IIxauII/pokerogue-mcp/issues/4)) are answered and closed, each linking to its findings on a `research/*` branch.
-
-One correction the research forced on the tool surface above: `ACTION` is button **5**, not 4 — `SUBMIT` sits at 4.
+The effort is mapped as [#1 Map: pokerogue-mcp v1](https://github.com/IIxauII/pokerogue-mcp/issues/1) — the destination, every decision locked so far with its evidence, and what is still fog. `CONTEXT.md` is the vocabulary; ADRs are in `docs/adr/`.
 
 ## Non-goals
 
 - Reimplementing game rules.
 - Any kind of multiplayer, ranking, or account farming. One account, one agent, playing the game as a player would. (v1 uses the dev's own existing account, decided in [#5](https://github.com/IIxauII/pokerogue-mcp/issues/5) — so agent mistakes land on a real save. The server never handles credentials; the session rides on a persisted cookie.)
+- Playing *well*. The finish line is surviving a run unattended, not score or wave depth.
