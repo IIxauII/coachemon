@@ -298,12 +298,20 @@ Sometimes, and it is not the case that matters. `reinitializeSaveData` puts up a
 
 The saving icon is not a signal either: `savingIcon.show()` is guarded by `if (sync)` ([`game-data.ts:1345-1347`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/system/game-data.ts#L1345-L1347)), so on the four waves in five that do not sync it never appears.
 
-**Console is a maybe, not a signal. [live]** The build marks `console.debug` and `console.log` as pure for tree-shaking in production:
+**Console is not a signal — and the reason is now measured, not predicted.** The build marks `console.debug` and `console.log` as pure for tree-shaking in production:
 
 ```ts
           manualPureFunctions: mode === "production" ? ["console.debug", "console.log"] : [],
 ```
-— [`vite.config.ts:37`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/vite.config.ts#L37). That should strip the per-phase `console.log(\`%cStart Phase ${...}\`)` at [`phase-manager.ts:371`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phase-manager.ts#L371), `console.debug("Session data saved to slot …")`, and `console.log("Seed:", …)` from the live bundle. `console.error` and `console.warn` are not in the list and should survive — which leaves `console.error(saveError)` observable over CDP `Runtime.consoleAPICalled`, but with a bare server-supplied string and no structure. **Treat the console as a diagnostic nicety, not the mechanism.** Whether the phase log survives on pokerogue.net is a one-line check for the live probe; if it does, the free phase trace in §3 gets even cheaper.
+— [`vite.config.ts:37`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/vite.config.ts#L37). **[confirmed live]** They are stripped from the shipped bundle, and `console.error` survives. So the per-phase `console.log(\`%cStart Phase ${...}\`)` at [`phase-manager.ts:371`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phase-manager.ts#L371), `console.debug("Session data saved to slot …")` and `console.log("Seed:", …)` are all gone: **there is no free passive phase trace, and §3.1's 100 ms poll is the mechanism rather than a fallback.**
+
+What survives is `console.error`, including `console.error(saveError)` on the save-failure path ([`game-data.ts:1394`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/system/game-data.ts#L1394)) — a bare server-supplied string with no structure. Do not key a detector on it, and the live probe found the concrete reason:
+
+> **[confirmed live]** Opening the save-slot screen fires five parallel `GET /savedata/session/get?slot=0..4`; every empty slot returns **404** with body `"save does not exist\n"`, and each one trips `console.error("Invalid save data JSON detected!", response)` at [`game-data.ts:933-935`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/system/game-data.ts#L933-L935) — the `response.charAt(0) !== "{"` arm. **Five console errors in 250 ms as completely normal operation.** A console-based detector reports an infrastructure fault every time the player opens Load Game.
+
+That is the same `getSession` fall-through §3.3 relies on, seen from the error side: a 404 on an empty slot is the system working. It also means a *wipe* produces one of these errors for the cleared slot when `TitlePhase` probes it — so the string is emitted on the healthy path of the very ending this ticket is about. **Console: diagnostic colour for a report the server has already decided on, never the thing it decides from.**
+
+One useful property regardless **[live]**: Chrome replays buffered console entries on `Runtime.enable`, so a server attaching to an already-running tab can see errors that predate the attach. Worth knowing for #5's attach-to-existing-tab design, but the buffer is bounded and lossy — a convenience for diagnosis, not a substitute for having been watching.
 
 ---
 
@@ -442,7 +450,7 @@ Object.keys(localStorage).filter(k => /^sessionData\d?_/.test(k))
 
 ### 4.1 The HTTP shape
 
-All of it goes through `ApiBase.doFetch` — plain `fetch`, `Authorization: <pokerogue_sessionId cookie>`, `PKR-Client-Version: <package version>` ([`api-base.ts:83-98`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/api/api-base.ts#L83-L98)). Base URL is `import.meta.env.VITE_SERVER_URL` ([`api.ts:72`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/api/api.ts#L72)) — **[live]** resolve the deployed value from a network capture; it is baked into the bundle.
+All of it goes through `ApiBase.doFetch` — plain `fetch`, `Authorization: <pokerogue_sessionId cookie>`, `PKR-Client-Version: <package version>` ([`api-base.ts:83-98`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/api/api-base.ts#L83-L98)). Base URL is `import.meta.env.VITE_SERVER_URL` ([`api.ts:72`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/api/api.ts#L72)), baked into the bundle at build time; **[confirmed live]** the deployed value is `https://api.pokerogue.net`. Note the two auth styles, which a CDP matcher has to handle separately: the `Authorization` header and `PKR-Client-Version` go on every request, while `clientSessionId` travels as a **query parameter** on the GET paths (`session/get`, `system/verify`, `session/newclear`) and inside the JSON body on `updateall`.
 
 `EncounterPhase` picks one of two calls per wave:
 
@@ -478,6 +486,48 @@ Outcome: `doEncounter()` never runs, no phase is queued, the UI sits in `UiMode.
 Note which waves: the non-sync ones, i.e. **four waves in five**. The sync path cannot hang — `updateAll` catches ([`savedata-api.ts:30-33`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/api/savedata-api.ts#L30-L33)).
 
 Signature over CDP: an unhandled rejection (`Runtime.exceptionThrown`), then a settle timeout at `UiMode.MESSAGE` with `phaseName === "EncounterPhase"`. This is exactly the state #3's *"20 s no-progress / 90 s hard timeout"* will trip on, and the map's *"Timeout and error model"* item should name it: **the run is alive and recoverable by reload, but this tab will never advance.** Reloading the page re-enters through boot → `LoginPhase` → `TitlePhase` → Continue, at the last synced wave.
+
+### 4.4 `scene.lastSavePlayTime` — what it is, and the one thing it is not
+
+The live probe found this counter and measured it precisely: 1 Hz, ran 555 → 0 at an observed `updateall → 200`, tracked the account save's write timestamp to within 1.3 s over 5½ minutes, climbed monotonically across 330 s inside one wave. Every one of those measurements is correct. **The inference drawn from them — that the zeroing sits only in the success path, making this a pre-emptive "saves are not landing" detector — is not.**
+
+Five writes exist, repo-wide (`grep -rn lastSavePlayTime src`). One is the 1 Hz increment ([`battle-scene.ts:674-675`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/battle-scene.ts#L674-L675)); three zero it at a run's beginning ([`title-phase.ts:324`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phases/title-phase.ts#L324), [`select-starter-phase.ts:121`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phases/select-starter-phase.ts#L121), [`game-data.ts:1023`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/system/game-data.ts#L1023) on loading a session). Exactly one is in the save path, and here it is in full context:
+
+```ts
+    if (bypassLogin || !sync) {
+      const verified = await this.verify();
+      globalScene.ui.savingIcon.hide();
+      return verified;
+    }
+
+    const saveError = await pokerogueApi.savedata.updateAll(request);
+    if (sync) {
+      globalScene.lastSavePlayTime = 0;
+      globalScene.ui.savingIcon.hide();
+    }
+
+    if (!saveError) {
+      return true;
+    }
+```
+— [`game-data.ts:1373-1387`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/system/game-data.ts#L1373-L1387).
+
+The reset is gated on `if (sync)` — which is already guaranteed true, since `!sync` returned four lines earlier — and it sits **after the `await` but before the `if (!saveError)` success check**. So it fires on **every sync attempt that gets a response, success or failure**, including the synthetic `"Unknown error"` that `updateAll`'s own `catch` manufactures for a network-level throw ([`savedata-api.ts:30-33`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/api/savedata-api.ts#L30-L33)). It is **seconds since the last sync *attempt***, not since the last success.
+
+Why the probe's measurement still looked like a success tracker, and always will: **there is no state in which a save has failed and the run is still playable.** A failed `saveAll` returns `false` and `encounter-phase.ts:304` tears the run down in the same tick (§1.2, §4.2 — single attempt, no retry, by design). So for any run that is still alive, "last attempt" and "last success" are the same instant. The counter cannot warn you, because the game gives exactly zero waves of warning.
+
+Two further corrections to the counter's shape, both bearing on the proposed alarm rule:
+
+- **The sawtooth is five waves, not one.** The non-sync branch returns at [`:1373-1377`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/system/game-data.ts#L1373-L1377) without ever reaching the reset, so four waves in five do not zero it. It zeroes on waves ≡ 1 (mod 5), and on any wave start where it has already reached 300 — the two arms of `battle.waveIndex % 5 === 1 || (globalScene.lastSavePlayTime ?? 0) >= 300` ([`encounter-phase.ts:300`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phases/encounter-phase.ts#L300)). The probe's 330 s monotone climb inside one wave is consistent with both readings; a climb across two or three *wave boundaries* would have separated them.
+- **"Wave advanced and the counter did not zero" therefore fires on four normal waves in five.** The correct invariant is narrower: *once `lastSavePlayTime` reaches 300, the very next `EncounterPhase.start()` must zero it* — that arm of the predicate forces a sync regardless of wave number.
+
+**What it is genuinely good for**, all three worth having:
+
+1. **A sync-wave predictor.** Before advancing a wave, the server can compute `nextWave % 5 === 1 || lastSavePlayTime >= 300` and know whether the coming `EncounterPhase` will hit the network. That is exactly the set of transitions on which a silent loss via `updateall` is possible — so the server can tighten its settle timeout there, arm the §4.1 network watch for that transition only, and leave the other four waves cheap.
+2. **A staleness bound for the report.** `lastSavePlayTime` seconds is how far the server's copy trails the tab, which is what makes `last_saved_wave` honest rather than guessed (§5.2 notes the local key runs *ahead* of the server, so it cannot supply this on its own).
+3. **A positive corroborator for the §4.3 hang.** If the counter passes 300 and a wave boundary comes and goes without zeroing, the `saveAll` promise never resolved. Paired with `phaseName === "EncounterPhase"` at `UiMode.MESSAGE` that is the hang exactly; paired with `MODIFIER_SELECT` it is an agent idling at a reward screen. The counter alone cannot separate those two — the phase name can, and already does — but it converts §4.3's `run_stuck` from a pure timeout into a timeout plus positive evidence.
+
+What it is not, restated because it is the load-bearing correction: **not a pre-emptive save-failure detector.** Nothing can be, on this code path. The pre-emptive detector, if one is wanted, is the §4.1 network watch on `POST /savedata/updateall` — it sees the non-empty error body before `saveAll`'s `.then` runs, which is the only place in the whole sequence where "the save failed" is known and the run has not yet been torn down. That window is one microtask wide, so it buys notice, not prevention.
 
 ---
 
@@ -549,7 +599,7 @@ Starting a run does not pick a slot for you. `SelectStarterPhase` goes STARTER_S
 
 ## 6. `GameOverPhase.isVictory` and friends
 
-**Is TS `private` readable from injected JS?** Yes, in principle. `private isVictory: boolean` ([`game-over-phase.ts:38`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phases/game-over-phase.ts#L38)) is a TypeScript modifier, not a `#private` field; it is assigned as an ordinary own property in the constructor ([`:44`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phases/game-over-phase.ts#L44)) and erased at emit. **[live]** Property-name mangling would still hide it; the build sets `mangle: { keepNames: true }` with no `mangleProps`-style option ([`vite.config.ts:44-55`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/vite.config.ts#L44-L55)), and rolldown/oxc do not mangle properties unless asked, so it should survive — worth one live check since it is a one-liner.
+**Is TS `private` readable from injected JS?** Yes, in principle. `private isVictory: boolean` ([`game-over-phase.ts:38`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phases/game-over-phase.ts#L38)) is a TypeScript modifier, not a `#private` field; it is assigned as an ordinary own property in the constructor ([`:44`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phases/game-over-phase.ts#L44)) and erased at emit. Property-name mangling would still hide it, but the build sets `mangle: { keepNames: true }` with no `mangleProps`-style option ([`vite.config.ts:44-55`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/vite.config.ts#L44-L55)) and rolldown/oxc do not mangle properties unless asked. **[confirmed live]** properties survive: `phaseManager.currentPhase`'s own keys read back as `["phaseName", "loaded", "gameMode"]`, and `loaded` is `private` on `TitlePhase` ([`title-phase.ts:32`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phases/title-phase.ts#L32)) — a TS-`private` field, readable, under its real name. So the mechanism works; it is the reachability below that kills it.
 
 **Is the phase object reachable when the title screen settles?** **No.** `PhaseManager` keeps exactly two references — `currentPhase` and `standbyPhase` ([`phase-manager.ts:248-250`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phase-manager.ts#L248-L250)). `shiftPhase()` overwrites `currentPhase` ([`:357`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phase-manager.ts#L357)) and `clearAllPhases()` nulls `standbyPhase` ([`:330-334`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/phase-manager.ts#L330-L334)). No history, no last-phase slot. By the time `TitlePhase` is current the `GameOverPhase` is garbage. So `isVictory` is readable **only while `GameOverPhase` is the current phase** — a ≥ 6 s window, which the settle loop is inside anyway.
 
@@ -577,7 +627,13 @@ That yields `run_interrupted` for the report. It is honest about the state, it r
 |---|---|---|---|
 | `run_over` | `GameOverPhase` seen, then `TitlePhase` without `LoginPhase` | `outcome: "wipe" \| "victory"`, `wave`, `party` at the end (from run history) | unchanged — Claude decides whether to start a new run. No auto-restart. |
 | `run_interrupted` | `LoginPhase` seen, no `GameOverPhase`, no menu action in flight | `reason: "save_failed"`, `last_saved_wave` (from the session in the slot), `resumable: true`, the server's error text if the network watch caught it | **an error, not a state.** The run is not over. Claude decides whether to resume or abandon. The server must not offer a fresh run as the default, and `new_run` into the occupied slot should require an explicit acknowledgement that it discards a resumable run. |
-| `run_stuck` | settle timeout with `phaseName === "EncounterPhase"` at `UiMode.MESSAGE`, unhandled rejection seen | `wave`, `last_saved_wave`, `recovery: "reload"` | the §4.3 hang. The run is alive; the tab is not. Feeds the map's open *"Timeout and error model"* and *"Recovery from stuck states"* items. |
+| `run_stuck` | settle timeout with `phaseName === "EncounterPhase"` at `UiMode.MESSAGE`, unhandled rejection seen, `lastSavePlayTime` past 300 and still climbing | `wave`, `last_saved_wave`, `seconds_since_last_sync`, `recovery: "reload"` | the §4.3 hang. The run is alive; the tab is not. Feeds the map's open *"Timeout and error model"* and *"Recovery from stuck states"* items. |
+
+**`lastSavePlayTime` earns a field, not a row.** The live probe proposed it as a fourth report — a pre-emptive "saves are not landing" alarm. §4.4 shows why that report cannot exist: the counter is zeroed on every sync *attempt*, success or failure ([`game-data.ts:1379-1383`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/system/game-data.ts#L1379-L1383)), and a failed save tears the run down in the same tick, so no run that is still playable has a stale counter to alarm on. What the counter does buy is three concrete improvements to the reports above, all worth taking:
+
+- a `seconds_since_last_sync` field on every report, which is what makes `last_saved_wave` honest (the local session key runs *ahead* of the server, §5.2, so it cannot supply this);
+- positive evidence for `run_stuck`, promoting it from a pure timeout (added to the row above);
+- a **sync-wave predictor** for the settle loop: `nextWave % 5 === 1 || lastSavePlayTime >= 300` says whether the coming wave transition will hit the network, i.e. whether a silent loss is possible on it. Arm the §4.1 `updateall` watch and a longer settle budget on those transitions only; leave the other four waves in five cheap. This is the best use of the finding and belongs in #3 as much as #7.
 
 ### Why the reports key on the phase trace and not on localStorage
 
@@ -607,16 +663,21 @@ Three smaller notes for #7:
 
 - **`ui.processInput()` returning `false` does not mean the press was rejected — confirmed, and it is worse than a one-handler quirk.** `UI.processInput` is a pure pass-through to `handler.processInput(button)` ([`ui.ts:261-273`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/ui/ui.ts#L261-L273)), and every handler builds its return from a local `success` flag that each branch must remember to set. The STARTER_SELECT `STATS` branch is the clean example: it hides three cursors, clears the species, moves the filter cursor, enables filter mode and opens a dropdown — six mutations — and never assigns `success` ([`starter-select-ui-handler.ts:1666-1676`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/ui/handlers/starter-select-ui-handler.ts#L1666-L1676)), so the call returns `false` after fully honouring the press. The return value is a *"should I play the select sound"* flag, not an acceptance signal. **Nothing in this document uses it**, and nothing should: press acceptance must be judged by re-reading state after settling. Belongs in #4's handler-families finding.
 - **`classicSessionsPlayed` increments at the slot-select ACTION, not at New Game — confirmed**, and the source shows why it is structural rather than incidental: §5.2.
+- **`lastSavePlayTime` — measurements all confirmed, causal claim corrected.** The probe's numbers are right (1 Hz, 555 → 0 at an observed `updateall → 200`, within 1.3 s of the account save's own timestamp). The inference that the zeroing sits only in the success path is not: it is gated on `if (sync)` alone, after the `await` and before the `if (!saveError)` check ([`game-data.ts:1379-1387`](https://github.com/pagefaultgames/pokerogue/blob/e4e9b5383be7c9e171d32a9daaea2658d475c521/src/system/game-data.ts#L1379-L1387)), so it fires on failed attempts too. The reason it *looks* like a success tracker is that a failed save tears the run down in the same tick, so on any surviving run the two coincide. Also: the sawtooth is five waves, not one — the non-sync branch returns before the reset. Full treatment and the three things it is genuinely good for: §4.4.
 
 ---
 
-## 9. For the live probe
+## 9. Live-probe results — all resolved
 
-Four things this document still cannot settle from source. None of them change the mechanism in §3.1; all are one-liners. (Two items from the first revision — *does a cleared slot stay cleared server-side* and *what run history holds* — are answered by the #6 measurement and now appear as **[confirmed live]** in §2.2, §2.3 and §3.3.)
+Every open item from the earlier revisions has been answered by the live half ([`06-losing-a-run-live.md`](./06-losing-a-run-live.md)). Nothing in this document is still waiting on a measurement.
 
-1. **Does `console.log("%cStart Phase …")` survive the production bundle?** `manualPureFunctions` should strip it (§2.6). If it survives, the phase trace is available passively over `Runtime.consoleAPICalled` with no polling at all — the single highest-value remaining check.
-2. **Is `phaseName` intact in the bundle?** Read `phaseManager.getCurrentPhase().phaseName` at any settled moment; it must be a readable string like `"CommandPhase"`. The whole of §3.1 rests on this one.
-3. **Is a `private` field readable?** During any phase with one, read it off `getCurrentPhase()`. (Do **not** force a game over to test `isVictory` — and it is not needed, since run history carries the same bit.)
-4. **The deployed API base URL**, from a network capture of any `/savedata/…` request.
+| Asked | Answer | Effect |
+|---|---|---|
+| Is `phaseName` intact in the production bundle? | **Yes.** `phaseManager.currentPhase` own keys at the title are `["phaseName", "loaded", "gameMode"]`. | §3.1 stands as written. The signal survives minification, as the `Phase.is()` argument predicted. |
+| Does the per-phase `console.log` survive? | **No.** `console.log`/`console.debug` stripped, `console.error` survives. | No free passive phase trace. **The 100 ms poll is the mechanism, not a fallback.** §2.6 rewritten. |
+| Deployed API base URL? | `https://api.pokerogue.net`. A live `POST /savedata/updateall → 200, body 0 bytes` — exactly §4.1's *success* shape. | §4.1's predicate confirmed on the wire: empty body is success, and the status code is not the test. |
+| What does `runHistoryData_<user>` hold? | `""` before a wipe → 5996 b after, decrypting to one entry keyed `1789225554241`, `isVictory: false`, `waveIndex 6`, `playerFaints: 1`, party at `hp: 0`. | §2.3 and §3.2 measured end to end. The writer fires exactly once per game over, with the shape claimed. |
+| Is `GameOverPhase` reachable at the settled title? | **No.** `currentPhase` is `TitlePhase`, `standbyPhase` is `null`, seed already rolled over. | §6 confirmed from the live side, for the reason given. `isVictory` is a dead end; read run history. |
+| Is a TS-`private` field readable off a live phase? | Moot — the object is gone before the title settles, and run history carries the same bit. | Dropped as unnecessary rather than answered. |
 
-Two things that would be valuable but should **not** be probed on the dev's account, because both are destructive: forcing a save failure (would end a live run), and opening `SAVE_SLOT` casually (writes a rename to any unnamed session — §3.3). If a partition test is ever wanted, it needs its own account.
+Two things still **not** to probe on the dev's account, both destructive: forcing a save failure (ends a live run) and opening `SAVE_SLOT` casually (writes a rename to any unnamed session — §3.3). A partition test needs its own account, and would be the only way to exercise §2.2.1 and §4.3 directly. Both are argued from source here and neither is on the critical path for #7.
