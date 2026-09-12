@@ -32,7 +32,7 @@ The wipe column is **measured**, not reasoned: a real run ended during this sess
 **Two things I got wrong in an earlier draft, both corrected by reading the game's own live function bodies (§7).** I am stating them up front because I had already reported both as findings:
 
 - **`sessionData_<user>` presence is not the signal.** `saveAll` writes `localStorage` **before** it calls the network and never rolls back, so a failed save leaves the session key written *fresh*, not stale — and two of the four teardown paths delete it anyway, cutting across the wipe/failure line. The measurement (a wipe deleted the key) stands; what it *proves* does not.
-- **`lastSavePlayTime` is not a save-*failure* canary.** `B.lastSavePlayTime = 0` runs after the `await`, gated only on the `sync` flag and **not on the outcome** — so a failed sync save resets it just like a successful one. It measures time since the last save *attempt*. My two live verifications of the reset stand; the inference I drew from them was wrong.
+- **`lastSavePlayTime` is not a save-*failure* canary — [disputed], see §6.** In the deployed bundle `B.lastSavePlayTime = 0` runs after the `await`, gated only on the `sync` flag and **not on the outcome**, so a failed sync save resets it just like a successful one; it measures time since the last save *attempt*. My two live verifications of the reset stand — but both were against saves that succeeded, so they could not tell the two readings apart. **The companion source read reaches the opposite conclusion**, and §6 quotes the deployed bytes so the disagreement can be settled rather than averaged. Until it is, do not build the early-warning alarm on it.
 
 **The live signal is `phaseManager.getCurrentPhase().phaseName`**, which the companion source read establishes and which I costed here at **0.21 ms / 21 bytes** (§9) — 0.2 % of a 100 ms settle poll. `"GameOverPhase"` means wipe; `"LoginPhase"` mid-session means a `reset(true)` teardown. It is a **settle-loop** signal: the phase is gone by the time the title screen settles, so a server that only looks afterwards has missed it, and falls back to run history.
 
@@ -225,7 +225,7 @@ Found while inventorying the scene, and it is the most useful thing in this docu
 
 **[verified]** `BattleScene` carries two sibling counters, `sessionPlayTime` and `lastSavePlayTime`. Both tick at 1 Hz off the scene's `playTimeTimer`, alongside `gameStats.playTime` — measured 24 increments each over 25.0 s wall-clock.
 
-**`lastSavePlayTime` is seconds since the last successful save.** I verified that two independent ways rather than inferring it from the name.
+**`lastSavePlayTime` is seconds since the last sync save *attempt*.** I first read it as "since the last successful save" and verified *that* two independent ways — but both verifications happened to be against saves that succeeded, which is exactly why they could not distinguish the two readings. The code (below) settles it in favour of "attempt". The measurements are unaffected; only the label changes.
 
 **First**, against the account save's own write timestamp. `data_<user>` carries a `timestamp` field, and the wipe rewrote it at `15:05:54.242Z`. Sampling both every 5 s:
 
@@ -298,7 +298,9 @@ This is the clearest case in this document for doing both halves of a research t
 
 Two things it is not. It is **not** a per-session signal: at the title screen `sessionPlayTime - lastSavePlayTime` held constant at 917 because both counters tick together, so the *difference* is inert — read `lastSavePlayTime` on its own.
 
-And it is **emphatically not** a wall-clock threshold. The 330 s above was mostly a human idling at a reward screen, and the counter climbed the whole time with nothing wrong. An agent that pauses to think does the same. **A fixed "`lastSavePlayTime > N` ⇒ fault" rule would fire on every slow turn.** The signal is `lastSavePlayTime` *failing to reset across a wave boundary the server itself observed* — i.e. pair it with `currentBattle.waveIndex` and alarm only when the wave has advanced and the counter has not zeroed. That makes it a settle-loop concern with one integer of carried state, not a stateless `get_state` field.
+And — **whatever the dispute above resolves to** — it is **emphatically not** a wall-clock threshold. The 330 s above was mostly a human idling at a reward screen, and the counter climbed the whole time with nothing wrong. An agent that pauses to think does the same. **A fixed "`lastSavePlayTime > N` ⇒ fault" rule would fire on every slow turn**, and is the kind of thing that gets built wrong by default.
+
+If the counter is ever used, the shape is: pair it with `currentBattle.waveIndex` and alarm only when **the wave has advanced and the counter has not zeroed** — a settle-loop concern carrying one remembered pair, not a stateless `get_state` field. That rule is correct for "saves stopped being attempted" regardless of how the dispute lands; it only detects *failed* saves if the source read's version of the reset is the right one.
 
 ## 7. Reading the game's own function bodies, live
 
@@ -470,7 +472,7 @@ The lean-scene row reads 68 bytes here against #9's 338 because the party was em
 
 - The **full discriminator** at 0.11 ms / 91 bytes is 0.1 % of a 100 ms settle poll. It is cheap enough for the settle loop, and it needs no decryption — presence of `sessionData_<user>` and the byte length of `runHistoryData_<user>` are both raw `localStorage` reads.
 - **Decrypt the run history only on a transition**, i.e. when the server has just observed the run disappear and needs `isVictory` and `waveIndex` for the report. At 6 KB + 0.02 ms that is still trivial, but there is no reason to pay it 10x a second.
-- **`lastSavePlayTime` belongs in the settle loop**, because its whole value is catching the fault early.
+- **`lastSavePlayTime` would belong in the settle loop** if it works — its whole value is catching the fault early — but see the dispute in §6 before building on it.
 
 ## 10. The save path over the network, and the console surface
 
@@ -534,11 +536,11 @@ Pulling §3, §7 and §10 into one shape. Naming the reports is the source half'
 
 | # | Signal | When it fires | Exactness | Needs |
 |---|---|---|---|---|
-| 1 | **`lastSavePlayTime`** | **earliest** — while the run is still alive and savable | a health indicator, not a verdict | the settle loop, plus one remembered `(wave, counter)` pair |
+| 1 | **`lastSavePlayTime`** — **[disputed]**, see §6 | **earliest** — while the run is still alive and savable | a health indicator at best; on the deployed bundle it does **not** detect a failed save | the settle loop, plus one remembered `(wave, counter)` pair |
 | 2 | **`phaseName` trace** | at the transition | **exact** — names which ending it was | having been watching |
 | 3 | **`runHistoryData_<user>`** | after the fact, durably | good enough to reconcile | nothing — locator-free, survives a reconnect |
 
-A server wants all three: 1 to warn, 2 to classify, 3 to recover when it was not there. Signal 1 is measured here and nowhere else; 2 and 3 are covered below.
+**Signals 2 and 3 are what v1 should be built on**: 2 to classify, 3 to recover when the server was not watching. Signal 1 would be the earliest warning and is the only one that could save a run rather than explain its loss — but the two halves of this ticket disagree about whether it works at all (§6), so it should not be built until that is settled.
 
 ### 1. In the settle loop — `phaseName`
 
