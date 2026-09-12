@@ -136,29 +136,15 @@ Three fields on `scene.ui.handlers[8]`, all read in the one-wave prototype:
 
 ## 5. CANCEL is not "back"
 
-There is no back button. `Button.CANCEL` means four different things, and the surface never pretends otherwise. `read_menu` reports a `cancel_effect` field; no tool offers a generic "go back".
+There is no back button, and no tool offers a generic "go back". `read_menu` reports a `cancel_effect` field, which is **derived from the escape ladder** ([#15](https://github.com/IIxauII/pokerogue-mcp/issues/15), `src/escape-ladder/table.ts` on master once [#21](https://github.com/IIxauII/pokerogue-mcp/pull/21) merges). That table is the single source for what CANCEL does on every screen. This section used to keep its own table, and it is gone because the audit showed it was wrong in several places:
 
-| `cancel_effect` | Meaning |
-|---|---|
-| `selects_last_option` | CANCEL moves the cursor to the **last** option and **activates** it |
-| `exits` | CANCEL leaves the screen without choosing |
-| `reopens` | The phase is unsatisfied, so the screen immediately comes back — an infinite loop if pressed reflexively |
-| `rejected` | CANCEL does nothing (and on this screen ACTION may be the rejected one instead) |
-| `destructive` | CANCEL discards state the run or the profile depends on |
-| `unknown` | Unmodelled screen |
+- `TITLE` is `rejected`, not `selects_last_option` (`TitlePhase` passes `noCancel: true`).
+- Nothing `reopens` on the shop's party screens. CANCEL returns to `MODIFIER_SELECT`, and #6's loop was a policy bug (#13). The only real `reopens` is `PARTY/RELEASE`.
+- `PARTY/SELECT (12)` is dismissible. `PartyUiMode` has **14** values, not 12.
+- `MODIFIER_SELECT` is `asks_confirm`: a skip-item CONFIRM, which is the shop's real exit.
+- `MESSAGE` is `consents` (CANCEL ≡ ACTION), not `exits`.
 
-Per encountered screen:
-
-| Screen | `cancel_effect` | Evidence |
-|---|---|---|
-| `TITLE`, `CONFIRM`, `OPTION_SELECT` | `selects_last_option` | **[source]** #4. It *looks* like "back" only because "No" and "Cancel" happen to be last. It is a selection, not an exit. |
-| `MESSAGE` | `exits` — ACTION or CANCEL both advance, and only while `awaitingActionInput` | **[source]** #4 |
-| `PARTY/*` must-answer (`partyUiMode` 1, 3, 4, 5, 6, 7, 12) | `reopens` | **[live]** for `4 MODIFIER` — 147 iterations, stopped by the human watching, not by the script (#6). The rest are **[source]**: the enum's doc comments. `FAINT_SWITCH` was *answered* live, never CANCELled. |
-| `PARTY/*` dismissible (`partyUiMode` 0, 2, 8, 11) | `exits` | **[source]** |
-| `SUMMARY` | `exits` — **and it is the only exit**. #8 logged `processInput(ACTION)` returning `false` 26 consecutive times with zero state change on a healthy run; CANCEL escaped SUMMARY → PARTY → COMMAND | **[live]** |
-| `STARTER_SELECT` filter bar | `destructive` — resets the profile's persisted filters, or with default filters falls through to `popStarter()` and silently eats a party member | **[source]** #8. The filter bar is **fully avoidable** and the server never enters it (§6.6). |
-| `COMMAND`, `FIGHT`, `TARGET_SELECT`, `MODIFIER_SELECT`, `SAVE_SLOT` | `unknown` — CANCEL was never pressed on these in any transcript | untested |
-| Any unmodelled screen | `unknown` | — |
+`cancel_effect` ∈ `exits` | `asks_confirm` | `consents` | `selects_last_option` | `reopens` | `rejected`, and screens with no ladder entry get `unknown`. Cost (`safe` / `lossy` / `destructive`) is carried by each rung, not by this field.
 
 Consequence for the agent: to leave a screen, select the option that leaves it (`Cancel`, `No`) by label, like any other decision. `press(CANCEL)` remains available and remains dangerous.
 
