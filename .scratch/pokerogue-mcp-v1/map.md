@@ -30,6 +30,8 @@ A working `pokerogue-mcp` in this repo that Claude Code connects to over stdio a
 
 <!-- one line per closed ticket -->
 
+- [Detecting a settled game](issues/02-settled-game.md): `phaseManager` is **not** the signal — `phaseQueue` is non-empty while the player sits at the command menu, so phase name is a *progress* fingerprint only. Settledness reads off the UI instead: `ui.overlayActive`, `handler.active`, and the per-handler gates (`blockInput` / `blockInputOverlay` / `transitioning` / `blockExit` / `pendingPrompt`), with three modes (MESSAGE, EVOLUTION_SCENE, MODIFIER_SELECT) gating on `awaitingActionInput` — which is **never reset on consumption** and must be paired with `onActionInput != null`. `isTextAnimationInProgress()` is sticky-true after the first message; use `textTimer.hasDispatched`. Poll 100 ms, require 2 consecutive samples with an identical fingerprint; 20 s no-progress / 90 s hard timeout. Predicate live-verified at 1.8 ms cold; in-battle branches source-derived only. Findings on branch `research/settled-game` at `.scratch/pokerogue-mcp-v1/research/02-settled-game.md`, against upstream `main @ e4e9b53`.
+
 - [Reading menus generically](issues/03-reading-menus.md): No uniform base class — `cursor` means a different thing per handler. `UI.handlers` is positionally indexed by `UiMode`, so `ui.mode` identifies the handler exactly. 48 handlers → **13 families**, only 7 on a run's critical path. The modal/form family (10 modes, incl. login) has **no cursor and ignores `processInput` entirely** — raw `press` is not a universal escape hatch. `setCursor` is safe from outside for 5 families, unsafe for party-list scrolling and settings. Recommendation: press-driven `select_option` by default. Findings on branch `research/reading-menus` at `.scratch/pokerogue-mcp-v1/research/03-reading-menus.md`, pinned to upstream `da1d0eff`.
 
 ## Not yet specified
@@ -42,6 +44,7 @@ A working `pokerogue-mcp` in this repo that Claude Code connects to over stdio a
 - **Unattended soak and cost** — measuring tokens per wave and calls per decision; whether more semantic tools are needed to make a full run affordable.
 - **Driving the modal/form family** — 10 modes that ignore `processInput` and need DOM text entry or a direct `config.buttonActions[i]()` call. Manual login dodges most of them; whether an unattended run hits any of the rest is unknown until the prototype logs its modes.
 - **Recovery from stuck states** — the run is alive but the agent is lost. Detection and escape.
+- **Losing a run without wiping** — a failed per-wave `saveAll` calls `globalScene.reset(true)` and lands on a title screen that is perfectly settled with the run gone. `run_over` must distinguish a wipe from this, or the agent will happily play a run that no longer exists.
 
 ## Out of scope
 

@@ -1,7 +1,7 @@
 # Detecting a settled game
 
 Type: research
-Status: claimed
+Status: resolved
 
 ## Question
 
@@ -15,3 +15,7 @@ Against the PokéRogue source and, where needed, a live browser session:
 - What is a realistic upper bound for how long a single wave's slowest phase takes, so a settle timeout can be chosen?
 
 Deliver a concrete JS predicate expression (evaluable via `Runtime.evaluate`) that returns whether the game is settled, plus a recommended poll interval and timeout, plus the known cases where it is wrong.
+
+## Answer
+
+Resolved on branch `research/settled-game` (commit `62d16d9`). Full findings, including the predicate, at `.scratch/pokerogue-mcp-v1/research/02-settled-game.md` on that branch. Gist is recorded in the map under Decisions so far.

@@ -17,3 +17,5 @@ What it must answer:
 - What broke, and what would have to be true for it not to break.
 
 Link the script as an asset. It is throwaway — it is evidence, not the server.
+
+Also measure, and correct, the settle numbers the research could only derive from source: the 100 ms poll interval, the 20 s no-progress timeout and the 90 s hard timeout. Confirm the in-battle branches of the predicate (`resolving`, `awaiting-action`, `text-animating`) actually fire, and re-check the shop (`MODIFIER_SELECT`) first.
