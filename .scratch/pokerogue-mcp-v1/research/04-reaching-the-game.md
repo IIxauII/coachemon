@@ -584,12 +584,44 @@ verified it is write-safe to clobber (nulled mid-battle, no errors, repopulated 
 next update) — consistent with the `// TODO: Don't store it here` in §7.4 and with
 nothing reading it back.
 
-**One caveat on my own "useful liveness check" line above**, raised by that session and
-worth carrying forward: `gameInfo` does read `gameMode: "Title"` on the title screen, but
-because updates are event-driven it is **not established** that a mid-run
-`globalScene.reset(true)` rewrites it. If it doesn't, a `gameInfo`-based liveness check
-would report `Classic`/wave N for a run that no longer exists — exactly the map's
-"Losing a run without wiping" failure. **So: use `gameInfo` at most as an "is the page
-alive" probe, and determine run-over from the scene, not from `gameInfo`.** For a pure
-liveness probe, `typeof window.onblur === 'function'` (§7.6) is narrower and cheaper
-still, since it says "a Phaser game is running" without asserting anything about the run.
+**A caveat I raised here has since been settled — against me, in the safe direction.**
+I had worried that because `gameInfo` updates are event-driven, a mid-run
+`globalScene.reset(true)` might *not* rewrite it, leaving a liveness check reporting
+`Classic`/wave N for a run that no longer exists — the map's "Losing a run without
+wiping" failure. The #10 session resolved it from source: **`BattleScene.reset()` calls
+`updateGameInfo()` unconditionally** (`battle-scene.ts:1216`, method-body indentation, no
+`if`), after zeroing money, modifiers, party and `currentBattle`, and the payload guards
+every run-scoped field on `currentBattle`. So it *always* rewrites to the Title payload,
+and **a `gameInfo` liveness check will never report a dead run as live.** Matching
+`gameMode === "Title"` is also safe despite `gameMode` being localised in general — that
+one value is a hardcoded literal, not an i18next lookup (`party.length === 0 && wave === 0`
+works equally well).
+
+What `gameInfo` still cannot do is say **why** a run ended: every teardown path — game
+over, per-wave save failure, save & quit, logout, language change, starter-select and
+gacha back-outs — calls the same `reset()` and produces an identical payload. That is now
+[#11](https://github.com/IIxauII/pokerogue-mcp/issues/11), and it points at the phase
+queue or `gameData.gameStats.sessionsWon`, both scene-side, so it lands in the territory
+this ticket opened.
+
+For a pure *page* liveness probe, `typeof window.onblur === 'function'` (§7.6) remains
+narrower and cheaper still, since it says "a Phaser game is running" without asserting
+anything about the run.
+
+### 8.1 A cheaper route for `ui.mode` specifically
+
+**Reported by the #10 session, not verified here** — the debug Chrome was gone by the
+time I went to check, so this is second-hand and flagged as such. Worth recording
+because if it holds it undercuts one narrow part of this ticket's verdict:
+**`document.getElementById("touchControls").dataset.uiMode` reportedly gives the current
+`UiMode` by *name*, always fresh** — written by `ui.setModeInternal` and `revertMode`
+(`ui.ts:548-551`, `612-615`), on a static `index.html` div that is present on desktop with
+`display: none`, where the attribute drives CSS rather than being debug scaffolding.
+
+If it holds, then for **mode alone** it is cheaper than the locator here — a
+`getElementById` plus a dataset read, no pool scan, no Phaser handle. It would not replace
+the locator (no handler, cursor, party, money or enemy, and a name rather than the int the
+enum tables key on), but it would be a genuine independent cross-check on `ui.mode` and
+would partially de-risk #3 and #4. **#6 should confirm it live** — agreement with
+`scene.ui.mode` across several modes, and freshness at a settled moment — before anything
+depends on it.
