@@ -6,7 +6,7 @@ const disc = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summ
 
 function ready(over: Partial<Ready> = {}): Ready {
   return {
-    ready: true, settled: true, reason: "menu-open", mode: 2, phaseName: "CommandPhase", wave: 3, turn: 1, runLive: true,
+    ready: true, settled: true, reason: "menu-open", mode: 2, phaseName: "CommandPhase", wave: 3, turn: 1, money: 1000, runLive: true,
     tutorialActive: false, handler: "CommandUiHandler", cursor: 0, modeChain: [], messageText: null, onActionInput: false,
     awaitingActionInput: false, fine: "A", frame: 100, domMode: "COMMAND", gameVersion: "1.12.0.11", disc, ...over,
   };

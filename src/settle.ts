@@ -37,6 +37,7 @@ export type PredicateRead =
       phaseName: string | null;
       wave: number | null;
       turn: number | null;
+      money: number | null;
       runLive: boolean;
       tutorialActive: boolean;
       handler: string | null;
