@@ -715,7 +715,7 @@ export class Driver {
   }
 
   #progress(r: Ready) {
-    return { phaseName: r.phaseName, mode: r.mode, modeChain: r.modeChain, cursor: r.cursor, messageText: r.messageText, wave: r.wave, turn: r.turn };
+    return { phaseName: r.phaseName, mode: r.mode, modeChain: r.modeChain, cursor: r.cursor, messageText: r.messageText, wave: r.wave, turn: r.turn, money: r.money };
   }
 
   #runState(r: Ready | null): RunState {

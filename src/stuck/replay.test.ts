@@ -56,7 +56,55 @@ test("run4: the three presses into the party-overlay stall are not admitted", ()
 });
 
 test("the same COMMAND prompt on a later turn is a different fingerprint", () => {
-  const read = { phaseName: "CommandPhase", mode: 2, modeChain: [], cursor: 0, messageText: "What will\nBulbasaur do?", wave: 3 };
+  const read = { phaseName: "CommandPhase", mode: 2, modeChain: [], cursor: 0, messageText: "What will\nBulbasaur do?", wave: 3, money: 1000 };
 
   assert.notEqual(progressFingerprint({ ...read, turn: 1 }), progressFingerprint({ ...read, turn: 2 }));
+});
+
+/**
+ * #35: Potion → mon → Apply, back to the shop, four times over; `spend` is what each purchase costs. The party's
+ * options overlay reads as the party itself (same mode, same message), which is where #28's trip was reported.
+ */
+function potionRun(spend: number) {
+  const shop = { phaseName: "SelectModifierPhase", modeChain: [], cursor: 0, wave: 15, turn: 15 };
+  const at = (mode: number, messageText: string | null, money: number) => progressFingerprint({ ...shop, mode, messageText, money });
+  const steps: ReplayStep[] = [];
+  let money = 1000;
+  for (let i = 0; i < 4; i++) {
+    const shopFp = at(6, "Restores 20 HP or 20% of a Pokémon's HP, whichever is higher.", money);
+    const party = at(8, "Restores 20 HP or 20% of a Pokémon's HP, whichever is higher.", money);
+    money -= spend;
+    const back = at(6, "Restores 20 HP or 20% of a Pokémon's HP, whichever is higher.", money);
+    const assess = (screen: string, fingerprint: string, transcriptLine: number): ReplayStep => ({
+      assess: { screen, fingerprint, settled: true, liveVersion: "1.12.0.11", tutorialActive: false, options: null },
+      transcriptLine,
+    });
+    const act = (screen: string, before: string, after: string, label: string, transcriptLine: number): ReplayStep => ({
+      call: { screen, before: { fingerprint: before, settled: true }, after: { fingerprint: after, settled: true }, choice: { kind: "option", label }, tutorialActive: false },
+      transcriptLine,
+    });
+    steps.push(
+      assess("MODIFIER_SELECT", shopFp, i * 3 + 1),
+      act("MODIFIER_SELECT", shopFp, party, "Potion", i * 3 + 1),
+      assess("PARTY/MODIFIER", party, i * 3 + 2),
+      act("PARTY/MODIFIER", party, party, "Charmander", i * 3 + 2),
+      assess("PARTY/MODIFIER", party, i * 3 + 3),
+      act("PARTY/MODIFIER", party, back, "Apply", i * 3 + 3),
+    );
+  }
+  return replay(steps);
+}
+
+test("#35: buying the same shop item four times in a row is progress, not a loop", () => {
+  const result = potionRun(66);
+
+  assert.equal(result.trips, 0);
+  assert.ok(result.maxRepeats <= 2, `maxRepeats ${result.maxRepeats}`);
+});
+
+test("#35: the same round trip with no money spent is still caught", () => {
+  const result = potionRun(0);
+
+  assert.ok(result.firstTrip);
+  assert.equal(result.firstTrip.assessment.stuck.verdict, "loop");
 });

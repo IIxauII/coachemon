@@ -102,6 +102,7 @@ return {
   ready: true, settled, reason, mode, phaseName,
   wave: battle ? battle.waveIndex : null,
   turn: battle ? battle.turn : null,
+  money: __try(() => typeof scene.money === 'number' ? scene.money : null),
   runLive: battle != null,
   tutorialActive: h ? h.tutorialActive === true : false,
   handler: h ? h.constructor.name : null,

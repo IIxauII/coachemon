@@ -32,6 +32,12 @@ export const THRESHOLD = 5;
  * prompt is the same fingerprint, and a battle of five turns is a false `loop`
  * (#16's replay: run5 reached 4 on a healthy wave). They cannot split a stuck
  * cycle — nothing a stuck agent does advances the turn — only real progress.
+ *
+ * `money` is appended for the same reason (#35): buying a shop item and coming
+ * back to MODIFIER_SELECT revisits the same fingerprints as #6's shop↔party
+ * loop, and four Potions in a row were a false `loop`. A purchase that goes
+ * through always spends money; the stuck cycle (pick, cancel out of the party,
+ * or an apply the game refuses) never does.
  */
 export function progressFingerprint(read: {
   phaseName: string | null;
@@ -43,6 +49,8 @@ export function progressFingerprint(read: {
   wave: number | null;
   /** `currentBattle.turn`, `null` outside a run. */
   turn: number | null;
+  /** `scene.money`, `null` when unreadable. */
+  money: number | null;
 }): string {
   return [
     read.phaseName ?? "",
@@ -52,6 +60,7 @@ export function progressFingerprint(read: {
     read.messageText ?? "",
     read.wave ?? "",
     read.turn ?? "",
+    read.money ?? "",
   ].join("|");
 }
 
