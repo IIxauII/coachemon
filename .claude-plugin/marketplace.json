@@ -1,0 +1,12 @@
+{
+  "name": "pokerogue-mcp",
+  "owner": { "name": "xau" },
+  "metadata": { "description": "PokéRogue for Claude Code: MCP server + play skill." },
+  "plugins": [
+    {
+      "name": "pokerogue",
+      "source": "./",
+      "description": "Let Claude play PokéRogue through a live pokerogue.net tab."
+    }
+  ]
+}

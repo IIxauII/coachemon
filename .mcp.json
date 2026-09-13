@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "pokerogue": {
-      "command": "node",
-      "args": ["src/server.ts"],
-      "timeout": 60000
-    }
-  }
-}
