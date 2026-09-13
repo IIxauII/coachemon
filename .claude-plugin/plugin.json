@@ -1,0 +1,16 @@
+{
+  "name": "pokerogue",
+  "displayName": "PokéRogue",
+  "version": "0.1.0",
+  "description": "Let Claude play PokéRogue: an MCP server that drives a live pokerogue.net tab over CDP, plus a skill for the play loop.",
+  "author": { "name": "xau" },
+  "homepage": "https://github.com/IIxauII/pokerogue-mcp",
+  "keywords": ["pokerogue", "game", "mcp", "cdp"],
+  "mcpServers": {
+    "pokerogue": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/src/server.ts"],
+      "timeout": 60000
+    }
+  }
+}

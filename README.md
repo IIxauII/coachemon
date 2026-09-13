@@ -10,13 +10,29 @@ Give an agent a **text-first** control loop over a live PokéRogue run. No pixel
 
 Requirements: Node ≥ 23.6 (runs `.ts` directly), Google Chrome, and a PokéRogue account already logged in inside the server's own Chrome profile (`~/.pokerogue-mcp/chrome-profile`; log in by hand once — the server never touches credentials, see [#5](https://github.com/IIxauII/pokerogue-mcp/issues/5)).
 
+### As a Claude Code plugin
+
+The repo is its own plugin marketplace. The plugin bundles the MCP server and the `play-pokerogue` skill (the play loop, screen table, stuck/timeout handling):
+
+```bash
+claude plugin marketplace add IIxauII/pokerogue-mcp   # private repo: uses your git/gh credentials
+claude plugin install pokerogue@pokerogue-mcp
+```
+
+Claude Code runs `npm ci --ignore-scripts` in its plugin cache on install, so there is no build step. Then, in any directory, ask Claude to play PokéRogue. The first time, log in by hand in the Chrome window the server opens. Update with `claude plugin marketplace update pokerogue-mcp`.
+
+The server is declared in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json). Its `"timeout": 60000` is a documented requirement, not a tuning knob ([#20](https://github.com/IIxauII/pokerogue-mcp/issues/20)): the settle budget is 30 s and progress notifications do not extend the client's per-call limit.
+
+### From a checkout
+
 ```bash
 npm install
 npm run smoke -- status          # attaches (launching Chrome if no debug port answers) and reports
 npm run smoke -- read_menu       # what the game is asking right now
+claude --plugin-dir .            # a session with this checkout's server and skill loaded
 ```
 
-Claude Code picks the server up from the checked-in [`.mcp.json`](.mcp.json) when started in this directory. Its `"timeout": 60000` is a documented requirement, not a tuning knob ([#20](https://github.com/IIxauII/pokerogue-mcp/issues/20)): the settle budget is 30 s and progress notifications do not extend the client's per-call limit.
+There is no project `.mcp.json`: a plugin at the repo root merges the root `.mcp.json` into its own servers, and a cwd-relative path there breaks once the plugin is copied into the cache. `--plugin-dir .` loads exactly what an installed plugin gets. Don't run it alongside an installed copy — two servers contend for one tab.
 
 The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (#5's command). It never closes the tab or Chrome. One driver per tab: a lock at `~/.pokerogue-mcp/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/pokerogue-mcp/issues/6) had three sessions interleaving presses on one live save.
 
@@ -38,7 +54,7 @@ Seven tools, three of which act. The contract is [`docs/spec/v1-tool-surface.md`
 
 Every result carries `status` ∈ `ok` / `timed_out` / `stuck` / `run_over` / `run_interrupted` plus `wave` and `screen`. `timed_out` is not fatal — the next `get_state` or `read_menu` resumes the wait. `stuck` names a `dead_end` / `loop` / `hang` verdict and hands over the per-screen escape ladder; the server never escapes on its own. There is no `back()`: CANCEL means four different things across screens, so the agent leaves a screen by selecting the option that leaves it.
 
-Measured: with the dumb policy in `scripts/autoplay.ts`, a decision costs ~0.6 s wall clock when the game is idle, ~6–9 s when a turn resolves, and a wave is 10–20 acting calls. **Played unattended by Claude Sonnet** (headless Claude Code through this `.mcp.json`): waves 1–8 to a wipe in 106 calls, 450 s, $2.07 — ~13 calls and $0.26 a wave, one `ambiguous` label, no stuck, no timeout. Details in [`docs/soak/2026-09-13-sonnet.md`](docs/soak/2026-09-13-sonnet.md).
+Measured: with the dumb policy in `scripts/autoplay.ts`, a decision costs ~0.6 s wall clock when the game is idle, ~6–9 s when a turn resolves, and a wave is 10–20 acting calls. **Played unattended by Claude Sonnet** (headless Claude Code through the then-checked-in `.mcp.json`, now the plugin): waves 1–8 to a wipe in 106 calls, 450 s, $2.07 — ~13 calls and $0.26 a wave, one `ambiguous` label, no stuck, no timeout. Details in [`docs/soak/2026-09-13-sonnet.md`](docs/soak/2026-09-13-sonnet.md).
 
 ## Why it's feasible (verified 2026-09-12)
 
