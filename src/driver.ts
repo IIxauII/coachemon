@@ -16,6 +16,7 @@ import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import * as js from "./game/js.ts";
 import { matchLabel, normalizeLabel } from "./labels.ts";
 import { isSettingsMode, modeName, screenId } from "./screen.ts";
+import { planSlot, slotLabel } from "./slots.ts";
 import { BEYOND_OBSERVED_MS, CALL_BUDGET_MS, settle, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
 import { progressFingerprint, StuckDetector, type Assessment, type Choice } from "./stuck/detector.ts";
 import { HangWatch } from "./stuck/hang.ts";
@@ -340,15 +341,16 @@ export class Driver {
     // them (measured: every key absent while slot 0 held a run). Refusing here leaves the setup on SAVE_SLOT/SAVE,
     // where select_option("Slot N") continues it and CANCEL abandons it without touching any save.
     menu = await this.#readMenu();
-    const free = menu.options.filter(o => o.hasData !== true).map(o => Number(o.i));
-    const occupied = menu.options.filter(o => o.hasData === true).map(o => Number(o.i));
-    const chosen = slot ?? free[0];
+    const { free, occupied, chosen: slotOpt } = planSlot(menu.options, slot);
     const leftOn = { screen: "SAVE_SLOT/SAVE", free, occupied, slots: menu.options, log, next: 'select_option("Slot N") to continue, or press(CANCEL) to abandon this setup (no save is touched)' };
-    if (chosen === undefined) throw new Refusal("no_free_slot", "Every save slot has data. Pass slot and overwrite: true to replace one; the run setup is waiting on the save-slot screen.", leftOn);
-    const slotOpt = menu.options.find(o => Number(o.i) === chosen);
-    if (!slotOpt) throw new Refusal("bad_slot", `slot ${chosen} is not on the save-slot screen`, leftOn);
+    if (!slotOpt) {
+      if (slot !== undefined) throw new Refusal("bad_slot", `slot ${slot} ("Slot ${slot + 1}") is not on the save-slot screen`, leftOn);
+      throw new Refusal("no_free_slot", "Every save slot has data. Pass slot and overwrite: true to replace one; the run setup is waiting on the save-slot screen.", leftOn);
+    }
+    const chosen = Number(slotOpt.i);
+    const chosenLabel = slotLabel(slotOpt);
     if (slotOpt.hasData === true && !overwrite) {
-      throw new Refusal("slot_occupied", `Slot ${chosen} has a saved run. Free: ${free.join(", ") || "none"}. The run setup is waiting on the save-slot screen.`, leftOn);
+      throw new Refusal("slot_occupied", `${chosenLabel} has a saved run. Free: ${free.join(", ") || "none"}. The run setup is waiting on the save-slot screen.`, leftOn);
     }
     await moveTo(menu, slotOpt, "save slot");
     s = await this.#commit(menu, slotOpt, cur.fine, ctx);
@@ -362,7 +364,7 @@ export class Driver {
       s = await this.#commit(menu, menu.options[answer], (s.last as Ready).fine, ctx);
       presses++;
       if (!overwrite) {
-        throw new Refusal("slot_occupied", `Slot ${chosen} has a saved run (the game asked to overwrite; answered No). The run setup is waiting on the save-slot screen.`, leftOn);
+        throw new Refusal("slot_occupied", `${chosenLabel} has a saved run (the game asked to overwrite; answered No). The run setup is waiting on the save-slot screen.`, leftOn);
       }
     }
 

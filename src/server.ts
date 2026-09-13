@@ -130,7 +130,7 @@ server.registerTool(
       "From the TITLE screen, start a Classic run with these starters (species names as shown on the starter grid) and play up to the first decision. Refuses an occupied save slot unless overwrite is true; default slot is the lowest free one. Refuses before pressing if the party exceeds the cost budget or a name is not on the grid.",
     inputSchema: {
       species: z.array(z.string()).min(1).max(6),
-      slot: z.number().int().min(0).max(4).optional(),
+      slot: z.number().int().min(0).max(4).optional().describe('0-based save-slot index: 0 is the screen\'s "Slot 1", 4 is "Slot 5".'),
       overwrite: z.boolean().optional(),
     },
   },
