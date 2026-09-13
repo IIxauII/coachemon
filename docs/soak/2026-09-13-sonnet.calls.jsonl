@@ -1,0 +1,106 @@
+{"t":3769,"tool":"status","args":{},"ms":98,"status":"ok","screen":"TITLE","wave":null}
+{"t":13814,"tool":"start_run","args":{"species":["Bulbasaur","Charmander","Squirtle"],"slot":2,"overwrite":true},"ms":8483,"status":"ok","screen":"PARTY/POST_BATTLE_SWITCH","wave":1,"messages":[]}
+{"t":17204,"tool":"select_option","args":{"label":"Cancel"},"ms":1418,"status":"ok","screen":"COMMAND","wave":1,"selected":"Cancel","messages":[]}
+{"t":19519,"tool":"select_option","args":{"label":"Fight"},"ms":585,"status":"ok","screen":"FIGHT","wave":1,"selected":"Fight","messages":[]}
+{"t":23465,"tool":"select_option","args":{"label":"Vine Whip"},"ms":2951,"status":"ok","screen":"COMMAND","wave":1,"selected":"Vine Whip","messages":[]}
+{"t":25965,"tool":"select_option","args":{"label":"Fight"},"ms":584,"status":"ok","screen":"FIGHT","wave":1,"selected":"Fight","messages":[]}
+{"t":29787,"tool":"select_option","args":{"label":"Vine Whip"},"ms":2745,"status":"ok","screen":"COMMAND","wave":1,"selected":"Vine Whip","messages":[]}
+{"t":31668,"tool":"select_option","args":{"label":"Fight"},"ms":581,"status":"ok","screen":"FIGHT","wave":1,"selected":"Fight","messages":[]}
+{"t":35515,"tool":"select_option","args":{"label":"Vine Whip"},"ms":2644,"status":"ok","screen":"COMMAND","wave":1,"selected":"Vine Whip","messages":[]}
+{"t":37382,"tool":"select_option","args":{"label":"Fight"},"ms":582,"status":"ok","screen":"FIGHT","wave":1,"selected":"Fight","messages":[]}
+{"t":46568,"tool":"select_option","args":{"label":"Vine Whip"},"ms":7897,"status":"ok","screen":"MODIFIER_SELECT","wave":1,"selected":"Vine Whip","messages":["Wild Nidoran♀ fainted!","Bulbasaur gained\n23 EXP. Points!"]}
+{"t":49361,"tool":"read_menu","args":{},"ms":208,"status":"ok","screen":"MODIFIER_SELECT","wave":1}
+{"t":52583,"tool":"select_option","args":{"label":"Sitrus Berry"},"ms":892,"status":"ok","screen":"PARTY/MODIFIER","wave":1,"selected":"Sitrus Berry","messages":[]}
+{"t":57516,"tool":"select_option","args":{"label":"Bulbasaur"},"ms":3475,"status":"ok","screen":"PARTY/MODIFIER:options","wave":1,"selected":"Bulbasaur","messages":[]}
+{"t":61168,"tool":"select_option","args":{"label":"Apply"},"ms":2443,"status":"ok","screen":"CONFIRM","wave":2,"selected":"Apply","messages":[]}
+{"t":64257,"tool":"select_option","args":{"label":"No"},"ms":577,"status":"ok","screen":"COMMAND","wave":2,"selected":"No","messages":[]}
+{"t":66294,"tool":"select_option","args":{"label":"Fight"},"ms":582,"status":"ok","screen":"FIGHT","wave":2,"selected":"Fight","messages":[]}
+{"t":70897,"tool":"select_option","args":{"label":"Vine Whip"},"ms":3566,"status":"ok","screen":"COMMAND","wave":2,"selected":"Vine Whip","messages":[]}
+{"t":72644,"tool":"select_option","args":{"label":"Fight"},"ms":579,"status":"ok","screen":"FIGHT","wave":2,"selected":"Fight","messages":[]}
+{"t":81257,"tool":"select_option","args":{"label":"Vine Whip"},"ms":7387,"status":"ok","screen":"MODIFIER_SELECT","wave":2,"selected":"Vine Whip","messages":["Wild Whismur fainted!","Bulbasaur gained\n20 EXP. Points!"]}
+{"t":91779,"tool":"select_option","args":{"label":"X Sp. Def"},"ms":2364,"status":"ok","screen":"CONFIRM","wave":3,"selected":"X Sp. Def","messages":[]}
+{"t":93501,"tool":"select_option","args":{"label":"No"},"ms":574,"status":"ok","screen":"COMMAND","wave":3,"selected":"No","messages":[]}
+{"t":97148,"tool":"select_option","args":{"label":"Fight"},"ms":589,"status":"ok","screen":"FIGHT","wave":3,"selected":"Fight","messages":[]}
+{"t":101572,"tool":"select_option","args":{"label":"Vine Whip"},"ms":3343,"status":"ok","screen":"COMMAND","wave":3,"selected":"Vine Whip","messages":[]}
+{"t":106174,"tool":"select_option","args":{"label":"Fight"},"ms":598,"status":"ok","screen":"FIGHT","wave":3,"selected":"Fight","messages":[]}
+{"t":115191,"tool":"select_option","args":{"label":"Vine Whip"},"ms":7910,"status":"ok","screen":"PARTY/FAINT_SWITCH","wave":3,"selected":"Vine Whip","messages":["Bulbasaur fainted!"]}
+{"t":117306,"tool":"select_option","args":{"label":"Charmander"},"ms":803,"status":"ok","screen":"PARTY/FAINT_SWITCH:options","wave":3,"selected":"Charmander","messages":[]}
+{"t":119784,"tool":"select_option","args":{"label":"Send Out"},"ms":1397,"status":"ok","screen":"COMMAND","wave":3,"selected":"Send Out","messages":[]}
+{"t":121821,"tool":"select_option","args":{"label":"Fight"},"ms":578,"status":"ok","screen":"FIGHT","wave":3,"selected":"Fight","messages":[]}
+{"t":130147,"tool":"select_option","args":{"label":"Ember"},"ms":7277,"status":"ok","screen":"MODIFIER_SELECT","wave":3,"selected":"Ember","messages":["Wild Fletchling fainted!","Charmander gained\n34 EXP. Points!"]}
+{"t":132419,"tool":"select_option","args":{"label":"Rare Candy"},"ms":882,"status":"ok","screen":"PARTY/MODIFIER","wave":3,"selected":"Rare Candy","messages":[]}
+{"t":138444,"tool":"select_option","args":{"label":"Charmander"},"ms":3470,"status":"ok","screen":"PARTY/MODIFIER:options","wave":3,"selected":"Charmander","messages":[]}
+{"t":148732,"tool":"select_option","args":{"label":"Apply"},"ms":9153,"status":"ok","screen":"CONFIRM","wave":4,"selected":"Apply","messages":["Charmander grew to\nLv. 6!","Charmander grew to\nLv. 6!","Charmander grew to\nLv. 6!"]}
+{"t":150550,"tool":"select_option","args":{"label":"No"},"ms":577,"status":"ok","screen":"COMMAND","wave":4,"selected":"No","messages":[]}
+{"t":152337,"tool":"select_option","args":{"label":"Fight"},"ms":576,"status":"ok","screen":"FIGHT","wave":4,"selected":"Fight","messages":[]}
+{"t":157232,"tool":"select_option","args":{"label":"Ember"},"ms":3799,"status":"ok","screen":"COMMAND","wave":4,"selected":"Ember","messages":[]}
+{"t":158939,"tool":"select_option","args":{"label":"Fight"},"ms":583,"status":"ok","screen":"FIGHT","wave":4,"selected":"Fight","messages":[]}
+{"t":161982,"tool":"select_option","args":{"label":"Ember"},"ms":1916,"status":"ok","screen":"COMMAND","wave":4,"selected":"Ember","messages":[]}
+{"t":163850,"tool":"select_option","args":{"label":"Fight"},"ms":589,"status":"ok","screen":"FIGHT","wave":4,"selected":"Fight","messages":[]}
+{"t":173045,"tool":"select_option","args":{"label":"Ember"},"ms":7992,"status":"ok","screen":"MODIFIER_SELECT","wave":4,"selected":"Ember","messages":["Wild Lechonk fainted!","Charmander gained\n41 EXP. Points!"]}
+{"t":181364,"tool":"select_option","args":{"label":"X Speed"},"ms":5427,"status":"ok","screen":"COMMAND","wave":5,"selected":"X Speed","messages":["All right! Let’s go!","Youngster Tommy\nwould like to battle!"]}
+{"t":184572,"tool":"select_option","args":{"label":"Fight"},"ms":579,"status":"ok","screen":"FIGHT","wave":5,"selected":"Fight","messages":[]}
+{"t":187820,"tool":"select_option","args":{"label":"Ember"},"ms":2130,"status":"ok","screen":"COMMAND","wave":5,"selected":"Ember","messages":[]}
+{"t":189926,"tool":"select_option","args":{"label":"Fight"},"ms":582,"status":"ok","screen":"FIGHT","wave":5,"selected":"Fight","messages":[]}
+{"t":198379,"tool":"select_option","args":{"label":"Ember"},"ms":7393,"status":"ok","screen":"COMMAND","wave":5,"selected":"Ember","messages":["Foe Sentret fainted!","Charmander gained\n53 EXP. Points!"]}
+{"t":200557,"tool":"select_option","args":{"label":"Fight"},"ms":581,"status":"ok","screen":"FIGHT","wave":5,"selected":"Fight","messages":[]}
+{"t":205008,"tool":"select_option","args":{"label":"Ember"},"ms":3365,"status":"ok","screen":"COMMAND","wave":5,"selected":"Ember","messages":[]}
+{"t":206963,"tool":"select_option","args":{"label":"Fight"},"ms":577,"status":"ok","screen":"FIGHT","wave":5,"selected":"Fight","messages":[]}
+{"t":224195,"tool":"select_option","args":{"label":"Ember"},"ms":16026,"status":"ok","screen":"MODIFIER_SELECT","wave":5,"selected":"Ember","messages":["Foe Poochyena fainted!","Charmander gained\n68 EXP. Points!","Charmander grew to\nLv. 7!","Charmander grew to\nLv. 7!","Charmander grew to\nLv. 7!","Charmander learned\nRage!","You defeated\nYoungster Tommy!","No! I lost!","You got\n₽110 for winning!"]}
+{"t":226630,"tool":"select_option","args":{"label":"Revive"},"ms":376,"status":"ambiguous","screen":"MODIFIER_SELECT"}
+{"t":228922,"tool":"read_menu","args":{},"ms":213,"status":"ok","screen":"MODIFIER_SELECT","wave":5}
+{"t":231253,"tool":"press","args":{"button":"RIGHT"},"ms":888,"status":"ok","screen":"MODIFIER_SELECT","wave":5,"messages":[]}
+{"t":233331,"tool":"press","args":{"button":"ACTION"},"ms":775,"status":"ok","screen":"PARTY/MODIFIER","wave":5,"messages":[]}
+{"t":235247,"tool":"select_option","args":{"label":"Bulbasaur"},"ms":804,"status":"ok","screen":"PARTY/MODIFIER:options","wave":5,"selected":"Bulbasaur","messages":[]}
+{"t":239585,"tool":"select_option","args":{"label":"Apply"},"ms":3191,"status":"ok","screen":"CONFIRM","wave":6,"selected":"Apply","messages":[]}
+{"t":247406,"tool":"select_option","args":{"label":"Yes"},"ms":790,"status":"ok","screen":"PARTY/POST_BATTLE_SWITCH","wave":6,"selected":"Yes","messages":[]}
+{"t":251839,"tool":"select_option","args":{"label":"Squirtle"},"ms":1010,"status":"ok","screen":"PARTY/POST_BATTLE_SWITCH:options","wave":6,"selected":"Squirtle","messages":[]}
+{"t":254524,"tool":"select_option","args":{"label":"Send Out"},"ms":1707,"status":"ok","screen":"COMMAND","wave":6,"selected":"Send Out","messages":[]}
+{"t":256564,"tool":"select_option","args":{"label":"Fight"},"ms":589,"status":"ok","screen":"FIGHT","wave":6,"selected":"Fight","messages":[]}
+{"t":260002,"tool":"select_option","args":{"label":"Water Gun"},"ms":2341,"status":"ok","screen":"COMMAND","wave":6,"selected":"Water Gun","messages":[]}
+{"t":261851,"tool":"select_option","args":{"label":"Fight"},"ms":589,"status":"ok","screen":"FIGHT","wave":6,"selected":"Fight","messages":[]}
+{"t":265066,"tool":"select_option","args":{"label":"Water Gun"},"ms":2124,"status":"ok","screen":"COMMAND","wave":6,"selected":"Water Gun","messages":[]}
+{"t":267014,"tool":"select_option","args":{"label":"Fight"},"ms":585,"status":"ok","screen":"FIGHT","wave":6,"selected":"Fight","messages":[]}
+{"t":275884,"tool":"select_option","args":{"label":"Water Gun"},"ms":7597,"status":"ok","screen":"MODIFIER_SELECT","wave":6,"selected":"Water Gun","messages":["Wild Whismur fainted!","Squirtle gained\n49 EXP. Points!"]}
+{"t":278548,"tool":"read_menu","args":{},"ms":209,"status":"ok","screen":"MODIFIER_SELECT","wave":6}
+{"t":280947,"tool":"select_option","args":{"label":"Lum Berry"},"ms":992,"status":"ok","screen":"PARTY/MODIFIER","wave":6,"selected":"Lum Berry","messages":[]}
+{"t":285425,"tool":"select_option","args":{"label":"Squirtle"},"ms":3480,"status":"ok","screen":"PARTY/MODIFIER:options","wave":6,"selected":"Squirtle","messages":[]}
+{"t":290266,"tool":"select_option","args":{"label":"Apply"},"ms":3696,"status":"ok","screen":"CONFIRM","wave":7,"selected":"Apply","messages":[]}
+{"t":293914,"tool":"select_option","args":{"label":"No"},"ms":799,"status":"ok","screen":"CONFIRM","wave":7,"selected":"No","messages":[]}
+{"t":295725,"tool":"select_option","args":{"label":"No"},"ms":581,"status":"ok","screen":"COMMAND","wave":7,"selected":"No","messages":[]}
+{"t":298447,"tool":"select_option","args":{"label":"Fight"},"ms":581,"status":"ok","screen":"FIGHT","wave":7,"selected":"Fight","messages":[]}
+{"t":300087,"tool":"select_option","args":{"label":"Water Gun"},"ms":580,"status":"ok","screen":"TARGET_SELECT","wave":7,"selected":"Water Gun","messages":[]}
+{"t":302157,"tool":"select_option","args":{"label":"Lechonk"},"ms":579,"status":"ok","screen":"COMMAND","wave":7,"selected":"Lechonk","messages":[]}
+{"t":303905,"tool":"select_option","args":{"label":"Fight"},"ms":582,"status":"ok","screen":"FIGHT","wave":7,"selected":"Fight","messages":[]}
+{"t":308746,"tool":"select_option","args":{"label":"Vine Whip"},"ms":3681,"status":"ok","screen":"TARGET_SELECT","wave":7,"selected":"Vine Whip","messages":[]}
+{"t":320330,"tool":"select_option","args":{"label":"Lechonk"},"ms":9833,"status":"ok","screen":"COMMAND","wave":7,"selected":"Lechonk","messages":[]}
+{"t":322568,"tool":"select_option","args":{"label":"Fight"},"ms":581,"status":"ok","screen":"FIGHT","wave":7,"selected":"Fight","messages":[]}
+{"t":324517,"tool":"select_option","args":{"label":"Water Gun"},"ms":575,"status":"ok","screen":"TARGET_SELECT","wave":7,"selected":"Water Gun","messages":[]}
+{"t":326196,"tool":"select_option","args":{"label":"Lechonk"},"ms":576,"status":"ok","screen":"COMMAND","wave":7,"selected":"Lechonk","messages":[]}
+{"t":329609,"tool":"select_option","args":{"label":"Fight"},"ms":588,"status":"ok","screen":"FIGHT","wave":7,"selected":"Fight","messages":[]}
+{"t":331151,"tool":"select_option","args":{"label":"Vine Whip"},"ms":570,"status":"ok","screen":"TARGET_SELECT","wave":7,"selected":"Vine Whip","messages":[]}
+{"t":339904,"tool":"select_option","args":{"label":"Weedle"},"ms":7613,"status":"ok","screen":"PARTY/FAINT_SWITCH","wave":7,"selected":"Weedle","messages":["Squirtle fainted!"]}
+{"t":342887,"tool":"select_option","args":{"label":"Charmander"},"ms":1012,"status":"ok","screen":"PARTY/FAINT_SWITCH:options","wave":7,"selected":"Charmander","messages":[]}
+{"t":345506,"tool":"select_option","args":{"label":"Send Out"},"ms":1399,"status":"ok","screen":"COMMAND","wave":7,"selected":"Send Out","messages":[]}
+{"t":347963,"tool":"select_option","args":{"label":"Fight"},"ms":584,"status":"ok","screen":"FIGHT","wave":7,"selected":"Fight","messages":[]}
+{"t":350149,"tool":"select_option","args":{"label":"Ember"},"ms":790,"status":"ok","screen":"TARGET_SELECT","wave":7,"selected":"Ember","messages":[]}
+{"t":351838,"tool":"select_option","args":{"label":"Lechonk"},"ms":577,"status":"ok","screen":"COMMAND","wave":7,"selected":"Lechonk","messages":[]}
+{"t":353676,"tool":"select_option","args":{"label":"Fight"},"ms":581,"status":"ok","screen":"FIGHT","wave":7,"selected":"Fight","messages":[]}
+{"t":355435,"tool":"select_option","args":{"label":"Vine Whip"},"ms":575,"status":"ok","screen":"TARGET_SELECT","wave":7,"selected":"Vine Whip","messages":[]}
+{"t":365754,"tool":"select_option","args":{"label":"Weedle"},"ms":9259,"status":"ok","screen":"COMMAND","wave":7,"selected":"Weedle","messages":["Wild Lechonk fainted!","Charmander gained\n26 EXP. Points!","Bulbasaur gained\n26 EXP. Points!"]}
+{"t":367825,"tool":"select_option","args":{"label":"Fight"},"ms":580,"status":"ok","screen":"FIGHT","wave":7,"selected":"Fight","messages":[]}
+{"t":369545,"tool":"select_option","args":{"label":"Ember"},"ms":579,"status":"ok","screen":"TARGET_SELECT","wave":7,"selected":"Ember","messages":[]}
+{"t":371337,"tool":"select_option","args":{"label":"Weedle"},"ms":577,"status":"ok","screen":"COMMAND","wave":7,"selected":"Weedle","messages":[]}
+{"t":373040,"tool":"select_option","args":{"label":"Fight"},"ms":594,"status":"ok","screen":"FIGHT","wave":7,"selected":"Fight","messages":[]}
+{"t":374721,"tool":"select_option","args":{"label":"Vine Whip"},"ms":579,"status":"ok","screen":"TARGET_SELECT","wave":7,"selected":"Vine Whip","messages":[]}
+{"t":392743,"tool":"select_option","args":{"label":"Weedle"},"ms":16799,"status":"ok","screen":"MODIFIER_SELECT","wave":7,"selected":"Weedle","messages":["Wild Weedle fainted!","Charmander gained\n20 EXP. Points!","Bulbasaur gained\n20 EXP. Points!","Bulbasaur grew to\nLv. 6!","Bulbasaur grew to\nLv. 6!","Bulbasaur grew to\nLv. 6!"]}
+{"t":395519,"tool":"read_menu","args":{},"ms":211,"status":"ok","screen":"MODIFIER_SELECT","wave":7}
+{"t":409074,"tool":"select_option","args":{"label":"5× Poké Ball"},"ms":9478,"status":"ok","screen":"COMMAND","wave":8,"selected":"5× Poké Ball","messages":["There you are! I’ve been looking everywhere for you!\nDid you forget to say goodbye to your best friend?","You’re going after your dream, huh?\nThat day is really today isn’t it…","Anyway, I’ll forgive you for forgetting me, but on one\ncondition. You have to battle me!","Give it your all! Wouldn’t want your adventure to be over\nbefore it started, right?","Rival Ivy\nwould like to battle!"]}
+{"t":412077,"tool":"select_option","args":{"label":"Fight"},"ms":591,"status":"ok","screen":"FIGHT","wave":8,"selected":"Fight","messages":[]}
+{"t":416895,"tool":"select_option","args":{"label":"Ember"},"ms":3677,"status":"ok","screen":"COMMAND","wave":8,"selected":"Ember","messages":[]}
+{"t":418764,"tool":"select_option","args":{"label":"Fight"},"ms":574,"status":"ok","screen":"FIGHT","wave":8,"selected":"Fight","messages":[]}
+{"t":426486,"tool":"select_option","args":{"label":"Ember"},"ms":6368,"status":"ok","screen":"PARTY/FAINT_SWITCH","wave":8,"selected":"Ember","messages":["Charmander fainted!"]}
+{"t":428770,"tool":"select_option","args":{"label":"Bulbasaur"},"ms":800,"status":"ok","screen":"PARTY/FAINT_SWITCH:options","wave":8,"selected":"Bulbasaur","messages":[]}
+{"t":431408,"tool":"select_option","args":{"label":"Send Out"},"ms":1406,"status":"ok","screen":"COMMAND","wave":8,"selected":"Send Out","messages":[]}
+{"t":433680,"tool":"select_option","args":{"label":"Fight"},"ms":582,"status":"ok","screen":"FIGHT","wave":8,"selected":"Fight","messages":[]}
+{"t":443806,"tool":"select_option","args":{"label":"Vine Whip"},"ms":9065,"status":"run_over","screen":"TITLE","wave":null,"selected":"Vine Whip","messages":["Bulbasaur fainted!"]}

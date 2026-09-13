@@ -339,3 +339,20 @@ One per tool where the work is self-contained, plus the two that carry unproven 
 8. **Auto-advance** — §6.8. Belongs with the envelope, not with any single tool.
 
 Each inherits Principle 4 (never trust `processInput`'s return) and the **[source]** tags above as verification work.
+
+---
+
+## 10. Corrections from the build
+
+[#24 Build the v1 server end to end](https://github.com/IIxauII/pokerogue-mcp/issues/24) built all eight in one pass and played a run from `start_run` to `run_over` through the server. What the live game corrected in this document, each **[live]**:
+
+- **§6.2 `biome`:** the field is `scene.arena.biomeId`, not `biomeType`. `biomeType` reads `undefined` for the whole run.
+- **§7 `PARTY` slot phase:** Cancel is the **fixed cursor 6**, not `party.length`; item-manage modes add the transfer/discard toggle at 7. DOWN walks `0 … n-1 → 6 → 0` (`PartyUiHandler.processInput`), so the driver navigates the slot list as a DOWN-cycle. A ±1 walk to index 3 oscillated between 2 and 6.
+- **§6.6 the first prompt of a run** is `PARTY/POST_BATTLE_SWITCH` ("Will you switch Pokémon?"), not a `CONFIRM`. Leaving it is `select_option("Cancel")`; the lesson that ACTION consents still holds.
+- **§6.6 slots:** `sessionSlots[i].hasData` is **`undefined` until the slot's server fetch resolves**, and the handler refuses ACTION on such a slot. The reader now reports `hasData: null` and the predicate treats any unresolved slot as busy (`slots-loading`). A logged-in account's slots live server-side, so **localStorage cannot pre-check them** — every `sessionData*` key was absent while slot 0 held a wave-1 run. `start_run` therefore decides on the slot screen itself; an occupied slot without `overwrite` answers the game's overwrite `CONFIRM` with **No** and refuses, leaving the setup on `SAVE_SLOT/SAVE` where `select_option("Slot N")` continues it.
+- **§3 a fresh run can be interrupted on its very first save.** Observed once: `EncounterPhase` at wave 1 → `ALERT_MODAL` (the `showInvalidSaveModal` path in `game-data.ts`, no `closeDelay`) → `reset(true)` → `TITLE`, about five seconds later. The retry into the same slot succeeded; the local system data had been out of date and the game reinitialised it. #11's teardown shape, met live, before any wave was played.
+- **§3 an alert shown without `closeDelay` is unclosable**, and one *with* a delay is unclosable until it elapses. The predicate reports both as busy (`alert-unclosable`) rather than settled, so a transient alert never trips the no-escape verdict on sight; a permanent one surfaces as `timed_out` carrying `alert_text` and the page's recent console errors.
+- **§6.8 auto-advance** only ever crosses *prompts*: battle narration scrolls by itself and is never returned. Level-ups, faints and EXP gains are prompts and do come back in `messages[]`. The press cap is set at **12** (the stuck window), as configuration in `src/driver.ts`.
+- **§3 acting results also carry `menu`** — screen, labels in cursor order, cursor, text — because the agent needs it for the next decision anyway and it saves a `read_menu` per decision.
+- **§7 shop row 0** labels are read from the four button containers' text objects (`rerollButtonContainer`, `transferButtonContainer`, `checkButtonContainer`, `lockRarityButtonContainer`, plus the continue button when the reward row is empty), invisible ones omitted, in the handler's own cursor order.
+- **Measured on the dumb policy** (`scripts/autoplay.ts`, one run, waves 1–4): a decision on an idle game is ~0.6 s wall clock end to end (settle ≈ 200 ms of it), a turn that resolves is 2–9 s, a wave is 10–20 acting calls, and the stuck detector tripped twice on policy loops at exactly the twelfth decision each time (`PARTY/FAINT_SWITCH:options → SUMMARY → CANCEL`, and #6's `MODIFIER_SELECT ↔ PARTY/MODIFIER`), never on a healthy stretch.
