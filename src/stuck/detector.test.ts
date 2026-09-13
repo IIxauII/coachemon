@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { PINNED_GAME_VERSION } from "../escape-ladder/lookup.ts";
-import { StuckDetector, type ActingCall, type Choice } from "./detector.ts";
+import { progressFingerprint, StuckDetector, type ActingCall, type Choice } from "./detector.ts";
 
 const SHOP = "SelectModifierPhase|6||0|Increases a Pokémon's level by 1.";
 const SHOP_PARTY = "SelectModifierPhase|8||0|Increases a Pokémon's level by 1.";
@@ -71,6 +71,36 @@ test("the fifth sighting of a fingerprint in the window is a loop", () => {
     result.stuck.cycle?.map(m => [m.fingerprint, m.screen]),
     [[SHOP, "MODIFIER_SELECT"], [SHOP_PARTY, "PARTY/MODIFIER"]],
   );
+});
+
+/** #35's shop run: Potion, pick the pokémon, Apply. The screens repeat; only the money says whether the purchase went through. */
+function shopPurchases(detector: StuckDetector, rounds: number, spend: number) {
+  const read = { phaseName: "SelectModifierPhase", modeChain: [], cursor: 0, messageText: null, wave: 15, turn: 1 };
+  const shop = (money: number) => progressFingerprint({ ...read, mode: 6, money });
+  const party = (money: number) => progressFingerprint({ ...read, mode: 8, money });
+  let money = 1000;
+  for (let i = 0; i < rounds; i++) {
+    detector.recordActing(call("MODIFIER_SELECT", shop(money), party(money), option("Potion")));
+    detector.recordActing(call("PARTY/MODIFIER", party(money), shop(money - spend), option("Apply")));
+    money -= spend;
+  }
+  return shop(money);
+}
+
+test("repeat shop purchases that spend money are progress, not a loop", () => {
+  const detector = new StuckDetector();
+  const now = shopPurchases(detector, 6, 66);
+
+  assert.equal(detector.assess(at("MODIFIER_SELECT", now, SHOP_OPTIONS)).status, "ok");
+});
+
+test("the same shop↔party cycle with the money unchanged still trips", () => {
+  const detector = new StuckDetector();
+  const now = shopPurchases(detector, 4, 0);
+  const result = detector.assess(at("MODIFIER_SELECT", now, SHOP_OPTIONS));
+
+  assert.equal(result.status, "stuck");
+  assert.equal(result.stuck.verdict, "loop");
 });
 
 test("a loop reported on the party screen is not promoted: its CANCEL is spent, but the shop's is not", () => {

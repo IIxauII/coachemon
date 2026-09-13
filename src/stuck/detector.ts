@@ -22,7 +22,7 @@ export const WINDOW = 12;
 export const THRESHOLD = 5;
 
 /**
- * The progress fingerprint: #13's five fields, then the battle clock.
+ * The progress fingerprint: #13's five fields, then the battle clock, then the money.
  *
  * The five fields are deliberately coarse: adding `optionsCursor` would split a
  * 3-screen cycle into 3 fingerprints needing 15 decisions to trip, which no
@@ -32,6 +32,11 @@ export const THRESHOLD = 5;
  * prompt is the same fingerprint, and a battle of five turns is a false `loop`
  * (#16's replay: run5 reached 4 on a healthy wave). They cannot split a stuck
  * cycle — nothing a stuck agent does advances the turn — only real progress.
+ *
+ * `money` is appended because a shop purchase that goes through changes none of
+ * the other fields, so repeat purchases read as #6's shop↔party loop (#35). A
+ * stuck shop cycle (item picked, party cancelled, or an apply the game refuses)
+ * never spends, so it still trips.
  */
 export function progressFingerprint(read: {
   phaseName: string | null;
@@ -43,6 +48,8 @@ export function progressFingerprint(read: {
   wave: number | null;
   /** `currentBattle.turn`, `null` outside a run. */
   turn: number | null;
+  /** `scene.money`, `null` when unreadable. */
+  money: number | null;
 }): string {
   return [
     read.phaseName ?? "",
@@ -52,6 +59,7 @@ export function progressFingerprint(read: {
     read.messageText ?? "",
     read.wave ?? "",
     read.turn ?? "",
+    read.money ?? "",
   ].join("|");
 }
 
