@@ -7,6 +7,8 @@ import { Refusal } from "./envelope.ts";
 import * as js from "./game/js.ts";
 import { CALL_BUDGET_MS, type Ready } from "./settle.ts";
 
+// `money` joins Ready with #38; spread so this fixture compiles with and without it.
+const money = { money: 1000 };
 const disc = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summaryUiMode: null, alertClosable: false, filterMode: false, transferMode: false };
 
 /**
@@ -24,7 +26,7 @@ function fakeTab(opts: { stallAfterPress: boolean }) {
       ready: true, settled, reason: settled ? "menu-open" : "ui-transition", mode: UiMode.TARGET_SELECT,
       phaseName: "SelectTargetPhase", wave: 13, turn: 1, runLive: true, tutorialActive: false, handler: "TargetSelectUiHandler",
       cursor: 2, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false, fine: "target|2",
-      frame: ++frame, domMode: "TARGET_SELECT", gameVersion: "1.12.0.11", disc,
+      frame: ++frame, domMode: "TARGET_SELECT", gameVersion: "1.12.0.11", disc, ...money,
     };
   };
   const menu: MenuRead = {
