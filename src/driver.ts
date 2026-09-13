@@ -16,7 +16,7 @@ import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import * as js from "./game/js.ts";
 import { matchLabel, normalizeLabel } from "./labels.ts";
 import { isSettingsMode, modeName, screenId } from "./screen.ts";
-import { BEYOND_OBSERVED_MS, settle, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
+import { BEYOND_OBSERVED_MS, CALL_BUDGET_MS, settle, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
 import { progressFingerprint, StuckDetector, type Assessment, type Choice } from "./stuck/detector.ts";
 import { HangWatch } from "./stuck/hang.ts";
 
@@ -29,7 +29,17 @@ export type CallContext = {
   signal?: AbortSignal;
   /** Progress notifications while a settle stalls; the server wires it to the MCP progress token when one is present. */
   progress?: (message: string) => void;
+  /**
+   * When the call must return, on the driver's clock. Every settle in the call shares it: pre-read, cursor walk, commit
+   * and auto-advance together stay inside one `CALL_BUDGET_MS` (#34). The driver sets it on entry.
+   */
+  deadline?: number;
 };
+
+/** The driver's clock: real by default, fake in tests. */
+export type Clock = { now: () => number; sleep: (ms: number) => Promise<void> };
+
+const REAL_CLOCK: Clock = { now: Date.now, sleep: ms => new Promise(r => setTimeout(r, ms)) };
 
 export type MenuOption = {
   i: number | string;
@@ -73,10 +83,12 @@ export class Driver {
   #latch = { sawRun: false, gameOver: false, interrupted: false };
   #stall = { pending: false, resumeCount: 0, cumulativeMs: 0, aborted: false };
   #menuActionInFlight = false;
+  readonly #clock: Clock;
 
-  constructor(session: CdpSession, lock: Lock) {
+  constructor(session: CdpSession, lock: Lock, clock: Clock = REAL_CLOCK) {
     this.session = session;
     this.lock = lock;
+    this.#clock = clock;
     session.onException = t => this.hang.unhandledRejection(t);
   }
 
@@ -125,6 +137,7 @@ export class Driver {
   }
 
   async getState(detail: "lean" | "party" | "items" | "full", ctx: CallContext): Promise<Record<string, unknown>> {
+    ctx = this.#begin(ctx);
     await this.session.ensure();
     const s = await this.#settleRead(ctx);
     if (!s.settled) return this.#timedOut(s, "get_state");
@@ -139,6 +152,7 @@ export class Driver {
   }
 
   async readMenu(ctx: CallContext): Promise<Record<string, unknown>> {
+    ctx = this.#begin(ctx);
     await this.session.ensure();
     const s = await this.#settleRead(ctx);
     if (!s.settled) return this.#timedOut(s, "read_menu");
@@ -149,6 +163,7 @@ export class Driver {
   }
 
   async press(buttonName: string, ctx: CallContext): Promise<Record<string, unknown>> {
+    ctx = this.#begin(ctx);
     const button = (Button as Record<string, number>)[buttonName];
     if (button === undefined) throw new Refusal("unknown_button", `Unknown button ${JSON.stringify(buttonName)}`, { buttons: Object.keys(Button) });
     await this.session.ensure();
@@ -177,6 +192,7 @@ export class Driver {
   }
 
   async selectOption(label: string | undefined, index: string | number | undefined, expectScreen: string | undefined, ctx: CallContext): Promise<Record<string, unknown>> {
+    ctx = this.#begin(ctx);
     await this.session.ensure();
     const pre = await this.#settleRead(ctx);
     if (!pre.settled) return this.#timedOut(pre, "select_option");
@@ -216,13 +232,15 @@ export class Driver {
     const before = progressFingerprint(this.#progress(ready));
     const choice: Choice = menu.family === "modal" ? { kind: "modal_button", index: Number(target.i) } : { kind: "option", label: normalizeLabel(target.label) };
 
-    await this.#moveTo(menu, target, ctx);
+    const walk = await this.#moveTo(menu, target, ctx);
+    if (walk) return this.#finishActing(ready, before, choice, { settle: walk, messages: [], presses: 0, capped: false }, { selected: target.label, on: screen });
     const committed = await this.#commit(menu, target, ready.fine, ctx);
     const adv = await this.#autoAdvance(committed, ctx);
     return this.#finishActing(ready, before, choice, adv, { selected: target.label, on: screen });
   }
 
   async startRun(species: string[], slot: number | undefined, overwrite: boolean, ctx: CallContext): Promise<Record<string, unknown>> {
+    ctx = this.#begin(ctx);
     await this.session.ensure();
     const pre = await this.#settleRead(ctx);
     if (!pre.settled) return this.#timedOut(pre, "start_run");
@@ -239,27 +257,32 @@ export class Driver {
     const before = progressFingerprint(this.#progress(ready));
     this.#menuActionInFlight = true;
     let presses = 0;
+    const timedOut = (s: SettleResult, step: string) => new Refusal("start_run_timed_out", `start_run timed out at ${step}`, { step, diagnostic: this.#diagnostic(s), log });
     const expect = async (s: SettleResult, mode: number, step: string): Promise<Ready> => {
-      if (!s.settled) throw new Refusal("start_run_timed_out", `start_run timed out at ${step}`, { step, diagnostic: this.#diagnostic(s), log });
+      if (!s.settled) throw timedOut(s, step);
       const r = s.last as Ready;
       if (r.mode !== mode) {
         throw new Refusal("start_run_unexpected_screen", `start_run expected ${modeName(mode)} after ${step} but saw ${screenId(r.mode, r.disc)}`, { step, screen: screenId(r.mode, r.disc), log });
       }
       return r;
     };
+    const moveTo = async (m: MenuRead, target: MenuOption, step: string): Promise<void> => {
+      const walk = await this.#moveTo(m, target, ctx);
+      if (walk) throw timedOut(walk, step);
+    };
 
     // 1. TITLE → game-mode select. New Game is the first option unless Continue is offered (source order: [Continue,] New Game, Load Game, Daily Run, Settings).
     let menu = await this.#readMenu();
     const newGameIndex = menu.options.length >= 5 ? 1 : 0;
     log.push(`title: ${menu.options.map(o => o.label).join(" | ")} → index ${newGameIndex}`);
-    await this.#moveTo(menu, menu.options[newGameIndex], ctx);
+    await moveTo(menu, menu.options[newGameIndex], "title");
     let s = await this.#commit(menu, menu.options[newGameIndex], ready.fine, ctx);
     presses++;
     let cur = await expect(s, UiMode.OPTION_SELECT, "title");
     // 2. Game mode: Classic is index 0.
     menu = await this.#readMenu();
     log.push(`game mode: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
-    await this.#moveTo(menu, menu.options[0], ctx);
+    await moveTo(menu, menu.options[0], "game mode");
     s = await this.#commit(menu, menu.options[0], cur.fine, ctx);
     presses++;
     cur = await expect(s, UiMode.STARTER_SELECT, "game mode");
@@ -290,7 +313,7 @@ export class Driver {
       cur = await expect(s, UiMode.OPTION_SELECT, `select ${pick.name}`);
       menu = await this.#readMenu();
       log.push(`${pick.name}: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
-      await this.#moveTo(menu, menu.options[0], ctx);
+      await moveTo(menu, menu.options[0], `add ${pick.name}`);
       s = await this.#commit(menu, menu.options[0], cur.fine, ctx);
       presses++;
       cur = await expect(s, UiMode.STARTER_SELECT, `add ${pick.name}`);
@@ -308,7 +331,7 @@ export class Driver {
     cur = await expect(s, UiMode.CONFIRM, "submit");
     menu = await this.#readMenu();
     log.push(`confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
-    await this.#moveTo(menu, menu.options[0], ctx);
+    await moveTo(menu, menu.options[0], "confirm");
     s = await this.#commit(menu, menu.options[0], cur.fine, ctx);
     presses++;
     cur = await expect(s, UiMode.SAVE_SLOT, "confirm");
@@ -327,7 +350,7 @@ export class Driver {
     if (slotOpt.hasData === true && !overwrite) {
       throw new Refusal("slot_occupied", `Slot ${chosen} has a saved run. Free: ${free.join(", ") || "none"}. The run setup is waiting on the save-slot screen.`, leftOn);
     }
-    await this.#moveTo(menu, slotOpt, ctx);
+    await moveTo(menu, slotOpt, "save slot");
     s = await this.#commit(menu, slotOpt, cur.fine, ctx);
     presses++;
     if (s.settled && (s.last as Ready).mode === UiMode.CONFIRM) {
@@ -335,7 +358,7 @@ export class Driver {
       menu = await this.#readMenu();
       const answer = overwrite ? 0 : 1;
       log.push(`overwrite confirm: ${menu.options.map(o => o.label).join(" | ")} → index ${answer}`);
-      await this.#moveTo(menu, menu.options[answer], ctx);
+      await moveTo(menu, menu.options[answer], "overwrite confirm");
       s = await this.#commit(menu, menu.options[answer], (s.last as Ready).fine, ctx);
       presses++;
       if (!overwrite) {
@@ -362,6 +385,11 @@ export class Driver {
 
   // ---------------------------------------------------------------- settle
 
+  /** Start the call's clock: one deadline for everything the call waits on (#34). */
+  #begin(ctx: CallContext): CallContext {
+    return { ...ctx, deadline: ctx.deadline ?? this.#clock.now() + CALL_BUDGET_MS };
+  }
+
   async #poll(): Promise<PredicateRead | Thrown> {
     return this.session.evaluate<PredicateRead>(js.PREDICATE);
   }
@@ -373,6 +401,9 @@ export class Driver {
         onPoll: (read, t) => this.#onPoll(read, t),
         onStall: (stallMs, reason) => ctx.progress?.(`waiting for the game to settle: ${reason} for ${Math.round(stallMs / 1000)} s`),
         signal: ctx.signal,
+        now: this.#clock.now,
+        sleep: this.#clock.sleep,
+        budgetMs: ctx.deadline === undefined ? CALL_BUDGET_MS : Math.max(0, ctx.deadline - this.#clock.now()),
       },
       preFp,
     );
@@ -435,7 +466,7 @@ export class Driver {
     // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
     await this.session.keepAlive();
     const a = await this.session.evaluate<{ ready: boolean; frame: number | null }>(js.FRAME);
-    await new Promise(r => setTimeout(r, 150));
+    await this.#clock.sleep(150);
     const b = await this.session.evaluate<{ ready: boolean; frame: number | null }>(js.FRAME);
     if (!isThrown(a) && !isThrown(b) && a.frame !== null && a.frame === b.frame) {
       throw new Refusal("loop_frozen", "The game loop is not advancing (hidden page and focus emulation did not take). A press now would freeze mid-fade. Nothing was pressed.", { screen, frame: a.frame });
@@ -450,87 +481,70 @@ export class Driver {
     return r;
   }
 
-  async #moveTo(menu: MenuRead, target: MenuOption, ctx: CallContext): Promise<void> {
+  /** Walk the cursor onto `target`. `null` once it is there; the unsettled result if the call's deadline ran out first. */
+  async #moveTo(menu: MenuRead, target: MenuOption, ctx: CallContext): Promise<SettleResult | null> {
     switch (menu.family) {
       case "option_select": {
         const unskipped = (menu.extra.unskippedIndices as number[] | null) ?? null;
         const j = unskipped ? unskipped.indexOf(Number(target.i)) : Number(target.i);
         if (j < 0) throw new Refusal("option_skipped", `option ${target.label} is not selectable right now`, { options: menu.options.map(o => o.label) });
         const r = await this.session.evaluate<{ ok: boolean; fullCursor: number }>(js.optionSelectSetCursor(j));
-        if (!isThrown(r) && r.ok && r.fullCursor === j) return;
-        await this.#navLinear(j, ctx, m => Number(m.cursor));
-        return;
+        if (!isThrown(r) && r.ok && r.fullCursor === j) return null;
+        return this.#walk(j, ctx, cur => (cur < j ? Button.DOWN : Button.UP));
       }
       case "command":
       case "fight":
-      case "mystery_encounter":
-        await this.#navGrid(Number(target.i), ctx);
-        return;
+      case "mystery_encounter": {
+        // 2×2 grids: UP/DOWN are ±2, LEFT/RIGHT ±1.
+        const t = Number(target.i);
+        return this.#walk(t, ctx, cur => (Math.floor(cur / 2) !== Math.floor(t / 2) ? (cur < t ? Button.DOWN : Button.UP) : cur < t ? Button.RIGHT : Button.LEFT));
+      }
       case "modifier_select": {
         const r = await this.session.evaluate<{ ok: boolean; rowCursor: number; cursor: number }>(js.shopSetCursor(Number(target.row), Number(target.col)));
         if (isThrown(r) || !r.ok || r.rowCursor !== target.row || r.cursor !== target.col) {
           throw new Refusal("cursor_unreachable", `could not position the shop cursor on ${target.label}`, { got: r });
         }
-        return;
+        return null;
       }
       case "starter_select": {
         const r = await this.session.evaluate<{ ok: boolean; why?: string; cursor: number }>(js.starterSetCursor(Number(target.i)));
         if (isThrown(r) || !r.ok || r.cursor !== Number(target.i)) throw new Refusal("cursor_unreachable", `could not position the grid cursor on ${target.label}`, { got: r });
-        return;
+        return null;
       }
       case "target_select":
-        await this.#navCycle(Number(target.i), Button.RIGHT, ctx);
-        return;
+        // A cyclic cursor over TARGET_SELECT's sparse BattlerIndex set: step one way until it lands.
+        return this.#walk(Number(target.i), ctx, () => Button.RIGHT);
       case "party":
         // The slot list is a DOWN-cycle: 0..n-1 → 6 (Cancel) → 0; the option phase is a plain list (#7 §7: presses, always).
-        if (menu.extra.optionsMode === true) await this.#navLinear(Number(target.i), ctx, m => Number(m.cursor));
-        else await this.#navCycle(Number(target.i), Button.DOWN, ctx);
-        return;
+        if (menu.extra.optionsMode === true) return this.#walk(Number(target.i), ctx, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
+        return this.#walk(Number(target.i), ctx, () => Button.DOWN);
       case "modal":
-        return; // committed through the button action, no cursor
+        return null; // committed through the button action, no cursor
       case "save_slot":
       case "ball":
       case "menu":
       default:
-        await this.#navLinear(Number(target.i), ctx, m => Number(m.cursor));
+        return this.#walk(Number(target.i), ctx, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
     }
   }
 
-  async #navLinear(target: number, ctx: CallContext, cursorOf: (m: MenuRead) => number): Promise<void> {
+  /**
+   * Press `step(cursor)` until the cursor reads `target`, each press settled against the call's deadline. A settled
+   * press that leaves the cursor where it was refuses at once: the same press again does the same (#34).
+   */
+  async #walk(target: number, ctx: CallContext, step: (cursor: number) => number): Promise<SettleResult | null> {
+    let prev: number | null = null;
     for (let n = 0; n < NAV_CAP; n++) {
-      const m = await this.#readMenu();
-      const cur = cursorOf(m);
-      if (cur === target) return;
-      const fine = await this.#fine();
-      await this.#pressAndSettle(cur < target ? Button.DOWN : Button.UP, fine, ctx);
+      const cur = Number((await this.#readMenu()).cursor);
+      if (cur === target) return null;
+      if (cur === prev) {
+        throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a press toward ${target}; ${target} can't be reached by moving the cursor here. ${n} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target, presses: n });
+      }
+      prev = cur;
+      const s = await this.#pressAndSettle(step(cur), await this.#fine(), ctx);
+      if (!s.settled) return s;
     }
-    throw new Refusal("cursor_unreachable", `cursor did not reach ${target} within ${NAV_CAP} presses`);
-  }
-
-  /** 2×2 grids: UP/DOWN are ±2, LEFT/RIGHT ±1 (COMMAND, FIGHT, MYSTERY_ENCOUNTER). */
-  async #navGrid(target: number, ctx: CallContext): Promise<void> {
-    for (let n = 0; n < NAV_CAP; n++) {
-      const m = await this.#readMenu();
-      const cur = Number(m.cursor);
-      if (cur === target) return;
-      let button: number;
-      if (Math.floor(cur / 2) !== Math.floor(target / 2)) button = cur < target ? Button.DOWN : Button.UP;
-      else button = cur < target ? Button.RIGHT : Button.LEFT;
-      const fine = await this.#fine();
-      await this.#pressAndSettle(button, fine, ctx);
-    }
-    throw new Refusal("cursor_unreachable", `cursor did not reach ${target} within ${NAV_CAP} presses`);
-  }
-
-  /** Cyclic cursors (TARGET_SELECT's sparse BattlerIndex set, the party slot list): step one way until it lands. */
-  async #navCycle(target: number, button: number, ctx: CallContext): Promise<void> {
-    for (let n = 0; n < NAV_CAP; n++) {
-      const m = await this.#readMenu();
-      if (Number(m.cursor) === target) return;
-      const fine = await this.#fine();
-      await this.#pressAndSettle(button, fine, ctx);
-    }
-    throw new Refusal("cursor_unreachable", `cursor ${target} not reached within ${NAV_CAP} presses`);
+    throw new Refusal("cursor_unreachable", `cursor did not reach ${target} within ${NAV_CAP} presses`, { target, presses: NAV_CAP });
   }
 
   async #fine(): Promise<string> {

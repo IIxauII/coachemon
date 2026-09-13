@@ -22,7 +22,7 @@ export const AGREE = 3;
 export const CHANGE_GRACE_MS = 3_000;
 /** After this much stall the call starts progress notifications; not a return point. */
 export const NO_PROGRESS_NOTICE_MS = 6_000;
-/** The only return point. Must stay below the client's hard limit and its 120 s auto-background (#20). */
+/** The only return point, for a whole tool call: every settle in one call shares it (#34). Must stay below the client's hard limit and its 120 s auto-background (#20). */
 export const CALL_BUDGET_MS = 30_000;
 /** Cumulative stall beyond anything observed on a healthy game; a label, not a verdict (#14). */
 export const BEYOND_OBSERVED_MS = 90_000;
