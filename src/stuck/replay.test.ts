@@ -56,7 +56,7 @@ test("run4: the three presses into the party-overlay stall are not admitted", ()
 });
 
 test("the same COMMAND prompt on a later turn is a different fingerprint", () => {
-  const read = { phaseName: "CommandPhase", mode: 2, modeChain: [], cursor: 0, messageText: "What will\nBulbasaur do?", wave: 3 };
+  const read = { phaseName: "CommandPhase", mode: 2, modeChain: [], cursor: 0, messageText: "What will\nBulbasaur do?", wave: 3, money: 1000 };
 
   assert.notEqual(progressFingerprint({ ...read, turn: 1 }), progressFingerprint({ ...read, turn: 2 }));
 });
