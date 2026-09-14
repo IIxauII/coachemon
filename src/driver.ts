@@ -279,25 +279,29 @@ export class Driver {
      */
     const refuseFromGrid = async (code: string, message: string, detail: Record<string, unknown>): Promise<never> => {
       try {
-        s = await this.#pressAndSettle(Button.CANCEL, cur.fine, ctx);
-        cur = await expect(s, UiMode.CONFIRM, "back out");
+        const confirm = await expect(await this.#pressAndSettle(Button.CANCEL, cur.fine, ctx), UiMode.CONFIRM, "back out");
         const m = await this.#readMenu();
         const yes = matchLabel(m.options, "Yes");
         if (yes.kind !== "one") throw new Refusal("start_run_unexpected_screen", `no single Yes on the return-to-title confirm: ${m.options.map(o => o.label).join(" | ")}`);
         log.push(`back out: ${m.options.map(o => o.label).join(" | ")} → Yes`);
         await moveTo(m, yes.option, "back out");
-        s = await this.#commit(m, yes.option, cur.fine, ctx);
-        await expect(s, UiMode.TITLE, "back out");
+        let back = await this.#commit(m, yes.option, confirm.fine, ctx);
+        // Yes sets STARTER_SELECT again before the title phase shows TITLE (StarterSelectUiHandler.tryExit): wait past it.
+        if (back.settled && (back.last as Ready).mode === UiMode.STARTER_SELECT) back = await this.#settle((back.last as Ready).fine, ctx);
+        await expect(back, UiMode.TITLE, "back out");
       } catch (e) {
-        if (!(e instanceof Refusal)) throw e;
         const live = await this.#poll();
+        const mode = !isThrown(live) && live.ready ? live.mode : null;
         const screen = !isThrown(live) && live.ready ? screenId(live.mode, live.disc) : "UNKNOWN(-1)";
-        throw new Refusal(code, `${message} Backing out to TITLE failed (${e.message}).`, {
-          ...detail, screen, log, back_out_error: e.code,
-          next: 'from STARTER_SELECT: press(CANCEL), then select_option("Yes") on the CONFIRM to return to TITLE; then start_run again',
+        const next =
+          mode === UiMode.CONFIRM ? 'select_option("Yes") on this CONFIRM to return to TITLE, then start_run again'
+          : mode === UiMode.STARTER_SELECT ? 'press(CANCEL), then select_option("Yes") on the CONFIRM to return to TITLE, then start_run again'
+          : "read_menu to see where the game is; start_run needs TITLE";
+        throw new Refusal(code, `${message} Backing out to TITLE failed (${(e as Error).message}).`, {
+          ...detail, screen, log, back_out_error: e instanceof Refusal ? e.code : "error", next,
         });
       }
-      throw new Refusal(code, `${message} Backed out to TITLE; call start_run again with a corrected party.`, { ...detail, screen: "TITLE" });
+      throw new Refusal(code, `${message} Backed out to TITLE; call start_run again with a corrected party.`, { ...detail, screen: "TITLE", log });
     };
 
     // 1. TITLE → game-mode select. New Game is the first option unless Continue is offered (source order: [Continue,] New Game, Load Game, Daily Run, Settings).
