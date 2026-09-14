@@ -54,7 +54,7 @@ CANCEL means different things per screen: it consents on messages, selects the l
 ## Result statuses
 
 - `ok` — carry on.
-- `timed_out` — not fatal; the game is still busy. Call `get_state` (presses nothing) to keep waiting. **Never repeat a press because the last one seemed to fail.**
+- `timed_out` — not fatal; the game is still busy. Call `get_state` (presses nothing) to keep waiting. **Never repeat a press because the last one seemed to fail.** One exception: a `timed_out` carrying `message_pending: true` means the call ran out of time with the game idle on a message; follow its `next` and `press(ACTION)`.
 - `stuck` — a press landed and nothing moved. The result names a verdict (`dead_end` / `loop` / `hang`) and carries `escape` with `untried` labels and a `ladder`. Try an untried option first, else the first unspent rung (prefer `safe` over `lossy`; ask the user before a `destructive` rung). Don't bounce between the same two screens more than twice.
 - `run_over` — party wiped. Report the wave reached; don't `start_run` again unless the user asks.
 - `run_interrupted` — the run may still exist server-side. Report and check `status`.

@@ -771,17 +771,23 @@ export class Driver {
     const last = s.last && s.last.ready ? s.last : null;
     const status: Status = this.#latch.interrupted ? "run_interrupted" : "timed_out";
     const alert = last?.mode === UiMode.ALERT_MODAL ? last.messageText : null;
+    // The budget ran out with the game idle on a message that takes ACTION (#55): waiting on it would never end.
+    // Not a doubled press: processInput clears onActionInput synchronously, so a live one is a fresh prompt.
+    const pending = alert === null && last !== null && last.settled && last.mode === UiMode.MESSAGE && last.awaitingActionInput && last.onActionInput;
     return {
       status,
       wave: last?.wave ?? null,
       screen: last ? screenId(last.mode, last.disc) : "UNKNOWN(-1)",
       diagnostic: this.#diagnostic(s),
       ...(alert !== null ? { alert_text: alert } : {}),
+      ...(pending ? { message_pending: true, text: last.messageText, next: DISMISS_MESSAGE } : {}),
       console_tail: this.session.consoleTail(),
       note:
         alert !== null
           ? `${what}: the game is showing an alert that no input can close yet. If it stays, only a page reload leaves it (destructive: progress since the last save).`
-          : `${what} did not settle within the call budget. Not fatal: call get_state or read_menu to keep waiting; nothing is pressed by that.`,
+          : pending
+            ? `${what} ran out of call budget, but the game is waiting on a message: press(ACTION) moves it on. Waiting with get_state will not.`
+            : `${what} did not settle within the call budget. Not fatal: call get_state or read_menu to keep waiting; nothing is pressed by that.`,
     };
   }
 
