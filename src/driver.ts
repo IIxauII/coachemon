@@ -516,6 +516,13 @@ export class Driver {
         if (isThrown(r) || !r.ok || r.cursor !== Number(target.i)) throw new Refusal("cursor_unreachable", `could not position the grid cursor on ${target.label}`, { got: r });
         return null;
       }
+      case "learn_move": {
+        // Rows 0..4 with UP/DOWN ±1, wrapping; ACTION on a moveset row forgets it, on row 4 declines the new move.
+        const t = Number(target.i);
+        const r = await this.session.evaluate<{ ok: boolean; moveCursor: number }>(js.learnMoveSetCursor(t));
+        if (!isThrown(r) && r.ok && r.moveCursor === t) return null;
+        return this.#walk(t, ctx, cur => (cur < t ? Button.DOWN : Button.UP));
+      }
       case "target_select":
         // A cyclic cursor over TARGET_SELECT's sparse BattlerIndex set: step one way until it lands.
         return this.#walk(Number(target.i), ctx, () => Button.RIGHT);

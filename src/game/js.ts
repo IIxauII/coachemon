@@ -92,6 +92,8 @@ const fine = [
   h && typeof h.rowCursor === 'number' ? h.rowCursor : '',
   h && typeof h.scrollCursor === 'number' ? h.scrollCursor : '',
   h && typeof h.fullCursor === 'number' ? h.fullCursor : '',
+  // SUMMARY's move-list row: without it a row press reads as unmoved (#32).
+  h && typeof h.moveCursor === 'number' ? h.moveCursor : '',
   messageText,
   ui.overlayActive === true ? 1 : 0, h && h.active === true ? 1 : 0,
   awaiting(h) ? 1 : 0, typing(h) || typing(mh) ? 1 : 0,
@@ -263,6 +265,24 @@ try {
     out.extra.awaitingActionInput = h.awaitingActionInput === true && h.onActionInput != null;
     if (mode === 47) { out.text = __try(() => __txt(h.label)) || out.text; out.extra.closable = h.allowClosing === true; }
     out.readable = true;
+  } else if (mode === 9 && h.summaryUiMode === 1) {
+    // SUMMARY/LEARN_MOVE: rows 0..3 are the moveset, row 4 the new move (ACTION there declines, via CANCEL). The row
+    // cursor is moveCursor; cursor is the page. Labels are read live from the moveset and newMove, never the text rows.
+    out.family = 'learn_move';
+    const pk = h.pokemon;
+    const ms = __try(() => pk.getMoveset()) || [];
+    const pp = m => __try(() => ({ pp: m.getMovePp() - m.ppUsed, maxPp: m.getMovePp() })) || {};
+    out.options = ms.map((m, i) => opt(i, __try(() => m.getName()), Object.assign({ forget: true }, pp(m))));
+    const nm = h.newMove;
+    if (nm) out.options.push(opt(4, __try(() => nm.name), { forget: false, new: true, pp: nm.pp, maxPp: nm.pp }));
+    out.cursor = h.moveSelect === true ? h.moveCursor : null;
+    out.extra.moveSelect = h.moveSelect === true;
+    out.extra.page = h.cursor;
+    out.extra.pokemon = __try(() => pk.name);
+    out.extra.newMove = __try(() => nm.name);
+    // Off the move list (LEFT to another page) the rows take no cursor: nothing to select until RIGHT returns to it.
+    if (h.moveSelect !== true) out.options = [];
+    out.readable = true;
   } else if (mode === 9 || mode === 26 || mode === 31 || mode === 41) {
     out.family = 'paged_viewer';
     out.cursor = h.cursor;
@@ -373,6 +393,21 @@ if (!L.ready) return { ok: false, why: L.why };
 const h = L.ui.handlers[L.ui.mode];
 h.setCursor(${unskippedIndex});
 return { ok: true, fullCursor: h.fullCursor, cursor: h.cursor };
+`);
+}
+
+/**
+ * Learn-move rows: `setCursor` writes `moveCursor` only while `moveSelect` is on; off it, the same call would turn the
+ * page, so it refuses instead.
+ */
+export function learnMoveSetCursor(row: number): string {
+  return inGame(`
+const L = __locate();
+if (!L.ready) return { ok: false, why: L.why };
+const h = L.ui.handlers[9];
+if (h.moveSelect !== true) return { ok: false, why: 'move-select-off' };
+h.setCursor(${row});
+return { ok: true, moveCursor: h.moveCursor };
 `);
 }
 

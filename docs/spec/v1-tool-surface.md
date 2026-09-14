@@ -292,6 +292,7 @@ The text is returned, never discarded: level-ups, faints and item effects are an
 | `SAVE_SLOT` | presses | Absolute index is `h.cursor + h.scrollCursor`; `setCursor` moves only the on-screen row and is not re-entrant with `scrollCursor` |
 | `TARGET_SELECT` | presses | **`h.cursor` is a `BattlerIndex`, not a list index** — sparse; the legal set is `h.targets[]` |
 | `SUMMARY` | **never position** | `cursor` is a *page* index; `setCursor` drives page-transition tweens. CANCEL is the only exit anyway |
+| `SUMMARY/LEARN_MOVE` move list | **`setCursor(row)`**, only while `h.moveSelect`; presses (UP/DOWN ±1, wrapping over rows 0–4) as fallback | **[source]** #31: with `moveSelect` on, `setCursor` writes `moveCursor` only, and UP/DOWN are themselves `setCursor(moveCursor ± 1)`. Off it, the same call turns the page, so the driver refuses |
 | Anything unmodelled | presses, or nothing | Degrade, never block |
 
 ### Where labels come from
@@ -310,6 +311,7 @@ The text is returned, never discarded: level-ups, faints and item effects are an
 | `SAVE_SLOT` | no label array — synthesize from `h.sessionSlots[abs]` | `hasData` readable before committing |
 | `STARTER_SELECT` | no label text — derive from `filteredStarterContainers[i].species.name` | index unstable across profiles |
 | `SUMMARY` | none — informational | `unmapped` family; CANCEL out |
+| `SUMMARY/LEARN_MOVE` | `learn_move` family: `h.pokemon.getMoveset()[i].getName()` for rows 0–3, `h.newMove.name` for row 4; cursor `h.moveCursor` | ACTION on a moveset row forgets it; on row 4 it goes through CANCEL and declines. `h.cursor` is the page. Empty while `moveSelect` is off |
 
 ---
 

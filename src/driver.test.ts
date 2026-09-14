@@ -183,3 +183,93 @@ test("start_run with overwrite answers Yes on the real overwrite confirm (#30)",
   assert.ok((r.log as string[]).some(l => l === "overwrite confirm: Yes | No → index 0"));
   assert.equal(tab.screen().phase, "CheckSwitchPhase");
 });
+
+/**
+ * #28's Charmander on SUMMARY/LEARN_MOVE: Scratch, Growl, Ember, Flare Blitz and the new Metal Claw on row 4, where the
+ * row cursor starts. ACTION on a moveset row forgets that move; on row 4 it declines. With `setCursorWorks: false` the
+ * handler's setCursor is unavailable and the driver must walk the rows one press at a time.
+ */
+function learnMoveTab(opts: { setCursorWorks: boolean }) {
+  let t = 0;
+  let frame = 0;
+  const presses: number[] = [];
+  const moves = ["Scratch", "Growl", "Ember", "Flare Blitz", "Metal Claw"];
+  let moveCursor = 4;
+  let answered: number | null = null;
+  const read = (): Ready => ({
+    ready: true, settled: true, reason: "menu-open", mode: answered === null ? UiMode.SUMMARY : UiMode.MESSAGE, phaseName: "LearnMovePhase",
+    wave: 16, turn: 1, runLive: true, tutorialActive: false, handler: "SummaryUiHandler", cursor: 2, modeChain: [], messageText: null,
+    onActionInput: false, awaitingActionInput: false, fine: `summary|2|${moveCursor}|${answered}`, frame: ++frame, domMode: null,
+    gameVersion: "1.12.0.11", disc: { ...disc, summaryUiMode: answered === null ? 1 : null }, ...money,
+  });
+  const menu = (): MenuRead => ({
+    readable: true, mode: UiMode.SUMMARY, family: "learn_move", cursor: moveCursor, text: null, extra: { moveSelect: true, page: 2 },
+    options: moves.map((label, i) => ({ i, label, forget: i < 4 })),
+  });
+  const session = {
+    onException: null,
+    attached: true,
+    ensure: async () => {},
+    keepAlive: async () => {},
+    rawKey: async () => {},
+    consoleTail: () => [],
+    evaluate: async (expr: string) => {
+      if (expr === js.PREDICATE) return read();
+      if (expr === js.FRAME) return { ready: true, frame: ++frame };
+      if (expr === js.READER) return menu();
+      for (let j = 0; j < 5; j++) {
+        if (expr === js.learnMoveSetCursor(j)) {
+          if (!opts.setCursorWorks) throw new Error("setCursor unavailable");
+          moveCursor = j;
+          return { ok: true, moveCursor };
+        }
+      }
+      for (const b of Object.values(Button)) {
+        if (expr === js.press(b)) {
+          presses.push(b);
+          if (b === Button.UP) moveCursor = moveCursor ? moveCursor - 1 : 4;
+          else if (b === Button.DOWN) moveCursor = moveCursor < 4 ? moveCursor + 1 : 0;
+          else if (b === Button.ACTION) answered = moveCursor;
+          return { ok: true };
+        }
+      }
+      return {};
+    },
+  } as unknown as CdpSession;
+  // evaluate() of a throwing expression surfaces as { __throw } in the real session.
+  const guarded = session.evaluate;
+  session.evaluate = (async (expr: string) => {
+    try {
+      return await guarded(expr);
+    } catch (e) {
+      return { __throw: (e as Error).message };
+    }
+  }) as CdpSession["evaluate"];
+  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
+    now: () => t,
+    sleep: async ms => { t += ms; },
+  });
+  return { driver, presses, answered: () => answered };
+}
+
+test("select_option forgets a move by label on SUMMARY/LEARN_MOVE (#31)", async () => {
+  const tab = learnMoveTab({ setCursorWorks: true });
+  const r = await outcome(tab.driver.selectOption("Growl", undefined, "SUMMARY/LEARN_MOVE", {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(tab.answered(), 1);
+  assert.deepEqual(tab.presses, [Button.ACTION], "the row is set directly, then committed once");
+});
+
+test("select_option on the new move declines it (#31)", async () => {
+  const tab = learnMoveTab({ setCursorWorks: true });
+  await outcome(tab.driver.selectOption("Metal Claw", undefined, undefined, {}));
+  assert.equal(tab.answered(), 4);
+});
+
+test("without setCursor the learn-move rows are walked one press per row, row 1 reachable (#31, #28)", async () => {
+  const tab = learnMoveTab({ setCursorWorks: false });
+  const r = await outcome(tab.driver.selectOption("Growl", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(tab.answered(), 1);
+  assert.deepEqual(tab.presses, [Button.UP, Button.UP, Button.UP, Button.ACTION]);
+});
