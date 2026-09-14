@@ -32,7 +32,7 @@ The `pokerogue` MCP server drives a live PokéRogue tab in Chrome over CDP. Stat
 | `PARTY/FAINT_SWITCH` | Must answer: pick a non-fainted, non-active mon, then `Send Out`. Never `Cancel`. |
 | `PARTY/POST_BATTLE_SWITCH`, `PARTY/SWITCH` | `Cancel` unless a switch is wanted. |
 | `MODIFIER_SELECT` (shop) | Take one reward (row 1, cost 0). Buy from shop rows only if money ≥ cost. Item that targets a mon opens `PARTY/MODIFIER` → pick mon → `Apply`/`Use`/`Teach`. |
-| `SUMMARY/LEARN_MOVE`, move-replace confirm | Replace a weak move or decline with `No`/`Cancel`. |
+| `SUMMARY/LEARN_MOVE`, move-replace confirm | `select_option` the move to forget by name, or the new move (last option) to decline. On the confirm, `No` declines. |
 | `OPTION_SELECT` (biome etc.) | Choose; first option if indifferent. |
 | `CONFIRM` you don't understand | `No`. |
 
