@@ -368,17 +368,18 @@ test("without setCursor the learn-move rows are walked one press per row, row 1 
  * #45's wave 18 shop: Rarer Candy levels the whole party, and each level-up is its own MESSAGE with a live prompt. ACTION
  * on one shows the next; after the last the shop comes back. Every press moves `messageText`, so the chain is progress.
  */
-function messageChainTab(count: number) {
+function messageChainTab(count: number, opts: { cycle: boolean } = { cycle: false }) {
   let t = 0;
   let frame = 0;
   const texts = Array.from({ length: count }, (_, i) => `Pokémon ${i + 1} grew to Lv. ${20 + i}!`);
   let shown: number | null = null;
   const read = (): Ready => {
-    const onMessage = shown !== null && shown < count;
+    const onMessage = shown !== null && (opts.cycle || shown < count);
+    const text = shown === null ? null : texts[shown % count];
     return {
       ready: true, settled: true, reason: onMessage ? "awaiting-action" : "menu-open", mode: onMessage ? UiMode.MESSAGE : UiMode.MODIFIER_SELECT,
       phaseName: onMessage ? "LevelUpPhase" : "SelectModifierPhase", wave: 18, turn: 1, runLive: true, tutorialActive: false, handler: null,
-      cursor: 0, modeChain: [], messageText: onMessage ? texts[shown!] : null, onActionInput: onMessage, awaitingActionInput: onMessage,
+      cursor: 0, modeChain: [], messageText: onMessage ? text : null, onActionInput: onMessage, awaitingActionInput: onMessage,
       fine: `chain|${shown}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
     };
   };
@@ -426,6 +427,18 @@ test("a chain of more messages than the auto-advance cap hands the next MESSAGE 
   assert.equal(rest.status, "ok", JSON.stringify(rest.diagnostic));
   assert.equal(rest.screen, "MODIFIER_SELECT");
   assert.equal(tab.shown(), 15);
+});
+
+test("a message chain that really cycles still trips the stuck detector across capped calls (#45)", async () => {
+  // Thirteen messages: one press plus twelve auto-advances brings every call back to the MESSAGE it started on.
+  const tab = messageChainTab(13, { cycle: true });
+  const statuses = [await outcome(tab.driver.selectOption("Rarer Candy", undefined, undefined, {}))];
+  for (let i = 0; i < 4; i++) statuses.push(await outcome(tab.driver.press("ACTION", {})));
+  // ACTION is the MESSAGE ladder's only rung and every call spent it, so the verdict goes past stuck to ladder-exhausted.
+  assert.deepEqual(statuses.map(r => r.status), ["ok", "ok", "ok", "ok", "run_interrupted"]);
+  const last = statuses.at(-1)!;
+  assert.equal((last.diagnostic as { reason: string }).reason, "ladder-exhausted");
+  assert.equal(last.next, undefined, "no press(ACTION) hint once the detector has tripped");
 });
 
 test("a chain the cap does not reach carries no next hint (#45)", async () => {
