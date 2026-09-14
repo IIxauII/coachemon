@@ -49,7 +49,7 @@ CANCEL means different things per screen: it consents on messages, selects the l
 - `stuck` — a press landed and nothing moved. The result names a verdict (`dead_end` / `loop` / `hang`) and carries `escape` with `untried` labels and a `ladder`. Try an untried option first, else the first unspent rung (prefer `safe` over `lossy`; ask the user before a `destructive` rung). Don't bounce between the same two screens more than twice.
 - `run_over` — party wiped. Report the wave reached; don't `start_run` again unless the user asks.
 - `run_interrupted` — the run may still exist server-side. Report and check `status`.
-- Refusals (`no_match`, `ambiguous`, `screen_changed`, …) pressed nothing: `read_menu` and retry with the right label or `index`.
+- Refusals (`no_match`, `ambiguous`, `screen_changed`, …) pressed nothing: `read_menu` and retry with the right label or `index`. `message_pending` is different: a message is up (e.g. "It won't have any effect."), so `press(ACTION)` first, then retry.
 
 ## Pacing with a human watching
 

@@ -25,6 +25,8 @@ import { HangWatch } from "./stuck/hang.ts";
 export const AUTO_ADVANCE_CAP = 12;
 /** Bound on cursor-walk presses inside one `select_option`. The longest measured walk is a 6-slot party list. */
 const NAV_CAP = 24;
+/** What a result says when a handler's own message box waits for ACTION (#44). */
+const DISMISS_MESSAGE = "press(ACTION) dismisses the message";
 
 export type CallContext = {
   signal?: AbortSignal;
@@ -218,6 +220,9 @@ export class Driver {
     const menu = await this.#readMenu();
     const labels = menu.options.map(o => normalizeLabel(o.label));
     const echo = { screen, options: labels, cursor: menu.cursor };
+    if (menu.extra.messagePending === true) {
+      throw new Refusal("message_pending", `${screen} is showing a message that swallows cursor presses until ACTION dismisses it: ${JSON.stringify(menu.text)}. Nothing was pressed.`, { ...echo, text: menu.text, next: DISMISS_MESSAGE });
+    }
     if (menu.options.length === 0) {
       throw new Refusal("no_options", `${screen} presents no options to select; use press (ACTION acknowledges a message, CANCEL leaves a viewer).`, echo);
     }
@@ -827,8 +832,14 @@ export class Driver {
       options: menu.options.map(o => o.label),
       cursor: menu.cursor,
       text: menu.text,
+      ...this.#pendingMessage(menu),
       tutorial_active: ready.tutorialActive,
     };
+  }
+
+  /** A handler's own message box is up and swallows presses (#44): flag it and name the way out. */
+  #pendingMessage(menu: MenuRead): Record<string, unknown> {
+    return menu.extra.messagePending === true ? { message_pending: true, next: DISMISS_MESSAGE } : {};
   }
 
   #menuPayload(ready: Ready, menu: MenuRead): Record<string, unknown> {
@@ -842,7 +853,9 @@ export class Driver {
       options: menu.options,
       cursor: menu.cursor,
       text: menu.text,
-      cancel_effect: ladder.status === "ladder" ? ladder.cancelEffect : "unknown",
+      ...this.#pendingMessage(menu),
+      // While a handler's own message waits, CANCEL dismisses it exactly as ACTION does (PartyUiHandler.processInput).
+      cancel_effect: menu.extra.messagePending === true ? "consents" : ladder.status === "ladder" ? ladder.cancelEffect : "unknown",
       screen_class: ladder.status === "ladder" ? ladder.class : null,
       ladder_note: ladder.status === "ladder" ? undefined : ladder.message,
       tutorial_active: ready.tutorialActive,

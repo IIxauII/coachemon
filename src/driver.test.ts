@@ -461,6 +461,113 @@ test("select_option on the new move declines it (#31)", async () => {
   assert.equal(tab.answered(), 4);
 });
 
+/**
+ * #44's wave-21 shop: a Revive applied to Charmander (slot 1, full HP) on PARTY/MODIFIER. ACTION on Apply closes the
+ * option list and PartyUiHandler shows "It won't have any effect." in its own message box, awaiting ACTION or CANCEL;
+ * while it waits, every direction is swallowed. The fake mirrors js.READER's party branch in that state: no options,
+ * the handler's own message as text, `extra.messagePending`.
+ */
+function partyMessageTab() {
+  let t = 0;
+  let frame = 0;
+  const presses: number[] = [];
+  const party = ["Fletchling", "Charmander"];
+  const verbs = ["Apply", "Summary", "Cancel"];
+  let optionsMode = true;
+  let cursor = 1;
+  let optionsCursor = 0;
+  let message: string | null = null;
+  const read = (): Ready => ({
+    ready: true, settled: true, reason: "menu-open", mode: UiMode.PARTY, phaseName: "SelectModifierPhase", wave: 21, turn: 1,
+    runLive: true, tutorialActive: false, handler: "PartyUiHandler", cursor, modeChain: [UiMode.MODIFIER_SELECT], messageText: null,
+    onActionInput: message !== null, awaitingActionInput: message !== null,
+    fine: `party|${optionsMode}|${cursor}|${optionsCursor}|${message}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11",
+    disc: { ...disc, partyUiMode: 4, optionsMode }, ...money,
+  });
+  const menu = (): MenuRead => {
+    const extra = { optionsMode, partyUiMode: 4, ...(message !== null ? { messagePending: true } : {}) };
+    if (message !== null) return { readable: true, mode: UiMode.PARTY, family: "party", cursor, text: message, options: [], extra };
+    if (optionsMode) return { readable: true, mode: UiMode.PARTY, family: "party", cursor: optionsCursor, text: "Revive", options: verbs.map((label, i) => ({ i, label })), extra };
+    return { readable: true, mode: UiMode.PARTY, family: "party", cursor, text: null, options: [...party.map((label, i) => ({ i, label })), { i: 6, label: "Cancel" }], extra };
+  };
+  const press = (b: number) => {
+    presses.push(b);
+    if (message !== null) {
+      if (b === Button.ACTION || b === Button.CANCEL) message = null;
+      return;
+    }
+    if (optionsMode) {
+      if (b === Button.DOWN) optionsCursor = Math.min(optionsCursor + 1, verbs.length - 1);
+      else if (b === Button.UP) optionsCursor = Math.max(optionsCursor - 1, 0);
+      else if (b === Button.ACTION && optionsCursor === 0) { optionsMode = false; message = "It won't have any effect."; }
+      return;
+    }
+    if (b === Button.DOWN) cursor = cursor === 6 ? 0 : cursor + 1 < party.length ? cursor + 1 : 6;
+  };
+  const session = {
+    onException: null,
+    attached: true,
+    ensure: async () => {},
+    keepAlive: async () => {},
+    rawKey: async () => {},
+    consoleTail: () => [],
+    evaluate: async (expr: string) => {
+      if (expr === js.PREDICATE) return read();
+      if (expr === js.FRAME) return { ready: true, frame: ++frame };
+      if (expr === js.READER) return menu();
+      for (const b of Object.values(Button)) {
+        if (expr === js.press(b)) {
+          press(b);
+          return { ok: true };
+        }
+      }
+      return {};
+    },
+  } as unknown as CdpSession;
+  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
+    now: () => t,
+    sleep: async ms => { t += ms; },
+  });
+  return { driver, presses, cursor: () => cursor };
+}
+
+test("a no-effect Apply on PARTY/MODIFIER returns the party message and says ACTION dismisses it (#44)", async () => {
+  const tab = partyMessageTab();
+  const r = await outcome(tab.driver.selectOption("Apply", undefined, "PARTY/MODIFIER:options", {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  const menu = r.menu as Record<string, unknown>;
+  assert.equal(menu.text, "It won't have any effect.");
+  assert.deepEqual(menu.options, []);
+  assert.equal(menu.message_pending, true);
+  assert.match(String(menu.next), /press\(ACTION\)/);
+});
+
+test("read_menu on PARTY with a pending message shows it and how to dismiss it (#44)", async () => {
+  const tab = partyMessageTab();
+  await outcome(tab.driver.selectOption("Apply", undefined, undefined, {}));
+  const r = await outcome(tab.driver.readMenu({}));
+  assert.equal(r.text, "It won't have any effect.");
+  assert.equal(r.message_pending, true);
+  assert.match(String(r.next), /press\(ACTION\)/);
+  assert.equal(r.cancel_effect, "consents", "CANCEL dismisses the message, it does not leave PARTY");
+});
+
+test("select_option refuses message_pending on PARTY without walking the cursor, and works once ACTION dismisses it (#44)", async () => {
+  const tab = partyMessageTab();
+  await outcome(tab.driver.selectOption("Apply", undefined, undefined, {}));
+  const pressed = tab.presses.length;
+  const refused = await outcome(tab.driver.selectOption("Cancel", undefined, undefined, {}));
+  assert.equal(refused.error, "message_pending");
+  assert.equal(refused.text, "It won't have any effect.");
+  assert.match(String(refused.next), /press\(ACTION\)/);
+  assert.equal(tab.presses.length, pressed, "nothing pressed while the message is up");
+
+  await outcome(tab.driver.press("ACTION", {}));
+  const r = await outcome(tab.driver.selectOption("Cancel", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(tab.cursor(), 6);
+});
+
 test("without setCursor the learn-move rows are walked one press per row, row 1 reachable (#31, #28)", async () => {
   const tab = learnMoveTab({ setCursorWorks: false });
   const r = await outcome(tab.driver.selectOption("Growl", undefined, undefined, {}));
