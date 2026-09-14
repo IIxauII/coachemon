@@ -726,3 +726,52 @@ test("a chain the cap does not reach carries no next hint (#45)", async () => {
   assert.equal(r.screen, "MODIFIER_SELECT");
   assert.equal(r.next, undefined);
 });
+
+/**
+ * #55: a level-up chain whose ACTION presses leave the fine fingerprint where it was (the stats window swaps increments
+ * for totals under the same message). Every press costs the settle's change grace, so the chain outlasts the call budget
+ * while the game sits on a prompt waiting for ACTION.
+ */
+function unmovedChainTab() {
+  let t = 0;
+  let frame = 0;
+  let presses = 0;
+  const read = (): Ready => ({
+    ready: true, settled: true, reason: "awaiting-action", mode: UiMode.MESSAGE, phaseName: "LevelUpPhase", wave: 30, turn: 2,
+    runLive: true, tutorialActive: false, handler: "BattleMessageUiHandler", cursor: null, modeChain: [], messageText: "Bulbasaur grew to Lv. 24!",
+    onActionInput: true, awaitingActionInput: true, fine: "levelup", frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
+  });
+  const menu: MenuRead = { readable: true, mode: UiMode.MESSAGE, family: "message", cursor: null, text: "Bulbasaur grew to Lv. 24!", extra: {}, options: [] };
+  const session = {
+    onException: null,
+    attached: true,
+    ensure: async () => {},
+    keepAlive: async () => {},
+    rawKey: async () => {},
+    consoleTail: () => [],
+    evaluate: async (expr: string) => {
+      if (expr === js.PREDICATE) return read();
+      if (expr === js.FRAME) return { ready: true, frame: ++frame };
+      if (expr === js.READER) return menu;
+      if (expr === js.press(Button.ACTION)) {
+        presses++;
+        return { ok: true };
+      }
+      return {};
+    },
+  } as unknown as CdpSession;
+  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
+    now: () => t,
+    sleep: async ms => { t += ms; },
+  });
+  return { driver, presses: () => presses };
+}
+
+test("an acting call that runs out of budget on a MESSAGE waiting for ACTION says so, instead of a bare timed_out (#55)", async () => {
+  const tab = unmovedChainTab();
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.status, "timed_out", JSON.stringify(r));
+  assert.equal(r.message_pending, true);
+  assert.match(String(r.next), /press\(ACTION\)/);
+  assert.match(String(r.note), /ACTION/);
+});

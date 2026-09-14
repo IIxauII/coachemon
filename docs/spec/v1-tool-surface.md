@@ -87,7 +87,7 @@ On any status other than `ok`, a fixed diagnostic block is attached — enough t
 | Status | Meaning | Result or error? |
 |---|---|---|
 | `ok` | The call did what it says | result |
-| `timed_out` | The game did not settle within budget. **Not fatal** — #6 measured a *healthy* game holding `overlayActive === true` for ~67 s after a Rare Candy, tripping three consecutive 20 s no-progress timeouts before recovering on its own. Aborting would have killed a live run. | result, carrying partial state |
+| `timed_out` | The game did not settle within budget. **Not fatal** — #6 measured a *healthy* game holding `overlayActive === true` for ~67 s after a Rare Candy, tripping three consecutive 20 s no-progress timeouts before recovering on its own. Aborting would have killed a live run. When the budget runs out with the game idle on a MESSAGE awaiting ACTION (a long auto-advanced chain, #55), the result carries `message_pending: true` and `next`, since waiting would never end. | result, carrying partial state |
 | `stuck` | A press landed and nothing moved. Distinct from `timed_out` — *busy and still waiting* is not *I pressed and nothing changed*. Collapsing them is what produces a server that presses ACTION blindly into a live game to "escape". | result |
 | `run_over` | The party wiped. `GameOverPhase` latched during settle (it dwells ≥ 6 s) (#11). Stands for **wipes only**. | result |
 | `run_interrupted` | `LoginPhase` mid-session with no `GameOverPhase` and no menu action in flight ⇒ a `reset(true)` teardown, i.e. the per-wave save failed and dumped the run to TITLE (#11). The run may still exist server-side, so this must **never** read as an invitation to start a new one. | **error** |

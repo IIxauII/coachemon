@@ -95,6 +95,8 @@ const fine = [
   // SUMMARY's move-list row: without it a row press reads as unmoved (#32).
   h && typeof h.moveCursor === 'number' ? h.moveCursor : '',
   messageText,
+  // The level-up stats window: its presses swap increments for totals, then close it, under an unchanged message (#55).
+  __try(() => mh.levelUpStatsContainer.visible ? (mh.levelUpStatsIncrContent.visible ? 'incr' : 'total') : '') ?? '',
   ui.overlayActive === true ? 1 : 0, h && h.active === true ? 1 : 0,
   awaiting(h) ? 1 : 0, typing(h) || typing(mh) ? 1 : 0,
   battle ? battle.waveIndex : '', battle ? battle.turn : '',
