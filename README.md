@@ -19,7 +19,9 @@ claude plugin marketplace add IIxauII/pokerogue-mcp   # private repo: uses your 
 claude plugin install pokerogue@pokerogue-mcp
 ```
 
-Claude Code runs `npm ci --ignore-scripts` in its plugin cache on install, so there is no build step. Then, in any directory, ask Claude to play PokéRogue. The first time, log in by hand in the Chrome window the server opens. Update with `claude plugin marketplace update pokerogue-mcp`.
+Claude Code runs `npm ci --ignore-scripts` in its plugin cache on install, so there is no build step. Then, in any directory, ask Claude to play PokéRogue. The first time, log in by hand in the Chrome window the server opens. Update with `claude plugin marketplace update pokerogue-mcp && claude plugin update pokerogue@pokerogue-mcp`.
+
+Releases are automatic: every push to `master` runs [semantic-release](.github/workflows/release.yml), which reads the [Conventional Commits](https://www.conventionalcommits.org/) since the last `v*` tag (`fix:` → patch, `feat:` → minor, `BREAKING CHANGE` → major), stamps the version into `package.json` and `.claude-plugin/plugin.json`, tags, and publishes GitHub release notes. `claude plugin update` only sees a change when that version moves, so commits on `master` must follow the convention — with squash merges, the PR title is the commit.
 
 The server is declared in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json). Its `"timeout": 60000` is a documented requirement, not a tuning knob ([#20](https://github.com/IIxauII/pokerogue-mcp/issues/20)): the settle budget is 30 s and progress notifications do not extend the client's per-call limit.
 
