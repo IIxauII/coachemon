@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { planSlot, slotLabel } from "./slots.ts";
+import { UiMode } from "./enums/generated.ts";
+import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 
 // The #28 screen: slots 1–2 hold runs, 3–5 are empty.
 const screen = [0, 1, 2, 3, 4].map(i => ({ i, label: `Slot ${i + 1}`, hasData: i < 2 }));
@@ -31,4 +32,11 @@ test("unresolved hasData counts as free; no free slot leaves chosen undefined", 
 
 test("a missing label falls back to the 1-based name", () => {
   assert.equal(slotLabel({ i: 4, label: null }), "Slot 5");
+});
+
+test("the overwrite confirm is a CONFIRM over SAVE_SLOT in SelectStarterPhase, not the wave-1 switch question (#30)", () => {
+  assert.equal(isOverwriteConfirm({ mode: UiMode.CONFIRM, phaseName: "SelectStarterPhase", modeChain: [UiMode.TITLE, UiMode.TITLE, UiMode.SAVE_SLOT] }), true);
+  assert.equal(isOverwriteConfirm({ mode: UiMode.CONFIRM, phaseName: "CheckSwitchPhase", modeChain: [UiMode.TITLE] }), false);
+  assert.equal(isOverwriteConfirm({ mode: UiMode.CONFIRM, phaseName: "SelectStarterPhase", modeChain: [UiMode.TITLE, UiMode.STARTER_SELECT] }), false, "the Begin-with-these-Pokémon confirm");
+  assert.equal(isOverwriteConfirm({ mode: UiMode.SAVE_SLOT, phaseName: "SelectStarterPhase", modeChain: [UiMode.TITLE, UiMode.SAVE_SLOT] }), false);
 });

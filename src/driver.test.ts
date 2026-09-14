@@ -83,3 +83,103 @@ test("a cursor walk whose presses never settle returns timed_out at the call dea
   assert.equal(r.status, "timed_out");
   assert.ok(tab.now() <= CALL_BUDGET_MS + 1_000, `returned at ${tab.now()} ms`);
 });
+
+/**
+ * `start_run` on a scripted tab, from TITLE to the first decision after the save slot. Slot 1 holds a run, the rest are
+ * empty. ACTION on a free slot starts the run and settles on CheckSwitchPhase's "Will you switch Pokémon?" CONFIRM, the
+ * screen #30 mistook for the overwrite confirm; ACTION on Slot 1 opens the real overwrite confirm first.
+ */
+function startRunTab() {
+  let t = 0;
+  let frame = 0;
+  const presses: number[] = [];
+  const slots = [0, 1, 2, 3, 4].map(i => ({ i, label: `Slot ${i + 1}`, hasData: i === 0 }));
+  type Screen = { mode: number; phase: string; chain: number[]; family: string; options: string[]; disc?: Record<string, unknown>; text?: string };
+  const title: Screen = { mode: UiMode.TITLE, phase: "TitlePhase", chain: [], family: "option_select", options: ["Continue", "New Game", "Load Game", "Run History", "Settings"] };
+  const gameMode: Screen = { mode: UiMode.OPTION_SELECT, phase: "TitlePhase", chain: [UiMode.TITLE], family: "option_select", options: ["Classic", "Daily Run", "Cancel"] };
+  const grid: Screen = { mode: UiMode.STARTER_SELECT, phase: "SelectStarterPhase", chain: [UiMode.TITLE], family: "starter_select", options: [] };
+  const starterMenu: Screen = { ...gameMode, phase: "SelectStarterPhase", chain: [UiMode.TITLE, UiMode.STARTER_SELECT], options: ["Add to Party", "Cancel"] };
+  const begin: Screen = { mode: UiMode.CONFIRM, phase: "SelectStarterPhase", chain: [UiMode.TITLE, UiMode.STARTER_SELECT], family: "option_select", options: ["Yes", "No"] };
+  const saveSlot: Screen = { mode: UiMode.SAVE_SLOT, phase: "SelectStarterPhase", chain: [UiMode.TITLE, UiMode.TITLE], family: "save_slot", options: [], disc: { saveSlotUiMode: 1 } };
+  // The stale chain entries below the top are what the live game showed (#30).
+  const overwriteConfirm: Screen = { ...begin, chain: [UiMode.TITLE, UiMode.TITLE, UiMode.SAVE_SLOT], text: "Overwrite the data in the selected slot?" };
+  const switchConfirm: Screen = { ...begin, phase: "CheckSwitchPhase", chain: [UiMode.TITLE], text: "Will you switch\nPokémon?" };
+
+  let screen = title;
+  let cursor = 0;
+  let party: string[] = [];
+  const go = (next: Screen) => { screen = next; cursor = 0; };
+  const read = (): Ready => ({
+    ready: true, settled: true, reason: "menu-open", mode: screen.mode, phaseName: screen.phase, wave: screen === switchConfirm ? 1 : null,
+    turn: null, runLive: screen === switchConfirm, tutorialActive: false, handler: null, cursor, modeChain: screen.chain,
+    messageText: screen.text ?? null, onActionInput: false, awaitingActionInput: false, fine: `${screen.mode}|${screen.phase}|${cursor}|${party.length}`,
+    frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc: { ...disc, ...screen.disc }, ...money,
+  });
+  const menu = (): MenuRead => ({
+    readable: true, mode: screen.mode, family: screen.family, cursor, text: screen.text ?? null, extra: {},
+    options: screen === saveSlot ? slots : screen.options.map((label, i) => ({ i, label })),
+  });
+  const press = (b: number) => {
+    presses.push(b);
+    if (b === Button.DOWN) cursor++;
+    else if (b === Button.UP) cursor--;
+    else if (b === Button.SUBMIT && screen === grid) go(begin);
+    else if (b === Button.ACTION) {
+      if (screen === title) go(gameMode);
+      else if (screen === gameMode) go(grid);
+      else if (screen === grid) go(starterMenu);
+      else if (screen === starterMenu) { party = [...party, "Bulbasaur"]; go(grid); }
+      else if (screen === begin) go(saveSlot);
+      else if (screen === saveSlot) go(slots[cursor].hasData ? overwriteConfirm : switchConfirm);
+      else if (screen === overwriteConfirm) go(switchConfirm);
+    }
+  };
+  const session = {
+    onException: null,
+    attached: true,
+    ensure: async () => {},
+    keepAlive: async () => {},
+    rawKey: async () => {},
+    consoleTail: () => [],
+    evaluate: async (expr: string) => {
+      if (expr === js.PREDICATE) return read();
+      if (expr === js.FRAME) return { ready: true, frame: ++frame };
+      if (expr === js.READER) return menu();
+      if (expr === js.STARTER_INFO) return { ok: true, filterMode: false, grid: [{ i: 0, name: "Bulbasaur", cost: 3 }], valueLimit: 10, party, partyValid: true };
+      if (expr === js.starterSetCursor(0)) return { ok: true, species: "Bulbasaur", cursor: 0 };
+      for (let j = 0; j < 5; j++) if (expr === js.optionSelectSetCursor(j)) { cursor = j; return { ok: true, fullCursor: j }; }
+      for (const b of Object.values(Button)) {
+        if (expr === js.press(b)) {
+          press(b);
+          return { ok: true };
+        }
+      }
+      return {};
+    },
+  } as unknown as CdpSession;
+  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
+    now: () => t,
+    sleep: async ms => { t += ms; },
+  });
+  return { driver, presses, screen: () => screen };
+}
+
+test("start_run on a free slot hands back the switch CONFIRM unanswered, not a slot_occupied refusal (#30)", async () => {
+  const tab = startRunTab();
+  const r = await outcome(tab.driver.startRun(["Bulbasaur"], undefined, false, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(r.started, true);
+  assert.equal(r.slot, 1);
+  assert.equal(tab.screen().phase, "CheckSwitchPhase");
+  assert.equal(tab.presses.at(-1), Button.ACTION, "the last press is the slot's ACTION; nothing answered the switch question");
+  assert.ok(!(r.log as string[]).some(l => l.startsWith("overwrite confirm")));
+});
+
+test("start_run with overwrite answers Yes on the real overwrite confirm (#30)", async () => {
+  const tab = startRunTab();
+  const r = await outcome(tab.driver.startRun(["Bulbasaur"], 0, true, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(r.slot, 0);
+  assert.ok((r.log as string[]).some(l => l === "overwrite confirm: Yes | No → index 0"));
+  assert.equal(tab.screen().phase, "CheckSwitchPhase");
+});
