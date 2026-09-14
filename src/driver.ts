@@ -233,11 +233,13 @@ export class Driver {
     const before = progressFingerprint(this.#progress(ready));
     const choice: Choice = menu.family === "modal" ? { kind: "modal_button", index: Number(target.i) } : { kind: "option", label: normalizeLabel(target.label) };
 
+    const spread = menu.family === "target_select" && menu.extra.isMultipleTargets === true;
+    const extra = { selected: target.label, on: screen, ...(spread ? { targets: "all" } : {}) };
     const walk = await this.#moveTo(menu, target, ctx);
-    if (walk) return this.#finishActing(ready, before, choice, { settle: walk, messages: [], presses: 0, capped: false }, { selected: target.label, on: screen });
+    if (walk) return this.#finishActing(ready, before, choice, { settle: walk, messages: [], presses: 0, capped: false }, extra);
     const committed = await this.#commit(menu, target, ready.fine, ctx);
     const adv = await this.#autoAdvance(committed, ctx);
-    return this.#finishActing(ready, before, choice, adv, { selected: target.label, on: screen });
+    return this.#finishActing(ready, before, choice, adv, extra);
   }
 
   async startRun(species: string[], slot: number | undefined, overwrite: boolean, ctx: CallContext): Promise<Record<string, unknown>> {
@@ -523,9 +525,15 @@ export class Driver {
         if (!isThrown(r) && r.ok && r.moveCursor === t) return null;
         return this.#walk(t, ctx, cur => (cur < t ? Button.DOWN : Button.UP));
       }
-      case "target_select":
-        // A cyclic cursor over TARGET_SELECT's sparse BattlerIndex set: step one way until it lands.
-        return this.#walk(Number(target.i), ctx, () => Button.RIGHT);
+      case "target_select": {
+        // A spread move ignores the cursor: ACTION hits every target and no direction moves it (#33).
+        if (menu.extra.isMultipleTargets === true) return null;
+        // BattlerIndex grid, nothing wraps (#40): enemies 2,3 on top, player field 0,1 below. UP/DOWN jump to the first
+        // target in the other row, LEFT/RIGHT step ±1 within a row (TargetSelectUiHandler.processInput).
+        const t = Number(target.i);
+        const enemy = (i: number) => i >= 2;
+        return this.#walk(t, ctx, cur => (enemy(cur) !== enemy(t) ? (enemy(t) ? Button.UP : Button.DOWN) : cur < t ? Button.RIGHT : Button.LEFT));
+      }
       case "party":
         // The slot list is a DOWN-cycle: 0..n-1 → 6 (Cancel) → 0; the option phase is a plain list (#7 §7: presses, always).
         if (menu.extra.optionsMode === true) return this.#walk(Number(target.i), ctx, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));

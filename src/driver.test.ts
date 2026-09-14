@@ -13,7 +13,7 @@ const disc = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summ
 
 /**
  * A game tab on a fake clock: every settle poll advances time by its sleep, nothing else does. The screen is #28's
- * double-battle TARGET_SELECT, where the cursor sits on Zigzagoon and no press ever moves it. With `stallAfterPress`
+ * double-battle TARGET_SELECT for a single-target move, where the cursor sits on Zigzagoon and no press ever moves it. With `stallAfterPress`
  * the game stops settling once the first press lands.
  */
 function fakeTab(opts: { stallAfterPress: boolean }) {
@@ -31,7 +31,7 @@ function fakeTab(opts: { stallAfterPress: boolean }) {
   };
   const menu: MenuRead = {
     readable: true, mode: UiMode.TARGET_SELECT, family: "target_select", cursor: 2, text: null,
-    options: [{ i: 2, label: "Zigzagoon" }, { i: 3, label: "Sentret" }], extra: { isMultipleTargets: true },
+    options: [{ i: 2, label: "Zigzagoon" }, { i: 3, label: "Sentret" }], extra: { isMultipleTargets: false },
   };
   const session = {
     onException: null,
@@ -82,6 +82,96 @@ test("a cursor walk whose presses never settle returns timed_out at the call dea
   const r = await outcome(tab.driver.selectOption("Sentret", undefined, undefined, {}));
   assert.equal(r.status, "timed_out");
   assert.ok(tab.now() <= CALL_BUDGET_MS + 1_000, `returned at ${tab.now()} ms`);
+});
+
+/**
+ * A double-battle TARGET_SELECT that moves its cursor the way TargetSelectUiHandler.processInput does (#40): UP/DOWN jump
+ * to the first target in the other row (enemies 2,3 on top, player field 0,1 below), LEFT/RIGHT step ±1 within a row,
+ * nothing wraps. A spread move (`isMultipleTargets`) ignores every direction; ACTION commits all targets.
+ */
+function targetGridTab(opts: { targets: { i: number; label: string }[]; cursor: number; isMultipleTargets: boolean }) {
+  let t = 0;
+  let frame = 0;
+  const presses: number[] = [];
+  const targets = opts.targets.map(o => o.i);
+  let cursor = opts.cursor;
+  let committed: number[] | null = null;
+  const read = (): Ready => ({
+    ready: true, settled: true, reason: "menu-open", mode: committed === null ? UiMode.TARGET_SELECT : UiMode.COMMAND,
+    phaseName: committed === null ? "SelectTargetPhase" : "CommandPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false,
+    handler: "TargetSelectUiHandler", cursor, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
+    fine: `target|${cursor}|${committed}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
+  });
+  const menu = (): MenuRead => ({
+    readable: true, mode: UiMode.TARGET_SELECT, family: "target_select", cursor, text: null,
+    options: opts.targets, extra: { isMultipleTargets: opts.isMultipleTargets },
+  });
+  const press = (b: number) => {
+    presses.push(b);
+    if (b === Button.ACTION) committed = opts.isMultipleTargets ? targets : [cursor];
+    else if (opts.isMultipleTargets) return;
+    else if (b === Button.UP && cursor < 2) cursor = targets.find(i => i >= 2) ?? cursor;
+    else if (b === Button.DOWN && cursor >= 2) cursor = targets.find(i => i < 2) ?? cursor;
+    else if (b === Button.LEFT && cursor % 2 && targets.includes(cursor - 1)) cursor--;
+    else if (b === Button.RIGHT && !(cursor % 2) && targets.includes(cursor + 1)) cursor++;
+  };
+  const session = {
+    onException: null,
+    attached: true,
+    ensure: async () => {},
+    keepAlive: async () => {},
+    rawKey: async () => {},
+    consoleTail: () => [],
+    evaluate: async (expr: string) => {
+      if (expr === js.PREDICATE) return read();
+      if (expr === js.FRAME) return { ready: true, frame: ++frame };
+      if (expr === js.READER) return menu();
+      for (const b of Object.values(Button)) {
+        if (expr === js.press(b)) {
+          press(b);
+          return { ok: true };
+        }
+      }
+      return {};
+    },
+  } as unknown as CdpSession;
+  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
+    now: () => t,
+    sleep: async ms => { t += ms; },
+  });
+  return { driver, presses, committed: () => committed };
+}
+
+test("select_option reaches the ally on the player row of TARGET_SELECT (#40)", async () => {
+  const tab = targetGridTab({ targets: [{ i: 2, label: "Starly" }, { i: 3, label: "Caterpie" }, { i: 1, label: "Lillipup" }], cursor: 2, isMultipleTargets: false });
+  const r = await outcome(tab.driver.selectOption("Lillipup", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.deepEqual(tab.committed(), [1]);
+  assert.deepEqual(tab.presses, [Button.DOWN, Button.ACTION]);
+});
+
+test("select_option crosses rows then steps along the row on TARGET_SELECT (#40)", async () => {
+  const tab = targetGridTab({ targets: [{ i: 2, label: "Starly" }, { i: 3, label: "Caterpie" }, { i: 0, label: "Fuecoco" }, { i: 1, label: "Lillipup" }], cursor: 1, isMultipleTargets: false });
+  const r = await outcome(tab.driver.selectOption("Caterpie", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.deepEqual(tab.committed(), [3]);
+  assert.deepEqual(tab.presses, [Button.UP, Button.RIGHT, Button.ACTION]);
+});
+
+test("select_option steps LEFT within the enemy row on TARGET_SELECT (#40)", async () => {
+  const tab = targetGridTab({ targets: [{ i: 2, label: "Starly" }, { i: 3, label: "Caterpie" }], cursor: 3, isMultipleTargets: false });
+  const r = await outcome(tab.driver.selectOption("Starly", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.deepEqual(tab.presses, [Button.LEFT, Button.ACTION]);
+});
+
+test("a spread move commits any listed target with one ACTION and reports targets: all (#33)", async () => {
+  const tab = targetGridTab({ targets: [{ i: 2, label: "Zigzagoon" }, { i: 3, label: "Sentret" }], cursor: 2, isMultipleTargets: true });
+  const r = await outcome(tab.driver.selectOption("Sentret", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(r.targets, "all");
+  assert.deepEqual(tab.committed(), [2, 3]);
+  assert.deepEqual(tab.presses, [Button.ACTION]);
 });
 
 /**
