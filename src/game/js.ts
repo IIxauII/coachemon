@@ -182,10 +182,10 @@ try {
     // from pokeballCounts, which countsText mirrors in the same key order; the row after the last ball is Cancel.
     const names = __kids(h.pokeballSelectContainer).find(k => k !== h.countsText && typeof k.text === 'string' && k.text.indexOf('\\n') > -1);
     const lines = names ? names.text.split('\\n').map(__strip) : [];
-    const counts = Object.values(scene.pokeballCounts || {});
-    out.options = counts.map((c, i) => {
+    const counts = Object.entries(scene.pokeballCounts || {});
+    out.options = counts.map(([type, c], i) => {
       const name = lines[i] || null;
-      return opt(i, (name ? name + ' ' : '') + '×' + c, { name, ballType: i, count: c });
+      return opt(i, (name ? name + ' ' : '') + '×' + c, { name, ballType: Number(type), count: c });
     });
     if (lines.length > counts.length) out.options.push(opt(counts.length, lines[counts.length]));
     out.cursor = h.cursor;
