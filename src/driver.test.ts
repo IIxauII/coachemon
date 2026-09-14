@@ -279,17 +279,18 @@ test("start_run with overwrite answers Yes on the real overwrite confirm (#30)",
  * row cursor starts. ACTION on a moveset row forgets that move; on row 4 it declines. With `setCursorWorks: false` the
  * handler's setCursor is unavailable and the driver must walk the rows one press at a time.
  */
-function learnMoveTab(opts: { setCursorWorks: boolean }) {
+function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean }) {
   let t = 0;
   let frame = 0;
   const presses: number[] = [];
+  const rawKeys: string[] = [];
   const moves = ["Scratch", "Growl", "Ember", "Flare Blitz", "Metal Claw"];
   let moveCursor = 4;
   let answered: number | null = null;
   const read = (): Ready => ({
     ready: true, settled: true, reason: "menu-open", mode: answered === null ? UiMode.SUMMARY : UiMode.MESSAGE, phaseName: "LearnMovePhase",
     wave: 16, turn: 1, runLive: true, tutorialActive: false, handler: "SummaryUiHandler", cursor: 2, modeChain: [], messageText: null,
-    onActionInput: false, awaitingActionInput: false, fine: `summary|2|${moveCursor}|${answered}`, frame: ++frame, domMode: null,
+    onActionInput: false, awaitingActionInput: false, fine: `summary|2|${opts.fineTracksRow === false ? "" : moveCursor}|${answered}`, frame: ++frame, domMode: null,
     gameVersion: "1.12.0.11", disc: { ...disc, summaryUiMode: answered === null ? 1 : null }, ...money,
   });
   const menu = (): MenuRead => ({
@@ -301,7 +302,12 @@ function learnMoveTab(opts: { setCursorWorks: boolean }) {
     attached: true,
     ensure: async () => {},
     keepAlive: async () => {},
-    rawKey: async () => {},
+    // The raw keyboard reaches the same handler: an arrow key moves the row exactly as processInput does.
+    rawKey: async (key: string) => {
+      rawKeys.push(key);
+      if (key === "ArrowUp") moveCursor = moveCursor ? moveCursor - 1 : 4;
+      else if (key === "ArrowDown") moveCursor = moveCursor < 4 ? moveCursor + 1 : 0;
+    },
     consoleTail: () => [],
     evaluate: async (expr: string) => {
       if (expr === js.PREDICATE) return read();
@@ -339,8 +345,28 @@ function learnMoveTab(opts: { setCursorWorks: boolean }) {
     now: () => t,
     sleep: async ms => { t += ms; },
   });
-  return { driver, presses, answered: () => answered };
+  return { driver, presses, rawKeys, answered: () => answered, moveCursor: () => moveCursor };
 }
+
+test("press(UP) on SUMMARY/LEARN_MOVE moves one row and reports changed (#32)", async () => {
+  const tab = learnMoveTab({ setCursorWorks: true });
+  const r = await outcome(tab.driver.press("UP", {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(tab.moveCursor(), 3);
+  assert.deepEqual(tab.rawKeys, []);
+  assert.equal(r.changed, true);
+  assert.equal(r.raw_keyboard_fallback, false);
+});
+
+test("a press that moved the menu cursor is never retried on the raw keyboard, even when the fine fingerprint misses it (#32)", async () => {
+  const tab = learnMoveTab({ setCursorWorks: true, fineTracksRow: false });
+  const r = await outcome(tab.driver.press("UP", {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(tab.moveCursor(), 3, "one UP, one row");
+  assert.deepEqual(tab.rawKeys, []);
+  assert.equal(r.changed, true);
+  assert.equal(r.raw_keyboard_fallback, false);
+});
 
 test("select_option forgets a move by label on SUMMARY/LEARN_MOVE (#31)", async () => {
   const tab = learnMoveTab({ setCursorWorks: true });

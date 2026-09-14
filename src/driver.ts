@@ -174,10 +174,13 @@ export class Driver {
     await this.#guard(ready);
     this.#menuActionInFlight = MENU_MODES.has(ready.mode);
     const before = progressFingerprint(this.#progress(ready));
+    const menuCursor = RAW_KEYS[buttonName] ? (await this.#readMenu()).cursor : null;
 
     let s = await this.#pressAndSettle(button, ready.fine, ctx);
     let rawFallback = false;
-    if (s.settled && s.fpMoved === false && RAW_KEYS[buttonName]) {
+    // A press that moved the menu cursor landed, whatever the fine fingerprint saw: retrying it moves the cursor twice (#32).
+    const cursorMoved = s.settled && s.fpMoved === false && menuCursor !== null && (await this.#readMenu()).cursor !== menuCursor;
+    if (s.settled && s.fpMoved === false && !cursorMoved && RAW_KEYS[buttonName]) {
       // §6.4: retry once through the raw keyboard, never through processInput again.
       rawFallback = true;
       const [key, code, keyCode] = RAW_KEYS[buttonName]!;
@@ -187,7 +190,7 @@ export class Driver {
     const adv = await this.#autoAdvance(s, ctx);
     return this.#finishActing(ready, before, { kind: "button", button: buttonName }, adv, {
       pressed: buttonName,
-      changed: adv.settle.fpMoved ?? null,
+      changed: cursorMoved || (adv.settle.fpMoved ?? null),
       raw_keyboard_fallback: rawFallback,
     });
   }
