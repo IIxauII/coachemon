@@ -230,7 +230,14 @@ try {
     out.extra.partyUiMode = h.partyUiMode;
     out.extra.optionsScroll = h.optionsScroll === true;
     out.extra.transferMode = h.transferMode === true;
-    if (h.optionsMode === true) {
+    if (h.awaitingActionInput === true && h.onActionInput != null) {
+      // PartyUiHandler's own message box ("It won't have any effect.", #44): processInput swallows every button but
+      // ACTION/CANCEL until it is dismissed, so no option can be reached. Its text lives on h.message, not MESSAGE's.
+      out.options = [];
+      out.text = __try(() => __txt(h.message));
+      out.extra.messagePending = true;
+      out.cursor = h.optionsMode === true ? h.optionsCursor : h.cursor;
+    } else if (h.optionsMode === true) {
       // Sort by y ASCENDING: verb first, Cancel last (#6 corrected #4). Labels are BBCode.
       const kids = __kids(h.optionsContainer).filter(k => typeof k.text === 'string');
       kids.sort((a, b) => a.y - b.y);
@@ -245,7 +252,7 @@ try {
       if (__try(() => h.isItemManageMode()) === true) out.options.push(opt(7, __try(() => __texts(h.partyDiscardModeButton || h.partyTransferModeButton)[0]) || 'Toggle', { synthetic: true }));
       out.cursor = h.cursor;
     }
-    out.readable = out.options.length > 0;
+    out.readable = out.options.length > 0 || out.extra.messagePending === true;
   } else if (mode === 10) {
     out.family = 'starter_select';
     const gd = scene.gameData;
