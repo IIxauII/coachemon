@@ -29,7 +29,6 @@ export type Diagnostic = {
   cumulative_stall_ms?: number;
   beyond_observed?: boolean;
   loop_frozen?: boolean;
-  presses?: number;
   cause?: string;
   stuck?: StuckReport;
   hang?: { heldMs: number; corroborated: boolean };
