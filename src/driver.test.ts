@@ -277,9 +277,11 @@ test("start_run with overwrite answers Yes on the real overwrite confirm (#30)",
 /**
  * #28's Charmander on SUMMARY/LEARN_MOVE: Scratch, Growl, Ember, Flare Blitz and the new Metal Claw on row 4, where the
  * row cursor starts. ACTION on a moveset row forgets that move; on row 4 it declines. With `setCursorWorks: false` the
- * handler's setCursor is unavailable and the driver must walk the rows one press at a time.
+ * handler's setCursor is unavailable and the driver must walk the rows one press at a time. `fineTracksRow: false` drops
+ * the row from the fine fingerprint (the #32 hole before #43); `readerFailsAfterPress` makes every menu read throw once a
+ * button has been pressed. Raw arrow keys move the row like processInput does.
  */
-function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean }) {
+function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean; readerFailsAfterPress?: boolean }) {
   let t = 0;
   let frame = 0;
   const presses: number[] = [];
@@ -312,7 +314,10 @@ function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean }
     evaluate: async (expr: string) => {
       if (expr === js.PREDICATE) return read();
       if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) return menu();
+      if (expr === js.READER) {
+        if (opts.readerFailsAfterPress && presses.length > 0) throw new Error("reader threw");
+        return menu();
+      }
       for (let j = 0; j < 5; j++) {
         if (expr === js.learnMoveSetCursor(j)) {
           if (!opts.setCursorWorks) throw new Error("setCursor unavailable");
@@ -356,6 +361,20 @@ test("press(UP) on SUMMARY/LEARN_MOVE moves one row and reports changed (#32)", 
   assert.deepEqual(tab.rawKeys, []);
   assert.equal(r.changed, true);
   assert.equal(r.raw_keyboard_fallback, false);
+});
+
+test("a press that moves neither the fingerprint nor the menu cursor still retries once on the raw keyboard (§6.4, #32)", async () => {
+  const tab = fakeTab({ stallAfterPress: false });
+  const r = await outcome(tab.driver.press("LEFT", {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(r.raw_keyboard_fallback, true);
+  assert.equal(r.changed, false);
+});
+
+test("a menu read that fails after the press is not a cursor move: the raw retry still fires (#32)", async () => {
+  const tab = learnMoveTab({ setCursorWorks: true, fineTracksRow: false, readerFailsAfterPress: true });
+  const r = await outcome(tab.driver.press("UP", {}));
+  assert.equal(r.raw_keyboard_fallback, true);
 });
 
 test("a press that moved the menu cursor is never retried on the raw keyboard, even when the fine fingerprint misses it (#32)", async () => {
