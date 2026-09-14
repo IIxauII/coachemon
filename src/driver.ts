@@ -643,7 +643,7 @@ export class Driver {
         ...(isThrown(snap) ? { snapshot_error: snap.__throw } : this.#cleanSnapshot(snap)),
         menu: this.#menuSummary(afterRead, menu),
       },
-      adv.capped ? { reason: "auto-advance-cap", presses: adv.presses } : null,
+      adv.capped,
     );
   }
 
@@ -665,17 +665,16 @@ export class Driver {
     assessment: Assessment,
     s: SettleResult,
     payload: Record<string, unknown>,
-    /** Auto-advance hit its press cap: `stuck` with this diagnostic (#7 §6.8). */
-    capped: { reason: string; presses: number } | null = null,
+    /**
+     * Auto-advance hit its press cap with a live MESSAGE still up (#7 §6.8). That is a long chain, not a stuck screen:
+     * every press moved on (#45). It is handed back as it stands; a MESSAGE that really repeats trips the detector.
+     */
+    capped = false,
   ): Record<string, unknown> {
     const screen = screenId(ready.mode, ready.disc);
     const hang = this.hang.assess();
     let status: Status = "ok";
     let diagnostic: Diagnostic | undefined;
-    if (capped) {
-      status = "stuck";
-      diagnostic = { ...this.#diagnostic(s), ...capped };
-    }
     if (hang.status === "run_interrupted") {
       status = "run_interrupted";
       diagnostic = { ...this.#diagnostic(s), reason: "save-hang", cause: hang.cause, hang: hang.hang };
@@ -696,6 +695,7 @@ export class Driver {
       diagnostic ??= { ...this.#diagnostic(s), reason: "game-over-phase" };
     }
     const out: Record<string, unknown> = { status, wave: ready.wave, screen, ...payload };
+    if (capped) out.next = `press("ACTION"): auto-advance stopped after ${AUTO_ADVANCE_CAP} messages with more to read`;
     if (diagnostic) {
       out.diagnostic = diagnostic;
       out.console_tail = this.session.consoleTail();

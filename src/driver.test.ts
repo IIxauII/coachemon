@@ -363,3 +363,75 @@ test("without setCursor the learn-move rows are walked one press per row, row 1 
   assert.equal(tab.answered(), 1);
   assert.deepEqual(tab.presses, [Button.UP, Button.UP, Button.UP, Button.ACTION]);
 });
+
+/**
+ * #45's wave 18 shop: Rarer Candy levels the whole party, and each level-up is its own MESSAGE with a live prompt. ACTION
+ * on one shows the next; after the last the shop comes back. Every press moves `messageText`, so the chain is progress.
+ */
+function messageChainTab(count: number) {
+  let t = 0;
+  let frame = 0;
+  const texts = Array.from({ length: count }, (_, i) => `Pokémon ${i + 1} grew to Lv. ${20 + i}!`);
+  let shown: number | null = null;
+  const read = (): Ready => {
+    const onMessage = shown !== null && shown < count;
+    return {
+      ready: true, settled: true, reason: onMessage ? "awaiting-action" : "menu-open", mode: onMessage ? UiMode.MESSAGE : UiMode.MODIFIER_SELECT,
+      phaseName: onMessage ? "LevelUpPhase" : "SelectModifierPhase", wave: 18, turn: 1, runLive: true, tutorialActive: false, handler: null,
+      cursor: 0, modeChain: [], messageText: onMessage ? texts[shown!] : null, onActionInput: onMessage, awaitingActionInput: onMessage,
+      fine: `chain|${shown}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
+    };
+  };
+  const menu = (): MenuRead =>
+    shown === null
+      ? { readable: true, mode: UiMode.MODIFIER_SELECT, family: "modifier_select", cursor: 0, text: null, extra: {}, options: [{ i: 0, label: "Rarer Candy", row: 1, col: 0 }] }
+      : { readable: true, mode: UiMode.MESSAGE, family: "message", cursor: null, text: null, extra: {}, options: [] };
+  const session = {
+    onException: null,
+    attached: true,
+    ensure: async () => {},
+    keepAlive: async () => {},
+    rawKey: async () => {},
+    consoleTail: () => [],
+    evaluate: async (expr: string) => {
+      if (expr === js.PREDICATE) return read();
+      if (expr === js.FRAME) return { ready: true, frame: ++frame };
+      if (expr === js.READER) return menu();
+      if (expr === js.shopSetCursor(1, 0)) return { ok: true, rowCursor: 1, cursor: 0 };
+      if (expr === js.press(Button.ACTION)) {
+        shown = shown === null ? 0 : shown + 1;
+        return { ok: true };
+      }
+      return {};
+    },
+  } as unknown as CdpSession;
+  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
+    now: () => t,
+    sleep: async ms => { t += ms; },
+  });
+  return { driver, shown: () => shown };
+}
+
+test("a chain of more messages than the auto-advance cap hands the next MESSAGE back as ok, not stuck (#45)", async () => {
+  const tab = messageChainTab(15);
+  const r = await outcome(tab.driver.selectOption("Rarer Candy", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(r.status, "ok", JSON.stringify(r.diagnostic));
+  assert.equal(r.diagnostic, undefined);
+  assert.equal(r.screen, "MESSAGE");
+  assert.equal((r.messages as string[]).length, 12);
+  assert.match(String(r.next), /press\("ACTION"\)/);
+
+  const rest = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(rest.status, "ok", JSON.stringify(rest.diagnostic));
+  assert.equal(rest.screen, "MODIFIER_SELECT");
+  assert.equal(tab.shown(), 15);
+});
+
+test("a chain the cap does not reach carries no next hint (#45)", async () => {
+  const tab = messageChainTab(3);
+  const r = await outcome(tab.driver.selectOption("Rarer Candy", undefined, undefined, {}));
+  assert.equal(r.status, "ok", JSON.stringify(r.diagnostic));
+  assert.equal(r.screen, "MODIFIER_SELECT");
+  assert.equal(r.next, undefined);
+});
