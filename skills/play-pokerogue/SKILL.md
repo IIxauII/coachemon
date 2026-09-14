@@ -26,17 +26,26 @@ The `pokerogue` MCP server drives a live PokéRogue tab in Chrome over CDP. Stat
 
 | Screen | Do |
 |---|---|
-| `COMMAND` | `Fight` usually. `Pokémon` to switch, `Ball` to catch. |
-| `FIGHT` | A damaging move with PP left, favouring type advantage and power (`read_menu` → `extra.moves`). |
+| `COMMAND` | `Fight` usually. `Pokémon` to switch, `Ball` to catch (wild mons only; trainer Pokémon can't be caught). |
+| `FIGHT` | A damaging move with PP left, favouring type advantage and power (`read_menu` → `extra.moves`). Avoid charge, recharge and recoil moves. |
 | `TARGET_SELECT` | In doubles, the enemy you can KO or the bigger threat. |
 | `PARTY/FAINT_SWITCH` | Must answer: pick a non-fainted, non-active mon, then `Send Out`. Never `Cancel`. |
 | `PARTY/POST_BATTLE_SWITCH`, `PARTY/SWITCH` | `Cancel` unless a switch is wanted. |
 | `MODIFIER_SELECT` (shop) | Take one reward (row 1, cost 0). Buy from shop rows only if money ≥ cost. Item that targets a mon opens `PARTY/MODIFIER` → pick mon → `Apply`/`Use`/`Teach`. |
 | `SUMMARY/LEARN_MOVE`, move-replace confirm | `select_option` the move to forget by name, or the new move (last option) to decline. On the confirm, `No` declines. |
 | `OPTION_SELECT` (biome etc.) | Choose; first option if indifferent. |
+| Party full, release a mon | Ask the user which mon to release. Never pick one yourself. |
 | `CONFIRM` you don't understand | `No`. |
 
 `read_menu`'s `screen_class` says whether a screen is `must_answer`.
+
+## Rival fights
+
+Rival waves (e.g. 95) hit much harder than gym leaders or bosses.
+
+- Go in at full HP. Heal in the shop before the wave.
+- Don't hard-switch into a big hit. A switch-in takes the full blow.
+- KO setup sweepers (e.g. Volcarona) the turn they come out, or have a faster answer ready.
 
 ## There is no back button
 
