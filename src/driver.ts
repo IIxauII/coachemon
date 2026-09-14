@@ -16,7 +16,7 @@ import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import * as js from "./game/js.ts";
 import { matchLabel, normalizeLabel } from "./labels.ts";
 import { isSettingsMode, modeName, screenId } from "./screen.ts";
-import { planSlot, slotLabel } from "./slots.ts";
+import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { BEYOND_OBSERVED_MS, CALL_BUDGET_MS, settle, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
 import { progressFingerprint, StuckDetector, type Assessment, type Choice } from "./stuck/detector.ts";
 import { HangWatch } from "./stuck/hang.ts";
@@ -355,17 +355,20 @@ export class Driver {
     await moveTo(menu, slotOpt, "save slot");
     s = await this.#commit(menu, slotOpt, cur.fine, ctx);
     presses++;
-    if (s.settled && (s.last as Ready).mode === UiMode.CONFIRM) {
-      // The overwrite confirm: the slot had data after all. Yes deletes that session; No returns to the slot screen.
-      menu = await this.#readMenu();
-      const answer = overwrite ? 0 : 1;
-      log.push(`overwrite confirm: ${menu.options.map(o => o.label).join(" | ")} → index ${answer}`);
-      await moveTo(menu, menu.options[answer], "overwrite confirm");
-      s = await this.#commit(menu, menu.options[answer], (s.last as Ready).fine, ctx);
-      presses++;
-      if (!overwrite) {
-        throw new Refusal("slot_occupied", `${chosenLabel} has a saved run (the game asked to overwrite; answered No). The run setup is waiting on the save-slot screen.`, leftOn);
+    // Only an occupied slot asks to overwrite; ACTION on a free one starts the run at once, and the first CONFIRM after
+    // that is CheckSwitchPhase's "Will you switch Pokémon?" (#30). Here overwrite is true: occupied without it refused above.
+    if (slotOpt.hasData === true) {
+      if (!s.settled) throw timedOut(s, "save slot");
+      const r = s.last as Ready;
+      if (!isOverwriteConfirm(r)) {
+        throw new Refusal("start_run_unexpected_screen", `start_run expected the overwrite confirm after choosing ${chosenLabel} but saw ${screenId(r.mode, r.disc)} (phase ${r.phaseName}). Nothing was answered.`, { step: "save slot", screen: screenId(r.mode, r.disc), log });
       }
+      // Yes deletes the session in that slot, then starts the run.
+      menu = await this.#readMenu();
+      log.push(`overwrite confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
+      await moveTo(menu, menu.options[0], "overwrite confirm");
+      s = await this.#commit(menu, menu.options[0], r.fine, ctx);
+      presses++;
     }
 
     this.detector.reset();
