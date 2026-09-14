@@ -73,6 +73,8 @@ const RAW_KEYS: Partial<Record<string, [key: string, code: string, keyCode: numb
   MENU: ["Escape", "Escape", 27],
 };
 
+const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
+
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
 
@@ -174,20 +176,30 @@ export class Driver {
     await this.#guard(ready);
     this.#menuActionInFlight = MENU_MODES.has(ready.mode);
     const before = progressFingerprint(this.#progress(ready));
+    const rawKey = RAW_KEYS[buttonName];
+    // Only a direction moves a cursor without moving the screen, so only a direction pays for the extra menu read.
+    const cursorBefore = ARROWS.has(buttonName) ? await this.#menuCursor() : null;
 
     let s = await this.#pressAndSettle(button, ready.fine, ctx);
     let rawFallback = false;
-    if (s.settled && s.fpMoved === false && RAW_KEYS[buttonName]) {
+    const unmoved = s.settled && s.fpMoved === false;
+    // The press landed on a cursor the fine fingerprint does not carry: a retry would move it twice (#32).
+    let landedUnseen = false;
+    if (unmoved && cursorBefore !== null) {
+      const cursorAfter = await this.#menuCursor();
+      landedUnseen = cursorAfter !== null && cursorAfter !== cursorBefore;
+    }
+    if (unmoved && !landedUnseen && rawKey) {
       // §6.4: retry once through the raw keyboard, never through processInput again.
       rawFallback = true;
-      const [key, code, keyCode] = RAW_KEYS[buttonName]!;
+      const [key, code, keyCode] = rawKey;
       await this.session.rawKey(key, code, keyCode);
       s = await this.#settle(ready.fine, ctx);
     }
     const adv = await this.#autoAdvance(s, ctx);
     return this.#finishActing(ready, before, { kind: "button", button: buttonName }, adv, {
       pressed: buttonName,
-      changed: adv.settle.fpMoved ?? null,
+      changed: landedUnseen || (adv.settle.fpMoved ?? null),
       raw_keyboard_fallback: rawFallback,
     });
   }
@@ -512,6 +524,12 @@ export class Driver {
   }
 
   // ------------------------------------------------------------- movement
+
+  /** The menu reader's cursor, or `null` when the read failed or the screen has none: never mistaken for a move. */
+  async #menuCursor(): Promise<number | string | null> {
+    const m = await this.#readMenu();
+    return m.readable && (typeof m.cursor === "number" || typeof m.cursor === "string") ? m.cursor : null;
+  }
 
   async #readMenu(): Promise<MenuRead> {
     const r = await this.session.evaluate<MenuRead>(js.READER);

@@ -219,9 +219,9 @@ button: string    // Button enum member name, resolved via the generated table (
 
 One button, one press. The permanent escape hatch, and the only way to act on an unmodelled screen.
 
-Delivery: try `ui.processInput(button)`. If the settle fingerprint has not left its pre-press value, retry **once** via a raw keyboard event dispatched to **`window`** (Phaser binds keyboard to `window`, not `document` — #9). The raw fallback was implemented in #8 and never needed; #6 spent 51 presses across a wave with zero requiring it, and the one time it did fire it also did nothing.
+Delivery: try `ui.processInput(button)`. If the settle fingerprint has not left its pre-press value, retry **once** via a raw keyboard event dispatched to **`window`** (Phaser binds keyboard to `window`, not `document` — #9). The raw fallback was implemented in #8 and never needed; #6 spent 51 presses across a wave with zero requiring it, and the one time it did fire it also did nothing. No retry when a direction press moved the menu reader's cursor (both reads real cursors, not a failed read): that press landed on a handler whose cursor the fingerprint does not carry, and a retry would move it twice (#32).
 
-`processInput`'s return value is **never reported and never used as a decision input** (Principle 4). The result carries `changed: true | false`, derived from the fingerprint.
+`processInput`'s return value is **never reported and never used as a decision input** (Principle 4). The result carries `changed: true | false`, derived from the fingerprint, or `true` when the menu cursor moved.
 
 ### 6.5 Refusals
 
