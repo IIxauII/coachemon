@@ -177,9 +177,10 @@ test("a spread move commits any listed target with one ACTION and reports target
 /**
  * `start_run` on a scripted tab, from TITLE to the first decision after the save slot. Slot 1 holds a run, the rest are
  * empty. ACTION on a free slot starts the run and settles on CheckSwitchPhase's "Will you switch Pokémon?" CONFIRM, the
- * screen #30 mistook for the overwrite confirm; ACTION on Slot 1 opens the real overwrite confirm first.
+ * screen #30 mistook for the overwrite confirm; ACTION on Slot 1 opens the real overwrite confirm first. CANCEL on the
+ * grid with an empty party asks to return to the title; Yes goes there (#41).
  */
-function startRunTab() {
+function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean } = {}) {
   let t = 0;
   let frame = 0;
   const presses: number[] = [];
@@ -194,10 +195,14 @@ function startRunTab() {
   // The stale chain entries below the top are what the live game showed (#30).
   const overwriteConfirm: Screen = { ...begin, chain: [UiMode.TITLE, UiMode.TITLE, UiMode.SAVE_SLOT], text: "Overwrite the data in the selected slot?" };
   const switchConfirm: Screen = { ...begin, phase: "CheckSwitchPhase", chain: [UiMode.TITLE], text: "Will you switch\nPokémon?" };
+  const exitConfirm: Screen = { ...begin, text: "Return to the title screen?" };
+  const costs = opts.costs ?? { Bulbasaur: 3 };
+  const grid_ = Object.entries(costs).map(([name, cost], i) => ({ i, name, cost }));
 
   let screen = title;
   let cursor = 0;
   let party: string[] = [];
+  let gridCursor = 0;
   const go = (next: Screen) => { screen = next; cursor = 0; };
   const read = (): Ready => ({
     ready: true, settled: true, reason: "menu-open", mode: screen.mode, phaseName: screen.phase, wave: screen === switchConfirm ? 1 : null,
@@ -214,11 +219,13 @@ function startRunTab() {
     if (b === Button.DOWN) cursor++;
     else if (b === Button.UP) cursor--;
     else if (b === Button.SUBMIT && screen === grid) go(begin);
+    else if (b === Button.CANCEL && screen === grid && party.length === 0 && !opts.cancelIgnored) go(exitConfirm);
     else if (b === Button.ACTION) {
       if (screen === title) go(gameMode);
       else if (screen === gameMode) go(grid);
       else if (screen === grid) go(starterMenu);
-      else if (screen === starterMenu) { party = [...party, "Bulbasaur"]; go(grid); }
+      else if (screen === starterMenu) { party = [...party, grid_[gridCursor].name]; go(grid); }
+      else if (screen === exitConfirm) go(cursor === 0 ? title : grid);
       else if (screen === begin) go(saveSlot);
       else if (screen === saveSlot) go(slots[cursor].hasData ? overwriteConfirm : switchConfirm);
       else if (screen === overwriteConfirm) go(switchConfirm);
@@ -235,8 +242,8 @@ function startRunTab() {
       if (expr === js.PREDICATE) return read();
       if (expr === js.FRAME) return { ready: true, frame: ++frame };
       if (expr === js.READER) return menu();
-      if (expr === js.STARTER_INFO) return { ok: true, filterMode: false, grid: [{ i: 0, name: "Bulbasaur", cost: 3 }], valueLimit: 10, party, partyValid: true };
-      if (expr === js.starterSetCursor(0)) return { ok: true, species: "Bulbasaur", cursor: 0 };
+      if (expr === js.STARTER_INFO) return { ok: true, filterMode: false, grid: grid_, valueLimit: 10, party, partyValid: true };
+      for (const g of grid_) if (expr === js.starterSetCursor(g.i)) { gridCursor = g.i; return { ok: true, species: g.name, cursor: g.i }; }
       for (let j = 0; j < 5; j++) if (expr === js.optionSelectSetCursor(j)) { cursor = j; return { ok: true, fullCursor: j }; }
       for (const b of Object.values(Button)) {
         if (expr === js.press(b)) {
@@ -272,6 +279,33 @@ test("start_run with overwrite answers Yes on the real overwrite confirm (#30)",
   assert.equal(r.slot, 0);
   assert.ok((r.log as string[]).some(l => l === "overwrite confirm: Yes | No → index 0"));
   assert.equal(tab.screen().phase, "CheckSwitchPhase");
+});
+
+test("start_run over budget backs out to TITLE before refusing, so a corrected start_run works at once (#41)", async () => {
+  const tab = startRunTab({ costs: { Bulbasaur: 3, Mewtwo: 11 } });
+  const r = await outcome(tab.driver.startRun(["Bulbasaur", "Mewtwo"], undefined, false, {}));
+  assert.equal(r.error, "party_over_budget", JSON.stringify(r));
+  assert.equal(r.screen, "TITLE");
+  assert.equal(tab.screen().mode, UiMode.TITLE);
+  const again = await outcome(tab.driver.startRun(["Bulbasaur"], undefined, false, {}));
+  assert.equal(again.error, undefined, JSON.stringify(again));
+  assert.equal(again.started, true);
+});
+
+test("start_run with a name not on the grid backs out to TITLE before refusing (#41)", async () => {
+  const tab = startRunTab();
+  const r = await outcome(tab.driver.startRun(["Missingno"], undefined, false, {}));
+  assert.equal(r.error, "unknown_species", JSON.stringify(r));
+  assert.equal(r.screen, "TITLE");
+  assert.equal(tab.screen().mode, UiMode.TITLE);
+});
+
+test("start_run whose back-out fails still refuses, naming the manual way back to TITLE (#41)", async () => {
+  const tab = startRunTab({ costs: { Bulbasaur: 3, Mewtwo: 11 }, cancelIgnored: true });
+  const r = await outcome(tab.driver.startRun(["Bulbasaur", "Mewtwo"], undefined, false, {}));
+  assert.equal(r.error, "party_over_budget", JSON.stringify(r));
+  assert.equal(r.screen, "STARTER_SELECT");
+  assert.match(String(r.next), /press\(CANCEL\).*select_option\("Yes"\)/);
 });
 
 /**
