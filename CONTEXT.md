@@ -36,7 +36,7 @@ For a given menu, the ordered **rungs** that leave it, safest first. Each rung i
 
 ## Option
 
-A single selectable entry in a menu, with a visible **label**. Selecting an option by label is a decision; the cursor movement it takes is an implementation detail the server hides.
+A single selectable entry in a menu, with a visible **label**. Selecting an option by label is a decision; the cursor movement it takes is an implementation detail the server hides. Where the label decorates a plain name with live data (`Great Ball ×9`), the option also carries that **name**, and the name selects it too.
 
 ## Progress fingerprint
 

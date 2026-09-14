@@ -14,6 +14,13 @@ test("exact match only — no prefix or fuzzy matching", () => {
   assert.deepEqual(matchLabel(options, "App"), { kind: "none" });
 });
 
+test("an option's name matches as well as its label, still exactly (#46)", () => {
+  const options = [{ label: "Poké Ball ×13", name: "Poké Ball" }, { label: "Great Ball ×9", name: "Great Ball" }, { label: "Cancel" }];
+  assert.deepEqual(matchLabel(options, "great ball"), { kind: "one", option: options[1] });
+  assert.deepEqual(matchLabel(options, "Great Ball ×9"), { kind: "one", option: options[1] });
+  assert.deepEqual(matchLabel(options, "Great"), { kind: "none" });
+});
+
 test("duplicates are ambiguous, not first-wins", () => {
   const options = [{ label: "Potion" }, { label: "Potion" }];
   const m = matchLabel(options, "potion");

@@ -14,7 +14,7 @@ import { Button, NAMES, UiMode } from "./enums/generated.ts";
 import { Refusal, worst, type Diagnostic, type Status } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import * as js from "./game/js.ts";
-import { matchLabel, normalizeLabel } from "./labels.ts";
+import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { isSettingsMode, modeName, screenId } from "./screen.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { BEYOND_OBSERVED_MS, CALL_BUDGET_MS, settle, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
@@ -47,6 +47,8 @@ const REAL_CLOCK: Clock = { now: Date.now, sleep: ms => new Promise(r => setTime
 export type MenuOption = {
   i: number | string;
   label: string | null;
+  /** The plain name a decorated label is built from (`Great Ball` in `Great Ball ×9`); selects the option too. */
+  name?: string | null;
   [k: string]: unknown;
 };
 
@@ -232,7 +234,7 @@ export class Driver {
       // both a free reward and a shop item). Still a value read this call, never a remembered position.
       const hit = menu.options.find(o => String(o.i) === String(index));
       if (!hit) throw new Refusal("no_match", `No option at index ${JSON.stringify(index)} on ${screen}.`, { ...echo, indices: menu.options.map(o => o.i) });
-      if (label !== undefined && normalizeLabel(hit.label) !== normalizeLabel(label)) {
+      if (label !== undefined && !optionAnswersTo(hit, label)) {
         throw new Refusal("screen_changed", `Option ${JSON.stringify(index)} is ${JSON.stringify(hit.label)}, not ${JSON.stringify(label)}. Nothing was pressed.`, echo);
       }
       target = hit;

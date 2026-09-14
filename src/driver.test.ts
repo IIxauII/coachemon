@@ -174,6 +174,72 @@ test("a spread move commits any listed target with one ACTION and reports target
   assert.deepEqual(tab.presses, [Button.ACTION]);
 });
 
+/** BALL as #46 reads it: `Name ×count` rows then Cancel, a plain UP/DOWN list. ACTION throws the ball under the cursor. */
+function ballTab() {
+  let t = 0;
+  let frame = 0;
+  const presses: number[] = [];
+  let cursor = 0;
+  let thrown: number | null = null;
+  const read = (): Ready => ({
+    ready: true, settled: true, reason: "menu-open", mode: thrown === null ? UiMode.BALL : UiMode.MESSAGE,
+    phaseName: "CommandPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false, handler: "BallUiHandler", cursor,
+    modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
+    fine: `ball|${cursor}|${thrown}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
+  });
+  const options = [
+    { i: 0, label: "Poké Ball ×13", name: "Poké Ball", ballType: 0, count: 13 },
+    { i: 1, label: "Great Ball ×9", name: "Great Ball", ballType: 1, count: 9 },
+    { i: 2, label: "Ultra Ball ×0", name: "Ultra Ball", ballType: 2, count: 0 },
+    { i: 3, label: "Cancel" },
+  ];
+  const menu = (): MenuRead => ({ readable: true, mode: UiMode.BALL, family: "ball", cursor, text: null, options, extra: {} });
+  const session = {
+    onException: null,
+    attached: true,
+    ensure: async () => {},
+    keepAlive: async () => {},
+    rawKey: async () => {},
+    consoleTail: () => [],
+    evaluate: async (expr: string) => {
+      if (expr === js.PREDICATE) return read();
+      if (expr === js.FRAME) return { ready: true, frame: ++frame };
+      if (expr === js.READER) return menu();
+      for (const b of Object.values(Button)) {
+        if (expr === js.press(b)) {
+          presses.push(b);
+          if (b === Button.ACTION) thrown = cursor;
+          else if (b === Button.DOWN) cursor = cursor < 3 ? cursor + 1 : 0;
+          else if (b === Button.UP) cursor = cursor ? cursor - 1 : 3;
+          return { ok: true };
+        }
+      }
+      return {};
+    },
+  } as unknown as CdpSession;
+  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
+    now: () => t,
+    sleep: async ms => { t += ms; },
+  });
+  return { driver, presses, thrown: () => thrown };
+}
+
+test("select_option throws a ball by its name, without the count (#46)", async () => {
+  const tab = ballTab();
+  const r = await outcome(tab.driver.selectOption("Great Ball", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(r.selected, "Great Ball ×9");
+  assert.equal(tab.thrown(), 1);
+  assert.deepEqual(tab.presses, [Button.DOWN, Button.ACTION]);
+});
+
+test("select_option by index accepts the ball's name as the label check (#46)", async () => {
+  const tab = ballTab();
+  const r = await outcome(tab.driver.selectOption("Poké Ball", 0, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(tab.thrown(), 0);
+});
+
 /**
  * `start_run` on a scripted tab, from TITLE to the first decision after the save slot. Slot 1 holds a run, the rest are
  * empty. ACTION on a free slot starts the run and settles on CheckSwitchPhase's "Will you switch Pokémon?" CONFIRM, the

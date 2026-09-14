@@ -16,9 +16,18 @@ export function normalizeLabel(label: string | null | undefined): string {
 
 export type Match<T> = { kind: "one"; option: T } | { kind: "none" } | { kind: "many"; options: T[] };
 
-export function matchLabel<T extends { label: string | null }>(options: readonly T[], label: string): Match<T> {
+export type Labelled = { label: string | null; name?: string | null };
+
+/**
+ * Whether `label` names `option`: its label, or its `name` where the label decorates one (`Great Ball ×9`, #46).
+ */
+export function optionAnswersTo(option: Labelled, label: string): boolean {
   const wanted = normalizeLabel(label);
-  const hits = options.filter(o => o.label !== null && normalizeLabel(o.label) === wanted);
+  return [option.label, option.name].some(l => typeof l === "string" && normalizeLabel(l) === wanted);
+}
+
+export function matchLabel<T extends Labelled>(options: readonly T[], label: string): Match<T> {
+  const hits = options.filter(o => optionAnswersTo(o, label));
   if (hits.length === 1) return { kind: "one", option: hits[0] };
   if (hits.length === 0) return { kind: "none" };
   return { kind: "many", options: hits };

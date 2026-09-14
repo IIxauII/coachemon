@@ -178,10 +178,16 @@ try {
     out.readable = out.options.length > 0;
   } else if (mode === 4) {
     out.family = 'ball';
-    const bc = h.pokeballSelectContainer;
-    let joined = null;
-    __kids(bc).forEach(k => { if (typeof k.text === 'string' && k.text.indexOf('\\n') > -1) joined = k.text; });
-    out.options = (joined ? joined.split('\\n') : __texts(bc)).map((t, i) => opt(i, t));
+    // Two multi-line texts (BallUiHandler.setup, #46): the names, one per ball type then Cancel, and countsText. Counts come
+    // from pokeballCounts, which countsText mirrors in the same key order; the row after the last ball is Cancel.
+    const names = __kids(h.pokeballSelectContainer).find(k => k !== h.countsText && typeof k.text === 'string' && k.text.indexOf('\\n') > -1);
+    const lines = names ? names.text.split('\\n').map(__strip) : [];
+    const counts = Object.entries(scene.pokeballCounts || {});
+    out.options = counts.map(([type, c], i) => {
+      const name = lines[i] || null;
+      return opt(i, (name ? name + ' ' : '') + '×' + c, { name, ballType: Number(type), count: c });
+    });
+    if (lines.length > counts.length) out.options.push(opt(counts.length, lines[counts.length]));
     out.cursor = h.cursor;
     out.readable = out.options.length > 0;
   } else if (mode === 5) {
