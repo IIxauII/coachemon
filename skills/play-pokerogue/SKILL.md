@@ -26,7 +26,7 @@ The `pokerogue` MCP server drives a live PokéRogue tab in Chrome over CDP. Stat
 
 | Screen | Do |
 |---|---|
-| `COMMAND` | `Fight` usually. `Pokémon` to switch, `Ball` to catch (wild mons only; trainer Pokémon can't be caught). |
+| `COMMAND` | `Fight` usually. `Pokémon` to switch, `Ball` to catch (wild mons only: in a trainer battle `extra.catchable` is `false` and `select_option` refuses a ball with `cannot_catch_trainer`). |
 | `FIGHT` | A damaging move with PP left, favouring type advantage and power (`read_menu` → `extra.moves`). Avoid charge, recharge and recoil moves. |
 | `TARGET_SELECT` | In doubles, the enemy you can KO or the bigger threat. |
 | `PARTY/FAINT_SWITCH` | Must answer: pick a non-fainted, non-active mon, then `Send Out`. Never `Cancel`. |
