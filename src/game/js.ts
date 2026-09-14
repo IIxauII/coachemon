@@ -150,6 +150,8 @@ const out = { mode, handler: h.constructor.name, family: null, options: [], curs
 const mh = ui.handlers[0];
 out.text = __try(() => (mh && mh.message && typeof mh.message.text === 'string') ? mh.message.text : null);
 const opt = (i, label, more) => Object.assign({ i, label }, more || {});
+// A trainer's Pokémon cannot be caught: the thrown ball is wasted (#56).
+const catchable = () => __try(() => !scene.currentBattle.trainer);
 
 try {
   if (h.config && Array.isArray(h.config.options)) {
@@ -165,6 +167,7 @@ try {
     out.options = __texts(h.commandsContainer).map((t, i) => opt(i, t));
     out.cursor = h.getCursor ? h.getCursor() : h.cursor;
     out.extra.fieldIndex = h.fieldIndex || 0;
+    out.extra.catchable = catchable();
     out.readable = out.options.length > 0;
   } else if (mode === 3) {
     out.family = 'fight';
@@ -191,6 +194,7 @@ try {
     });
     if (lines.length > counts.length) out.options.push(opt(counts.length, lines[counts.length]));
     out.cursor = h.cursor;
+    out.extra.catchable = catchable();
     out.readable = out.options.length > 0;
   } else if (mode === 5) {
     out.family = 'target_select';

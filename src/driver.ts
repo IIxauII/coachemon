@@ -248,6 +248,13 @@ export class Driver {
       target = m.option;
     }
 
+    // Command.BALL is the second command; BALL rows carry a ballType, Cancel does not. Refused by position, not by the
+    // localised label (#56).
+    const throwsBall = (menu.family === "command" && Number(target.i) === 1) || (menu.family === "ball" && "ballType" in target);
+    if (throwsBall && menu.extra.catchable === false) {
+      throw new Refusal("cannot_catch_trainer", `This is a trainer battle: its Pokémon cannot be caught, so ${JSON.stringify(target.label)} is refused. Nothing was pressed.`, echo);
+    }
+
     this.#menuActionInFlight = MENU_MODES.has(ready.mode);
     const before = progressFingerprint(this.#progress(ready));
     const choice: Choice = menu.family === "modal" ? { kind: "modal_button", index: Number(target.i) } : { kind: "option", label: normalizeLabel(target.label) };

@@ -174,15 +174,18 @@ test("a spread move commits any listed target with one ACTION and reports target
   assert.deepEqual(tab.presses, [Button.ACTION]);
 });
 
-/** BALL as #46 reads it: `Name ×count` rows then Cancel, a plain UP/DOWN list. ACTION throws the ball under the cursor. */
-function ballTab() {
+/**
+ * BALL as #46 reads it: `Name ×count` rows then Cancel, a plain UP/DOWN list. ACTION throws the ball under the cursor.
+ * `trainer` marks the battle uncatchable as the reader does (#56); `command` opens on COMMAND instead, Ball at row 1.
+ */
+function ballTab(opts: { trainer?: boolean; command?: boolean } = {}) {
   let t = 0;
   let frame = 0;
   const presses: number[] = [];
   let cursor = 0;
   let thrown: number | null = null;
   const read = (): Ready => ({
-    ready: true, settled: true, reason: "menu-open", mode: thrown === null ? UiMode.BALL : UiMode.MESSAGE,
+    ready: true, settled: true, reason: "menu-open", mode: thrown !== null ? UiMode.MESSAGE : opts.command ? UiMode.COMMAND : UiMode.BALL,
     phaseName: "CommandPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false, handler: "BallUiHandler", cursor,
     modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
     fine: `ball|${cursor}|${thrown}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
@@ -193,7 +196,11 @@ function ballTab() {
     { i: 2, label: "Ultra Ball ×0", name: "Ultra Ball", ballType: 2, count: 0 },
     { i: 3, label: "Cancel" },
   ];
-  const menu = (): MenuRead => ({ readable: true, mode: UiMode.BALL, family: "ball", cursor, text: null, options, extra: {} });
+  const extra = opts.trainer ? { catchable: false } : { catchable: true };
+  const commands = [{ i: 0, label: "Fight" }, { i: 1, label: "Ball" }, { i: 2, label: "Pokémon" }, { i: 3, label: "Run" }];
+  const menu = (): MenuRead => opts.command
+    ? { readable: true, mode: UiMode.COMMAND, family: "command", cursor, text: null, options: commands, extra: { fieldIndex: 0, ...extra } }
+    : { readable: true, mode: UiMode.BALL, family: "ball", cursor, text: null, options, extra };
   const session = {
     onException: null,
     attached: true,
@@ -238,6 +245,35 @@ test("select_option by index accepts the ball's name as the label check (#46)", 
   const r = await outcome(tab.driver.selectOption("Poké Ball", 0, undefined, {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
   assert.equal(tab.thrown(), 0);
+});
+
+test("select_option refuses a ball in a trainer battle without pressing anything (#56)", async () => {
+  const tab = ballTab({ trainer: true });
+  const r = await outcome(tab.driver.selectOption("Great Ball", undefined, undefined, {}));
+  assert.equal(r.error, "cannot_catch_trainer");
+  assert.deepEqual(tab.presses, []);
+  assert.equal(tab.thrown(), null);
+});
+
+test("select_option still takes Cancel on BALL in a trainer battle (#56)", async () => {
+  const tab = ballTab({ trainer: true });
+  const r = await outcome(tab.driver.selectOption("Cancel", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+});
+
+test("select_option refuses Ball on COMMAND in a trainer battle, and read_menu flags it uncatchable (#56)", async () => {
+  const tab = ballTab({ trainer: true, command: true });
+  const r = await outcome(tab.driver.selectOption("Ball", undefined, undefined, {}));
+  assert.equal(r.error, "cannot_catch_trainer");
+  assert.deepEqual(tab.presses, []);
+  const m = await outcome(tab.driver.readMenu({}));
+  assert.equal((m.extra as Record<string, unknown>).catchable, false);
+});
+
+test("select_option takes Ball on COMMAND in a wild battle (#56)", async () => {
+  const tab = ballTab({ command: true });
+  const r = await outcome(tab.driver.selectOption("Ball", undefined, undefined, {}));
+  assert.notEqual(r.error, "cannot_catch_trainer", JSON.stringify(r));
 });
 
 /**
