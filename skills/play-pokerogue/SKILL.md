@@ -16,7 +16,7 @@ The `pokerogue` MCP server drives a live PokéRogue tab in Chrome over CDP. Stat
 ## The loop
 
 1. `status` — attached? run live? on `TITLE`?
-2. No run: `start_run` with the user's starters (species names as on the starter grid; default e.g. `["Bulbasaur","Charmander","Squirtle"]`). It refuses before pressing if the party is over the cost budget or a name isn't on the grid.
+2. No run: `start_run` with the user's starters (species names as on the starter grid; default e.g. `["Bulbasaur","Charmander","Squirtle"]`). If the party is over the cost budget or a name isn't on the grid it refuses and backs out to `TITLE` first, so fix the party and call `start_run` again. If the refusal carries `next`, the back-out failed: do what `next` says.
 3. Until a result's `status` is `run_over` or `run_interrupted`:
    - Every acting result carries `menu` (screen, labels in cursor order, cursor, text). Decide from it. Call `read_menu` only when you need full option objects (move PP/power in `extra.moves`, shop costs, party HP) or `cancel_effect`.
    - Act with `select_option` using a label **exactly** as returned. If a label is duplicated (e.g. same item as free reward and in the shop), pass `index` (the option's `i` from `read_menu` this call). Pass `expect_screen` when acting on a screen read earlier.

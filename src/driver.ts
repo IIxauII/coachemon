@@ -273,6 +273,36 @@ export class Driver {
       const walk = await this.#moveTo(m, target, ctx);
       if (walk) throw timedOut(walk, step);
     };
+    /**
+     * A party refused on the grid, before any starter is added: CANCEL on the empty grid asks to return to the title and
+     * Yes goes there (#41), so the corrected start_run needs no manual steps. If that fails, say how to finish by hand.
+     */
+    const refuseFromGrid = async (code: string, message: string, detail: Record<string, unknown>): Promise<never> => {
+      try {
+        const confirm = await expect(await this.#pressAndSettle(Button.CANCEL, cur.fine, ctx), UiMode.CONFIRM, "back out");
+        const m = await this.#readMenu();
+        const yes = matchLabel(m.options, "Yes");
+        if (yes.kind !== "one") throw new Refusal("start_run_unexpected_screen", `no single Yes on the return-to-title confirm: ${m.options.map(o => o.label).join(" | ")}`);
+        log.push(`back out: ${m.options.map(o => o.label).join(" | ")} → Yes`);
+        await moveTo(m, yes.option, "back out");
+        let back = await this.#commit(m, yes.option, confirm.fine, ctx);
+        // Yes sets STARTER_SELECT again before the title phase shows TITLE (StarterSelectUiHandler.tryExit): wait past it.
+        if (back.settled && (back.last as Ready).mode === UiMode.STARTER_SELECT) back = await this.#settle((back.last as Ready).fine, ctx);
+        await expect(back, UiMode.TITLE, "back out");
+      } catch (e) {
+        const live = await this.#poll();
+        const mode = !isThrown(live) && live.ready ? live.mode : null;
+        const screen = !isThrown(live) && live.ready ? screenId(live.mode, live.disc) : "UNKNOWN(-1)";
+        const next =
+          mode === UiMode.CONFIRM ? 'select_option("Yes") on this CONFIRM to return to TITLE, then start_run again'
+          : mode === UiMode.STARTER_SELECT ? 'press(CANCEL), then select_option("Yes") on the CONFIRM to return to TITLE, then start_run again'
+          : "read_menu to see where the game is; start_run needs TITLE";
+        throw new Refusal(code, `${message} Backing out to TITLE failed (${(e as Error).message}).`, {
+          ...detail, screen, log, back_out_error: e instanceof Refusal ? e.code : "error", next,
+        });
+      }
+      throw new Refusal(code, `${message} Backed out to TITLE; call start_run again with a corrected party.`, { ...detail, screen: "TITLE", log });
+    };
 
     // 1. TITLE → game-mode select. New Game is the first option unless Continue is offered (source order: [Continue,] New Game, Load Game, Daily Run, Settings).
     let menu = await this.#readMenu();
@@ -294,16 +324,17 @@ export class Driver {
     const info = await this.session.evaluate<{ ok: boolean; why?: string; filterMode: boolean; grid: { i: number; name: string | null; cost: number | null }[]; valueLimit: number | null }>(js.STARTER_INFO);
     if (isThrown(info) || !info.ok) throw new Refusal("starter_unreadable", isThrown(info) ? info.__throw : String(info.why));
     if (info.filterMode) throw new Refusal("filter_bar", "The starter filter bar is active; the server never drives it. Leave it by hand.");
-    const picks = species.map(name => {
+    const picks: typeof info.grid = [];
+    for (const name of species) {
       const hit = info.grid.filter(g => g.name !== null && normalizeLabel(g.name) === normalizeLabel(name));
       if (hit.length !== 1) {
-        throw new Refusal("unknown_species", `${JSON.stringify(name)} is not on the starter grid (${hit.length} matches).`, { available: info.grid.map(g => g.name) });
+        await refuseFromGrid("unknown_species", `${JSON.stringify(name)} is not on the starter grid (${hit.length} matches).`, { available: info.grid.map(g => g.name) });
       }
-      return hit[0];
-    });
+      picks.push(hit[0]);
+    }
     const cost = picks.reduce((t, p) => t + (p.cost ?? 0), 0);
     if (info.valueLimit !== null && cost > info.valueLimit) {
-      throw new Refusal("party_over_budget", `Party costs ${cost} against a limit of ${info.valueLimit}.`, { picks: picks.map(p => ({ name: p.name, cost: p.cost })), limit: info.valueLimit });
+      await refuseFromGrid("party_over_budget", `Party costs ${cost} against a limit of ${info.valueLimit}.`, { picks: picks.map(p => ({ name: p.name, cost: p.cost })), limit: info.valueLimit });
     }
     for (const pick of picks) {
       const moved = await this.session.evaluate<{ ok: boolean; why?: string; species?: string }>(js.starterSetCursor(pick.i));
