@@ -20,6 +20,15 @@ The user holds the controller. You read the game and advise. **Never press, sele
 
 `starters` gives unlocked species by national dex id with IV total, passive/hidden-ability unlock, egg moves, cost reduction and candy. `cost` is only filled while the user is on the starter grid; otherwise it is `null`.
 
+## Always-on coaching
+
+When the user wants the coach running for the whole session ("keep coaching", "watch my run"), start both layers:
+
+1. **HUD** — `scripts/read.sh <browser> hud` draws a panel in the top-left corner of the game tab, built from the game's own sprites (Pokémon icons, type badges, move categories). Each live foe gets its weaknesses, hard walls (×0 / ×¼, counting immunity abilities), trap abilities, and the party member + move to use against it. The header shows the send-in order. It refreshes every second with no Claude involved. Header buttons switch between **full**, **mini** (one line per foe) and **closed** (a small 🎯 tab); the last view is remembered in the page's localStorage. `hud-off` removes it. It is a type-chart heuristic — it knows nothing about Sturdy, Guts or setup moves, which is what your brief is for.
+2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints `NEW BATTLE <battle JSON>` once per new battle and re-injects the HUD after a page reload. It prints `COACH ERROR <msg>` once per distinct failure, so report that line rather than staying silent.
+
+On each `NEW BATTLE`, reply with a brief built from that JSON; no extra read is needed. Keep it to a few lines: enemy team weak / strong against, send-in order, one move per matchup, and any ability trap from the rules below. Only go deeper if the user asks.
+
 ## Rules learned the hard way
 
 - **Never quote a starter cost from memory.** PokéRogue costs differ from intuition (Bunnelby 3, Lechonk 2, Popplio 4). No `cost` in the read → ask the user to open the starter grid, or say costs are unverified.

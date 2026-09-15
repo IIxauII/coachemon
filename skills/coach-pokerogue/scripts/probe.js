@@ -53,6 +53,7 @@
         double: b?.double ?? null,
         trainer: b?.trainer?.getName?.() ?? null,
         money: s.money,
+        hudActive: !!window.__coachHud,
         uiMode: document.getElementById("touchControls")?.dataset.uiMode ?? null,
         party: s.getPlayerParty().map(mon),
         enemy: s.getEnemyParty().map(mon),
