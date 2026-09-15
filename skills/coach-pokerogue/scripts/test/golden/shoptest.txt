@@ -17,3 +17,62 @@ buy first — taking the free reward closes the shop
 · 5× Poké Ball you have 34
 · Potion party healthy
 🎲 nothing good — reroll for $2250?
+== wave 13 rare candy
+🛒 $1824 − ×
+buy first — taking the free reward closes the shop
+💰 nothing to buy
+🎁 Rare Candy +1 level (permanent) · Morpeko Lv 14
+· 5× Poké Ball you have 12
+· Max Ether PP fine
+== wave 14 pp up
+🛒 $1824 − ×
+buy first — taking the free reward closes the shop
+💰 nothing to buy
+🎁 PP Up more PP on a move (permanent)
+· TM Round TM for Comfey (over Body Slam)
+· Potion party healthy
+🎲 nothing good — reroll for $500?
+== wave 15 calm mind
+🛒 $900 − ×
+buy first — taking the free reward closes the shop
+💰 nothing to buy
+🎁 TM Calm Mind setup TM for Comfey (+1 SpA/SpD)
+· 5× Poké Ball you have 34
+· Full Heal no status
+== tm recipient
+🛒 $400 − ×
+buy first — taking the free reward closes the shop
+💰 nothing to buy
+🎁 TM Fire Fang TM for Morpeko (over Tackle)
+· TM Thunder Fang TM — can't check who learns it
+· 5× Great Ball you have 34
+== wave 18 free ether
+🛒 $1622 → $491 − ×
+buy first — taking the free reward closes the shop
+💰 Super Potion $599 Comfey 50% HP
+💰 Ether $532 Snorlax Body Slam 1/15
+🎁 Ether PP for Morpeko · saves $532
+· X Sp. Atk only lasts a few battles
+· Potion heals Comfey a little
+== key items
+🛒 $72 − ×
+buy first — taking the free reward closes the shop
+💰 nothing to buy
+🎁 Master Ball Master Ball — catches anything · you have 0
+· Mega Bracelet nobody on the team can Mega Evolve
+· Egg Voucher egg voucher — outlasts the run
+== mega capable
+🛒 $72 − ×
+buy first — taking the free reward closes the shop
+💰 nothing to buy
+🎁 Mega Bracelet Charizard can Mega Evolve (needs its stone)
+· Fire Stone nobody can use it
+· Leftovers everyone's at max stack
+== boss next
+🛒 $300 − ×
+buy first — taking the free reward closes the shop
+💰 nothing to buy
+🎁 Super Potion heals Blastoise
+· Revive nobody fainted · spare for the boss
+· X Attack only lasts a few battles
+ok
