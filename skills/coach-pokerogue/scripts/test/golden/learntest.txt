@@ -1,28 +1,77 @@
 == Charizard ← Flare Blitz
-✚ Fire Flare Blitz recoil · weak Atk ≈96
+✚ Fire Flare Blitz 3× Fire · recoil 33% of damage · weak Atk ≈76
 · Fire Heat Wave spread ≈147
-· Dragon Dragon Breath coverage ≈72
-· Flying Air Slash coverage ≈128
+· Dragon Dragon Breath SE on Dragon ≈72
+· Flying Air Slash SE on Fighting ≈126
 · Fire Flamethrower ≈135
 Skip — not an upgrade
 == Venusaur ← Solar Beam
-✚ Grass Solar Beam coverage · charges ≈108
-· Normal Double-Edge coverage · recoil ≈90
+✚ Grass Solar Beam charge turn ≈90
+· Normal Double-Edge neutral on Flying/Poison/Bug… · recoil 33% of damage ≈84
 · Grass Sleep Powder status
 · Grass Synthesis status
-· Grass Power Whip coverage ≈172
+· Grass Power Whip SE on Ground/Rock/Water ≈186
 Skip — not an upgrade
 == Blastoise ← Skull Bash
-✚ Normal Skull Bash coverage · charges ≈77
+✚ Normal Skull Bash neutral on Water · charge turn ≈65
 · Water Aqua Tail 3× Water ≈96
-· Steel Flash Cannon coverage ≈96
-· Water Wave Crash 3× Water · recoil ≈95
+· Steel Flash Cannon SE on Ice/Fairy ≈104
+· Water Wave Crash 3× Water · recoil 33% of damage ≈95
 · Water Hydro Pump 3× Water ≈106
 Skip — not an upgrade
 == Scrafty ← Head Smash
-✚ Rock Head Smash coverage · recoil ≈96
+✚ Rock Head Smash SE on Flying/Bug/Fire · recoil 33% of damage · team gains SE on Flying/Bug/Fire ≈105
 · Fighting Focus Punch 3× Fighting ≈180
-· Normal Rock Climb coverage ≈92
+✕ Normal Rock Climb neutral on Flying/Poison/Bug… ≈84
 · Fighting Brick Break 3× Fighting ≈90
 · Fighting High Jump Kick 3× Fighting ≈140
-Skip — not an upgrade
+Learn → forget Rock Climb
+== Nidoking ← Double Kick
+✚ Fighting Double Kick 2 hits · SE on Normal/Ice · team gains SE on Normal/Ice ≈76
+✕ Normal Tackle ≈40
+· Poison Poison Jab SE on Fairy ≈142
+· Ground Earthquake SE on Poison/Rock/Steel… ≈195
+· Bug Pin Missile 3.1 hits · SE on Psychic/Dark ≈93
+Learn → forget Tackle
+== Cloyster (Skill Link) ← Triple Axel
+✚ Ice Triple Axel 2.7 hits ≈162
+· Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon ≈244
+· Rock Rock Blast 5 hits · SE on Bug/Fire/Ice ≈146
+· Normal Tackle ≈40
+Learns it — free slot
+== Gengar ← Shadow Ball
+✚ Ghost Shadow Ball SE on Ghost/Psychic · team gains SE on Ghost/Psychic ≈156
+· Ghost Night Shade damage = level ≈116
+✕ Normal Super Fang halves HP · can't KO ≈59
+· Grass Grass Knot weight-based · SE on Ground/Rock/Water ≈78
+· Poison Sludge Bomb SE on Grass/Fairy ≈176
+Learn → forget Super Fang
+== Metagross ← Steel Beam
+✚ Steel Steel Beam −50% HP each use ≈102
+· Psychic Zen Headbutt SE on Fighting ≈127
+· Ground Earthquake SE on Steel/Fire/Electric ≈130
+· Steel Iron Head ≈120
+✕ Steel Bullet Punch priority +1 ≈66
+Learn → forget Bullet Punch
+== Dragonite ← Outrage
+✚ Dragon Outrage locks 2–3 turns, then confused ≈126
+· Dragon Dragon Claw SE on Dragon ≈142
+✕ Normal Extreme Speed priority +2 ≈88
+· Fire Fire Punch SE on Bug/Steel/Grass… ≈98
+· Electric Thunder Punch SE on Flying/Water ≈95
+Learn → forget Extreme Speed
+== Arcanine ← Overheat
+✚ Fire Overheat −2 SpA after use ≈140
+· Fire Flamethrower SE on Bug/Steel/Grass… ≈176
+✕ Normal Extreme Speed ≈73
+· Electric Wild Charge SE on Flying/Water · recoil 25% of damage ≈78
+· Dark Crunch SE on Ghost/Psychic ≈92
+Learn → forget Extreme Speed
+== Tyranitar ← Iron Head (team)
+✚ Steel Iron Head SE on Rock/Fairy · team gains SE on Fairy ≈99
+· Dark Crunch ≈120
+· Rock Stone Edge SE on Flying/Bug/Fire… · only Rock move on team ≈156
+✕ Normal Tackle neutral on Fighting · only Normal move on team ≈41
+· Dark Bite ≈90
+Learn → forget Tackle
+ok
