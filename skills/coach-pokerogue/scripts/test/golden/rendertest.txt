@@ -59,10 +59,10 @@ team: ⚠ loses only Dark move
 Learn → forget Bite
 == rewards boss next (full)
 🛒 $500 nothing affordable 👑 boss next − {Minimal overview} × {Close}
-🎁 TM Fire Fang Morpeko → forget Tackle
+🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 · Leftovers held item · for Charizard/Morpeko
 · 5× Great Ball you have 20
-summary {"kind":"shop","wave":29,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":"take TM Fire Fang → Morpeko"}
+summary {"kind":"shop","wave":29,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":"take TM Fire Fang → Morpeko (forget Tackle)"}
 == rewards boss next (mini)
 🛒 $500 👑 boss next + {Expand} × {Close}
 🎁 TM Fire Fang Morpeko → forget Tackle

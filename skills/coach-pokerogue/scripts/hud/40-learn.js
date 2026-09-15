@@ -20,7 +20,7 @@ const learnMoveById = (party, id) => {
   try { return pm ? new pm.constructor(id).getMove() : null; } catch { return null; }
 };
 
-const { moveScore, learnPlan } = (() => {
+const { moveScore, learnPlan, learnAdvice } = (() => {
   const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
   const attrsOf = (mv, name) => (mv.attrs || []).filter(a => a.constructor?.name === name);
   const isDamaging = mv => !!mv && mv.category !== 2 && (mv.power > 0 || mv.power === -1);
@@ -216,7 +216,7 @@ const { moveScore, learnPlan } = (() => {
   };
 
   // The whole learn decision for `pk` and move `mv`: each current slot against the new move, which to forget, and
-  // what the team gains or loses. Shared by the learn card and the rewards card's TM scoring.
+  // what the team gains or loses. Callers go through learnAdvice below.
   const learnPlan = (pk, mv, { double = false, party = [pk] } = {}) => {
     const current = movesOf(pk);
     const mates = party.filter(p => p && p !== pk);
@@ -258,11 +258,32 @@ const { moveScore, learnPlan } = (() => {
     };
     return { moves, incoming, forget, compare: free ? -1 : compare, kind, gain, team, atk: pk.getStat(1), spa: pk.getStat(3) };
   };
-  return { moveScore, learnPlan };
+  // The learn decision as a verdict a caller can act on, whatever offers the move (level-up, TM): `learn` true (learn
+  // it), false (skip) or null (your call: a status move, or only status moves to drop); `slot` the move it replaces
+  // (-1: a free slot, or none), `forget` that move's name, `against` the slot it was weighed against (named on a skip
+  // too), `gain` the effective power it adds, and a short `reason`.
+  // A status move with a full moveset names the weakest attack as the slot, without deciding for the user.
+  // The learn card and the rewards card's TM advice both judge a move through this, so they can't disagree.
+  const learnAdvice = (pk, mv, ctx = {}) => {
+    const plan = learnPlan(pk, mv, ctx);
+    const { kind, moves, incoming, compare } = plan;
+    const setup = incoming.setup ?? null;
+    const slot = plan.forget >= 0 ? plan.forget : kind === "status" ? compare : -1;
+    const learn = kind === "learn" || (kind === "free" && incoming.value !== null) ? true : kind === "skip" ? false : null;
+    const reason = {
+      free: "free slot",
+      learn: `over ${moves[plan.forget]?.name}`,
+      skip: `not an upgrade over ${moves[compare]?.name}`,
+      status: setup ? `setup ${setup.text}${setup.fits ? "" : " (weak fit)"}` : "status move",
+      "only-status": "only status moves to drop",
+    }[kind];
+    return { learn, kind, slot, forget: slot >= 0 ? moves[slot].name : null, against: compare >= 0 ? moves[compare].name : null, gain: plan.gain, reason, setup, plan };
+  };
+  return { moveScore, learnPlan, learnAdvice };
 })();
 
 const learnModel = ({ pk, mv, double, party }) => {
-  const plan = learnPlan(pk, mv, { double, party: party?.length ? party : [pk] });
+  const { plan } = learnAdvice(pk, mv, { double, party: party?.length ? party : [pk] });
   const { moves, incoming, forget, compare, team } = plan;
   const verdict = {
     free: ["Learns it — free slot", "#6d6"],

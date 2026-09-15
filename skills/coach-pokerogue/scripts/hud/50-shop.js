@@ -23,6 +23,36 @@ const shopUsers = (t, party) => {
   if (typeof t.selectFilter !== "function") return null;
   try { return party.filter(p => t.selectFilter(p) == null); } catch { return null; }
 };
+// Who can learn a TM: the game's select filter (TmModifierType's is `isTmCompatible(moveId, true)` — species and
+// fusion TM lists, minus moves already known); without one, the same check called directly. Members who already know
+// the move are dropped either way. null when it can't be told.
+const knowsMove = (p, id) => (p.moveset ?? []).some(m => m?.moveId === id);
+const tmLearners = (t, party) => {
+  let users = shopUsers(t, party);
+  if (!users && party.length && party.every(p => typeof p.isTmCompatible === "function")) {
+    try { users = party.filter(p => p.isTmCompatible(t.moveId, true)); } catch { users = null; }
+  }
+  return users && users.filter(p => !knowsMove(p, t.moveId));
+};
+
+// TM advice: the learn decision (learnAdvice, the learn card's own) for every member who can learn the move, and the
+// best recipient. `take` true with the member gaining the most effective power (or, for a setup move, the member it
+// suits), false when nobody gains (`closest` is the nearest miss), null for a status move nobody needs as setup.
+const tmAdvice = (mv, users, ctx) => {
+  const all = users.map(p => ({ p, a: learnAdvice(p, mv, ctx) }));
+  const recipient = x => ({ icon: iconOf(x.p), name: x.p.name, forget: x.a.forget, against: x.a.against, slot: x.a.slot, gain: x.a.gain, reason: x.a.reason });
+  const best = all.filter(x => x.a.learn).sort((a, b) => b.a.gain - a.a.gain)[0];
+  if (best) return { take: true, best: recipient(best) };
+  const setup = all.filter(x => x.a.setup).sort((a, b) => b.a.setup.value - a.a.setup.value)[0];
+  if (setup?.a.setup.fits) return { take: true, best: { ...recipient(setup), gain: setup.a.setup.value, setup: setup.a.setup.text } };
+  if (mv.category === 2) return { take: null, best: null };
+  // An attack for a member with only status moves: which one to drop is the user's call.
+  const open = all.find(x => x.a.learn === null);
+  if (open) return { take: null, best: recipient(open) };
+  const closest = all.filter(x => x.a.learn === false).sort((a, b) => b.a.gain - a.a.gain)[0];
+  return { take: false, best: null, closest: closest ? recipient(closest) : null };
+};
+
 const shopTier = t => {
   if (t.tier != null) return t.tier;
   try { return t.getOrInferTier?.() ?? null; } catch { return null; }
@@ -150,29 +180,31 @@ const shopModel = (s, h) => {
       const mv = learnMoveById(party, t.moveId);
       extra.moveId = t.moveId ?? null;
       extra.move = mv ? { name: mv.name, type: TYPES[mv.type] ?? "Normal", cat: ["physical", "special", "status"][mv.category] } : null;
-      if (!users) { v = 5; why = "TM — can't check who learns it"; }
-      else if (!users.length) { v = -6; why = "TM — nobody can learn it"; extra.users = []; }
+      const users = tmLearners(t, alive);
+      if (!users || !mv) { v = 5; why = "TM — can't check who learns it"; extra.tm = null; }
+      else if (!users.length) { v = -6; why = "skip · nobody can learn it"; extra.users = []; extra.tm = "skip"; }
       else {
-        // The learn card's scorer on every member that can learn it and doesn't know it yet: best recipient wins.
-        const plans = mv ? users.map(p => ({ p, plan: learnPlan(p, mv, { double: !!s.currentBattle?.double, party }) })) : [];
-        const good = plans.filter(x => x.plan.incoming.value !== null && (x.plan.kind === "free" || x.plan.kind === "learn")).sort((a, b) => b.plan.gain - a.plan.gain);
-        const best = good[0] ?? null;
+        // The learn card's own decision on every member that can learn it: best recipient wins.
+        const advice = tmAdvice(mv, users, { double: !!s.currentBattle?.double, party });
+        const b = advice.best;
         extra.users = users.map(p => p.name);
-        if (best) {
-          const forget = best.plan.forget >= 0 ? best.plan.moves[best.plan.forget].name : null;
-          extra.best = { icon: iconOf(best.p), name: best.p.name, forget, gain: best.plan.gain };
-          v = 5 + Math.min(20, Math.round(best.plan.gain / 6));
-          why = `TM for ${best.p.name}${forget ? ` (over ${forget})` : " (free slot)"}`;
-        } else if (mv && mv.category === 2) {
+        extra.tm = advice.take ? "take" : advice.take === false ? "skip" : "maybe";
+        if (b) extra.best = { icon: b.icon, name: b.name, forget: b.forget, gain: b.gain, ...(b.setup ? { setup: b.setup } : {}) };
+        if (advice.take && b.setup) {
           // Setup moves: the member it suits best (boosts the stat it attacks with, no setup move yet).
-          const setup = plans.filter(x => x.plan.incoming.setup).sort((a, b) => b.plan.incoming.setup.value - a.plan.incoming.setup.value)[0];
-          if (setup?.plan.incoming.setup.fits) {
-            const su = setup.plan.incoming.setup;
-            extra.best = { icon: iconOf(setup.p), name: setup.p.name, forget: null, gain: su.value };
-            v = 10 + Math.min(10, Math.round(su.value / 10));
-            why = `setup TM for ${setup.p.name} (${su.text})`;
-          } else { v = 3; why = `status TM — ${users[0].name}${users.length > 1 ? ` +${users.length - 1}` : ""} can learn it`; }
-        } else { v = -3; why = `TM — no upgrade for ${users.map(p => p.name).slice(0, 2).join("/")}`; }
+          v = 10 + Math.min(10, Math.round(b.gain / 10));
+          why = `setup TM for ${b.name} (${b.setup})${b.forget ? ` over ${b.forget}` : ""}`;
+        } else if (advice.take) {
+          v = 5 + Math.min(20, Math.round(b.gain / 6));
+          why = `TM for ${b.name}${b.forget ? ` (over ${b.forget})` : " (free slot)"} · +${b.gain} power`;
+        } else if (b) {
+          v = 3; why = `TM for ${b.name} — ${b.reason}, your call`;
+        } else if (advice.take === null) {
+          v = 3; why = `status TM — ${users[0].name}${users.length > 1 ? ` +${users.length - 1}` : ""} can learn it`;
+        } else {
+          const c = advice.closest;
+          v = -3; why = `skip · no upgrade for ${users.map(p => p.name).slice(0, 2).join("/")}${c?.against ? ` · ${c.name} keeps ${c.against}` : ""}`;
+        }
       }
     } else if (isA(t, "EvolutionItemModifierType") || isA(t, "FormChangeItemModifierType")) {
       const evo = isA(t, "EvolutionItemModifierType");
