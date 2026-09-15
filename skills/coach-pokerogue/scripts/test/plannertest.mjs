@@ -103,10 +103,10 @@ const cyrus = withMetagross => {
 };
 
 // Mounts the HUD on a mocked scene and returns the rendered lines (`field`: everything above the foe rows).
-const render = ({ party, foes, live, arena, dist, switches, double = false }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
-  const pm = { getCurrentPhase: () => (live ? { phaseName: "CommandPhase" } : null), queueMessage() {} };
+  const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : live ? { phaseName: "CommandPhase" } : null), queueMessage() {} };
   const onField = () => party.filter(p => p.isOnField());
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
   const [gyarados, weavile] = foes;
@@ -288,4 +288,54 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   assert.ok(field.some(l => /Hydreigon → Ferrothorn switches/.test(l)), "switch predicted");
   assert.ok(!slotLines(field).some(l => /→ Hydreigon/.test(l)), `no slot aims at the leaving Hydreigon:\n${field.join("\n")}`);
   assert.ok(!field.some(l => /^◎ focus Hydreigon/.test(l)), "no focus on the leaving Hydreigon");
+}
+
+// ---- 9–11. Free switch: the game asks "Will you switch Pokémon?" before the first turn (CheckSwitchPhase).
+// Ninetales is on the field and loses to the faster Rhyperior. Swampert beats it — but as a normal switch it would
+// eat a Stone Edge coming in (≥ 25 % KO), so in the command phase it's rejected. Offered free, it's the answer.
+Object.assign(TABLE, {
+  "Ninetales>Flamethrower>Rhyperior": [[60], 1, 0.25], "Swampert>Surf>Rhyperior": [[220], 1, 4],
+  "Rhyperior>Stone Edge>Ninetales": [[500], 0.8, 2], "Rhyperior>Stone Edge>Swampert": [[200], 0.8, 0.5],
+});
+const freeSwitchCase = swampertOut => ({
+  party: [
+    mon("Ninetales", 70, ["Fire"], [190, 90, 100, 130, 140, 120], [["Flamethrower", "Fire", 90, "S"]], !swampertOut, swampertOut ? undefined : 120),
+    mon("Swampert", 70, ["Water", "Ground"], [187, 140, 120, 100, 120, 60], [["Surf", "Water", 90, "S"]], swampertOut),
+  ],
+  foes: [
+    mon("Rhyperior", 72, ["Ground", "Rock"], [200, 180, 160, 60, 70, 140], [["Stone Edge", "Rock", 100, "P"]], true),
+    mon("Tyranitar", 72, ["Rock", "Dark"], [260, 180, 140, 90, 120, 80], [["Crunch", "Dark", 80, "P"]], false),
+  ],
+});
+const stoneEdge = () => [{ name: "Stone Edge", type: "Rock", p: 1, score: 10, targets: [0] }];
+// The stub predicts Rhyperior switching to Tyranitar; during a free switch the enemy hasn't decided anything yet.
+const rhyperiorSwitches = foes => active => new Map(active.includes(foes[0]) ? [[foes[0], { to: foes[1], ratio: 1 }]] : []);
+
+// 9. Command phase: the switch-in would be KO'd coming in, so it isn't recommended.
+{
+  const { party, foes } = freeSwitchCase(false);
+  const { lines, field } = render({ party, foes, live: true, dist: stoneEdge, switches: () => new Map() });
+  console.log(`== free switch — same field in the command phase (live)\n${lines.join("\n")}`);
+  assert.ok(!field.some(l => /Swampert in(?! · optional)/.test(l)), `Swampert would be KO'd coming in:\n${field.join("\n")}`);
+}
+
+// 10. CheckSwitchPhase: Swampert comes in without a hit and no turn lost.
+{
+  const { party, foes } = freeSwitchCase(false);
+  const { lines, field } = render({ party, foes, live: true, phase: "CheckSwitchPhase", dist: stoneEdge, switches: rhyperiorSwitches(foes) });
+  console.log(`== free switch — switch (live)\n${lines.join("\n")}`);
+  assert.match(field[0] ?? "", /^⇄ free switch\? Ninetales → Swampert \(no hit taken\)/, `free switch line first:\n${field.join("\n")}`);
+  assert.ok(field.some(l => /^⚔ Swampert .*Surf → Rhyperior/.test(l)), "the coming turn's plan follows");
+  assert.ok(!field.some(l => /^(now|next):/.test(l)), "no now/next split for a free switch");
+  assert.ok(!field.some(l => /switches — moves aimed at it/.test(l)), "no enemy switch predicted before the enemy has seen our field");
+}
+
+// 11. CheckSwitchPhase with the best mon already out: stay.
+{
+  const { party, foes } = freeSwitchCase(true);
+  const { lines, field } = render({ party, foes, live: true, phase: "CheckSwitchPhase", dist: stoneEdge, switches: () => new Map() });
+  console.log(`== free switch — stay (live)\n${lines.join("\n")}`);
+  assert.match(field[0] ?? "", /^⇄ free switch\? stay — Swampert is best here/, `stay line first:\n${field.join("\n")}`);
+  assert.ok(field.some(l => /^⚔ Swampert .*Surf → Rhyperior/.test(l)));
+  assert.ok(!field.some(l => /Ninetales/.test(l)), "no switch suggested");
 }

@@ -84,3 +84,47 @@ Ferrothorn Ferrothorn L80 Grass Steel 100% ✦ x ▲ Fighting Fire ×4 ✕ Poiso
 1 Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
 2 Lucario ⇄ Fighting Aura Sphere → Snorlax switch in, takes a hit · KO · 54% left
 3 Lucario Fighting Aura Sphere → Ferrothorn KO · 7% left
+== free switch — same field in the command phase (live)
+🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
+⚔ Ninetales 💀 Rock ×2 {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
+⇄ no safe switch-in — every bench mon is KO'd coming in or before it acts
+🩸 Fighting ×2 Ground ×2 Steel ×2 Water ×2
+Rhyperior Rhyperior L72 Ground Rock 100% ✦ x ▲ Fighting Ground Steel Water ×4 Grass ×4 Ice ✕ Poison ×¼ Electric ×0 ↯ Rock Stone Edge ~100% · moves first ➜ Ninetales Fire Flamethrower ~28% ⚠ loses trade
+Tyranitar Tyranitar L72 Rock Dark 100% ✦ x ▲ Fighting ×4 Ground Bug Steel Water Grass Fairy ✕ Psychic ×0 ↯ Dark Crunch moves first ➜ Swampert Water Surf ~54% · 2HKO ⚠ loses trade later
+♟ Fight plan likely lost
+☠ Tyranitar Tyranitar KOs 2/2 · win condition
+🛡 Swampert save for Tyranitar ~54%/turn
+1 Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
+2 Swampert free Water Surf → Rhyperior KO · 22% left
+3 Swampert Water Surf → Tyranitar falls · foe at 100%
+✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
+⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
+== free switch — switch (live)
+🎯 W200 · Cyrus Swampert − {Minimal overview} × {Close}
+⇄ free switch? Ninetales → Swampert (no hit taken)
+⚔ Swampert ⚠ Rock {Rhyperior's Stone Edge: ~100% of current HP, 37% KO} Water Surf → Rhyperior 1HKO
+🩸 Fighting ×2 Ground ×2 Steel ×2 Water ×2
+Rhyperior Rhyperior L72 Ground Rock 100% ✦ x ▲ Fighting Ground Steel Water ×4 Grass ×4 Ice ✕ Poison ×¼ Electric ×0 ↯ Rock Stone Edge ~100% · moves first ➜ Swampert Water Surf ~99% · 1HKO
+Tyranitar Tyranitar L72 Rock Dark 100% ✦ x ▲ Fighting ×4 Ground Bug Steel Water Grass Fairy ✕ Psychic ×0 ↯ Dark Crunch moves first ➜ Swampert Water Surf ~54% · 2HKO ⚠ loses trade later
+♟ Fight plan likely lost
+☠ Tyranitar Tyranitar KOs 2/2 · win condition
+🛡 Swampert save for Tyranitar ~54%/turn
+1 Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
+2 Swampert free Water Surf → Rhyperior KO · 22% left
+3 Swampert Water Surf → Tyranitar falls · foe at 100%
+✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
+⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
+== free switch — stay (live)
+🎯 W200 · Cyrus Swampert − {Minimal overview} × {Close}
+⇄ free switch? stay — Swampert is best here
+⚔ Swampert ⚠ Rock {Rhyperior's Stone Edge: ~100% of current HP, 37% KO} Water Surf → Rhyperior 1HKO
+🩸 Fighting ×2 Ground ×2 Steel ×2 Water ×2
+Rhyperior Rhyperior L72 Ground Rock 100% ✦ x ▲ Fighting Ground Steel Water ×4 Grass ×4 Ice ✕ Poison ×¼ Electric ×0 ↯ Rock Stone Edge ~100% · moves first ➜ Swampert Water Surf ~99% · 1HKO
+Tyranitar Tyranitar L72 Rock Dark 100% ✦ x ▲ Fighting ×4 Ground Bug Steel Water Grass Fairy ✕ Psychic ×0 ↯ Dark Crunch moves first ➜ Swampert Water Surf ~54% · 2HKO ⚠ loses trade later
+♟ Fight plan likely lost
+☠ Tyranitar Tyranitar KOs 2/2 · win condition
+🛡 Swampert save for Tyranitar ~54%/turn
+1 Swampert Water Surf → Rhyperior KO · 22% left
+2 Swampert Water Surf → Tyranitar falls · foe at 100%
+3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 65%
+⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert

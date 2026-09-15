@@ -37,6 +37,8 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      - ◎ focus / ⋔ split targeting in doubles.
      - 💀 / ⚠ danger tags, including next turn's.
      - Each foe row: weaknesses, walls, trap abilities, its likely move (↯ with %), and the pick against it.
+   - **Free switches.** The "Will you switch?" prompt (encounter start, "Switch" battle style, wild/mystery encounters only) and replacing a fainted mon cost no hit and no turn: the card shows `⇄ free switch? X → Y` or `stay`. Mid-turn switches (U-turn, Eject Button) and every trainer-battle switch cost the turn.
+   - **🎯 Catch card** (wild): catch chance per ball from the game's capture formula, and a catch / maybe / skip verdict. It weighs account value (new species, hidden ability, shiny), team value (covers weaknesses, beats the weakest member, who it would replace) and ending a dangerous encounter early. It picks the cheapest ball that works, and saves Rogue/Master balls for valuable catches.
    - **♟ Fight plan** (trainers): the enemy win condition, who to reserve for it, sacrifices for free switch-ins, step order, and a "likely lost" warning.
    - **🎓 Learn-move card:** new move vs current four as effective power, with reasons and a learn / forget / skip verdict.
    - **🛒 Rewards card:** buys for current needs (revive, heal, potion, ether) first, then the free reward by rarity tier and need, and a reroll hint.

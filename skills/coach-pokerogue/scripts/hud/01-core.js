@@ -96,6 +96,16 @@ const sandbox = (s, fn) => {
     if (Phaser.Math.RND.state() !== rnd || (battle && battle.battleSeedState !== seed)) sandboxBreaches++;
   }
 };
-// Game-code calls only run while the game is waiting for the player's command: no phase is mid-execution, and
-// the enemy's decisions for the turn haven't been made yet.
-const awaitingCommand = s => s.phaseManager?.getCurrentPhase?.()?.phaseName === "CommandPhase";
+// Game-code calls only run while the game is waiting on a player decision: no phase is mid-execution, and the
+// enemy's decisions for the turn haven't been made yet. "check-switch" is the free "Will you switch?" prompt at an
+// encounter's start (and its party screen); "faint-switch" replaces a fainted mon. A U-turn-style mid-turn switch
+// (modal SwitchPhase with doReturn) is excluded: the turn is still resolving. See references/game-code.md §9.
+const awaitingDecision = s => {
+  const ph = s.phaseManager?.getCurrentPhase?.();
+  if (ph?.phaseName === "CommandPhase") return "command";
+  // SwitchPhase(0, slot, isModal false, doReturn true) is the party screen after answering Yes.
+  if (ph?.phaseName === "CheckSwitchPhase" || (ph?.phaseName === "SwitchPhase" && !ph.isModal)) return "check-switch";
+  if (ph?.phaseName === "SwitchPhase" && ph.isModal && !ph.doReturn) return "faint-switch";
+  return null;
+};
+const awaitingCommand = s => awaitingDecision(s) !== null;

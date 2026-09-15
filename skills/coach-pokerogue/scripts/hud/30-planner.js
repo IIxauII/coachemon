@@ -3,13 +3,27 @@
 // 10-damage, `enemyMoveDistribution` in 20-enemy-ai); otherwise — and in mocks without those — from the `hits`
 // approximation, so the panel always renders.
 
+// ---- When a switch is free (read from the live build's phases; see game-code.md §9)
+// - CheckSwitchPhase ("Will you switch Pokémon?" → CONFIRM): queued only when an encounter starts — EncounterPhase.end,
+//   a mystery-encounter battle, a loaded save, a retry — never in trainer battles (battleType 1) and never when a
+//   trainer sends in its next mon; skipped under battle style "Set", or when the mon is trapped, frenzied or
+//   commanded, or no bench mon is healthy. Doubles ask once per slot. Yes → SwitchPhase → the swap happens before
+//   TurnInitPhase: no enemy hit, no turn lost, and the enemy picks its first command against our new field.
+// - Faint replacement (FaintPhase → SwitchPhase modal, no return) runs after TurnEndPhase: free too.
+// - U-turn / Volt Switch / Baton Pass / Eject Button (a deferred SwitchPhase with return) switch mid-turn: the
+//   enemy's already-chosen moves still land on the switch-in if it moves later. Not free.
+// - A regular switch command resolves before moves: the switch-in takes the hit, its move waits a turn.
+// Both prompts wait on UI input with no phase mid-execution, so the sandboxed game calls are as safe as in the
+// CommandPhase — though turnData isn't reset until TurnInitPhase.
+const plannerReady = s => awaitingDecision(s) !== null;
+
 // The same damage and threat numbers are asked for many times in one refresh (every candidate field, the rows, the
 // team plan). They only change with the turn, someone's HP or who is on the field.
 let plannerMemo = { key: null, map: new Map() };
 const planMemo = (s, k, fn) => {
   const b = s.currentBattle;
   const mons = [...(s.getPlayerParty?.() ?? []), ...(s.getEnemyParty?.() ?? [])];
-  const key = [b?.waveIndex, b?.turn, b?.enemySwitchCounter, awaitingCommand(s),
+  const key = [b?.waveIndex, b?.turn, b?.enemySwitchCounter, awaitingDecision(s),
     ...mons.map(p => p && `${p.id}:${p.hp}:${p.bossSegmentIndex ?? ""}:${p.isOnField?.() ? 1 : 0}`)].join("|");
   if (plannerMemo.key !== key) plannerMemo = { key, map: new Map() };
   if (!plannerMemo.map.has(k)) plannerMemo.map.set(k, fn());
@@ -18,7 +32,7 @@ const planMemo = (s, k, fn) => {
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
-const healAtEnd = (s, p) => (awaitingCommand(s) && typeof endOfTurnHeal === "function" ? endOfTurnHeal(p) || 0 : 0);
+const healAtEnd = (s, p) => (plannerReady(s) && typeof endOfTurnHeal === "function" ? endOfTurnHeal(p) || 0 : 0);
 // "Triple Axel ×3", "Bullet Seed ×2–5": multi-hit moves change KO math more than their power suggests.
 const hitCounts = o => {
   const ns = (o?.dist ?? []).filter(d => d.p > 0).map(d => d.n);
@@ -33,7 +47,7 @@ const rawMax = o => {
 };
 // P(foe uses a Protect-type move this turn), from the enemy AI's distribution (game code only).
 const protectChance = (s, foe) => planMemo(s, `protect:${foe.id}`, () => {
-  if (!awaitingCommand(s) || !foe.isOnField?.() || typeof enemyMoveDistribution !== "function") return 0;
+  if (!plannerReady(s) || !foe.isOnField?.() || typeof enemyMoveDistribution !== "function") return 0;
   return (enemyMoveDistribution(s, foe) ?? []).reduce((sum, d) => {
     const pm = foe.moveset[d.slot] ?? foe.moveset.find(m => m?.getName() === d.name);
     const mv = pm?.getMove?.();
@@ -53,7 +67,7 @@ const spreadMult = (s, atk) => {
 // for turn order) and `dmg` (expected damage, what the rows show).
 const planOutcomes = (s, atk, def) => planMemo(s, `o:${atk.id}>${def.id}`, () => {
   const pmOf = name => atk.moveset.find(m => m?.getName() === name) ?? null;
-  if (awaitingCommand(s) && typeof moveOutcomes === "function") {
+  if (plannerReady(s) && typeof moveOutcomes === "function") {
     const live = moveOutcomes(s, atk, def);
     if (live?.length) return live.map(o => ({ ...o, pm: pmOf(o.name), dmg: o.expected, live: true }));
   }
@@ -101,7 +115,7 @@ const actionOrder = (s, a, aPm, b, bPm) => {
 // field, the AI's rule is replayed on damage: moves that KO go first, then the SMART chain with damage standing in
 // for the move score. Without game code: the hardest-hitting move, always.
 const likelyMoves = (s, foe, me, outs, next) => {
-  const live = awaitingCommand(s);
+  const live = plannerReady(s);
   if (live && !next && foe.isOnField?.() && typeof enemyMoveDistribution === "function") {
     const dist = enemyMoveDistribution(s, foe);
     if (dist?.length) {
@@ -146,7 +160,7 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
   const outs = planOutcomes(s, foe, me);
   const moves = likelyMoves(s, foe, me, outs, next);
   if (!moves.length) return null;
-  const live = awaitingCommand(s) && typeof moveOutcome === "function" && outs.some(o => o.live);
+  const live = plannerReady(s) && typeof moveOutcome === "function" && outs.some(o => o.live);
   let expected = 0, pKo = 0, first = 0, koFirst = 0, worst = null, likely = null;
   const kos = [];
   for (const m of moves) {
@@ -232,7 +246,9 @@ const exchange = (s, me, pm, foe, opts = {}) => {
 // odds), with a bonus for pairs that cover both foes.
 // `active`: the foes our moves land on this turn (a predicted switch-in replaces the mon leaving).
 // `attackers`: the foes that actually attack this turn — a mon switching out doesn't, nor does its switch-in.
-const fieldPlan = (s, party, active, double, attackers = active) => {
+// `freeSwitch`: the game is offering a switch before the turn (CheckSwitchPhase): a switch-in takes no hit and loses
+// no turn, so every candidate field starts the coming turn fresh.
+const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = false } = {}) => {
   const slots = double && active.length === 2 ? 2 : 1;
   const current = party.filter(p => p.isOnField?.());
 
@@ -266,8 +282,10 @@ const fieldPlan = (s, party, active, double, attackers = active) => {
     if (hp <= 0 || lostChance >= 0.25) return [{ me, move: null, target: null, turns: 9, hits: 9, score: -99, hp: 0 }];
     const lost = entering ? 1 : 0;
     const free = f => !entering && !attackers.includes(f);
-    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(s, threatFrom(s, f, me, null, { next: entering }), me, hp) + (free(f) ? 1 : 0))));
-    const trade = (o, f) => exchange(s, me, o.pm, f, { hp, outcome: o, free: free(f), next: entering });
+    // A mon not yet on the field faces what the foe picks for it, not the move it chose against the current field.
+    const next = entering || !me.isOnField?.();
+    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(s, threatFrom(s, f, me, null, { next }), me, hp) + (free(f) ? 1 : 0))));
+    const trade = (o, f) => exchange(s, me, o.pm, f, { hp, outcome: o, free: free(f), next });
     const out = [];
     active.forEach((f, fi) => {
       // In doubles a spread move always hits both, so it only counts as the "both" option below.
@@ -301,12 +319,15 @@ const fieldPlan = (s, party, active, double, attackers = active) => {
   };
 
   // Every candidate field. Newcomers fill empty slots (a fainted member's) for free; any beyond that are
-  // voluntary switches (`payers`), which take the incoming hit.
-  const free = Math.max(0, slots - current.length);
+  // voluntary switches (`payers`), which take the incoming hit — unless the switch is free. `swaps` counts the
+  // voluntary switches either way.
+  const empty = Math.max(0, slots - current.length);
+  const free = freeSwitch ? slots : empty;
   const plans = [];
   const add = (picks, payers) => {
     const j = slots === 2 ? joint(picks, payers) : null;
-    plans.push({ picks, payers, extra: payers.length, joint: j, score: picks.reduce((t, p) => t + p.score, 0) + (j?.value ?? 0) });
+    const swaps = Math.max(0, picks.filter(p => !current.includes(p.me)).length - empty);
+    plans.push({ picks, payers, extra: payers.length, swaps, joint: j, score: picks.reduce((t, p) => t + p.score, 0) + (j?.value ?? 0) });
   };
 
   // Doubles: where both slots aim is one decision. Each slot's own score only knows its own hit; this adds what the
@@ -405,13 +426,15 @@ const fieldPlan = (s, party, active, double, attackers = active) => {
   // Stay with the current field unless it is actually failing: a member with nothing that damages, a member
   // that loses its trade, or a switch that is clearly better. Switching costs a turn and a free hit, so a
   // merely better field is shown as an optional hint instead — and when everything fails, staying wins ties.
+  // A free switch costs nothing, so only a tiny gain isn't worth the churn.
   const top = list => list.reduce((b, p) => (!b || p.score > b.score ? p : b), null);
   const bestAny = top(plans);
-  const bestStay = top(plans.filter(p => p.extra === 0));
+  const bestStay = top(plans.filter(p => p.swaps === 0));
   const failing = plan => plan.picks.some(p => !p.move || p.score < 0);
-  const stay = !!bestStay && (failing(bestStay) ? bestAny.score <= bestStay.score : bestAny.score - bestStay.score < 3);
+  const margin = freeSwitch ? 0.5 : 3;
+  const stay = !!bestStay && (failing(bestStay) ? bestAny.score <= bestStay.score : bestAny.score - bestStay.score < margin);
   const best = stay ? bestStay : bestAny;
-  const alt = stay && bestAny !== bestStay && bestAny.extra > 0 ? bestAny : null;
+  const alt = stay && bestAny !== bestStay && bestAny.swaps > 0 ? bestAny : null;
 
   // How badly a foe hits a slot's pokémon. "ko": likely KO (≥ 50 %) and the foe likely acts first; "risk": a likely
   // KO after we act, a real KO chance, or a super-effective hit for half the HP or more. `next`: the hit comes next
@@ -475,7 +498,8 @@ const fieldPlan = (s, party, active, double, attackers = active) => {
     view: {
       optional: alt ? swaps(alt) : [],
       // Staying is failing but every switch-in would be KO'd coming in: say so rather than stay silent.
-      noSafeSwitch: best.extra === 0 && failing(best) && party.length > current.length,
+      noSafeSwitch: !freeSwitch && best.swaps === 0 && failing(best) && party.length > current.length,
+      freeSwitch,
       slots: best.picks.map(p => {
         const enter = best.payers.includes(p.me);
         return {
@@ -508,16 +532,20 @@ const duel = (s, me, foe) => {
 // Plain data for one refresh. Its JSON is the change signature, so the DOM is
 // only rebuilt when something the panel shows has actually changed.
 // While the game waits for a command, the whole refresh runs in one sandbox (every game call it makes).
-const model = (s, b, party, foes) => (awaitingCommand(s) ? sandbox(s, () => battleModel(s, b, party, foes)) : battleModel(s, b, party, foes));
+const model = (s, b, party, foes) => (plannerReady(s) ? sandbox(s, () => battleModel(s, b, party, foes)) : battleModel(s, b, party, foes));
 const battleModel = (s, b, party, foes) => {
   const onField = foes.filter(f => f.isOnField?.());
   const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
-  const predicted = predictSwitches(s, b, active);
+  // During a free switch the enemy hasn't decided anything: it picks its first command after our switch, against
+  // the field we choose. Its switch rule isn't replayable against a hypothetical field, so predict none now; the
+  // CommandPhase refresh predicts against the real field. (CheckSwitchPhase isn't offered in trainer battles.)
+  const freeSwitch = awaitingDecision(s) === "check-switch";
+  const predicted = freeSwitch ? new Map() : predictSwitches(s, b, active);
   const switching = f => (predicted.get(f)?.ratio ?? 0) >= 1;
   // Plan against the field our moves will actually hit; if a switch is predicted, also keep the plan for
   // the case it stays, shown dim.
   const facing = active.map(f => (switching(f) ? predicted.get(f).to : f));
-  const plan = fieldPlan(s, party, facing, !!b.double, active.filter(f => !switching(f)));
+  const plan = fieldPlan(s, party, facing, !!b.double, active.filter(f => !switching(f)), { freeSwitch });
   const ifStay = active.some(switching) ? fieldPlan(s, party, active, !!b.double) : null;
 
   // Foes on the field take their pokémon and move from the field plan, so the rows never contradict it.
@@ -585,6 +613,7 @@ const battleModel = (s, b, party, foes) => {
     kind: "battle",
     field: plan?.view ?? null,
     teamPlan: b.trainer ? teamPlan(s, b, party, foes) : null,
+    catch: b.trainer ? null : catchAdvice(s, b, party, foes),
     enemySwitches: active.filter(f => predicted.has(f)).map(f => ({
       from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
     })),

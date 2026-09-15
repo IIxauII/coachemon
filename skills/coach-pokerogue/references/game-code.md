@@ -562,3 +562,46 @@ reflected by `isUsable` / move queue.
   `endOfTurnHeal` between turns and boss segment state carried over; cap 9.
 - `exchange(s, me, myPm, foe)` → `{ pWeKoFirst, pTheyKoFirst, expectedHpLeft }` combining `actionOrder`,
   `moveOutcome` (acc, crit, dist), `enemyMoveDistribution` and survival items. Feeds `fieldPlan` scores.
+
+---
+
+## 9. Free switches, and when a switch costs the turn
+
+Read from `battle-scene-BmkpVc5x.js` (phases). `PhaseTree`: `pushPhase` appends to level 0 (the turn's base queue,
+where TurnStartPhase also pushes the MovePhase markers and `queueTurnEndPhases` —
+`WeatherEffectPhase, PositionalTagPhase, BerryPhase, CheckStatusEffectPhase, TurnEndPhase`); `unshiftPhase` /
+`queueDeferred` add to a deeper level that runs before control returns to level 0.
+
+**CheckSwitchPhase** ("Will you switch Pokémon?"):
+```
+start(){ let e=B.getPlayerField()[this.fieldIndex]; if(B.battleStyle===1){this.end();return}
+  if(field lacks e) → unshiftNew('SummonMissingPhase'); if(no healthy bench) end;
+  if(e.getTag('FRENZY')||e.isTrapped()||B.getPlayerField().some(p=>p.getTag('COMMANDED'))) end;
+  B.ui.showText(t('battle:switchQuestion'),null,()=>{ B.ui.setMode(14 /*CONFIRM*/,
+    ()=>{ B.ui.setMode(0); B.phaseManager.unshiftNew('SwitchPhase',0,this.fieldIndex,false,true); this.end() },
+    ()=>{ B.ui.setMode(0); this.end() }) }) }
+```
+- Queued (`pushNew('CheckSwitchPhase', 0, double)`, plus slot 1 in doubles) only at encounter start:
+  `EncounterPhase.end` (`battleType!==1 && (waveIndex>1 || !isDaily) && allowedParty.length > (double?2:1)`),
+  mystery-encounter `endBattleSetup` (`encounterMode!==1 && !disableSwitch`), TitlePhase loading a session, and
+  GameOverPhase retry. **Never in trainer battles** (BattleType 1 = TRAINER; `trainer.genAI` is gated on it) and
+  **never when a trainer sends its next mon** (the post-KO `SwitchSummonPhase` queues nothing for the player).
+  `battleStyle` is the "Battle Style" setting: 0 Switch (default), 1 Set (skips the prompt).
+- Yes → `SwitchPhase(SWITCH, slot, isModal=false, doReturn=true)` → party UI (mode 8) → `SwitchSummonPhase`, all
+  before `InitEncounterPhase`/`TurnInitPhase`. The enemy has no command yet: TurnInitPhase pushes our CommandPhase,
+  then EnemyCommandPhase, so its first move choice and switch check see the new field. No hit, no turn lost.
+- Game calls during it: the phase sits in the text/CONFIRM callbacks with nothing mid-execution, same as a waiting
+  CommandPhase. Sandboxed calls are safe; `turnData` hasn't been reset (TurnInitPhase does that) and
+  `turnCommands` are empty.
+
+**Other switch moments**
+| Moment | Phases | Enemy acts on the switch-in first? | Enemy's next command decided against |
+|---|---|---|---|
+| Switch command in CommandPhase | TurnStartPhase: non-FIGHT commands first → `SwitchSummonPhase(1,…)` | yes: every enemy move this turn (targets resolved to the slot) | old field this turn; new field next turn |
+| Faint replacement (ours) | FaintPhase → `pushNew('SwitchPhase',1,slot,isModal=true,doReturn=false)` → level 0, after TurnEndPhase | no (turn is over) | new field |
+| Trainer post-KO send-in | FaintPhase → `pushNew('SwitchSummonPhase',1,slot,-1,false,false)` (`getNextSummonIndex`) → after TurnEndPhase | — | its new mon decides next turn against our field then |
+| U-turn / Volt Switch / Flip Turn / Baton Pass / Eject Button / Emergency Exit | `ForceSwitchOutHelper.switchOutLogic` → `queueDeferred('SwitchPhase',type,slot,true,true)` (Baton Pass type 2 transfers stages) | yes, if the enemy moves later in the turn (its command was already chosen against the old mon's slot) | old field this turn; new field next turn |
+| Roar/Dragon Tail on us | `queueDeferred('SwitchSummonPhase',4,…)` random bench mon | same as above | same |
+
+Faint-replacement `SwitchPhase` is also idle UI (party screen), so game calls are safe there; tell it apart from a
+mid-turn U-turn `SwitchPhase` by `isModal && !doReturn`.

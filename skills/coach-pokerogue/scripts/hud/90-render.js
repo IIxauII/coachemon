@@ -157,7 +157,16 @@ const drawBattle = m => {
   const split = !!f?.slots.some(sl => sl.enter);
   const field = !f ? [...enemySwitches] : [
     ...enemySwitches,
-    ...(split
+    // The game is asking whether to switch before the turn: the answer first, then the coming turn's plan.
+    ...(f.freeSwitch
+      ? [...(f.switches.length
+          ? f.switches.map(sw => line("⇄", "#6d6", h("span", { color: "#6d6", marginRight: "3px" }, "free switch?"),
+              ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), h("span", { color: "#6d6", margin: "0 3px" }, "→")] : []),
+              mon(sw.in.icon, sw.in.name, 20), h("span", { ...dim, marginLeft: "3px" }, "(no hit taken)")))
+          : [line("⇄", "#6d6", h("span", { color: "#6d6", marginRight: "3px" }, "free switch? stay —"),
+              h("span", dim, `${f.slots.map(sl => sl.name).join(" & ")} ${f.slots.length > 1 ? "are" : "is"} best here`))]),
+        ...f.slots.map(sl => slotLine(sl))]
+      : split
       ? [...f.switches.map(sw => swapLine(sw, "#fa4", "in", "now:")),
         ...f.slots.filter(sl => !sl.enter).map(sl => slotLine(sl, "now:")),
         ...f.slots.filter(sl => sl.enter).map(sl => slotLine(sl, "next:"))]
@@ -180,7 +189,7 @@ const drawBattle = m => {
       r.pick ? h("span", { display: "flex", alignItems: "center" },
         h("span", { color: r.pick.later ? "#9aa" : "#8cf" }, r.pick.later ? "later" : "➜"), mon(r.pick.icon, r.pick.name, 20), badge(r.pick.type),
         r.pick.risky ? h("span", { color: "#fa4" }, "⚠") : null) : null));
-    return [header, ...field, ...rows].filter(Boolean);
+    return [header, ...field, ...drawCatch(m), ...rows].filter(Boolean);
   }
 
   // With one foe the team line just repeats its weaknesses.
@@ -218,7 +227,7 @@ const drawBattle = m => {
           r.pick.notes?.length ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, r.pick.notes.join(" · ")) : null,
           r.pick.vs ? [h("span", { color: "#c9f", fontSize: "9px", margin: "0 2px 0 4px" }, "into"), mon(r.pick.vs.icon, r.pick.vs.name, 18)] : null)
       : line("➜", "#8cf", h("span", dim, "no damaging move lands"))));
-  return [header, ...field, team, ...rows, ...drawTeamPlan(m)].filter(Boolean);
+  return [header, ...field, ...drawCatch(m), team, ...rows, ...drawTeamPlan(m)].filter(Boolean);
 };
 
 const el = document.createElement("div");
