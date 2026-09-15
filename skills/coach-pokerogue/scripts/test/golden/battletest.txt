@@ -6,6 +6,12 @@
 🩸 Ground ×2 Fighting ×1 Fire ×1 Water ×1
 Bisharp Bisharp L60 Dark Steel 100% ✦ Inner Focus ▲ Fighting ×4 Ground Fire ✕ Poison ×0 Psychic ×0 ↯ Steel Iron Head ~55% · moves after ➜ Charizard Fire Heat Wave ~100% · 1HKO
 Nidoqueen Nidoqueen L64 Poison Ground 100% ✦ Rivalry ▲ Ground Water Psychic Ice ✕ Poison ×¼ Electric ×0 ↯ Poison Sludge Bomb ~55% · moves after ➜ Venusaur Grass Power Whip ~56% · 2HKO
+== lastFoe
+🎯 W89 Charizard › Venusaur − {Minimal overview} × {Close}
+⚔ Charizard Fire Heat Wave → Nidoqueen 2HKO
+⚔ Venusaur Grass Power Whip → Nidoqueen 2HKO
+◎ focus Nidoqueen : KO before it moves
+Nidoqueen Nidoqueen L64 Poison Ground 100% ✦ Rivalry ▲ Ground Water Psychic Ice ✕ Poison ×¼ Electric ×0 ↯ Poison Sludge Bomb ~55% · moves after ➜ Charizard Fire Heat Wave ~55% · 2HKO
 == threat
 🎯 W89 Charizard − {Minimal overview} × {Close}
 ⚔ Charizard 💀 Rock ×4 {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc

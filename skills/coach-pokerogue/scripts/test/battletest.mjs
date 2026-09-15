@@ -19,6 +19,10 @@ const scenarios = {
   double: { double: true, party, foes: [
     mon("Bisharp", 60, ["Dark","Steel"], "Inner Focus", [152,140,120,70,80,90], [["Iron Head","Steel",80,"P"],["Night Slash","Dark",70,"P"]], true),
     mon("Nidoqueen", 64, ["Poison","Ground"], "Rivalry", [201,120,115,100,110,100], [["Earth Power","Ground",90,"S"],["Sludge Bomb","Poison",90,"S"]], true)] },
+  // Doubles with one foe left: both of our slots still need a move.
+  lastFoe: { double: true, party, foes: [
+    mon("Bisharp", 60, ["Dark","Steel"], "Inner Focus", [152,140,120,70,80,90], [["Iron Head","Steel",80,"P"],["Night Slash","Dark",70,"P"]], false, 0),
+    mon("Nidoqueen", 64, ["Poison","Ground"], "Rivalry", [201,120,115,100,110,100], [["Earth Power","Ground",90,"S"],["Sludge Bomb","Poison",90,"S"]], true)] },
   threat: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,120], [["Flamethrower","Fire",90,"S"],["Air Slash","Flying",75,"S"]], true, 120),
     mon("Blastoise", 64, ["Water"], "Torrent", [187,122,144,125,151,116], [["Wave Crash","Water",120,"P"]], false)],
