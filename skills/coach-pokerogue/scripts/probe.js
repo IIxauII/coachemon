@@ -12,6 +12,8 @@
     const s = game.scene.getScene("battle");
     // Mid-reload or on the title screen the battle scene exists without its UI yet.
     if (!s?.ui) throw Object.assign(new Error("game loading"), { loading: true });
+    // Title screen or between runs: no battle to read.
+    if (MODE === "battle" && !s.currentBattle) throw Object.assign(new Error("no battle"), { loading: true });
     if (MODE === "starters") {
       const gd = s.gameData;
       const h = s.ui.getHandler();
