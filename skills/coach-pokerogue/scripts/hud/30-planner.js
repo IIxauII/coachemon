@@ -249,7 +249,9 @@ const exchange = (s, me, pm, foe, opts = {}) => {
 // `freeSwitch`: the game is offering a switch before the turn (CheckSwitchPhase): a switch-in takes no hit and loses
 // no turn, so every candidate field starts the coming turn fresh.
 const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = false } = {}) => {
-  const slots = double && active.length === 2 ? 2 : 1;
+  // Our side has two slots whenever two of us can stand, even if only one foe is left; `pair`: two foes to aim at.
+  const slots = double && party.length >= 2 ? 2 : 1;
+  const pair = double && active.length === 2;
   const current = party.filter(p => p.isOnField?.());
 
   // A voluntary switch-in is hit before it acts, by moves the AI picked against the mon leaving.
@@ -288,10 +290,10 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     const trade = (o, f) => exchange(s, me, o.pm, f, { hp, outcome: o, free: free(f), next });
     const out = [];
     active.forEach((f, fi) => {
-      // In doubles a spread move always hits both, so it only counts as the "both" option below.
+      // Against two foes a spread move always hits both, so it only counts as the "both" option below.
       let best = null;
       for (const o of planOutcomes(s, me, f)) {
-        if (!(o.expected > 0) || (slots === 2 && o.spread)) continue;
+        if (!(o.expected > 0) || (pair && o.spread)) continue;
         const x = trade(o, f);
         const turns = x.turnsWe + lost;
         const score = danger - turns + (x.pWeKoFirst - x.pTheyKoFirst);
@@ -299,7 +301,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       }
       if (best) out.push(best);
     });
-    if (slots === 2) {
+    if (pair) {
       for (const o of planOutcomes(s, me, active[0]).filter(x => x.spread && x.expected > 0)) {
         const other = planOutcomes(s, me, active[1]).find(x => x.name === o.name);
         const xs = [trade(o, active[0]), other ? trade(other, active[1]) : null];
@@ -325,7 +327,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   const free = freeSwitch ? slots : empty;
   const plans = [];
   const add = (picks, payers) => {
-    const j = slots === 2 ? joint(picks, payers) : null;
+    const j = slots === 2 || pair ? joint(picks, payers) : null;
     const swaps = Math.max(0, picks.filter(p => !current.includes(p.me)).length - empty);
     plans.push({ picks, payers, extra: payers.length, swaps, joint: j, score: picks.reduce((t, p) => t + p.score, 0) + (j?.value ?? 0) });
   };
