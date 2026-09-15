@@ -95,13 +95,17 @@ const { captureChance, catchAdvice } = (() => {
   const damagingTypes = p => (p.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } })
     .filter(mv => mv && mv.category !== 2 && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean);
   const bstOf = p => p.species?.baseTotal ?? 0;
+  const rootOf = (p, live) => call(live, () => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
+  // A clear upgrade over our weakest member: this much more BST, and a real mon, not a route-1 one beating another.
+  const UPGRADE_BST = 100, UPGRADE_FLOOR = 400;
 
-  const teamReasons = (s, foe, b) => {
+  const teamReasons = (s, foe, b, live) => {
     const all = (s.getPlayerParty?.() ?? []).filter(Boolean);
     const out = [];
     const limited = (s.gameMode?.challenges ?? []).some(c => c.id === 7 && c.value > 0) && b.waveIndex % 10 !== 1;
     if (limited) return { out: [{ kind: "team", text: "Limited Catch: won't join the party", w: 0 }], replace: null };
-    if (!all.length) return { out, replace: null };
+    // Its line is already on the team: a second one adds nothing.
+    if (!all.length || all.some(p => rootOf(p, live) === rootOf(foe, live))) return { out, replace: null };
 
     // Attacking types that hit two or more of us super-effectively and that more of us are weak to than resist.
     const weak = TYPES.filter(t => {
@@ -121,8 +125,8 @@ const { captureChance, catchAdvice } = (() => {
 
     const weakest = all.reduce((w, p) => (!w || bstOf(p) < bstOf(w) || (bstOf(p) === bstOf(w) && p.level < w.level) ? p : w), null);
     const full = all.length >= 6;
-    if (bstOf(foe) && bstOf(weakest) && bstOf(foe) >= bstOf(weakest) + 50) {
-      out.push({ kind: "team", text: `stronger than ${weakest.name} (BST ${bstOf(foe)} vs ${bstOf(weakest)})`, w: 1.5 });
+    if (bstOf(weakest) && bstOf(foe) >= UPGRADE_FLOOR && bstOf(foe) >= bstOf(weakest) + UPGRADE_BST) {
+      out.push({ kind: "team", text: `stronger than ${weakest.name} (BST ${bstOf(foe)} vs ${bstOf(weakest)})`, w: 2 });
     }
     // A full party makes room by releasing someone: name who, if the catch is a team upgrade at all.
     const replace = full && out.length ? { icon: iconOf(weakest), name: weakest.name } : null;
@@ -131,6 +135,7 @@ const { captureChance, catchAdvice } = (() => {
   };
 
   // ---- Account value (dex, starter unlocks, abilities, IVs, shinies). Pure reads of gameData.
+  const IV_TOTAL = 30, IV_STAT = 15;
   const accountReasons = (s, foe, live) => {
     const out = [];
     const sp = foe.species;
@@ -138,7 +143,7 @@ const { captureChance, catchAdvice } = (() => {
     if (!sp || !gd?.dexData) return out;
     const dex = gd.dexData[sp.speciesId];
     const caught = big(dex?.caughtAttr);
-    const root = call(live, () => sp.getRootSpeciesId(true), sp.speciesId) ?? sp.speciesId;
+    const root = rootOf(foe, live);
     const rootDex = gd.dexData[root];
     const rare = sp.legendary || sp.subLegendary || sp.mythical;
     if (!caught) {
@@ -153,9 +158,9 @@ const { captureChance, catchAdvice } = (() => {
       const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
       if (caught && !(caught & 2n)) out.push({ kind: "account", text: `first shiny · +${candy} candy`, w: 3 });
       else if (caught && (caught & attr & 112n) !== (attr & 112n)) out.push({ kind: "account", text: `new shiny variant · +${candy} candy`, w: 2.5 });
-      else out.push({ kind: "account", text: `shiny · +${candy} candy`, w: 1.5 });
+      else out.push({ kind: "account", text: `shiny · +${candy} candy`, w: 2 });
     }
-    if (caught && (caught & (attr & ~127n)) === 0n) out.push({ kind: "account", text: "new form", w: 1 });
+    if (caught && (caught & (attr & ~127n)) === 0n) out.push({ kind: "account", text: "new form", w: 2 });
 
     const ab = foe.abilityIndex ?? 0;
     const bit = ab !== 1 || sp.ability2 ? 1 << ab : 4;
@@ -170,13 +175,21 @@ const { captureChance, catchAdvice } = (() => {
     if (big(rootDex?.caughtAttr) && Array.isArray(dexIvs) && Array.isArray(foe.ivs)) {
       const gains = foe.ivs.map((v, i) => Math.max(0, v - (dexIvs[i] ?? 0)));
       const total = gains.reduce((t, x) => t + x, 0);
-      if (total >= 15 || Math.max(...gains) >= 10) out.push({ kind: "account", text: `IVs +${total} on ${gains.filter(Boolean).length} stats`, w: 1 });
+      // Early dex IVs are low, so small gains come with nearly every wild mon: only a big one counts, and it's only
+      // worth a card for a line we're using.
+      const using = (s.getPlayerParty?.() ?? []).some(p => p && rootOf(p, live) === root);
+      if (total >= IV_TOTAL || Math.max(...gains) >= IV_STAT) {
+        out.push({ kind: "account", text: `IVs +${total} on ${gains.filter(Boolean).length} stats${using ? " (on the team)" : ""}`, w: using ? 2 : 1 });
+      }
     }
     return out;
   };
 
   // ---- Ending the encounter
   // Our fastest KO of `foe` from the field against what it deals meanwhile. `p`: the throw's chance with a cheap ball.
+  // Chip damage over the whole fight that makes it dangerous, as a share of our HP: only a fight that wears us down to a
+  // KO. A slow fight that costs HP a heal fixes isn't worth a ball and a party slot.
+  const CHIP = 1;
   const escapeReason = (s, foe, party, p) => {
     if (!(p > 0)) return null;
     let best = null;
@@ -203,7 +216,7 @@ const { captureChance, catchAdvice } = (() => {
       // Foe turns before our finishing blow, against failed throws (each gives it one).
       const hitsFight = turns >= 9 ? 9 : Math.max(0, turns - first);
       const hitsThrow = (1 - p) / p;
-      const danger = theyFirst >= 0.3 || (pKo >= 0.5 && turns >= 2) || dmg * hitsFight >= me.hp * 0.5;
+      const danger = theyFirst >= 0.3 || (pKo >= 0.5 && turns >= 2) || dmg * hitsFight >= me.hp * CHIP;
       if (danger && hitsThrow + 0.25 < hitsFight && (!best || hitsFight - hitsThrow > best.gain)) {
         best = { gain: hitsFight - hitsThrow, me, turns, pKo };
       }
@@ -218,6 +231,9 @@ const { captureChance, catchAdvice } = (() => {
   // Ultra for a solid catch, Rogue for a valuable one, Master only for something rare.
   const maxBallFor = (value, counts) => (value >= 5 ? 4 : value >= 2.5 ? 3 : value >= 1.5 || counts[2] >= 5 ? 2 : 1);
   const GOOD = 0.6;
+  // The least value that earns a card: one real reason (new species/form, hidden ability, shiny, clear upgrade, a big
+  // IV gain on the team's line) or two lesser ones together.
+  const SHOW = 2;
   const pickBall = (chance, maxId) => {
     const allowed = chance.filter(c => c.id <= maxId && c.count > 0 && c.p > 0);
     return allowed.find(c => c.p >= GOOD) ?? allowed.reduce((b, c) => (!b || c.p > b.p ? c : b), null);
@@ -234,7 +250,7 @@ const { captureChance, catchAdvice } = (() => {
       }) * 1000) / 1000,
     }));
 
-    const team = teamReasons(s, foe, b);
+    const team = teamReasons(s, foe, b, live);
     const reasons = [...accountReasons(s, foe, live), ...team.out];
     let value = reasons.reduce((t, r) => t + r.w, 0);
     const cheap = pickBall(chance, value >= 1.5 ? maxBallFor(value, counts) : maxBallFor(0, counts));
@@ -244,9 +260,10 @@ const { captureChance, catchAdvice } = (() => {
     const p = best?.p ?? 0;
     const hp = foe.hp / foe.getMaxHp();
 
+    // Below SHOW nothing is worth a ball (a covered weakness or a small IV gain alone isn't): skip, and skips aren't drawn.
     let verdict = "skip";
-    if ((value >= 2.5 && p >= 0.3) || (value >= 1.5 && p >= 0.5) || (escape && p >= 0.5)) verdict = "catch";
-    else if (value >= 1.5 || (value >= 1 && p >= 0.5) || (escape && p >= 0.25)) verdict = "maybe";
+    if ((value >= 2.5 && p >= 0.3) || (value >= SHOW && p >= 0.5) || (escape && p >= 0.5)) verdict = "catch";
+    else if (value >= SHOW || (escape && p >= 0.25)) verdict = "maybe";
 
     // Ending a dangerous fight leads when it's there: it's what makes a throw urgent this turn.
     const rank = r => (r.kind === "escape" ? 9 : r.w);

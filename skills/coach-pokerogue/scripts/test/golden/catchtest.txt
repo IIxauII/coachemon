@@ -11,10 +11,9 @@ PB ×5 77% GB ×3 96% UB ×2 100% RB ×1 100% MB ×1 100%
 == new species (mini)
 🎯 catch: PB 77% — new species
 == skip (full)
-🎯 Pidgey skip: low chance, nothing new
-PB ×5 4% GB ×5 7%
+
 == skip (mini)
-🎯 skip: low chance, nothing new
+
 == escape (full)
 🎯 Arcanine catch: UB 65% — ends it: we can't KO it, it KOs Venusaur
 PB ×5 44% UB ×5 65%
@@ -31,4 +30,14 @@ PB ×5 34% GB ×5 42% UB ×5 50%
 ⚑ party full: replaces Pikachu
 == team (mini)
 🎯 catch: UB 50% — new species, stronger than Pikachu (BST 479 vs 320), sleep/paralyse it for better odds
+== common owned (full)
+
+== common owned (mini)
+
+== hidden ability (full)
+🎯 Glameow catch: GB 70% — new hidden ability
+PB ×10 56% GB ×3 70% UB ×3 82% RB ×2 100% MB ×1 100%
+★ new hidden ability
+== hidden ability (mini)
+🎯 catch: GB 70% — new hidden ability
 ok

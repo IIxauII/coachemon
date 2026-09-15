@@ -1,6 +1,6 @@
 // Catch coach against wild encounters: the capture formula for a known species/ball/HP/status, trainer and boss
 // rules, a new species worth a ball, a caught weak mon not worth one, a dangerous foe a throw ends sooner than a
-// fight, and no Master Ball on a low-value catch. Prints the rendered sections, so run.mjs also keeps a golden.
+// fight, no Master Ball on a low-value catch, and no card at all for the common owned mons of an early run. Prints the rendered sections, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
@@ -31,7 +31,8 @@ const dexData = () => {
   return d;
 };
 
-const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false }) => {
+// `owned`: extra caught species ids (dex IVs 20, abilityAttr 1).
+const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [] }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : null) };
@@ -44,6 +45,10 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
     gameMode: { isDaily: false, isClassic: true, challenges: [] },
     gameData: { dexData: dexData(), starterData: { 3: { abilityAttr: 1 }, 9: { abilityAttr: 1 }, 16: { abilityAttr: 1 }, 58: { abilityAttr: 1 } } },
   };
+  for (const id of owned) {
+    scene.gameData.dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [20,20,20,20,20,20] };
+    scene.gameData.starterData[id] = { abilityAttr: 1 };
+  }
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
@@ -191,5 +196,44 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   const a = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [55,30,30,30,30,40], [["Tackle","Normal",40,"P"]], true, undefined, { id: 16, catchRate: 3, bst: 251 });
   const b = mon("Pidgey2", 20, ["Normal","Flying"], "Keen Eye", [55,30,30,30,30,40], [["Tackle","Normal",40,"P"]], true, undefined, { id: 16, catchRate: 3, bst: 251 });
   assert.equal(run({ party: [venusaur(), blastoise()], foes: [a, b], double: true }).advice, null);
+}
+
+// ---- 9. An early run (wave ~25, team L16–20) meeting the route's common mons, all already caught: no card.
+const early = () => {
+  const e = (name, types, bst, id, field) => mon(name, 18, types, "None", [55,40,40,40,40,50], [["Tackle","Normal",40,"P"]], field, undefined, { id, bst });
+  return [e("Comfey", ["Fairy"], 485, 764, true), e("Lechonk", ["Normal"], 255, 915, true), e("Patrat", ["Normal"], 255, 504, false),
+    e("Espurr", ["Psychic"], 355, 677, false), e("Morpeko", ["Electric","Dark"], 418, 877, false)];
+};
+const OWNED = [764, 915, 504, 677, 877, 431, 263, 19];
+const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,30,30,30,50], [["Scratch","Normal",40,"P"]], true, 40,
+  { id: 431, catchRate: 190, bst: 310 }, extra);
+{
+  // Outclasses Lechonk by 55 BST and gains a few IVs (+18): neither is a reason to spend a ball.
+  const { advice } = run({ party: early(), foes: [glameow({ ivs: [30,20,20,20,20,28] })], counts: { 0: 10, 1: 3, 2: 0, 3: 0, 4: 0 }, owned: OWNED });
+  const t = advice.targets[0];
+  assert.equal(t.verdict, "skip", `common owned Glameow: ${t.why}`);
+  assert.ok(t.best.p >= 0.5, "a cheap ball would work — it's still not worth it");
+  for (const v of ["full", "mini"]) { globalThis.__ca.setViewMode(v); assert.deepEqual(globalThis.__ca.drawCatch(advice), [], `no card (${v})`); }
+  show("common owned", advice);
+
+  // Doubles: Patrat + Espurr. Espurr resists the team's Fighting weakness, but an Espurr is already on the team.
+  const patrat = mon("Patrat", 15, ["Normal"], "Run Away", [45,35,30,25,30,35], [["Tackle","Normal",40,"P"]], true, undefined, { id: 504, catchRate: 255, bst: 255 });
+  const espurr = mon("Espurr", 16, ["Psychic"], "Keen Eye", [45,30,35,40,35,50], [["Confusion","Psychic",50,"S"]], true, undefined, { id: 677, catchRate: 190, bst: 355 });
+  assert.equal(run({ party: early(), foes: [patrat, espurr], double: true, owned: OWNED }).advice, null, "common owned doubles: silent");
+  // Zigzagoon + Rattata, same.
+  const zig = mon("Zigzagoon", 18, ["Normal"], "Pickup", [55,35,40,30,40,60], [["Tackle","Normal",40,"P"]], true, undefined, { id: 263, catchRate: 255, bst: 240 });
+  const rat = mon("Rattata", 19, ["Normal"], "Guts", [50,45,30,25,30,65], [["Tackle","Normal",40,"P"]], true, undefined, { id: 19, catchRate: 255, bst: 253 });
+  assert.equal(run({ party: early(), foes: [zig, rat], double: true, owned: OWNED }).advice, null, "Zigzagoon + Rattata: silent");
+}
+
+// ---- 10. The same Glameow with its hidden ability, Rogue and Master Balls in the bag: worth a card, with a cheap ball.
+{
+  const { advice } = run({ party: early(), foes: [glameow({ abilityIndex: 2 })], counts: { 0: 10, 1: 3, 2: 3, 3: 2, 4: 1 }, owned: OWNED });
+  const t = advice.targets[0];
+  assert.equal(t.verdict, "catch");
+  assert.match(t.why, /new hidden ability/);
+  assert.ok(!["Rogue Ball", "Master Ball"].includes(t.best.ball), `no Rogue/Master Ball for a hidden ability: ${t.best.ball}`);
+  assert.ok(globalThis.__ca.drawCatch(advice).length, "card drawn");
+  show("hidden ability", advice);
 }
 console.log("ok");
