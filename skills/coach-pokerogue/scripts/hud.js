@@ -55,6 +55,7 @@
     let m = typesOf(p).reduce((x, d) => x * vs(type, d), 1);
     if (ab.includes("Wonder Guard") && m < 2) return 0;
     if (ab.includes("Thick Fat") && (type === "Fire" || type === "Ice")) m /= 2;
+    if (ab.includes("Heatproof") && type === "Fire") m /= 2;
     if (m >= 2 && ab.some(a => a === "Solid Rock" || a === "Filter" || a === "Prism Armor")) m *= 0.75;
     return m;
   };
@@ -201,7 +202,7 @@
     };
   };
 
-  const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), "Wonder Guard", "Thick Fat", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple"]);
+  const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), "Wonder Guard", "Thick Fat", "Heatproof", "Solid Rock", "Filter", "Prism Armor", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple"]);
   const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"];
   const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
