@@ -127,42 +127,55 @@
       if (!out.length) out.push({ me, move: null, target: null, turns: 9, score: danger - 9 });
       return out;
     };
-    const stay = me => (me.isOnField?.() ? 0.5 : 0);
-
-    let best = null;
-    if (slots === 1) {
-      for (const me of party) for (const o of options(me)) {
-        const score = o.score + stay(me);
-        if (!best || score > best.score) best = { picks: [o], score };
-      }
-    } else {
-      const opts = party.map(options);
-      for (let i = 0; i < party.length; i++) for (let j = i + 1; j < party.length; j++) {
-        for (const a of opts[i]) for (const b of opts[j]) {
-          const covers = a.target === "both" || b.target === "both" || (a.target !== null && b.target !== null && a.target !== b.target);
-          const score = a.score + b.score + (covers ? 1 : -1) + stay(party[i]) + stay(party[j]);
-          if (!best || score > best.score) best = { picks: [a, b], score };
-        }
-      }
-      // Fewer than two healthy members: field the one there is.
-      if (!best) for (const o of opts[0] ?? []) if (!best || o.score > best.score) best = { picks: [o], score: o.score };
-    }
-    if (!best) return null;
-
-    const chosen = best.picks.map(p => p.me);
+    // Every candidate field, with how many switches it takes beyond filling empty slots.
     const current = party.filter(p => p.isOnField?.());
-    const outs = current.filter(p => !chosen.includes(p));
-    const ins = chosen.filter(p => !current.includes(p));
+    const plans = [];
+    const add = picks => {
+      const ins = picks.filter(p => !current.includes(p.me)).length;
+      const extra = Math.max(0, ins - Math.max(0, slots - current.length));
+      const covers = picks.length < 2 || picks[0].target === "both" || picks[1].target === "both"
+        || (picks[0].target !== null && picks[1].target !== null && picks[0].target !== picks[1].target);
+      plans.push({ picks, extra, score: picks.reduce((t, p) => t + p.score, 0) + (picks.length === 2 ? (covers ? 1 : -1) : 0) });
+    };
+    const opts = party.map(options);
+    if (slots === 1 || party.length < 2) {
+      opts.forEach(os => os.forEach(o => add([o])));
+    } else {
+      for (let i = 0; i < party.length; i++) for (let j = i + 1; j < party.length; j++) {
+        for (const a of opts[i]) for (const b of opts[j]) add([a, b]);
+      }
+    }
+    if (!plans.length) return null;
+
+    // Stay with the current field unless it is actually failing: a member with nothing that damages, a member
+    // that loses its trade, or a switch that is clearly better. Switching costs a turn and a free hit, so a
+    // merely better field is shown as an optional hint instead.
+    const top = list => list.reduce((b, p) => (!b || p.score > b.score ? p : b), null);
+    const bestAny = top(plans);
+    const bestStay = top(plans.filter(p => p.extra === 0));
+    const failing = plan => plan.picks.some(p => !p.move || p.score < 0);
+    const stay = bestStay && !failing(bestStay) && bestAny.score - bestStay.score < 3;
+    const best = stay ? bestStay : bestAny;
+    const alt = stay && bestAny !== bestStay && bestAny.extra > 0 ? bestAny : null;
+
+    const swaps = plan => {
+      const chosen = plan.picks.map(p => p.me);
+      const outs = current.filter(p => !chosen.includes(p));
+      return chosen.filter(p => !current.includes(p))
+        .map((p, i) => ({ out: outs[i] ? { icon: iconOf(outs[i]), name: outs[i].name } : null, in: { icon: iconOf(p), name: p.name } }));
+    };
+    const ins = swaps(best);
     return {
       picks: best.picks, // live objects for the per-foe rows; not part of the JSON-safe view
       view: {
+      optional: alt ? swaps(alt) : [],
       slots: best.picks.map(p => ({
         icon: iconOf(p.me), name: p.me.name, out: !!p.me.isOnField?.(),
         move: p.move?.name ?? null, type: p.move?.type ?? null, cat: p.move?.cat ?? null,
         target: p.target === "both" ? "both" : p.target === null ? null : { icon: iconOf(active[p.target]), name: active[p.target].name },
         ko: p.turns <= 3 ? p.turns : 0,
       })),
-      switches: ins.map((p, i) => ({ out: outs[i] ? { icon: iconOf(outs[i]), name: outs[i].name } : null, in: { icon: iconOf(p), name: p.name } })),
+      switches: ins,
       },
     };
   };
@@ -509,7 +522,10 @@
     const header = bar("🎯", m.title,
       ...m.order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, 20)]));
 
-    // ⚔ what each field slot should do; ⇄ the switches to get there.
+    const swapLine = (sw, color, tail) => line("⇄", color,
+      ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), h("span", { color, margin: "0 3px" }, "out ›")] : [h("span", { color, marginRight: "3px" }, "send")]),
+      mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail));
+    // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn).
     const f = m.field;
     const field = !f ? [] : [
       ...f.slots.map(sl => line("⚔", "#8cf",
@@ -519,9 +535,8 @@
           : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
         h("span", { flex: "1" }),
         sl.ko ? h("span", dim, `${sl.ko}HKO`) : null)),
-      ...f.switches.map(sw => line("⇄", "#fa4",
-        ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), h("span", { color: "#fa4", margin: "0 3px" }, "out ›")] : [h("span", { color: "#fa4", marginRight: "3px" }, "send")]),
-        mon(sw.in.icon, sw.in.name, 20), h("span", { color: "#fa4", marginLeft: "3px" }, "in"))),
+      ...f.switches.map(sw => swapLine(sw, "#fa4", "in")),
+      ...(view === "full" ? f.optional.map(sw => swapLine(sw, "#9aa", "in · optional")) : []),
     ];
 
     if (view === "mini") {
