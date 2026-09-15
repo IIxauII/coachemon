@@ -154,6 +154,8 @@
     const outs = current.filter(p => !chosen.includes(p));
     const ins = chosen.filter(p => !current.includes(p));
     return {
+      picks: best.picks, // live objects for the per-foe rows; not part of the JSON-safe view
+      view: {
       slots: best.picks.map(p => ({
         icon: iconOf(p.me), name: p.me.name, out: !!p.me.isOnField?.(),
         move: p.move?.name ?? null, type: p.move?.type ?? null, cat: p.move?.cat ?? null,
@@ -161,6 +163,7 @@
         ko: p.turns <= 3 ? p.turns : 0,
       })),
       switches: ins.map((p, i) => ({ out: outs[i] ? { icon: iconOf(outs[i]), name: outs[i].name } : null, in: { icon: iconOf(p), name: p.name } })),
+      },
     };
   };
 
@@ -171,15 +174,30 @@
   // Plain data for one refresh. Its JSON is the change signature, so the DOM is
   // only rebuilt when something the panel shows has actually changed.
   const model = (b, party, foes) => {
-    const used = new Set();
-    const picks = foes.map(foe => {
+    const onField = foes.filter(f => f.isOnField?.());
+    const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
+    const plan = fieldPlan(party, active, !!b.double);
+
+    // Foes on the field take their pokémon and move from the field plan, so the rows never contradict it.
+    // A trainer's waiting mons (or a foe no slot is on) get the best 1-v-1 pick, preferring members not
+    // already busy, and are marked `later`.
+    const used = new Set(plan?.picks.map(p => p.me) ?? []);
+    const pickFor = foe => {
+      const ai = active.indexOf(foe);
+      const slot = ai >= 0 && plan ? plan.picks.find(p => p.target === ai) ?? plan.picks.find(p => p.target === "both") : null;
+      if (slot?.move) {
+        const dmg = slot.target === "both" ? (hits(slot.me, foe).find(x => x.name === slot.move.name)?.dmg ?? 0) * 0.75 : slot.move.dmg;
+        return { me: slot.me, mine: { ...slot.move, dmg }, myTurns: turnsToKo(foe.hp, dmg), score: slot.score, later: false };
+      }
       const ranked = party.map(me => matchup(me, foe))
         .map(m => ({ ...m, rank: m.score - (used.has(m.me) ? 1 : 0) }))
         .sort((x, y) => y.rank - x.rank);
       const pick = ranked[0];
       if (pick) used.add(pick.me);
-      return pick;
-    });
+      return pick ? { ...pick, later: ai < 0 } : null;
+    };
+    const picks = new Map();
+    for (const f of [...active, ...foes.filter(f => !active.includes(f))]) picks.set(f, pickFor(f));
 
     const teamWeak = {};
     const rows = foes.map((foe, i) => {
@@ -191,7 +209,7 @@
         else if (e === 0) avoid.push([t, "×0"]);
         else if (e <= 0.25) avoid.push([t, "×¼"]);
       }
-      const p = picks[i];
+      const p = picks.get(foe);
       return {
         icon: iconOf(foe), name: foe.name, lv: foe.level, types: typesOf(foe),
         abilities: abilitiesOf(foe), boss: !!foe.isBoss?.(), status: foe.status?.effect ?? 0,
@@ -200,18 +218,17 @@
         pick: p?.mine ? {
           icon: iconOf(p.me), name: p.me.name, move: p.mine.name, type: p.mine.type, cat: p.mine.cat,
           pct: Math.min(100, Math.round(p.mine.dmg / foe.getMaxHp() * 100)),
-          ko: p.myTurns <= 3 ? p.myTurns : 0, risky: p.score < 0,
+          ko: p.myTurns <= 3 ? p.myTurns : 0, risky: p.score < 0, later: p.later,
         } : null,
       };
     });
 
-    const onField = foes.filter(f => f.isOnField?.());
-    const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
+    const sendIns = [...(plan?.picks.map(p => p.me) ?? []), ...foes.map(f => picks.get(f)?.me).filter(Boolean)];
     return {
       kind: "battle",
-      field: fieldPlan(party, active, !!b.double),
+      field: plan?.view ?? null,
       title: `W${b.waveIndex}${b.trainer ? ` · ${b.trainer.getName()}` : ""}`,
-      order: [...new Set(picks.filter(Boolean).map(p => p.me))].map(me => ({ icon: iconOf(me), name: me.name })),
+      order: [...new Set(sendIns)].map(me => ({ icon: iconOf(me), name: me.name })),
       team: Object.entries(teamWeak).sort((x, y) => y[1] - x[1]).slice(0, 4),
       rows,
     };
@@ -514,7 +531,7 @@
         ...r.weak.slice(0, 3).map(([t, s]) => badge(t, s)),
         h("span", { flex: "1" }),
         r.pick ? h("span", { display: "flex", alignItems: "center" },
-          h("span", { color: "#8cf" }, "➜"), mon(r.pick.icon, r.pick.name, 20), badge(r.pick.type),
+          h("span", { color: r.pick.later ? "#9aa" : "#8cf" }, r.pick.later ? "later" : "➜"), mon(r.pick.icon, r.pick.name, 20), badge(r.pick.type),
           r.pick.risky ? h("span", { color: "#fa4" }, "⚠") : null) : null));
       return [header, ...field, ...rows];
     }
@@ -542,7 +559,8 @@
             badge(r.pick.type),
             h("span", { fontWeight: "bold" }, r.pick.move),
             h("span", { ...dim, marginLeft: "4px" }, `~${r.pick.pct}%${r.pick.ko ? ` · ${r.pick.ko}HKO` : ""}`),
-            r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null)
+            r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null,
+            r.pick.later ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, "later") : null)
         : line("➜", "#8cf", h("span", dim, "no damaging move lands"))));
     return [header, ...field, team, ...rows].filter(Boolean);
   };
