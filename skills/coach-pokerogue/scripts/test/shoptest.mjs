@@ -140,6 +140,65 @@ const scenarios = {
       assert.equal(m.free[m.pick].name, "Ether");
       assert.ok(m.buys.filter(b => b.name === "Ether").length <= 1, `at most one Ether bought: ${m.buys.map(b => b.name)}`);
     } },
+  // TM advice, take: two members can learn TM Crunch. Snorlax (physical, Tackle to spare) gains more than Comfey (weak
+  // Atk), so it's the recipient — and the recipient and slot are exactly what the learn card would say for it.
+  "tm best of two": { wave: 24, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.magicalLeaf, 0, 20], [M.calmMind, 0, 20], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90 }),
+      pk("Snorlax", 200, 200, 0, [[M.bodySlam, 0, 15], [M.brickBreak, 0, 15], [M.aquaTail, 0, 10], [M.tackle, 0, 35]], { atk: 130, spa: 60 })],
+    free: [tm(M.crunch, ["Comfey", "Snorlax"], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
+    expect: (m, api, sc) => {
+      const cr = m.free[0];
+      assert.equal(m.pick, 0);
+      assert.equal(cr.tm, "take");
+      assert.equal(cr.best.name, "Snorlax");
+      const a = api.learnAdvice(sc.party[1], MOVES[M.crunch], { double: false, party: sc.party });
+      assert.equal(a.learn, true);
+      assert.equal(cr.best.forget, a.forget, "same slot as the learn decision");
+      assert.equal(cr.best.gain, a.gain, "same gain as the learn decision");
+      assert.ok(api.learnAdvice(sc.party[0], MOVES[M.crunch], { double: false, party: sc.party }).gain < a.gain);
+    } },
+  // TM advice, skip: TM Tackle is no upgrade for anyone who can learn it, and a mon that already knows it is left out.
+  // It's flagged skip and ranks below Poké Balls we're short of.
+  "tm skip": { wave: 25, money: 200, balls: 3, party: [
+      pk("Snorlax", 200, 200, 0, [[M.bodySlam, 0, 15], [M.crunch, 0, 15], [M.brickBreak, 0, 15], [M.aquaTail, 0, 10]], { atk: 130, spa: 60 }),
+      pk("Comfey", 110, 110, 0, [[M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90 })],
+    free: [tm(M.tackle, ["Snorlax", "Comfey"], 0), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
+    expect: m => {
+      const t = m.free[0];
+      assert.equal(t.tm, "skip");
+      assert.deepEqual(t.users, ["Snorlax"], "Comfey already knows Tackle");
+      assert.ok(t.v < m.free[1].v, "a useless TM ranks below a Poké Ball");
+      assert.match(t.why, /^skip · no upgrade for Snorlax · Snorlax keeps /);
+      assert.equal(t.best, undefined);
+    } },
+  // No select filter on the type: compatibility comes from the member's own isTmCompatible. Nobody compatible: skip.
+  "tm compatibility fallback": { wave: 26, money: 200, party: [
+      Object.assign(pk("Morpeko", 120, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25], [M.tackle, 0, 35]], { types: ["Electric", "Dark"], atk: 95, spa: 70 }), { isTmCompatible: id => id === M.fireFang }),
+      // Ignores excludeKnown: the coach still drops a member that already knows the move.
+      Object.assign(pk("Arcanine", 150, 150, 0, [[M.fireFang, 0, 15]], { types: ["Fire"], atk: 110, spa: 100 }), { isTmCompatible: () => true })],
+    free: [mk(TmModifierType, { name: "TM Fire Fang", iconImage: "tm", tier: 1, moveId: M.fireFang }),
+      mk(TmModifierType, { name: "TM Psybeam", iconImage: "tm", tier: 1, moveId: M.psybeam })],
+    expect: m => {
+      assert.equal(m.free[0].tm, "take");
+      assert.deepEqual(m.free[0].users, ["Morpeko"]);
+      assert.equal(m.free[0].best.forget, null, "free slot");
+      // Arcanine's mock says yes to everything: Psybeam goes to it (no Morpeko).
+      assert.deepEqual(m.free[1].users, ["Arcanine"]);
+    } },
+  "tm nobody": { wave: 27, money: 200, party: [charizard()],
+    free: [tm(M.nuzzle, [], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
+    expect: m => { assert.equal(m.free[0].tm, "skip"); assert.equal(m.pick, 1); assert.match(m.free[0].why, /nobody can learn it/); } },
+  // A setup TM for a member with four moves: it names the weakest attack as the slot to give up.
+  "tm setup full moveset": { wave: 28, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.magicalLeaf, 0, 20], [M.tackle, 0, 35], [M.confusion, 0, 25]], { types: ["Fairy"], atk: 50, spa: 90 })],
+    free: [tm(M.calmMind, ["Comfey"], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
+    expect: m => {
+      const cm = m.free[0];
+      assert.equal(m.pick, 0);
+      assert.equal(cm.tm, "take");
+      assert.equal(cm.best.setup, "+1 SpA/SpD");
+      assert.equal(cm.best.forget, "Tackle", "weak-Atk Tackle is the attack to give up");
+    } },
   // Mega Bracelet with no mega-capable mon, Egg Voucher, Master Ball.
   "key items": { wave: 31, money: 72, party: [charizard()],
     free: [mk(ModifierType, { name: "Mega Bracelet", iconImage: "mega_bracelet", tier: 3, id: "MEGA_BRACELET" }), mk(AddVoucherModifierType, { name: "Egg Voucher", iconImage: "coupon", tier: 1 }),
@@ -173,11 +232,11 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__sm = shopModel;\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__sm = shopModel; globalThis.__api = { learnAdvice };\n})();\n"));
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
   console.log(`== ${label}\n` + (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
   const m = globalThis.__sm(scene, handler);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
-  sc.expect?.(m);
+  sc.expect?.(m, globalThis.__api, sc);
 }
 console.log("ok");

@@ -23,7 +23,7 @@ buy first — taking the free reward closes the shop
 == wave 14 pp up
 🛒 $1824 − ×
 🎁 PP Up more PP on a move (permanent)
-· TM Round TM for Comfey (over Body Slam) · for Snorlax
+· TM Round Comfey → forget Body Slam · +13 power
 · Potion party healthy
 🎲 nothing good — reroll for $500?
 == wave 15 calm mind
@@ -33,7 +33,7 @@ buy first — taking the free reward closes the shop
 · Full Heal no status
 == tm recipient
 🛒 $400 − ×
-🎁 TM Fire Fang Morpeko → forget Tackle
+🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 · TM Thunder Fang TM — can't check who learns it
 · 5× Great Ball you have 34
 == wave 18 free ether
@@ -50,6 +50,26 @@ buy first — taking the free reward closes the shop
 💰 Max Ether $1330 Snorlax Body Slam 1/15
 🎁 Ether PP for Morpeko · saves $1330
 · Super Lure more double battles for a while
+· 5× Poké Ball you have 34
+== tm best of two
+🛒 $200 nothing affordable − ×
+🎁 TM Crunch Snorlax → forget Tackle · +56 power
+· 5× Poké Ball you have 34
+== tm skip
+🛒 $200 nothing affordable − ×
+🎁 5× Poké Ball you have 3
+· TM Tackle skip · no upgrade for Snorlax · Snorlax keeps Brick Break
+== tm compatibility fallback
+🛒 $200 nothing affordable − ×
+🎁 TM Fire Fang Morpeko free slot · +78 power
+· TM Psybeam Arcanine free slot · +77 power
+== tm nobody
+🛒 $200 nothing affordable − ×
+🎁 5× Poké Ball least bad · you have 34
+· TM Nuzzle skip · nobody can learn it
+== tm setup full moveset
+🛒 $200 nothing affordable − ×
+🎁 TM Calm Mind Comfey setup +1 SpA/SpD → forget Tackle
 · 5× Poké Ball you have 34
 == key items
 🛒 $72 nothing affordable − ×

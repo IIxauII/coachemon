@@ -142,12 +142,15 @@ const drawShop = m => {
         h("span", { fontWeight: "bold" }, b.name), h("span", { ...dim, marginLeft: "4px" }, `$${b.cost}`),
         h("span", { flex: "1" }), mon(b.target, b.targetName, 20), h("span", dim, b.why)))
     : [];
-  // A TM names its best recipient by icon and the move it replaces, instead of the "TM for X (over Y)" text.
-  const tmTo = f => {
+  // A TM names its best recipient by icon and the move it replaces, instead of the "TM for X (over Y)" text; full view
+  // adds the effective power it gains. Other options' rows use it too, in their smaller type.
+  const tmTo = (f, style = dim) => {
     const b = f.best;
     if (!b) return null;
-    const setup = /^setup TM for .+ \((.+)\)$/.exec(f.why);
-    return [mon(b.icon, b.name, 20), h("span", dim, b.forget ? `→ forget ${b.forget}` : setup ? `setup ${setup[1]}` : "free slot")];
+    const forget = b.forget ? `→ forget ${b.forget}` : "free slot";
+    const what = b.setup ? `setup ${b.setup}${b.forget ? ` ${forget}` : ""}` : f.tm === "maybe" ? `${b.reason} — your call` : forget;
+    const gain = view === "full" && f.tm === "take" && !b.setup && b.gain > 0 ? ` · +${b.gain} power` : "";
+    return [mon(b.icon, b.name, 20), h("span", style, what + gain)];
   };
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? h("span", dim, p.why)) : null;
@@ -158,7 +161,8 @@ const drawShop = m => {
     return rest.length ? ` · for ${rest.slice(0, 2).join("/")}${rest.length > 2 ? ` +${rest.length - 2}` : ""}` : "";
   };
   const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", "#9aa", itemImg(f.icon, f.name),
-    h("span", dim, f.name), h("span", { flex: "1" }), h("span", { color: "#9aa", fontSize: "9px" }, `${f.why}${usersText(f)}`)));
+    h("span", dim, f.name), h("span", { flex: "1" }),
+    tmTo(f, { color: "#9aa", fontSize: "9px" }) ?? h("span", { color: f.tm === "skip" ? "#e77" : "#9aa", fontSize: "9px" }, `${f.why}${usersText(f)}`)));
   return [header,
     m.buys.length ? h("div", { ...dim, fontSize: "9px" }, "buy first — taking the free reward closes the shop") : null,
     ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
@@ -199,7 +203,7 @@ const hudSummary = m => {
   if (m.kind === "shop") {
     const p = m.pick >= 0 ? m.free[m.pick] : null;
     const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
-    return { ...base, rewards: [p ? `take ${p.name}${p.best ? ` → ${p.best.name}` : ""}` : null, buys].filter(Boolean).join(" · ") || null };
+    return { ...base, rewards: [p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : ""}` : null, buys].filter(Boolean).join(" · ") || null };
   }
   return { ...base, verdict: verdictOf(m), field: m.field ? m.field.slots.map(slotText).join(" ; ") : null,
     danger: dangerTags(m).filter(d => d.level === "ko").map(({ mon: name, from, move }) => ({ mon: name, from, move })) };

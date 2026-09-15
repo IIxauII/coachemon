@@ -29,7 +29,7 @@ const run = (pk, newMove, { double = false, party = [pk] } = {}) => {
   globalThis.document = { documentElement: { dataset: ds }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__lm = { learnModel, learnState };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__lm = { learnModel, learnState, learnAdvice };\n})();\n"));
   const model = globalThis.__lm.learnModel(globalThis.__lm.learnState(scene));
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");
   const txt = n => typeof n === "string" ? n : n.children.map(txt).join(" ");
@@ -138,6 +138,14 @@ for (const [label, pk, newMove, double] of cases) {
   const r = run(emolga, ["Spark","Electric",65,"P"]);
   show("Emolga ← Spark", r);
   assert.equal(r.model.moves[r.model.forget]?.name, "Thunder Shock");
+  // The shared advice (also behind TM advice) says the same as the card: learn, over Thunder Shock, same gain.
+  const a = globalThis.__lm.learnAdvice(emolga, mv(["Spark","Electric",65,"P"]), { party: [emolga] });
+  assert.deepEqual([a.learn, a.slot, a.forget, a.gain, a.reason], [true, r.model.forget, "Thunder Shock", r.model.gain, "over Thunder Shock"]);
+  // A skip names the slot it lost to but replaces nothing; a status move with four moves is the user's call.
+  const skip = globalThis.__lm.learnAdvice(emolga, mv(["Tackle","Normal",40,"P"]), { party: [emolga] });
+  assert.deepEqual([skip.learn, skip.slot, skip.forget, skip.against != null], [false, -1, null, true]);
+  const status = globalThis.__lm.learnAdvice(emolga, mv(["Growl","Normal",-1,"X"]), { party: [emolga] });
+  assert.equal(status.learn, null);
 }
 
 // ---- Team view: forgetting the team's only Dark move is flagged; a move the team lacks coverage for is noted.
