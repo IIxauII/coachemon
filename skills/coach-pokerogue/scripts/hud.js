@@ -83,7 +83,7 @@
       const base = ((2 * a.level / 5 + 2) * mv.power * stat(a, phys ? 1 : 3) / stat(d, phys ? 2 : 4)) / 50 + 2;
       const e = effectiveness(type, d);
       const dmg = base * (typesOf(a).includes(type) ? 1.5 : 1) * e;
-      out.push({ name: m.getName(), type, cat: phys ? "physical" : "special", e, dmg: dmg * reliability(mv), spread: SPREAD_TARGETS.includes(mv.moveTarget) });
+      out.push({ name: m.getName(), type, cat: phys ? "physical" : "special", e, dmg: dmg * reliability(mv), spread: SPREAD_TARGETS.includes(mv.moveTarget), priority: mv.priority ?? 0 });
     }
     return out;
   };
@@ -158,13 +158,33 @@
     const best = stay ? bestStay : bestAny;
     const alt = stay && bestAny !== bestStay && bestAny.extra > 0 ? bestAny : null;
 
+    // How badly the worst foe hits a slot's pokémon this turn. "ko": its best move takes the current HP and it
+    // acts first (faster, or a priority move); "risk": it can KO but we act first, or a super-effective hit
+    // takes half the current HP or more.
+    const threat = me => {
+      let worst = null;
+      for (const f of active) {
+        for (const x of hits(f, me)) {
+          const dmg = x.dmg * (slots === 2 && x.spread ? 0.75 : 1);
+          if (!worst || dmg > worst.dmg) worst = { ...x, dmg, from: f };
+        }
+      }
+      if (!worst || !(worst.dmg > 0)) return null;
+      const pct = Math.round(worst.dmg / me.hp * 100);
+      const first = worst.priority > 0 || stat(worst.from, 5) > stat(me, 5);
+      const level = pct >= 100 && first ? "ko" : pct >= 100 || (worst.e >= 2 && pct >= 50) ? "risk" : null;
+      return level && { level, move: worst.name, type: worst.type, e: worst.e, pct: Math.min(pct, 999), from: worst.from.name };
+    };
+
     const swaps = plan => {
       const chosen = plan.picks.map(p => p.me);
       const outs = current.filter(p => !chosen.includes(p));
       return chosen.filter(p => !current.includes(p))
-        .map((p, i) => ({ out: outs[i] ? { icon: iconOf(outs[i]), name: outs[i].name } : null, in: { icon: iconOf(p), name: p.name } }));
+        .map((p, i) => ({ out: outs[i] ? { icon: iconOf(outs[i]), name: outs[i].name, threat: threat(outs[i]) } : null, in: { icon: iconOf(p), name: p.name } }));
     };
     const ins = swaps(best);
+
+
     return {
       picks: best.picks, // live objects for the per-foe rows; not part of the JSON-safe view
       view: {
@@ -174,6 +194,7 @@
         move: p.move?.name ?? null, type: p.move?.type ?? null, cat: p.move?.cat ?? null,
         target: p.target === "both" ? "both" : p.target === null ? null : { icon: iconOf(active[p.target]), name: active[p.target].name },
         ko: p.turns <= 3 ? p.turns : 0,
+        threat: threat(p.me),
       })),
       switches: ins,
       },
@@ -522,14 +543,21 @@
     const header = bar("🎯", m.title,
       ...m.order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, 20)]));
 
+    const threatTag = t => {
+      const n = h("span", { display: "inline-flex", alignItems: "center", marginRight: "4px", color: t.level === "ko" ? "#e55" : "#fa4" },
+        t.level === "ko" ? "💀" : "⚠", badge(t.type, t.e >= 2 ? `×${t.e}` : ""));
+      n.title = `${t.from}'s ${t.move}: ~${t.pct}% of current HP${t.level === "ko" ? ", before it can act" : ""}`;
+      return n;
+    };
     const swapLine = (sw, color, tail) => line("⇄", color,
-      ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), h("span", { color, margin: "0 3px" }, "out ›")] : [h("span", { color, marginRight: "3px" }, "send")]),
+      ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), sw.out.threat ? threatTag(sw.out.threat) : null, h("span", { color, margin: "0 3px" }, "out ›")] : [h("span", { color, marginRight: "3px" }, "send")]),
       mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail));
     // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn).
     const f = m.field;
     const field = !f ? [] : [
       ...f.slots.map(sl => line("⚔", "#8cf",
         mon(sl.icon, sl.name, 22),
+        sl.threat ? threatTag(sl.threat) : null,
         ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, "no damaging move")]),
         ...(sl.target === "both" ? [h("span", { color: "#8cf", marginLeft: "4px" }, "→ both")]
           : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
