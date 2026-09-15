@@ -15,14 +15,14 @@ Learn → forget Ember
 == plan (full)
 🎯 W15 · Youngster Charizard − {Minimal overview} × {Close}
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
-team weak to: Fire ×2
+foes weak to: Fire ×2
 Paras Paras L20 Bug Grass 100% ▲ Fire ×4 ↯ Normal Scratch → Charizard moves after
 Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard moves after ➜ Charizard Fire Flamethrower ~100% · 1 hit later
 ♟ winnable · 2 steps + {Show the fight plan}
 -- after + (full)
 🎯 W15 · Youngster Charizard − {Minimal overview} × {Close}
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
-team weak to: Fire ×2
+foes weak to: Fire ×2
 Paras Paras L20 Bug Grass 100% ▲ Fire ×4 ↯ Normal Scratch → Charizard moves after
 Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard moves after ➜ Charizard Fire Flamethrower ~100% · 1 hit later
 ♟ Fight plan winnable
@@ -35,7 +35,7 @@ Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard move
 -- after + (mini)
 🎯 W15 · Youngster Charizard − {Minimal overview} × {Close}
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
-team weak to: Fire ×2
+foes weak to: Fire ×2
 Paras Paras L20 Bug Grass 100% ▲ Fire ×4 ↯ Normal Scratch → Charizard moves after
 Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard moves after ➜ Charizard Fire Flamethrower ~100% · 1 hit later
 ♟ Fight plan winnable

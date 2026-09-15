@@ -45,10 +45,24 @@ const scenarios = {
     mon("Venusaur", 66, ["Grass","Poison"], "Overgrow", [220,135,122,144,144,150], [["Power Whip","Grass",120,"P"]], true)],
     foes: [mon("Aurorus", 66, ["Rock","Ice"], "Refrigerate", [230,90,110,150,120,100], [["Ice Beam","Ice",90,"S"]], true)] },
   single: { double: false, party, foes: [mon("Ninetales", 72, ["Fire"], "Flash Fire", [188,90,100,130,140,130], [["Flamethrower","Fire",90,"S"],["Extrasensory","Psychic",80,"S"]], true)] },
-  // A trap the planned move runs into goes on the slot line (collapsed and mini): a 1-hit KO into Sturdy.
+  // A trap the planned move runs into goes on the slot line (collapsed and mini): Fire into Thick Fat.
   trap: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
+    foes: [mon("Swinub", 20, ["Ice","Ground"], "Thick Fat", [60,50,80,30,30,20], [["Tackle","Normal",40,"P"]], true)] },
+  // Not a trap on the slot line: Sturdy is already in the damage (the KO count).
+  modelled: { double: false, party: [
+    mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
     foes: [mon("Pineco", 20, ["Bug"], "Sturdy", [60,50,80,30,30,20], [["Tackle","Normal",40,"P"]], true)] },
+  // The target is predicted to switch to an Intimidate mon: that drop isn't in our stat stages yet, so it's a trap.
+  intimidateIn: { double: false, trainer: { isBoss: false }, party: [
+    mon("Blastoise", 80, ["Water"], "Torrent", [250,130,170,140,180,130], [["Wave Crash","Water",120,"P"]], true)],
+    foes: [
+      mon("Ludicolo", 80, ["Water","Grass"], "Swift Swim", [250,110,120,150,170,110], [["Giga Drain","Grass",75,"S"]], true),
+      mon("Arcanine", 80, ["Fire"], "Intimidate", [260,170,130,150,130,140], [["Flare Blitz","Fire",120,"P"]], false)] },
+  // Nor an Intimidate foe already on the field: its drop is in our stat stages.
+  intimidate: { double: false, party: [
+    mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
+    foes: [mon("Granbull", 30, ["Fairy"], "Intimidate", [120,90,75,40,60,45], [["Tackle","Normal",40,"P"]], true)] },
 };
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
 const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");

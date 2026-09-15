@@ -37,7 +37,7 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      - ⇆ predicted enemy switches aim the plan at the switch-in, with a dim ↺ *if it stays*.
      - ◎ focus targeting in doubles (a split shows in the ⚔ targets).
      - 💀 / ⚠ danger tags with the hit's % of current HP, including next turn's.
-     - Each foe row (full view): trap abilities only, ▲ weaknesses / ✕ walls among the types the party has moves of, ↯ its likely move into our mon, and ➜ a pick only for foes no slot is on yet. Trainers add "team weak to:".
+     - Each foe row (full view): trap abilities only, ▲ weaknesses / ✕ walls among the types the party has moves of, ↯ its likely move into our mon, and ➜ a pick only for foes no slot is on yet. Trainers add "foes weak to:".
      - **Mini**: one line per slot, with ⚠ the trap ability its move runs into; the fight plan as one line.
    - **Free switches.** The "Will you switch?" prompt (encounter start, "Switch" battle style, wild/mystery encounters only) and replacing a fainted mon cost no hit and no turn: the card shows `⇄ free switch? X → Y` or `stay`. Mid-turn switches (U-turn, Eject Button) and every trainer-battle switch cost the turn.
    - **🎯 Catch card** (wild): catch chance per ball from the game's capture formula, and a catch / maybe verdict — shown only when a catch is worth it, silent otherwise. It weighs account value (new species or form, hidden ability, shiny, a big IV gain on a line on the team), team value (covers weaknesses, clearly outclasses the weakest member, who it would replace; nothing for a line already on the team) and ending an encounter that would cost a party member. It picks the cheapest ball that works, and saves Rogue/Master balls for valuable catches.
@@ -72,7 +72,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 
 - **Never quote a starter cost from memory.** PokéRogue costs differ from intuition (Bunnelby 3, Lechonk 2, Popplio 4). No `cost` in the read → ask the user to open the starter grid, or say costs are unverified.
 - **Abilities come from the read, not the species' best ability.** Hidden abilities (Huge Power, Gale Wings, Protean…) are only in play if `hiddenAbility` is true / the battle read shows them.
-- **Check every enemy ability for traps** before recommending a move: Dry Skin / Water Absorb / Volt Absorb / Flash Fire / Sap Sipper / Levitate (immunity or heal), Fluffy (halves contact), Simple (doubled stat stages), Guts (don't status it), Sturdy, Intimidate.
+- **Check every enemy ability for traps** before recommending a move: Dry Skin / Water Absorb / Volt Absorb / Flash Fire / Sap Sipper / Levitate (immunity or heal), Soundproof / Bulletproof / Wind Rider / Overcoat (move-flag immunity), Fluffy (halves contact), Simple (doubled stat stages), Guts (don't status it), Sturdy, Intimidate.
 - Prefer special moves into Defense boosts, physical into Special Defense boosts; read `statStages` (7 entries: atk, def, spa, spd, spe, acc, eva — no HP slot).
 - Compare Speed stats to say who moves first. Priority moves (Quick Attack, Fake Out) go before that.
 - Flag danger unprompted: an on-field ally at low HP, a status condition, a move about to run out of PP.

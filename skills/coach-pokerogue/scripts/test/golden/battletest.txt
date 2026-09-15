@@ -83,7 +83,7 @@ queued during prediction: 0; queueMessage restored: true
 now: ⇄ Blastoise out › Venusaur in
 next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
 ↺ if it stays: Blastoise Water Wave Crash → Arcanine
-team weak to: Water ×1
+foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water
 Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼ ↯ Water Surf → Venusaur 80% likely · moves after
 ♟ winnable · 2 steps + {Show the fight plan}
@@ -111,14 +111,52 @@ summary {"kind":"battle","wave":89,"verdict":"fight","field":"Charizard Air Slas
 🎯 W89 + {Expand} × {Close}
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
 == trap (full)
-🎯 W89 ⚔ Charizard Flamethrower → Pineco · 1 hit ⚠ Sturdy + {Show details} × {Close}
-summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Flamethrower → Pineco · 1 hit","danger":[],"learn":null,"rewards":null}
+🎯 W89 ⚔ Charizard Flamethrower → Swinub · 1 hit ⚠ Thick Fat + {Show details} × {Close}
+summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Flamethrower → Swinub · 1 hit","danger":[],"learn":null,"rewards":null}
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
-⚔ Charizard Fire Flamethrower → Pineco 1 hit
-Pineco Pineco L20 Bug 100% ✦ ⚠ Sturdy ▲ Fire ↯ Normal Tackle → Charizard 100% likely · moves after
+⚔ Charizard Fire Flamethrower → Swinub 1 hit
+Swinub Swinub L20 Ice Ground 100% ✦ ⚠ Thick Fat ▲ — ↯ Normal Tackle → Charizard 100% likely · moves after
 == trap (mini)
-🎯 W89 ⚔ Charizard Flamethrower → Pineco · 1 hit ⚠ Sturdy + {Show details} × {Close}
+🎯 W89 ⚔ Charizard Flamethrower → Swinub · 1 hit ⚠ Thick Fat + {Show details} × {Close}
 -- after + (mini)
 🎯 W89 + {Expand} × {Close}
-⚔ Charizard Fire Flamethrower → Pineco ⚠ Sturdy 1 hit
+⚔ Charizard Fire Flamethrower → Swinub ⚠ Thick Fat 1 hit
+== modelled (full)
+🎯 W89 ⚔ Scrafty Brick Break → Pineco · 1 hit + {Show details} × {Close}
+summary {"kind":"battle","wave":89,"verdict":"easy","field":"Scrafty Brick Break → Pineco · 1 hit","danger":[],"learn":null,"rewards":null}
+-- after + (full)
+🎯 W89 − {Minimal overview} × {Close}
+⚔ Scrafty Fighting Brick Break → Pineco 1 hit
+Pineco Pineco L20 Bug 100% ✦ ⚠ Sturdy ▲ — ↯ Normal Tackle → Scrafty 100% likely · moves after
+== modelled (mini)
+🎯 W89 ⚔ Scrafty Brick Break → Pineco · 1 hit + {Show details} × {Close}
+-- after + (mini)
+🎯 W89 + {Expand} × {Close}
+⚔ Scrafty Fighting Brick Break → Pineco 1 hit
+queued during prediction: 0; queueMessage restored: true
+== intimidateIn (full)
+🎯 W89 · Tester Blastoise − {Minimal overview} × {Close}
+⇆ Ludicolo → Arcanine switches — moves aimed at it
+⚔ Blastoise Water Wave Crash → Arcanine 2 hits
+↺ if it stays: Blastoise Water Wave Crash → Ludicolo
+Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼
+Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water ↯ Fire Flare Blitz → Blastoise 100% likely · moves first
+♟ Fight plan likely lost
+☠ Ludicolo Ludicolo KOs 1/1 · win condition
+1 Blastoise Water Wave Crash → Ludicolo falls · foe at 63%
+⚠ likely lost: nothing we have hurts Ludicolo — maximise damage before it comes in
+summary {"kind":"battle","wave":89,"verdict":"trainer","field":"Blastoise Wave Crash → Arcanine · 2 hits","danger":[],"learn":null,"rewards":null}
+== intimidateIn (mini)
+🎯 W89 · Tester Blastoise + {Expand} × {Close}
+⇆ Ludicolo → Arcanine switches — moves aimed at it
+⚔ Blastoise Water Wave Crash → Arcanine ⚠ Intimidate 2 hits
+♟ likely lost · ☠ Ludicolo · 1 step + {Show the fight plan}
+== intimidate (full)
+🎯 W89 − {Minimal overview} × {Close}
+⚔ Scrafty Fighting Brick Break → Granbull 3 hits
+Granbull Granbull L30 Fairy 100% ✦ ⚠ Intimidate ▲ — ↯ Normal Tackle → Scrafty 100% likely · moves after
+summary {"kind":"battle","wave":89,"verdict":"fight","field":"Scrafty Brick Break → Granbull · 3 hits","danger":[],"learn":null,"rewards":null}
+== intimidate (mini)
+🎯 W89 + {Expand} × {Close}
+⚔ Scrafty Fighting Brick Break → Granbull 3 hits

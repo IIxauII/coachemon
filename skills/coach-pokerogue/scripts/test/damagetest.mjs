@@ -376,6 +376,18 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.ok(o.max > 0 && o.expected > 0);
   assert.equal(hits(atk, def).length, 1);
   assert.equal(damageCalls, calls, "no game calls outside CommandPhase");
+
+  // Move-flag immunities: a sound move into Soundproof, a ball move into Bulletproof, a wind move into Wind Rider.
+  for (const [ability, flag] of [["Soundproof", 1 << 2], ["Bulletproof", 1 << 10], ["Wind Rider", 1 << 13]]) {
+    const flagged = move(9, "Flagged", 14, 120, { flags: flag });
+    const wall = mon("wall");
+    wall.getAbility = () => ({ name: ability, getAttrs: () => [] });
+    setup(atk, wall);
+    const w = moveOutcome(scene, atk, wall, pmOf(flagged));
+    assert.equal(w.e, 0, `${ability} blocks the estimate`);
+    assert.equal(w.max, 0, `${ability}: no damage`);
+    assert.ok(moveOutcome(scene, atk, wall, pmOf(bigHit)).max > 0, `${ability} lets unflagged moves through`);
+  }
   phaseName = "CommandPhase";
 }
 
