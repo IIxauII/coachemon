@@ -7,7 +7,7 @@ const drawTeamPlan = m => {
   const tp = m?.steps ? m : m?.teamPlan;
   if (!tp || view === "closed") return [];
   const red = "#e55", amber = "#fa4";
-  const small = { color: "#9aa", fontSize: "9px" };
+  const small = { color: "#9aa", fontSize: FS.tiny };
   const lost = tp.result !== "win";
   const approx = !!m?.double;
   const steps = `${approx ? "~" : ""}${tp.steps.length} step${tp.steps.length === 1 ? "" : "s"}`;
@@ -41,11 +41,11 @@ const drawTeamPlan = m => {
     const tag = entryTag[st.entry];
     out.push(line(`${approx ? "~" : ""}${i + 1}`, "#8cf",
       mon(st.send.icon, st.send.name, 20),
-      tag ? h("span", { color: tag[1], fontSize: "9px", marginRight: "2px" }, tag[0]) : null,
+      tag ? h("span", { color: tag[1], fontSize: FS.tiny, marginRight: "2px" }, tag[0]) : null,
       ...(st.move ? [st.type ? badge(st.type) : null, h("span", { marginRight: "2px" }, st.move)] : [h("span", dim, "—")]),
       h("span", dim, "→"), mon(st.vs.icon, st.vs.name, 18),
       h("span", { flex: "1" }),
-      h("span", st.sacrifice ? { color: amber, fontSize: "9px" } : small, st.why),
+      h("span", st.sacrifice ? { color: amber, fontSize: FS.tiny } : small, st.why),
       st.notes?.length ? h("span", { ...small, marginLeft: "4px" }, st.notes.join(" · ")) : null));
   });
   for (const x of tp.sacrifice) {
