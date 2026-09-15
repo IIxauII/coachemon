@@ -5,8 +5,10 @@ set -euo pipefail
 browser=${1:?chrome|orion}
 mode=${2:-battle}
 here=$(cd "$(dirname "$0")" && pwd)
-case "$mode" in hud|hud-off) src=hud.js ;; *) src=probe.js ;; esac
-probe=$(sed "s/__MODE__/$mode/" "$here/$src")
+case "$mode" in
+  hud|hud-off) probe=$(node "$here/hud-bundle.mjs" "$mode") ;;
+  *) probe=$(sed "s/__MODE__/$mode/" "$here/probe.js") ;;
+esac
 
 # Wrapper: inject probe as a <script> tag (reaches the page world), read the
 # result back off the DOM, clean up.
