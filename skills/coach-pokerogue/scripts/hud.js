@@ -120,61 +120,50 @@
     return { me, mine, myTurns, score: theirTurns - myTurns + (faster ? 0.5 : -0.5) };
   };
 
-  // Trainer switch prediction: a replica of the game's own EnemyCommandPhase rule, read from the live build. A
-  // trainer's active mon that isn't trapped or locked into a move switches when its best benched mon's matchup
-  // score × w ≥ its own × (boss ? 2 : 3), with w = 1 − 0.1^(1/enemySwitchCounter), sending the top-scored mon.
-  // Switches resolve before moves, so our attack lands on the switch-in. The matchup score replicates
-  // Pokemon.getMatchupScore with the panel's type chart: the game's version can trigger ability displays.
-  const typeEff = (type, p) => typesOf(p).reduce((x, d) => x * vs(type, d), 1);
-  const matchupScore = (e, p) => {
-    const pTypes = typesOf(p);
-    const outspeed = (e.isOnField?.() ? stat(e, 5) : e.getStat(5)) >= stat(p, 5);
-    let def = 1 / Math.max(typeEff(pTypes[0], e), 0.25);
-    if (pTypes.length > 1) def /= Math.max(typeEff(pTypes[1], e), 0.25);
-    let off = 0, n = 0;
-    for (const m of e.moveset.filter(Boolean)) {
-      const mv = m.getMove();
-      if (mv.category === 2 || m.getMovePp() - m.ppUsed <= 0) continue;
-      const t = TYPES[mv.type];
-      let x = typeEff(t, p);
-      if (typesOf(e).includes(t) && !hasAttr(mv, "VariableMoveTypeAttr")) x *= 1.5;
-      off += x;
-      n++;
+  // Trainer switch prediction with the game's own code. EnemyCommandPhase (read from the live build): a trainer's
+  // active mon that isn't trapped or locked into a move switches when
+  //   bestBenchScore × (1 − 0.1^(1/enemySwitchCounter)) ≥ avg own matchup score × (boss ? 2 : 3)
+  // and sends trainer.getNextSummonIndex(). Switches resolve before moves, so our attack lands on the switch-in.
+  // getMatchupScore isn't fully side-effect free — non-simulated type checks can queue a strong-winds message or
+  // an ability display — so every call runs with the phase queue muted (see `muted`), and only once per turn.
+  const QUEUE_METHODS = ["pushPhase", "unshiftPhase", "pushNew", "unshiftNew", "queueMessage", "queueAbilityDisplay", "hideAbilityBar"];
+  const muted = (s, fn) => {
+    const pm = s.phaseManager;
+    const saved = QUEUE_METHODS.filter(k => typeof pm[k] === "function").map(k => [k, Object.prototype.hasOwnProperty.call(pm, k), pm[k]]);
+    for (const [k] of saved) pm[k] = () => {};
+    try {
+      return fn();
+    } finally {
+      // Synchronous: nothing else runs while muted, and the queue is restored exactly as it was.
+      for (const [k, own, f] of saved) { if (own) pm[k] = f; else delete pm[k]; }
     }
-    off /= n || 1;
-    const hpE = e.hp / e.getMaxHp(), hpP = p.hp / p.getMaxHp();
-    let u = hpE + (1 - hpP);
-    if (hpE <= 0.2 && e.isOnField?.()) {
-      if (!outspeed && off < 1.5 && def < 1.5) u *= 0.85; else u = 1 - hpE + (outspeed ? 0.2 : 0.1);
-    } else if (outspeed) u *= 1.25;
-    else if (hpE > 0.2 && hpE <= 0.4) u *= 0.5;
-    return (off + def) * Math.min(u, 1);
   };
-  // Map of active foe → { to, ratio }; ratio ≥ 1 means the rule fires, just under 1 is "may switch" given
-  // the replica's approximations.
-  const predictSwitches = (s, b, active, playerField) => {
+  let switchCache = { key: null, value: new Map() };
+  const predictSwitches = (s, b, active) => {
     const tr = b.trainer;
+    if (!tr?.getPartyMemberMatchupScores) return new Map();
+    const key = [b.waveIndex, b.turn, b.enemySwitchCounter, ...s.getField().map(p => p && `${p.id}:${p.hp}`)].join("|");
+    if (switchCache.key === key) return switchCache.value;
     const out = new Map();
-    if (!tr || !playerField.length) return out;
     const enemies = s.getEnemyParty();
-    const count = b.getBattlerCount?.() ?? (b.double ? 2 : 1);
-    const counter = b.enemySwitchCounter ?? 0;
-    const w = 1 - (counter ? 0.1 ** (1 / counter) : 0);
-    for (const e of active) {
-      try { if (e.getMoveQueue?.().length || e.isTrapped?.()) continue; } catch { continue; }
-      const slot = tr.isDouble?.() ? (e.trainerSlot ?? 0) : 0;
-      const bench = enemies.slice(count).filter(x => x.hp > 0 && (!slot || x.trainerSlot === slot));
-      if (!bench.length) continue;
-      const benchScore = x => {
-        let total = 0;
-        for (const p of playerField) { total += matchupScore(x, p); if (p.species?.legendary) total /= 2; }
-        return total / playerField.length;
-      };
-      const [to, score] = bench.map(x => [x, benchScore(x)]).sort((x, y) => y[1] - x[1])[0];
-      const own = playerField.reduce((t, p) => t + matchupScore(e, p), 0) / playerField.length;
-      const ratio = (score * w) / Math.max(own * (tr.config?.isBoss ? 2 : 3), 0.01);
-      if (ratio >= 0.8 && ![...out.values()].some(v => v.to === to)) out.set(e, { to, ratio });
-    }
+    muted(s, () => {
+      for (const e of active) {
+        try {
+          if (e.getMoveQueue().length || e.isTrapped()) continue;
+          const scores = tr.getPartyMemberMatchupScores(e.trainerSlot, true);
+          if (!scores.length) continue;
+          const own = e.getOpponents().map(o => e.getMatchupScore(o));
+          const avg = own.reduce((t, x) => t + x, 0) / own.length;
+          const best = tr.getSortedPartyMemberMatchupScores(scores)[0][1];
+          const counter = b.enemySwitchCounter;
+          const w = 1 - (counter ? 0.1 ** (1 / counter) : 0);
+          if (best * w < avg * (tr.config.isBoss ? 2 : 3)) continue;
+          const to = enemies[tr.getNextSummonIndex(e.trainerSlot, scores)];
+          if (to && ![...out.values()].some(v => v.to === to)) out.set(e, { to, ratio: 1 });
+        } catch {}
+      }
+    });
+    switchCache = { key, value: out };
     return out;
   };
 
@@ -318,7 +307,7 @@
   const model = (s, b, party, foes) => {
     const onField = foes.filter(f => f.isOnField?.());
     const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
-    const predicted = predictSwitches(s, b, active, party.filter(p => p.isOnField?.()));
+    const predicted = predictSwitches(s, b, active);
     const switching = f => (predicted.get(f)?.ratio ?? 0) >= 1;
     // Plan against the field our moves will actually hit; if a switch is predicted, also keep the plan for
     // the case it stays, shown dim.
@@ -681,9 +670,9 @@
       ...(sl.move ? [badge(sl.type), h("span", { marginRight: "2px" }, sl.move)] : [h("span", dim, "—")]),
       ...(sl.target === "both" ? [h("span", dim, "→ both")] : sl.target ? [h("span", dim, "→"), mon(sl.target.icon, sl.target.name, 18)] : []),
     ];
-    const enemySwitches = m.enemySwitches.map(es => line("⇆", es.sure ? "#c9f" : "#9aa",
-      mon(es.from.icon, es.from.name, 20), h("span", { color: es.sure ? "#c9f" : "#9aa", margin: "0 3px" }, "→"),
-      mon(es.to.icon, es.to.name, 20), h("span", { color: es.sure ? "#c9f" : "#9aa", marginLeft: "3px" }, es.sure ? "likely switch — moves aimed at it" : "may switch")));
+    const enemySwitches = m.enemySwitches.map(es => line("⇆", "#c9f",
+      mon(es.from.icon, es.from.name, 20), h("span", { color: "#c9f", margin: "0 3px" }, "→"),
+      mon(es.to.icon, es.to.name, 20), h("span", { color: "#c9f", marginLeft: "3px" }, "switches — moves aimed at it")));
     const ifStay = m.ifStay && view === "full"
       ? line("↺", "#9aa", h("span", { ...dim, marginRight: "4px" }, "if it stays:"), ...m.ifStay.flatMap((sl, i) => [i ? h("span", dim, " · ") : null, ...slotMove(sl)]))
       : null;
@@ -731,8 +720,8 @@
         h("span", { color: TRAPS.has(a) ? "#fa4" : "#bbd", marginRight: "6px" }, TRAPS.has(a) ? `⚠ ${a}` : a))) : null,
       line("▲", "#6d6", ...(r.weak.length ? r.weak.map(([t, s]) => badge(t, s)) : [h("span", dim, "—")])),
       r.avoid.length ? line("✕", "#e55", ...r.avoid.map(([t, s]) => badge(t, s))) : null,
-      r.switchTo ? line("⇆", r.switchTo.sure ? "#c9f" : "#9aa",
-        h("span", { color: r.switchTo.sure ? "#c9f" : "#9aa", marginRight: "3px" }, r.switchTo.sure ? "likely switches to" : "may switch to"),
+      r.switchTo ? line("⇆", "#c9f",
+        h("span", { color: "#c9f", marginRight: "3px" }, "switches to"),
         mon(r.switchTo.icon, r.switchTo.name, 20)) : null,
       r.pick
         ? line("➜", "#8cf",
