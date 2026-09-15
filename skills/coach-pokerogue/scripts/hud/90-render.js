@@ -191,6 +191,7 @@ const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? "
 const hudSummary = m => {
   if (!m) return null;
   const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null };
+  if (m.kind === "biome") return biomeSummary(m);
   if (m.kind === "learn") {
     const only = m.team?.onlyType && m.forget >= 0 ? ` · ⚠ loses only ${m.team.onlyType} move` : "";
     return { ...base, learn: `${m.verdict[0]}${only}` };
@@ -393,6 +394,8 @@ const tick = () => {
       m = learnModel(learn);
     } else if (s.ui.getMode() === 6 && handler?.options?.length) {
       m = shopModel(s, handler);
+    } else if (biomeScreen(s, handler)) {
+      m = biomeModel(s, handler);
     } else {
       const b = s.currentBattle;
       const foes = s.getEnemyParty().filter(p => p.hp > 0);
@@ -410,7 +413,7 @@ const tick = () => {
     el.style.width = view === "full" && !collapsed ? "300px" : "auto";
     if (sig !== last) {
       missed = false;
-      el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle }[m.kind])(m));
+      el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle, biome: drawBiome }[m.kind])(m));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missed ? "" : sig;
     }

@@ -1,0 +1,24 @@
+== swamp vs construction site (full)
+🗺 Next biome from Tall Grass − {Minimal overview} × {Close}
+★ Swamp Poison 76% Water 34% Fighting 28% 76 {offense 88 · defense -5 · catches 100}
+· mostly Toxicroak 28% · Quagsire 19% · Arbok 19%
+✓ 2 mons hit SE
+🎯 catch Arbok covers Fighting · new
+→ Graveyard · Tall Grass
+· Construction Site Fighting 55% Steel 45% Electric 31% 70 {offense 100 · defense -22 · catches 0}
+· mostly Machoke 31% · Magneton 31% · Gurdurr 14%
+✗ Snorlax & Lapras weak
+✓ Alakazam resists
+✓ 2 mons hit SE
+→ ★Laboratory (1/3) · Factory
+summary {"kind":"biome","wave":30,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":null,"biome":"Swamp 76 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · Construction Site 70"}
+== swamp vs construction site (mini)
+🗺 Next biome from Tall Grass + {Expand} × {Close}
+★ Swamp 76 {offense 88 · defense -5 · catches 100} — 2 mons hit SE
+· Construction Site 70 {offense 100 · defense -22 · catches 0} — Snorlax & Lapras weak, Alakazam resists
+== no tables
+🗺 Next biome − {Minimal overview} × {Close}
+· Swamp
+· Construction Site
+reading the game's biome tables…
+ok

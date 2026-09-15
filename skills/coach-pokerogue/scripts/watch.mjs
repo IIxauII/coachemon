@@ -1,5 +1,5 @@
 // Always-on coach feed for Claude's Monitor tool: prints one short stdout line per
-// new battle, danger, learn-move prompt and reward screen, and one per distinct read
+// new battle, danger, learn-move prompt, reward screen and biome choice, and one per distinct read
 // error. Lines are summaries (notifications truncate long ones); read.sh battle
 // has the detail. Each line carries the HUD's own verdict when the HUD is running,
 // so Claude can stay quiet when the panel already has it. Also keeps the HUD
@@ -97,6 +97,11 @@ for (;;) {
           `REWARDS ${w} money $${snap.money} reroll $${r.rerollCost} | free: ${r.free.map(item).join(", ")} | shop: ${r.shop.map(item).join(", ")}`
           + `${hud?.rewards ? ` | HUD: ${hud.rewards}` : ""}`);
       }
+    }
+    // Biome choice: once per wave, only with the HUD's call (the read alone has no options to show), held back a few
+    // polls while the HUD is still reading the game's biome tables.
+    if (hud?.biome && seen.biome !== `${snap.wave}` && hudReady("biome", `${snap.wave}`, / pick — /.test(hud.biome))) {
+      emit("biome", `${snap.wave}`, `BIOME ${w} | HUD: ${hud.biome}`);
     }
   } catch (e) {
     const msg = String(e.message ?? e).split("\n")[0];

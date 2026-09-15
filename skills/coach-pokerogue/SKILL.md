@@ -45,6 +45,7 @@ When the user wants the coach running for the whole session ("keep coaching", "w
    - **🎓 Learn-move card:** new move vs current four as effective power (`power 96`, `3rd Water move`), with reasons and a learn / forget / skip verdict (a skip names the slot it lost to, ↔). Full view adds Atk / SpA and a `team:` line (SE types gained / lost, ⚠ losing the team's only move of a type). Mini shows the move to forget and only that ⚠.
    - **🛒 Rewards card:** buys for current needs (revive, heal, potion, ether) first ("buy first" only when there are buys), then the free reward by what it does for the party, and a reroll hint. A TM pick shows its best recipient and `→ forget X`; `👑 boss next` before a boss wave.
    - `window.__coachHud.summary()` is the panel's verdict in plain text; the battle read carries it as `hud`.
+   - **🗺 Biome card** (the next-biome choice a Map offers): ranks each biome for the party with a score and ★ pick / ≈ close. Spawns come from the game's own biome pools (tier odds, time of day of the next ten waves, the boss wave as one in ten, species taken at the party's level): ✓/✗ who's weak, who resists, how many mons hit them SE, and a 🎯 catch that covers a weakness, outclasses the weakest member or is new. Full view adds the type mix, the species met most and where the biome leads (★ rare: Space, Fairy Cave, Laboratory). The pools are read from the game's loaded modules a moment after the HUD starts; until then the card only lists the options. Trainers and gym leaders aren't judged.
    - Your brief still covers what the panel can't judge: setup lines, long-term team building, and anything the user asks.
 2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints one short summary line per event and re-injects the HUD after a page reload. Lines carry the HUD's verdict when it's running:
    - `NEW BATTLE w<wave> [double] <trainer|wild> · <easy|trainer|DANGER|catch|fight> | <foes> [💀 <our mon>]` — an easy wave lists only foe names and levels. `(resumed, turn N)` when the watcher started mid-battle.
@@ -52,8 +53,9 @@ When the user wants the coach running for the whole session ("keep coaching", "w
    - `LEARN MOVE w<wave> <pokémon> wants <move> | has: <moves> | <pokémon> Atk<n>/SpA<n> | HUD: <verdict> [· ⚠ loses only <type> move]`
    - `REWARDS w<wave> money $<n> reroll $<n> | free: … | shop: … | HUD: take X [→ <TM recipient>] · buy Y` (again after a reroll)
    - `COACH ERROR <msg>`, once per distinct failure. Report it rather than staying silent.
+   - `BIOME w<wave> | HUD: <biome> <score> pick — <reasons> · <other biome> <score>` once per biome choice, only with the HUD running.
 
-Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`, `learn`, `rewards`), `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
+Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`, `learn`, `rewards`, `biome`), `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
 
 The panel already shows the decision; the user glances at it mid-battle. Speak only when you add something.
 
@@ -63,6 +65,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 - **Trainer:** send-in order and the win condition, ≤4 lines. Don't repeat the ⚔ line; add ability traps from the rules below and what the plan can't see.
 - **Learn move:** reply only if the HUD verdict is "your call" or you disagree — coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
 - **Rewards:** only what the HUD can't judge: held items (`items`), long-term team building, whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. Don't quote item effects from memory; use `desc`.
+- **Biome:** reply only to add what the card doesn't weigh: the gym leader or evil-team boss ahead, trainers, a rare biome two steps away, or a close call.
 
 ## Rules learned the hard way
 
