@@ -38,7 +38,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const handler = { options: sc.free.map(t => opt(t)), shopOptionsRows: shopRows, rerollCost: 2250 };
   const scene = { money: sc.money, pokeballCounts: { 0: 34 }, currentBattle: {}, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [] };
-  globalThis.Phaser = { Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
+  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};

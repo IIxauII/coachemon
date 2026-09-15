@@ -52,7 +52,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
     getSortedPartyMemberMatchupScores: sc2 => sc2.slice().sort((a, b) => b[1] - a[1]),
     getNextSummonIndex: () => 1 } : null;
   const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
-  globalThis.Phaser = { Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
+  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};

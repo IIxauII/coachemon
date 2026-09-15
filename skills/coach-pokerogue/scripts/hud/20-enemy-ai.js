@@ -4,19 +4,9 @@
 //   bestBenchScore × (1 − 0.1^(1/enemySwitchCounter)) ≥ avg own matchup score × (boss ? 2 : 3)
 // and sends trainer.getNextSummonIndex(). Switches resolve before moves, so our attack lands on the switch-in.
 // getMatchupScore isn't fully side-effect free — non-simulated type checks can queue a strong-winds message or
-// an ability display — so every call runs with the phase queue muted (see `muted`), and only once per turn.
-const QUEUE_METHODS = ["pushPhase", "unshiftPhase", "pushNew", "unshiftNew", "queueMessage", "queueAbilityDisplay", "hideAbilityBar"];
-const muted = (s, fn) => {
-  const pm = s.phaseManager;
-  const saved = QUEUE_METHODS.filter(k => typeof pm[k] === "function").map(k => [k, Object.prototype.hasOwnProperty.call(pm, k), pm[k]]);
-  for (const [k] of saved) pm[k] = () => {};
-  try {
-    return fn();
-  } finally {
-    // Synchronous: nothing else runs while muted, and the queue is restored exactly as it was.
-    for (const [k, own, f] of saved) { if (own) pm[k] = f; else delete pm[k]; }
-  }
-};
+// an ability display — so every call runs inside `sandbox`, and only once per turn.
+// Game calls run inside `sandbox` (01-core.js).
+const muted = sandbox;
 let switchCache = { key: null, value: new Map() };
 const predictSwitches = (s, b, active) => {
   const tr = b.trainer;

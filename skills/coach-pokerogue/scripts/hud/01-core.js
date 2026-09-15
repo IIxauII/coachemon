@@ -55,3 +55,47 @@ const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === 
 const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), "Wonder Guard", "Thick Fat", "Heatproof", "Solid Rock", "Filter", "Prism Armor", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple"]);
 const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"];
 const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
+
+// ---- Calling the game's own code safely
+// Even the game's "simulated" paths have hidden effects (read from the live build; see the coach spec): they can
+// queue ability displays/messages, record abilities in waveData/summonData.abilitiesApplied, draw from the battle
+// RNG (Outrage-type targeting, consecutive Protect, Shell Side Arm ties, Psywave) or Phaser's global RNG (Present),
+// and write turnData (Tera Shell's moveEffectiveness; our own multi-hit hitCount/hitsLeft). `sandbox` runs `fn`
+// with the phase queue muted and restores all of that afterwards. It is synchronous, so nothing else runs in
+// between and the restore is exact. Wrap a whole refresh in one sandbox; never call game functions outside it
+// unless the spec lists them as pure reads.
+const QUEUE_METHODS = ["pushPhase", "unshiftPhase", "pushNew", "unshiftNew", "queueMessage", "queueAbilityDisplay", "hideAbilityBar", "queueFaintPhase"];
+let sandboxBreaches = 0; // times a restore didn't match — surfaced on the panel, never expected
+const sandbox = (s, fn) => {
+  const pm = s.phaseManager;
+  const queue = QUEUE_METHODS.filter(k => typeof pm[k] === "function").map(k => [k, Object.prototype.hasOwnProperty.call(pm, k), pm[k]]);
+  const rnd = Phaser.Math.RND.state();
+  const battle = s.currentBattle;
+  const seed = battle?.battleSeedState;
+  const rngOffset = s.rngOffset, rngSeedOverride = s.rngSeedOverride;
+  const mons = [...(s.getPlayerParty?.() ?? []), ...(s.getEnemyParty?.() ?? [])].filter(Boolean).map(p => ({
+    p,
+    wave: p.waveData?.abilitiesApplied && new Set(p.waveData.abilitiesApplied),
+    summon: p.summonData?.abilitiesApplied && new Set(p.summonData.abilitiesApplied),
+    turn: p.turnData && { hitCount: p.turnData.hitCount, hitsLeft: p.turnData.hitsLeft, moveEffectiveness: p.turnData.moveEffectiveness },
+  }));
+  for (const [k] of queue) pm[k] = () => {};
+  try {
+    return fn();
+  } finally {
+    for (const [k, own, f] of queue) { if (own) pm[k] = f; else delete pm[k]; }
+    Phaser.Math.RND.state(rnd);
+    if (battle) battle.battleSeedState = seed;
+    s.rngOffset = rngOffset;
+    s.rngSeedOverride = rngSeedOverride;
+    for (const { p, wave, summon, turn } of mons) {
+      if (wave) p.waveData.abilitiesApplied = wave;
+      if (summon) p.summonData.abilitiesApplied = summon;
+      if (turn) Object.assign(p.turnData, turn);
+    }
+    if (Phaser.Math.RND.state() !== rnd || (battle && battle.battleSeedState !== seed)) sandboxBreaches++;
+  }
+};
+// Game-code calls only run while the game is waiting for the player's command: no phase is mid-execution, and
+// the enemy's decisions for the turn haven't been made yet.
+const awaitingCommand = s => s.phaseManager?.getCurrentPhase?.()?.phaseName === "CommandPhase";

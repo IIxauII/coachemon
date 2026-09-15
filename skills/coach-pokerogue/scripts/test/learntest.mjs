@@ -14,7 +14,7 @@ for (const [label, pk, newMove, double] of cases) {
   let el; const ds = {};
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const scene = { currentBattle: { double }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => [pk] };
-  globalThis.Phaser = { Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
+  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], title: "", addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: ds }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
