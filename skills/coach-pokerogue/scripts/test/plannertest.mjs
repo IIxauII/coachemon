@@ -129,7 +129,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
   assert.ok(!el.textContent, `panel error: ${el.textContent}`);
   const lines = (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
-  const firstRow = lines.findIndex(l => /^(🩸|(\S+) \2 L\d+)/.test(l));
+  const firstRow = lines.findIndex(l => /^(team weak to:|(\S+) \2 L\d+)/.test(l));
   return { lines, field: lines.slice(1, firstRow < 0 ? undefined : firstRow), scene };
 };
 // The Cyrus mistake: Scrafty sent in "→ High Jump Kick" as if the move happened this turn.
@@ -152,7 +152,7 @@ const assertNoImmediateScrafty = field => {
   assert.match(next, /⚠ .*\{next turn: Weavile's Knock Off/, "next-turn threat from the foe it will actually face");
   assert.match(next, /boss: 2 bars — no 1HKO/, "boss bars explain why it isn't a 1HKO");
   const weavileRow = lines.find(l => /^Weavile Weavile/.test(l));
-  assert.match(weavileRow, /↯ Dark Knock Off ~\d+% · moves first/, "foe row shows its likely move, probability and order");
+  assert.match(weavileRow, /↯ Dark Knock Off → Metagross (~\d+% HP|\d+% likely) · moves first/, "foe row shows its likely move into our mon, its odds and order");
   assert.ok(lines.some(l => /^↺ if it stays: Morpeko/.test(l)), "plan for Gyarados staying is kept, dim");
 }
 
@@ -164,8 +164,8 @@ const assertNoImmediateScrafty = field => {
   assertNoImmediateScrafty(field);
   assert.ok(!field.some(l => /Scrafty in/.test(l) && !/optional/.test(l)), "no switch into a KO");
   const stay = field.find(l => /^⚔ Morpeko/.test(l));
-  assert.match(stay ?? "", /💀 Ice .*3 hits .*\{next turn: Weavile's Triple Axel/, "next-turn 💀 on the staying mon, multi-hit shown");
-  assert.ok(field.some(l => /no safe switch-in/.test(l)), "says there is no safe switch-in");
+  assert.match(stay ?? "", /💀 Ice .*3-hit .*\{next turn: Weavile's Triple Axel/, "next-turn 💀 on the staying mon, multi-hit shown");
+  assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
 }
 
 // ---- 3. The planner's building blocks, on scenario 1's scene.
@@ -219,7 +219,7 @@ const assertNoImmediateScrafty = field => {
   console.log(`== switch-in never acts (live)\n${lines.join("\n")}`);
   assert.ok(!field.some(l => /Blastoise in(?! · optional)/.test(l)), `Blastoise is KO'd before it acts, so it isn't the switch-in:\n${field.join("\n")}`);
   assert.ok(field.some(l => /^⚔ Charizard/.test(l)), "staying wins");
-  assert.ok(field.some(l => /no safe switch-in/.test(l)), "says there is no safe switch-in");
+  assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
 }
 
 // ---- 6–8. Doubles: where both slots aim is one decision.
@@ -270,7 +270,7 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   console.log(`== doubles split (live)\n${lines.join("\n")}`);
   const slots = slotLines(field);
   assert.ok(slots.some(l => /^⚔ Garchomp .*→ Weezing/.test(l)) && slots.some(l => /^⚔ Lucario .*→ Toxapex/.test(l)), `split targets:\n${field.join("\n")}`);
-  assert.ok(field.some(l => /^⋔ split: both KO/.test(l)), "split is explained");
+  assert.ok(!field.some(l => /^⋔/.test(l)), "a split needs no line: the ⚔ targets show it");
   assert.ok(!field.some(l => /^◎/.test(l)), "no focus");
 }
 

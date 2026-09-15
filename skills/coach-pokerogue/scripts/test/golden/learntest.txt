@@ -1,28 +1,28 @@
 == Charizard ← Flare Blitz
-✚ Fire Flare Blitz recoil · weak Atk ≈96
-· Fire Heat Wave spread ≈147
-· Dragon Dragon Breath coverage ≈72
-· Flying Air Slash coverage ≈128
-· Fire Flamethrower ≈135
+✚ Fire Flare Blitz recoil · weak Atk power 96
+· Fire Heat Wave spread power 147
+· Dragon Dragon Breath coverage power 72
+· Flying Air Slash coverage power 128
+· Fire Flamethrower power 135
 Skip — not an upgrade
 == Venusaur ← Solar Beam
-✚ Grass Solar Beam coverage · charges ≈108
-· Normal Double-Edge coverage · recoil ≈90
+✚ Grass Solar Beam coverage · charges power 108
+· Normal Double-Edge coverage · recoil power 90
 · Grass Sleep Powder status
 · Grass Synthesis status
-· Grass Power Whip coverage ≈172
+· Grass Power Whip coverage power 172
 Skip — not an upgrade
 == Blastoise ← Skull Bash
-✚ Normal Skull Bash coverage · charges ≈77
-· Water Aqua Tail 3× Water ≈96
-· Steel Flash Cannon coverage ≈96
-· Water Wave Crash 3× Water · recoil ≈95
-· Water Hydro Pump 3× Water ≈106
+✚ Normal Skull Bash coverage · charges power 77
+· Water Aqua Tail 3rd Water move power 96
+· Steel Flash Cannon coverage power 96
+· Water Wave Crash 3rd Water move · recoil power 95
+· Water Hydro Pump 3rd Water move power 106
 Skip — not an upgrade
 == Scrafty ← Head Smash
-✚ Rock Head Smash coverage · recoil ≈96
-· Fighting Focus Punch 3× Fighting ≈180
-· Normal Rock Climb coverage ≈92
-· Fighting Brick Break 3× Fighting ≈90
-· Fighting High Jump Kick 3× Fighting ≈140
+✚ Rock Head Smash coverage · recoil power 96
+· Fighting Focus Punch 3rd Fighting move power 180
+· Normal Rock Climb coverage power 92
+· Fighting Brick Break 3rd Fighting move power 90
+· Fighting High Jump Kick 3rd Fighting move power 140
 Skip — not an upgrade

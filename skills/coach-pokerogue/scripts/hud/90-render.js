@@ -42,21 +42,27 @@ const line = (label, color, ...kids) => h("div", { display: "flex", alignItems: 
 const hpColor = hp => (hp > 50 ? "#6d6" : hp > 20 ? "#ec4" : "#e55");
 
 // Panel views: "full" (everything), "mini" (one line per foe), "closed" (tab).
+// An easy wild wave collapses to one line in either view; a view button pressed during a wave holds for the rest
+// of it (`hold` is that wave's key), so the panel doesn't collapse again under the user.
 const VIEW_KEY = "coach-hud-view";
 let view = "full";
 try { view = localStorage.getItem(VIEW_KEY) || view; } catch {}
+let shownWave = null, hold = null;
+const redraw = () => { last = ""; tick(); };
 const setView = v => {
   view = v;
-  last = "";
+  hold = shownWave;
   try { localStorage.setItem(VIEW_KEY, v); } catch {}
-  tick();
+  redraw();
 };
+// `next`: the view to switch to, or a function to run.
 const button = (label, title, next) => {
   const n = h("span", { cursor: "pointer", padding: "0 4px", borderRadius: "3px", background: "rgba(255,255,255,.1)", fontWeight: "bold" }, label);
   n.title = title;
-  n.addEventListener("click", e => { e.stopPropagation(); setView(next); });
+  n.addEventListener("click", e => { e.stopPropagation(); typeof next === "function" ? next() : setView(next); });
   return n;
 };
+const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 
 const tab = (emoji, icon) => {
   const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, emoji, icon);
@@ -70,6 +76,9 @@ const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: 
   view === "full" ? button("−", "Minimal overview", "mini") : button("+", "Expand", "full"),
   button("×", "Close", "closed"));
 
+// "3× Water" (the move would be the third of its type) reads as "3rd Water move".
+const ordinal = n => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
+const learnNote = n => n.replace(/^(\d+)× (\w+)$/, (_, k, t) => `${ordinal(+k)} ${t} move`);
 const drawLearn = m => {
   if (view === "closed") return [tab("🎓", mon(m.icon, m.name, 20))];
   const header = bar("🎓", `${m.name} learns`, mon(m.icon, m.name, 20));
@@ -77,10 +86,10 @@ const drawLearn = m => {
     badge(x.type), img("categories", x.cat, x.cat, 12, null),
     h("span", { fontWeight: "bold", marginLeft: "2px" }, x.name),
     h("span", { flex: "1" }),
-    x.notes.length ? h("span", { color: "#9aa", fontSize: "9px", marginRight: "4px" }, x.notes.join(" · ")) : null,
-    h("span", dim, x.value === null ? "status" : `≈${x.value}`));
+    x.notes.length ? h("span", { color: "#9aa", fontSize: "9px", marginRight: "4px" }, x.notes.map(learnNote).join(" · ")) : null,
+    h("span", dim, x.value === null ? "status" : `power ${x.value}`));
   const verdict = h("div", { color: m.verdict[1], fontWeight: "bold", marginTop: "3px" }, m.verdict[0]);
-  if (view === "mini") return [header, row(m.move, "✚", "#6d6"), verdict];
+  if (view === "mini") return [header, row(m.move, "✚", "#6d6"), m.forget >= 0 ? row(m.moves[m.forget], "✕", "#e55") : null, verdict].filter(Boolean);
   return [header, row(m.move, "✚", "#6d6"),
     h("div", { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" }),
     ...m.moves.map((x, i) => (i === m.forget ? row(x, "✕", "#e55") : row(x, "·", "#9aa"))),
@@ -97,28 +106,93 @@ const drawShop = m => {
     ? m.buys.map(b => line("💰", "#ec4", itemImg(b.icon, b.name),
         h("span", { fontWeight: "bold" }, b.name), h("span", { ...dim, marginLeft: "4px" }, `$${b.cost}`),
         h("span", { flex: "1" }), mon(b.target, b.targetName, 20), h("span", dim, b.why)))
-    : [line("💰", "#ec4", h("span", dim, "nothing to buy"))];
+    : [];
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), h("span", dim, p.why)) : null;
   if (view === "mini") return [header, ...buyRows, take].filter(Boolean);
   const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", "#9aa", itemImg(f.icon, f.name),
     h("span", dim, f.name), h("span", { flex: "1" }), h("span", { color: "#9aa", fontSize: "9px" }, f.why)));
   return [header,
-    h("div", { ...dim, fontSize: "9px" }, "buy first — taking the free reward closes the shop"),
-    ...buyRows, h("div", sep), take, ...others,
+    m.buys.length ? h("div", { ...dim, fontSize: "9px" }, "buy first — taking the free reward closes the shop") : null,
+    ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
     m.reroll ? line("🎲", "#8cf", h("span", dim, m.reroll)) : null].filter(Boolean);
 };
 
+// Danger the panel flags on our side: the 💀 / ⚠ tags on field slots and on mons a switch takes out.
+const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
+  .filter(([name, t]) => name && t).map(([name, t]) => ({ mon: name, level: t.level, from: t.from, move: t.move }));
+const catchWorthIt = m => !!m.catch?.targets?.some(t => t.verdict !== "skip");
+const planLost = m => !!m.teamPlan && m.teamPlan.result !== "win";
+// An easy wave: a wild fight with nothing to decide. No boss, no danger tag, no switch (nor a missing one), every
+// slot KOs in 1–2 hits, and no catch worth a ball. Anything else expands the panel on its own.
+const easyWave = m => {
+  const f = m.field;
+  if (m.kind !== "battle" || m.trainer || !f || f.freeSwitch || m.enemySwitches?.length || m.rows.some(r => r.boss)) return false;
+  if (f.switches.length || f.noSafeSwitch || dangerTags(m).length || catchWorthIt(m) || planLost(m)) return false;
+  return f.slots.length > 0 && f.slots.every(sl => sl.move && sl.ko >= 1 && sl.ko <= 2);
+};
+// easy / trainer / danger / catch / fight, most specific first: what the watcher and Claude's brief key off.
+const verdictOf = m => (easyWave(m) ? "easy" : m.trainer ? "trainer"
+  : dangerTags(m).length || m.rows.some(r => r.boss) || m.field?.noSafeSwitch ? "danger"
+  : catchWorthIt(m) ? "catch" : "fight");
+const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.ko ? ` · ${hitsText(sl.ko)}` : ""}`;
+
+// Plain-text verdict of what the panel shows, for the watcher and the battle read (`window.__coachHud.summary()`).
+// `danger` lists the 💀 tags only: a likely KO before our mon acts.
+const hudSummary = m => {
+  if (!m) return null;
+  const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null };
+  if (m.kind === "learn") return { ...base, learn: m.verdict[0] };
+  if (m.kind === "shop") {
+    const p = m.pick >= 0 ? m.free[m.pick] : null;
+    const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
+    return { ...base, rewards: [p ? `take ${p.name}` : null, buys].filter(Boolean).join(" · ") || null };
+  }
+  return { ...base, verdict: verdictOf(m), field: m.field ? m.field.slots.map(slotText).join(" ; ") : null,
+    danger: dangerTags(m).filter(d => d.level === "ko").map(({ mon: name, from, move }) => ({ mon: name, from, move })) };
+};
+
+// Trap abilities on a slot's target that its planned move runs into: by type, by category (Intimidate, Fluffy), a
+// super-effective hit (Filter and co.) or a 1-hit KO (Sturdy). Rows carry names and types only, so this is by name.
+const trapsHit = (m, sl) => {
+  if (!sl.move) return [];
+  const foes = m.rows.filter(r => (sl.target === "both" ? !r.pick?.later : r.name === sl.target?.name));
+  const phys = sl.cat === "physical";
+  const hits = (a, r) => ABILITY_IMMUNE[a] === sl.type
+    || (a === "Thick Fat" && (sl.type === "Fire" || sl.type === "Ice")) || (a === "Heatproof" && sl.type === "Fire")
+    || (a === "Fluffy" && (phys || sl.type === "Fire")) || (a === "Intimidate" && phys) || (a === "Sturdy" && sl.ko === 1)
+    || a === "Wonder Guard"
+    || (["Filter", "Solid Rock", "Prism Armor"].includes(a) && r.types.reduce((x, d) => x * vs(sl.type, d), 1) >= 2);
+  return [...new Set(foes.flatMap(r => r.abilities.filter(a => TRAPS.has(a) && hits(a, r))))];
+};
+
+let collapsed = false; // set per draw by tick: this battle panel is the one-line easy-wave view
 const drawBattle = m => {
   if (view === "closed") return [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)];
+  const f = m.field;
+  const trapTag = sl => trapsHit(m, sl).map(a => h("span", { color: "#fa4", fontSize: "9px", marginLeft: "3px" }, `⚠ ${a}`));
 
+  // Easy wild wave: one line, one ⚔ per slot. `+` shows the chosen view for the rest of the wave.
+  if (collapsed) {
+    return [h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "3px", fontWeight: "bold" },
+      "🎯", m.title,
+      ...f.slots.flatMap(sl => [h("span", { color: "#8cf", marginLeft: "4px" }, "⚔"), mon(sl.icon, sl.name, 20),
+        h("span", {}, sl.move),
+        ...(sl.target === "both" ? [h("span", dim, "→ both")] : sl.target ? [h("span", dim, "→"), mon(sl.target.icon, sl.target.name, 18)] : []),
+        h("span", { ...dim, fontWeight: "normal" }, `· ${hitsText(sl.ko)}`), ...trapTag(sl)]),
+      h("span", { flex: "1" }), h("span", { width: "4px" }), button("+", "Show details", view), button("×", "Close", "closed"))];
+  }
+
+  // Send-in icons only add something when they go beyond the ⚔ mons: a trainer's later foes.
+  const slotNames = new Set(f?.slots.map(sl => sl.name) ?? []);
+  const order = m.trainer || m.order.some(o => !slotNames.has(o.name)) ? m.order : [];
   const header = bar("🎯", m.title,
-    ...m.order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, 20)]));
+    ...order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, 20)]));
 
   const threatTag = t => {
     const n = h("span", { display: "inline-flex", alignItems: "center", marginRight: "4px", color: t.level === "ko" ? "#e55" : "#fa4" },
       t.level === "ko" ? "💀" : "⚠", badge(t.type, t.e >= 2 ? `×${t.e}` : ""),
-      t.hits ? h("span", { fontSize: "9px", marginLeft: "1px" }, `${t.hits} hits`) : null);
+      h("span", { fontSize: "9px", marginLeft: "1px" }, `${t.pct}%${t.hits ? ` ${t.hits}-hit` : ""}`));
     n.title = `${t.next ? "next turn: " : ""}${t.from}'s ${t.move}: ~${t.pct}% of current HP`
       + `${t.pko > 0 && t.pko < 100 ? `, ${t.pko}% KO` : ""}${t.level === "ko" ? ", before it can act" : ""}`;
     return n;
@@ -131,16 +205,17 @@ const drawBattle = m => {
   const swapLine = (sw, color, tail, label) => step(label, "⇄", color,
     ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), sw.out.threat ? threatTag(sw.out.threat) : null, h("span", { color, margin: "0 3px" }, "out ›")] : [h("span", { color, marginRight: "3px" }, "send")]),
     mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail));
-  // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn).
-  const f = m.field;
+  // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn). Mini has no
+  // foe rows, so a trap ability the move runs into goes on the slot itself.
   const slotLine = (sl, label) => step(label, "⚔", "#8cf",
     mon(sl.icon, sl.name, 22),
     sl.threat ? threatTag(sl.threat) : null,
     ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, "no damaging move")]),
     ...(sl.target === "both" ? [h("span", { color: "#8cf", marginLeft: "4px" }, "→ both")]
       : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
+    ...(view === "mini" ? trapTag(sl) : []),
     h("span", { flex: "1" }),
-    sl.ko ? h("span", dim, `${sl.ko}HKO`) : null,
+    sl.ko ? h("span", dim, hitsText(sl.ko)) : null,
     sl.notes?.length ? h("span", { ...dim, fontSize: "9px", marginLeft: "4px" }, sl.notes.join(" · ")) : null);
   const firstText = p => (p >= 100 ? "moves first" : p <= 0 ? "moves after" : `${p}% first`);
   const slotMove = sl => [
@@ -154,6 +229,11 @@ const drawBattle = m => {
   const ifStay = m.ifStay && view === "full"
     ? line("↺", "#9aa", h("span", { ...dim, marginRight: "4px" }, "if it stays:"), ...m.ifStay.flatMap((sl, i) => [i ? h("span", dim, " · ") : null, ...slotMove(sl)]))
     : null;
+  const noSafeSwitch = () => {
+    const n = line("⇄", "#e55", h("span", { color: "#e55" }, "no safe switch"));
+    n.title = "every bench mon is KO'd coming in or before it acts";
+    return n;
+  };
   const split = !!f?.slots.some(sl => sl.enter);
   const field = !f ? [...enemySwitches] : [
     ...enemySwitches,
@@ -171,62 +251,60 @@ const drawBattle = m => {
         ...f.slots.filter(sl => !sl.enter).map(sl => slotLine(sl, "now:")),
         ...f.slots.filter(sl => sl.enter).map(sl => slotLine(sl, "next:"))]
       : [...f.slots.map(sl => slotLine(sl)), ...f.switches.map(sw => swapLine(sw, "#fa4", "in"))]),
-    // Doubles: both slots on one foe, or split for a reason worth saying.
+    // Doubles: both slots on one foe says why. A split needs no line: the ⚔ targets already show it.
     f.targeting?.kind === "focus" ? line("◎", "#8cf", h("span", { color: "#8cf", marginRight: "3px" }, "focus"), mon(f.targeting.target.icon, f.targeting.target.name, 18),
       h("span", dim, `: ${f.targeting.note}${f.targeting.pko > 0 && f.targeting.pko < 100 ? ` (${f.targeting.pko}%)` : ""}`)) : null,
-    f.targeting?.kind === "split" ? line("⋔", "#8cf", h("span", dim, `split: ${f.targeting.note}`)) : null,
     ...(view === "full" ? f.optional.map(sw => swapLine(sw, "#9aa", "in · optional")) : []),
-    f.noSafeSwitch ? line("⇄", "#e55", h("span", { color: "#e55" }, "no safe switch-in — every bench mon is KO'd coming in or before it acts")) : null,
+    f.noSafeSwitch ? noSafeSwitch() : null,
     ifStay,
   ];
 
-  if (view === "mini") {
-    const rows = m.rows.map(r => h("div", { display: "flex", alignItems: "center", gap: "2px" },
-      mon(r.icon, r.name, 22),
-      h("span", { color: hpColor(r.hp), width: "30px" }, `${r.hp}%`),
-      ...r.weak.slice(0, 3).map(([t, s]) => badge(t, s)),
-      h("span", { flex: "1" }),
-      r.pick ? h("span", { display: "flex", alignItems: "center" },
-        h("span", { color: r.pick.later ? "#9aa" : "#8cf" }, r.pick.later ? "later" : "➜"), mon(r.pick.icon, r.pick.name, 20), badge(r.pick.type),
-        r.pick.risky ? h("span", { color: "#fa4" }, "⚠") : null) : null));
-    return [header, ...field, ...drawCatch(m), ...rows].filter(Boolean);
-  }
+  if (view === "mini") return [header, ...field, ...drawCatch(m), ...drawTeamPlan(m)].filter(Boolean);
 
-  // With one foe the team line just repeats its weaknesses.
-  const team = m.rows.length > 1 ? line("🩸", "#e77", ...m.team.map(([t, n]) => badge(t, `×${n}`))) : null;
-  const rows = m.rows.map(r => h("div", { marginTop: "5px", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,.12)" },
-    h("div", { display: "flex", alignItems: "center", gap: "3px" },
-      mon(r.icon, r.name, 28),
-      h("span", { fontWeight: "bold" }, r.name),
-      h("span", dim, `L${r.lv}`),
-      ...r.types.map(t => badge(t)),
-      r.boss ? "👑" : null,
-      STATUS_FRAMES[r.status] ? img("statuses", STATUS_FRAMES[r.status], STATUS_FRAMES[r.status], 10, null) : null,
-      h("span", { flex: "1" }),
-      h("span", { color: hpColor(r.hp) }, `${r.hp}%`)),
-    r.abilities.length ? line("✦", "#bbd", ...r.abilities.map(a =>
-      h("span", { color: TRAPS.has(a) ? "#fa4" : "#bbd", marginRight: "6px" }, TRAPS.has(a) ? `⚠ ${a}` : a))) : null,
-    line("▲", "#6d6", ...(r.weak.length ? r.weak.map(([t, s]) => badge(t, s)) : [h("span", dim, "—")])),
-    r.avoid.length ? line("✕", "#e55", ...r.avoid.map(([t, s]) => badge(t, s))) : null,
-    r.switchTo ? line("⇆", "#c9f",
-      h("span", { color: "#c9f", marginRight: "3px" }, "switches to"),
-      mon(r.switchTo.icon, r.switchTo.name, 20)) : null,
-    // The enemy's likely move into the pokémon we put in front of it.
-    r.likely ? line("↯", "#e77",
-      badge(r.likely.type), h("span", { color: "#e77" }, r.likely.move),
-      h("span", { ...dim, marginLeft: "4px" }, [r.likely.p != null ? `~${r.likely.p}%` : null, r.likely.hits ? `${r.likely.hits} hits` : null, firstText(r.likely.first)].filter(Boolean).join(" · "))) : null,
-    r.pick
-      ? line("➜", "#8cf",
-          mon(r.pick.icon, r.pick.name, 22),
-          img("categories", r.pick.cat, r.pick.cat, 12, null),
-          badge(r.pick.type),
-          h("span", { fontWeight: "bold" }, r.pick.move),
-          h("span", { ...dim, marginLeft: "4px" }, `~${r.pick.pct}%${r.pick.ko ? ` · ${r.pick.ko}HKO` : ""}`),
-          r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null,
-          r.pick.later ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, "later") : null,
-          r.pick.notes?.length ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, r.pick.notes.join(" · ")) : null,
-          r.pick.vs ? [h("span", { color: "#c9f", fontSize: "9px", margin: "0 2px 0 4px" }, "into"), mon(r.pick.vs.icon, r.pick.vs.name, 18)] : null)
-      : line("➜", "#8cf", h("span", dim, "no damaging move lands"))));
+  // Only types the party has a damaging move of: a weakness nobody can hit is noise.
+  const usable = ([t]) => !m.moveTypes || m.moveTypes.includes(t);
+  const teamWeak = m.team.filter(usable);
+  const team = m.trainer && m.rows.length > 1 && teamWeak.length
+    ? line("", "#e77", h("span", { color: "#e77", marginRight: "4px" }, "team weak to:"), ...teamWeak.map(([t, n]) => badge(t, `×${n}`)))
+    : null;
+  const rows = m.rows.map(r => {
+    const traps = r.abilities.filter(a => TRAPS.has(a));
+    const weak = r.weak.filter(usable), avoid = r.avoid.filter(usable);
+    return h("div", { marginTop: "5px", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,.12)" },
+      h("div", { display: "flex", alignItems: "center", gap: "3px" },
+        mon(r.icon, r.name, 28),
+        h("span", { fontWeight: "bold" }, r.name),
+        h("span", dim, `L${r.lv}`),
+        ...r.types.map(t => badge(t)),
+        r.boss ? "👑" : null,
+        STATUS_FRAMES[r.status] ? img("statuses", STATUS_FRAMES[r.status], STATUS_FRAMES[r.status], 10, null) : null,
+        h("span", { flex: "1" }),
+        h("span", { color: hpColor(r.hp) }, `${r.hp}%`)),
+      traps.length ? line("✦", "#fa4", ...traps.map(a => h("span", { color: "#fa4", marginRight: "6px" }, `⚠ ${a}`))) : null,
+      line("▲", "#6d6", ...(weak.length ? weak.map(([t, x]) => badge(t, x)) : [h("span", dim, "—")])),
+      avoid.length ? line("✕", "#e55", ...avoid.map(([t, x]) => badge(t, x))) : null,
+      // The enemy's likely move into the pokémon we put in front of it: its damage (% of that mon's HP) once the
+      // model carries it, otherwise how likely the AI is to pick it.
+      r.likely ? line("↯", "#e77",
+        badge(r.likely.type), h("span", { color: "#e77" }, r.likely.move),
+        ...(r.pick ? [h("span", { ...dim, margin: "0 2px 0 3px" }, "→"), mon(r.pick.icon, r.pick.name, 18)] : []),
+        h("span", { ...dim, marginLeft: "4px" }, [
+          r.likely.pct != null ? `~${r.likely.pct}% HP` : r.likely.p != null ? `${r.likely.p}% likely` : null,
+          r.likely.hits ? `${r.likely.hits}-hit` : null, firstText(r.likely.first)].filter(Boolean).join(" · "))) : null,
+      // A foe on the field already has its ⚔ line; the pick is only news for one no slot is on yet.
+      r.pick?.later
+        ? line("➜", "#8cf",
+            mon(r.pick.icon, r.pick.name, 22),
+            img("categories", r.pick.cat, r.pick.cat, 12, null),
+            badge(r.pick.type),
+            h("span", { fontWeight: "bold" }, r.pick.move),
+            h("span", { ...dim, marginLeft: "4px" }, `~${r.pick.pct}%${r.pick.ko ? ` · ${hitsText(r.pick.ko)}` : ""}`),
+            r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null,
+            h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, "later"),
+            r.pick.notes?.length ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, r.pick.notes.join(" · ")) : null)
+        : !r.pick && !f ? line("➜", "#8cf", h("span", dim, "no damaging move lands")) : null,
+      r.notes?.length ? line("·", "#9aa", h("span", { ...dim, fontSize: "9px" }, r.notes.join(" · "))) : null);
+  });
   return [header, ...field, ...drawCatch(m), team, ...rows, ...drawTeamPlan(m)].filter(Boolean);
 };
 
@@ -242,14 +320,20 @@ Object.assign(el.style, {
 // Keep clicks on the panel from reaching the game underneath.
 for (const ev of ["click", "mousedown", "pointerdown", "touchstart"]) el.addEventListener(ev, e => e.stopPropagation());
 let last = "";
+let shown = null; // the model last drawn: `window.__coachHud.last()` / `summary()`
 document.body.appendChild(el);
+
+// Damaging move types across the living party: the foe rows only list weaknesses we can hit.
+const moveTypesOf = party => [...new Set(party.flatMap(p => p.moveset.filter(Boolean).map(pm => {
+  try { const mv = pm.getMove(); return mv.category !== 2 && mv.power > 0 ? TYPES[mv.type] : null; } catch { return null; }
+})).filter(Boolean))];
 
 const tick = () => {
   try {
     game ??= Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
     const s = game.scene.getScene("battle");
     // Mid-reload or on the title screen: nothing to coach, and the scene isn't wired up yet.
-    if (!s?.ui) { el.style.display = "none"; return; }
+    if (!s?.ui) { el.style.display = "none"; shown = null; return; }
     const learn = learnState(s);
     const handler = s.ui.getHandler();
     let m;
@@ -261,12 +345,17 @@ const tick = () => {
       const b = s.currentBattle;
       const foes = s.getEnemyParty().filter(p => p.hp > 0);
       const party = s.getPlayerParty().filter(p => p.hp > 0);
-      if (!b || !foes.length || !party.length) { el.style.display = "none"; return; }
-      m = model(s, b, party, foes);
+      if (!b || !foes.length || !party.length) { el.style.display = "none"; shown = null; return; }
+      m = { ...model(s, b, party, foes), trainer: !!b.trainer, double: !!b.double, moveTypes: moveTypesOf(party) };
     }
-    const sig = JSON.stringify([view, m]);
+    m.wave = s.currentBattle?.waveIndex ?? null;
+    shown = m;
+    // A view picked by a button holds until the card or wave changes.
+    shownWave = `${m.kind}:${m.wave}`;
+    collapsed = view !== "closed" && hold !== shownWave && easyWave(m);
+    const sig = JSON.stringify([view, collapsed, m]);
     el.style.display = "block";
-    el.style.width = view === "full" ? "300px" : "auto";
+    el.style.width = view === "full" && !collapsed ? "300px" : "auto";
     if (sig !== last) {
       missed = false;
       el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle }[m.kind])(m));
