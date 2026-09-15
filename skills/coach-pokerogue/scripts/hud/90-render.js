@@ -79,21 +79,54 @@ const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: 
 // "3× Water" (the move would be the third of its type) reads as "3rd Water move".
 const ordinal = n => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 const learnNote = n => n.replace(/^(\d+)× (\w+)$/, (_, k, t) => `${ordinal(+k)} ${t} move`);
+// What the effective power is made of, as the power's tooltip: the card stays one number per move.
+const powerTitle = x => [`base ${x.power}${x.hits > 1 ? ` × ${x.hits} hits` : ""}`, x.acc < 100 ? `${x.acc}% acc` : null,
+  x.stab ? "STAB" : null, x.fixed ? "fixed damage" : null].filter(Boolean).join(" · ");
 const drawLearn = m => {
   if (view === "closed") return [tab("🎓", mon(m.icon, m.name, 20))];
-  const header = bar("🎓", `${m.name} learns`, mon(m.icon, m.name, 20));
-  const row = (x, mark, color) => line(mark, color,
-    badge(x.type), img("categories", x.cat, x.cat, 12, null),
-    h("span", { fontWeight: "bold", marginLeft: "2px" }, x.name),
-    h("span", { flex: "1" }),
-    x.notes.length ? h("span", { color: "#9aa", fontSize: "9px", marginRight: "4px" }, x.notes.map(learnNote).join(" · ")) : null,
-    h("span", dim, x.value === null ? "status" : `power ${x.value}`));
-  const verdict = h("div", { color: m.verdict[1], fontWeight: "bold", marginTop: "3px" }, m.verdict[0]);
-  if (view === "mini") return [header, row(m.move, "✚", "#6d6"), m.forget >= 0 ? row(m.moves[m.forget], "✕", "#e55") : null, verdict].filter(Boolean);
+  const header = bar("🎓", `${m.name} learns`, mon(m.icon, m.name, 20),
+    view === "full" && m.atk != null ? h("span", { ...dim, fontWeight: "normal", fontSize: "9px" }, `Atk ${m.atk} / SpA ${m.spa}`) : null);
+  // The slot the new move would take: the one to forget, or on a skip the one it lost to.
+  const slot = m.forget >= 0 ? m.forget : m.compare;
+  // Only-type loss: the slot's own "only X move on team" note becomes a ⚠ by its name; the team line says it.
+  const onlyNote = m.team?.onlyType ? `only ${m.team.onlyType} move on team` : null;
+  const row = (x, mark, color, warn) => {
+    const notes = warn ? x.notes.filter(n => n !== onlyNote) : x.notes;
+    const power = h("span", dim, x.value === null ? "status" : `power ${x.value}`);
+    if (x.value !== null && x.power != null) power.title = powerTitle(x);
+    return line(mark, color,
+      badge(x.type), img("categories", x.cat, x.cat, 12, null),
+      h("span", { fontWeight: "bold", marginLeft: "2px" }, x.name),
+      warn ? h("span", { color: "#fa4", marginLeft: "3px" }, "⚠") : null,
+      h("span", { flex: "1" }),
+      notes.length ? h("span", { color: "#9aa", fontSize: "9px", marginRight: "4px" }, notes.map(learnNote).join(" · ")) : null,
+      power);
+  };
+  const warnAt = i => i === slot && !!onlyNote;
+  const loses = onlyNote ? h("span", { color: "#fa4" }, `⚠ loses only ${m.team.onlyType} move`) : null;
+  // Net change only: a type both gained and lost (a same-type swap) is no change.
+  const gains = (m.team?.gains ?? []).filter(t => !m.team.loses.includes(t));
+  const lost = (m.team?.loses ?? []).filter(t => !m.team.gains.includes(t));
+  const teamParts = [
+    gains.length ? h("span", { color: "#6d6" }, `+SE ${gains.slice(0, 3).join("/")}${gains.length > 3 ? "…" : ""}`) : null,
+    lost.length ? h("span", { color: "#e77" }, `−SE ${lost.slice(0, 3).join("/")}${lost.length > 3 ? "…" : ""}`) : null,
+    loses,
+  ].filter(Boolean);
+  const teamLine = parts => (parts.length
+    ? line("", "#9aa", h("span", { ...dim, marginRight: "4px" }, "team:"), ...parts.flatMap((p, i) => [i ? h("span", dim, " · ") : null, p]))
+    : null);
+  // Effective power the swap gains; on a skip only a loss (a gain under the learn threshold would read as a contradiction).
+  const gain = (m.decision === "learn" || (m.decision === "skip" && m.gain < 0)) && m.gain
+    ? h("span", { ...dim, fontWeight: "normal", marginLeft: "6px" }, `${m.gain > 0 ? "+" : "−"}${Math.abs(m.gain)} power`) : null;
+  const verdict = h("div", { color: m.verdict[1], fontWeight: "bold", marginTop: "3px" }, m.verdict[0], view === "full" ? gain : null);
+  if (view === "mini") {
+    return [header, row(m.move, "✚", "#6d6"), m.forget >= 0 ? row(m.moves[m.forget], "✕", "#e55", warnAt(m.forget)) : null,
+      m.forget >= 0 ? teamLine([loses].filter(Boolean)) : null, verdict].filter(Boolean);
+  }
   return [header, row(m.move, "✚", "#6d6"),
     h("div", { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" }),
-    ...m.moves.map((x, i) => (i === m.forget ? row(x, "✕", "#e55") : row(x, "·", "#9aa"))),
-    verdict];
+    ...m.moves.map((x, i) => (i === m.forget ? row(x, "✕", "#e55", warnAt(i)) : i === slot ? row(x, "↔", "#fa4", warnAt(i)) : row(x, "·", "#9aa"))),
+    teamLine(teamParts), verdict].filter(Boolean);
 };
 
 const itemImg = (icon, name) => img("items", icon, name, 18, null);
@@ -101,17 +134,31 @@ const sep = { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" };
 const drawShop = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   if (view === "closed") return [tab("🛒", p ? itemImg(p.icon, p.name) : null)];
-  const header = bar("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null);
+  const header = bar("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
+    view === "full" && !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal", fontSize: "9px" }, "nothing affordable") : null,
+    m.bossNext ? h("span", { color: "#fa4", fontSize: "9px" }, "👑 boss next") : null);
   const buyRows = m.buys.length
     ? m.buys.map(b => line("💰", "#ec4", itemImg(b.icon, b.name),
         h("span", { fontWeight: "bold" }, b.name), h("span", { ...dim, marginLeft: "4px" }, `$${b.cost}`),
         h("span", { flex: "1" }), mon(b.target, b.targetName, 20), h("span", dim, b.why)))
     : [];
+  // A TM names its best recipient by icon and the move it replaces, instead of the "TM for X (over Y)" text.
+  const tmTo = f => {
+    const b = f.best;
+    if (!b) return null;
+    const setup = /^setup TM for .+ \((.+)\)$/.exec(f.why);
+    return [mon(b.icon, b.name, 20), h("span", dim, b.forget ? `→ forget ${b.forget}` : setup ? `setup ${setup[1]}` : "free slot")];
+  };
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
-    h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), h("span", dim, p.why)) : null;
+    h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? h("span", dim, p.why)) : null;
   if (view === "mini") return [header, ...buyRows, take].filter(Boolean);
+  // Who can use it, when the reason doesn't already name them.
+  const usersText = f => {
+    const rest = (f.users ?? []).filter(n => !f.why.includes(n));
+    return rest.length ? ` · for ${rest.slice(0, 2).join("/")}${rest.length > 2 ? ` +${rest.length - 2}` : ""}` : "";
+  };
   const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", "#9aa", itemImg(f.icon, f.name),
-    h("span", dim, f.name), h("span", { flex: "1" }), h("span", { color: "#9aa", fontSize: "9px" }, f.why)));
+    h("span", dim, f.name), h("span", { flex: "1" }), h("span", { color: "#9aa", fontSize: "9px" }, `${f.why}${usersText(f)}`)));
   return [header,
     m.buys.length ? h("div", { ...dim, fontSize: "9px" }, "buy first — taking the free reward closes the shop") : null,
     ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
@@ -144,11 +191,14 @@ const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? "
 const hudSummary = m => {
   if (!m) return null;
   const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null };
-  if (m.kind === "learn") return { ...base, learn: m.verdict[0] };
+  if (m.kind === "learn") {
+    const only = m.team?.onlyType && m.forget >= 0 ? ` · ⚠ loses only ${m.team.onlyType} move` : "";
+    return { ...base, learn: `${m.verdict[0]}${only}` };
+  }
   if (m.kind === "shop") {
     const p = m.pick >= 0 ? m.free[m.pick] : null;
     const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
-    return { ...base, rewards: [p ? `take ${p.name}` : null, buys].filter(Boolean).join(" · ") || null };
+    return { ...base, rewards: [p ? `take ${p.name}${p.best ? ` → ${p.best.name}` : ""}` : null, buys].filter(Boolean).join(" · ") || null };
   }
   return { ...base, verdict: verdictOf(m), field: m.field ? m.field.slots.map(slotText).join(" ; ") : null,
     danger: dangerTags(m).filter(d => d.level === "ko").map(({ mon: name, from, move }) => ({ mon: name, from, move })) };

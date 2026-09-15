@@ -252,7 +252,8 @@ const { moveScore, learnPlan } = (() => {
     const team = {
       gains: incoming.teamSe ?? [],
       loses: dropped ? dropped.teamSe ?? [] : [],
-      onlyType: dropped?.onlyOnTeam ? dropped.type : null,
+      // Losing the team's only move of a type, unless the new move is that type.
+      onlyType: dropped?.onlyOnTeam && dropped.type !== incoming.type ? dropped.type : null,
     };
     return { moves, incoming, forget, compare: free ? -1 : compare, kind, gain, team, atk: pk.getStat(1), spa: pk.getStat(3) };
   };
@@ -267,9 +268,8 @@ const learnModel = ({ pk, mv, double, party }) => {
     status: ["Status move — your call", "#fa4"],
     "only-status": ["Only status moves to drop — your call", "#fa4"],
     learn: [`Learn → forget ${moves[forget]?.name}`, "#6d6"],
-    skip: ["Skip — not an upgrade", "#e55"],
+    skip: [`Skip — not an upgrade${moves[compare] ? ` over ${moves[compare].name}` : ""}`, "#e55"],
   }[plan.kind];
-  if (team.gains.length) incoming.notes.push(`team gains SE on ${team.gains.slice(0, 3).join("/")}`);
   return {
     kind: "learn", icon: iconOf(pk), name: pk.name, move: incoming, moves, forget, compare, verdict,
     decision: plan.kind, gain: plan.gain, atk: plan.atk, spa: plan.spa, team,

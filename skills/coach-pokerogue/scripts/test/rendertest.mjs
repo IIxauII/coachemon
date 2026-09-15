@@ -1,5 +1,6 @@
 // Card rendering in both views, and the watcher's summary of each card: the learn-move card (mini names the move to
-// forget) and the fight plan one-liner that `+` opens.
+// forget) with its team line and only-type warning, the rewards card's TM recipient and boss-next tag, and the fight
+// plan one-liner that `+` opens.
 import { bundle } from "../hud-bundle.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -50,4 +51,48 @@ for (const view of ["full", "mini"]) {
   const open = el.kids.map(find).find(Boolean);
   open?.onclick({ stopPropagation() {} });
   console.log(`-- after + (${view})\n${lines(el)}`);
+}
+
+// Learn with a team: Espeon trades Bite, the team's only Dark move, for Earth Power — the team line carries the SE
+// types gained and the only-type loss, and mini keeps just that warning.
+const espeon = pk("Espeon", ["Psychic"], 65, 130, [["Bite","Dark",60,"P"],["Psychic","Psychic",90,"S"],["Shadow Ball","Ghost",80,"S"],["Dazzling Gleam","Fairy",80,"S"]]);
+const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["Ice Beam","Ice",90,"S"]]);
+for (const view of ["full", "mini"]) {
+  const scene = { currentBattle: { waveIndex: 27, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: espeon, newMove: mv(["Earth Power","Ground",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [espeon, lapras] };
+  const el = mount(scene, view);
+  console.log(`== learn team (${view})\n${lines(el)}`);
+  if (view === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+}
+
+// Rewards before a boss: the TM row shows its best recipient and the move it replaces, full view adds who can use the
+// other rewards, and the watcher's summary names the recipient.
+{
+  class ModifierType {}
+  class PokemonModifierType extends ModifierType {}
+  class TmModifierType extends PokemonModifierType {}
+  class PokemonHeldItemModifierType extends PokemonModifierType {}
+  class AddPokeballModifierType extends ModifierType {}
+  const MOVES = { 1: ["Tackle","Normal",40,"P"], 2: ["Spark","Electric",65,"P"], 3: ["Bite","Dark",60,"P"], 4: ["Quick Attack","Normal",40,"P"], 5: ["Fire Fang","Fire",65,"P",95], 6: ["Heat Wave","Fire",95,"S",90] };
+  class PokemonMove {
+    constructor(id) { this.moveId = id; this.ppUsed = 0; }
+    getMove() { return mv(MOVES[this.moveId]); }
+    getName() { return MOVES[this.moveId][0]; }
+    getMovePp() { return 20; }
+  }
+  const member = (name, types, atk, spa, ids) => ({ ...pk(name, types, atk, spa, []), status: null, species: { forms: [] }, moveset: ids.map(id => new PokemonMove(id)) });
+  const morpeko = member("Morpeko", ["Electric","Dark"], 95, 70, [2, 3, 1, 4]);
+  const charizard = member("Charizard", ["Fire","Flying"], 110, 150, [6]);
+  const team = [charizard, morpeko];
+  const free = [
+    Object.assign(new TmModifierType(), { name: "TM Fire Fang", iconImage: "tm", tier: 1, moveId: 5, selectFilter: p => (p === morpeko ? null : "no effect") }),
+    Object.assign(new PokemonHeldItemModifierType(), { name: "Leftovers", iconImage: "leftovers", tier: 0, selectFilter: () => null }),
+    Object.assign(new AddPokeballModifierType(), { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 }),
+  ];
+  const handler = { options: free.map(t => ({ modifierTypeOption: { type: t, cost: 0 } })), shopOptionsRows: [], rerollCost: 250 };
+  for (const view of ["full", "mini"]) {
+    const scene = { money: 500, pokeballCounts: { 1: 20 }, modifiers: [], currentBattle: { waveIndex: 29 }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => team, getEnemyParty: () => [] };
+    const el = mount(scene, view);
+    console.log(`== rewards boss next (${view})\n${lines(el)}`);
+    if (view === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+  }
 }
