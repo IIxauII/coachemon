@@ -69,9 +69,9 @@ const node = () => { const n = { style: {}, children: [], addEventListener() {},
 globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
 globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
-const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits, bestMove };\n})();\n");
+const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits, bestMove, sandbox };\n})();\n");
 eval(src);
-const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits, bestMove } = globalThis.__dmg;
+const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits, bestMove, sandbox } = globalThis.__dmg;
 
 // Expected damage of one hit whose max roll is `max`: the mean of the 16 rolls 85..100 %.
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
@@ -98,6 +98,14 @@ const bigHit = move(1, "Big Hit", 14, 120);
   near(ta.expected, 0.9 * avgRoll(20) + 0.81 * avgRoll(40) + 0.729 * avgRoll(60), "Triple Axel expected");
   near(single.expected, avgRoll(120), "single-hit expected");
   assert.ok(ta.expected < single.expected, "accuracy per hit makes Triple Axel worth less than an equal max single hit");
+  // A boss 1 HP above its bar boundary takes 1 from this use; `uncapped` is what the same use deals on a later bar.
+  const edge = mon("edge", { hp: 501, maxHp: 1000, boss: 2, player: false });
+  setup(atk, edge);
+  const clamped = moveOutcome(scene, atk, edge, pmOf(bigHit), { crit: false });
+  near(clamped.expected, 1, "clamped at the boundary");
+  near(clamped.uncapped, avgRoll(120), "uncapped single hit");
+  setup(atk, edge);
+  near(moveOutcome(scene, atk, edge, pmOf(tripleAxel), { crit: false }).uncapped, ta.expected, "uncapped Triple Axel");
   assert.ok(ta.notes.includes("3 hits"));
   // Wide Lens: +5 accuracy on every rolled hit.
   const lens = mon("weavile2", { player: false, items: [new PokemonMoveAccuracyBoosterModifier()] });
@@ -205,6 +213,11 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const again = damageCalls;
   moveOutcome(scene, atk, def, pmOf(tripleAxel));
   assert.equal(damageCalls, again, "cached per turn");
+  // Inside a caller's sandbox (a whole HUD refresh) the restore waits for that sandbox to close, but game code run
+  // in between — the enemy AI scoring its moves — must already see the user's turnData untouched.
+  setup(atk, def);
+  const during = sandbox(scene, () => { moveOutcome(scene, atk, def, pmOf(tripleAxel)); return JSON.stringify(atk.turnData); });
+  assert.equal(during, turnData[0], "multi-hit turnData restored before the next game call");
 }
 
 // hits / bestMove keep the old record shape, backed by the game path: expected for ours, max for a foe's.

@@ -88,7 +88,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 == free switch — switch (live)
 🎯 W200 · Cyrus Swampert − {Minimal overview} × {Close}
 ⇄ free switch? Ninetales → Swampert (no hit taken)
-⚔ Swampert ⚠ Rock 100% {Rhyperior's Stone Edge: ~100% of current HP, 37% KO} Water Surf → Rhyperior 1 hit
+⚔ Swampert ⚠ Rock 100% {Rhyperior's Stone Edge: ~100% of current HP, 35% KO} Water Surf → Rhyperior 1 hit
 team weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Swampert 100% likely · moves first
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
@@ -103,7 +103,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 == free switch — stay (live)
 🎯 W200 · Cyrus Swampert − {Minimal overview} × {Close}
 ⇄ free switch? stay — Swampert is best here
-⚔ Swampert ⚠ Rock 100% {Rhyperior's Stone Edge: ~100% of current HP, 37% KO} Water Surf → Rhyperior 1 hit
+⚔ Swampert ⚠ Rock 100% {Rhyperior's Stone Edge: ~100% of current HP, 35% KO} Water Surf → Rhyperior 1 hit
 team weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Swampert 100% likely · moves first
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later

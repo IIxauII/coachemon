@@ -185,7 +185,7 @@ const actDelay = p => {
 };
 
 // How `foe` threatens `me` over its likely moves: expected damage (for scoring), the worst max roll among moves it
-// might realistically pick (for the 💀 flag), P(KO this turn at current HP) with a crit as a small extra risk, and
+// might realistically pick (for the 💀 flag), P(KO this turn at current HP) with crit rolls included, and
 // P(foe acts before me) — `koFirst` weights that by the moves that KO. `myPm` is our planned move (turn order).
 // Damage uses our true abilities (not the AI's view): the AI's blind spots decide what it picks, not what it deals.
 // Each move is weighted by the chance the foe gets to use it (`actChance`: sleep, freeze, paralysis, confusion).
@@ -203,12 +203,7 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
     const order = actionOrder(s, foe, pm, me, myPm ?? NO_MOVE_INFO);
     first += m.p * order;
     if (!m.o) continue;
-    let ko = m.o.pKo ?? 0;
-    if (live && m.p >= 0.1 && ko < 1 && m.o.pm) {
-      const crit = moveOutcome(s, foe, me, m.o.pm, { crit: true });
-      const cp = m.o.critChance ?? 1 / 24;
-      if (crit) ko = (1 - cp) * ko + cp * (crit.pKo ?? 0);
-    }
+    const ko = m.o.pKo ?? 0;
     const p = m.p * actChance(foe, pm.getMove?.() ?? null, next);
     expected += p * m.o.expected;
     pKo += p * ko;
@@ -235,13 +230,14 @@ const koChanceAt = (t, hp) => {
 };
 // Turns a threat needs to KO `me` from `hp`, a heal at turn end included.
 const foeTurns = (s, t, me, hp) => (!t || !(t.expected > 0) ? 9
-  : koChanceAt(t, hp) >= 0.5 ? 1 : Math.min(9, Math.max(2, turnsToKo(hp + healAtEnd(s, me), t.expected))));
+  : koChanceAt(t, hp) >= 0.5 ? 1 : Math.min(9, Math.max(2, turnsToKo(hp, t.expected, healAtEnd(s, me)))));
 
-// Hits of `dmgAt(i)` (the i-th use) to clear each HP chunk in turn; a boss bar's boundary wastes the overflow.
-const hitsToKo = (chunks, dmgAt) => {
+// Hits of `dmgAt(i)` (the i-th use) to clear each HP chunk in turn, `heal` restored after each hit it survives; a
+// boss bar's boundary wastes the overflow.
+const hitsToKo = (chunks, dmgAt, heal = 0) => {
   let n = 0;
   for (let hp of chunks) {
-    while (hp > 0 && n < 9) { const d = dmgAt(n); if (!(d > 0)) return 9; hp -= d; n++; }
+    while (hp > 0 && n < 9) { const d = dmgAt(n); if (!(d > 0)) return 9; hp -= d; n++; if (hp > 0) hp += heal; }
   }
   return Math.min(9, n);
 };
@@ -271,20 +267,22 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   const maxHp = me.getMaxHp?.() ?? hp;
   let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1;
   if (mine?.expected > 0) {
-    // Mean damage when it lands: misses are already in turn 1's odds, and a boss bar clamps each turn's hit.
-    const perTurn = mine.expected / Math.max(mine.acc ?? 1, 0.3) * steady;
+    // Mean damage when it lands: misses are already in turn 1's odds, and a boss bar clamps each turn's hit. Uncapped:
+    // this turn's hit may stop at a bar boundary, the hits on later bars don't.
+    const perTurn = (mine.uncapped ?? mine.expected) / Math.max(mine.acc ?? 1, 0.3) * steady;
     const bars = bossBarsLeft(foe);
     const seg = foe.getMaxHp() / (foe.bossSegments || 1);
     // Overheat-type drops to the stat the move attacks with weaken every repeat.
     const atkStat = mine.cat === "special" ? 3 : 1;
     const drop = mine.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
+    const heal = healAtEnd(s, foe);
     const byTurns = drop
-      ? hitsToKo(bars > 1 ? [foe.hp - seg * (bars - 1) + healAtEnd(s, foe), ...Array(bars - 1).fill(seg)] : [foe.hp + healAtEnd(s, foe)],
-        i => perTurn * stage(Math.max(-6, s0 + drop * i)) / stage(s0))
+      ? hitsToKo(bars > 1 ? [foe.hp - seg * (bars - 1), ...Array(bars - 1).fill(seg)] : [foe.hp],
+        i => perTurn * stage(Math.max(-6, s0 + drop * i)) / stage(s0), heal)
       : bars > 1
-        ? turnsToKo(foe.hp - seg * (bars - 1) + healAtEnd(s, foe), perTurn) + (bars - 1) * turnsToKo(seg, perTurn)
-        : turnsToKo(foe.hp + healAtEnd(s, foe), perTurn);
+        ? turnsToKo(foe.hp - seg * (bars - 1), perTurn, heal) + (bars - 1) * turnsToKo(seg, perTurn, heal)
+        : turnsToKo(foe.hp, perTurn, heal);
     hitsWe = (mine.pKo ?? 0) * steady >= 0.5 ? 1 : Math.min(9, Math.max(2, byTurns));
     // Turns around the hits: sleep or a recharge now, a foe hidden mid-Dig that we'd outspeed; a charging turn per
     // hit, a lost turn between hits (recharge, or a move that can't be used twice in a row); Outrage's lock runs

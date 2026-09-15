@@ -15,7 +15,7 @@ const STUBBED = ["moveOutcome", "moveOutcomes", "endOfTurnHeal", "enemyMoveDistr
 const STUBS = `
 const moveOutcome = (s, atk, def, pm, opts = {}) => globalThis.__stub.outcome(atk, def, pm, opts);
 const moveOutcomes = (s, atk, def) => atk.moveset.map(pm => moveOutcome(s, atk, def, pm)).filter(Boolean);
-const endOfTurnHeal = () => 0;
+const endOfTurnHeal = p => globalThis.__stub.heal?.(p) ?? 0;
 const enemyMoveDistribution = (s, e) => globalThis.__stub.dist(e);
 const predictSwitches = (s, b, active) => globalThis.__stub.switches(active);
 const enemyAction = (s, e) => ({ kind: "move", dist: enemyMoveDistribution(s, e), tera: false });
@@ -73,7 +73,10 @@ const outcome = (atk, def, pm, { crit = false } = {}) => {
     }
     return hp;
   };
-  let expected = 0, pKo = 0;
+  let expected = 0, pKo = 0, uncapped = 0;
+  per.forEach((x, k) => {
+    for (let r = 0; r < 16; r++) uncapped += acc ** (k + 1) / 16 * Math.floor(x * mult * (85 + r) / 100);
+  });
   land.forEach((p, i) => {
     for (let r = 0; r < 16; r++) {
       const hp = play(i + 1, (85 + r) / 100);
@@ -85,7 +88,7 @@ const outcome = (atk, def, pm, { crit = false } = {}) => {
   return {
     name: pm.getName(), type: TY[mv.type], cat: mv.category ? "special" : "physical", e, priority: mv.priority, spread: [2, 4, 6, 8].includes(mv.moveTarget),
     acc, dist: [{ n: per.length, p: 1 }], perHit: per.map(x => ({ max: Math.floor(x * mult), min: Math.floor(x * mult * 0.85) })),
-    expected, max: def.hp - Math.max(play(per.length, 1), 0), pKo, critChance: 1 / 24, notes: [],
+    expected, uncapped, max: def.hp - Math.max(play(per.length, 1), 0), pKo, notes: [],
   };
 };
 
@@ -191,12 +194,26 @@ const assertNoImmediateScrafty = field => {
   assert.ok(t.pKo > 0.6 && t.first === 1, `Triple Axel likely KOs Scrafty first (pKo ${t.pKo})`);
   assert.equal(t.worstMove.hits, "3");
   assert.doesNotThrow(() => JSON.stringify(t), "threat is JSON-safe");
+  // The outcome's pKo already folds crit rolls in: Waterfall's 59–70 rolls KO 62 HP on 12 of 16, and no crit on top.
+  const worn = { ...scrafty, id: "worn Scrafty", hp: 62 };
+  assert.ok(Math.abs(threatFrom(s, gyarados, worn).pKo - 0.75) < 1e-9, `KO odds count crits once (${threatFrom(s, gyarados, worn).pKo})`);
 
   const x = exchange(s, scrafty, scrafty.moveset[0], weavile, { next: true });
   assert.equal(x.turnsWe, 2, "two boss bars: High Jump Kick can't 1HKO");
   assert.ok(x.pTheyKoFirst > 0.9, `Weavile wins the exchange (${x.pTheyKoFirst})`);
   const m = exchange(s, morpeko, morpeko.moveset[0], gyarados);
   assert.ok(m.pWeKoFirst === 1 && m.turnsWe === 1, "Aura Wheel KOs Gyarados before it moves");
+  // One HP above the bar boundary: Aura Wheel (77–90) breaks the bar for 1 HP, then needs two more for the last 150.
+  const edge = { ...weavile, id: "Weavile at the boundary", hp: 151 };
+  assert.equal(exchange(s, morpeko, morpeko.moveset[0], edge).turnsWe, 3, "a clamped first hit doesn't set the pace for later bars");
+  // Turn-end heals come every turn the target survives. Meteor Mash lands for 64.3 on average into a Gyarados healing
+  // 30: 250 HP falls 34.3 a turn after the first, so the 7th hit KOs (6.4). Waterfall (55.1) into a Metagross
+  // healing 10: 240 / 45.1 → 6 turns. Healing once would say 5 and 5.
+  globalThis.__stub.heal = p => ({ Gyarados: 30, Metagross: 10 })[p.name] ?? 0;
+  const [, , metagross] = party;
+  const healing = exchange(s, { ...metagross, id: "healing Metagross" }, metagross.moveset[0], { ...gyarados, id: "healing Gyarados" });
+  delete globalThis.__stub.heal;
+  assert.deepEqual([healing.turnsWe, healing.turnsThey], [7, 6], "heals land every turn on both sides");
   console.log("== building blocks ok");
 }
 
