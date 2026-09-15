@@ -61,9 +61,11 @@
   // i: 1 atk, 2 def, 3 spa, 4 spd, 5 spe. statStages has no HP slot.
   const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ?? 0);
 
-  // Rough damage of attacker's best usable damaging move into defender.
-  const bestMove = (a, d) => {
-    let best = null;
+  const SPREAD_TARGETS = [2, 4, 6, 8]; // MoveTarget ALL_OTHERS, ALL_NEAR_OTHERS, ALL_NEAR_ENEMIES, ALL_ENEMIES
+
+  // Rough damage of each usable damaging move of attacker into defender.
+  const hits = (a, d) => {
+    const out = [];
     for (const m of a.moveset.filter(Boolean)) {
       const mv = m.getMove();
       if (mv.category === 2 || !(mv.power > 0) || m.getMovePp() - m.ppUsed <= 0) continue;
@@ -72,10 +74,12 @@
       const base = ((2 * a.level / 5 + 2) * mv.power * stat(a, phys ? 1 : 3) / stat(d, phys ? 2 : 4)) / 50 + 2;
       const e = effectiveness(type, d);
       const dmg = base * (typesOf(a).includes(type) ? 1.5 : 1) * e;
-      if (!best || dmg > best.dmg) best = { name: m.getName(), type, cat: phys ? "physical" : "special", e, dmg };
+      out.push({ name: m.getName(), type, cat: phys ? "physical" : "special", e, dmg, spread: SPREAD_TARGETS.includes(mv.moveTarget) });
     }
-    return best;
+    return out;
   };
+  const bestMove = (a, d) => hits(a, d).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);
+  const turnsToKo = (hp, dmg) => (dmg > 0 ? Math.min(9, Math.ceil(hp / dmg)) : 9);
 
   // Positive score = we KO it in fewer turns than it KOs us.
   const matchup = (me, foe) => {
@@ -85,6 +89,70 @@
     const theirTurns = theirs?.dmg > 0 ? Math.min(9, Math.ceil(me.hp / theirs.dmg)) : 9;
     const faster = stat(me, 5) >= stat(foe, 5);
     return { me, mine, myTurns, score: theirTurns - myTurns + (faster ? 0.5 : -0.5) };
+  };
+
+  // Who should be on the field now and what each slot does. For doubles every pair of healthy party members is
+  // tried with every option per slot — a single-target move into either foe, or a spread move into both at the
+  // game's ¾ spread damage — scored by turns to KO against how fast the worse foe KOs that member, plus speed.
+  // Pairs that cover both foes, and members already out (switching costs a turn), get a bonus.
+  const fieldPlan = (party, active, double) => {
+    const slots = double && active.length === 2 ? 2 : 1;
+    const options = me => {
+      const danger = Math.min(...active.map(f => turnsToKo(me.hp, bestMove(f, me)?.dmg ?? 0)));
+      const out = [];
+      active.forEach((f, fi) => {
+        // In doubles a spread move always hits both, so it only counts as the "both" option below.
+        const m = hits(me, f).filter(x => slots === 1 || !x.spread).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);
+        if (!(m?.dmg > 0)) return;
+        const turns = turnsToKo(f.hp, m.dmg);
+        out.push({ me, move: m, target: fi, turns, score: danger - turns + (stat(me, 5) >= stat(f, 5) ? 0.5 : -0.5) });
+      });
+      if (slots === 2) {
+        for (const m of hits(me, active[0]).filter(x => x.spread)) {
+          const other = hits(me, active[1]).find(x => x.name === m.name);
+          const turns = Math.max(turnsToKo(active[0].hp, m.dmg * 0.75), turnsToKo(active[1].hp, (other?.dmg ?? 0) * 0.75));
+          const faster = active.every(f => stat(me, 5) >= stat(f, 5));
+          if (turns < 9) out.push({ me, move: m, target: "both", turns, score: danger - turns + 1 + (faster ? 0.5 : -0.5) });
+        }
+      }
+      if (!out.length) out.push({ me, move: null, target: null, turns: 9, score: danger - 9 });
+      return out;
+    };
+    const stay = me => (me.isOnField?.() ? 0.5 : 0);
+
+    let best = null;
+    if (slots === 1) {
+      for (const me of party) for (const o of options(me)) {
+        const score = o.score + stay(me);
+        if (!best || score > best.score) best = { picks: [o], score };
+      }
+    } else {
+      const opts = party.map(options);
+      for (let i = 0; i < party.length; i++) for (let j = i + 1; j < party.length; j++) {
+        for (const a of opts[i]) for (const b of opts[j]) {
+          const covers = a.target === "both" || b.target === "both" || (a.target !== null && b.target !== null && a.target !== b.target);
+          const score = a.score + b.score + (covers ? 1 : -1) + stay(party[i]) + stay(party[j]);
+          if (!best || score > best.score) best = { picks: [a, b], score };
+        }
+      }
+      // Fewer than two healthy members: field the one there is.
+      if (!best) for (const o of opts[0] ?? []) if (!best || o.score > best.score) best = { picks: [o], score: o.score };
+    }
+    if (!best) return null;
+
+    const chosen = best.picks.map(p => p.me);
+    const current = party.filter(p => p.isOnField?.());
+    const outs = current.filter(p => !chosen.includes(p));
+    const ins = chosen.filter(p => !current.includes(p));
+    return {
+      slots: best.picks.map(p => ({
+        icon: iconOf(p.me), name: p.me.name, out: !!p.me.isOnField?.(),
+        move: p.move?.name ?? null, type: p.move?.type ?? null, cat: p.move?.cat ?? null,
+        target: p.target === "both" ? "both" : p.target === null ? null : { icon: iconOf(active[p.target]), name: active[p.target].name },
+        ko: p.turns <= 3 ? p.turns : 0,
+      })),
+      switches: ins.map((p, i) => ({ out: outs[i] ? { icon: iconOf(outs[i]), name: outs[i].name } : null, in: { icon: iconOf(p), name: p.name } })),
+    };
   };
 
   const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), "Wonder Guard", "Thick Fat", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple"]);
@@ -128,8 +196,11 @@
       };
     });
 
+    const onField = foes.filter(f => f.isOnField?.());
+    const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
     return {
       kind: "battle",
+      field: fieldPlan(party, active, !!b.double),
       title: `W${b.waveIndex}${b.trainer ? ` · ${b.trainer.getName()}` : ""}`,
       order: [...new Set(picks.filter(Boolean).map(p => p.me))].map(me => ({ icon: iconOf(me), name: me.name })),
       team: Object.entries(teamWeak).sort((x, y) => y[1] - x[1]).slice(0, 4),
@@ -150,7 +221,6 @@
     return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double } : null;
   };
 
-  const SPREAD_TARGETS = [2, 4, 6, 8]; // MoveTarget ALL_OTHERS, ALL_NEAR_OTHERS, ALL_NEAR_ENEMIES, ALL_ENEMIES
   const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
 
   // Effective power of a move on this pokémon: power × accuracy × STAB × how well its attack stat suits the
@@ -413,6 +483,21 @@
     const header = bar("🎯", m.title,
       ...m.order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, 20)]));
 
+    // ⚔ what each field slot should do; ⇄ the switches to get there.
+    const f = m.field;
+    const field = !f ? [] : [
+      ...f.slots.map(sl => line("⚔", "#8cf",
+        mon(sl.icon, sl.name, 22),
+        ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, "no damaging move")]),
+        ...(sl.target === "both" ? [h("span", { color: "#8cf", marginLeft: "4px" }, "→ both")]
+          : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
+        h("span", { flex: "1" }),
+        sl.ko ? h("span", dim, `${sl.ko}HKO`) : null)),
+      ...f.switches.map(sw => line("⇄", "#fa4",
+        ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), h("span", { color: "#fa4", margin: "0 3px" }, "out ›")] : [h("span", { color: "#fa4", marginRight: "3px" }, "send")]),
+        mon(sw.in.icon, sw.in.name, 20), h("span", { color: "#fa4", marginLeft: "3px" }, "in"))),
+    ];
+
     if (view === "mini") {
       const rows = m.rows.map(r => h("div", { display: "flex", alignItems: "center", gap: "2px" },
         mon(r.icon, r.name, 22),
@@ -422,7 +507,7 @@
         r.pick ? h("span", { display: "flex", alignItems: "center" },
           h("span", { color: "#8cf" }, "➜"), mon(r.pick.icon, r.pick.name, 20), badge(r.pick.type),
           r.pick.risky ? h("span", { color: "#fa4" }, "⚠") : null) : null));
-      return [header, ...rows];
+      return [header, ...field, ...rows];
     }
 
     // With one foe the team line just repeats its weaknesses.
@@ -450,7 +535,7 @@
             h("span", { ...dim, marginLeft: "4px" }, `~${r.pick.pct}%${r.pick.ko ? ` · ${r.pick.ko}HKO` : ""}`),
             r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null)
         : line("➜", "#8cf", h("span", dim, "no damaging move lands"))));
-    return [header, team, ...rows].filter(Boolean);
+    return [header, ...field, team, ...rows].filter(Boolean);
   };
 
   const el = document.createElement("div");
