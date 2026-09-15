@@ -32,13 +32,14 @@ const foes = [
   mon("Weavile", 110, ["Dark","Ice"], "Pressure", [560,330,190,110,210,320], [["Triple Axel","Ice",120,"P"],["Night Slash","Dark",70,"P"]], false, undefined, 2),
 ];
 
-const run = phase => {
+const run = (phase, { party: ours = party, foes: theirs = foes, double = false } = {}) => {
+  const party = ours, foes = theirs;
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : null) };
   for (const f of foes) f.getOpponents = () => party.filter(p => p.isOnField());
   const trainer = { getName: () => "Cyrus", config: { isBoss: true }, isDouble: () => false };
-  const scene = { phaseManager: pm, getField: () => [...party, ...foes].filter(p => p.isOnField()), currentBattle: { waveIndex: 115, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+  const scene = { phaseManager: pm, getField: () => [...party, ...foes].filter(p => p.isOnField()), currentBattle: { waveIndex: 115, turn: 1, double, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
@@ -86,4 +87,27 @@ assert.ok(ms < 500, `cheap enough to run every turn (${ms.toFixed(0)} ms incl. b
 const live = run("CommandPhase").plan;
 assert.equal(live.win?.name, "Weavile");
 assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", "sandbox restored the RNG");
+assert.ok(!plan.compact && plan.summary === null, "a lost fight is never compact");
+assert.equal(plan.approxDoubles, false);
+
+// An early trainer with nothing to plan around: the plan collapses to one line. In a double battle the plan is still
+// one-on-one exchanges, and says so.
+{
+  const ours = [
+    mon("Charizard", 30, ["Fire","Flying"], "Blaze", [95,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true),
+    mon("Blastoise", 30, ["Water"], "Torrent", [95,58,70,62,75,55], [["Surf","Water",90,"S"]], true),
+  ];
+  const youngster = [
+    mon("Rattata", 12, ["Normal"], "Run Away", [32,20,15,12,15,30], [["Tackle","Normal",40,"P"]], true),
+    mon("Pidgey", 12, ["Normal","Flying"], "Keen Eye", [34,18,17,16,16,26], [["Gust","Flying",40,"S"]], true),
+  ];
+  const single = run(null, { party: ours, foes: youngster }).plan;
+  console.log(`== easy trainer\n${single.summary}`);
+  assert.equal(single.result, "win");
+  assert.ok(single.compact, `compact: ${JSON.stringify(single)}`);
+  assert.match(single.summary, /^winnable · Charizard/);
+  const double = run(null, { party: ours, foes: youngster, double: true }).plan;
+  assert.ok(double.approxDoubles, "doubles are flagged as approximated");
+  assert.ok(double.compact);
+}
 console.log("ok");

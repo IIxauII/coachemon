@@ -209,17 +209,17 @@ const tpSearch = (T, start, reserve, win) => {
 const teamPlan = (s, b, party, foes) => {
   if (!b?.trainer || !party.length || !foes.length) return null;
   const live = awaitingCommand(s);
-  const key = [b.waveIndex, b.turn, b.enemySwitchCounter, ...party.map(p => `${p.id}:${p.hp}`), ...foes.map(f => `${f.id}:${f.hp}`)].join("|");
+  const key = [b.waveIndex, b.turn, b.enemySwitchCounter, !!b.double, ...party.map(p => `${p.id}:${p.hp}`), ...foes.map(f => `${f.id}:${f.hp}`)].join("|");
   // A plan built from the game's own numbers stays until the turn changes; outside the command phase only the
   // approximation is available, so don't let it replace one.
   if (teamPlanCache.key === key && (teamPlanCache.live || !live)) return teamPlanCache.value;
   const T = live ? sandbox(s, () => tpTables(s, party, foes, true)) : tpTables(s, party, foes, false);
-  const value = tpView(T, party, foes);
+  const value = tpView(T, party, foes, !!b.double);
   teamPlanCache = { key, live, value };
   return value;
 };
 
-const tpView = (T, party, foes) => {
+const tpView = (T, party, foes, double = false) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
   const pctOf = (hp, max) => Math.round(hp / max * 100);
   const onField = party.findIndex(p => p.isOnField?.());
@@ -309,6 +309,8 @@ const tpView = (T, party, foes) => {
     if (spent.length) warnings.push(`${names(spent)} goes down before ${w} comes in`);
   } else if (lost) warnings.push(`${lost}the plan runs out with ${left} foe${left > 1 ? "s" : ""} standing — maximise damage`);
 
+  // Nothing to plan around (an easy trainer): one line instead of the step list.
+  const compact = plan.result === "win" && !warnings.length && !sacrifice.length && !answers.length;
   return {
     result: plan.result,
     win: win >= 0 ? { ...ref(foes[win]), kills: kills[win], of: alive, boss: !!foes[win].isBoss?.() } : null,
@@ -318,5 +320,9 @@ const tpView = (T, party, foes) => {
     })),
     sacrifice,
     warnings,
+    compact,
+    summary: compact ? `winnable · ${[...new Set(steps.map(x => x.send.name))].join(" › ")}` : null,
+    // Doubles are simulated as one-on-one exchanges, so the steps are only a rough order.
+    approxDoubles: double,
   };
 };

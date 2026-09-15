@@ -129,13 +129,15 @@ const easyWave = m => {
   const f = m.field;
   if (m.kind !== "battle" || m.trainer || !f || f.freeSwitch || m.enemySwitches?.length || m.rows.some(r => r.boss)) return false;
   if (f.switches.length || f.noSafeSwitch || dangerTags(m).length || catchWorthIt(m) || planLost(m)) return false;
-  return f.slots.length > 0 && f.slots.every(sl => sl.move && sl.ko >= 1 && sl.ko <= 2);
+  return f.slots.length > 0 && f.slots.every(sl => sl.move && slowestKo(sl) >= 1 && slowestKo(sl) <= 2);
 };
+// A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
+const slowestKo = sl => (sl.koEach?.length ? Math.max(...sl.koEach) : sl.ko);
 // easy / trainer / danger / catch / fight, most specific first: what the watcher and Claude's brief key off.
 const verdictOf = m => (easyWave(m) ? "easy" : m.trainer ? "trainer"
   : dangerTags(m).length || m.rows.some(r => r.boss) || m.field?.noSafeSwitch ? "danger"
   : catchWorthIt(m) ? "catch" : "fight");
-const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.ko ? ` · ${hitsText(sl.ko)}` : ""}`;
+const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
 // Plain-text verdict of what the panel shows, for the watcher and the battle read (`window.__coachHud.summary()`).
 // `danger` lists the 💀 tags only: a likely KO before our mon acts.
@@ -179,7 +181,7 @@ const drawBattle = m => {
       ...f.slots.flatMap(sl => [h("span", { color: "#8cf", marginLeft: "4px" }, "⚔"), mon(sl.icon, sl.name, 20),
         h("span", {}, sl.move),
         ...(sl.target === "both" ? [h("span", dim, "→ both")] : sl.target ? [h("span", dim, "→"), mon(sl.target.icon, sl.target.name, 18)] : []),
-        h("span", { ...dim, fontWeight: "normal" }, `· ${hitsText(sl.ko)}`), ...trapTag(sl)]),
+        h("span", { ...dim, fontWeight: "normal" }, `· ${hitsText(slowestKo(sl))}`), ...trapTag(sl)]),
       h("span", { flex: "1" }), h("span", { width: "4px" }), button("+", "Show details", view), button("×", "Close", "closed"))];
   }
 

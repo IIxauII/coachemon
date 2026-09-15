@@ -114,3 +114,67 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 2 Swampert Water Surf → Tyranitar falls · foe at 100%
 3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 65%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
+== doubles spread move KOs our partner (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
+⚔ Lucario Fighting Aura Sphere → Heatran 3 hits
+◎ focus Heatran : most damage
+team weak to: Fighting ×2 Ground ×2
+Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
+Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
+== doubles spread move scratches our partner (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Ground Earthquake → both 1 hit hits Lucario 23%
+⚔ Lucario Fighting Aura Sphere → Heatran 3 hits spare hit — KO without it
+team weak to: Fighting ×2 Ground ×2
+Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Lucario 50% likely · moves after
+Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
+== doubles spread move, one foe left (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
+⚔ Lucario Fighting Aura Sphere → Heatran 3 hits
+◎ focus Heatran : most damage
+Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
+♟ winnable · ~1 step + {Show the fight plan}
+== doubles overkill (live)
+🎯 W200 · Cyrus Charizard › Venusaur − {Minimal overview} × {Close}
+⚔ Charizard Fire Heat Wave → both 1 hit
+⚔ Venusaur Grass Giga Drain → Rattata 1 hit spare hit — KO without it
+Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Hyper Fang → Venusaur 50% likely · moves after
+Pidgey Pidgey L30 Normal Flying 100% ▲ — ↯ Flying Wing Attack → Charizard 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
+== doubles slot 0 locked (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Snorlax locked in
+⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
+team weak to: Fighting ×2 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
+Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
+== doubles slot 0 switching (live)
+🎯 W200 · Cyrus Lucario › Metagross − {Minimal overview} × {Close}
+now: ⇄ Garchomp out › Metagross in
+now: ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
+next: ⚔ Metagross Steel Meteor Mash → Hydreigon 2 hits
+team weak to: Fighting ×2 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
+Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Metagross 100% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
+== doubles protect (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
+⚔ Lucario 💀 Dark 100% {Hydreigon's Dark Pulse: ~100% of current HP, before it can act} Normal Protect Garchomp KOs Hydreigon first
+team weak to: Fighting ×2 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 0% likely · moves after
+Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
+== doubles helping hand (live)
+🎯 W200 · Cyrus Garchomp › Clefable − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit with Helping Hand
+⚔ Clefable Normal Helping Hand Garchomp KOs Hydreigon
+team weak to: Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Dragon Fairy ×4 ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
+Snorlax Snorlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Garchomp 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}

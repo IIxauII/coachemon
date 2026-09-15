@@ -16,7 +16,7 @@ summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Heat Wave
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Fire Heat Wave → both 1 hit
-⚔ Venusaur Normal Double-Edge → Rattata 1 hit
+⚔ Venusaur Normal Double-Edge → Rattata 1 hit spare hit — KO without it
 Rattata Rattata L20 Normal 100% ▲ Fighting ↯ Normal Tackle → Venusaur 100% likely · moves after
 Pidgey Pidgey L20 Normal Flying 100% ▲ — ↯ Flying Gust → Charizard 100% likely · moves after
 == easyDouble (mini)
@@ -24,13 +24,13 @@ Pidgey Pidgey L20 Normal Flying 100% ▲ — ↯ Flying Gust → Charizard 100% 
 -- after + (mini)
 🎯 W89 + {Expand} × {Close}
 ⚔ Charizard Fire Heat Wave → both 1 hit
-⚔ Venusaur Normal Double-Edge → Rattata 1 hit
+⚔ Venusaur Normal Double-Edge → Rattata 1 hit spare hit — KO without it
 == double (full)
 🎯 W89 ⚔ Charizard Heat Wave → both · 2 hits ⚔ Venusaur Power Whip → Nidoqueen · 2 hits + {Show details} × {Close}
 summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Heat Wave → both · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits","danger":[],"learn":null,"rewards":null}
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
-⚔ Charizard Fire Heat Wave → both 2 hits
+⚔ Charizard Fire Heat Wave → both Bisharp 1 hit · Nidoqueen 2 hits
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
 Bisharp Bisharp L60 Dark Steel 100% ▲ Fighting ×4 Fire ↯ Steel Iron Head → Charizard 55% likely · moves after
 Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → Venusaur 55% likely · moves after
@@ -38,7 +38,7 @@ Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → 
 🎯 W89 ⚔ Charizard Heat Wave → both · 2 hits ⚔ Venusaur Power Whip → Nidoqueen · 2 hits + {Show details} × {Close}
 -- after + (mini)
 🎯 W89 + {Expand} × {Close}
-⚔ Charizard Fire Heat Wave → both 2 hits
+⚔ Charizard Fire Heat Wave → both Bisharp 1 hit · Nidoqueen 2 hits
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
 == lastFoe (full)
 🎯 W89 ⚔ Charizard Heat Wave → Nidoqueen · 2 hits ⚔ Venusaur Power Whip → Nidoqueen · 2 hits + {Show details} × {Close}
