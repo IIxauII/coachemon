@@ -244,7 +244,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
     const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0 };
     if (first.cancelled || first.result === 7 || first.result === 13) {
-      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, max: 0, pKo: 0, notes: ["no effect"] };
+      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, notes: ["no effect"] };
     }
 
     const ohko = first.result === 6;
@@ -306,6 +306,9 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
     const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
     const pKo = ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
+    // Expected damage per use before the target's HP or a boss bar's boundary cuts it: what later turns deal.
+    const uncapped = perHit.reduce((t, m, k) => t + (k === 0 || checkAll ? acc ** (k + 1) : acc)
+      * dist.filter(x => x.n > k).reduce((u, x) => u + x.p, 0) * [...m].reduce((u, [d, p]) => u + d * p, 0), 0);
     const [worst] = resolve({ ...f, pFocus: 0, pEndure: 0 }, maxes.map(d => new Map([[d, 1]])), [{ n: hitsMax, p: 1 }], 1, false, ohko);
 
     // A target mid-Dig / Fly / Dive / Shadow Force is only hit if it moves first and comes out (spec §5), unless the
@@ -381,7 +384,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     return {
       ...base, acc, crit, dist, semi, self, selfKo, lock, noRepeat, drops,
       perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })),
-      expected, max: f.hp - Math.max(0, worst.hp), pKo, notes,
+      expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, notes,
     };
   };
 
@@ -420,7 +423,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     return {
       name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, ...traits(atk, mv, false), semi: false, self: 0,
       acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
-      expected: Math.min(def.hp - end.hp, max * 0.925) * acc, max: def.hp - end.hp, pKo: end.ko ? acc : 0, notes: ["estimate"],
+      expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko ? acc : 0, notes: ["estimate"],
     };
   };
 
@@ -474,7 +477,9 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
 })();
 
 const bestMove = (a, d, foe = false) => hits(a, d, foe).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);
-const turnsToKo = (hp, dmg) => (dmg > 0 ? Math.min(9, Math.ceil(hp / dmg)) : 9);
+// `heal`: restored at the end of every turn the target survives.
+const turnsToKo = (hp, dmg, heal = 0) => (!(dmg > 0) ? 9 : hp <= dmg ? Math.ceil(hp / dmg)
+  : dmg > heal ? Math.min(9, Math.ceil((hp - heal) / (dmg - heal))) : 9);
 
 // Positive score = we KO it in fewer turns than it KOs us.
 const matchup = (me, foe) => {
