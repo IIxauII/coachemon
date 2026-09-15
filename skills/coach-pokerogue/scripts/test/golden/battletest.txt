@@ -1,0 +1,35 @@
+== double
+🎯 W89 Charizard › Venusaur − {Minimal overview} × {Close}
+⚔ Charizard Fire Heat Wave → both 2HKO
+⚔ Venusaur Grass Power Whip → Nidoqueen 2HKO
+⋔ split: both KO
+🩸 Ground ×2 Fighting ×1 Fire ×1 Water ×1
+Bisharp Bisharp L60 Dark Steel 100% ✦ Inner Focus ▲ Fighting ×4 Ground Fire ✕ Poison ×0 Psychic ×0 ↯ Steel Iron Head ~55% · moves after ➜ Charizard Fire Heat Wave ~100% · 1HKO
+Nidoqueen Nidoqueen L64 Poison Ground 100% ✦ Rivalry ▲ Ground Water Psychic Ice ✕ Poison ×¼ Electric ×0 ↯ Poison Sludge Bomb ~55% · moves after ➜ Venusaur Grass Power Whip ~56% · 2HKO
+== threat
+🎯 W89 Charizard − {Minimal overview} × {Close}
+⚔ Charizard 💀 Rock ×4 {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc
+⇄ no safe switch-in — every bench mon is KO'd coming in or before it acts
+Lycanroc Lycanroc L70 Rock 100% ✦ Keen Eye ▲ Fighting Ground Steel Water Grass ↯ Rock Stone Edge ~100% · moves first ➜ Charizard Fire Flamethrower ~32% ⚠ loses trade
+== switchin
+🎯 W89 Charizard − {Minimal overview} × {Close}
+⚔ Charizard 💀 Rock ×4 {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc
+⇄ no safe switch-in — every bench mon is KO'd coming in or before it acts
+Lycanroc Lycanroc L90 Rock 100% ✦ Tough Claws ▲ Fighting Ground Steel Water Grass ↯ Rock Stone Edge ~100% · moves first ➜ Charizard Fire Flamethrower ~17% ⚠ loses trade
+queued during prediction: 0; queueMessage restored: true
+== predict
+🎯 W89 · Tester Venusaur − {Minimal overview} × {Close}
+⇆ Arcanine → Ludicolo switches — moves aimed at it
+now: ⇄ Blastoise out › Venusaur in
+next: ⚔ Venusaur Grass Power Whip → Ludicolo 2HKO
+↺ if it stays: Blastoise Water Wave Crash → Arcanine
+🩸 Ground ×1 Rock ×1 Water ×1 Flying ×1
+Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Ground Rock Water ⇆ switches to Ludicolo ➜ Venusaur Grass Power Whip ~54% · 2HKO into Ludicolo
+== risk
+🎯 W89 Venusaur − {Minimal overview} × {Close}
+⚔ Venusaur ⚠ Ice ×2 {Aurorus's Ice Beam: ~75% of current HP} Grass Power Whip → Aurorus 1HKO
+Aurorus Aurorus L66 Rock Ice 100% ✦ Refrigerate ▲ Fighting ×4 Ground Rock Steel ×4 Water Grass ↯ Ice Ice Beam ~100% · moves after ➜ Venusaur Grass Power Whip ~100% · 1HKO
+== single
+🎯 W89 Charizard − {Minimal overview} × {Close}
+⚔ Charizard Flying Air Slash → Ninetales 3HKO
+Ninetales Ninetales L72 Fire 100% ✦ ⚠ Flash Fire ▲ Ground Rock Water ✕ Fire ×0 ↯ Fire Flamethrower ~70% · moves after ➜ Charizard Flying Air Slash ~37% · 3HKO
