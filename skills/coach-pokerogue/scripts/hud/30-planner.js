@@ -114,9 +114,11 @@ const actionOrder = (s, a, aPm, b, bPm) => {
 // on the field, which is also what a switch-in eats this turn. For next turn (`next`), or a foe not yet on the
 // field, the AI's rule is replayed on damage: moves that KO go first, then the SMART chain with damage standing in
 // for the move score. Without game code: the hardest-hitting move, always.
+// A foe with nobody to aim at (our slot is empty while we pick a fainted mon's replacement) has no real distribution:
+// the AI scores every move −∞ and the chain stops on the first, so the replay path answers instead.
 const likelyMoves = (s, foe, me, outs, next) => {
   const live = plannerReady(s);
-  if (live && !next && foe.isOnField?.() && typeof enemyMoveDistribution === "function") {
+  if (live && !next && foe.isOnField?.() && (foe.getOpponents?.() ?? [me]).length && typeof enemyMoveDistribution === "function") {
     const dist = enemyMoveDistribution(s, foe);
     if (dist?.length) {
       const idx = me.isOnField?.() ? me.getBattlerIndex?.() : null;
