@@ -16,6 +16,9 @@ const party = [
   mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["High Jump Kick","Fighting",130,"P"],["Brick Break","Fighting",75,"P"],["Rock Climb","Normal",90,"P"]], false),
 ];
 const scenarios = {
+  // Early-run wild waves with nothing to decide: one line.
+  easy: { double: false, party, foes: [mon("Rattata", 20, ["Normal"], "Run Away", [60,50,40,30,40,70], [["Tackle","Normal",40,"P"],["Quick Attack","Normal",40,"P"]], true)] },
+  easyDouble: { double: true, party, foes: [mon("Rattata", 20, ["Normal"], "Run Away", [60,50,40,30,40,70], [["Tackle","Normal",40,"P"]], true), mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,45,40,35,35,56], [["Gust","Flying",40,"S"]], true)] },
   double: { double: true, party, foes: [
     mon("Bisharp", 60, ["Dark","Steel"], "Inner Focus", [152,140,120,70,80,90], [["Iron Head","Steel",80,"P"],["Night Slash","Dark",70,"P"]], true),
     mon("Nidoqueen", 64, ["Poison","Ground"], "Rivalry", [201,120,115,100,110,100], [["Earth Power","Ground",90,"S"],["Sludge Bomb","Poison",90,"S"]], true)] },
@@ -42,27 +45,44 @@ const scenarios = {
     mon("Venusaur", 66, ["Grass","Poison"], "Overgrow", [220,135,122,144,144,150], [["Power Whip","Grass",120,"P"]], true)],
     foes: [mon("Aurorus", 66, ["Rock","Ice"], "Refrigerate", [230,90,110,150,120,100], [["Ice Beam","Ice",90,"S"]], true)] },
   single: { double: false, party, foes: [mon("Ninetales", 72, ["Fire"], "Flash Fire", [188,90,100,130,140,130], [["Flamethrower","Fire",90,"S"],["Extrasensory","Psychic",80,"S"]], true)] },
+  // A trap the planned move runs into goes on the slot line (collapsed and mini): a 1-hit KO into Sturdy.
+  trap: { double: false, party: [
+    mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
+    foes: [mon("Pineco", 20, ["Bug"], "Sturdy", [60,50,80,30,30,20], [["Tackle","Normal",40,"P"]], true)] },
 };
+const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
+const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+// Every node with a click handler, depth first, to press the panel's buttons.
+const buttons = n => (n == null || typeof n === "string" ? [] : [...(n.onclick ? [n] : []), ...(n.children ?? []).flatMap(buttons)]);
+
 for (const [label, sc] of Object.entries(scenarios)) {
-  let el;
-  globalThis.window = globalThis; delete globalThis.__coachHud;
+  for (const VIEW of ["full", "mini"]) {
+    let el;
+    globalThis.window = globalThis; delete globalThis.__coachHud; delete globalThis.__queued;
     class PM { queueMessage() { globalThis.__queued = (globalThis.__queued ?? 0) + 1; } getCurrentPhase() { return { phaseName: "CommandPhase" }; } }
-  const pm = new PM();
-  const onField = () => sc.party.filter(p => p.isOnField());
-  for (const f of sc.foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => { pm.queueMessage("side effect"); return 1; }; f.id = f.name; }
-  for (const p of sc.party) p.id = p.name;
-  const trainer = sc.trainer ? { getName: () => "Tester", config: sc.trainer, isDouble: () => false,
-    getPartyMemberMatchupScores: () => { pm.queueMessage("side effect"); return sc.foes.slice(1).map((f, i) => [i + 1, 5]); },
-    getSortedPartyMemberMatchupScores: sc2 => sc2.slice().sort((a, b) => b[1] - a[1]),
-    getNextSummonIndex: () => 1 } : null;
-  const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-  const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud"));
-  const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-  if (sc.trainer) console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
-  console.log(`== ${label}\n` + (el.kids ?? []).slice(0, 7).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
+    const pm = new PM();
+    const onField = () => sc.party.filter(p => p.isOnField());
+    for (const f of sc.foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => { pm.queueMessage("side effect"); return 1; }; f.id = f.name; }
+    for (const p of sc.party) p.id = p.name;
+    const trainer = sc.trainer ? { getName: () => "Tester", config: sc.trainer, isDouble: () => false,
+      getPartyMemberMatchupScores: () => { pm.queueMessage("side effect"); return sc.foes.slice(1).map((f, i) => [i + 1, 5]); },
+      getSortedPartyMemberMatchupScores: sc2 => sc2.slice().sort((a, b) => b[1] - a[1]),
+      getNextSummonIndex: () => 1 } : null;
+    const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
+    globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
+    const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
+    globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
+    globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
+    globalThis.localStorage = { getItem: () => VIEW, setItem() {} };
+    eval(bundle("hud"));
+    if (sc.trainer && VIEW === "full") console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
+    console.log(`== ${label} (${VIEW})\n${lines(el)}`);
+    if (VIEW === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+    // A collapsed wave: `+` shows the chosen view, and it holds for the rest of the wave.
+    const plus = (el.kids ?? []).length === 1 ? buttons(el.kids[0]).find(b => b.children.includes("+")) : null;
+    if (plus) {
+      plus.onclick({ stopPropagation() {} });
+      console.log(`-- after + (${VIEW})\n${lines(el)}`);
+    }
+  }
 }

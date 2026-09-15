@@ -1,0 +1,29 @@
+D usable (awake foe): Sucker Punch, Tackle
+E Iron Barbs: Fury Swipes ≈−31% · 2–5 hits
+E recoil ≈−18%
+E Steel Beam: −50% HP
+E High Jump Kick: crash −50% on a miss
+E Explosion: user faints
+E Outrage: locks 2–3 turns → confused
+E Overheat: −2 SpA
+E Gigaton Hammer: not twice in a row
+A Hyper Beam: 3 hits in 5 turns · Body Slam: 4 hits in 4 turns
+A Solar Beam: 6 turns, in sun 3
+A into an attacker: Focus Punch KO first 0 in 9, Sucker Punch 1 in 1; into a setup move: 1 in 1, 1 in 9
+A team plan: 3 hits take 3 turns, 5 with recharge, 6 charging, taking 2 hits (none while underground)
+F foe asleep 3 turns: 0 of its damage
+F foe asleep, wakes this turn: 1 of its damage
+F foe asleep 2 turns, Early Bird: 1 of its damage
+F foe frozen: 0.25 of its damage
+F foe frozen, last turn: 1 of its damage
+F foe paralysed: 0.88 of its damage
+F foe confused: 0.67 of its damage
+F foe recharging: 0 of its damage
+F our Snorlax: 2 turns awake, 4 asleep
+F foe underground: faster Strike 2 turns (KO first 1), Earthquake 1, slower Strike 1
+8 raw AI with no opponents: Tackle 100%
+8 threat on the replacement: Earthquake 100%, pKo 1
+$ foe 220 HP: Steel Beam 2 turns cost 1 · Flash Cannon 2 turns · pick Flash Cannon
+$ foe 120 HP: Steel Beam 1 turns cost 0.5 · Flash Cannon 2 turns · pick Steel Beam
+$ 4 hits needed: Pound 4 turns · Outrage 5 (cost 0.15) · Overheat 9
+engine: ok

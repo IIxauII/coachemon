@@ -32,7 +32,55 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     try { return Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p?.game).game.scene.getScene("battle"); } catch { return null; }
   };
   const gameReady = (s, atk, def) => !!s && awaitingCommand(s) && typeof def.getAttackDamage === "function" && typeof atk.getMoveType === "function";
-  const usable = p => p.moveset.filter(Boolean).filter(pm => pm.getMove().category !== 2 && pm.getMovePp() - pm.ppUsed > 0);
+  const turnKey = s => {
+    const b = s.currentBattle;
+    return [b?.waveIndex, b?.turn, b?.enemySwitchCounter, ...(s.getField?.() ?? []).map(p => p && `${p.id}:${p.hp}`)].join("|");
+  };
+  let cache = { key: null, map: new Map() };
+  const cached = (s, key, fn) => {
+    const turn = turnKey(s);
+    if (cache.key !== turn) cache = { key: turn, map: new Map() };
+    if (!cache.map.has(key)) cache.map.set(key, fn());
+    return cache.map.get(key);
+  };
+  // Sucker Punch and Thunderclap read the target's chosen command, which doesn't exist yet while we choose: their
+  // condition is left to the planner (`needsAttack`). (Upper Hand needs a priority move from the target: dropped.)
+  const COMMAND_CONDITION = [389, 909];
+  // Damaging moves with PP left. With `def` and game calls allowed, also only what can be picked and would work this
+  // turn: restrictions checked for selection (Disable, Taunt, Encore, Torment, Imprison…) and the move's own
+  // conditions (Fake Out / First Impression after the first turn, Dream Eater on an awake target, Belch, Steel
+  // Roller…). Conditions can draw from the battle RNG, so they run with it forced, like the enemy AI's.
+  const usable = (p, def = null, s = null) => {
+    const base = p.moveset.filter(Boolean).filter(pm => pm.getMove().category !== 2 && pm.getMovePp() - pm.ppUsed > 0);
+    if (!def || !gameReady(s, p, def)) return base;
+    return cached(s, `u|${p.id}|${def.id}|${base.map(pm => pm.getMove().id)}`, () => guarded(s, () => base.filter(pm => {
+      if (typeof pm.isUsable === "function") {
+        const r = pm.isUsable(p, false, true);
+        if (!(Array.isArray(r) ? r[0] : r)) return false;
+      }
+      const mv = pm.getMove();
+      if (typeof mv.applyConditions !== "function" || COMMAND_CONDITION.includes(mv.id)) return true;
+      try { return !!forcedRng(s, () => mv.applyConditions(p, def, -1)); } catch { return true; }
+    })));
+  };
+  // What a move costs over turns and what it depends on. `charge`: a charging turn before the hit (Solar Beam
+  // outside sun, Sky Attack, Skull Bash; Dig / Fly / Dive / Bounce semi-invulnerable meanwhile, `semiCharge`) —
+  // unless its instant-charge condition holds now; `recharge`: a lost turn after it (Hyper Beam, Giga Impact);
+  // `interrupt`: fails if the user is hit first (Focus Punch); `needsAttack`: fails unless the target attacks
+  // (Sucker Punch, Thunderclap); `once`: only on the user's first turn out (Fake Out, First Impression).
+  const traits = (atk, mv, live) => {
+    const charging = !!mv.isChargingMove?.();
+    const chargeAttrs = mv.chargeAttrs ?? [];
+    const instant = charging && live && chargeAttrs.some(a => isA(a, "InstantChargeAttr") && a.condition?.(atk, mv));
+    return {
+      charge: charging && !instant,
+      semiCharge: charging && !instant && chargeAttrs.some(a => isA(a, "SemiInvulnerableAttr")),
+      recharge: attrs(mv, "RechargeAttr").length > 0,
+      interrupt: attrs(mv, "PreUseInterruptAttr").length > 0,
+      needsAttack: mv.id === 389 || mv.id === 909,
+      once: [mv.conditions, mv.conditionsSeq2, mv.conditionsSeq3].some(cs => (cs ?? []).some(c => isA(c, "FirstMoveCondition"))),
+    };
+  };
 
   // ---- Boss segments and survival (spec §3, §8). Pure math on read fields.
   // EnemyPokemon's module-private calculateBossSegmentDamage, verbatim.
@@ -136,6 +184,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
   };
 
   // ---- Game path (spec §1, §2, §4, §5)
+  const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
   const RESULT_MULT = { 1: 1, 2: 4, 3: 2, 4: 0.5, 5: 0.25, 6: 1, 7: 0, 13: 0 };
   // The random roll is 85..100 %, uniform over 16 values; the simulated call returns the 100 % one.
   const addRolls = (m, max, p) => {
@@ -193,7 +242,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     const first = call(0, false);
     const eGame = def.getMoveEffectiveness?.(atk, move, ignoreAbility, true);
     const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
-    const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied };
+    const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0 };
     if (first.cancelled || first.result === 7 || first.result === 13) {
       return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, max: 0, pKo: 0, notes: ["no effect"] };
     }
@@ -259,7 +308,65 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     const pKo = ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
     const [worst] = resolve({ ...f, pFocus: 0, pEndure: 0 }, maxes.map(d => new Map([[d, 1]])), [{ n: hitsMax, p: 1 }], 1, false, ohko);
 
+    // A target mid-Dig / Fly / Dive / Shadow Force is only hit if it moves first and comes out (spec §5), unless the
+    // move reaches it there (Earthquake into Dig) or accuracy is bypassed. The planner knows the order.
+    const semiTag = (def.summonData?.tags ?? []).find(t => isA(t, "SemiInvulnerableTag"));
+    const semi = !!semiTag && move.moveTarget !== 0 && !(ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr")
+      || atk.getTag?.("IGNORE_ACCURACY") || attrs(move, "HitsTagAttr").some(h => h.tagType === semiTag.tagType));
     const notes = [];
+
+    // What the move costs its user per use: the target's contact-chip ability (Rough Skin / Iron Barbs, 1/8 max HP)
+    // for each landed contact hit, and recoil (a share of the damage dealt, or of max HP). Magic Guard blocks both,
+    // Rock Head the recoil. Hits are counted as if the target doesn't faint before the last one.
+    const maxHp = atk.getMaxHp?.() ?? 0;
+    const guard = ability(atk, "BlockNonDirectDamageAbAttr");
+    let self = 0;
+    const landed = checkAll
+      ? Array.from({ length: hitsMax }, (_, k) => acc ** (k + 1) * dist.filter(x => x.n > k).reduce((t, x) => t + x.p, 0)).reduce((t, x) => t + x, 0)
+      : acc * dist.reduce((t, x) => t + x.n * x.p, 0);
+    const contact = typeof move.doesFlagEffectApply === "function" ? move.doesFlagEffectApply({ flag: 1, user: atk, target: def }) : hasFlag(move, 1);
+    if (contact && !guard && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
+      const [abName, ratio] = [def.getAbility?.(), def.hasPassive?.() ? def.getPassiveAbility?.() : null]
+        .flatMap(a => (a?.getAttrs?.("PostDefendContactDamageAbAttr") ?? []).map(x => [a.name, x.damageRatio])).find(Boolean) ?? ["contact", 8];
+      const chip = Math.max(1, Math.floor(maxHp / (ratio || 8))) * landed;
+      self += chip;
+      notes.push(`${abName}: ${base.name} ≈−${Math.round(chip / maxHp * 100)}%`);
+    }
+    const pctOf = x => Math.round(x / maxHp * 100);
+    const recoil = attrs(move, "RecoilAttr")[0];
+    if (recoil && maxHp && !(!recoil.unblockable && (guard || ability(atk, "BlockRecoilDamageAttr")))) {
+      const hurt = recoil.useHp ? Math.max(1, Math.floor(maxHp * recoil.damageRatio)) * acc : expected * (recoil.damageRatio ?? 0.25);
+      self += hurt;
+      notes.push(`recoil ≈−${pctOf(hurt)}%`);
+    }
+    // Steel Beam / Mind Blown cost half max HP, hit or miss; High Jump Kick-type moves crash for half on a miss
+    // (Outrage's miss effect only ends its lock). Magic Guard blocks all three.
+    if (maxHp && !guard && attrs(move, "HalfSacrificialAttr").length) {
+      self += Math.max(1, Math.floor(maxHp / 2));
+      notes.push(`${base.name}: −50% HP`);
+    }
+    if (maxHp && !guard && acc < 1 && attrs(move, "MissEffectAttr").length && !attrs(move, "FrenzyAttr").length) {
+      self += Math.max(1, Math.floor(maxHp / 2)) * (1 - acc);
+      notes.push(`${base.name}: crash −50% on a miss`);
+    }
+    // Explosion / Self-Destruct faint the user regardless; Final Gambit only when it hits.
+    const selfKo = attrs(move, "SacrificialAttrOnHit").length ? acc : attrs(move, "SacrificialAttr").length ? 1 : 0;
+    if (selfKo) notes.push(`${base.name}: user faints`);
+    // Outrage / Thrash / Petal Dance / Raging Fury: locked in for 2–3 turns, then confused.
+    const lock = attrs(move, "FrenzyAttr").length > 0;
+    if (lock) notes.push(`${base.name}: locks 2–3 turns → confused`);
+    // Gigaton Hammer / Blood Moon can't be selected twice in a row.
+    const noRepeat = (move.restrictions ?? []).some(r => r.i18nkey === "battle:moveDisabledConsecutive");
+    if (noRepeat) notes.push(`${base.name}: not twice in a row`);
+    // Guaranteed drops to the user's own stats (Overheat −2 SpA, Close Combat −1 Def/SpD): { stat index: stages }.
+    const drops = {};
+    for (const a of attrs(move, "StatStageChangeAttr")) {
+      if (!a.selfTarget || !(a.stages < 0) || (move.chance > 0 && move.chance < 100)) continue;
+      for (const st of a.stats ?? []) drops[st] = (drops[st] ?? 0) + a.stages;
+    }
+    const dropText = Object.entries(drops).map(([st, n]) => `−${-n} ${STAT_NAMES[st] ?? st}`);
+    if (dropText.length) notes.push(`${base.name}: ${dropText.join(" ")}`);
+
     if (dist.length > 1) notes.push(`${dist[0].n}–${hitsMax} hits`);
     else if (hitsMax > 1) notes.push(`${hitsMax} hits`);
     if (f.boss && f.idx > 0) notes.push(`boss ${f.idx + 1} bars`);
@@ -267,8 +374,12 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     if (f.pFocus) notes.push("focus band");
     if (disguise) notes.push("disguise");
     if (crit === 1) notes.push("crit");
+    if (base.charge) notes.push("charges a turn");
+    if (base.recharge) notes.push("recharges a turn");
+    if (base.interrupt) notes.push("fails if hit");
+    if (semi) notes.push("target semi-invulnerable");
     return {
-      ...base, acc, crit, dist,
+      ...base, acc, crit, dist, semi, self, selfKo, lock, noRepeat, drops,
       perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })),
       expected, max: f.hp - Math.max(0, worst.hp), pKo, notes,
     };
@@ -307,7 +418,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     const max = Math.floor(x.dmg);
     const end = applyHits(def, [max], { s });
     return {
-      name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false,
+      name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, ...traits(atk, mv, false), semi: false, self: 0,
       acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
       expected: Math.min(def.hp - end.hp, max * 0.925) * acc, max: def.hp - end.hp, pKo: end.ko ? acc : 0, notes: ["estimate"],
     };
@@ -322,11 +433,9 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     depth++;
     try { return sandbox(s, fn); } finally { depth--; }
   };
-  let cache = { key: null, map: new Map() };
   const moveOutcome = (s, atk, def, pm, opts = {}) => {
     if (!gameReady(s, atk, def)) return fromApprox(s, atk, def, pm);
-    const b = s.currentBattle;
-    const turn = [b?.waveIndex, b?.turn, b?.enemySwitchCounter, ...(s.getField?.() ?? []).map(p => p && `${p.id}:${p.hp}`)].join("|");
+    const turn = turnKey(s);
     if (cache.key !== turn) cache = { key: turn, map: new Map() };
     const key = [atk.id, atk.hp, def.id, def.hp, atk.moveset.indexOf(pm), pm.getMove().id, !!opts.aiView, opts.crit].join("|");
     if (cache.map.has(key)) return cache.map.get(key);
@@ -340,7 +449,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     cache.map.set(key, out);
     return out;
   };
-  const moveOutcomes = (s, atk, def) => (gameReady(s, atk, def) ? guarded(s, () => usable(atk).map(pm => moveOutcome(s, atk, def, pm))) : usable(atk).map(pm => fromApprox(s, atk, def, pm))).filter(Boolean);
+  const moveOutcomes = (s, atk, def) => (gameReady(s, atk, def) ? guarded(s, () => usable(atk, def, s).map(pm => moveOutcome(s, atk, def, pm))) : usable(atk).map(pm => fromApprox(s, atk, def, pm))).filter(Boolean);
 
   // Per-move damage records for the planner and learn cards: `dmg` is the expected damage (discounted for moves
   // that may not land) for our moves, the max roll for a foe's. The game already applies the ¾ spread factor when
@@ -348,7 +457,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
   const hits = (a, d, foe = false, s = sceneNow()) => {
     if (gameReady(s, a, d)) {
       // No sandbox here: moveOutcome opens one only on a cache miss, and the panel asks every second.
-      return usable(a).map(pm => {
+      return usable(a, d, s).map(pm => {
         const o = moveOutcome(s, a, d, pm);
         return o && { ...o, dmg: (foe ? o.max : o.expected * reliability(pm.getMove())) / (o.spreadApplied ? 0.75 : 1) };
       }).filter(Boolean);

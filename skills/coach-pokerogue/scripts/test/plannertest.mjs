@@ -33,13 +33,14 @@ const liveBundle = () => {
   return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange };\n" + src.slice(end);
 };
 
-// moves: [name, type, power, cat, priority = 0]
+// moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]
+const attr = n => new ({ [n]: class {} })[n]();
 const mon = (name, lv, types, [hp, atk, def, spa, spd, spe], moves, field, curHp, extra = {}) => ({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field, isBoss: () => !!extra.bossSegments,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null, getBattlerIndex: () => (field ? 0 : -1), getHeldItems: () => [],
-  moveset: moves.map(([n, t, p, c, priority = 0]) => ({ getName: () => n, getMove: () => ({ name: n, type: TY.indexOf(t), power: p, category: cat[c], moveTarget: 3, priority, accuracy: 100, attrs: [] }), getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(([n, t, p, c, priority = 0, { target = 3, attrs = [], id } = {}]) => ({ getName: () => n, moveId: id, getMove: () => ({ id, name: n, type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, priority, accuracy: 100, attrs: attrs.map(attr) }), getMovePp: () => 10, ppUsed: 0 })),
   ...extra,
 });
 
@@ -82,7 +83,7 @@ const outcome = (atk, def, pm, { crit = false } = {}) => {
   });
   const mv = pm.getMove();
   return {
-    name: pm.getName(), type: TY[mv.type], cat: mv.category ? "special" : "physical", e, priority: mv.priority, spread: false,
+    name: pm.getName(), type: TY[mv.type], cat: mv.category ? "special" : "physical", e, priority: mv.priority, spread: [2, 4, 6, 8].includes(mv.moveTarget),
     acc, dist: [{ n: per.length, p: 1 }], perHit: per.map(x => ({ max: Math.floor(x * mult), min: Math.floor(x * mult * 0.85) })),
     expected, max: def.hp - Math.max(play(per.length, 1), 0), pKo, critChance: 1 / 24, notes: [],
   };
@@ -103,10 +104,11 @@ const cyrus = withMetagross => {
 };
 
 // Mounts the HUD on a mocked scene and returns the rendered lines (`field`: everything above the foe rows).
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase }) => {
+// `fieldIndex`: whose command phase it is; `turnCommands`: commands already chosen this turn.
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [] }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
-  const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : live ? { phaseName: "CommandPhase" } : null), queueMessage() {} };
+  const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : live ? { phaseName: "CommandPhase", fieldIndex } : null), queueMessage() {} };
   const onField = () => party.filter(p => p.isOnField());
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
   const [gyarados, weavile] = foes;
@@ -118,7 +120,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   const trainer = { getName: () => "Cyrus", config: { isBoss: true }, isDouble: () => false,
     getPartyMemberMatchupScores: () => [[1, 5]], getSortedPartyMemberMatchupScores: x => x, getNextSummonIndex: () => 1 };
   const scene = { phaseManager: pm, arena, getField: () => [...onField(), ...foes.filter(f => f.isOnField())],
-    currentBattle: { waveIndex: 200, turn: 3, double, enemySwitchCounter: 0, getBattlerCount: () => (double ? 2 : 1), trainer },
+    currentBattle: { waveIndex: 200, turn: 3, double, turnCommands, enemySwitchCounter: 0, getBattlerCount: () => (double ? 2 : 1), trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
@@ -129,7 +131,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
   assert.ok(!el.textContent, `panel error: ${el.textContent}`);
   const lines = (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
-  const firstRow = lines.findIndex(l => /^(🩸|(\S+) \2 L\d+)/.test(l));
+  const firstRow = lines.findIndex(l => /^(team weak to:|(\S+) \2 L\d+)/.test(l));
   return { lines, field: lines.slice(1, firstRow < 0 ? undefined : firstRow), scene };
 };
 // The Cyrus mistake: Scrafty sent in "→ High Jump Kick" as if the move happened this turn.
@@ -152,7 +154,7 @@ const assertNoImmediateScrafty = field => {
   assert.match(next, /⚠ .*\{next turn: Weavile's Knock Off/, "next-turn threat from the foe it will actually face");
   assert.match(next, /boss: 2 bars — no 1HKO/, "boss bars explain why it isn't a 1HKO");
   const weavileRow = lines.find(l => /^Weavile Weavile/.test(l));
-  assert.match(weavileRow, /↯ Dark Knock Off ~\d+% · moves first/, "foe row shows its likely move, probability and order");
+  assert.match(weavileRow, /↯ Dark Knock Off → Metagross (~\d+% HP|\d+% likely) · moves first/, "foe row shows its likely move into our mon, its odds and order");
   assert.ok(lines.some(l => /^↺ if it stays: Morpeko/.test(l)), "plan for Gyarados staying is kept, dim");
 }
 
@@ -164,8 +166,8 @@ const assertNoImmediateScrafty = field => {
   assertNoImmediateScrafty(field);
   assert.ok(!field.some(l => /Scrafty in/.test(l) && !/optional/.test(l)), "no switch into a KO");
   const stay = field.find(l => /^⚔ Morpeko/.test(l));
-  assert.match(stay ?? "", /💀 Ice .*3 hits .*\{next turn: Weavile's Triple Axel/, "next-turn 💀 on the staying mon, multi-hit shown");
-  assert.ok(field.some(l => /no safe switch-in/.test(l)), "says there is no safe switch-in");
+  assert.match(stay ?? "", /💀 Ice .*3-hit .*\{next turn: Weavile's Triple Axel/, "next-turn 💀 on the staying mon, multi-hit shown");
+  assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
 }
 
 // ---- 3. The planner's building blocks, on scenario 1's scene.
@@ -219,7 +221,7 @@ const assertNoImmediateScrafty = field => {
   console.log(`== switch-in never acts (live)\n${lines.join("\n")}`);
   assert.ok(!field.some(l => /Blastoise in(?! · optional)/.test(l)), `Blastoise is KO'd before it acts, so it isn't the switch-in:\n${field.join("\n")}`);
   assert.ok(field.some(l => /^⚔ Charizard/.test(l)), "staying wins");
-  assert.ok(field.some(l => /no safe switch-in/.test(l)), "says there is no safe switch-in");
+  assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
 }
 
 // ---- 6–8. Doubles: where both slots aim is one decision.
@@ -270,7 +272,7 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   console.log(`== doubles split (live)\n${lines.join("\n")}`);
   const slots = slotLines(field);
   assert.ok(slots.some(l => /^⚔ Garchomp .*→ Weezing/.test(l)) && slots.some(l => /^⚔ Lucario .*→ Toxapex/.test(l)), `split targets:\n${field.join("\n")}`);
-  assert.ok(field.some(l => /^⋔ split: both KO/.test(l)), "split is explained");
+  assert.ok(!field.some(l => /^⋔/.test(l)), "a split needs no line: the ⚔ targets show it");
   assert.ok(!field.some(l => /^◎/.test(l)), "no focus");
 }
 
@@ -338,4 +340,139 @@ const rhyperiorSwitches = foes => active => new Map(active.includes(foes[0]) ? [
   assert.match(field[0] ?? "", /^⇄ free switch\? stay — Swampert is best here/, `stay line first:\n${field.join("\n")}`);
   assert.ok(field.some(l => /^⚔ Swampert .*Surf → Rhyperior/.test(l)));
   assert.ok(!field.some(l => /Ninetales/.test(l)), "no switch suggested");
+}
+
+// ---- 12–14. Spread moves that hit every other pokémon land on our partner too (Earthquake: MoveTarget 4).
+// Both foes are weak to Ground: Earthquake takes both, Dragon Claw only one. Earthquake into Lucario either KOs it
+// (12, 14) or only scratches it (13).
+const EQ = { target: 4 };
+Object.assign(TABLE, {
+  "Garchomp>Earthquake>Heatran": [[400], 1, 4], "Garchomp>Earthquake>Magnezone": [[400], 1, 4],
+  "Garchomp>Dragon Claw>Heatran": [[150], 1, 0.5], "Garchomp>Dragon Claw>Magnezone": [[150], 1, 0.5],
+  "Lucario>Aura Sphere>Heatran": [[120], 1, 1], "Lucario>Aura Sphere>Magnezone": [[120], 1, 1],
+  "Heatran>Flash Cannon>Garchomp": [[60], 1, 1], "Heatran>Flash Cannon>Lucario": [[30], 1, 0.5],
+  "Magnezone>Flash Cannon>Garchomp": [[60], 1, 1], "Magnezone>Flash Cannon>Lucario": [[30], 1, 0.5],
+});
+const quakeParty = lucarioTakes => {
+  TABLE["Garchomp>Earthquake>Lucario"] = [[lucarioTakes], 1, 2];
+  return [
+    mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Earthquake", "Ground", 100, "P", 0, EQ], ["Dragon Claw", "Dragon", 80, "P"]], true, undefined, { getBattlerIndex: () => 0 }),
+    mon("Lucario", 80, ["Fighting", "Steel"], [240, 150, 110, 180, 110, 120], [["Aura Sphere", "Fighting", 80, "S"]], true, undefined, { getBattlerIndex: () => 1 }),
+  ];
+};
+const quakeFoes = () => [
+  foeAt(2, "Heatran", 80, ["Fire", "Steel"], [300, 90, 110, 130, 110, 70], [["Flash Cannon", "Steel", 80, "S"]]),
+  foeAt(3, "Magnezone", 80, ["Electric", "Steel"], [300, 70, 130, 130, 90, 60], [["Flash Cannon", "Steel", 80, "S"]]),
+];
+
+// 12. Earthquake would KO our Lucario: not worth two foes.
+{
+  const { lines, field } = render({ party: quakeParty(300), foes: quakeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles spread move KOs our partner (live)\n${lines.join("\n")}`);
+  const chomp = slotLines(field).find(l => /^⚔ Garchomp/.test(l));
+  assert.ok(chomp && !/Earthquake/.test(chomp), `no Earthquake into our own Lucario:\n${field.join("\n")}`);
+}
+
+// 13. Earthquake only scratches Lucario: still the play, and the slot says what it costs.
+{
+  const { lines, field } = render({ party: quakeParty(60), foes: quakeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles spread move scratches our partner (live)\n${lines.join("\n")}`);
+  assert.match(slotLines(field).find(l => /^⚔ Garchomp/.test(l)) ?? "", /Earthquake → both .*hits Lucario \d+%/, `Earthquake, with its cost to Lucario:\n${field.join("\n")}`);
+}
+
+// 14. One foe left, both our slots still up: Earthquake still hits Lucario.
+{
+  const [heatran] = quakeFoes();
+  const { lines, field } = render({ party: quakeParty(300), foes: [heatran], live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles spread move, one foe left (live)\n${lines.join("\n")}`);
+  const chomp = slotLines(field).find(l => /^⚔ Garchomp/.test(l));
+  assert.match(chomp ?? "", /Dragon Claw → Heatran/, `Dragon Claw rather than Earthquake through Lucario:\n${field.join("\n")}`);
+}
+
+// ---- 15. Overkill: Heat Wave already KOs both foes, so Venusaur's hit is spare — no recoil move for nothing.
+Object.assign(TABLE, {
+  "Charizard>Heat Wave>Rattata": [[200], 1, 1], "Charizard>Heat Wave>Pidgey": [[200], 1, 1],
+  "Venusaur>Double-Edge>Rattata": [[250], 1, 1], "Venusaur>Double-Edge>Pidgey": [[250], 1, 1],
+  "Venusaur>Giga Drain>Rattata": [[90], 1, 1], "Venusaur>Giga Drain>Pidgey": [[45], 1, 0.5],
+  "Rattata>Hyper Fang>Charizard": [[40], 1, 1], "Rattata>Hyper Fang>Venusaur": [[40], 1, 1],
+  "Pidgey>Wing Attack>Charizard": [[30], 1, 1], "Pidgey>Wing Attack>Venusaur": [[60], 1, 2],
+});
+{
+  const party = [
+    mon("Charizard", 60, ["Fire", "Flying"], [190, 125, 118, 160, 128, 148], [["Heat Wave", "Fire", 95, "S", 0, { target: 6 }]], true, undefined, { getBattlerIndex: () => 0 }),
+    mon("Venusaur", 60, ["Grass", "Poison"], [200, 135, 122, 144, 144, 118], [["Double-Edge", "Normal", 120, "P", 0, { attrs: ["RecoilAttr"] }], ["Giga Drain", "Grass", 75, "S"]], true, undefined, { getBattlerIndex: () => 1 }),
+  ];
+  const foes = [
+    foeAt(2, "Rattata", 30, ["Normal"], [80, 60, 40, 30, 40, 70], [["Hyper Fang", "Normal", 80, "P"]]),
+    foeAt(3, "Pidgey", 30, ["Normal", "Flying"], [80, 50, 45, 40, 40, 60], [["Wing Attack", "Flying", 60, "P"]]),
+  ];
+  const { lines, field } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles overkill (live)\n${lines.join("\n")}`);
+  const slots = slotLines(field);
+  assert.match(slots.find(l => /^⚔ Charizard/.test(l)) ?? "", /Heat Wave → both/);
+  const venu = slots.find(l => /^⚔ Venusaur/.test(l)) ?? "";
+  assert.ok(!/Double-Edge/.test(venu), `no recoil move for a spare hit:\n${field.join("\n")}`);
+  assert.match(venu, /spare hit/, "the slot says its hit isn't needed");
+}
+
+// ---- 16–17. Slot 1's command phase: slot 0's command is locked in `turnCommands[0]`.
+const hydreigonSnorlax = () => [
+  foeAt(2, "Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 90], [["Dark Pulse", "Dark", 80, "S"]]),
+  foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
+];
+// 16. Scenario 6's field, but Garchomp already chose Dragon Claw into Snorlax: keep it, plan Lucario around it.
+{
+  // A target picked in SelectTargetPhase sits on the command itself, not on `move.targets`.
+  const turnCommands = [{ command: 0, cursor: 0, move: { move: 337, targets: [], useMode: 0 }, targets: [3] }];
+  const { lines, field } = render({ party: doublesParty(), foes: hydreigonSnorlax(), live: true, double: true, dist: aimAtBoth, switches: () => new Map(), fieldIndex: 1, turnCommands });
+  console.log(`== doubles slot 0 locked (live)\n${lines.join("\n")}`);
+  const slots = slotLines(field);
+  assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Snorlax .*locked in/, `slot 0 keeps its command:\n${field.join("\n")}`);
+  assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Aura Sphere → Hydreigon/, "slot 1 is planned around it");
+}
+
+// 17. Garchomp is switching out to Metagross: the plan takes that as given.
+{
+  Object.assign(TABLE, { "Metagross>Meteor Mash>Hydreigon": [[200], 1, 2], "Metagross>Meteor Mash>Snorlax": [[90], 1, 1],
+    "Hydreigon>Dark Pulse>Metagross": [[60], 1, 1], "Snorlax>Body Slam>Metagross": [[30], 1, 0.5] });
+  const party = [...doublesParty(), mon("Metagross", 80, ["Steel", "Psychic"], [250, 180, 170, 120, 120, 70], [["Meteor Mash", "Steel", 90, "P"]], false)];
+  const { lines, field } = render({ party, foes: hydreigonSnorlax(), live: true, double: true, dist: aimAtBoth, switches: () => new Map(), fieldIndex: 1, turnCommands: [{ command: 2, cursor: 2, args: [false] }] });
+  console.log(`== doubles slot 0 switching (live)\n${lines.join("\n")}`);
+  assert.ok(field.some(l => /^now: ⇄ Garchomp .*out › Metagross in/.test(l)), `the locked switch is the plan:\n${field.join("\n")}`);
+  assert.ok(!field.some(l => /⚔ Garchomp/.test(l)), "Garchomp isn't planned to act");
+}
+
+// ---- 18–19. Support moves.
+// 18. Protect: Hydreigon outspeeds and KOs Lucario, whose hit barely matters, but the faster Garchomp KOs Hydreigon first.
+{
+  Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": [[400], 1, 2], "Hydreigon>Dark Pulse>Lucario": [[300], 1, 1], "Lucario>Aura Sphere>Snorlax": [[30], 1, 2] });
+  const party = [
+    mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Dragon Claw", "Dragon", 80, "P"]], true, undefined, { getBattlerIndex: () => 0 }),
+    mon("Lucario", 80, ["Fighting", "Steel"], [240, 150, 110, 180, 110, 60], [["Aura Sphere", "Fighting", 80, "S"], ["Protect", "Normal", 0, "X", 4, { target: 0, attrs: ["ProtectAttr"], id: 182 }]], true, undefined, { getBattlerIndex: () => 1 }),
+  ];
+  const foes = hydreigonSnorlax();
+  const dist = e => (e === foes[0] ? [{ name: "Dark Pulse", type: "Dark", p: 1, score: 10, targets: [1] }] : aimAtBoth(e));
+  const { lines, field } = render({ party, foes, live: true, double: true, dist, switches: () => new Map() });
+  console.log(`== doubles protect (live)\n${lines.join("\n")}`);
+  const slots = slotLines(field);
+  assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Protect .*Garchomp KOs Hydreigon first/, `Lucario protects:\n${field.join("\n")}`);
+  assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon/);
+}
+
+// 19. Helping Hand: Dragon Claw alone leaves Hydreigon standing, ×1.5 KOs it; Clefable's own hit adds nothing.
+{
+  Object.assign(TABLE, {
+    "Garchomp>Dragon Claw>Hydreigon": [[250], 1, 2],
+    "Clefable>Moonblast>Hydreigon": [[30], 1, 4], "Clefable>Moonblast>Snorlax": [[20], 1, 1],
+    "Hydreigon>Dark Pulse>Clefable": [[40], 1, 0.5], "Snorlax>Body Slam>Clefable": [[40], 1, 1],
+  });
+  const party = [
+    mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Dragon Claw", "Dragon", 80, "P"]], true, undefined, { getBattlerIndex: () => 0 }),
+    mon("Clefable", 80, ["Fairy"], [300, 80, 120, 100, 140, 60], [["Moonblast", "Fairy", 95, "S"], ["Helping Hand", "Normal", 0, "X", 5, { target: 10, id: 270 }]], true, undefined, { getBattlerIndex: () => 1 }),
+  ];
+  const { lines, field } = render({ party, foes: hydreigonSnorlax(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles helping hand (live)\n${lines.join("\n")}`);
+  const slots = slotLines(field);
+  assert.match(slots.find(l => /^⚔ Clefable/.test(l)) ?? "", /Helping Hand .*Garchomp KOs Hydreigon/, `Clefable boosts Garchomp:\n${field.join("\n")}`);
+  assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon 1 hit .*with Helping Hand/);
 }

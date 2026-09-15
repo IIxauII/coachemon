@@ -9,7 +9,7 @@ const cat = { P: 0, S: 1, X: 2 };
 // moves: [name, type, power, cat, target=3]; sp: species fields
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, sp = {}, extra = {}) => ({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0,
-  species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false },
+  species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [] },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field,
   isBoss: () => (extra.bossSegments ?? 0) > 0, bossSegments: 0, bossSegmentIndex: 0,
@@ -235,5 +235,31 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.ok(!["Rogue Ball", "Master Ball"].includes(t.best.ball), `no Rogue/Master Ball for a hidden ability: ${t.best.ball}`);
   assert.ok(globalThis.__ca.drawCatch(advice).length, "card drawn");
   show("hidden ability", advice);
+}
+// ---- 11. "Stronger than" compares lines, not stages: an unevolved Spinarak on the team is an Ariados-to-be, a wild
+// mon far below our levels isn't an upgrade yet, and an unevolved wild catch is judged by what it becomes.
+{
+  const upgradeOf = advice => advice?.targets[0].reasons.find(r => r.text.startsWith("stronger than"))?.text ?? null;
+  const member = (name, lv, bst, id, evos) => mon(name, lv, ["Bug","Poison"], "Swarm", [90,60,60,60,60,60], [["Poison Sting","Poison",15,"P"]], true, undefined, { id, bst, evos });
+  const counts = { 0: 10, 1: 5, 2: 0, 3: 0, 4: 0 };
+  // Spinarak (190, one stage left) vs a wild final-stage 430: not an upgrade over Ariados (~400).
+  const spinarak = member("Spinarak", 20, 190, 167, [[168, 22]]);
+  const wild = mon("Lickitung", 21, ["Normal"], "Oblivious", [100,60,70,60,70,30], [["Lick","Ghost",30,"P"]], true, 50, { id: 108, bst: 430 });
+  assert.equal(upgradeOf(run({ party: [venusaur(), spinarak], foes: [wild], counts }).advice), null, "Spinarak's line isn't weaker than a 430 wild");
+  // The old comparison would have fired on current BST (430 vs 190).
+  const noEvo = member("Spinarak", 20, 190, 167, []);
+  assert.match(upgradeOf(run({ party: [venusaur(), noEvo], foes: [wild], counts }).advice) ?? "", /stronger than Spinarak \(BST 430 vs 190\)/);
+  // Level: a Pidgeot 30 levels below our weakest member isn't an upgrade yet.
+  const pikachu = mon("Pikachu", 45, ["Electric"], "Static", [90,60,50,60,60,90], [["Spark","Electric",65,"P"]], true, undefined, { id: 25, bst: 320 });
+  const lowPidgeot = mon("Pidgeot", 15, ["Normal","Flying"], "Keen Eye", [60,40,40,40,40,50], [["Gust","Flying",40,"S"]], true, 30, { id: 18, bst: 479 });
+  assert.equal(upgradeOf(run({ party: [venusaur(), pikachu], foes: [lowPidgeot], counts }).advice), null, "too far below our levels");
+  // An unevolved Charmander-like catch (309, two stages left) outgrows a final-stage 400 member.
+  const final400 = member("Ariados", 30, 400, 168, []);
+  const charmander = mon("Charmander", 28, ["Fire"], "Blaze", [70,50,40,55,45,60], [["Ember","Fire",40,"S"]], true, 30, { id: 4, bst: 309, evos: [[5, 16], [6, 36]] });
+  const grows = run({ party: [venusaur(), final400], foes: [charmander], counts }).advice;
+  const text = upgradeOf(grows);
+  assert.match(text ?? "", /stronger than Ariados \(final BST ~\d+ vs 400\)/, text);
+  jsonSafe(grows, "final BST");
+  show("unevolved upgrade", grows);
 }
 console.log("ok");

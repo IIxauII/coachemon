@@ -1,43 +1,52 @@
 == boss (full)
 🎯 Pikachu maybe: break its bars first — only a Master Ball works now, new species
-PB ×5 0% GB ×5 0% UB ×5 0% MB ×1 100%
+Poké ×5 0% Great ×5 0% Ultra ×5 0% Master ×1 100%
 ★ new species
 == boss (mini)
 🎯 maybe: break its bars first — only a Master Ball works now, new species
 == new species (full)
-🎯 Pikachu catch: PB 77% — new species
-PB ×5 77% GB ×3 96% UB ×2 100% RB ×1 100% MB ×1 100%
+🎯 Pikachu catch: Poké 77% — new species
+Poké ×5 77% Great ×3 96% Ultra ×2 100% Rogue ×1 100% Master ×1 100%
 ★ new species
 == new species (mini)
-🎯 catch: PB 77% — new species
+🎯 catch: Poké 77% — new species
 == skip (full)
 
 == skip (mini)
 
 == escape (full)
-🎯 Arcanine catch: UB 65% — ends it: we can't KO it, it KOs Venusaur
-PB ×5 44% UB ×5 65%
+🎯 Arcanine catch: Ultra 65% — ends it: we can't KO it, it KOs Venusaur
+Poké ×5 44% Ultra ×5 65%
 ⇥ ends it: we can't KO it, it KOs Venusaur
 == escape (mini)
-🎯 catch: UB 65% — ends it: we can't KO it, it KOs Venusaur
+🎯 catch: Ultra 65% — ends it: we can't KO it, it KOs Venusaur
 == team (full)
-🎯 Pidgeot catch: UB 50% — new species, stronger than Pikachu (BST 479 vs 320), sleep/paralyse it for better odds
-PB ×5 34% GB ×5 42% UB ×5 50%
+🎯 Pidgeot catch: Ultra 50% — new species, stronger than Pikachu (BST 479 vs 320), sleep/paralyse it for better odds
+Poké ×5 34% Great ×5 42% Ultra ×5 50%
 ★ new species
 ⚑ covers Ground weakness
 ⚑ hits Fighting/Bug/Grass (no one else does)
 ⚑ stronger than Pikachu (BST 479 vs 320)
 ⚑ party full: replaces Pikachu
 == team (mini)
-🎯 catch: UB 50% — new species, stronger than Pikachu (BST 479 vs 320), sleep/paralyse it for better odds
+🎯 catch: Ultra 50% — new species, stronger than Pikachu (BST 479 vs 320), sleep/paralyse it for better odds
 == common owned (full)
 
 == common owned (mini)
 
 == hidden ability (full)
-🎯 Glameow catch: GB 70% — new hidden ability
-PB ×10 56% GB ×3 70% UB ×3 82% RB ×2 100% MB ×1 100%
+🎯 Glameow catch: Great 70% — new hidden ability
+Poké ×10 56% Great ×3 70% Ultra ×3 82% Rogue ×2 100% Master ×1 100%
 ★ new hidden ability
 == hidden ability (mini)
-🎯 catch: GB 70% — new hidden ability
+🎯 catch: Great 70% — new hidden ability
+== unevolved upgrade (full)
+🎯 Charmander catch: Great 40% — ends it: 3 turns to KO, new species, sleep/paralyse it for better odds
+Poké ×10 31% Great ×5 40%
+★ new species
+⚑ covers Fire weakness
+⚑ stronger than Ariados (final BST ~529 vs 400)
+⇥ ends it: 3 turns to KO
+== unevolved upgrade (mini)
+🎯 catch: Great 40% — ends it: 3 turns to KO, new species, sleep/paralyse it for better odds
 ok

@@ -1,5 +1,6 @@
 // Starts the refresh loop. Last in the bundle, so every draw function (including 95-render-team) is defined
-// before the first tick. `stats()` exposes the sandbox restore-mismatch count and refresh cost for live checks.
+// before the first tick. `stats()` exposes the sandbox restore-mismatch count and refresh cost for live checks;
+// `last()` the model last drawn and `summary()` its plain-text verdict, which probe.js adds to the battle read.
 let lastTickMs = 0, maxTickMs = 0;
 const timedTick = () => {
   const t0 = performance.now();
@@ -12,5 +13,7 @@ timedTick();
 window.__coachHud = {
   stop: () => { clearInterval(timer); el.remove(); delete window.__coachHud; },
   stats: () => ({ breaches: sandboxBreaches, lastTickMs, maxTickMs }),
+  last: () => shown,
+  summary: () => hudSummary(shown),
 };
 document.documentElement.dataset.mcpOut = JSON.stringify({ hud: "on" });

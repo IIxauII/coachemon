@@ -82,12 +82,22 @@
         rewards = { free: h.options.map(item), shop: (h.shopOptionsRows || []).flat().map(item), rerollCost: h.rerollCost ?? null };
       }
 
+      // The HUD's own verdict on what it shows (easy / trainer / danger / catch / fight, the ⚔ line, learn and reward
+      // calls), when it is running. `danger`: our mons with a 💀 tag.
+      let hud = null;
+      try {
+        const x = window.__coachHud?.summary?.();
+        if (x) hud = { wave: x.wave, verdict: x.verdict, field: x.field, danger: x.danger, learn: x.learn, rewards: x.rewards };
+      } catch {}
+
       out = {
         wave: b?.waveIndex ?? null,
+        turn: b?.turn ?? null,
         double: b?.double ?? null,
         trainer: b?.trainer?.getName?.() ?? null,
         money: s.money,
         hudActive: !!window.__coachHud,
+        hud,
         uiMode: document.getElementById("touchControls")?.dataset.uiMode ?? null,
         learn,
         rewards,

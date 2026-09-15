@@ -1,28 +1,89 @@
 == Charizard ← Flare Blitz
-✚ Fire Flare Blitz recoil · weak Atk ≈96
-· Fire Heat Wave spread ≈147
-· Dragon Dragon Breath coverage ≈72
-· Flying Air Slash coverage ≈128
-· Fire Flamethrower ≈135
-Skip — not an upgrade
+✚ Fire Flare Blitz 3rd Fire move · recoil 33% of damage · weak Atk power 57
+· Fire Heat Wave 2nd Fire move · spread power 111
+↔ Dragon Dragon Breath SE on Dragon power 72
+· Flying Air Slash SE on Fighting power 126
+· Fire Flamethrower 2nd Fire move power 101
+team: −SE Dragon
+Skip — not an upgrade over Dragon Breath −15 power
 == Venusaur ← Solar Beam
-✚ Grass Solar Beam coverage · charges ≈108
-· Normal Double-Edge coverage · recoil ≈90
+✚ Grass Solar Beam 2nd Grass move · charge turn power 68
+↔ Normal Double-Edge neutral on Flying/Poison/Bug… · recoil 33% of damage power 84
 · Grass Sleep Powder status
 · Grass Synthesis status
-· Grass Power Whip coverage ≈172
-Skip — not an upgrade
+· Grass Power Whip SE on Ground/Rock/Water power 186
+Skip — not an upgrade over Double-Edge −16 power
 == Blastoise ← Skull Bash
-✚ Normal Skull Bash coverage · charges ≈77
-· Water Aqua Tail 3× Water ≈96
-· Steel Flash Cannon coverage ≈96
-· Water Wave Crash 3× Water · recoil ≈95
-· Water Hydro Pump 3× Water ≈106
-Skip — not an upgrade
+✚ Normal Skull Bash neutral on Water · charge turn power 65
+· Water Aqua Tail 3rd Water move power 72
+· Steel Flash Cannon SE on Ice/Fairy power 104
+↔ Water Wave Crash 3rd Water move · recoil 33% of damage power 71
+· Water Hydro Pump 3rd Water move power 79
+Skip — not an upgrade over Wave Crash −6 power
 == Scrafty ← Head Smash
-✚ Rock Head Smash coverage · recoil ≈96
-· Fighting Focus Punch 3× Fighting ≈180
-· Normal Rock Climb coverage ≈92
-· Fighting Brick Break 3× Fighting ≈90
-· Fighting High Jump Kick 3× Fighting ≈140
-Skip — not an upgrade
+✚ Rock Head Smash SE on Flying/Bug/Fire · recoil 33% of damage power 105
+· Fighting Focus Punch 3rd Fighting move power 135
+· Normal Rock Climb neutral on Flying/Poison/Bug… power 84
+✕ Fighting Brick Break 3rd Fighting move power 68
+· Fighting High Jump Kick 3rd Fighting move power 105
+team: +SE Flying/Bug/Fire
+Learn → forget Brick Break +37 power
+== Nidoking ← Double Kick
+✚ Fighting Double Kick 2 hits · SE on Normal/Ice power 76
+✕ Normal Tackle power 40
+· Poison Poison Jab SE on Fairy power 142
+· Ground Earthquake SE on Poison/Rock/Steel… power 195
+· Bug Pin Missile 3.1 hits · SE on Psychic/Dark power 93
+team: +SE Normal/Ice
+Learn → forget Tackle +36 power
+== Cloyster (Skill Link) ← Triple Axel
+✚ Ice Triple Axel 2.7 hits · 2nd Ice move power 122
+· Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon power 244
+· Rock Rock Blast 5 hits · SE on Bug/Fire/Ice power 146
+· Normal Tackle power 40
+Learns it — free slot
+== Gengar ← Shadow Ball
+✚ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move power 117
+· Ghost Night Shade damage = level power 116
+✕ Normal Super Fang halves HP · can't KO power 59
+· Grass Grass Knot weight-based · SE on Ground/Rock/Water power 78
+· Poison Sludge Bomb SE on Grass/Fairy power 176
+team: +SE Ghost/Psychic
+Learn → forget Super Fang +58 power
+== Metagross ← Steel Beam
+✚ Steel Steel Beam 2nd Steel move · −50% HP each use power 76
+· Psychic Zen Headbutt SE on Fighting power 127
+· Ground Earthquake SE on Steel/Fire/Electric power 130
+· Steel Iron Head 2nd Steel move power 90
+✕ Steel Bullet Punch 2nd Steel move · priority +1 power 56
+Learn → forget Bullet Punch +20 power
+== Dragonite ← Outrage
+✚ Dragon Outrage SE on Dragon · locks 2–3 turns, then confused power 149
+↔ Dragon Dragon Claw SE on Dragon power 142
+· Normal Extreme Speed priority +2 power 100
+· Fire Fire Punch SE on Bug/Steel/Grass… power 98
+· Electric Thunder Punch SE on Flying/Water power 95
+Skip — not an upgrade over Dragon Claw
+== Arcanine ← Overheat
+✚ Fire Overheat 2nd Fire move · −2 SpA after use power 105
+· Fire Flamethrower SE on Bug/Steel/Grass… power 176
+✕ Normal Extreme Speed power 73
+· Electric Wild Charge SE on Flying/Water · recoil 25% of damage power 78
+· Dark Crunch SE on Ghost/Psychic power 92
+Learn → forget Extreme Speed +32 power
+== Emolga ← Spark
+✚ Electric Spark SE on Water power 117
+✕ Electric Thunder Shock SE on Water power 72
+· Normal Quick Attack priority +1 power 50
+· Ice Icicle Crash SE on Ground/Grass/Dragon power 99
+· Electric Charge status
+Learn → forget Thunder Shock +45 power
+== Tyranitar ← Iron Head (team)
+✚ Steel Iron Head SE on Rock/Fairy power 99
+· Dark Crunch 2nd Dark move power 90
+· Rock Stone Edge SE on Flying/Bug/Fire… · only Rock move on team power 156
+✕ Normal Tackle neutral on Fighting · only Normal move on team power 41
+· Dark Bite 2nd Dark move power 68
+team: +SE Fairy
+Learn → forget Tackle +58 power
+ok
