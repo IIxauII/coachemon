@@ -30,6 +30,7 @@ const planMemo = (s, k, fn) => {
   return plannerMemo.map.get(k);
 };
 
+const COST_NOTE = /−|recoil|locks|twice in a row|faints|charges a turn|recharges a turn|fails if hit/;
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
 const healAtEnd = (s, p) => (plannerReady(s) && typeof endOfTurnHeal === "function" ? endOfTurnHeal(p) || 0 : 0);
@@ -614,6 +615,8 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     if (p.move && bars > 1 && p.hits > 1 && p.hits <= bars) out.push(`boss: ${bars} bars — no 1HKO`);
     const n = hitCounts(p.move);
     if (n) out.push(`${p.move.name} ×${n}`);
+    // What the move costs its user (10-damage): HP, lock-in, stat drops, lost turns.
+    out.push(...(p.move?.notes ?? []).filter(x => COST_NOTE.test(x)));
     return out;
   };
 
