@@ -120,18 +120,78 @@
     return { me, mine, myTurns, score: theirTurns - myTurns + (faster ? 0.5 : -0.5) };
   };
 
+  // Trainer switch prediction: a replica of the game's own EnemyCommandPhase rule, read from the live build. A
+  // trainer's active mon that isn't trapped or locked into a move switches when its best benched mon's matchup
+  // score × w ≥ its own × (boss ? 2 : 3), with w = 1 − 0.1^(1/enemySwitchCounter), sending the top-scored mon.
+  // Switches resolve before moves, so our attack lands on the switch-in. The matchup score replicates
+  // Pokemon.getMatchupScore with the panel's type chart: the game's version can trigger ability displays.
+  const typeEff = (type, p) => typesOf(p).reduce((x, d) => x * vs(type, d), 1);
+  const matchupScore = (e, p) => {
+    const pTypes = typesOf(p);
+    const outspeed = (e.isOnField?.() ? stat(e, 5) : e.getStat(5)) >= stat(p, 5);
+    let def = 1 / Math.max(typeEff(pTypes[0], e), 0.25);
+    if (pTypes.length > 1) def /= Math.max(typeEff(pTypes[1], e), 0.25);
+    let off = 0, n = 0;
+    for (const m of e.moveset.filter(Boolean)) {
+      const mv = m.getMove();
+      if (mv.category === 2 || m.getMovePp() - m.ppUsed <= 0) continue;
+      const t = TYPES[mv.type];
+      let x = typeEff(t, p);
+      if (typesOf(e).includes(t) && !hasAttr(mv, "VariableMoveTypeAttr")) x *= 1.5;
+      off += x;
+      n++;
+    }
+    off /= n || 1;
+    const hpE = e.hp / e.getMaxHp(), hpP = p.hp / p.getMaxHp();
+    let u = hpE + (1 - hpP);
+    if (hpE <= 0.2 && e.isOnField?.()) {
+      if (!outspeed && off < 1.5 && def < 1.5) u *= 0.85; else u = 1 - hpE + (outspeed ? 0.2 : 0.1);
+    } else if (outspeed) u *= 1.25;
+    else if (hpE > 0.2 && hpE <= 0.4) u *= 0.5;
+    return (off + def) * Math.min(u, 1);
+  };
+  // Map of active foe → { to, ratio }; ratio ≥ 1 means the rule fires, just under 1 is "may switch" given
+  // the replica's approximations.
+  const predictSwitches = (s, b, active, playerField) => {
+    const tr = b.trainer;
+    const out = new Map();
+    if (!tr || !playerField.length) return out;
+    const enemies = s.getEnemyParty();
+    const count = b.getBattlerCount?.() ?? (b.double ? 2 : 1);
+    const counter = b.enemySwitchCounter ?? 0;
+    const w = 1 - (counter ? 0.1 ** (1 / counter) : 0);
+    for (const e of active) {
+      try { if (e.getMoveQueue?.().length || e.isTrapped?.()) continue; } catch { continue; }
+      const slot = tr.isDouble?.() ? (e.trainerSlot ?? 0) : 0;
+      const bench = enemies.slice(count).filter(x => x.hp > 0 && (!slot || x.trainerSlot === slot));
+      if (!bench.length) continue;
+      const benchScore = x => {
+        let total = 0;
+        for (const p of playerField) { total += matchupScore(x, p); if (p.species?.legendary) total /= 2; }
+        return total / playerField.length;
+      };
+      const [to, score] = bench.map(x => [x, benchScore(x)]).sort((x, y) => y[1] - x[1])[0];
+      const own = playerField.reduce((t, p) => t + matchupScore(e, p), 0) / playerField.length;
+      const ratio = (score * w) / Math.max(own * (tr.config?.isBoss ? 2 : 3), 0.01);
+      if (ratio >= 0.8 && ![...out.values()].some(v => v.to === to)) out.set(e, { to, ratio });
+    }
+    return out;
+  };
+
   // Who should be on the field now and what each slot does. For doubles every pair of healthy party members is
   // tried with every option per slot — a single-target move into either foe, or a spread move into both at the
   // game's ¾ spread damage — scored by turns to KO against how fast the worse foe KOs that member, plus speed,
   // with a bonus for pairs that cover both foes.
-  const fieldPlan = (party, active, double) => {
+  // `active`: the foes our moves land on this turn (a predicted switch-in replaces the mon leaving).
+  // `attackers`: the foes that actually attack this turn — a mon switching out doesn't, nor does its switch-in.
+  const fieldPlan = (party, active, double, attackers = active) => {
     const slots = double && active.length === 2 ? 2 : 1;
     const current = party.filter(p => p.isOnField?.());
     // Hardest hit a foe lands on `me` this turn (spread moves at ¾ in doubles).
     const foeTop = (f, me) => Math.max(0, ...hits(f, me, true).map(x => x.dmg * (slots === 2 && x.spread ? 0.75 : 1)));
     // A voluntary switch-in is hit before it acts: the worst foe's hit, plus half the other's in doubles.
     const incoming = me => {
-      const tops = active.map(f => foeTop(f, me)).sort((a, b) => b - a);
+      const tops = attackers.map(f => foeTop(f, me)).sort((a, b) => b - a);
       return (tops[0] ?? 0) + (tops[1] ?? 0) * 0.5;
     };
 
@@ -209,7 +269,7 @@
     // takes half the current HP or more.
     const threat = me => {
       let worst = null;
-      for (const f of active) {
+      for (const f of attackers) {
         for (const x of hits(f, me, true)) {
           const dmg = x.dmg * (slots === 2 && x.spread ? 0.75 : 1);
           if (!worst || dmg > worst.dmg) worst = { ...x, dmg, from: f };
@@ -255,21 +315,29 @@
 
   // Plain data for one refresh. Its JSON is the change signature, so the DOM is
   // only rebuilt when something the panel shows has actually changed.
-  const model = (b, party, foes) => {
+  const model = (s, b, party, foes) => {
     const onField = foes.filter(f => f.isOnField?.());
     const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
-    const plan = fieldPlan(party, active, !!b.double);
+    const predicted = predictSwitches(s, b, active, party.filter(p => p.isOnField?.()));
+    const switching = f => (predicted.get(f)?.ratio ?? 0) >= 1;
+    // Plan against the field our moves will actually hit; if a switch is predicted, also keep the plan for
+    // the case it stays, shown dim.
+    const facing = active.map(f => (switching(f) ? predicted.get(f).to : f));
+    const plan = fieldPlan(party, facing, !!b.double, active.filter(f => !switching(f)));
+    const ifStay = active.some(switching) ? fieldPlan(party, active, !!b.double) : null;
 
     // Foes on the field take their pokémon and move from the field plan, so the rows never contradict it.
     // A trainer's waiting mons (or a foe no slot is on) get the best 1-v-1 pick, preferring members not
     // already busy, and are marked `later`.
     const used = new Set(plan?.picks.map(p => p.me) ?? []);
     const pickFor = foe => {
-      const ai = active.indexOf(foe);
+      // A foe predicted to switch out shares its switch-in's pick: that's who the move lands on.
+      const target = switching(foe) ? predicted.get(foe).to : foe;
+      const ai = facing.indexOf(target);
       const slot = ai >= 0 && plan ? plan.picks.find(p => p.target === ai) ?? plan.picks.find(p => p.target === "both") : null;
       if (slot?.move) {
-        const dmg = slot.target === "both" ? (hits(slot.me, foe).find(x => x.name === slot.move.name)?.dmg ?? 0) * 0.75 : slot.move.dmg;
-        return { me: slot.me, mine: { ...slot.move, dmg }, myTurns: turnsToKo(foe.hp, dmg), score: slot.score, later: false };
+        const dmg = slot.target === "both" ? (hits(slot.me, target).find(x => x.name === slot.move.name)?.dmg ?? 0) * 0.75 : slot.move.dmg;
+        return { me: slot.me, mine: { ...slot.move, dmg }, myTurns: turnsToKo(target.hp, dmg), score: slot.score, later: false, vs: target };
       }
       const ranked = party.map(me => matchup(me, foe))
         .map(m => ({ ...m, rank: m.score - (used.has(m.me) ? 1 : 0) }))
@@ -279,7 +347,7 @@
       return pick ? { ...pick, later: ai < 0 } : null;
     };
     const picks = new Map();
-    for (const f of [...active, ...foes.filter(f => !active.includes(f))]) picks.set(f, pickFor(f));
+    for (const f of [...facing, ...active, ...foes.filter(f => !active.includes(f) && !facing.includes(f))]) if (!picks.has(f)) picks.set(f, pickFor(f));
 
     const teamWeak = {};
     const rows = foes.map((foe, i) => {
@@ -297,9 +365,11 @@
         abilities: abilitiesOf(foe), boss: !!foe.isBoss?.(), status: foe.status?.effect ?? 0,
         hp: Math.round(foe.hp / foe.getMaxHp() * 100),
         weak, avoid,
+        switchTo: predicted.has(foe) ? { icon: iconOf(predicted.get(foe).to), name: predicted.get(foe).to.name, sure: switching(foe) } : null,
         pick: p?.mine ? {
           icon: iconOf(p.me), name: p.me.name, move: p.mine.name, type: p.mine.type, cat: p.mine.cat,
-          pct: Math.min(100, Math.round(p.mine.dmg / foe.getMaxHp() * 100)),
+          pct: Math.min(100, Math.round(p.mine.dmg / (p.vs ?? foe).getMaxHp() * 100)),
+          vs: p.vs && p.vs !== foe ? { icon: iconOf(p.vs), name: p.vs.name } : null,
           ko: p.myTurns <= 3 ? p.myTurns : 0, risky: p.score < 0, later: p.later,
         } : null,
       };
@@ -309,6 +379,10 @@
     return {
       kind: "battle",
       field: plan?.view ?? null,
+      enemySwitches: active.filter(f => predicted.has(f)).map(f => ({
+        from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
+      })),
+      ifStay: ifStay ? ifStay.view.slots : null,
       title: `W${b.waveIndex}${b.trainer ? ` · ${b.trainer.getName()}` : ""}`,
       order: [...new Set(sendIns)].map(me => ({ icon: iconOf(me), name: me.name })),
       team: Object.entries(teamWeak).sort((x, y) => y[1] - x[1]).slice(0, 4),
@@ -493,7 +567,7 @@
   const h = (tag, style, ...kids) => {
     const n = document.createElement(tag);
     Object.assign(n.style, style);
-    n.append(...kids.filter(k => k != null && k !== ""));
+    n.append(...kids.flat().filter(k => k != null && k !== ""));
     return n;
   };
   const img = (key, frame, title, height, fallback = title) => {
@@ -602,7 +676,19 @@
       mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail));
     // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn).
     const f = m.field;
-    const field = !f ? [] : [
+    const slotMove = sl => [
+      mon(sl.icon, sl.name, 20),
+      ...(sl.move ? [badge(sl.type), h("span", { marginRight: "2px" }, sl.move)] : [h("span", dim, "—")]),
+      ...(sl.target === "both" ? [h("span", dim, "→ both")] : sl.target ? [h("span", dim, "→"), mon(sl.target.icon, sl.target.name, 18)] : []),
+    ];
+    const enemySwitches = m.enemySwitches.map(es => line("⇆", es.sure ? "#c9f" : "#9aa",
+      mon(es.from.icon, es.from.name, 20), h("span", { color: es.sure ? "#c9f" : "#9aa", margin: "0 3px" }, "→"),
+      mon(es.to.icon, es.to.name, 20), h("span", { color: es.sure ? "#c9f" : "#9aa", marginLeft: "3px" }, es.sure ? "likely switch — moves aimed at it" : "may switch")));
+    const ifStay = m.ifStay && view === "full"
+      ? line("↺", "#9aa", h("span", { ...dim, marginRight: "4px" }, "if it stays:"), ...m.ifStay.flatMap((sl, i) => [i ? h("span", dim, " · ") : null, ...slotMove(sl)]))
+      : null;
+    const field = !f ? [...enemySwitches] : [
+      ...enemySwitches,
       ...f.slots.map(sl => line("⚔", "#8cf",
         mon(sl.icon, sl.name, 22),
         sl.threat ? threatTag(sl.threat) : null,
@@ -614,6 +700,7 @@
       ...f.switches.map(sw => swapLine(sw, "#fa4", "in")),
       ...(view === "full" ? f.optional.map(sw => swapLine(sw, "#9aa", "in · optional")) : []),
       f.noSafeSwitch ? line("⇄", "#e55", h("span", { color: "#e55" }, "no safe switch-in — every bench mon gets KO'd coming in")) : null,
+      ifStay,
     ];
 
     if (view === "mini") {
@@ -644,6 +731,9 @@
         h("span", { color: TRAPS.has(a) ? "#fa4" : "#bbd", marginRight: "6px" }, TRAPS.has(a) ? `⚠ ${a}` : a))) : null,
       line("▲", "#6d6", ...(r.weak.length ? r.weak.map(([t, s]) => badge(t, s)) : [h("span", dim, "—")])),
       r.avoid.length ? line("✕", "#e55", ...r.avoid.map(([t, s]) => badge(t, s))) : null,
+      r.switchTo ? line("⇆", r.switchTo.sure ? "#c9f" : "#9aa",
+        h("span", { color: r.switchTo.sure ? "#c9f" : "#9aa", marginRight: "3px" }, r.switchTo.sure ? "likely switches to" : "may switch to"),
+        mon(r.switchTo.icon, r.switchTo.name, 20)) : null,
       r.pick
         ? line("➜", "#8cf",
             mon(r.pick.icon, r.pick.name, 22),
@@ -652,7 +742,8 @@
             h("span", { fontWeight: "bold" }, r.pick.move),
             h("span", { ...dim, marginLeft: "4px" }, `~${r.pick.pct}%${r.pick.ko ? ` · ${r.pick.ko}HKO` : ""}`),
             r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null,
-            r.pick.later ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, "later") : null)
+            r.pick.later ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, "later") : null,
+            r.pick.vs ? [h("span", { color: "#c9f", fontSize: "9px", margin: "0 2px 0 4px" }, "into"), mon(r.pick.vs.icon, r.pick.vs.name, 18)] : null)
         : line("➜", "#8cf", h("span", dim, "no damaging move lands"))));
     return [header, ...field, team, ...rows].filter(Boolean);
   };
@@ -687,7 +778,7 @@
         const foes = s.getEnemyParty().filter(p => p.hp > 0);
         const party = s.getPlayerParty().filter(p => p.hp > 0);
         if (!b || !foes.length || !party.length) { el.style.display = "none"; return; }
-        m = model(b, party, foes);
+        m = model(s, b, party, foes);
       }
       const sig = JSON.stringify([view, m]);
       el.style.display = "block";
