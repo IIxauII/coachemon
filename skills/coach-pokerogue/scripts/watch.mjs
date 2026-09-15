@@ -50,7 +50,8 @@ for (;;) {
       emit("learn", `${snap.wave}|${snap.learn.pokemon}|${snap.learn.move.name}`,
         `LEARN MOVE ${w} ${snap.learn.pokemon} wants ${move(snap.learn.move)} | has: ${(pk?.moves ?? []).map(move).join(", ")}`);
     }
-    if (snap.rewards) {
+    // A shop with no free rewards (reroll cost -1) isn't the reward screen the user picks from.
+    if (snap.rewards?.free.length) {
       const r = snap.rewards;
       emit("rewards", `${snap.wave}|${r.free.map(i => i.name).join(",")}`,
         `REWARDS ${w} money $${snap.money} reroll $${r.rerollCost} | free: ${r.free.map(item).join(", ")} | shop: ${r.shop.map(item).join(", ")}`);
