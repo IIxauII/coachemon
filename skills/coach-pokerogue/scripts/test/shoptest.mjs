@@ -129,6 +129,17 @@ const scenarios = {
       assert.ok(!m.buys.some(b => b.targetName === "Comfey" && !b.why.includes("HP")), "Calm Mind (status) and Draining Kiss 8/10 aren't low PP");
       assert.ok(m.buys.some(b => b.targetName === "Comfey" && b.why.includes("HP")), "Comfey's HP is still bought for");
     } },
+  // Live, wave 23, $1474: Super Lure, 5× Poké Ball, Ether. A lure's tier mustn't outrank a free Ether the party needs.
+  "wave 23 lure vs ether": { wave: 23, money: 1474, party: [
+      pk("Morpeko", 120, 120, 0, [[M.spark, 17, 20], [M.bite, 0, 25]], { types: ["Electric", "Dark"] }),
+      pk("Snorlax", 200, 200, 0, [[M.bodySlam, 14, 15], [M.crunch, 3, 15]])],
+    free: [mk(ModifierType, { name: "Super Lure", iconImage: "super_lure", tier: 1, id: "SUPER_LURE" }),
+      mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }),
+      mk(PokemonPpRestoreModifierType, { name: "Ether", iconImage: "ether", tier: 0, restorePoints: 10 })],
+    expect: m => {
+      assert.equal(m.free[m.pick].name, "Ether");
+      assert.ok(m.buys.filter(b => b.name === "Ether").length <= 1, `at most one Ether bought: ${m.buys.map(b => b.name)}`);
+    } },
   // Mega Bracelet with no mega-capable mon, Egg Voucher, Master Ball.
   "key items": { wave: 31, money: 72, party: [charizard()],
     free: [mk(ModifierType, { name: "Mega Bracelet", iconImage: "mega_bracelet", tier: 3, id: "MEGA_BRACELET" }), mk(AddVoucherModifierType, { name: "Egg Voucher", iconImage: "coupon", tier: 1 }),

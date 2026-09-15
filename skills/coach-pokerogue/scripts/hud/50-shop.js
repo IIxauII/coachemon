@@ -144,7 +144,8 @@ const shopModel = (s, h) => {
       if (t.pokeballType === 4) { v = Math.max(v, 20); why = `Master Ball — catches anything · you have ${n}`; }
       else { v += n >= 10 ? -4 : n >= 5 ? 1 : 4; why = `you have ${n}`; }
     } else if (isA(t, "TempStatStageBoosterModifierType") || /LURE/.test(t.id ?? "")) {
-      v -= 3; why = "only lasts a few battles";
+      // Tier says nothing here: a few battles of a stat stage or more doubles never beats covering a real need.
+      v = Math.min(v, 6) - 3; why = /LURE/.test(t.id ?? "") ? "more double battles for a while" : "only lasts a few battles";
     } else if (isA(t, "TmModifierType")) {
       const mv = learnMoveById(party, t.moveId);
       extra.moveId = t.moveId ?? null;
