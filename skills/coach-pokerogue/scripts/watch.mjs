@@ -40,7 +40,8 @@ for (;;) {
     const w = `w${snap.wave}`;
     const foes = snap.enemy.filter(e => !e.hp.startsWith("0/"));
     if (foes.length && snap.wave != null) {
-      emit("battle", `${snap.wave}|${snap.enemy.map(e => e.name).join(",")}`,
+      // Keyed on the wave alone: a trainer's fainted mons drop out of the enemy list mid-battle.
+      emit("battle", `${snap.wave}`,
         `NEW BATTLE ${w} ${snap.double ? "double" : "single"} ${snap.trainer ?? "wild"} | ${foes.map(mon).join(" · ")}`);
     }
     if (snap.learn) {
