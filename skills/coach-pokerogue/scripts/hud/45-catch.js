@@ -96,8 +96,28 @@ const { captureChance, catchAdvice } = (() => {
     .filter(mv => mv && mv.category !== 2 && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean);
   const bstOf = p => p.species?.baseTotal ?? 0;
   const rootOf = (p, live) => call(live, () => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
-  // A clear upgrade over our weakest member: this much more BST, and a real mon, not a route-1 one beating another.
-  const UPGRADE_BST = 100, UPGRADE_FLOOR = 400;
+  // A line's strength is its final evolution's BST, not the current stage's: an unevolved Spinarak (190) isn't weaker
+  // than a wild 400. The game only exposes evolutions as species ids (PokemonSpecies.getEvolutionLevels() →
+  // [[speciesId, level], …], every descendant flattened, a pure data read), so the final BST is estimated from how many
+  // stages are left: two when the first two entries are consecutive ids at different levels (Charmander 5@16, 6@36;
+  // Oddish 44@21, 45@item), else one (Eevee's and Tyrogue's branches share a level).
+  const stagesLeft = p => {
+    let evos;
+    try { evos = p.species?.getEvolutionLevels?.(); } catch { evos = null; }
+    if (!Array.isArray(evos) || !evos.length) return 0;
+    const [a, b] = evos;
+    return b && b[0] === a[0] + 1 && b[1] !== a[1] ? 2 : 1;
+  };
+  // Typical growth per stage: ×1.3, +110, and a floor near 400 for a line's final form (Spinarak 190 → Ariados 400,
+  // Charmander 309 → Charizard 534, Pidgey 251 → Pidgeot 479).
+  const finalBstOf = p => {
+    const bst = bstOf(p), n = stagesLeft(p);
+    if (!n || !bst) return { bst, final: bst, estimated: false };
+    return { bst, final: Math.round(Math.max(bst * 1.3 ** n, bst + 110 * n, 400 + 90 * (n - 1))), estimated: true };
+  };
+  // A clear upgrade over our weakest member: this much more final BST, a real mon, not a route-1 one beating another,
+  // and not so far below our weakest member's level that it would have to catch up first.
+  const UPGRADE_BST = 100, UPGRADE_FLOOR = 400, UPGRADE_LEVEL_GAP = 10;
 
   const teamReasons = (s, foe, b, live) => {
     const all = (s.getPlayerParty?.() ?? []).filter(Boolean);
@@ -123,10 +143,14 @@ const { captureChance, catchAdvice } = (() => {
       if (adds.length >= 2) out.push({ kind: "team", text: `hits ${adds.slice(0, 3).join("/")} (no one else does)`, w: 0.5 });
     }
 
-    const weakest = all.reduce((w, p) => (!w || bstOf(p) < bstOf(w) || (bstOf(p) === bstOf(w) && p.level < w.level) ? p : w), null);
+    const fin = new Map([...all, foe].map(p => [p, finalBstOf(p)]));
+    const weakest = all.reduce((w, p) => (!w || fin.get(p).final < fin.get(w).final || (fin.get(p).final === fin.get(w).final && p.level < w.level) ? p : w), null);
     const full = all.length >= 6;
-    if (bstOf(weakest) && bstOf(foe) >= UPGRADE_FLOOR && bstOf(foe) >= bstOf(weakest) + UPGRADE_BST) {
-      out.push({ kind: "team", text: `stronger than ${weakest.name} (BST ${bstOf(foe)} vs ${bstOf(weakest)})`, w: 2 });
+    const mine = fin.get(weakest), theirs = fin.get(foe);
+    if (mine.final && theirs.final >= UPGRADE_FLOOR && theirs.final >= mine.final + UPGRADE_BST
+      && (foe.level ?? 0) >= (weakest.level ?? 0) - UPGRADE_LEVEL_GAP) {
+      const show = x => (x.estimated ? `~${x.final}` : `${x.final}`);
+      out.push({ kind: "team", text: `stronger than ${weakest.name} (${theirs.estimated || mine.estimated ? "final " : ""}BST ${show(theirs)} vs ${show(mine)})`, w: 2 });
     }
     // A full party makes room by releasing someone: name who, if the catch is a team upgrade at all.
     const replace = full && out.length ? { icon: iconOf(weakest), name: weakest.name } : null;
