@@ -40,4 +40,13 @@ Poké ×10 56% Great ×3 70% Ultra ×3 82% Rogue ×2 100% Master ×1 100%
 ★ new hidden ability
 == hidden ability (mini)
 🎯 catch: Great 70% — new hidden ability
+== unevolved upgrade (full)
+🎯 Charmander catch: Great 40% — ends it: 3 turns to KO, new species, sleep/paralyse it for better odds
+Poké ×10 31% Great ×5 40%
+★ new species
+⚑ covers Fire weakness
+⚑ stronger than Ariados (final BST ~529 vs 400)
+⇥ ends it: 3 turns to KO
+== unevolved upgrade (mini)
+🎯 catch: Great 40% — ends it: 3 turns to KO, new species, sleep/paralyse it for better odds
 ok

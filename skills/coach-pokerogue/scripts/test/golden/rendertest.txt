@@ -1,17 +1,17 @@
 == learn (full)
 🎓 Charmeleon learns Charmeleon − {Minimal overview} × {Close}
-✚ Fire Flamethrower power 135
-✕ Normal Tackle weak Atk power 32
-· Fire Ember coverage power 72
-· Dragon Dragon Breath coverage power 72
-· Normal Scratch weak Atk power 32
-Learn → forget Tackle
-summary {"kind":"learn","wave":12,"verdict":null,"field":null,"danger":[],"learn":"Learn → forget Tackle","rewards":null}
+✚ Fire Flamethrower SE on Bug/Steel/Grass… · team gains SE on Bug/Steel/Grass power 176
+· Normal Tackle 2nd Normal move · weak Atk power 24
+✕ Fire Ember SE on Bug/Steel/Grass… power 78
+· Dragon Dragon Breath SE on Dragon power 72
+· Normal Scratch 2nd Normal move · weak Atk power 24
+Learn → forget Ember
+summary {"kind":"learn","wave":12,"verdict":null,"field":null,"danger":[],"learn":"Learn → forget Ember","rewards":null}
 == learn (mini)
 🎓 Charmeleon learns Charmeleon + {Expand} × {Close}
-✚ Fire Flamethrower power 135
-✕ Normal Tackle weak Atk power 32
-Learn → forget Tackle
+✚ Fire Flamethrower SE on Bug/Steel/Grass… · team gains SE on Bug/Steel/Grass power 176
+✕ Fire Ember SE on Bug/Steel/Grass… power 78
+Learn → forget Ember
 == plan (full)
 🎯 W15 · Youngster Charizard − {Minimal overview} × {Close}
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
