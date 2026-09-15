@@ -1,6 +1,6 @@
 == double
 🎯 W89 Charizard › Venusaur − {Minimal overview} × {Close}
-⚔ Charizard Fire Heat Wave → both 2HKO
+⚔ Charizard Fire Heat Wave → both Bisharp 1HKO · Nidoqueen 2HKO
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2HKO
 ⋔ split: both KO
 🩸 Ground ×2 Fighting ×1 Fire ×1 Water ×1

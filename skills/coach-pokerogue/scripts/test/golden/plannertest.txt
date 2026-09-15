@@ -128,3 +128,85 @@ Tyranitar Tyranitar L72 Rock Dark 100% ✦ x ▲ Fighting ×4 Ground Bug Steel W
 2 Swampert Water Surf → Tyranitar falls · foe at 100%
 3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 65%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
+== doubles spread move KOs our partner (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Heatran 3HKO
+⚔ Lucario Fighting Aura Sphere → Heatran 3HKO
+◎ focus Heatran : most damage
+🩸 Fighting ×2 Ground ×2 Water ×1 Fire ×1
+Heatran Heatran L80 Fire Steel 100% ✦ x ▲ Fighting Ground ×4 Water ✕ Poison ×0 Bug ×¼ Steel ×¼ Grass ×¼ Ice ×¼ Fairy ×¼ ↯ Steel Flash Cannon ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~46% · 3HKO
+Magnezone Magnezone L80 Electric Steel 100% ✦ x ▲ Fighting Ground ×4 Fire ✕ Flying ×¼ Poison ×0 Steel ×¼ ↯ Steel Flash Cannon ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~46% · 3HKO
+♟ Fight plan winnable
+1 Garchomp Ground Earthquake → Heatran KO · 100% left
+2 Garchomp Ground Earthquake → Magnezone KO · 100% left
+== doubles spread move scratches our partner (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Ground Earthquake → both 1HKO hits Lucario 23%
+⚔ Lucario Fighting Aura Sphere → Heatran 3HKO spare hit — KO without it
+⋔ split: both KO
+🩸 Fighting ×2 Ground ×2 Water ×1 Fire ×1
+Heatran Heatran L80 Fire Steel 100% ✦ x ▲ Fighting Ground ×4 Water ✕ Poison ×0 Bug ×¼ Steel ×¼ Grass ×¼ Ice ×¼ Fairy ×¼ ↯ Steel Flash Cannon ~50% · moves after ➜ Lucario Fighting Aura Sphere ~37% · 3HKO
+Magnezone Magnezone L80 Electric Steel 100% ✦ x ▲ Fighting Ground ×4 Fire ✕ Flying ×¼ Poison ×0 Steel ×¼ ↯ Steel Flash Cannon ~50% · moves after ➜ Garchomp Ground Earthquake ~100% · 1HKO
+♟ Fight plan winnable
+1 Garchomp Ground Earthquake → Heatran KO · 100% left
+2 Garchomp Ground Earthquake → Magnezone KO · 100% left
+== doubles spread move, one foe left (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Heatran 3HKO
+⚔ Lucario Fighting Aura Sphere → Heatran 3HKO
+◎ focus Heatran : most damage
+Heatran Heatran L80 Fire Steel 100% ✦ x ▲ Fighting Ground ×4 Water ✕ Poison ×0 Bug ×¼ Steel ×¼ Grass ×¼ Ice ×¼ Fairy ×¼ ↯ Steel Flash Cannon ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~46% · 3HKO
+♟ Fight plan winnable
+1 Garchomp Ground Earthquake → Heatran KO · 100% left
+== doubles overkill (live)
+🎯 W200 · Cyrus Charizard › Venusaur − {Minimal overview} × {Close}
+⚔ Charizard Fire Heat Wave → both 1HKO
+⚔ Venusaur Grass Giga Drain → Rattata 1HKO spare hit — KO without it
+⋔ split: both KO
+🩸 Fighting ×1 Rock ×1 Electric ×1 Ice ×1
+Rattata Rattata L30 Normal 100% ✦ x ▲ Fighting ✕ Ghost ×0 ↯ Normal Hyper Fang ~50% · moves after ➜ Venusaur Grass Giga Drain ~99% · 1HKO
+Pidgey Pidgey L30 Normal Flying 100% ✦ x ▲ Rock Electric Ice ✕ Ground ×0 Ghost ×0 ↯ Flying Wing Attack ~50% · moves after ➜ Charizard Fire Heat Wave ~100% · 1HKO
+♟ Fight plan winnable
+1 Charizard Fire Heat Wave → Rattata KO · 100% left
+2 Charizard Fire Heat Wave → Pidgey KO · 100% left
+== doubles slot 0 locked (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Snorlax locked in
+⚔ Lucario Fighting Aura Sphere → Hydreigon 2HKO
+🩸 Fighting ×2 Bug ×1 Ice ×1 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ✦ x ▲ Fighting Bug Ice Dragon Fairy ×4 ✕ Psychic ×0 ↯ Dark Dark Pulse ~50% · moves after ➜ Lucario Fighting Aura Sphere ~55% · 2HKO
+Snorlax Snorlax L80 Normal 100% ✦ x ▲ Fighting ✕ Ghost ×0 ↯ Normal Body Slam ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~14% ⚠ loses trade
+♟ Fight plan winnable
+1 Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
+2 Lucario ⇄ Fighting Aura Sphere → Snorlax switch in, takes a hit · KO · 54% left
+== doubles slot 0 switching (live)
+🎯 W200 · Cyrus Lucario › Metagross − {Minimal overview} × {Close}
+now: ⇄ Garchomp out › Metagross in
+now: ⚔ Lucario Fighting Aura Sphere → Hydreigon 2HKO
+next: ⚔ Metagross Steel Meteor Mash → Hydreigon 2HKO
+🩸 Fighting ×2 Bug ×1 Ice ×1 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ✦ x ▲ Fighting Bug Ice Dragon Fairy ×4 ✕ Psychic ×0 ↯ Dark Dark Pulse ~50% · moves after ➜ Lucario Fighting Aura Sphere ~55% · 2HKO
+Snorlax Snorlax L80 Normal 100% ✦ x ▲ Fighting ✕ Ghost ×0 ↯ Normal Body Slam ~100% · moves after ➜ Metagross Steel Meteor Mash ~18%
+♟ Fight plan winnable
+1 Metagross ⇄ Steel Meteor Mash → Hydreigon switch in, takes a hit · KO · 67% left
+2 Metagross Steel Meteor Mash → Snorlax KO · 40% left
+== doubles protect (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 1HKO
+⚔ Lucario 💀 Dark {Hydreigon's Dark Pulse: ~100% of current HP, before it can act} Normal Protect Garchomp KOs Hydreigon first
+🩸 Fighting ×2 Bug ×1 Ice ×1 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ✦ x ▲ Fighting Bug Ice Dragon Fairy ×4 ✕ Psychic ×0 ↯ Dark Dark Pulse ~0% · moves after ➜ Garchomp Dragon Dragon Claw ~100% · 1HKO
+Snorlax Snorlax L80 Normal 100% ✦ x ▲ Fighting ✕ Ghost ×0 ↯ Normal Body Slam ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~14%
+♟ Fight plan winnable
+1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
+2 Garchomp Dragon Dragon Claw → Snorlax KO · 53% left
+== doubles helping hand (live)
+🎯 W200 · Cyrus Garchomp › Clefable − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 1HKO with Helping Hand
+⚔ Clefable Normal Helping Hand Garchomp KOs Hydreigon
+🩸 Fighting ×2 Bug ×1 Ice ×1 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ✦ x ▲ Fighting Bug Ice Dragon Fairy ×4 ✕ Psychic ×0 ↯ Dark Dark Pulse ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~77% · 1HKO
+Snorlax Snorlax L80 Normal 100% ✦ x ▲ Fighting ✕ Ghost ×0 ↯ Normal Body Slam ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~14%
+♟ Fight plan winnable
+1 Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
+2 Garchomp Dragon Dragon Claw → Snorlax KO · 20% left
