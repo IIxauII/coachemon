@@ -1,7 +1,7 @@
 {
   "name": "pokerogue",
   "displayName": "PokéRogue",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Let Claude play PokéRogue: an MCP server that drives a live pokerogue.net tab over CDP, plus a skill for the play loop.",
   "author": { "name": "xau" },
   "homepage": "https://github.com/IIxauII/pokerogue-mcp",
