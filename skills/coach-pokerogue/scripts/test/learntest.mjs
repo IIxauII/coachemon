@@ -130,6 +130,16 @@ for (const [label, pk, newMove, double] of cases) {
   assert.deepEqual(byName(k.model, "Close Combat").drawbacks, ["−1 Def/SpD after use"]);
 }
 
+// ---- Live, wave 22: Emolga (Atk 26 / SpA 26) wants Spark. Thunder Shock is the same type and weaker — the one to
+// forget; Quick Attack's priority and Normal coverage stay.
+{
+  const emolga = mon("Emolga", ["Electric","Flying"], 26, 26, [["Thunder Shock","Electric",40,"S"],["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }],
+    ["Icicle Crash","Ice",85,"P",90],["Charge","Electric",-1,"X",-1,[["StatStageChangeAttr",{ stats: [4], stages: 1, selfTarget: true }]]]]);
+  const r = run(emolga, ["Spark","Electric",65,"P"]);
+  show("Emolga ← Spark", r);
+  assert.equal(r.model.moves[r.model.forget]?.name, "Thunder Shock");
+}
+
 // ---- Team view: forgetting the team's only Dark move is flagged; a move the team lacks coverage for is noted.
 {
   const tyranitar = mon("Tyranitar", ["Rock","Dark"], 134, 95, [["Crunch","Dark",80,"P"],["Stone Edge","Rock",100,"P",80],["Tackle","Normal",40,"P"],["Bite","Dark",60,"P"]]);

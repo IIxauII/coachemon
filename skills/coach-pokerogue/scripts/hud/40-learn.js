@@ -87,6 +87,29 @@ const { moveScore, learnPlan } = (() => {
   // Defending types a set of moves hits super-effectively (single types). Fixed damage ignores effectiveness.
   const isFixed = mv => mv.power === -1 && STAND_INS.some(([name, , , fixed]) => fixed && attrsOf(mv, name).length);
   const seTypes = moves => new Set(moves.filter(m => isDamaging(m) && !isFixed(m)).flatMap(m => CHART[TYPES[m.type]]?.[0] ?? []));
+  // A status move that raises the user's own stats (Calm Mind, Swords Dance, Dragon Dance): worth something when it
+  // boosts the stat this mon attacks with and it has no such setup move yet. `value` is in the same rough units as
+  // effective power; null when the move isn't setup.
+  const setupOf = (pk, mv, current) => {
+    if (mv.category !== 2) return null;
+    const boosts = attrsOf(mv, "StatStageChangeAttr").filter(a => a.selfTarget && (a.stages ?? 0) > 0);
+    if (!boosts.length) return null;
+    const atk = pk.getStat(1), spa = pk.getStat(3);
+    const main = new Set([atk >= spa * 0.9 ? 1 : null, spa >= atk * 0.9 ? 3 : null].filter(Boolean));
+    const weight = i => (main.has(i) ? 30 : i === 5 ? 20 : i === 2 || i === 4 ? 10 : i === 1 || i === 3 ? 5 : 3);
+    let value = 0;
+    const parts = [];
+    for (const a of boosts) {
+      for (const i of a.stats ?? []) value += weight(i) * a.stages;
+      parts.push(`+${a.stages} ${(a.stats ?? []).map(i => STAT_NAMES[i]).join("/")}`);
+    }
+    const boostsMain = boosts.some(a => (a.stats ?? []).some(i => main.has(i)));
+    const hasSetup = current.some(o => o !== mv && o.category === 2 && attrsOf(o, "StatStageChangeAttr")
+      .some(a => a.selfTarget && (a.stages ?? 0) > 0 && (a.stats ?? []).some(i => main.has(i))));
+    if (!boostsMain) value *= 0.5;
+    if (hasSetup) value *= 0.3;
+    return { value: Math.round(value), text: parts.join(" "), fits: boostsMain && !hasSetup };
+  };
   const movesOf = p => (p?.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } }).filter(Boolean);
 
   // Effective power of a move on this pokémon: power × expected hits × accuracy × STAB × how well its attack stat
@@ -132,7 +155,8 @@ const { moveScore, learnPlan } = (() => {
       else if (neutral.length && otherTypes.length) notes.push(`neutral on ${list(neutral)}`);
     }
     const sameType = others.filter(o => isDamaging(o) && TYPES[o.type] === type).length;
-    if (sameType >= 2) { value *= 0.8; notes.push(`${sameType + 1}× ${type}`); }
+    // Same-type redundancy: a second move of a type adds little beyond the stronger one, a third less still.
+    if (sameType >= 1) { value *= sameType >= 2 ? 0.6 : 0.75; notes.push(`${sameType + 1}× ${type}`); }
 
     // The move's own drawbacks, from its attrs: each one discounts the value and is named in `drawbacks` (and notes).
     const drawbacks = [];
@@ -164,7 +188,8 @@ const { moveScore, learnPlan } = (() => {
     } else if (hasAttr(mv, "RechargeAttr")) cost(0.5, "recharge turn");
     else if ((mv.priority ?? 0) < 0) cost(0.8, "moves last");
     if ((mv.conditions ?? []).some(c => c?.constructor?.name === "FirstMoveCondition")) cost(0.4, "first turn only");
-    else if ((mv.priority ?? 0) > 0) { value *= 1.1; notes.push(`priority +${mv.priority}`); }
+    // Priority picks off weakened foes and faster threats before they act.
+    else if ((mv.priority ?? 0) > 0) { value *= 1.25; notes.push(`priority +${mv.priority}`); }
 
     // Guaranteed self stat changes (chance −1/100): drops cost more on the stat the move attacks with (Overheat's SpA)
     // than on defences (Close Combat); boosts (Flame Charge) add.
@@ -215,6 +240,8 @@ const { moveScore, learnPlan } = (() => {
     // Scored against the slot it would take (the best one to drop even when skipping), or all four with a free slot.
     const against = free || compare < 0 ? current : current.filter((_, j) => j !== compare);
     const incoming = info(mv, moveScore(pk, mv, against, double, ctx));
+    const setup = setupOf(pk, mv, current);
+    if (setup) { incoming.setup = setup; incoming.notes.push(`setup ${setup.text}${setup.fits ? "" : " (weak fit)"}`); }
     let kind, forget = -1, gain = 0;
     if (free) { kind = "free"; gain = incoming.value ?? 0; }
     else if (incoming.value === null) kind = "status";
