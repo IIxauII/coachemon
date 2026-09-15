@@ -17,13 +17,15 @@ let teamPlanCache = { key: null, live: false, value: null };
 const tpOurMove = (s, me, f, live) => {
   if (live && typeof moveOutcomes === "function") {
     try {
-      const best = (moveOutcomes(s, me, f) ?? []).reduce((b, o) => (!b || o.expected > b.expected ? o : b), null);
+      // Best by turns to KO it (a charge or recharge turn per hit counts), then by damage.
+      const turns = o => (o.expected > 0 ? (o.charge || o.recharge ? 2 : 1) * Math.ceil(f.hp / o.expected) - (o.recharge ? 1 : 0) : 99);
+      const best = (moveOutcomes(s, me, f) ?? []).reduce((b, o) => (!b || turns(o) < turns(b) || (turns(o) === turns(b) && o.expected > b.expected) ? o : b), null);
       if (best?.expected > 0) {
         const n = best.dist?.length ? Math.max(1, Math.round(best.dist.reduce((t, d) => t + d.n * d.p, 0))) : 1;
         const per = best.perHit?.length
           ? Array.from({ length: n }, (_, k) => best.perHit[Math.min(k, best.perHit.length - 1)]).map(x => (x.max + x.min) / 2 * (best.acc ?? 1))
           : [best.expected];
-        return { name: best.name, type: best.type, e: best.e, priority: best.priority ?? 0, hits: per };
+        return { name: best.name, type: best.type, e: best.e, priority: best.priority ?? 0, hits: per, charge: !!best.charge, recharge: !!best.recharge || !!best.noRepeat, semiCharge: !!best.semiCharge };
       }
     } catch {}
   }
@@ -140,7 +142,11 @@ const tpFight = (T, st, mi, fi, entry) => {
   if (entry === "switch") { mh -= them.dmg; endTurn(); }
   while (mh >= 1 && fh >= 1 && turns < TP_TURNS) {
     turns++;
-    if (meFirst) { hitFoe(); if (fh >= 1) mh -= them.dmg; } else { mh -= them.dmg; if (mh >= 1) hitFoe(); }
+    // A charging move hits every second turn (hidden meanwhile for Dig / Fly: the foe's later hit misses); a
+    // recharging one, or one that can't repeat, loses the turn after each hit.
+    const hits = us?.charge ? turns % 2 === 0 : us?.recharge ? turns % 2 === 1 : true;
+    const hidden = !hits && us?.semiCharge;
+    if (meFirst) { if (hits) hitFoe(); if (fh >= 1 && !hidden) mh -= them.dmg; } else { mh -= them.dmg; if (mh >= 1 && hits) hitFoe(); }
     endTurn();
   }
   return { mh: mh < 1 ? 0 : mh, mb, fh: fh < 1 ? 0 : fh, fs, fb, turns };

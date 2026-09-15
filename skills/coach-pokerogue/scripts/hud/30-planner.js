@@ -154,10 +154,40 @@ const likelyMoves = (s, foe, me, outs, next) => {
   });
 };
 
+// P(`p` gets to use `mv` this turn, or next turn with `next`), as MovePhase rolls it in the live build: recharging
+// after Hyper Beam → 0 (this turn only); asleep → 0 until its sleep counter runs out (one faster with Early Bird)
+// unless the move works asleep (Sleep Talk, Snore); frozen → 1/4 thaw, sure once its freeze counter runs out, or a
+// move that thaws the user; paralysis → 7/8; confused with turns left → 2/3.
+const actChance = (p, mv = null, next = false) => {
+  const later = next ? 1 : 0;
+  if (!next && p.getTag?.("RECHARGING")) return 0;
+  const moveHas = (name, test = () => true) => (mv?.attrs ?? []).some(a => a.constructor?.name === name && test(a));
+  const st = p.status;
+  let q = 1;
+  if (st?.effect === 4 && !moveHas("BypassSleepAttr")) {
+    const early = p.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr") ? 1 : 0;
+    if ((st.sleepTurnsRemaining ?? 0) - 1 - later - early * (1 + later) > 0) return 0;
+  }
+  if (st?.effect === 5 && !moveHas("HealStatusEffectAttr", a => a.selfTarget) && (st.freezeTurnsRemaining ?? 0) - 1 - later > 0) q *= 0.25;
+  if (st?.effect === 3) q *= 7 / 8;
+  const confused = p.getTag?.("CONFUSED");
+  if (confused && (confused.turnCount ?? 0) - later > 1) q *= 2 / 3;
+  return q;
+};
+// Turns before `p` can act at all: sleep left, or a recharge turn now.
+const actDelay = p => {
+  if (p.getTag?.("RECHARGING")) return 1;
+  const st = p.status;
+  if (st?.effect !== 4) return 0;
+  const early = p.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr") ? 1 : 0;
+  return Math.max(0, Math.ceil((st.sleepTurnsRemaining ?? 0) / (1 + early)) - 1);
+};
+
 // How `foe` threatens `me` over its likely moves: expected damage (for scoring), the worst max roll among moves it
 // might realistically pick (for the 💀 flag), P(KO this turn at current HP) with a crit as a small extra risk, and
 // P(foe acts before me) — `koFirst` weights that by the moves that KO. `myPm` is our planned move (turn order).
 // Damage uses our true abilities (not the AI's view): the AI's blind spots decide what it picks, not what it deals.
+// Each move is weighted by the chance the foe gets to use it (`actChance`: sleep, freeze, paralysis, confusion).
 const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(s, `t:${foe.id}>${me.id}:${pmName(myPm)}:${next}`, () => {
   const outs = planOutcomes(s, foe, me);
   const moves = likelyMoves(s, foe, me, outs, next);
@@ -178,11 +208,12 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
       const cp = m.o.critChance ?? 1 / 24;
       if (crit) ko = (1 - cp) * ko + cp * (crit.pKo ?? 0);
     }
-    expected += m.p * m.o.expected;
-    pKo += m.p * ko;
-    koFirst += m.p * ko * order;
-    if (m.p >= 0.05 && (!worst || m.o.max > worst.o.max)) worst = m;
-    kos.push({ p: m.p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1 });
+    const p = m.p * actChance(foe, pm.getMove?.() ?? null, next);
+    expected += p * m.o.expected;
+    pKo += p * ko;
+    koFirst += p * ko * order;
+    if (p >= 0.05 && (!worst || m.o.max > worst.o.max)) worst = m;
+    kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1 });
   }
   const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o) };
   return {
@@ -205,40 +236,87 @@ const koChanceAt = (t, hp) => {
 const foeTurns = (s, t, me, hp) => (!t || !(t.expected > 0) ? 9
   : koChanceAt(t, hp) >= 0.5 ? 1 : Math.min(9, Math.max(2, turnsToKo(hp + healAtEnd(s, me), t.expected))));
 
+// Hits of `dmgAt(i)` (the i-th use) to clear each HP chunk in turn; a boss bar's boundary wastes the overflow.
+const hitsToKo = (chunks, dmgAt) => {
+  let n = 0;
+  for (let hp of chunks) {
+    while (hp > 0 && n < 9) { const d = dmgAt(n); if (!(d > 0)) return 9; hp -= d; n++; }
+  }
+  return Math.min(9, n);
+};
+
 // One-on-one from now: `me` repeats `pm` into `foe` while `foe` answers with its likely moves. Turn 1 is played
 // with the real odds — order, accuracy, rolls, crits, Sturdy/Focus Band (inside pKo); later turns by expected
 // damage, with boss bars (each clamps a hit at its boundary) and turn-end heals. Options: `hp` (ours after an
 // incoming hit), `free` (the foe is switching in and doesn't act this turn), `next` (the foe re-picks its move
 // against us next turn), `outcome` (our move's record, if already at hand).
+// The move's own costs are priced in: turns (charge, recharge, not twice in a row, Outrage's confusion, falling
+// Atk/SpA on repeats, our sleep or paralysis), the HP it costs us (recoil, Steel Beam, crash, contact chip, lowered
+// defences, self-KO) and `cost` — our max HP it spends plus a little for a lock-in — for scoring ties.
 const exchange = (s, me, pm, foe, opts = {}) => {
   const hp = opts.hp ?? me.hp;
   const mine = opts.outcome ?? planOutcomes(s, me, foe).find(o => o.name === pmName(pm)) ?? null;
   const t = threatFrom(s, foe, me, pm, { next: !!opts.next });
-  const qWe = mine?.pKo ?? 0;
-  const qThey = opts.free ? 0 : koChanceAt(t, hp);
-  let turnsWe = 9;
-  if (mine?.expected > 0) {
-    // Mean damage when it lands: misses are already in turn 1's odds, and a boss bar clamps each turn's hit.
-    const perTurn = mine.expected / Math.max(mine.acc ?? 1, 0.3);
-    const bars = bossBarsLeft(foe);
-    const seg = foe.getMaxHp() / (foe.bossSegments || 1);
-    const byTurns = bars > 1
-      ? turnsToKo(foe.hp - seg * (bars - 1) + healAtEnd(s, foe), perTurn) + (bars - 1) * turnsToKo(seg, perTurn)
-      : turnsToKo(foe.hp + healAtEnd(s, foe), perTurn);
-    turnsWe = qWe >= 0.5 ? 1 : Math.min(9, Math.max(2, byTurns));
-  }
-  const turnsThey = Math.min(9, foeTurns(s, t, me, hp) + (opts.free ? 1 : 0));
   const pFirst = t ? 1 - (t.pKo > 0 ? t.koFirst : t.first) : 1;
   const pF = opts.free ? 1 : pFirst;
+  // Chance our move does its job when chosen: we get to act, Focus Punch isn't hit first, Sucker Punch meets an
+  // attack, a foe mid-Dig / Fly has come out first. `steady`: the part that recurs on later turns.
+  const foeAttacks = opts.free || !t ? 0 : Math.min(1, t.moves.reduce((sum, m) => sum + m.p, 0));
+  const needs = (mine?.interrupt ? 1 - foeAttacks * (1 - pF) : 1) * (mine?.needsAttack ? foeAttacks * pF : 1);
+  const steady = (me.status?.effect === 3 ? 7 / 8 : 1) * needs;
+  const now = actChance(me, pm?.getMove?.() ?? null, !!opts.next) * needs * (mine?.semi ? 1 - pF : 1);
+  const qWe = mine?.charge ? 0 : (mine?.pKo ?? 0) * now;
+  const qThey = opts.free ? 0 : koChanceAt(t, hp);
+  const maxHp = me.getMaxHp?.() ?? hp;
+  let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1;
+  if (mine?.expected > 0) {
+    // Mean damage when it lands: misses are already in turn 1's odds, and a boss bar clamps each turn's hit.
+    const perTurn = mine.expected / Math.max(mine.acc ?? 1, 0.3) * steady;
+    const bars = bossBarsLeft(foe);
+    const seg = foe.getMaxHp() / (foe.bossSegments || 1);
+    // Overheat-type drops to the stat the move attacks with weaken every repeat.
+    const atkStat = mine.cat === "special" ? 3 : 1;
+    const drop = mine.drops?.[atkStat] ?? 0;
+    const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
+    const byTurns = drop
+      ? hitsToKo(bars > 1 ? [foe.hp - seg * (bars - 1) + healAtEnd(s, foe), ...Array(bars - 1).fill(seg)] : [foe.hp + healAtEnd(s, foe)],
+        i => perTurn * stage(Math.max(-6, s0 + drop * i)) / stage(s0))
+      : bars > 1
+        ? turnsToKo(foe.hp - seg * (bars - 1) + healAtEnd(s, foe), perTurn) + (bars - 1) * turnsToKo(seg, perTurn)
+        : turnsToKo(foe.hp + healAtEnd(s, foe), perTurn);
+    hitsWe = (mine.pKo ?? 0) * steady >= 0.5 ? 1 : Math.min(9, Math.max(2, byTurns));
+    // Turns around the hits: sleep or a recharge now, a foe hidden mid-Dig that we'd outspeed; a charging turn per
+    // hit, a lost turn between hits (recharge, or a move that can't be used twice in a row); Outrage's lock runs
+    // 2–3 turns and the confusion after it wastes a third of up to two more hits.
+    delay = actDelay(me) + (mine.semi && pF >= 0.5 ? 1 : 0);
+    const cycle = mine.recharge || mine.noRepeat ? 2 * hitsWe - 1 : mine.charge ? 2 * hitsWe : hitsWe;
+    const confusedHits = mine.lock ? Math.min(Math.max(0, hitsWe - 2), 2) : 0;
+    turnsWe = mine.once && hitsWe > 1 ? 9 : Math.min(9, Math.ceil(delay + cycle + confusedHits * 0.5));
+    // Confusion hurts itself with a typeless 40-power physical hit a third of the time.
+    const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, 1) / stat(me, 2) / 50 + 2) * 0.925;
+    selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + confusedHits * 1.5 * confusionHit / 3;
+    // Lowered Def / SpD (Close Combat, V-create) after the first use: the foe hits harder on the rest.
+    const soften = st => (mine.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mine.drops[st])) : 1);
+    if (hitsWe > 1 && (mine.drops?.[2] || mine.drops?.[4])) defUp = 1 + ((soften(2) + soften(4)) / 2 - 1) * (hitsWe - 1) / hitsWe;
+  }
+  // Our own toll comes off the HP the foe has to get through (front-loaded); if it alone would drop us, we go down
+  // around our last hit.
+  const selfKo = mine?.selfKo ?? 0;
+  const budget = hp - selfSpent;
+  const foeT = defUp > 1 && t ? { ...t, expected: t.expected * defUp } : t;
+  let turnsThey = Math.min(9, (budget > 0 ? foeTurns(s, foeT, me, budget) : Math.max(1, Math.min(turnsWe, 9))) + (opts.free ? 1 : 0));
+  if (selfKo >= 0.5) turnsThey = Math.min(turnsThey, delay + 1);
   const weFirst = pF * qWe + (1 - pF) * (1 - qThey) * qWe;
   const theyFirst = (1 - pF) * qThey + pF * (1 - qWe) * qThey;
   const rest = Math.max(0, 1 - weFirst - theyFirst);
   const later = turnsWe < turnsThey ? 1 : turnsWe > turnsThey ? 0 : pFirst;
   const taken = turnsWe >= 9 ? turnsThey : Math.max(0, turnsWe - pFirst - (opts.free ? 1 : 0));
+  const hpLeft = Math.max(0, hp - (t?.expected ?? 0) * defUp * taken - selfSpent) * (1 - selfKo);
   return {
     pWeKoFirst: weFirst + rest * later, pTheyKoFirst: theyFirst + rest * (1 - later),
-    expectedHpLeft: Math.max(0, Math.round(hp - (t?.expected ?? 0) * taken)),
-    turnsWe, turnsThey, pFirst,
+    expectedHpLeft: Math.round(hpLeft),
+    turnsWe, turnsThey, pFirst, hitsWe,
+    cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mine?.lock ? 0.1 : 0),
   };
 };
 
@@ -298,7 +376,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
         if (!(o.expected > 0) || (pair && o.spread)) continue;
         const x = trade(o, f);
         const turns = x.turnsWe + lost;
-        const score = danger - turns + (x.pWeKoFirst - x.pTheyKoFirst);
+        const score = danger - turns + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0);
         if (!best || score > best.score || (score === best.score && o.expected > best.move.expected)) best = { me, move: o, target: fi, turns, hits: x.turnsWe, score, hp };
       }
       if (best) out.push(best);
@@ -308,7 +386,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
         const other = planOutcomes(s, me, active[1]).find(x => x.name === o.name);
         const xs = [trade(o, active[0]), other ? trade(other, active[1]) : null];
         const hits = Math.max(xs[0].turnsWe, xs[1]?.turnsWe ?? 9);
-        const edge = Math.min(...xs.filter(Boolean).map(x => x.pWeKoFirst - x.pTheyKoFirst));
+        const edge = Math.min(...xs.filter(Boolean).map(x => x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0)));
         if (hits + lost < 9) out.push({ me, move: o, target: "both", turns: hits + lost, hits, score: danger - hits - lost + 1 + edge, hp });
       }
     }
