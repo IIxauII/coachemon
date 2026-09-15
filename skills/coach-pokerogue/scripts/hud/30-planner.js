@@ -250,59 +250,147 @@ const statusTokens = (s, foe, me) => {
     .map(m => ({ effect: m.effect, q: Math.min(1, (m.chance ?? 0.025) * (m.getStackCount?.() ?? 1)) }))
     .filter(x => x.q > 0 && canTakeStatus(s, me, x.effect, foe));
 };
-// Item thieves `foe` holds against `me`, as expected steals by the end of turn j. Each steal moves one stack of a
-// random transferable item. Grip Claw (ContactHeldItemTransferChanceModifier) rolls 10 %·stack on each landed hit
-// of an attack, before turn end; Mini Black Hole (TurnHeldItemTransferModifier) takes a stack per its stack at turn
-// end, after `me`'s own heals. Sticky Hold blocks both.
+// Share of attempts a status cancels, by attempt since it landed (MovePhase): sleep lasts 2 (⅓) or 3 (⅔) turns and
+// ticks down before the check, so it cancels 1 or 2 attempts (Early Bird ticks twice: 1 at most, ⅔); freeze starts
+// at 3 and cancels each of the first two attempts ¾ of the time (a ¼ thaw), the third always thaws. Paralysis
+// cancels 1 in 8 for good (`attemptsLost`).
+const STATUS_SKIP = {
+  4: (a, early) => (early ? (a === 0 ? 2 / 3 : 0) : a === 0 ? 1 : a === 1 ? 2 / 3 : 0),
+  5: a => (a === 0 ? 3 / 4 : a === 1 ? 9 / 16 : 0),
+};
+// The wave tokens `foe`'s hits can hand `me`: `by(x)`, P(`me` has a token's status after x landed hits), and each
+// token's `share` of that. Null when none can land.
+const tokenOdds = (s, foe, me) => {
+  const tokens = statusTokens(s, foe, me);
+  if (!tokens.length) return null;
+  const perHit = 1 - tokens.reduce((keep, x) => keep * (1 - x.q), 1);
+  const qSum = tokens.reduce((sum, x) => sum + x.q, 0);
+  return {
+    tokens: tokens.map(x => ({ ...x, share: x.q / qSum })),
+    by: x => 1 - (1 - perHit) ** Math.max(0, x),
+    early: !!me.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr"),
+  };
+};
+// Turn-end HP change a token's status adds to `me` (poison and burn chip, Poison Heal), weighted by the shares.
+// `heal(p)`: the turn-end HP change of `p`.
+const tokenShift = (odds, me, heal) => {
+  const base = heal(me);
+  return odds.tokens.reduce((sum, x) => sum + x.share * (heal(Object.create(me, { status: { value: { effect: x.effect, toxicTurnCount: 0 } } })) - base), 0);
+};
+// Expected share of `me`'s attempt on turn k that token statuses cancel, from `by(t)` — P(statused by the end of turn
+// t), t = 0 before this fight — and P(the foe moves first). A status from a hit before our move cancels that turn's.
+// Sleep and freeze from before the fight are taken as worn off; paralysis stays.
+const attemptsLost = (odds, by, k, pFoeFirst) => {
+  let lost = 0;
+  for (const x of odds.tokens) {
+    if (x.effect === 3) { lost += x.share / 8 * (pFoeFirst * by(k) + (1 - pFoeFirst) * by(k - 1)); continue; }
+    if (!STATUS_SKIP[x.effect]) continue;
+    const skip = a => (a < 0 ? 0 : STATUS_SKIP[x.effect](a, odds.early));
+    for (let t = 1; t <= k; t++) lost += x.share * (by(t) - by(t - 1)) * (pFoeFirst * skip(k - t) + (1 - pFoeFirst) * skip(k - t - 1));
+  }
+  return Math.min(1, lost);
+};
+// What wave status tokens do to `me`'s own turns in a fight with `foe`, which lands `hitsPerTurn` hits a turn and moves
+// first with `pFoeFirst`: `act(k)`, the share of turn k's attempt not cancelled, and `para(k)`, P(paralysed by then).
+// Null when no token can cancel anything.
+const tokenActs = (s, foe, me, hitsPerTurn, pFoeFirst) => {
+  const odds = hitsPerTurn > 0 ? tokenOdds(s, foe, me) : null;
+  if (!odds?.tokens.some(x => x.effect === 3 || STATUS_SKIP[x.effect])) return null;
+  const by = t => odds.by(hitsPerTurn * t);
+  return {
+    act: k => 1 - attemptsLost(odds, by, k, pFoeFirst),
+    para: k => odds.tokens.filter(x => x.effect === 3).reduce((sum, x) => sum + x.share, 0) * by(k),
+  };
+};
+
+// Item thieves `foe` holds against `me`. Grip Claw (ContactHeldItemTransferChanceModifier) rolls 10 %·stack on each
+// landed hit of an attack, before turn end; Mini Black Hole (TurnHeldItemTransferModifier) steals once per its stack
+// at turn end, after `me`'s own heals. Sticky Hold blocks both.
 const THIEVES = { ContactHeldItemTransferChanceModifier: "Grip Claw", TurnHeldItemTransferModifier: "Mini Black Hole" };
 const transferable = p => (p.getHeldItems?.() ?? []).filter(m => m.isTransferable !== false);
 const thieves = (foe, me) => (me.hasAbilityWithAttr?.("BlockItemTheftAbAttr") || !transferable(me).length ? []
   : (foe.getHeldItems?.() ?? []).filter(m => THIEVES[m.constructor?.name]));
-const stealsBy = (foe, me, hitsPerTurn) => {
+// { perHit, perTurn }: expected Grip Claw steals per landed hit, Mini Black Hole steals per turn.
+const stealRates = (foe, me) => {
   let perHit = 0, perTurn = 0;
   for (const m of thieves(foe, me)) {
     const n = m.getStackCount?.() ?? 1;
     if (m.constructor.name === "TurnHeldItemTransferModifier") perTurn += n;
     else perHit += Math.min(1, (m.chance ?? 0.1) * n);
   }
-  return perHit || perTurn ? j => perHit * hitsPerTurn * j + perTurn * (j - 1) : null;
+  return perHit || perTurn ? { perHit, perTurn } : null;
+};
+// P(k steals) for k = 0..9 (9 takes the tail): `fixed` sure steals plus Grip Claw's, Poisson with mean `mean`.
+const stealCounts = (fixed, mean) => {
+  const out = Array(10).fill(0);
+  let pk = Math.exp(-mean), rest = 1;
+  for (let k = 0; fixed + k < 9; k++) { out[fixed + k] = pk; rest -= pk; pk *= mean / (k + 1); }
+  out[9] += Math.max(0, rest);
+  return out;
+};
+// `me`'s turn-end HP change after 0..9 steals ([k]: after k), by `heal(p)`. A steal picks one of the transferable
+// items still held, at random, and takes one of its stacks (HeldItemTransferModifier.apply); an item at no stacks
+// is gone.
+const afterSteals = (me, heal) => {
+  const items = me.getHeldItems?.() ?? [];
+  const full = items.map(m => m.getStackCount?.() ?? m.stackCount ?? 1);
+  const values = new Map();
+  const value = st => {
+    const key = st.join();
+    if (!values.has(key)) {
+      const held = items.flatMap((m, i) => (st[i] <= 0 ? [] : st[i] === full[i] ? [m] : [Object.create(m, { getStackCount: { value: () => st[i] }, stackCount: { value: st[i] } })]));
+      values.set(key, heal(Object.create(me, { getHeldItems: { value: () => held } })));
+    }
+    return values.get(key);
+  };
+  let dist = new Map([[full.join(), { st: full, p: 1 }]]);
+  const out = [value(full)];
+  for (let k = 1; k <= 9; k++) {
+    const next = new Map();
+    for (const { st, p } of dist.values()) {
+      const left = st.flatMap((n, i) => (n > 0 && items[i].isTransferable !== false ? [i] : []));
+      const outs = left.length ? left.map(i => st.map((n, j) => (j === i ? n - 1 : n))) : [st];
+      for (const ns of outs) {
+        const e = next.get(ns.join());
+        if (e) e.p += p / outs.length; else next.set(ns.join(), { st: ns, p: p / outs.length });
+      }
+    }
+    dist = next;
+    out.push([...dist.values()].reduce((sum, { st, p }) => sum + p * value(st), 0));
+  }
+  return out;
 };
 
 // Turn-end HP change of `me` at the end of turn j (1 = this turn) of a fight with `foe`, which lands `hitsPerTurn`
 // hits a turn on it: `at(j)`. Constant (`flat`) unless
 // - the foe's hits can hand `me` a status whose chip or heal (Poison Heal) then comes every turn: weighted by the
 //   chance it has landed by turn j;
-// - the foe steals `me`'s items: what they add (Leftovers, Shell Bell, berries; an orb's chip) fades by the share of
-//   stacks gone by then.
+// - the foe steals `me`'s items: what they add (Leftovers, Shell Bell, berries; an orb's chip) is weighed over how
+//   many steals there may have been by then.
 const turnEndCourse = (s, me, foe, hitsPerTurn, dealt = 0) => {
   const base = healAtEnd(s, me, dealt);
   const flat = { base, flat: true, at: () => base };
   if (!foe || !(hitsPerTurn >= 0)) return flat;
-  const tokens = hitsPerTurn > 0 ? statusTokens(s, foe, me) : [];
-  const perHit = 1 - tokens.reduce((keep, x) => keep * (1 - x.q), 1);
-  const qSum = tokens.reduce((sum, x) => sum + x.q, 0);
-  const statusChange = tokens.reduce((sum, x) => {
-    const statused = Object.create(me, { status: { value: { effect: x.effect, toxicTurnCount: 0 } } });
-    return sum + x.q / qSum * (healAtEnd(s, statused, dealt) - base);
-  }, 0);
-  const steals = stealsBy(foe, me, hitsPerTurn);
-  const stacks = steals ? transferable(me).reduce((sum, m) => sum + (m.getStackCount?.() ?? 1), 0) : 0;
-  const fromItems = steals ? base - healAtEnd(s, Object.create(me, { getHeldItems: { value: () => [] } }), dealt) : 0;
-  if (!statusChange && !fromItems) return flat;
-  return {
-    base, flat: false,
-    at: j => base + statusChange * (1 - (1 - perHit) ** (hitsPerTurn * j)) - fromItems * Math.min(1, (steals?.(j) ?? 0) / (stacks || 1)),
-  };
+  const odds = hitsPerTurn > 0 ? tokenOdds(s, foe, me) : null;
+  const statusChange = odds ? tokenShift(odds, me, p => healAtEnd(s, p, dealt)) : 0;
+  const rates = stealRates(foe, me);
+  const byCount = rates ? afterSteals(me, p => healAtEnd(s, p, dealt)) : null;
+  const items = byCount && byCount.some(v => v !== base)
+    ? j => stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j).reduce((sum, p, k) => sum + p * (byCount[k] - base), 0)
+    : null;
+  if (!statusChange && !items) return flat;
+  return { base, flat: false, at: j => base + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
 };
 const hitsOn = t => (t?.moves ?? []).reduce((sum, m) => sum + m.p * (m.acc ?? 1) * (m.hits ?? 1), 0);
 
 // Turns a threat needs to KO `me` from `hp`, turn-end HP changes included (and a Reviver Seed's second life).
-// `dealt`: what we deal a turn, for Shell Bell. `foe`: who the threat is from (its wave tokens).
+// `dealt`: what we deal a turn, for Shell Bell. `foe`: who the threat is from (its tokens and thieves). `mult(j)`:
+// its damage on turn j against the expected, when that changes over the fight (a boss's boosts as its bars break).
 // Chip can finish the job on the hit turn (or alone, against a foe that doesn't attack), so it isn't held to 2.
-const foeTurns = (s, t, me, hp, dealt = 0, foe = null) => {
+const foeTurns = (s, t, me, hp, { dealt = 0, foe = null, mult = null } = {}) => {
   const course = turnEndCourse(s, me, foe, t ? hitsOn(t) : -1, dealt);
   const heal = course.base;
-  if (course.flat) {
+  if (course.flat && !mult) {
     if (!t || !(t.expected > 0)) return heal < 0 ? turnsToKo(hp, 0, heal) : 9;
     if (koChanceAt(t, hp) >= 0.5) return 1;
     return Math.min(9, Math.max(heal < 0 ? 1 : 2, turnsToKo(hp, t.expected, heal)) + (t.revive ? turnsToKo(t.revive, t.expected, heal) : 0));
@@ -312,7 +400,7 @@ const foeTurns = (s, t, me, hp, dealt = 0, foe = null) => {
   // Turn by turn from turn `from`: the hit, then the turn-end change if still standing. Returns the KO turn.
   const run = (left, from) => {
     for (let j = from; j < 9; j++) {
-      left -= dmg;
+      left -= dmg * (mult ? mult(j + 1) : 1);
       if (left > 0) left += course.at(j + 1);
       if (left <= 0) return j + 1;
     }
@@ -330,7 +418,7 @@ const hitsToKo = (chunks, dmgAt, heal = 0, per = []) => {
   for (const [c, chunk] of chunks.entries()) {
     let hp = chunk;
     const from = n;
-    while (hp > 0 && n < 9) { const d = dmgAt(n, c); if (!(d > 0)) return 9; hp -= d; n++; if (hp > 0) hp += typeof heal === "function" ? heal(n) : heal; }
+    while (hp > 0 && n < 9) { const d = Math.max(0, dmgAt(n, c) || 0); hp -= d; n++; if (hp > 0) hp += typeof heal === "function" ? heal(n) : heal; }
     per.push(n - from);
   }
   return Math.min(9, n);
@@ -379,11 +467,13 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   // King's Rock: 10 % a stack to flinch us with each attack that lands before we move.
   const flinch = Math.min(1, 0.1 * heldStack(foe, "FlinchChanceModifier")) * foeAttacks;
   const steady = (me.status?.effect === 3 ? 7 / 8 : 1) * needs * (1 - flinch * (1 - pF));
-  const now = actChance(me, pm?.getMove?.() ?? null, !!opts.next) * needs * (mine?.semi ? 1 - pF : 1);
+  // Wave status tokens: sleep, freeze and paralysis the foe's hits may hand us cancel some of our later attempts.
+  const acts = opts.free || !t ? null : tokenActs(s, foe, me, hitsOn(t), 1 - pF);
+  const now = actChance(me, pm?.getMove?.() ?? null, !!opts.next) * needs * (mine?.semi ? 1 - pF : 1) * (acts ? acts.act(1) : 1);
   const qWe = mine?.charge ? 0 : (mine?.pKo ?? 0) * now;
   const qThey = opts.free ? 0 : koChanceAt(t, hp);
   const maxHp = me.getMaxHp?.() ?? hp;
-  let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, atkUp = 1;
+  let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, foeMult = null;
   if (mine?.expected > 0) {
     // Mean damage when it lands: misses are already in turn 1's odds, and a boss bar clamps each turn's hit. Uncapped:
     // this turn's hit may stop at a bar boundary, the hits on later bars don't.
@@ -401,17 +491,9 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const chunks = [...(bars > 1 ? [foe.hp - seg * (bars - 1), ...Array(bars - 1).fill(seg)] : [foe.hp]), ...(mine.revive ? [mine.revive] : [])];
     const barFactor = [...barBreakFactors(s, foe, mine.cat === "special" ? 4 : 2, bars), 1];
     const perChunk = [];
-    const byTurns = drop || !course.flat
-      ? hitsToKo(chunks, (i, c) => perTurn * barFactor[c] * stage(Math.max(-6, s0 + drop * i)) / stage(s0), course.flat ? heal : course.at, perChunk)
+    const byTurns = drop || !course.flat || acts
+      ? hitsToKo(chunks, (i, c) => perTurn * barFactor[c] * stage(Math.max(-6, s0 + drop * i)) / stage(s0) * (acts ? acts.act(i + 1) : 1), course.flat ? heal : course.at, perChunk)
       : Math.min(9, chunks.reduce((sum, hpc, c) => sum + perChunk[perChunk.push(turnsToKo(hpc, perTurn * barFactor[c], heal)) - 1], 0));
-    // The foe's own boosts from those breaks, over the turns spent on each bar, by how much of its damage is physical.
-    if (bars > 1 && t?.moves.length) {
-      const phys = t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / (t.moves.reduce((sum, m) => sum + m.p, 0) || 1);
-      const [fa, fs] = [1, 3].map(st => barBreakFactors(s, foe, st, bars, true));
-      const spent = perChunk.slice(0, bars);
-      const total = spent.reduce((sum, n) => sum + n, 0);
-      if (total > 0) atkUp = spent.reduce((sum, n, c) => sum + n * (phys * fa[c] + (1 - phys) * fs[c]), 0) / total;
-    }
     hitsWe = (mine.pKo ?? 0) * steady >= 0.5 ? 1 : Math.min(9, Math.max(heal < 0 ? 1 : 2, byTurns));
     // Turns around the hits: sleep or a recharge now, a foe hidden mid-Dig that we'd outspeed; a charging turn per
     // hit, a lost turn between hits (recharge, or a move that can't be used twice in a row); Outrage's lock runs
@@ -420,6 +502,20 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const cycle = mine.recharge || mine.noRepeat ? 2 * hitsWe - 1 : mine.charge ? 2 * hitsWe : hitsWe;
     const confusedHits = mine.lock ? Math.min(Math.max(0, hitsWe - 2), 2) : 0;
     turnsWe = mine.once && hitsWe > 1 ? 9 : Math.min(9, Math.ceil(delay + cycle + confusedHits * 0.5));
+    // The foe's own boosts from those breaks (by how much of its damage is physical), from the turn our hit breaks
+    // each bar: that turn's hit from it is boosted only if we moved first.
+    if (bars > 1 && t?.moves.length && !(foe.hasTrainer?.() ?? !!s.currentBattle?.trainer)) {
+      const phys = t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / (t.moves.reduce((sum, m) => sum + m.p, 0) || 1);
+      const [fa, fs] = [1, 3].map(st => barBreakFactors(s, foe, st, bars, true));
+      const pace = cycle / Math.max(1, hitsWe);
+      let hitsSoFar = 0;
+      const breaks = perChunk.slice(0, bars - 1).map(n => Math.ceil(delay + (hitsSoFar += n) * pace - 1e-9));
+      const factor = b => phys * fa[b] + (1 - phys) * fs[b];
+      foeMult = j => {
+        const before = breaks.filter(x => x < j).length;
+        return breaks.includes(j) ? pF * factor(before + 1) + (1 - pF) * factor(before) : factor(before);
+      };
+    }
     // Confusion hurts itself with a typeless 40-power physical hit a third of the time.
     const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, 1) / stat(me, 2) / 50 + 2) * 0.925;
     selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + confusedHits * 1.5 * confusionHit / 3;
@@ -431,15 +527,26 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   // around our last hit.
   const selfKo = mine?.selfKo ?? 0;
   const budget = hp - selfSpent;
-  const foeT = defUp * atkUp !== 1 && t ? { ...t, expected: t.expected * defUp * atkUp } : t;
-  let turnsThey = Math.min(9, (budget > 0 ? foeTurns(s, foeT, me, budget, mine?.uncapped ?? mine?.expected ?? 0, foe) : Math.max(1, Math.min(turnsWe, 9))) + (opts.free ? 1 : 0));
+  const foeT = defUp !== 1 && t ? { ...t, expected: t.expected * defUp } : t;
+  const turnsFoe = budget > 0 ? foeTurns(s, foeT, me, budget, { dealt: mine?.uncapped ?? mine?.expected ?? 0, foe, mult: foeMult }) : Math.max(1, Math.min(turnsWe, 9));
+  let turnsThey = Math.min(9, turnsFoe + (opts.free ? 1 : 0));
   if (selfKo >= 0.5) turnsThey = Math.min(turnsThey, delay + 1);
   const weFirst = pF * qWe + (1 - pF) * (1 - qThey) * qWe * (1 - flinch);
   const theyFirst = (1 - pF) * qThey + pF * (1 - qWe) * qThey;
   const rest = Math.max(0, 1 - weFirst - theyFirst);
-  const later = turnsWe < turnsThey ? 1 : turnsWe > turnsThey ? 0 : pFirst;
-  const taken = turnsWe >= 9 ? turnsThey : Math.max(0, turnsWe - pFirst - (opts.free ? 1 : 0));
-  const hpLeft = Math.max(0, hp - (t?.expected ?? 0) * defUp * atkUp * taken - selfSpent) * (1 - selfKo);
+  // Who moves first on the deciding turn: a token's paralysis by then halves our Speed.
+  let pLast = pFirst;
+  const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
+  if (pPara > 0) {
+    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: 3 } } };
+    if (typeof me.getEffectiveStat !== "function") slowed.getEffectiveStat = { value: i => stat(me, i) / (i === 5 ? 2 : 1) };
+    const tp = threatFrom(s, foe, Object.create(me, slowed), pm, { next: !!opts.next });
+    pLast = (1 - pPara) * pFirst + pPara * (tp ? 1 - (tp.pKo > 0 ? tp.koFirst : tp.first) : pFirst);
+  }
+  const later = turnsWe < turnsThey ? 1 : turnsWe > turnsThey ? 0 : pLast;
+  const taken = turnsWe >= 9 ? turnsThey : Math.max(0, turnsWe - pLast - (opts.free ? 1 : 0));
+  const boosted = foeMult && taken > 0 ? Array.from({ length: Math.ceil(taken) }, (_, i) => foeMult(i + 1)).reduce((sum, x) => sum + x, 0) / Math.ceil(taken) : 1;
+  const hpLeft = Math.max(0, hp - (t?.expected ?? 0) * defUp * boosted * taken - selfSpent) * (1 - selfKo);
   return {
     pWeKoFirst: weFirst + rest * later, pTheyKoFirst: theyFirst + rest * (1 - later),
     expectedHpLeft: Math.round(hpLeft),
@@ -498,7 +605,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     const free = f => !entering && !attackers.includes(f);
     // A mon not yet on the field faces what the foe picks for it, not the move it chose against the current field.
     const next = entering || !me.isOnField?.();
-    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(s, threatFrom(s, f, me, null, { next }), me, hp, 0, f) + (free(f) ? 1 : 0))));
+    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(s, threatFrom(s, f, me, null, { next }), me, hp, { foe: f }) + (free(f) ? 1 : 0))));
     const trade = (o, f) => exchange(s, me, o.pm, f, { hp, outcome: o, free: free(f), next });
     const cost = o => (drawback(o) ? DRAWBACK_COST : 0);
     const one = (o, fi) => {

@@ -32,7 +32,7 @@ const foes = [
   mon("Weavile", 110, ["Dark","Ice"], "Pressure", [560,330,190,110,210,320], [["Triple Axel","Ice",120,"P"],["Night Slash","Dark",70,"P"]], false, undefined, 2),
 ];
 
-const run = (phase, { party: ours = party, foes: theirs = foes, double = false } = {}) => {
+const run = (phase, { party: ours = party, foes: theirs = foes, double = false, enemyModifiers } = {}) => {
   const party = ours, foes = theirs;
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
@@ -40,7 +40,7 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false }
   for (const f of foes) f.getOpponents = () => party.filter(p => p.isOnField());
   const trainer = { getName: () => "Cyrus", config: { isBoss: true }, isDouble: () => false };
   const scene = { phaseManager: pm, getField: () => [...party, ...foes].filter(p => p.isOnField()), currentBattle: { waveIndex: 115, turn: 1, double, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes, enemyModifiers };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
@@ -116,5 +116,25 @@ assert.equal(plan.approxDoubles, false);
   const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
   s.arena = { weather: { weatherType: 3 } };
   assert.deepEqual(globalThis.__tp.tpHealProfile(s, zard), { base: -6, sitrus: 0, enigma: 0 }, "sandstorm chip in the profile");
+}
+// Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
+{
+  const item = (name, props = {}, n = 1) => Object.assign(new ({ [name]: class { isTransferable = true; getStackCount() { return n; } } })[name](), props);
+  const token = effect => new ({ EnemyAttackStatusEffectChanceModifier: class { effect = effect; chance = effect === 1 ? 0.05 : 0.025; getStackCount() { return 10; } } }).EnemyAttackStatusEffectChanceModifier();
+  const blastoise = (items = []) => Object.assign(mon("Blastoise", 60, ["Water"], "Torrent", [200,100,120,160,120,80], [["Water Gun","Water",40,"S"]], true), { getHeldItems: () => items });
+  const snorlax = (items = []) => Object.assign(mon("Snorlax", 60, ["Normal"], "Thick Fat", [300,80,90,65,110,30], [["Tackle","Normal",40,"P"]], true), { getHeldItems: () => items });
+  const step = opts => run(null, opts).plan.steps[0];
+  const plain = step({ party: [blastoise([item("TurnHealModifier")])], foes: [snorlax()] });
+  const robbed = step({ party: [blastoise([item("TurnHealModifier")])], foes: [snorlax([item("TurnHeldItemTransferModifier")])] });
+  console.log(`== thieves and tokens\n${plain.why}`);
+  assert.ok(robbed.hp < plain.hp, `a foe's Mini Black Hole takes our Leftovers (${plain.hp}% → ${robbed.hp}%)`);
+  const bare = step({ party: [blastoise()], foes: [snorlax([item("TurnHealModifier")])] });
+  const clawed = step({ party: [blastoise([item("ContactHeldItemTransferChanceModifier", { chance: 0.1 }, 5)])], foes: [snorlax([item("TurnHealModifier")])] });
+  assert.ok(bare.foeHp > 0 && clawed.foeHp === 0, `our Grip Claw takes its Leftovers, and the fight (${bare.why} → ${clawed.why})`);
+  const poisoned = step({ party: [blastoise()], foes: [snorlax()], enemyModifiers: [token(1)] });
+  const clean = step({ party: [blastoise()], foes: [snorlax()] });
+  assert.ok(poisoned.hp < clean.hp, `poison tokens chip us (${clean.hp}% → ${poisoned.hp}%)`);
+  const slept = step({ party: [blastoise()], foes: [snorlax()], enemyModifiers: [token(4)] });
+  assert.ok(slept.hp < clean.hp, `sleep tokens cost us turns, so Snorlax gets more hits in (${clean.hp}% → ${slept.hp}%)`);
 }
 console.log("ok");
