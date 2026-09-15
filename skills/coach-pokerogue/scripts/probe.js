@@ -10,6 +10,8 @@
   try {
     const game = Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
     const s = game.scene.getScene("battle");
+    // Mid-reload or on the title screen the battle scene exists without its UI yet.
+    if (!s?.ui) throw Object.assign(new Error("game loading"), { loading: true });
     if (MODE === "starters") {
       const gd = s.gameData;
       const h = s.ui.getHandler();
@@ -93,7 +95,7 @@
       };
     }
   } catch (e) {
-    out = { error: String(e) };
+    out = e.loading ? { loading: true } : { error: String(e) };
   }
   document.documentElement.dataset.mcpOut = JSON.stringify(out);
 })();

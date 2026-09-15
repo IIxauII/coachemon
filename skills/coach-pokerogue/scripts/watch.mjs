@@ -35,6 +35,7 @@ for (;;) {
   try {
     const snap = await read("battle");
     if (snap.error) throw new Error(snap.error);
+    if (snap.loading) { await new Promise(r => setTimeout(r, 2000)); continue; }
     lastError = null;
     if (withHud && !snap.hudActive) await read("hud");
     const w = `w${snap.wave}`;

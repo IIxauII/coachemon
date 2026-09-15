@@ -216,6 +216,8 @@ const tick = () => {
   try {
     game ??= Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
     const s = game.scene.getScene("battle");
+    // Mid-reload or on the title screen: nothing to coach, and the scene isn't wired up yet.
+    if (!s?.ui) { el.style.display = "none"; return; }
     const learn = learnState(s);
     const handler = s.ui.getHandler();
     let m;
