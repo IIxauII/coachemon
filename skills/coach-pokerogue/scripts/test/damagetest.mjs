@@ -9,6 +9,9 @@ class SurviveDamageModifier { getStackCount() { return 1; } }
 class PokemonMoveAccuracyBoosterModifier { getStackCount() { return 1; } }
 class BerryModifier { constructor(t) { this.berryType = t; } getStackCount() { return 1; } }
 class TurnHealModifier { getStackCount() { return 1; } }
+const held = (name, props = {}, n = 1) => Object.assign(new ({ [name]: class { getStackCount() { return n; } } })[name](), props);
+// An ability attribute carrying its constructor arguments, as the game stores them.
+const abAttr = (name, props = {}) => Object.assign(new ({ [name]: class {} })[name](), props);
 
 let damageCalls = 0;
 const move = (id, name, type, power, { acc = 100, attrs = [], flags = 0, cat = 0 } = {}) => ({
@@ -20,15 +23,15 @@ const move = (id, name, type, power, { acc = 100, attrs = [], flags = 0, cat = 0
   },
 });
 const pmOf = mv => ({ getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0 });
-const mon = (id, { hp = 1000, maxHp = hp, abilities = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [] } = {}) => {
+const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [] } = {}) => {
   const p = {
     id, name: id, level: 50, hp, formIndex, getMaxHp: () => maxHp, isPlayer: () => player, isOnField: () => true,
-    getTypes: () => types, getAbility: () => ({ name: "x" }), hasPassive: () => false,
+    getTypes: () => types, getAbility: () => ({ name: "x", getAttrs: n => attrs.filter(a => a.constructor.name === n) }), hasPassive: () => false, status,
     getStat: () => 100, summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], abilitiesApplied: new Set() },
     waveData: { abilitiesApplied: new Set(), abilityRevealed: true },
     turnData: { hitCount: 0, hitsLeft: -1, moveEffectiveness: null },
     bossSegments: boss, bossSegmentIndex: boss ? boss - 1 : 0, isBoss: () => boss > 0,
-    getHeldItems: () => items, hasAbilityWithAttr: a => abilities.includes(a), getTag: () => null,
+    getHeldItems: () => items, hasAbilityWithAttr: a => abilities.includes(a) || attrs.some(x => x.constructor.name === a), getTag: t => (tags.includes(t) ? {} : null),
     getMoveType: mv => (mv.name === "Aura Wheel" ? (p.formIndex === 1 ? 16 : 12) : mv.type),
     getMoveCategory: (_, mv) => mv.category,
     getAccuracyMultiplier: () => 1, getCritStage: () => 0,
@@ -69,9 +72,9 @@ const node = () => { const n = { style: {}, children: [], addEventListener() {},
 globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
 globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
-const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits, bestMove, sandbox };\n})();\n");
+const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits, bestMove, sandbox };\n})();\n");
 eval(src);
-const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits, bestMove, sandbox } = globalThis.__dmg;
+const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits, bestMove, sandbox } = globalThis.__dmg;
 
 // Expected damage of one hit whose max roll is `max`: the mean of the 16 rolls 85..100 %.
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
@@ -286,14 +289,80 @@ const bigHit = move(1, "Big Hit", 14, 120);
 
 assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.lastError?.stack}`);
 
-// End-of-turn heals.
+// Turn end: the signed HP change between this turn's moves and the next command.
 {
   const p = mon("berry", { hp: 90, maxHp: 200, items: [new BerryModifier(0), new BerryModifier(2), new TurnHealModifier()] });
-  assert.equal(endOfTurnHeal(p), 50 + 12);
-  assert.equal(endOfTurnHeal(p, { tookSuperEffective: true, hp: 60 }), 50 + 50 + 12);
-  assert.equal(endOfTurnHeal(p, { hp: 150 }), 12, "Sitrus waits for half HP");
-  assert.equal(endOfTurnHeal(p, { hp: 195 }), 5, "capped at max HP");
-  assert.equal(endOfTurnHeal(p, { hp: 0 }), 0);
+  assert.equal(endOfTurnHp(p, { s: scene }), 50 + 12);
+  assert.equal(endOfTurnHp(p, { s: scene, tookSuperEffective: true, hp: 60 }), 50 + 50 + 12);
+  assert.equal(endOfTurnHp(p, { s: scene, hp: 150 }), 12, "Sitrus waits for half HP");
+  assert.equal(endOfTurnHp(p, { s: scene, hp: 195 }), 5, "capped at max HP");
+  assert.equal(endOfTurnHp(p, { s: scene, hp: 0 }), 0);
+}
+{
+  const at = (weatherType = 0, terrainType = 0, extra = {}) => ({ ...scene, arena: { tags: [], weather: weatherType ? { weatherType } : null, terrain: terrainType ? { terrainType } : null }, ...extra });
+  const [SUN, RAIN, SAND, HAIL] = [1, 2, 3, 4];
+  const m = (opts = {}) => mon("m", { hp: 100, maxHp: 160, ...opts });
+  // Sandstorm / hail: 1/16, not for the types it spares, Magic Guard, Overcoat-type abilities or a mon underground.
+  assert.equal(endOfTurnHp(m(), { s: at(SAND) }), -10, "sandstorm 1/16");
+  assert.equal(endOfTurnHp(m({ types: [5] }), { s: at(SAND) }), 0, "Rock ignores sand");
+  assert.equal(endOfTurnHp(m({ types: [5] }), { s: at(HAIL) }), -10, "but not hail");
+  assert.equal(endOfTurnHp(m({ types: [14] }), { s: at(HAIL) }), 0, "Ice ignores hail");
+  assert.equal(endOfTurnHp(m({ abilities: ["BlockNonDirectDamageAbAttr"] }), { s: at(SAND) }), 0, "Magic Guard");
+  assert.equal(endOfTurnHp(m({ attrs: [abAttr("BlockWeatherDamageAttr", { weatherTypes: [] })] }), { s: at(HAIL) }), 0, "Overcoat");
+  const sandVeil = m({ attrs: [abAttr("BlockWeatherDamageAttr", { weatherTypes: [SAND] })] });
+  assert.equal(endOfTurnHp(sandVeil, { s: at(SAND) }), 0, "Sand Veil in sand");
+  assert.equal(endOfTurnHp(sandVeil, { s: at(HAIL) }), -10, "Sand Veil in hail");
+  assert.equal(endOfTurnHp(m({ tags: ["UNDERGROUND"] }), { s: at(SAND) }), 0, "mid-Dig");
+  const cloudNine = mon("cloud nine", { attrs: [abAttr("SuppressWeatherEffectAbAttr")] });
+  assert.equal(endOfTurnHp(m(), { s: at(SAND, 0, { getField: () => [cloudNine] }) }), 0, "Cloud Nine on the field");
+  // Weather abilities: Rain Dish / Ice Body 1/16, Dry Skin 1/8 in rain and −1/8 in sun, Solar Power −1/8.
+  const drySkin = [abAttr("PostWeatherLapseHealAbAttr", { healFactor: 2, weatherTypes: [RAIN, 7] }), abAttr("PostWeatherLapseDamageAbAttr", { damageFactor: 2, weatherTypes: [SUN, 8] })];
+  assert.equal(endOfTurnHp(m({ attrs: [abAttr("PostWeatherLapseHealAbAttr", { healFactor: 1, weatherTypes: [RAIN, 7] })] }), { s: at(RAIN) }), 10, "Rain Dish");
+  assert.equal(endOfTurnHp(m({ attrs: drySkin }), { s: at(RAIN) }), 20, "Dry Skin in rain");
+  assert.equal(endOfTurnHp(m({ attrs: drySkin }), { s: at(SUN) }), -20, "Dry Skin in sun");
+  assert.equal(endOfTurnHp(m({ attrs: drySkin }), { s: at() }), 0, "Dry Skin without weather");
+  // Status: poison 1/8, toxic n/16 with the counter ticking first, burn 1/16 (Heatproof halves it).
+  assert.equal(endOfTurnHp(m({ status: { effect: 1 } }), { s: at() }), -20, "poison");
+  assert.equal(endOfTurnHp(m({ status: { effect: 2, toxicTurnCount: 2 } }), { s: at() }), -30, "toxic, third turn");
+  assert.equal(endOfTurnHp(m({ status: { effect: 6 } }), { s: at() }), -10, "burn");
+  assert.equal(endOfTurnHp(m({ status: { effect: 6 }, attrs: [abAttr("ReduceBurnDamageAbAttr", { multiplier: 0.5 })] }), { s: at() }), -5, "Heatproof");
+  assert.equal(endOfTurnHp(m({ status: { effect: 1 }, abilities: ["BlockNonDirectDamageAbAttr"] }), { s: at() }), 0, "Magic Guard vs poison");
+  const poisonHeal = [abAttr("BlockStatusDamageAbAttr", { effects: [1, 2] }), abAttr("PostTurnStatusHealAbAttr", { effects: [1, 2] })];
+  assert.equal(endOfTurnHp(m({ status: { effect: 2, toxicTurnCount: 4 }, attrs: poisonHeal }), { s: at() }), 20, "Poison Heal");
+  assert.equal(endOfTurnHp(m({ status: { effect: 6 }, attrs: poisonHeal }), { s: at() }), -10, "Poison Heal doesn't cover burn");
+  // Toxic / Flame Orb: the status lands at turn end, so its chip counts as recurring; not on the types it can't affect.
+  assert.equal(endOfTurnHp(m({ items: [held("TurnStatusEffectModifier", { effect: 2 })] }), { s: at() }), -10, "Toxic Orb");
+  assert.equal(endOfTurnHp(m({ types: [8], items: [held("TurnStatusEffectModifier", { effect: 2 })] }), { s: at() }), 0, "Toxic Orb on Steel");
+  assert.equal(endOfTurnHp(m({ items: [held("TurnStatusEffectModifier", { effect: 6 })] }), { s: at() }), -10, "Flame Orb");
+  // Chip comes before berries (Sitrus reads the HP after it) and can faint the mon, which then heals nothing.
+  const sitrus = [new BerryModifier(0), new TurnHealModifier()];
+  assert.equal(endOfTurnHp(m({ hp: 90, items: sitrus }), { s: at(SAND) }), -10 + 10, "80/160 isn't below half");
+  assert.equal(endOfTurnHp(m({ hp: 85, items: sitrus }), { s: at(SAND) }), -10 + 40 + 10, "75/160 is");
+  assert.equal(endOfTurnHp(m({ hp: 5, items: sitrus, status: { effect: 1 } }), { s: at() }), -5, "poison faints it");
+  // Grassy Terrain: 1/16 to grounded mons.
+  assert.equal(endOfTurnHp(m(), { s: at(0, 3) }), 10, "Grassy Terrain");
+  assert.equal(endOfTurnHp(m({ types: [2] }), { s: at(0, 3) }), 0, "Flying isn't grounded");
+  // The enemy's wave heal tokens: 2 % max HP per stack; players don't get it.
+  const waveHeal = at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] });
+  assert.equal(endOfTurnHp(m({ player: false }), { s: waveHeal }), 9, "enemy turn heal ×3");
+  assert.equal(endOfTurnHp(m(), { s: waveHeal }), 0, "not for the player");
+  assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 40, player: false }), { s: waveHeal }), 1, "the 1 HP floor covers all stacks");
+  // Shell Bell: 1/8 of the damage dealt this turn per stack.
+  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 24, "Shell Bell ×2");
+  assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier")] }), { s: at() }), 0, "Shell Bell without damage");
+}
+
+// Reviver Seed: a lethal hit isn't a KO — it's back at half HP.
+{
+  const atk = mon("a");
+  const seed = mon("seed", { hp: 100, maxHp: 300, items: [held("PokemonInstantReviveModifier")] });
+  setup(atk, seed);
+  const o = moveOutcome(scene, atk, seed, pmOf(bigHit), { crit: false });
+  assert.equal(o.pKo, 0, "revives");
+  assert.equal(o.revive, 150);
+  assert.ok(o.notes.includes("reviver seed"));
+  setup(atk, mon("plain", { hp: 100 }));
+  assert.equal(moveOutcome(scene, atk, enemies[0], pmOf(bigHit), { crit: false }).revive, 0);
 }
 
 // Outside the command phase no game code runs; the approximation still answers.

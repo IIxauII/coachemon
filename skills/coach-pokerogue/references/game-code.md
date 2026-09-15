@@ -472,15 +472,19 @@ The HUD's `predictSwitches` matches this rule. Gaps:
 | Sturdy | `PreDefendFullHpEndureAbAttr` (non-simulated only) → `STURDY` tag → survive at 1 | no | `p.isFullHp() && p.getMaxHp()>1 && p.hasAbilityWithAttr('PreDefendFullHpEndureAbAttr')` unless attacker Mold Breaker (`ignoreAbility`) |
 | Disguise / Ice Face | `FormBlockDamageAbAttr` (non-simulated only) → 0 damage, 1/8 recoil | no | `p.getAbility().getAttrs('FormBlockDamageAbAttr')` + `formIndex===attr.formIndex` |
 | Multiscale / Shadow Shield / Tera Shell | ReceivedMoveDamageMultiplier / FullHpResistType | no | inside getAttackDamage (sandbox for Tera Shell) |
-| Reviver Seed | `PokemonInstantReviveModifier` on faint → 50 % HP | no | held item constructor.name |
+| Reviver Seed | `PokemonInstantReviveModifier` in FaintPhase → back at `toDmgValue(maxHp/2)`, summon data reset | no | held item constructor.name → outcome `pKo 0`, `revive` |
 | Sitrus / Enigma | BerryPhase only (turn end): <50 % / hit super-effectively this turn → +25 % max HP (Ripen ×2) | no | held items + §3 |
 | Lum | BerryPhase: status or confusion → cured at turn end | no | held item |
 | Liechi/Ganlon/Petaya/Apicot/Salac | BerryPhase: <25 % (Gluttony 50 %) → +1 Atk/Def/SpA/SpD/Spe | no | held item |
 | Starf | BerryPhase <25 %: +2 random stat (global RNG) | yes | expectation |
 | Lansat | BerryPhase <25 %: `CRIT_BOOST` tag | no | |
 | Quick Claw / Quick Draw | TurnStartPhase: `BYPASS_SPEED` → FIRST bracket | 10 %/stack; 30 % | held item / ability |
-| King's Rock | `FlinchChanceModifier` after damaging hit | 10 %/stack | held item |
-| Leftovers / Shell Bell | turn-end heal 1/16·stack / 1/8 dealt·stack | no | held item |
+| King's Rock | `FlinchChanceModifier` after damaging hit (flinches only if the holder moved first) | 10 %/stack | held item |
+| Leftovers / Shell Bell | TurnEndPhase heal 1/16·stack / MoveEffectPhase `toDmgValue(totalDamageDealt/8)·stack` | no | held item |
+| Toxic / Flame Orb | `TurnStatusEffectModifier` at TurnEndPhase (`trySetStatus`, type immunities apply) | no | held item + `effect` |
+| Boss bar break | `handleBossSegmentCleared`, wild bosses only: +1 to a stat below +6 picked weighted by `getStat(s,false)`; +2 for idx 0 when ≥3 bars, idx 1 when ≥5 | yes | expectation |
+| Enemy wave heal | `EnemyTurnHealModifier` at TurnEndPhase: `max(floor(maxHp/50)·stack, 1)` when not full | no | `s.enemyModifiers` |
+| Enemy wave status | `EnemyAttackStatusEffectChanceModifier` on each enemy attack move: 5 % (burn/poison) / 2.5 % ·stack to the target; `EnemyStatusEffectHealChanceModifier` 2.5 %·stack cure at turn end | yes | `s.enemyModifiers` |
 | Choice items, Life Orb, Expert Belt, Focus Sash, Loaded Dice | **not in the game** | — | drop from models |
 
 Item lookup: `p.getHeldItems()` (player → `s.modifiers`, enemy → `s.enemyModifiers`); identify by
@@ -489,6 +493,16 @@ Item lookup: `p.getHeldItems()` (player → `s.modifiers`, enemy → `s.enemyMod
 `FlinchChanceModifier`, `PokemonInstantReviveModifier`) and `m.getStackCount()`. Pure reads.
 Choice-like locks that do exist: Gorilla Tactics tag, Encore, Outrage-family move queue, Torment — all already
 reflected by `isUsable` / move queue.
+
+### Turn-end HP order
+
+`WeatherEffectPhase` (sandstorm/hail `toDmgValue(maxHp/16)`, `ignoreSegments`; spared: Ground/Rock/Steel in sand,
+Ice in hail, `SuppressWeatherEffectAbAttr` on the field, `BlockWeatherDamageAttr` for the weather, Magic Guard,
+UNDERGROUND/UNDERWATER; then `PostWeatherLapse{Heal,Damage}AbAttr`: Rain Dish/Ice Body 1/16, Dry Skin ±1/8, Solar
+Power −1/8) → `PostTurnStatusEffectPhase` (poison 1/8, toxic `maxHp·toxicTurnCount/16` after the counter ticks, burn
+1/16 ×`ReduceBurnDamageAbAttr`; blocked by Magic Guard and `BlockStatusDamageAbAttr`) → BerryPhase → `TurnEndPhase`
+(Leftovers, Grassy Terrain 1/16 if grounded, enemy wave heal and status cure, `PostTurnAbAttr`: Poison Heal 1/8,
+then orbs). HUD: `endOfTurnHp`.
 
 ---
 
@@ -539,7 +553,9 @@ reflected by `isUsable` / move queue.
 - `moveOutcome(s, atk, def, pm)` → `{ type, cat, e: result→multiplier, perHit: [{max,min}], dist: [{n,p}], acc,
   expectedDamage, pKo, pKoCrit, name, priority, spread }` — combines the above; replaces `hits()`'s per-move record so
   30-planner keeps working (`dmg` = expectedDamage vs non-boss; for bosses use `applyHits`).
-- `endOfTurnHeal(p, { tookSuperEffective })` → HP healed at BerryPhase (Sitrus <50 %, Enigma on SE hit, Ripen) + Leftovers.
+- `endOfTurnHp(p, { s, hp, tookSuperEffective, dealt })` → signed turn-end HP change in the order above: weather and
+  status chip (orbs counted as already on), berries (Sitrus <50 %, Enigma on SE hit, Ripen), Leftovers, Grassy
+  Terrain, enemy wave heal, weather/Poison Heal abilities, Shell Bell from `dealt`.
 
 ### Enemy AI (20-enemy-ai.js)
 - `aiTargets(s, e, move)` → `[{battlerIndex, p}]` — re-implementation of getMoveTargets (opponent side) + getNextTargets
@@ -559,7 +575,7 @@ reflected by `isUsable` / move queue.
 - `threatFrom(s, foe, me)` → Σ over `enemyMoveDistribution` of `p × moveOutcome(foe, me, …)`; exposes worst-case
   (`max` roll + crit) for the "ko" flag and expected for scoring. Replaces `hits(f, me, true)` + `FOE_MARGIN`.
 - `turnsToKo(s, atk, def, pm, { firstHitAlreadyTaken })` → expected turns using `applyHits` per turn plus
-  `endOfTurnHeal` between turns and boss segment state carried over; cap 9.
+  `endOfTurnHp` between turns and boss segment state carried over; cap 9.
 - `exchange(s, me, myPm, foe)` → `{ pWeKoFirst, pTheyKoFirst, expectedHpLeft }` combining `actionOrder`,
   `moveOutcome` (acc, crit, dist), `enemyMoveDistribution` and survival items. Feeds `fieldPlan` scores.
 

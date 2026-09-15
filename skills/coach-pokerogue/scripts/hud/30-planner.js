@@ -33,7 +33,9 @@ const planMemo = (s, k, fn) => {
 const COST_NOTE = /−|recoil|locks|twice in a row|faints|charges a turn|recharges a turn|fails if hit/;
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
-const healAtEnd = (s, p) => (plannerReady(s) && typeof endOfTurnHeal === "function" ? endOfTurnHeal(p) || 0 : 0);
+// Turn-end HP change, signed: heals +, weather / status chip −. `dealt`: damage `p` deals a turn (Shell Bell).
+const healAtEnd = (s, p, dealt = 0) => (plannerReady(s) && typeof endOfTurnHp === "function" ? endOfTurnHp(p, { s, dealt }) || 0 : 0);
+const heldStack = (p, name) => (p.getHeldItems?.() ?? []).filter(m => m.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
 // "Triple Axel ×3", "Bullet Seed ×2–5": multi-hit moves change KO math more than their power suggests.
 const hitCounts = o => {
   const ns = (o?.dist ?? []).filter(d => d.p > 0).map(d => d.n);
@@ -209,12 +211,13 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
     pKo += p * ko;
     koFirst += p * ko * order;
     if (p >= 0.05 && (!worst || m.o.max > worst.o.max)) worst = m;
-    kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1 });
+    kos.push({ p, max: m.o.max, pKo: ko, acc: m.o.acc ?? 1, revive: m.o.revive ?? 0 });
   }
   const brief = m => m && { name: m.name, type: m.type, e: m.o?.e ?? null, p: m.p, hits: hitCounts(m.o) };
   return {
     expected, worst: worst?.o.max ?? 0, pKo, first, koFirst: pKo > 0 ? koFirst / pKo : first,
     move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live,
+    revive: Math.max(0, ...kos.map(k => k.revive)),
   };
 });
 
@@ -224,27 +227,55 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
 const koChanceAt = (t, hp) => {
   if (!t) return 0;
   if (hp <= 0) return 1;
+  if (t.revive) return 0;
   if (hp >= t.hp) return t.pKo;
   return Math.min(1, t.moves.reduce((sum, m) => sum + m.p * (m.max < hp ? 0
     : !t.live ? 1 : Math.max(m.pKo, m.acc * Math.min(1, (m.max - hp) / (0.15 * m.max) + 1 / 16))), 0));
 };
-// Turns a threat needs to KO `me` from `hp`, a heal at turn end included.
-const foeTurns = (s, t, me, hp) => (!t || !(t.expected > 0) ? 9
-  : koChanceAt(t, hp) >= 0.5 ? 1 : Math.min(9, Math.max(2, turnsToKo(hp, t.expected, healAtEnd(s, me)))));
+// Turns a threat needs to KO `me` from `hp`, turn-end HP changes included (and a Reviver Seed's second life).
+// `dealt`: what we deal a turn, for Shell Bell.
+// Chip can finish the job on the hit turn (or alone, against a foe that doesn't attack), so it isn't held to 2.
+const foeTurns = (s, t, me, hp, dealt = 0) => {
+  const heal = healAtEnd(s, me, dealt);
+  if (!t || !(t.expected > 0)) return heal < 0 ? turnsToKo(hp, 0, heal) : 9;
+  if (koChanceAt(t, hp) >= 0.5) return 1;
+  return Math.min(9, Math.max(heal < 0 ? 1 : 2, turnsToKo(hp, t.expected, heal)) + (t.revive ? turnsToKo(t.revive, t.expected, heal) : 0));
+};
 
-// Hits of `dmgAt(i)` (the i-th use) to clear each HP chunk in turn, `heal` restored after each hit it survives; a
-// boss bar's boundary wastes the overflow.
+// Hits of `dmgAt(i, c)` (the i-th use, into chunk c) to clear each HP chunk in turn, `heal` added after each hit it
+// survives (chip when negative); a boss bar's boundary wastes the overflow.
 const hitsToKo = (chunks, dmgAt, heal = 0) => {
   let n = 0;
-  for (let hp of chunks) {
-    while (hp > 0 && n < 9) { const d = dmgAt(n); if (!(d > 0)) return 9; hp -= d; n++; if (hp > 0) hp += heal; }
+  for (const [c, chunk] of chunks.entries()) {
+    let hp = chunk;
+    while (hp > 0 && n < 9) { const d = dmgAt(n, c); if (!(d > 0)) return 9; hp -= d; n++; if (hp > 0) hp += heal; }
   }
   return Math.min(9, n);
 };
 
+// A wild boss gains stat stages each time a bar breaks (EnemyPokemon.handleBossSegmentCleared): +1 to a random stat
+// not yet at +6, weighted by its stats; +2 for the last bar of a 3+ bar boss and for the last two of a 5+ bar one.
+// Returns the damage factor on each bar from now (1 for the current one) from the expected rise of `defStat`
+// (2 Def, 4 SpD). A trainer's boss gets none.
+const barBreakFactors = (s, foe, defStat, bars) => {
+  const out = [1];
+  if (bars <= 1 || (foe.hasTrainer?.() ?? !!s.currentBattle?.trainer)) return Array(Math.max(1, bars)).fill(1);
+  const w = [1, 2, 3, 4, 5].map(i => Math.max(0, foe.getStat?.(i, false) || 0));
+  const share = w[defStat - 1] / (w.reduce((t, x) => t + x, 0) || 1);
+  const s0 = foe.summonData?.statStages?.[defStat - 1] ?? 0;
+  let up = 0;
+  for (let i = 1; i < bars; i++) {
+    const idx = bars - 1 - i;
+    up += share * (1 + (foe.bossSegments >= 3 && idx === 0 ? 1 : 0) + (foe.bossSegments >= 5 && idx === 1 ? 1 : 0));
+    out.push(stage(s0) / stage(Math.min(6, s0 + up)));
+  }
+  return out;
+};
+
 // One-on-one from now: `me` repeats `pm` into `foe` while `foe` answers with its likely moves. Turn 1 is played
 // with the real odds — order, accuracy, rolls, crits, Sturdy/Focus Band (inside pKo); later turns by expected
-// damage, with boss bars (each clamps a hit at its boundary) and turn-end heals. Options: `hp` (ours after an
+// damage, with boss bars (each clamps a hit at its boundary, and a wild boss's stat boosts when one breaks), a
+// Reviver Seed's second life, turn-end heals and chip, and a faster foe's King's Rock flinches. Options: `hp` (ours after an
 // incoming hit), `free` (the foe is switching in and doesn't act this turn), `next` (the foe re-picks its move
 // against us next turn), `outcome` (our move's record, if already at hand).
 // The move's own costs are priced in: turns (charge, recharge, not twice in a row, Outrage's confusion, falling
@@ -260,7 +291,9 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   // attack, a foe mid-Dig / Fly has come out first. `steady`: the part that recurs on later turns.
   const foeAttacks = opts.free || !t ? 0 : Math.min(1, t.moves.reduce((sum, m) => sum + m.p, 0));
   const needs = (mine?.interrupt ? 1 - foeAttacks * (1 - pF) : 1) * (mine?.needsAttack ? foeAttacks * pF : 1);
-  const steady = (me.status?.effect === 3 ? 7 / 8 : 1) * needs;
+  // King's Rock: 10 % a stack to flinch us with each attack that lands before we move.
+  const flinch = Math.min(1, 0.1 * heldStack(foe, "FlinchChanceModifier")) * foeAttacks;
+  const steady = (me.status?.effect === 3 ? 7 / 8 : 1) * needs * (1 - flinch * (1 - pF));
   const now = actChance(me, pm?.getMove?.() ?? null, !!opts.next) * needs * (mine?.semi ? 1 - pF : 1);
   const qWe = mine?.charge ? 0 : (mine?.pKo ?? 0) * now;
   const qThey = opts.free ? 0 : koChanceAt(t, hp);
@@ -276,14 +309,14 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const atkStat = mine.cat === "special" ? 3 : 1;
     const drop = mine.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
-    const heal = healAtEnd(s, foe);
+    const heal = healAtEnd(s, foe, t?.expected ?? 0);
+    // HP to get through: what's left of this bar, each bar after it, and half its HP again after a Reviver Seed.
+    const chunks = [...(bars > 1 ? [foe.hp - seg * (bars - 1), ...Array(bars - 1).fill(seg)] : [foe.hp]), ...(mine.revive ? [mine.revive] : [])];
+    const barFactor = [...barBreakFactors(s, foe, mine.cat === "special" ? 4 : 2, bars), 1];
     const byTurns = drop
-      ? hitsToKo(bars > 1 ? [foe.hp - seg * (bars - 1), ...Array(bars - 1).fill(seg)] : [foe.hp],
-        i => perTurn * stage(Math.max(-6, s0 + drop * i)) / stage(s0), heal)
-      : bars > 1
-        ? turnsToKo(foe.hp - seg * (bars - 1), perTurn, heal) + (bars - 1) * turnsToKo(seg, perTurn, heal)
-        : turnsToKo(foe.hp, perTurn, heal);
-    hitsWe = (mine.pKo ?? 0) * steady >= 0.5 ? 1 : Math.min(9, Math.max(2, byTurns));
+      ? hitsToKo(chunks, (i, c) => perTurn * barFactor[c] * stage(Math.max(-6, s0 + drop * i)) / stage(s0), heal)
+      : Math.min(9, chunks.reduce((sum, hpc, c) => sum + turnsToKo(hpc, perTurn * barFactor[c], heal), 0));
+    hitsWe = (mine.pKo ?? 0) * steady >= 0.5 ? 1 : Math.min(9, Math.max(heal < 0 ? 1 : 2, byTurns));
     // Turns around the hits: sleep or a recharge now, a foe hidden mid-Dig that we'd outspeed; a charging turn per
     // hit, a lost turn between hits (recharge, or a move that can't be used twice in a row); Outrage's lock runs
     // 2–3 turns and the confusion after it wastes a third of up to two more hits.
@@ -303,9 +336,9 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   const selfKo = mine?.selfKo ?? 0;
   const budget = hp - selfSpent;
   const foeT = defUp > 1 && t ? { ...t, expected: t.expected * defUp } : t;
-  let turnsThey = Math.min(9, (budget > 0 ? foeTurns(s, foeT, me, budget) : Math.max(1, Math.min(turnsWe, 9))) + (opts.free ? 1 : 0));
+  let turnsThey = Math.min(9, (budget > 0 ? foeTurns(s, foeT, me, budget, mine?.uncapped ?? mine?.expected ?? 0) : Math.max(1, Math.min(turnsWe, 9))) + (opts.free ? 1 : 0));
   if (selfKo >= 0.5) turnsThey = Math.min(turnsThey, delay + 1);
-  const weFirst = pF * qWe + (1 - pF) * (1 - qThey) * qWe;
+  const weFirst = pF * qWe + (1 - pF) * (1 - qThey) * qWe * (1 - flinch);
   const theyFirst = (1 - pF) * qThey + pF * (1 - qWe) * qThey;
   const rest = Math.max(0, 1 - weFirst - theyFirst);
   const later = turnsWe < turnsThey ? 1 : turnsWe > turnsThey ? 0 : pFirst;

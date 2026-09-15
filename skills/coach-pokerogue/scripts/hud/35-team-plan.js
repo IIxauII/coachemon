@@ -4,7 +4,7 @@
 //
 // The fight is simulated coarsely. An exchange is one of our mons against one foe until one faints: each side
 // deals its expected damage per turn (our best move; the foe's likely move), in speed/priority order, with boss bars
-// clamping each hit and end-of-turn heals in between. A voluntary switch-in takes one hit before it acts; a fainted
+// clamping each hit and turn-end heals and chip in between. A voluntary switch-in takes one hit before it acts; a fainted
 // mon's replacement comes in free. After a foe faints the trainer sends the bench mon with the best matchup score
 // against the mon we have on the field (trainer.getNextSummonIndex over getPartyMemberMatchupScores, spec §7).
 // Our choices are searched with a small beam; the enemy's are not branched. Mid-exchange enemy switches, status,
@@ -71,13 +71,14 @@ const tpTypeScore = (f, me) => {
   return atk + def;
 };
 
-// End-of-turn heal split into what recurs (Leftovers) and the one-shot berries (Sitrus below half, Enigma after a
-// super-effective hit), read by asking endOfTurnHeal about the mon at a made-up HP.
-const tpHealProfile = p => {
-  if (typeof endOfTurnHeal !== "function") return null;
+// Turn-end HP change split into what recurs (Leftovers and other heals, weather and status chip: negative when chip
+// wins) and the one-shot berries (Sitrus below half, Enigma after a super-effective hit), read by asking endOfTurnHp
+// about the mon at a made-up HP.
+const tpHealProfile = (s, p) => {
+  if (typeof endOfTurnHp !== "function") return null;
   const max = p.getMaxHp();
   const at = (hp, se) => {
-    try { return Math.max(0, endOfTurnHeal(Object.create(p, { hp: { value: hp } }), { tookSuperEffective: se }) || 0); } catch { return 0; }
+    try { return endOfTurnHp(Object.create(p, { hp: { value: hp } }), { s, hp, tookSuperEffective: se }) || 0; } catch { return 0; }
   };
   const base = at(Math.ceil(max * 0.75), false);
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
@@ -110,7 +111,7 @@ const tpTables = (s, party, foes, live) => {
     boss: foes.map(f => (f.isBoss?.() && f.bossSegments > 1
       ? { seg: f.getMaxHp() / f.bossSegments, min: final && !f.formIndex ? 1 : 0, idx: f.bossSegmentIndex ?? f.bossSegments - 1 } : null)),
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
-    ourHeal: party.map(tpHealProfile), foeHeal: foes.map(tpHealProfile),
+    ourHeal: party.map(p => tpHealProfile(s, p)), foeHeal: foes.map(p => tpHealProfile(s, p)),
     foeStart: foes.map(f => f.hp),
   };
 };

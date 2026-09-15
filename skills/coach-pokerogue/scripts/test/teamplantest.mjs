@@ -47,7 +47,7 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false }
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   // The planner lives inside the bundle's IIFE; expose it for the test only.
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__tp = { teamPlan, drawTeamPlan };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__tp = { teamPlan, drawTeamPlan, tpHealProfile };\n})();\n"));
   const plan = globalThis.__tp.teamPlan(scene, scene.currentBattle, party, foes);
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };
@@ -109,5 +109,12 @@ assert.equal(plan.approxDoubles, false);
   const double = run(null, { party: ours, foes: youngster, double: true }).plan;
   assert.ok(double.approxDoubles, "doubles are flagged as approximated");
   assert.ok(double.compact);
+}
+// Turn-end chip carries into the fight as a negative per-turn change: a sandstorm takes 1/16 a turn.
+{
+  const { scene: s } = run(null);
+  const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
+  s.arena = { weather: { weatherType: 3 } };
+  assert.deepEqual(globalThis.__tp.tpHealProfile(s, zard), { base: -6, sitrus: 0, enigma: 0 }, "sandstorm chip in the profile");
 }
 console.log("ok");
