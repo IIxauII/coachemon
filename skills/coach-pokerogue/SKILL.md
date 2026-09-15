@@ -24,10 +24,20 @@ The user holds the controller. You read the game and advise. **Never press, sele
 
 When the user wants the coach running for the whole session ("keep coaching", "watch my run"), start both layers:
 
-1. **HUD** — `scripts/read.sh <browser> hud` draws a panel in the top-left corner of the game tab, built from the game's own sprites (Pokémon icons, type badges, move categories). Each live foe gets its weaknesses, hard walls (×0 / ×¼, counting immunity abilities), trap abilities, and the party member + move to use against it. The header shows the send-in order. It refreshes every second with no Claude involved. Header buttons switch between **full**, **mini** (one line per foe) and **closed** (a small 🎯 tab); the last view is remembered in the page's localStorage. `hud-off` removes it. It is a type-chart heuristic — it knows nothing about Sturdy, Guts or setup moves, which is what your brief is for.
-2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints `NEW BATTLE <battle JSON>` once per new battle and re-injects the HUD after a page reload. It prints `COACH ERROR <msg>` once per distinct failure, so report that line rather than staying silent.
+1. **HUD** — `scripts/read.sh <browser> hud` draws a panel in the top-left corner of the game tab, built from the game's own sprites (Pokémon icons, type badges, move categories). Each live foe gets its weaknesses, hard walls (×0 / ×¼, counting immunity abilities), trap abilities, and the party member + move to use against it. The header shows the send-in order. On a learn-move prompt it switches to a 🎓 card: the new move and the current four, each scored as effective power (power × accuracy × STAB × attack-stat fit, bonus for type coverage no other move gives), and a verdict — *learn → forget X*, *skip*, or *your call* for status moves it can't score. It refreshes every second with no Claude involved. Header buttons switch between **full**, **mini** (one line per foe) and **closed** (a small 🎯 tab); the last view is remembered in the page's localStorage. `hud-off` removes it. It is a type-chart heuristic — it knows nothing about Sturdy, Guts or setup moves, which is what your brief is for.
+2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints one short summary line per event and re-injects the HUD after a page reload:
+   - `NEW BATTLE w<wave> <double|single> <trainer|wild> | <foes>`
+   - `LEARN MOVE w<wave> <pokémon> wants <move> | has: <moves>`
+   - `REWARDS w<wave> money $<n> reroll $<n> | free: … | shop: …` (again after a reroll)
+   - `COACH ERROR <msg>`, once per distinct failure. Report it rather than staying silent.
 
-On each `NEW BATTLE`, reply with a brief built from that JSON; no extra read is needed. Keep it to a few lines: enemy team weak / strong against, send-in order, one move per matchup, and any ability trap from the rules below. Only go deeper if the user asks.
+Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
+
+Reply to each event with a brief of a few lines. Only go deeper if the user asks.
+
+- **Battle:** enemy team weak / strong against, send-in order, one move per matchup, and any ability trap from the rules below. Wild waves often end before the brief lands, so lead with the move.
+- **Learn move:** learn or skip, and which move to forget. Weigh what the HUD can't: coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
+- **Rewards:** what to buy, then which free reward to take. Consider party HP and PP, items already held (`items`), and money. Say whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. Don't quote item effects from memory; use `desc`.
 
 ## Rules learned the hard way
 

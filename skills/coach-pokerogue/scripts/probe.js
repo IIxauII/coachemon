@@ -30,6 +30,8 @@
           })),
       };
     } else {
+      const CATS = ["Physical","Special","Status"];
+      const moveInfo = mv => ({ name: mv.name, type: TYPES[mv.type], power: mv.power, category: CATS[mv.category], accuracy: mv.accuracy });
       const mon = p => ({
         name: p.name,
         lv: p.level,
@@ -44,10 +46,38 @@
         boss: p.isBoss(),
         moves: p.moveset.map(m => {
           const mv = m.getMove();
-          return { name: m.getName(), type: TYPES[mv.type], power: mv.power, category: ["Physical","Special","Status"][mv.category], pp: `${m.getMovePp() - m.ppUsed}/${m.getMovePp()}` };
+          return { ...moveInfo(mv), name: m.getName(), pp: `${m.getMovePp() - m.ppUsed}/${m.getMovePp()}` };
         }),
       });
       const b = s.currentBattle;
+      const party = s.getPlayerParty();
+      const h = s.ui.getHandler();
+      const uiModeId = s.ui.getMode();
+      const phase = s.phaseManager?.getCurrentPhase?.();
+
+      // Learn-move: the SUMMARY screen (UiMode 9, summaryUiMode 1) holds the new move; before it opens, the
+      // "forget a move?" prompt only has LearnMovePhase's moveId, so build the move from a PokemonMove.
+      let learn = null;
+      if (uiModeId === 9 && h?.summaryUiMode === 1 && h.newMove) {
+        learn = { pokemon: h.pokemon.name, move: moveInfo(h.newMove) };
+      } else if (phase?.phaseName === "LearnMovePhase") {
+        const pk = party[phase.partyMemberIndex];
+        const pm = pk?.moveset.find(Boolean);
+        if (pk && pm) learn = { pokemon: pk.name, move: moveInfo(new pm.constructor(phase.moveId).getMove()) };
+      }
+
+      // Rewards: MODIFIER_SELECT (UiMode 6). Free rewards in options, shop rows in shopOptionsRows.
+      let rewards = null;
+      if (uiModeId === 6 && h?.options) {
+        const item = o => {
+          const t = o.modifierTypeOption?.type;
+          let desc = null;
+          try { desc = t?.getDescription?.(); } catch {}
+          return { name: t?.name, desc, cost: o.modifierTypeOption?.cost ?? 0 };
+        };
+        rewards = { free: h.options.map(item), shop: (h.shopOptionsRows || []).flat().map(item), rerollCost: h.rerollCost ?? null };
+      }
+
       out = {
         wave: b?.waveIndex ?? null,
         double: b?.double ?? null,
@@ -55,7 +85,9 @@
         money: s.money,
         hudActive: !!window.__coachHud,
         uiMode: document.getElementById("touchControls")?.dataset.uiMode ?? null,
-        party: s.getPlayerParty().map(mon),
+        learn,
+        rewards,
+        party: party.map(mon),
         enemy: s.getEnemyParty().map(mon),
         items: s.modifiers.map(m => `${m.type?.name} x${m.stackCount}`),
       };

@@ -1,6 +1,7 @@
 // Runs in the PokéRogue page world. Draws a small always-on coach panel over the
-// game: what each live foe is weak to / resists, which party member to send
-// against it and with which move. Read-only: presses nothing, writes nothing to
+// game: in battle, what each live foe is weak to / resists, which party member
+// to send against it and with which move; on a learn-move prompt, whether to
+// learn the new move and which one to forget. Read-only: presses nothing, writes nothing to
 // the game. Idempotent — injecting again replaces the running panel.
 // __MODE__ is replaced by read.sh with "hud" (install) or "hud-off" (remove).
 (() => {
@@ -127,11 +128,58 @@
     });
 
     return {
+      kind: "battle",
       title: `W${b.waveIndex}${b.trainer ? ` · ${b.trainer.getName()}` : ""}`,
       order: [...new Set(picks.filter(Boolean).map(p => p.me))].map(me => ({ icon: iconOf(me), name: me.name })),
       team: Object.entries(teamWeak).sort((x, y) => y[1] - x[1]).slice(0, 4),
       rows,
     };
+  };
+
+  // Learn-move: the SUMMARY screen (UiMode 9, summaryUiMode 1) holds the new move; before it opens, the
+  // "forget a move?" prompt only has LearnMovePhase's moveId, so the move is built from a PokemonMove.
+  const learnState = s => {
+    const h = s.ui.getHandler();
+    if (s.ui.getMode() === 9 && h?.summaryUiMode === 1 && h.newMove) return { pk: h.pokemon, mv: h.newMove };
+    const phase = s.phaseManager?.getCurrentPhase?.();
+    if (phase?.phaseName !== "LearnMovePhase") return null;
+    const pk = s.getPlayerParty()[phase.partyMemberIndex];
+    const pm = pk?.moveset.find(Boolean);
+    return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove() } : null;
+  };
+
+  // Effective power of a move on this pokémon: power × accuracy × STAB × how well its attack stat suits the
+  // category, ×1.2 when no other damaging move covers its type. null for status moves, which can't be scored.
+  const moveValue = (pk, mv, others) => {
+    if (mv.category === 2 || !(mv.power > 0)) return null;
+    const type = TYPES[mv.type];
+    const atk = pk.getStat(1), spa = pk.getStat(3);
+    const fit = (mv.category === 0 ? atk : spa) / Math.max(atk, spa);
+    const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
+    const covered = others.some(o => o.category !== 2 && o.power > 0 && TYPES[o.type] === type);
+    return Math.round(mv.power * acc * (typesOf(pk).includes(type) ? 1.5 : 1) * fit * (covered ? 1 : 1.2));
+  };
+
+  const learnModel = ({ pk, mv }) => {
+    const current = pk.moveset.filter(Boolean).map(m => m.getMove());
+    const info = (x, value) => ({ name: x.name, type: TYPES[x.type] ?? "Normal", cat: ["physical", "special", "status"][x.category], value });
+    // Each slot is judged against the other three, so coverage counts for both the old move and its replacement.
+    const moves = current.map((x, i) => {
+      const rest = current.filter((_, j) => j !== i);
+      return { ...info(x, moveValue(pk, x, rest)), replacement: moveValue(pk, mv, rest) };
+    });
+    let forget = -1;
+    let verdict;
+    if (current.length < 4) verdict = ["Learns it — free slot", "#6d6"];
+    else if (moveValue(pk, mv, current) === null) verdict = ["Status move — your call", "#fa4"];
+    else {
+      const gain = m => m.replacement - m.value;
+      moves.forEach((m, i) => { if (m.value !== null && (forget < 0 || gain(m) > gain(moves[forget]))) forget = i; });
+      if (forget < 0) verdict = ["Only status moves to drop — your call", "#fa4"];
+      else if (moves[forget].replacement > moves[forget].value * 1.1) verdict = [`Learn → forget ${moves[forget].name}`, "#6d6"];
+      else { verdict = ["Skip — not an upgrade", "#e55"]; forget = -1; }
+    }
+    return { kind: "learn", icon: iconOf(pk), name: pk.name, move: info(mv, moveValue(pk, mv, current)), moves, forget, verdict };
   };
 
   let game = null;
@@ -193,21 +241,39 @@
     return n;
   };
 
-  const draw = m => {
-    if (view === "closed") {
-      const tab = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" },
-        "🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null);
-      tab.title = "Open coach";
-      tab.addEventListener("click", e => { e.stopPropagation(); setView("mini"); });
-      return [tab];
-    }
+  const tab = (emoji, icon) => {
+    const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, emoji, icon);
+    n.title = "Open coach";
+    n.addEventListener("click", e => { e.stopPropagation(); setView("mini"); });
+    return n;
+  };
+  const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" },
+    emoji, title, h("span", { flex: "1" }), ...right,
+    h("span", { width: "4px" }),
+    view === "full" ? button("−", "Minimal overview", "mini") : button("+", "Expand", "full"),
+    button("×", "Close", "closed"));
 
-    const header = h("div", { display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" },
-      "🎯", m.title, h("span", { flex: "1" }),
-      ...m.order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, 20)]),
-      h("span", { width: "4px" }),
-      view === "full" ? button("−", "Minimal overview", "mini") : button("+", "Expand", "full"),
-      button("×", "Close", "closed"));
+  const drawLearn = m => {
+    if (view === "closed") return [tab("🎓", mon(m.icon, m.name, 20))];
+    const header = bar("🎓", `${m.name} learns`, mon(m.icon, m.name, 20));
+    const row = (x, mark, color) => line(mark, color,
+      badge(x.type), img("categories", x.cat, x.cat, 12, null),
+      h("span", { fontWeight: "bold", marginLeft: "2px" }, x.name),
+      h("span", { flex: "1" }),
+      h("span", dim, x.value === null ? "status" : `≈${x.value}`));
+    const verdict = h("div", { color: m.verdict[1], fontWeight: "bold", marginTop: "3px" }, m.verdict[0]);
+    if (view === "mini") return [header, row(m.move, "✚", "#6d6"), verdict];
+    return [header, row(m.move, "✚", "#6d6"),
+      h("div", { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" }),
+      ...m.moves.map((x, i) => (i === m.forget ? row(x, "✕", "#e55") : row(x, "·", "#9aa"))),
+      verdict];
+  };
+
+  const drawBattle = m => {
+    if (view === "closed") return [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)];
+
+    const header = bar("🎯", m.title,
+      ...m.order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, 20)]));
 
     if (view === "mini") {
       const rows = m.rows.map(r => h("div", { display: "flex", alignItems: "center", gap: "2px" },
@@ -267,17 +333,23 @@
     try {
       game ??= Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
       const s = game.scene.getScene("battle");
-      const b = s.currentBattle;
-      const foes = s.getEnemyParty().filter(p => p.hp > 0);
-      const party = s.getPlayerParty().filter(p => p.hp > 0);
-      if (!b || !foes.length || !party.length) { el.style.display = "none"; return; }
-      const m = model(b, party, foes);
+      const learn = learnState(s);
+      let m;
+      if (learn) {
+        m = learnModel(learn);
+      } else {
+        const b = s.currentBattle;
+        const foes = s.getEnemyParty().filter(p => p.hp > 0);
+        const party = s.getPlayerParty().filter(p => p.hp > 0);
+        if (!b || !foes.length || !party.length) { el.style.display = "none"; return; }
+        m = model(b, party, foes);
+      }
       const sig = JSON.stringify([view, m]);
       el.style.display = "block";
       el.style.width = view === "full" ? "300px" : "auto";
       if (sig !== last) {
         missed = false;
-        el.replaceChildren(...draw(m));
+        el.replaceChildren(...(m.kind === "learn" ? drawLearn(m) : drawBattle(m)));
         // Icon atlases load lazily; redraw next tick until every sprite is in.
         last = missed ? "" : sig;
       }
