@@ -30,32 +30,39 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      - the enemy AI's move-choice algorithm, reproduced as a probability per move and target;
      - the EnemyCommandPhase switch rule.
      Game calls run only in the command phase, inside `sandbox` (queue muted; RNG, abilitiesApplied and turnData restored), cached per turn. `window.__coachHud.stats()` reports sandbox restore mismatches (should stay 0) and refresh cost. Outside the command phase it falls back to a type-chart estimate.
+   - **Easy wild waves collapse to one line**, in either view: `🎯 W12 ⚔ Charizard Heat Wave → Rattata · 1 hit [+] [×]` (one ⚔ per slot in doubles). Easy = wild, no boss, no 💀/⚠ tag, no switch or missing safe switch, every slot KOs in 1–2 hits, no catch worth a ball. Anything else expands on its own; a view button the user presses holds for the rest of the wave.
    - **Battle card.**
-     - ⚔ who should be out and what each slot does, with `now:` / `next:` when a switch uses the turn.
-     - ⇄ switches: kept to failing fields, never into a KO on entry or before acting; *optional* when merely better; "no safe switch-in" otherwise.
+     - ⚔ who should be out and what each slot does (`2 hits` to KO), with `now:` / `next:` when a switch uses the turn.
+     - ⇄ switches: kept to failing fields, never into a KO on entry or before acting; *optional* when merely better; "no safe switch" otherwise.
      - ⇆ predicted enemy switches aim the plan at the switch-in, with a dim ↺ *if it stays*.
-     - ◎ focus / ⋔ split targeting in doubles.
-     - 💀 / ⚠ danger tags, including next turn's.
-     - Each foe row: weaknesses, walls, trap abilities, its likely move (↯ with %), and the pick against it.
+     - ◎ focus targeting in doubles (a split shows in the ⚔ targets).
+     - 💀 / ⚠ danger tags with the hit's % of current HP, including next turn's.
+     - Each foe row (full view): trap abilities only, ▲ weaknesses / ✕ walls among the types the party has moves of, ↯ its likely move into our mon, and ➜ a pick only for foes no slot is on yet. Trainers add "team weak to:".
+     - **Mini**: one line per slot, with ⚠ the trap ability its move runs into; the fight plan as one line.
    - **Free switches.** The "Will you switch?" prompt (encounter start, "Switch" battle style, wild/mystery encounters only) and replacing a fainted mon cost no hit and no turn: the card shows `⇄ free switch? X → Y` or `stay`. Mid-turn switches (U-turn, Eject Button) and every trainer-battle switch cost the turn.
    - **🎯 Catch card** (wild): catch chance per ball from the game's capture formula, and a catch / maybe verdict — shown only when a catch is worth it, silent otherwise. It weighs account value (new species or form, hidden ability, shiny, a big IV gain on a line on the team), team value (covers weaknesses, clearly outclasses the weakest member, who it would replace; nothing for a line already on the team) and ending an encounter that would cost a party member. It picks the cheapest ball that works, and saves Rogue/Master balls for valuable catches.
-   - **♟ Fight plan** (trainers): the enemy win condition, who to reserve for it, sacrifices for free switch-ins, step order, and a "likely lost" warning.
-   - **🎓 Learn-move card:** new move vs current four as effective power, with reasons and a learn / forget / skip verdict.
-   - **🛒 Rewards card:** buys for current needs (revive, heal, potion, ether) first, then the free reward by rarity tier and need, and a reroll hint.
+   - **♟ Fight plan** (trainers): one line `♟ winnable · N steps [+]` for a plain win; opens by itself on "likely lost", a sacrifice or a mon to reserve — the enemy win condition, who to reserve for it, sacrifices for free switch-ins, step order and warnings. Steps are marked approximate (`~`) in doubles.
+   - **🎓 Learn-move card:** new move vs current four as effective power (`power 96`, `3rd Water move`), with reasons and a learn / forget / skip verdict. Mini shows the move to forget.
+   - **🛒 Rewards card:** buys for current needs (revive, heal, potion, ether) first ("buy first" only when there are buys), then the free reward by rarity tier and need, and a reroll hint.
+   - `window.__coachHud.summary()` is the panel's verdict in plain text; the battle read carries it as `hud`.
    - Your brief still covers what the panel can't judge: setup lines, long-term team building, and anything the user asks.
-2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints one short summary line per event and re-injects the HUD after a page reload:
-   - `NEW BATTLE w<wave> <double|single> <trainer|wild> | <foes>`
-   - `LEARN MOVE w<wave> <pokémon> wants <move> | has: <moves>`
-   - `REWARDS w<wave> money $<n> reroll $<n> | free: … | shop: …` (again after a reroll)
+2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints one short summary line per event and re-injects the HUD after a page reload. Lines carry the HUD's verdict when it's running:
+   - `NEW BATTLE w<wave> [double] <trainer|wild> · <easy|trainer|DANGER|catch|fight> | <foes> [💀 <our mon>]` — an easy wave lists only foe names and levels. `(resumed, turn N)` when the watcher started mid-battle.
+   - `DANGER w<wave> <our mon> ← <foe> <move>` the first time a 💀 appears mid-battle, once per mon per wave.
+   - `LEARN MOVE w<wave> <pokémon> wants <move> | has: <moves> | <pokémon> Atk<n>/SpA<n> | HUD: <verdict>`
+   - `REWARDS w<wave> money $<n> reroll $<n> | free: … | shop: … | HUD: take X · buy Y` (again after a reroll)
    - `COACH ERROR <msg>`, once per distinct failure. Report it rather than staying silent.
 
-Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
+Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`, `learn`, `rewards`), `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
 
-Reply to each event with a brief of a few lines. Only go deeper if the user asks.
+The panel already shows the decision; the user glances at it mid-battle. Speak only when you add something.
 
-- **Battle:** enemy team weak / strong against, send-in order, one move per matchup, and any ability trap from the rules below. Wild waves often end before the brief lands, so lead with the move.
-- **Learn move:** learn or skip, and which move to forget. Weigh what the HUD can't: coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
-- **Rewards:** what to buy, then which free reward to take. Consider party HP and PP, items already held (`items`), and money. Say whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. Don't quote item effects from memory; use `desc`.
+- **Easy wild wave:** no reply.
+- **Catch:** one line — catch or not, and why, if you'd weigh it differently from the panel.
+- **DANGER / boss:** 2–3 lines, move first: what to click, then the threat and the out (switch, sacrifice, heal).
+- **Trainer:** send-in order and the win condition, ≤4 lines. Don't repeat the ⚔ line; add ability traps from the rules below and what the plan can't see.
+- **Learn move:** reply only if the HUD verdict is "your call" or you disagree — coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
+- **Rewards:** only what the HUD can't judge: held items (`items`), long-term team building, whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. Don't quote item effects from memory; use `desc`.
 
 ## Rules learned the hard way
 
