@@ -250,6 +250,41 @@ const assertNoImmediateScrafty = field => {
   const bulky = { getStat: i => [300, 10, 1000, 10, 10, 10][i] };
   assert.equal(exchange(s, morpeko, morpeko.moveset[0], { ...weavile, ...bulky, id: "trainer Weavile", hasTrainer: () => true }).turnsWe, 4);
   assert.equal(exchange(s, morpeko, morpeko.moveset[0], { ...weavile, ...bulky, id: "wild Weavile", hasTrainer: () => false }).turnsWe, 5, "bar-break boosts slow later bars");
+  // …and an Atk-heavy one hits harder once a bar breaks: Meteor Mash takes 3 turns a bar of a 400 HP Ursaring, whose
+  // Body Slam (36.8 a turn) needs 7 turns for Metagross's 250 HP; +~1 Atk after the first bar makes it 6.
+  Object.assign(TABLE, { "Metagross>Meteor Mash>Ursaring": [[80], 1, 1], "Ursaring>Body Slam>Metagross": [[40], 1, 1] });
+  const ursaring = (id, trainer) => mon("Ursaring", 80, ["Normal"], [400, 1000, 10, 10, 10, 10], [["Body Slam", "Normal", 85, "P"]], true, undefined,
+    { id, bossSegments: 2, bossSegmentIndex: 1, hasTrainer: () => trainer });
+  const slam = x => exchange(s, { ...metagross, id: `Metagross vs ${x.id}` }, metagross.moveset[0], x);
+  assert.deepEqual([slam(ursaring("trainer Ursaring", true)).turnsWe, slam(ursaring("trainer Ursaring", true)).turnsThey], [6, 7]);
+  assert.equal(slam(ursaring("wild Ursaring", false)).turnsThey, 6, "bar-break boosts to its attack speed up its KO");
+  // Wave poison tokens: each landed enemy attack poisons 5 % a stack. Waterfall (73.9 a turn) needs 3 turns for 150 HP;
+  // at 10 stacks Morpeko is poisoned half the time by turn 1's end, and the expected 1/8 chip finishes it in 2.
+  const token = new (class EnemyAttackStatusEffectChanceModifier { effect = 1; chance = 0.05; getStackCount() { return 10; } })();
+  globalThis.__stub.heal = p => (p.status?.effect === 1 ? -22 : 0);
+  const gyaradosVs = id => exchange(s, { ...morpeko, id }, morpeko.moveset[0], { ...gyarados, id: `Gyarados vs ${id}` }, { hp: 150 }).turnsThey;
+  assert.equal(gyaradosVs("Morpeko without tokens"), 3);
+  s.enemyModifiers = [token];
+  assert.equal(gyaradosVs("Morpeko vs tokens"), 2, "poison tokens chip over the fight");
+  assert.equal(exchange(s, { ...morpeko, id: "burned Morpeko", status: { effect: 6 } }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs burned" }, { hp: 150 }).turnsThey, 3,
+    "a statused mon can't be poisoned");
+  delete s.enemyModifiers;
+  // Item thieves take one stack a steal. Leftovers healing Metagross 10 a turn makes Waterfall (55.1) take 6 turns; a
+  // Mini Black Hole takes them at the end of turn 1, a 5-stack Grip Claw half the time each hit: 5 either way.
+  const heldItem = (name, n = 1) => new ({ [name]: class { isTransferable = true; getStackCount() { return n; } } })[name]();
+  const leftovers = () => [heldItem("TurnHealModifier")];
+  globalThis.__stub.heal = p => (p.getHeldItems().some(m => m.constructor.name === "TurnHealModifier") ? { Metagross: 10, Gyarados: 30 }[p.name] ?? 0 : 0);
+  const waterfall = (id, items) => exchange(s, { ...metagross, id, getHeldItems: leftovers }, metagross.moveset[0], { ...gyarados, id: `Gyarados vs ${id}`, getHeldItems: () => items }).turnsThey;
+  assert.equal(waterfall("Metagross, no thief", []), 6);
+  assert.equal(waterfall("Metagross vs black hole", [heldItem("TurnHeldItemTransferModifier")]), 5, "Mini Black Hole takes the Leftovers");
+  assert.equal(waterfall("Metagross vs grip claw", [heldItem("ContactHeldItemTransferChanceModifier", 5)]), 5, "Grip Claw takes the Leftovers");
+  assert.equal(exchange(s, { ...metagross, id: "sticky Metagross", getHeldItems: leftovers, hasAbilityWithAttr: a => a === "BlockItemTheftAbAttr" }, metagross.moveset[0],
+    { ...gyarados, id: "Gyarados vs sticky", getHeldItems: () => [heldItem("TurnHeldItemTransferModifier")] }).turnsThey, 6, "Sticky Hold keeps them");
+  // …and ours from it: Meteor Mash (64.3) into a Gyarados healing 30 takes 7 turns, 5 once our black hole has its Leftovers.
+  const mash = (id, items) => exchange(s, { ...metagross, id, getHeldItems: () => items }, metagross.moveset[0], { ...gyarados, id: `Gyarados vs ${id}`, getHeldItems: leftovers }).turnsWe;
+  assert.equal(mash("Metagross, no black hole", []), 7);
+  assert.equal(mash("Metagross with black hole", [heldItem("TurnHeldItemTransferModifier")]), 5, "our Mini Black Hole takes its Leftovers");
+  delete globalThis.__stub.heal;
   console.log("== building blocks ok");
 }
 
@@ -275,6 +310,21 @@ const assertNoImmediateScrafty = field => {
   assert.ok(!field.some(l => /Blastoise in(?! · optional)/.test(l)), `Blastoise is KO'd before it acts, so it isn't the switch-in:\n${field.join("\n")}`);
   assert.ok(field.some(l => /^⚔ Charizard/.test(l)), "staying wins");
   assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
+}
+
+// ---- 5b. A foe's item thief is named on the slot that holds something to lose.
+{
+  const item = (name, props = {}) => Object.assign(new ({ [name]: class { isTransferable = true; getStackCount() { return 1; } } })[name](), props);
+  const lycanroc = held => [mon("Lycanroc", 70, ["Rock"], [200, 190, 100, 80, 90, 140], [["Stone Edge", "Rock", 100, "P"]], true, undefined, { getHeldItems: () => held })];
+  const charizard = held => [mon("Charizard", 66, ["Fire", "Flying"], [190, 125, 118, 160, 128, 120], [["Flamethrower", "Fire", 90, "S"]], true, 120, { getHeldItems: () => held })];
+  const dist = () => [{ name: "Stone Edge", type: "Rock", p: 1, score: 10, targets: [0] }];
+  const slot = (party, foes) => render({ party, foes, live: true, dist }).field.find(l => /^⚔ Charizard/.test(l)) ?? "";
+  const claw = slot(charizard([item("TurnHealModifier")]), lycanroc([item("ContactHeldItemTransferChanceModifier", { chance: 0.1 })]));
+  assert.match(claw, /Lycanroc's Grip Claw: 10% item steal a hit/, `Grip Claw named:\n${claw}`);
+  const hole = slot(charizard([item("TurnHealModifier")]), lycanroc([item("TurnHeldItemTransferModifier")]));
+  assert.match(hole, /Lycanroc's Mini Black Hole: steals 1 item a turn/, `Mini Black Hole named:\n${hole}`);
+  assert.doesNotMatch(slot(charizard([]), lycanroc([item("TurnHeldItemTransferModifier")])), /Mini Black Hole/, "nothing to steal, no note");
+  console.log("== item thief note ok");
 }
 
 // ---- 6–8. Doubles: where both slots aim is one decision.

@@ -482,9 +482,12 @@ The HUD's `predictSwitches` matches this rule. Gaps:
 | King's Rock | `FlinchChanceModifier` after damaging hit (flinches only if the holder moved first) | 10 %/stack | held item |
 | Leftovers / Shell Bell | TurnEndPhase heal 1/16·stack / MoveEffectPhase `toDmgValue(totalDamageDealt/8)·stack` | no | held item |
 | Toxic / Flame Orb | `TurnStatusEffectModifier` at TurnEndPhase (`trySetStatus`, type immunities apply) | no | held item + `effect` |
-| Boss bar break | `handleBossSegmentCleared`, wild bosses only: +1 to a stat below +6 picked weighted by `getStat(s,false)`; +2 for idx 0 when ≥3 bars, idx 1 when ≥5 | yes | expectation |
+| Boss bar break | `handleBossSegmentCleared`, wild bosses only: +1 to a stat below +6 picked weighted by `getStat(s,false)`; +2 for idx 0 when ≥3 bars, idx 1 when ≥5 | yes | expectation, on its defences (our hits) and its Atk/SpA (its hits) |
+| Grip Claw | `ContactHeldItemTransferChanceModifier`, MoveEffectPhase after each hit of any attack move (no contact check): `randSeedFloat() <= 0.1·stack` → one stack of a random transferable item of the target | yes | expectation: steals per landed hit |
+| Mini Black Hole | `TurnHeldItemTransferModifier`, TurnEndPhase after the heals, holder not fainted: `stack` steals from a random opponent, one stack of a random transferable item each | target pick | expectation: steals per turn |
+| Sticky Hold | `BlockItemTheftAbAttr` on the victim: `tryTransferHeldItemModifier` cancels across sides | no | ability attr |
 | Enemy wave heal | `EnemyTurnHealModifier` at TurnEndPhase: `max(floor(maxHp/50)·stack, 1)` when not full | no | `s.enemyModifiers` |
-| Enemy wave status | `EnemyAttackStatusEffectChanceModifier` on each enemy attack move: 5 % (burn/poison) / 2.5 % ·stack to the target; `EnemyStatusEffectHealChanceModifier` 2.5 %·stack cure at turn end | yes | `s.enemyModifiers` |
+| Enemy wave status | `EnemyAttackStatusEffectChanceModifier` after each hit of an enemy attack move, shuffled: 5 % (burn/poison) / 2.5 % ·stack (max 10) → `trySetStatus` (any status or immunity blocks; `canSetStatus(effect, quiet=true)` is pure); `EnemyStatusEffectHealChanceModifier` 2.5 %·stack cure at turn end | yes | `s.enemyModifiers` |
 | Choice items, Life Orb, Expert Belt, Focus Sash, Loaded Dice | **not in the game** | — | drop from models |
 
 Item lookup: `p.getHeldItems()` (player → `s.modifiers`, enemy → `s.enemyModifiers`); identify by
