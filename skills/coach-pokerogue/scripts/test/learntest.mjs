@@ -146,7 +146,7 @@ for (const [label, pk, newMove, double] of cases) {
   const mate = mon("Blastoise", ["Water"], 100, 110, [["Surf","Water",90,"S",100,[],false,4],["Ice Beam","Ice",90,"S"]]);
   const r = run(tyranitar, ["Iron Head","Steel",80,"P"], { party: [tyranitar, mate] });
   show("Tyranitar ← Iron Head (team)", r);
-  assert.ok(r.model.move.notes.some(n => /team gains SE on Fairy/.test(n)), `team gains: ${r.model.move.notes}`);
+  assert.match(r.text, /^team: \+SE Fairy/m, "team gains shown on the team line");
   assert.deepEqual(r.model.team.gains, ["Fairy"]);
   const solo = mon("Umbreon", ["Dark"], 70, 60, [["Foul Play","Dark",95,"P"],["Tackle","Normal",40,"P"],["Quick Attack","Normal",40,"P"],["Swift","Normal",60,"S"]]);
   const u = run(solo, ["Psychic","Psychic",90,"S"], { party: [solo, mate] });

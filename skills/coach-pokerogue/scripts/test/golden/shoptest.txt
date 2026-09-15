@@ -23,17 +23,17 @@ buy first — taking the free reward closes the shop
 == wave 14 pp up
 🛒 $1824 − ×
 🎁 PP Up more PP on a move (permanent)
-· TM Round TM for Comfey (over Body Slam)
+· TM Round TM for Comfey (over Body Slam) · for Snorlax
 · Potion party healthy
 🎲 nothing good — reroll for $500?
 == wave 15 calm mind
 🛒 $900 − ×
-🎁 TM Calm Mind setup TM for Comfey (+1 SpA/SpD)
+🎁 TM Calm Mind Comfey setup +1 SpA/SpD
 · 5× Poké Ball you have 34
 · Full Heal no status
 == tm recipient
 🛒 $400 − ×
-🎁 TM Fire Fang TM for Morpeko (over Tackle)
+🎁 TM Fire Fang Morpeko → forget Tackle
 · TM Thunder Fang TM — can't check who learns it
 · 5× Great Ball you have 34
 == wave 18 free ether
@@ -45,17 +45,17 @@ buy first — taking the free reward closes the shop
 · X Sp. Atk only lasts a few battles
 · Potion heals Comfey a little
 == key items
-🛒 $72 − ×
+🛒 $72 nothing affordable − ×
 🎁 Master Ball Master Ball — catches anything · you have 0
 · Mega Bracelet nobody on the team can Mega Evolve
 · Egg Voucher egg voucher — outlasts the run
 == mega capable
-🛒 $72 − ×
+🛒 $72 nothing affordable − ×
 🎁 Mega Bracelet Charizard can Mega Evolve (needs its stone)
 · Fire Stone nobody can use it
 · Leftovers everyone's at max stack
 == boss next
-🛒 $300 − ×
+🛒 $300 👑 boss next − ×
 🎁 Super Potion heals Blastoise
 · Revive nobody fainted · spare for the boss
 · X Attack only lasts a few battles

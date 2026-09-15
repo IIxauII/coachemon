@@ -1,16 +1,16 @@
 == learn (full)
-🎓 Charmeleon learns Charmeleon − {Minimal overview} × {Close}
-✚ Fire Flamethrower SE on Bug/Steel/Grass… · team gains SE on Bug/Steel/Grass power 176
-· Normal Tackle 2nd Normal move · weak Atk power 24
-✕ Fire Ember SE on Bug/Steel/Grass… power 78
-· Dragon Dragon Breath SE on Dragon power 72
-· Normal Scratch 2nd Normal move · weak Atk power 24
-Learn → forget Ember
+🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 − {Minimal overview} × {Close}
+✚ Fire Flamethrower SE on Bug/Steel/Grass… power 176 {base 90 · STAB}
+· Normal Tackle 2nd Normal move · weak Atk power 24 {base 40}
+✕ Fire Ember SE on Bug/Steel/Grass… power 78 {base 40 · STAB}
+· Dragon Dragon Breath SE on Dragon power 72 {base 60}
+· Normal Scratch 2nd Normal move · weak Atk power 24 {base 40}
+Learn → forget Ember +98 power
 summary {"kind":"learn","wave":12,"verdict":null,"field":null,"danger":[],"learn":"Learn → forget Ember","rewards":null}
 == learn (mini)
 🎓 Charmeleon learns Charmeleon + {Expand} × {Close}
-✚ Fire Flamethrower SE on Bug/Steel/Grass… · team gains SE on Bug/Steel/Grass power 176
-✕ Fire Ember SE on Bug/Steel/Grass… power 78
+✚ Fire Flamethrower SE on Bug/Steel/Grass… power 176 {base 90 · STAB}
+✕ Fire Ember SE on Bug/Steel/Grass… power 78 {base 40 · STAB}
 Learn → forget Ember
 == plan (full)
 🎯 W15 · Youngster Charizard − {Minimal overview} × {Close}
@@ -41,3 +41,28 @@ Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard move
 ♟ Fight plan winnable
 1 Charizard Fire Flamethrower → Paras KO · 100% left
 2 Charizard Fire Flamethrower → Oddish KO · 100% left
+== learn team (full)
+🎓 Espeon learns Espeon Atk 65 / SpA 130 − {Minimal overview} × {Close}
+✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90}
+✕ Dark Bite ⚠ weak Atk power 30 {base 60}
+· Psychic Psychic SE on Poison · only Psychic move on team power 159 {base 90 · STAB}
+· Ghost Shadow Ball only Ghost move on team power 80 {base 80}
+· Fairy Dazzling Gleam SE on Dragon/Dark · only Fairy move on team power 98 {base 80}
+team: +SE Steel/Electric · ⚠ loses only Dark move
+Learn → forget Bite +87 power
+summary {"kind":"learn","wave":27,"verdict":null,"field":null,"danger":[],"learn":"Learn → forget Bite · ⚠ loses only Dark move","rewards":null}
+== learn team (mini)
+🎓 Espeon learns Espeon + {Expand} × {Close}
+✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90}
+✕ Dark Bite ⚠ weak Atk power 30 {base 60}
+team: ⚠ loses only Dark move
+Learn → forget Bite
+== rewards boss next (full)
+🛒 $500 nothing affordable 👑 boss next − {Minimal overview} × {Close}
+🎁 TM Fire Fang Morpeko → forget Tackle
+· Leftovers held item · for Charizard/Morpeko
+· 5× Great Ball you have 20
+summary {"kind":"shop","wave":29,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":"take TM Fire Fang → Morpeko"}
+== rewards boss next (mini)
+🛒 $500 👑 boss next + {Expand} × {Close}
+🎁 TM Fire Fang Morpeko → forget Tackle
