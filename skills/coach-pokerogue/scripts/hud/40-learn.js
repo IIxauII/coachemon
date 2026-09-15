@@ -253,7 +253,8 @@ const { moveScore, learnPlan } = (() => {
       gains: incoming.teamSe ?? [],
       loses: dropped ? dropped.teamSe ?? [] : [],
       // Losing the team's only move of a type, unless the new move is that type.
-      onlyType: dropped?.onlyOnTeam && dropped.type !== incoming.type ? dropped.type : null,
+      // Normal hits nothing super-effectively: losing the last one is no coverage loss worth a warning.
+      onlyType: dropped?.onlyOnTeam && dropped.type !== incoming.type && dropped.type !== "Normal" ? dropped.type : null,
     };
     return { moves, incoming, forget, compare: free ? -1 : compare, kind, gain, team, atk: pk.getStat(1), spa: pk.getStat(3) };
   };

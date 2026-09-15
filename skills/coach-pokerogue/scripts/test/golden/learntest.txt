@@ -82,8 +82,8 @@ Learn → forget Thunder Shock +45 power
 ✚ Steel Iron Head SE on Rock/Fairy power 99
 · Dark Crunch 2nd Dark move power 90
 · Rock Stone Edge SE on Flying/Bug/Fire… · only Rock move on team power 156
-✕ Normal Tackle ⚠ neutral on Fighting power 41
+✕ Normal Tackle neutral on Fighting · only Normal move on team power 41
 · Dark Bite 2nd Dark move power 68
-team: +SE Fairy · ⚠ loses only Normal move
+team: +SE Fairy
 Learn → forget Tackle +58 power
 ok
