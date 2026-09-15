@@ -117,15 +117,32 @@ const drawBattle = m => {
 
   const threatTag = t => {
     const n = h("span", { display: "inline-flex", alignItems: "center", marginRight: "4px", color: t.level === "ko" ? "#e55" : "#fa4" },
-      t.level === "ko" ? "💀" : "⚠", badge(t.type, t.e >= 2 ? `×${t.e}` : ""));
-    n.title = `${t.from}'s ${t.move}: ~${t.pct}% of current HP${t.level === "ko" ? ", before it can act" : ""}`;
+      t.level === "ko" ? "💀" : "⚠", badge(t.type, t.e >= 2 ? `×${t.e}` : ""),
+      t.hits ? h("span", { fontSize: "9px", marginLeft: "1px" }, `${t.hits} hits`) : null);
+    n.title = `${t.next ? "next turn: " : ""}${t.from}'s ${t.move}: ~${t.pct}% of current HP`
+      + `${t.pko > 0 && t.pko < 100 ? `, ${t.pko}% KO` : ""}${t.level === "ko" ? ", before it can act" : ""}`;
     return n;
   };
-  const swapLine = (sw, color, tail) => line("⇄", color,
+  // A switch uses the turn: with one, the plan reads as steps — `now:` the switch (and any slot that still
+  // attacks this turn), `next:` the switch-in's move.
+  const step = (label, icon, color, ...kids) => h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" },
+    label ? h("span", { ...dim, width: "30px", flex: "none" }, label) : null,
+    h("span", { color, width: "14px", flex: "none" }, icon), ...kids);
+  const swapLine = (sw, color, tail, label) => step(label, "⇄", color,
     ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), sw.out.threat ? threatTag(sw.out.threat) : null, h("span", { color, margin: "0 3px" }, "out ›")] : [h("span", { color, marginRight: "3px" }, "send")]),
     mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail));
   // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn).
   const f = m.field;
+  const slotLine = (sl, label) => step(label, "⚔", "#8cf",
+    mon(sl.icon, sl.name, 22),
+    sl.threat ? threatTag(sl.threat) : null,
+    ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, "no damaging move")]),
+    ...(sl.target === "both" ? [h("span", { color: "#8cf", marginLeft: "4px" }, "→ both")]
+      : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
+    h("span", { flex: "1" }),
+    sl.ko ? h("span", dim, `${sl.ko}HKO`) : null,
+    sl.notes?.length ? h("span", { ...dim, fontSize: "9px", marginLeft: "4px" }, sl.notes.join(" · ")) : null);
+  const firstText = p => (p >= 100 ? "moves first" : p <= 0 ? "moves after" : `${p}% first`);
   const slotMove = sl => [
     mon(sl.icon, sl.name, 20),
     ...(sl.move ? [badge(sl.type), h("span", { marginRight: "2px" }, sl.move)] : [h("span", dim, "—")]),
@@ -137,19 +154,20 @@ const drawBattle = m => {
   const ifStay = m.ifStay && view === "full"
     ? line("↺", "#9aa", h("span", { ...dim, marginRight: "4px" }, "if it stays:"), ...m.ifStay.flatMap((sl, i) => [i ? h("span", dim, " · ") : null, ...slotMove(sl)]))
     : null;
+  const split = !!f?.slots.some(sl => sl.enter);
   const field = !f ? [...enemySwitches] : [
     ...enemySwitches,
-    ...f.slots.map(sl => line("⚔", "#8cf",
-      mon(sl.icon, sl.name, 22),
-      sl.threat ? threatTag(sl.threat) : null,
-      ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, "no damaging move")]),
-      ...(sl.target === "both" ? [h("span", { color: "#8cf", marginLeft: "4px" }, "→ both")]
-        : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
-      h("span", { flex: "1" }),
-      sl.ko ? h("span", dim, `${sl.ko}HKO`) : null)),
-    ...f.switches.map(sw => swapLine(sw, "#fa4", "in")),
+    ...(split
+      ? [...f.switches.map(sw => swapLine(sw, "#fa4", "in", "now:")),
+        ...f.slots.filter(sl => !sl.enter).map(sl => slotLine(sl, "now:")),
+        ...f.slots.filter(sl => sl.enter).map(sl => slotLine(sl, "next:"))]
+      : [...f.slots.map(sl => slotLine(sl)), ...f.switches.map(sw => swapLine(sw, "#fa4", "in"))]),
+    // Doubles: both slots on one foe, or split for a reason worth saying.
+    f.targeting?.kind === "focus" ? line("◎", "#8cf", h("span", { color: "#8cf", marginRight: "3px" }, "focus"), mon(f.targeting.target.icon, f.targeting.target.name, 18),
+      h("span", dim, `: ${f.targeting.note}${f.targeting.pko > 0 && f.targeting.pko < 100 ? ` (${f.targeting.pko}%)` : ""}`)) : null,
+    f.targeting?.kind === "split" ? line("⋔", "#8cf", h("span", dim, `split: ${f.targeting.note}`)) : null,
     ...(view === "full" ? f.optional.map(sw => swapLine(sw, "#9aa", "in · optional")) : []),
-    f.noSafeSwitch ? line("⇄", "#e55", h("span", { color: "#e55" }, "no safe switch-in — every bench mon gets KO'd coming in")) : null,
+    f.noSafeSwitch ? line("⇄", "#e55", h("span", { color: "#e55" }, "no safe switch-in — every bench mon is KO'd coming in or before it acts")) : null,
     ifStay,
   ];
 
@@ -184,6 +202,10 @@ const drawBattle = m => {
     r.switchTo ? line("⇆", "#c9f",
       h("span", { color: "#c9f", marginRight: "3px" }, "switches to"),
       mon(r.switchTo.icon, r.switchTo.name, 20)) : null,
+    // The enemy's likely move into the pokémon we put in front of it.
+    r.likely ? line("↯", "#e77",
+      badge(r.likely.type), h("span", { color: "#e77" }, r.likely.move),
+      h("span", { ...dim, marginLeft: "4px" }, [r.likely.p != null ? `~${r.likely.p}%` : null, r.likely.hits ? `${r.likely.hits} hits` : null, firstText(r.likely.first)].filter(Boolean).join(" · "))) : null,
     r.pick
       ? line("➜", "#8cf",
           mon(r.pick.icon, r.pick.name, 22),
@@ -193,9 +215,10 @@ const drawBattle = m => {
           h("span", { ...dim, marginLeft: "4px" }, `~${r.pick.pct}%${r.pick.ko ? ` · ${r.pick.ko}HKO` : ""}`),
           r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null,
           r.pick.later ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, "later") : null,
+          r.pick.notes?.length ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, r.pick.notes.join(" · ")) : null,
           r.pick.vs ? [h("span", { color: "#c9f", fontSize: "9px", margin: "0 2px 0 4px" }, "into"), mon(r.pick.vs.icon, r.pick.vs.name, 18)] : null)
       : line("➜", "#8cf", h("span", dim, "no damaging move lands"))));
-  return [header, ...field, team, ...rows].filter(Boolean);
+  return [header, ...field, team, ...rows, ...drawTeamPlan(m)].filter(Boolean);
 };
 
 const el = document.createElement("div");
@@ -248,7 +271,3 @@ const tick = () => {
     last = "";
   }
 };
-const timer = setInterval(tick, 1000);
-tick();
-window.__coachHud = { stop: () => { clearInterval(timer); el.remove(); delete window.__coachHud; } };
-document.documentElement.dataset.mcpOut = JSON.stringify({ hud: "on" });

@@ -1,0 +1,86 @@
+== cyrus (live)
+🎯 W200 · Cyrus Metagross − {Minimal overview} × {Close}
+⇆ Gyarados → Weavile switches — moves aimed at it
+now: ⇄ Morpeko out › Metagross in
+next: ⚔ Metagross ⚠ Dark ×2 {next turn: Weavile's Knock Off: ~56% of current HP} Steel Meteor Mash → Weavile 2HKO boss: 2 bars — no 1HKO
+↺ if it stays: Morpeko Electric Aura Wheel → Gyarados
+🩸 Rock ×2 Electric ×1 Fighting ×1 Bug ×1
+Gyarados Gyarados L82 Water Flying 100% ✦ x ▲ Rock Electric ×4 ✕ Ground ×0 ⇆ switches to Weavile ➜ Metagross Steel Meteor Mash ~45% · 2HKO boss: 2 bars — no 1HKO into Weavile
+Weavile Weavile L84 Dark Ice 👑 100% ✦ x ▲ Fighting ×4 Rock Bug Steel Fire Fairy ✕ Psychic ×0 ↯ Dark Knock Off ~85% · moves first ➜ Metagross Steel Meteor Mash ~45% · 2HKO boss: 2 bars — no 1HKO
+♟ Fight plan winnable
+1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
+2 Metagross ⇄ Steel Meteor Mash → Weavile switch in, takes a hit · falls · foe at 50%
+3 Scrafty free Fighting High Jump Kick → Weavile KO · 10% left
+== cyrus, no Metagross (live)
+🎯 W200 · Cyrus Morpeko − {Minimal overview} × {Close}
+⇆ Gyarados → Weavile switches — moves aimed at it
+⚔ Morpeko 💀 Ice 3 hits {next turn: Weavile's Triple Axel: ~100% of current HP, 67% KO, before it can act} Electric Aura Wheel → Weavile
+⇄ no safe switch-in — every bench mon is KO'd coming in or before it acts
+↺ if it stays: Morpeko Electric Aura Wheel → Gyarados
+🩸 Rock ×2 Electric ×1 Fighting ×1 Bug ×1
+Gyarados Gyarados L82 Water Flying 100% ✦ x ▲ Rock Electric ×4 ✕ Ground ×0 ⇆ switches to Weavile ➜ Morpeko Electric Aura Wheel ~28% ⚠ loses trade into Weavile
+Weavile Weavile L84 Dark Ice 👑 100% ✦ x ▲ Fighting ×4 Rock Bug Steel Fire Fairy ✕ Psychic ×0 ↯ Ice Triple Axel ~83% · 3 hits · moves first ➜ Morpeko Electric Aura Wheel ~28% ⚠ loses trade
+♟ Fight plan likely lost
+☠ Weavile Weavile 👑 KOs 2/2 · win condition
+🛡 Scrafty save for Weavile ~100%/turn
+🛡 Morpeko save for Weavile ~28%/turn
+1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
+2 Morpeko Electric Aura Wheel → Weavile falls · foe at 72%
+3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 50%
+⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Morpeko
+== building blocks ok
+== cyrus (fallback)
+🎯 W200 · Cyrus Morpeko › Scrafty − {Minimal overview} × {Close}
+⚔ Morpeko ⚠ Water {Gyarados's Waterfall: ~103% of current HP} Electric Aura Wheel → Gyarados 1HKO
+🩸 Rock ×2 Electric ×1 Fighting ×1 Bug ×1
+Gyarados Gyarados L82 Water Flying 100% ✦ x ▲ Rock Electric ×4 ✕ Ground ×0 ↯ Water Waterfall moves after ➜ Morpeko Electric Aura Wheel ~100% · 1HKO
+Weavile Weavile L84 Dark Ice 👑 100% ✦ x ▲ Fighting ×4 Rock Bug Steel Fire Fairy ✕ Psychic ×0 ↯ Ice Triple Axel moves first ➜ Scrafty Fighting High Jump Kick ~100% · 2HKO later boss: 2 bars — no 1HKO
+♟ Fight plan winnable
+1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
+2 Scrafty ⇄ Fighting High Jump Kick → Weavile switch in, takes a hit · KO · 22% left
+== switch-in never acts (live)
+🎯 W200 · Cyrus Charizard − {Minimal overview} × {Close}
+⚔ Charizard 💀 Rock ×4 {Lycanroc's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Lycanroc
+⇄ no safe switch-in — every bench mon is KO'd coming in or before it acts
+Lycanroc Lycanroc L70 Rock 100% ✦ x ▲ Fighting Ground Steel Water Grass ↯ Rock Stone Edge ~100% · moves first ➜ Charizard Fire Flamethrower ~28% ⚠ loses trade
+♟ Fight plan winnable
+1 Charizard Fire Flamethrower → Lycanroc sacrifice → Blastoise in free
+2 Blastoise free Water Wave Crash → Lycanroc KO · 41% left
+✝ Charizard 63% · sacrifice to Lycanroc so Blastoise comes in free
+== doubles focus (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 2HKO
+⚔ Lucario Fighting Aura Sphere → Hydreigon 2HKO
+◎ focus Hydreigon : KO before it moves
+🩸 Fighting ×2 Bug ×1 Ice ×1 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ✦ x ▲ Fighting Bug Ice Dragon Fairy ×4 ✕ Psychic ×0 ↯ Dark Dark Pulse ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~55% · 2HKO
+Snorlax Snorlax L80 Normal 100% ✦ x ▲ Fighting ✕ Ghost ×0 ↯ Normal Body Slam ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~14%
+♟ Fight plan winnable
+1 Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
+2 Lucario ⇄ Fighting Aura Sphere → Snorlax switch in, takes a hit · KO · 54% left
+== doubles split (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Weezing 1HKO
+⚔ Lucario Fighting Aura Sphere → Toxapex 1HKO
+⋔ split: both KO
+🩸 Ground ×2 Psychic ×2 Electric ×1
+Weezing Weezing L80 Poison 100% ✦ x ▲ Ground Psychic ↯ Poison Sludge Bomb ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~100% · 1HKO
+Toxapex Toxapex L80 Poison Water 100% ✦ x ▲ Ground Electric Psychic ↯ Water Scald ~50% · moves after ➜ Lucario Fighting Aura Sphere ~100% · 1HKO
+♟ Fight plan winnable
+1 Garchomp Dragon Dragon Claw → Weezing KO · 100% left
+2 Lucario ⇄ Fighting Aura Sphere → Toxapex switch in, takes a hit · KO · 77% left
+== doubles focus on a leaving foe (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⇆ Hydreigon → Ferrothorn switches — moves aimed at it
+⚔ Garchomp Dragon Dragon Claw → Ferrothorn
+⚔ Lucario Fighting Aura Sphere → Ferrothorn
+◎ focus Ferrothorn : most damage
+↺ if it stays: Garchomp Dragon Dragon Claw → Hydreigon · Lucario Fighting Aura Sphere → Hydreigon
+🩸 Fighting ×3 Bug ×1 Ice ×1 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ✦ x ▲ Fighting Bug Ice Dragon Fairy ×4 ✕ Psychic ×0 ⇆ switches to Ferrothorn ➜ Garchomp Dragon Dragon Claw ~20% into Ferrothorn
+Snorlax Snorlax L80 Normal 100% ✦ x ▲ Fighting ✕ Ghost ×0 ↯ Normal Body Slam ~50% · moves after ➜ Garchomp Dragon Dragon Claw ~14%
+Ferrothorn Ferrothorn L80 Grass Steel 100% ✦ x ▲ Fighting Fire ×4 ✕ Poison ×0 Grass ×¼ ↯ Steel Gyro Ball ~100% · moves after ➜ Garchomp Dragon Dragon Claw ~20%
+♟ Fight plan winnable
+1 Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
+2 Lucario ⇄ Fighting Aura Sphere → Snorlax switch in, takes a hit · KO · 54% left
+3 Lucario Fighting Aura Sphere → Ferrothorn KO · 7% left

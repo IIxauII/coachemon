@@ -42,7 +42,7 @@ const scenarios = {
 for (const [label, sc] of Object.entries(scenarios)) {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
-    class PM { queueMessage() { globalThis.__queued = (globalThis.__queued ?? 0) + 1; } getCurrentPhase() { return null; } }
+    class PM { queueMessage() { globalThis.__queued = (globalThis.__queued ?? 0) + 1; } getCurrentPhase() { return { phaseName: "CommandPhase" }; } }
   const pm = new PM();
   const onField = () => sc.party.filter(p => p.isOnField());
   for (const f of sc.foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => { pm.queueMessage("side effect"); return 1; }; f.id = f.name; }
