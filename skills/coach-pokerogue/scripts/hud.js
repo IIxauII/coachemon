@@ -73,28 +73,47 @@
     return mv.priority < 0 ? 0.8 : 1;
   };
 
-  // Rough damage of each usable damaging move of attacker into defender.
-  const hits = (a, d) => {
+  const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric" };
+  // Enemy damage is estimated pessimistically: held items, crits and rolls aren't modelled, and a recommendation
+  // that underestimates an enemy hit gets a pokémon killed.
+  const FOE_MARGIN = 1.15;
+
+  // Rough damage of each usable damaging move of attacker into defender. `foe` marks an enemy attacking us:
+  // it gets the safety margin and no discount for moves that may not land, since it might still use them.
+  const hits = (a, d, foe = false) => {
     const out = [];
+    const ab = abilitiesOf(a);
     for (const m of a.moveset.filter(Boolean)) {
       const mv = m.getMove();
       if (mv.category === 2 || !(mv.power > 0) || m.getMovePp() - m.ppUsed <= 0) continue;
-      const type = TYPES[mv.type];
+      let type = TYPES[mv.type];
+      let power = mv.power;
+      const ate = ab.map(x => ATE[x]).find(Boolean);
+      if (ate && type === "Normal") { type = ate; power *= 1.2; }
+      if (ab.includes("Technician") && power <= 60) power *= 1.5;
       const phys = mv.category === 0;
-      const base = ((2 * a.level / 5 + 2) * mv.power * stat(a, phys ? 1 : 3) / stat(d, phys ? 2 : 4)) / 50 + 2;
+      let atk = stat(a, phys ? 1 : 3);
+      if (phys && (ab.includes("Huge Power") || ab.includes("Pure Power"))) atk *= 2;
+      if (phys && ab.includes("Hustle")) atk *= 1.5;
+      const base = ((2 * a.level / 5 + 2) * power * atk / stat(d, phys ? 2 : 4)) / 50 + 2;
       const e = effectiveness(type, d);
-      const dmg = base * (typesOf(a).includes(type) ? 1.5 : 1) * e;
-      out.push({ name: m.getName(), type, cat: phys ? "physical" : "special", e, dmg: dmg * reliability(mv), spread: SPREAD_TARGETS.includes(mv.moveTarget), priority: mv.priority ?? 0 });
+      const stab = typesOf(a).includes(type) ? (ab.includes("Adaptability") ? 2 : 1.5) : 1;
+      let dmg = base * stab * e;
+      if (phys && ab.includes("Tough Claws")) dmg *= 1.3; // most physical moves make contact
+      if (ab.includes("Sheer Force")) dmg *= 1.3;
+      if (ab.includes("Strong Jaw") && /bite|crunch|fang|jaw/i.test(m.getName())) dmg *= 1.5;
+      dmg *= foe ? FOE_MARGIN : reliability(mv);
+      out.push({ name: m.getName(), type, cat: phys ? "physical" : "special", e, dmg, spread: SPREAD_TARGETS.includes(mv.moveTarget), priority: mv.priority ?? 0 });
     }
     return out;
   };
-  const bestMove = (a, d) => hits(a, d).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);
+  const bestMove = (a, d, foe = false) => hits(a, d, foe).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);
   const turnsToKo = (hp, dmg) => (dmg > 0 ? Math.min(9, Math.ceil(hp / dmg)) : 9);
 
   // Positive score = we KO it in fewer turns than it KOs us.
   const matchup = (me, foe) => {
     const mine = bestMove(me, foe);
-    const theirs = bestMove(foe, me);
+    const theirs = bestMove(foe, me, true);
     const myTurns = mine?.dmg > 0 ? Math.min(9, Math.ceil(foe.hp / mine.dmg)) : 9;
     const theirTurns = theirs?.dmg > 0 ? Math.min(9, Math.ceil(me.hp / theirs.dmg)) : 9;
     const faster = stat(me, 5) >= stat(foe, 5);
@@ -103,24 +122,38 @@
 
   // Who should be on the field now and what each slot does. For doubles every pair of healthy party members is
   // tried with every option per slot — a single-target move into either foe, or a spread move into both at the
-  // game's ¾ spread damage — scored by turns to KO against how fast the worse foe KOs that member, plus speed.
-  // Pairs that cover both foes, and members already out (switching costs a turn), get a bonus.
+  // game's ¾ spread damage — scored by turns to KO against how fast the worse foe KOs that member, plus speed,
+  // with a bonus for pairs that cover both foes.
   const fieldPlan = (party, active, double) => {
     const slots = double && active.length === 2 ? 2 : 1;
-    const options = me => {
-      const danger = Math.min(...active.map(f => turnsToKo(me.hp, bestMove(f, me)?.dmg ?? 0)));
+    const current = party.filter(p => p.isOnField?.());
+    // Hardest hit a foe lands on `me` this turn (spread moves at ¾ in doubles).
+    const foeTop = (f, me) => Math.max(0, ...hits(f, me, true).map(x => x.dmg * (slots === 2 && x.spread ? 0.75 : 1)));
+    // A voluntary switch-in is hit before it acts: the worst foe's hit, plus half the other's in doubles.
+    const incoming = me => {
+      const tops = active.map(f => foeTop(f, me)).sort((a, b) => b - a);
+      return (tops[0] ?? 0) + (tops[1] ?? 0) * 0.5;
+    };
+
+    // `entering`: switched in by choice this turn — it arrives with the incoming hit taken and a turn lost, and
+    // a switch-in that doesn't survive the hit is never an option.
+    const options = (me, entering) => {
+      const hp = entering ? me.hp - incoming(me) : me.hp;
+      if (hp <= 0) return [{ me, move: null, target: null, turns: 9, score: -99 }];
+      const lost = entering ? 1 : 0;
+      const danger = Math.min(...active.map(f => turnsToKo(hp, foeTop(f, me))));
       const out = [];
       active.forEach((f, fi) => {
         // In doubles a spread move always hits both, so it only counts as the "both" option below.
         const m = hits(me, f).filter(x => slots === 1 || !x.spread).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);
         if (!(m?.dmg > 0)) return;
-        const turns = turnsToKo(f.hp, m.dmg);
+        const turns = turnsToKo(f.hp, m.dmg) + lost;
         out.push({ me, move: m, target: fi, turns, score: danger - turns + (stat(me, 5) >= stat(f, 5) ? 0.5 : -0.5) });
       });
       if (slots === 2) {
         for (const m of hits(me, active[0]).filter(x => x.spread)) {
           const other = hits(me, active[1]).find(x => x.name === m.name);
-          const turns = Math.max(turnsToKo(active[0].hp, m.dmg * 0.75), turnsToKo(active[1].hp, (other?.dmg ?? 0) * 0.75));
+          const turns = Math.max(turnsToKo(active[0].hp, m.dmg * 0.75), turnsToKo(active[1].hp, (other?.dmg ?? 0) * 0.75)) + lost;
           const faster = active.every(f => stat(me, 5) >= stat(f, 5));
           if (turns < 9) out.push({ me, move: m, target: "both", turns, score: danger - turns + 1 + (faster ? 0.5 : -0.5) });
         }
@@ -128,22 +161,34 @@
       if (!out.length) out.push({ me, move: null, target: null, turns: 9, score: danger - 9 });
       return out;
     };
-    // Every candidate field, with how many switches it takes beyond filling empty slots.
-    const current = party.filter(p => p.isOnField?.());
+    const cache = new Map();
+    const opt = (me, entering) => {
+      const k = `${party.indexOf(me)}|${entering}`;
+      if (!cache.has(k)) cache.set(k, options(me, entering));
+      return cache.get(k);
+    };
+
+    // Every candidate field. Newcomers fill empty slots (a fainted member's) for free; any beyond that are
+    // voluntary switches, which take the incoming hit. `extra` counts those.
+    const free = Math.max(0, slots - current.length);
     const plans = [];
-    const add = picks => {
-      const ins = picks.filter(p => !current.includes(p.me)).length;
-      const extra = Math.max(0, ins - Math.max(0, slots - current.length));
+    const add = (picks, extra) => {
       const covers = picks.length < 2 || picks[0].target === "both" || picks[1].target === "both"
         || (picks[0].target !== null && picks[1].target !== null && picks[0].target !== picks[1].target);
       plans.push({ picks, extra, score: picks.reduce((t, p) => t + p.score, 0) + (picks.length === 2 ? (covers ? 1 : -1) : 0) });
     };
-    const opts = party.map(options);
-    if (slots === 1 || party.length < 2) {
-      opts.forEach(os => os.forEach(o => add([o])));
-    } else {
-      for (let i = 0; i < party.length; i++) for (let j = i + 1; j < party.length; j++) {
-        for (const a of opts[i]) for (const b of opts[j]) add([a, b]);
+    const fields = [];
+    if (slots === 1 || party.length < 2) party.forEach(p => fields.push([p]));
+    else for (let i = 0; i < party.length; i++) for (let j = i + 1; j < party.length; j++) fields.push([party[i], party[j]]);
+    for (const members of fields) {
+      const newcomers = members.filter(p => !current.includes(p));
+      const paying = Math.max(0, newcomers.length - free);
+      // With one free slot and two newcomers, either of them could be the one that switches in under fire.
+      const assignments = paying === 0 ? [[]] : paying === newcomers.length ? [newcomers] : newcomers.map(p => [p]);
+      for (const payers of assignments) {
+        const [a, b] = members.map(p => opt(p, payers.includes(p)));
+        if (!b) a.forEach(x => add([x], payers.length));
+        else for (const x of a) for (const y of b) add([x, y], payers.length);
       }
     }
     if (!plans.length) return null;
@@ -165,7 +210,7 @@
     const threat = me => {
       let worst = null;
       for (const f of active) {
-        for (const x of hits(f, me)) {
+        for (const x of hits(f, me, true)) {
           const dmg = x.dmg * (slots === 2 && x.spread ? 0.75 : 1);
           if (!worst || dmg > worst.dmg) worst = { ...x, dmg, from: f };
         }
@@ -190,6 +235,8 @@
       picks: best.picks, // live objects for the per-foe rows; not part of the JSON-safe view
       view: {
       optional: alt ? swaps(alt) : [],
+      // Staying is failing but every switch-in would be KO'd coming in: say so rather than stay silent.
+      noSafeSwitch: best.extra === 0 && failing(best) && party.length > current.length,
       slots: best.picks.map(p => ({
         icon: iconOf(p.me), name: p.me.name, out: !!p.me.isOnField?.(),
         move: p.move?.name ?? null, type: p.move?.type ?? null, cat: p.move?.cat ?? null,
@@ -566,6 +613,7 @@
         sl.ko ? h("span", dim, `${sl.ko}HKO`) : null)),
       ...f.switches.map(sw => swapLine(sw, "#fa4", "in")),
       ...(view === "full" ? f.optional.map(sw => swapLine(sw, "#9aa", "in · optional")) : []),
+      f.noSafeSwitch ? line("⇄", "#e55", h("span", { color: "#e55" }, "no safe switch-in — every bench mon gets KO'd coming in")) : null,
     ];
 
     if (view === "mini") {
@@ -577,7 +625,7 @@
         r.pick ? h("span", { display: "flex", alignItems: "center" },
           h("span", { color: r.pick.later ? "#9aa" : "#8cf" }, r.pick.later ? "later" : "➜"), mon(r.pick.icon, r.pick.name, 20), badge(r.pick.type),
           r.pick.risky ? h("span", { color: "#fa4" }, "⚠") : null) : null));
-      return [header, ...field, ...rows];
+      return [header, ...field, ...rows].filter(Boolean);
     }
 
     // With one foe the team line just repeats its weaknesses.
