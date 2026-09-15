@@ -300,7 +300,12 @@ const { captureChance, catchAdvice, damagingTypes, finalBstOf, teamWeakTypes } =
     if (bossLocked && verdict !== "skip") blockers.push(counts[4] > 0 && value >= 5 ? "Master Ball, or break its bars first" : "break its bars first — only a Master Ball works now");
     else if (verdict !== "skip" && p < GOOD) {
       if (hp > 0.5) tips.push("lower its HP first");
-      else if (!foe.status?.effect) tips.push("sleep/paralyse it for better odds");
+      else if (!foe.status?.effect) {
+        // The wave's status-cure tokens (EnemyStatusEffectHealChanceModifier): 2.5 % a stack at each turn end.
+        const cure = (s.enemyModifiers ?? []).filter(m => m.constructor?.name === "EnemyStatusEffectHealChanceModifier")
+          .reduce((t, m) => t + 2.5 * (m.getStackCount?.() ?? 1), 0);
+        tips.push(`sleep/paralyse it for better odds${cure ? ` (it cures itself ${Math.min(100, cure)}%/turn)` : ""}`);
+      }
     }
     let why;
     if (verdict === "skip") why = reasons.some(r => r.w > 0) ? `low chance, ${main.slice(0, 2).join(", ")}` : p < 0.3 ? "low chance, nothing new" : "nothing new";

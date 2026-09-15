@@ -1,6 +1,6 @@
 // Planner scenarios with explicit assertions. Usage: node test/plannertest.mjs
 //
-// The planner's numbers come from 10-damage (`moveOutcome(s)`, `endOfTurnHeal`) and 20-enemy-ai
+// The planner's numbers come from 10-damage (`moveOutcome(s)`, `endOfTurnHp`) and 20-enemy-ai
 // (`enemyMoveDistribution`, `predictSwitches`, `enemyAction`), which call real game code. A plain mock can't feed
 // those, and top-level consts in the one-IIFE bundle can't be redefined afterwards. So the "live" scenarios rewrite
 // the bundle text: those definitions are renamed to `__real_*` and small stand-ins reading `globalThis.__stub` are
@@ -11,11 +11,11 @@ import { bundle } from "../hud-bundle.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-const STUBBED = ["moveOutcome", "moveOutcomes", "endOfTurnHeal", "enemyMoveDistribution", "predictSwitches", "enemyAction"];
+const STUBBED = ["moveOutcome", "moveOutcomes", "endOfTurnHp", "enemyMoveDistribution", "predictSwitches", "enemyAction"];
 const STUBS = `
 const moveOutcome = (s, atk, def, pm, opts = {}) => globalThis.__stub.outcome(atk, def, pm, opts);
 const moveOutcomes = (s, atk, def) => atk.moveset.map(pm => moveOutcome(s, atk, def, pm)).filter(Boolean);
-const endOfTurnHeal = p => globalThis.__stub.heal?.(p) ?? 0;
+const endOfTurnHp = (p, opts) => globalThis.__stub.heal?.(p, opts) ?? 0;
 const enemyMoveDistribution = (s, e) => globalThis.__stub.dist(e);
 const predictSwitches = (s, b, active) => globalThis.__stub.switches(active);
 const enemyAction = (s, e) => ({ kind: "move", dist: enemyMoveDistribution(s, e), tera: false });
@@ -30,7 +30,7 @@ const liveBundle = () => {
   assert.ok(at > 0, "bundle has 30-planner.js");
   src = src.slice(0, at) + STUBS + src.slice(at);
   const end = src.lastIndexOf("})();");
-  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange };\n" + src.slice(end);
+  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, turnsToKo };\n" + src.slice(end);
 };
 
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]
@@ -177,7 +177,7 @@ const assertNoImmediateScrafty = field => {
 {
   const { party, foes } = cyrus(true);
   const { scene: s } = render({ party, foes, live: true });
-  const { actionOrder, threatFrom, exchange } = globalThis.__planner;
+  const { actionOrder, threatFrom, exchange, turnsToKo } = globalThis.__planner;
   const [morpeko, scrafty] = party;
   const [gyarados, weavile] = foes;
   const plain = { priority: 0 };
@@ -214,6 +214,42 @@ const assertNoImmediateScrafty = field => {
   const healing = exchange(s, { ...metagross, id: "healing Metagross" }, metagross.moveset[0], { ...gyarados, id: "healing Gyarados" });
   delete globalThis.__stub.heal;
   assert.deepEqual([healing.turnsWe, healing.turnsThey], [7, 6], "heals land every turn on both sides");
+  // Chip lands every turn, the last one included: 250 HP under 64.3 a hit and 61 chip goes in 2, not 3.
+  assert.equal(turnsToKo(250, 64.3, -61), 2, "chip counts on the KO turn");
+  assert.equal(turnsToKo(40, 30, -10), 1, "chip finishes it the turn it's hit");
+  assert.equal(turnsToKo(100, 0, -30), 4, "chip alone");
+  globalThis.__stub.heal = p => (p.name === "Gyarados" ? -61 : 0);
+  assert.equal(exchange(s, { ...metagross, id: "Metagross vs chip" }, metagross.moveset[0], { ...gyarados, id: "poisoned Gyarados" }).turnsWe, 2, "chip shortens the exchange");
+  // Hit plus chip finishing it this turn isn't held to two turns: Meteor Mash (64.3) and 40 chip into 100 HP.
+  globalThis.__stub.heal = p => ({ Gyarados: -40, Morpeko: -20 })[p.name] ?? 0;
+  assert.equal(exchange(s, { ...metagross, id: "Metagross vs low chip" }, metagross.moveset[0], { ...gyarados, id: "Gyarados at 100", hp: 100 }).turnsWe, 1, "our hit and its chip");
+  // …on our side too: Waterfall can't KO Morpeko at 90 alone, but with 20 poison chip it goes down this turn.
+  assert.equal(exchange(s, { ...morpeko, id: "poisoned Morpeko" }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs poison" }, { hp: 90 }).turnsThey, 1, "its hit and our chip");
+  // Shell Bell: our heal is asked with the damage we deal.
+  const asked = [];
+  globalThis.__stub.heal = (p, o) => { asked.push([p.name, Math.round(o?.dealt ?? 0)]); return 0; };
+  exchange(s, { ...metagross, id: "Metagross with a bell" }, metagross.moveset[0], { ...gyarados, id: "Gyarados vs bell" });
+  delete globalThis.__stub.heal;
+  assert.ok(asked.some(([n, d]) => n === "Metagross" && d > 50), `our turn-end HP is asked with the damage dealt (${JSON.stringify(asked)})`);
+  // Reviver Seed: Aura Wheel's KO brings Gyarados back at 125, so it takes a second turn.
+  const seededOutcome = globalThis.__stub.outcome;
+  globalThis.__stub.outcome = (a, d, pm, o) => { const x = seededOutcome(a, d, pm, o); return x && d.revive ? { ...x, pKo: 0, revive: d.revive } : x; };
+  assert.equal(exchange(s, morpeko, morpeko.moveset[0], { ...gyarados, id: "seeded Gyarados", revive: 125 }).turnsWe, 2, "Reviver Seed adds half its HP to get through");
+  // …and our own: Waterfall can't finish a seeded Morpeko at 60 HP this turn.
+  const bare = exchange(s, { ...morpeko, id: "Morpeko at 60" }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs 60" }, { hp: 60 });
+  const saved = exchange(s, { ...morpeko, id: "seeded Morpeko at 60", revive: 110 }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs seed" }, { hp: 60 });
+  globalThis.__stub.outcome = seededOutcome;
+  assert.ok(bare.turnsThey === 1 && saved.turnsThey > 2, `seed buys turns (${bare.turnsThey} → ${saved.turnsThey})`);
+  // King's Rock: a faster foe flinches us 10 % a stack. High Jump Kick (55.1 a use) into Gyarados: 5 turns, 7 at 30 %.
+  const rock = new (class FlinchChanceModifier { getStackCount() { return 3; } })();
+  const hjk = x => exchange(s, scrafty, scrafty.moveset[0], x).turnsWe;
+  assert.equal(hjk({ ...gyarados, id: "Gyarados no rock" }), 5);
+  assert.equal(hjk({ ...gyarados, id: "Gyarados with rock", getHeldItems: () => [rock] }), 7, "flinches cost turns");
+  // A wild boss gains a stat stage per bar broken, weighted by its stats: a Def-heavy Weavile's second bar takes
+  // Aura Wheel (83 a use) 3 turns instead of 2. A trainer's boss doesn't.
+  const bulky = { getStat: i => [300, 10, 1000, 10, 10, 10][i] };
+  assert.equal(exchange(s, morpeko, morpeko.moveset[0], { ...weavile, ...bulky, id: "trainer Weavile", hasTrainer: () => true }).turnsWe, 4);
+  assert.equal(exchange(s, morpeko, morpeko.moveset[0], { ...weavile, ...bulky, id: "wild Weavile", hasTrainer: () => false }).turnsWe, 5, "bar-break boosts slow later bars");
   console.log("== building blocks ok");
 }
 

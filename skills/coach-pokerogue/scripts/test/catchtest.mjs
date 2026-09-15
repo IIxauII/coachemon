@@ -32,7 +32,7 @@ const dexData = () => {
 };
 
 // `owned`: extra caught species ids (dex IVs 20, abilityAttr 1).
-const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [] }) => {
+const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [] }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : null) };
@@ -41,7 +41,7 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
     phaseManager: pm, getField: () => [...party, ...foes].filter(p => p.isOnField()),
     currentBattle: { waveIndex: 23, turn: 1, double, battleType: trainer ? 1 : 0, enemySwitchCounter: 0, getBattlerCount: () => (double ? 2 : 1), trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes,
-    pokeballCounts: counts, modifiers: [], arena: { biomeId: 3 },
+    pokeballCounts: counts, modifiers: [], enemyModifiers, arena: { biomeId: 3 },
     gameMode: { isDaily: false, isClassic: true, challenges: [] },
     gameData: { dexData: dexData(), starterData: { 3: { abilityAttr: 1 }, 9: { abilityAttr: 1 }, 16: { abilityAttr: 1 }, 58: { abilityAttr: 1 } } },
   };
@@ -189,6 +189,10 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   assert.equal(t.verdict, "catch");
   jsonSafe(advice, "team");
   show("team", advice);
+  // The wave's status-cure tokens (2.5 % a stack each turn) can shake the status off before the throw.
+  const cure = new (class EnemyStatusEffectHealChanceModifier { getStackCount() { return 4; } })();
+  const cured = run({ party, foes: [{ ...pidgeot, id: "Pidgeot with cure tokens" }], counts: { 0: 5, 1: 5, 2: 5, 3: 0, 4: 0 }, enemyModifiers: [cure] }).advice.targets[0];
+  assert.match(cured.why, /sleep\/paralyse it for better odds \(it cures itself 10%\/turn\)/, cured.why);
 }
 
 // ---- 8. Doubles with two foes out and nothing worth catching: silent.

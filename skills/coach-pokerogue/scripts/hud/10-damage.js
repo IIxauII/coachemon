@@ -3,7 +3,7 @@
 // simulated, inside `sandbox`), so held items, abilities, stat stages, weather, screens and form-dependent types
 // are the game's. Everything the simulated call leaves out is modelled here from the coach spec (game-code.md):
 // the damage roll, crits, accuracy, multi-hit counts, boss HP segments, Sturdy / Focus Band / endure survival and
-// turn-end berry heals. Outside the command phase, or against mocks without game functions, the old
+// turn-end HP changes (weather and status chip, berries, Leftovers and other heals). Outside the command phase, or against mocks without game functions, the old
 // approximation keeps the panel rendering.
 
 // Per-turn damage discount for moves that often don't land when chosen: Focus Punch fails if the user is hit
@@ -17,7 +17,7 @@ const reliability = mv => {
 const FOE_MARGIN = 1.15;
 
 // Private helpers live in this closure so their names can't collide with other hud modules.
-const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
+const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
   // Class names survive minification; subclasses count (FixedDamageAttr covers Super Fang, Seismic Toss…).
   const isA = (x, name) => {
     for (let c = x?.constructor; c?.name; c = Object.getPrototypeOf(c)) if (c.name === name) return true;
@@ -107,6 +107,8 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
       sturdy: !ignoreAbility && maxHp > 1 && ability(t, "PreDefendFullHpEndureAbAttr"),
       pFocus: Math.min(1, 0.1 * stack(t, "SurviveDamageModifier")),
       pEndure: endure ? Math.min(1, (endure.chance ?? 2) * (endure.getStackCount?.() ?? 1) / 100) : 0,
+      // Reviver Seed (FaintPhase): a faint brings it straight back at half HP, so no KO.
+      revive: stack(t, "PokemonInstantReviveModifier") ? Math.max(1, Math.floor(maxHp / 2)) : 0,
     };
   };
   // One landed hit of `d` on state {hp, idx, tok} as EnemyPokemon.damage / Pokemon.damage resolve it:
@@ -169,18 +171,56 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     return { hp: Math.max(0, end.hp), segIdx: end.idx, ko, pSurvive };
   };
 
-  // HP restored at turn end: Sitrus below half and Enigma after a super-effective hit (BerryPhase, doubled by
-  // Ripen), then Leftovers. `hp`: the HP the pokémon will have by then, if not its current HP.
-  const endOfTurnHeal = (p, { tookSuperEffective = false, hp = p.hp } = {}) => {
+  // ---- Turn end (spec §8). The HP a pokémon gains (+) or loses (−) between this turn's moves and the next command,
+  // in the game's order: weather chip (WeatherEffectPhase), status chip (PostTurnStatusEffectPhase), berries
+  // (BerryPhase), then TurnEndPhase heals. Chip can faint it, and a fainted mon heals nothing. `hp`: the HP it will
+  // have by then, if not its current HP; `tookSuperEffective`: Enigma; `dealt`: damage it dealt this turn (Shell Bell).
+  // Reads fields and item/ability attributes only.
+  const abAttrs = (p, name) => (ability(p, name)
+    ? [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null].flatMap(a => a?.getAttrs?.(name) ?? []) : []);
+  const frac = (max, n) => Math.max(1, Math.floor(max / n));
+  const WEATHER_SPARED = { 3: [4, 5, 8], 4: [14] }; // sandstorm: Ground, Rock, Steel; hail: Ice
+  const ORB_SPARED = { 1: [3, 8], 2: [3, 8], 6: [9] }; // poison: Poison, Steel; burn: Fire
+  const endOfTurnHp = (p, { s = sceneNow(), tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
     if (hp <= 0) return 0;
     const max = p.getMaxHp();
+    const types = p.getTypes?.() ?? [];
+    const guard = ability(p, "BlockNonDirectDamageAbAttr");
+    const w = s?.arena?.weather?.weatherType ?? 0;
+    const weather = w && !(s.getField?.(true) ?? []).some(q => q && ability(q, "SuppressWeatherEffectAbAttr")) ? w : 0;
+    const inWeather = a => (a.weatherTypes ?? []).includes(weather);
+    let chip = 0;
+    if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
+      && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
+      && !p.getTag?.("UNDERGROUND") && !p.getTag?.("UNDERWATER")) chip += frac(max, 16);
+    // Dry Skin / Solar Power in sun.
+    if (!guard) for (const a of abAttrs(p, "PostWeatherLapseDamageAbAttr")) if (inWeather(a)) chip += frac(max, 16 / (a.damageFactor ?? 2));
+    // Toxic / Flame Orb put their status on at turn end: counted as if already on, a turn early.
+    const orb = p.status?.effect ? null : items(p).find(m => m.constructor.name === "TurnStatusEffectModifier" && !types.some(t => ORB_SPARED[m.effect]?.includes(t)));
+    const effect = p.status?.effect || orb?.effect || 0;
+    if ([1, 2, 6].includes(effect) && !guard && !abAttrs(p, "BlockStatusDamageAbAttr").some(a => (a.effects ?? []).includes(effect))) {
+      let d = effect === 1 ? frac(max, 8) : effect === 2 ? Math.max(1, Math.floor(max * ((p.status?.toxicTurnCount ?? 0) + 1) / 16)) : frac(max, 16);
+      if (effect === 6) for (const a of abAttrs(p, "ReduceBurnDamageAbAttr")) d = Math.max(1, Math.floor(d * (a.multiplier ?? 0.5)));
+      chip += d;
+    }
+    const left = hp - chip;
+    if (left <= 0) return -hp;
+
     const quarter = Math.max(1, Math.floor(max / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
     const berry = t => items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === t);
     let heal = 0;
-    if (berry(0) && hp / max < 0.5) heal += quarter;
+    if (berry(0) && left / max < 0.5) heal += quarter;
     if (berry(2) && tookSuperEffective) heal += quarter;
-    heal += Math.max(1, Math.floor(max / 16)) * stack(p, "TurnHealModifier");
-    return Math.max(0, Math.min(heal, max - hp));
+    heal += frac(max, 16) * stack(p, "TurnHealModifier");
+    if (s?.arena?.terrain?.terrainType === 3 && (p.isGrounded?.() ?? !types.includes(2))) heal += frac(max, 16);
+    if (p.isPlayer?.() === false) {
+      const n = (s?.enemyModifiers ?? []).filter(m => m.constructor.name === "EnemyTurnHealModifier").reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
+      if (n) heal += Math.max(Math.floor(max / 50) * n, 1);
+    }
+    for (const a of abAttrs(p, "PostWeatherLapseHealAbAttr")) if (inWeather(a)) heal += frac(max, 16 / (a.healFactor ?? 1));
+    if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) heal += frac(max, 8);
+    if (dealt > 0) heal += frac(dealt, 8) * stack(p, "HitHealModifier");
+    return Math.min(max, left + heal) - hp;
   };
 
   // ---- Game path (spec §1, §2, §4, §5)
@@ -244,7 +284,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
     const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0 };
     if (first.cancelled || first.result === 7 || first.result === 13) {
-      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, notes: ["no effect"] };
+      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: ["no effect"] };
     }
 
     const ohko = first.result === 6;
@@ -305,7 +345,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     const f = targetFacts(s, def, ignoreAbility);
     const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
     const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
-    const pKo = ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
+    const pKo = f.revive ? 0 : ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
     // Expected damage per use before the target's HP or a boss bar's boundary cuts it: what later turns deal.
     const uncapped = perHit.reduce((t, m, k) => t + (k === 0 || checkAll ? acc ** (k + 1) : acc)
       * dist.filter(x => x.n > k).reduce((u, x) => u + x.p, 0) * [...m].reduce((u, [d, p]) => u + d * p, 0), 0);
@@ -375,6 +415,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     if (f.boss && f.idx > 0) notes.push(`boss ${f.idx + 1} bars`);
     if (f.sturdy && f.hp >= f.maxHp) notes.push("sturdy");
     if (f.pFocus) notes.push("focus band");
+    if (f.revive) notes.push("reviver seed");
     if (disguise) notes.push("disguise");
     if (crit === 1) notes.push("crit");
     if (base.charge) notes.push("charges a turn");
@@ -384,7 +425,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     return {
       ...base, acc, crit, dist, semi, self, selfKo, lock, noRepeat, drops,
       perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })),
-      expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, notes,
+      expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, notes,
     };
   };
 
@@ -420,10 +461,11 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
     const max = Math.floor(x.dmg);
     const end = applyHits(def, [max], { s });
+    const revive = targetFacts(s, def).revive;
     return {
       name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, ...traits(atk, mv, false), semi: false, self: 0,
       acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
-      expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko ? acc : 0, notes: ["estimate"],
+      expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, notes: ["estimate"],
     };
   };
 
@@ -473,13 +515,16 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits } = (() => {
     return out;
   };
 
-  return { moveOutcome, moveOutcomes, applyHits, endOfTurnHeal, hits };
+  return { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits };
 })();
 
 const bestMove = (a, d, foe = false) => hits(a, d, foe).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);
-// `heal`: restored at the end of every turn the target survives.
-const turnsToKo = (hp, dmg, heal = 0) => (!(dmg > 0) ? 9 : hp <= dmg ? Math.ceil(hp / dmg)
-  : dmg > heal ? Math.min(9, Math.ceil((hp - heal) / (dmg - heal))) : 9);
+// `heal`: turn-end HP change. A heal (+) comes only on turns the target survives the hit; chip (−) lands every turn,
+// the KO turn included.
+const turnsToKo = (hp, dmg, heal = 0) => {
+  if (heal < 0) return Math.min(9, Math.ceil(hp / (Math.max(0, dmg) - heal)));
+  return !(dmg > 0) ? 9 : hp <= dmg ? Math.ceil(hp / dmg) : dmg > heal ? Math.min(9, Math.ceil((hp - heal) / (dmg - heal))) : 9;
+};
 
 // Positive score = we KO it in fewer turns than it KOs us.
 const matchup = (me, foe) => {
