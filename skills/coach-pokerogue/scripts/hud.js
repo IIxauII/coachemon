@@ -55,6 +55,7 @@
     let m = typesOf(p).reduce((x, d) => x * vs(type, d), 1);
     if (ab.includes("Wonder Guard") && m < 2) return 0;
     if (ab.includes("Thick Fat") && (type === "Fire" || type === "Ice")) m /= 2;
+    if (m >= 2 && ab.some(a => a === "Solid Rock" || a === "Filter" || a === "Prism Armor")) m *= 0.75;
     return m;
   };
   const stage = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
@@ -62,6 +63,14 @@
   const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ?? 0);
 
   const SPREAD_TARGETS = [2, 4, 6, 8]; // MoveTarget ALL_OTHERS, ALL_NEAR_OTHERS, ALL_NEAR_ENEMIES, ALL_ENEMIES
+  const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
+  // Per-turn damage discount for moves that often don't land when chosen: Focus Punch fails if the user is hit
+  // first, charging and recharging moves spend a second turn, negative priority moves go last.
+  const reliability = mv => {
+    if (hasAttr(mv, "PreUseInterruptAttr")) return 0.4;
+    if (mv.isChargingMove?.() || hasAttr(mv, "RechargeAttr")) return 0.5;
+    return mv.priority < 0 ? 0.8 : 1;
+  };
 
   // Rough damage of each usable damaging move of attacker into defender.
   const hits = (a, d) => {
@@ -74,7 +83,7 @@
       const base = ((2 * a.level / 5 + 2) * mv.power * stat(a, phys ? 1 : 3) / stat(d, phys ? 2 : 4)) / 50 + 2;
       const e = effectiveness(type, d);
       const dmg = base * (typesOf(a).includes(type) ? 1.5 : 1) * e;
-      out.push({ name: m.getName(), type, cat: phys ? "physical" : "special", e, dmg, spread: SPREAD_TARGETS.includes(mv.moveTarget) });
+      out.push({ name: m.getName(), type, cat: phys ? "physical" : "special", e, dmg: dmg * reliability(mv), spread: SPREAD_TARGETS.includes(mv.moveTarget) });
     }
     return out;
   };
@@ -221,8 +230,6 @@
     return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double } : null;
   };
 
-  const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
-
   // Effective power of a move on this pokémon: power × accuracy × STAB × how well its attack stat suits the
   // category, then adjusted for what it costs or adds, each adjustment named in `notes` so the card can show why.
   // null value for status moves, which can't be scored.
@@ -238,8 +245,10 @@
     if (sameType === 0) { value *= 1.2; notes.push("coverage"); }
     else if (sameType >= 2) { value *= 0.8; notes.push(`${sameType + 1}× ${type}`); }
     if (hasAttr(mv, "RecoilAttr")) { value *= 0.67; notes.push("recoil"); }
-    if (mv.isChargingMove?.()) { value *= 0.5; notes.push("charges"); }
-    if (hasAttr(mv, "RechargeAttr")) { value *= 0.5; notes.push("recharge"); }
+    if (hasAttr(mv, "PreUseInterruptAttr")) { value *= 0.4; notes.push("fails if hit"); }
+    else if (mv.isChargingMove?.()) { value *= 0.5; notes.push("charges"); }
+    else if (hasAttr(mv, "RechargeAttr")) { value *= 0.5; notes.push("recharge"); }
+    else if (mv.priority < 0) { value *= 0.8; notes.push("moves last"); }
     if (double && SPREAD_TARGETS.includes(mv.moveTarget)) { value *= 1.15; notes.push("spread"); }
     if (fit < 0.9) notes.push(mv.category === 0 ? "weak Atk" : "weak SpA");
     return { value: Math.round(value), notes };
