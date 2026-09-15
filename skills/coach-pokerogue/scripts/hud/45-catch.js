@@ -41,7 +41,7 @@
 // Every game method call here (hasAbility, getRootSpeciesId, gameMode checks, the planner's damage code) runs inside
 // `sandbox` while the game waits for a command; otherwise field reads and the approximations stand in.
 
-const { captureChance, catchAdvice } = (() => {
+const { captureChance, catchAdvice, damagingTypes, finalBstOf, teamWeakTypes } = (() => {
   const BALLS = [
     { id: 0, ball: "Poké Ball", short: "PB", key: "pb", mult: 1 },
     { id: 1, ball: "Great Ball", short: "GB", key: "gb", mult: 1.5 },
@@ -119,6 +119,12 @@ const { captureChance, catchAdvice } = (() => {
   // and not so far below our weakest member's level that it would have to catch up first.
   const UPGRADE_BST = 100, UPGRADE_FLOOR = 400, UPGRADE_LEVEL_GAP = 10;
 
+  // Attacking types that hit two or more of us super-effectively and that more of us are weak to than resist.
+  const teamWeakTypes = all => TYPES.filter(t => {
+    const n = all.filter(p => effectiveness(t, p) >= 2).length;
+    return n >= 2 && n > all.filter(p => effectiveness(t, p) <= 0.5).length;
+  });
+
   const teamReasons = (s, foe, b, live) => {
     const all = (s.getPlayerParty?.() ?? []).filter(Boolean);
     const out = [];
@@ -127,11 +133,7 @@ const { captureChance, catchAdvice } = (() => {
     // Its line is already on the team: a second one adds nothing.
     if (!all.length || all.some(p => rootOf(p, live) === rootOf(foe, live))) return { out, replace: null };
 
-    // Attacking types that hit two or more of us super-effectively and that more of us are weak to than resist.
-    const weak = TYPES.filter(t => {
-      const n = all.filter(p => effectiveness(t, p) >= 2).length;
-      return n >= 2 && n > all.filter(p => effectiveness(t, p) <= 0.5).length;
-    });
+    const weak = teamWeakTypes(all);
     const covers = weak.filter(t => effectiveness(t, foe) <= 0.5);
     if (covers.length) out.push({ kind: "team", text: `covers ${covers.slice(0, 2).join("/")} weakness`, w: covers.length > 1 ? 1.5 : 1 });
 
@@ -338,5 +340,5 @@ const { captureChance, catchAdvice } = (() => {
     return value;
   };
 
-  return { captureChance, catchAdvice };
+  return { captureChance, catchAdvice, damagingTypes, finalBstOf, teamWeakTypes };
 })();

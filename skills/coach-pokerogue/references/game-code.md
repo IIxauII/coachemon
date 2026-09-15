@@ -605,3 +605,22 @@ start(){ let e=B.getPlayerField()[this.fieldIndex]; if(B.battleStyle===1){this.e
 
 Faint-replacement `SwitchPhase` is also idle UI (party screen), so game calls are safe there; tell it apart from a
 mid-turn U-turn `SwitchPhase` by `isModal && !doReturn`.
+
+---
+
+## 10. Biome choice, and module-private game tables
+
+`SelectBiomePhase` (the current phase while UiMode 15 OPTION_SELECT shows the choice) offers the current biome's
+`biomeLinks` (an id, or `[id, n]` rolled in with chance 1/n) as `{label: getBiomeName(id), handler}`, only with a
+`MapModifier` and ≥ 2 links left. The handler closes over the id: the HUD sees only `handler.config.options[].label`.
+
+`allBiomes` (Map BiomeId → `{biomeId, pokemonPool, trainerPool, trainerChance, weatherPool, terrainPool, biomeLinks}`),
+the species data registry and `getBiomeName` are module-private: no scene path reaches another biome's pools (`Arena`
+copies only its own, merged for the time of day). The live build exports them across chunks under mangled export names
+but keeps function names (`ar as us` in loading-scene = allBiomes; `t as $t` in FadeOut = the registry, set by
+`setSpeciesDataRegistry`; `getBiomeName as P`). Re-`import()`ing an already-loaded `/assets/<name>-<hash>.js` URL from
+the page returns the same module instance without re-running it, so `47-biome.js` scans those namespaces by shape (a Map
+whose values carry `biomeLinks` + `pokemonPool`; an object with `getSpecies`/`getAllSpecies`; a function named
+`getBiomeName`). It is async: the first ticks have no tables. Pool keys: tier 0–4 COMMON…ULTRA_RARE, 5–8
+BOSS…BOSS_ULTRA_RARE; time of day -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT. Spawn odds and time-of-day rules: the header
+of `47-biome.js`. Not verified against a live tab yet (none was open); read from the fetched build.
