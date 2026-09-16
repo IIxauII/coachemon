@@ -27,7 +27,8 @@
  * Keys are HUD modules under `skills/coach-pokerogue/scripts/hud/`; a moved hash
  * names the modules to re-read. Modules absent from this map (`35-team-plan.js`,
  * `40-learn.js`, `50-shop.js`) build on the ones here and read live state
- * directly; they own no game-code claim of their own.
+ * directly; they own no game-code claim of their own — `50-shop.js`'s spending
+ * rules rest on `49-ahead.js`'s calendar, which does.
  */
 import type { SourceRef } from "../src/escape-ladder/types.ts";
 
@@ -137,5 +138,37 @@ export const HUD_DEPS = {
     `${P}#EnemyPokemon.constructor`,
     `src/utils/common.ts#shiftCharCodes`,
     `src/utils/common.ts#randSeedInt`,
+  ],
+
+  /**
+   * §12. The big-fight calendar, the full-heal schedule, reward luck and the
+   * classic final boss. The four calendar rules and the heal condition are
+   * *read* — pure arithmetic on the wave index — but a changed rule silently
+   * moves every "next big fight" the card names. The reward and final-boss refs
+   * are re-implemented: the HUD quotes the luck upgrade odds and the Eternamax
+   * checklist without calling anything.
+   */
+  "49-ahead.js": [
+    `src/game-mode.ts#GameMode.isWaveFinal`,
+    `src/game-mode.ts#GameMode.isFixedBattle`,
+    `src/game-mode.ts#GameMode.getFixedBattle`,
+    `src/game-mode.ts#GameMode.isBoss`,
+    `src/game-mode.ts#GameMode.isWaveTrainer`,
+    `src/data/trainers/fixed-battle-configs.ts#classicFixedBattles`,
+    `src/phases/victory-phase.ts#VictoryPhase.start`,
+    `src/phases/select-biome-phase.ts#SelectBiomePhase.setNextBiomeAndEnd`,
+    `src/phases/party-heal-phase.ts#PartyHealPhase.start`,
+    `${SCENE}#BattleScene.isNewBiome`,
+    `src/modifier/modifier-type.ts#getNewModifierTypeOption`,
+    `src/modifier/modifier-type.ts#getPartyLuckValue`,
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.getRerollCost`,
+    `${P}#Pokemon.getLuck`,
+    `${P}#Pokemon.isAllowedInBattle`,
+    `${SCENE}#BattleScene.initFinalBossPhaseTwo`,
+    `${SCENE}#BattleScene.generateEnemyModifiers`,
+    `${P}#Pokemon.hasPassive`,
+    `${P}#EnemyPokemon.generateAndPopulateMoveset`,
+    `${P}#EnemyPokemon.getMinimumSegmentIndex`,
+    `src/phases/damage-anim-phase.ts#DamageAnimPhase.end`,
   ],
 } satisfies Record<string, readonly SourceRef[]>;
