@@ -156,7 +156,7 @@ const drawShop = m => {
   };
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? h("span", dim, p.why)) : null;
-  if (view === "mini") return [header, ...buyRows, take].filter(Boolean);
+  if (view === "mini") return [header, ...buyRows, take, ...drawPreview(m.preview)].filter(Boolean);
   // Who can use it, when the reason doesn't already name them.
   const usersText = f => {
     const rest = (f.users ?? []).filter(n => !f.why.includes(n));
@@ -168,7 +168,9 @@ const drawShop = m => {
   return [header,
     m.buys.length ? h("div", { ...dim, fontSize: FS.tiny }, "buy first — taking the free reward closes the shop") : null,
     ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
-    m.reroll ? line("🎲", "#8cf", h("span", dim, m.reroll)) : null].filter(Boolean);
+    m.reroll ? line("🎲", "#8cf", h("span", dim, m.reroll)) : null,
+    // What the shop is being stocked for: the wave the run seed has already decided on (it draws its own rule).
+    ...drawPreview(m.preview)].filter(Boolean);
 };
 
 // Danger the panel flags on our side: the 💀 / ⚠ tags on field slots and on mons a switch takes out.
@@ -196,8 +198,9 @@ const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? "
 // `danger` lists the 💀 tags only: a likely KO before our mon acts.
 const hudSummary = m => {
   if (!m) return null;
-  const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null };
-  if (m.kind === "biome") return biomeSummary(m);
+  const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null,
+    next: previewSummary(m.preview) };
+  if (m.kind === "biome") return biomeSummary(m, base);
   if (m.kind === "learn") {
     const only = m.team?.onlyType && m.forget >= 0 ? ` · ⚠ loses only ${m.team.onlyType} move` : "";
     return { ...base, learn: `${m.verdict[0]}${only}` };
@@ -370,7 +373,7 @@ const drawBattle = m => {
         : !r.pick && !f ? line("➜", "#8cf", h("span", dim, "no damaging move lands")) : null,
       r.notes?.length ? line("·", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, r.notes.join(" · "))) : null);
   });
-  return [header, ...field, ...drawCatch(m), team, ...rows, ...drawTeamPlan(m)].filter(Boolean);
+  return [header, ...field, ...drawCatch(m), team, ...rows, ...drawTeamPlan(m), ...drawPreview(m.preview)].filter(Boolean);
 };
 
 const el = document.createElement("div");
@@ -416,6 +419,10 @@ const tick = () => {
       m = { ...model(s, b, party, foes), trainer: !!b.trainer, double: !!b.double, moveTypes: moveTypesOf(party) };
     }
     m.wave = s.currentBattle?.waveIndex ?? null;
+    // Score the last preview against the wave that actually arrived, then read the one ahead. Both are reads; the
+    // preview is cached per wave and per input, so a tick that changes nothing costs a JSON key comparison.
+    previewCheck(s);
+    if (m.kind === "battle" || m.kind === "shop") m.preview = previewNext(s);
     shown = m;
     // A view picked by a button holds until the card or wave changes.
     shownWave = `${m.kind}:${m.wave}`;

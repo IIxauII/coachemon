@@ -59,3 +59,17 @@ The one process allowed to press buttons in a given game tab. The server takes t
 ## Interrupted run
 
 A run that ended without the party wiping — the game tore itself down and dropped back to the title. Distinct from a **wipe**: a wipe is an ending the agent played its way into, while an interrupted run is a failure, and the run may still exist server-side. The two are never reported as the same thing, because treating an interruption as a wipe invites starting a new run over a run that is still alive.
+
+## Preview
+
+What the **run seed** already decides about a **wave** the run has not reached yet, read out ahead of time. A preview is a read: it never advances the game or the run's own sequence of rolls.
+
+Each field of a preview carries its **confidence**, and a field is never surer than what it derives from:
+
+- **exact** — settled independently of how much of the run has been played, so it cannot drift.
+- **replay** — right only while the game's own draws for that wave are exactly the draws the preview made.
+- **estimate** — read off state that belongs to the current wave and may have moved on by the time the previewed wave arrives.
+
+Every confidence is also conditional on the run not changing first: a catch, an evolution, a shop pick or a biome change re-rolls what a preview was read from. Confidence is claimed, then **scored** — each field is checked against the wave when it actually arrives, and a field that has ever been wrong is marked as such for the rest of the run.
+
+Not to be confused with a **tier**, which throughout is the game's own word for a rarity band (an encounter's, a species').

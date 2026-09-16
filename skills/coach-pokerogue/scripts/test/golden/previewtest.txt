@@ -1,0 +1,171 @@
+== wave 11 predicted {"type":"wild","double":false,"levels":[9],"trainer":null,"foes":["Onix L9"]}
+== wave 12 predicted {"type":"wild","double":false,"levels":[8],"trainer":null,"foes":["Onix L8"]}
+== wave 19 predicted {"type":"trainer","double":true,"levels":[14,15],"trainer":"Youngster3","foes":["Gengar L14","Machop L15"]}
+== wave 20 predicted {"type":"trainer","double":true,"levels":[16,17],"trainer":"Youngster2","foes":["Geodude L16","Machop L17"]}
+== wave 24 predicted {"type":"wild","double":false,"levels":[13],"trainer":null,"foes":["Machop L13"]}
+== wild (wave 13)
+{
+ "wave": 13,
+ "type": "wild",
+ "fixed": false,
+ "double": false,
+ "levels": [
+  10
+ ],
+ "trainer": null,
+ "me": null,
+ "foes": [
+  "Zubat L10"
+ ],
+ "confidence": {
+  "type": "replay",
+  "trainer": null,
+  "foes": "replay",
+  "double": "replay",
+  "levels": "replay"
+ },
+ "notes": [],
+ "missed": []
+}
+== gym (wave 20)
+{
+ "wave": 20,
+ "type": "trainer",
+ "fixed": false,
+ "double": true,
+ "levels": [
+  16,
+  17
+ ],
+ "trainer": "Youngster2",
+ "me": null,
+ "foes": [
+  "Geodude L16",
+  "Machop L17"
+ ],
+ "confidence": {
+  "type": "exact",
+  "trainer": "replay",
+  "foes": "replay",
+  "double": "replay",
+  "levels": "replay"
+ },
+ "notes": [],
+ "missed": []
+}
+== fixed rival (wave 8)
+{
+ "wave": 8,
+ "type": "trainer",
+ "fixed": true,
+ "double": false,
+ "levels": [
+  10,
+  11,
+  12
+ ],
+ "trainer": "Rival1",
+ "me": null,
+ "foes": [
+  "Geodude L10",
+  "Machop L11",
+  "Machop L12"
+ ],
+ "confidence": {
+  "type": "exact",
+  "trainer": "exact",
+  "foes": "exact",
+  "double": "exact",
+  "levels": "exact"
+ },
+ "notes": [],
+ "missed": []
+}
+== fixed rival, seed offset (wave 25)
+{
+ "wave": 25,
+ "type": "trainer",
+ "fixed": true,
+ "double": false,
+ "levels": [
+  18,
+  19,
+  20
+ ],
+ "trainer": "Rival1",
+ "me": null,
+ "foes": [
+  "Gengar L18",
+  "Geodude L19",
+  "Geodude L20"
+ ],
+ "confidence": {
+  "type": "exact",
+  "trainer": "exact",
+  "foes": "exact",
+  "double": "exact",
+  "levels": "exact"
+ },
+ "notes": [],
+ "missed": []
+}
+== mystery encounter
+{
+ "wave": 13,
+ "type": "me",
+ "fixed": false,
+ "double": false,
+ "levels": [
+  10
+ ],
+ "trainer": null,
+ "me": "departmentStoreSale",
+ "foes": [],
+ "confidence": {
+  "type": "replay",
+  "trainer": null,
+  "foes": "replay",
+  "double": "replay",
+  "levels": "replay"
+ },
+ "notes": [],
+ "missed": []
+}
+== gym confidence {"type":"exact","trainer":"replay","foes":"replay","double":"replay","levels":"replay"}
+== tally after a hit and a miss {"checked":2,"hit":{"type":2,"trainer":0,"foes":1,"double":1,"levels":1},"miss":{"type":0,"trainer":1,"foes":1,"double":1,"levels":1}}
+== marked ["foes","double","levels"]
+== unavailable {"kind":"preview","wave":13,"unavailable":"the live build has no generateNewBattleTrainer"}
+== fixed ahead [{"wave":8,"kind":"fixed"},{"wave":20,"kind":"gym"},{"wave":25,"kind":"fixed"}]
+== card wave 13 (full)
+🔮 Next W13~ wild
+· Zubat L10~ Poison Flying Sturdy
+Tackle
+~ holds while nothing else draws first · if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
+== card wave 13 (mini)
+🔮 W13~ wild Zubat L10~
+summary "W13 wild — Zubat L10 [~]"
+== card wave 20 (full)
+🔮 Next W20 trainer double~
+· Youngster2~
+· Geodude L16~ Rock Ground Sturdy
+Tackle · Rock Slide
+· Machop L17~ Fighting Sturdy
+Tackle · Rock Slide
+~ holds while nothing else draws first · if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
+== card wave 20 (mini)
+🔮 W20 trainer double~ Youngster2~ · Geodude L16, Machop L17~
+summary "W20 trainer Youngster2 (double) — Geodude L16, Machop L17 [~]"
+== card wave 8 (full)
+🔮 Next W8 ★ trainer
+· Rival1
+· Geodude L10 Rock Ground Sturdy
+Tackle · Rock Slide
+· Machop L11 Fighting Sturdy
+Tackle · Rock Slide
+· Machop L12 Fighting Sturdy
+Tackle · Rock Slide
+if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
+== card wave 8 (mini)
+🔮 W8 ★ trainer Rival1 · 3 mons L10–12
+summary "W8 ★ trainer Rival1 — Geodude L10, Machop L11, Machop L12"
+ok

@@ -650,3 +650,70 @@ whose values carry `biomeLinks` + `pokemonPool`; an object with `getSpecies`/`ge
 `getBiomeName`). It is async: the first ticks have no tables. Pool keys: tier 0–4 COMMON…ULTRA_RARE, 5–8
 BOSS…BOSS_ULTRA_RARE; time of day -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT. Spawn odds and time-of-day rules: the header
 of `47-biome.js`. Not verified against a live tab yet (none was open); read from the fetched build.
+
+---
+
+## 11. The run seed, and previewing a wave before it starts
+
+**Seeds.** `scene.seed` is the run's; `scene.waveSeed` is `shiftCharCodes(seed, waveIndex)`, re-derived by
+`resetSeed(w)` which also does `Phaser.Math.RND.sow([waveSeed])`. `executeWithSeedOffset(fn, offset, seedOverride?)`
+saves `RND.state()`, `rngOffset` and `rngSeedOverride`, sows `shiftCharCodes(seedOverride || seed, offset)`, runs `fn`
+and puts all three back — a **fork**, and the reason a preview is a read. `randSeedInt(range, min = 0)` is
+`min` for `range <= 1`, else `RND.integerInRange(min, range - 1 + min)`.
+
+**What a wave's content hangs on.** `newBattle()` calls `resetSeed(w)` at its top, so the stream restarts at a known
+point every wave, and then draws in this order:
+
+| # | Call | Draws | Fork |
+|---|---|---|---|
+| 1 | `gameMode.isWaveTrainer(w)` | the biome's trainer chance | look-back loop forks per wave (offset `w`); the final roll is on the stream. A gym wave (`w % 30 === (offsetGym ? 0 : 20)`) returns early and draws nothing |
+| 2 | `isWaveMysteryEncounter(type, w)` | the ME roll | fork at `w * 3000`, run seed |
+| 3 | `generateNewBattleTrainer(w)` | `arena.randomTrainerType` tier + type, the double roll, the variant roll | stream |
+| 3′ | `getFixedBattle(w).getTrainer()` | the trainer's party template and name | fork at `(seedOffsetWaveIndex \|\| w) << 8`, run seed — replaces 1–3 on a fixed wave |
+| 4 | `checkIsDouble(...)` | the wild double roll (a trainer's comes from its variant) | stream |
+| 5 | `new Battle(...)` | `getLevelForWave` per slot; a trainer's levels are `getPartyLevels`, no RNG | fork at `w << 3`, **wave** seed |
+
+On a Mystery Encounter wave, `EncounterPhase` then picks *which* encounter with `getMysteryEncounter()` in a fork at
+`w * 16` on the run seed — a second, separate fork from the `w * 3000` roll that decided there would be one at all.
+
+The enemy party is built later, in `EncounterPhase.start()`: `trainer.genPartyMember(i)` **forks per member** —
+`waveIndex + (config.getDerivedType() << 10) + (((useSameSeedForAllMembers ? 0 : i) + 1) << 8)`, or
+`getDerivedType() + ((i + 1) << 8)` when `hasStaticParty` — while a wild spawn is `randomSpecies(w, level, attempt,
+luck)` straight off the stream, then `addEnemyPokemon`, whose `EnemyPokemon` constructor draws again (id/IVs, gender,
+moveset, shiny — and a shiny-locked spawn skips `trySetShiny`, so `isEncounterShinyLocked()` changes the draw count).
+
+**`randomSpecies` is an `Arena` method**, reached as `scene.arena.randomSpecies` (§ the pool rules in the header of
+`47-biome.js` read it the same way). `48-preview.js` resolves the receiver at call time rather than assuming it,
+because the wrong receiver is not a wrong answer but a silent one: the availability gate would simply make the card
+unavailable on every wild wave. **Unresolved**: the preview passes `(w, level, true)` where the argument list above
+has `attempt` third and `luck` fourth. If `attempt` is a retry counter, `true` coerces to `1` and the replay may be
+one draw off the game on wild waves — which is exactly a `replay`-confidence field, and exactly what the arrival
+tally measures first.
+
+**So**: everything decided in a fork is exact from any point in the run; everything on the stream is only as good as
+a replay that draws exactly what the game draws, in the same order. `48-preview.js` replays the table above inside
+`s.executeWithSeedOffset(fn, w, s.seed)` (the same sow as `resetSeed(w)`), with `s.currentBattle` swapped for the
+`Battle` it just built and `s.waveSeed` pinned to the previewed wave, and labels every field `exact` / `replay` /
+`estimate`. It scores itself against each wave on arrival.
+
+**A fork is exact about its own roll, not about its inputs**, and the confidence model follows the derivation rather
+than the fork. A trainer's party members are each fork-isolated (`waveIndex + type << 10 + …`), but the fork is keyed
+on the trainer, and on a wave whose trainer came from `generateNewBattleTrainer` **that trainer was drawn on the
+stream** — so the party is `replay`, not `exact`, however fork-isolated each member is. Only a wave whose kind *and*
+trainer cost no stream draw is exact end to end: a fixed battle, whose trainer is a table lookup. A gym wave
+(`w % 30 === (offsetGym ? 0 : 20)`) is in between — `isWaveTrainer` returns before the chance roll, so the wave's
+*kind* is exact, while its trainer and everything under it are still `replay`.
+
+**Safe to call this way** (all read-only given the fork and the swap; all verified present in the live bundle, so
+minification keeps their names): `gameMode.isFixedBattle` / `getFixedBattle` / `isWaveTrainer` / `isBoss`,
+`isWaveMysteryEncounter`, `generateNewBattleTrainer`, `checkIsDouble`, `getEncounterBossSegments`, `randomSpecies`,
+`addEnemyPokemon`, `getMysteryEncounter`, `trainer.genPartyMember` / `getPartyLevels`, `new Battle(...)` via
+`currentBattle.constructor`.
+
+**Not safe**: `newBattle()` itself (it re-sows the live stream, assigns `currentBattle`, and `field.add`s the
+trainer). Two known impurities the preview lives with: `getPartyLevels` bumps a shared party template's `size` to 2
+for a double battle (idempotent, and the real battle does the same), and a `Trainer` constructor builds sprites
+through `addFieldSprite` — they are moved into its container, off the display list, and destroyed with it.
+
+**Unmeasured**: whether anything draws from the stream between `resetSeed(w)` and the party loop that this replay
+doesn't. That is exactly what the arrival check measures; `window.__coachHud.preview()` prints the tally.

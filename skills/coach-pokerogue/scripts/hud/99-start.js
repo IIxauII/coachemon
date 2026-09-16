@@ -15,5 +15,8 @@ window.__coachHud = {
   stats: () => ({ breaches: sandboxBreaches, lastTickMs, maxTickMs }),
   last: () => shown,
   summary: () => hudSummary(shown),
+  // How the next-wave preview has actually scored this run: hits and misses per field, and the last wave it got
+  // wrong. A field with a miss is drawn `!` on the card from then on.
+  preview: () => previewStats(),
 };
 document.documentElement.dataset.mcpOut = JSON.stringify({ hud: "on" });
