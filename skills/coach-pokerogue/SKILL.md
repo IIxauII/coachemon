@@ -51,6 +51,21 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      - **TMs** are judged with the learn card's own decision, on every member the game says can learn the move (and doesn't know it yet): the recipient gaining the most, the move it replaces (`→ forget X`, `free slot`, or `setup +1 SpA` for a setup move it suits) and the power gained. A TM that's no upgrade for anyone, or that nobody can learn, reads `skip` and ranks below other rewards.
    - `window.__coachHud.summary()` is the panel's verdict in plain text; the battle read carries it as `hud`.
    - **🗺 Biome card** (the next-biome choice a Map offers): ranks each biome for the party with a score and ★ pick / ≈ close. Spawns come from the game's own biome pools (tier odds, time of day of the next ten waves, the boss wave as one in ten, species taken at the party's level): ✓/✗ who's weak, who resists, how many mons hit them SE, and a 🎯 catch that covers a weakness, outclasses the weakest member or is new. Full view adds the type mix, the species met most and where the biome leads (★ rare: Space, Fairy Cave, Laboratory). The pools are read from the game's loaded modules a moment after the HUD starts; until then the card only lists the options. Trainers and gym leaders aren't judged.
+   - **🎭 Mystery Encounter card** (the encounter's option screen): every option with what it really does for this
+     party, and ★ take / · ok / ✗ avoid; – for an option the party can't pick, with what it needs. Full view adds a
+     line per option: ⚔ the battle it starts (with the foe's level against yours and who hits it super-effectively),
+     the mon the game will use, and why. Built from the pinned source (`46-encounter.js`, `references/game-code.md`
+     §13), never from the wiki.
+     - **Judged:** the twelve common encounters — Mysterious Chest, Fight or Flight, Department Store Sale, Shady
+       Vitamin Dealer, Lost at Sea, Fiery Fallout, The Strong Stuff, Berries Abound, Part-Timer, Teleporting Hijinks,
+       Uncommon Breed, Global Trade System. Every other encounter shows its options, who qualifies and what they cost,
+       marked "not judged".
+     - **🔮 = fixed by the run seed.** An option's first rolls are forked from the seed, so the card can say what
+       *will* happen, not just the odds: whether the chest is a trap, the store's item rolls, where the teleport
+       lands, who Fiery Fallout burns (and whose ability it overwrites), the vitamin dealer's new nature. Like the 🔮
+       next-wave card, treat it as the coach's own read: say it where it changes the decision.
+     - Money is spent only while it leaves three waves' worth of reward money; a fight is "hard" 5+ levels over your
+       best mon, or when nothing hits it super-effectively at your level. Both are first cuts.
    - **🔮 Next wave** (on the rewards and battle cards): what the run seed has already decided about the wave ahead —
      wild / trainer / Mystery Encounter, which trainer and its party with levels, types, ability and moves, single or
      double, and boss bars. It replays the game's own wave generation in a seed fork (`48-preview.js`,
@@ -86,8 +101,9 @@ When the user wants the coach running for the whole session ("keep coaching", "w
    - `REWARDS w<wave> money $<n> reroll $<n> | free: … | shop: … | HUD: take X [→ <TM recipient> (forget <move>)] · buy Y` (again after a reroll)
    - `COACH ERROR <msg>`, once per distinct failure. Report it rather than staying silent.
    - `BIOME w<wave> | HUD: <biome> <score> pick — <reasons> · <other biome> <score>` once per biome choice, only with the HUD running.
+   - `ENCOUNTER w<wave> | HUD: <encounter>: take <option> — <outcome> · avoid <options>` once per Mystery Encounter, only with the HUD running (`your call` when no option stands out, `not judged` for an encounter the card doesn't know).
 
-Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`, `learn`, `rewards`, `biome`, `next`: the next-wave
+Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`, `learn`, `rewards`, `biome`, `encounter`: the Mystery Encounter call, `next`: the next-wave
 preview in one line, with its marks in brackets, and `ahead`: the next big fight, its verdict and what makes it risky), `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
 
 The panel already shows the decision; the user glances at it mid-battle. Speak only when you add something.
@@ -99,6 +115,7 @@ The panel already shows the decision; the user glances at it mid-battle. Speak o
 - **Learn move:** reply only if the HUD verdict is "your call" or you disagree — coverage the party loses (dropping the only Dark move), setup and status value, recoil, accuracy, spread moves in doubles.
 - **Rewards:** only what the HUD can't judge: held items (`items`), long-term team building, whether a reroll is worth it. Buy shop items **before** taking the free reward: taking it ends the screen. Don't quote item effects from memory; use `desc`.
 - **Biome:** reply only to add what the card doesn't weigh: the gym leader or evil-team boss ahead, trainers, a rare biome two steps away, or a close call.
+- **Mystery Encounter:** reply when the card says `not judged` or `your call` (read the options off the screenshot or the card and weigh them), or when the run's longer plan disagrees — a vitamin on the wrong mon, money the next boss shop needs, a biome detour before a gym.
 
 ## Rules learned the hard way
 

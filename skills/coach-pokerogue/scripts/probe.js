@@ -87,7 +87,7 @@
       let hud = null;
       try {
         const x = window.__coachHud?.summary?.();
-        if (x) hud = { wave: x.wave, verdict: x.verdict, field: x.field, danger: x.danger, learn: x.learn, rewards: x.rewards, biome: x.biome ?? null, next: x.next ?? null, ahead: x.ahead ?? null };
+        if (x) hud = { wave: x.wave, verdict: x.verdict, field: x.field, danger: x.danger, learn: x.learn, rewards: x.rewards, biome: x.biome ?? null, encounter: x.encounter ?? null, next: x.next ?? null, ahead: x.ahead ?? null };
       } catch {}
 
       out = {
