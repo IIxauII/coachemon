@@ -237,8 +237,35 @@ export const HUD_DEPS = {
     `src/data/mystery-encounters/encounters/global-trade-system-encounter.ts#getPokemonTradeOptions`,
   ],
 
-  /** §10: the biome choice the phase offers, and the spawn rules behind the pools it scans. */
-  "47-biome.js": [`src/phases/select-biome-phase.ts#SelectBiomePhase.start`, `src/field/arena.ts#Arena.randomSpecies`],
+  /**
+   * §10: the biome choice the phase offers, and what each of the ten waves it
+   * covers holds: the spawn and trainer rules behind the pools it scans, the
+   * trainer odds, the gym leader on the gym wave, wild evolutions by level, and
+   * who comes back from fainting at the X1 heal. All re-implemented as odds.
+   */
+  "47-biome.js": [
+    `src/phases/select-biome-phase.ts#SelectBiomePhase.start`,
+    `src/phases/select-biome-phase.ts#SelectBiomePhase.setNextBiomeAndEnd`,
+    `src/phases/party-heal-phase.ts#PartyHealPhase.start`,
+    `src/data/challenge.ts#HardcoreChallenge.applyPreventRevive`,
+    `src/data/challenge.ts#LimitedSupportChallenge.applyPartyHeal`,
+    `src/field/arena.ts#Arena.randomSpecies`,
+    `src/field/arena.ts#Arena.randomTrainerType`,
+    `src/field/arena.ts#Arena.generateNonBossBiomeTier`,
+    `src/field/arena.ts#Arena.generateBossBiomeTier`,
+    `src/field/arena.ts#Arena.checkLegendBST`,
+    `src/field/arena.ts#Arena.getTimeOfDay`,
+    `src/game-mode.ts#GameMode.isWaveTrainer`,
+    `src/game-mode.ts#GameMode.isTrainerBoss`,
+    `src/game-mode.ts#GameMode.getWaveForDifficulty`,
+    `src/data/daily-seed/daily-run.ts#getDailyForcedWaveBiomePoolTier`,
+    `src/field/trainer.ts#Trainer.genNewPartyMemberSpecies`,
+    `${SCENE}#BattleScene.randomSpecies`,
+    `src/data/trainers/trainer-config.ts#TrainerConfig.initForGymLeader`,
+    `src/ai/ai-species-gen.ts#determineEnemySpecies`,
+    `src/ai/ai-species-gen.ts#calcEvoChance`,
+    `src/ai/ai-species-gen.ts#getRequiredPrevo`,
+  ],
 
   /**
    * §11. The preview replays `newBattle`'s own draws in the game's own order inside

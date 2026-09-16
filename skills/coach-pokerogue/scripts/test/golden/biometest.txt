@@ -1,24 +1,67 @@
 == swamp vs construction site (full)
 🗺 Next biome from Tall Grass − {Minimal overview} × {Close}
-★ Swamp Poison 76% Water 34% Fighting 28% 76 {offense 88 · defense -5 · catches 100}
-· mostly Toxicroak 28% · Quagsire 19% · Arbok 19%
+★ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
+· mostly Quagsire 18% · Arbok 17% · Gulpin 17%
+👤 trainers 8%: Parasol Lady · Black Belt
 ✓ 2 mons hit SE
 🎯 catch Arbok covers Fighting · new
+👑 W40 boss: Toxapex 100%
 → Graveyard · Tall Grass
-· Construction Site Fighting 55% Steel 45% Electric 31% 70 {offense 100 · defense -22 · catches 0}
-· mostly Machoke 31% · Magneton 31% · Gurdurr 14%
+· Construction Site Fighting 60% Steel 40% Electric 28% 69 {offense 100 · defense -23 · catches 0 · big fight 0}
+· mostly Machoke 31% · Magneton 28% · Gurdurr 26%
+👤 trainers 10%: Black Belt
 ✗ Snorlax & Lapras weak
 ✓ Alakazam resists
 ✓ 2 mons hit SE
+👑 W40 boss: Gurdurr 100%
 → ★Laboratory (1/3) · Factory
-summary {"kind":"biome","wave":30,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":null,"encounter":null,"next":null,"ahead":null,"biome":"Swamp 76 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · Construction Site 70"}
+summary {"kind":"biome","wave":30,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":null,"encounter":null,"next":null,"ahead":null,"biome":"Swamp 85 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · Construction Site 69"}
 == swamp vs construction site (mini)
 🗺 Next biome from Tall Grass + {Expand} × {Close}
-★ Swamp 76 {offense 88 · defense -5 · catches 100} — 2 mons hit SE
-· Construction Site 70 {offense 100 · defense -22 · catches 0} — Snorlax & Lapras weak, Alakazam resists
+★ Swamp 85 {offense 87 · defense -5 · catches 100 · big fight 100} — 2 mons hit SE
+· Construction Site 69 {offense 100 · defense -23 · catches 0 · big fight 0} — Snorlax & Lapras weak, Alakazam resists
 == no tables
 🗺 Next biome − {Minimal overview} × {Close}
 · Swamp
 · Construction Site
 reading the game's biome tables…
+== gym at wave 50 (full)
+🗺 Next biome from Tall Grass − {Minimal overview} × {Close}
+★ Swamp Poison 71% Water 31% Ground 27% 86 {offense 86 · defense -1 · catches 100 · big fight 100}
+· mostly Arbok 22% · Gulpin 22% · Quagsire 21%
+👤 trainers 6%: Parasol Lady · Black Belt
+✓ Garchomp resists
+✓ 2 mons hit SE
+✓ W50 gym Poison (Janine): 2 hit SE
+🎯 catch Arbok covers Fighting · new
+→ Graveyard · Tall Grass
+· Construction Site Fighting 49% Steel 41% Electric 29% 77 {offense 100 · defense -22 · catches 0 · big fight 75}
+· mostly Machoke 31% · Magneton 29% · Gurdurr 15%
+👤 trainers 8%: Black Belt
+✗ Snorlax & Lapras weak
+✓ Alakazam resists
+✓ 2 mons hit SE
+✓ W50 gym Rock (Brock): 2 hit SE, Lapras weak
+→ ★Laboratory (1/3) · Factory
+== hardcore, Snorlax fainted (full)
+🗺 Next biome from Tall Grass − {Minimal overview} × {Close}
+✚ judged without 1 fainted — no revive at the next heal
+★ Swamp Poison 72% Water 38% Fighting 29% 79 {offense 87 · defense 2 · catches 0 · big fight 100}
+· mostly Quagsire 18% · Arbok 17% · Gulpin 17%
+👤 trainers 8%: Parasol Lady · Black Belt
+✓ 2 mons hit SE
+👑 W40 boss: Toxapex 100%
+→ Graveyard · Tall Grass
+≈ Construction Site Fighting 60% Steel 40% Electric 28% 74 {offense 100 · defense -10 · catches 0 · big fight 17}
+· mostly Machoke 31% · Magneton 28% · Gurdurr 26%
+👤 trainers 10%: Black Belt
+✗ Lapras weak
+✓ Alakazam resists
+✓ 2 mons hit SE
+👑 W40 boss: Gurdurr 100%
+→ ★Laboratory (1/3) · Factory
+== swamp vs marsh (mini)
+🗺 Next biome from Tall Grass + {Expand} × {Close}
+≈ Swamp 85 {offense 87 · defense -5 · catches 100 · big fight 100} — 2 mons hit SE
+★ Marsh 86 {offense 88 · defense -6 · catches 100 · big fight 100} — edges Swamp on offense, 2 mons hit SE
 ok

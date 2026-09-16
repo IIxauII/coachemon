@@ -712,9 +712,48 @@ but keeps function names (`ar as us` in loading-scene = allBiomes; `t as $t` in 
 `setSpeciesDataRegistry`; `getBiomeName as P`). Re-`import()`ing an already-loaded `/assets/<name>-<hash>.js` URL from
 the page returns the same module instance without re-running it, so `47-biome.js` scans those namespaces by shape (a Map
 whose values carry `biomeLinks` + `pokemonPool`; an object with `getSpecies`/`getAllSpecies`; a function named
-`getBiomeName`). It is async: the first ticks have no tables. Pool keys: tier 0–4 COMMON…ULTRA_RARE, 5–8
-BOSS…BOSS_ULTRA_RARE; time of day -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT. Spawn odds and time-of-day rules: the header
-of `47-biome.js`. Not verified against a live tab yet (none was open); read from the fetched build.
+`getBiomeName`; the trainer configs, an object whose values carry `trainerType` + `partyTemplates`, exported from
+loading-scene as `do`). It is async: the first ticks have no tables. Pool keys: tier 0–4 COMMON…ULTRA_RARE, 5–8
+BOSS…BOSS_ULTRA_RARE; time of day -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT. The export shapes were confirmed on the live
+1.12.0.11 chunks (`TrainerConfig` keeps its class and field names; the registry keeps `getEvolutions`,
+`getPrevolution`, `hasPrevolution`; species keep `getPrevolutionLevels`). `signatureSpecies` is not exported: a gym
+leader's signature slots are closures in `partyMemberFuncs`, so a leader is judged by `specialtyType`.
+
+**What the ten waves after a biome choice hold.** A choice at wave X0 covers X1…X10 of the new biome.
+
+| Wave | Holds | Rule |
+|---|---|---|
+| fixed or final | not the biome's | `isFixedBattle` / `isWaveFinal` |
+| gym `w % 30 === (offsetGym ? 0 : 20)` | a trainer, always | `isWaveTrainer` returns early |
+| X2…X9 | a trainer with 1/`trainerChance` | no gym or fixed wave within 2 (inside X2…X10), and no hit on the 1–2 waves before (a fork at offset `v`, one draw each): `(1 − 1/c)^k / c` |
+| X1, X0 (not gym) | wild | X1 skipped for a sprite bug; X0 is the wild boss in classic |
+| Daily | trainer on X5, and on X0 past 10 | `getDailyTrainerManipulation` can override (not read) |
+
+A trainer's type is `Arena.randomTrainerType`: `randSeedInt(512)` over trainerPool tiers 0–4 (no luck), or
+`randSeedInt(64)` over the boss tiers when the biome has a BOSS trainer and `isTrainerBoss` (the gym wave; Daily: X0 in
+20–40) — **the gym leader is the biome's**. An all-empty pool gives BREEDER. Its party is
+`genNewPartyMemberSpecies`: `speciesPools` by the same 512 roll (a nested entry is rerolled past), else
+`randomSpecies(…, speciesFilter)` over every catchable species taken back to its root. A wild spawn is
+`Arena.randomSpecies`: `randSeedInt(512 − 2·luck)`, or `randSeedInt(64 − luck/2)` when the BOSS tier (5 only) has a
+species for the time of day; a Daily event seed's `dailyConfig.forcedWaves[].tier` pins the tier of a wave's first
+spawn. The legend reroll uses `getWaveForDifficulty(w, true)` (Daily: w + 30).
+
+**Wild evolutions** (`determineEnemySpecies`, via `getWildSpeciesForLevel`; kind 2 WILD, 1 for a boss or trainer):
+first, below a prevolution's threshold (`evoLevelThreshold[kind]` else its required level, or the `min` of both when that
+level isn't 1) the prevolution is returned outright; then every evolution with `t = max(required level,
+evoLevelThreshold[kind])`, `t > 0`, reached
+by the spawn's level is a candidate, one picked evenly, and it's taken when `randSeedIntRange(t, round(t·m)) ≤ level`
+(m: 1.2 wild, 1.1 normal, 1 strong), recursing from the evolved form without the prevolution step. So a level-1
+trade or item evolution is a sure thing unless it carries a delay. No evolving at classic wave 20's trainer.
+
+**The heal.** `setNextBiomeAndEnd` unshifts `PartyHealPhase` when the next wave is an X1 and the `PARTY_HEAL`
+challenges allow it (Limited Support 1 and 3 don't); `PartyHealPhase` revives the fainted unless `PREVENT_REVIVE`
+(Hardcore). So the fainted fight in the next biome, except under those two.
+
+`47-biome.js` turns all of this into odds per wave. The chunk re-import was checked live in Chrome on 1.12.0.11
+(2026-09-16, title screen, a fresh profile): the scan finds all five tables in the 10 loaded chunks, a BOSS trainer
+carries its `specialtyType`, and `getEvolutions` returns `level` + `evoLevelThreshold`. Not checked in Orion, and the
+card itself has not met a real biome choice yet.
 
 ---
 

@@ -1,45 +1,72 @@
 // Biome route advisor: when the game offers a choice of next biome (the party holds a Map), which one suits the party.
 //
-// ---- How the game decides (read from the pinned source, v1.12.0.11; not called live)
+// ---- How the game decides (read from the pinned source, v1.12.0.11; not called live; references/game-code.md §10)
 // SelectBiomePhase.start: `let{biomeLinks:v}=allBiomes.get(arena.biomeId)`; links are ids or [id, n] (offered with
 // chance 1/n); with a MapModifier and more than one left: `ui.setMode(15 /* OPTION_SELECT */, {options: biomes.map(b =>
 // ({label: getBiomeName(b), handler}))})`. The handler closes over the id, so an option is only its localized label.
 // Biome data (`allBiomes`, a Map BiomeId → {pokemonPool, trainerPool, trainerChance, biomeLinks}) is module-private:
 // nothing on the scene holds another biome's pools (Arena copies only its own). pokemonPool[tier][timeOfDay] lists
-// species ids; tier 0–4 COMMON…ULTRA_RARE, 5–8 BOSS…BOSS_ULTRA_RARE; timeOfDay -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT.
-// Arena.randomSpecies: tier from randSeedInt(512) (156+ common, 32+ uncommon, 6+ rare, 1+ super rare, 0 ultra) or
-// randSeedInt(64) for a boss (20+ boss, 6+ rare, 1+ super rare, 0 ultra); an empty tier drops to the one below; a
-// legend-like species (BST < 660) rerolls before wave 55 (BST ≥ 660: before 80); then getWildSpeciesForLevel may evolve
-// it (random, around its evolution level). Arena.getTimeOfDay: ABYSS always night, else (wave + waveCycleOffset) % 40:
+// species ids; trainerPool[tier] lists trainer types; tier 0–4 COMMON…ULTRA_RARE, 5–8 BOSS…BOSS_ULTRA_RARE; timeOfDay
+// -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT. Arena.getTimeOfDay: ABYSS always night, else (wave + waveCycleOffset) % 40:
 // < 15 day, < 20 dusk, < 35 night, else dawn.
+//
+// What each of the ten waves the choice covers holds:
+// - A fixed battle or the final wave: not the biome's (the rival, the evil team, the Elite Four); left out.
+// - `isWaveTrainer`, classic: the gym wave `w % 30 === (offsetGym ? 0 : 20)` always; X1 and X0 never; any other wave
+//   rolls 1/trainerChance, blocked by a gym or fixed wave within two waves (inside X2…X10) and by a roll that hit on
+//   either of the two waves before it (forks at offset w, one draw each). Daily: X5 and X0 past 10.
+// - A trainer: `Arena.randomTrainerType` rolls randSeedInt(512) over trainerPool tiers 0–4 (156+ common, 32+ uncommon,
+//   6+ rare, 1+ super rare, 0 ultra; no luck), or randSeedInt(64) over the boss tiers 5–8 (20+, 6+, 1+, 0) when the
+//   biome has a BOSS trainer and `isTrainerBoss` (the gym wave; Daily: X0 in 20–40): the gym leader is the biome's.
+//   An empty tier drops to the one below. Its party (`Trainer.genNewPartyMemberSpecies`): the config's speciesPools by
+//   the same 512 roll, else `speciesFilter` over every catchable species, taken back to its base form; a gym leader's
+//   filter is its specialty type (its signature slots are closures, unreadable, and mostly that type too).
+// - Otherwise a wild one: `Arena.randomSpecies` rolls randSeedInt(512 − 2·luck) over the same tier cuts, or
+//   randSeedInt(64 − luck/2) on a boss wave (`isBoss`, X0 in classic); a Daily event seed's `forcedWaves` pins the
+//   tier. An empty tier drops to the one below; a legend-like species (BST < 660) rerolls before difficulty wave 55
+//   (BST ≥ 660: before 80). `getWildSpeciesForLevel` then evolves it by chance (`determineEnemySpecies`): each
+//   evolution whose threshold t = max(its required level, evoLevelThreshold[kind]) the spawn has reached is picked evenly and taken
+//   when randSeedIntRange(t, round(t·m)) ≤ level (m 1.2 wild, 1.1 boss and trainer), again from the evolved form; a
+//   species below its own prevolution's threshold is replaced by the prevolution first. Kind: 2 wild, 1 boss/trainer.
+// Mystery Encounters take some wild and trainer waves at random; not modelled.
 //
 // ---- Where the tables come from at runtime
 // The live build keeps function and class names and exports these across chunks (loading-scene exports allBiomes,
 // FadeOut exports the species data registry and getBiomeName). `loadGameTables` imports the already-loaded /assets/*.js
 // modules again — the browser hands back the same module instances, nothing re-runs — and picks the exports by shape:
 // a Map whose values carry biomeLinks + pokemonPool, an object with getSpecies/getAllSpecies, a function named
-// getBiomeName, and the timed event manager (getShinyCatchMultiplier; the catch card's shiny odds). It's async, so the
-// first refresh or two draw the card without spawn data. Nothing is copied from the game.
+// getBiomeName, the trainer configs (an object whose values carry trainerType + partyTemplates), and the timed event
+// manager (getShinyCatchMultiplier; the catch card's shiny odds). It's async, so the first refresh or two draw the card
+// without spawn data. Without the trainer configs the trainer waves are left out, as fixed waves are. Nothing is copied
+// from the game.
 //
 // ---- Scoring (per offered biome, explainable on purpose)
-// Spawns: every species in the pool for the next 10 waves' times of day, weighted by the tier odds above; the boss wave
-// counts as one wave in ten. Each is taken at the party's top level along its evolution line (by level only).
-// - offense: per spawn, the best multiplier any party move reaches (STAB ×1.5): SE 1, neutral 0.5, resisted 0.
-// - defense: per spawn, share of the party resisting all its types minus the share weak to one of them.
-// - catch: species that cover a team weakness, clearly outclass the weakest member, or are new to the dex (light).
-// score = 50·offense + 25·(defense + 1) + up to 8 for catches, 0–108.
-const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() => {
-  const TIER_ODDS = [356, 124, 26, 5, 1].map(x => x / 512);
-  const BOSS_ODDS = [44, 14, 5, 1].map(x => x / 64);
-  const BOSS_SHARE = 0.1;
-  const ABYSS = 24;
-  // How much a catch counts, by tier: a common one is there to meet, an ultra rare one mostly isn't.
+// Encounters: every wave's wild and trainer species at those odds, each wave counting once, evolved at the party's top
+// level. The party is everyone: entering an X1 heals and revives, except under Hardcore (no revive) or Limited Support's
+// no-heal settings, where the fainted stay out.
+// - offense: per encounter, the best multiplier any party move reaches (STAB ×1.5): SE 1, neutral 0.5, resisted 0.
+// - defense: per encounter, share of the party resisting all its types minus the share weak to one of them.
+// - catch: wild species that cover a team weakness, clearly outclass the weakest member, or are new to the dex (light).
+// - big fight: the biome's tenth wave — its gym leader, or its wild boss — per foe: 1 when two members hit it SE, 0.5
+//   for one, minus the share weak to it. It already counts as one wave of ten above; this is on top, because it's the
+//   fight that ends a run.
+// score = 50·offense + 25·(defense + 1) + up to 8 for catches ± 10 for the big fight. Ties go to the unrounded score.
+const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor } = (() => {
+  const TIER_CUTS = [156, 32, 6, 1, 0];
+  const BOSS_CUTS = [20, 6, 1, 0];
+  const ABYSS = 24, END = 50;
+  const WINDOW = 10;
+  // What a tier is worth as a catch: a common one is there to meet, an ultra rare one mostly isn't.
   const CATCH_TIER = [1, 1, 0.6, 0.3, 0.15];
+  const TRAINER_TIER = 99; // an encounter from a trainer's party: not a catch
+  const BOSS_FIT = 10;
+  // `determineEnemySpecies`'s random factor, by EvoLevelThresholdKind (0 STRONG, 1 NORMAL, 2 WILD).
+  const EVO_SPREAD = [1, 1.1, 1.2];
   // Rare destinations worth naming when an option can lead there.
   const RARE_ONWARD = new Set([25, 28, 41]); // SPACE, FAIRY_CAVE, LABORATORY
 
   let tables = null, triedAt = -Infinity;
-  const setGameTables = t => { tables = t; };
+  const setGameTables = t => { tables = t; formsCache.clear(); trainerCache.clear(); };
   const scan = (ns, found) => {
     for (const k of Object.keys(ns)) {
       let v;
@@ -54,6 +81,10 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() =>
         found.biomeName ??= v;
       } else if (typeof v === "object" && typeof v.getShinyCatchMultiplier === "function") {
         found.events ??= v;
+      } else if (typeof v === "object" && !Array.isArray(v) && !found.trainers) {
+        let first;
+        try { first = v[Object.keys(v)[0]]; } catch { continue; }
+        if (first && typeof first === "object" && "trainerType" in first && "partyTemplates" in first) found.trainers = v;
       }
     }
   };
@@ -73,7 +104,7 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() =>
     if (!urls.length) return;
     const found = {};
     Promise.all(urls.map(u => import(u).then(ns => scan(ns, found), () => {})))
-      .then(() => { if (found.biomes && found.species) tables = found; });
+      .then(() => { if (found.biomes && found.species) setGameTables(found); });
   };
 
   // The game's timed event manager, or null while the tables aren't read (starts the read).
@@ -98,76 +129,214 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() =>
 
   const speciesById = id => tryDo(() => tables.species.getSpecies(id));
   const typesOfSpecies = sp => [sp.type1, sp.type2].filter(t => t != null).map(t => TYPES[t]).filter(Boolean);
-  // The species a spawn is likely to be at `level`: the last evolution along its line reached by level (item and
-  // friendship evolutions carry no real level and are skipped).
-  const atLevel = (sp, level) => {
-    let pick = sp;
-    for (const [id, lv] of tryDo(() => sp.getEvolutionLevels(), [])) {
-      if (typeof lv === "number" && lv > 1 && lv <= level) pick = speciesById(id) ?? pick;
-    }
-    return pick;
+  // P(tier i) for a roll uniform on [0, max), tier i taking the values from cuts[i] up to the tier above's cut.
+  const tierOdds = (cuts, max) => cuts.map((c, i) => Math.max(0, (i ? Math.min(cuts[i - 1], max) : max) - Math.min(c, max)) / max);
+  const odds = (pools, tiers, cuts, max, forced = null) => {
+    const p = forced != null && tiers.includes(forced) ? tiers.map(t => (t === forced ? 1 : 0)) : tierOdds(cuts, max);
+    const out = [];
+    p.forEach((x, i) => {
+      if (!x) return;
+      let j = i;
+      while (j > 0 && !pools[j].length) j--; // an empty tier drops to the one below
+      if (pools[j].length) out.push({ tier: tiers[j], list: pools[j], p: x });
+    });
+    return out;
   };
 
-  const timesOfDay = (s, biomeId, wave) => {
-    const out = [0, 0, 0, 0];
-    for (let w = wave + 1; w <= wave + 10; w++) {
+  // ---- A spawn's species at `level`, as the game's chance of each form: Map id → p.
+  const formsCache = new Map();
+  const formsAt = (id, level, kind) => {
+    const key = `${id}|${level}|${kind}`;
+    if (formsCache.has(key)) return formsCache.get(key);
+    const out = new Map();
+    const add = (sid, p) => out.set(sid, (out.get(sid) ?? 0) + p);
+    const reg = tables?.species;
+    const sp0 = speciesById(id);
+    if (!sp0) { formsCache.set(key, out); return out; }
+    if (typeof reg?.getEvolutions !== "function") {
+      // An older registry without evolution records: the last stage reached by level, as the game's own list gives it.
+      let pick = id;
+      for (const [eid, lv] of tryDo(() => sp0.getEvolutionLevels(), [])) if (typeof lv === "number" && lv > 1 && lv <= level) pick = eid;
+      add(pick, 1);
+      formsCache.set(key, out);
+      return out;
+    }
+    const walk = (sp, p, forcePrevo, depth) => {
+      if (forcePrevo && tryDo(() => reg.hasPrevolution(sp.speciesId), false)) {
+        const pls = tryDo(() => sp.getPrevolutionLevels(true), []);
+        for (let i = pls.length - 1; i >= 0; i--) {
+          const [pid, lv, thr] = pls[i];
+          const t = thr?.[kind] ?? lv;
+          if (level < (lv === 1 ? t : Math.min(lv, t))) { add(pid, p); return; }
+        }
+      }
+      const pool = (tryDo(() => reg.getEvolutions(sp.speciesId), []) ?? [])
+        .map(e => ({ id: e.speciesId, lv: e.level ?? 0, t: Math.max(e.level ?? 0, e.evoLevelThreshold?.[kind] ?? 0) }))
+        .filter(e => e.t > 0 && level >= e.lv && level >= e.t);
+      if (!pool.length || depth > 4) { add(sp.speciesId, p); return; }
+      for (const e of pool) {
+        const q = p / pool.length;
+        const hi = Math.round(e.t * EVO_SPREAD[kind]);
+        const evolves = Math.min(1, Math.max(0, (level - e.t + 1) / (hi - e.t + 1)));
+        const next = evolves > 0 ? speciesById(e.id) : null;
+        if (next) walk(next, q * evolves, false, depth + 1);
+        add(sp.speciesId, next ? q * (1 - evolves) : q);
+      }
+    };
+    walk(sp0, 1, true, 0);
+    for (const [k, v] of out) if (v < 1e-9) out.delete(k);
+    formsCache.set(key, out);
+    return out;
+  };
+
+  // ---- A trainer type's party, as base species with their chance: [{ id, p }], plus its specialty type.
+  const trainerCache = new Map();
+  const rootOfId = id => {
+    let cur = id;
+    for (let i = 0; i < 4; i++) {
+      const prev = tryDo(() => (tables.species.hasPrevolution(cur) ? tables.species.getPrevolution(cur) : null));
+      if (prev == null) break;
+      cur = typeof prev === "object" ? prev.speciesId : prev;
+    }
+    return cur;
+  };
+  const trainerParty = type => {
+    if (trainerCache.has(type)) return trainerCache.get(type);
+    const cfg = tryDo(() => tables.trainers[type]);
+    let value = null;
+    if (cfg) {
+      let species = [];
+      if (cfg.speciesPools) {
+        const pools = [0, 1, 2, 3, 4].map(t => (tryDo(() => cfg.speciesPools[t], []) ?? []).filter(x => typeof x === "number"));
+        const byId = new Map();
+        for (const { list, p } of odds(pools, [0, 1, 2, 3, 4], TIER_CUTS, 512)) for (const id of list) byId.set(id, (byId.get(id) ?? 0) + p / list.length);
+        species = [...byId].map(([id, p]) => ({ id, p }));
+      } else if (typeof cfg.speciesFilter === "function") {
+        const ids = new Set();
+        for (const sp of tryDo(() => tables.species.getAllSpecies(), [])) {
+          if (tryDo(() => (sp.isCatchable?.() ?? true) && cfg.speciesFilter(sp), false)) ids.add(rootOfId(sp.speciesId));
+        }
+        species = [...ids].map(id => ({ id, p: 1 / ids.size }));
+      }
+      value = { type, name: String(cfg.name ?? `trainer ${type}`), specialty: cfg.specialtyType != null ? TYPES[cfg.specialtyType] ?? null : null, species };
+    }
+    trainerCache.set(type, value);
+    return value;
+  };
+
+  // ---- What each of the ten waves holds in this biome: [{ w, tod, wild, trainer, boss, gym }], the fixed waves left out.
+  const wavesIn = (s, biome, wave) => {
+    const gm = s.gameMode;
+    const gymAt = w => w % 30 === (s.offsetGym ? 0 : 20);
+    const fixedAt = w => tryDo(() => gm.isWaveFinal(w), false) || tryDo(() => gm.isFixedBattle(w), false);
+    const bossTrainers = (biome.trainerPool?.[5] ?? []).length > 0;
+    const out = [];
+    for (let w = wave + 1; w <= wave + WINDOW; w++) {
+      if (fixedAt(w)) continue;
       const c = (w + (s.waveCycleOffset ?? 0)) % 40;
-      out[biomeId === ABYSS ? 3 : c < 15 ? 1 : c < 20 ? 2 : c < 35 ? 3 : 0] += 0.1;
+      const tod = biome.biomeId === ABYSS ? 3 : c < 15 ? 1 : c < 20 ? 2 : c < 35 ? 3 : 0;
+      let trainer = 0, gym = false;
+      if (gm?.isDaily) {
+        trainer = w % 10 === 5 || (w % 10 === 0 && w > 10) ? 1 : 0;
+        gym = trainer && bossTrainers && w > 10 && w < 50 && w % 10 === 0;
+      } else if (gymAt(w)) {
+        trainer = 1;
+        gym = bossTrainers && (biome.biomeId !== END || !!gm?.isClassic || tryDo(() => gm.isWaveFinal(w), false));
+      } else if (w % 10 > 1) {
+        const chance = biome.trainerChance ?? 0;
+        if (chance) {
+          const base = Math.floor(w / 10) * 10;
+          let blocked = false, before = 0;
+          for (let v = Math.max(w - 2, base + 2); v <= Math.min(w + 2, base + 10); v++) {
+            if (v === w) continue;
+            if (gymAt(v) || tryDo(() => gm.isFixedBattle(v), false)) { blocked = true; break; }
+            if (v < w) before++;
+          }
+          trainer = blocked ? 0 : (1 - 1 / chance) ** before / chance;
+        }
+      }
+      const boss = trainer < 1 && tryDo(() => gm.isBoss(w), w % 10 === 0);
+      out.push({ w, tod, wild: 1 - trainer, trainer, boss, gym });
     }
     return out;
   };
 
-  // Weighted spawns: [{ id, tier, w, wild }] with w summing to 1 (wild waves 0.9, the boss wave 0.1); `wild` is the
-  // non-boss part of w, `tier` the most common tier the species is in.
-  const spawns = (s, biome, wave) => {
-    const tod = timesOfDay(s, biome.biomeId, wave);
+  // Weighted encounters: [{ id, tier, w, wild, boss, trainer }] with w summing to 1 over the waves the biome decides;
+  // `wild` is the non-boss wild part of w, `boss` the tenth wave's (wild boss or gym leader), `trainer` a trainer's.
+  // `id` is the species as it's rolled, before it evolves. Also the trainers met and the tenth wave's foes.
+  const encounters = (s, biome, wave, luck = 0) => {
+    const gm = s.gameMode;
     const byId = new Map();
-    const add = (id, tier, w) => {
-      const e = byId.get(id) ?? { id, tier, w: 0, wild: 0 };
+    const add = (id, tier, w, part) => {
+      const e = byId.get(id) ?? { id, tier, w: 0, wild: 0, boss: 0, trainer: 0 };
       e.tier = Math.min(e.tier, tier);
       e.w += w;
-      if (tier <= 4) e.wild += w;
+      e[part] += w;
       byId.set(id, e);
     };
-    const midWave = wave + 5; // the reroll is per wave; the biome's middle stands in for all ten
-    const legalAt = id => {
-      const sp = speciesById(id);
-      if (!sp) return false;
-      if (!(sp.legendary || sp.subLegendary || sp.mythical)) return true;
-      return midWave >= (sp.baseTotal >= 660 ? 80 : 55);
-    };
-    const pass = (tiers, odds, share) => {
-      tod.forEach((todShare, t) => {
-        if (!todShare) return;
-        const lists = tiers.map(tier => {
-          const pool = biome.pokemonPool?.[tier] ?? {};
-          return [...(pool[-1] ?? []), ...(pool[t] ?? [])].filter(legalAt);
-        });
-        odds.forEach((p, i) => {
-          let j = i;
-          while (j > 0 && !lists[j].length) j--; // an empty tier drops to the one below
-          const list = lists[j];
-          for (const id of list) add(id, tiers[j], share * todShare * p / list.length);
-        });
-      });
-    };
-    pass([0, 1, 2, 3, 4], TIER_ODDS, 1 - BOSS_SHARE);
-    pass([5, 6, 7, 8], BOSS_ODDS, BOSS_SHARE);
-    const total = [...byId.values()].reduce((t, e) => t + e.w, 0) || 1;
-    return [...byId.values()].map(e => ({ ...e, w: e.w / total, wild: e.wild / total }));
+    const trainersMet = new Map(), gymLeaders = new Map();
+    let bigFight = null, total = 0;
+    for (const wv of wavesIn(s, biome, wave)) {
+      total += 1;
+      if (wv.wild > 0) {
+        const difficulty = tryDo(() => gm.getWaveForDifficulty(wv.w, true), wv.w);
+        const legalAt = id => {
+          const sp = speciesById(id);
+          if (!sp) return false;
+          if (!(sp.legendary || sp.subLegendary || sp.mythical)) return true;
+          return difficulty >= (sp.baseTotal >= 660 ? 80 : 55);
+        };
+        // `isBossSpecies` asks only the BOSS tier (5) for this time of day, and never an Endless or Daily End boss
+        // short of the final wave.
+        const bossWave = wv.boss && (biome.pokemonPool?.[5]?.[-1] ?? []).length + (biome.pokemonPool?.[5]?.[wv.tod] ?? []).length > 0
+          && (biome.biomeId !== END || !!gm?.isClassic);
+        const tiers = bossWave ? [5, 6, 7, 8] : [0, 1, 2, 3, 4];
+        const pools = tiers.map(t => [...(biome.pokemonPool?.[t]?.[-1] ?? []), ...(biome.pokemonPool?.[t]?.[wv.tod] ?? [])].filter(legalAt));
+        const forced = gm?.isDaily ? tryDo(() => gm.dailyConfig.forcedWaves.find(f => f.waveIndex === wv.w).tier) : null;
+        const max = bossWave ? 64 - luck * 0.5 : 512 - luck * 2;
+        for (const { tier, list, p } of odds(pools, tiers, bossWave ? BOSS_CUTS : TIER_CUTS, max, forced)) {
+          for (const id of list) add(id, tier, wv.wild * p / list.length, bossWave ? "boss" : "wild");
+        }
+        if (bossWave) bigFight = { wave: wv.w, gym: false };
+      }
+      if (wv.trainer > 0 && tables?.trainers) {
+        const tiers = wv.gym ? [5, 6, 7, 8] : [0, 1, 2, 3, 4];
+        const pools = tiers.map(t => biome.trainerPool?.[t] ?? []);
+        for (const { list, p } of odds(pools, tiers, wv.gym ? BOSS_CUTS : TIER_CUTS, wv.gym ? 64 : 512)) {
+          for (const type of list) {
+            const party = trainerParty(type);
+            if (!party) continue;
+            const q = wv.trainer * p / list.length;
+            const met = wv.gym ? gymLeaders : trainersMet;
+            met.set(type, (met.get(type) ?? 0) + q);
+            for (const m of party.species) add(m.id, TRAINER_TIER, q * m.p, wv.gym ? "boss" : "trainer");
+          }
+        }
+        if (wv.gym) bigFight = { wave: wv.w, gym: true };
+      }
+    }
+    const sum = [...byId.values()].reduce((t, e) => t + e.w, 0) || 1;
+    // Waves nothing could be read for (trainers without their configs) drop out of the weighting.
+    const list = [...byId.values()].map(e => ({ ...e, w: e.w / sum, wild: e.wild / sum, boss: e.boss / sum, trainer: e.trainer / sum }));
+    const share = m => [...m].map(([type, q]) => ({ ...trainerParty(type), q })).sort((a, b) => b.q - a.q);
+    return { list, trainers: share(trainersMet), leaders: share(gymLeaders), bigFight, waves: total };
   };
 
   const big = x => { try { return BigInt(x ?? 0); } catch { return 0n; } };
   const rootIdOf = sp => tryDo(() => sp.getRootSpeciesId(true), sp?.speciesId);
   const joinNames = names => (names.length > 2 ? `${names.length} mons` : names.join(" & "));
+  // Entering an X1 revives the fainted (PartyHealPhase), unless Hardcore prevents revives or Limited Support (1 no heal,
+  // 3 neither) skips the heal.
+  const staysFainted = s => (s.gameMode?.challenges ?? []).some(c => (c.id === 9 && c.value > 0) || (c.id === 8 && (c.value === 1 || c.value === 3)));
 
-  const judge = (s, id, party, level, wave) => {
+  const judge = (s, id, party, level, wave, luck) => {
     const biome = tryDo(() => tables.biomes.get(id));
     if (!biome) return null;
-    const spawnList = spawns(s, biome, wave).map(e => {
-      const sp = atLevel(speciesById(e.id), level);
-      return { ...e, sp, types: typesOfSpecies(sp) };
-    }).filter(e => e.types.length);
+    const enc = encounters(s, biome, wave, luck);
+    const spawnList = enc.list.flatMap(e => [...formsAt(e.id, level, e.wild > 0 ? 2 : 1)].map(([fid, fp]) => {
+      const sp = speciesById(fid);
+      return sp && { ...e, sp, types: typesOfSpecies(sp), w: e.w * fp, wild: e.wild * fp, boss: e.boss * fp };
+    })).filter(e => e?.types.length);
     if (!spawnList.length) return null;
 
     const moves = party.map(p => {
@@ -175,6 +344,8 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() =>
       return [...new Set(damagingTypes(p))].map(t => ({ t, stab: own.includes(t) ? 1.5 : 1 }));
     });
     const mult = (t, types) => types.reduce((x, d) => x * vs(t, d), 1);
+    const hitsSE = (i, types) => moves[i].some(m => mult(m.t, types) >= 2);
+    const weakTo = (p, types) => Math.max(...types.map(t => effectiveness(t, p))) >= 2;
     let offense = 0, defense = 0;
     const se = party.map(() => 0), weak = party.map(() => 0), resist = party.map(() => 0);
     const typeShare = {};
@@ -182,13 +353,8 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() =>
       for (const t of e.types) typeShare[t] = (typeShare[t] ?? 0) + e.w;
       let best = 0;
       party.forEach((p, i) => {
-        let mine = 0;
-        for (const m of moves[i]) {
-          const x = mult(m.t, e.types);
-          if (x >= 2) mine = Math.max(mine, 2);
-          best = Math.max(best, x * m.stab);
-        }
-        if (mine >= 2) se[i] += e.w;
+        for (const m of moves[i]) best = Math.max(best, mult(m.t, e.types) * m.stab);
+        if (hitsSE(i, e.types)) se[i] += e.w;
         const worst = Math.max(...e.types.map(t => effectiveness(t, p)));
         if (worst >= 2) { weak[i] += e.w; defense -= e.w / party.length; }
         else if (worst <= 0.5) { resist[i] += e.w; defense += e.w / party.length; }
@@ -196,29 +362,62 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() =>
       offense += e.w * (best >= 2 ? 1 : best >= 1 ? 0.5 : 0);
     }
 
-    // Catches: non-boss spawns that cover a team weakness, clearly outclass the weakest member, or are new to the dex.
+    // The tenth wave: a gym leader by specialty type, else the wild boss by species. Per foe: two hitters 1, one 0.5,
+    // minus the share of us weak to it.
+    const fitOf = types => {
+      const hitters = party.filter((_, i) => hitsSE(i, types)).length;
+      return (hitters >= 2 ? 1 : hitters ? 0.5 : 0) - party.filter(p => weakTo(p, types)).length / party.length;
+    };
+    let bossFit = 0, fight = null;
+    if (enc.bigFight?.gym && enc.leaders.length) {
+      const byType = new Map();
+      for (const l of enc.leaders) {
+        const types = l.specialty ? [l.specialty] : null;
+        if (!types) continue;
+        const g = byType.get(l.specialty) ?? { type: l.specialty, names: [], q: 0 };
+        g.names.push(l.name); g.q += l.q;
+        byType.set(l.specialty, g);
+      }
+      const groups = [...byType.values()].sort((a, b) => b.q - a.q);
+      const q = groups.reduce((t, g) => t + g.q, 0) || 1;
+      bossFit = groups.reduce((t, g) => t + (g.q / q) * fitOf([g.type]), 0);
+      const hitters = party.filter((_, i) => groups.some(g => hitsSE(i, [g.type]))).map(p => p.name);
+      const weakNames = party.filter(p => groups.some(g => g.q / q >= 0.3 && weakTo(p, [g.type]))).map(p => p.name);
+      fight = { wave: enc.bigFight.wave, gym: true, types: groups.map(g => ({ type: g.type, names: g.names, pct: Math.round(g.q / q * 100) })), hitters, weak: weakNames };
+    } else if (enc.bigFight) {
+      const foes = spawnList.filter(e => e.boss > 0);
+      const q = foes.reduce((t, e) => t + e.boss, 0);
+      if (q > 0) {
+        bossFit = foes.reduce((t, e) => t + (e.boss / q) * fitOf(e.types), 0);
+        const met = {};
+        for (const e of foes) { const n = tryDo(() => e.sp.name, `#${e.id}`); met[n] = (met[n] ?? 0) + e.boss / q; }
+        fight = { wave: enc.bigFight.wave, gym: false, foes: Object.entries(met).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([n, x]) => [n, Math.round(x * 100)]) };
+      }
+    }
+
+    // Catches: wild non-boss spawns that cover a team weakness, clearly outclass the weakest member, or are new to the dex.
     const weakTypes = teamWeakTypes(party);
     const roots = new Set(party.map(p => rootIdOf(p.species)));
     const fin = party.map(p => finalBstOf(p).final).filter(Boolean);
     const weakest = fin.length ? Math.min(...fin) : 0;
     const dex = s.gameData?.dexData ?? {};
-    const catches = [];
+    const catches = new Map();
     for (const e of spawnList) {
       if (e.tier > 4 || !(e.wild > 0) || roots.has(rootIdOf(e.sp))) continue;
       const covers = weakTypes.filter(t => mult(t, e.types) <= 0.5);
       const bst = finalBstOf({ species: e.sp }).final;
       const upgrade = weakest && bst >= 400 && bst >= weakest + 100;
       const fresh = !big(dex[e.sp.speciesId]?.caughtAttr); // the species met, after evolving
-      const value = (covers.length ? 1 : 0) + (upgrade ? 1 : 0) + (fresh ? 0.5 : 0);
-      if (value < 1) continue;
+      const value = ((covers.length ? 1 : 0) + (upgrade ? 1 : 0) + (fresh ? 0.5 : 0)) * CATCH_TIER[e.tier];
+      if (value < CATCH_TIER[e.tier] || (catches.get(e.sp.speciesId)?.value ?? -1) >= value) continue;
       const tags = [covers.length ? `covers ${covers.slice(0, 2).join("/")}` : null, upgrade ? `BST ~${bst}` : null, fresh ? "new" : null].filter(Boolean);
-      catches.push({ name: tryDo(() => e.sp.name, `#${e.id}`), icon: tryDo(() => [e.sp.getIconAtlasKey(0), String(e.sp.getIconId(false, 0))]),
-        tier: e.tier, value: value * CATCH_TIER[e.tier], tags });
+      catches.set(e.sp.speciesId, { name: tryDo(() => e.sp.name, `#${e.id}`), icon: tryDo(() => [e.sp.getIconAtlasKey(0), String(e.sp.getIconId(false, 0))]),
+        tier: e.tier, value, tags });
     }
-    catches.sort((a, b) => b.value - a.value);
-    const opportunity = Math.min(1, catches.slice(0, 3).reduce((t, c) => t + c.value, 0) / 3);
+    const catchList = [...catches.values()].sort((a, b) => b.value - a.value);
+    const opportunity = Math.min(1, catchList.slice(0, 3).reduce((t, c) => t + c.value, 0) / 3);
 
-    const score = Math.round(50 * offense + 25 * (defense + 1) + 8 * opportunity);
+    const raw = 50 * offense + 25 * (defense + 1) + 8 * opportunity + BOSS_FIT * bossFit;
     const mix = Object.entries(typeShare).sort((a, b) => b[1] - a[1]).slice(0, 3).filter(([, x], i) => i === 0 || x >= 0.15)
       .map(([t, x]) => [t, Math.round(x * 100)]);
     // The species met most, by name at the party's level (a line in several tiers adds up).
@@ -226,23 +425,43 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() =>
     for (const e of spawnList) { const n = tryDo(() => e.sp.name, `#${e.id}`); met[n] = (met[n] ?? 0) + e.w; }
     const common = Object.entries(met).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([n, x]) => [n, Math.round(x * 100)]);
 
-    // Reasons, worst news first: who's weak, who resists, who hits it, what's worth catching.
+    // Reasons, worst news first: who's weak, the gym leader when it's bad news, who resists, who hits it, the gym leader
+    // when it's good news, what's worth catching.
     const names = pred => party.filter((_, i) => pred(i)).map(p => p.name);
     const weakNames = names(i => weak[i] >= 0.35), resistNames = names(i => resist[i] >= 0.4), hitters = names(i => se[i] >= 0.4);
     const reasons = [];
+    const gymReason = fight?.gym ? (() => {
+      const who = fight.types.slice(0, 2).map(g => `${g.type} (${g.names.length > 2 ? `${g.names.length} leaders` : g.names.join("/")})`).join(" or ");
+      const how = [fight.hitters.length ? `${fight.hitters.length} hit${fight.hitters.length === 1 ? "s" : ""} SE` : "nothing hits SE",
+        fight.weak.length ? `${joinNames(fight.weak)} weak` : null].filter(Boolean).join(", ");
+      return { good: bossFit >= 0.25, gym: true, text: `W${fight.wave} gym ${who}: ${how}` };
+    })() : null;
     if (weakNames.length) reasons.push({ good: false, text: `${joinNames(weakNames)} weak` });
+    if (gymReason && !gymReason.good) reasons.push(gymReason);
     if (resistNames.length) reasons.push({ good: true, text: `${joinNames(resistNames)} resist${resistNames.length === 1 ? "s" : ""}` });
     if (hitters.length >= 2) reasons.push({ good: true, text: `${hitters.length} mons hit SE` });
     else if (hitters.length === 1) reasons.push({ good: false, text: `only ${hitters[0]} hits SE` });
     else reasons.push({ good: false, text: "nothing hits SE" });
-    if (catches[0]) reasons.push({ good: true, catch: true, text: `catch ${catches[0].name} (${catches[0].tags.join(", ")})` });
+    if (gymReason?.good) reasons.push(gymReason);
+    if (catchList[0]) reasons.push({ good: true, catch: true, text: `catch ${catchList[0].name} (${catchList[0].tags.join(", ")})` });
 
+    const trainerShare = enc.list.reduce((t, e) => t + e.trainer, 0);
     const onward = tryDo(() => [...biome.biomeLinks], []).map(l => ({ name: nameOf(linkId(l)), rare: RARE_ONWARD.has(linkId(l)), chance: Array.isArray(l) ? l[1] : 1 }));
     return {
-      score, offense: Math.round(offense * 100), defense: Math.round(defense * 100), opportunity: Math.round(opportunity * 100),
-      mix, common, reasons, catch: catches[0] ? { name: catches[0].name, icon: catches[0].icon, tags: catches[0].tags } : null,
-      trainerChance: biome.trainerChance ?? null, onward,
+      raw, score: Math.round(raw), offense: Math.round(offense * 100), defense: Math.round(defense * 100),
+      opportunity: Math.round(opportunity * 100), bossFit: Math.round(bossFit * 100),
+      mix, common, reasons, catch: catchList[0] ? { name: catchList[0].name, icon: catchList[0].icon, tags: catchList[0].tags } : null,
+      trainers: enc.trainers.length ? { pct: Math.round(trainerShare * 100), names: enc.trainers.slice(0, 3).map(t => t.name) } : null,
+      fight, trainerChance: biome.trainerChance ?? null, onward,
     };
+  };
+
+  // What separates two options that round to about the same score: the component with the largest weighted gap.
+  const edgeOver = (a, b) => {
+    const parts = [["offense", 0.5 * (a.offense - b.offense)], ["defense", 0.25 * (a.defense - b.defense)],
+      ["the big fight", 0.1 * (a.bossFit - b.bossFit)], ["catches", 0.08 * (a.opportunity - b.opportunity)]];
+    const [name, gap] = parts.sort((x, y) => y[1] - x[1])[0];
+    return gap > 0 ? name : null;
   };
 
   let cache = { key: null, value: null };
@@ -250,25 +469,38 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() =>
     loadGameTables();
     const labels = h.config.options.map(o => String(o.label ?? ""));
     const wave = s.currentBattle?.waveIndex ?? 0;
-    const party = s.getPlayerParty().filter(Boolean);
-    const key = JSON.stringify([!!tables, wave, labels, party.map(p => [p.id, p.level, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))])]);
+    const everyone = s.getPlayerParty().filter(Boolean);
+    const party = staysFainted(s) ? everyone.filter(p => p.hp > 0) : everyone;
+    const key = JSON.stringify([!!tables, wave, labels, party.map(p => [p.id, p.level, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
+      (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
     if (cache.key === key) return cache.value;
-    const level = Math.max(1, ...party.map(p => p.level ?? 1));
+    const level = Math.max(1, ...everyone.map(p => p.level ?? 1));
+    const luck = partyLuck(everyone);
     const ids = tables ? resolveOptions(s, labels) : labels.map(() => null);
-    const options = labels.map((label, i) => ({ label, id: ids[i], ...(ids[i] != null && party.length ? judge(s, ids[i], party, level, wave) ?? {} : {}) }));
+    const options = labels.map((label, i) => ({ label, id: ids[i], ...(ids[i] != null && party.length ? judge(s, ids[i], party, level, wave, luck) ?? {} : {}) }));
     const scored = options.filter(o => o.score != null);
-    const best = scored.reduce((b, o) => (!b || o.score > b.score ? o : b), null);
+    const ranked = [...scored].sort((a, b) => b.raw - a.raw || b.bossFit - a.bossFit || b.defense - a.defense);
+    const best = ranked[0] ?? null;
     for (const o of scored) o.verdict = o === best ? "pick" : best.score - o.score <= 5 ? "close" : "worse";
+    // A near tie still gets a pick, and says what decided it.
+    if (best && ranked[1] && best.score - ranked[1].score <= 2) {
+      const edge = edgeOver(best, ranked[1]);
+      if (edge) best.reasons.unshift({ good: true, edge: true, text: `edges ${ranked[1].label} on ${edge}` });
+    }
     const value = {
       kind: "biome", from: tables ? nameOf(s.arena?.biomeId) : null, options,
-      pick: best ? options.indexOf(best) : -1, data: !!tables,
+      pick: best ? options.indexOf(best) : -1, data: !!tables, trainers: !!tables?.trainers,
+      fainted: everyone.length - party.length,
     };
+    for (const o of options) delete o.raw;
     cache = { key, value };
     return value;
   };
 
-  // The weighted spawn list of one biome as the next ten waves after `wave` would see it (tests, live checks).
-  const spawnsFor = (s, id, wave) => (tables?.biomes?.get(id) ? spawns(s, tables.biomes.get(id), wave) : null);
+  // The weighted encounters of one biome as the ten waves after `wave` would see them, and a species' chance of each
+  // form at a level (tests, live checks).
+  const spawnsFor = (s, id, wave, luck = 0) => (tables?.biomes?.get(id) ? encounters(s, tables.biomes.get(id), wave, luck) : null);
+  const formsFor = (id, level, kind = 2) => Object.fromEntries(formsAt(id, level, kind));
 
-  return { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor };
+  return { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor };
 })();
