@@ -24,7 +24,7 @@ const drawCatch = m => {
       best ? h("span", { color, marginRight: "3px" }, pct(t.best.p)) : null,
       h("span", {}, best ? `— ${t.why}` : t.why)));
     if (view !== "full") continue;
-    out.push(line("", "#9aa", ...t.chance.map(x => h("span", { display: "inline-flex", alignItems: "center", marginRight: "5px", fontSize: "9px", ...(x.p > 0 ? {} : dim) },
+    out.push(line("", "#9aa", ...t.chance.map(x => h("span", { display: "inline-flex", alignItems: "center", marginRight: "5px", fontSize: FS.tiny, ...(x.p > 0 ? {} : dim) },
       ...ball(x, 12), `×${x.count} ${pct(x.p)}`))));
     for (const r of t.reasons) out.push(line(KIND[r.kind][0], KIND[r.kind][1], h("span", dim, r.text)));
   }

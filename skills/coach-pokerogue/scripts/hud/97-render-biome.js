@@ -5,10 +5,10 @@
 const drawBiome = m => {
   const pick = m.pick >= 0 ? m.options[m.pick] : null;
   if (view === "closed") return [tab("🗺", pick ? h("span", {}, pick.label) : null)];
-  const header = bar("🗺", "Next biome", m.from ? h("span", { ...dim, fontWeight: "normal", fontSize: "9px" }, `from ${m.from}`) : null);
+  const header = bar("🗺", "Next biome", m.from ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, `from ${m.from}`) : null);
   if (!m.options.some(o => o.score != null)) {
     return [header, ...m.options.map(o => line("·", "#9aa", h("span", {}, o.label))),
-      line("", "#9aa", h("span", { ...dim, fontSize: "9px" }, m.data ? "no spawn data for these biomes" : "reading the game's biome tables…"))];
+      line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, m.data ? "no spawn data for these biomes" : "reading the game's biome tables…"))];
   }
   const COLOR = { pick: "#6d6", close: "#ec4", worse: "#9aa" };
   const MARK = { pick: "★", close: "≈", worse: "·" };
@@ -26,7 +26,7 @@ const drawBiome = m => {
     out.push(h("div", { marginTop: "4px", paddingTop: "3px", borderTop: "1px solid rgba(255,255,255,.12)" },
       line(MARK[o.verdict], color, name, h("span", { flex: "1" }), ...o.mix.map(([t, pct]) => badge(t, `${pct}%`)), score)));
     if (o.common?.length) {
-      out.push(line("·", "#9aa", h("span", { ...dim, fontSize: "9px" }, `mostly ${o.common.map(([n, pct]) => `${n} ${pct}%`).join(" · ")}`)));
+      out.push(line("·", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, `mostly ${o.common.map(([n, pct]) => `${n} ${pct}%`).join(" · ")}`)));
     }
     for (const r of o.reasons) {
       // The catch names its species by icon (the name when the sprite isn't loaded) and then only what it's good for.
@@ -35,7 +35,7 @@ const drawBiome = m => {
         : line(r.good ? "✓" : "✗", r.good ? "#6d6" : "#e77", h("span", {}, r.text)));
     }
     if (o.onward?.length) {
-      out.push(line("→", "#9aa", h("span", { ...dim, fontSize: "9px" },
+      out.push(line("→", "#9aa", h("span", { ...dim, fontSize: FS.tiny },
         o.onward.map(x => `${x.rare ? "★" : ""}${x.name}${x.chance > 1 ? ` (1/${x.chance})` : ""}`).join(" · "))));
     }
   }

@@ -39,12 +39,12 @@ const tpTheirMove = (s, f, me, live) => {
     try {
       const t = threatFrom(s, f, me);
       if (Number.isFinite(t?.expected)) {
-        return { dmg: t.expected, name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, first: t.first, priority: t.move?.priority ?? 0 };
+        return { dmg: t.expected, name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t) };
       }
     } catch {}
   }
   const m = bestMove(f, me, true);
-  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, first: null, priority: m?.priority ?? 0 };
+  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, first: null, priority: m?.priority ?? 0, hits: m?.dmg > 0 ? 1 : 0 };
 };
 
 const tpFoeFirst = (s, me, f, ours, theirs, live) => {
@@ -74,12 +74,14 @@ const tpTypeScore = (f, me) => {
 // Turn-end HP change split into what recurs (Leftovers and other heals, weather and status chip: negative when chip
 // wins) and the one-shot berries (Sitrus below half, Enigma after a super-effective hit), read by asking endOfTurnHp
 // about the mon at a made-up HP.
+const tpHealAt = (s, p, hp = Math.ceil(p.getMaxHp() * 0.75), se = false) => {
+  if (typeof endOfTurnHp !== "function") return 0;
+  try { return endOfTurnHp(Object.create(p, { hp: { value: hp } }), { s, hp, tookSuperEffective: se }) || 0; } catch { return 0; }
+};
 const tpHealProfile = (s, p) => {
   if (typeof endOfTurnHp !== "function") return null;
   const max = p.getMaxHp();
-  const at = (hp, se) => {
-    try { return endOfTurnHp(Object.create(p, { hp: { value: hp } }), { s, hp, tookSuperEffective: se }) || 0; } catch { return 0; }
-  };
+  const at = (hp, se) => tpHealAt(s, p, hp, se);
   const base = at(Math.ceil(max * 0.75), false);
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
@@ -113,12 +115,39 @@ const tpTables = (s, party, foes, live) => {
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
     ourHeal: party.map(p => tpHealProfile(s, p)), foeHeal: foes.map(p => tpHealProfile(s, p)),
     foeStart: foes.map(f => f.hp),
+    ...tpWear(s, party, foes, live, ours, theirs),
   };
 };
 
-const tpHeal = (hp, max, prof, used, se) => {
+// Wave status tokens on our mons and item thieves on both sides (30-planner): the token odds and what their status
+// adds at turn end, who moves first once paralysed, each side's steal rates, and each mon's turn-end HP change after
+// k steals.
+const tpWear = (s, party, foes, live, ours, theirs) => {
+  const heal = p => tpHealAt(s, p);
+  const tok = party.map(me => {
+    const odds = foes[0] ? tokenOdds(s, foes[0], me) : null;
+    return odds && { odds, shift: tokenShift(odds, me, heal), para: odds.tokens.filter(x => x.effect === 3).reduce((t, x) => t + x.share, 0) };
+  });
+  const firstPara = party.map((me, mi) => (tok[mi]?.para ? foes.map((f, fi) => {
+    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: 3 } } };
+    if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === 5 ? 2 : 1) };
+    const clone = Object.create(me, slowed);
+    return tpFoeFirst(s, clone, f, ours[mi][fi], tpTheirMove(s, f, clone, live), live);
+  }) : null));
+  const fromUs = foes.map(f => party.map(me => stealRates(f, me)));
+  const fromFoe = party.map(me => foes.map(f => stealRates(me, f)));
+  return {
+    tok, firstPara, fromUs, fromFoe,
+    ourItems: party.map((me, mi) => (foes.some((_, fi) => fromUs[fi][mi]) ? afterSteals(me, heal) : null)),
+    foeItems: foes.map((f, fi) => (party.some((_, mi) => fromFoe[mi][fi]) ? afterSteals(f, heal) : null)),
+  };
+};
+// Turn-end HP change from `byCount` (after k steals) with `fixed` sure steals and Grip Claw's `mean`, against none.
+const tpStolen = (byCount, fixed, mean) => (byCount ? stealCounts(fixed, mean).reduce((t, p, k) => t + p * (byCount[k] - byCount[0]), 0) : 0);
+
+const tpHeal = (hp, max, prof, used, se, extra = 0) => {
   if (!prof || hp < 1) return [hp, used];
-  let add = prof.base;
+  let add = prof.base + extra;
   if (hp < max / 2 && !(used & 1) && prof.sitrus) { add += prof.sitrus; used |= 1; }
   if (se && !(used & 2) && prof.enigma) { add += prof.enigma; used |= 2; }
   return [Math.min(max, hp + add), used];
@@ -126,34 +155,62 @@ const tpHeal = (hp, max, prof, used, se) => {
 
 // One exchange from state `st`: our `mi` against foe `fi` until one faints (or TP_TURNS pass).
 // entry "switch": a voluntary switch-in, the foe gets a free hit first.
+// Carried between exchanges: `ox` the landed enemy hits each of our mons has taken (wave status tokens), `od`/`og`
+// the Mini Black Hole steals and Grip Claw's expected steals from it, `fd`/`fg` the same from each foe.
 const tpFight = (T, st, mi, fi, entry) => {
   let mh = st.oh[mi], mb = st.ob[mi], fh = st.fh[fi], fs = st.fs[fi], fb = st.fb[fi];
-  const us = T.ours[mi][fi], them = T.theirs[fi][mi], meFirst = T.first[mi][fi] < 0.5, boss = T.boss[fi];
+  // Tables or states without them (built by hand) carry no wear.
+  let ox = st.ox?.[mi] ?? 0, od = st.od?.[mi] ?? 0, og = st.og?.[mi] ?? 0, fd = st.fd?.[fi] ?? 0, fg = st.fg?.[fi] ?? 0;
+  const us = T.ours[mi][fi], them = T.theirs[fi][mi], boss = T.boss[fi];
+  const tok = T.tok?.[mi], robUs = T.fromUs?.[fi]?.[mi], robFoe = T.fromFoe?.[mi]?.[fi];
   let turns = 0;
-  const hitFoe = () => {
+  const hitFoe = act => {
     for (const d of us?.hits ?? []) {
       if (fh < 1) break;
-      if (boss) { const [x, idx] = tpBossHit(d, fh, boss.seg, boss.min, fs); fh -= x; fs = idx; } else fh -= d;
+      if (boss) { const [x, idx] = tpBossHit(d * act, fh, boss.seg, boss.min, fs); fh -= x; fs = idx; } else fh -= d * act;
+      fg += (robFoe?.perHit ?? 0) * act;
     }
   };
-  const endTurn = () => {
-    [mh, mb] = tpHeal(mh, T.ourMax[mi], T.ourHeal[mi], mb, them.e >= 2);
-    [fh, fb] = tpHeal(fh, T.foeMax[fi], T.foeHeal[fi], fb, (us?.e ?? 1) >= 2);
+  const foeHit = () => {
+    mh -= them.dmg;
+    ox += them.hits ?? 0;
+    og += (robUs?.perHit ?? 0) * (them.hits ?? 0);
   };
-  if (entry === "switch") { mh -= them.dmg; endTurn(); }
+  // P(token status by the end of turn t), t = 0 before this exchange.
+  const bys = [];
+  const by = t => (!tok ? 0 : t < bys.length ? bys[t] : tok.odds.by(ox));
+  const endTurn = () => {
+    [mh, mb] = tpHeal(mh, T.ourMax[mi], T.ourHeal[mi], mb, them.e >= 2, (tok ? tok.shift * by(turns) : 0) + tpStolen(T.ourItems?.[mi], od, og));
+    [fh, fb] = tpHeal(fh, T.foeMax[fi], T.foeHeal[fi], fb, (us?.e ?? 1) >= 2, tpStolen(T.foeItems?.[fi], fd, fg));
+    // Mini Black Hole steals after the heals, if its holder is still up.
+    if (robUs && fh >= 1) od += robUs.perTurn;
+    if (robFoe && mh >= 1) fd += robFoe.perTurn;
+  };
+  if (entry === "switch") { foeHit(); endTurn(); }
+  bys.push(by(0));
   while (mh >= 1 && fh >= 1 && turns < TP_TURNS) {
     turns++;
+    // Paralysed (likely) by now, we're half as fast.
+    const meFirst = (tok?.para && by(turns - 1) * tok.para >= 0.5 ? T.firstPara[mi][fi] : T.first[mi][fi]) < 0.5;
+    const act = () => (tok ? 1 - attemptsLost(tok.odds, by, turns, meFirst ? 0 : 1) : 1);
     // A charging move hits every second turn (hidden meanwhile for Dig / Fly: the foe's later hit misses); a
     // recharging one, or one that can't repeat, loses the turn after each hit.
     const hits = us?.charge ? turns % 2 === 0 : us?.recharge ? turns % 2 === 1 : true;
     const hidden = !hits && us?.semiCharge;
-    if (meFirst) { if (hits) hitFoe(); if (fh >= 1 && !hidden) mh -= them.dmg; } else { mh -= them.dmg; if (mh >= 1 && hits) hitFoe(); }
+    if (meFirst) { if (hits) hitFoe(act()); if (fh >= 1 && !hidden) foeHit(); } else { foeHit(); if (mh >= 1 && hits) hitFoe(act()); }
+    bys.push(by(turns));
     endTurn();
   }
-  return { mh: mh < 1 ? 0 : mh, mb, fh: fh < 1 ? 0 : fh, fs, fb, turns };
+  return { mh: mh < 1 ? 0 : mh, mb, fh: fh < 1 ? 0 : fh, fs, fb, turns, ox, od, og, fd, fg };
 };
 
-const tpClone = st => ({ ...st, oh: st.oh.slice(), ob: st.ob.slice(), fh: st.fh.slice(), fs: st.fs.slice(), fb: st.fb.slice() });
+const tpClone = st => ({ ...st, oh: st.oh.slice(), ob: st.ob.slice(), fh: st.fh.slice(), fs: st.fs.slice(), fb: st.fb.slice(),
+  ox: st.ox.slice(), od: st.od.slice(), og: st.og.slice(), fd: st.fd.slice(), fg: st.fg.slice() });
+// Carry an exchange's result into state `c`.
+const tpApply = (c, mi, fi, r) => {
+  c.oh[mi] = r.mh; c.ob[mi] = r.mb; c.fh[fi] = r.fh; c.fs[fi] = r.fs; c.fb[fi] = r.fb;
+  c.ox[mi] = r.ox; c.od[mi] = r.od; c.og[mi] = r.og; c.fd[fi] = r.fd; c.fg[fi] = r.fg;
+};
 const tpAlive = hps => hps.flatMap((hp, i) => (hp >= 1 ? [i] : []));
 
 // The trainer's next mon: best matchup score against the mon we have on the field.
@@ -196,7 +253,7 @@ const tpSearch = (T, start, reserve, win) => {
       for (const [mi, entry] of cands) {
         const r = tpFight(T, st, mi, fi, entry);
         const c = tpClone(st);
-        c.oh[mi] = r.mh; c.ob[mi] = r.mb; c.fh[fi] = r.fh; c.fs[fi] = r.fs; c.fb[fi] = r.fb;
+        tpApply(c, mi, fi, r);
         c.cur = r.mh >= 1 ? mi : null;
         c.fcur = r.fh >= 1 ? fi : null;
         c.steps = [...st.steps, { mi, fi, entry, hp: r.mh, foeFrom: st.fh[fi], foeHp: r.fh, turns: r.turns }];
@@ -234,6 +291,7 @@ const tpView = (T, party, foes, double = false) => {
   const start = {
     oh: party.map(p => p.hp), ob: party.map(() => 0),
     fh: foes.map(f => f.hp), fs: T.boss.map(x => x?.idx ?? 0), fb: foes.map(() => 0),
+    ox: party.map(() => 0), od: party.map(() => 0), og: party.map(() => 0), fd: foes.map(() => 0), fg: foes.map(() => 0),
     cur: onField >= 0 ? onField : null, fcur: foeOnField >= 0 ? foeOnField : null, steps: [],
   };
 
@@ -245,7 +303,7 @@ const tpView = (T, party, foes, double = false) => {
       const runs = left.map(mi => ({ mi, r: tpFight(T, st, mi, fi, "free") }));
       const rank = ({ mi, r }) => (r.fh < 1 ? 2 + r.mh / T.ourMax[mi] : 1 - r.fh / st.fh[fi]);
       const { mi, r } = runs.reduce((b, x) => (rank(x) > rank(b) ? x : b));
-      st.oh[mi] = r.mh; st.fh[fi] = r.fh; st.fs[fi] = r.fs;
+      tpApply(st, mi, fi, r);
       if (r.mh < 1) kills++;
       else break; // it fell, or neither side can finish the other
     }
