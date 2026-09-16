@@ -111,9 +111,10 @@ for (const [label, pk, newMove, double] of cases) {
   show("Dragonite ← Outrage", o);
   assert.ok(o.model.move.drawbacks.includes("locks 2–3 turns, then confused"));
   assert.ok(!o.model.move.drawbacks.some(d => /misses/.test(d)), "Outrage's miss effect isn't crash damage");
+  // Outrage does clear Dragon Claw here, but only because randbats runs it on Dragonite: the moveset-prior
+  // section below pins that down by scoring the same moveset on a species randbats has never heard of.
   const claw = byName(o.model, "Dragon Claw");
-  assert.ok(claw.replacement <= claw.value * 1.1, `Outrage isn't a clear upgrade over Dragon Claw (${claw.replacement} vs ${claw.value})`);
-  assert.notEqual(o.model.moves[o.model.forget]?.name, "Dragon Claw");
+  assert.ok(claw.replacement > claw.value, `Outrage outscores Dragon Claw (${claw.replacement} vs ${claw.value})`);
 
   const arcanine = mon("Arcanine", ["Fire"], 110, 120, [["Flamethrower","Fire",90,"S"],["Extreme Speed","Normal",80,"P"],["Wild Charge","Electric",90,"P",100,[["RecoilAttr",{ damageRatio: 0.25 }]]],["Crunch","Dark",80,"P"]]);
   const h = run(arcanine, ["Overheat","Fire",130,"S",90,[["StatStageChangeAttr",{ stats: [3], stages: -2, selfTarget: true }]]]);
@@ -130,22 +131,25 @@ for (const [label, pk, newMove, double] of cases) {
   assert.deepEqual(byName(k.model, "Close Combat").drawbacks, ["−1 Def/SpD after use"]);
 }
 
-// ---- Live, wave 22: Emolga (Atk 26 / SpA 26) wants Spark. Thunder Shock is the same type and weaker — the one to
-// forget; Quick Attack's priority and Normal coverage stay.
+// ---- Live, wave 22: Emolga (Atk 26 / SpA 26) wants Spark. Charge is the slot that goes — a +1 SpD on a mon that
+// attacks with neither defence is worth less than a second Electric attack; Quick Attack and Icicle Crash stay.
 {
   const emolga = mon("Emolga", ["Electric","Flying"], 26, 26, [["Thunder Shock","Electric",40,"S"],["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }],
     ["Icicle Crash","Ice",85,"P",90],["Charge","Electric",-1,"X",-1,[["StatStageChangeAttr",{ stats: [4], stages: 1, selfTarget: true }]]]]);
   const r = run(emolga, ["Spark","Electric",65,"P"]);
   show("Emolga ← Spark", r);
-  assert.equal(r.model.moves[r.model.forget]?.name, "Thunder Shock");
-  // The shared advice (also behind TM advice) says the same as the card: learn, over Thunder Shock, same gain.
+  assert.equal(r.model.moves[r.model.forget]?.name, "Charge");
+  // The shared advice (also behind TM advice) says the same as the card: learn, over Charge, same gain.
   const a = globalThis.__lm.learnAdvice(emolga, mv(["Spark","Electric",65,"P"]), { party: [emolga] });
-  assert.deepEqual([a.learn, a.slot, a.forget, a.gain, a.reason], [true, r.model.forget, "Thunder Shock", r.model.gain, "over Thunder Shock"]);
-  // A skip names the slot it lost to but replaces nothing; a status move with four moves is the user's call.
-  const skip = globalThis.__lm.learnAdvice(emolga, mv(["Tackle","Normal",40,"P"]), { party: [emolga] });
+  assert.deepEqual([a.learn, a.slot, a.forget, a.gain, a.reason], [true, r.model.forget, "Charge", r.model.gain, "over Charge"]);
+  // A skip names the slot it lost to but replaces nothing. Four real attacks, so there is no dead slot to take.
+  const armed = mon("Emolga", ["Electric","Flying"], 26, 26, [["Thunder Shock","Electric",40,"S"],["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }],
+    ["Icicle Crash","Ice",85,"P",90],["Air Slash","Flying",75,"S",95]]);
+  const skip = globalThis.__lm.learnAdvice(armed, mv(["Tackle","Normal",40,"P"]), { party: [armed] });
   assert.deepEqual([skip.learn, skip.slot, skip.forget, skip.against != null], [false, -1, null, true]);
-  const status = globalThis.__lm.learnAdvice(emolga, mv(["Growl","Normal",-1,"X"]), { party: [emolga] });
-  assert.equal(status.learn, null);
+  // A foe's −1 Atk is scored now, and it loses to every attack in the moveset: a skip, not a shrug.
+  const growl = globalThis.__lm.learnAdvice(armed, mv(["Growl","Normal",-1,"X",100,[["StatStageChangeAttr", { stats: [1], stages: -1 }]],false,6]), { party: [armed] });
+  assert.deepEqual([growl.learn, growl.kind], [false, "skip"]);
 }
 
 // ---- Team view: forgetting the team's only Dark move is flagged; a move the team lacks coverage for is noted.
@@ -160,5 +164,140 @@ for (const [label, pk, newMove, double] of cases) {
   const u = run(solo, ["Psychic","Psychic",90,"S"], { party: [solo, mate] });
   assert.ok(byName(u.model, "Foul Play").onlyOnTeam, "Foul Play is the team's only Dark move");
   assert.ok(byName(u.model, "Foul Play").notes.includes("only Dark move on team"));
+}
+// ---- Status moves are scored, so a dead one is the slot to forget (#70)
+// Every case below is a real prompt from the wave 10–35 coaching session on the issue, where the card proposed
+// dropping an attack while a zero-value status move sat in the moveset.
+const statChange = (stats, stages, self) => ["StatStageChangeAttr", { stats, stages, ...(self ? { selfTarget: true } : {}) }];
+const HOWL = ["Howl","Normal",-1,"X",-1,[statChange([1], 1)],false,13];      // USER_AND_ALLIES, and the attr carries no selfTarget
+const GROWL = ["Growl","Normal",-1,"X",100,[statChange([1], -1)],false,6];   // ALL_NEAR_ENEMIES
+const ROOST = ["Roost","Flying",-1,"X",-1,[["HealAttr",{ healRatio: 0.5 }],["AddBattlerTagAttr",{ tagType: "ROOSTED", selfTarget: true }]],false,0];
+const NASTY_PLOT = ["Nasty Plot","Dark",-1,"X",-1,[statChange([3], 2, true)],false,0];
+const HELPING_HAND = ["Helping Hand","Normal",-1,"X",-1,[["AddBattlerTagAttr",{ tagType: "HELPING_HAND" }]],false,10];
+const SING = ["Sing","Normal",55,"X",55,[["StatusEffectAttr",{ effect: 4 }]]];
+const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT" }]]];
+{
+  // Wave 33: the TM offers Nasty Plot. The card used to propose dropping Snarl — a scored STAB special move on the
+  // mon's better stat — because Howl, +1 Atk on a special attacker, had no number at all.
+  const houndoom = mon("Houndoom", ["Dark","Fire"], 120, 160, [["Crunch","Dark",80,"P"], HOWL, ["Snarl","Dark",55,"S",95], ["Incinerate","Fire",60,"S"]]);
+  const r = run(houndoom, NASTY_PLOT);
+  show("Houndoom ← Nasty Plot (TM)", r);
+  assert.equal(r.model.moves[r.model.forget]?.name, "Howl", "+1 Atk on a special attacker is the dead slot");
+  assert.ok(byName(r.model, "Howl").value < byName(r.model, "Snarl").value, "Howl is worth less than a STAB special move");
+  assert.ok(r.model.move.value > 0 && r.model.move.notes.some(n => /\+2 SpA/.test(n)), `Nasty Plot is scored: ${r.model.move.notes}`);
+
+  // Wave 34: Roost on the main attacker, with revives at $1100. Half its max HP back beats another Growl.
+  const fletchinder = mon("Fletchinder", ["Fire","Flying"], 130, 62, [["Acrobatics","Flying",55,"P"], GROWL, ["Flame Charge","Fire",50,"P"], ["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }]]);
+  const roost = run(fletchinder, ROOST);
+  show("Fletchinder ← Roost", roost);
+  assert.equal(roost.model.decision, "learn");
+  assert.equal(roost.model.moves[roost.model.forget]?.name, "Growl");
+  assert.ok(roost.model.move.notes.includes("heal 50%"));
+  assert.ok(byName(roost.model, "Growl").value <= 10, `a foe's −1 Atk is worth little (${byName(roost.model, "Growl").value})`);
+
+  // Wave 25/28: Helping Hand only ever targets an ally, so in a single battle it does nothing at all.
+  const minccino = mon("Minccino", ["Normal"], 110, 60, [["Pound","Normal",40,"P"],["Baby-Doll Eyes","Fairy",-1,"X",100,[statChange([1], -1)]], HELPING_HAND, SING]);
+  const hh = run(minccino, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
+  show("Minccino ← Triple Axel", hh);
+  assert.equal(byName(hh.model, "Helping Hand").value, 0);
+  assert.ok(byName(hh.model, "Helping Hand").notes.includes("ally only"));
+  assert.equal(hh.model.moves[hh.model.forget]?.name, "Helping Hand", "the dead slot goes before Pound");
+  const dbl = run(minccino, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }], { double: true });
+  assert.ok(byName(dbl.model, "Helping Hand").value > 0, "in a double battle it is worth something again");
+
+  // Sleep is the strongest thing a status move does, discounted by Sing's 55% accuracy. On Minccino it is worth
+  // less again, for the reason the old card couldn't state: three of its four slots are already status moves.
+  const clean = run(mon("Jigglypuff", ["Normal","Fairy"], 70, 65, [["Body Slam","Normal",85,"P"],["Dazzling Gleam","Fairy",80,"S"],["Play Rough","Fairy",90,"P",90]]), SING);
+  const sing = clean.model.move;
+  assert.ok(sing.value >= 30 && sing.value <= 45, `Sing ≈ sleep × 55% accuracy (${sing.value})`);
+  assert.ok(sing.notes.includes("55% acc") && sing.notes.includes("sleep"));
+  const crowded = byName(hh.model, "Sing");
+  assert.ok(crowded.notes.includes("3 status moves") && crowded.value < sing.value, "a moveset that is mostly status has no room for another");
+  const taunted = run(mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"]]), TAUNT);
+  assert.ok(taunted.model.move.value > 0 && taunted.model.move.notes.includes("taunt"), `Taunt is scored: ${taunted.model.move.notes}`);
+
+  // Nothing here recognises a move with no attributes at all: no invented number, and it stays off the forget list.
+  const unknown = run(mon("Smeargle", ["Normal"], 60, 60, [["Tackle","Normal",40,"P"],["Swift","Normal",60,"S"],["Quick Attack","Normal",40,"P"],["Sketch","Normal",-1,"X",-1]]), ["Pound","Normal",40,"P"]);
+  assert.equal(byName(unknown.model, "Sketch").value, null);
+  const call = globalThis.__lm.learnAdvice(mon("Smeargle", ["Normal"], 60, 60, [["Tackle","Normal",40,"P"],["Swift","Normal",60,"S"],["Quick Attack","Normal",40,"P"],["Pound","Normal",40,"P"]]), mv(["Sketch","Normal",-1,"X",-1]));
+  assert.deepEqual([call.learn, call.kind], [null, "status"], "an unscorable status move is still the user's call");
+}
+
+// ---- The moveset prior (05-randbats.js): a nudge and a note, never a veto
+{
+  // Houndour is not fully evolved, so randbats has no sets for it — Houndoom's stand in, and count for less.
+  const houndour = mon("Houndour", ["Dark","Fire"], 60, 80, [["Bite","Dark",60,"P"], HOWL, ["Leer","Normal",-1,"X",100,[statChange([2], -1)]], ["Incinerate","Fire",60,"S"]]);
+  const r = run(houndour, NASTY_PLOT);
+  show("Houndour ← Nasty Plot", r);
+  const note = r.model.move.notes.find(n => n.startsWith("set move"));
+  assert.match(note ?? "", /^set move \(.*, evolved\)$/, `the prior stands in for the evolution: ${r.model.move.notes}`);
+  // Both dead slots are below every attack, and the weaker of the two goes.
+  assert.ok(["Howl", "Leer"].includes(r.model.moves[r.model.forget]?.name), `forgets a dead status slot, not an attack (${r.model.moves[r.model.forget]?.name})`);
+
+  // A species randbats has never heard of gets no note and no nudge — and then Outrage's lock-in keeps it a skip,
+  // which is what tips Dragonite the other way above.
+  const moves = [["Dragon Claw","Dragon",80,"P"],["Extreme Speed","Normal",80,"P",100,[],false,3,{ fields: { priority: 2 } }],["Fire Punch","Fire",75,"P"],["Thunder Punch","Electric",75,"P"]];
+  const outrage = ["Outrage","Dragon",120,"P",100,["FrenzyAttr",["MissEffectAttr",{}],["NoEffectAttr",{}]],false,7];
+  const known = run(mon("Dragonite", ["Dragon","Flying"], 134, 100, moves), outrage);
+  const unknown = run(mon("Dracowidget", ["Dragon","Flying"], 134, 100, moves), outrage);
+  assert.ok(known.model.move.notes.some(n => n.startsWith("set move")), "randbats runs Outrage on Dragonite");
+  assert.ok(!unknown.model.move.notes.some(n => n.startsWith("set move")));
+  assert.equal(unknown.model.decision, "skip", "without the prior the lock-in keeps Outrage off the set");
+  assert.equal(known.model.decision, "learn", "with it, a close call tips");
+  assert.ok(known.model.move.value / unknown.model.move.value <= 1.2, "a nudge, not a veto");
+}
+
+// ---- Which stat the mon attacks with, and which type the move lands as
+{
+  // Huge Power doubles Atk outright: Azumarill is a physical attacker with a 50-something raw Atk stat.
+  const azu = mon("Azumarill", ["Water","Fairy"], 90, 110, [["Aqua Jet","Water",40,"P",100,[],false,3,{ fields: { priority: 1 } }],["Play Rough","Fairy",90,"P",90],["Ice Beam","Ice",90,"S"],["Surf","Water",90,"S",100,[],false,4]], { ability: "Huge Power" });
+  const r = run(azu, ["Liquidation","Water",85,"P",100]);
+  show("Azumarill (Huge Power) ← Liquidation", r);
+  assert.equal(r.model.atk, 180, "the card reports the doubled Atk");
+  assert.ok(!r.model.move.notes.includes("weak Atk"), "a physical move is not a weak fit on a Huge Power mon");
+  const plain = run(mon("Marillish", ["Water","Fairy"], 90, 110, [["Aqua Jet","Water",40,"P",100,[],false,3,{ fields: { priority: 1 } }],["Play Rough","Fairy",90,"P",90],["Ice Beam","Ice",90,"S"],["Surf","Water",90,"S",100,[],false,4]]), ["Liquidation","Water",85,"P",100]);
+  assert.ok(plain.model.move.notes.includes("weak Atk"), "without the ability the same stats are a weak fit");
+
+  // Pixilate turns a Normal move Fairy — a different type, different STAB, different coverage.
+  const sylveon = mon("Sylveon", ["Fairy"], 65, 130, [["Shadow Ball","Ghost",80,"S"],["Psyshock","Psychic",80,"S"],["Mystical Fire","Fire",75,"S"]], { ability: "Pixilate" });
+  const p = run(sylveon, ["Hyper Voice","Normal",90,"S",100,[],false,2]);
+  show("Sylveon (Pixilate) ← Hyper Voice", p);
+  assert.equal(p.model.move.type, "Fairy");
+  assert.ok(p.model.move.stab && p.model.move.notes.includes("Pixilate"));
+  assert.equal(p.model.move.power, Math.round(90 * 1.2));
+
+  // Adaptability is a 2× STAB, not 1.5×.
+  const scoreOf = ability => run(mon("Porygon-Z", ["Normal"], 80, 135, [["Thunderbolt","Electric",90,"S"],["Ice Beam","Ice",90,"S"],["Shadow Ball","Ghost",80,"S"]], { ability }), ["Tri Attack","Normal",80,"S"]).model.move.value;
+  assert.ok(scoreOf("Adaptability") / scoreOf("Download") > 1.3, "Adaptability is worth a third more than plain STAB");
+
+  // Weather Ball's type follows the weather, which the card can't see: no STAB claim, no coverage claim.
+  const w = run(mon("Castform", ["Normal"], 70, 70, [["Thunder","Electric",110,"S",70],["Ice Beam","Ice",90,"S"],["Sunny Day","Fire",-1,"X",-1,[["WeatherChangeAttr",{}]]]]), ["Weather Ball","Normal",50,"S",100,["WeatherBallTypeAttr"]]);
+  assert.ok(w.model.move.notes.includes("type varies"));
+  assert.deepEqual(w.model.move.se, [], "no super-effective claim for a type it can't pin down");
+  assert.ok(!w.model.move.stab);
+
+  // Solar Beam's charge turn is real without a sun setter, and mostly skipped with one in the party.
+  const venu = types => mon("Venusaur", ["Grass","Poison"], 100, 142, [["Sludge Bomb","Poison",90,"S"],["Giga Drain","Grass",75,"S"],["Sleep Powder","Grass",-1,"X",75,[["StatusEffectAttr",{ effect: 4 }]]]], types);
+  const solar = ["Solar Beam","Grass",120,"S",100,[],true,3,{ chargeAttrs: ["WeatherInstantChargeAttr"] }];
+  const dry = run(venu({}), solar);
+  const sunny = run(venu({}), solar, { party: [venu({}), mon("Torkoal", ["Fire"], 85, 85, [["Lava Plume","Fire",80,"S"]], { ability: "Drought" })] });
+  show("Venusaur ← Solar Beam (no sun)", dry);
+  assert.ok(dry.model.move.drawbacks.includes("charge turn (not in sun)"));
+  assert.ok(sunny.model.move.drawbacks.includes("charge turn (skipped in sun)"));
+  assert.ok(sunny.model.move.value > dry.model.move.value * 1.5, "sun is most of the move");
+}
+
+// ---- Priority is worth what it can finish
+{
+  const moves = [["Earthquake","Ground",100,"P",100,[],false,4],["Stone Edge","Rock",100,"P",80],["Crunch","Dark",80,"P"]];
+  const boost = move => {
+    const pk = mon("Ursaluna", ["Ground","Normal"], 140, 60, moves);
+    const withPriority = run(pk, move).model.move.value;
+    const without = run(pk, [move[0], move[1], move[2], move[3], move[4], move[5], move[6], move[7], {}]).model.move.value;
+    return withPriority / without;
+  };
+  const quick = boost(["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }]);
+  const espeed = boost(["Extreme Speed","Normal",80,"P",100,[],false,3,{ fields: { priority: 2 } }]);
+  assert.ok(quick > 1 && quick < espeed, `priority is worth more on a move that can finish something (${quick} vs ${espeed})`);
 }
 console.log("ok");
