@@ -93,3 +93,9 @@ One of the segments a boss pokémon's HP is split into. A hit that would carry p
 How quickly one side can faint a target from a given HP, told as the chance the target is down by each coming turn. It runs through every **boss bar**, a Reviver Seed's second life, and the HP the target gains or loses at each turn end. Only the first turn is played at its exact odds; later turns follow from the spread of damage each attack can do.
 
 The **likely** KO turn is the first by which the target is more likely down than not; the **expected** KO turn weighs every turn by its chance, and is what advice is scored on.
+
+## Move traits
+
+What a move does beyond its damage number, read once from the move and its user: the turns it spends (a charging turn, a recharge turn, a lock-in, not twice in a row), what it costs its user (recoil, HP, fainting, its own stat drops), when it fails (hit first, a target that doesn't attack, past the first turn), how many times it hits, and what a status move sets up (stat stages, a status, a heal, a hazard). Traits hold no battle state: whether a condition holds this turn, and what a trait is worth, belong to whoever reads them.
+
+A move's **costs** are the traits that hurt its user, and are always named the same way wherever a card shows them. Not to be confused with a **drawback**, which is the coach's judgement that a move scores worse than it hits, taken from the game's own move scoring.
