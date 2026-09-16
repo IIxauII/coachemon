@@ -15,4 +15,11 @@ winnable · Charizard
 KO · 60% left
 == mirror at a speed tie
 win 0.500 · loss 0.500
+== drain
+3 → 4 turns
+== beast boost
+Blastoise loses 119 / 179 / 239 HP after 0 / 1 / 2 KOs (no ability: 119 / 119 / 119)
+== feeding Beast Boost
+Pidgey → Buzzwole: falls · foe at 43% · feeds Beast Boost +1 Atk
+Blastoise → Buzzwole: KO · 100% left
 ok

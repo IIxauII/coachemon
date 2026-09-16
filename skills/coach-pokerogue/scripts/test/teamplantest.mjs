@@ -49,7 +49,7 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   // The planner lives inside the bundle's IIFE; expose it for the test only.
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__tp = { teamPlan, drawTeamPlan, tpHealProfile, tpSendScore, tpFight };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__tp = { teamPlan, drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables };\n})();\n"));
   const plan = globalThis.__tp.teamPlan(scene, scene.currentBattle, party, foes);
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };
@@ -159,5 +159,52 @@ assert.equal(plan.approxDoubles, false);
   T.first = [[0]];
   const faster = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
   assert.ok(faster.pWin > 0.8 && faster.pWin < 1, `outspeeding wins most, not all: ${faster.pWin}`);
+}
+// Drain (#90): the foe's Leech Life wins back half of each hit it lands. 100 a turn into its 300 HP is three turns;
+// healing 30 of its 60 a turn, it stands through the third (300 → 230 → 160 → 90) and takes a fourth.
+{
+  const { tpFight } = globalThis.__tp;
+  const T = drain => ({ ours: [[{ hits: [100] }]], theirs: [[{ dmg: 60, e: 1, drain }]], first: [[0]], boss: [null], ourMax: [400], foeMax: [300], ourHeal: [null], foeHeal: [null] });
+  const st = () => ({ oh: [400], ob: [0], fh: [300], fs: [0], fb: [0] });
+  const [plain, drained] = [0, 0.5].map(d => tpFight(T(d), st(), 0, 0, "free"));
+  console.log(`== drain\n${plain.turns} → ${drained.turns} turns`);
+  assert.deepEqual([plain.turns, drained.turns], [3, 4], "the foe's drain costs us a turn");
+  // …and ours: moving first, our three hits win back 50 each against its two of 60 — 200 ends on 230 — and never past
+  // our max: from 390 the first 50 tops out at 400, so it ends on 380, not 420.
+  const ours = { ...T(0), ours: [[{ hits: [100], drain: 0.5 }]] };
+  assert.equal(tpFight(ours, { ...st(), oh: [200] }, 0, 0, "free").mh, 230, "our drain heals on every hit");
+  assert.equal(tpFight(ours, { ...st(), oh: [390] }, 0, 0, "free").mh, 380, "never past max");
+}
+// On-KO boosts (#90): each KO Buzzwole's Beast Boost scores raises its Atk a stage, so the mon after a fallen one takes
+// its hits at ×1.5, then ×2.
+{
+  const { tpTables, tpFight } = globalThis.__tp;
+  const { scene: s } = run(null);
+  const beastBoost = {
+    hasAbilityWithAttr: a => a === "PostVictoryStatStageChangeAbAttr",
+    getAbility: () => ({ name: "Beast Boost", getAttrs: a => (a === "PostVictoryStatStageChangeAbAttr" ? [{ changes: () => [{ stat: 1, stages: 1 }] }] : []) }),
+  };
+  const buzzwole = extra => Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Beast Boost", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"]], true), extra);
+  // Faster, and Hydro Pump 2HKOs: Blastoise takes one Lunge, however many KOs Buzzwole has had.
+  const blastoise = mon("Blastoise", 100, ["Water"], "Torrent", [400,150,300,150,300,250], [["Hydro Pump","Water",110,"S"]], false);
+  const hitsOn = (foe, fk) => {
+    const T = tpTables(s, [blastoise], [foe], false);
+    return 400 - tpFight(T, { oh: [400], ob: [0], fh: [400], fs: [0], fb: [0], ok: [0], fk: [fk] }, 0, 0, "free").mh;
+  };
+  const boosted = [0, 1, 2].map(k => hitsOn(buzzwole(beastBoost), k));
+  const plainHits = [0, 1, 2].map(k => hitsOn(buzzwole({}), k));
+  console.log(`== beast boost\nBlastoise loses ${boosted.map(Math.round).join(" / ")} HP after 0 / 1 / 2 KOs (no ability: ${plainHits.map(Math.round).join(" / ")})`);
+  assert.ok(plainHits.every(x => x === plainHits[0]), "no ability, no change");
+  assert.ok(boosted[0] === plainHits[0] && boosted[1] > boosted[0] && boosted[2] > boosted[1], "each KO fed makes its hits hurt more");
+  // The plan says so on the step that feeds it. A worn Pidgey is out, faster, and Brave Bird takes more than half off
+  // Buzzwole before Thunder Punch KOs it; Blastoise then comes in free and finishes it before it moves. Switching
+  // Blastoise in instead would cost it three quarters of its HP.
+  const fodder = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,450,30,30,30,300], [["Brave Bird","Flying",120,"P"]], true, 10);
+  const puncher = Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Beast Boost", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"],["Thunder Punch","Electric",75,"P"]], true), beastBoost);
+  const plan = run(null, { party: [fodder, blastoise], foes: [puncher] }).plan;
+  console.log(`== feeding Beast Boost\n${plan.steps.map(x => `${x.send.name} → ${x.vs.name}: ${x.why}`).join("\n")}`);
+  const fed = plan.steps.find(x => x.send.name === "Pidgey");
+  assert.ok(fed && fed.hp === 0, `Pidgey falls to Buzzwole: ${JSON.stringify(plan.steps)}`);
+  assert.match(fed.why, /feeds Beast Boost \+1 Atk/, "a fall into Beast Boost is named");
 }
 console.log("ok");

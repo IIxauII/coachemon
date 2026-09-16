@@ -183,6 +183,21 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     for (const [t, p] of live) add(done, t, p);
     return squeezeDist(done, USE_POINTS);
   };
+  // Drain (Giga Drain, Leech Life, Draining Kiss): the share of the damage a hit deals that heals its user, signed.
+  // HitHealAttr queues a PokemonHealPhase for floor(damage dealt × healRatio) after each hit; there a Heal Block stops
+  // it and a player's Healing Charm raises it (×(1 + 0.1·stack)). A target with Liquid Ooze (ReverseDrainAbAttr) turns
+  // the heal into that much damage to the user instead, unless the user has Magic Guard. Strength Sap heals by a stat,
+  // not by damage, and is a status move: not counted.
+  const drainRatio = (s, atk, def, move) => {
+    const a = attrs(move, "HitHealAttr").find(x => x.healStat == null);
+    if (!a) return 0;
+    const ratio = a.healRatio ?? 0.5;
+    if (ability(def, "ReverseDrainAbAttr")) return ability(atk, "BlockNonDirectDamageAbAttr") ? 0 : -ratio;
+    if (atk.getTag?.("HEAL_BLOCK")) return 0;
+    const charm = (atk.isPlayer?.() === false ? s?.enemyModifiers : s?.modifiers) ?? [];
+    return ratio * charm.filter(m => m.constructor?.name === "HealingBoosterModifier")
+      .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
+  };
   // Chance a landed use of `move` flinches `def` (Fake Out, Iron Head): the move's effect chance as the game reads it
   // (Serene Grace, Shield Dust), none through Inner Focus. It only matters if the user moves first (the planner's call).
   const flinchChance = (atk, def, move, ignoreAbility) => {
@@ -459,6 +474,9 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     }
     const dropText = Object.entries(drops).map(([st, n]) => `−${-n} ${STAT_NAMES[st] ?? st}`);
     if (dropText.length) notes.push(`${base.name}: ${dropText.join(" ")}`);
+    const drain = drainRatio(s, atk, def, move);
+    if (drain > 0) notes.push(`drains ${Math.round(drain * 100)}%`);
+    else if (drain < 0) notes.push(`Liquid Ooze: ${base.name} hurts ${Math.round(-drain * 100)}%`);
 
     if (dist.length > 1) notes.push(`${dist[0].n}–${hitsMax} hits`);
     else if (hitsMax > 1) notes.push(`${hitsMax} hits`);
@@ -473,7 +491,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     if (base.interrupt) notes.push("fails if hit");
     if (semi) notes.push("target semi-invulnerable");
     return {
-      ...base, acc, crit, dist, semi, self, selfKo, lock, noRepeat, drops,
+      ...base, acc, crit, dist, semi, self, selfKo, lock, noRepeat, drops, drain,
       perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })),
       expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, notes,
       use, focus: f.pFocus, flinch: flinchChance(atk, def, move, ignoreAbility),
@@ -519,7 +537,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
       name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, ...traits(atk, mv, false), semi: false, self: 0,
       acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
       expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, notes: ["estimate"],
-      use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, flinch: flinchChance(atk, def, mv, false),
+      use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(s, atk, def, mv),
     };
   };
 

@@ -178,7 +178,7 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 ♟ winnable · ~2 steps + {Show the fight plan}
 == doubles slot 0 switching (live)
 🎯 W200 · Cyrus Lucario › Metagross − {Minimal overview} × {Close}
-now: ⇄ Garchomp out › Metagross in
+now: ⇄ Garchomp out › Metagross in · takes ~16%
 now: ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 next: ⚔ Metagross Steel Meteor Mash → Hydreigon 2 hits
 foes weak to: Fighting ×2 Dragon ×1
@@ -201,3 +201,14 @@ foes weak to: Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Dragon Fairy ×4 ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+== drain
+Meteor Mash into a draining Golisopod: 5 hits
+== on-KO boost
+⚔ Mamoswine Ground Earthquake → Buzzwole 3 hits KO feeds Buzzwole's Beast Boost (+1 Atk)
+now: ⇄ Mamoswine out › Crobat in · takes ~6% · resists Lunge
+next: ⚔ Crobat Flying Wing Attack → Buzzwole
+-- without Beast Boost
+⚔ Mamoswine Ground Earthquake → Buzzwole 3 hits
+⇄ Mamoswine out › Crobat in · optional · takes ~6% · resists Lunge
+== summary
+{"danger":[{"mon":"Mamoswine","from":"Mega Golisopod","move":"Iron Head","level":"after","saveFor":"Xurkitree"}],"plan":"likely lost · ☠ Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in"}

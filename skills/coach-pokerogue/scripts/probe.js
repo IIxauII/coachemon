@@ -48,6 +48,9 @@
         status: p.status?.effect ?? null,
         onField: p.isOnField(),
         boss: p.isBoss(),
+        // HP bars still standing out of the boss's total (bossSegmentIndex counts down to 0 on the last bar).
+        bossBars: p.isBoss() && p.bossSegments > 1 ? { left: (p.bossSegmentIndex ?? p.bossSegments - 1) + 1, of: p.bossSegments } : null,
+        held: (p.getHeldItems?.() ?? []).map(m => `${m.type?.name} x${m.stackCount}`),
         moves: p.moveset.map(m => {
           const mv = m.getMove();
           return { ...moveInfo(mv), name: m.getName(), pp: `${m.getMovePp() - m.ppUsed}/${m.getMovePp()}` };
@@ -82,12 +85,13 @@
         rewards = { free: h.options.map(item), shop: (h.shopOptionsRows || []).flat().map(item), rerollCost: h.rerollCost ?? null };
       }
 
-      // The HUD's own verdict on what it shows (easy / trainer / danger / catch / fight, the ⚔ line, learn and reward
-      // calls), when it is running. `danger`: our mons with a 💀 tag.
+      // The HUD's own verdict on what it shows (easy / trainer / danger / catch / fight, the ⚔ line, the fight plan,
+      // learn and reward calls, the team audit), when it is running. `danger`: our mons likely KO'd this turn, before
+      // (`level` "ko") or after they act.
       let hud = null;
       try {
         const x = window.__coachHud?.summary?.();
-        if (x) hud = { wave: x.wave, verdict: x.verdict, field: x.field, danger: x.danger, learn: x.learn, rewards: x.rewards, biome: x.biome ?? null, encounter: x.encounter ?? null, next: x.next ?? null, ahead: x.ahead ?? null };
+        if (x) hud = { wave: x.wave, verdict: x.verdict, field: x.field, danger: x.danger, plan: x.plan ?? null, learn: x.learn, rewards: x.rewards, biome: x.biome ?? null, encounter: x.encounter ?? null, next: x.next ?? null, ahead: x.ahead ?? null, audit: x.audit ?? null };
       } catch {}
 
       out = {
@@ -103,7 +107,8 @@
         rewards,
         party: party.map(mon),
         enemy: s.getEnemyParty().map(mon),
-        items: s.modifiers.map(m => `${m.type?.name} x${m.stackCount}`),
+        // The party's own modifiers; a held item is on its holder (`held`) instead.
+        items: s.modifiers.filter(m => m.pokemonId === undefined).map(m => `${m.type?.name} x${m.stackCount}`),
       };
     }
   } catch (e) {
