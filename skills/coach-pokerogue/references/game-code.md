@@ -1092,3 +1092,50 @@ loses nothing in a single battle; the bonus is only ever an upside.
 
 **Unmeasured.** Whether the field read on the rewards screen is the field of the next battle's roll, and the size of
 the spread bonus itself (a first cut).
+
+## 17. The team audit: relearning, held items, EXP, status immunity and speed
+
+Read at the pinned tag (`v1.12.0.11`). `49-audit.js` checks how the party is built, between waves, on the rewards
+card. It calls one game function (`getLearnableLevelMoves`) and judges moves with the learn card's own scorer
+(`slotScores`, `learnAdvice`, `40-learn.js`); everything below is what it relies on.
+
+**Memory Mushroom.** `RememberMoveModifierType`'s select filter greys out a member whose
+`getLearnableLevelMoves()` is empty, and `RememberMoveModifier.apply` queues a `LearnMovePhase` with
+`getLearnableLevelMoves()[i][1]` — the list is `[level, MoveId, source][]`. It is `getLevelMoves(1, true, true, true)`
+(evolution, prevolution and relearner moves, plus the fusion partner's) filtered to level ≤ the mon's level, plus
+its unlocked egg moves when it came from the starter screen (`metBiome === -1`) outside Daily and Fresh Start, plus
+every TM it has used (`usedTMs`), minus the moves it knows. A pure read of learnsets. The mushroom is a GREAT-tier
+reward (weight `min(1 + floor(wave / 30), 4)`), a shop item from wave 81, and a guaranteed Mysterious Challengers /
+Weird Dream reward. The rewards card now gives it to the member whose relearn list holds the biggest learn-card
+upgrade, weighted by that member's share of the fight like every held item.
+
+**No unattached held items.** A held item is a `PokemonHeldItemModifier` with a `pokemonId`, created only once a party
+slot is picked (`SelectModifierPhase.openModifierMenu` → `newModifier(party[slot])`), and
+`BattleScene.updateModifiers` deletes any whose holder isn't in the party. Releasing a mon deletes its items
+(`removePartyMemberModifiers`); a fainted mon keeps them. So "held items sitting in the bag" can't happen: the
+modifier bar simply shows held items and party-wide items (charms) together. The audit has no such check.
+
+**EXP.** `applyPartyExp` gives EXP to non-fainted members under `getMaxExpLevel()`: a participant `1 / participants`,
+a non-participant nothing, or `0.2 · EXP. All stacks / participants` with EXP. All (`ExpShareModifier`, 5 stacks).
+Charms (`ExpBoosterModifier`: +25 % / +60 % / +100 %, 99 / 30 / 10 stacks) multiply each share. EXP. Balance exists
+but is in no pool. So a party at the cap gains nothing from any EXP item, and a member far behind the carry only
+catches up by fighting or through EXP. All.
+
+**Status immunity.** `Pokemon.canSetStatus`: poison and toxic fail on Poison or Steel unless the user's
+`IgnoreTypeStatusEffectImmunityAbAttr` (Corrosion) cancels it; paralysis on Electric; freeze on Ice (or in sun);
+sleep only in Electric Terrain; burn on Fire. Terrain, weather and the target's abilities are left out of the audit.
+
+**Priority and speed.** `Move.getPriority(user)` is `move.priority`, then `IncrementMovePriorityAttr`, then
+`ChangeMovePriorityAbAttr`: Prankster +1 on status moves, Gale Wings +1 on Flying moves at full HP, Triage +3 on
+healing moves. Only Gale Wings makes an attack faster, so it is the one ability the audit counts. Turn order within a
+priority bracket is `getEffectiveStat(SPD)` descending (`sortInSpeedOrder`), ties shuffled on a per-turn seed, reversed
+under Trick Room. The audit compares raw `getStat(SPD)` on both sides — stages, items and abilities move during a fight.
+
+**Mega and Tera** (not audited). Mega Evolution happens outside battle: a Mega Bracelet only lets MEGA/PRIMAL stones
+into the reward pool, and attaching the stone changes the form at once. The Tera Orb allows one Tera per arena
+(`MAX_TERAS_PER_ARENA`, reset by a new biome or a party heal). Neither leaves an "owned but unused" state the audit
+could read before a fight.
+
+**Unmeasured.** Every threshold is a first cut: a shared weakness at two members and a third of the party with no
+resist, a dead status slot below 20 on the learn scorer's scale, an attack off a stat under 75 % of the other one,
+"behind" at 5 levels and under three quarters of the carry's level, a relearn worth naming at +10 power.

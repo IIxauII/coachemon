@@ -20,7 +20,7 @@ const learnMoveById = (party, id) => {
   try { return pm ? new pm.constructor(id).getMove() : null; } catch { return null; }
 };
 
-const { moveScore, learnPlan, learnAdvice } = (() => {
+const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFixed } = (() => {
   const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
   const attrsOf = (mv, name) => (mv.attrs || []).filter(a => a.constructor?.name === name);
   const isDamaging = mv => !!mv && mv.category !== 2 && (mv.power > 0 || mv.power === -1);
@@ -417,33 +417,45 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
   // `double` is this battle's flag on the learn card. The rewards card's TM advice passes the share of double battles
   // ahead instead (`doubleOdds`, 0–1), since a TM is kept for the run: it scales the spread bonus and an ally move's
   // worth, and the moveset prior reads the doubles sets once most battles ahead are doubles.
-  const learnPlan = (pk, mv, { double: flag = false, party = [pk] } = {}) => {
-    const double = Math.min(1, Math.max(0, Number(flag) || 0));
+  // What the learn scorer needs about a mon and its team, worked out once per mon: its moves, the types its teammates
+  // already hit super-effectively and attack with, and the moveset prior's inputs — the species' competitive sets and
+  // what this mon already knows, which is how "the role it is already playing" is worked out.
+  const scoringContext = (pk, double, party) => {
     const current = movesOf(pk);
     const mates = party.filter(p => p && p !== pk);
-    const teamSe = seTypes(mates.flatMap(movesOf));
     const teamTypes = new Set(mates.flatMap(movesOf).filter(isDamaging).map(m => TYPES[m.type]));
-    // `prior` and `ownMoves` are the moveset prior's inputs: the species' competitive sets, and what this mon
-    // already knows — which is how "the role it is already playing" is worked out. Both are per-mon, so they are
-    // resolved once here rather than on every move scored.
-    const ctx = { party, teamSe, prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName) };
-    const info = (x, score) => ({ name: x.name, type: effectiveType(pk, x).type ?? "Normal", cat: ["physical", "special", "status"][x.category], ...score });
-    // Each slot is judged against the other three, so coverage counts for both the old move and its replacement.
-    const moves = current.map((x, i) => {
-      const rest = current.filter((_, j) => j !== i);
-      const score = moveScore(pk, x, rest, double, ctx);
-      const type = TYPES[x.type];
-      const onlyOnTeam = mates.length > 0 && isDamaging(x) && !teamTypes.has(type) && !rest.some(o => isDamaging(o) && TYPES[o.type] === type);
-      if (onlyOnTeam && score.value !== null) score.notes.push(`only ${type} move on team`);
-      return { ...info(x, score), onlyOnTeam, replacement: moveScore(pk, mv, rest, double, ctx).value };
-    });
+    const ctx = { party, teamSe: seTypes(mates.flatMap(movesOf)), prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName) };
+    return { current, mates, teamTypes, ctx };
+  };
+  const info = (pk, x, score) => ({ name: x.name, type: effectiveType(pk, x).type ?? "Normal", cat: ["physical", "special", "status"][x.category], ...score });
+  // Each slot is judged against the other three, so coverage counts for both the old move and its replacement.
+  const scoreSlots = (pk, double, { current, mates, teamTypes, ctx }) => current.map((x, i) => {
+    const rest = current.filter((_, j) => j !== i);
+    const score = moveScore(pk, x, rest, double, ctx);
+    const type = TYPES[x.type];
+    const onlyOnTeam = mates.length > 0 && isDamaging(x) && !teamTypes.has(type) && !rest.some(o => isDamaging(o) && TYPES[o.type] === type);
+    if (onlyOnTeam && score.value !== null) score.notes.push(`only ${type} move on team`);
+    return { ...info(pk, x, score), onlyOnTeam, rest };
+  });
+  // Every slot of a mon's current moveset scored as the learn card scores it, for whoever audits a moveset with no
+  // new move on offer (49-audit). `double`: a battle flag or a share of doubles ahead, as for `learnPlan`.
+  const slotScores = (pk, { double: flag = false, party = [pk] } = {}) => {
+    const double = Math.min(1, Math.max(0, Number(flag) || 0));
+    const sc = scoringContext(pk, double, party);
+    return { moves: scoreSlots(pk, double, sc).map(({ rest, ...m }) => m), atk: Math.round(atkOf(pk)), spa: Math.round(spaOf(pk)) };
+  };
+  const learnPlan = (pk, mv, { double: flag = false, party = [pk] } = {}) => {
+    const double = Math.min(1, Math.max(0, Number(flag) || 0));
+    const sc = scoringContext(pk, double, party);
+    const { current, ctx } = sc;
+    const moves = scoreSlots(pk, double, sc).map(({ rest, ...m }) => ({ ...m, replacement: moveScore(pk, mv, rest, double, ctx).value }));
     const gainOf = m => (m.replacement ?? 0) - m.value;
     let compare = -1;
     moves.forEach((m, i) => { if (m.value !== null && (compare < 0 || gainOf(m) > gainOf(moves[compare]))) compare = i; });
     const free = current.length < 4;
     // Scored against the slot it would take (the best one to drop even when skipping), or all four with a free slot.
     const against = free || compare < 0 ? current : current.filter((_, j) => j !== compare);
-    const incoming = info(mv, moveScore(pk, mv, against, double, ctx));
+    const incoming = info(pk, mv, moveScore(pk, mv, against, double, ctx));
     // `statusScore` already names the boost in the notes; this is only what the verdict line says about it.
     const setup = setupOf(pk, mv, current);
     if (setup) { incoming.setup = setup; if (!setup.fits) incoming.notes.push("weak fit"); }
@@ -485,7 +497,7 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     }[kind];
     return { learn, kind, slot, forget: slot >= 0 ? moves[slot].name : null, against: compare >= 0 ? moves[compare].name : null, gain: plan.gain, reason, setup, plan };
   };
-  return { moveScore, learnPlan, learnAdvice };
+  return { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFixed };
 })();
 
 const learnModel = ({ pk, mv, double, party }) => {

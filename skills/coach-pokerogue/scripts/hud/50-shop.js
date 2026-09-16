@@ -136,7 +136,7 @@ const shopModel = (s, h) => {
 
   // Free rewards: what the item does for this party now, then rarity tier as a tiebreak for everything else.
   const balls = s.pokeballCounts ?? {};
-  const rctx = rewardContext(s, alive, { bossNext, gauntlet });
+  const rctx = rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1) });
   const free = (h.options || []).map(o => {
     const t = o.modifierTypeOption.type;
     const tier = shopTier(t);
@@ -270,5 +270,5 @@ const shopModel = (s, h) => {
   // How many shop items the money covers at all: often none early on, when the shop is irrelevant.
   const affordable = shop.filter(i => i.cost <= s.money).length;
   return { kind: "shop", money: s.money, left: money, buys, free, pick, reroll, bossNext, gauntlet, luck, wave,
-    affordable, ahead };
+    affordable, ahead, audit: teamAudit(s, ahead) };
 };

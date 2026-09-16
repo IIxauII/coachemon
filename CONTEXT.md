@@ -86,6 +86,17 @@ Every confidence is also conditional on the run not changing first: a catch, an 
 
 Not to be confused with a **tier**, which throughout is the game's own word for a rarity band (an encounter's, a species').
 
+## Team audit
+
+The **coach**'s check of how the **party** is built, as opposed to what to do with it now: the part of a **card** that
+judges the team the decisions made rather than the decision at hand. It is said between waves, where a reward, a TM or
+a relearned move can still fix it. Party checks read only the party (a weakness nobody resists, dead move slots,
+members left behind); roster checks read the next big fight's foes from a **preview** (who outspeeds them, a foe with
+a single **answer**). A finding either loses fights or only costs tempo, and the card leads with the first kind.
+
+An **answer** to a foe is a member's attack that hits it super-effectively off the stat that member actually attacks
+with. A foe with one answer is a single point of failure: lose that member and the fight is gone.
+
 ## Moveset prior
 
 Outside evidence about which moves a species is usually built around, used to break a tie the **coach**'s own numbers leave open. It is a prior in the plain sense: it shifts a score the coach already computed, and never decides on its own. A prior that overrules the computed score is a bug, not a stronger prior.

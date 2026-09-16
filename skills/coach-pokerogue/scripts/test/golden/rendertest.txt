@@ -6,7 +6,7 @@
 · Dragon Dragon Breath SE on Dragon power 72 {base 60}
 · Normal Scratch 2nd Normal move · weak Atk power 24 {base 40}
 Learn → forget Ember +108 power
-summary {"kind":"learn","wave":12,"verdict":null,"field":null,"danger":[],"learn":"Learn → forget Ember","rewards":null,"encounter":null,"next":null,"ahead":null}
+summary {"kind":"learn","wave":12,"verdict":null,"field":null,"danger":[],"learn":"Learn → forget Ember","rewards":null,"encounter":null,"next":null,"ahead":null,"audit":null}
 == learn (mini)
 🎓 Charmeleon learns Charmeleon + {Expand} × {Close}
 ✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB}
@@ -50,7 +50,7 @@ Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard move
 · Fairy Dazzling Gleam SE on Dragon/Dark · only Fairy move on team power 98 {base 80}
 team: +SE Steel/Electric · ⚠ loses only Dark move
 Learn → forget Bite +87 power
-summary {"kind":"learn","wave":27,"verdict":null,"field":null,"danger":[],"learn":"Learn → forget Bite · ⚠ loses only Dark move","rewards":null,"encounter":null,"next":null,"ahead":null}
+summary {"kind":"learn","wave":27,"verdict":null,"field":null,"danger":[],"learn":"Learn → forget Bite · ⚠ loses only Dark move","rewards":null,"encounter":null,"next":null,"ahead":null,"audit":null}
 == learn team (mini)
 🎓 Espeon learns Espeon + {Expand} × {Close}
 ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90}
@@ -62,7 +62,9 @@ Learn → forget Bite
 🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 · Leftovers held item · for Charizard/Morpeko
 · 5× Great Ball you have 20
-summary {"kind":"shop","wave":29,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":"take TM Fire Fang → Morpeko (forget Tackle)","encounter":null,"next":null,"ahead":null}
+🩺 team: 2 issues · Morpeko: Quick Attack is a second Normal attack (Tackle) + {Show the team audit}
+summary {"kind":"shop","wave":29,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":"take TM Fire Fang → Morpeko (forget Tackle)","encounter":null,"next":null,"ahead":null,"audit":"2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Fighting/Poison/Ground/Rock +5 super-effectively"}
 == rewards boss next (mini)
 🛒 $500 👑 boss next + {Expand} × {Close}
 🎁 TM Fire Fang Morpeko → forget Tackle
+🩺 team: 2 issues · Morpeko: Quick Attack is a second Normal attack (Tackle) + {Show the team audit}

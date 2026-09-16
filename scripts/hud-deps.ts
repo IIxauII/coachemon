@@ -345,6 +345,25 @@ export const HUD_DEPS = {
   ],
 
   /**
+   * §17. The team audit. It calls only `getLearnableLevelMoves` (the relearn
+   * list a Memory Mushroom indexes, read as `[level, MoveId]`) and scores with
+   * the learn card; the rest is re-implemented: status type immunities, which
+   * priority an ability grants an attack, raw Speed for turn order, and the
+   * EXP split behind "at the level cap" and "EXP. All feeds the bench".
+   */
+  "49-audit.js": [
+    `${P}#Pokemon.getLearnableLevelMoves`,
+    `src/modifier/modifier-type.ts#RememberMoveModifierType.constructor`,
+    `src/modifier/modifier.ts#RememberMoveModifier.apply`,
+    `${P}#Pokemon.canSetStatus`,
+    `${M}#Move.getPriority`,
+    `src/data/abilities/ab-attrs.ts#ChangeMovePriorityAbAttr.apply`,
+    `src/utils/speed-order.ts#sortInSpeedOrder`,
+    `${SCENE}#BattleScene.applyPartyExp`,
+    `${SCENE}#BattleScene.getMaxExpLevel`,
+  ],
+
+  /**
    * §15. The rewards card judges held items, mints, vitamins, EXP items, candy
    * and evolution items by the member they would go to. It calls only select
    * filters and `getMaxExpLevel`; what an item does is re-implemented from its
