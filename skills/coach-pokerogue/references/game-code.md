@@ -855,7 +855,9 @@ upgrading a tier each time it hits. So luck is a per-reward chance of a tier upg
 luck 14**. `getPartyLuckValue` sums `getLuck()` over everyone `isAllowedInBattle()`, clamps to 14, and adds a timed
 event boost the HUD cannot see — so the HUD's number is a floor. A fixed battle's `customModifierRewardSettings` can
 pin `guaranteedModifierTiers` and set `allowLuckUpgrades: false` (the rival from 25 on, both evil bosses): on those
-waves luck buys nothing and a reroll redraws the items but never the rarities. `getRerollCost`
+waves luck buys nothing on the screen as first rolled. **A reroll drops those settings** — `rerollModifiers` queues
+`SelectModifierPhase(rerollCount + 1, tiers)` with no custom settings — so a reroll rolls rarities and takes luck
+upgrades like any other wave (§19; this section said otherwise before #93). `getRerollCost`
 (`select-modifier-phase.ts:419`) is `ceil(wave / 10) × base × 2 ** rerollCount`, base 250, or the summed tier values
 `[50, 125, 300, 750, 2000]` when rarities are locked — so the cost doubles every reroll.
 
@@ -1177,3 +1179,60 @@ threat the planner already scores the switch with.
 
 **Unmeasured.** `FEED_COST` is a first cut; a boost gained mid-exchange isn't applied inside that exchange (it ends
 it, except Soul-Heart); a drain's expected heal uses this turn's expected damage for every later turn.
+
+## 19. The reward roll, and previewing a reroll
+
+Read at the pinned tag (`v1.12.0.11`) for `50-reroll.js`: what the next reroll offers, read before paying for it.
+
+**The roll.** `SelectModifierPhase.start` calls `updateSeed()` → `resetSeed()` only on a wave's first roll
+(`rerollCount` 0, not a copy): `resetSeed` sows `shiftCharCodes(seed, currentBattle.waveIndex)` and sets `waveSeed`,
+nothing else, and there is no RNG counter at this tag. A reroll never re-seeds: it continues the stream. Every
+non-copy roll then calls `regenerateModifierPoolThresholds(party, PLAYER, rerollCount)` (`modifier-type.ts:2354`) and
+`getModifierTypeOptions(count)` → `getPlayerModifierTypeOptions(count, party, lockModifierTiers ? modifierTiers :
+undefined, customModifierSettings)` (`:2496`).
+
+- `regenerate` **draws**: it calls `generateType(party)` on every generator entry in every tier, whatever its weight
+  — attack-type boosters, base-stat and temp-stat boosters, species items, TMs, evolution and form-change items,
+  mints, Tera Shards (a loop), berries. A generator with no candidates returns before drawing, and a one-item pick
+  draws nothing, so the draw count depends on the party. The weight functions (`init-modifier-pools.ts`) don't draw
+  and write nothing; they read party HP, PP, status, held items, abilities, the game mode, the wave and ball counts,
+  and the vouchers' weights read `rerollCount`. It writes the module-private `modifierPoolThresholds` /
+  `ignoredPoolIndexes` / `itemPoolChecks`.
+- Each option (`getModifierTypeOptionWithRetry` → `getNewModifierTypeOption`, `:2570` / `:2762`): with no tier,
+  `randSeedInt(1024)` and, unless it rolled 0, the luck loop `randSeedInt(floor(128 / ((luck + 4) / 4))) < 4`; with a
+  tier (locked), the luck loop while a non-empty next tier exists; then the item pick by weight, and `generateType`
+  again for a generator (a null result recurses). A duplicate — the same `type.name` or the same `type.group`, and two
+  undefined groups count — redraws, capped at `min(count × 5, 50)`; a candidate `applyChallenges(WAVE_REWARD)`
+  rejects redraws with no cap (only Hardcore rejects: revives).
+- Count: `getModifierCount` is `3 + ExtraModifierModifier + TempExtraModifierModifier`, or the custom settings' own
+  count when the phase has them.
+
+**A reroll.** `rerollModifiers` (`select-modifier-phase.ts:188`) unshifts `SelectModifierPhase(rerollCount + 1,
+typeOptions.map(o => o.type?.tier).filter(defined))` and nothing else: **the custom settings are dropped**. So after a
+fixed battle (`victory-phase.ts:85`, guaranteed tiers with `allowLuckUpgrades: false`) or a Mystery Encounter's
+`setEncounterRewards`, the reroll is an ordinary roll — three-plus options, rolled rarities, luck upgrades — and only
+the first reroll's cost carries the wave's `rerollMultiplier` (negative: rerolls off, cost −1). The tiers passed on
+are the final, upgraded tiers on screen, used only while `scene.lockModifierTiers` is set; locked tiers still climb
+by luck. The lock toggle (`toggleRerollLock`) and its button exist only with a `LockModifierTiersModifier` (the
+handler's `show`); locking changes the cost to the summed tier values (§12).
+
+**What else draws while the screen idles.** Nothing found on the seeded stream: `ModifierSelectUiHandler.show`
+(tweens, the upgrade animations, cost text), the shop row (`getPlayerShopModifierTypeOptionsForWave`), `getRerollCost`,
+the lock toggle, buying a heal / revive / PP item, the held-item transfer screen, the TM / Memory Mushroom
+`LearnMovePhase` and its copy phase (which neither re-seeds nor regenerates), `BattleScene.update` and the play-time
+timer. The party screen's unsplice points `Math.random` at the seeded stream, but inside `executeWithSeedOffset`, a
+fork. Daily's `getPartyLuckValue` is a fork too. Phaser's own internals weren't read (its tweens and particles are
+believed to use `Math.random`). What *does* move a preview without drawing: anything that changes the party or its
+held items (the weights and generator candidates), and the lock toggle.
+
+**The preview.** Inside `sandbox` (§0), from `RND.state()` as it stands: `regenerate(party, PLAYER, n)` and
+`getPlayerModifierTypeOptions(count, party, lock ? tiers : undefined)`, `n` the next reroll count, `count` from a
+fresh `new SelectModifierPhase(n, tiers)` (the Phase constructors do nothing) — never the live phase's, which counts
+its custom settings. Once with the lock as it stands and, with a Lock Capsule, once toggled, each from the same
+state; then `regenerate` for the live reroll count restores the tables (nothing reads them before the next non-copy
+roll regenerates), and the sandbox restores the stream. The two functions are module exports found by name by
+`47-biome.js`'s chunk scan. Offers are judged by `50-shop.js`'s own judge, and compared on its scale (≈10 a tier):
+`REROLL_GAIN` 5, a first cut.
+
+**Unmeasured.** Whether the live bundle exports the two functions under those names, and whether a real reroll
+matches its preview: the HUD scores every reroll against the last preview for it (`window.__coachHud.reroll()`).

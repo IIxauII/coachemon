@@ -51,7 +51,7 @@
 //   for one, minus the share weak to it. It already counts as one wave of ten above; this is on top, because it's the
 //   fight that ends a run.
 // score = 50·offense + 25·(defense + 1) + up to 8 for catches ± 10 for the big fight. Ties go to the unrounded score.
-const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor } = (() => {
+const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRewardFns, spawnsFor, formsFor } = (() => {
   const TIER_CUTS = [156, 32, 6, 1, 0];
   const BOSS_CUTS = [20, 6, 1, 0];
   const ABYSS = 24, END = 50;
@@ -67,6 +67,11 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor 
 
   let tables = null, triedAt = -Infinity;
   const setGameTables = t => { tables = t; formsCache.clear(); trainerCache.clear(); };
+  // The reward roll's two module functions, for 50-reroll's preview. Kept apart from `tables`: a build that renamed
+  // them still has biome data, and a build without biome data can still roll rewards.
+  const REWARD_FNS = ["regenerateModifierPoolThresholds", "getPlayerModifierTypeOptions"];
+  let rewardFns = null;
+  const setRewardFns = f => { rewardFns = f; };
   const scan = (ns, found) => {
     for (const k of Object.keys(ns)) {
       let v;
@@ -79,6 +84,8 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor 
         found.species ??= v;
       } else if (typeof v === "function" && v.name === "getBiomeName") {
         found.biomeName ??= v;
+      } else if (typeof v === "function" && REWARD_FNS.includes(v.name)) {
+        found[v.name] ??= v;
       } else if (typeof v === "object" && typeof v.getShinyCatchMultiplier === "function") {
         found.events ??= v;
       } else if (typeof v === "object" && !Array.isArray(v) && !found.trainers) {
@@ -90,7 +97,7 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor 
   };
   // Retried every 30 s while not found: the HUD may be injected before the game has loaded its chunks.
   const loadGameTables = () => {
-    if (tables || Date.now() - triedAt < 30000) return;
+    if ((tables && rewardFns) || Date.now() - triedAt < 30000) return;
     triedAt = Date.now();
     // Only the game's own Vite chunks (`/assets/<name>-<hash>.js`, loaded as script or modulepreload): importing a URL
     // that was never a module would run it anew.
@@ -104,11 +111,16 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor 
     if (!urls.length) return;
     const found = {};
     Promise.all(urls.map(u => import(u).then(ns => scan(ns, found), () => {})))
-      .then(() => { if (found.biomes && found.species) setGameTables(found); });
+      .then(() => {
+        if (!tables && found.biomes && found.species) setGameTables(found);
+        if (!rewardFns && REWARD_FNS.every(k => found[k])) setRewardFns({ regenerate: found[REWARD_FNS[0]], options: found[REWARD_FNS[1]] });
+      });
   };
 
   // The game's timed event manager, or null while the tables aren't read (starts the read).
   const gameEvents = () => { loadGameTables(); return tables?.events ?? null; };
+  // `{ regenerate, options }`: the reward roll's module functions, or null while they aren't found (starts the read).
+  const gameRewardFns = () => { loadGameTables(); return rewardFns; };
 
   const biomeScreen = (s, h) => s.ui.getMode() === 15 && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectBiomePhase"
     && !!h?.config?.options?.length;
@@ -502,5 +514,5 @@ const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor 
   const spawnsFor = (s, id, wave, luck = 0) => (tables?.biomes?.get(id) ? encounters(s, tables.biomes.get(id), wave, luck) : null);
   const formsFor = (id, level, kind = 2) => Object.fromEntries(formsAt(id, level, kind));
 
-  return { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor, formsFor };
+  return { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRewardFns, spawnsFor, formsFor };
 })();

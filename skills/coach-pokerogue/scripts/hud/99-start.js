@@ -18,5 +18,7 @@ window.__coachHud = {
   // How the next-wave preview has actually scored this run: hits and misses per field, and the last wave it got
   // wrong. A field with a miss is drawn `!` on the card from then on.
   preview: () => previewStats(),
+  // How the reroll preview has scored: every reroll made against the offers previewed for it.
+  reroll: () => rerollStats(),
 };
 document.documentElement.dataset.mcpOut = JSON.stringify({ hud: "on" });

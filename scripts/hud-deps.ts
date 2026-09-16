@@ -416,6 +416,27 @@ export const HUD_DEPS = {
   ],
 
   /**
+   * §19. The reroll preview calls the reward roll's two module functions from the
+   * live stream position and replays what a reroll's `SelectModifierPhase` does
+   * with them: the reroll count it passes, the tiers it carries (used only under
+   * the lock), the settings it drops, the count and the cost. A changed draw
+   * order inside the roll is the game's own and needs nothing here; a changed
+   * phase flow — a reroll that keeps custom settings, re-seeds, or regenerates
+   * with another count — makes every preview quietly wrong.
+   */
+  "50-reroll.js": [
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.start`,
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.rerollModifiers`,
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.toggleRerollLock`,
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.getModifierCount`,
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.getRerollCost`,
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.getModifierTypeOptions`,
+    `src/modifier/modifier-type.ts#regenerateModifierPoolThresholds`,
+    `src/modifier/modifier-type.ts#getPlayerModifierTypeOptions`,
+    `src/ui/handlers/modifier-select-ui-handler.ts#ModifierSelectUiHandler.show`,
+  ],
+
+  /**
    * §16. Who a TM can be taught to: the select filter, the party screen's TM
    * mode (a fainted member is offered TEACH) and Hardcore's exception, which
    * gives a fainted member only Release. The challenge id comes through as a
