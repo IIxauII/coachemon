@@ -682,13 +682,16 @@ The enemy party is built later, in `EncounterPhase.start()`: `trainer.genPartyMe
 luck)` straight off the stream, then `addEnemyPokemon`, whose `EnemyPokemon` constructor draws again (id/IVs, gender,
 moveset, shiny — and a shiny-locked spawn skips `trySetShiny`, so `isEncounterShinyLocked()` changes the draw count).
 
-**`randomSpecies` is an `Arena` method**, reached as `scene.arena.randomSpecies` (§ the pool rules in the header of
-`47-biome.js` read it the same way). `48-preview.js` resolves the receiver at call time rather than assuming it,
-because the wrong receiver is not a wrong answer but a silent one: the availability gate would simply make the card
-unavailable on every wild wave. **Unresolved**: the preview passes `(w, level, true)` where the argument list above
-has `attempt` third and `luck` fourth. If `attempt` is a retry counter, `true` coerces to `1` and the replay may be
-one draw off the game on wild waves — which is exactly a `replay`-confidence field, and exactly what the arrival
-tally measures first.
+**The wild spawn goes through two methods, and which one you call matters.** `EncounterPhase` calls
+`globalScene.randomSpecies(waveIndex, level, true)` — a `BattleScene` method whose `fromArenaPool` branch is
+`this.arena.randomSpecies(waveIndex, level, 0, getPartyLuckValue(this.party))` (`battle-scene.ts:2326`). The `Arena`
+method's own signature is `(waveIndex, level, attempt = 0, luckValue = 0, isBoss?)`, so calling **it** with the
+scene's argument list puts `true` in `attempt` (coercing to 1, which is the retry counter) and drops the luck that
+shifts the tier thresholds. `48-preview.js` therefore calls the scene wrapper when the live build exposes it and
+reproduces what the wrapper does when it doesn't — resolving by feature rather than assuming a receiver, because the
+wrong receiver is not a wrong answer but a silent one (the availability gate would make the card unavailable on every
+wild wave). The `47-biome.js` header reads the *pool rules* off the arena method, which is a different question and
+still right.
 
 **So**: everything decided in a fork is exact from any point in the run; everything on the stream is only as good as
 a replay that draws exactly what the game draws, in the same order. `48-preview.js` replays the table above inside
@@ -717,3 +720,56 @@ through `addFieldSprite` — they are moved into its container, off the display 
 
 **Unmeasured**: whether anything draws from the stream between `resetSeed(w)` and the party loop that this replay
 doesn't. That is exactly what the arrival check measures; `window.__coachHud.preview()` prints the tally.
+
+## 12. The fixed-battle calendar, full heals, and reward luck
+
+The look-ahead (`49-ahead.js`) rests on four rules that a wave is a **big fight**, none of which draws:
+
+| Rule | Source | Waves |
+|---|---|---|
+| `gameMode.isWaveFinal(w)` | `game-mode.ts:294` | classic 200; daily 50; endless every 250 |
+| `gameMode.isFixedBattle(w)` | `game-mode.ts:357`, table in `data/trainers/fixed-battle-configs.ts` | 5 youngster; rival 8/25/55/95/145/195; evil team 35/62/64/66/112/114/115/164/165; Elite Four 182/184/186/188; champion 190 |
+| the gym rule | `game-mode.ts:217`, the early return in `isWaveTrainer` | `w % 30 === (offsetGym ? 0 : 20)`, except the final wave |
+| `gameMode.isBoss(w)` | `game-mode.ts:311` | every tenth wave |
+
+They overlap (190 is both the champion and a tenth wave); the table above is the precedence the HUD uses. **The
+schedule is a calendar, not a roll**, so it holds from any point in a run — while the *roster* of a fixed wave comes
+from `48-preview.js`'s replay and is only read a few waves out, because the replay feeds on the party, the luck value
+and the biome, all of which move.
+
+**Full heals.** `VictoryPhase` pushes `SelectBiomePhase` when `isNewBiome()` — `waveIndex % 10 === 0` in classic
+(`battle-scene.ts:1271`) — and `SelectBiomePhase.setNextBiomeAndEnd` unshifts `PartyHealPhase` when the *next* wave is
+an X1. `PartyHealPhase` sets `hp = getMaxHp()`, calls `resetStatus`, zeroes every move's `ppUsed`, revives the fallen
+(unless a PREVENT_REVIVE challenge is on) and resets `arena.playerTerasUsed`. So a classic run heals entering 11, 21 …
+191 and nowhere else, and **waves 181–190 hold the four Elite Four fights and the champion with no heal between
+them**. There is also **no rewards screen after a tenth wave** (`VictoryPhase` only pushes `SelectModifierPhase` when
+`currentWaveIndex % 10`), so the shop before an X0 boss is the last one until X1.
+
+**Reward tiers and luck.** `getNewModifierTypeOption` (`modifier-type.ts:2762`) rolls `randSeedInt(1024)` for a tier,
+then — for the player pool, when `allowLuckUpgrades` — repeats `randSeedInt(floor(128 / ((luck + 4) / 4))) < 4`,
+upgrading a tier each time it hits. So luck is a per-reward chance of a tier upgrade: **3.1 % at luck 0, 14.3 % at
+luck 14**. `getPartyLuckValue` sums `getLuck()` over everyone `isAllowedInBattle()`, clamps to 14, and adds a timed
+event boost the HUD cannot see — so the HUD's number is a floor. A fixed battle's `customModifierRewardSettings` can
+pin `guaranteedModifierTiers` and set `allowLuckUpgrades: false` (the rival from 25 on, both evil bosses): on those
+waves luck buys nothing and a reroll redraws the items but never the rarities. `getRerollCost`
+(`select-modifier-phase.ts:419`) is `ceil(wave / 10) × base × 2 ** rerollCount`, base 250, or the summed tier values
+`[50, 125, 300, 750, 2000]` when rarities are locked — so the cost doubles every reroll.
+
+**The classic final boss (wave 200).** All read, none rolled:
+
+- `generateEnemyModifiers` returns early for `isClassicFinalBoss`, so **phase 1 carries no held items**, and
+  `Pokemon.hasPassive` returns false for it — **no passive ability**.
+- `Pokemon.damage` caps damage at `hp - 1` while the final boss is in `formIndex 0` on its last shield, and
+  `getMinimumSegmentIndex()` returns 1 for it: **phase 1 cannot be knocked out**. The fight always reaches phase two.
+- `DamageAnimPhase.end` then calls `BattleScene.initFinalBossPhaseTwo`, which gives Eternamax a **non-transferrable
+  Mini Black Hole** (`TurnHeldItemTransferModifier` — one of the player's held items every turn), regenerates its
+  moveset at form 1 and sets `currentBattle.double = true`: **the fight becomes a double**.
+- Movesets are fixed (`pokemon.ts:6530`): form 0 Eternabeam / Sludge Bomb / Flamethrower / **Cosmic Power** (which
+  raises its own defences), form 1 Dynamax Cannon / Cross Poison / Flamethrower / **Recover at −4 priority**.
+- Bars come from `getEncounterBossSegments(200, level, ETERNATUS, true)`: 2, +1 at level ≥ 100, +1 for BST ≥ 670,
+  +1 per 250 waves. Each break boosts a random stat (+2 for the last shields) — §3.
+
+**Safe to call this way** (all pure reads of the wave index or of the player's own party): `gameMode.isWaveFinal` /
+`isFixedBattle` / `getFixedBattle` / `isBoss`, `Pokemon.getLuck` / `isAllowedInBattle`, a modifier's
+`getStackCount()`. `getFixedBattle(w).getTrainer()` is *not* one of these — it draws, and `48-preview.js` only calls
+it inside a fork.

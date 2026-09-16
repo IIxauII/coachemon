@@ -77,14 +77,20 @@ class FakeBattle {
 
 const FIXED = { 8: { seedOffsetWaveIndex: 0, name: "Rival", type: 20 }, 25: { seedOffsetWaveIndex: 8, name: "Rival", type: 20 } };
 
+// getPartyLuckValue (modifier-type.ts): the party's luck summed over everyone allowed in battle, clamped to 14.
+const partyLuckOf = party => Math.max(0, Math.min(14, party.reduce((t, p) => t + (p.getLuck?.() ?? 0), 0)));
+let arenaArgs = []; // what the arena's `randomSpecies` was last handed, so the wrapper's argument list is checkable
+
 // `offsets` records every fork the code under test opens, so the test can assert the offsets themselves.
 const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meRate = 0 } = {}) => {
   const offsets = [];
   const scene = {
     seed, waveSeed: shiftCharCodes(seed, wave), rngOffset: 0, rngSeedOverride: "", offsetGym: false, waveCycleOffset: 0,
-    // `randomSpecies` sits on the arena, as `references/game-code.md` §11 has it: the preview must reach it
-    // through `s.arena`, never off the scene.
-    arena: { biomeId: 7, randomSpecies: () => species(POOL[randSeedInt(POOL.length)]) }, modifiers, mysteryEncounterSaveData: { encounteredEvents: [], encounterSpawnChance: 3 },
+    // The game's own two-step: `EncounterPhase` calls `globalScene.randomSpecies(w, level, true)`, whose
+    // `fromArenaPool` branch is `arena.randomSpecies(w, level, 0, getPartyLuckValue(party))`. The arena method
+    // records what it was handed, so a preview that skips the wrapper shows up as a mismatch.
+    arena: { biomeId: 7, randomSpecies: (w, level, attempt = 0, luck = 0) => { arenaArgs.push([attempt, luck]); return species(POOL[randSeedInt(POOL.length)]); } },
+    modifiers, mysteryEncounterSaveData: { encounteredEvents: [], encounterSpawnChance: 3 },
     phaseManager: { pushPhase() {}, unshiftPhase() {}, pushNew() {}, unshiftNew() {}, queueMessage() {},
       queueAbilityDisplay() {}, hideAbilityBar() {}, queueFaintPhase() {} },
     getPlayerParty: () => party, getEnemyParty: () => scene.currentBattle?.enemyParty ?? [],
@@ -138,6 +144,10 @@ const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meR
     },
     addEnemyPokemon: (sp, level, _slot, boss) => mon(sp, level, { boss: boss ? 2 : 0 }),
     getMysteryEncounter: () => ({ localizationKey: "departmentStoreSale", encounterTier: 0 }),
+    // BattleScene.randomSpecies, `fromArenaPool` branch.
+    randomSpecies: (w, level, fromArenaPool) => (fromArenaPool
+      ? scene.arena.randomSpecies(w, level, 0, partyLuckOf(party))
+      : species(POOL[0])),
   };
   scene.currentBattle = new FakeBattle(scene.gameMode, { waveIndex: wave, battleType: 0, double: false });
   scene.currentBattle.constructor = FakeBattle;
@@ -170,7 +180,7 @@ const playWave = (scene, w) => {
     battle.enemyLevels.forEach((level, e) => {
       battle.enemyParty[e] = type === 1
         ? trainer.genPartyMember(e)
-        : scene.addEnemyPokemon(scene.arena.randomSpecies(w, level, true), level, 0, !!scene.getEncounterBossSegments(w, level));
+        : scene.addEnemyPokemon(scene.randomSpecies(w, level, true), level, 0, !!scene.getEncounterBossSegments(w, level));
     });
   }
   return battle;
@@ -187,7 +197,7 @@ const mount = opts => {
   globalThis.setInterval = () => 0;
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__pv = { previewFor, previewNext, previewCheck, previewStats, fixedAhead, drawPreview, previewSummary };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__pv = { previewFor, previewNext, previewCheck, previewStats, drawPreview, previewSummary };\n})();\n"));
   return { scene, offsets, pv: globalThis.__pv };
 };
 
@@ -320,12 +330,35 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   console.log(`== unavailable ${JSON.stringify(m)}`);
 }
 
-// ---- 7. The fixed-battle schedule ahead needs no RNG at all.
+// ---- 7. The wild spawn goes through the scene wrapper the game itself calls, so the arena sees the game's own
+// argument list: attempt 0 and the party's luck, not `true` landing in `attempt` with the luck lost.
 {
-  const { scene, pv } = mount({ wave: 1 });
-  const ahead = pv.fixedAhead(scene, 2, 30);
-  console.log(`== fixed ahead ${JSON.stringify(ahead)}`);
-  assert.deepEqual(ahead, [{ wave: 8, kind: "fixed" }, { wave: 20, kind: "gym" }, { wave: 25, kind: "fixed" }]);
+  const { scene, pv } = mount({ wave: 12, party: [{ getLuck: () => 3, species: { speciesId: 1 }, level: 9 }] });
+  arenaArgs = [];
+  const m = pv.previewNext(scene);
+  assert.equal(m.type, "wild");
+  assert.deepEqual(arenaArgs, [[0, 3]], `the arena is handed (attempt 0, luck 3): ${JSON.stringify(arenaArgs)}`);
+  console.log(`== wild spawn args ${JSON.stringify(arenaArgs)}`);
+  // Without the wrapper the preview reproduces what the wrapper does, rather than guessing the arena's signature.
+  const { scene: s2, pv: pv2 } = mount({ wave: 12, party: [{ getLuck: () => 3, species: { speciesId: 1 }, level: 9 }] });
+  delete s2.randomSpecies;
+  arenaArgs = [];
+  pv2.previewNext(s2);
+  assert.deepEqual(arenaArgs, [[0, 3]], `the fallback passes the same: ${JSON.stringify(arenaArgs)}`);
+}
+
+// ---- 7b. A look-ahead to a far wave is never scored against the wave being played: only the next wave is.
+{
+  const { scene, pv } = mount({ wave: 12 });
+  pv.previewNext(scene);       // wave 13 — this is the one the tally should score
+  pv.previewFor(scene, 20);    // a look-ahead, which must not take its place
+  playWave(scene, 13);
+  pv.previewCheck(scene);
+  const stats = pv.previewStats();
+  assert.equal(stats.checked, 1);
+  assert.equal(stats.miss.type + stats.miss.foes + stats.miss.levels + stats.miss.double, 0,
+    `the look-ahead didn't displace the prediction: ${JSON.stringify(stats.last)}`);
+  console.log(`== tally with a look-ahead in flight ${JSON.stringify({ checked: stats.checked, miss: stats.miss })}`);
 }
 
 // ---- 8. The card, in both views, plus the one-line summary.

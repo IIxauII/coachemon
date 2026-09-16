@@ -221,12 +221,61 @@ const scenarios = {
     free: [mk(PokemonHpRestoreModifierType, { name: "Super Potion", iconImage: "super_potion", tier: 0, restorePoints: 50, restorePercent: 25 }), mk(PokemonReviveModifierType, { name: "Revive", iconImage: "revive", tier: 1, restorePoints: 0, restorePercent: 50 }),
       mk(TempStatStageBoosterModifierType, { name: "X Attack", iconImage: "x_attack", tier: 0 })],
     expect: m => { assert.ok(m.bossNext); assert.equal(m.free[m.pick].name, "Super Potion"); assert.match(m.free[1].why, /spare for the boss/); } },
+  // Wave 181, with the game mode wired up: the Elite Four starts next wave and the run doesn't heal again until 191,
+  // so the whole party has to last. A revive nobody needs yet is worth holding, and the hurt threshold rises.
+  "elite four gauntlet": { wave: 181, money: 3000, mode: "classic", party: [charizard(), pk("Blastoise", 160, 187, 0, [[M.aquaTail, 0, 10]])],
+    free: [mk(PokemonReviveModifierType, { name: "Max Revive", iconImage: "max_revive", tier: 2, restorePoints: 0, restorePercent: 100 }),
+      mk(TempStatStageBoosterModifierType, { name: "X Attack", iconImage: "x_attack", tier: 0 }),
+      mk(AddPokeballModifierType, { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 })],
+    expect: m => {
+      assert.ok(m.gauntlet, "five big fights before the next full heal");
+      assert.equal(m.ahead.fightsBeforeHeal, 5);
+      assert.equal(m.ahead.heal.wave, 191);
+      assert.equal(m.free[m.pick].name, "Max Revive");
+      assert.match(m.free[0].why, /spare for the gauntlet/);
+      assert.ok(m.buys.some(b => b.targetName === "Blastoise"), "85% HP is worth topping up before the E4");
+      assert.equal(m.luck.value, 0);
+    } },
+  // The control, with the same calendar: an ordinary boss run-up is one fight and then a full heal, so a spare
+  // revive is back to being a spare and the same Great Ball wins.
+  "ordinary boss run-up": { wave: 176, money: 3000, mode: "classic", party: [charizard(), pk("Blastoise", 160, 187, 0, [[M.aquaTail, 0, 10]])],
+    free: [mk(PokemonReviveModifierType, { name: "Max Revive", iconImage: "max_revive", tier: 2, restorePoints: 0, restorePercent: 100 }),
+      mk(AddPokeballModifierType, { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 })],
+    expect: m => {
+      assert.equal(m.gauntlet, false);
+      assert.equal(m.ahead.next.wave, 180, "the boss wave");
+      assert.equal(m.ahead.heal.wave, 181);
+      assert.equal(m.ahead.fightsBeforeHeal, 1, "one fight, then the heal");
+      assert.equal(m.free[m.pick].name, "5× Great Ball");
+      assert.match(m.free[0].why, /^nobody fainted$/);
+      assert.equal(m.ahead.eternatus, null, "24 waves out, the final boss is nobody's business yet");
+    } },
+  // Past the last heal: 195 and 200 with nothing in between, and no X1 left to restore anything.
+  "no heal left": { wave: 192, money: 3000, mode: "classic", party: [charizard(), pk("Blastoise", 160, 187, 0, [[M.aquaTail, 0, 10]])],
+    free: [mk(PokemonReviveModifierType, { name: "Max Revive", iconImage: "max_revive", tier: 2, restorePoints: 0, restorePercent: 100 }),
+      mk(AddPokeballModifierType, { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 })],
+    expect: m => {
+      assert.equal(m.ahead.heal, null, "no X1 left before the final wave");
+      assert.equal(m.ahead.fightsBeforeHeal, 2, "the rival at 195 and Eternatus at 200");
+      assert.ok(m.gauntlet);
+      assert.equal(m.free[m.pick].name, "Max Revive");
+      assert.ok(m.ahead.eternatus, "the checklist is up with two shops left");
+    } },
 };
+// The classic calendar, only as much of it as the rewards card reads. Waves 182–190 are the Elite Four and the
+// champion; the run heals entering every X1.
+const E4_WAVES = new Set([5, 8, 25, 35, 55, 62, 64, 66, 95, 112, 114, 115, 145, 164, 165, 182, 184, 186, 188, 190, 195]);
+const classicMode = () => ({
+  isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0,
+  isFixedBattle: w => E4_WAVES.has(w), getFixedBattle: () => ({}),
+});
 for (const [label, sc] of Object.entries(scenarios)) {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const handler = { options: sc.free.map(t => opt(t)), shopOptionsRows: shopRows, rerollCost: sc.reroll ?? 2250 };
-  const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: [], currentBattle: { waveIndex: sc.wave ?? 0 }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [] };
+  // Most scenarios leave `gameMode` off: the card has to fall back to the tenth-wave rule when the live build hides
+  // it. The ones that set `mode` get the classic calendar, which is what the look-ahead reads.
+  const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: [], currentBattle: { waveIndex: sc.wave ?? 0 }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [], ...(sc.mode ? { gameMode: classicMode() } : {}) };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
