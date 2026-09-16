@@ -28,6 +28,7 @@ class PokemonNatureChangeModifierType extends PokemonModifierType {}
 class BaseStatBoosterModifierType extends PokemonHeldItemModifierType {}
 class SpeciesStatBoosterModifierType extends PokemonHeldItemModifierType {}
 class ExpBoosterModifierType extends ModifierType {}
+class DoubleBattleChanceBoosterModifier {}
 const mk = (C, f) => Object.assign(new C(), f);
 const opt = (t, cost = 0) => ({ modifierTypeOption: { type: t, cost } });
 const shopRows = [[
@@ -66,8 +67,9 @@ const M = {
   drainingKiss: move("Draining Kiss", "Fairy", 50, 1), magicalLeaf: move("Magical Leaf", "Grass", 60, 1, -1),
   bite: move("Bite", "Dark", 60, 0), bodySlam: move("Body Slam", "Normal", 85, 0), crunch: move("Crunch", "Dark", 80, 0),
   confusion: move("Confusion", "Psychic", 50, 1), psybeam: move("Psybeam", "Psychic", 65, 1), thunderShock: move("Thunder Shock", "Electric", 40, 1),
-  nuzzle: move("Nuzzle", "Electric", 20, 0), quickAttack: move("Quick Attack", "Normal", 40, 0),
+  nuzzle: move("Nuzzle", "Electric", 20, 0), quickAttack: move("Quick Attack", "Normal", 40, 0), hyperVoice: move("Hyper Voice", "Normal", 90, 1),
 };
+MOVES[M.hyperVoice].moveTarget = 6; // ALL_NEAR_ENEMIES: a spread move
 
 // [id, ppUsed, maxPp]
 let monId = 0;
@@ -286,6 +288,34 @@ const scenarios = {
   "tm nobody": { wave: 27, money: 200, party: [charizard()],
     free: [tm(M.nuzzle, [], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
     expect: m => { assert.equal(m.free[0].tm, "skip"); assert.equal(m.pick, 1); assert.match(m.free[0].why, /nobody can learn it/); } },
+  // A fainted member can still be taught a TM (only Hardcore takes that away): Morpeko is down, and is the only one
+  // who can learn Fire Fang.
+  "tm fainted recipient": { wave: 22, money: 400, party: [charizard(), pk("Morpeko", 0, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25], [M.tackle, 0, 35], [M.quickAttack, 0, 30]], { types: ["Electric", "Dark"], atk: 95, spa: 70 })],
+    free: [tm(M.fireFang, ["Morpeko"], 1), mk(AddPokeballModifierType, { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 })],
+    expect: m => {
+      const ff = m.free[0];
+      assert.equal(ff.tm, "take");
+      assert.equal(ff.best.name, "Morpeko");
+      assert.equal(ff.best.fainted, true);
+      assert.match(ff.why, /^TM for Morpeko \(fainted\) \(over Tackle\)/);
+    } },
+  "tm fainted hardcore": { wave: 22, money: 400, challenges: [{ id: 9, value: 1 }], party: [charizard(), pk("Morpeko", 0, 120, 0, [[M.spark, 0, 20], [M.tackle, 0, 35]], { types: ["Electric", "Dark"], atk: 95, spa: 70 })],
+    free: [tm(M.fireFang, ["Morpeko"], 1)],
+    expect: m => { assert.equal(m.free[0].tm, "skip"); assert.match(m.free[0].why, /nobody can learn it/); } },
+  // A spread TM is kept for the run, so its bonus follows the game's double-battle odds over the next ten waves, not
+  // the wave just won: 1/8 a wave (1/32 on wave 30) with no lure, 1/2 (1/8) while a Lure's ten battles last.
+  "tm spread by doubles ahead": { wave: 22, money: 400, double: true, party: [pk("Charizard", 186, 186, 0, [[M.airSlash, 0, 15], [M.tackle, 0, 35]], { types: ["Fire", "Flying"], atk: 110, spa: 150 })],
+    free: [tm(M.hyperVoice, ["Charizard"], 1)],
+    expect: (m, api, sc, scene) => {
+      assert.equal(api.doubleOdds(scene, 23), (9 / 8 + 1 / 32) / 10);
+      const lured = { ...scene, modifiers: [Object.assign(new DoubleBattleChanceBoosterModifier(), { getBattleCount: () => 10 })] };
+      assert.equal(api.doubleOdds(lured, 23), (9 / 2 + 1 / 8) / 10);
+      assert.equal(api.doubleOdds({ ...lured, modifiers: [Object.assign(new DoubleBattleChanceBoosterModifier(), { battleCount: 3 })] }, 23), (3 / 2 + 6 / 8 + 1 / 32) / 10, "a lure covers only the battles it has left");
+      const mv = MOVES[M.hyperVoice];
+      const gain = double => api.learnAdvice(sc.party[0], mv, { double, party: sc.party }).gain;
+      assert.ok(gain(0) < gain(api.doubleOdds(scene, 23)) && gain(api.doubleOdds(lured, 23)) < gain(1), `${gain(0)} ${gain(0.12)} ${gain(0.46)} ${gain(1)}`);
+      assert.equal(m.free[0].best.gain, gain(api.doubleOdds(scene, 23)), "the finished wave's double flag is not what counts");
+    } },
   // A setup TM for a member with four moves: it names the weakest attack as the slot to give up.
   "tm setup full moveset": { wave: 28, money: 200, party: [
       pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.magicalLeaf, 0, 20], [M.tackle, 0, 35], [M.confusion, 0, 25]], { types: ["Fairy"], atk: 50, spa: 90 })],
@@ -374,17 +404,18 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const handler = { options: sc.free.map(t => opt(t)), shopOptionsRows: shopRows, rerollCost: sc.reroll ?? 2250 };
   // Most scenarios leave `gameMode` off: the card has to fall back to the tenth-wave rule when the live build hides
   // it. The ones that set `mode` get the classic calendar, which is what the look-ahead reads.
-  const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave ?? 0 }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [], ...(sc.mode ? { gameMode: classicMode() } : {}) };
+  const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave ?? 0, double: !!sc.double }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [],
+    ...(sc.mode ? { gameMode: classicMode() } : sc.challenges ? { gameMode: { challenges: sc.challenges } } : {}) };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__sm = shopModel; globalThis.__api = { learnAdvice };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__sm = shopModel; globalThis.__api = { learnAdvice, doubleOdds };\n})();\n"));
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
   console.log(`== ${label}\n` + (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
   const m = globalThis.__sm(scene, handler);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
-  sc.expect?.(m, globalThis.__api, sc);
+  sc.expect?.(m, globalThis.__api, sc, scene);
 }
 console.log("ok");

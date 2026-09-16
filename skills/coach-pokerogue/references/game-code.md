@@ -1013,3 +1013,43 @@ pool weight is 0 in classic; locked tiers can still be upgraded by luck.
 
 **Unmeasured.** None of this has met a live rewards screen: that every generated type exposes its field under the
 name above, and that the weights (a first cut on the card's 10-a-tier scale) rank the way a strong player would.
+
+## 16. TMs: who can be taught, and how often battles are doubles
+
+Read at the pinned tag (`v1.12.0.11`). `50-shop.js` judges a TM with the learn card's own decision (`learnAdvice`,
+`40-learn.js`); this section is what it reads besides the move.
+
+**Fainted members.** `TmModifierType`'s select filter is `isTmCompatible(moveId, true)` and nothing else, and
+`PartyUiHandler.updateOptions` offers `TEACH` in `PartyUiMode.TM_MODIFIER` whoever the cursor is on, fainted or not.
+The TM pool itself (`TmModifierTypeGenerator`) is drawn from `getCompatibleTms` over the **whole** party. The one
+exception is the Hardcore challenge (`Challenges.HARDCORE`, 9): a fainted member there goes through
+`updateOptionsHardcore`, which offers only Release (or transfer / discard), so it can't be taught. The card considers
+every member outside Hardcore, the living ones in it, and marks a fainted recipient.
+
+**Double battles.** `newBattle` asks `checkIsDouble` every wave:
+
+| Wave | Double when |
+|---|---|
+| classic final, Endless boss (`isWaveFinal`, `isEndlessBoss`), Mystery Encounter | never |
+| fixed battle whose config sets `double` | that value |
+| wild | `randSeedInt(getDoubleBattleChance(w)) === 0` |
+| generic trainer | the trainer's `DOUBLE` variant: `doubleOnly` always, no `hasDouble` never, else the same roll in `generateNewBattleTrainer` |
+| fixed evil-team grunt (`getRandomTrainerFunc`) | `randInt(3) === 0` on the trainer |
+
+`getDoubleBattleChance(w)` starts at **8** (**32** on an X0 wave), is divided by **4** for each
+`DoubleBattleChanceBoosterModifier` (a Lure / Super Lure / Max Lure, 10 / 15 / 30 battles; taking a second of the same
+kind only refreshes its battle count, `LapsingPersistentModifier.add`) and by 4 again for each mon on the **field** with `DoubleBattleChanceAbAttr` (Illuminate, Arena
+Trap), and is floored at 1. A lure is a `LapsingPersistentModifier`: `BattleEndPhase` lapses it before
+`SelectModifierPhase`, so on the rewards screen its `battleCount` is the number of battles ahead it still covers.
+
+A TM stays for the run, so the rewards card judges its spread bonus (×1.15 in the learn scorer) and an ally move's
+worth by `doubleOdds` (`49-ahead.js`): the expected share of double battles over the next 10 waves at those odds,
+each lure counted only for the battles it has left. A fixed battle that pins nothing (a grunt) counts as single, and
+Mystery Encounter waves count as battles, since whether a wave is one is itself a roll. At base odds that is ~12 %,
+a +2 % nudge; under a fresh lure ~46 %. The learn card keeps the current battle's flag.
+
+**Spread damage.** `getAttackDamage` multiplies by 0.75 only when a move hits more than one target, so a spread move
+loses nothing in a single battle; the bonus is only ever an upside.
+
+**Unmeasured.** Whether the field read on the rewards screen is the field of the next battle's roll, and the size of
+the spread bonus itself (a first cut).

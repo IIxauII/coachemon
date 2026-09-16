@@ -208,6 +208,8 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     || Object.keys(HEAL_FLAT).some(n => attrsOf(mv, n).length > 0);
   const inflictsStatus = mv => (mv.attrs || []).some(a => a.constructor?.name === "StatusEffectAttr" && !selfSide(mv, a));
 
+  const doublesNote = share => `${Math.round(share * 100)}% doubles ahead`;
+
   // What a status move is worth, and why. null value when nothing here recognises it: the card says "your call"
   // rather than inventing a number, and the slot stays off the forget list.
   const statusScore = (pk, mv, others, double, ctx) => {
@@ -251,6 +253,8 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     if (status >= 2) { value *= status >= 3 ? 0.35 : 0.6; notes.push(`${status + 1} status moves`); }
     const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
     if (!SELF_TARGETS.has(mv.moveTarget) && acc < 1) { value *= acc; notes.push(`${Math.round(acc * 100)}% acc`); }
+    // Over the battles ahead (a TM), an ally move is worth what it is in the doubles among them.
+    if (ALLY_TARGETS.has(mv.moveTarget) && double < 1) { value *= double; notes.push(doublesNote(double)); }
     const prior = priorOf(pk, mv, ctx);
     if (prior) { value *= prior.mult; notes.push(prior.note); }
     return { value: Math.round(value), notes: [...why, ...notes], status: true, why: why.join(" · "), se: [], neutral: [], teamSe: [], drawbacks: [] };
@@ -394,7 +398,10 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
       } else { value *= 1.1; notes.push(`+${stages} ${names}`); }
     }
     notes.push(...drawbacks);
-    if (double && SPREAD_TARGETS.includes(mv.moveTarget)) { value *= 1.15; notes.push("spread"); }
+    if (double && SPREAD_TARGETS.includes(mv.moveTarget)) {
+      value *= 1 + 0.15 * double;
+      notes.push(double < 1 ? `spread · ${doublesNote(double)}` : "spread");
+    }
     if (fit < 0.9) notes.push(mv.category === 0 ? "weak Atk" : "weak SpA");
     const prior = priorOf(pk, mv, ctx);
     if (prior) { value *= prior.mult; notes.push(prior.note); }
@@ -407,7 +414,11 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
 
   // The whole learn decision for `pk` and move `mv`: each current slot against the new move, which to forget, and
   // what the team gains or loses. Callers go through learnAdvice below.
-  const learnPlan = (pk, mv, { double = false, party = [pk] } = {}) => {
+  // `double` is this battle's flag on the learn card. The rewards card's TM advice passes the share of double battles
+  // ahead instead (`doubleOdds`, 0–1), since a TM is kept for the run: it scales the spread bonus and an ally move's
+  // worth, and the moveset prior reads the doubles sets once most battles ahead are doubles.
+  const learnPlan = (pk, mv, { double: flag = false, party = [pk] } = {}) => {
+    const double = Math.min(1, Math.max(0, Number(flag) || 0));
     const current = movesOf(pk);
     const mates = party.filter(p => p && p !== pk);
     const teamSe = seTypes(mates.flatMap(movesOf));
@@ -415,7 +426,7 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     // `prior` and `ownMoves` are the moveset prior's inputs: the species' competitive sets, and what this mon
     // already knows — which is how "the role it is already playing" is worked out. Both are per-mon, so they are
     // resolved once here rather than on every move scored.
-    const ctx = { party, teamSe, prior: priorSets(pk, double), ownMoves: current.map(moveName) };
+    const ctx = { party, teamSe, prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName) };
     const info = (x, score) => ({ name: x.name, type: effectiveType(pk, x).type ?? "Normal", cat: ["physical", "special", "status"][x.category], ...score });
     // Each slot is judged against the other three, so coverage counts for both the old move and its replacement.
     const moves = current.map((x, i) => {

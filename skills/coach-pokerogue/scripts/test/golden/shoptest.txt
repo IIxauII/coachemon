@@ -106,6 +106,16 @@ buy first — taking the free reward closes the shop
 🛒 $200 nothing affordable − ×
 🎁 5× Poké Ball least bad · you have 34
 · TM Nuzzle skip · nobody can learn it
+== tm fainted recipient
+🛒 $400 − ×
+🎁 TM Fire Fang Morpeko (fainted) → forget Tackle · +48 power
+· 5× Great Ball you have 34
+== tm fainted hardcore
+🛒 $400 − ×
+🎁 TM Fire Fang least bad · skip · nobody can learn it
+== tm spread by doubles ahead
+🛒 $400 − ×
+🎁 TM Hyper Voice Charizard free slot · +69 power
 == tm setup full moveset
 🛒 $200 nothing affordable − ×
 🎁 TM Calm Mind Comfey setup +1 SpA/SpD → forget Tackle

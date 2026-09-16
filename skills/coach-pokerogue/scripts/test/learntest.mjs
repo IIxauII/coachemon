@@ -204,6 +204,11 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.equal(hh.model.moves[hh.model.forget]?.name, "Helping Hand", "the dead slot goes before Pound");
   const dbl = run(minccino, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }], { double: true });
   assert.ok(byName(dbl.model, "Helping Hand").value > 0, "in a double battle it is worth something again");
+  // A TM on the rewards card is judged over the battles ahead: at a quarter doubles, a quarter of that.
+  const quarter = globalThis.__lm.learnAdvice(minccino, mv(["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]), { double: 0.25 });
+  const hhQuarter = quarter.plan.moves.find(x => x.name === "Helping Hand");
+  assert.ok(Math.abs(hhQuarter.value - byName(dbl.model, "Helping Hand").value / 4) <= 1, `a quarter of its doubles worth (${hhQuarter.value})`);
+  assert.ok(hhQuarter.notes.includes("25% doubles ahead"));
 
   // Sleep is the strongest thing a status move does, discounted by Sing's 55% accuracy. On Minccino it is worth
   // less again, for the reason the old card couldn't state: three of its four slots are already status moves.
