@@ -88,7 +88,7 @@ What a tool call reports about the game and the run, apart from its own payload:
 
 ## Preview
 
-What the **run seed** already decides about a **wave** the run has not reached yet, read out ahead of time. A preview is a read: it never advances the game or the run's own sequence of rolls.
+What the **run seed** already decides about something the run has not reached yet, read out ahead of time: a **wave** ahead, or the rewards a reroll the player hasn't paid for would bring. A preview is a read: it never advances the game or the run's own sequence of rolls.
 
 Each field of a preview carries its **confidence**, and a field is never surer than what it derives from:
 

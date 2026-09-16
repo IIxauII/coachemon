@@ -22,7 +22,8 @@
 // `getNewModifierTypeOption` rolls a tier and then upgrades it while `randSeedInt(floor(512 / (luck + 4))) < 4`, so
 // party luck is a per-item chance of a tier upgrade: 3.1 % at luck 0, 14.3 % at luck 14. A fixed battle's
 // `customModifierRewardSettings` can pin the tiers outright and set `allowLuckUpgrades: false` — the rival at 25 and
-// every boss after it — and then luck buys nothing and a reroll cannot change the rarities. Luck is the party's
+// every boss after it — and then luck buys nothing on the screen as rolled. A reroll drops those settings (it queues a
+// plain `SelectModifierPhase`), so it rolls rarities and takes luck upgrades like any other wave. Luck is the party's
 // `getLuck()` summed and clamped to 14; timed-event boosts add to it unseen, so the HUD's number is a floor.
 //
 // Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
@@ -259,7 +260,7 @@ const { aheadModel, partyLuck, doubleOdds } = (() => {
       readiness: named ? readiness(named, party.filter(p => p.hp > 0)) : null,
       luck: { value: luck, grade: LUCK_GRADES[luck] ?? String(luck), upgradePct: Math.round(upgradeChance(luck) * 1000) / 10 },
       // What the rewards for the wave just cleared are pinned to — the fixed battle you have already won, not the
-      // one ahead. This is what decides whether a reroll can change the rarities at all.
+      // one ahead. This is what decides whether luck can upgrade the screen as first rolled (a reroll drops the pin).
       thisWave: rewardRules(s, wave),
       eternatus: finalNear ? eternatusCard(s, next?.kind === "final" ? named : null, party) : null,
     };

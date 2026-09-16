@@ -198,4 +198,44 @@ buy first — taking the free reward closes the shop
 ☠ Eternamax knows Recover at −4 priority: out-damage it, don't chip it
 ☠ phase 1's Cosmic Power raises its defences every use — stalling makes it worse
 ✓ it carries no held items in phase 1 and has no passive ability
+== reroll preview
+🛒 $3000 − ×
+🎁 X Defense least bad · only lasts a few battles
+· 5× Poké Ball you have 34
+· Potion party healthy
+🎲 reroll $250~ ✓ worth it best 1× Egg Voucher (+21)
+· X Attack only lasts a few battles
+· Rare Candy Snorlax · Lv 45, at the Lv 16 cap where EXP can't level it
+› 1× Egg Voucher egg voucher — outlasts the run
+🔒 lock, reroll $700~ ✓ worth it 1× Egg Voucher · Leftovers · 5× Great Ball
+🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+== reroll keep
+🛒 $400 − ×
+🎁 Leftovers Snorlax 1/16 HP a turn
+· 5× Poké Ball you have 34
+🎲 reroll $250~ keep best 5× Great Ball (-12)
+· X Attack only lasts a few battles
+› 5× Great Ball you have 34
+· X Attack only lasts a few battles
+🔒 lock, reroll $700~ can't pay X Attack · 5× Great Ball · X Attack
+🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+== reroll over the buys
+🛒 $1300 → $236 − ×
+buy first — taking the free reward closes the shop
+💰 Hyper Potion $1064 Blastoise 32% HP
+🎁 X Defense least bad · only lasts a few battles
+🎲 reroll $250~ ✓ over the buys best Master Ball (+43)
+› Master Ball Master Ball — catches anything · you have 0
+· Master Ball Master Ball — catches anything · you have 0
+· Master Ball Master Ball — catches anything · you have 0
+🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
+== reroll disabled
+🛒 $3000 − ×
+🎁 X Defense least bad · only lasts a few battles
+🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively +
+== reroll preview unavailable
+🛒 $3000 − ×
+🎁 X Defense least bad · only lasts a few battles
+🎲 nothing good — reroll for $250?
+🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively +
 ok

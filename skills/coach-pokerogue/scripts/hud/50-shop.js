@@ -137,8 +137,8 @@ const shopModel = (s, h) => {
   // Free rewards: what the item does for this party now, then rarity tier as a tiebreak for everything else.
   const balls = s.pokeballCounts ?? {};
   const rctx = rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1) });
-  const free = (h.options || []).map(o => {
-    const t = o.modifierTypeOption.type;
+  // One reward judged for this party: the options on screen, and the ones a reroll would bring.
+  const judge = t => {
     const tier = shopTier(t);
     let v = (tier ?? 0) * 10;
     let why = TIER_NAMES[tier] ?? "";
@@ -250,25 +250,49 @@ const shopModel = (s, h) => {
       name: t.name, icon: t.iconImage, v, why, covers,
       tier, tierName: TIER_NAMES[tier] ?? null, class: t.constructor?.name ?? null, id: t.id ?? null, ...extra,
     };
-  });
+  };
+  const free = (h.options || []).map(o => judge(o.modifierTypeOption.type));
   const pick = free.reduce((best, f, i) => (best < 0 || f.v > free[best].v ? i : best), -1);
   if (pick >= 0 && free[pick].v < 0) free[pick].why = `least bad · ${free[pick].why}`;
   const { buys, left: money } = planBuys(pick >= 0 ? free[pick].covers : null);
   for (const f of free) delete f.covers; // holds pokémon objects; the model must stay JSON-safe for the signature
   for (const b of buys) { delete b.pokemon; delete b.kind; delete b.t; }
 
-  // Rerolling: the cost doubles every time (`2 ** rerollCount`), so it is worth one look, not a habit. When this
-  // wave's rewards are pinned to guaranteed tiers a reroll redraws the items but never the rarities, and on those
-  // waves luck buys nothing either — say so rather than dangling an upgrade that can't happen.
+  // Rerolling. With the reroll preview (50-reroll.js) the card knows what the next reroll brings, so the advice is a
+  // comparison: the best offer after it against the best offer now, on the same scale. Without it, the old hint: the
+  // cost doubles every time (`2 ** rerollCount`), so a weak screen is worth one look, not a habit. A reroll is an
+  // ordinary roll even after a fixed battle pinned this screen's tiers — the reroll drops the wave's reward settings.
   const pinned = ahead?.thisWave ?? null;
-  const reroll = pick >= 0 && free[pick].v < 10 && h.rerollCost > 0 && money >= h.rerollCost * 3
-    ? `nothing good — reroll for $${h.rerollCost}?${pinned?.tiers.length ? ` (same tiers: ${pinned.tiers.join("/")})` : ""}`
-    : null;
+  const preview = rerollPreview(s);
+  const rerollAhead = preview?.rolls?.length ? rerollAdvice(preview, judge, pick >= 0 ? free[pick] : null, s.money, money) : null;
+  const reroll = rerollAhead ? null
+    : pick >= 0 && free[pick].v < 10 && h.rerollCost > 0 && money >= h.rerollCost * 3 ? `nothing good — reroll for $${h.rerollCost}?` : null;
   const luck = ahead?.luck
     ? { ...ahead.luck, upgrades: !pinned || pinned.luckUpgrades }
     : null;
   // How many shop items the money covers at all: often none early on, when the shop is irrelevant.
   const affordable = shop.filter(i => i.cost <= s.money).length;
-  return { kind: "shop", money: s.money, left: money, buys, free, pick, reroll, bossNext, gauntlet, luck, wave,
+  return { kind: "shop", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
     affordable, ahead, audit: teamAudit(s, ahead) };
+};
+
+// How much better the best offer after a reroll has to be than the best offer now, on the card's scale (about 10 a
+// rarity tier), before the reroll is worth its money. A first cut.
+const REROLL_GAIN = 5;
+// The reroll preview judged: per roll (the lock as it stands, then toggled), its offers, its best, and a verdict —
+// `reroll` when it beats the screen by REROLL_GAIN and the money is there after the planned buys, `instead of buys`
+// when it only fits by skipping them, `keep` when it doesn't beat the screen, `short` when it can't be paid for.
+const rerollAdvice = (preview, judge, now, money, afterBuys) => {
+  const rolls = preview.rolls.map(r => {
+    const offers = r.types.map((t, i) => {
+      const f = judge(t);
+      delete f.covers;
+      return { ...f, ...(r.upgrades[i] > 0 ? { upgraded: r.upgrades[i] } : {}) };
+    });
+    const best = offers.reduce((b, f, i) => (b < 0 || f.v > offers[b].v ? i : b), -1);
+    const gain = best >= 0 ? offers[best].v - (now?.v ?? 0) : 0;
+    const verdict = r.cost > money ? "short" : gain < REROLL_GAIN ? "keep" : r.cost > afterBuys ? "instead of buys" : "reroll";
+    return { lock: r.lock, cost: r.cost, offers, best, gain: Math.round(gain * 10) / 10, verdict };
+  });
+  return { n: preview.n, canLock: preview.canLock, locked: preview.locked, missed: preview.missed, rolls };
 };

@@ -29,6 +29,27 @@ class BaseStatBoosterModifierType extends PokemonHeldItemModifierType {}
 class SpeciesStatBoosterModifierType extends PokemonHeldItemModifierType {}
 class ExpBoosterModifierType extends ModifierType {}
 class DoubleBattleChanceBoosterModifier {}
+class LockModifierTiersModifier {}
+// The reward phase as the reroll preview reads it: its reroll count, the options on screen, its cost rule and count.
+class SelectModifierPhase {
+  constructor(rerollCount = 0, modifierTiers) { this.phaseName = "SelectModifierPhase"; this.rerollCount = rerollCount; this.modifierTiers = modifierTiers; }
+  getRerollCost(lock) { return this.noReroll ? -1 : lock ? 700 : 250 * 2 ** this.rerollCount; }
+  getModifierCount() { return 3; }
+}
+// The game's two reward functions, drawing from the mocked stream: `regenerate` draws once (a generator), each option
+// draws once and takes the pool entry at draw + reroll count (+ 2 when tiers are locked). Every call is logged.
+const draw = () => { const n = Number(Phaser.Math.RND._s.split(",")[1]); Phaser.Math.RND._s = `!rnd,${n + 1}`; return n; };
+const mockRewardFns = (pool, log) => {
+  let n = 0;
+  return {
+    regenerate: (party, poolType, rerollCount) => { log.push(["regenerate", poolType, rerollCount]); n = rerollCount; draw(); },
+    options: (count, party, tiers) => {
+      log.push(["options", count, tiers ?? null]);
+      console.log("the game logs every item it draws");
+      return Array.from({ length: count }, () => ({ type: pool[(draw() + n + (tiers ? 2 : 0)) % pool.length], upgradeCount: 0 }));
+    },
+  };
+};
 const mk = (C, f) => Object.assign(new C(), f);
 const opt = (t, cost = 0) => ({ modifierTypeOption: { type: t, cost } });
 const shopRows = [[
@@ -389,6 +410,83 @@ const scenarios = {
       assert.equal(m.free[m.pick].name, "Max Revive");
       assert.ok(m.ahead.eternatus, "the checklist is up with two shops left");
     } },
+  // Reroll preview: a weak screen (Poké Balls we have plenty of, an X item, a Potion nobody needs). The next reroll,
+  // read off the stream, is worth its $250. With a Lock Capsule the locked roll is read too, from the same stream
+  // position. The stream, the threshold tables and the console are left as they were.
+  "reroll preview": { wave: 14, money: 3000, party: [snorlax(), jolteon()], modifiers: [new LockModifierTiersModifier()],
+    free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 }),
+      mk(PokemonHpRestoreModifierType, { name: "Potion", iconImage: "potion", tier: 0, restorePoints: 20, restorePercent: 10 })],
+    rewardPool: () => [held("LEFTOVERS", "Leftovers", 3), mk(AddPokeballModifierType, { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 }),
+      mk(TempStatStageBoosterModifierType, { name: "X Attack", iconImage: "x_attack", tier: 0 }), rareCandy(),
+      mk(AddVoucherModifierType, { name: "1× Egg Voucher", iconImage: "coupon", tier: 1 })],
+    expect: (m, api, sc, scene) => {
+      const r = m.rerollAhead;
+      assert.ok(r, "the preview is read");
+      assert.equal(m.reroll, null, "no hint when the preview answers");
+      assert.equal(r.rolls.length, 2, "the lock as it stands, then toggled");
+      const [plain, locked] = r.rolls;
+      assert.deepEqual([plain.lock, plain.cost, locked.lock, locked.cost], [false, 250, true, 700]);
+      assert.equal(plain.verdict, "reroll");
+      assert.equal(Phaser.Math.RND.state(), "!rnd,0", "the live stream is untouched");
+      const log = sc.rewardLog;
+      assert.deepEqual(log.at(-1), ["regenerate", 0, 0], "the tables are put back for the live reroll count");
+      assert.deepEqual(log.filter(x => x[0] === "options").map(x => x[2]), [null, [0, 0, 0]], "the locked roll passes the tiers on screen");
+      assert.equal(log.filter(x => x[0] === "regenerate" && x[2] === 1).length, 2, "each roll regenerates for reroll 1");
+      assert.equal(console.log, sc.consoleLog, "console restored");
+      const before = log.length;
+      api.shopModel(scene, scene.ui.getHandler());
+      assert.equal(log.length, before, "an unchanged screen is served from the cache");
+      assert.match(api.hudSummary(m).rewards, /reroll \$250 → .* \(reroll\) \[~\]/);
+
+      // The player rerolls: the new phase shows exactly the previewed offers — a hit.
+      const rolled = sc.pool.filter(t => plain.offers.some(f => f.name === t.name));
+      const next = new SelectModifierPhase(1, [0, 0, 0]);
+      next.typeOptions = plain.offers.map(f => ({ type: rolled.find(t => t.name === f.name) }));
+      scene.phase = next;
+      api.rerollCheck(scene);
+      assert.deepEqual([api.rerollStats().hit, api.rerollStats().miss], [1, 0]);
+      // Read again on the new screen, then a reroll that comes out different — a miss, marked `!` from then on.
+      Phaser.Math.RND._s = "!rnd,7";
+      assert.equal(api.shopModel(scene, scene.ui.getHandler()).rerollAhead.missed, false);
+      const third = new SelectModifierPhase(2, [0, 0, 0]);
+      third.typeOptions = [0, 1, 2].map(() => ({ type: { name: "Nope", tier: 0 } }));
+      scene.phase = third;
+      api.rerollCheck(scene);
+      assert.deepEqual([api.rerollStats().hit, api.rerollStats().miss], [1, 1]);
+      const m3 = api.shopModel(scene, scene.ui.getHandler());
+      assert.equal(m3.rerollAhead.missed, true);
+      assert.match(api.hudSummary(m3).rewards, /\[!\]/);
+    } },
+  // A good screen and little money: the reroll is read, but keeping the screen wins, and the locked roll can't be paid.
+  "reroll keep": { wave: 14, money: 400, party: [snorlax(), jolteon()], modifiers: [new LockModifierTiersModifier()],
+    free: [held("LEFTOVERS", "Leftovers", 3), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
+    rewardPool: () => [mk(TempStatStageBoosterModifierType, { name: "X Attack", iconImage: "x_attack", tier: 0 }), mk(AddPokeballModifierType, { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 })],
+    expect: m => {
+      const [plain, locked] = m.rerollAhead.rolls;
+      assert.equal(plain.verdict, "keep");
+      assert.ok(plain.gain < 0);
+      assert.equal(locked.verdict, "short");
+    } },
+  // No Lock Capsule: one roll. The reroll only fits by skipping the heal the hurt Blastoise needs.
+  "reroll over the buys": { wave: 14, money: 1300, party: [charizard(), pk("Blastoise", 60, 187, 0, [[M.aquaTail, 0, 10]])],
+    free: [mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 })],
+    rewardPool: () => [mk(AddPokeballModifierType, { name: "Master Ball", iconImage: "mb", tier: 4, pokeballType: 4 })],
+    expect: m => {
+      const roll = m.rerollAhead.rolls[0];
+      assert.equal(m.rerollAhead.rolls.length, 1);
+      assert.ok(m.buys.length && m.left < 250, `a heal is planned: ${m.buys.map(b => b.name)} → $${m.left}`);
+      assert.equal(roll.verdict, "instead of buys");
+      assert.equal(roll.offers[roll.best].name, "Master Ball");
+    } },
+  // Rerolls switched off on this screen (a negative reroll multiplier): nothing to preview, and no hint.
+  "reroll disabled": { wave: 14, money: 3000, reroll: -1, noReroll: true, party: [snorlax()],
+    free: [mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 })],
+    rewardPool: () => [held("LEFTOVERS", "Leftovers", 3)],
+    expect: m => { assert.equal(m.rerollAhead, null); assert.equal(m.reroll, null); } },
+  // The reward functions aren't found in the live build (yet): the old hint stands in.
+  "reroll preview unavailable": { wave: 14, money: 3000, reroll: 250, phase: true, party: [snorlax()],
+    free: [mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 })],
+    expect: m => { assert.equal(m.rerollAhead, null); assert.match(m.reroll, /reroll for \$250/); } },
 };
 // The classic calendar, only as much of it as the rewards card reads. Waves 182–190 are the Elite Four and the
 // champion; the run heals entering every X1.
@@ -406,12 +504,22 @@ for (const [label, sc] of Object.entries(scenarios)) {
   // it. The ones that set `mode` get the classic calendar, which is what the look-ahead reads.
   const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave ?? 0, double: !!sc.double }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [],
     ...(sc.mode ? { gameMode: classicMode() } : sc.challenges ? { gameMode: { challenges: sc.challenges } } : {}) };
+  // The reroll scenarios put the reward phase on the phase queue; the others leave it off, as a read from an older HUD did.
+  if (sc.rewardPool || sc.phase) {
+    scene.phase = Object.assign(new SelectModifierPhase(0), { typeOptions: sc.free.map(t => ({ type: t })), noReroll: !!sc.noReroll });
+    scene.phaseManager = { getCurrentPhase: () => scene.phase };
+  }
+  sc.pool = sc.rewardPool?.();
+  sc.rewardLog = [];
+  sc.consoleLog = console.log;
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__sm = shopModel; globalThis.__api = { learnAdvice, doubleOdds };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__sm = shopModel; globalThis.__api = { learnAdvice, doubleOdds, shopModel, rerollCheck, rerollStats, hudSummary, setRewardFns, tick };\n})();\n"));
+  // The chunk scan finds nothing under node: hand the reroll preview its functions, and draw the card again.
+  if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
   console.log(`== ${label}\n` + (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
   const m = globalThis.__sm(scene, handler);

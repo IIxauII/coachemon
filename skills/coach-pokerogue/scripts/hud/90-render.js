@@ -165,7 +165,7 @@ const drawShop = m => {
   };
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? heldTo(p) ?? h("span", dim, p.why)) : null;
-  if (view === "mini") return [header, ...buyRows, take, ...drawAudit(m.audit), ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
+  if (view === "mini") return [header, ...buyRows, take, ...drawReroll(m), ...drawAudit(m.audit), ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
   // Who can use it, when the reason doesn't already name them (a holder is the answer already).
   const usersText = f => {
     if (f.holder) return "";
@@ -178,7 +178,8 @@ const drawShop = m => {
   return [header,
     m.buys.length ? h("div", { ...dim, fontSize: FS.tiny }, "buy first — taking the free reward closes the shop") : null,
     ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
-    m.reroll ? line("🎲", "#8cf", h("span", dim, m.reroll)) : null,
+    // What the next reroll brings, read off the stream (or the old hint without the preview).
+    ...drawReroll(m),
     // What is wrong with the team itself, while this shop can still patch it.
     ...drawAudit(m.audit),
     // What the shop is being stocked for: the wave the run seed has already decided on (it draws its own rule), then
@@ -236,7 +237,7 @@ const hudSummary = m => {
   if (m.kind === "shop") {
     const p = m.pick >= 0 ? m.free[m.pick] : null;
     const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
-    return { ...base, rewards: [p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null, buys].filter(Boolean).join(" · ") || null };
+    return { ...base, rewards: [p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null, buys, rerollSummary(m)].filter(Boolean).join(" · ") || null };
   }
   const saveFor = name => m.teamPlan?.reserve?.find(r => r.name === name)?.for.name ?? null;
   return { ...base, verdict: verdictOf(m), field: m.field ? m.field.slots.map(slotText).join(" ; ") : null,
@@ -437,6 +438,8 @@ const tick = () => {
     const s = game.scene.getScene("battle");
     // Mid-reload or on the title screen: nothing to coach, and the scene isn't wired up yet.
     if (!s?.ui) { el.style.display = "none"; shown = null; return; }
+    // Score a reroll the player just made against the preview read for it, before the card reads the next one.
+    rerollCheck(s);
     const learn = learnState(s);
     const handler = s.ui.getHandler();
     let m;
