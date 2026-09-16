@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Orion transport probe (#150) AMO",
+  "version": "0.0.1",
+  "description": "PROTOTYPE, throwaway: can a background reach a local process on 127.0.0.1 and relay commands into pokerogue.net?",
+  "background": { "scripts": ["background.js"] },
+  "host_permissions": ["https://pokerogue.net/*", "http://127.0.0.1/*"],
+  "content_scripts": [
+    { "matches": ["https://pokerogue.net/*"], "js": ["main.js"], "world": "MAIN", "run_at": "document_idle" },
+    { "matches": ["https://pokerogue.net/*"], "js": ["isolated.js"], "run_at": "document_idle" }
+  ],
+  "browser_specific_settings": { "gecko": { "id": "probe150@coachemon.invalid", "strict_min_version": "128.0" } }
+}
