@@ -35,7 +35,7 @@ const liveBundle = () => {
   assert.ok(at > 0, "bundle has 30-planner.js");
   src = src.slice(0, at) + STUBS + src.slice(at);
   const end = src.lastIndexOf("})();");
-  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, turnsToKo, koCurve, tokenActs, selfStages, setupRamp };\n" + src.slice(end);
+  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, turnsToKo, koCurve, tokenActs, selfStages, setupRamp, koBoost, hudSummary };\n" + src.slice(end);
 };
 
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
@@ -760,4 +760,107 @@ const hydreigonSnorlax = () => [
   const slots = slotLines(field);
   assert.match(slots.find(l => /^⚔ Clefable/.test(l)) ?? "", /Helping Hand .*Garchomp KOs Hydreigon/, `Clefable boosts Garchomp:\n${field.join("\n")}`);
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon 1 hit .*with Helping Hand/);
+}
+
+// ---- 20. Drain (#90 §C, the Guzma w165 Golisopod): a drain move wins back half of what it deals every turn.
+// Meteor Mash (85–100) into a 300 HP Golisopod is a 4HKO. Its Leech Life lands ~55 on Metagross and heals ~28 of it
+// a turn, so the fourth Mash falls short: 5. A full-HP foe can't heal past its max.
+Object.assign(TABLE, {
+  "Metagross>Meteor Mash>Golisopod": [[100], 1, 1], "Golisopod>Leech Life>Metagross": [[60], 1, 1],
+  "Venusaur>Giga Drain>Snorlax": [[50], 1, 1], "Snorlax>Body Slam>Venusaur": [[80], 1, 1],
+});
+{
+  const drainOf = { "Leech Life": 0.5, "Giga Drain": 0.5 };
+  const draining = ratio => (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && drainOf[pm.getName()] ? { ...x, drain: ratio ?? drainOf[pm.getName()] } : x; };
+  const metagross = id => mon("Metagross", 80, ["Steel", "Psychic"], [400, 180, 170, 120, 120, 120], [["Meteor Mash", "Steel", 90, "P"]], true, undefined, { id });
+  const golisopod = id => mon("Golisopod", 80, ["Bug", "Water"], [300, 180, 170, 60, 120, 40], [["Leech Life", "Bug", 80, "P"]], true, undefined, { id });
+  const leech = () => [{ name: "Leech Life", type: "Bug", p: 1, score: 10, targets: [0] }];
+  const { scene: s } = render({ party: [metagross("M")], foes: [golisopod("G")], live: true, dist: leech, switches: () => new Map() });
+  const { exchange, threatFrom } = globalThis.__planner;
+  globalThis.__stub.outcome = draining(0);
+  assert.equal(exchange(s, metagross("Metagross, no drain"), metagross("x").moveset[0], golisopod("Golisopod, no drain")).turnsWe, 4, "4HKO without the drain");
+  globalThis.__stub.outcome = draining();
+  const t = threatFrom(s, golisopod("Golisopod drains"), metagross("Metagross vs drain"));
+  assert.ok(Math.abs(t.drain - t.expected / 2) < 1e-9, `the threat carries the HP it drains a turn (${t.drain} of ${t.expected})`);
+  const leeched = exchange(s, metagross("Metagross vs Leech Life"), metagross("x").moveset[0], golisopod("Golisopod with Leech Life"));
+  console.log(`== drain\nMeteor Mash into a draining Golisopod: ${leeched.turnsWe} hits`);
+  assert.equal(leeched.turnsWe, 5, "Leech Life's healing costs a hit");
+
+  // Ours: Body Slam (68–80) 4HKOs a 280 HP Venusaur; Giga Drain (~46 a turn) wins back ~23 of it, and it takes 6. Into
+  // Liquid Ooze the same drain hurts instead: 3.
+  const venusaur = id => mon("Venusaur", 80, ["Grass", "Poison"], [280, 100, 120, 180, 120, 100], [["Giga Drain", "Grass", 75, "S"]], true, undefined, { id });
+  const snorlax = id => mon("Snorlax", 80, ["Normal"], [900, 150, 110, 80, 150, 30], [["Body Slam", "Normal", 85, "P"]], true, undefined, { id });
+  const slams = (id, ratio) => {
+    globalThis.__stub.outcome = draining(ratio);
+    return exchange(s, venusaur(`Venusaur ${id}`), venusaur("x").moveset[0], snorlax(`Snorlax ${id}`)).turnsThey;
+  };
+  const bodySlam = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
+  globalThis.__stub.dist = bodySlam;
+  assert.deepEqual([slams("plain", 0), slams("drains", 0.5), slams("into ooze", -0.5)], [4, 6, 3], "our drain buys turns; Liquid Ooze costs them");
+  globalThis.__stub.outcome = outcome;
+}
+
+// ---- 21. On-KO boosts (#90 §D, Guzma's Buzzwole): a foe with Beast Boost gets stronger for every KO we feed it.
+// Read off the ability: Beast Boost's changes are a function of the holder (its highest stat), Soul-Heart counts
+// every faint.
+{
+  const { koBoost } = globalThis.__planner;
+  const ability = (name, attr, x) => ({
+    hasAbilityWithAttr: a => a === attr,
+    getAbility: () => ({ name, getAttrs: a => (a === attr ? [x] : []) }),
+  });
+  const beastBoost = ability("Beast Boost", "PostVictoryStatStageChangeAbAttr", { changes: p => [{ stat: p.getStat(1) >= p.getStat(3) ? 1 : 3, stages: 1 }] });
+  const soulHeart = ability("Soul-Heart", "PostKnockOutStatStageChangeAbAttr", { stat: 3, stages: 1 });
+  const buzzwole = extra => mon("Buzzwole", 80, ["Bug", "Fighting"], [300, 250, 250, 100, 100, 150], [["Lunge", "Bug", 80, "P"]], true, undefined, { ...beastBoost, ...extra });
+  assert.deepEqual(koBoost(buzzwole()), { up: { 1: 1 }, ability: "Beast Boost", any: false });
+  assert.deepEqual(koBoost(mon("Magearna", 80, ["Steel", "Fairy"], [300, 100, 100, 250, 100, 100], [], true, undefined, soulHeart)), { up: { 3: 1 }, ability: "Soul-Heart", any: true });
+  assert.equal(koBoost(buzzwole({ hasAbilityWithAttr: () => false })), null, "a suppressed ability gives nothing");
+
+  // Mamoswine (140 HP) is faster but Lunge (68–80) takes it in two; its Earthquake needs three on Buzzwole. Staying
+  // feeds Buzzwole a KO, and the slot says so while there's someone left to face it.
+  Object.assign(TABLE, { "Mamoswine>Earthquake>Buzzwole": [[110], 1, 1], "Buzzwole>Lunge>Mamoswine": [[80], 1, 1], "Buzzwole>Lunge>Snorlax": [[500], 1, 1] });
+  const mamoswine = mon("Mamoswine", 80, ["Ice", "Ground"], [300, 200, 100, 70, 80, 200], [["Earthquake", "Ground", 100, "P"]], true, 140);
+  const bench = mon("Snorlax", 80, ["Normal"], [300, 150, 110, 80, 150, 30], [["Body Slam", "Normal", 85, "P"]], false);
+  const lunge = () => [{ name: "Lunge", type: "Bug", p: 1, score: 10, targets: [0] }];
+  const at = extra => lineOf(render({ party: [mamoswine, bench], foes: [buzzwole(extra)], live: true, dist: lunge, switches: () => new Map() }).field, "Mamoswine");
+  const fed = at({});
+  console.log(`== on-KO boost\n${fed}`);
+  assert.match(fed, /KO feeds Buzzwole's Beast Boost \(\+1 Atk\)/, `the slot names the boost it feeds:\n${fed}`);
+  assert.doesNotMatch(at({ hasAbilityWithAttr: () => false }), /feeds/, "no boost, no note");
+
+  // A close call it tips: Mamoswine (150 HP, a speed tie) needs three Earthquakes (136–160) to Buzzwole's two Lunges,
+  // while Crobat resists Lunge (~6 % coming in) but chips slowly with Wing Attack. Without the boost staying edges it
+  // and the switch is only optional; the KO staying would feed Buzzwole tips it to Crobat — the Guzma turn 20 pivot —
+  // and the switch line says why it's cheap.
+  Object.assign(TABLE, { "Buzzwole>Lunge>Crobat": [[20], 1, 0.25], "Crobat>Wing Attack>Buzzwole": [[45], 1, 4], "Mamoswine>Earthquake>Buzzwole": [[160], 1, 1] });
+  const tied = mon("Mamoswine", 80, ["Ice", "Ground"], [300, 200, 100, 70, 80, 150], [["Earthquake", "Ground", 100, "P"]], true, 150);
+  const crobat = mon("Crobat", 80, ["Poison", "Flying"], [300, 150, 110, 80, 150, 250], [["Wing Attack", "Flying", 60, "P"]], false);
+  const pivot = extra => render({ party: [tied, crobat], foes: [buzzwole(extra)], live: true, dist: lunge, switches: () => new Map() }).field;
+  const boosted = pivot({}), plain = pivot({ hasAbilityWithAttr: () => false });
+  console.log(`${boosted.join("\n")}\n-- without Beast Boost\n${plain.join("\n")}`);
+  assert.match(boosted.find(l => /^now: ⇄/.test(l)) ?? "", /Mamoswine out › Crobat in · takes ~6% · resists Lunge/, `switch to Crobat:\n${boosted.join("\n")}`);
+  assert.ok(plain.some(l => /^⚔ Mamoswine/.test(l)) && plain.some(l => /Crobat in · optional/.test(l)), `stay without the boost:\n${plain.join("\n")}`);
+}
+
+// ---- 22. The summary the watcher and the battle read get (#90 §H, §I): a likely KO after our mon acts is a second
+// danger level, naming the foe the fight plan saves that mon for, and the fight plan's verdict comes along — Guzma's
+// turn 1, where Mamoswine acts once and then falls to Iron Head.
+{
+  const { hudSummary } = globalThis.__planner;
+  const threat = (level, after) => ({ level, after, from: "Mega Golisopod", move: "Iron Head" });
+  const m = {
+    kind: "battle", wave: 165, trainer: true, rows: [],
+    field: { slots: [{ name: "Mamoswine", move: "Precipice Blades", target: { name: "Mega Golisopod" }, ko: 0, threat: threat("risk", true) }], switches: [] },
+    teamPlan: {
+      result: "loss", win: { name: "Buzzwole", kills: 3, of: 6 }, steps: [], sacrifice: [],
+      reserve: [{ name: "Mamoswine", for: { name: "Xurkitree" } }],
+      warnings: ["likely lost: nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat", "Mamoswine goes down before Buzzwole comes in"],
+    },
+  };
+  const sum = hudSummary(m);
+  console.log(`== summary\n${JSON.stringify({ danger: sum.danger, plan: sum.plan })}`);
+  assert.deepEqual(sum.danger, [{ mon: "Mamoswine", from: "Mega Golisopod", move: "Iron Head", level: "after", saveFor: "Xurkitree" }]);
+  assert.equal(sum.plan, "likely lost · ☠ Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in");
+  // A plain ⚠ (a real KO chance, not a likely KO) stays off the list.
+  assert.deepEqual(hudSummary({ ...m, field: { ...m.field, slots: [{ ...m.field.slots[0], threat: threat("risk", false) }] } }).danger, []);
 }

@@ -186,9 +186,10 @@ const drawShop = m => {
     ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
 };
 
-// Danger the panel flags on our side: the 💀 / ⚠ tags on field slots and on mons a switch takes out.
+// Danger the panel flags on our side: the 💀 / ⚠ tags on field slots and on mons a switch takes out. `after`: a ⚠ that
+// is a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
-  .filter(([name, t]) => name && t).map(([name, t]) => ({ mon: name, level: t.level, from: t.from, move: t.move }));
+  .filter(([name, t]) => name && t).map(([name, t]) => ({ mon: name, level: t.level, from: t.from, move: t.move, after: !!t.after }));
 const catchWorthIt = m => !!m.catch?.targets?.some(t => t.verdict !== "skip");
 const planLost = m => !!m.teamPlan && m.teamPlan.result !== "win";
 // An easy wave: a wild fight with nothing to decide. No boss, no danger tag, no switch (nor a missing one), every
@@ -207,11 +208,24 @@ const verdictOf = m => (easyWave(m) ? "easy" : m.trainer ? "trainer"
   : catchWorthIt(m) ? "catch" : "fight");
 const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
+// The fight plan in one line: its verdict, the win condition, then what it warns about (a likely loss says why).
+const planSummary = tp => {
+  if (!tp) return null;
+  if (tp.summary) return tp.summary;
+  const lost = tp.result !== "win";
+  return [lost ? "likely lost" : "winnable",
+    tp.win ? `☠ ${tp.win.name} KOs ${tp.win.kills}/${tp.win.of}` : null,
+    ...tp.warnings.map(w => w.replace(/^likely lost: /, "")),
+    tp.sacrifice.length ? `sacrifice ${tp.sacrifice.map(x => `${x.name} → ${x.frees.name} in free`).join(", ")}` : null,
+  ].filter(Boolean).join(" · ");
+};
+
 // Plain-text verdict of what the panel shows, for the watcher and the battle read (`window.__coachHud.summary()`).
-// `danger` lists the 💀 tags only: a likely KO before our mon acts.
+// `danger`: a likely KO of one of our mons this turn — `level` "ko" before it acts (the 💀 tags), "after" once it has
+// acted; `saveFor` names the foe the fight plan keeps that mon for. `plan`: the fight plan's line (trainer battles).
 const hudSummary = m => {
   if (!m) return null;
-  const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null, encounter: null,
+  const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], plan: null, learn: null, rewards: null, encounter: null,
     next: previewSummary(m.preview), ahead: aheadSummary(m.ahead), audit: auditSummary(m.audit) };
   if (m.kind === "biome") return biomeSummary(m, base);
   if (m.kind === "encounter") return encounterSummary(m, base);
@@ -224,8 +238,11 @@ const hudSummary = m => {
     const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
     return { ...base, rewards: [p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null, buys].filter(Boolean).join(" · ") || null };
   }
+  const saveFor = name => m.teamPlan?.reserve?.find(r => r.name === name)?.for.name ?? null;
   return { ...base, verdict: verdictOf(m), field: m.field ? m.field.slots.map(slotText).join(" ; ") : null,
-    danger: dangerTags(m).filter(d => d.level === "ko").map(({ mon: name, from, move }) => ({ mon: name, from, move })) };
+    danger: dangerTags(m).filter(d => d.level === "ko" || d.after)
+      .map(({ mon: name, from, move, level }) => ({ mon: name, from, move, level: level === "ko" ? "ko" : "after", saveFor: saveFor(name) })),
+    plan: planSummary(m.teamPlan) };
 };
 
 // Trap abilities on a slot's target that its planned move runs into: by type, by category (Fluffy) or a
@@ -281,9 +298,12 @@ const drawBattle = m => {
   const step = (label, icon, color, ...kids) => h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" },
     label ? h("span", { ...dim, width: "30px", flex: "none" }, label) : null,
     h("span", { color, width: "14px", flex: "none" }, icon), ...kids);
+  // A paid switch-in also says what coming in costs it, and why that's cheap: "takes ~6% · resists Lunge".
+  const takesText = x => (x ? `takes ~${x.pct}%${x.e === 0 ? ` · immune to ${x.move}` : x.e != null && x.e < 1 ? ` · resists ${x.move}` : x.e > 1 ? ` · weak to ${x.move}` : ""}` : null);
   const swapLine = (sw, color, tail, label) => step(label, "⇄", color,
     ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), sw.out.threat ? threatTag(sw.out.threat) : null, h("span", { color, margin: "0 3px" }, "out ›")] : [h("span", { color, marginRight: "3px" }, "send")]),
-    mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail));
+    mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail),
+    sw.in.takes ? h("span", { ...dim, fontSize: FS.tiny, marginLeft: "4px" }, `· ${takesText(sw.in.takes)}`) : null);
   // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn). Mini has no
   // foe rows, so a trap ability the move runs into goes on the slot itself.
   const slotLine = (sl, label) => step(label, "⚔", "#8cf",

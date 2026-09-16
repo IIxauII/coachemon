@@ -42,6 +42,12 @@ const hudReady = (kind, key, ready) => {
   return ++waits[kind].n > HUD_WAIT_POLLS;
 };
 const dangers = new Set(); // `${wave}|${mon}`: one DANGER line per mon per wave
+const lostWaves = new Set(); // waves whose fight plan has already been reported as likely lost
+// A KO before our mon acts always; one after it acts only for a mon the fight plan is saving for a foe. A HUD from
+// before `level` existed only listed the first kind.
+const notable = d => (d.level ?? "ko") === "ko" || !!d.saveFor;
+const dangerText = d => (d.level === "after" ? `⚠ ${d.mon} (after acting, saved for ${d.saveFor})` : `💀 ${d.mon}`);
+const isLost = plan => !!plan?.startsWith("likely lost");
 let firstBattle = true; // the first battle seen since the watcher started may already be under way
 let lastError = null;
 for (;;) {
@@ -59,23 +65,29 @@ for (;;) {
     if (foes.length && snap.wave != null && !snap.learn && !snap.rewards && seen.battle !== battleKey
       && hudReady("battle", battleKey, hud?.verdict)) {
       const v = hud?.verdict ?? null;
-      const danger = hud?.danger ?? [];
+      const danger = (hud?.danger ?? []).filter(notable);
       const resumed = firstBattle && snap.turn > 1 ? ` (resumed, turn ${snap.turn})` : "";
       // An easy wave only needs names: the panel has it handled.
       const foeText = v === "easy" ? foes.map(p => `${p.name} L${p.lv}`).join(" · ") : foes.map(mon).join(" · ");
       emit("battle", battleKey,
         `NEW BATTLE ${w}${snap.double ? " double" : ""} ${snap.trainer ?? "wild"}${v ? ` · ${v === "danger" ? "DANGER" : v}` : ""}${resumed}`
-        + ` | ${foeText}${danger.map(d => ` 💀 ${d.mon}`).join("")}`);
+        + ` | ${foeText}${danger.map(d => ` ${dangerText(d)}`).join("")}${hud?.plan ? ` | plan: ${hud.plan}` : ""}`);
       for (const d of danger) dangers.add(`${snap.wave}|${d.mon}`);
+      if (isLost(hud?.plan)) lostWaves.add(snap.wave);
       firstBattle = false;
     }
-    // A 💀 that shows up after the battle line: once per mon per wave.
     if (hud && seen.battle === battleKey) {
-      for (const d of hud.danger ?? []) {
+      // A 💀 that shows up after the battle line: once per mon per wave.
+      for (const d of (hud.danger ?? []).filter(notable)) {
         const key = `${snap.wave}|${d.mon}`;
         if (dangers.has(key)) continue;
         dangers.add(key);
-        console.log(`DANGER ${w} ${d.mon} ← ${d.from} ${d.move}`);
+        console.log(`DANGER ${w} ${d.mon} ← ${d.from} ${d.move}${d.level === "after" ? ` (after acting, saved for ${d.saveFor})` : ""}`);
+      }
+      // The fight plan turning into a likely loss mid-battle: once per wave.
+      if (isLost(hud.plan) && !lostWaves.has(snap.wave)) {
+        lostWaves.add(snap.wave);
+        console.log(`LIKELY LOST ${w} turn ${snap.turn} | ${hud.plan}`);
       }
     }
     if (snap.learn) {

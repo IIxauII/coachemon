@@ -74,6 +74,15 @@ export const HUD_DEPS = {
     `src/phases/move-phase.ts#MovePhase.thirdFailureCheck`,
     `${M}#Move.doesFlagEffectApply`,
     `src/phases/move-effect-phase.ts#MoveEffectPhase.protectedCheck`,
+    // §18 drain: the share of each hit's damage dealt that heals the user, Heal Block, Healing Charm, Liquid Ooze.
+    `${M}#HitHealAttr.apply`,
+    `${M}#HitHealAttr.getHealAmount`,
+    `src/phases/move-effect-phase.ts#MoveEffectPhase.applyMoveEffects`,
+    `src/phases/move-effect-phase.ts#MoveEffectPhase.applyMoveDamage`,
+    `src/phases/pokemon-heal-phase.ts#PokemonHealPhase.end`,
+    `src/modifier/modifier.ts#HealingBoosterModifier.apply`,
+    `src/data/abilities/ab-attrs.ts#ReverseDrainAbAttr.canApply`,
+    `src/data/abilities/ab-attrs.ts#ReverseDrainAbAttr.apply`,
   ],
 
   /**
@@ -126,6 +135,11 @@ export const HUD_DEPS = {
     `src/data/arena-tag.ts#SpikesTag.getDamageHpRatio`,
     `src/data/arena-tag.ts#StealthRockTag.getDamageHpRatio`,
     `src/data/arena-tag.ts#ToxicSpikesTag.activateTrap`,
+    // §18 on-KO boosts: who gains stages when a mon faints, and Beast Boost's pick of stat. Also 35-team-plan's.
+    `src/phases/faint-phase.ts#FaintPhase.doFaint`,
+    `src/data/abilities/ab-attrs.ts#PostVictoryStatStageChangeAbAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#PostKnockOutStatStageChangeAbAttr.apply`,
+    `src/data/abilities/init-abilities.ts#beastBoostHighestStatCalc`,
   ],
 
   /**

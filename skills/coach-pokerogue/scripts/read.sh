@@ -16,7 +16,9 @@ wrapper="(() => { const e = document.createElement('script'); e.textContent = $(
 
 case "$browser" in
   orion)
-    osascript - "$wrapper" <<'EOF'
+    # With Develop → Allow JavaScript from Apple Events off, `do JavaScript` runs nothing and hands back AppleScript's
+    # `missing value`: say so instead of leaving callers to choke on it as JSON.
+    result=$(osascript - "$wrapper" <<'EOF'
 on run argv
   tell application "Orion"
     repeat with w in windows
@@ -28,6 +30,12 @@ on run argv
   return "{\"error\":\"no pokerogue.net tab in Orion\"}"
 end run
 EOF
+)
+    if [ "$result" = "missing value" ]; then
+      echo '{"error":"Orion is not running JavaScript: check Develop → Allow JavaScript from Apple Events"}'
+    else
+      printf '%s\n' "$result"
+    fi
     ;;
   chrome)
     WRAPPER="$wrapper" node --input-type=module -e '

@@ -16,7 +16,7 @@ The user holds the controller. You read the game and advise. **Never press, sele
 - **Read fresh before every recommendation.** The user keeps playing between messages; a snapshot from two turns ago is stale.
 - `error` in the JSON → report it; don't guess the state.
 
-`battle` gives wave, double, trainer, money, `uiMode`, party and enemy (level, HP, types, ability, passive, stats, stat stages, status, on-field, boss, moves with type/power/category/PP remaining) and held items. `enemy` lists the trainer's **whole** party, not just the lead — plan for all of them.
+`battle` gives wave, double, trainer, money, `uiMode`, party and enemy (level, HP, types, ability, passive, stats, stat stages, status, on-field, boss with `bossBars` left of total, `held` items, moves with type/power/category/PP remaining) and the party's other `items`. `enemy` lists the trainer's **whole** party, not just the lead — plan for all of them.
 
 `starters` gives unlocked species by national dex id with IV total, passive/hidden-ability unlock, egg moves, cost reduction and candy. `cost` is only filled while the user is on the starter grid; otherwise it is `null`.
 
@@ -36,7 +36,8 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      - **Status moves** (single battles): setup, a status on the foe, a heal or a hazard can be this turn's move when the turns after it win the fight faster or more surely than attacking, e.g. `Swords Dance +2 Atk · then Leaf Blade`, `Spore → Machamp sleep · then Seed Bomb`, `Stealth Rock 4 to come` (the trainer's mons still to come). The note carries the chance it works when below 100 % (accuracy, a likely Protect). Doubles still get only Protect and Helping Hand.
      - A foe's own setup counts: its expected boosts make its later hits harder, our hits into it weaker, and a Dragon Dance can take the Speed order. This turn's hit counts only as often as the foe doesn't Protect, and Primordial weather or Psychic Terrain stopping a move leaves it out.
      - The planner is exact for this turn and the next; past that it races KO odds on expected play. Near-equal options lean to the move the mon used last turn, and a mon that just came in isn't switched straight back out without a real gain.
-     - ⇄ switches: kept to failing fields, never into a KO on entry or before acting; *optional* when merely better; "no safe switch" otherwise.
+     - **Drain** (Giga Drain, Leech Life, Draining Kiss) heals its user its share of each hit's damage, on both sides, so a draining foe takes more hits (`drains 50%`); Liquid Ooze turns it into damage. **On-KO boosts** (Beast Boost, Moxie, the Neighs, Soul-Heart): falling to such a foe while others are left to face it costs the option, the slot says `KO feeds Buzzwole's Beast Boost (+1 Atk)`, and the fight plan carries the boost into later exchanges (`feeds Beast Boost +1 Atk`). Speed boosts aren't modelled.
+     - ⇄ switches: kept to failing fields, never into a KO on entry or before acting; *optional* when merely better; "no safe switch" otherwise. A paid switch-in says what coming in costs it and why: `takes ~6% · resists Lunge`.
      - ⇆ predicted enemy switches aim the plan at the switch-in, with a dim ↺ *if it stays*.
      - ◎ focus targeting in doubles (a split shows in the ⚔ targets).
      - 💀 / ⚠ danger tags with the hit's % of current HP, including next turn's.
@@ -103,15 +104,16 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      no passive. It names a mon carrying most of the party's held items, since that is what the thief eats first.
    - Your brief still covers what the panel can't judge: setup lines, long-term team building, and anything the user asks. The split is deliberate (after PokéChamp): the panel is exact for a turn or two and coarse beyond; you judge the long horizon — whether a reserve is worth holding, when a trade is worth it, what the rest of the run needs.
 2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints one short summary line per event and re-injects the HUD after a page reload. Lines carry the HUD's verdict when it's running:
-   - `NEW BATTLE w<wave> [double] <trainer|wild> · <easy|trainer|DANGER|catch|fight> | <foes> [💀 <our mon>]` — an easy wave lists only foe names and levels. `(resumed, turn N)` when the watcher started mid-battle.
-   - `DANGER w<wave> <our mon> ← <foe> <move>` the first time a 💀 appears mid-battle, once per mon per wave.
+   - `NEW BATTLE w<wave> [double] <trainer|wild> · <easy|trainer|DANGER|catch|fight> | <foes> [💀 <our mon>] [⚠ <our mon> (after acting, saved for <foe>)] [| plan: <fight plan>]` — an easy wave lists only foe names and levels. `(resumed, turn N)` when the watcher started mid-battle. The plan part is a trainer battle's ♟ line: `winnable · A › B`, or `likely lost · ☠ <win condition> KOs n/m · <why>`.
+   - `DANGER w<wave> <our mon> ← <foe> <move> [(after acting, saved for <foe>)]` the first time a 💀 appears mid-battle, once per mon per wave; also a likely KO right after acting, but only for a mon the fight plan saves for a later foe.
+   - `LIKELY LOST w<wave> turn <n> | <fight plan>` once per wave, when the fight plan turns into a likely loss mid-battle. Say what the plan says to salvage (chip the win condition, keep the saved mon healthy) before the user spends another mon.
    - `LEARN MOVE w<wave> <pokémon> wants <move> | has: <moves> | <pokémon> Atk<n>/SpA<n> | HUD: <verdict> [· ⚠ loses only <type> move]`
    - `REWARDS w<wave> money $<n> reroll $<n> | free: … | shop: … | HUD: take X [→ <TM recipient> (forget <move>)] · buy Y [| audit: N issues: <worst finding>]` (again after a reroll)
-   - `COACH ERROR <msg>`, once per distinct failure. Report it rather than staying silent.
+   - `COACH ERROR <msg>`, once per distinct failure. Report it rather than staying silent. `Orion is not running JavaScript` means *Allow JavaScript from Apple Events* has been switched off: ask the user to turn it back on.
    - `BIOME w<wave> | HUD: <biome> <score> pick — <reasons> · <other biome> <score>` once per biome choice, only with the HUD running.
    - `ENCOUNTER w<wave> | HUD: <encounter>: take <option> — <outcome> · avoid <options>` once per Mystery Encounter, only with the HUD running (`your call` when no option stands out, `not judged` for an encounter the card doesn't know).
 
-Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`, `learn`, `rewards`, `biome`, `encounter`: the Mystery Encounter call, `next`: the next-wave
+Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`: our mons likely KO'd this turn, `level` `ko` before they act or `after`, with `saveFor` the foe the fight plan keeps that mon for, `plan`: the fight plan's line, `learn`, `rewards`, `biome`, `encounter`: the Mystery Encounter call, `next`: the next-wave
 preview in one line, with its marks in brackets, `ahead`: the next big fight, its verdict and what makes it risky, and `audit`: the team audit's count and its top three findings), `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
 
 The panel already shows the decision; the user glances at it mid-battle. Speak only when you add something.

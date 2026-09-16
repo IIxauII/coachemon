@@ -36,13 +36,13 @@ const tpOurMove = (s, me, f, live) => {
         const per = best.perHit?.length
           ? Array.from({ length: n }, (_, k) => best.perHit[Math.min(k, best.perHit.length - 1)]).map(x => (x.max + x.min) / 2 * (best.acc ?? 1))
           : [best.expected];
-        return { name: best.name, type: best.type, e: best.e, priority: best.priority ?? 0, hits: per, charge: !!best.charge, recharge: !!best.recharge || !!best.noRepeat, semiCharge: !!best.semiCharge,
-          use: tpSpread(useOf(best)) };
+        return { name: best.name, type: best.type, cat: best.cat, e: best.e, priority: best.priority ?? 0, hits: per, charge: !!best.charge, recharge: !!best.recharge || !!best.noRepeat, semiCharge: !!best.semiCharge,
+          use: tpSpread(useOf(best)), drain: best.drain ?? 0 };
       }
     } catch {}
   }
   const m = bestMove(me, f);
-  return m?.dmg > 0 ? { name: m.name, type: m.type, e: m.e, priority: m.priority ?? 0, hits: [m.dmg] } : null;
+  return m?.dmg > 0 ? { name: m.name, type: m.type, cat: m.cat, e: m.e, priority: m.priority ?? 0, hits: [m.dmg], drain: m.drain ?? 0 } : null;
 };
 
 // What `f` does to `me` per turn (its mean, uncut by `me`'s HP, and its damage levels), and P(f acts first) when the
@@ -56,15 +56,20 @@ const tpTheirMove = (s, f, me, live) => {
       if (Number.isFinite(t?.expected)) {
         const now = next && f.isOnField?.() ? threatFrom(s, f, me) : t;
         const mean = (t.use ?? []).reduce((sum, x) => sum + x.d * x.p, 0);
+        const moved = t.moves.reduce((sum, m) => sum + m.p, 0);
         return {
           dmg: mean > 0 ? mean : t.expected, entry: Number.isFinite(now?.expected) ? now.expected : t.expected, use: tpSpread(t.use),
           name: typeof t.move === "string" ? t.move : t.move?.name ?? null, e: t.move?.e ?? 1, first: t.first, priority: t.move?.priority ?? 0, hits: hitsOn(t),
+          // The share of its damage its drain moves win back, and how much of its damage is physical (for boosts).
+          drain: t.expected > 0 ? (t.drain ?? 0) / t.expected : 0,
+          phys: moved > 0 ? t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / moved : 1,
         };
       }
     } catch {}
   }
   const m = bestMove(f, me, true);
-  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, first: null, priority: m?.priority ?? 0, hits: m?.dmg > 0 ? 1 : 0 };
+  return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, first: null, priority: m?.priority ?? 0, hits: m?.dmg > 0 ? 1 : 0,
+    drain: m?.drain ?? 0, phys: m?.cat === "special" ? 0 : 1 };
 };
 
 const tpFoeFirst = (s, me, f, ours, theirs, live) => {
@@ -153,6 +158,16 @@ const tpTables = (s, party, foes, live) => {
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
     ourHeal: party.map(p => tpHealProfile(s, p)), foeHeal: foes.map(p => tpHealProfile(s, p)),
     foeStart: foes.map(f => f.hp),
+    // On-KO boosts (Beast Boost, Moxie, Soul-Heart) on each side, and the damage factor `n` KOs' worth gives a hit
+    // (`atk`: the attacker's boosts for a physical share `phys`; `def`: the defender's).
+    ourKo: party.map(koBoost), foeKo: foes.map(koBoost),
+    koMult: (atkMon, atkBoost, atkN, defMon, defBoost, defN, phys) => {
+      const f = (p, b, n, st) => koStageFactor(p, b, n, st);
+      const up = phys * f(atkMon, atkBoost, atkN, 1) + (1 - phys) * f(atkMon, atkBoost, atkN, 3);
+      const guard = phys * f(defMon, defBoost, defN, 2) + (1 - phys) * f(defMon, defBoost, defN, 4);
+      return up / guard;
+    },
+    party, foes,
     ...tpWear(s, party, foes, live, ours, theirs),
   };
 };
@@ -200,10 +215,17 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // to TP_BRANCHES by closeness. Returns the likelier ending in the old shape ({ mh, fh, … , turns }) with `pWin` (the
 // foe falls first), `pLoss`, `pStall` and `ends` ({ win, loss, stall }, each such a state or null).
 const tpFight = (T, st, mi, fi, entry) => {
-  const key = T.memo && [mi, fi, entry, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi],
+  // KOs each side's on-KO boost has had so far (Soul-Heart counts every faint).
+  const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
+  const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok?.[mi] ?? 0) : 0;
+  const nFoe = T.foeKo?.[fi] ? (T.foeKo[fi].any ? faints : st.fk?.[fi] ?? 0) : 0;
+  const key = T.memo && [mi, fi, entry, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], nUs, nFoe,
     ...[st.ox?.[mi], st.od?.[mi], st.og?.[mi], st.fd?.[fi], st.fg?.[fi]].map(x => Math.round((x ?? 0) * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
   const us = T.ours[mi][fi], them = T.theirs[fi][mi], boss = T.boss[fi];
+  // Those boosts on either side, as factors on each side's hits (Speed boosts aren't modelled).
+  const usMul = us && (nUs || nFoe) && T.koMult ? T.koMult(T.party[mi], T.ourKo[mi], nUs, T.foes[fi], T.foeKo[fi], nFoe, us.cat === "special" ? 0 : 1) : 1;
+  const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
   const tok = T.tok?.[mi], robUs = T.fromUs?.[fi]?.[mi], robFoe = T.fromFoe?.[mi]?.[fi];
   const ourUse = us?.use ?? [{ r: 1, p: 1 }], theirUse = them.use ?? [{ r: 1, p: 1 }];
   // Tables or states without them (built by hand) carry no wear.
@@ -211,15 +233,23 @@ const tpFight = (T, st, mi, fi, entry) => {
   let turns = 0;
   // P(token status by the end of turn t), t = 0 before this exchange, from the landed hits expected by then.
   const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entry === "switch" ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t)));
+  // A drain move (Giga Drain, Leech Life) wins back its share of the HP each hit actually took.
   const hitFoe = (b, r) => {
+    let dealt = 0;
     for (const d of us?.hits ?? []) {
       if (b.fh < 1) break;
-      if (boss) { const [x, idx] = tpBossHit(d * r, b.fh, boss.seg, boss.min, b.fs); b.fh -= x; b.fs = idx; } else b.fh -= d * r;
+      const before = b.fh;
+      if (boss) { const [x, idx] = tpBossHit(d * r * usMul, b.fh, boss.seg, boss.min, b.fs); b.fh -= x; b.fs = idx; } else b.fh -= d * r * usMul;
+      dealt += before - Math.max(0, b.fh);
       b.fg += robFoe?.perHit ?? 0;
     }
+    if (us?.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + dealt * us.drain);
   };
   const foeHit = (b, r, dmg = them.dmg) => {
-    b.mh -= dmg * r;
+    const hit = dmg * r * themMul;
+    const dealt = Math.min(hit, Math.max(0, b.mh));
+    b.mh -= hit;
+    if (them.drain && b.fh >= 1) b.fh = Math.min(T.foeMax[fi], b.fh + dealt * them.drain);
     b.ox += them.hits ?? 0;
     b.og += (robUs?.perHit ?? 0) * (them.hits ?? 0);
   };
@@ -312,9 +342,12 @@ const tpMerge = (list, k, T, mi, fi) => {
 const tpFoeLeft = r => r.pLoss * (r.ends.loss?.fh ?? 0) + r.pStall * (r.ends.stall?.fh ?? 0);
 
 const tpClone = st => ({ ...st, oh: st.oh.slice(), ob: st.ob.slice(), fh: st.fh.slice(), fs: st.fs.slice(), fb: st.fb.slice(),
-  ox: st.ox.slice(), od: st.od.slice(), og: st.og.slice(), fd: st.fd.slice(), fg: st.fg.slice() });
-// Carry an exchange's result into state `c`.
+  ox: st.ox.slice(), od: st.od.slice(), og: st.og.slice(), fd: st.fd.slice(), fg: st.fg.slice(),
+  ok: st.ok?.slice() ?? st.oh.map(() => 0), fk: st.fk?.slice() ?? st.fh.map(() => 0) });
+// Carry an exchange's result into state `c`, counting the KO it scored for the side's on-KO boosts (`ok`, `fk`).
 const tpApply = (c, mi, fi, r) => {
+  if (c.ok && c.fh[fi] >= 1 && r.fh < 1) c.ok[mi]++;
+  if (c.fk && c.oh[mi] >= 1 && r.mh < 1) c.fk[fi]++;
   c.oh[mi] = r.mh; c.ob[mi] = r.mb; c.fh[fi] = r.fh; c.fs[fi] = r.fs; c.fb[fi] = r.fb;
   c.ox[mi] = r.ox; c.od[mi] = r.od; c.og[mi] = r.og; c.fd[fi] = r.fd; c.fg[fi] = r.fg;
 };
@@ -377,7 +410,7 @@ const tpSearch = (T, start, reserve, win) => {
           return v + p * tpValue(T, x, !!x.result);
         }, 0) / Math.max(1e-9, (r.ends.win ? r.pWin : 0) + (r.ends.loss ? r.pLoss : 0) + (r.ends.stall ? r.pStall : 0));
         if (c.result) { done.push(c); continue; }
-        const sig = [c.cur, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round)].join(",");
+        const sig = [c.cur, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round), ...c.ok, ...c.fk].join(",");
         if (!next.has(sig) || next.get(sig).val < c.val) next.set(sig, c);
       }
     }
@@ -408,6 +441,7 @@ const tpView = (T, party, foes, double = false) => {
     oh: party.map(p => p.hp), ob: party.map(() => 0),
     fh: foes.map(f => f.hp), fs: T.boss.map(x => x?.idx ?? 0), fb: foes.map(() => 0),
     ox: party.map(() => 0), od: party.map(() => 0), og: party.map(() => 0), fd: foes.map(() => 0), fg: foes.map(() => 0),
+    ok: party.map(() => 0), fk: foes.map(() => 0),
     cur: onField >= 0 ? onField : null, fcur: foeOnField >= 0 ? foeOnField : null, steps: [],
   };
 
@@ -464,6 +498,9 @@ const tpView = (T, party, foes, double = false) => {
     if (x.foeHp < 1) why.push(x.hp >= 1 ? `KO${odds} · ${pctOf(x.hp, T.ourMax[x.mi])}% left` : `trade${odds}`);
     else if (x.hp < 1) why.push(sacrifice ? `sacrifice → ${party[nextStep.mi].name} in free` : `falls${odds} · foe at ${pctOf(x.foeHp, T.foeMax[x.fi])}%`);
     else why.push(`stalls${odds}`);
+    // A KO it scores on us while it stays standing powers it up for the steps after.
+    const fed = x.hp < 1 && x.foeHp >= 1 && nextStep ? T.foeKo?.[x.fi] : null;
+    if (fed) why.push(`feeds ${fed.ability} ${koBoostText(fed)}`);
     return {
       vs: ref(foes[x.fi]), send: ref(party[x.mi]), entry: x.entry,
       move: us?.name ?? null, type: us?.type ?? null,

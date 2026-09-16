@@ -1139,3 +1139,41 @@ could read before a fight.
 **Unmeasured.** Every threshold is a first cut: a shared weakness at two members and a third of the party with no
 resist, a dead status slot below 20 on the learn scorer's scale, an attack off a stat under 75 % of the other one,
 "behind" at 5 levels and under three quarters of the carry's level, a relearn worth naming at +10 power.
+
+## 18. Drain, on-KO boosts, and what a switch-in takes
+
+Read at the pinned tag (`v1.12.0.11`), for the battle guidance gaps a Guzma fight (wave 165) exposed: a draining
+Golisopod out-healed the damage the HUD promised, and a Buzzwole with Beast Boost was fed KOs.
+
+**Drain.** `HitHealAttr` is a `MoveEffectAttr` on the user with the default `POST_APPLY` trigger, so
+`MoveEffectPhase.applyMoveEffects` fires it after **every hit**. `getHealAmount` is
+`toDmgValue(user.turnData.singleHitDamageDealt × healRatio)` — `singleHitDamageDealt` is the HP the hit actually
+took (`applyMoveDamage`: `damageAndUpdate`'s return, so capped by the target's HP and a boss bar) — and `apply`
+queues a `PokemonHealPhase` for it. `healRatio` defaults to ½ (Giga Drain, Leech Life, Drain Punch, Parabolic
+Charge per target); Draining Kiss and Oblivion Wing carry ¾, Bouncy Bubble 1. A `healStat` instead (Strength Sap) heals by the target's stat: a status move, not a
+drain. `PokemonHealPhase.end`: Heal Block (`HEAL_BLOCK` tag) cancels a positive heal; `HealingBoosterModifier`
+(Healing Charm, ×1.1 per stack, player side: `applyModifiers(HealingBoosterModifier, this.player, …)`) multiplies it;
+`heal` caps it at max HP. **Liquid Ooze** (`ReverseDrainAbAttr` on the target): `HitHealAttr.apply` returns without
+healing, and the ability's `PostDefend` queues the same amount as a negative heal on the user, unless the user has
+Magic Guard (`BlockNonDirectDamageAbAttr`), which cancels it. `10-damage.js` records it as `drain`, the signed share of
+damage dealt; the planner adds `drain × expected damage` a turn to the side's turn-end change, capped at max HP (a
+boss at its bar's top), and the team plan heals each simulated hit by its share.
+
+**On-KO boosts.** `FaintPhase.doFaint`, after a mon faints: every mon on the field runs `PostKnockOutAbAttr`
+(Soul-Heart: `PostKnockOutStatStageChangeAbAttr`, +1 SpA, **any** faint, allies' included); then, if the victim took
+an attack this turn and its `source` is still on the field, the source runs `PostVictoryAbAttr` —
+`PostVictoryStatStageChangeAbAttr` with fixed `changes` (Moxie, Chilling Neigh, As One (Glastrier) +1 Atk; Grim
+Neigh, As One (Spectrier) +1 SpA; Battle Bond +1 Atk/SpA/Spe off the Greninja line) or a function of the holder (Beast Boost and its twin:
+`beastBoostHighestStatCalc`, +1 on the highest of Atk, Def, SpA, SpD, Spe by `getStat(s, false)`, the first on a
+tie). The move's own `PostVictoryStatStageChangeAttr` (Fell Stinger) comes after and isn't read. Stages go through
+`StatStageChangePhase` (±6 cap) and last until it leaves the field. `hasAbilityWithAttr` respects suppression. The
+planner prices a KO it would score on us at `FEED_COST` (0.5 turns) a stage on an attacking stat or Speed, half on a
+defence, times P(it KOs us first), while someone is left to face it; the team plan counts each side's KOs and scales
+later exchanges' hits by the stages (Speed left out).
+
+**Switch-in cost.** A command switch resolves before moves, so the switch-in takes what the foe chose against the mon
+leaving (§9). The ⇄ line names that share of its HP and the likeliest move's effectiveness on it, from the same
+threat the planner already scores the switch with.
+
+**Unmeasured.** `FEED_COST` is a first cut; a boost gained mid-exchange isn't applied inside that exchange (it ends
+it, except Soul-Heart); a drain's expected heal uses this turn's expected damage for every later turn.

@@ -440,4 +440,30 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   phaseName = "CommandPhase";
 }
 
+// Drain (#90): the share of the damage dealt that heals the user. Giga Drain and Leech Life are ½, Draining Kiss ¾; a
+// player's Healing Charm raises it; Heal Block stops it; Liquid Ooze makes it damage instead, unless Magic Guard;
+// Strength Sap (a heal by the target's stat) isn't a drain.
+{
+  const hitHeal = (healRatio, healStat = null) => abAttr("HitHealAttr", { healRatio, healStat });
+  const gigaDrain = move(202, "Giga Drain", 11, 75, { cat: 1, attrs: [hitHeal(0.5)] });
+  const kiss = move(577, "Draining Kiss", 17, 50, { cat: 1, attrs: [hitHeal(0.75)] });
+  const drainOf = (atk, def, mv) => { setup(atk, def); return moveOutcome(scene, atk, def, pmOf(mv), { crit: false }); };
+  const plain = drainOf(mon("venusaur"), mon("target"), gigaDrain);
+  assert.equal(plain.drain, 0.5, "Giga Drain heals half");
+  assert.ok(plain.notes.includes("drains 50%"), `named: ${plain.notes}`);
+  assert.equal(drainOf(mon("comfey"), mon("target"), kiss).drain, 0.75, "Draining Kiss heals three quarters");
+  assert.equal(drainOf(mon("venusaur"), mon("target"), bigHit).drain, 0, "no drain on a plain hit");
+  assert.equal(drainOf(mon("tangela", { tags: ["HEAL_BLOCK"] }), mon("target"), gigaDrain).drain, 0, "Heal Block");
+  const ooze = drainOf(mon("venusaur"), mon("tentacruel", { abilities: ["ReverseDrainAbAttr"] }), gigaDrain);
+  assert.equal(ooze.drain, -0.5, "Liquid Ooze turns the heal into damage");
+  assert.ok(ooze.notes.includes("Liquid Ooze: Giga Drain hurts 50%"), `named: ${ooze.notes}`);
+  assert.equal(drainOf(mon("clefable", { abilities: ["BlockNonDirectDamageAbAttr"] }), mon("tentacruel", { abilities: ["ReverseDrainAbAttr"] }), gigaDrain).drain, 0, "Magic Guard ignores the ooze");
+  scene.modifiers = [held("HealingBoosterModifier", { multiplier: 1.1 }, 2)];
+  near(drainOf(mon("venusaur"), mon("target"), gigaDrain).drain, 0.6, "Healing Charm ×2: ×1.2");
+  near(drainOf(mon("foe", { player: false }), mon("target"), gigaDrain).drain, 0.5, "the charm is the player's");
+  delete scene.modifiers;
+  const sap = move(668, "Strength Sap", 11, -1, { cat: 2, attrs: [hitHeal(null, 1)] });
+  assert.equal(drainOf(mon("venusaur"), mon("target"), { ...sap, category: 1, power: 10 }).drain, 0, "a heal by a stat isn't a drain");
+}
+
 console.log("damage: ok");

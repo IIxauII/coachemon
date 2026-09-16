@@ -211,7 +211,7 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
   const moves = likelyMoves(s, foe, me, outs, next);
   if (!moves.length) return null;
   const live = plannerReady(s) && typeof moveOutcome === "function" && outs.some(o => o.live);
-  let expected = 0, pKo = 0, first = 0, koFirst = 0, worst = null, likely = null;
+  let expected = 0, pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
   const kos = [], use = [], boost = {};
   for (const m of moves) {
     if (!likely || m.p > likely.p) likely = m;
@@ -227,6 +227,7 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
     const ko = m.o.pKo ?? 0;
     const p = m.p * actChance(foe, pm.getMove?.() ?? null, next);
     expected += p * m.o.expected;
+    drained += p * (m.o.drain ?? 0) * m.o.expected;
     pKo += p * ko;
     koFirst += p * ko * order;
     if (p >= 0.05 && (!worst || m.o.max > worst.o.max)) worst = m;
@@ -243,6 +244,8 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
     move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use: squeezeDist(use, 12),
     revive: Math.max(0, ...kos.map(k => k.revive)),
     boost: Object.keys(boost).length ? boost : null,
+    // HP its drain moves give it back a turn (Liquid Ooze on `me`: taken off it), from the damage they deal.
+    drain: drained,
   };
 });
 
@@ -275,6 +278,48 @@ const selfStages = (p, mv) => {
     if (!out[st]) delete out[st];
   }
   return Object.keys(out).length ? out : null;
+};
+// Stat stages `p` gains for each KO, as FaintPhase.doFaint hands them out: PostVictoryStatStageChangeAbAttr when its own
+// hit faints a foe (Moxie, Beast Boost on its highest stat, Chilling / Grim Neigh, As One, Battle Bond's non-Greninja
+// form), PostKnockOutStatStageChangeAbAttr when anyone faints (Soul-Heart). { up: { [stat 1–5]: stages a KO },
+// ability, any } (`any`: every faint counts, not only its own KOs), or null. Speed counts only for the name (the
+// damage multipliers below leave it out). A suppressed ability (Neutralizing Gas) gives nothing.
+const koBoost = p => {
+  if (!p) return null;
+  const up = {};
+  let name = null, any = false;
+  try {
+    for (const [attr, whose] of [["PostVictoryStatStageChangeAbAttr", false], ["PostKnockOutStatStageChangeAbAttr", true]]) {
+      if (!p.hasAbilityWithAttr?.(attr)) continue;
+      for (const a of [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null]) {
+        for (const x of a?.getAttrs?.(attr) ?? []) {
+          const changes = whose
+            ? [{ stat: typeof x.stat === "function" ? x.stat(p) : x.stat, stages: x.stages }]
+            : typeof x.changes === "function" ? x.changes(p) : x.changes ?? [];
+          for (const c of changes) if (c.stat >= 1 && c.stat <= 5 && c.stages) up[c.stat] = (up[c.stat] ?? 0) + c.stages;
+          name ??= a.name;
+          any ||= whose;
+        }
+      }
+    }
+  } catch { return null; }
+  return Object.keys(up).length ? { up, ability: name, any } : null;
+};
+// Damage factor after `n` KOs' worth of `boost` on stat `st`, from the stages `p` has now (capped at +6).
+const koStageFactor = (p, boost, n, st) => {
+  const k = boost?.up?.[st] ?? 0;
+  if (!k || !(n > 0)) return 1;
+  const s0 = p?.isOnField?.() ? p.summonData?.statStages?.[st - 1] ?? 0 : 0;
+  return stage(Math.max(-6, Math.min(6, s0 + k * n))) / stage(s0);
+};
+const STAT_ABBR = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
+const koBoostText = b => Object.entries(b.up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${STAT_ABBR[st]}`).join(" ");
+// What feeding `foe` one KO costs the fight still to come, in turns of ours: FEED_COST a stage it gains on an attacking
+// stat or Speed, half that on a defence. Nothing once nobody else is left to face it.
+const feedCost = (foe, others) => {
+  const b = others > 0 ? koBoost(foe) : null;
+  if (!b) return 0;
+  return Object.entries(b.up).reduce((t, [st, n]) => t + Math.max(0, n) * ([2, 4].includes(+st) ? 0.5 : 1), 0) * FEED_COST;
 };
 // A foe that sets up hits harder each turn it does: its damage on turn j (1 = this turn) against this turn's, from the
 // Atk / SpA stages it's expected to have added by then (`t.boost`), weighed by how much of its damage is physical.
@@ -461,6 +506,8 @@ const turnEndCourse = (s, me, foe, hitsPerTurn, dealt = 0) => {
   return { base, flat: false, at: j => (toxic ? toxic(j) : base) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
 };
 const hitsOn = t => (t?.moves ?? []).reduce((sum, m) => sum + m.p * (m.acc ?? 1) * (m.hits ?? 1), 0);
+// A turn-end HP change (a number, or one by turn) plus the HP a side's drain moves win back each turn.
+const withDrain = (heal, drain) => (!drain ? heal : typeof heal === "function" ? j => heal(j) + drain : heal + drain);
 
 // ---- KO/survive bucketing (after Foul Play): later turns of a fight are played from each use's damage distribution
 // rather than its mean, so a coin-flip 2HKO reads as one, not as a sure 2HKO.
@@ -486,8 +533,9 @@ const KO_LEVELS = 4;
 // `focus`: Focus Band's chance to hang on at 1 HP. `firstKo`: this turn's exact KO odds for use 1 (Sturdy, the roll
 // against the real HP), when the caller has them; the HP left still comes from the distribution. `start`: the
 // branches to begin from ([{ c, hp, p }], p summing to 1) when an earlier turn has already been played.
+// `caps`: the most HP each chunk can be healed back up to (a heal past max HP is lost); none when not given.
 // `after1`: the branches standing after use 1 and its turn end, p summing to 1 (none if it can't stand).
-const koCurve = (chunks, use, { scale = () => 1, act = () => 1, heal = 0, focus = 0, firstKo = null, start = null } = {}) => {
+const koCurve = (chunks, use, { scale = () => 1, act = () => 1, heal = 0, focus = 0, firstKo = null, start = null, caps = null } = {}) => {
   const by = [];
   let states = start?.length ? start : [{ c: 0, hp: chunks[0], p: 1 }];
   let down = 0, after1 = [];
@@ -520,7 +568,7 @@ const koCurve = (chunks, use, { scale = () => 1, act = () => 1, heal = 0, focus 
     const h = typeof heal === "function" ? heal(i + 1) : heal;
     const merged = chunks.map(() => []);
     for (const [c, hp, p] of hit) {
-      const left = hp + h;
+      const left = caps && h > 0 ? Math.min(Math.max(hp, caps[c] ?? Infinity), hp + h) : hp + h;
       if (left > 0) merged[c].push({ d: left, p });
       else if (c < chunks.length - 1) merged[c + 1].push({ d: chunks[c + 1], p });
       else down += p;
@@ -545,13 +593,15 @@ const koTurns = by => Math.min(9, 1 + by.slice(0, 8).reduce((t, x) => t + (1 - x
 // and thieves). `mult(j)`: its damage on turn j against the expected, when that changes over the fight (a boss's boosts
 // as its bars break, our lowered defences). `act(i)`: the chance it gets its i-th attack off (our flinches).
 // Its setup moves ramp its later hits (`setupRamp`). Chip can finish the job on the hit turn (or alone, against a foe
-// that doesn't attack).
-const foeCurve = (s, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null } = {}) => {
+// that doesn't attack). `drain`: HP our own drain moves win back a turn (negative into Liquid Ooze), up to `cap`.
+const foeCurve = (s, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0, cap = null } = {}) => {
   const course = turnEndCourse(s, me, foe, t ? hitsOn(t) : -1, dealt);
   const attacks = !!t && t.expected > 0;
   const ramp = setupRamp(foe, t);
+  const heal = withDrain(course.flat ? course.base : course.at, drain);
   return koCurve([hp, ...(attacks && t.revive ? [t.revive] : [])], attacks ? t.use ?? [{ d: t.expected, p: 1 }] : [{ d: 0, p: 1 }], {
-    scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined, act, heal: course.flat ? course.base : course.at, start,
+    scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined, act, heal, start,
+    caps: drain ? [cap ?? me.getMaxHp?.() ?? Infinity, me.getMaxHp?.() ?? Infinity] : null,
     firstKo: attacks && !start ? koChanceAt(t, hp) * act(0) : null,
   });
 };
@@ -645,9 +695,12 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
     // Its turn-end HP change, with our item thieves on it (`steady` of our hits land a turn).
     const course = turnEndCourse(s, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0);
-    const heal = course.flat ? course.base : course.at;
+    // Its drain moves (Leech Life) win back part of what they deal us every turn it stands: a bar can't be healed past
+    // its top.
+    const heal = withDrain(course.flat ? course.base : course.at, t?.drain ?? 0);
     // HP to get through: what's left of this bar, each bar after it, and half its HP again after a Reviver Seed.
     const chunks = [...(bars > 1 ? [foe.hp - seg * (bars - 1), ...Array(bars - 1).fill(seg)] : [foe.hp]), ...(mine.revive ? [mine.revive] : [])];
+    const caps = t?.drain ? chunks.map((_, c) => (c < bars ? (bars > 1 ? seg : foe.getMaxHp()) : foe.getMaxHp())) : null;
     const barFactor = [...barBreakFactors(s, foe, mine.cat === "special" ? 4 : 2, bars), 1];
     // Its own setup raising (or Shell Smash lowering) the defence this move meets, by our i-th use.
     const defStat = mine.cat === "special" ? 4 : 2;
@@ -665,7 +718,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const nowUse = !mine.charge && delay === 0;
     qWe = nowUse ? (mine.pKo ?? 0) * now : 0;
     const curve = koCurve(chunks, useOf(mine), {
-      scale, heal, focus: mine.focus ?? 0,
+      scale, heal, focus: mine.focus ?? 0, caps,
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe,
     });
@@ -714,7 +767,11 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   const foeAct = i => (1 - ourFlinch * (i === 0 ? pF * now : mine?.once ? 0 : pFirst * steady)) * (opts.foeAct ? opts.foeAct(i) : 1);
   const mult = foeMult || defUp !== 1 ? j => (foeMult ? foeMult(j) : 1) * defUp : null;
   const myStart = after?.me.map(x => ({ ...x, hp: x.c === 0 ? x.hp - selfSpent : x.hp })).filter(x => x.hp > 0);
-  const theirs = budget > 0 ? foeCurve(s, foeT, me, budget, { dealt: mine?.uncapped ?? mine?.expected ?? 0, foe, mult, act: foeAct, start: myStart?.length ? myStart : null }) : null;
+  // Our drain move wins back its share of what it deals on each turn it lands.
+  const ourDrain = (mine?.drain ?? 0) * (mine?.expected ?? 0) * steady;
+  const theirs = budget > 0 ? foeCurve(s, foeT, me, budget, {
+    dealt: mine?.uncapped ?? mine?.expected ?? 0, foe, mult, act: foeAct, start: myStart?.length ? myStart : null, drain: ourDrain, cap: maxHp - selfSpent,
+  }) : null;
   const turnsFoe = theirs ? koTurn(theirs.by) : Math.max(1, Math.min(turnsWe, 9));
   const lag = opts.free ? 1 : 0;
   let turnsThey = Math.min(9, turnsFoe + lag);
@@ -761,7 +818,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   const expTurns = F => Math.min(9, 1 + Array.from({ length: 8 }, (_, j) => 1 - F(j + 1)).reduce((t, x) => t + x, 0));
   const taken = turnsWe >= 9 ? turnsThey : Math.max(0, turnsWe - pLast - lag);
   const boosted = foeMult && taken > 0 ? Array.from({ length: Math.ceil(taken) }, (_, i) => foeMult(i + 1)).reduce((sum, x) => sum + x, 0) / Math.ceil(taken) : 1;
-  const hpLeft = Math.max(0, hp - (t?.expected ?? 0) * defUp * boosted * taken - selfSpent) * (1 - selfKo);
+  const hpLeft = Math.max(0, Math.min(maxHp, hp - (t?.expected ?? 0) * defUp * boosted * taken - selfSpent + ourDrain * Math.min(taken, turnsWe))) * (1 - selfKo);
   return {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
     expectedHpLeft: Math.round(hpLeft),
@@ -834,10 +891,12 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     const trade = (o, f) => exchange(s, me, o.pm, f, { hp, outcome: o, free: free(f), next });
     const last = entering ? null : lastMoveOf(me);
     const cost = o => (drawback(o) ? DRAWBACK_COST : 0) - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
+    // Falling to a foe with an on-KO boost (Beast Boost, Moxie) arms it against whoever comes next.
+    const feed = f => feedCost(f, party.length - 1);
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      return { me, move: o, target: fi, turns, hits: x.turnsWe, score: danger - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o), hp, trade: x };
+      return { me, move: o, target: fi, turns, hits: x.turnsWe, score: danger - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst, hp, trade: x };
     };
     // Depth 2: this turn's move played out exactly — the order, its KO odds, its flinch — then, from the HP it is
     // expected to leave on both sides, the best move for the rest of the fight against what the foe re-picks. It
@@ -863,7 +922,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
         const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return danger - eTurns - lost + edge - spent - cost(o);
+        return danger - eTurns - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
       };
       const score = scoreOf(best);
       const { y, x2 } = best;
@@ -878,7 +937,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       const each = xs.map(x => x?.turnsWe ?? 9);
       const hits = Math.max(...each);
       if (hits + lost >= 9) return null;
-      const edge = Math.min(...xs.filter(Boolean).map(x => x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0)));
+      const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
       const slow = Math.max(...xs.map(x => x?.eTurnsWe ?? 9));
       return { me, move: o, target: "both", turns: hits + lost, hits, each, score: danger - slow - lost + 1 + edge - cost(o), hp };
     };
@@ -941,7 +1000,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       if (!landed || (w < 1 && !missed)) return null;
       const mix = k => w * landed.x2[k] + (missed ? (1 - w) * missed.x2[k] : 0);
       const eTurns = 1 + mix("eTurnsWe");
-      const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they;
+      const edge = standing * (mix("pWeKoFirst") - mix("pTheyKoFirst")) - they - feed(f) * (they + standing * mix("pTheyKoFirst"));
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
       const bonus = play.kind === "hazard" ? play.value * works : 0;
       const keep = last != null && pm.moveId === last ? KEEP_BONUS : 0;
@@ -1178,6 +1237,8 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     return level && {
       level, move: t.worstMove.name, type: t.worstMove.type, e, pct: Math.min(pct, 999), from: t.from,
       pko: t.live ? Math.round(ko * 100) : null, hits: t.worstMove.hits, next,
+      // A "risk" that is a likely KO all the same, only after our mon has acted once.
+      after: level === "risk" && ko >= 0.5 && first < 0.5,
     };
   };
   const worse = (a, b) => (!a ? b : b && RANK[b.level] > RANK[a.level] ? b : a);
@@ -1198,6 +1259,8 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     if (p.move && bars > 1 && p.hits > 1 && p.hits <= bars) out.push(`boss: ${bars} bars — no 1HKO`);
     if (p.effect) out.push(p.effect);
     if (p.then) out.push(`then ${p.then.name}`);
+    const fed = foe && (p.trade?.pTheyKoFirst ?? 0) >= 0.5 && party.length > 1 ? koBoost(foe) : null;
+    if (fed) out.push(`KO feeds ${foe.name}'s ${fed.ability} (${koBoostText(fed)})`);
     const n = hitCounts(p.move);
     if (n) out.push(`${p.move.name} ×${n}`);
     // What the move costs its user (10-damage): HP, lock-in, stat drops, lost turns.
@@ -1227,11 +1290,22 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     return plan.joint.foes.every(f => f.pKo >= 0.5) ? { kind: "split", note: "both KO" } : null;
   };
 
+  // Why a paid switch-in is cheap: the share of its HP the hits aimed at the mon leaving take off it, and how it takes
+  // the likeliest of them (the foe that hits hardest) — immune, resisted, or weak.
+  const entryHit = me => {
+    const ts = attackers.map(f => threatFrom(s, f, me)).filter(t => t?.move);
+    if (!ts.length) return null;
+    const t = ts.reduce((a, b) => (b.expected > a.expected ? b : a));
+    return { pct: Math.min(999, Math.round(incoming(me).dmg / me.getMaxHp() * 100)), move: t.move.name, type: t.move.type, e: t.move.e };
+  };
   const swaps = plan => {
     const chosen = plan.picks.map(p => p.me);
     const outs = current.filter(p => !chosen.includes(p));
     return chosen.filter(p => !current.includes(p))
-      .map((p, i) => ({ out: outs[i] ? { icon: iconOf(outs[i]), name: outs[i].name, threat: nowThreat(outs[i]) } : null, in: { icon: iconOf(p), name: p.name } }));
+      .map((p, i) => ({
+        out: outs[i] ? { icon: iconOf(outs[i]), name: outs[i].name, threat: nowThreat(outs[i]) } : null,
+        in: { icon: iconOf(p), name: p.name, takes: plan.payers.includes(p) ? entryHit(p) : null },
+      }));
   };
 
   // Support moves, kept conservative (the planner only scores damage): Protect for a slot likely KO'd before it
@@ -1352,6 +1426,9 @@ const FLIP_COST = 0.5;
 const STATUS_COST = 0.2;
 // A whole HP bar of a trainer's mon still to come, in turns of ours: what a hazard's chip is worth (first cut).
 const HAZARD_TURNS = 2;
+// A stage a foe's on-KO ability (Beast Boost, Moxie) gains from KOing us, in turns of ours, while others are left to
+// face it (first cut).
+const FEED_COST = 0.5;
 
 // ---- Status moves as this turn's action
 // What a status move of `me`'s does to a fight with `f`, if it's one the planner can price, or null:
