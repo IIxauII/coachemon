@@ -14,6 +14,8 @@ const sprite = (key, frame) => {
   return sprites.get(id) ?? "";
 };
 
+// HUD font sizes: one knob scales every view.
+const FS = { base: "12px", small: "11px", tiny: "10px" };
 const h = (tag, style, ...kids) => {
   const n = document.createElement(tag);
   Object.assign(n.style, style);
@@ -35,7 +37,7 @@ const img = (key, frame, title, height, fallback = title) => {
 };
 const mon = (icon, name, height = 24) => (icon ? img(icon[0], icon[1], name, height, name) : name);
 const badge = (type, suffix = "") => h("span", { whiteSpace: "nowrap", marginRight: "3px" },
-  img("types", type.toLowerCase(), type, 12), suffix && h("b", { fontSize: "10px" }, suffix));
+  img("types", type.toLowerCase(), type, 13), suffix && h("b", { fontSize: FS.small }, suffix));
 const dim = { color: "#9aa" };
 const line = (label, color, ...kids) => h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" },
   h("span", { color, width: "14px", flex: "none" }, label), ...kids);
@@ -85,7 +87,7 @@ const powerTitle = x => [`base ${x.power}${x.hits > 1 ? ` × ${x.hits} hits` : "
 const drawLearn = m => {
   if (view === "closed") return [tab("🎓", mon(m.icon, m.name, 20))];
   const header = bar("🎓", `${m.name} learns`, mon(m.icon, m.name, 20),
-    view === "full" && m.atk != null ? h("span", { ...dim, fontWeight: "normal", fontSize: "9px" }, `Atk ${m.atk} / SpA ${m.spa}`) : null);
+    view === "full" && m.atk != null ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, `Atk ${m.atk} / SpA ${m.spa}`) : null);
   // The slot the new move would take: the one to forget, or on a skip the one it lost to.
   const slot = m.forget >= 0 ? m.forget : m.compare;
   // Only-type loss: the slot's own "only X move on team" note becomes a ⚠ by its name; the team line says it.
@@ -99,7 +101,7 @@ const drawLearn = m => {
       h("span", { fontWeight: "bold", marginLeft: "2px" }, x.name),
       warn ? h("span", { color: "#fa4", marginLeft: "3px" }, "⚠") : null,
       h("span", { flex: "1" }),
-      notes.length ? h("span", { color: "#9aa", fontSize: "9px", marginRight: "4px" }, notes.map(learnNote).join(" · ")) : null,
+      notes.length ? h("span", { color: "#9aa", fontSize: FS.tiny, marginRight: "4px" }, notes.map(learnNote).join(" · ")) : null,
       power);
   };
   const warnAt = i => i === slot && !!onlyNote;
@@ -135,8 +137,8 @@ const drawShop = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   if (view === "closed") return [tab("🛒", p ? itemImg(p.icon, p.name) : null)];
   const header = bar("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
-    view === "full" && !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal", fontSize: "9px" }, "nothing affordable") : null,
-    m.bossNext ? h("span", { color: "#fa4", fontSize: "9px" }, "👑 boss next") : null);
+    view === "full" && !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, "nothing affordable") : null,
+    m.bossNext ? h("span", { color: "#fa4", fontSize: FS.tiny }, "👑 boss next") : null);
   const buyRows = m.buys.length
     ? m.buys.map(b => line("💰", "#ec4", itemImg(b.icon, b.name),
         h("span", { fontWeight: "bold" }, b.name), h("span", { ...dim, marginLeft: "4px" }, `$${b.cost}`),
@@ -162,9 +164,9 @@ const drawShop = m => {
   };
   const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", "#9aa", itemImg(f.icon, f.name),
     h("span", dim, f.name), h("span", { flex: "1" }),
-    tmTo(f, { color: "#9aa", fontSize: "9px" }) ?? h("span", { color: f.tm === "skip" ? "#e77" : "#9aa", fontSize: "9px" }, `${f.why}${usersText(f)}`)));
+    tmTo(f, { color: "#9aa", fontSize: FS.tiny }) ?? h("span", { color: f.tm === "skip" ? "#e77" : "#9aa", fontSize: FS.tiny }, `${f.why}${usersText(f)}`)));
   return [header,
-    m.buys.length ? h("div", { ...dim, fontSize: "9px" }, "buy first — taking the free reward closes the shop") : null,
+    m.buys.length ? h("div", { ...dim, fontSize: FS.tiny }, "buy first — taking the free reward closes the shop") : null,
     ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
     m.reroll ? line("🎲", "#8cf", h("span", dim, m.reroll)) : null].filter(Boolean);
 };
@@ -227,7 +229,7 @@ let collapsed = false; // set per draw by tick: this battle panel is the one-lin
 const drawBattle = m => {
   if (view === "closed") return [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)];
   const f = m.field;
-  const trapTag = sl => trapsHit(m, sl).map(a => h("span", { color: "#fa4", fontSize: "9px", marginLeft: "3px" }, `⚠ ${a}`));
+  const trapTag = sl => trapsHit(m, sl).map(a => h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "3px" }, `⚠ ${a}`));
 
   // Easy wild wave: one line, one ⚔ per slot. `+` shows the chosen view for the rest of the wave.
   if (collapsed) {
@@ -249,7 +251,7 @@ const drawBattle = m => {
   const threatTag = t => {
     const n = h("span", { display: "inline-flex", alignItems: "center", marginRight: "4px", color: t.level === "ko" ? "#e55" : "#fa4" },
       t.level === "ko" ? "💀" : "⚠", badge(t.type, t.e >= 2 ? `×${t.e}` : ""),
-      h("span", { fontSize: "9px", marginLeft: "1px" }, `${t.pct}%${t.hits ? ` ${t.hits}-hit` : ""}`));
+      h("span", { fontSize: FS.tiny, marginLeft: "1px" }, `${t.pct}%${t.hits ? ` ${t.hits}-hit` : ""}`));
     n.title = `${t.next ? "next turn: " : ""}${t.from}'s ${t.move}: ~${t.pct}% of current HP`
       + `${t.pko > 0 && t.pko < 100 ? `, ${t.pko}% KO` : ""}${t.level === "ko" ? ", before it can act" : ""}`;
     return n;
@@ -273,7 +275,7 @@ const drawBattle = m => {
     ...(view === "mini" ? trapTag(sl) : []),
     h("span", { flex: "1" }),
     sl.ko ? h("span", dim, hitsText(sl.ko)) : null,
-    sl.notes?.length ? h("span", { ...dim, fontSize: "9px", marginLeft: "4px" }, sl.notes.join(" · ")) : null);
+    sl.notes?.length ? h("span", { ...dim, fontSize: FS.tiny, marginLeft: "4px" }, sl.notes.join(" · ")) : null);
   const firstText = p => (p >= 100 ? "moves first" : p <= 0 ? "moves after" : `${p}% first`);
   const slotMove = sl => [
     mon(sl.icon, sl.name, 20),
@@ -360,10 +362,10 @@ const drawBattle = m => {
             h("span", { fontWeight: "bold" }, r.pick.move),
             h("span", { ...dim, marginLeft: "4px" }, `~${r.pick.pct}%${r.pick.ko ? ` · ${hitsText(r.pick.ko)}` : ""}`),
             r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null,
-            h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, "later"),
-            r.pick.notes?.length ? h("span", { color: "#9aa", fontSize: "9px", marginLeft: "4px" }, r.pick.notes.join(" · ")) : null)
+            h("span", { color: "#9aa", fontSize: FS.tiny, marginLeft: "4px" }, "later"),
+            r.pick.notes?.length ? h("span", { color: "#9aa", fontSize: FS.tiny, marginLeft: "4px" }, r.pick.notes.join(" · ")) : null)
         : !r.pick && !f ? line("➜", "#8cf", h("span", dim, "no damaging move lands")) : null,
-      r.notes?.length ? line("·", "#9aa", h("span", { ...dim, fontSize: "9px" }, r.notes.join(" · "))) : null);
+      r.notes?.length ? line("·", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, r.notes.join(" · "))) : null);
   });
   return [header, ...field, ...drawCatch(m), team, ...rows, ...drawTeamPlan(m)].filter(Boolean);
 };
@@ -372,9 +374,9 @@ const el = document.createElement("div");
 el.id = "coach-hud";
 Object.assign(el.style, {
   position: "fixed", top: "8px", left: "8px", zIndex: "2147483647",
-  maxWidth: "min(300px, calc(100vw - 16px))", padding: "6px 8px", borderRadius: "6px",
+  maxWidth: "min(320px, calc(100vw - 16px))", padding: "6px 8px", borderRadius: "6px",
   background: "rgba(12,12,24,.88)", color: "#eee",
-  font: "11px/1.4 ui-monospace, Menlo, monospace",
+  font: `${FS.base}/1.4 ui-monospace, Menlo, monospace`,
   userSelect: "none", display: "none",
 });
 // Keep clicks on the panel from reaching the game underneath.
