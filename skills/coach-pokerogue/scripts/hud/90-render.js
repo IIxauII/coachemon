@@ -156,17 +156,25 @@ const drawShop = m => {
     const gain = view === "full" && f.tm === "take" && !b.setup && b.gain > 0 ? ` · +${b.gain} power` : "";
     return [mon(b.icon, b.name, 20), h("span", style, what + gain)];
   };
+  // A held item, mint, vitamin or candy names the member it should go to by icon, ahead of its reason — which then
+  // drops the "<name> · " it opens with.
+  const heldTo = (f, style = dim) => {
+    if (!f.holder) return null;
+    const lead = `${f.holder.name} · `;
+    return [mon(f.holder.icon, f.holder.name, 20), h("span", style, f.why.startsWith(lead) ? f.why.slice(lead.length) : f.why)];
+  };
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
-    h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? h("span", dim, p.why)) : null;
+    h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? heldTo(p) ?? h("span", dim, p.why)) : null;
   if (view === "mini") return [header, ...buyRows, take, ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
-  // Who can use it, when the reason doesn't already name them.
+  // Who can use it, when the reason doesn't already name them (a holder is the answer already).
   const usersText = f => {
+    if (f.holder) return "";
     const rest = (f.users ?? []).filter(n => !f.why.includes(n));
     return rest.length ? ` · for ${rest.slice(0, 2).join("/")}${rest.length > 2 ? ` +${rest.length - 2}` : ""}` : "";
   };
   const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", "#9aa", itemImg(f.icon, f.name),
     h("span", dim, f.name), h("span", { flex: "1" }),
-    tmTo(f, { color: "#9aa", fontSize: FS.tiny }) ?? h("span", { color: f.tm === "skip" ? "#e77" : "#9aa", fontSize: FS.tiny }, `${f.why}${usersText(f)}`)));
+    tmTo(f, { color: "#9aa", fontSize: FS.tiny }) ?? heldTo(f, { color: "#9aa", fontSize: FS.tiny }) ?? h("span",{ color: f.tm === "skip" ? "#e77" : "#9aa", fontSize: FS.tiny }, `${f.why}${usersText(f)}`)));
   return [header,
     m.buys.length ? h("div", { ...dim, fontSize: FS.tiny }, "buy first — taking the free reward closes the shop") : null,
     ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
@@ -212,7 +220,7 @@ const hudSummary = m => {
   if (m.kind === "shop") {
     const p = m.pick >= 0 ? m.free[m.pick] : null;
     const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
-    return { ...base, rewards: [p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : ""}` : null, buys].filter(Boolean).join(" · ") || null };
+    return { ...base, rewards: [p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null, buys].filter(Boolean).join(" · ") || null };
   }
   return { ...base, verdict: verdictOf(m), field: m.field ? m.field.slots.map(slotText).join(" ; ") : null,
     danger: dangerTags(m).filter(d => d.level === "ko").map(({ mon: name, from, move }) => ({ mon: name, from, move })) };

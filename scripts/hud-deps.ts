@@ -28,7 +28,7 @@
  * names the modules to re-read. Modules absent from this map (`50-shop.js`)
  * build on the ones here and read live state directly; they own no game-code
  * claim of their own — its spending rules rest on
- * `49-ahead.js`'s calendar, which does.
+ * `49-ahead.js`'s calendar and its item judgements on `50-items.js`, which do.
  */
 import type { SourceRef } from "../src/escape-ladder/types.ts";
 
@@ -307,5 +307,43 @@ export const HUD_DEPS = {
     `${P}#EnemyPokemon.generateAndPopulateMoveset`,
     `${P}#EnemyPokemon.getMinimumSegmentIndex`,
     `src/phases/damage-anim-phase.ts#DamageAnimPhase.end`,
+  ],
+
+  /**
+   * §15. The rewards card judges held items, mints, vitamins, EXP items, candy
+   * and evolution items by the member they would go to. It calls only select
+   * filters and `getMaxExpLevel`; what an item does is re-implemented from its
+   * modifier (per-stack effects, stack limits), who benefits from the game's
+   * own pool weights (status orbs, Mystical Rock), and the level-cap rules from
+   * the EXP split — a member at the cap gets nothing and a Rare Candy ignores
+   * it. Four enums come through as bare numbers: the Nature grid a mint is
+   * read with, the Stat a vitamin names, the BerryType and MoveFlags' contact
+   * bit. The species-booster and Leek species ids are the generators' tables.
+   */
+  "50-items.js": [
+    `src/modifier/modifier-type.ts#PokemonHeldItemModifierType.constructor`,
+    `src/modifier/modifier-type.ts#PokemonNatureChangeModifierType.constructor`,
+    `src/modifier/modifier-type.ts#EvolutionItemModifierType.constructor`,
+    `src/modifier/modifier-type.ts#SpeciesStatBoosterModifierTypeGenerator.constructor`,
+    `src/modifier/init-modifier-pools.ts#initUltraModifierPool`,
+    `src/modifier/modifier.ts#TurnHealModifier.apply`,
+    `src/modifier/modifier.ts#HitHealModifier.apply`,
+    `src/modifier/modifier.ts#BypassSpeedChanceModifier.apply`,
+    `src/modifier/modifier.ts#FlinchChanceModifier.apply`,
+    `src/modifier/modifier.ts#PokemonInstantReviveModifier.apply`,
+    `src/modifier/modifier.ts#EvolutionStatBoosterModifier.apply`,
+    `src/modifier/modifier.ts#PokemonMultiHitModifier.applyDamageModifier`,
+    `src/modifier/modifier.ts#PokemonNatureWeightModifier.apply`,
+    `src/modifier/modifier.ts#BaseStatModifier.getMaxHeldItemCount`,
+    `src/modifier/modifier.ts#BerryModifier.getMaxHeldItemCount`,
+    `src/modifier/modifier.ts#ExpShareModifier.apply`,
+    `src/modifier/modifier.ts#PokemonLevelIncrementModifier.apply`,
+    `${SCENE}#BattleScene.getMaxExpLevel`,
+    `${SCENE}#BattleScene.applyPartyExp`,
+    `${P}#PlayerPokemon.addExp`,
+    `src/enums/nature.ts#Nature`,
+    `src/enums/stat.ts#Stat`,
+    `src/enums/berry-type.ts#BerryType`,
+    `src/enums/move-flags.ts#MoveFlags`,
   ],
 } satisfies Record<string, readonly SourceRef[]>;

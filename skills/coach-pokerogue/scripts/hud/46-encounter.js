@@ -34,11 +34,6 @@ const { encounterScreen, encounterModel } = (() => {
     BERRIES = 19, PART_TIMER = 21, TELEPORT = 25, BREED = 28, GTS = 29;
   const TIERS = { 66: "common", 40: "great", 19: "ultra", 3: "rogue" };
   const DISABLED_MODES = new Set([1, 3]);
-  // Stat order of the Nature grid (Nature = 5·raised + lowered) and the Nature enum's names.
-  const NATURE_STATS = ["Atk", "Def", "Spe", "SpA", "SpD"];
-  const NATURES = ["Hardy", "Lonely", "Brave", "Adamant", "Naughty", "Bold", "Docile", "Relaxed", "Impish", "Lax", "Timid",
-    "Hasty", "Serious", "Jolly", "Naive", "Modest", "Mild", "Quiet", "Bashful", "Rash", "Calm", "Gentle", "Sassy",
-    "Careful", "Quirky"];
   // Teleporting Hijinks' BIOME_CANDIDATES, and the ones worth the trip (the biome card's rare destinations).
   const TELEPORT_BIOMES = [[25, "Space"], [28, "Fairy Cave"], [41, "Laboratory"], [40, "Island"], [23, "Wasteland"], [20, "Dojo"]];
   const RARE_BIOMES = new Set([25, 28, 41]);
@@ -122,10 +117,6 @@ const { encounterScreen, encounterModel } = (() => {
   };
 
   const LEAVE = { outcome: "shop only, no reward", verdict: "ok" };
-  const NATURE_OF = n => {
-    const up = Math.floor(n / 5), down = n % 5;
-    return { name: NATURES[n] ?? `#${n}`, up: up === down ? null : NATURE_STATS[up], down: up === down ? null : NATURE_STATS[down] };
-  };
 
   // ---- Per encounter: one entry per `me.options` index. { outcome, battle, verdict: take|ok|avoid|null, why, exact, needs }
   const RULES = {
@@ -188,7 +179,7 @@ const { encounterScreen, encounterModel } = (() => {
       if (carry) {
         const n = c.post(() => { let x = int(25); while (x === carry.nature) x = int(25); return x; });
         if (n != null) {
-          const fx = NATURE_OF(n);
+          const fx = natureOf(n);
           const main = tryDo(() => (carry.getStat(1) >= carry.getStat(3) ? "Atk" : "SpA"), "Atk");
           const verdict = fx.up === main ? "good" : fx.down === main || fx.down === "Spe" ? "bad" : "meh";
           nature = { text: `${carry.name} becomes ${fx.name}${fx.up ? ` (+${fx.up} −${fx.down})` : " (neutral)"}`, verdict };
