@@ -55,6 +55,16 @@ Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100%
 ⚔ Ambipom Normal Fake Out → Slowbro 3 hits then Return
 == consistency: last turn's move (live)
 ⚔ Garchomp Dragon Dragon Claw → Snorlax
+== setup: Swords Dance then Leaf Blade (live)
+⚔ Gallade Normal Swords Dance +2 Atk · then Leaf Blade
+== status: Spore first (live)
+⚔ Breloom ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP} Grass Spore → Machamp 3 hits sleep · then Seed Bomb
+== heal: Slack Off first (live)
+⚔ Slowbro Normal Slack Off heal 50% · then Scald
+== hazard: Stealth Rock (live)
+⚔ Skarmory Rock Stealth Rock 4 to come · then Drill Peck
+== foe Protect: KO this turn 1.000 → 0.500
+== foe setup: expected turns to KO Gallade 7.27 → 4.94
 == doubles focus (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 2 hits

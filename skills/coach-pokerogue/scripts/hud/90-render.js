@@ -195,7 +195,7 @@ const slowestKo = sl => (sl.koEach?.length ? Math.max(...sl.koEach) : sl.ko);
 const verdictOf = m => (easyWave(m) ? "easy" : m.trainer ? "trainer"
   : dangerTags(m).length || m.rows.some(r => r.boss) || m.field?.noSafeSwitch ? "danger"
   : catchWorthIt(m) ? "catch" : "fight");
-const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
+const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
 // Plain-text verdict of what the panel shows, for the watcher and the battle read (`window.__coachHud.summary()`).
 // `danger` lists the 💀 tags only: a likely KO before our mon acts.

@@ -427,6 +427,14 @@ Calls used, all **only in sandbox**: `pm.isUsable(e,false,true)`, `e.getTag('ENC
 `getAttackDamage` exactly as quoted (keep the AI's `ignoreAbility` flags — do **not** use our "true info" call).
 Cost: ≤ 4 moves × ≤ 2 targets × ~5 calls; once per turn key.
 
+**Replaying the choice against a mon that isn't its target yet** (`aiReplay`, read at 1.12.0.11): the same steps with
+one target of ours, which may be on the bench (next turn's pick after a switch) or a hypothetical state (§14). Every
+method above takes the target as an argument, so nothing needs it on the field; the terrain check gets our slot 0.
+Moves on the foe's own side are scored the way `getNextTargets` aims them — on the foe itself, sign +1 — so a setup
+move keeps its real score. `StatStageChangeAttr.getTargetBenefitScore` only counts the stages still under ±6, so the
+AI keeps choosing a setup move at about the same rate turn after turn until it's capped, or until the KO filter (step
+5) narrows the pool to attacks.
+
 ---
 
 ## 7. Enemy switch logic (EnemyCommandPhase) — confirmation
@@ -563,6 +571,12 @@ then orbs). HUD: `endOfTurnHp`.
 - `endOfTurnHp(p, { s, hp, tookSuperEffective, dealt })` → signed turn-end HP change in the order above: weather and
   status chip (orbs counted as already on), berries (Sitrus <50 %, Enigma on SE hit, Ripen), Leftovers, Grassy
   Terrain, enemy wave heal, weather/Poison Heal abilities, Shell Bell from `dealt`.
+- `moveOutcome(...)` also marks `bypassProtect` (`doesFlagEffectApply({ flag: IGNORE_PROTECT })`) and comes back as
+  "no effect" (`stopped by weather` / `terrain`) for a move primordial weather or Psychic Terrain cancels (§14).
+- `statusMoves(s, atk, def)` → `[{ pm, name, type, acc, e, priority, bypassProtect, bounce, blocked }]`: the status
+  moves `atk` can pick that would work into `def` (`isUsable`, `applyConditions`), with accuracy, `e` 0 for an
+  immunity (`getMoveEffectiveness`), Magic Bounce and a weather / terrain cancel. Game calls only. Every cache key
+  carries `hypothesisKey`, so numbers for a written-on state (§14) never mix with the real ones.
 
 ### Enemy AI (20-enemy-ai.js)
 - `aiTargets(s, e, move)` → `[{battlerIndex, p}]` — re-implementation of getMoveTargets (opponent side) + getNextTargets
@@ -572,6 +586,8 @@ then orbs). HUD: `endOfTurnHp`.
   `applyConditions(e,p,-1)`, weather/terrain cancel, `getMoveEffectiveness(…,true)` ×, STAB via `e.isOfType(move.type)`).
 - `enemyMoveDistribution(s, e)` → `[{ pm, move, targets: [{battlerIndex, p}], p, score }]` (§6 algorithm; queue /
   Struggle / Encore / aiType 0,1,2; Protect branch). Cache per turn key.
+- `aiReplay(s, e, target, { hp })` → rows like `enemyMoveDistribution`'s, without targets: `getNextMove` replayed
+  against one target of ours that needn't be on the field (§6), status moves included. Sandbox per call.
 - `predictSwitches(s, b, active)` — keep, run in `sandbox`, fix doubles counter sequencing, skip Commander `skipTurn`.
 - `enemyAction(s, e)` → `{ kind: 'switch', to } | { kind: 'move', dist, tera: tr?.shouldTera(e) ?? false }`.
 - `predictedTeras(s, b)` → the active foes whose action this turn Terastallizes; `withPredictedTera(mons, fn)` runs
@@ -608,6 +624,23 @@ then orbs). HUD: `endOfTurnHp`.
   (`getLastXMoves(1)`, `tempSummonData.turnCount ≥ 2`), −0.5 for a plan that switches out a mon that came in last
   turn (`tempSummonData.turnCount ≤ 1` past turn 1: `resetSummonData` on the switch-in, `SwitchSummonPhase.onEnd`
   takes one off for a command switch, `TurnEndPhase` adds one).
+- Next turn's pick (`likelyMoves` with `next`, or a foe not on the field) is `aiReplay` against our mon; the old
+  damage stand-in for the move score only answers where the replay can't run.
+- Status moves as this turn's action (singles; §14): each status move `statusPlay` can price — setup, a status on the
+  foe, a heal, a hazard in a trainer battle — is turn 1 of an `exchange` in which we deal nothing, then the best of our
+  top two moves and a priority move from its branches, as in depth 2, with the effect written onto the mons
+  (`withHypothesis`: stat stages, a status) so the game's own damage, order and AI replay price the turns after. It
+  lands with P(we act, not flinched) × accuracy × (1 − P(Protect)) and no immunity or Magic Bounce; a miss plays on
+  from the unchanged state. A sleep or paralysis that lands before the foe moves cancels this turn's hit too (all of it
+  for sleep, 1 in 8 for paralysis), and sleep's later lost attempts go by `STATUS_SKIP`. A heal lifts our HP branches
+  (before its hit when we're faster). A hazard adds `HAZARD_TURNS` (2) per whole HP bar it takes off the trainer's mons
+  still to come. Scored like a depth-2 line less `STATUS_COST` (0.2). Doubles keep Protect and Helping Hand only.
+- A foe's setup: `threatFrom(...).boost` = expected stages its status moves add a turn (`selfStages`, after Simple /
+  Contrary and the cap). `foeCurve` ramps its later hits by the Atk / SpA ones (`setupRamp`), `exchange` our hits by
+  its Def / SpD ones, and the deciding turn's order by its Speed ones once it has had the turns to pass us. Doubles'
+  joint value counts it as its next two turns' extra damage (`setupDanger`) instead of a flat half.
+- `exchange` discounts this turn's hit by the foe's Protect chance unless the move goes through Protect, and toxic's
+  chip grows by a 16th each turn in `turnEndCourse`.
 
 ### Team plan (35-team-plan.js)
 - `tpFight` plays both speed orders each turn weighted by P(foe first) (token paralysis mixed in, not a 0.5 cut) and
@@ -871,3 +904,48 @@ option, `populateDialogueTokensFromRequirements`, any `on…Phase` closure.
 
 **Unmeasured**: every 🔮 outcome is a replay of the source's draw order, never checked against an encounter as it
 resolved. A closure that gains an early `await`, or a draw before the one the HUD replays, makes it confidently wrong.
+
+---
+
+## 14. Status moves as a turn's action, and a foe's setup
+
+Read from the pinned tag (1.12.0.11); the refs are under `30-planner.js`, `10-damage.js` and `20-enemy-ai.js` in
+`scripts/hud-deps.ts`.
+
+**What each class of move does when it lands**, as the planner writes it onto the mons (`withHypothesis`, 01-core):
+- **Setup.** `StatStageChangeAttr.apply` queues a `StatStageChangePhase` for `stages` (`getLevels(user)`: Growth's
+  sunny +2) on each of `stats`, on the user when `selfTarget` — Howl and the other `USER_AND_ALLIES` moves carry no
+  `selfTarget` and still boost the user. `StatStageChangeMultiplierAbAttr` scales it: Simple ×2, Contrary ×−1. Stages
+  cap at ±6. `CutHpStatStageBoostAttr` (Belly Drum) first takes `maxHp / cutRatio`. The game reads stages back through
+  `Pokemon.getStatStage` → `summonData.statStages[stat − 1]`, so writing a new array there moves every damage,
+  accuracy and Speed number the game computes.
+- **Status.** `StatusEffectAttr.apply` → `trySetStatus`; a status move with no chance always tries. Sleep lasts 2 turns
+  a third of the time and 3 otherwise (`doSetStatus`: `randBattleSeedInt(3) === 0 ? 2 : 3`), counted down before the
+  check, so it cancels the next one or two attempts (Early Bird ticks twice). Paralysis halves Speed
+  (`getEffectiveStat`) and cancels a move 1 time in 8 (`MovePhase.checkPara`: `randBattleSeedInt(8) === 0`). Burn
+  halves physical damage inside `getAttackDamage`. Toxic's chip is `(toxicTurnCount + 1) / 16`, the count rising
+  each turn (`Status.incrementTurn`). Immunity to a status *move* comes from `getMoveEffectiveness` (a type the move
+  respects — Thunder Wave into Ground — a powder move into Grass, `MoveImmunityAbAttr` such as Good as Gold, a
+  Substitute) and `canSetStatus`; Magic Bounce (`ReflectStatusMoveAbAttr`) sends it back.
+- **Heal.** `HealAttr` heals `toDmgValue(maxHp × healRatio)` and fails at full HP (`canApply`). `PlantHealAttr`
+  (Synthesis, Moonlight, Morning Sun): ⅔ in sun, ¼ in rain, sand, hail, snow, fog; ½ otherwise. `SandHealAttr`
+  (Shore Up): ⅔ in sand. `BoostHealAttr`: its boosted ratio when its condition holds.
+- **Hazards.** `AddArenaTrapTagAttr` fails once the tag can't take another layer. On a switch-in
+  (`EntryHazardTag.apply`): Stealth Rock takes `⅛ × Rock effectiveness` of max HP, grounded or not; Spikes `1 / (10 −
+  2·layers)` (⅛, ⅙, ¼) of a grounded mon; Toxic Spikes poison a grounded mon (badly at 2 layers), and a grounded Poison
+  type removes them. Magic Guard (`BlockNonDirectDamageAbAttr`) blocks the damage.
+- **Protect.** `ProtectAttr.getCondition`: the n-th success in a row passes with `1 / 3^n`. A move goes through when
+  `doesFlagEffectApply({ flag: IGNORE_PROTECT })` (Feint; Unseen Fist on contact), checked in
+  `MoveEffectPhase.protectedCheck`.
+- **Stopped before damage.** `MovePhase.secondFailureCheck` cancels a move in primordial weather
+  (`Arena.isMoveWeatherCancelled`: Water in harsh sun, Fire in heavy rain) and `thirdFailureCheck` a priority move into
+  a grounded target under Psychic Terrain (`isMoveTerrainCancelled`). `getAttackDamage` doesn't see either.
+
+**A foe's setup.** The enemy AI scores a setup move by the stages it can still add (§6), so a foe that picks Swords
+Dance half the time keeps doing so until capped or until an attack KOs. The planner takes the stages it's expected to
+add a turn (`threatFrom(...).boost`) and ramps its later hits by the Atk / SpA they raise, our hits by the Def / SpD
+they raise, and the Speed order once a Speed boost has had the turns it needs.
+
+**Unmeasured**: none of the status plays has met a live fight. The hypothesis writes plain `{ effect, toxicTurnCount,
+sleepTurnsRemaining }` objects as statuses; a game read that calls a `Status` method on one would throw, which drops
+that one option (each runs under its own `try`), not the panel.

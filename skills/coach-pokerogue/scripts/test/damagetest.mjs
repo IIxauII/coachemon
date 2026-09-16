@@ -72,9 +72,9 @@ const node = () => { const n = { style: {}, children: [], addEventListener() {},
 globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
 globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
-const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits, bestMove, sandbox };\n})();\n");
+const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits, bestMove, sandbox };\n})();\n");
 eval(src);
-const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits, bestMove, sandbox } = globalThis.__dmg;
+const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits, bestMove, sandbox } = globalThis.__dmg;
 
 // Expected damage of one hit whose max roll is `max`: the mean of the 16 rolls 85..100 %.
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
@@ -371,6 +371,47 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.ok(o.notes.includes("reviver seed"));
   setup(atk, mon("plain", { hp: 100 }));
   assert.equal(moveOutcome(scene, atk, enemies[0], pmOf(bigHit), { crit: false }).revive, 0);
+}
+
+// Stopped before the damage step: primordial weather (a Fire move in heavy rain) and Psychic Terrain (priority into a
+// grounded target) cancel the move in MovePhase, which the simulated damage call never sees.
+{
+  const atk = mon("a", { moves: [bigHit] }), def = mon("target");
+  for (const [check, why] of [["isMoveWeatherCancelled", "weather"], ["isMoveTerrainCancelled", "terrain"]]) {
+    setup(atk, def);
+    scene.arena[check] = (user, x, y) => (y ?? x).name === "Big Hit";
+    const o = moveOutcome(scene, atk, def, pmOf(bigHit));
+    delete scene.arena[check];
+    assert.equal(o.expected, 0, `${why}: no damage`);
+    assert.equal(o.pKo, 0);
+    assert.deepEqual(o.notes, [`stopped by ${why}`]);
+  }
+  setup(atk, def);
+  assert.ok(moveOutcome(scene, atk, def, pmOf(bigHit)).expected > 0, "nothing stops it otherwise");
+  // Protect blocks it unless it ignores Protect (MoveFlags.IGNORE_PROTECT, 1 << 1).
+  const feint = move(364, "Feint", 0, 30, { flags: 2 });
+  assert.equal(moveOutcome(scene, atk, def, pmOf(feint)).bypassProtect, true, "Feint goes through Protect");
+  assert.equal(moveOutcome(scene, atk, def, pmOf(bigHit)).bypassProtect, false);
+}
+
+// Status moves: the usable ones with their accuracy, and 0 effectiveness where the target is immune.
+{
+  const thunderWave = move(86, "Thunder Wave", 12, 0, { acc: 90, cat: 2 });
+  const swordsDance = move(14, "Swords Dance", 0, 0, { acc: -1, cat: 2 });
+  const atk = mon("a", { moves: [bigHit, thunderWave, swordsDance] });
+  const ground = mon("ground");
+  ground.getMoveEffectiveness = (src, mv) => (mv.name === "Thunder Wave" ? 0 : 1);
+  setup(atk, ground);
+  const st = statusMoves(scene, atk, ground);
+  assert.deepEqual(st.map(x => x.name), ["Thunder Wave", "Swords Dance"], "status moves only");
+  const tw = st.find(x => x.name === "Thunder Wave");
+  assert.equal(tw.acc, 0.9);
+  assert.equal(tw.e, 0, "Thunder Wave into a Ground type");
+  assert.equal(tw.cat, "status");
+  assert.equal(st.find(x => x.name === "Swords Dance").acc, 1, "no accuracy check");
+  phaseName = "MovePhase";
+  assert.deepEqual(statusMoves(scene, atk, ground), [], "game calls only");
+  phaseName = "CommandPhase";
 }
 
 // Outside the command phase no game code runs; the approximation still answers.
