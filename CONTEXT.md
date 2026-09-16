@@ -90,9 +90,10 @@ Not to be confused with a **tier**, which throughout is the game's own word for 
 
 The **coach**'s check of how the **party** is built, as opposed to what to do with it now: the part of a **card** that
 judges the team the decisions made rather than the decision at hand. It is said between waves, where a reward, a TM or
-a relearned move can still fix it. Party checks read only the party (a weakness nobody resists, dead move slots,
-members left behind); roster checks read the next big fight's foes from a **preview** (who outspeeds them, a foe with
-a single **answer**). A finding either loses fights or only costs tempo, and the card leads with the first kind.
+a relearned move can still fix it. Party checks read the **party profile** (a weakness nobody resists, the types
+nothing hits) plus each member's moveset and level (dead move slots, members left behind); roster checks read the next
+big fight's foes from a **preview** (who outspeeds them, a foe with a single **answer**, the weakest member against
+that roster). A finding either loses fights or only costs tempo, and the card leads with the first kind.
 
 An **answer** to a foe is a member's attack that hits it super-effectively off the stat that member actually attacks
 with. A foe with one answer is a single point of failure: lose that member and the fight is gone.

@@ -6,8 +6,8 @@
 // audit needed was on the party snapshot; no card said it.
 //
 // Two kinds of check, told apart because they rest on different things:
-// - **Party checks** read only the party: a type most of us are weak to and nobody resists, the types no move of ours
-//   hits super-effectively, dead move slots (and the level-up move a Memory Mushroom would put in one), members left
+// - **Party checks** read only the party. The party profile (CONTEXT.md): a type most of us are weak to and nobody
+//   resists, the types no move of ours hits super-effectively. Then each member: dead move slots (and the level-up move a Memory Mushroom would put in one), members left
 //   far behind the carry, EXP items stacked on a party that sits at the level cap.
 // - **Roster checks** read the next big fight's roster from 49-ahead (the preview's replay, only within its look-ahead
 //   window): who outspeeds its fastest foe, a foe only one member hits super-effectively, a status move most of the
