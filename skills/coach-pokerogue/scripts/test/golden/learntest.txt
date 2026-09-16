@@ -1,6 +1,6 @@
 == Charizard ← Flare Blitz
 ✚ Fire Flare Blitz 3rd Fire move · recoil 33% of damage · weak Atk power 57
-· Fire Heat Wave 2nd Fire move · spread power 111
+· Fire Heat Wave 2nd Fire move · spread · set move (Offensive Protect) power 133
 ↔ Dragon Dragon Breath SE on Dragon power 72
 · Flying Air Slash SE on Fighting power 126
 · Fire Flamethrower 2nd Fire move power 101
@@ -15,11 +15,11 @@ Skip — not an upgrade over Dragon Breath −15 power
 Skip — not an upgrade over Double-Edge −16 power
 == Blastoise ← Skull Bash
 ✚ Normal Skull Bash neutral on Water · charge turn power 65
-· Water Aqua Tail 3rd Water move power 72
+↔ Water Aqua Tail 3rd Water move power 72
 · Steel Flash Cannon SE on Ice/Fairy power 104
-↔ Water Wave Crash 3rd Water move · recoil 33% of damage power 71
+· Water Wave Crash 3rd Water move · recoil 33% of damage · set move (Doubles Bulky Attacker) power 85
 · Water Hydro Pump 3rd Water move power 79
-Skip — not an upgrade over Wave Crash −6 power
+Skip — not an upgrade over Aqua Tail −7 power
 == Scrafty ← Head Smash
 ✚ Rock Head Smash SE on Flying/Bug/Fire · recoil 33% of damage power 105
 · Fighting Focus Punch 3rd Fighting move power 135
@@ -38,52 +38,102 @@ team: +SE Normal/Ice
 Learn → forget Tackle +36 power
 == Cloyster (Skill Link) ← Triple Axel
 ✚ Ice Triple Axel 2.7 hits · 2nd Ice move power 122
-· Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon power 244
-· Rock Rock Blast 5 hits · SE on Bug/Fire/Ice power 146
+· Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon · set move (Fast Attacker) power 293
+· Rock Rock Blast 5 hits · SE on Bug/Fire/Ice · set move (Fast Attacker) power 176
 · Normal Tackle power 40
 Learns it — free slot
 == Gengar ← Shadow Ball
-✚ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move power 117
+✚ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move · set move (Wallbreaker) power 140
 · Ghost Night Shade damage = level power 116
 ✕ Normal Super Fang halves HP · can't KO power 59
 · Grass Grass Knot weight-based · SE on Ground/Rock/Water power 78
 · Poison Sludge Bomb SE on Grass/Fairy power 176
 team: +SE Ghost/Psychic
-Learn → forget Super Fang +58 power
+Learn → forget Super Fang +81 power
 == Metagross ← Steel Beam
 ✚ Steel Steel Beam 2nd Steel move · −50% HP each use power 76
 · Psychic Zen Headbutt SE on Fighting power 127
-· Ground Earthquake SE on Steel/Fire/Electric power 130
+· Ground Earthquake SE on Steel/Fire/Electric · set move (Bulky Support) power 156
 · Steel Iron Head 2nd Steel move power 90
-✕ Steel Bullet Punch 2nd Steel move · priority +1 power 56
-Learn → forget Bullet Punch +20 power
+✕ Steel Bullet Punch 2nd Steel move · priority +1 · set move (Bulky Support) power 66
+Learn → forget Bullet Punch +10 power
 == Dragonite ← Outrage
-✚ Dragon Outrage SE on Dragon · locks 2–3 turns, then confused power 149
-↔ Dragon Dragon Claw SE on Dragon power 142
-· Normal Extreme Speed priority +2 power 100
+✚ Dragon Outrage SE on Dragon · locks 2–3 turns, then confused · set move (Bulky Setup) power 178
+✕ Dragon Dragon Claw SE on Dragon power 142
+· Normal Extreme Speed priority +2 power 105
 · Fire Fire Punch SE on Bug/Steel/Grass… power 98
 · Electric Thunder Punch SE on Flying/Water power 95
-Skip — not an upgrade over Dragon Claw
+Learn → forget Dragon Claw +36 power
 == Arcanine ← Overheat
 ✚ Fire Overheat 2nd Fire move · −2 SpA after use power 105
 · Fire Flamethrower SE on Bug/Steel/Grass… power 176
-✕ Normal Extreme Speed power 73
-· Electric Wild Charge SE on Flying/Water · recoil 25% of damage power 78
+· Normal Extreme Speed set move (Bulky Attacker) power 88
+✕ Electric Wild Charge SE on Flying/Water · recoil 25% of damage power 78
 · Dark Crunch SE on Ghost/Psychic power 92
-Learn → forget Extreme Speed +32 power
+team: −SE Flying/Water
+Learn → forget Wild Charge +27 power
 == Emolga ← Spark
-✚ Electric Spark SE on Water power 117
-✕ Electric Thunder Shock SE on Water power 72
-· Normal Quick Attack priority +1 power 50
+✚ Electric Spark 2nd Electric move power 73
+· Electric Thunder Shock SE on Water power 72
+· Normal Quick Attack priority +1 power 47
 · Ice Icicle Crash SE on Ground/Grass/Dragon power 99
-· Electric Charge status
-Learn → forget Thunder Shock +45 power
+✕ Electric Charge +1 SpD power 5
+Learn → forget Charge +68 power
 == Tyranitar ← Iron Head (team)
 ✚ Steel Iron Head SE on Rock/Fairy power 99
 · Dark Crunch 2nd Dark move power 90
-· Rock Stone Edge SE on Flying/Bug/Fire… · only Rock move on team power 156
+· Rock Stone Edge SE on Flying/Bug/Fire… · set move (Bulky Setup) · only Rock move on team power 187
 ✕ Normal Tackle neutral on Fighting · only Normal move on team power 41
 · Dark Bite 2nd Dark move power 68
 team: +SE Fairy
 Learn → forget Tackle +58 power
+== Houndoom ← Nasty Plot (TM)
+✚ Dark Nasty Plot +2 SpA · set move (Fast Attacker) power 72
+· Dark Crunch 2nd Dark move · weak Atk power 68
+✕ Normal Howl +1 Atk power 3
+· Dark Snarl 2nd Dark move power 59
+· Fire Incinerate SE on Bug/Steel/Grass… power 117
+Learn → forget Howl +69 power
+== Fletchinder ← Roost
+✚ Flying Roost heal 50% · set move (Bulky Attacker, evolved) power 67
+· Flying Acrobatics SE on Fighting power 97
+✕ Normal Growl foe Atk −1 power 8
+· Fire Flame Charge SE on Steel/Ice power 95
+· Normal Quick Attack priority +1 power 47
+Learn → forget Growl +59 power
+== Minccino ← Triple Axel
+✚ Ice Triple Axel 2.4 hits · SE on Flying/Ground/Grass… · set move (Fast Attacker, evolved) power 137
+· Normal Pound power 78
+· Fairy Baby-Doll Eyes foe Atk −1 · 3 status moves power 5
+✕ Normal Helping Hand ally only power 0
+· Normal Sing sleep · 3 status moves · 55% acc power 23
+team: +SE Flying/Ground/Grass…
+Learn → forget Helping Hand +137 power
+== Houndour ← Nasty Plot
+✚ Dark Nasty Plot +2 SpA · set move (Fast Attacker, evolved) power 67
+· Dark Bite SE on Ghost/Psychic · weak Atk power 88
+✕ Normal Howl +1 Atk power 3
+· Normal Leer foe Def −1 power 4
+· Fire Incinerate SE on Bug/Steel/Grass… power 117
+Learn → forget Howl +64 power
+== Azumarill (Huge Power) ← Liquidation
+✚ Water Liquidation 2nd Water move · set move (Bulky Attacker) power 115
+· Water Aqua Jet 2nd Water move · priority +1 · set move (Bulky Attacker) power 66
+· Fairy Play Rough SE on Fighting/Dark · set move (Bulky Attacker) power 187
+· Ice Ice Beam SE on Flying/Grass · weak SpA power 69
+✕ Water Surf 2nd Water move · weak SpA power 62
+Learn → forget Surf +53 power
+== Sylveon (Pixilate) ← Hyper Voice
+✚ Fairy Hyper Voice Pixilate · SE on Dragon/Dark · set move (Bulky Setup) power 245
+· Ghost Shadow Ball SE on Ghost/Psychic power 101
+· Psychic Psyshock SE on Fighting/Poison power 101
+· Fire Mystical Fire SE on Bug/Steel/Grass… power 98
+team: +SE Dragon/Dark
+Learns it — free slot
+== Venusaur ← Solar Beam (no sun)
+✚ Grass Solar Beam 2nd Grass move · charge turn (not in sun) power 68
+· Poison Sludge Bomb SE on Grass/Fairy · set move (Bulky Support) power 211
+· Grass Giga Drain SE on Ground/Rock/Water · set move (Bulky Support) power 176
+· Grass Sleep Powder sleep · 75% acc · set move (Bulky Support) power 63
+Learns it — free slot
 ok

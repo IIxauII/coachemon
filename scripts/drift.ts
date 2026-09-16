@@ -13,8 +13,8 @@
  *       # after re-reading every entry the check named: record the new
  *       # hashes and move the pin. Stamping is the review sign-off.
  *
- * Each hashed unit is one method (`path#Class.method`, `path#Class.constructor`)
- * or top-level function (`path#name`), printed without comments so
+ * Each hashed unit is one method (`path#Class.method`, `path#Class.constructor`),
+ * top-level function or enum (`path#name`), printed without comments so
  * formatting-only churn does not trip it. Exit 1 when any dep moved, vanished,
  * or has never been reviewed.
  *
@@ -109,6 +109,8 @@ function findUnit(sf: ts.SourceFile, symbol: string): ts.Node | undefined {
   for (const node of sf.statements) {
     if (className === undefined) {
       if (ts.isFunctionDeclaration(node) && node.name?.text === member) return node;
+      // An enum is a unit too: the coach reads several of them as bare numbers, so a reordered member is drift.
+      if (ts.isEnumDeclaration(node) && node.name.text === member) return node;
       if (ts.isVariableStatement(node)) {
         const decl = node.declarationList.declarations.find(d => ts.isIdentifier(d.name) && d.name.text === member);
         if (decl) return decl;

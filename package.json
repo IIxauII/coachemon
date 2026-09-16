@@ -12,6 +12,7 @@
     "test": "node --test \"src/**/*.test.ts\"",
     "typecheck": "tsc",
     "enums:gen": "node scripts/gen-enums.ts",
+    "randbats:gen": "node scripts/gen-randbats.ts",
     "drift:check": "node scripts/drift.ts",
     "ladder:drift": "node scripts/drift.ts",
     "stuck:replay": "node scripts/stuck-replay.ts"
