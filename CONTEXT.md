@@ -26,6 +26,10 @@ The structured, text-only view of the game at a settled moment. **Lean** by defa
 
 Whatever the game is currently asking the player to choose between. Presented by a **screen**, and served by a **handler** — the game object that owns the menu's options and cursor. A menu is **known** when the server can read its labels and move its cursor, and **unknown** otherwise; unknown menus degrade to raw presses rather than blocking.
 
+## Menu family
+
+A set of menus the server reads, moves through and commits the same way: a list, a two-by-two grid, the party's slot cycle, a shop, a modal's buttons. A known menu belongs to exactly one family; an unknown menu belongs to none. A family is about how a menu is operated, not what it means: one family serves many **screens** (every yes/no confirm and the title share one).
+
 ## Button
 
 One of the game's own input actions (UP, DOWN, LEFT, RIGHT, ACTION, CANCEL, MENU, …), identified by an int from the game's `Button` enum. A **press** delivers exactly one button to the game.
