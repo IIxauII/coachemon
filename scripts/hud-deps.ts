@@ -11,8 +11,8 @@
  * Two kinds of dep, both worth watching and not told apart here:
  *
  *  - **Re-implemented.** The HUD computes it itself, because calling the game's
- *    own copy would draw from the battle RNG, rewrite the move queue, or return
- *    one sample where the HUD wants every branch with its chance. A changed body
+ *    own copy would draw from the battle RNG, rewrite the move queue, or give
+ *    one draw where the HUD wants every branch with its chance. A changed body
  *    makes the HUD quietly wrong.
  *  - **Called, or replayed in order.** The HUD calls it inside `sandbox`, or
  *    replays the sequence it sits in. A changed signature, return shape or draw
@@ -20,9 +20,10 @@
  *    `newBattle`'s draws, so a reordered call there desynchronises every field
  *    after it.
  *
- * `skills/coach-pokerogue/references/game-code.md` is the reading these rest on.
- * It was read off a live minified bundle rather than the pinned tag, so until a
- * pin bump re-reads them these hashes are the doc's only tie to a fixed ref.
+ * `skills/coach-pokerogue/references/game-code.md` is the reading these rest on,
+ * read from the pinned tag; what is true only of the live minified bundle sits
+ * apart in its §22. Its line citations go stale at a pin bump; these hashes name
+ * which of its readings to redo.
  *
  * Keys are HUD modules under `skills/coach-pokerogue/scripts/hud/`; a moved hash
  * names the modules to re-read. `50-shop.js` owns only its TM claims (§16):
@@ -36,13 +37,27 @@ const M = "src/data/moves/move.ts";
 const SCENE = "src/battle-scene.ts";
 
 export const HUD_DEPS = {
-  /** §0: why every HUD call runs inside `sandbox` — the bookkeeping `simulated` does not suppress. */
-  "01-core.js": [`src/data/abilities/apply-ab-attrs.ts#applySingleAbAttrs`],
+  /**
+   * §0: why every HUD call runs inside `sandbox` — the bookkeeping `simulated` does not suppress, and the
+   * draws and writes it restores: the battle stream and the seed-fork state, Outrage-type targeting, Shell
+   * Side Arm's tie, Present's roll and heal, Tera Shell's `moveEffectiveness`.
+   */
+  "01-core.js": [
+    `src/data/abilities/apply-ab-attrs.ts#applySingleAbAttrs`,
+    `src/battle.ts#Battle.randSeedInt`,
+    `${SCENE}#BattleScene.executeWithSeedOffset`,
+    `src/data/moves/move-utils.ts#getMoveTargets`,
+    `${M}#ShellSideArmCategoryAttr.apply`,
+    `${M}#PresentPowerAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#FullHpResistTypeAbAttr.apply`,
+  ],
 
   /**
-   * §1–§5, §8. `getAttackDamage` is called (simulated, sandboxed); everything the
-   * simulated call leaves out is re-implemented: the damage roll, crits, accuracy,
-   * multi-hit counts, boss segments, Sturdy / Focus Band / endure, turn-end HP.
+   * §1–§5, §8, §18 drain, §21 end of turn. `getAttackDamage` is called (simulated,
+   * sandboxed); everything the simulated call leaves out is re-implemented: the
+   * damage roll, crits, accuracy, multi-hit counts, boss segments, Sturdy / Focus
+   * Band / endure, and turn-end HP — the phases that run after the moves: weather,
+   * berries, status chip and the turn-end heals.
    */
   "10-damage.js": [
     `${P}#Pokemon.getAttackDamage`,
@@ -83,12 +98,58 @@ export const HUD_DEPS = {
     `src/modifier/modifier.ts#HealingBoosterModifier.apply`,
     `src/data/abilities/ab-attrs.ts#ReverseDrainAbAttr.canApply`,
     `src/data/abilities/ab-attrs.ts#ReverseDrainAbAttr.apply`,
+    // Called: the move's type, category and crit stage.
+    `${P}#Pokemon.getMoveType`,
+    `${P}#Pokemon.getMoveCategory`,
+    `${P}#Pokemon.getCritStage`,
+    // §2 hit counts and per-hit power: the multi-hit type (Ash-Greninja's Water Shuriken), Skill Link, Parental Bond
+    // and Multi-Lens strikes, the `turnData` MoveEffectPhase sets and the power steps read off it, a miss or faint
+    // ending the use, and a spread move's target count.
+    `${M}#MultiHitAttr.apply`,
+    `${M}#WaterShurikenMultiHitTypeAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#MaxMultiHitAbAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#AddSecondStrikeAbAttr.canApply`,
+    `${M}#Move.canBeMultiStrikeEnhanced`,
+    `src/modifier/modifier.ts#PokemonMultiHitModifier.apply`,
+    `src/modifier/modifier.ts#PokemonMultiHitModifier.applyDamageModifier`,
+    `src/phases/move-effect-phase.ts#MoveEffectPhase.start`,
+    `src/phases/move-effect-phase.ts#MoveEffectPhase.conductHitChecks`,
+    `src/phases/move-effect-phase.ts#MoveEffectPhase.end`,
+    `${M}#MultiHitPowerIncrementAttr.apply`,
+    `src/data/moves/move-utils.ts#getMoveTargets`,
+    // Damage outside the formula: Present's power draw, Psywave's range, Tera Shell's full-HP resist.
+    `${M}#PresentPowerAttr.apply`,
+    `${M}#RandomLevelDamageAttr.getDamage`,
+    `src/data/abilities/ab-attrs.ts#FullHpResistTypeAbAttr.apply`,
+    // §3, §8 survival: the classic final boss's last segment, Sturdy.
+    `${P}#EnemyPokemon.getMinimumSegmentIndex`,
+    `src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr.canApply`,
+    // §21 `endOfTurnHp`: the turn-end phase order, weather chip and who it spares, berries, status chip and the
+    // status orbs, Leftovers, Shell Bell, the enemy's per-turn heal, and the weather and status abilities.
+    `src/phase-manager.ts#turnEndPhases`,
+    `src/phases/weather-effect-phase.ts#WeatherEffectPhase.start`,
+    `src/data/weather.ts#Weather.isTypeDamageImmune`,
+    `src/data/abilities/ab-attrs.ts#BlockWeatherDamageAttr.canApply`,
+    `src/phases/berry-phase.ts#BerryPhase.eatBerries`,
+    `src/data/berry.ts#getBerryPredicate`,
+    `src/data/berry.ts#getBerryEffectFunc`,
+    `src/phases/post-turn-status-effect-phase.ts#PostTurnStatusEffectPhase.start`,
+    `src/modifier/modifier.ts#TurnStatusEffectModifier.apply`,
+    `src/modifier/modifier.ts#TurnHealModifier.apply`,
+    `src/modifier/modifier.ts#HitHealModifier.apply`,
+    `src/modifier/modifier.ts#EnemyTurnHealModifier.apply`,
+    `src/data/abilities/ab-attrs.ts#PostWeatherLapseDamageAbAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#PostWeatherLapseHealAbAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#PostTurnStatusHealAbAttr.apply`,
   ],
 
   /**
-   * §6, §7. `getNextMove` / `getNextTargets` are never called — they draw from the
-   * battle RNG and rewrite the move queue — so the whole choice is re-implemented
-   * to get every outcome with its chance instead of one draw.
+   * §6, §7. `getNextMove` / `getNextTargets` are not called: the whole choice is
+   * re-implemented to get every outcome with its chance, which doubles and later
+   * turns need. In singles at the command prompt a sandboxed `getNextMove` returns
+   * the move the enemy will use, not a sample (§6, #158) — verified from source,
+   * not on a live tab. `predictSwitches` calls the trainer's matchup scoring, also
+   * listed under `35-team-plan.js`.
    */
   "20-enemy-ai.js": [
     `${P}#EnemyPokemon.getNextMove`,
@@ -99,6 +160,25 @@ export const HUD_DEPS = {
     `${M}#AttackMove.getTargetBenefitScore`,
     // `aiReplay`: a foe's setup move scored per stage it can still add.
     `${M}#StatStageChangeAttr.getTargetBenefitScore`,
+    // `forcedRng` stands in for the battle stream's draw; `aiMoveTargets` restates the targeting (RANDOM_NEAR_ENEMY
+    // draws); `aiTargetScore` enumerates consecutive Protect's draw; a queued move is read by its use mode.
+    `src/battle.ts#Battle.randSeedInt`,
+    `src/data/moves/move-utils.ts#getMoveTargets`,
+    `${M}#ProtectAttr.getCondition`,
+    `src/enums/move-use-mode.ts#isVirtual`,
+    `src/enums/move-use-mode.ts#isIgnorePP`,
+    `${P}#Pokemon.getMoveType`,
+    // The prediction is cached per turn key: the enemy decides after our command.
+    `src/phases/turn-init-phase.ts#TurnInitPhase.start`,
+    // Tera: `shouldTera` is called, `teraOn` replays TeraPhase's writes.
+    `src/field/trainer.ts#Trainer.shouldTera`,
+    `src/phases/tera-phase.ts#TeraPhase.end`,
+    // `predictSwitches`.
+    `${P}#Pokemon.getMatchupScore`,
+    `${P}#Pokemon.isTrapped`,
+    `src/field/trainer.ts#Trainer.getPartyMemberMatchupScores`,
+    `src/field/trainer.ts#Trainer.getSortedPartyMemberMatchupScores`,
+    `src/field/trainer.ts#Trainer.getNextSummonIndex`,
   ],
 
   /** §5 turn order and §9 free switches: no safe call returns either, so both are re-derived. */
@@ -140,6 +220,16 @@ export const HUD_DEPS = {
     `src/data/abilities/ab-attrs.ts#PostVictoryStatStageChangeAbAttr.apply`,
     `src/data/abilities/ab-attrs.ts#PostKnockOutStatStageChangeAbAttr.apply`,
     `src/data/abilities/init-abilities.ts#beastBoostHighestStatCalc`,
+    // `actionOrder`: a switch, item or run goes first; then priority, bracket (Quick Claw, Quick Draw) and speed.
+    `src/phases/turn-start-phase.ts#TurnStartPhase.getCommandOrder`,
+    `src/queues/move-phase-priority-queue.ts#MovePhasePriorityQueue.sortPostSpeed`,
+    `src/data/abilities/ab-attrs.ts#BypassSpeedChanceAbAttr.canApply`,
+    // Sleep: the 2-or-3 turn roll, the countdown `actChance` / `actDelay` / `STATUS_SKIP` restate, Early Bird.
+    `${P}#Pokemon.doSetStatus`,
+    `src/phases/move-phase.ts#MovePhase.checkSleep`,
+    `src/data/abilities/ab-attrs.ts#ReduceStatusEffectDurationAbAttr.apply`,
+    // `statusPlay` reads a weather-boosted heal's fields by name.
+    `${M}#BoostHealAttr.constructor`,
   ],
 
   /**
@@ -153,9 +243,11 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * Catch odds and whether a ball is allowed at all, both re-implemented; a fusion's
+   * §20. Catch odds and whether a ball is allowed at all, both re-implemented; a fusion's
    * averaged base stats, the fusion-aware shiny check and its candy, the event's shiny
-   * multiplier, and the move that leaves a foe at 1 HP.
+   * multiplier, and the move that leaves a foe at 1 HP. What a catch does (Limited
+   * Catch, a full party, the dex bits and candy) is re-implemented too; the game-mode
+   * checks are called, with fallbacks.
    */
   "45-catch.js": [
     `src/phases/attempt-capture-phase.ts#AttemptCapturePhase.start`,
@@ -166,6 +258,23 @@ export const HUD_DEPS = {
     `src/system/game-data.ts#GameData.setPokemonSpeciesCaught`,
     `src/timed-event-manager.ts#TimedEventManager.getShinyCatchMultiplier`,
     `src/data/moves/move.ts#SurviveDamageAttr.getModifiedDamage`,
+    // The capture formula's factors: ball, status, Catching Charm.
+    `src/data/pokeball.ts#getPokeballCatchMultiplier`,
+    `src/data/status-effect.ts#getStatusEffectCatchRateMultiplier`,
+    `src/modifier/modifier.ts#CriticalCatchChanceBoosterModifier.apply`,
+    // Whether a ball is allowed: a boss with bars left (Wonder Guard aside), the final bosses, Fresh Start.
+    `src/phases/command-phase.ts#CommandPhase.handleBallCommand`,
+    `${P}#Pokemon.hasAbility`,
+    `src/game-mode.ts#GameMode.isBattleClassicFinalBoss`,
+    `src/game-mode.ts#GameMode.isEndlessMinorBoss`,
+    `src/game-mode.ts#GameMode.isFullFreshStartChallenge`,
+    `src/game-mode.ts#GameMode.isFreshStartChallenge`,
+    `src/data/daily-seed/daily-run.ts#getDailyEventSeedBoss`,
+    `src/system/game-data.ts#GameData.getStarterCount`,
+    // What a catch does.
+    `src/phases/attempt-capture-phase.ts#AttemptCapturePhase.catch`,
+    `src/data/challenge.ts#LimitedCatchChallenge.applyPokemonAddToParty`,
+    `${P}#Pokemon.getDexAttr`,
   ],
 
   /**
@@ -174,9 +283,13 @@ export const HUD_DEPS = {
    * tag, the stat change and whether it is self-targeted (#70). Three enums come
    * through as bare values — `MoveTarget` and `StatusEffect` as numbers the card
    * indexes tables with, `BattlerTagType` as the strings it keys `TAG_VALUE` by —
-   * so a reordered member silently mis-scores every move that carries it.
+   * so a reordered member silently mis-scores every move that carries it. Fixed
+   * damage is priced back into power through the base damage formula, and Present
+   * at its expected power.
    */
   "40-learn.js": [
+    `${P}#Pokemon.getBaseDamage`,
+    `${M}#PresentPowerAttr.apply`,
     `${M}#MoveAttr.constructor`,
     `${M}#HealAttr.constructor`,
     `${M}#StatusEffectAttr.constructor`,
@@ -198,6 +311,7 @@ export const HUD_DEPS = {
    * `PostMysteryEncounterPhase` ×2000) or a reordered draw inside an option makes
    * every 🔮 outcome confidently wrong. Two enums come through as bare numbers:
    * the encounter type the rules are keyed by and the Nature the dealer rolls.
+   * Every fork is run through `executeWithSeedOffset`; `randSeedInt` is restated.
    */
   "46-encounter.js": [
     `src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.displayEncounterOptions`,
@@ -208,6 +322,9 @@ export const HUD_DEPS = {
     `src/phases/mystery-encounter-phases.ts#PostMysteryEncounterPhase.start`,
     `src/phases/mystery-encounter-phases.ts#MysteryEncounterRewardsPhase.doEncounterRewardsAndContinue`,
     `src/data/mystery-encounters/mystery-encounter.ts#MysteryEncounter.updateSeedOffset`,
+    `${SCENE}#BattleScene.executeWithSeedOffset`,
+    `src/utils/common.ts#randSeedInt`,
+    `src/data/mystery-encounters/mystery-encounter-option.ts#MysteryEncounterOption.meetsRequirements`,
     `src/data/mystery-encounters/mystery-encounter-option.ts#MysteryEncounterOption.meetsPrimaryRequirementAndPrimaryPokemonSelected`,
     `src/data/mystery-encounters/mystery-encounter-requirements.ts#MoneyRequirement.meetsRequirement`,
     `src/data/mystery-encounters/requirements/requirement-groups.ts#STEALING_MOVES`,
@@ -279,6 +396,15 @@ export const HUD_DEPS = {
     `src/ai/ai-species-gen.ts#determineEnemySpecies`,
     `src/ai/ai-species-gen.ts#calcEvoChance`,
     `src/ai/ai-species-gen.ts#getRequiredPrevo`,
+    // `wavesIn`: the pools refreshed for the time of day, fixed, final and boss waves, and the boss-spawn rule.
+    `src/field/arena.ts#Arena.updatePoolsForTimeOfDay`,
+    `src/game-mode.ts#GameMode.isFixedBattle`,
+    `src/game-mode.ts#GameMode.isWaveFinal`,
+    `src/game-mode.ts#GameMode.isBoss`,
+    `${SCENE}#BattleScene.getEncounterBossSegments`,
+    // `formsAt`'s WILD vs NORMAL evolution kind, and each trainer config's default `speciesFilter`.
+    `src/data/pokemon-species.ts#PokemonSpecies.getWildSpeciesForLevel`,
+    `src/data/trainers/trainer-config.ts#TrainerConfig.constructor`,
   ],
 
   /**
@@ -286,11 +412,14 @@ export const HUD_DEPS = {
    * `executeWithSeedOffset`, so every method it calls *and their order* are the
    * dependency: a reordered draw desynchronises every field after it, and the
    * arrival tally would only notice after the fact. `shiftCharCodes` and
-   * `randSeedInt` are re-implemented in `48-preview.js` (minification drops their
-   * names); if either changes, the wave seed or every draw position is wrong.
+   * `randSeedInt` are restated in `48-preview.js`, though both are exported by name
+   * (upstream keeps names through minification, §22); if either changes, the wave
+   * seed or every draw position is wrong.
    */
   "48-preview.js": [
     `${SCENE}#BattleScene.newBattle`,
+    `${SCENE}#BattleScene.handleFixedBattle`,
+    `${SCENE}#BattleScene.handleNonFixedBattle`,
     `${SCENE}#BattleScene.executeWithSeedOffset`,
     `${SCENE}#BattleScene.resetSeed`,
     `${SCENE}#BattleScene.isWaveMysteryEncounter`,
@@ -305,6 +434,8 @@ export const HUD_DEPS = {
     `src/game-mode.ts#GameMode.getFixedBattle`,
     `src/game-mode.ts#GameMode.isWaveTrainer`,
     `src/game-mode.ts#GameMode.isBoss`,
+    `src/game-mode.ts#GameMode.isWaveFinal`,
+    `src/field/arena.ts#Arena.getTimeOfDay`,
     `src/field/trainer.ts#Trainer.constructor`,
     `src/field/trainer.ts#Trainer.genPartyMember`,
     `src/field/trainer.ts#Trainer.getPartyLevels`,
@@ -312,6 +443,7 @@ export const HUD_DEPS = {
     `src/battle.ts#Battle.getLevelForWave`,
     `src/phases/encounter-phase.ts#EncounterPhase.start`,
     `src/phases/encounter-phase.ts#EncounterPhase.isEncounterShinyLocked`,
+    `${P}#Pokemon.constructor`,
     `${P}#EnemyPokemon.constructor`,
     `src/utils/common.ts#shiftCharCodes`,
     `src/utils/common.ts#randSeedInt`,
@@ -339,6 +471,7 @@ export const HUD_DEPS = {
     `src/modifier/modifier-type.ts#getNewModifierTypeOption`,
     `src/modifier/modifier-type.ts#getPartyLuckValue`,
     `src/phases/select-modifier-phase.ts#SelectModifierPhase.getRerollCost`,
+    `src/modifier/modifier-type.ts#getPlayerModifierTypeOptions`,
     `${P}#Pokemon.getLuck`,
     `${P}#Pokemon.isAllowedInBattle`,
     `${SCENE}#BattleScene.initFinalBossPhaseTwo`,
@@ -346,6 +479,7 @@ export const HUD_DEPS = {
     `${P}#Pokemon.hasPassive`,
     `${P}#EnemyPokemon.generateAndPopulateMoveset`,
     `${P}#EnemyPokemon.getMinimumSegmentIndex`,
+    `src/data/moves/pokemon-move.ts#PokemonMove.getMovePp`,
     `src/phases/damage-anim-phase.ts#DamageAnimPhase.end`,
     // §16: `doubleOdds`, the share of double battles ahead a TM is judged by.
     `${SCENE}#BattleScene.checkIsDouble`,
@@ -353,6 +487,8 @@ export const HUD_DEPS = {
     `${SCENE}#BattleScene.generateNewBattleTrainer`,
     `src/game-mode.ts#GameMode.isEndlessBoss`,
     `src/modifier/modifier.ts#DoubleBattleChanceBoosterModifier.apply`,
+    `src/modifier/modifier.ts#DoubleBattleChanceBoosterModifier.match`,
+    `src/battle.ts#getRandomTrainerFunc`,
     `src/modifier/modifier.ts#LapsingPersistentModifier.lapse`,
     `src/phases/battle-end-phase.ts#BattleEndPhase.start`,
     `src/data/abilities/ab-attrs.ts#DoubleBattleChanceAbAttr.apply`,
@@ -396,6 +532,12 @@ export const HUD_DEPS = {
     `src/modifier/init-modifier-pools.ts#initUltraModifierPool`,
     `src/modifier/modifier.ts#TurnHealModifier.apply`,
     `src/modifier/modifier.ts#HitHealModifier.apply`,
+    `src/modifier/modifier.ts#SurviveDamageModifier.apply`,
+    `src/modifier/modifier.ts#CritBoosterModifier.apply`,
+    `src/modifier/modifier.ts#FieldEffectModifier.apply`,
+    `src/modifier/modifier.ts#ContactHeldItemTransferChanceModifier.getTransferredItemCount`,
+    `src/phases/move-effect-phase.ts#MoveEffectPhase.applyOnTargetEffects`,
+    `src/modifier/modifier.ts#PokemonMoveAccuracyBoosterModifier.apply`,
     `src/modifier/modifier.ts#BypassSpeedChanceModifier.apply`,
     `src/modifier/modifier.ts#FlinchChanceModifier.apply`,
     `src/modifier/modifier.ts#PokemonInstantReviveModifier.apply`,
@@ -425,6 +567,7 @@ export const HUD_DEPS = {
    * with another count — makes every preview quietly wrong.
    */
   "50-reroll.js": [
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.constructor`,
     `src/phases/select-modifier-phase.ts#SelectModifierPhase.start`,
     `src/phases/select-modifier-phase.ts#SelectModifierPhase.rerollModifiers`,
     `src/phases/select-modifier-phase.ts#SelectModifierPhase.toggleRerollLock`,
@@ -437,13 +580,17 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §16. Who a TM can be taught to: the select filter, the party screen's TM
+   * §16. Who a TM can be taught to: the select filter (called), the pool drawn
+   * from the whole party's compatible TMs, the party screen's TM
    * mode (a fainted member is offered TEACH) and Hardcore's exception, which
    * gives a fainted member only Release. The challenge id comes through as a
    * bare number.
    */
   "50-shop.js": [
     `src/modifier/modifier-type.ts#TmModifierType.constructor`,
+    `src/modifier/modifier-type.ts#TmModifierTypeGenerator.constructor`,
+    `${P}#PlayerPokemon.isTmCompatible`,
+    `${P}#PlayerPokemon.getCompatibleTms`,
     `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.updateOptions`,
     `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.updateOptionsHardcore`,
     `src/enums/challenges.ts#Challenges`,

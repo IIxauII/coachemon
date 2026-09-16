@@ -1,7 +1,7 @@
 // Catch coach: for a wild foe, the chance each ball we hold catches it, what catching it is worth (to the team, to
 // the account) and whether a throw ends a dangerous encounter cheaper than fighting it out.
 //
-// ---- How the game decides (read from battle-scene-BmkpVc5x.js / loading-scene-BqCzRPcm.js, not called live)
+// ---- How the game decides (see game-code.md §20; not called live)
 // AttemptCapturePhase.start (B = the scene):
 //   B.pokeballCounts[this.pokeballType]--; let m=3*e.getMaxHp(),v=2*e.hp,y=e.species.catchRate,
 //   x=getPokeballCatchMultiplier(ball), S=e.status?getStatusEffectCatchRateMultiplier(e.status.effect):1,

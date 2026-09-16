@@ -92,7 +92,7 @@ const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", 
 const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
 // ---- Calling the game's own code safely
-// Even the game's "simulated" paths have hidden effects (read from the live build; see the coach spec): they can
+// Even the game's "simulated" paths have hidden effects (see game-code.md §0): they can
 // queue ability displays/messages, record abilities in waveData/summonData.abilitiesApplied, draw from the battle
 // RNG (Outrage-type targeting, consecutive Protect, Shell Side Arm ties, Psywave) or Phaser's global RNG (Present),
 // and write turnData (Tera Shell's moveEffectiveness; our own multi-hit hitCount/hitsLeft). `sandbox` runs `fn`

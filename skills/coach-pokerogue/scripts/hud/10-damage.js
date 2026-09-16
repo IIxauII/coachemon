@@ -85,7 +85,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
   };
 
   // ---- Boss segments and survival (spec §3, §8). Pure math on read fields.
-  // EnemyPokemon's module-private calculateBossSegmentDamage, verbatim.
+  // calculateBossSegmentDamage (utils/damage, exported; EnemyPokemon.damage calls it), verbatim.
   const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
     const a = idx ?? Math.ceil(hp / segSize) - 1;
     if (a <= 0) return [dmg, 1];

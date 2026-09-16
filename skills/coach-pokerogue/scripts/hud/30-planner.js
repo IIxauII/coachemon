@@ -3,14 +3,14 @@
 // 10-damage, `enemyMoveDistribution` in 20-enemy-ai); otherwise — and in mocks without those — from the `hits`
 // approximation, so the panel always renders.
 
-// ---- When a switch is free (read from the live build's phases; see game-code.md §9)
+// ---- When a switch is free (read from the game's phases; see game-code.md §9)
 // - CheckSwitchPhase ("Will you switch Pokémon?" → CONFIRM): queued only when an encounter starts — EncounterPhase.end,
 //   a mystery-encounter battle, a loaded save, a retry — never in trainer battles (battleType 1) and never when a
 //   trainer sends in its next mon; skipped under battle style "Set", or when the mon is trapped, frenzied or
 //   commanded, or no bench mon is healthy. Doubles ask once per slot. Yes → SwitchPhase → the swap happens before
 //   TurnInitPhase: no enemy hit, no turn lost, and the enemy picks its first command against our new field.
 // - Faint replacement (FaintPhase → SwitchPhase modal, no return) runs after TurnEndPhase: free too.
-// - U-turn / Volt Switch / Baton Pass / Eject Button (a deferred SwitchPhase with return) switch mid-turn: the
+// - U-turn / Volt Switch / Baton Pass (a deferred SwitchPhase with return) switch mid-turn: the
 //   enemy's already-chosen moves still land on the switch-in if it moves later. Not free.
 // - A regular switch command resolves before moves: the switch-in takes the hit, its move waits a turn.
 // Both prompts wait on UI input with no phase mid-execution, so the sandboxed game calls are as safe as in the
@@ -170,7 +170,7 @@ const likelyMoves = (s, foe, me, outs, next) => {
   });
 };
 
-// P(`p` gets to use `mv` this turn, or next turn with `next`), as MovePhase rolls it in the live build: recharging
+// P(`p` gets to use `mv` this turn, or next turn with `next`), as MovePhase rolls it: recharging
 // after Hyper Beam → 0 (this turn only); asleep → 0 until its sleep counter runs out (one faster with Early Bird)
 // unless the move works asleep (Sleep Talk, Snore); frozen → 1/4 thaw, sure once its freeze counter runs out, or a
 // move that thaws the user; paralysis → 7/8; confused with turns left → 2/3.

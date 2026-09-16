@@ -1,7 +1,8 @@
 // Predictions of what the enemy AI does this turn: switch (EnemyCommandPhase) or move (EnemyPokemon.getNextMove).
-// Both are re-implemented from the live build (spec §6, §7) so the HUD gets every outcome with its chance instead
-// of one random draw. getNextMove/getNextTargets themselves are never called: they draw from the battle RNG and
-// rewrite the move queue.
+// Both are re-implemented from the pinned source (spec §6, §7) so the HUD gets every outcome with its chance, which
+// doubles and later turns need. getNextMove/getNextTargets themselves aren't called. In singles at the command
+// prompt a sandboxed getNextMove would return the move the enemy actually picks, not a sample (§6, #158; verified
+// from source only, not on a live tab).
 const muted = sandbox; // older name, kept for callers
 
 // The enemy decides after the player's commands and nothing it reads changes while the game waits for a command,
