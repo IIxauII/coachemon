@@ -1,6 +1,6 @@
 # Agent transport on Orion
 
-Ticket: [#150](https://github.com/IIxauII/pokerogue-mcp/issues/150). Observed on **2026-09-16**, **Orion 1.1.2 on macOS 26.2** (WebKit 625.1.8), with the dev at the keyboard and the agent reading a loopback listener. Everything below is observation, not documentation, unless marked otherwise. **Status: in progress.** The pass bar is met; the variants under "Not yet tested" are still open.
+Ticket: [#150](https://github.com/IIxauII/pokerogue-mcp/issues/150). Observed on **2026-09-16**, **Orion 1.1.2 on macOS 26.2** (WebKit 625.1.8), with the dev at the keyboard and the agent reading a loopback listener. Everything below is observation, not documentation, unless marked otherwise. **Status: resolved.** The pass bar is met. The dev chose not to run the variants under "Not yet tested"; see "Decisions".
 
 **Short answer.** **Loopback passes the transport pass bar on Orion**, on both the CWS-shape and the AMO-shape build. After **330 s** with no traffic from the local process, a command reached MAIN-world page code on a live `pokerogue.net` tab and its answer came back in **19 ms**. Both backgrounds had been up for 16–17 minutes without ever unloading. Orion runs **both** builds as persistent background pages, **including the one that declares `background.service_worker`**. Per the rescope on #150, routes 1 (Apple Events pull), 3 (native-messaging relay shim) and 4 (downloads drop) therefore do not need to run.
 
@@ -54,11 +54,20 @@ The passing idle command was delivered over all four channels at once: two socke
 - **Content scripts do not inject into tabs already open at install.** The pokerogue.net tab loaded before install had no probe until the dev reloaded it (`tabs.sendMessage` → `Could not establish connection. Receiving end does not exist.`). This differs from Safari 26.2, which injected into the open tab on grant. It matters for onboarding, because a reload mid-run can cost the player the current screen.
 - **Apple Events `do JavaScript` still works** against the same tab. The coach HUD was re-attached through `read.sh orion hud` during the test, without disturbing the extension's channel.
 
+## Decisions
+
+Made by the dev on 2026-09-16, after the pass:
+
+- **Orion's transport is loopback.** Routes 1, 3 and 4 are not pursued, and the Orion AppleScript route carries no carve-out from the "extension replaces CDP and Apple Events" lock.
+- **Either build: both listings name Orion.** The CWS and AMO descriptions both say the extension works in Orion, and the player picks. Nobody is steered to one store.
+- **No further variants.** Everything below stays untested; the pass bar was the question.
+
 ## Not yet tested
 
-- **Hidden tab / Orion not frontmost:** every command so far hit a visible tab.
+Recorded, not run. **Known risk:** orionfeedback [#14474](https://orionfeedback.org/d/14474) (Orion 1.1.2, "Under Review") reports 1Password's Chrome extension dead after the Mac wakes from sleep until the extension is reloaded. If that hits this extension's background, the transport stays down after wake even though the background's reconnect loop works.
+
+- **Hidden tab / Orion not frontmost:** every command hit a visible tab.
 - **WebSocket only** or **long-poll only.** Both ran at once, so it is not isolated which one keeps the background responsive. Given a persistent background page, either is likely enough.
-- **Idle beyond ~17 min**, and **sleep/wake.** orionfeedback [#14474](https://orionfeedback.org/d/14474) reports 1Password's Chrome extension dead after wake on 1.1.2.
+- **Idle beyond ~17 min**, and **sleep/wake** (see the risk above).
 - **Without the `http://127.0.0.1/*` host permission.**
 - **Store-installed builds** (CWS / AMO listing) rather than sideloads, and Orion's opt-in store auto-update, which reportedly clears site permissions.
-- **Which build Orion players should install** is a decision, not yet made.
