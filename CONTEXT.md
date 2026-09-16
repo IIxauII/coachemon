@@ -10,9 +10,17 @@ One playthrough of PokéRogue, from wave 1 until the party wipes. A **wipe** end
 
 One encounter within a run — a battle, or a between-battle screen such as a shop or reward choice. Waves are numbered from 1 and never repeat within a run.
 
+## Run calendar
+
+What a run's wave numbers alone decide, before any roll: which waves are the final boss, a fixed battle, a gym leader or a boss, where the party heals, and the odds of a trainer on each wave. The game mode and challenges shape it; a roll never does. Not to be confused with a **preview**, which reads what the run seed has already rolled.
+
 ## Party
 
 The pokémon the player controls in the current run. The **active pokémon** is the one currently on the field; the rest are on the bench. Distinct from account-level collection data.
+
+## Party profile
+
+The **party** judged as a whole rather than member by member: the types it hits super-effectively, the types it can't, the types several members are weak to, and its weakest member. Any would-be newcomer (a wild pokémon, a species in a biome, a trade offer) is judged against the profile, so every card gives the same reasons for the same pokémon.
 
 ## Settled
 
@@ -25,6 +33,10 @@ The structured, text-only view of the game at a settled moment. **Lean** by defa
 ## Menu
 
 Whatever the game is currently asking the player to choose between. Presented by a **screen**, and served by a **handler** — the game object that owns the menu's options and cursor. A menu is **known** when the server can read its labels and move its cursor, and **unknown** otherwise; unknown menus degrade to raw presses rather than blocking.
+
+## Menu family
+
+A set of menus the server reads, moves through and commits the same way: a list, a two-by-two grid, the party's slot cycle, a shop, a modal's buttons. A known menu belongs to exactly one family; an unknown menu belongs to none. A family is about how a menu is operated, not what it means: one family serves many **screens** (every yes/no confirm and the title share one).
 
 ## Button
 
