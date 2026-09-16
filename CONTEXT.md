@@ -52,6 +52,14 @@ Stuck is reported, never escaped unilaterally.
 
 What the game is actually asking, as a whole. A screen is *not* the same as a **UiMode**: one UiMode can serve several screens that differ in what they mean and in how they can be left, so a screen is identified by the UiMode together with whatever discriminates it. The **menu** is the choice a screen presents; the screen is the thing Claude is looking at.
 
+## Card
+
+The **coach**'s advice for the decision the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it.
+
+## Verdict
+
+A battle card's one-word call on the wave: **easy**, **trainer**, **danger**, **catch** or **fight**. It lets whoever watches alongside the coach stay quiet on an easy wave and speak up on a dangerous one. A verdict sums the card up; it never adds advice the card doesn't show.
+
 ## Driver
 
 The one process allowed to press buttons in a given game tab. The server takes the role on start; a second server that finds a live driver reports the tab as **contended** and refuses to act, since two drivers interleaving presses on one save is indistinguishable from the game misbehaving.
