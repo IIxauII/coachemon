@@ -57,7 +57,7 @@ const { rewardContext, rewardValue } = (() => {
   // ---- The party as the rewards card sees it. The **carry** is the member the run leans on: the highest level (EXP
   // follows whoever fights), ties to the harder hitter. The **level cap** is `getMaxExpLevel()` — EXP past it is lost
   // and a member at it gets no share at all, while a Rare Candy ignores it.
-  const rewardContext = (s, alive, { bossNext = false, gauntlet = false } = {}) => {
+  const rewardContext = (s, alive, { bossNext = false, gauntlet = false, double = 0 } = {}) => {
     const wave = s.currentBattle?.waveIndex ?? 0;
     const capOf = () => {
       const w = Math.ceil((wave || 1) / 10) * 10;
@@ -73,7 +73,7 @@ const { rewardContext, rewardValue } = (() => {
     const owned = id => (s.modifiers ?? []).some(m => m?.type?.id === id);
     // A member's share of the fight: the carry in full, the rest by how close to its level they are.
     const role = p => (!carry || p === carry ? 1 : Math.max(0.4, Math.min(1, p.level / Math.max(1, carry.level))));
-    return { s, wave, cap, carry, alive, bossNext, gauntlet, held, holds, stacks, owned, role,
+    return { s, wave, cap, carry, alive, bossNext, gauntlet, double, held, holds, stacks, owned, role,
       bulkShare: p => bulk(p) / maxBulk, speedShare: p => statOf(p, 5) / maxSpeed };
   };
 
@@ -259,8 +259,18 @@ const { rewardContext, rewardValue } = (() => {
       };
       return verdict(bestHolder(pool, ctx, fit), "nobody can change Tera type", pool);
     }
+    // Memory Mushroom: the member whose relearn list holds the biggest upgrade, by the learn card's own decision
+    // (49-audit's `relearnBest`). Nothing worth relearning is worth little: the mushroom is spent on pick.
     if (cls("RememberMoveModifierType") && users) {
-      return users.length ? { v: 5, why: `${users[0].name} · relearn a move`, holder: { icon: iconOf(users[0]), name: users[0].name }, users: users.map(p => p.name) } : { v: -3, why: "nobody has a move to relearn", users: [] };
+      if (!users.length) return { v: -3, why: "nobody has a move to relearn", users: [] };
+      const fixes = users.map(p => ({ p, fix: tryDo(() => relearnBest(p, ctx.alive.includes(p) ? ctx.alive : [...ctx.alive, p], ctx.double ?? 0)) }))
+        .filter(x => x.fix).sort((a, b) => b.fix.gain * ctx.role(b.p) - a.fix.gain * ctx.role(a.p));
+      const best = fixes[0];
+      if (!best) return { v: 1, why: "no relearnable move beats what they know", users: users.map(p => p.name) };
+      const f = best.fix;
+      return { v: 5 + Math.min(15, Math.round(f.gain * ctx.role(best.p) / 6)),
+        why: `${best.p.name} · relearn ${f.move}${f.forget ? ` over ${f.forget}` : ""} · +${f.gain} power`,
+        holder: { icon: iconOf(best.p), name: best.p.name }, users: users.map(p => p.name) };
     }
     return null;
   };

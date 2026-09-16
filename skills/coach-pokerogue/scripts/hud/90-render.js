@@ -165,7 +165,7 @@ const drawShop = m => {
   };
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? heldTo(p) ?? h("span", dim, p.why)) : null;
-  if (view === "mini") return [header, ...buyRows, take, ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
+  if (view === "mini") return [header, ...buyRows, take, ...drawAudit(m.audit), ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
   // Who can use it, when the reason doesn't already name them (a holder is the answer already).
   const usersText = f => {
     if (f.holder) return "";
@@ -179,6 +179,8 @@ const drawShop = m => {
     m.buys.length ? h("div", { ...dim, fontSize: FS.tiny }, "buy first — taking the free reward closes the shop") : null,
     ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
     m.reroll ? line("🎲", "#8cf", h("span", dim, m.reroll)) : null,
+    // What is wrong with the team itself, while this shop can still patch it.
+    ...drawAudit(m.audit),
     // What the shop is being stocked for: the wave the run seed has already decided on (it draws its own rule), then
     // the next big fight the calendar holds and whether this party is ready for it.
     ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
@@ -210,7 +212,7 @@ const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? "
 const hudSummary = m => {
   if (!m) return null;
   const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null, encounter: null,
-    next: previewSummary(m.preview), ahead: aheadSummary(m.ahead) };
+    next: previewSummary(m.preview), ahead: aheadSummary(m.ahead), audit: auditSummary(m.audit) };
   if (m.kind === "biome") return biomeSummary(m, base);
   if (m.kind === "encounter") return encounterSummary(m, base);
   if (m.kind === "learn") {

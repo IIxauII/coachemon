@@ -1,0 +1,53 @@
+== wave 29 whitney
+🛒 $500 nothing affordable 👑 boss next − ×
+🎁 Memory Mushroom Minccino relearn Take Down over Helping Hand · +84 power
+· 5× Poké Ball you have 20
+🩺 team: 10 issues · Minccino: 1 attack, 3 status moves +
+✗ slot Minccino: 1 attack, 3 status moves ↺ Take Down over Helping Hand +84
+✗ slot Diglett: no Ground attack (no STAB) ↺ Bulldoze over (free slot) +117
+✗ levels Diglett L12/Houndour L16/Wiglett L16 trail Fletchinder L23 — lead them on easy waves
+· slot Minccino: Baby-Doll Eyes does little (foe Atk −1)
+· slot Minccino: Helping Hand does little (helping hand)
+· slot Houndour: Howl boosts Atk, it attacks with SpA
+· slot Houndour: Leer does little (foe Def −1)
+· slot Wiglett: Water Gun is special on SpA 25 (Atk 40)
+· slot Diglett: Sand Attack does little (foe Eva −1)
+· coverage nothing hits Flying/Poison/Water/Electric +3 super-effectively
+mushroom Memory Mushroom: 18 Minccino · relearn Take Down over Helping Hand · +84 power | 5× Poké Ball: -4 you have 20
+summary 10 issues: Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand); Diglett: no Ground attack (no STAB) (relearn Bulldoze); Diglett L12/Houndour L16/Wiglett L16 trail Fletchinder L23 — lead them on easy waves
+== wave 164 guzma
+🛒 $500 nothing affordable − ×
+🎁 5× Poké Ball least bad · you have 20
+🩺 Team audit vs W165 Guzma
+✗ Araquanid (W165) has one answer: Crobat Wing Attack
+✗ Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
+✗ only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
+· Mamoswine: Scary Face does little (foe Spe −2)
+· Mamoswine: Amnesia does little (+2 SpD)
+↺ Memory Mushroom: relearn Icicle Crash over Amnesia · +164 power
+· Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)
+· Golduck: Aqua Tail is a second Water attack (Surf)
+· Comfey: Play Rough is physical on Atk 223 (SpA 312)
++4 more
+✗ answers Araquanid (W165) has one answer: Crobat Wing Attack
+✗ answers Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
+✗ speed only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
+· slot Mamoswine: Scary Face does little (foe Spe −2)
+· slot Mamoswine: Amnesia does little (+2 SpD) ↺ Icicle Crash over Amnesia +164
+· slot Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)
+· slot Golduck: Aqua Tail is a second Water attack (Surf)
+· slot Comfey: Play Rough is physical on Atk 223 (SpA 312)
+· slot Comfey: Petal Dance is a second Grass attack (Giga Drain)
+· slot Dudunsparce: Hyper Drill is a second Normal attack (Boomburst)
+· link Comfey answers nothing at W165 — first to replace
+· investment whole party at the Lv 162 cap: 28 EXP item stacks do nothing — take battle items
+mushroom 5× Poké Ball: -4 least bad · you have 20
+summary 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
+== clean
+🛒 $500 nothing affordable − ×
+🎁 5× Poké Ball least bad · you have 20
+🩺 team: 1 issue · nothing hits Dark super-effectively +
+· coverage nothing hits Dark super-effectively
+mushroom 5× Poké Ball: -4 least bad · you have 20
+summary 1 issue: nothing hits Dark super-effectively
+ok

@@ -95,7 +95,9 @@ for (;;) {
       if (seen.rewards !== key && hudReady("rewards", key, hud?.rewards)) {
         emit("rewards", key,
           `REWARDS ${w} money $${snap.money} reroll $${r.rerollCost} | free: ${r.free.map(item).join(", ")} | shop: ${r.shop.map(item).join(", ")}`
-          + `${hud?.rewards ? ` | HUD: ${hud.rewards}` : ""}`);
+          + `${hud?.rewards ? ` | HUD: ${hud.rewards}` : ""}`
+          // The team audit's count and its first finding only: notifications truncate, and the read has the rest.
+          + `${hud?.audit ? ` | audit: ${hud.audit.split("; ")[0]}` : ""}`);
       }
     }
     // Biome choice: once per wave, only with the HUD's call (the read alone has no options to show), held back a few

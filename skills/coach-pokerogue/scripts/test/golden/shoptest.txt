@@ -9,72 +9,88 @@ buy first — taking the free reward closes the shop
 · 5× Poké Ball you have 34
 · Leppa Berry Charizard Leppa refills a move at 0 PP
 · X Accuracy only lasts a few battles
+🩺 team: 6 issues · 4 of 4 weak to Fighting, nobody resists +
 == healthy
 🛒 $15256 − ×
 🎁 X Defense least bad · only lasts a few battles
 · 5× Poké Ball you have 34
 · Potion party healthy
 🎲 nothing good — reroll for $2250?
+🩺 team: 2 issues · Charizard: no Normal attack (no STAB) +
 == wave 13 rare candy
 🛒 $1824 − ×
 🎁 Rare Candy Charizard Lv 16, at the Lv 16 cap where EXP can't level it
 · 5× Poké Ball you have 12
 · Max Ether PP fine
+🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Fire +4 super-effectively +
 == rare candy catch-up
 🛒 $100 nothing affordable − ×
 🎁 Rare Candy Morpeko Lv 11, furthest behind
+🩺 team: 4 issues · 2 of 2 weak to Fighting, nobody resists +
 == rare candy evolves
 🛒 $100 nothing affordable − ×
 🎁 Rarer Candy +1 level for the whole party · 1 at the Lv 16 cap
 · Rare Candy Charmander evolves at Lv 16
+🩺 team: 4 issues · 2 of 2 weak to Fighting, nobody resists +
 == held items by holder
 🛒 $100 nothing affordable − ×
 🎁 Leftovers Snorlax 1/16 HP a turn (2/4)
 · Quick Claw Snorlax 10% to move first
 · King's Rock Jolteon 10% flinch a hit
+🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
 == status orb
 🛒 $100 nothing affordable − ×
 🎁 Flame Orb Machamp Guts wants the status
 · Toxic Orb Machamp Guts wants the status
+🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +7 super-effectively +
 == status orb nobody
 🛒 $100 nothing affordable − ×
 🎁 5× Poké Ball you have 3
 · Flame Orb does nothing for this team · for Charizard
+🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively +
 == mints
 🛒 $100 nothing affordable − ×
 🎁 Mint Snorlax Adamant +Atk −SpA, was Modest
 · Mint Modest +SpA −Atk · no better for anyone · for Machamp
+🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +7 super-effectively +
 == exp at the cap
 🛒 $100 nothing affordable − ×
 🎁 EXP. All nobody on the bench under the Lv 38 cap
 · EXP. Charm whole party at the Lv 38 cap
+🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
 == exp for the bench
 🛒 $100 nothing affordable − ×
 🎁 EXP. All EXP for the bench · 1 under the Lv 38 cap
+🩺 team: 3 issues · 2 of 3 weak to Ground, nobody resists +
 == evolution item and eviolite
 🛒 $100 nothing affordable − ×
 🎁 Leaf Stone Pikachu evolves now
+🩺 team: 4 issues · 2 of 2 weak to Fighting, nobody resists +
 == vitamins and species boosters
 🛒 $100 nothing affordable − ×
 🎁 Protein Snorlax +10% base Atk (carry)
 · Light Ball Pikachu ×2 Atk/SpA
 · Thick Club nobody it works for · for Snorlax/Jolteon +1
+🩺 team: 3 issues · 2 of 3 weak to Ground, nobody resists +
 == wave 14 pp up
 🛒 $1824 − ×
 🎁 PP Up more PP on a move (permanent)
 · TM Round Comfey → forget Body Slam · +13 power
 · Potion party healthy
 🎲 nothing good — reroll for $500?
+🩺 team: 2 issues · Comfey: Body Slam is physical on Atk 50 (SpA 90) +
 == wave 15 calm mind
 🛒 $900 − ×
 🎁 TM Calm Mind Comfey setup +1 SpA/SpD
 · 5× Poké Ball you have 34
 · Full Heal no status
+🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
 == tm recipient
 🛒 $400 − ×
 🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 · TM Thunder Fang TM — can't check who learns it
 · 5× Great Ball you have 34
+🩺 team: 2 issues · Morpeko: Quick Attack is a second Normal attack (Tackle) +
 == wave 18 free ether
 🛒 $1622 → $491 − ×
 buy first — taking the free reward closes the shop
@@ -83,6 +99,7 @@ buy first — taking the free reward closes the shop
 🎁 Ether PP for Morpeko · saves $532
 · X Sp. Atk only lasts a few battles
 · Potion heals Comfey a little
+🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Bug +6 super-effectively +
 == wave 23 lure vs ether
 🛒 $1474 → $144 − ×
 buy first — taking the free reward closes the shop
@@ -90,51 +107,63 @@ buy first — taking the free reward closes the shop
 🎁 Ether PP for Morpeko · saves $1330
 · Super Lure more double battles for a while
 · 5× Poké Ball you have 34
+🩺 team: 2 issues · 2 of 2 weak to Fighting, nobody resists +
 == tm best of two
 🛒 $200 nothing affordable − ×
 🎁 TM Crunch Snorlax → forget Tackle · +68 power
 · 5× Poké Ball you have 34
+🩺 team: 3 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
 == tm skip
 🛒 $200 nothing affordable − ×
 🎁 5× Poké Ball you have 3
 · TM Tackle skip · no upgrade for Snorlax · Snorlax keeps Brick Break
+🩺 team: 3 issues · Comfey: no Fairy attack (no STAB) +
 == tm compatibility fallback
 🛒 $200 nothing affordable − ×
 🎁 TM Fire Fang Morpeko free slot · +78 power
 · TM Psybeam Arcanine free slot · +77 power
+🩺 team: 2 issues · 2 of 2 weak to Ground, nobody resists +
 == tm nobody
 🛒 $200 nothing affordable − ×
 🎁 5× Poké Ball least bad · you have 34
 · TM Nuzzle skip · nobody can learn it
+🩺 team: 1 issue · nothing hits Flying/Poison/Ground/Rock +8 super-effectively +
 == tm fainted recipient
 🛒 $400 − ×
 🎁 TM Fire Fang Morpeko (fainted) → forget Tackle · +48 power
 · 5× Great Ball you have 34
+🩺 team: 2 issues · Morpeko: Quick Attack is a second Normal attack (Tackle) +
 == tm fainted hardcore
 🛒 $400 − ×
 🎁 TM Fire Fang least bad · skip · nobody can learn it
+🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Ghost +6 super-effectively +
 == tm spread by doubles ahead
 🛒 $400 − ×
 🎁 TM Hyper Voice Charizard free slot · +69 power
+🩺 team: 2 issues · Charizard: Tackle is physical on Atk 110 (SpA 150) +
 == tm setup full moveset
 🛒 $200 nothing affordable − ×
 🎁 TM Calm Mind Comfey setup +1 SpA/SpD → forget Tackle
 · 5× Poké Ball you have 34
+🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
 == key items
 🛒 $72 nothing affordable − ×
 🎁 Master Ball Master Ball — catches anything · you have 0
 · Mega Bracelet nobody on the team can Mega Evolve
 · Egg Voucher egg voucher — outlasts the run
+🩺 team: 1 issue · nothing hits Flying/Poison/Ground/Rock +8 super-effectively +
 == mega capable
 🛒 $72 nothing affordable − ×
 🎁 Mega Bracelet Charizard can Mega Evolve (needs its stone)
 · Fire Stone nobody can use it
 · Leftovers everyone's at max stack
+🩺 team: 2 issues · Charizard: no Normal attack (no STAB) +
 == boss next
 🛒 $300 👑 boss next − ×
 🎁 Super Potion heals Blastoise
 · Revive nobody fainted · spare for the boss
 · X Attack only lasts a few battles
+🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
 == elite four gauntlet
 🛒 $3000 → $2401 👑 boss next − ×
 buy first — taking the free reward closes the shop
@@ -142,6 +171,7 @@ buy first — taking the free reward closes the shop
 🎁 Max Revive nobody fainted · spare for the gauntlet
 · X Attack only lasts a few battles
 · 5× Great Ball you have 34
+🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
 ⚑ Next big fight fixed battle next wave W182
 ✗ 5 big fights before the next full heal (W191)
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
@@ -149,6 +179,7 @@ buy first — taking the free reward closes the shop
 🛒 $3000 − ×
 🎁 5× Great Ball you have 34
 · Max Revive nobody fainted
+🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
 ⚑ Next big fight boss in 4 W180
 ✚ full heal entering W181 — HP, status, PP, revives, Tera
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
@@ -158,6 +189,7 @@ buy first — taking the free reward closes the shop
 💰 Super Potion $599 Blastoise 86% HP
 🎁 Max Revive nobody fainted · spare for the gauntlet
 · 5× Great Ball you have 34
+🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
 ⚑ Next big fight fixed battle in 3 W195
 ✗ no full heal left — 2 big fights on what you have
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
