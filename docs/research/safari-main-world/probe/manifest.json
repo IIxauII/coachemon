@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "MAIN-world probe (research #119)",
+  "version": "0.0.1",
+  "description": "Throwaway probe: does world MAIN run on pokerogue.net in Safari, and can a background page reach 127.0.0.1?",
+  "background": { "scripts": ["background.js"] },
+  "action": { "default_title": "Run executeScript probe" },
+  "permissions": ["scripting"],
+  "host_permissions": ["https://pokerogue.net/*", "http://127.0.0.1/*"],
+  "content_scripts": [
+    { "matches": ["https://pokerogue.net/*"], "js": ["main.js"], "world": "MAIN", "run_at": "document_idle" },
+    { "matches": ["https://pokerogue.net/*"], "js": ["isolated.js"], "run_at": "document_idle" }
+  ]
+}
