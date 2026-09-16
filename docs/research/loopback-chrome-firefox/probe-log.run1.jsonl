@@ -1,0 +1,146 @@
+{"at":"2026-09-16T20:46:16.823Z","event":"listening","port":47161,"idleSeconds":330,"out":"probe-log.jsonl","run":"mu4kma5u"}
+{"at":"2026-09-16T20:46:25.786Z","event":"probe-known","tag":"firefox/ws"}
+{"at":"2026-09-16T20:46:25.788Z","event":"bg-start","tag":"firefox/ws","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/ws","means":"ws","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:25.791Z","event":"probe-known","tag":"firefox/ws-ka"}
+{"at":"2026-09-16T20:46:25.792Z","event":"bg-start","tag":"firefox/ws-ka","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/ws-ka","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:25.821Z","event":"probe-known","tag":"firefox/poll"}
+{"at":"2026-09-16T20:46:25.822Z","event":"bg-start","tag":"firefox/poll","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/poll","means":"poll","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:25.839Z","event":"probe-known","tag":"firefox/tab-ka"}
+{"at":"2026-09-16T20:46:25.839Z","event":"bg-start","tag":"firefox/tab-ka","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/tab-ka","means":"ws","wsKeepalive":false,"tabKeepalive":true,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:25.886Z","event":"tab-hello","tag":"firefox/ws","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:46:25.890Z","event":"tab-hello","tag":"firefox/ws-ka","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:46:25.891Z","event":"tab-hello","tag":"firefox/poll","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:46:25.892Z","event":"tab-hello","tag":"firefox/tab-ka","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:46:25.908Z","event":"probe-known","tag":"firefox/ws-ka-noperm"}
+{"at":"2026-09-16T20:46:25.909Z","event":"bg-start","tag":"firefox/ws-ka-noperm","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":false,"config":{"tag":"firefox/ws-ka-noperm","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":false}}
+{"at":"2026-09-16T20:46:25.909Z","event":"tab-hello","tag":"firefox/ws-ka-noperm","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:46:25.930Z","event":"probe-known","tag":"firefox/poll-noperm"}
+{"at":"2026-09-16T20:46:25.934Z","event":"bg-start","tag":"firefox/poll-noperm","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":false,"config":{"tag":"firefox/poll-noperm","means":"poll","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":false}}
+{"at":"2026-09-16T20:46:25.997Z","event":"tab-hello","tag":"firefox/poll-noperm","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:46:31.829Z","event":"probe-known","tag":"chrome-lna/ws"}
+{"at":"2026-09-16T20:46:31.843Z","event":"ws-open","tag":"chrome-lna/ws","origin":"chrome-extension://oepcogddbmnjdgikgoelocikmlekflhl"}
+{"at":"2026-09-16T20:46:31.850Z","event":"bg-start","tag":"chrome-lna/ws","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":true,"config":{"tag":"chrome-lna/ws","means":"ws","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:31.993Z","event":"probe-known","tag":"chrome-lna/ws-ka"}
+{"at":"2026-09-16T20:46:31.993Z","event":"ws-open","tag":"chrome-lna/ws-ka","origin":"chrome-extension://kbpjaohiobohekoiicbddgcjmpfkckfb"}
+{"at":"2026-09-16T20:46:32.011Z","event":"bg-start","tag":"chrome-lna/ws-ka","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":true,"config":{"tag":"chrome-lna/ws-ka","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:32.024Z","event":"probe-known","tag":"chrome-lna/poll"}
+{"at":"2026-09-16T20:46:32.029Z","event":"bg-start","tag":"chrome-lna/poll","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":true,"config":{"tag":"chrome-lna/poll","means":"poll","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:32.071Z","event":"probe-known","tag":"chrome-lna/tab-ka"}
+{"at":"2026-09-16T20:46:32.072Z","event":"ws-open","tag":"chrome-lna/tab-ka","origin":"chrome-extension://gccingjinoeboddhiffihhdiamfpiffk"}
+{"at":"2026-09-16T20:46:32.073Z","event":"probe-known","tag":"chrome-lna/ws-ka-noperm"}
+{"at":"2026-09-16T20:46:32.073Z","event":"ws-open","tag":"chrome-lna/ws-ka-noperm","origin":"chrome-extension://hbllnbgfloifjjeniheaieopcdojdken"}
+{"at":"2026-09-16T20:46:32.076Z","event":"bg-start","tag":"chrome-lna/tab-ka","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":true,"config":{"tag":"chrome-lna/tab-ka","means":"ws","wsKeepalive":false,"tabKeepalive":true,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:32.076Z","event":"bg-start","tag":"chrome-lna/ws-ka-noperm","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":false,"config":{"tag":"chrome-lna/ws-ka-noperm","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":false}}
+{"at":"2026-09-16T20:46:32.076Z","event":"probe-known","tag":"chrome-lna/poll-noperm"}
+{"at":"2026-09-16T20:46:32.084Z","event":"bg-start","tag":"chrome-lna/poll-noperm","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":false,"config":{"tag":"chrome-lna/poll-noperm","means":"poll","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":false}}
+{"at":"2026-09-16T20:46:32.113Z","event":"tab-hello","tag":"chrome-lna/tab-ka","bgUptimeS":0,"tabId":468569981}
+{"at":"2026-09-16T20:46:32.114Z","event":"tab-hello","tag":"chrome-lna/poll-noperm","bgUptimeS":0,"tabId":468569981}
+{"at":"2026-09-16T20:46:32.116Z","event":"tab-hello","tag":"chrome-lna/poll","bgUptimeS":0,"tabId":468569981}
+{"at":"2026-09-16T20:46:32.144Z","event":"tab-hello","tag":"chrome-lna/ws-ka","bgUptimeS":0,"tabId":468569981}
+{"at":"2026-09-16T20:46:32.154Z","event":"tab-hello","tag":"chrome-lna/ws-ka-noperm","bgUptimeS":0,"tabId":468569981}
+{"at":"2026-09-16T20:46:32.158Z","event":"tab-hello","tag":"chrome-lna/ws","bgUptimeS":0,"tabId":468569981}
+{"at":"2026-09-16T20:46:35.927Z","event":"probe-known","tag":"chrome-nolna/ws"}
+{"at":"2026-09-16T20:46:35.937Z","event":"bg-start","tag":"chrome-nolna/ws","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":true,"config":{"tag":"chrome-nolna/ws","means":"ws","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:35.939Z","event":"ws-open","tag":"chrome-nolna/ws","origin":"chrome-extension://kfcffdbkdhpijkfcccgcnmhbmgllnnbl"}
+{"at":"2026-09-16T20:46:35.984Z","event":"probe-known","tag":"chrome-nolna/poll-noperm"}
+{"at":"2026-09-16T20:46:35.988Z","event":"bg-start","tag":"chrome-nolna/poll-noperm","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":false,"config":{"tag":"chrome-nolna/poll-noperm","means":"poll","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":false}}
+{"at":"2026-09-16T20:46:36.007Z","event":"probe-known","tag":"chrome-nolna/tab-ka"}
+{"at":"2026-09-16T20:46:36.007Z","event":"ws-open","tag":"chrome-nolna/tab-ka","origin":"chrome-extension://offiapojboolgllifaeglhmhahmfinif"}
+{"at":"2026-09-16T20:46:36.011Z","event":"bg-start","tag":"chrome-nolna/tab-ka","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":true,"config":{"tag":"chrome-nolna/tab-ka","means":"ws","wsKeepalive":false,"tabKeepalive":true,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:36.025Z","event":"probe-known","tag":"chrome-nolna/ws-ka-noperm"}
+{"at":"2026-09-16T20:46:36.025Z","event":"ws-open","tag":"chrome-nolna/ws-ka-noperm","origin":"chrome-extension://kilhdcmfbgpcnkhdfkkfmcpjfhjnnbep"}
+{"at":"2026-09-16T20:46:36.027Z","event":"bg-start","tag":"chrome-nolna/ws-ka-noperm","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":false,"config":{"tag":"chrome-nolna/ws-ka-noperm","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":false}}
+{"at":"2026-09-16T20:46:36.069Z","event":"probe-known","tag":"chrome-nolna/poll"}
+{"at":"2026-09-16T20:46:36.071Z","event":"bg-start","tag":"chrome-nolna/poll","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":true,"config":{"tag":"chrome-nolna/poll","means":"poll","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:36.072Z","event":"probe-known","tag":"chrome-nolna/ws-ka"}
+{"at":"2026-09-16T20:46:36.072Z","event":"ws-open","tag":"chrome-nolna/ws-ka","origin":"chrome-extension://hbkdeonjpphhfcancobdadpjboghgejd"}
+{"at":"2026-09-16T20:46:36.073Z","event":"bg-start","tag":"chrome-nolna/ws-ka","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36","isServiceWorker":true,"hasDocument":false,"loopbackGranted":true,"config":{"tag":"chrome-nolna/ws-ka","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:46:37.180Z","event":"tab-hello","tag":"chrome-nolna/ws-ka","bgUptimeS":1,"tabId":183412441}
+{"at":"2026-09-16T20:46:37.206Z","event":"tab-hello","tag":"chrome-nolna/poll-noperm","bgUptimeS":1,"tabId":183412441}
+{"at":"2026-09-16T20:46:37.206Z","event":"tab-hello","tag":"chrome-nolna/tab-ka","bgUptimeS":1,"tabId":183412441}
+{"at":"2026-09-16T20:46:37.211Z","event":"tab-hello","tag":"chrome-nolna/poll","bgUptimeS":1,"tabId":183412441}
+{"at":"2026-09-16T20:46:37.213Z","event":"tab-hello","tag":"chrome-nolna/ws-ka-noperm","bgUptimeS":1,"tabId":183412441}
+{"at":"2026-09-16T20:46:37.214Z","event":"tab-hello","tag":"chrome-nolna/ws","bgUptimeS":1,"tabId":183412441}
+{"at":"2026-09-16T20:46:55.888Z","event":"suspend","tag":"firefox/ws","bgUptimeS":30}
+{"at":"2026-09-16T20:46:55.898Z","event":"suspend","tag":"firefox/poll","bgUptimeS":30}
+{"at":"2026-09-16T20:46:55.900Z","event":"suspend","tag":"firefox/ws-ka","bgUptimeS":30}
+{"at":"2026-09-16T20:46:55.904Z","event":"poll-dropped","tag":"firefox/poll","heldMs":5057}
+{"at":"2026-09-16T20:46:55.906Z","event":"suspend","tag":"firefox/ws-ka-noperm","bgUptimeS":30}
+{"at":"2026-09-16T20:46:55.998Z","event":"suspend","tag":"firefox/poll-noperm","bgUptimeS":30}
+{"at":"2026-09-16T20:46:56.000Z","event":"poll-dropped","tag":"firefox/poll-noperm","heldMs":5060}
+{"at":"2026-09-16T20:47:02.120Z","event":"ws-closed","tag":"chrome-lna/ws","why":"close-frame","openForS":30}
+{"at":"2026-09-16T20:47:02.137Z","event":"poll-dropped","tag":"chrome-lna/poll","heldMs":5098}
+{"at":"2026-09-16T20:47:02.138Z","event":"poll-dropped","tag":"chrome-lna/poll-noperm","heldMs":5052}
+{"at":"2026-09-16T20:47:07.142Z","event":"poll-dropped","tag":"chrome-nolna/poll-noperm","heldMs":6143}
+{"at":"2026-09-16T20:47:07.144Z","event":"poll-dropped","tag":"chrome-nolna/poll","heldMs":6069}
+{"at":"2026-09-16T20:47:07.145Z","event":"ws-closed","tag":"chrome-nolna/ws","why":"close-frame","openForS":31}
+{"at":"2026-09-16T20:47:25.622Z","event":"ws-open","tag":"firefox/ws","origin":"moz-extension://0546c981-f171-486f-9889-ee2f774119f7"}
+{"at":"2026-09-16T20:47:25.632Z","event":"bg-start","tag":"firefox/ws","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/ws","means":"ws","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:47:25.647Z","event":"ws-open","tag":"firefox/ws-ka","origin":"moz-extension://3891cede-ba4c-4137-9130-0f642e85c89a"}
+{"at":"2026-09-16T20:47:25.648Z","event":"bg-start","tag":"firefox/ws-ka","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/ws-ka","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:47:25.665Z","event":"bg-start","tag":"firefox/poll","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/poll","means":"poll","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":true}}
+{"at":"2026-09-16T20:47:25.695Z","event":"ws-open","tag":"firefox/tab-ka","origin":"moz-extension://3e4ec7c2-bfe5-4888-a7a7-b3a41c8e7811"}
+{"at":"2026-09-16T20:47:25.695Z","event":"bg-start","tag":"firefox/tab-ka","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/tab-ka","means":"ws","wsKeepalive":false,"tabKeepalive":true,"loopbackPerm":true}}
+{"at":"2026-09-16T20:47:25.738Z","event":"ws-open","tag":"firefox/ws-ka-noperm","origin":"moz-extension://f64b3c83-4a3b-4b93-a6c9-b7012ff0a2ff"}
+{"at":"2026-09-16T20:47:25.742Z","event":"bg-start","tag":"firefox/ws-ka-noperm","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":false,"config":{"tag":"firefox/ws-ka-noperm","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":false}}
+{"at":"2026-09-16T20:47:25.746Z","event":"tab-hello","tag":"firefox/ws","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:47:25.748Z","event":"tab-hello","tag":"firefox/ws-ka","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:47:25.749Z","event":"tab-hello","tag":"firefox/poll","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:47:25.758Z","event":"tab-hello","tag":"firefox/tab-ka","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:47:25.764Z","event":"tab-hello","tag":"firefox/ws-ka-noperm","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:47:25.769Z","event":"bg-start","tag":"firefox/poll-noperm","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":false,"config":{"tag":"firefox/poll-noperm","means":"poll","wsKeepalive":false,"tabKeepalive":false,"loopbackPerm":false}}
+{"at":"2026-09-16T20:47:25.797Z","event":"tab-hello","tag":"firefox/poll-noperm","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:47:25.812Z","event":"probe-known","tag":"firefox/ws-ka-defaultcsp"}
+{"at":"2026-09-16T20:47:25.813Z","event":"bg-start","tag":"firefox/ws-ka-defaultcsp","bgUptimeS":0,"ua":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:156.0) Gecko/20100101 Firefox/156.0","isServiceWorker":false,"hasDocument":true,"loopbackGranted":true,"config":{"tag":"firefox/ws-ka-defaultcsp","means":"ws","wsKeepalive":true,"tabKeepalive":false,"loopbackPerm":true,"targets":["firefox"],"defaultCsp":true}}
+{"at":"2026-09-16T20:47:25.899Z","event":"tab-hello","tag":"firefox/ws-ka-defaultcsp","bgUptimeS":0,"tabId":1}
+{"at":"2026-09-16T20:47:32.645Z","event":"cmd-sent","id":"rmu4kma5u-c1","trigger":"manual-http","idleSeconds":76,"delivered":{"firefox/ws":"ws","firefox/ws-ka":"ws","firefox/poll":"poll","firefox/tab-ka":"ws","firefox/ws-ka-noperm":"ws","firefox/poll-noperm":"poll","chrome-lna/ws":"no-channel","chrome-lna/ws-ka":"ws","chrome-lna/poll":"no-channel","chrome-lna/tab-ka":"ws","chrome-lna/ws-ka-noperm":"ws","chrome-lna/poll-noperm":"no-channel","chrome-nolna/ws":"no-channel","chrome-nolna/poll-noperm":"no-channel","chrome-nolna/tab-ka":"ws","chrome-nolna/ws-ka-noperm":"ws","chrome-nolna/poll":"no-channel","chrome-nolna/ws-ka":"ws","firefox/ws-ka-defaultcsp":"no-channel"}}
+{"at":"2026-09-16T20:47:32.666Z","event":"PASS","id":"rmu4kma5u-c1","tag":"chrome-lna/tab-ka","latencyMs":24,"via":"ws","bgUptimeS":61,"bgLagMs":3,"tabLagMs":12,"page":{"source":"probe161-main","tag":"chrome-lna/tab-ka","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":3112,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:47:32.671Z","event":"PASS","id":"rmu4kma5u-c1","tag":"chrome-lna/ws-ka","latencyMs":29,"via":"ws","bgUptimeS":61,"bgLagMs":3,"tabLagMs":12,"page":{"source":"probe161-main","tag":"chrome-lna/ws-ka","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":3112,"hidden":false},"keepalives":3}
+{"at":"2026-09-16T20:47:32.673Z","event":"PASS","id":"rmu4kma5u-c1","tag":"chrome-nolna/ws-ka","latencyMs":31,"via":"ws","bgUptimeS":57,"bgLagMs":14,"tabLagMs":19,"page":{"source":"probe161-main","tag":"chrome-nolna/ws-ka","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":2449,"hidden":false},"keepalives":2}
+{"at":"2026-09-16T20:47:32.674Z","event":"PASS","id":"rmu4kma5u-c1","tag":"chrome-lna/ws-ka-noperm","latencyMs":32,"via":"ws","bgUptimeS":61,"bgLagMs":3,"tabLagMs":10,"page":{"source":"probe161-main","tag":"chrome-lna/ws-ka-noperm","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":3112,"hidden":false},"keepalives":3}
+{"at":"2026-09-16T20:47:32.678Z","event":"PASS","id":"rmu4kma5u-c1","tag":"chrome-nolna/tab-ka","latencyMs":35,"via":"ws","bgUptimeS":57,"bgLagMs":8,"tabLagMs":18,"page":{"source":"probe161-main","tag":"chrome-nolna/tab-ka","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":2449,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:47:32.680Z","event":"PASS","id":"rmu4kma5u-c1","tag":"chrome-nolna/ws-ka-noperm","latencyMs":38,"via":"ws","bgUptimeS":57,"bgLagMs":12,"tabLagMs":19,"page":{"source":"probe161-main","tag":"chrome-nolna/ws-ka-noperm","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":2449,"hidden":false},"keepalives":2}
+{"at":"2026-09-16T20:47:32.699Z","event":"PASS","id":"rmu4kma5u-c1","tag":"firefox/ws","latencyMs":57,"via":"ws","bgUptimeS":7,"bgLagMs":3,"tabLagMs":48,"page":{"source":"probe161-main","tag":"firefox/ws","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":380,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:47:32.702Z","event":"PASS","id":"rmu4kma5u-c1","tag":"firefox/ws-ka","latencyMs":60,"via":"ws","bgUptimeS":7,"bgLagMs":25,"tabLagMs":52,"page":{"source":"probe161-main","tag":"firefox/ws-ka","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":381,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:47:32.704Z","event":"PASS","id":"rmu4kma5u-c1","tag":"firefox/tab-ka","latencyMs":62,"via":"ws","bgUptimeS":7,"bgLagMs":32,"tabLagMs":52,"page":{"source":"probe161-main","tag":"firefox/tab-ka","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":381,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:47:32.706Z","event":"PASS","id":"rmu4kma5u-c1","tag":"firefox/poll","latencyMs":64,"via":"poll","bgUptimeS":7,"bgLagMs":51,"tabLagMs":58,"page":{"source":"probe161-main","tag":"firefox/poll","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":382,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:47:32.706Z","event":"PASS","id":"rmu4kma5u-c1","tag":"firefox/ws-ka-noperm","latencyMs":64,"via":"ws","bgUptimeS":7,"bgLagMs":39,"tabLagMs":52,"page":{"source":"probe161-main","tag":"firefox/ws-ka-noperm","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":381,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:47:32.708Z","event":"PASS","id":"rmu4kma5u-c1","tag":"firefox/poll-noperm","latencyMs":66,"via":"poll","bgUptimeS":7,"bgLagMs":53,"tabLagMs":58,"page":{"source":"probe161-main","tag":"firefox/poll-noperm","id":"rmu4kma5u-c1","typeofPhaser":"object","frame":382,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:47:52.649Z","event":"FAIL","id":"rmu4kma5u-c1","tag":"chrome-lna/ws","idleSeconds":76,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:47:52.650Z","event":"FAIL","id":"rmu4kma5u-c1","tag":"chrome-lna/poll","idleSeconds":76,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:47:52.650Z","event":"FAIL","id":"rmu4kma5u-c1","tag":"chrome-lna/poll-noperm","idleSeconds":76,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:47:52.650Z","event":"FAIL","id":"rmu4kma5u-c1","tag":"chrome-nolna/ws","idleSeconds":76,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:47:52.650Z","event":"FAIL","id":"rmu4kma5u-c1","tag":"chrome-nolna/poll-noperm","idleSeconds":76,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:47:52.650Z","event":"FAIL","id":"rmu4kma5u-c1","tag":"chrome-nolna/poll","idleSeconds":76,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:47:52.650Z","event":"FAIL","id":"rmu4kma5u-c1","tag":"firefox/ws-ka-defaultcsp","idleSeconds":76,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:47:55.906Z","event":"suspend","tag":"firefox/ws-ka-defaultcsp","bgUptimeS":30}
+{"at":"2026-09-16T20:48:02.674Z","event":"suspend","tag":"firefox/ws","bgUptimeS":37}
+{"at":"2026-09-16T20:48:02.676Z","event":"ws-closed","tag":"firefox/ws","why":"close-frame","openForS":37}
+{"at":"2026-09-16T20:48:02.704Z","event":"suspend","tag":"firefox/ws-ka","bgUptimeS":37}
+{"at":"2026-09-16T20:48:02.706Z","event":"suspend","tag":"firefox/poll","bgUptimeS":37}
+{"at":"2026-09-16T20:48:02.707Z","event":"suspend","tag":"firefox/ws-ka-noperm","bgUptimeS":37}
+{"at":"2026-09-16T20:48:02.707Z","event":"ws-closed","tag":"firefox/ws-ka","why":"close-frame","openForS":37}
+{"at":"2026-09-16T20:48:02.708Z","event":"suspend","tag":"firefox/poll-noperm","bgUptimeS":37}
+{"at":"2026-09-16T20:48:02.709Z","event":"poll-dropped","tag":"firefox/poll","heldMs":4996}
+{"at":"2026-09-16T20:48:02.710Z","event":"ws-closed","tag":"firefox/ws-ka-noperm","why":"close-frame","openForS":37}
+{"at":"2026-09-16T20:48:02.712Z","event":"poll-dropped","tag":"firefox/poll-noperm","heldMs":4998}
+{"at":"2026-09-16T20:53:03.309Z","event":"cmd-sent","id":"rmu4kma5u-c2","trigger":"idle 330s","idleSeconds":331,"delivered":{"firefox/ws":"no-channel","firefox/ws-ka":"no-channel","firefox/poll":"no-channel","firefox/tab-ka":"ws","firefox/ws-ka-noperm":"no-channel","firefox/poll-noperm":"no-channel","chrome-lna/ws":"no-channel","chrome-lna/ws-ka":"ws","chrome-lna/poll":"no-channel","chrome-lna/tab-ka":"ws","chrome-lna/ws-ka-noperm":"ws","chrome-lna/poll-noperm":"no-channel","chrome-nolna/ws":"no-channel","chrome-nolna/poll-noperm":"no-channel","chrome-nolna/tab-ka":"ws","chrome-nolna/ws-ka-noperm":"ws","chrome-nolna/poll":"no-channel","chrome-nolna/ws-ka":"ws","firefox/ws-ka-defaultcsp":"no-channel"}}
+{"at":"2026-09-16T20:53:03.335Z","event":"PASS","id":"rmu4kma5u-c2","tag":"chrome-nolna/ws-ka","latencyMs":32,"via":"ws","bgUptimeS":387,"bgLagMs":9,"tabLagMs":15,"page":{"source":"probe161-main","tag":"chrome-nolna/ws-ka","id":"rmu4kma5u-c2","typeofPhaser":"object","frame":22288,"hidden":false},"keepalives":19}
+{"at":"2026-09-16T20:53:03.337Z","event":"PASS","id":"rmu4kma5u-c2","tag":"chrome-lna/ws-ka-noperm","latencyMs":34,"via":"ws","bgUptimeS":391,"bgLagMs":5,"tabLagMs":11,"page":{"source":"probe161-main","tag":"chrome-lna/ws-ka-noperm","id":"rmu4kma5u-c2","typeofPhaser":"object","frame":22951,"hidden":false},"keepalives":19}
+{"at":"2026-09-16T20:53:03.344Z","event":"PASS","id":"rmu4kma5u-c2","tag":"chrome-nolna/tab-ka","latencyMs":41,"via":"ws","bgUptimeS":387,"bgLagMs":8,"tabLagMs":15,"page":{"source":"probe161-main","tag":"chrome-nolna/tab-ka","id":"rmu4kma5u-c2","typeofPhaser":"object","frame":22288,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:53:03.345Z","event":"PASS","id":"rmu4kma5u-c2","tag":"chrome-lna/tab-ka","latencyMs":42,"via":"ws","bgUptimeS":391,"bgLagMs":5,"tabLagMs":12,"page":{"source":"probe161-main","tag":"chrome-lna/tab-ka","id":"rmu4kma5u-c2","typeofPhaser":"object","frame":22951,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:53:03.347Z","event":"PASS","id":"rmu4kma5u-c2","tag":"chrome-lna/ws-ka","latencyMs":44,"via":"ws","bgUptimeS":391,"bgLagMs":5,"tabLagMs":12,"page":{"source":"probe161-main","tag":"chrome-lna/ws-ka","id":"rmu4kma5u-c2","typeofPhaser":"object","frame":22951,"hidden":false},"keepalives":19}
+{"at":"2026-09-16T20:53:03.347Z","event":"PASS","id":"rmu4kma5u-c2","tag":"chrome-nolna/ws-ka-noperm","latencyMs":44,"via":"ws","bgUptimeS":387,"bgLagMs":9,"tabLagMs":14,"page":{"source":"probe161-main","tag":"chrome-nolna/ws-ka-noperm","id":"rmu4kma5u-c2","typeofPhaser":"object","frame":22288,"hidden":false},"keepalives":19}
+{"at":"2026-09-16T20:53:03.367Z","event":"PASS","id":"rmu4kma5u-c2","tag":"firefox/tab-ka","latencyMs":64,"via":"ws","bgUptimeS":338,"bgLagMs":5,"tabLagMs":39,"page":{"source":"probe161-main","tag":"firefox/tab-ka","id":"rmu4kma5u-c2","typeofPhaser":"object","frame":47919,"hidden":false},"keepalives":0}
+{"at":"2026-09-16T20:53:23.318Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"firefox/ws","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.319Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"firefox/ws-ka","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.319Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"firefox/poll","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.319Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"firefox/ws-ka-noperm","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.319Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"firefox/poll-noperm","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.320Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"chrome-lna/ws","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.320Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"chrome-lna/poll","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.321Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"chrome-lna/poll-noperm","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.321Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"chrome-nolna/ws","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.321Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"chrome-nolna/poll-noperm","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.321Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"chrome-nolna/poll","idleSeconds":331,"reason":"no live channel within 20000 ms"}
+{"at":"2026-09-16T20:53:23.321Z","event":"FAIL","id":"rmu4kma5u-c2","tag":"firefox/ws-ka-defaultcsp","idleSeconds":331,"reason":"no live channel within 20000 ms"}
