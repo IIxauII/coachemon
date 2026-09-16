@@ -26,9 +26,9 @@
  *
  * Keys are HUD modules under `skills/coach-pokerogue/scripts/hud/`; a moved hash
  * names the modules to re-read. Modules absent from this map (`35-team-plan.js`,
- * `40-learn.js`, `50-shop.js`) build on the ones here and read live state
- * directly; they own no game-code claim of their own — `50-shop.js`'s spending
- * rules rest on `49-ahead.js`'s calendar, which does.
+ * `50-shop.js`) build on the ones here and read live state directly; they own no
+ * game-code claim of their own — `50-shop.js`'s spending rules rest on
+ * `49-ahead.js`'s calendar, which does.
  */
 import type { SourceRef } from "../src/escape-ladder/types.ts";
 
@@ -99,6 +99,26 @@ export const HUD_DEPS = {
     `src/phases/attempt-capture-phase.ts#AttemptCapturePhase.start`,
     `src/data/pokeball.ts#getCriticalCaptureChance`,
     `src/phases/command-phase.ts#CommandPhase.checkCanUseBall`,
+  ],
+
+  /**
+   * The learn card calls nothing, but it reads a move apart by the *shape* of its
+   * attributes: which field holds the heal ratio, the inflicted status, the battler
+   * tag, the stat change and whether it is self-targeted (#70). Three enums come
+   * through as bare values — `MoveTarget` and `StatusEffect` as numbers the card
+   * indexes tables with, `BattlerTagType` as the strings it keys `TAG_VALUE` by —
+   * so a reordered member silently mis-scores every move that carries it.
+   */
+  "40-learn.js": [
+    `${M}#MoveAttr.constructor`,
+    `${M}#HealAttr.constructor`,
+    `${M}#StatusEffectAttr.constructor`,
+    `${M}#AddBattlerTagAttr.constructor`,
+    `${M}#StatStageChangeAttr.constructor`,
+    `${M}#MultiHitAttr.constructor`,
+    `src/enums/move-target.ts#MoveTarget`,
+    `src/enums/status-effect.ts#StatusEffect`,
+    `src/enums/battler-tag-type.ts#BattlerTagType`,
   ],
 
   /** §10: the biome choice the phase offers, and the spawn rules behind the pools it scans. */

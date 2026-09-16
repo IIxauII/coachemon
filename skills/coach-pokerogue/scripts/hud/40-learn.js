@@ -87,15 +87,34 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
   // Defending types a set of moves hits super-effectively (single types). Fixed damage ignores effectiveness.
   const isFixed = mv => mv.power === -1 && STAND_INS.some(([name, , , fixed]) => fixed && attrsOf(mv, name).length);
   const seTypes = moves => new Set(moves.filter(m => isDamaging(m) && !isFixed(m)).flatMap(m => CHART[TYPES[m.type]]?.[0] ?? []));
+  // ---- Which stat the mon actually attacks with
+  // Abilities that multiply an attack stat outright (Huge Power doubles Atk): a Marill's 50 Atk is a 100 Atk for
+  // every physical move it will ever pick, so the card compares and reports the multiplied number.
+  // Gorilla Tactics is left out: it multiplies Atk too, but locks the mon into the move it opens with, and that
+  // trade is not something a per-move score can carry.
+  const ATK_MULT = { "Huge Power": 2, "Pure Power": 2, Hustle: 1.5 };
+  const atkOf = pk => abilitiesOf(pk).reduce((n, a) => n * (ATK_MULT[a] ?? 1), pk.getStat(1));
+  const spaOf = pk => pk.getStat(3);
+  // The stat(s) this mon attacks with: within 10% of its best is close enough to count as both.
+  const mainStats = pk => {
+    const atk = atkOf(pk), spa = spaOf(pk);
+    return new Set([atk >= spa * 0.9 ? 1 : null, spa >= atk * 0.9 ? 3 : null].filter(Boolean));
+  };
+
+  // Self/ally-side move targets (MoveTarget): nothing on the far side is touched, so accuracy never applies and a
+  // stat change here is a buff, not a drop — Howl's attr carries no `selfTarget`, only this target.
+  const SELF_TARGETS = new Set([0, 10, 11, 12, 13, 15, 18]); // USER, NEAR_ALLY, ALLY, USER_OR_NEAR_ALLY, USER_AND_ALLIES, USER_SIDE, PARTY
+  const ALLY_TARGETS = new Set([10, 11]);                    // NEAR_ALLY, ALLY: there is nobody to aim at in a single battle
+  const selfSide = (mv, a) => !!a?.selfTarget || SELF_TARGETS.has(mv.moveTarget);
+
   // A status move that raises the user's own stats (Calm Mind, Swords Dance, Dragon Dance): worth something when it
   // boosts the stat this mon attacks with and it has no such setup move yet. `value` is in the same rough units as
   // effective power; null when the move isn't setup.
   const setupOf = (pk, mv, current) => {
     if (mv.category !== 2) return null;
-    const boosts = attrsOf(mv, "StatStageChangeAttr").filter(a => a.selfTarget && (a.stages ?? 0) > 0);
+    const boosts = attrsOf(mv, "StatStageChangeAttr").filter(a => selfSide(mv, a) && (a.stages ?? 0) > 0);
     if (!boosts.length) return null;
-    const atk = pk.getStat(1), spa = pk.getStat(3);
-    const main = new Set([atk >= spa * 0.9 ? 1 : null, spa >= atk * 0.9 ? 3 : null].filter(Boolean));
+    const main = mainStats(pk);
     const weight = i => (main.has(i) ? 30 : i === 5 ? 20 : i === 2 || i === 4 ? 10 : i === 1 || i === 3 ? 5 : 3);
     let value = 0;
     const parts = [];
@@ -105,26 +124,179 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     }
     const boostsMain = boosts.some(a => (a.stats ?? []).some(i => main.has(i)));
     const hasSetup = current.some(o => o !== mv && o.category === 2 && attrsOf(o, "StatStageChangeAttr")
-      .some(a => a.selfTarget && (a.stages ?? 0) > 0 && (a.stats ?? []).some(i => main.has(i))));
+      .some(a => selfSide(o, a) && (a.stages ?? 0) > 0 && (a.stats ?? []).some(i => main.has(i))));
     if (!boostsMain) value *= 0.5;
     if (hasSetup) value *= 0.3;
     return { value: Math.round(value), text: parts.join(" "), fits: boostsMain && !hasSetup };
   };
   const movesOf = p => (p?.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } }).filter(Boolean);
 
+  // ---- The moveset prior (05-randbats.js)
+  // Which moves show up on this species' competitive sets, and under which role name. It is a *nudge* on a score
+  // and a note on the card, never a veto: randbats is a different game — no passives, no boss bars, level 80-ish
+  // fully-evolved mons. A move nobody runs is still the right pick when the numbers say so.
+  const PRIOR_EXACT = { role: 1.2, any: 1.12 };
+  const PRIOR_EVO = { role: 1.12, any: 1.06 }; // the sets belong to what this mon grows into, not to this mon
+  const moveName = mv => String(mv?.name ?? "").replace(/ \(N\)$/, "");
+  const rbId = name => String(name ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Own properties only: a nickname like "constructor" must not reach up the prototype chain and hand back a function.
+  const rbAt = (table, id) => (table && Object.prototype.hasOwnProperty.call(table, id) ? table[id] : null);
+  const rbRoles = (id, double) => {
+    const row = rbAt(double ? RANDBATS.d : RANDBATS.s, id) ?? rbAt(RANDBATS.s, id) ?? [];
+    return row.map(r => [RANDBATS.r[r[0]], new Set(r.slice(1).map(i => RANDBATS.m[i]))]);
+  };
+  // The sets to judge this mon by: its own, its forms' (PokéRogue names only the base species), or — randbats
+  // lists no not-fully-evolved species — the ones it grows into, which count for less.
+  const priorSets = (pk, double) => {
+    if (typeof RANDBATS === "undefined") return null;
+    const id = rbId(pk?.species?.name ?? pk?.name);
+    if (!id) return null;
+    if (rbAt(RANDBATS.s, id) || rbAt(RANDBATS.d, id)) return { roles: rbRoles(id, double), exact: true };
+    for (const [key, exact] of [["f", true], ["e", false]]) {
+      const stand = rbAt(RANDBATS[key], id);
+      if (stand) return { roles: stand.flatMap(x => rbRoles(x, double)), exact };
+    }
+    return null;
+  };
+  // The role this moveset already looks most like, then whether `mv` belongs to it. A move that completes the role
+  // the mon is already playing is worth more than one that merely turns up on some other set.
+  const priorOf = (pk, mv, ctx) => {
+    const sets = ctx.prior ?? null;
+    if (!sets?.roles?.length) return null;
+    const own = ctx.ownMoves ?? [];
+    let best = null, bestHits = -1;
+    for (const role of sets.roles) {
+      const hits = own.filter(n => role[1].has(n)).length;
+      if (hits > bestHits) { bestHits = hits; best = role; }
+    }
+    const name = moveName(mv);
+    const inBest = !!best && best[1].has(name);
+    const any = inBest ? best : sets.roles.find(r => r[1].has(name));
+    if (!any) return null;
+    const scale = sets.exact ? PRIOR_EXACT : PRIOR_EVO;
+    return { mult: inBest ? scale.role : scale.any, note: `set move (${any[0]}${sets.exact ? "" : ", evolved"})` };
+  };
+
+  // ---- Status moves, on the same scale as effective power
+  // Before this they were unscored, so the card could neither recommend one nor offer a dead one as the slot to
+  // forget (#70). The numbers are what a class of move is worth over a wave in PokéRogue's single-file fights, not
+  // mainline theory: recovery and sleep are worth a lot, a foe's −1 Atk very little.
+  const STATUS_VALUE = [0, 30, 45, 45, 70, 55, 45]; // StatusEffect NONE, POISON, TOXIC, PARALYSIS, SLEEP, FREEZE, BURN
+  const TAG_VALUE = {
+    // Shuts a foe's plan down. Worth most against the bosses that heal or set up — which the learn card can't see.
+    TAUNT: 30, ENCORE: 30, DISABLED: 25, HEAL_BLOCK: 25, TORMENT: 20, IMPRISON: 15,
+    // Chip, drain or a clock.
+    SEEDED: 35, SALT_CURED: 30, PERISH_SONG: 25, TRAPPED: 15, DROWSY: 45,
+    // Buys the user something.
+    SUBSTITUTE: 25, ALWAYS_CRIT: 25, CRIT_BOOST: 20, AQUA_RING: 20, INGRAIN: 20, MAGNET_RISEN: 10, HELPING_HAND: 25,
+    CENTER_OF_ATTENTION: 10, MINIMIZED: 5,
+  };
+  // Status attributes worth a flat amount, as [value, what the card calls it]. Keyed by the concrete class, so a
+  // subclass (ProtectAttr, LeechSeedAttr) is valued here rather than through the base class's branch below.
+  const STATUS_ATTR = {
+    ProtectAttr: [25, "protect"], ConfuseAttr: [25, "confuse"], LeechSeedAttr: [35, "leech seed"],
+    PartyStatusCureAttr: [25, "cures the party"], HealStatusEffectAttr: [15, "cures status"],
+    AddArenaTagAttr: [25, "screen"], AddArenaTrapTagAttr: [20, "hazard"],
+    WeatherChangeAttr: [20, "weather"], TerrainChangeAttr: [20, "terrain"],
+    CopyStatsAttr: [20, "copies boosts"], SwapStatStagesAttr: [20, "swaps boosts"], ResetStatsAttr: [20, "clears boosts"],
+    ForceSwitchOutAttr: [12, "forces a switch"], SacrificialFullRestoreAttr: [30, "full restore, user faints"],
+  };
+  // Recovery. HealAttr carries its own ratio; the weather-gated ones (Synthesis, Moonlight) heal half that in the
+  // wrong weather, so they take a flat, discounted value instead.
+  const HEAL_FLAT = { WeatherHealAttr: 45, PlantHealAttr: 45, SandHealAttr: 45 };
+  const isRecovery = mv => attrsOf(mv, "HealAttr").length > 0 || attrsOf(mv, "BoostHealAttr").length > 0
+    || Object.keys(HEAL_FLAT).some(n => attrsOf(mv, n).length > 0);
+  const inflictsStatus = mv => (mv.attrs || []).some(a => a.constructor?.name === "StatusEffectAttr" && !selfSide(mv, a));
+
+  // What a status move is worth, and why. null value when nothing here recognises it: the card says "your call"
+  // rather than inventing a number, and the slot stays off the forget list.
+  const statusScore = (pk, mv, others, double, ctx) => {
+    const notes = [], why = [];
+    let value = 0, known = false;
+    const add = (n, text) => { value += n; why.push(text); known = true; };
+    if (unimplemented(mv)) return { value: 0, notes: ["not implemented"], status: true, se: [], neutral: [], teamSe: [], drawbacks: [] };
+    if (ALLY_TARGETS.has(mv.moveTarget) && !double) {
+      return { value: 0, notes: ["ally only"], status: true, why: "nothing to target in a single battle", se: [], neutral: [], teamSe: [], drawbacks: [] };
+    }
+    for (const [name, [n, text]] of Object.entries(STATUS_ATTR)) if (attrsOf(mv, name).length) add(n, text);
+    for (const [name, n] of Object.entries(HEAL_FLAT)) if (attrsOf(mv, name).length) add(n, "heal (weather)");
+    for (const a of [...attrsOf(mv, "HealAttr"), ...attrsOf(mv, "BoostHealAttr")]) {
+      const ratio = a.healRatio ?? 0.5;
+      add(Math.round(120 * ratio), `heal ${Math.round(ratio * 100)}%`);
+    }
+    for (const a of attrsOf(mv, "StatusEffectAttr")) {
+      if (selfSide(mv, a)) continue;
+      add(STATUS_VALUE[a.effect] ?? 20, STATUS_FRAMES[a.effect] ?? "status");
+    }
+    for (const a of attrsOf(mv, "AddBattlerTagAttr")) {
+      const n = TAG_VALUE[a.tagType];
+      if (n != null) add(n, String(a.tagType).toLowerCase().replace(/_/g, " "));
+    }
+    const setup = setupOf(pk, mv, others);
+    if (setup) add(setup.value, setup.text);
+    // A foe's stat drop is worth a fraction of the same boost on us: it lasts only while that foe is out, and the
+    // wave replaces it. This is what makes Growl and Leer the slot to forget rather than an attacking move.
+    for (const a of attrsOf(mv, "StatStageChangeAttr")) {
+      if (selfSide(mv, a) || (a.stages ?? 0) >= 0) continue;
+      const drop = i => (i === 1 || i === 3 || i === 5 ? 8 : i === 6 ? 6 : 4);
+      const n = (a.stats ?? []).reduce((t, i) => t + drop(i) * -(a.stages ?? 0), 0);
+      add(n, `foe ${(a.stats ?? []).map(i => STAT_NAMES[i]).join("/")} −${-(a.stages ?? 0)}`);
+    }
+    if (!known) return { value: null, notes: [], status: true, se: [], neutral: [], teamSe: [], drawbacks: [] };
+
+    // The same trick twice is worth less the second time, and a moveset that is mostly status has no room left.
+    if (isRecovery(mv) && others.some(isRecovery)) { value *= 0.5; notes.push("already has recovery"); }
+    if (inflictsStatus(mv) && others.some(inflictsStatus)) { value *= 0.5; notes.push("already has a status move"); }
+    const status = others.filter(o => o.category === 2).length;
+    if (status >= 2) { value *= status >= 3 ? 0.35 : 0.6; notes.push(`${status + 1} status moves`); }
+    const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
+    if (!SELF_TARGETS.has(mv.moveTarget) && acc < 1) { value *= acc; notes.push(`${Math.round(acc * 100)}% acc`); }
+    const prior = priorOf(pk, mv, ctx);
+    if (prior) { value *= prior.mult; notes.push(prior.note); }
+    return { value: Math.round(value), notes: [...why, ...notes], status: true, why: why.join(" · "), se: [], neutral: [], teamSe: [], drawbacks: [] };
+  };
+
+  // ---- The type a move actually lands as
+  // An -ate ability rewrites a Normal move's type and adds 20% power, Liquid Voice turns sound-based moves into
+  // Water, and a handful of moves take their type from something the card can't see (the weather, a held item,
+  // the IVs). STAB and the whole coverage read hang on this, so a type the card can't pin down claims neither.
+  const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric", Dragonize: "Dragon" };
+  const SOUND_FLAG = 1 << 2;
+  // Variable-type attributes. Tera Blast is absent on purpose: it is Normal until the mon terastallizes.
+  const VARIABLE_TYPE = ["FormChangeItemTypeAttr", "TechnoBlastTypeAttr", "AuraWheelTypeAttr", "RagingBullTypeAttr",
+    "IvyCudgelTypeAttr", "WeatherBallTypeAttr", "TerrainPulseTypeAttr", "HiddenPowerTypeAttr", "TeraStarstormTypeAttr",
+    "CombinedPledgeTypeAttr"];
+  const SUN_ABILITIES = new Set(["Drought", "Desolate Land", "Orichalcum Pulse"]);
+  const effectiveType = (pk, mv) => {
+    const base = TYPES[mv.type];
+    const ab = abilitiesOf(pk);
+    // Revelation Dance takes the user's own first type, so it is knowable — and always STAB.
+    if (attrsOf(mv, "MatchUserTypeAttr").length) return { type: typesOf(pk)[0] ?? base, note: "user's type" };
+    if (VARIABLE_TYPE.some(n => attrsOf(mv, n).length)) return { type: base, variable: true, note: "type varies" };
+    const ate = ab.find(a => ATE[a]);
+    if (ate && base === "Normal") return { type: ATE[ate], boost: 1.2, note: ate };
+    if (ab.includes("Normalize")) return { type: "Normal", boost: 1.2, note: "Normalize" };
+    if (ab.includes("Liquid Voice") && moveHasFlag(mv, SOUND_FLAG)) return { type: "Water", note: "Liquid Voice" };
+    return { type: base };
+  };
+
   // Effective power of a move on this pokémon: power × expected hits × accuracy × STAB × how well its attack stat
   // suits the category, then adjusted for what it costs or adds, each adjustment named in `notes` so the card can
   // show why. `others`: this mon's other moves; `teamSe`: types the rest of the party already hits super-effectively.
-  // null value for status moves, which can't be scored.
+  // Status moves go through `statusScore`, which values them on the same scale.
   const moveScore = (pk, mv, others, double, ctx = {}) => {
     const party = ctx.party ?? [pk];
     const teamSe = ctx.teamSe ?? null;
-    if (!isDamaging(mv)) return { value: null, notes: [] };
+    if (!isDamaging(mv)) return statusScore(pk, mv, others, double, ctx);
     const notes = [];
-    const type = TYPES[mv.type];
+    const et = effectiveType(pk, mv);
+    const type = et.type;
     if (unimplemented(mv)) return { value: 0, notes: ["not implemented"], power: 0 };
-    const atk = pk.getStat(1), spa = pk.getStat(3);
-    const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
+    const ability = abilitiesOf(pk);
+    const atk = atkOf(pk), spa = spaOf(pk);
+    // Hustle buys its 50% Atk with 20% accuracy on physical moves; the Atk is already in `atk`.
+    let acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
+    if (mv.category === 0 && ability.includes("Hustle")) { acc *= 0.8; notes.push("Hustle"); }
     let power = mv.power;
     let fixed = false;
     if (!(power > 0)) {
@@ -132,30 +304,36 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
       power = s.power; fixed = s.fixed;
       notes.push(s.note);
     }
+    if (et.note) notes.push(et.note);
+    if (et.boost && !fixed) power *= et.boost;
     // Technician: ×1.5 on hits of base power ≤ 60 (after variable power).
     const grows = attrsOf(mv, "MultiHitPowerIncrementAttr").length > 0;
-    if (!fixed && abilitiesOf(pk).includes("Technician") && power * (grows ? 3 : 1) <= 60) { power *= 1.5; notes.push("Technician"); }
+    if (!fixed && ability.includes("Technician") && power * (grows ? 3 : 1) <= 60) { power *= 1.5; notes.push("Technician"); }
     const mh = multiHit(pk, mv, acc, party);
     if (mh.hits > 1) notes.push(`${mh.hits} hits`);
     const fit = fixed ? 1 : (mv.category === 0 ? atk : spa) / Math.max(atk, spa);
-    const stab = !fixed && typesOf(pk).includes(type) ? 1.5 : 1;
+    // A type the card can't pin down claims no STAB and no coverage: a wrong claim reads worse than a missing one.
+    const blind = fixed || !!et.variable;
+    const stab = !blind && typesOf(pk).includes(type) ? (ability.includes("Adaptability") ? 2 : 1.5) : 1;
     let value = power * mh.factor * stab * fit;
 
     // Coverage, by the type chart: defending types this move newly hits super-effectively (more if nobody on the team
     // does), and types that resist every other move of ours but not this one. Not just "no other move of this type".
     const ownSe = seTypes(others);
-    const se = fixed ? [] : (CHART[type]?.[0] ?? []).filter(d => !ownSe.has(d));
+    const se = blind ? [] : (CHART[type]?.[0] ?? []).filter(d => !ownSe.has(d));
     const teamOnly = teamSe ? se.filter(d => !teamSe.has(d)) : [];
     const otherTypes = [...new Set(others.filter(o => isDamaging(o) && !isFixed(o)).map(o => TYPES[o.type]))];
-    const neutral = fixed ? [] : TYPES.filter(d => !se.includes(d) && vs(type, d) >= 1 && Math.max(0, ...otherTypes.map(t => vs(t, d))) < 1);
+    const neutral = blind ? [] : TYPES.filter(d => !se.includes(d) && vs(type, d) >= 1 && Math.max(0, ...otherTypes.map(t => vs(t, d))) < 1);
     if (se.length || neutral.length) {
       value *= 1 + Math.min(0.3, (se.length ? 0.1 : 0) + 0.04 * se.length + 0.04 * teamOnly.length + 0.02 * neutral.length);
       const list = xs => `${xs.slice(0, 3).join("/")}${xs.length > 3 ? "…" : ""}`;
       if (se.length) notes.push(`SE on ${list(se)}`);
       else if (neutral.length && otherTypes.length) notes.push(`neutral on ${list(neutral)}`);
     }
-    const sameType = others.filter(o => isDamaging(o) && TYPES[o.type] === type).length;
     // Same-type redundancy: a second move of a type adds little beyond the stronger one, a third less still.
+    // A move whose type varies is a duplicate of nothing, so it is exempt — fixed damage still counts, since two
+    // Ghost moves are two Ghost moves however their damage is worked out.
+    const sameType = et.variable ? 0 : others.filter(o => isDamaging(o) && TYPES[o.type] === type).length;
     if (sameType >= 1) { value *= sameType >= 2 ? 0.6 : 0.75; notes.push(`${sameType + 1}× ${type}`); }
 
     // The move's own drawbacks, from its attrs: each one discounts the value and is named in `drawbacks` (and notes).
@@ -183,13 +361,23 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     else if (mv.isChargingMove?.()) {
       const charge = mv.chargeAttrs ?? [];
       if (charge.some(a => a.constructor?.name === "SemiInvulnerableAttr")) cost(0.6, "two-turn (dodges)");
-      else if (charge.some(a => a.constructor?.name === "WeatherInstantChargeAttr")) cost(0.5, "charge turn (not in sun)");
-      else cost(0.5, "charge turn");
+      else if (charge.some(a => a.constructor?.name === "WeatherInstantChargeAttr")) {
+        // Solar Beam skips its charge turn in sun. A party that brings its own sun has it up most waves; without
+        // a setter the charge turn is real, and costs what any other two-turn move costs.
+        const sun = party.some(p => { try { return p && abilitiesOf(p).some(a => SUN_ABILITIES.has(a)); } catch { return false; } });
+        cost(sun ? 0.85 : 0.5, sun ? "charge turn (skipped in sun)" : "charge turn (not in sun)");
+      } else cost(0.5, "charge turn");
     } else if (hasAttr(mv, "RechargeAttr")) cost(0.5, "recharge turn");
     else if ((mv.priority ?? 0) < 0) cost(0.8, "moves last");
     if ((mv.conditions ?? []).some(c => c?.constructor?.name === "FirstMoveCondition")) cost(0.4, "first turn only");
-    // Priority picks off weakened foes and faster threats before they act.
-    else if ((mv.priority ?? 0) > 0) { value *= 1.25; notes.push(`priority +${mv.priority}`); }
+    // Priority picks off weakened foes and faster threats before they act — but only if the hit is big enough to
+    // finish something. Going first with a 40-power Quick Attack rarely decides a wave; Extreme Speed does, and a
+    // move that outspeeds the other priority moves (+2 and up) does a little more.
+    else if ((mv.priority ?? 0) > 0) {
+      const punch = Math.min(1, Math.max(0, (power * stab * fit - 30) / 90));
+      value *= 1 + (0.15 + 0.2 * punch) * (mv.priority >= 2 ? 1.2 : 1);
+      notes.push(`priority +${mv.priority}`);
+    }
 
     // Guaranteed self stat changes (chance −1/100): drops cost more on the stat the move attacks with (Overheat's SpA)
     // than on defences (Close Combat); boosts (Flame Charge) add.
@@ -208,6 +396,8 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     notes.push(...drawbacks);
     if (double && SPREAD_TARGETS.includes(mv.moveTarget)) { value *= 1.15; notes.push("spread"); }
     if (fit < 0.9) notes.push(mv.category === 0 ? "weak Atk" : "weak SpA");
+    const prior = priorOf(pk, mv, ctx);
+    if (prior) { value *= prior.mult; notes.push(prior.note); }
     return {
       value: Math.round(value), notes,
       power: Math.round(power), hits: mh.hits, acc: Math.round(acc * 100), stab: stab > 1, fixed,
@@ -222,8 +412,11 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     const mates = party.filter(p => p && p !== pk);
     const teamSe = seTypes(mates.flatMap(movesOf));
     const teamTypes = new Set(mates.flatMap(movesOf).filter(isDamaging).map(m => TYPES[m.type]));
-    const ctx = { party, teamSe };
-    const info = (x, score) => ({ name: x.name, type: TYPES[x.type] ?? "Normal", cat: ["physical", "special", "status"][x.category], ...score });
+    // `prior` and `ownMoves` are the moveset prior's inputs: the species' competitive sets, and what this mon
+    // already knows — which is how "the role it is already playing" is worked out. Both are per-mon, so they are
+    // resolved once here rather than on every move scored.
+    const ctx = { party, teamSe, prior: priorSets(pk, double), ownMoves: current.map(moveName) };
+    const info = (x, score) => ({ name: x.name, type: effectiveType(pk, x).type ?? "Normal", cat: ["physical", "special", "status"][x.category], ...score });
     // Each slot is judged against the other three, so coverage counts for both the old move and its replacement.
     const moves = current.map((x, i) => {
       const rest = current.filter((_, j) => j !== i);
@@ -240,8 +433,9 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
     // Scored against the slot it would take (the best one to drop even when skipping), or all four with a free slot.
     const against = free || compare < 0 ? current : current.filter((_, j) => j !== compare);
     const incoming = info(mv, moveScore(pk, mv, against, double, ctx));
+    // `statusScore` already names the boost in the notes; this is only what the verdict line says about it.
     const setup = setupOf(pk, mv, current);
-    if (setup) { incoming.setup = setup; incoming.notes.push(`setup ${setup.text}${setup.fits ? "" : " (weak fit)"}`); }
+    if (setup) { incoming.setup = setup; if (!setup.fits) incoming.notes.push("weak fit"); }
     let kind, forget = -1, gain = 0;
     if (free) { kind = "free"; gain = incoming.value ?? 0; }
     else if (incoming.value === null) kind = "status";
@@ -256,13 +450,14 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
       // Normal hits nothing super-effectively: losing the last one is no coverage loss worth a warning.
       onlyType: dropped?.onlyOnTeam && dropped.type !== incoming.type && dropped.type !== "Normal" ? dropped.type : null,
     };
-    return { moves, incoming, forget, compare: free ? -1 : compare, kind, gain, team, atk: pk.getStat(1), spa: pk.getStat(3) };
+    return { moves, incoming, forget, compare: free ? -1 : compare, kind, gain, team, atk: Math.round(atkOf(pk)), spa: Math.round(spaOf(pk)) };
   };
   // The learn decision as a verdict a caller can act on, whatever offers the move (level-up, TM): `learn` true (learn
-  // it), false (skip) or null (your call: a status move, or only status moves to drop); `slot` the move it replaces
-  // (-1: a free slot, or none), `forget` that move's name, `against` the slot it was weighed against (named on a skip
-  // too), `gain` the effective power it adds, and a short `reason`.
-  // A status move with a full moveset names the weakest attack as the slot, without deciding for the user.
+  // it), false (skip) or null (your call); `slot` the move it replaces (-1: a free slot, or none), `forget` that
+  // move's name, `against` the slot it was weighed against (named on a skip too), `gain` the effective power it
+  // adds, and a short `reason`.
+  // Status moves are scored on the same scale as attacks, so they get a real verdict and can be the slot to forget.
+  // "Your call" is left for the ones nothing recognises: the move names the weakest slot without deciding.
   // The learn card and the rewards card's TM advice both judge a move through this, so they can't disagree.
   const learnAdvice = (pk, mv, ctx = {}) => {
     const plan = learnPlan(pk, mv, ctx);
@@ -274,8 +469,8 @@ const { moveScore, learnPlan, learnAdvice } = (() => {
       free: "free slot",
       learn: `over ${moves[plan.forget]?.name}`,
       skip: `not an upgrade over ${moves[compare]?.name}`,
-      status: setup ? `setup ${setup.text}${setup.fits ? "" : " (weak fit)"}` : "status move",
-      "only-status": "only status moves to drop",
+      status: setup ? `setup ${setup.text}${setup.fits ? "" : " (weak fit)"}` : "can't score this status move",
+      "only-status": "nothing scorable to drop",
     }[kind];
     return { learn, kind, slot, forget: slot >= 0 ? moves[slot].name : null, against: compare >= 0 ? moves[compare].name : null, gain: plan.gain, reason, setup, plan };
   };
@@ -287,8 +482,8 @@ const learnModel = ({ pk, mv, double, party }) => {
   const { moves, incoming, forget, compare, team } = plan;
   const verdict = {
     free: ["Learns it — free slot", "#6d6"],
-    status: ["Status move — your call", "#fa4"],
-    "only-status": ["Only status moves to drop — your call", "#fa4"],
+    status: ["Can't score this one — your call", "#fa4"],
+    "only-status": ["Nothing scorable to drop — your call", "#fa4"],
     learn: [`Learn → forget ${moves[forget]?.name}`, "#6d6"],
     skip: [`Skip — not an upgrade${moves[compare] ? ` over ${moves[compare].name}` : ""}`, "#e55"],
   }[plan.kind];

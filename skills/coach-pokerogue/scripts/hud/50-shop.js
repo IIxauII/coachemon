@@ -37,16 +37,20 @@ const tmLearners = (t, party) => {
 
 // TM advice: the learn decision (learnAdvice, the learn card's own) for every member who can learn the move, and the
 // best recipient. `take` true with the member gaining the most effective power (or, for a setup move, the member it
-// suits), false when nobody gains (`closest` is the nearest miss), null for a status move nobody needs as setup.
+// suits), false when nobody gains (`closest` is the nearest miss), null when nobody's card can score it.
+// Status moves are scored on the same scale as attacks now (#70), so most of them land in the first branch — the
+// `setup` field rides along on the recipient either way, because "setup TM for Comfey (+1 SpA/SpD)" says more than
+// "over Tackle".
 const tmAdvice = (mv, users, ctx) => {
   const all = users.map(p => ({ p, a: learnAdvice(p, mv, ctx) }));
-  const recipient = x => ({ icon: iconOf(x.p), name: x.p.name, forget: x.a.forget, against: x.a.against, slot: x.a.slot, gain: x.a.gain, reason: x.a.reason });
+  const recipient = x => ({ icon: iconOf(x.p), name: x.p.name, forget: x.a.forget, against: x.a.against, slot: x.a.slot, gain: x.a.gain, reason: x.a.reason,
+    ...(x.a.setup ? { setup: x.a.setup.text } : {}) });
   const best = all.filter(x => x.a.learn).sort((a, b) => b.a.gain - a.a.gain)[0];
   if (best) return { take: true, best: recipient(best) };
   const setup = all.filter(x => x.a.setup).sort((a, b) => b.a.setup.value - a.a.setup.value)[0];
-  if (setup?.a.setup.fits) return { take: true, best: { ...recipient(setup), gain: setup.a.setup.value, setup: setup.a.setup.text } };
-  if (mv.category === 2) return { take: null, best: null };
-  // An attack for a member with only status moves: which one to drop is the user's call.
+  if (setup?.a.setup.fits) return { take: true, best: { ...recipient(setup), gain: setup.a.setup.value } };
+  if (mv.category === 2 && all.every(x => x.a.learn === null)) return { take: null, best: null };
+  // Nobody's card could score it: which slot to drop is the user's call.
   const open = all.find(x => x.a.learn === null);
   if (open) return { take: null, best: recipient(open) };
   const closest = all.filter(x => x.a.learn === false).sort((a, b) => b.a.gain - a.a.gain)[0];

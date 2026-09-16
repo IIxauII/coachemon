@@ -95,7 +95,9 @@ const drawLearn = m => {
   const row = (x, mark, color, warn) => {
     const notes = warn ? x.notes.filter(n => n !== onlyNote) : x.notes;
     const power = h("span", dim, x.value === null ? "status" : `power ${x.value}`);
+    // A status move's number is what its effects are worth on the same scale, so its tooltip names those instead.
     if (x.value !== null && x.power != null) power.title = powerTitle(x);
+    else if (x.value !== null && x.why) power.title = x.why;
     return line(mark, color,
       badge(x.type), img("categories", x.cat, x.cat, 12, null),
       h("span", { fontWeight: "bold", marginLeft: "2px" }, x.name),

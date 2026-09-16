@@ -73,3 +73,9 @@ Each field of a preview carries its **confidence**, and a field is never surer t
 Every confidence is also conditional on the run not changing first: a catch, an evolution, a shop pick or a biome change re-rolls what a preview was read from. Confidence is claimed, then **scored** — each field is checked against the wave when it actually arrives, and a field that has ever been wrong is marked as such for the rest of the run.
 
 Not to be confused with a **tier**, which throughout is the game's own word for a rarity band (an encounter's, a species').
+
+## Moveset prior
+
+Outside evidence about which moves a species is usually built around, used to break a tie the **coach**'s own numbers leave open. It is a prior in the plain sense: it shifts a score the coach already computed, and never decides on its own. A prior that overrules the computed score is a bug, not a stronger prior.
+
+A prior is always named on the card that used it, along with the **role** — the named set it comes from — so a recommendation it moved can be argued with.
