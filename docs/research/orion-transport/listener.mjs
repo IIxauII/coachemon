@@ -28,6 +28,7 @@ const polls = new Set();     // { res, build, since }
 const pending = new Map();   // id -> { sentAt, deliveredVia: [], acked, timer, queued }
 let lastTraffic = Date.now(); // last listener→extension command
 let seq = 0;
+const RUN = Date.now().toString(36);
 
 // --- commands -------------------------------------------------------------
 const deliver = cmd => {
@@ -43,7 +44,8 @@ const deliver = cmd => {
 };
 
 const send = trigger => {
-  const cmd = { kind: "cmd", id: `c${++seq}`, sentAt: Date.now() };
+  // Ids must stay unique across listener restarts: the background dedupes by id for its whole life.
+  const cmd = { kind: "cmd", id: `r${RUN}-c${++seq}`, sentAt: Date.now() };
   const idleMs = Date.now() - lastTraffic;
   lastTraffic = Date.now();
   const live = { liveSockets: sockets.size, livePolls: polls.size };
@@ -88,6 +90,9 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, cors); res.end("ok");
     if (!p) return log("ack-unknown", a);
     const latencyMs = Date.now() - p.sentAt;
+    // Only an answer from MAIN-world page code counts; a background ack with tab errors does not.
+    const reachedPage = a.results?.some(r => r.reply?.main?.source === "probe150-main");
+    if (!reachedPage) return log("ack-no-page", { id: a.id, latencyMs, ...a });
     const first = !p.acked;
     p.acked = true; clearTimeout(p.timer);
     return log(first ? (latencyMs <= PASS_MS ? "PASS" : "SLOW") : "ack-dup", { id: a.id, latencyMs, ...a });
