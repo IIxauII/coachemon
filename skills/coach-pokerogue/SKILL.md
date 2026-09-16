@@ -47,6 +47,14 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      - **TMs** are judged with the learn card's own decision, on every member the game says can learn the move (and doesn't know it yet): the recipient gaining the most, the move it replaces (`→ forget X`, `free slot`, or `setup +1 SpA` for a setup move it suits) and the power gained. A TM that's no upgrade for anyone, or that nobody can learn, reads `skip` and ranks below other rewards.
    - `window.__coachHud.summary()` is the panel's verdict in plain text; the battle read carries it as `hud`.
    - **🗺 Biome card** (the next-biome choice a Map offers): ranks each biome for the party with a score and ★ pick / ≈ close. Spawns come from the game's own biome pools (tier odds, time of day of the next ten waves, the boss wave as one in ten, species taken at the party's level): ✓/✗ who's weak, who resists, how many mons hit them SE, and a 🎯 catch that covers a weakness, outclasses the weakest member or is new. Full view adds the type mix, the species met most and where the biome leads (★ rare: Space, Fairy Cave, Laboratory). The pools are read from the game's loaded modules a moment after the HUD starts; until then the card only lists the options. Trainers and gym leaders aren't judged.
+   - **🔮 Next wave** (on the rewards and battle cards): what the run seed has already decided about the wave ahead —
+     wild / trainer / Mystery Encounter, which trainer and its **exact** party with levels, types, ability and moves,
+     single or double, and boss bars. It replays the game's own wave generation in a seed fork (`48-preview.js`,
+     `references/game-code.md` §11): a read, with the live RNG stream, `currentBattle` and `waveSeed` restored. Fields
+     are marked `~` (holds only while the game draws what the replay draws: a generic trainer's identity, the wild
+     species, the wild double roll), `?` (a guess — the spawn pool shifts with the time of day) or `!` (this run has
+     already proved it wrong). It scores itself against every wave on arrival: `window.__coachHud.preview()` prints
+     hits and misses per field. Nothing is drawn if the live build has moved past the pin.
    - Your brief still covers what the panel can't judge: setup lines, long-term team building, and anything the user asks.
 2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints one short summary line per event and re-injects the HUD after a page reload. Lines carry the HUD's verdict when it's running:
    - `NEW BATTLE w<wave> [double] <trainer|wild> · <easy|trainer|DANGER|catch|fight> | <foes> [💀 <our mon>]` — an easy wave lists only foe names and levels. `(resumed, turn N)` when the watcher started mid-battle.
