@@ -200,7 +200,7 @@ const hudSummary = m => {
   if (!m) return null;
   const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null,
     next: previewSummary(m.preview) };
-  if (m.kind === "biome") return biomeSummary(m);
+  if (m.kind === "biome") return biomeSummary(m, base);
   if (m.kind === "learn") {
     const only = m.team?.onlyType && m.forget >= 0 ? ` · ⚠ loses only ${m.team.onlyType} move` : "";
     return { ...base, learn: `${m.verdict[0]}${only}` };

@@ -3,11 +3,13 @@
 // Mini: one line — `🔮 W13 trainer Youngster Ben · double · Machop L9, Geodude L10`. Full adds a row per foe with its
 // types, ability and moves, the boss bars, and a footer naming anything the preview can't promise.
 // A field the preview can't pin is marked: `~` it holds only while the game draws what this replay draws, `?` it is a
-// guess, `!` it has already been wrong once this run (see `window.__coachHud.preview()`).
+// guess, `!` it has already been wrong once this run (see `window.__coachHud.preview()`). The whole card is a read of
+// the seed *as the run stands*, so the full view always closes with "if nothing changes": a catch, an evolution, a
+// shop pick or a biome change re-rolls what the replay fed on, mark or no mark.
 // Nothing is drawn when the preview is unavailable — a build past the pin, or no run seed: the tally is the place
 // that reports drift, and a card that nags on every tick is worse than a quiet one.
 const PREVIEW_MARK = { exact: "", replay: "~", estimate: "?" };
-const previewMark = (m, field) => (m.missed?.includes(field) ? "!" : PREVIEW_MARK[m.tier?.[field]] ?? "");
+const previewMark = (m, field) => (m.missed?.includes(field) ? "!" : PREVIEW_MARK[m.confidence?.[field]] ?? "");
 const previewKind = m => (m.type === "me" ? "mystery" : m.fixed ? `★ ${m.type}` : m.type);
 // `Machop L9, Geodude L10`, or `2 mons L9–10` when there are too many to name.
 const previewFoes = (m, long) => {
@@ -41,8 +43,10 @@ const drawPreview = (m, viewOverride) => {
   if (m.me?.name) out.push(line("?", "#c9f", h("span", {}, m.me.name)));
   const caveats = [...(m.notes ?? [])];
   if (m.missed?.length) caveats.push(`! ${m.missed.join(", ")} has been wrong this run`);
-  else if (Object.values(m.tier ?? {}).includes("replay")) caveats.push("~ holds while nothing else draws first");
-  if (caveats.length) out.push(line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, caveats.join(" · "))));
+  else if (Object.values(m.confidence ?? {}).includes("replay")) caveats.push("~ holds while nothing else draws first");
+  // Standing, not conditional: every field above is only the wave the seed holds *if nothing changes* first.
+  caveats.push("if nothing changes: a catch, evolution, shop pick or biome change re-rolls this");
+  out.push(line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, caveats.join(" · "))));
   return out;
 };
 

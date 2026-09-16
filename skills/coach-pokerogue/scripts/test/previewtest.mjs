@@ -82,7 +82,9 @@ const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meR
   const offsets = [];
   const scene = {
     seed, waveSeed: shiftCharCodes(seed, wave), rngOffset: 0, rngSeedOverride: "", offsetGym: false, waveCycleOffset: 0,
-    arena: { biomeId: 7 }, modifiers, mysteryEncounterSaveData: { encounteredEvents: [], encounterSpawnChance: 3 },
+    // `randomSpecies` sits on the arena, as `references/game-code.md` §11 has it: the preview must reach it
+    // through `s.arena`, never off the scene.
+    arena: { biomeId: 7, randomSpecies: () => species(POOL[randSeedInt(POOL.length)]) }, modifiers, mysteryEncounterSaveData: { encounteredEvents: [], encounterSpawnChance: 3 },
     phaseManager: { pushPhase() {}, unshiftPhase() {}, pushNew() {}, unshiftNew() {}, queueMessage() {},
       queueAbilityDisplay() {}, hideAbilityBar() {}, queueFaintPhase() {} },
     getPlayerParty: () => party, getEnemyParty: () => scene.currentBattle?.enemyParty ?? [],
@@ -134,7 +136,6 @@ const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meR
       scene.executeWithSeedOffset(() => { boss = w % 10 === 0 || randSeedInt(100) < 0; }, w << 2);
       return boss ? 2 : 0;
     },
-    randomSpecies: w => species(POOL[randSeedInt(POOL.length)]),
     addEnemyPokemon: (sp, level, _slot, boss) => mon(sp, level, { boss: boss ? 2 : 0 }),
     getMysteryEncounter: () => ({ localizationKey: "departmentStoreSale", encounterTier: 0 }),
   };
@@ -169,7 +170,7 @@ const playWave = (scene, w) => {
     battle.enemyLevels.forEach((level, e) => {
       battle.enemyParty[e] = type === 1
         ? trainer.genPartyMember(e)
-        : scene.addEnemyPokemon(scene.randomSpecies(w, level, true), level, 0, !!scene.getEncounterBossSegments(w, level));
+        : scene.addEnemyPokemon(scene.arena.randomSpecies(w, level, true), level, 0, !!scene.getEncounterBossSegments(w, level));
     });
   }
   return battle;
@@ -192,7 +193,7 @@ const mount = opts => {
 
 const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.double, levels: m.levels,
   trainer: m.trainer?.name ?? null, me: m.me?.name ?? null, foes: m.foes.map(f => `${f.name} L${f.level}${f.segments ? ` ×${f.segments}` : ""}`),
-  tier: m.tier, notes: m.notes, missed: m.missed });
+  confidence: m.confidence, notes: m.notes, missed: m.missed });
 
 // ---- 1. The replay check: predict wave w from wave w-1, then play wave w for real and compare.
 {
@@ -242,7 +243,29 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   assert.equal(me.type, "me");
   assert.equal(me.me.name, "departmentStoreSale");
   assert.deepEqual(me.foes, [], "an ME has no enemy party to preview");
-  assert.equal(me.tier.foes, "exact");
+  // The ME roll is its own fork, but reaching it runs through the trainer-chance roll on the stream, so the wave's
+  // kind — and everything under it — is only ever as sure as a replay.
+  assert.equal(me.confidence.type, "replay");
+  assert.equal(me.confidence.foes, "replay");
+}
+
+// ---- 3b. A field is never surer than what it derives from.
+{
+  // A fixed battle: the trainer is a table lookup, so its party and levels are exact end to end.
+  const { scene: sf, pv: pvf } = mount({ wave: 7 });
+  const fixed = pvf.previewNext(sf);
+  assert.deepEqual(fixed.confidence, { type: "exact", trainer: "exact", foes: "exact", double: "exact", levels: "exact" },
+    "a fixed battle is exact end to end");
+  // A gym wave: the calendar decides its kind with no draw, but the trainer itself is drawn on the stream — so the
+  // party forked off that trainer cannot be exact, however fork-isolated each member's own roll is.
+  const { scene: sg, pv: pvg } = mount({ wave: 19 });
+  const gym = pvg.previewNext(sg);
+  console.log(`== gym confidence ${JSON.stringify(gym.confidence)}`);
+  assert.equal(gym.type, "trainer");
+  assert.equal(gym.confidence.type, "exact", "a gym wave's kind costs no draw");
+  assert.equal(gym.confidence.trainer, "replay", "its trainer is still drawn on the stream");
+  assert.equal(gym.confidence.foes, "replay", "so the party under it is no surer than the trainer");
+  assert.equal(gym.confidence.levels, "replay", "and neither are the levels");
 }
 
 // ---- 4. The fork offsets are the game's own.
@@ -251,8 +274,8 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   offsets.length = 0;
   const m = pv.previewNext(scene); // wave 8: the rival, seedOffsetWaveIndex 0
   assert.equal(m.fixed, true);
-  assert.equal(m.tier.type, "exact");
-  assert.equal(m.tier.trainer, "exact");
+  assert.equal(m.confidence.type, "exact");
+  assert.equal(m.confidence.trainer, "exact");
   assert.deepEqual(offsets[0], [8, "run"], "the whole replay forks at the wave on the run seed");
   assert.deepEqual(offsets[1], [8 << 8, "run"], "the fixed trainer forks at (seedOffsetWaveIndex || wave) << 8");
   assert.deepEqual(offsets[2], [8 << 3, "wave"], "the levels fork at wave << 3 on the wave seed");

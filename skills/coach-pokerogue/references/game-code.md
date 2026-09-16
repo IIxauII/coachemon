@@ -673,17 +673,36 @@ point every wave, and then draws in this order:
 | 4 | `checkIsDouble(...)` | the wild double roll (a trainer's comes from its variant) | stream |
 | 5 | `new Battle(...)` | `getLevelForWave` per slot; a trainer's levels are `getPartyLevels`, no RNG | fork at `w << 3`, **wave** seed |
 
+On a Mystery Encounter wave, `EncounterPhase` then picks *which* encounter with `getMysteryEncounter()` in a fork at
+`w * 16` on the run seed — a second, separate fork from the `w * 3000` roll that decided there would be one at all.
+
 The enemy party is built later, in `EncounterPhase.start()`: `trainer.genPartyMember(i)` **forks per member** —
 `waveIndex + (config.getDerivedType() << 10) + (((useSameSeedForAllMembers ? 0 : i) + 1) << 8)`, or
-`getDerivedType() + ((i + 1) << 8)` when `hasStaticParty` — while a wild spawn is `arena.randomSpecies(w, level, 0,
+`getDerivedType() + ((i + 1) << 8)` when `hasStaticParty` — while a wild spawn is `randomSpecies(w, level, attempt,
 luck)` straight off the stream, then `addEnemyPokemon`, whose `EnemyPokemon` constructor draws again (id/IVs, gender,
 moveset, shiny — and a shiny-locked spawn skips `trySetShiny`, so `isEncounterShinyLocked()` changes the draw count).
+
+**`randomSpecies` is an `Arena` method**, reached as `scene.arena.randomSpecies` (§ the pool rules in the header of
+`47-biome.js` read it the same way). `48-preview.js` resolves the receiver at call time rather than assuming it,
+because the wrong receiver is not a wrong answer but a silent one: the availability gate would simply make the card
+unavailable on every wild wave. **Unresolved**: the preview passes `(w, level, true)` where the argument list above
+has `attempt` third and `luck` fourth. If `attempt` is a retry counter, `true` coerces to `1` and the replay may be
+one draw off the game on wild waves — which is exactly a `replay`-confidence field, and exactly what the arrival
+tally measures first.
 
 **So**: everything decided in a fork is exact from any point in the run; everything on the stream is only as good as
 a replay that draws exactly what the game draws, in the same order. `48-preview.js` replays the table above inside
 `s.executeWithSeedOffset(fn, w, s.seed)` (the same sow as `resetSeed(w)`), with `s.currentBattle` swapped for the
 `Battle` it just built and `s.waveSeed` pinned to the previewed wave, and labels every field `exact` / `replay` /
 `estimate`. It scores itself against each wave on arrival.
+
+**A fork is exact about its own roll, not about its inputs**, and the confidence model follows the derivation rather
+than the fork. A trainer's party members are each fork-isolated (`waveIndex + type << 10 + …`), but the fork is keyed
+on the trainer, and on a wave whose trainer came from `generateNewBattleTrainer` **that trainer was drawn on the
+stream** — so the party is `replay`, not `exact`, however fork-isolated each member is. Only a wave whose kind *and*
+trainer cost no stream draw is exact end to end: a fixed battle, whose trainer is a table lookup. A gym wave
+(`w % 30 === (offsetGym ? 0 : 20)`) is in between — `isWaveTrainer` returns before the chance roll, so the wave's
+*kind* is exact, while its trainer and everything under it are still `replay`.
 
 **Safe to call this way** (all read-only given the fork and the swap; all verified present in the live bundle, so
 minification keeps their names): `gameMode.isFixedBattle` / `getFixedBattle` / `isWaveTrainer` / `isBoss`,

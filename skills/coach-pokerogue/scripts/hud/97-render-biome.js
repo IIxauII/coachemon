@@ -43,8 +43,10 @@ const drawBiome = m => {
 };
 
 // `Swamp 72 pick — Garchomp resists, 3 mons hit SE · Construction Site 55`.
-const biomeSummary = m => {
+// `base` is `hudSummary`'s shared shape: spread it rather than rebuilding it, so a field added there (`next`) can't
+// go missing from this one summary.
+const biomeSummary = (m, base) => {
   const text = m.options.map(o => (o.score == null ? o.label
     : o.verdict === "pick" ? `${o.label} ${o.score} pick — ${o.reasons.slice(0, 3).map(r => r.text).join(", ")}` : `${o.label} ${o.score}`)).join(" · ");
-  return { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null, biome: text };
+  return { ...base, biome: text };
 };

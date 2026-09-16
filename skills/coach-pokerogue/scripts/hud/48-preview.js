@@ -25,28 +25,44 @@
 // Phaser containers that are never added to the field (`newBattle` does that, not the constructors) and are
 // destroyed before the model is returned.
 //
-// ---- What is exact and what is a guess (`tier` per field)
+// ---- What is exact and what is a guess (`confidence` per field; `tier` in this file is only ever the game's own
+// word for an encounter's rarity)
 // - `exact`    decided in a fork whose seed and offset don't depend on where the stream is: the fixed-battle trainer,
-//              every trainer party member, the enemy levels, the ME roll and which ME, the boss-bar count.
+//              its party members, the enemy levels, the ME roll and which ME, the boss-bar count.
 // - `replay`   right only as long as the game draws nothing between `resetSeed(w)` and that point that this replay
-//              doesn't: a generic trainer's identity, the wild double roll, the wild species.
+//              doesn't: a generic wave's kind, a generic trainer's identity, the wild double roll, the wild species.
 // - `estimate` the arena's species pool is the one loaded for *this* wave's time of day; when the next wave falls in
 //              another one, the pool it draws from isn't the pool we hold.
+// **A field is never surer than what it derives from.** A fork is exact about its own roll, not about its inputs: a
+// generic trainer's party members are each their own fork, but the fork is keyed on the trainer the stream picked, so
+// a party is only as sure as the trainer, and a trainer only as sure as the wave's kind. `weakest` enforces that, and
+// it is why only a fixed wave — whose trainer is a table lookup — reads `exact` end to end.
 // Each field is also conditional on the live inputs not moving before the wave starts: a catch, an evolution, a shop
-// pick or a biome change re-rolls what depends on the party, the luck value or the biome. Nothing here is promised:
-// `previewCheck` scores every field against the wave when it actually arrives, a field that has ever been wrong is
-// shown with `?`, and `window.__coachHud.preview()` prints the tally.
+// pick or a biome change re-rolls what depends on the party, the luck value or the biome, which is what the card's
+// standing "if nothing changes" line says. Nothing here is promised: `previewCheck` scores every field against the
+// wave when it actually arrives, a field that has ever been wrong is shown with `!`, and `window.__coachHud.preview()`
+// prints the tally.
 const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() => {
   const WILD = 0, TRAINER = 1, MYSTERY = 3; // BattleType
   const SLOT_NONE = 0; // TrainerSlot.NONE
   const BIOME_END = 50;
-  const TIER = { exact: "exact", replay: "replay", estimate: "estimate" };
+  const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };
+  // Weakest wins, so a field can be capped by whatever it derives from. Order: exact > replay > estimate.
+  const RANK = [CONFIDENCE.exact, CONFIDENCE.replay, CONFIDENCE.estimate];
+  const weakest = (...cs) => RANK[Math.max(...cs.filter(Boolean).map(c => RANK.indexOf(c)))];
   // The scene methods the replay calls. Missing one means the live build moved past the pin: the card says so
   // instead of guessing.
   const NEEDED = ["executeWithSeedOffset", "isWaveMysteryEncounter", "generateNewBattleTrainer", "checkIsDouble",
-    "getEncounterBossSegments", "randomSpecies", "addEnemyPokemon", "getMysteryEncounter"];
+    "getEncounterBossSegments", "addEnemyPokemon", "getMysteryEncounter"];
+  // `randomSpecies` is an `Arena` method (`references/game-code.md` §11, and 47-biome.js's reading of the pool
+  // rules), reached through `s.arena`. Take whichever receiver the live build actually exposes: guessing wrong is not
+  // a wrong answer but a silent one — the `NEEDED` gate would make the card unavailable on every wild wave.
+  const speciesRoll = s => (typeof s.arena?.randomSpecies === "function" ? s.arena : s);
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
+  // `GameMode.isWaveTrainer`: a gym wave is a trainer wave by the calendar, returning before the chance roll — so its
+  // kind costs no draw and is as certain as a fixed battle's.
+  const isGymWave = (s, gm, w) => w % 30 === (s.offsetGym ? 0 : 20) && !tryDo(() => gm.isWaveFinal(w), false);
   // `randSeedInt` (utils/common): the same three lines, so a replayed draw lands on the same stream position.
   const rnd = range => (range <= 1 ? 0 : Phaser.Math.RND.integerInRange(0, range - 1));
   // `shiftCharCodes` (utils/common): the wave seed is the run seed with every char code shifted by the wave. The
@@ -146,7 +162,7 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
             if (type === TRAINER) {
               p = trainer.genPartyMember(e);
             } else {
-              let species = s.randomSpecies(w, level, true);
+              let species = speciesRoll(s).randomSpecies(w, level, true);
               // The Golden Bug Net's 10 % swap draws only when the player holds one, so the replay only draws then.
               if (hasBugNet(s) && !gm.isBoss(w) && s.arena?.biomeId !== BIOME_END && rnd(10) === 0) {
                 notes.push("Golden Bug Net can swap this spawn");
@@ -156,29 +172,40 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
             battle.enemyParty[e] = p;
             built.push(p);
             return foeOf(p);
-      });
-      });
+          });
+        });
 
-      // `arena.pokemonPool` holds the species lists for *this* wave's time of day; the game rebuilds it when the
-      // clock turns over, and a wild spawn read off the pool we hold is then a guess.
-      const podShift = type === WILD && timeOfDayFor(s, w) !== timeOfDayFor(s, s.currentBattle?.waveIndex ?? w);
-      if (podShift) notes.push("time of day turns over: the spawn pool shifts");
-      return {
-        wave: w, type: type === MYSTERY ? "me" : type === TRAINER ? "trainer" : "wild", fixed: !!fixedCfg,
-        trainer: trainer ? { name: trainerName(trainer), double: tryDo(() => trainer.isDouble(), false) } : null,
-        me: me ? { name: meName(me), tier: me.encounterTier ?? null } : null,
-        double, levels, foes, boss: foes.some(f => f.segments > 1),
-        tier: {
-          // A fixed wave's kind is a table lookup; a generic wave's is the trainer-chance roll off the stream.
-          type: fixedCfg ? TIER.exact : TIER.replay,
-          trainer: !trainer ? null : fixedCfg ? TIER.exact : TIER.replay,
-          // Every trainer member and the ME are forks of their own; a wild species rides the stream and the pool.
-          foes: type === WILD ? (podShift ? TIER.estimate : TIER.replay) : TIER.exact,
-          double: fixedCfg || type === TRAINER ? TIER.exact : TIER.replay,
-          levels: TIER.exact,
-        },
-        notes,
-      };
+        // `arena.pokemonPool` holds the species lists for *this* wave's time of day; the game rebuilds it when the
+        // clock turns over, and a wild spawn read off the pool we hold is then a guess.
+        const podShift = type === WILD && timeOfDayFor(s, w) !== timeOfDayFor(s, s.currentBattle?.waveIndex ?? w);
+        if (podShift) notes.push("time of day turns over: the spawn pool shifts");
+        return {
+          wave: w, type: type === MYSTERY ? "me" : type === TRAINER ? "trainer" : "wild", fixed: !!fixedCfg,
+          trainer: trainer ? { name: trainerName(trainer), double: tryDo(() => trainer.isDouble(), false) } : null,
+          me: me ? { name: meName(me), tier: me.encounterTier ?? null } : null,
+          double, levels, foes, boss: foes.some(f => f.segments > 1),
+          confidence: (() => {
+            // A fixed wave's kind is a table lookup and a gym wave's is the calendar; any other wave's is the
+            // trainer-chance roll off the stream, and every field below inherits that `replay` through `weakest`.
+            const kind = fixedCfg || isGymWave(s, gm, w) ? CONFIDENCE.exact : CONFIDENCE.replay;
+            // A fixed trainer comes with the table entry; every other trainer's identity is drawn on the stream.
+            const who = !trainer ? null : weakest(kind, fixedCfg ? CONFIDENCE.exact : CONFIDENCE.replay);
+            // A trainer's double is its variant, settled when the trainer was; a wild one is its own roll on the stream.
+            const dbl = type === WILD ? weakest(kind, CONFIDENCE.replay) : weakest(kind, who);
+            // Each trainer member is a fork of its own — but one keyed on the trainer, so never surer than the trainer.
+            // A wild species rides the stream, off a pool that is this wave's when the clock turns over.
+            const foesOwn = type === WILD ? (podShift ? CONFIDENCE.estimate : CONFIDENCE.replay) : CONFIDENCE.exact;
+            return {
+              type: kind,
+              trainer: who,
+              foes: weakest(kind, who, foesOwn),
+              double: dbl,
+              // The `w << 3` fork is exact about its own roll, but it is fed the battle type, the trainer and the double.
+              levels: weakest(kind, who, dbl),
+            };
+          })(),
+          notes,
+        };
       });
     } finally {
       s.waveSeed = liveWaveSeed;
@@ -240,6 +267,7 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
   const previewFor = (s, w) => {
     if (!s?.currentBattle || w == null || w < 1) return null;
     const missing = NEEDED.filter(k => typeof s[k] !== "function");
+    if (typeof speciesRoll(s).randomSpecies !== "function") missing.push("randomSpecies");
     if (missing.length || typeof s.gameMode?.isFixedBattle !== "function" || !s.seed) {
       return { kind: "preview", wave: w, unavailable: missing[0] ? `the live build has no ${missing[0]}` : "no run seed" };
     }
@@ -252,7 +280,7 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
     const value = tryDo(() => ({ kind: "preview", ...quiet(() => sandbox(s, () => replay(s, w))) }),
       { kind: "preview", wave: w, unavailable: "the replay threw" });
     // Measured, not claimed: a field this run has ever got wrong is listed here and the card marks it `?`.
-    value.missed = FIELDS.filter(f => everMissed(f) && value.tier?.[f]);
+    value.missed = FIELDS.filter(f => everMissed(f) && value.confidence?.[f]);
     cache = { key, value };
     if (!value.unavailable) predicted = { ...value, scored: false };
     return value;
@@ -267,9 +295,8 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
     if (typeof gm?.isFixedBattle !== "function") return [];
     const out = [];
     for (let w = from; w < from + n; w++) {
-      const gym = w % 30 === (s.offsetGym ? 0 : 20) && !tryDo(() => gm.isWaveFinal(w), false);
       if (tryDo(() => gm.isFixedBattle(w), false)) out.push({ wave: w, kind: "fixed" });
-      else if (gym) out.push({ wave: w, kind: "gym" });
+      else if (isGymWave(s, gm, w)) out.push({ wave: w, kind: "gym" });
     }
     return out;
   };
