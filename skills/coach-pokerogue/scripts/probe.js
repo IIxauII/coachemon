@@ -26,8 +26,8 @@
             id: +id,
             cost: costs[id] ?? null,
             ivTotal: gd.dexData[id].ivs.reduce((a, b) => a + b, 0),
-            passiveUnlocked: (st.passiveAttr & 1) === 1,
-            hiddenAbility: (st.abilityAttr & 4) === 4,
+            passiveUnlocked: (st.passiveAttr & Passive.UNLOCKED) === Passive.UNLOCKED,
+            hiddenAbility: (st.abilityAttr & AbilityAttr.ABILITY_HIDDEN) === AbilityAttr.ABILITY_HIDDEN,
             eggMoves: st.eggMoves,
             costReduction: st.valueReduction,
             candy: st.candyCount,
@@ -62,10 +62,10 @@
       const uiModeId = s.ui.getMode();
       const phase = s.phaseManager?.getCurrentPhase?.();
 
-      // Learn-move: the SUMMARY screen (UiMode 9, summaryUiMode 1) holds the new move; before it opens, the
+      // Learn-move: the SUMMARY screen in LEARN_MOVE mode holds the new move; before it opens, the
       // "forget a move?" prompt only has LearnMovePhase's moveId, so build the move from a PokemonMove.
       let learn = null;
-      if (uiModeId === 9 && h?.summaryUiMode === 1 && h.newMove) {
+      if (uiModeId === UiMode.SUMMARY && h?.summaryUiMode === SummaryUiMode.LEARN_MOVE && h.newMove) {
         learn = { pokemon: h.pokemon.name, move: moveInfo(h.newMove) };
       } else if (phase?.phaseName === "LearnMovePhase") {
         const pk = party[phase.partyMemberIndex];
@@ -73,9 +73,9 @@
         if (pk && pm) learn = { pokemon: pk.name, move: moveInfo(new pm.constructor(phase.moveId).getMove()) };
       }
 
-      // Rewards: MODIFIER_SELECT (UiMode 6). Free rewards in options, shop rows in shopOptionsRows.
+      // Rewards: MODIFIER_SELECT. Free rewards in options, shop rows in shopOptionsRows.
       let rewards = null;
-      if (uiModeId === 6 && h?.options) {
+      if (uiModeId === UiMode.MODIFIER_SELECT && h?.options) {
         const item = o => {
           const t = o.modifierTypeOption?.type;
           let desc = null;

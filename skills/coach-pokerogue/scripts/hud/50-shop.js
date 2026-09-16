@@ -4,7 +4,7 @@
 // (PokemonModifierType.selectFilter: null = usable — TM compatibility, evolution/form-change items, held-item stack
 // limits), and only then by rarity tier. Held items, mints, EXP items, candy, vitamins and evolution items are judged
 // on the member they'd go to by 50-items.js; nothing here depends on remembering what an item does.
-const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxury"];
+const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxury"]; // indexed by ModifierTier
 const isA = (t, name) => {
   for (let p = t && Object.getPrototypeOf(t); p && p !== Object.prototype; p = Object.getPrototypeOf(p)) {
     if (p.constructor?.name === name) return true;
@@ -36,9 +36,9 @@ const tmLearners = (t, party) => {
   return users && users.filter(p => !knowsMove(p, t.moveId));
 };
 // A fainted member can still be taught a TM: the party screen's TM mode offers TEACH whoever the cursor is on, and
-// the TM pool itself is drawn from the whole party. Only the Hardcore challenge (Challenges.HARDCORE, 9) takes it away,
+// the TM pool itself is drawn from the whole party. Only the Hardcore challenge takes it away,
 // by giving a fainted member nothing but Release (`PartyUiHandler.updateOptionsHardcore`).
-const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === 9 && c.value > 0);
+const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.HARDCORE && c.value > 0);
 
 // TM advice: the learn decision (learnAdvice, the learn card's own) for every member who can learn the move, and the
 // best recipient. `take` true with the member gaining the most effective power (or, for a setup move, the member it
@@ -54,7 +54,7 @@ const tmAdvice = (mv, users, ctx) => {
   if (best) return { take: true, best: recipient(best) };
   const setup = all.filter(x => x.a.setup).sort((a, b) => b.a.setup.value - a.a.setup.value)[0];
   if (setup?.a.setup.fits) return { take: true, best: { ...recipient(setup), gain: setup.a.setup.value } };
-  if (mv.category === 2 && all.every(x => x.a.learn === null)) return { take: null, best: null };
+  if (mv.category === MoveCategory.STATUS && all.every(x => x.a.learn === null)) return { take: null, best: null };
   // Nobody's card could score it: which slot to drop is the user's call.
   const open = all.find(x => x.a.learn === null);
   if (open) return { take: null, best: recipient(open) };
@@ -84,13 +84,13 @@ const shopModel = (s, h) => {
   // Low PP: a damaging move nearly out (≤ a quarter of its PP and ≤ 5 left). Unused status moves and a few PP spent
   // don't count — the game's own Ether weight asks for over half used and ≤ 5 left.
   const lowOn = m => {
-    try { if (m.getMove?.()?.category === 2) return false; } catch {}
+    try { if (m.getMove?.()?.category === MoveCategory.STATUS) return false; } catch {}
     const max = m.getMovePp(), left = max - m.ppUsed;
     return m.ppUsed > 0 && left <= Math.min(5, Math.max(1, Math.floor(max / 4)));
   };
   const needs = {
     fainted: party.filter(p => p.hp <= 0),
-    status: party.filter(p => p.hp > 0 && (p.status?.effect ?? 0) > 0),
+    status: party.filter(p => p.hp > 0 && (p.status?.effect ?? 0) > StatusEffect.NONE),
     hurt: party.filter(p => p.hp > 0 && pct(p) < hurtBelow).sort((a, b) => pct(a) - pct(b)),
     lowPp: party.filter(p => p.hp > 0).map(p => ({ p, moves: p.moveset.filter(Boolean).filter(lowOn) })).filter(x => x.moves.length),
   };
@@ -190,7 +190,7 @@ const shopModel = (s, h) => {
       v += 8; why = "egg voucher — outlasts the run";
     } else if (isA(t, "AddPokeballModifierType")) {
       const n = balls[t.pokeballType] ?? 0;
-      if (t.pokeballType === 4) { v = Math.max(v, 20); why = `Master Ball — catches anything · you have ${n}`; }
+      if (t.pokeballType === PokeballType.MASTER_BALL) { v = Math.max(v, 20); why = `Master Ball — catches anything · you have ${n}`; }
       else { v += n >= 10 ? -4 : n >= 5 ? 1 : 4; why = `you have ${n}`; }
     } else if (isA(t, "TempStatStageBoosterModifierType") || /LURE/.test(t.id ?? "")) {
       // Tier says nothing here: a few battles of a stat stage or more doubles never beats covering a real need.

@@ -2,10 +2,10 @@
 // who it takes, what it costs, what's at stake, whether it starts a battle — and a take / ok / avoid call.
 //
 // ---- How the game decides (read from the pinned source, v1.12.0.11; references/game-code.md §13)
-// The screen is UiMode 45 (MYSTERY_ENCOUNTER), served by MysteryEncounterUiHandler while MysteryEncounterPhase waits.
+// The screen is UiMode.MYSTERY_ENCOUNTER, served by MysteryEncounterUiHandler while MysteryEncounterPhase waits.
 // `displayEncounterOptions` has already called `option.meetsRequirements()` for every option and kept the answers in
-// `optionsMeetsReqs`; an unmet option is unselectable only in optionMode DISABLED_OR_DEFAULT (1) / DISABLED_OR_SPECIAL
-// (3). Calling `meetsRequirements()` again is not a read: it assigns `primaryPokemon` and can draw `randSeedInt`, so the
+// `optionsMeetsReqs`; an unmet option is unselectable only in optionMode DISABLED_OR_DEFAULT / DISABLED_OR_SPECIAL.
+// Calling `meetsRequirements()` again is not a read: it assigns `primaryPokemon` and can draw `randSeedInt`, so the
 // card reads the handler's answers and `option.primaryPokemon` (the first qualifier) instead, and lists who qualifies
 // with each primary requirement's `queryParty`, which only filters.
 // What an option does lives in closures (`onPreOptionPhase`, `onOptionPhase`, `onPostOptionPhase`) that can't be read,
@@ -22,7 +22,6 @@
 // A fight is "hard" when the foe is 5+ levels over our best, or nothing hits it super-effectively and it's at our level
 // (a boss: within 3 levels under it). Money is spent freely only while it leaves RESERVE_WAVES waves' worth of reward money.
 const { encounterScreen, encounterModel } = (() => {
-  const ME_MODE = 45;
   // MysteryEncounterType, in enum order.
   const NAMES = ["Mysterious Challengers", "Mysterious Chest", "Dark Deal", "Fight or Flight", "Slumbering Snorlax",
     "Training Session", "Department Store Sale", "Shady Vitamin Dealer", "Field Trip", "Safari Zone", "Lost at Sea",
@@ -30,16 +29,20 @@ const { encounterScreen, encounterModel } = (() => {
     "Absolute Avarice", "A Trainer's Test", "Trash to Treasure", "Berries Abound", "Clowning Around", "Part-Timer",
     "Dancing Lessons", "Weird Dream", "The Winstrate Challenge", "Teleporting Hijinks", "Bug-Type Superfan",
     "Fun and Games", "Uncommon Breed", "Global Trade System", "The Expert Pokémon Breeder"];
-  const CHEST = 1, FIGHT_OR_FLIGHT = 3, STORE = 6, VITAMINS = 7, LOST_AT_SEA = 10, FALLOUT = 11, STRONG_STUFF = 12,
-    BERRIES = 19, PART_TIMER = 21, TELEPORT = 25, BREED = 28, GTS = 29;
-  const TIERS = { 66: "common", 40: "great", 19: "ultra", 3: "rogue" };
-  const DISABLED_MODES = new Set([1, 3]);
+  const CHEST = MysteryEncounterType.MYSTERIOUS_CHEST, FIGHT_OR_FLIGHT = MysteryEncounterType.FIGHT_OR_FLIGHT,
+    STORE = MysteryEncounterType.DEPARTMENT_STORE_SALE, VITAMINS = MysteryEncounterType.SHADY_VITAMIN_DEALER,
+    LOST_AT_SEA = MysteryEncounterType.LOST_AT_SEA, FALLOUT = MysteryEncounterType.FIERY_FALLOUT,
+    STRONG_STUFF = MysteryEncounterType.THE_STRONG_STUFF, BERRIES = MysteryEncounterType.BERRIES_ABOUND,
+    PART_TIMER = MysteryEncounterType.PART_TIMER, TELEPORT = MysteryEncounterType.TELEPORTING_HIJINKS,
+    BREED = MysteryEncounterType.UNCOMMON_BREED, GTS = MysteryEncounterType.GLOBAL_TRADE_SYSTEM;
+  const TIERS = { [MysteryEncounterTier.COMMON]: "common", [MysteryEncounterTier.GREAT]: "great", [MysteryEncounterTier.ULTRA]: "ultra", [MysteryEncounterTier.ROGUE]: "rogue" };
+  const DISABLED_MODES = new Set([MysteryEncounterOptionMode.DISABLED_OR_DEFAULT, MysteryEncounterOptionMode.DISABLED_OR_SPECIAL]);
   // Teleporting Hijinks' BIOME_CANDIDATES, and the ones worth the trip (the biome card's rare destinations).
-  const TELEPORT_BIOMES = [[25, "Space"], [28, "Fairy Cave"], [41, "Laboratory"], [40, "Island"], [23, "Wasteland"], [20, "Dojo"]];
-  const RARE_BIOMES = new Set([25, 28, 41]);
+  const TELEPORT_BIOMES = [[BiomeId.SPACE, "Space"], [BiomeId.FAIRY_CAVE, "Fairy Cave"], [BiomeId.LABORATORY, "Laboratory"],
+    [BiomeId.ISLAND, "Island"], [BiomeId.WASTELAND, "Wasteland"], [BiomeId.DOJO, "Dojo"]];
+  const RARE_BIOMES = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
   const RESERVE_WAVES = 3;
   const HARD_LEVEL_GAP = 5, BOSS_LEVEL_EDGE = 3;
-  const FIRE = 9, BURN = 6;
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
   const strip = t => String(t ?? "").replace(/\[\/?[^\]]*\]/g, "").replace(/\s+/g, " ").trim();
@@ -49,7 +52,7 @@ const { encounterScreen, encounterModel } = (() => {
   // The game's `randSeedInt(range, min)` on whatever stream is sown.
   const int = (range, min = 0) => (range <= 1 ? min : Phaser.Math.RND.integerInRange(min, range - 1 + min));
 
-  const encounterScreen = (s, h) => s.ui.getMode() === ME_MODE && !!s.currentBattle?.mysteryEncounter
+  const encounterScreen = (s, h) => s.ui.getMode() === UiMode.MYSTERY_ENCOUNTER && !!s.currentBattle?.mysteryEncounter
     && Array.isArray(h?.encounterOptions) && h.encounterOptions.length > 0;
 
   // ---- Generic reading of the options, any encounter
@@ -156,7 +159,7 @@ const { encounterScreen, encounterModel } = (() => {
       const vits = rolls(3, 3)?.map(r => (r === 0 ? 1 : 0));
       const xs = rolls(5, 5)?.map(r => (r === 0 ? 1 : 0));
       const balls = rolls(4, 65)?.map(r => (r < 10 ? 0 : r < 40 ? 1 : r < 60 ? 2 : 3));
-      const low = [1, 2, 3].reduce((t, k) => t + (c.s.pokeballCounts?.[k] ?? 0), 0) < 5;
+      const low = [PokeballType.GREAT_BALL, PokeballType.ULTRA_BALL, PokeballType.ROGUE_BALL].reduce((t, k) => t + (c.s.pokeballCounts?.[k] ?? 0), 0) < 5;
       const out = [
         { outcome: tms ? `pick of 5 TMs: ${count(tms, [["Common"], ["Great"], ["Ultra"]])}` : "pick of 5 TMs (Common 40%, Great 40%, Ultra 20%)",
           value: tms ? (tms.includes(2) ? 2 : tms.includes(1) ? 1.5 : 1) : 1.5 },
@@ -180,7 +183,7 @@ const { encounterScreen, encounterModel } = (() => {
         const n = c.post(() => { let x = int(25); while (x === carry.nature) x = int(25); return x; });
         if (n != null) {
           const fx = natureOf(n);
-          const main = tryDo(() => (carry.getStat(1) >= carry.getStat(3) ? "Atk" : "SpA"), "Atk");
+          const main = tryDo(() => (carry.getStat(Stat.ATK) >= carry.getStat(Stat.SPATK) ? "Atk" : "SpA"), "Atk");
           const verdict = fx.up === main ? "good" : fx.down === main || fx.down === "Spe" ? "bad" : "meh";
           nature = { text: `${carry.name} becomes ${fx.name}${fx.up ? ` (+${fx.up} −${fx.down})` : " (neutral)"}`, verdict };
         }
@@ -211,11 +214,11 @@ const { encounterScreen, encounterModel } = (() => {
       const f = c.foe(0);
       const fight = c.fight(f, { double: true });
       const allowed = c.alive;
-      const nonFire = allowed.filter(p => !tryDo(() => p.isOfType(FIRE, { includeTeraType: false }), typesOf(p).includes("Fire")));
+      const nonFire = allowed.filter(p => !tryDo(() => p.isOfType(PokemonType.FIRE, { includeTeraType: false }), typesOf(p).includes("Fire")));
       const burnable = nonFire.filter(p => !p.status?.effect);
       const idx = burnable.length ? c.during(() => int(burnable.length)) : null;
       const burned = idx != null ? burnable[idx] : null;
-      const sticks = burned && tryDo(() => burned.canSetStatus(BURN, true), true);
+      const sticks = burned && tryDo(() => burned.canSetStatus(StatusEffect.BURN, true), true);
       const burn = burned
         ? sticks ? `; ${burned.name} is burned and its ability becomes Heatproof for good` : `; ${burned.name} shrugs off the burn`
         : burnable.length ? "; one of them is burned and its ability becomes Heatproof for good" : "";
@@ -249,7 +252,7 @@ const { encounterScreen, encounterModel } = (() => {
       const n = c.me.misc?.numBerries ?? 0;
       const fastest = c.me.misc?.fastestPokemon;
       const enemySpeed = c.me.misc?.enemySpeed;
-      const ratio = fastest && enemySpeed ? fastest.getStat(5) / (enemySpeed * 1.1) : null;
+      const ratio = fastest && enemySpeed ? fastest.getStat(Stat.SPD) / (enemySpeed * 1.1) : null;
       const slow = ratio != null && ratio < 1;
       const grabbed = ratio >= 1 ? Math.max(Math.min(Math.round((ratio - 1) / 0.08), n), 2) : 0;
       const enraged = c.wave < 50 ? "Def/SpD/Spe" : "Atk/Def/SpA/SpD/Spe";
@@ -268,11 +271,11 @@ const { encounterScreen, encounterModel } = (() => {
       const clamp = x => Math.min(Math.max(2.5 * (1 + x), 1), 4);
       const workers = c.alive.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
       const best = score => workers.map(p => ({ p, mult: score(p) })).reduce((t, x) => (!t || x.mult > t.mult ? x : t), null);
-      const deliver = best(p => { const base = Math.floor(196 * p.level * 0.01) + 5; return clamp((p.getStat(5) - base) / base); });
+      const deliver = best(p => { const base = Math.floor(196 * p.level * 0.01) + 5; return clamp((p.getStat(Stat.SPD) - base) / base); });
       const lift = best(p => {
         const hp = Math.floor(166 * p.level * 0.01) + p.level + 10, ad = Math.floor(166 * p.level * 0.01) + 5;
         const base = hp + 1.5 * ad * 2;
-        return clamp((p.getStat(0) + 1.5 * (p.getStat(1) + p.getStat(2)) - base) / base);
+        return clamp((p.getStat(Stat.HP) + 1.5 * (p.getStat(Stat.ATK) + p.getStat(Stat.DEF)) - base) / base);
       });
       const tired = "; its moves drop to 2 PP";
       const out = [

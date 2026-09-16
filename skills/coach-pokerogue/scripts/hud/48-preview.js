@@ -43,9 +43,7 @@
 // wave when it actually arrives, a field that has ever been wrong is shown with `!`, and `window.__coachHud.preview()`
 // prints the tally.
 const { previewFor, previewNext, previewCheck, previewStats } = (() => {
-  const WILD = 0, TRAINER = 1, MYSTERY = 3; // BattleType
-  const SLOT_NONE = 0; // TrainerSlot.NONE
-  const BIOME_END = 50;
+  const WILD = BattleType.WILD, TRAINER = BattleType.TRAINER, MYSTERY = BattleType.MYSTERY_ENCOUNTER;
   const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };
   // Weakest wins, so a field can be capped by whatever it derives from. Order: exact > replay > estimate.
   const RANK = [CONFIDENCE.exact, CONFIDENCE.replay, CONFIDENCE.estimate];
@@ -104,17 +102,17 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
     ability: tryDo(() => p.getAbility()?.name),
     passive: p.hasPassive?.() ? tryDo(() => p.getPassiveAbility()?.name) : null,
     hp: tryDo(() => p.getMaxHp()),
-    // 1 atk, 2 def, 3 spa, 4 spd, 5 spe — the same slots as `stat()` in 01-core.
-    stats: tryDo(() => [1, 2, 3, 4, 5].map(i => p.getStat(i))),
+    // Atk, Def, SpA, SpD, Spe — the same slots as `stat()` in 01-core.
+    stats: tryDo(() => [Stat.ATK, Stat.DEF, Stat.SPATK, Stat.SPDEF, Stat.SPD].map(i => p.getStat(i))),
     segments: p.bossSegments ?? 0,
     shiny: !!p.shiny,
     moves: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getName())).filter(Boolean),
     // The types it can actually attack with: 49-ahead reads these to judge what the party is walking into.
     moveTypes: [...new Set((p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getMove()))
-      .filter(mv => mv && mv.category !== 2 && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean))],
+      .filter(mv => mv && mv.category !== MoveCategory.STATUS && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean))],
   });
 
-  const trainerName = t => tryDo(() => t.getName(SLOT_NONE, true)) ?? tryDo(() => t.name) ?? "trainer";
+  const trainerName = t => tryDo(() => t.getName(TrainerSlot.NONE, true)) ?? tryDo(() => t.name) ?? "trainer";
   const meName = enc => tryDo(() => enc.localizationKey) ?? tryDo(() => enc.constructor?.name) ?? null;
 
   // One wave, replayed. Runs inside the caller's `sandbox`; returns plain data, holding on to no game object.
@@ -163,9 +161,9 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
             return [];
           }
           // The `EncounterPhase` loop, in its order: each member is read into the party before the next is generated.
-          // EncounterPhase.isEncounterShinyLocked: END biome under Endless or the Fresh Start challenge (4). It
+          // EncounterPhase.isEncounterShinyLocked: END biome under Endless or the Fresh Start challenge. It
           // changes the draw count — a locked spawn never calls `trySetShiny` — so the replay has to get it right.
-          const shinyLock = s.arena?.biomeId === BIOME_END && (!!gm.isEndless || tryDo(() => gm.hasChallenge(4), false));
+          const shinyLock = s.arena?.biomeId === BiomeId.END && (!!gm.isEndless || tryDo(() => gm.hasChallenge(Challenges.FRESH_START), false));
           return levels.map((level, e) => {
             let p;
             if (type === TRAINER) {
@@ -173,10 +171,10 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
             } else {
               let species = wildSpecies(s, w, level, playerParty);
               // The Golden Bug Net's 10 % swap draws only when the player holds one, so the replay only draws then.
-              if (hasBugNet(s) && !gm.isBoss(w) && s.arena?.biomeId !== BIOME_END && rnd(10) === 0) {
+              if (hasBugNet(s) && !gm.isBoss(w) && s.arena?.biomeId !== BiomeId.END && rnd(10) === 0) {
                 notes.push("Golden Bug Net can swap this spawn");
               }
-              p = s.addEnemyPokemon(species, level, SLOT_NONE, !!s.getEncounterBossSegments(w, level, species), shinyLock);
+              p = s.addEnemyPokemon(species, level, TrainerSlot.NONE, !!s.getEncounterBossSegments(w, level, species), shinyLock);
             }
             battle.enemyParty[e] = p;
             built.push(p);
@@ -224,12 +222,12 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
 
   // The player's Golden Bug Net, by the modifier's own class name (the game checks `BoostBugSpawnModifier`).
   const hasBugNet = s => (s.modifiers ?? []).some(m => m?.constructor?.name === "BoostBugSpawnModifier");
-  // Arena.getTimeOfDay: ABYSS (24) is always night; otherwise (wave + waveCycleOffset) % 40.
+  // Arena.getTimeOfDay: ABYSS is always night; otherwise (wave + waveCycleOffset) % 40.
   const timeOfDayFor = (s, w) => {
     if (w == null) return null;
-    if (s.arena?.biomeId === 24) return 3;
+    if (s.arena?.biomeId === BiomeId.ABYSS) return TimeOfDay.NIGHT;
     const c = (w + (s.waveCycleOffset ?? 0)) % 40;
-    return c < 15 ? 1 : c < 20 ? 2 : c < 35 ? 3 : 0;
+    return c < 15 ? TimeOfDay.DAY : c < 20 ? TimeOfDay.DUSK : c < 35 ? TimeOfDay.NIGHT : TimeOfDay.DAWN;
   };
 
   // ---- Accuracy, measured rather than claimed

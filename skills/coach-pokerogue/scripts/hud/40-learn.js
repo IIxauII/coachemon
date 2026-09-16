@@ -1,12 +1,12 @@
 // Learn-move card model.
-// Learn-move: the SUMMARY screen (UiMode 9, summaryUiMode 1) holds the new move; before it opens, the
+// Learn-move: the SUMMARY screen (summaryUiMode LEARN_MOVE) holds the new move; before it opens, the
 // "forget a move?" prompt only has LearnMovePhase's moveId, so the move is built from a PokemonMove.
 // No game functions run here (the game isn't waiting on a battle command): only move/attr fields are read.
 const learnState = s => {
   const h = s.ui.getHandler();
   const double = !!s.currentBattle?.double;
   const party = s.getPlayerParty?.() ?? [];
-  if (s.ui.getMode() === 9 && h?.summaryUiMode === 1 && h.newMove) return { pk: h.pokemon, mv: h.newMove, double, party };
+  if (s.ui.getMode() === UiMode.SUMMARY && h?.summaryUiMode === SummaryUiMode.LEARN_MOVE && h.newMove) return { pk: h.pokemon, mv: h.newMove, double, party };
   const phase = s.phaseManager?.getCurrentPhase?.();
   if (phase?.phaseName !== "LearnMovePhase") return null;
   const pk = party[phase.partyMemberIndex];
@@ -23,7 +23,7 @@ const learnMoveById = (party, id) => {
 const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFixed } = (() => {
   const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
   const attrsOf = (mv, name) => (mv.attrs || []).filter(a => a.constructor?.name === name);
-  const isDamaging = mv => !!mv && mv.category !== 2 && (mv.power > 0 || mv.power === -1);
+  const isDamaging = mv => !!mv && mv.category !== MoveCategory.STATUS && (mv.power > 0 || mv.power === -1);
   const unimplemented = mv => / \(N\)$/.test(mv.name ?? "");
 
   // Fixed damage as the base power that deals about as much at this level with even Atk/Def and no STAB
@@ -49,7 +49,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     ["OpponentHighHpPowerAttr", () => 60, "weaker as the foe tires"],
     ["MagnitudePowerAttr", () => 71, "random power"],
     ["PresentPowerAttr", () => 52, "may heal the foe"],
-    ["BeatUpAttr", (pk, mv, a, party) => 15 * Math.max(1, party.filter(p => p?.hp > 0 && !(p.status?.effect > 0)).length), "party-based"],
+    ["BeatUpAttr", (pk, mv, a, party) => 15 * Math.max(1, party.filter(p => p?.hp > 0 && !(p.status?.effect > StatusEffect.NONE)).length), "party-based"],
     ["SpitUpPowerAttr", () => 30, "needs Stockpile"],
     ["LessPPMorePowerAttr", () => 60, "stronger as PP drops"],
     ["PunishmentPowerAttr", () => 60, "stronger vs boosts"],
@@ -62,18 +62,18 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     return { power: 60, note: "variable power", fixed: false };
   };
 
-  // Expected hits and the per-hit power multiple they add up to. MultiHitType 0 `_2`, 1 `_2_TO_5` (mean 3.1, Skill
-  // Link 5), 2 `_3`, 3 `_10`, 4 Beat Up. Triple Axel/Kick grow by the base power each hit and check accuracy per hit
-  // (CHECK_ALL_HITS 65536): Σ a^(k+1)·(k+1). Otherwise only the first hit can miss.
+  // Expected hits and the per-hit power multiple they add up to. TWO_TO_FIVE averages 3.1 (Skill Link 5), BEAT_UP
+  // hits once per healthy party member. Triple Axel/Kick grow by the base power each hit and check accuracy per hit
+  // (CHECK_ALL_HITS): Σ a^(k+1)·(k+1). Otherwise only the first hit can miss.
   const multiHit = (pk, mv, acc, party) => {
     const mh = attrsOf(mv, "MultiHitAttr")[0];
     if (!mh) return { hits: 1, factor: acc };
     const skillLink = abilitiesOf(pk).includes("Skill Link");
-    const type = mh.intrinsicMultiHitType ?? mh.multiHitType ?? 1;
-    const n = type === 1 ? (skillLink ? 5 : 3.1) : type === 0 ? 2 : type === 2 ? 3 : type === 3 ? 10
-      : Math.max(1, party.filter(p => p?.hp > 0 && !(p.status?.effect > 0)).length);
+    const type = mh.intrinsicMultiHitType ?? mh.multiHitType ?? MultiHitType.TWO_TO_FIVE;
+    const n = type === MultiHitType.TWO_TO_FIVE ? (skillLink ? 5 : 3.1) : type === MultiHitType.TWO ? 2 : type === MultiHitType.THREE ? 3 : type === MultiHitType.TEN ? 10
+      : Math.max(1, party.filter(p => p?.hp > 0 && !(p.status?.effect > StatusEffect.NONE)).length);
     const grows = attrsOf(mv, "MultiHitPowerIncrementAttr").length > 0;
-    const checkAll = (mv.hasFlag ? mv.hasFlag(65536) : grows) && !skillLink;
+    const checkAll = (mv.hasFlag ? mv.hasFlag(MoveFlags.CHECK_ALL_HITS) : grows) && !skillLink;
     if (!checkAll && !grows) return { hits: n, factor: acc * n };
     let factor = 0, reach = 1, hits = 0;
     for (let k = 0; k < Math.round(n); k++) {
@@ -93,29 +93,29 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
   // Gorilla Tactics is left out: it multiplies Atk too, but locks the mon into the move it opens with, and that
   // trade is not something a per-move score can carry.
   const ATK_MULT = { "Huge Power": 2, "Pure Power": 2, Hustle: 1.5 };
-  const atkOf = pk => abilitiesOf(pk).reduce((n, a) => n * (ATK_MULT[a] ?? 1), pk.getStat(1));
-  const spaOf = pk => pk.getStat(3);
+  const atkOf = pk => abilitiesOf(pk).reduce((n, a) => n * (ATK_MULT[a] ?? 1), pk.getStat(Stat.ATK));
+  const spaOf = pk => pk.getStat(Stat.SPATK);
   // The stat(s) this mon attacks with: within 10% of its best is close enough to count as both.
   const mainStats = pk => {
     const atk = atkOf(pk), spa = spaOf(pk);
-    return new Set([atk >= spa * 0.9 ? 1 : null, spa >= atk * 0.9 ? 3 : null].filter(Boolean));
+    return new Set([atk >= spa * 0.9 ? Stat.ATK : null, spa >= atk * 0.9 ? Stat.SPATK : null].filter(Boolean));
   };
 
   // Self/ally-side move targets (MoveTarget): nothing on the far side is touched, so accuracy never applies and a
   // stat change here is a buff, not a drop — Howl's attr carries no `selfTarget`, only this target.
-  const SELF_TARGETS = new Set([0, 10, 11, 12, 13, 15, 18]); // USER, NEAR_ALLY, ALLY, USER_OR_NEAR_ALLY, USER_AND_ALLIES, USER_SIDE, PARTY
-  const ALLY_TARGETS = new Set([10, 11]);                    // NEAR_ALLY, ALLY: there is nobody to aim at in a single battle
+  const SELF_TARGETS = new Set([MoveTarget.USER, MoveTarget.NEAR_ALLY, MoveTarget.ALLY, MoveTarget.USER_OR_NEAR_ALLY, MoveTarget.USER_AND_ALLIES, MoveTarget.USER_SIDE, MoveTarget.PARTY]);
+  const ALLY_TARGETS = new Set([MoveTarget.NEAR_ALLY, MoveTarget.ALLY]); // there is nobody to aim at in a single battle
   const selfSide = (mv, a) => !!a?.selfTarget || SELF_TARGETS.has(mv.moveTarget);
 
   // A status move that raises the user's own stats (Calm Mind, Swords Dance, Dragon Dance): worth something when it
   // boosts the stat this mon attacks with and it has no such setup move yet. `value` is in the same rough units as
   // effective power; null when the move isn't setup.
   const setupOf = (pk, mv, current) => {
-    if (mv.category !== 2) return null;
+    if (mv.category !== MoveCategory.STATUS) return null;
     const boosts = attrsOf(mv, "StatStageChangeAttr").filter(a => selfSide(mv, a) && (a.stages ?? 0) > 0);
     if (!boosts.length) return null;
     const main = mainStats(pk);
-    const weight = i => (main.has(i) ? 30 : i === 5 ? 20 : i === 2 || i === 4 ? 10 : i === 1 || i === 3 ? 5 : 3);
+    const weight = i => (main.has(i) ? 30 : i === Stat.SPD ? 20 : i === Stat.DEF || i === Stat.SPDEF ? 10 : i === Stat.ATK || i === Stat.SPATK ? 5 : 3);
     let value = 0;
     const parts = [];
     for (const a of boosts) {
@@ -123,7 +123,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
       parts.push(`+${a.stages} ${(a.stats ?? []).map(i => STAT_NAMES[i]).join("/")}`);
     }
     const boostsMain = boosts.some(a => (a.stats ?? []).some(i => main.has(i)));
-    const hasSetup = current.some(o => o !== mv && o.category === 2 && attrsOf(o, "StatStageChangeAttr")
+    const hasSetup = current.some(o => o !== mv && o.category === MoveCategory.STATUS && attrsOf(o, "StatStageChangeAttr")
       .some(a => selfSide(o, a) && (a.stages ?? 0) > 0 && (a.stats ?? []).some(i => main.has(i))));
     if (!boostsMain) value *= 0.5;
     if (hasSetup) value *= 0.3;
@@ -240,7 +240,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     // wave replaces it. This is what makes Growl and Leer the slot to forget rather than an attacking move.
     for (const a of attrsOf(mv, "StatStageChangeAttr")) {
       if (selfSide(mv, a) || (a.stages ?? 0) >= 0) continue;
-      const drop = i => (i === 1 || i === 3 || i === 5 ? 8 : i === 6 ? 6 : 4);
+      const drop = i => (i === Stat.ATK || i === Stat.SPATK || i === Stat.SPD ? 8 : i === Stat.ACC ? 6 : 4);
       const n = (a.stats ?? []).reduce((t, i) => t + drop(i) * -(a.stages ?? 0), 0);
       add(n, `foe ${(a.stats ?? []).map(i => STAT_NAMES[i]).join("/")} −${-(a.stages ?? 0)}`);
     }
@@ -249,7 +249,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     // The same trick twice is worth less the second time, and a moveset that is mostly status has no room left.
     if (isRecovery(mv) && others.some(isRecovery)) { value *= 0.5; notes.push("already has recovery"); }
     if (inflictsStatus(mv) && others.some(inflictsStatus)) { value *= 0.5; notes.push("already has a status move"); }
-    const status = others.filter(o => o.category === 2).length;
+    const status = others.filter(o => o.category === MoveCategory.STATUS).length;
     if (status >= 2) { value *= status >= 3 ? 0.35 : 0.6; notes.push(`${status + 1} status moves`); }
     const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
     if (!SELF_TARGETS.has(mv.moveTarget) && acc < 1) { value *= acc; notes.push(`${Math.round(acc * 100)}% acc`); }
@@ -265,7 +265,6 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
   // Water, and a handful of moves take their type from something the card can't see (the weather, a held item,
   // the IVs). STAB and the whole coverage read hang on this, so a type the card can't pin down claims neither.
   const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric", Dragonize: "Dragon" };
-  const SOUND_FLAG = 1 << 2;
   // Variable-type attributes. Tera Blast is absent on purpose: it is Normal until the mon terastallizes.
   const VARIABLE_TYPE = ["FormChangeItemTypeAttr", "TechnoBlastTypeAttr", "AuraWheelTypeAttr", "RagingBullTypeAttr",
     "IvyCudgelTypeAttr", "WeatherBallTypeAttr", "TerrainPulseTypeAttr", "HiddenPowerTypeAttr", "TeraStarstormTypeAttr",
@@ -280,7 +279,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     const ate = ab.find(a => ATE[a]);
     if (ate && base === "Normal") return { type: ATE[ate], boost: 1.2, note: ate };
     if (ab.includes("Normalize")) return { type: "Normal", boost: 1.2, note: "Normalize" };
-    if (ab.includes("Liquid Voice") && moveHasFlag(mv, SOUND_FLAG)) return { type: "Water", note: "Liquid Voice" };
+    if (ab.includes("Liquid Voice") && moveHasFlag(mv, MoveFlags.SOUND_BASED)) return { type: "Water", note: "Liquid Voice" };
     return { type: base };
   };
 
@@ -300,7 +299,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     const atk = atkOf(pk), spa = spaOf(pk);
     // Hustle buys its 50% Atk with 20% accuracy on physical moves; the Atk is already in `atk`.
     let acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
-    if (mv.category === 0 && ability.includes("Hustle")) { acc *= 0.8; notes.push("Hustle"); }
+    if (mv.category === MoveCategory.PHYSICAL && ability.includes("Hustle")) { acc *= 0.8; notes.push("Hustle"); }
     let power = mv.power;
     let fixed = false;
     if (!(power > 0)) {
@@ -315,7 +314,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     if (!fixed && ability.includes("Technician") && power * (grows ? 3 : 1) <= 60) { power *= 1.5; notes.push("Technician"); }
     const mh = multiHit(pk, mv, acc, party);
     if (mh.hits > 1) notes.push(`${mh.hits} hits`);
-    const fit = fixed ? 1 : (mv.category === 0 ? atk : spa) / Math.max(atk, spa);
+    const fit = fixed ? 1 : (mv.category === MoveCategory.PHYSICAL ? atk : spa) / Math.max(atk, spa);
     // A type the card can't pin down claims no STAB and no coverage: a wrong claim reads worse than a missing one.
     const blind = fixed || !!et.variable;
     const stab = !blind && typesOf(pk).includes(type) ? (ability.includes("Adaptability") ? 2 : 1.5) : 1;
@@ -385,7 +384,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
 
     // Guaranteed self stat changes (chance −1/100): drops cost more on the stat the move attacks with (Overheat's SpA)
     // than on defences (Close Combat); boosts (Flame Charge) add.
-    const attackStat = mv.category === 0 ? 1 : 3;
+    const attackStat = mv.category === MoveCategory.PHYSICAL ? Stat.ATK : Stat.SPATK;
     for (const a of attrsOf(mv, "StatStageChangeAttr")) {
       if (!a.selfTarget || !(mv.chance === -1 || mv.chance === undefined || mv.chance >= 100)) continue;
       const stages = a.stages ?? 0;
@@ -402,7 +401,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
       value *= 1 + 0.15 * double;
       notes.push(double < 1 ? `spread · ${doublesNote(double)}` : "spread");
     }
-    if (fit < 0.9) notes.push(mv.category === 0 ? "weak Atk" : "weak SpA");
+    if (fit < 0.9) notes.push(mv.category === MoveCategory.PHYSICAL ? "weak Atk" : "weak SpA");
     const prior = priorOf(pk, mv, ctx);
     if (prior) { value *= prior.mult; notes.push(prior.note); }
     return {

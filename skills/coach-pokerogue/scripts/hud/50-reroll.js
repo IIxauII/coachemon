@@ -33,7 +33,6 @@
 // player actually makes is scored against the last preview for it, and a miss marks the line `!` for the rest of the run
 // (`window.__coachHud.reroll()`).
 const { rerollPreview, rerollCheck, rerollStats } = (() => {
-  const PLAYER = 0; // ModifierPoolType.PLAYER
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
   // `getNewModifierTypeOption` logs every item it draws.
   const quiet = fn => {
@@ -73,7 +72,7 @@ const { rerollPreview, rerollCheck, rerollStats } = (() => {
     const tiers = tiersOf(ph);
     const at = Phaser.Math.RND.state();
     try {
-      fns.regenerate(party, PLAYER, n);
+      fns.regenerate(party, ModifierPoolType.PLAYER, n);
       const count = new ph.constructor(n, tiers).getModifierCount();
       const options = fns.options(count, party, lock ? tiers : undefined);
       return { lock, cost, types: options.map(o => o.type), upgrades: options.map(o => o.upgradeCount ?? 0) };
@@ -125,7 +124,7 @@ const { rerollPreview, rerollCheck, rerollStats } = (() => {
           if (canLock(s)) rolls.push(roll(fns, ph, party, !lock));
           return { n: (ph.rerollCount ?? 0) + 1, rolls: rolls.filter(Boolean), canLock: canLock(s), locked: lock };
         } finally {
-          fns.regenerate(party, PLAYER, ph.rerollCount ?? 0);
+          fns.regenerate(party, ModifierPoolType.PLAYER, ph.rerollCount ?? 0);
         }
       })), { unavailable: "the reward roll threw" });
       cache = { key, value };

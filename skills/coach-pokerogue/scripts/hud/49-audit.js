@@ -78,17 +78,17 @@ const { teamAudit, relearnBest } = (() => {
     const { atk, spa } = scored;
     for (const { x, mv } of attacks) {
       if (x.fixed) continue;
-      const [mine, other, stat] = mv.category === 0 ? [atk, spa, "Atk"] : [spa, atk, "SpA"];
+      const [mine, other, stat] = mv.category === MoveCategory.PHYSICAL ? [atk, spa, "Atk"] : [spa, atk, "SpA"];
       if (mine < other * OFF_STAT) add(`${x.name} is ${x.cat} on ${stat} ${mine} (${stat === "Atk" ? "SpA" : "Atk"} ${other})`, x.name);
     }
-    const main = atk >= spa * 0.9 && spa >= atk * 0.9 ? null : atk > spa ? 1 : 3;
+    const main = atk >= spa * 0.9 && spa >= atk * 0.9 ? null : atk > spa ? Stat.ATK : Stat.SPATK;
     for (const [i, x] of scored.moves.entries()) {
       const mv = moves[i];
-      if (!mv || mv.category !== 2 || main == null) continue;
+      if (!mv || mv.category !== MoveCategory.STATUS || main == null) continue;
       const boosts = (mv.attrs ?? []).filter(a => a.constructor?.name === "StatStageChangeAttr" && (a.stages ?? 0) > 0
-        && (a.selfTarget || [0, 13, 15].includes(mv.moveTarget)));
+        && (a.selfTarget || [MoveTarget.USER, MoveTarget.USER_AND_ALLIES, MoveTarget.USER_SIDE].includes(mv.moveTarget)));
       const stats = [...new Set(boosts.flatMap(a => a.stats ?? []))];
-      if (stats.length && stats.every(s => s === 4 - main)) add(`${x.name} boosts ${main === 1 ? "SpA" : "Atk"}, it attacks with ${main === 1 ? "Atk" : "SpA"}`, x.name);
+      if (stats.length && stats.every(s => s === (main === Stat.ATK ? Stat.SPATK : Stat.ATK))) add(`${x.name} boosts ${main === Stat.ATK ? "SpA" : "Atk"}, it attacks with ${main === Stat.ATK ? "Atk" : "SpA"}`, x.name);
     }
     const byType = new Map();
     for (const { x } of attacks) if (!x.fixed) byType.set(x.type, [...(byType.get(x.type) ?? []), x]);
@@ -97,7 +97,7 @@ const { teamAudit, relearnBest } = (() => {
       const [keep, ...rest] = [...xs].sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
       for (const r of rest) add(`${r.name} is a second ${type} attack (${keep.name})`, r.name);
     }
-    const status = scored.moves.filter((_, i) => moves[i]?.category === 2);
+    const status = scored.moves.filter((_, i) => moves[i]?.category === MoveCategory.STATUS);
     for (const x of status) {
       if (x.value !== null && x.value < WEAK_STATUS && !out.some(f => f.slot === x.name)) add(`${x.name} does little${x.why ? ` (${x.why})` : ""}`, x.name);
     }
@@ -171,9 +171,9 @@ const { teamAudit, relearnBest } = (() => {
   // learn card's does.
   const ATK_DOUBLED = ["Huge Power", "Pure Power"];
   const onStat = (p, mv) => {
-    const atk = tryDo(() => p.getStat(1), 0) * (tryDo(() => abilitiesOf(p), []).some(a => ATK_DOUBLED.includes(a)) ? 2 : 1);
-    const spa = tryDo(() => p.getStat(3), 0);
-    return mv.category === 0 ? atk >= spa * OFF_STAT : spa >= atk * OFF_STAT;
+    const atk = tryDo(() => p.getStat(Stat.ATK), 0) * (tryDo(() => abilitiesOf(p), []).some(a => ATK_DOUBLED.includes(a)) ? 2 : 1);
+    const spa = tryDo(() => p.getStat(Stat.SPATK), 0);
+    return mv.category === MoveCategory.PHYSICAL ? atk >= spa * OFF_STAT : spa >= atk * OFF_STAT;
   };
   const answersTo = (p, foe) => typedAttacks(p).filter(mv => foeMult(TYPES[mv.type], foe) >= 2 && onStat(p, mv))
     .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
@@ -183,10 +183,10 @@ const { teamAudit, relearnBest } = (() => {
   // or abilities, which move during the fight.
   const PRIORITY_ABILITIES = new Set(["Gale Wings"]); // Flying moves at full HP; Prankster and Triage don't attack
   const speedCheck = (party, foes, wave) => {
-    const fastest = foes.reduce((a, f) => ((f.stats?.[4] ?? 0) > (a?.stats?.[4] ?? -1) ? f : a), null);
-    const spe = fastest?.stats?.[4];
+    const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD - 1] ?? 0) > (a?.stats?.[Stat.SPD - 1] ?? -1) ? f : a), null);
+    const spe = fastest?.stats?.[Stat.SPD - 1]; // 48-preview's `stats` is Atk…Spe, no HP
     if (!spe) return [];
-    const faster = party.filter(p => tryDo(() => p.getStat(5), 0) > spe);
+    const faster = party.filter(p => tryDo(() => p.getStat(Stat.SPD), 0) > spe);
     const priority = party.filter(p => typedAttacks(p).some(mv => (mv.priority ?? 0) > 0)
       || (tryDo(() => abilitiesOf(p), []).some(a => PRIORITY_ABILITIES.has(a)) && typedAttacks(p).some(mv => TYPES[mv.type] === "Flying")));
     if (faster.length >= 2 || priority.length) return [];
@@ -204,11 +204,12 @@ const { teamAudit, relearnBest } = (() => {
 
   // StatusEffect → the types it can't land on: `Pokemon.canSetStatus`'s type checks. Corrosion on the user cancels
   // the poison ones (`IgnoreTypeStatusEffectImmunityAbAttr`); the foes' abilities are left out.
-  const STATUS_IMMUNE = { 1: ["Poison", "Steel"], 2: ["Poison", "Steel"], 3: ["Electric"], 5: ["Ice"], 6: ["Fire"] };
-  const deadStatus = (party, foes, wave) => party.flatMap(p => movesOf(p).filter(mv => mv.category === 2).flatMap(mv => {
+  const STATUS_IMMUNE = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"], [StatusEffect.PARALYSIS]: ["Electric"],
+    [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
+  const deadStatus = (party, foes, wave) => party.flatMap(p => movesOf(p).filter(mv => mv.category === MoveCategory.STATUS).flatMap(mv => {
     const a = (mv.attrs ?? []).find(x => x.constructor?.name === "StatusEffectAttr" && !x.selfTarget);
     const immune = STATUS_IMMUNE[a?.effect];
-    if (!immune || ((a.effect === 1 || a.effect === 2) && tryDo(() => abilitiesOf(p), []).includes("Corrosion"))) return [];
+    if (!immune || ((a.effect === StatusEffect.POISON || a.effect === StatusEffect.TOXIC) && tryDo(() => abilitiesOf(p), []).includes("Corrosion"))) return [];
     const n = foes.filter(f => (f.types ?? []).some(t => immune.includes(t))).length;
     return n * 2 >= foes.length && n ? [{ kind: "slot", level: "low", mon: p.name,
       text: `${p.name}: ${nameOf(mv)} can't land on ${n} of ${foes.length} foes at W${wave}` }] : [];

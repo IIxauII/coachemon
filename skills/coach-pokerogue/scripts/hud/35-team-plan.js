@@ -83,7 +83,7 @@ const tpFoeFirst = (s, me, f, ours, theirs, live) => {
   }
   const mine = ours?.priority ?? 0;
   if (theirs.priority !== mine) return theirs.priority > mine ? 1 : 0;
-  const a = stat(me, 5), b = stat(f, 5);
+  const a = stat(me, Stat.SPD), b = stat(f, Stat.SPD);
   return b > a ? 1 : b < a ? 0 : 0.5;
 };
 
@@ -92,8 +92,8 @@ const tpFoeFirst = (s, me, f, ours, theirs, live) => {
 // 20–40 % HP. Our HP moves over the plan, so the game is asked once with ours at 0 — the HP factor then caps at 1 and
 // the call returns the type scores alone — and `tpSendScore` puts the HP back. Without game code, a type-chart stand-in.
 const tpSendBase = (s, f, me, live) => {
-  const speed = p => (typeof p.getEffectiveStat === "function" ? p.getEffectiveStat(5) : stat(p, 5));
-  const outspeed = (f.isActive?.(true) ? speed(f) : f.getStat(5, false)) >= speed(me);
+  const speed = p => (typeof p.getEffectiveStat === "function" ? p.getEffectiveStat(Stat.SPD) : stat(p, Stat.SPD));
+  const outspeed = (f.isActive?.(true) ? speed(f) : f.getStat(Stat.SPD, false)) >= speed(me);
   if (live && typeof f.getMatchupScore === "function") {
     try {
       const v = f.getMatchupScore(Object.create(me, { hp: { value: 0 } }));
@@ -102,7 +102,7 @@ const tpSendBase = (s, f, me, live) => {
   }
   // The game's own shape: attack, its damaging moves' effectiveness into us (×1.5 for its own type) averaged; defence,
   // how little our types hurt it.
-  const moves = (f.moveset ?? []).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== 2);
+  const moves = (f.moveset ?? []).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
   const atk = moves.length ? moves.reduce((t, mv) => t + effectiveness(TYPES[mv.type], me) * (typesOf(f).includes(TYPES[mv.type]) ? 1.5 : 1), 0) / moves.length : 1;
   const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
   return { base: atk + def, outspeed };
@@ -163,8 +163,8 @@ const tpTables = (s, party, foes, live) => {
     ourKo: party.map(koBoost), foeKo: foes.map(koBoost),
     koMult: (atkMon, atkBoost, atkN, defMon, defBoost, defN, phys) => {
       const f = (p, b, n, st) => koStageFactor(p, b, n, st);
-      const up = phys * f(atkMon, atkBoost, atkN, 1) + (1 - phys) * f(atkMon, atkBoost, atkN, 3);
-      const guard = phys * f(defMon, defBoost, defN, 2) + (1 - phys) * f(defMon, defBoost, defN, 4);
+      const up = phys * f(atkMon, atkBoost, atkN, Stat.ATK) + (1 - phys) * f(atkMon, atkBoost, atkN, Stat.SPATK);
+      const guard = phys * f(defMon, defBoost, defN, Stat.DEF) + (1 - phys) * f(defMon, defBoost, defN, Stat.SPDEF);
       return up / guard;
     },
     party, foes,
@@ -179,11 +179,11 @@ const tpWear = (s, party, foes, live, ours, theirs) => {
   const heal = p => tpHealAt(s, p);
   const tok = party.map(me => {
     const odds = foes[0] ? tokenOdds(s, foes[0], me) : null;
-    return odds && { odds, shift: tokenShift(odds, me, heal), para: odds.tokens.filter(x => x.effect === 3).reduce((t, x) => t + x.share, 0) };
+    return odds && { odds, shift: tokenShift(odds, me, heal), para: odds.tokens.filter(x => x.effect === StatusEffect.PARALYSIS).reduce((t, x) => t + x.share, 0) };
   });
   const firstPara = party.map((me, mi) => (tok[mi]?.para ? foes.map((f, fi) => {
-    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: 3 } } };
-    if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === 5 ? 2 : 1) };
+    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
+    if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
     const clone = Object.create(me, slowed);
     return tpFoeFirst(s, clone, f, ours[mi][fi], tpTheirMove(s, f, clone, live), live);
   }) : null));
