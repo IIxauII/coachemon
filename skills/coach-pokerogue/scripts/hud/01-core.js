@@ -53,6 +53,21 @@ const stage = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
 // i: 1 atk, 2 def, 3 spa, 4 spd, 5 spe. statStages has no HP slot.
 const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ?? 0);
 
+// A damage distribution ([{ d, p }] or a Map d → p) cut down to at most `k` points by joining the two closest
+// neighbours into their weighted mean, over and over: the KO thresholds that matter keep their sharp edges, a miss
+// (0) and a crit stay apart from the rolls.
+const squeezeDist = (points, k) => {
+  const out = [...(points instanceof Map ? [...points].map(([d, p]) => ({ d, p })) : points.map(x => ({ ...x })))]
+    .filter(x => x.p > 0).sort((a, b) => a.d - b.d);
+  while (out.length > k) {
+    let at = 0;
+    for (let i = 1; i < out.length - 1; i++) if (out[i + 1].d - out[i].d < out[at + 1].d - out[at].d) at = i;
+    const [a, b] = [out[at], out[at + 1]];
+    out.splice(at, 2, { d: (a.d * a.p + b.d * b.p) / (a.p + b.p), p: a.p + b.p });
+  }
+  return out;
+};
+
 const SPREAD_TARGETS = [2, 4, 6, 8]; // MoveTarget ALL_OTHERS, ALL_NEAR_OTHERS, ALL_NEAR_ENEMIES, ALL_ENEMIES
 const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
 

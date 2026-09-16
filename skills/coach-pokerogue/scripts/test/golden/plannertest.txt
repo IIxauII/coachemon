@@ -7,7 +7,15 @@ next: ⚔ Metagross ⚠ Dark ×2 56% {next turn: Weavile's Knock Off: ~56% of cu
 foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Dark Knock Off → Metagross 85% likely · moves first
-♟ winnable · 3 steps + {Show the fight plan}
+♟ Fight plan likely lost
+☠ Weavile Weavile 👑 KOs 3/3 · win condition
+🛡 Scrafty save for Weavile ~100%/turn
+🛡 Metagross save for Weavile ~69%/turn
+1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
+2 Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
+3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
+4 Metagross free Steel Meteor Mash → Weavile falls (77%) · foe at 53%
+⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Metagross
 == cyrus, no Metagross (live)
 🎯 W200 · Cyrus Morpeko − {Minimal overview} × {Close}
 ⇆ Gyarados → Weavile switches — moves aimed at it
@@ -22,8 +30,8 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 ↯ Ice Triple Axel → 
 🛡 Scrafty save for Weavile ~100%/turn
 🛡 Morpeko save for Weavile ~28%/turn
 1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
-2 Morpeko Electric Aura Wheel → Weavile falls · foe at 72%
-3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 50%
+2 Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
+3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Morpeko
 == building blocks ok
 == cyrus (fallback)
@@ -43,6 +51,10 @@ Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100%
 2 Blastoise free Water Wave Crash → Lycanroc KO · 41% left
 ✝ Charizard 63% · sacrifice to Lycanroc so Blastoise comes in free
 == item thief note ok
+== depth 2: Fake Out then Return (live)
+⚔ Ambipom Normal Fake Out → Slowbro 3 hits then Return
+== consistency: last turn's move (live)
+⚔ Garchomp Dragon Dragon Claw → Snorlax
 == doubles focus (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 2 hits
@@ -82,7 +94,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 ☠ Tyranitar Tyranitar KOs 2/2 · win condition
 🛡 Swampert save for Tyranitar ~54%/turn
 1 Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
-2 Swampert free Water Surf → Rhyperior KO · 22% left
+2 Swampert free Water Surf → Rhyperior KO (75%) · 29% left
 3 Swampert Water Surf → Tyranitar falls · foe at 100%
 ✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
@@ -97,7 +109,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 ☠ Tyranitar Tyranitar KOs 2/2 · win condition
 🛡 Swampert save for Tyranitar ~54%/turn
 1 Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
-2 Swampert free Water Surf → Rhyperior KO · 22% left
+2 Swampert free Water Surf → Rhyperior KO (75%) · 29% left
 3 Swampert Water Surf → Tyranitar falls · foe at 100%
 ✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
@@ -111,7 +123,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 ♟ Fight plan likely lost
 ☠ Tyranitar Tyranitar KOs 2/2 · win condition
 🛡 Swampert save for Tyranitar ~54%/turn
-1 Swampert Water Surf → Rhyperior KO · 22% left
+1 Swampert Water Surf → Rhyperior KO (60%) · 28% left
 2 Swampert Water Surf → Tyranitar falls · foe at 100%
 3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 65%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
@@ -122,7 +134,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 ◎ focus Heatran : most damage
 foes weak to: Fighting ×2 Ground ×2
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
-Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
+Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Lucario 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
 == doubles spread move scratches our partner (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}

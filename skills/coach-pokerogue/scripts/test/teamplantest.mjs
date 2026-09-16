@@ -28,8 +28,10 @@ const foes = [
   mon("Gyarados", 100, ["Water","Flying"], "Moxie", [330,260,210,160,230,200], [["Waterfall","Water",80,"P"],["Crunch","Dark",80,"P"]], false),
   mon("Houndoom", 100, ["Dark","Fire"], "Flash Fire", [290,190,170,260,190,230], [["Flamethrower","Fire",90,"S"],["Dark Pulse","Dark",80,"S"]], false),
   mon("Magnezone", 100, ["Electric","Steel"], "Sturdy", [280,160,270,290,210,140], [["Thunderbolt","Electric",90,"S"],["Flash Cannon","Steel",80,"S"]], false),
-  // Triple Axel's 20/40/60 hits, summed: the approximate damage model counts one hit per move.
-  mon("Weavile", 110, ["Dark","Ice"], "Pressure", [560,330,190,110,210,320], [["Triple Axel","Ice",120,"P"],["Night Slash","Dark",70,"P"]], false, undefined, 2),
+  // Triple Axel's 20/40/60 hits, summed: the approximate damage model counts one hit per move. Brick Break is never
+  // its best hit, but it makes Weavile the trainer's clear send-in against Morpeko (its moves average ×1.75 into it);
+  // on the matchup score alone Houndoom would tie it, and the game breaks a tie at random.
+  mon("Weavile", 110, ["Dark","Ice"], "Pressure", [560,330,190,110,210,320], [["Triple Axel","Ice",120,"P"],["Brick Break","Fighting",75,"P"]], false, undefined, 2),
 ];
 
 const run = (phase, { party: ours = party, foes: theirs = foes, double = false, enemyModifiers } = {}) => {
@@ -47,7 +49,7 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   // The planner lives inside the bundle's IIFE; expose it for the test only.
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__tp = { teamPlan, drawTeamPlan, tpHealProfile };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__tp = { teamPlan, drawTeamPlan, tpHealProfile, tpSendScore, tpFight };\n})();\n"));
   const plan = globalThis.__tp.teamPlan(scene, scene.currentBattle, party, foes);
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };
@@ -136,5 +138,26 @@ assert.equal(plan.approxDoubles, false);
   assert.ok(poisoned.hp < clean.hp, `poison tokens chip us (${clean.hp}% → ${poisoned.hp}%)`);
   const slept = step({ party: [blastoise()], foes: [snorlax()], enemyModifiers: [token(4)] });
   assert.ok(slept.hp < clean.hp, `sleep tokens cost us turns, so Snorlax gets more hits in (${clean.hp}% → ${slept.hp}%)`);
+}
+// The trainer's send-in at the HP the plan has reached: min(1, its HP ratio + 1 − ours), ×0.5 for a bench mon at
+// 20–40 % that doesn't outspeed. A worn-down Morpeko makes a 30 % bench mon a better send-in than a healthy one does.
+{
+  const { tpSendScore } = globalThis.__tp;
+  const T = { send: [[{ base: 3, outspeed: false }], [{ base: 3, outspeed: true }]], foeMax: [100, 100], ourMax: [200] };
+  const at = (ourHp, fi) => Math.round(tpSendScore(T, { oh: [ourHp], fh: [30, 30] }, fi, 0) * 1000) / 1000;
+  assert.deepEqual([at(200, 0), at(20, 0), at(200, 1), at(20, 1)], [0.45, 1.8, 1.125, 3], "the HP factor follows the simulated HP");
+}
+// Speed order and rolls as chances: a mirror match at a speed tie with a coin-flip KO is a coin flip, not a sure win.
+{
+  const { tpFight } = globalThis.__tp;
+  const rolls = [{ r: 0.92, p: 0.5 }, { r: 1.08, p: 0.5 }];
+  const T = { ours: [[{ hits: [100], use: rolls }]], theirs: [[{ dmg: 100, e: 1, use: rolls }]], first: [[0.5]], boss: [null], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null] };
+  const r = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
+  console.log(`== mirror at a speed tie\nwin ${r.pWin.toFixed(3)} · loss ${r.pLoss.toFixed(3)}`);
+  // Two turns: each side's two hits KO when at least one of them rolls high (¾); on the turn both would, the tie.
+  assert.ok(Math.abs(r.pWin - r.pLoss) < 1e-9 && Math.abs(r.pWin + r.pLoss - 1) < 1e-9, `symmetric (${r.pWin}, ${r.pLoss})`);
+  T.first = [[0]];
+  const faster = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
+  assert.ok(faster.pWin > 0.8 && faster.pWin < 1, `outspeeding wins most, not all: ${faster.pWin}`);
 }
 console.log("ok");

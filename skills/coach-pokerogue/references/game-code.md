@@ -583,11 +583,43 @@ then orbs). HUD: `endOfTurnHp`.
   `move.getPriority(p,true)`, `move.getPriorityModifier(p,true)`, Quick Claw (0.1·stack) / Quick Draw (0.3, attacking)
   → FIRST, `p.getEffectiveStat(5)` (reversed under `s.arena.getTag('TRICK_ROOM')`), tie 0.5.
 - `threatFrom(s, foe, me)` → Σ over `enemyMoveDistribution` of `p × moveOutcome(foe, me, …)`; exposes worst-case
-  (`max` roll + crit) for the "ko" flag and expected for scoring. Replaces `hits(f, me, true)` + `FOE_MARGIN`.
-- `turnsToKo(s, atk, def, pm, { firstHitAlreadyTaken })` → expected turns using `applyHits` per turn plus
-  `endOfTurnHp` between turns and boss segment state carried over; cap 9.
-- `exchange(s, me, myPm, foe)` → `{ pWeKoFirst, pTheyKoFirst, expectedHpLeft }` combining `actionOrder`,
-  `moveOutcome` (acc, crit, dist), `enemyMoveDistribution` and survival items. Feeds `fieldPlan` scores.
+  (`max` roll + crit) for the "ko" flag and expected for scoring, and `use`: the turn's damage distribution over
+  those moves. Replaces `hits(f, me, true)` + `FOE_MARGIN`.
+- `moveOutcome(...).use` → `[{ d, p }]`, the damage of one use before the target's HP or a boss bar cuts it: the
+  per-hit roll × crit maps convolved over the hit counts, a miss at 0 (each hit rolling for CHECK_ALL_HITS), cut to 12
+  points by joining the closest neighbours. `flinch`: P(a landed use flinches the target) from
+  `FlinchAttr.getMoveChance` (Serene Grace, Shield Dust), 0 through Inner Focus.
+- `koCurve(chunks, use, { scale, act, heal, focus, firstKo, start })` → `by[n-1]` = P(down by use n), n ≤ 9: KO/survive
+  bucketing (after Foul Play). Each use splits every standing branch into cleared (a boss bar or the Reviver Seed's
+  second life next, overflow wasted) or standing, turn-end chip or heal applied per branch, then the standing ones
+  merged to 4 HP levels per chunk. `firstKo` pins use 1 to this turn's exact odds (Sturdy, the roll on the real HP).
+  `after1` hands the standing branches to a later turn. Replaces mean-damage turn counts: a 2HKO that lands 48 % of
+  the time is a 3HKO, not a sure 2.
+- `exchange(s, me, myPm, foe, { after })` → `{ pWeKoFirst, pTheyKoFirst, turnsWe, turnsThey, eTurnsWe, eTurnsThey,
+  expectedHpLeft, turn1 }`: turn 1 exact (order, KO odds, King's Rock and our own flinch), then a race of the two KO
+  curves turn by turn, independent, the order deciding a turn both would KO (a speed tie is 0.5 each turn).
+  `turnsWe` / `turnsThey` are the median (the panel's "N hits"); `eTurns*` the expectation, which scoring uses.
+  `after` starts both curves from an earlier exchange's `turn1` branches. Feeds `fieldPlan` scores.
+- Depth 2 (`fieldPlan`): each option's turn 1 played exactly, then the best of our top two moves and a priority move
+  from its standing branches, kept when it beats repeating the move by 0.1 (Fake Out then an attack). No minimax: the
+  foe's reply is the AI replica's distribution, re-picked for turn 2. Doubles: the three best options per slot and
+  any priority / flinch / first-turn-only move. A follow-up that also hits our partner is never proposed.
+- Consistency prior (after PokéLLMon): +0.15 for the move a mon out since before last turn used last
+  (`getLastXMoves(1)`, `tempSummonData.turnCount ≥ 2`), −0.5 for a plan that switches out a mon that came in last
+  turn (`tempSummonData.turnCount ≤ 1` past turn 1: `resetSummonData` on the switch-in, `SwitchSummonPhase.onEnd`
+  takes one off for a command switch, `TurnEndPhase` adds one).
+
+### Team plan (35-team-plan.js)
+- `tpFight` plays both speed orders each turn weighted by P(foe first) (token paralysis mixed in, not a 0.5 cut) and
+  each side's damage from ≤ 4 levels of its `use` relative to the mean, carrying ≤ 4 HP branches. It returns the
+  likelier ending plus `pWin` / `pLoss` / `pStall`; the beam carries the likelier ending and values every ending by
+  its chance. A foe's hits on a mon not on the field (or from a foe not on it) use its re-picked moves (`next`).
+- Send-in after a faint: `Trainer.getNextSummonIndex` → the best `getMatchupScore(benchMon, ourMon)`, which is
+  `(atkScore + defScore) × min(hpDiff, 1)`, `hpDiff = benchHp% + (1 − ourHp%)` (rounded to 0.01), ×1.25 if the bench
+  mon outspeeds (`getStat(SPD, false)` off the field), else ×0.5 at 20–40 % HP. With a full-HP bench mon the factor
+  caps at 1, so speed can't matter and ties are common — the game breaks them with a seeded random pick. The plan
+  asks the game once with our HP at 0 (the factor caps, the call returns the type scores) and puts the simulated HP
+  back itself.
 
 ---
 

@@ -155,7 +155,8 @@ const log = (...a) => console.log(...a);
 }
 
 // ---- A. Charge and recharge turns. Watchog into Golem: Hyper Beam 3HKO takes 5 turns (a recharge between hits);
-// Body Slam 4HKO takes 4, so it's the pick.
+// Body Slam's 68–80 rolls (a crit 1 in 24) 4HKO the 300 HP only 37 % of the time, so 5 hits in 5 turns — as long, but
+// with no turn it can't act, so it's the pick.
 {
   const hyperBeam = move(63, "Hyper Beam", 150, { cat: 1, attrs: [new RechargeAttr()] });
   const bodySlam = move(34, "Body Slam", 85);
@@ -166,7 +167,7 @@ const log = (...a) => console.log(...a);
   const hb = E.exchange(scene, watchog, watchog.moveset[0], golem);
   const bs = E.exchange(scene, watchog, watchog.moveset[1], golem);
   log(`A Hyper Beam: ${hb.hitsWe} hits in ${hb.turnsWe} turns · Body Slam: ${bs.hitsWe} hits in ${bs.turnsWe} turns`);
-  assert.deepEqual([hb.hitsWe, hb.turnsWe, bs.hitsWe, bs.turnsWe], [3, 5, 4, 4]);
+  assert.deepEqual([hb.hitsWe, hb.turnsWe, bs.hitsWe, bs.turnsWe], [3, 5, 5, 5]);
   assert.equal(E.duel(scene, watchog, golem).mine.name, "Body Slam");
 
   // Solar Beam charges a turn per hit, unless its instant-charge condition (sun) holds.
@@ -246,7 +247,9 @@ const log = (...a) => console.log(...a);
   setup([sleeper], [golem]);
   const awake = E.exchange(scene, sleeper, sleeper.moveset[0], golem);
   log(`F our Snorlax: ${awake.turnsWe} turns awake, ${asleep.turnsWe} asleep`);
-  assert.deepEqual([awake.turnsWe, asleep.turnsWe], [2, 4]);
+  // Body Slam's 136–160 rolls (1 in 24 a crit) take the 300 HP Golem in two uses only about 46 % of the time: its mean
+  // (151) says 2, the odds say 3.
+  assert.deepEqual([awake.turnsWe, asleep.turnsWe], [3, 5]);
   assert.ok(asleep.pWeKoFirst <= awake.pWeKoFirst);
 
   // A foe mid-Dig: a faster attacker's hit misses this turn; Earthquake reaches it.

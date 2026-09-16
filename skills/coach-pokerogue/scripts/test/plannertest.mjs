@@ -30,7 +30,7 @@ const liveBundle = () => {
   assert.ok(at > 0, "bundle has 30-planner.js");
   src = src.slice(0, at) + STUBS + src.slice(at);
   const end = src.lastIndexOf("})();");
-  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, turnsToKo };\n" + src.slice(end);
+  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, turnsToKo, koCurve, tokenActs };\n" + src.slice(end);
 };
 
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]
@@ -108,7 +108,7 @@ const cyrus = withMetagross => {
 
 // Mounts the HUD on a mocked scene and returns the rendered lines (`field`: everything above the foe rows).
 // `fieldIndex`: whose command phase it is; `turnCommands`: commands already chosen this turn.
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [] }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : live ? { phaseName: "CommandPhase", fieldIndex } : null), queueMessage() {} };
@@ -116,7 +116,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
   const [gyarados, weavile] = foes;
   globalThis.__stub = {
-    outcome,
+    outcome: stubOutcome,
     dist: dist ?? (e => (e === gyarados ? [{ name: "Waterfall", type: "Water", p: 1, score: 10, targets: [0] }] : [])),
     switches: switches ?? (active => new Map(weavile && active.includes(gyarados) ? [[gyarados, { to: weavile, ratio: 1 }]] : [])),
   };
@@ -206,20 +206,23 @@ const assertNoImmediateScrafty = field => {
   // One HP above the bar boundary: Aura Wheel (77–90) breaks the bar for 1 HP, then needs two more for the last 150.
   const edge = { ...weavile, id: "Weavile at the boundary", hp: 151 };
   assert.equal(exchange(s, morpeko, morpeko.moveset[0], edge).turnsWe, 3, "a clamped first hit doesn't set the pace for later bars");
-  // Turn-end heals come every turn the target survives. Meteor Mash lands for 64.3 on average into a Gyarados healing
-  // 30: 250 HP falls 34.3 a turn after the first, so the 7th hit KOs (6.4). Waterfall (55.1) into a Metagross
-  // healing 10: 240 / 45.1 → 6 turns. Healing once would say 5 and 5.
+  // Turn-end heals come every turn the target survives. Meteor Mash lands for 64.3 on average, 57.9 a use with its 10 %
+  // misses, into a Gyarados healing 30: 250 HP falls 27.9 a turn, so it stands on 82.6 before the 7th use (out of
+  // reach of a 70 max roll) and falls to the 8th. Waterfall (55.1) into a Metagross healing 10: 240 / 45.1 → 6 turns.
+  // Healing once would say 5 and 5.
   globalThis.__stub.heal = p => ({ Gyarados: 30, Metagross: 10 })[p.name] ?? 0;
   const [, , metagross] = party;
   const healing = exchange(s, { ...metagross, id: "healing Metagross" }, metagross.moveset[0], { ...gyarados, id: "healing Gyarados" });
   delete globalThis.__stub.heal;
-  assert.deepEqual([healing.turnsWe, healing.turnsThey], [7, 6], "heals land every turn on both sides");
+  assert.deepEqual([healing.turnsWe, healing.turnsThey], [8, 6], "heals land every turn on both sides");
   // Chip lands every turn, the last one included: 250 HP under 64.3 a hit and 61 chip goes in 2, not 3.
   assert.equal(turnsToKo(250, 64.3, -61), 2, "chip counts on the KO turn");
   assert.equal(turnsToKo(40, 30, -10), 1, "chip finishes it the turn it's hit");
   assert.equal(turnsToKo(100, 0, -30), 4, "chip alone");
+  // Meteor Mash and 61 chip a turn into 250 HP: two turns do it only 47.8 % of the time (the rolls and a 10 % miss
+  // decide), three 98 %. The mean (64.3 + 61 a turn) would call it a sure two.
   globalThis.__stub.heal = p => (p.name === "Gyarados" ? -61 : 0);
-  assert.equal(exchange(s, { ...metagross, id: "Metagross vs chip" }, metagross.moveset[0], { ...gyarados, id: "poisoned Gyarados" }).turnsWe, 2, "chip shortens the exchange");
+  assert.equal(exchange(s, { ...metagross, id: "Metagross vs chip" }, metagross.moveset[0], { ...gyarados, id: "poisoned Gyarados" }).turnsWe, 3, "chip shortens the exchange");
   // Hit plus chip finishing it this turn isn't held to two turns: Meteor Mash (64.3) and 40 chip into 100 HP.
   globalThis.__stub.heal = p => ({ Gyarados: -40, Morpeko: -20 })[p.name] ?? 0;
   assert.equal(exchange(s, { ...metagross, id: "Metagross vs low chip" }, metagross.moveset[0], { ...gyarados, id: "Gyarados at 100", hp: 100 }).turnsWe, 1, "our hit and its chip");
@@ -262,20 +265,33 @@ const assertNoImmediateScrafty = field => {
   assert.equal(exchange(s, { ...metagross, id: "Metagross at 80 vs wild" }, metagross.moveset[0], ursaring("wild Ursaring vs 80", false), { hp: 80 }).turnsThey, 3,
     "no boost before the bar breaks");
   // Sleep tokens (2.5 % a stack a landed hit): asleep 1–2 attempts (⅓ / ⅔). Metagross moves first, so a Body Slam's
-  // sleep costs from the next turn: acting 1, .9, .84, .86, .87… takes Meteor Mash 7 turns through 400 HP, not 6.
+  // sleep costs from the next turn: acting 1, .9, .84, .86, .87, .89… Meteor Mash needs six landed uses for the two
+  // 200 HP bars, and all of the first six get through 50.4 % of the time — just more likely than not, so 6 turns; by
+  // the 7th, 83.7 %. Taken on the mean it read 7.
+  const { tokenActs, koCurve } = globalThis.__planner;
+  const mashRolls = Array.from({ length: 16 }, (_, r) => ({ d: Math.floor(80 * (85 + r) / 100), p: 1 / 16 }));
+  const tokenCurve = id => {
+    const a = tokenActs(s, ursaring(`${id} Ursaring`, true), { ...metagross, id: `Metagross vs ${id}` }, 1, 0);
+    return koCurve([200, 200], mashRolls, { act: i => a.act(i + 1) }).by.map(x => Math.round(x * 1000) / 1000);
+  };
   const sleepToken = new (class EnemyAttackStatusEffectChanceModifier { effect = 4; chance = 0.025; getStackCount() { return 4; } })();
   s.enemyModifiers = [sleepToken];
-  assert.equal(slam(ursaring("trainer Ursaring vs sleep", true)).turnsWe, 7, "sleep tokens cost our turns");
-  // Freeze at 10 stacks (25 % a hit): ¾ then 9/16 of the next two attempts lost, acting 1, .81, .72, .79, .84…: 8 turns.
+  assert.deepEqual(tokenCurve("sleep").slice(4, 7), [0, 0.504, 0.837], "each attempt is one KO-or-not branch, not a share of a hit");
+  assert.equal(slam(ursaring("trainer Ursaring vs sleep", true)).turnsWe, 6, "sleep tokens cost our turns");
+  // Freeze at 10 stacks (25 % a hit): ¾ then 9/16 of the next two attempts lost, acting 1, .81, .72, .79, .84, .88,
+  // .91: six of the first seven land 71.9 % of the time, so 7 turns (the mean said 8).
   s.enemyModifiers = [new (class EnemyAttackStatusEffectChanceModifier { effect = 5; chance = 0.025; getStackCount() { return 10; } })()];
-  assert.equal(slam(ursaring("trainer Ursaring vs freeze", true)).turnsWe, 8, "freeze tokens cost our turns");
-  // Paralysis halves Speed: a Speed-100 Ursaring then outspeeds Metagross (120). Both KO on turn 6; paralysed by turn 5
-  // with 1 − .75⁵ = .763, Metagross gets the last hit in only .237 of the time.
+  assert.deepEqual(tokenCurve("freeze").slice(5, 7), [0.342, 0.719]);
+  assert.equal(slam(ursaring("trainer Ursaring vs freeze", true)).turnsWe, 7, "freeze tokens cost our turns");
+  // Paralysis halves Speed: a Speed-100 Ursaring then outspeeds Metagross (120). Both KO on turn 6 more likely than
+  // not; paralysed by turn 5 with 1 − .75⁵ = .763, Metagross gets the last hit in only .237 of the time — and its 6th
+  // use itself only lands in time 70.3 % of the time (a paralysed turn is lost 1 in 8), so .703 × .237 = .167.
   s.enemyModifiers = [new (class EnemyAttackStatusEffectChanceModifier { effect = 3; chance = 0.025; getStackCount() { return 10; } })()];
   const quick = id => ({ ...ursaring(id, true), getStat: i => [400, 1000, 10, 10, 10, 100][i] });
   const tie = exchange(s, { ...metagross, id: "Metagross at 200 vs para" }, metagross.moveset[0], quick("quick Ursaring vs para"), { hp: 200 });
   assert.deepEqual([tie.turnsWe, tie.turnsThey], [6, 6]);
-  assert.ok(Math.abs(tie.pWeKoFirst - 0.237) < 0.01, `paralysis flips the order of the last turn (${tie.pWeKoFirst})`);
+  assert.equal(tokenCurve("para")[5], 0.703);
+  assert.ok(Math.abs(tie.pWeKoFirst - 0.167) < 0.005, `paralysis flips the order of the last turn (${tie.pWeKoFirst})`);
   delete s.enemyModifiers;
   // Wave poison tokens: each landed enemy attack poisons 5 % a stack. Waterfall (73.9 a turn) needs 3 turns for 150 HP;
   // at 10 stacks Morpeko is poisoned half the time by turn 1's end, and the expected 1/8 chip finishes it in 2.
@@ -305,9 +321,10 @@ const assertNoImmediateScrafty = field => {
   assert.equal(exchange(s, { ...metagross, id: "Metagross, Leftovers and a 4-stack", getHeldItems: () => [heldItem("TurnHealModifier"), heldItem("BaseStatModifier", 4)] },
     metagross.moveset[0], { ...gyarados, id: "Gyarados vs 4-stack", getHeldItems: () => [heldItem("TurnHeldItemTransferModifier")] }).turnsThey, 7, "a steal picks an item, then a stack");
   globalThis.__stub.heal = p => (p.getHeldItems().some(m => m.constructor.name === "TurnHealModifier") ? { Metagross: 10, Gyarados: 30 }[p.name] ?? 0 : 0);
-  // …and ours from it: Meteor Mash (64.3) into a Gyarados healing 30 takes 7 turns, 5 once our black hole has its Leftovers.
+  // …and ours from it: Meteor Mash (57.9 a use, misses counted) into a Gyarados healing 30 takes 8 turns, 5 once our
+  // black hole has its Leftovers.
   const mash = (id, items) => exchange(s, { ...metagross, id, getHeldItems: () => items }, metagross.moveset[0], { ...gyarados, id: `Gyarados vs ${id}`, getHeldItems: leftovers }).turnsWe;
-  assert.equal(mash("Metagross, no black hole", []), 7);
+  assert.equal(mash("Metagross, no black hole", []), 8);
   assert.equal(mash("Metagross with black hole", [heldItem("TurnHeldItemTransferModifier")]), 5, "our Mini Black Hole takes its Leftovers");
   delete globalThis.__stub.heal;
   console.log("== building blocks ok");
@@ -350,6 +367,38 @@ const assertNoImmediateScrafty = field => {
   assert.match(hole, /Lycanroc's Mini Black Hole: steals 1 item a turn/, `Mini Black Hole named:\n${hole}`);
   assert.doesNotMatch(slot(charizard([]), lycanroc([item("TurnHeldItemTransferModifier")])), /Mini Black Hole/, "nothing to steal, no note");
   console.log("== item thief note ok");
+}
+
+// ---- 5c. Depth 2: Fake Out first. Ambipom is faster; Slowbro's Psychic (136–160) 2HKOs its 250 HP. Return
+// (136–160) needs three hits for 320 HP, so trading Returns loses on turn 2. Fake Out (51–60, priority, a sure flinch
+// on the first turn out) takes turn 1 for free, and two Returns on top of it are enough: Ambipom's last hit lands
+// on turn 3 before Slowbro's second Psychic.
+Object.assign(TABLE, { "Ambipom>Fake Out>Slowbro": [[60], 1, 1], "Ambipom>Return>Slowbro": [[160], 1, 1], "Slowbro>Psychic>Ambipom": [[160], 1, 1] });
+{
+  const party = [mon("Ambipom", 70, ["Normal"], [250, 180, 120, 60, 120, 200], [["Fake Out", "Normal", 40, "P", 3], ["Return", "Normal", 102, "P"]], true)];
+  const foes = [mon("Slowbro", 70, ["Water", "Psychic"], [320, 120, 200, 180, 150, 60], [["Psychic", "Psychic", 90, "S"]], true)];
+  const fakeOut = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Fake Out" ? { ...x, once: true, flinch: 1 } : x; };
+  const dist = () => [{ name: "Psychic", type: "Psychic", p: 1, score: 10, targets: [0] }];
+  const at = stub => render({ party, foes, live: true, dist, switches: () => new Map(), stubOutcome: stub }).field.find(l => /^⚔ Ambipom/.test(l)) ?? "";
+  const withFakeOut = at(fakeOut);
+  console.log(`== depth 2: Fake Out then Return (live)\n${withFakeOut}`);
+  assert.match(withFakeOut, /Fake Out → Slowbro .*then Return/, `Fake Out first, Return after:\n${withFakeOut}`);
+  // Without the first-turn flinch, Fake Out is just a weak hit: repeat Return.
+  assert.match(at(outcome), /Return → Slowbro/, "no flinch, no Fake Out");
+}
+
+// ---- 5d. Consistency: two equal moves, and the one Garchomp used last turn keeps the edge rather than the first listed.
+Object.assign(TABLE, { "Garchomp>Dragon Claw>Snorlax": [[70], 1, 1], "Garchomp>Stone Edge>Snorlax": [[70], 1, 1], "Snorlax>Body Slam>Garchomp": [[40], 1, 1] });
+{
+  const foes = [mon("Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]], true)];
+  const chomp = extra => [mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130],
+    [["Stone Edge", "Rock", 100, "P", 0, { id: 444 }], ["Dragon Claw", "Dragon", 80, "P", 0, { id: 337 }]], true, undefined, extra)];
+  const dist = () => [{ name: "Body Slam", type: "Normal", p: 1, score: 10, targets: [0] }];
+  const pick = extra => render({ party: chomp(extra), foes, live: true, dist, switches: () => new Map() }).field.find(l => /^⚔ Garchomp/.test(l)) ?? "";
+  assert.match(pick({}), /Stone Edge → Snorlax/, "the first listed, all else equal");
+  const kept = pick({ tempSummonData: { turnCount: 3 }, getLastXMoves: () => [{ move: 337, targets: [2], result: 1 }] });
+  console.log(`== consistency: last turn's move (live)\n${kept}`);
+  assert.match(kept, /Dragon Claw → Snorlax/, `keeps last turn's near-equal move:\n${kept}`);
 }
 
 // ---- 6–8. Doubles: where both slots aim is one decision.

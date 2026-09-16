@@ -13,4 +13,6 @@
 winnable · Charizard
 == thieves and tokens
 KO · 60% left
+== mirror at a speed tie
+win 0.500 · loss 0.500
 ok
