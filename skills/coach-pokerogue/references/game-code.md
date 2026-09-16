@@ -805,3 +805,69 @@ waves luck buys nothing and a reroll redraws the items but never the rarities. `
 `isFixedBattle` / `getFixedBattle` / `isBoss`, `Pokemon.getLuck` / `isAllowedInBattle`, a modifier's
 `getStackCount()`. `getFixedBattle(w).getTrainer()` is *not* one of these — it draws, and `48-preview.js` only calls
 it inside a fork.
+
+## 13. Mystery Encounters: the option screen, its forks, and what the common encounters do
+
+Read from the pinned source (v1.12.0.11); nothing here has been checked against a live encounter yet.
+
+**The screen.** `MysteryEncounterPhase.start` bumps the encounter's seed offset (`updateSeedOffset`: `seedOffset ??
+waveIndex·1000`, then `+ 512`) and opens UiMode 45 (`MysteryEncounterUiHandler`). `displayEncounterOptions` calls
+`option.meetsRequirements()` once per option and keeps the answers in `optionsMeetsReqs`; the rendered labels are
+BBCode text objects in `optionsContainer.list`, with "view party" last. `processInput` refuses an unmet option only in
+optionMode `DISABLED_OR_DEFAULT` (1) or `DISABLED_OR_SPECIAL` (3). **`meetsRequirements()` is not a read**: it assigns
+`primaryPokemon` / `secondaryPokemon`, and with `excludePrimaryFromSecondaryRequirements` it draws `randSeedInt` for the
+primary. An option without secondary requirements takes the **first** qualifier as its primary — the mon the game
+uses when the option doesn't open a party picker. Each primary requirement's `queryParty(party)` only filters, so the
+HUD lists qualifiers with it, inside `sandbox`. `MoneyRequirement` refreshes `requiredMoney` from
+`getWaveMoneyAmount(scalingMultiplier)` when checked; `getWaveMoneyAmount` is pure arithmetic on the wave index.
+
+**The forks.** An option's closures run on the run seed at offsets derived from `getSeedOffset()`:
+
+| Closure | Where | Offset |
+|---|---|---|
+| `onPreOptionPhase` | `MysteryEncounterPhase.handleOptionSelect` | `getSeedOffset()` |
+| `onOptionPhase` | `MysteryEncounterOptionSelectedPhase.start` (after the intro visuals hide, when `autoHideIntroVisuals`) | `getSeedOffset() × 500` |
+| `onPostOptionPhase` | `PostMysteryEncounterPhase.start` | `getSeedOffset() × 2000` |
+| rewards | `MysteryEncounterRewardsPhase.start` | `waveIndex × 1000`, whatever was picked |
+
+`executeWithSeedOffset` puts the stream back as soon as its callback *returns*, and every one of these callbacks is
+async — so **only the draws before a closure's first `await` are forked**. Those are exact from the moment the option
+screen is up; anything after an `await` (a party picker, a message, an animation) draws from the live stream.
+`handleOptionSelect` calls `populateDialogueTokensFromRequirements()` first, on the live stream, which doesn't touch
+the forks. A draw is `randSeedInt(range, min)` = `RND.integerInRange(min, range − 1 + min)` (§11).
+
+**Leaving.** `leaveEncounterWithoutBattle(true)` → `MysteryEncounterRewardsPhase(addHealPhase)`: with no
+`doEncounterRewards` set, that is a `SelectModifierPhase` with `fillRemaining: false` — the shop with **no free
+reward**, not a heal. `setEncounterRewards({ guaranteed…, fillRemaining: false })` is a reward screen of exactly those
+items, **pick one**; `fillRemaining: true` adds the wave's normal rewards.
+
+**The twelve common encounters** (tier weight 66; Field Trip is common too but commented out of every biome list, so
+it never spawns). What the HUD re-implements, and which part is exact:
+
+| Encounter | Gate | Options, as the source does them | Exact (fork, draw) |
+|---|---|---|---|
+| Mysterious Chest | party ≥ 2 | open: `roll = randSeedInt(100)` — ≥ 75 pick of Common×2 + Great×2, ≥ 45 Ultra×3, ≥ 35 Rogue×2, ≥ 30 Master×1, else **trap**: `getHighestLevelPlayerPokemon(true, false)` (first of the highest level among the living) is KO'd, then a Gimmighoul boss (level scaling 0.5) with normal rewards · leave | pre ×1, first draw: the roll |
+| Fight or Flight | — | fight a boss (+2 to a random stat on entry) for `misc` (a `ModifierTypeOption`, tier by wave: > 160 Master, > 120 Rogue, > 40 Ultra, else Great), catchable · steal it with a `STEALING_MOVES` user, EXP · leave | — |
+| Department Store Sale | waves ≤ 100 | pick of 5 TMs (`randSeedInt(5)`: < 2 Common, < 4 Great, else Ultra) · pick of 3 (`randSeedInt(3)`: 0 PP Up, else a vitamin) · pick of 5 (`randSeedInt(5)`: 0 Dire Hit, else an X item) · pick of 4 ball packs (`randSeedInt(65)`: < 10 Poké, < 40 Great, < 60 Ultra, else Rogue) | option ×500, every roll (the loop runs before any `await`) |
+| Shady Vitamin Dealer | money ≥ ×1.5; a mon over half HP | ×1.5: 2 random vitamins on a picked mon over half HP; post phase: it loses ½ max HP and `newNature = randSeedInt(25)` redrawn while equal to its nature · ×5: 2 vitamins, nothing else · leave | post ×2000: the nature, for a given mon |
+| Lost at Sea | — | a Surf learner guides, EXP · a Fly learner guides, EXP · every allowed mon takes `floor(maxHp × 25 %)`, never below 1 HP (`applyDamageToPokemon`) | — |
+| Fiery Fallout | waves 40–180 | double battle vs 2 Volcarona (+1 SpD/Spe, Fire Spin on both leads, sun) → the lead gets a random attack-type booster + rewards · every allowed non-Fire mon (`isOfType(FIRE, { includeTeraType: false })`) takes 20 %, then `burnable[randSeedInt(burnable.length)]` (no status) is burned — if `canSetStatus(BURN, true)` — and **its ability is overridden to Heatproof** · a Fire type or `FIRE_RESISTANT_ABILITIES` mon: no fight, booster + rewards, EXP | option ×500, the burn target |
+| The Strong Stuff | party ≥ 3, once a run | drink: the two highest `getSpeciesForm().getBaseStatTotal()` (stable sort) get `PokemonBaseStatTotalModifier(−15)`, the rest `+10` — every base stat, HP by half — then rewards · fight Shuckle (5 bars, +1 Def/SpD, berries; Gastro Acid and Stealth Rock on the player's lead) → Soul Dew + rewards | — |
+| Berries Abound | — | fight a boss → pick of 5 berries + `numBerries` (> 160: 7, > 120: 5, > 40: 4, else 2) · race: `d = fastest.getStat(SPD) / (enemySpeed × 1.1)`; `d ≥ 1` grabs `max(min(round((d − 1) / 0.08), numBerries), 2)` berries, no fight, EXP; `d < 1` is the same fight with the boss +1 Def/SpD/Spe (wave < 50) or all five · leave | — (stat arithmetic, no draw) |
+| Part-Timer | — | a picked mon earns `getWaveMoneyAmount(mult)` × Amulet Coin (`value += floor(value × 0.2 × stacks)`): deliver `mult = clamp(2.5 × Spe / base, 1, 4)` with `base = floor(196 · L / 100) + 5`; warehouse the same on `HP + 1.5 (Atk + Def)` against `floor(166 · L / 100) + L + 10 + 1.5 × 2 (floor(166 · L / 100) + 5)`; sell (a `CHARMING_MOVES` user) ×2.5. Every move of that mon is left with **2 PP** | — |
+| Teleporting Hijinks | waves X2–X4, money ≥ ×1.75 | pay ×1.75, or free with a Steel/Electric mon (+EXP): `BIOME_CANDIDATES` minus the current biome, `[randSeedInt(n)]` — Space, Fairy Cave, Laboratory, Island, Wasteland, Dojo — then an enraged boss there · stay: a boss here, Magnet and Metal Coat among the rewards | option ×500, the destination (first draw of `doBiomeTransitionDialogueAndBattleInit`) |
+| Uncommon Breed | — | `misc.pokemon` (level = top level − 2, an egg move) — fight it boosted, catchable · spend 4 random berries: it joins, +2nd egg move · a `CHARMING_MOVES` user: it joins with IVs rerolled upward, +2nd egg move, EXP | — |
+| Global Trade System | party ≥ 2 for trades | trade a mon for one of 3 offers built in onInit (`getPokemonTradeOptions`: non-legendary species within ±100 BST, same level; a legendary gets a fixed pool) · wonder trade: random species, boosted shiny / hidden-ability odds · a held item for a random item one tier up · leave | — (offers are already rolled and readable in `misc.tradeOptionsMap`) |
+
+`onInit` leaves what it rolled on the encounter: `misc` (Fight or Flight's item, Berries Abound's `numBerries` /
+`fastestPokemon` / `enemySpeed`, Uncommon Breed's `pokemon`, the GTS offers, Teleporting Hijinks' `price`) and
+`enemyPartyConfigs[0].pokemonConfigs` (species, `level` when fixed, `isBoss`, `bossSegments`). A config without a level
+gets the wave's `enemyLevels` + `round(wave / 10 × levelAdditiveModifier)` in `initBattleWithEnemyConfig`.
+
+**Safe to call this way** (inside `sandbox`): `encounter.getSeedOffset()`, `executeWithSeedOffset` with a callback that
+only draws, a primary requirement's `queryParty`, `getWaveMoneyAmount`, `Pokemon.isOfType` / `canSetStatus(effect,
+true)` (§0: ability bookkeeping, which `sandbox` restores). **Not safe**: `meetsRequirements()` on an encounter or an
+option, `populateDialogueTokensFromRequirements`, any `on…Phase` closure.
+
+**Unmeasured**: every 🔮 outcome is a replay of the source's draw order, never checked against an encounter as it
+resolved. A closure that gains an early `await`, or a draw before the one the HUD replays, makes it confidently wrong.

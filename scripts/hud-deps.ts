@@ -139,6 +139,69 @@ export const HUD_DEPS = {
     `src/enums/battler-tag-type.ts#BattlerTagType`,
   ],
 
+  /**
+   * §13. The Mystery Encounter card calls nothing that decides an outcome: it
+   * reads the handler's requirement answers, and re-implements what each of the
+   * twelve common encounters does from its source file — so every encounter
+   * const, the helpers and tuning constants its outcome is spelled from, and the
+   * phases that fork the RNG are the dependency. A moved fork offset
+   * (`handleOptionSelect` ×1, `MysteryEncounterOptionSelectedPhase` ×500,
+   * `PostMysteryEncounterPhase` ×2000) or a reordered draw inside an option makes
+   * every 🔮 outcome confidently wrong. Two enums come through as bare numbers:
+   * the encounter type the rules are keyed by and the Nature the dealer rolls.
+   */
+  "46-encounter.js": [
+    `src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.displayEncounterOptions`,
+    `src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.processInput`,
+    `src/phases/mystery-encounter-phases.ts#MysteryEncounterPhase.start`,
+    `src/phases/mystery-encounter-phases.ts#MysteryEncounterPhase.handleOptionSelect`,
+    `src/phases/mystery-encounter-phases.ts#MysteryEncounterOptionSelectedPhase.start`,
+    `src/phases/mystery-encounter-phases.ts#PostMysteryEncounterPhase.start`,
+    `src/phases/mystery-encounter-phases.ts#MysteryEncounterRewardsPhase.doEncounterRewardsAndContinue`,
+    `src/data/mystery-encounters/mystery-encounter.ts#MysteryEncounter.updateSeedOffset`,
+    `src/data/mystery-encounters/mystery-encounter-option.ts#MysteryEncounterOption.meetsPrimaryRequirementAndPrimaryPokemonSelected`,
+    `src/data/mystery-encounters/mystery-encounter-requirements.ts#MoneyRequirement.meetsRequirement`,
+    `src/data/mystery-encounters/requirements/requirement-groups.ts#STEALING_MOVES`,
+    `src/data/mystery-encounters/requirements/requirement-groups.ts#CHARMING_MOVES`,
+    `src/data/mystery-encounters/requirements/requirement-groups.ts#FIRE_RESISTANT_ABILITIES`,
+    `src/data/mystery-encounters/utils/encounter-phase-utils.ts#leaveEncounterWithoutBattle`,
+    `src/data/mystery-encounters/utils/encounter-phase-utils.ts#handleMysteryEncounterVictory`,
+    `src/data/mystery-encounters/utils/encounter-phase-utils.ts#initBattleWithEnemyConfig`,
+    `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#getHighestLevelPlayerPokemon`,
+    `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#getEncounterPokemonLevelForWave`,
+    `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#applyDamageToPokemon`,
+    `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#modifyPlayerPokemonBST`,
+    `src/modifier/modifier.ts#PokemonBaseStatTotalModifier.apply`,
+    `src/modifier/modifier.ts#MoneyMultiplierModifier.apply`,
+    `${SCENE}#BattleScene.getWaveMoneyAmount`,
+    `src/enums/mystery-encounter-type.ts#MysteryEncounterType`,
+    `src/enums/mystery-encounter-tier.ts#MysteryEncounterTier`,
+    `src/enums/nature.ts#Nature`,
+    `src/data/mystery-encounters/encounters/mysterious-chest-encounter.ts#MysteriousChestEncounter`,
+    `src/data/mystery-encounters/encounters/mysterious-chest-encounter.ts#TRAP_PERCENT`,
+    `src/data/mystery-encounters/encounters/mysterious-chest-encounter.ts#COMMON_REWARDS_PERCENT`,
+    `src/data/mystery-encounters/encounters/mysterious-chest-encounter.ts#ULTRA_REWARDS_PERCENT`,
+    `src/data/mystery-encounters/encounters/mysterious-chest-encounter.ts#ROGUE_REWARDS_PERCENT`,
+    `src/data/mystery-encounters/encounters/mysterious-chest-encounter.ts#MASTER_REWARDS_PERCENT`,
+    `src/data/mystery-encounters/encounters/fight-or-flight-encounter.ts#FightOrFlightEncounter`,
+    `src/data/mystery-encounters/encounters/department-store-sale-encounter.ts#DepartmentStoreSaleEncounter`,
+    `src/data/mystery-encounters/encounters/shady-vitamin-dealer-encounter.ts#ShadyVitaminDealerEncounter`,
+    `src/data/mystery-encounters/encounters/lost-at-sea-encounter.ts#LostAtSeaEncounter`,
+    `src/data/mystery-encounters/encounters/lost-at-sea-encounter.ts#DAMAGE_PERCENTAGE`,
+    `src/data/mystery-encounters/encounters/fiery-fallout-encounter.ts#FieryFalloutEncounter`,
+    `src/data/mystery-encounters/encounters/fiery-fallout-encounter.ts#DAMAGE_PERCENTAGE`,
+    `src/data/mystery-encounters/encounters/the-strong-stuff-encounter.ts#TheStrongStuffEncounter`,
+    `src/data/mystery-encounters/encounters/berries-abound-encounter.ts#BerriesAboundEncounter`,
+    `src/data/mystery-encounters/encounters/part-timer-encounter.ts#PartTimerEncounter`,
+    `src/data/mystery-encounters/encounters/part-timer-encounter.ts#applyMoneyMultipliers`,
+    `src/data/mystery-encounters/encounters/teleporting-hijinks-encounter.ts#TeleportingHijinksEncounter`,
+    `src/data/mystery-encounters/encounters/teleporting-hijinks-encounter.ts#BIOME_CANDIDATES`,
+    `src/data/mystery-encounters/encounters/teleporting-hijinks-encounter.ts#doBiomeTransitionDialogueAndBattleInit`,
+    `src/data/mystery-encounters/encounters/uncommon-breed-encounter.ts#UncommonBreedEncounter`,
+    `src/data/mystery-encounters/encounters/global-trade-system-encounter.ts#GlobalTradeSystemEncounter`,
+    `src/data/mystery-encounters/encounters/global-trade-system-encounter.ts#getPokemonTradeOptions`,
+  ],
+
   /** §10: the biome choice the phase offers, and the spawn rules behind the pools it scans. */
   "47-biome.js": [`src/phases/select-biome-phase.ts#SelectBiomePhase.start`, `src/field/arena.ts#Arena.randomSpecies`],
 

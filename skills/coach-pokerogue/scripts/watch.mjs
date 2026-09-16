@@ -1,5 +1,5 @@
 // Always-on coach feed for Claude's Monitor tool: prints one short stdout line per
-// new battle, danger, learn-move prompt, reward screen and biome choice, and one per distinct read
+// new battle, danger, learn-move prompt, reward screen, biome choice and Mystery Encounter, and one per distinct read
 // error. Lines are summaries (notifications truncate long ones); read.sh battle
 // has the detail. Each line carries the HUD's own verdict when the HUD is running,
 // so Claude can stay quiet when the panel already has it. Also keeps the HUD
@@ -103,6 +103,9 @@ for (;;) {
     if (hud?.biome && seen.biome !== `${snap.wave}` && hudReady("biome", `${snap.wave}`, / pick — /.test(hud.biome))) {
       emit("biome", `${snap.wave}`, `BIOME ${w} | HUD: ${hud.biome}`);
     }
+    // Mystery Encounter option screen: once per wave and encounter, only with the HUD's call (the read has no options).
+    const meKey = hud?.encounter ? `${snap.wave}|${hud.encounter.split(":")[0]}` : null;
+    if (meKey && seen.encounter !== meKey) emit("encounter", meKey, `ENCOUNTER ${w} | HUD: ${hud.encounter}`);
   } catch (e) {
     const msg = String(e.message ?? e).split("\n")[0];
     if (msg !== lastError) console.log(`COACH ERROR ${msg}`);

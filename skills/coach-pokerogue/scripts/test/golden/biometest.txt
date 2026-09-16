@@ -11,7 +11,7 @@
 ✓ Alakazam resists
 ✓ 2 mons hit SE
 → ★Laboratory (1/3) · Factory
-summary {"kind":"biome","wave":30,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":null,"next":null,"ahead":null,"biome":"Swamp 76 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · Construction Site 70"}
+summary {"kind":"biome","wave":30,"verdict":null,"field":null,"danger":[],"learn":null,"rewards":null,"encounter":null,"next":null,"ahead":null,"biome":"Swamp 76 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · Construction Site 70"}
 == swamp vs construction site (mini)
 🗺 Next biome from Tall Grass + {Expand} × {Close}
 ★ Swamp 76 {offense 88 · defense -5 · catches 100} — 2 mons hit SE

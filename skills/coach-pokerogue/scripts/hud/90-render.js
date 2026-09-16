@@ -201,9 +201,10 @@ const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? "
 // `danger` lists the 💀 tags only: a likely KO before our mon acts.
 const hudSummary = m => {
   if (!m) return null;
-  const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null,
+  const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], learn: null, rewards: null, encounter: null,
     next: previewSummary(m.preview), ahead: aheadSummary(m.ahead) };
   if (m.kind === "biome") return biomeSummary(m, base);
+  if (m.kind === "encounter") return encounterSummary(m, base);
   if (m.kind === "learn") {
     const only = m.team?.onlyType && m.forget >= 0 ? ` · ⚠ loses only ${m.team.onlyType} move` : "";
     return { ...base, learn: `${m.verdict[0]}${only}` };
@@ -415,6 +416,8 @@ const tick = () => {
       m = shopModel(s, handler);
     } else if (biomeScreen(s, handler)) {
       m = biomeModel(s, handler);
+    } else if (encounterScreen(s, handler)) {
+      m = encounterModel(s, handler);
     } else {
       const b = s.currentBattle;
       const foes = s.getEnemyParty().filter(p => p.hp > 0);
@@ -440,7 +443,7 @@ const tick = () => {
     el.style.width = view === "full" && !collapsed ? "300px" : "auto";
     if (sig !== last) {
       missed = false;
-      el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle, biome: drawBiome }[m.kind])(m));
+      el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle, biome: drawBiome, encounter: drawEncounter }[m.kind])(m));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missed ? "" : sig;
     }

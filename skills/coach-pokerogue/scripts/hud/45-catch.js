@@ -41,7 +41,7 @@
 // Every game method call here (hasAbility, getRootSpeciesId, gameMode checks, the planner's damage code) runs inside
 // `sandbox` while the game waits for a command; otherwise field reads and the approximations stand in.
 
-const { captureChance, catchAdvice, damagingTypes, finalBstOf, teamWeakTypes } = (() => {
+const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamWeakTypes } = (() => {
   const BALLS = [
     { id: 0, ball: "Poké Ball", short: "PB", key: "pb", mult: 1 },
     { id: 1, ball: "Great Ball", short: "GB", key: "gb", mult: 1.5 },
@@ -345,5 +345,13 @@ const { captureChance, catchAdvice, damagingTypes, finalBstOf, teamWeakTypes } =
     return value;
   };
 
-  return { captureChance, catchAdvice, damagingTypes, finalBstOf, teamWeakTypes };
+  // What owning `foe` is worth with no ball in the picture: the account and team reasons a throw is weighed on, for a
+  // mon a Mystery Encounter hands over. `live`: game calls allowed (inside `sandbox`).
+  const catchWorth = (s, foe, live) => {
+    const b = s.currentBattle ?? { waveIndex: 0 };
+    const reasons = [...accountReasons(s, foe, live), ...teamReasons(s, foe, b, live).out];
+    return { value: reasons.reduce((t, r) => t + r.w, 0), reasons: reasons.map(r => r.text), show: SHOW };
+  };
+
+  return { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamWeakTypes };
 })();
