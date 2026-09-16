@@ -67,10 +67,15 @@ const hasFormKey = (p, re) => [p.species, p.fusionSpecies].some(sp => (sp?.forms
 const shopModel = (s, h) => {
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
-  // Every 10th wave is a boss: the reward before it is the last chance to patch the team up.
+  // The reward before a big fight is the last chance to patch the team up. What counts as one comes from 49-ahead's
+  // calendar — the fixed battles and the gym waves as well as every tenth wave — and falls back to the tenth-wave
+  // rule when the live build hides the game mode. `gauntlet` is the Elite Four case: more than one big fight before
+  // the next full heal, so the whole party has to last, not just the lead.
   const wave = s.currentBattle?.waveIndex ?? 0;
-  const bossNext = wave > 0 && wave % 10 === 9;
-  const hurtBelow = bossNext ? 80 : 60;
+  const ahead = aheadModel(s);
+  const bossNext = ahead?.next ? ahead.next.in === 1 : wave > 0 && wave % 10 === 9;
+  const gauntlet = (ahead?.fightsBeforeHeal ?? 0) >= 2;
+  const hurtBelow = gauntlet ? 90 : bossNext ? 80 : 60;
   // Low PP: a damaging move nearly out (≤ a quarter of its PP and ≤ 5 left). Unused status moves and a few PP spent
   // don't count — the game's own Ether weight asks for over half used and ≤ 5 left.
   const lowOn = m => {
@@ -139,7 +144,12 @@ const shopModel = (s, h) => {
     // heals no more than it does, and a heal far short of the damage is worth little.
     const need = (list, kind, bonus, text, none) => {
       if (!list.length) {
-        if (bossNext) { v = 2; why = `${none} · spare for the boss`; } else { v = -5; why = none; }
+        // Nobody needs it now — but a spare is worth holding when a big fight is next. Through a gauntlet it is
+        // worth what it is: a Max Revive carried into the Elite Four beats a thirty-fifth Great Ball, a Potion
+        // doesn't, so the tier carries the weight rather than a flat number.
+        if (gauntlet) { v = 4 + (tier ?? 0) * 4; why = `${none} · spare for the gauntlet`; }
+        else if (bossNext) { v = 2; why = `${none} · spare for the boss`; }
+        else { v = -5; why = none; }
         return;
       }
       const targets = list.map(x => x.p ?? x);
@@ -147,14 +157,14 @@ const shopModel = (s, h) => {
       const enough = p => kind !== "hurt" || healOn(t, p) >= Math.min((p.getMaxHp() - p.hp) * 0.8, healOn(boughtFor(p).t, p));
       const bought = targets.filter(p => boughtFor(p) && enough(p));
       if (kind === "hurt" && !bought.length && targets.every(p => healOn(t, p) < (p.getMaxHp() - p.hp) * 0.5)) {
-        v = bossNext ? 6 : 2; covers = null; why = `${text(list[0])} a little`;
+        v = gauntlet ? 8 : bossNext ? 6 : 2; covers = null; why = `${text(list[0])} a little`;
       } else if (bought.length) {
         const savings = bought.map(p => ({ p, saved: boughtFor(p).cost })).sort((a, b) => b.saved - a.saved);
-        v = 4 + Math.min(10, savings[0].saved / 100) + (bossNext ? 2 : 0);
+        v = 4 + Math.min(10, savings[0].saved / 100) + (gauntlet ? 4 : bossNext ? 2 : 0);
         covers = [kind, savings[0].p]; why = `${text(list[targets.indexOf(savings[0].p)])} · saves $${savings[0].saved}`;
         extra.saves = savings[0].saved;
       } else {
-        v = 10 + bonus + (bossNext ? 4 : 0); covers = [kind, targets[0]]; why = text(list[0]);
+        v = 10 + bonus + (gauntlet ? 6 : bossNext ? 4 : 0); covers = [kind, targets[0]]; why = text(list[0]);
       }
     };
     if (isRevive(t)) need(needs.fainted, "fainted", 15, p => `revives ${p.name}`, "nobody fainted");
@@ -247,9 +257,18 @@ const shopModel = (s, h) => {
   for (const f of free) delete f.covers; // holds pokémon objects; the model must stay JSON-safe for the signature
   for (const b of buys) { delete b.pokemon; delete b.kind; delete b.t; }
 
+  // Rerolling: the cost doubles every time (`2 ** rerollCount`), so it is worth one look, not a habit. When this
+  // wave's rewards are pinned to guaranteed tiers a reroll redraws the items but never the rarities, and on those
+  // waves luck buys nothing either — say so rather than dangling an upgrade that can't happen.
+  const pinned = ahead?.thisWave ?? null;
   const reroll = pick >= 0 && free[pick].v < 10 && h.rerollCost > 0 && money >= h.rerollCost * 3
-    ? `nothing good — reroll for $${h.rerollCost}?` : null;
+    ? `nothing good — reroll for $${h.rerollCost}?${pinned?.tiers.length ? ` (same tiers: ${pinned.tiers.join("/")})` : ""}`
+    : null;
+  const luck = ahead?.luck
+    ? { ...ahead.luck, upgrades: !pinned || pinned.luckUpgrades }
+    : null;
   // How many shop items the money covers at all: often none early on, when the shop is irrelevant.
   const affordable = shop.filter(i => i.cost <= s.money).length;
-  return { kind: "shop", money: s.money, left: money, buys, free, pick, reroll, bossNext, wave, affordable };
+  return { kind: "shop", money: s.money, left: money, buys, free, pick, reroll, bossNext, gauntlet, luck, wave,
+    affordable, ahead };
 };

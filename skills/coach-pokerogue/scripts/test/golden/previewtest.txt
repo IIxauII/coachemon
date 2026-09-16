@@ -135,7 +135,8 @@
 == tally after a hit and a miss {"checked":2,"hit":{"type":2,"trainer":0,"foes":1,"double":1,"levels":1},"miss":{"type":0,"trainer":1,"foes":1,"double":1,"levels":1}}
 == marked ["foes","double","levels"]
 == unavailable {"kind":"preview","wave":13,"unavailable":"the live build has no generateNewBattleTrainer"}
-== fixed ahead [{"wave":8,"kind":"fixed"},{"wave":20,"kind":"gym"},{"wave":25,"kind":"fixed"}]
+== wild spawn args [[0,3]]
+== tally with a look-ahead in flight {"checked":1,"miss":{"type":0,"trainer":0,"foes":0,"double":0,"levels":0}}
 == card wave 13 (full)
 🔮 Next W13~ wild
 · Zubat L10~ Poison Flying Sturdy

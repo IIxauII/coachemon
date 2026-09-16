@@ -86,4 +86,35 @@ buy first — taking the free reward closes the shop
 🎁 Super Potion heals Blastoise
 · Revive nobody fainted · spare for the boss
 · X Attack only lasts a few battles
+== elite four gauntlet
+🛒 $3000 → $2401 👑 boss next − ×
+buy first — taking the free reward closes the shop
+💰 Super Potion $599 Blastoise 86% HP
+🎁 Max Revive nobody fainted · spare for the gauntlet
+· X Attack only lasts a few battles
+· 5× Great Ball you have 34
+⚑ Next big fight fixed battle next wave W182
+✗ 5 big fights before the next full heal (W191)
+🍀 luck 0 (D) — 3.1% tier upgrade per reward
+== ordinary boss run-up
+🛒 $3000 − ×
+🎁 5× Great Ball you have 34
+· Max Revive nobody fainted
+⚑ Next big fight boss in 4 W180
+✚ full heal entering W181 — HP, status, PP, revives, Tera
+🍀 luck 0 (D) — 3.1% tier upgrade per reward
+== no heal left
+🛒 $3000 → $2401 − ×
+buy first — taking the free reward closes the shop
+💰 Super Potion $599 Blastoise 86% HP
+🎁 Max Revive nobody fainted · spare for the gauntlet
+· 5× Great Ball you have 34
+⚑ Next big fight fixed battle in 3 W195
+✗ no full heal left — 2 big fights on what you have
+🍀 luck 0 (D) — 3.1% tier upgrade per reward
+☠ phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax
+☠ Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double
+☠ Eternamax knows Recover at −4 priority: out-damage it, don't chip it
+☠ phase 1's Cosmic Power raises its defences every use — stalling makes it worse
+✓ it carries no held items in phase 1 and has no passive ability
 ok
