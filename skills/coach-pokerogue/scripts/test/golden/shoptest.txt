@@ -7,7 +7,7 @@ buy first — taking the free reward closes the shop
 💰 Ether $532 Charizard Heat Wave 1/10
 🎁 1× Egg Voucher egg voucher — outlasts the run
 · 5× Poké Ball you have 34
-· Leppa Berry held item
+· Leppa Berry Charizard Leppa refills a move at 0 PP
 · X Accuracy only lasts a few battles
 == healthy
 🛒 $15256 − ×
@@ -17,9 +17,48 @@ buy first — taking the free reward closes the shop
 🎲 nothing good — reroll for $2250?
 == wave 13 rare candy
 🛒 $1824 − ×
-🎁 Rare Candy +1 level (permanent) · Morpeko Lv 14
+🎁 Rare Candy Charizard Lv 16, at the Lv 16 cap where EXP can't level it
 · 5× Poké Ball you have 12
 · Max Ether PP fine
+== rare candy catch-up
+🛒 $100 nothing affordable − ×
+🎁 Rare Candy Morpeko Lv 11, furthest behind
+== rare candy evolves
+🛒 $100 nothing affordable − ×
+🎁 Rarer Candy +1 level for the whole party · 1 at the Lv 16 cap
+· Rare Candy Charmander evolves at Lv 16
+== held items by holder
+🛒 $100 nothing affordable − ×
+🎁 Leftovers Snorlax 1/16 HP a turn (2/4)
+· Quick Claw Snorlax 10% to move first
+· King's Rock Jolteon 10% flinch a hit
+== status orb
+🛒 $100 nothing affordable − ×
+🎁 Flame Orb Machamp Guts wants the status
+· Toxic Orb Machamp Guts wants the status
+== status orb nobody
+🛒 $100 nothing affordable − ×
+🎁 5× Poké Ball you have 3
+· Flame Orb does nothing for this team · for Charizard
+== mints
+🛒 $100 nothing affordable − ×
+🎁 Mint Snorlax Adamant +Atk −SpA, was Modest
+· Mint Modest +SpA −Atk · no better for anyone · for Machamp
+== exp at the cap
+🛒 $100 nothing affordable − ×
+🎁 EXP. All nobody on the bench under the Lv 38 cap
+· EXP. Charm whole party at the Lv 38 cap
+== exp for the bench
+🛒 $100 nothing affordable − ×
+🎁 EXP. All EXP for the bench · 1 under the Lv 38 cap
+== evolution item and eviolite
+🛒 $100 nothing affordable − ×
+🎁 Leaf Stone Pikachu evolves now
+== vitamins and species boosters
+🛒 $100 nothing affordable − ×
+🎁 Protein Snorlax +10% base Atk (carry)
+· Light Ball Pikachu ×2 Atk/SpA
+· Thick Club nobody it works for · for Snorlax/Jolteon +1
 == wave 14 pp up
 🛒 $1824 − ×
 🎁 PP Up more PP on a move (permanent)

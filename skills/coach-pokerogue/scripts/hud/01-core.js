@@ -49,6 +49,18 @@ const effectiveness = (type, p, mv) => {
   if (m >= 2 && ab.some(a => a === "Solid Rock" || a === "Filter" || a === "Prism Armor")) m *= 0.75;
   return m;
 };
+// Natures: the enum is the grid 5·raised + lowered over [Atk, Def, Spe, SpA, SpD], neutral on the diagonal.
+// `upStat` / `downStat` are Stat indices (1 atk, 2 def, 3 spa, 4 spd, 5 spe); null when neutral.
+const NATURE_STATS = ["Atk", "Def", "Spe", "SpA", "SpD"];
+const NATURE_STAT_IDS = [1, 2, 5, 3, 4];
+const NATURES = ["Hardy", "Lonely", "Brave", "Adamant", "Naughty", "Bold", "Docile", "Relaxed", "Impish", "Lax", "Timid",
+  "Hasty", "Serious", "Jolly", "Naive", "Modest", "Mild", "Quiet", "Bashful", "Rash", "Calm", "Gentle", "Sassy",
+  "Careful", "Quirky"];
+const natureOf = n => {
+  const up = Math.floor(n / 5), down = n % 5, neutral = up === down;
+  return { name: NATURES[n] ?? `#${n}`, up: neutral ? null : NATURE_STATS[up], down: neutral ? null : NATURE_STATS[down],
+    upStat: neutral ? null : NATURE_STAT_IDS[up], downStat: neutral ? null : NATURE_STAT_IDS[down] };
+};
 const stage = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
 // i: 1 atk, 2 def, 3 spa, 4 spd, 5 spe. statStages has no HP slot.
 const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ?? 0);

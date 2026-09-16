@@ -1,7 +1,8 @@
 // Rewards card: buys for current needs, and the free reward judged by what it does for this party — permanent
 // upgrades (Rare Candy, PP Up) over heals nobody needs, TMs scored with the learn scorer on members the game says can
 // learn them, setup TMs for the member they suit, key/evolution items only when someone can use them, held items
-// against their stack limit, and heals weighed up before a boss wave. Prints the rendered card (golden) and asserts
+// against their stack limit, and heals weighed up before a boss wave. Held items, mints, vitamins, EXP items and candy
+// go to the member they do the most for, against the level cap and the carry. Prints the rendered card (golden) and asserts
 // the picks.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
@@ -22,6 +23,11 @@ class PokemonHeldItemModifierType extends PokemonModifierType {}
 class BerryModifierType extends PokemonHeldItemModifierType {}
 class TmModifierType extends PokemonModifierType {}
 class EvolutionItemModifierType extends PokemonModifierType {}
+class AllPokemonLevelIncrementModifierType extends ModifierType {}
+class PokemonNatureChangeModifierType extends PokemonModifierType {}
+class BaseStatBoosterModifierType extends PokemonHeldItemModifierType {}
+class SpeciesStatBoosterModifierType extends PokemonHeldItemModifierType {}
+class ExpBoosterModifierType extends ModifierType {}
 const mk = (C, f) => Object.assign(new C(), f);
 const opt = (t, cost = 0) => ({ modifierTypeOption: { type: t, cost } });
 const shopRows = [[
@@ -64,27 +70,119 @@ const M = {
 };
 
 // [id, ppUsed, maxPp]
+let monId = 0;
 const pk = (name, hp, max, status, moves, f = {}) => ({
-  name, hp, level: f.level ?? 40, getMaxHp: () => max, status: status ? { effect: status } : null, getIconAtlasKey: () => "k", getIconId: () => 1,
-  getTypes: () => (f.types ?? ["Normal"]).map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), getStat: i => ({ 1: f.atk ?? 100, 3: f.spa ?? 100 }[i] ?? 100),
-  species: { forms: (f.forms ?? []).map(formKey => ({ formKey })) },
+  id: ++monId, name, hp, level: f.level ?? 40, getMaxHp: () => max, status: status ? { effect: status } : null, getIconAtlasKey: () => "k", getIconId: () => 1,
+  getTypes: () => (f.types ?? ["Normal"]).map(t => TY.indexOf(t)), getAbility: () => ({ name: f.ability ?? "x" }),
+  getStat: i => ({ 1: f.atk ?? 100, 2: f.def ?? 100, 3: f.spa ?? 100, 4: f.spd ?? 100, 5: f.spe ?? 100 }[i] ?? 100),
+  getNature: () => f.nature ?? 0, getLuck: () => f.luck ?? 0,
+  species: { speciesId: f.speciesId ?? 0, forms: (f.forms ?? []).map(formKey => ({ formKey })), getEvolutionLevels: () => f.evolutions ?? [] },
   moveset: moves.map(([id, used, maxPp]) => new PokemonMove(id, used, maxPp)),
 });
 // A TM the listed members can learn (the game's selectFilter: null = compatible and not known).
 const tm = (id, learners, tier = 1) => mk(TmModifierType, { name: `TM ${MOVES[id].name}`, iconImage: "tm", tier, moveId: id,
   selectFilter: p => (learners.includes(p.name) && !p.moveset.some(m => m.moveId === id) ? null : "no effect") });
 
+const rareCandy = () => mk(PokemonLevelIncrementModifierType, { name: "Rare Candy", iconImage: "rare_candy", tier: 0, selectFilter: () => null });
+const held = (id, name, tier) => mk(PokemonHeldItemModifierType, { name, iconImage: name.toLowerCase().replace(/\W+/g, "_"), tier, id, selectFilter: () => null });
+const mint = (nature, stat) => mk(PokemonNatureChangeModifierType, { name: "Mint", iconImage: `mint_${stat}`, tier: 2, id: "MINT", nature, selectFilter: p => (p.getNature() === nature ? "no effect" : null) });
+const snorlax = (f = {}) => pk("Snorlax", 250, 250, 0, [[M.bodySlam, 0, 15], [M.crunch, 0, 15]], { atk: 130, spa: 60, def: 110, spd: 110, spe: 30, level: 45, ...f });
+const jolteon = (f = {}) => pk("Jolteon", 130, 130, 0, [[M.thunderShock, 0, 30], [M.psybeam, 0, 20]], { types: ["Electric"], atk: 65, spa: 110, def: 60, spd: 95, spe: 130, level: 42, nature: 10, ...f });
 const charizard = () => pk("Charizard", 186, 186, 0, [[M.heatWave, 0, 10], [M.airSlash, 0, 15]], { types: ["Fire", "Flying"], atk: 110, spa: 150 });
 const scenarios = {
   hurt: { money: 15256, party: [pk("Charizard", 186, 186, 0, [[M.heatWave, 9, 10], [M.airSlash, 0, 15]]), pk("Blastoise", 70, 187, 0, [[M.aquaTail, 0, 10]]), pk("Morpeko", 0, 157, 0, [[M.spark, 0, 20]]), pk("Scrafty", 150, 161, 6, [[M.brickBreak, 0, 15]])],
-    free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), mk(BerryModifierType, { name: "Leppa Berry", iconImage: "leppa_berry", tier: 0 }), mk(TempStatStageBoosterModifierType, { name: "X Accuracy", iconImage: "x_accuracy", tier: 0 }), mk(AddVoucherModifierType, { name: "1× Egg Voucher", iconImage: "coupon", tier: 1 })] },
+    free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), mk(BerryModifierType, { name: "Leppa Berry", iconImage: "leppa_berry", tier: 0, berryType: 10 }), mk(TempStatStageBoosterModifierType, { name: "X Accuracy", iconImage: "x_accuracy", tier: 0 }), mk(AddVoucherModifierType, { name: "1× Egg Voucher", iconImage: "coupon", tier: 1 })] },
   healthy: { money: 15256, party: [pk("Charizard", 186, 186, 0, [[M.heatWave, 0, 10]])],
     free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 }), mk(PokemonHpRestoreModifierType, { name: "Potion", iconImage: "potion", tier: 0, restorePoints: 20, restorePercent: 10 })] },
   // Live, wave 13: a fresh team, $1824. Rare Candy (Common) is a permanent level; Max Ether (Great) fixes nothing.
-  "wave 13 rare candy": { wave: 13, money: 1824, balls: 12, party: [charizard(), pk("Morpeko", 120, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25]], { level: 14, types: ["Electric", "Dark"] })],
-    free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), mk(PokemonLevelIncrementModifierType, { name: "Rare Candy", iconImage: "rare_candy", tier: 0, selectFilter: () => null }),
+  // The level cap at wave 13 is 16: Charizard, the carry, is at it and EXP can't level it, while Morpeko will get
+  // there from battles anyway — so the candy (which ignores the cap) goes to Charizard.
+  "wave 13 rare candy": { wave: 13, money: 1824, balls: 12, party: [pk("Charizard", 186, 186, 0, [[M.heatWave, 0, 10], [M.airSlash, 0, 15]], { level: 16, types: ["Fire", "Flying"], atk: 110, spa: 150 }),
+      pk("Morpeko", 120, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25]], { level: 14, types: ["Electric", "Dark"] })],
+    free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), rareCandy(),
       mk(PokemonPpRestoreModifierType, { name: "Max Ether", iconImage: "max_ether", tier: 1, restorePoints: -1 })],
-    expect: m => { assert.equal(m.free[m.pick].name, "Rare Candy"); assert.match(m.free[m.pick].why, /Morpeko Lv 14/); } },
+    expect: m => {
+      const c = m.free[m.pick];
+      assert.equal(c.name, "Rare Candy");
+      assert.match(c.why, /^Charizard · Lv 16, at the Lv 16 cap/);
+      assert.equal(c.holder.name, "Charizard");
+    } },
+  // Nobody at the cap yet: the candy is a catch-up level for whoever is furthest behind.
+  "rare candy catch-up": { wave: 13, money: 100, party: [pk("Charizard", 186, 186, 0, [[M.heatWave, 0, 10]], { level: 15 }), pk("Morpeko", 120, 120, 0, [[M.spark, 0, 20]], { level: 11 })],
+    free: [rareCandy()],
+    expect: m => { assert.match(m.free[0].why, /^Morpeko · Lv 11/); assert.equal(m.free[0].holder.name, "Morpeko"); } },
+  // One level short of evolving beats everything else: Charmander (Lv 15, evolves at 16) over the capped carry.
+  "rare candy evolves": { wave: 13, money: 100, party: [pk("Charizard", 186, 186, 0, [[M.heatWave, 0, 10]], { level: 20 }),
+      pk("Charmander", 60, 60, 0, [[M.fireFang, 0, 15]], { level: 15, speciesId: 4, evolutions: [[5, 16], [6, 36]] })],
+    free: [rareCandy(), mk(AllPokemonLevelIncrementModifierType, { name: "Rarer Candy", iconImage: "rarer_candy", tier: 2 })],
+    expect: m => {
+      assert.match(m.free[0].why, /^Charmander · evolves at Lv 16/);
+      assert.ok(m.free[0].v > 12, "an evolution is worth more than a plain level");
+      assert.match(m.free[1].why, /1 at the Lv 16 cap/, "Charizard is past the cap");
+    } },
+  // Held items stop scoring the same: each goes to the member it does the most for. Leftovers to the bulky Snorlax
+  // (which already holds one), Quick Claw to the slow one, King's Rock to the fast one.
+  "held items by holder": { wave: 42, money: 100, party: [snorlax(), jolteon()],
+    modifiers: [{ pokemonId: 0, type: { id: "LEFTOVERS" }, getStackCount: () => 1 }],
+    free: [held("LEFTOVERS", "Leftovers", 3), held("QUICK_CLAW", "Quick Claw", 2), held("KINGS_ROCK", "King's Rock", 3)],
+    setup: sc => { sc.modifiers[0].pokemonId = sc.party[0].id; },
+    expect: m => {
+      const [lo, qc, kr] = m.free;
+      assert.equal(m.pick, 0);
+      assert.equal(lo.holder.name, "Snorlax");
+      assert.match(lo.why, /\(2\/4\)/, "stacks on the Leftovers it holds");
+      assert.equal(qc.holder.name, "Snorlax");
+      assert.equal(kr.holder.name, "Jolteon");
+      assert.equal(new Set(m.free.map(f => f.v)).size, 3, `three different values: ${m.free.map(f => f.v)}`);
+      assert.ok(lo.v < 30, "no longer the Rogue tier's 30 + 3");
+    } },
+  // A status orb is for a member that wants the status (the game's own pool rule): Guts Machamp takes the Flame Orb.
+  // With nobody who can use it, it hurts whoever holds it.
+  "status orb": { wave: 42, money: 100, party: [snorlax(), pk("Machamp", 180, 180, 0, [[M.brickBreak, 0, 15]], { types: ["Fighting"], ability: "Guts", atk: 140, spa: 60, level: 44 })],
+    free: [held("FLAME_ORB", "Flame Orb", 2), held("TOXIC_ORB", "Toxic Orb", 2)],
+    expect: m => { assert.equal(m.free[0].holder.name, "Machamp"); assert.match(m.free[0].why, /Guts/); assert.ok(m.free[0].v > 10); } },
+  "status orb nobody": { wave: 42, money: 100, balls: 3, party: [pk("Charizard", 186, 186, 0, [[M.heatWave, 0, 10]], { types: ["Fire", "Flying"], ability: "Guts" })],
+    free: [held("FLAME_ORB", "Flame Orb", 2), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
+    expect: m => { assert.ok(m.free[0].v < 0, "Fire types can't be burned"); assert.equal(m.pick, 1); } },
+  // Mints by nature fit: Adamant fixes a Modest physical Snorlax; Modest helps nobody on a physical team.
+  "mints": { wave: 42, money: 100, party: [snorlax({ nature: 15 }), pk("Machamp", 180, 180, 0, [[M.brickBreak, 0, 15]], { types: ["Fighting"], atk: 140, spa: 60, level: 44, nature: 3 })],
+    free: [mint(3, "atk"), mint(15, "spatk")],
+    expect: m => {
+      const [adamant, modest] = m.free;
+      assert.equal(m.pick, 0);
+      assert.equal(adamant.holder.name, "Snorlax");
+      assert.match(adamant.why, /^Snorlax · Adamant \+Atk −SpA, was Modest$/);
+      assert.ok(adamant.v >= 15);
+      assert.ok(modest.v < 0, modest.why);
+    } },
+  // EXP items count the members still under the level cap (38 at wave 42): at the cap, EXP is lost.
+  "exp at the cap": { wave: 42, money: 100, party: [snorlax(), jolteon()],
+    free: [mk(ModifierType, { name: "EXP. All", iconImage: "exp_share", tier: 2, id: "EXP_SHARE" }), mk(ExpBoosterModifierType, { name: "EXP. Charm", iconImage: "exp_charm", tier: 2, id: "EXP_CHARM", boostPercent: 25 })],
+    expect: m => {
+      assert.match(m.free[0].why, /nobody on the bench under the Lv 38 cap/);
+      assert.match(m.free[1].why, /whole party at the Lv 38 cap/);
+      assert.ok(m.free.every(f => f.v <= 1));
+    } },
+  "exp for the bench": { wave: 42, money: 100, party: [snorlax(), jolteon(), pk("Pichu", 40, 40, 0, [[M.thunderShock, 0, 30]], { level: 20, types: ["Electric"] })],
+    free: [mk(ModifierType, { name: "EXP. All", iconImage: "exp_share", tier: 2, id: "EXP_SHARE" })],
+    expect: m => { assert.match(m.free[0].why, /1 under the Lv 38 cap/); assert.ok(m.free[0].v >= 9); } },
+  // An evolution item on a member holding an Eviolite costs the boost: the other member evolves first.
+  "evolution item and eviolite": { wave: 42, money: 100, party: [pk("Gloom", 120, 120, 0, [[M.magicalLeaf, 0, 20]], { level: 30 }), pk("Pikachu", 90, 90, 0, [[M.spark, 0, 20]], { level: 28, speciesId: 25 })],
+    modifiers: [{ pokemonId: 0, type: { id: "EVIOLITE" }, getStackCount: () => 1 }],
+    setup: sc => { sc.modifiers[0].pokemonId = sc.party[0].id; },
+    free: [mk(EvolutionItemModifierType, { name: "Leaf Stone", iconImage: "leaf_stone", tier: 1, selectFilter: () => null })],
+    expect: m => { assert.equal(m.free[0].holder.name, "Pikachu"); assert.match(m.free[0].why, /^Pikachu · evolves now$/); } },
+  // Vitamins by the stat the member uses; species boosters only for their species.
+  "vitamins and species boosters": { wave: 42, money: 100, party: [snorlax(), jolteon(), pk("Pikachu", 90, 90, 0, [[M.spark, 0, 20]], { level: 30, speciesId: 25, types: ["Electric"] })],
+    free: [mk(BaseStatBoosterModifierType, { name: "Protein", iconImage: "protein", tier: 1, id: "BASE_STAT_BOOSTER", stat: 1, selectFilter: () => null }),
+      mk(SpeciesStatBoosterModifierType, { name: "Light Ball", iconImage: "light_ball", tier: 2, id: "RARE_SPECIES_STAT_BOOSTER", key: "LIGHT_BALL", selectFilter: () => null }),
+      mk(SpeciesStatBoosterModifierType, { name: "Thick Club", iconImage: "thick_club", tier: 2, id: "RARE_SPECIES_STAT_BOOSTER", key: "THICK_CLUB", selectFilter: () => null })],
+    expect: m => {
+      assert.equal(m.free[0].holder.name, "Snorlax", "Protein for the physical carry");
+      assert.equal(m.free[1].holder.name, "Pikachu");
+      assert.match(m.free[1].why, /×2 Atk\/SpA/);
+      assert.ok(m.free[2].v < 0, "no Cubone line");
+    } },
   // Live, wave 14: TM Round, PP Up, Potion with a healthy party and strong moves: PP Up, and a reroll is worth a look.
   "wave 14 pp up": { wave: 14, money: 1824, reroll: 500, party: [
       pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.magicalLeaf, 0, 20], [M.calmMind, 0, 20], [M.bodySlam, 0, 15]], { types: ["Fairy"], atk: 50, spa: 90 }),
@@ -272,10 +370,11 @@ const classicMode = () => ({
 for (const [label, sc] of Object.entries(scenarios)) {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
+  sc.setup?.(sc);
   const handler = { options: sc.free.map(t => opt(t)), shopOptionsRows: shopRows, rerollCost: sc.reroll ?? 2250 };
   // Most scenarios leave `gameMode` off: the card has to fall back to the tenth-wave rule when the live build hides
   // it. The ones that set `mode` get the classic calendar, which is what the look-ahead reads.
-  const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: [], currentBattle: { waveIndex: sc.wave ?? 0 }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [], ...(sc.mode ? { gameMode: classicMode() } : {}) };
+  const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave ?? 0 }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [], ...(sc.mode ? { gameMode: classicMode() } : {}) };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };

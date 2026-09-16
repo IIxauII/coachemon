@@ -2,7 +2,8 @@
 // Rewards screen (UiMode 6). Needs come from the party; items are judged by their game class and fields
 // (restorePoints / restorePercent, moveId, pokeballType), by who in the party the game itself would let use them
 // (PokemonModifierType.selectFilter: null = usable — TM compatibility, evolution/form-change items, held-item stack
-// limits), and only then by rarity tier. Nothing here depends on remembering what an item does.
+// limits), and only then by rarity tier. Held items, mints, EXP items, candy, vitamins and evolution items are judged
+// on the member they'd go to by 50-items.js; nothing here depends on remembering what an item does.
 const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxury"];
 const isA = (t, name) => {
   for (let p = t && Object.getPrototypeOf(t); p && p !== Object.prototype; p = Object.getPrototypeOf(p)) {
@@ -131,6 +132,7 @@ const shopModel = (s, h) => {
 
   // Free rewards: what the item does for this party now, then rarity tier as a tiebreak for everything else.
   const balls = s.pokeballCounts ?? {};
+  const rctx = rewardContext(s, alive, { bossNext, gauntlet });
   const free = (h.options || []).map(o => {
     const t = o.modifierTypeOption.type;
     const tier = shopTier(t);
@@ -167,17 +169,16 @@ const shopModel = (s, h) => {
         v = 10 + bonus + (gauntlet ? 6 : bossNext ? 4 : 0); covers = [kind, targets[0]]; why = text(list[0]);
       }
     };
-    if (isRevive(t)) need(needs.fainted, "fainted", 15, p => `revives ${p.name}`, "nobody fainted");
+    const judged = rewardValue(t, rctx, users);
+    if (judged) {
+      v = judged.v; why = judged.why;
+      if (judged.users) extra.users = judged.users;
+      if (judged.holder) extra.holder = judged.holder;
+    } else if (isRevive(t)) need(needs.fainted, "fainted", 15, p => `revives ${p.name}`, "nobody fainted");
     else if (isHeal(t)) need(needs.hurt, "hurt", 8, p => `heals ${p.name}`, "party healthy");
     else if (isA(t, "PokemonStatusHealModifierType")) need(needs.status, "status", 8, p => `cures ${p.name}`, "no status");
     else if (isPp(t) || isAllPp(t)) need(needs.lowPp, "lowPp", 6, x => `PP for ${x.p.name}`, "PP fine");
-    else if (isA(t, "PokemonLevelIncrementModifierType")) {
-      // A permanent level, best spent on the lowest-level member.
-      const low = alive.reduce((a, p) => (!a || p.level < a.level ? p : a), null);
-      v = 12; why = low ? `+1 level (permanent) · ${low.name} Lv ${low.level}` : "+1 level (permanent)";
-    } else if (isA(t, "AllPokemonLevelIncrementModifierType")) {
-      v = 25; why = "+1 level for the whole party";
-    } else if (isA(t, "PokemonPpUpModifierType")) {
+    else if (isA(t, "PokemonPpUpModifierType")) {
       // Permanent extra PP on one move.
       if (users && !users.length) { v = -3; why = "every move's PP is maxed"; }
       else { v = (t.upPoints ?? 1) >= 3 ? 10 : 8; why = "more PP on a move (permanent)"; }
@@ -221,6 +222,7 @@ const shopModel = (s, h) => {
         }
       }
     } else if (isA(t, "EvolutionItemModifierType") || isA(t, "FormChangeItemModifierType")) {
+      // 50-items.js takes evolution items whose users can be told; what's left is unknown, or a form change.
       const evo = isA(t, "EvolutionItemModifierType");
       if (users) extra.users = users.map(p => p.name);
       if (users?.length) { v = evo ? 25 : 15; why = `${evo ? "evolves" : "changes form of"} ${users[0].name}`; }
@@ -233,18 +235,10 @@ const shopModel = (s, h) => {
       if (owned(mega ? "MegaEvolutionAccessModifier" : "GigantamaxAccessModifier")) { v = -5; why = "already have one"; }
       else if (can.length) { v = 20; why = `${can[0].name} can ${mega ? "Mega Evolve (needs its stone)" : "Gigantamax"}`; }
       else { v = -5; why = `nobody on the team can ${mega ? "Mega Evolve" : "Gigantamax"}`; }
-    } else if (isA(t, "AttackTypeBoosterModifierType")) {
-      const type = TYPES[t.moveType];
-      const fits = (users ?? alive).filter(p => p.moveset.filter(Boolean).some(pm => {
-        try { const m = pm.getMove(); return m.category !== 2 && m.type === t.moveType; } catch { return false; }
-      }));
-      extra.users = fits.map(p => p.name);
-      if (fits.length) { v += 5; why = `boosts ${type} · ${fits[0].name}`; }
-      else { v -= 5; why = users && !users.length ? "everyone's at max stack" : `no ${type} attacker`; }
     } else if (isA(t, "PokemonHeldItemModifierType")) {
       if (users) extra.users = users.map(p => p.name);
       if (users && !users.length) { v -= 8; why = "everyone's at max stack"; }
-      else { v += 3; why = "held item"; }
+      else { v += 3; why = "held item"; } // one 50-items.js has no rule for
     }
     return {
       name: t.name, icon: t.iconImage, v, why, covers,

@@ -949,3 +949,67 @@ they raise, and the Speed order once a Speed boost has had the turns it needs.
 **Unmeasured**: none of the status plays has met a live fight. The hypothesis writes plain `{ effect, toxicTurnCount,
 sleepTurnsRemaining }` objects as statuses; a game read that calls a `Status` method on one would throw, which drops
 that one option (each runs under its own `try`), not the panel.
+
+## 15. Rewards judged by who they go to: held items, mints, EXP and the level cap
+
+Read at the pinned tag (`v1.12.0.11`). `50-items.js` judges these rewards on the member they'd go to; `50-shop.js`
+keeps needs, TMs, balls and the tier fallback. Everything here is a read: select filters, `getMaxExpLevel`, fields
+on the reward type (`private` in TypeScript, ordinary properties live).
+
+**Ids.** A reward built by a generator carries the generator's id (`MINT`, `BERRY`, `BASE_STAT_BOOSTER`,
+`RARE_SPECIES_STAT_BOOSTER`, `EVOLUTION_ITEM`, `TERA_SHARD` …, `generateType`), so those are told apart by class and
+field (`nature`, `berryType`, `stat`, `key`, `teraType`, `moveType`); plain items keep their own (`LEFTOVERS`).
+
+**Held items.** `PokemonHeldItemModifierType`'s select filter checks **only the stack limit** (`inoperable` when the
+max is 0, `tooMany` at the max): not the species (a Leek or Light Ball passes for anyone), not whether an Eviolite
+holder can evolve, not whether the holder has a move of a type booster's type. Per stack, and the max:
+
+| Item | Effect a stack | Max |
+|---|---|---|
+| Leftovers (`TurnHealModifier`) | `maxHp / 16` at turn end, below full HP | 4 |
+| Shell Bell (`HitHealModifier`) | `damage / 8` | 4 |
+| Focus Band (`SurviveDamageModifier`) | 10 % to survive a KO hit | 5 |
+| Quick Claw (`BypassSpeedChanceModifier`) | 10 % to move first | 3 |
+| King's Rock (`FlinchChanceModifier`) | 10 % flinch | 3 |
+| Reviver Seed (`PokemonInstantReviveModifier`) | revive at ½ HP once | 1 |
+| Scope Lens / Leek | +1 / +2 crit stages (Leek: Farfetch'd, Galarian Farfetch'd, Sirfetch'd) | 1 |
+| Eviolite (`EvolutionStatBoosterModifier`) | ×1.5 Def / SpD while `hasEvolutions`; half for a half-evolved fusion; not Gigantamaxed | 1 |
+| Toxic / Flame Orb | badly poisons / burns the holder; either blocks the other | 1 |
+| Mystical Rock | the holder's weather / terrain +2 turns | 2 |
+| Soul Dew (`PokemonNatureWeightModifier`) | nature multiplier 0.1 further from 1 — both ways | 10 |
+| Grip Claw | 10 % steal on contact | 5 |
+| Wide Lens | +5 accuracy | 3 |
+| Multi Lens (`PokemonMultiHitModifier`) | +1 hit; first hit ×(1 − ¼·stacks), extras ×¼ — **the same total damage** | 2 |
+| Attack type booster | power ×(1 + 0.2·stacks) | 99 |
+| Species booster | ×2 to its stats, its species only (Light Ball, Thick Club, Metal / Quick Powder, DeepSea Tooth / Scale) | 1 |
+| Vitamin (`BaseStatModifier`) | base stat ×(1 + 0.1·stacks) | the stat's IV |
+| Berry | Sitrus / Lum / Leppa / Enigma max 2, the rest 3 | 2–3 |
+
+Who benefits comes from the game's own pool weights where it has one (`initUltraModifierPool`): a status orb for a
+member it can status that has Toxic Boost / Poison Heal (Flare Boost for the Flame Orb), or Guts / Quick Feet /
+Marvel Scale / Magic Guard without the opposite ability, or knows Facade / Psycho Shift; a Mystical Rock for a
+weather or terrain setter by ability or move. Lucky and Golden Eggs aren't in the player pool — Mystery Encounters
+only.
+
+**Mints.** `PokemonNatureChangeModifierType.nature`; the filter rejects the member's current nature; picking it sets
+`customPokemonData.nature`, which `getNature()` returns. The Nature enum is the grid `5·raised + lowered` over
+`[Atk, Def, Spe, SpA, SpD]`, neutral on the diagonal. There is **no Ability Capsule** at this tag; the Ability Charm
+only raises wild mons' hidden-ability odds (1/256 → 1/64 … 1/8).
+
+**EXP and the level cap.** `getMaxExpLevel()`: `w = getWaveForDifficulty(ceil(wave / 10) × 10)`, cap
+`ceil((1 + w/2 + (w/25)²) × 1.2 / 2) × 2 + 2` (wave 10 → 10, 20 → 16, 50 → 38, 200 → 200). `applyPartyExp` only
+shares EXP among members **below** the cap — a member at it gets nothing and its share is not passed on — and
+`PlayerPokemon.addExp` throws away EXP past it. Exp Share gives the bench `0.2 × stacks` of a participant's share;
+EXP Charms multiply every member's EXP. **Rare Candy ignores the cap** (`PokemonLevelIncrementModifier.apply` checks
+`getMaxExpLevel(true)`), so it is the only way to level a member at the cap. EXP Balance and the Oval Charm aren't in
+any reward pool at this tag.
+
+**Evolution items.** The filter runs the evolution's full `validate` (level, form, condition such as time of day), and
+taking the item queues the `EvolutionPhase` at once. A form-change item's filter only checks the species' trigger;
+its generator is what checks Mega Bracelet / Dynamax Band access.
+
+**Luck and locking.** Party luck is already on the ⚑ card (§12). A Lock Capsule keeps rarities on a reroll, but its
+pool weight is 0 in classic; locked tiers can still be upgraded by luck.
+
+**Unmeasured.** None of this has met a live rewards screen: that every generated type exposes its field under the
+name above, and that the weights (a first cut on the card's 10-a-tier scale) rank the way a strong player would.
