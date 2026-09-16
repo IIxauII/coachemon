@@ -13,7 +13,7 @@
 // A fixed wave replaces 1–3 with `getFixedBattle(w).getTrainer()` in a fork at `(seedOffsetWaveIndex || w) << 8`.
 // The enemy party is built later, in `EncounterPhase`: a trainer's members each in their own fork
 // (`waveIndex + (type << 10) + ((index + 1) << 8)`, or `type + ((index + 1) << 8)` for a static party), a wild
-// species straight off the stream through `arena.randomSpecies`.
+// species straight off the stream through the scene's own `randomSpecies` wrapper.
 //
 // ---- How the preview runs
 // `executeWithSeedOffset(fn, offset, seedOverride)` saves and restores `RND.state()`, `rngOffset` and
@@ -42,7 +42,7 @@
 // standing "if nothing changes" line says. Nothing here is promised: `previewCheck` scores every field against the
 // wave when it actually arrives, a field that has ever been wrong is shown with `!`, and `window.__coachHud.preview()`
 // prints the tally.
-const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() => {
+const { previewFor, previewNext, previewCheck, previewStats } = (() => {
   const WILD = 0, TRAINER = 1, MYSTERY = 3; // BattleType
   const SLOT_NONE = 0; // TrainerSlot.NONE
   const BIOME_END = 50;
@@ -54,10 +54,16 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
   // instead of guessing.
   const NEEDED = ["executeWithSeedOffset", "isWaveMysteryEncounter", "generateNewBattleTrainer", "checkIsDouble",
     "getEncounterBossSegments", "addEnemyPokemon", "getMysteryEncounter"];
-  // `randomSpecies` is an `Arena` method (`references/game-code.md` §11, and 47-biome.js's reading of the pool
-  // rules), reached through `s.arena`. Take whichever receiver the live build actually exposes: guessing wrong is not
-  // a wrong answer but a silent one — the `NEEDED` gate would make the card unavailable on every wild wave.
-  const speciesRoll = s => (typeof s.arena?.randomSpecies === "function" ? s.arena : s);
+  // The wild spawn. `EncounterPhase` calls **`globalScene.randomSpecies(w, level, true)`** — the scene wrapper, whose
+  // `fromArenaPool` branch is `arena.randomSpecies(w, level, 0, getPartyLuckValue(party))`. Calling the arena method
+  // directly with the scene's argument list is a different draw: `true` lands in `attempt`, and the luck that shifts
+  // the tier thresholds is lost. So take the wrapper when the live build has it, and reproduce what it does when it
+  // doesn't. Guessing the receiver wrong is not a wrong answer but a silent one — the `NEEDED` gate would make the
+  // card unavailable on every wild wave — so the fallback is by feature, not by assumption.
+  const wildSpecies = (s, w, level, party) => (typeof s.randomSpecies === "function"
+    ? s.randomSpecies(w, level, true)
+    : s.arena.randomSpecies(w, level, 0, partyLuck(party)));
+  const hasSpeciesRoll = s => typeof s.randomSpecies === "function" || typeof s.arena?.randomSpecies === "function";
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
   // `GameMode.isWaveTrainer`: a gym wave is a trainer wave by the calendar, returning before the chance roll — so its
@@ -103,6 +109,9 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
     segments: p.bossSegments ?? 0,
     shiny: !!p.shiny,
     moves: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getName())).filter(Boolean),
+    // The types it can actually attack with: 49-ahead reads these to judge what the party is walking into.
+    moveTypes: [...new Set((p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getMove()))
+      .filter(mv => mv && mv.category !== 2 && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean))],
   });
 
   const trainerName = t => tryDo(() => t.getName(SLOT_NONE, true)) ?? tryDo(() => t.name) ?? "trainer";
@@ -113,7 +122,7 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
   // what `resetSeed(w)` sows at the top of `newBattle` — and restores the live stream when it returns. `waveSeed` is
   // pinned to the previewed wave for the same span, because the game's own code reads it (the `new Battle` fork, and
   // anything else that forks on the wave seed).
-  const replay = (s, w) => {
+  const replay = (s, w, playerParty) => {
     const gm = s.gameMode;
     const notes = [];
     const built = []; // everything to destroy before returning
@@ -162,7 +171,7 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
             if (type === TRAINER) {
               p = trainer.genPartyMember(e);
             } else {
-              let species = speciesRoll(s).randomSpecies(w, level, true);
+              let species = wildSpecies(s, w, level, playerParty);
               // The Golden Bug Net's 10 % swap draws only when the player holds one, so the replay only draws then.
               if (hasBugNet(s) && !gm.isBoss(w) && s.arena?.biomeId !== BIOME_END && rnd(10) === 0) {
                 notes.push("Golden Bug Net can swap this spawn");
@@ -263,11 +272,14 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
   const everMissed = field => stats.miss[field] > 0;
 
   // ---- The model the card draws
-  let cache = { key: null, value: null };
+  // Keyed by wave *and* by every input the replay reads, and a few waves deep: 49-ahead asks for the next big fight
+  // in the same tick that the card asks for the next wave, and a one-slot cache would replay both every second.
+  const CACHE_MAX = 6;
+  const cache = new Map();
   const previewFor = (s, w) => {
     if (!s?.currentBattle || w == null || w < 1) return null;
     const missing = NEEDED.filter(k => typeof s[k] !== "function");
-    if (typeof speciesRoll(s).randomSpecies !== "function") missing.push("randomSpecies");
+    if (!hasSpeciesRoll(s)) missing.push("randomSpecies");
     if (missing.length || typeof s.gameMode?.isFixedBattle !== "function" || !s.seed) {
       return { kind: "preview", wave: w, unavailable: missing[0] ? `the live build has no ${missing[0]}` : "no run seed" };
     }
@@ -276,30 +288,21 @@ const { previewFor, previewNext, previewCheck, previewStats, fixedAhead } = (() 
     const key = JSON.stringify([s.seed, w, s.arena?.biomeId, s.waveCycleOffset, s.offsetGym,
       party.map(p => [p.species?.speciesId, p.level, p.luck]), (s.modifiers ?? []).length,
       (s.mysteryEncounterSaveData?.encounteredEvents ?? []).length, s.mysteryEncounterSaveData?.encounterSpawnChance]);
-    if (cache.key === key) return cache.value;
-    const value = tryDo(() => ({ kind: "preview", ...quiet(() => sandbox(s, () => replay(s, w))) }),
+    const hit = cache.get(key);
+    if (hit) return hit;
+    const value = tryDo(() => ({ kind: "preview", ...quiet(() => sandbox(s, () => replay(s, w, party))) }),
       { kind: "preview", wave: w, unavailable: "the replay threw" });
     // Measured, not claimed: a field this run has ever got wrong is listed here and the card marks it `?`.
     value.missed = FIELDS.filter(f => everMissed(f) && value.confidence?.[f]);
-    cache = { key, value };
-    if (!value.unavailable) predicted = { ...value, scored: false };
+    cache.set(key, value);
+    while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
+    // Only the wave actually being walked into is scored on arrival. A look-ahead to a fight ten waves out is never
+    // the next wave, so handing it to the tally would score it against the wrong battle and mark honest fields `!`.
+    if (!value.unavailable && w === (s.currentBattle?.waveIndex ?? 0) + 1) predicted = { ...value, scored: false };
     return value;
   };
   // The wave the player is about to walk into.
   const previewNext = s => previewFor(s, (s?.currentBattle?.waveIndex ?? 0) + 1);
 
-  // Which of the next `n` waves hold a fixed battle (rival, evil team, gym, Elite Four, Eternatus). No RNG: the
-  // schedule is the game mode's own table plus the gym rule. #68 turns this into the look-ahead card.
-  const fixedAhead = (s, from, n = 20) => {
-    const gm = s?.gameMode;
-    if (typeof gm?.isFixedBattle !== "function") return [];
-    const out = [];
-    for (let w = from; w < from + n; w++) {
-      if (tryDo(() => gm.isFixedBattle(w), false)) out.push({ wave: w, kind: "fixed" });
-      else if (isGymWave(s, gm, w)) out.push({ wave: w, kind: "gym" });
-    }
-    return out;
-  };
-
-  return { previewFor, previewNext, previewCheck, previewStats, fixedAhead };
+  return { previewFor, previewNext, previewCheck, previewStats };
 })();

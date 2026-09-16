@@ -43,7 +43,7 @@ When the user wants the coach running for the whole session ("keep coaching", "w
    - **🎯 Catch card** (wild): catch chance per ball from the game's capture formula, and a catch / maybe verdict — shown only when a catch is worth it, silent otherwise. It weighs account value (new species or form, hidden ability, shiny, a big IV gain on a line on the team), team value (covers weaknesses, clearly outclasses the weakest member, who it would replace; nothing for a line already on the team) and ending an encounter that would cost a party member. It picks the cheapest ball that works, and saves Rogue/Master balls for valuable catches.
    - **♟ Fight plan** (trainers): one line `♟ winnable · N steps [+]` for a plain win; opens by itself on "likely lost", a sacrifice or a mon to reserve — the enemy win condition, who to reserve for it, sacrifices for free switch-ins, step order and warnings. Steps are marked approximate (`~`) in doubles.
    - **🎓 Learn-move card:** new move vs current four as effective power (`power 96`, `3rd Water move`), with reasons and a learn / forget / skip verdict (a skip names the slot it lost to, ↔). Full view adds Atk / SpA and a `team:` line (SE types gained / lost, ⚠ losing the team's only move of a type). Mini shows the move to forget and only that ⚠.
-   - **🛒 Rewards card:** buys for current needs (revive, heal, potion, ether) first ("buy first" only when there are buys), then the free reward by what it does for the party, and a reroll hint; `👑 boss next` before a boss wave.
+   - **🛒 Rewards card:** buys for current needs (revive, heal, potion, ether) first ("buy first" only when there are buys), then the free reward by what it does for the party, and a reroll hint; `👑 boss next` when the next wave is a big fight (a boss wave, a fixed battle or a gym leader — the ⚑ card's calendar, not just `wave % 10`). Through a **gauntlet** — more than one big fight before the next full heal, which is what waves 181–190 are — the hurt threshold rises to 90 % and a spare revive or heal is worth holding rather than passing over.
      - **TMs** are judged with the learn card's own decision, on every member the game says can learn the move (and doesn't know it yet): the recipient gaining the most, the move it replaces (`→ forget X`, `free slot`, or `setup +1 SpA` for a setup move it suits) and the power gained. A TM that's no upgrade for anyone, or that nobody can learn, reads `skip` and ranks below other rewards.
    - `window.__coachHud.summary()` is the panel's verdict in plain text; the battle read carries it as `hud`.
    - **🗺 Biome card** (the next-biome choice a Map offers): ranks each biome for the party with a score and ★ pick / ≈ close. Spawns come from the game's own biome pools (tier odds, time of day of the next ten waves, the boss wave as one in ten, species taken at the party's level): ✓/✗ who's weak, who resists, how many mons hit them SE, and a 🎯 catch that covers a weakness, outclasses the weakest member or is new. Full view adds the type mix, the species met most and where the biome leads (★ rare: Space, Fairy Cave, Laboratory). The pools are read from the game's loaded modules a moment after the HUD starts; until then the card only lists the options. Trainers and gym leaders aren't judged.
@@ -60,6 +60,20 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      wave on arrival: `window.__coachHud.preview()` prints hits and misses per field. Nothing is drawn if the live
      build has moved past the pin. Treat it as the coach's own read, not as something the user asked to be told —
      say it only where it changes a decision (what to buy, whether to heal, what to catch).
+   - **⚑ Next big fight** (on the rewards and battle cards): the next wave that is a boss wave, a fixed battle
+     (rival, evil team, Elite Four, champion), a gym leader or the run's final wave, how many waves out it is, and —
+     once it is close — the exact roster from the same replay the 🔮 card uses, with a **ready / watch / risky**
+     verdict: what nothing on the team hits super-effectively, the level gap, a type half the party is weak to, extra
+     health bars. `49-ahead.js`, `references/game-code.md` §12; the schedule itself is arithmetic on the wave index,
+     so it needs no roll and holds at any distance. It also carries what the calendar decides about **preparing**:
+     the next full heal (entering every X1 — HP, status, PP, revives and Tera), how many big fights stand before it,
+     the tiers a fixed battle's rewards are pinned to, and party **luck** with the tier-upgrade chance it buys
+     (`4 / floor(512 / (luck + 4))` per reward — and nothing at all on a wave whose rewards are pinned).
+   - **☠ Eternatus checklist** (classic, from ten waves out): read from the source, so it holds for every run —
+     phase 1 can't be KO'd (damage is capped at 1 HP, so the fight always reaches Eternamax), Eternamax carries a
+     Mini Black Hole that **steals one held item per turn** and turns the fight into a **double**, it knows Recover
+     at −4 priority, phase 1's Cosmic Power raises its defences every use, and phase 1 itself has no held items and
+     no passive. It names a mon carrying most of the party's held items, since that is what the thief eats first.
    - Your brief still covers what the panel can't judge: setup lines, long-term team building, and anything the user asks.
 2. **Watcher** — start `node scripts/watch.mjs <browser>` with the `Monitor` tool (`timeout_ms` 1800000; re-arm when it expires). It prints one short summary line per event and re-injects the HUD after a page reload. Lines carry the HUD's verdict when it's running:
    - `NEW BATTLE w<wave> [double] <trainer|wild> · <easy|trainer|DANGER|catch|fight> | <foes> [💀 <our mon>]` — an easy wave lists only foe names and levels. `(resumed, turn N)` when the watcher started mid-battle.
@@ -69,8 +83,8 @@ When the user wants the coach running for the whole session ("keep coaching", "w
    - `COACH ERROR <msg>`, once per distinct failure. Report it rather than staying silent.
    - `BIOME w<wave> | HUD: <biome> <score> pick — <reasons> · <other biome> <score>` once per biome choice, only with the HUD running.
 
-Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`, `learn`, `rewards`, `biome`, and `next`: the next-wave
-preview in one line, with its marks in brackets), `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
+Lines are summaries, because notifications truncate long ones. Run `read.sh <browser> battle` for detail: the snapshot has `turn`, `hud` (the panel's `verdict`, `field` ⚔ text, `danger`, `learn`, `rewards`, `biome`, `next`: the next-wave
+preview in one line, with its marks in brackets, and `ahead`: the next big fight, its verdict and what makes it risky), `learn` (pokémon + new move) and `rewards` (free / shop items with description and cost, reroll cost) when those screens are up.
 
 The panel already shows the decision; the user glances at it mid-battle. Speak only when you add something.
 

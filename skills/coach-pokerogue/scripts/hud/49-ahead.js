@@ -1,0 +1,238 @@
+// Look-ahead to the next big fight: which wave it lands on, who it is, whether the party is ready for it, and what
+// the run gives you to prepare with. Built on 48-preview's replay, so a fixed fight is named exactly rather than
+// guessed from a hand-kept roster table.
+//
+// ---- The calendar (read from the pinned source, v1.12.0.11; references/game-code.md §12)
+// Four rules say a wave is a big fight, and not one of them costs a draw — the schedule is a calendar, not a roll:
+//   final  `gameMode.isWaveFinal(w)`                     Eternatus at 200 in classic
+//   fixed  `gameMode.isFixedBattle(w)`                   the rival, the evil team, the Elite Four, the champion
+//   gym    `w % 30 === (offsetGym ? 0 : 20)`             the same rule `isWaveTrainer` returns early on
+//   boss   `gameMode.isBoss(w)`                          every tenth wave
+// A wave can match several (190 is both the champion and a boss wave); the list above is the precedence.
+//
+// ---- Heals
+// `VictoryPhase` pushes `SelectBiomePhase` whenever `isNewBiome()` — in classic, every tenth wave — and
+// `SelectBiomePhase.setNextBiomeAndEnd` unshifts `PartyHealPhase` when the *next* wave is an X1. `PartyHealPhase`
+// restores HP, cures status, refills every move's PP, revives the fallen and resets `arena.playerTerasUsed`. So a
+// classic run heals entering 11, 21 … 191 and nowhere else, and **waves 181–190 hold the four Elite Four fights and
+// the champion with no heal between them**. `fightsBeforeHeal` counts that stretch, and the rewards card spends on
+// it: it is the difference between topping one mon up and stocking the whole party.
+//
+// ---- Rewards and luck
+// `getNewModifierTypeOption` rolls a tier and then upgrades it while `randSeedInt(floor(512 / (luck + 4))) < 4`, so
+// party luck is a per-item chance of a tier upgrade: 3.1 % at luck 0, 14.3 % at luck 14. A fixed battle's
+// `customModifierRewardSettings` can pin the tiers outright and set `allowLuckUpgrades: false` — the rival at 25 and
+// every boss after it — and then luck buys nothing and a reroll cannot change the rarities. Luck is the party's
+// `getLuck()` summed and clamped to 14; timed-event boosts add to it unseen, so the HUD's number is a floor.
+//
+// Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
+// which replays inside a seed fork. Nothing is called that the preview doesn't already call.
+const { aheadModel, partyLuck } = (() => {
+  const SPAN = 30;        // how far ahead the schedule looks
+  // How far ahead the roster is still worth reading. The calendar holds at any distance, but the replay feeds on the
+  // party, the luck value and the biome, and a catch, an evolution or a shop pick re-rolls it — so a roster read more
+  // than a few waves out is a number that will have moved by the time the fight arrives.
+  const LOOKAHEAD = 5;
+  // How early the run's last wave is worth preparing for. Longer than LOOKAHEAD on purpose: the Eternatus checklist
+  // is about what to carry into 200, and it has to be up while there are still shops left to act on it.
+  const FINAL_NOTICE = 10;
+  // `label` is what the card says when the fight has no trainer name yet.
+  const KIND_LABEL = { final: "final boss", fixed: "fixed battle", gym: "gym leader", boss: "boss" };
+
+  const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
+
+  // ---- Luck. `getPartyLuckValue` (modifier-type.ts) sums the party's luck over everyone allowed in battle and
+  // clamps to 14; the event boost it adds on top isn't readable from the scene, so this is a floor, not the value.
+  const partyLuck = party => {
+    const allowed = party.filter(p => tryDo(() => p.isAllowedInBattle(), true));
+    return Math.max(0, Math.min(14, allowed.reduce((t, p) => t + (tryDo(() => p.getLuck(), 0) ?? 0), 0)));
+  };
+  const LUCK_GRADES = ["D", "C", "C+", "B-", "B", "B+", "A-", "A", "A+", "A++", "S", "S+", "SS", "SS+", "SSS"];
+  // One reward's chance of being upgraded a tier at least once: the loop rolls `randSeedInt(odds) < 4` and repeats
+  // while it hits, so the first roll is the one worth quoting.
+  const upgradeChance = luck => 4 / Math.floor(128 / ((luck + 4) / 4));
+
+  // The tiers this wave's rewards are pinned to, and whether luck can still move them. A fixed battle's config
+  // carries them; every other wave rolls freely. `TIER_NAMES` lives in 50-shop.js, which loads after this file —
+  // safe because nothing here runs at load time (see the header of 98-render-preview.js for the same rule).
+  const rewardRules = (s, wave) => {
+    const cfg = tryDo(() => (s.gameMode?.isFixedBattle?.(wave) ? s.gameMode.getFixedBattle(wave) : null));
+    const custom = cfg?.customModifierRewardSettings;
+    if (!custom) return null;
+    const tiers = (custom.guaranteedModifierTiers ?? []).map(t => TIER_NAMES[t] ?? `tier ${t}`);
+    if (!tiers.length && custom.allowLuckUpgrades !== false) return null;
+    return { tiers, luckUpgrades: custom.allowLuckUpgrades !== false };
+  };
+
+  // ---- The calendar
+  const isGym = (s, w) => w % 30 === (s.offsetGym ? 0 : 20) && !tryDo(() => s.gameMode.isWaveFinal(w), false);
+  const kindOf = (s, w) => {
+    const gm = s.gameMode;
+    if (tryDo(() => gm.isWaveFinal(w), false)) return "final";
+    if (tryDo(() => gm.isFixedBattle(w), false)) return "fixed";
+    if (isGym(s, w)) return "gym";
+    if (tryDo(() => gm.isBoss(w), w % 10 === 0)) return "boss";
+    return null;
+  };
+  // Every big fight in `[from, from + n)`, in wave order. No RNG: four arithmetic rules on the wave index.
+  const bigFightsAhead = (s, from, n = SPAN) => {
+    if (typeof s?.gameMode?.isFixedBattle !== "function") return [];
+    const out = [];
+    for (let w = from; w < from + n; w++) {
+      const kind = kindOf(s, w);
+      if (kind) out.push({ wave: w, kind, label: KIND_LABEL[kind] });
+      if (kind === "final") break; // nothing is scheduled past the run's last wave
+    }
+    return out;
+  };
+  // The next wave the run heals on. `SelectBiomePhase` heals entering an X1, and only after a wave that changed
+  // biome — in classic every tenth wave, so every X1 up to the final wave. A PARTY_HEAL challenge can switch it off;
+  // the HUD can't see that and says nothing about it.
+  const nextHeal = (s, from) => {
+    for (let w = from; w < from + 60; w++) {
+      if (tryDo(() => s.gameMode.isWaveFinal(w), false)) return null;
+      if (w % 10 === 1) return w;
+    }
+    return null;
+  };
+
+  // ---- Readiness: the party against the roster the preview hands over.
+  // A foe's types and ability come from the replay, so the multiplier is the real one; its damaging move types come
+  // from the moveset the replay generated, and when those are missing its own types stand in as a STAB proxy.
+  const foeMult = (type, foe) => (ABILITY_IMMUNE[foe.ability] === type || ABILITY_IMMUNE[foe.passive] === type
+    ? 0 : (foe.types ?? []).reduce((x, d) => x * vs(type, d), 1));
+  const readiness = (model, party) => {
+    const foes = model?.foes ?? [];
+    if (!foes.length || !party.length) return null;
+    const ourLevel = Math.max(...party.map(p => p.level ?? 1));
+    const theirLevel = Math.max(...foes.map(f => f.level ?? 0));
+    const moves = party.map(p => {
+      const own = typesOf(p);
+      return [...new Set(damagingTypes(p))].map(t => ({ t, stab: own.includes(t) ? 1.5 : 1 }));
+    });
+    const answers = (i, f) => moves[i].some(m => foeMult(m.t, f) >= 2);
+    const unanswered = foes.filter(f => !party.some((_, i) => answers(i, f)));
+    const hitters = party.filter((_, i) => foes.some(f => answers(i, f))).map(p => p.name);
+    // What they swing back with: their damaging moves when the replay generated a moveset, else their own types.
+    const theirTypes = [...new Set(foes.flatMap(f => (f.moveTypes?.length ? f.moveTypes : f.types) ?? []))];
+    const threats = theirTypes.map(t => ({ type: t, n: party.filter(p => effectiveness(t, p) >= 2).length }))
+      .filter(x => x.n >= Math.max(2, Math.ceil(party.length / 2))).sort((a, b) => b.n - a.n);
+    const bars = foes.reduce((t, f) => t + Math.max(0, (f.segments ?? 0) - 1), 0);
+
+    const notes = [];
+    if (unanswered.length) {
+      notes.push({ good: false, text: `nothing hits ${unanswered.slice(0, 2).map(f => f.name).join("/")} super-effectively` });
+    }
+    if (theirLevel > ourLevel) notes.push({ good: false, text: `they're +${theirLevel - ourLevel} levels on us` });
+    else if (ourLevel - theirLevel >= 5) notes.push({ good: true, text: `we're +${ourLevel - theirLevel} levels on them` });
+    if (threats.length) notes.push({ good: false, text: `${threats[0].n} of us weak to ${threats[0].type}` });
+    if (hitters.length >= 2) notes.push({ good: true, text: `${hitters.length} mons hit super-effectively` });
+    else if (hitters.length === 1) notes.push({ good: false, text: `only ${hitters[0]} hits super-effectively` });
+    if (bars) notes.push({ good: false, text: `${bars} extra health ${bars === 1 ? "bar" : "bars"} to break` });
+
+    const bad = unanswered.length + (theirLevel > ourLevel ? 1 : 0) + threats.length + (hitters.length ? 0 : 1);
+    return {
+      verdict: bad === 0 ? "ready" : bad === 1 ? "watch" : "risky",
+      levelGap: ourLevel - theirLevel, ourLevel, theirLevel, bars,
+      unanswered: unanswered.map(f => f.name), hitters, threats: threats.slice(0, 2), notes,
+      // A roster the preview itself only half-believes makes a readiness call worth only as much.
+      sure: model.confidence?.foes === "exact",
+    };
+  };
+
+  // ---- The final boss, from the source rather than from memory. None of this is a roll, so it holds for every run.
+  // Phase one can't be knocked out: `Pokemon.damage` caps damage at `hp - 1` while the classic final boss is in form
+  // 0 on its last shield, and `getMinimumSegmentIndex` keeps that shield up. `DamageAnimPhase.end` then calls
+  // `initFinalBossPhaseTwo`, which hands Eternamax a **non-transferrable Mini Black Hole** — a
+  // `TurnHeldItemTransferModifier` that takes one of your held items every turn — regenerates its moveset at form 1
+  // and **turns the battle into a double**. Phase one itself carries no held items at all
+  // (`generateEnemyModifiers` returns early for the classic final boss) and has no passive ability.
+  const ETERNATUS_FACTS = [
+    { good: false, text: "phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax" },
+    { good: false, text: "Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double" },
+    { good: false, text: "Eternamax knows Recover at −4 priority: out-damage it, don't chip it" },
+    { good: false, text: "phase 1's Cosmic Power raises its defences every use — stalling makes it worse" },
+    { good: true, text: "it carries no held items in phase 1 and has no passive ability" },
+  ];
+  // Who is carrying the most held-item stacks: those are what the Mini Black Hole eats first.
+  const heldStacks = (s, party) => party.map(p => ({
+    name: p.name,
+    n: (s.modifiers ?? []).filter(m => m?.pokemonId != null && m.pokemonId === p.id)
+      .reduce((t, m) => t + (tryDo(() => m.getStackCount(), 1) ?? 1), 0),
+  })).filter(x => x.n > 0).sort((a, b) => b.n - a.n);
+
+  const eternatusCard = (s, model, party) => {
+    const foe = model?.foes?.[0] ?? null;
+    const carrying = heldStacks(s, party);
+    const facts = [...ETERNATUS_FACTS];
+    // Worth saying only when there is somewhere to spread to and one mon is holding most of it: the thief takes one
+    // item a turn from whatever is on the field, so a stack on a single mon is a stack handed over.
+    if (party.length > 1 && carrying[0]?.n >= 3 && carrying[0].n >= (carrying[1]?.n ?? 0) * 2) {
+      facts.push({ good: false, text: `${carrying[0].name} carries ${carrying[0].n} held items — spread them before 200` });
+    }
+    if (party.filter(p => p.hp > 0).length < 2) {
+      facts.push({ good: false, text: "phase 2 is a double battle: bring a second mon that can stand in it" });
+    }
+    return { foe: foe && { name: foe.name, level: foe.level, types: foe.types, segments: foe.segments, moves: foe.moves }, facts };
+  };
+
+  // ---- The model the card draws. One replay at most (the next big fight's), and only when it is close enough to
+  // prepare for. Cached like the preview: the schedule walks thirty waves through `isFixedBattle`, which builds a
+  // `FixedBattleConfig` and runs the challenge hooks each time, and the panel redraws every second.
+  let cache = { key: null, value: null };
+  const aheadModel = s => {
+    const wave = s?.currentBattle?.waveIndex ?? 0;
+    if (!wave || typeof s.gameMode?.isFixedBattle !== "function") return null;
+    // Everything below is read from the wave, the party and the run's own offsets; the replay's own inputs are
+    // keyed again inside `previewFor`.
+    const cacheKey = JSON.stringify([s.seed, wave, s.offsetGym, s.arena?.biomeId,
+      // Whether a member is standing, not how much HP it has: nothing here reads the number, and keying on it
+      // would miss the cache on every hit taken.
+      (s.getPlayerParty?.() ?? []).filter(Boolean).map(p => [p.species?.speciesId, p.level, p.hp > 0, p.luck]),
+      (s.modifiers ?? []).length]);
+    if (cache.key === cacheKey) return cache.value;
+    const value = build(s, wave);
+    cache = { key: cacheKey, value };
+    return value;
+  };
+
+  const build = (s, wave) => {
+    const schedule = bigFightsAhead(s, wave + 1);
+    const next = schedule[0] ?? null;
+    const heal = nextHeal(s, wave + 1);
+    const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];
+    const luck = partyLuck(party);
+
+    // A preview only for the fight itself, and only once it is near: a replay for a wave 20 away is a cost with no
+    // advice attached, and the inputs it reads will have moved long before then.
+    const model = next && next.wave - wave <= LOOKAHEAD ? previewFor(s, next.wave) : null;
+    const named = model && !model.unavailable ? model : null;
+    if (next) {
+      next.in = next.wave - wave;
+      next.trainer = named?.trainer?.name ?? null;
+      next.foes = named?.foes ?? [];
+      next.double = named?.double ?? null;
+      next.bars = (named?.foes ?? []).reduce((t, f) => t + Math.max(0, (f.segments ?? 0) - 1), 0);
+      next.exact = named?.confidence?.foes === "exact";
+      // What beating it pays, when the fixed-battle table pins it. Exact, and a reason to spend on getting there.
+      next.rewards = rewardRules(s, next.wave);
+    }
+    // The run's last wave, which is worth preparing for earlier than its roster is worth reading.
+    const final = schedule.find(f => f.kind === "final");
+    const finalNear = final && final.wave - wave <= FINAL_NOTICE;
+    return {
+      wave, next, heal: heal == null ? null : { wave: heal, in: heal - wave },
+      // The stretch the rewards card spends against: how many big fights stand between here and the next full heal.
+      fightsBeforeHeal: heal == null ? schedule.length : schedule.filter(f => f.wave < heal).length,
+      schedule: schedule.slice(0, 4).map(f => ({ ...f, in: f.wave - wave })),
+      readiness: named ? readiness(named, party.filter(p => p.hp > 0)) : null,
+      luck: { value: luck, grade: LUCK_GRADES[luck] ?? String(luck), upgradePct: Math.round(upgradeChance(luck) * 1000) / 10 },
+      // What the rewards for the wave just cleared are pinned to — the fixed battle you have already won, not the
+      // one ahead. This is what decides whether a reroll can change the rarities at all.
+      thisWave: rewardRules(s, wave),
+      eternatus: finalNear ? eternatusCard(s, next?.kind === "final" ? named : null, party) : null,
+    };
+  };
+
+  return { aheadModel, partyLuck };
+})();
