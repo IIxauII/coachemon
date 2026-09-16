@@ -4,7 +4,7 @@
 now: ⇄ Morpeko out › Metagross in
 next: ⚔ Metagross ⚠ Dark ×2 56% {next turn: Weavile's Knock Off: ~56% of current HP} Steel Meteor Mash → Weavile 2 hits boss: 2 bars — no 1HKO
 ↺ if it stays: Morpeko Electric Aura Wheel → Gyarados
-team weak to: Electric ×1 Fighting ×1
+foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Dark Knock Off → Metagross 85% likely · moves first
 ♟ winnable · 3 steps + {Show the fight plan}
@@ -14,7 +14,7 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Dark Knock Off
 ⚔ Morpeko 💀 Ice 100% 3-hit {next turn: Weavile's Triple Axel: ~100% of current HP, 67% KO, before it can act} Electric Aura Wheel → Weavile
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 ↺ if it stays: Morpeko Electric Aura Wheel → Gyarados
-team weak to: Electric ×1 Fighting ×1
+foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 ↯ Ice Triple Axel → Morpeko 83% likely · 3-hit · moves first
 ♟ Fight plan likely lost
@@ -29,7 +29,7 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 ↯ Ice Triple Axel → 
 == cyrus (fallback)
 🎯 W200 · Cyrus Morpeko › Scrafty − {Minimal overview} × {Close}
 ⚔ Morpeko ⚠ Water 103% {Gyarados's Waterfall: ~103% of current HP} Electric Aura Wheel → Gyarados 1 hit
-team weak to: Electric ×1 Fighting ×1
+foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4 ↯ Water Waterfall → Morpeko moves after
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Ice Triple Axel → Scrafty moves first ➜ Scrafty Fighting High Jump Kick ~100% · 2 hits later boss: 2 bars — no 1HKO
 ♟ winnable · 2 steps + {Show the fight plan}
@@ -48,7 +48,7 @@ Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100%
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 2 hits
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 ◎ focus Hydreigon : KO before it moves
-team weak to: Fighting ×2 Dragon ×1
+foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
@@ -66,7 +66,7 @@ Toxapex Toxapex L80 Poison Water 100% ▲ — ↯ Water Scald → Lucario 50% li
 ⚔ Lucario Fighting Aura Sphere → Ferrothorn
 ◎ focus Ferrothorn : most damage
 ↺ if it stays: Garchomp Dragon Dragon Claw → Hydreigon · Lucario Fighting Aura Sphere → Hydreigon
-team weak to: Fighting ×3 Dragon ×1
+foes weak to: Fighting ×3 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → Garchomp 100% likely · moves after
@@ -75,7 +75,7 @@ Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → 
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-team weak to: Water ×2
+foes weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Ninetales 100% likely · moves first
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
 ♟ Fight plan likely lost
@@ -90,7 +90,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 🎯 W200 · Cyrus Swampert − {Minimal overview} × {Close}
 ⇄ free switch? Ninetales → Swampert (no hit taken)
 ⚔ Swampert ⚠ Rock 100% {Rhyperior's Stone Edge: ~100% of current HP, 35% KO} Water Surf → Rhyperior 1 hit
-team weak to: Water ×2
+foes weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Swampert 100% likely · moves first
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
 ♟ Fight plan likely lost
@@ -105,7 +105,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 🎯 W200 · Cyrus Swampert − {Minimal overview} × {Close}
 ⇄ free switch? stay — Swampert is best here
 ⚔ Swampert ⚠ Rock 100% {Rhyperior's Stone Edge: ~100% of current HP, 35% KO} Water Surf → Rhyperior 1 hit
-team weak to: Water ×2
+foes weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Swampert 100% likely · moves first
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
 ♟ Fight plan likely lost
@@ -120,7 +120,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 ⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
 ⚔ Lucario Fighting Aura Sphere → Heatran 3 hits
 ◎ focus Heatran : most damage
-team weak to: Fighting ×2 Ground ×2
+foes weak to: Fighting ×2 Ground ×2
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
 Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
@@ -128,7 +128,7 @@ Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Fl
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Ground Earthquake → both 1 hit hits Lucario 23%
 ⚔ Lucario Fighting Aura Sphere → Heatran 3 hits spare hit — KO without it
-team weak to: Fighting ×2 Ground ×2
+foes weak to: Fighting ×2 Ground ×2
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Lucario 50% likely · moves after
 Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
@@ -150,7 +150,7 @@ Pidgey Pidgey L30 Normal Flying 100% ▲ — ↯ Flying Wing Attack → Charizar
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Snorlax locked in
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
-team weak to: Fighting ×2 Dragon ×1
+foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
@@ -159,7 +159,7 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 now: ⇄ Garchomp out › Metagross in
 now: ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 next: ⚔ Metagross Steel Meteor Mash → Hydreigon 2 hits
-team weak to: Fighting ×2 Dragon ×1
+foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Metagross 100% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
@@ -167,7 +167,7 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Metagross 
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
 ⚔ Lucario 💀 Dark 100% {Hydreigon's Dark Pulse: ~100% of current HP, before it can act} Normal Protect Garchomp KOs Hydreigon first
-team weak to: Fighting ×2 Dragon ×1
+foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 0% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
@@ -175,7 +175,7 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 🎯 W200 · Cyrus Garchomp › Clefable − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit with Helping Hand
 ⚔ Clefable Normal Helping Hand Garchomp KOs Hydreigon
-team weak to: Dragon ×1
+foes weak to: Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Dragon Fairy ×4 ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}

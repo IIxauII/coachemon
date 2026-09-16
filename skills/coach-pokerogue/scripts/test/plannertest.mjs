@@ -134,7 +134,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
   assert.ok(!el.textContent, `panel error: ${el.textContent}`);
   const lines = (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
-  const firstRow = lines.findIndex(l => /^(team weak to:|(\S+) \2 L\d+)/.test(l));
+  const firstRow = lines.findIndex(l => /^(foes weak to:|(\S+) \2 L\d+)/.test(l));
   return { lines, field: lines.slice(1, firstRow < 0 ? undefined : firstRow), scene };
 };
 // The Cyrus mistake: Scrafty sent in "→ High Jump Kick" as if the move happened this turn.

@@ -211,15 +211,18 @@ const hudSummary = m => {
     danger: dangerTags(m).filter(d => d.level === "ko").map(({ mon: name, from, move }) => ({ mon: name, from, move })) };
 };
 
-// Trap abilities on a slot's target that its planned move runs into: by type, by category (Intimidate, Fluffy), a
-// super-effective hit (Filter and co.) or a 1-hit KO (Sturdy). Rows carry names and types only, so this is by name.
+// Trap abilities on a slot's target that its planned move runs into: by type, by category (Fluffy) or a
+// super-effective hit (Filter and co.). Rows carry names and types only, so this is by name. Intimidate only on a
+// predicted switch-in (on the field its drop is already in our stat stages); never Sturdy (the damage model already
+// counts it in the KO).
 const trapsHit = (m, sl) => {
   if (!sl.move) return [];
   const foes = m.rows.filter(r => (sl.target === "both" ? !r.pick?.later : r.name === sl.target?.name));
+  const incoming = new Set(m.rows.filter(r => r.switchTo?.sure).map(r => r.switchTo.name));
   const phys = sl.cat === "physical";
   const hits = (a, r) => ABILITY_IMMUNE[a] === sl.type
     || (a === "Thick Fat" && (sl.type === "Fire" || sl.type === "Ice")) || (a === "Heatproof" && sl.type === "Fire")
-    || (a === "Fluffy" && (phys || sl.type === "Fire")) || (a === "Intimidate" && phys) || (a === "Sturdy" && sl.ko === 1)
+    || (a === "Fluffy" && (phys || sl.type === "Fire")) || (a === "Intimidate" && phys && incoming.has(r.name))
     || a === "Wonder Guard"
     || (["Filter", "Solid Rock", "Prism Armor"].includes(a) && r.types.reduce((x, d) => x * vs(sl.type, d), 1) >= 2);
   return [...new Set(foes.flatMap(r => r.abilities.filter(a => TRAPS.has(a) && hits(a, r))))];
@@ -324,7 +327,7 @@ const drawBattle = m => {
   const usable = ([t]) => !m.moveTypes || m.moveTypes.includes(t);
   const teamWeak = m.team.filter(usable);
   const team = m.trainer && m.rows.length > 1 && teamWeak.length
-    ? line("", "#e77", h("span", { color: "#e77", marginRight: "4px" }, "team weak to:"), ...teamWeak.map(([t, n]) => badge(t, `×${n}`)))
+    ? line("", "#e77", h("span", { color: "#e77", marginRight: "4px" }, "foes weak to:"), ...teamWeak.map(([t, n]) => badge(t, `×${n}`)))
     : null;
   const rows = m.rows.map(r => {
     const traps = r.abilities.filter(a => TRAPS.has(a));

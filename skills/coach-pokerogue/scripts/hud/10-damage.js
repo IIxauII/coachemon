@@ -446,7 +446,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
     if (phys && (ab.includes("Huge Power") || ab.includes("Pure Power"))) atk *= 2;
     if (phys && ab.includes("Hustle")) atk *= 1.5;
     const base = ((2 * a.level / 5 + 2) * power * atk / stat(d, phys ? 2 : 4)) / 50 + 2;
-    const e = effectiveness(type, d);
+    const e = effectiveness(type, d, mv);
     const stab = typesOf(a).includes(type) ? (ab.includes("Adaptability") ? 2 : 1.5) : 1;
     let dmg = base * stab * e;
     if (phys && ab.includes("Tough Claws")) dmg *= 1.3; // most physical moves make contact

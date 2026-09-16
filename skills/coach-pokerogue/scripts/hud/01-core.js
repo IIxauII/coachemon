@@ -28,6 +28,9 @@ const ABILITY_IMMUNE = {
   "Volt Absorb": "Electric", "Lightning Rod": "Electric", "Motor Drive": "Electric",
   "Sap Sipper": "Grass",
 };
+// Immunities by move flag rather than type (MoveFlags bits at the pinned game ref).
+const ABILITY_IMMUNE_FLAG = { "Soundproof": 1 << 2, "Bulletproof": 1 << 10, "Overcoat": 1 << 11, "Wind Rider": 1 << 13 };
+const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
 
 const typesOf = p => p.getTypes().map(t => TYPES[t]).filter(Boolean);
 const abilitiesOf = p => [p.getAbility()?.name, p.hasPassive?.() ? p.getPassiveAbility()?.name : null].filter(Boolean);
@@ -35,9 +38,10 @@ const vs = (atk, def) => {
   const [se, nve, none] = CHART[atk] ?? [[], [], []];
   return none.includes(def) ? 0 : se.includes(def) ? 2 : nve.includes(def) ? 0.5 : 1;
 };
-const effectiveness = (type, p) => {
+// `mv` (optional): the move, so flag immunities (Soundproof and co.) apply too.
+const effectiveness = (type, p, mv) => {
   const ab = abilitiesOf(p);
-  if (ab.some(a => ABILITY_IMMUNE[a] === type)) return 0;
+  if (ab.some(a => ABILITY_IMMUNE[a] === type || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;
   let m = typesOf(p).reduce((x, d) => x * vs(type, d), 1);
   if (ab.includes("Wonder Guard") && m < 2) return 0;
   if (ab.includes("Thick Fat") && (type === "Fire" || type === "Ice")) m /= 2;
@@ -52,7 +56,7 @@ const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ??
 const SPREAD_TARGETS = [2, 4, 6, 8]; // MoveTarget ALL_OTHERS, ALL_NEAR_OTHERS, ALL_NEAR_ENEMIES, ALL_ENEMIES
 const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
 
-const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), "Wonder Guard", "Thick Fat", "Heatproof", "Solid Rock", "Filter", "Prism Armor", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple",
+const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IMMUNE_FLAG), "Wonder Guard", "Thick Fat", "Heatproof", "Solid Rock", "Filter", "Prism Armor", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple",
   // Punish contact or being hit: chip, status, stat drops, a lost ability.
   "Iron Barbs", "Rough Skin", "Static", "Flame Body", "Poison Point", "Effect Spore", "Cursed Body", "Gooey", "Tangling Hair", "Mummy", "Weak Armor", "Stamina",
   // Turn our hits, stat drops or KOs into boosts; undo chip or status; ignore our boosts or residual damage.
