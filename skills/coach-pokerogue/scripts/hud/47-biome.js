@@ -18,7 +18,8 @@
 // FadeOut exports the species data registry and getBiomeName). `loadGameTables` imports the already-loaded /assets/*.js
 // modules again — the browser hands back the same module instances, nothing re-runs — and picks the exports by shape:
 // a Map whose values carry biomeLinks + pokemonPool, an object with getSpecies/getAllSpecies, a function named
-// getBiomeName. It's async, so the first refresh or two draw the card without spawn data. Nothing is copied from the game.
+// getBiomeName, and the timed event manager (getShinyCatchMultiplier; the catch card's shiny odds). It's async, so the
+// first refresh or two draw the card without spawn data. Nothing is copied from the game.
 //
 // ---- Scoring (per offered biome, explainable on purpose)
 // Spawns: every species in the pool for the next 10 waves' times of day, weighted by the tier odds above; the boss wave
@@ -27,7 +28,7 @@
 // - defense: per spawn, share of the party resisting all its types minus the share weak to one of them.
 // - catch: species that cover a team weakness, clearly outclass the weakest member, or are new to the dex (light).
 // score = 50·offense + 25·(defense + 1) + up to 8 for catches, 0–108.
-const { biomeScreen, biomeModel, setGameTables, spawnsFor } = (() => {
+const { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor } = (() => {
   const TIER_ODDS = [356, 124, 26, 5, 1].map(x => x / 512);
   const BOSS_ODDS = [44, 14, 5, 1].map(x => x / 64);
   const BOSS_SHARE = 0.1;
@@ -51,6 +52,8 @@ const { biomeScreen, biomeModel, setGameTables, spawnsFor } = (() => {
         found.species ??= v;
       } else if (typeof v === "function" && v.name === "getBiomeName") {
         found.biomeName ??= v;
+      } else if (typeof v === "object" && typeof v.getShinyCatchMultiplier === "function") {
+        found.events ??= v;
       }
     }
   };
@@ -72,6 +75,9 @@ const { biomeScreen, biomeModel, setGameTables, spawnsFor } = (() => {
     Promise.all(urls.map(u => import(u).then(ns => scan(ns, found), () => {})))
       .then(() => { if (found.biomes && found.species) tables = found; });
   };
+
+  // The game's timed event manager, or null while the tables aren't read (starts the read).
+  const gameEvents = () => { loadGameTables(); return tables?.events ?? null; };
 
   const biomeScreen = (s, h) => s.ui.getMode() === 15 && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectBiomePhase"
     && !!h?.config?.options?.length;
@@ -264,5 +270,5 @@ const { biomeScreen, biomeModel, setGameTables, spawnsFor } = (() => {
   // The weighted spawn list of one biome as the next ten waves after `wave` would see it (tests, live checks).
   const spawnsFor = (s, id, wave) => (tables?.biomes?.get(id) ? spawns(s, tables.biomes.get(id), wave) : null);
 
-  return { biomeScreen, biomeModel, setGameTables, spawnsFor };
+  return { biomeScreen, biomeModel, gameEvents, setGameTables, spawnsFor };
 })();

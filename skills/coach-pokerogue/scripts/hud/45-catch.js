@@ -11,8 +11,9 @@
 //   (5 Luxury 1, not in pokeballCounts). Atlas frames (getPokeballAtlasKey / AddPokeballModifierType icons in the
 //   `items` atlas): pb gb ub rb mb.
 // - Status (getStatusEffectCatchRateMultiplier): `case 1:case 2:case 3:case 6:return 1.5;case 4:case 5:return 2.5`
-//   → poison/toxic/paralysis/burn ×1.5, sleep/freeze ×2.5. Shiny: `shinyCatchMultiplier??2` (×3 during some events;
-//   the event manager is module-private, so ×2 is assumed).
+//   → poison/toxic/paralysis/burn ×1.5, sleep/freeze ×2.5. Shiny: `timedEventManager.getShinyCatchMultiplier()`,
+//   `activeEvent()?.shinyCatchMultiplier ?? 2` (×3 during some events). The manager is module-private: 47-biome's
+//   chunk scan picks it up by shape, and ×2 stands in until it has. `isShiny()` is the base *or* the fusion shiny.
 // - Shakes (the tween's onRepeat): `if(t++<(k?1:3)) x===-1||k||w>=255||e.randBattleSeedInt(65536)<E ? shake : failCatch
 //   else if(k&&e.randBattleSeedInt(65536)>=E) failCatch else lock` → a normal throw needs 3 checks of E/65536, a
 //   critical capture 1; Master Ball (x=-1) and w≥255 always hold.
@@ -22,8 +23,10 @@
 //   So P(catch) = c·s + (1−c)·s³ with s = min(1, E/65536), c = O/256. No abilities, biomes or held items enter it.
 // When a ball may be thrown (CommandPhase.checkCanUseBall / handleBallCommand):
 // - trainer battles never (`y===1 → noPokeballTrainer`); mystery encounters only with `mysteryEncounter.catchAllowed`;
-// - the End biome (biomeId 50, wild): classic runs only when every foe on the field is already caught and it isn't
-//   the final boss; endless/daily/fresh-start never (daily event bosses aside);
+// - the End biome (biomeId 50, wild), checkCanUseBall: classic (challenge runs too) before the final boss only when every
+//   active foe's species is caught; the classic final boss only while at most one starter is uncaught
+//   (`getStarterCount(caught) < getAllStarters().length - 1` refuses); a full Fresh Start never; endless never (wave
+//   % 250 bosses included); daily only away from its final boss, or at a final boss its event seed marks catchable;
 // - only one foe on the field (`t.length>1 → noPokeballMulti`): in doubles, KO one first;
 // - bosses: `x.isBoss()&&x.bossSegmentIndex>=1&&!x.hasAbility(25 /* Wonder Guard */)` → the classic final boss
 //   refuses everything but a challenge-free Master Ball; any other boss refuses every ball but Master (`e<4`)
@@ -68,6 +71,12 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
   const big = x => { try { return BigInt(x ?? 0); } catch { return 0n; } };
   const call = (live, fn, fallback) => { if (!live) return fallback; try { return fn(); } catch { return fallback; } };
 
+  // The event's shiny multiplier, when 47-biome has found the game's event manager.
+  const shinyMultOf = () => {
+    try { return (typeof gameEvents === "function" ? gameEvents()?.getShinyCatchMultiplier() : null) ?? 2; } catch { return 2; }
+  };
+  const isShinyMon = (p, live) => call(live, () => p.isShiny(), !!p.shiny || (!!p.fusionSpecies && !!p.fusionShiny));
+
   const critFactorOf = (s, live) => {
     const mode = s.gameMode ?? {};
     if (call(live, () => mode.isFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === 4 && c.value > 0))) return 0;
@@ -83,10 +92,17 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     if (!b || b.trainer || b.battleType === 1) return "trainer";
     if (b.battleType === 3 && !b.mysteryEncounter?.catchAllowed) return "mystery encounter";
     if (s.arena?.biomeId === END_BIOME && (b.battleType ?? 0) === 0) {
-      const mode = s.gameMode ?? {};
-      const final = call(live, () => mode.isBattleClassicFinalBoss(b.waveIndex), b.waveIndex === 200);
-      const allCaught = active.every(f => big(s.gameData?.dexData?.[f.species?.speciesId]?.caughtAttr));
-      if (!(mode.isClassic && !final && allCaught)) return "End biome";
+      const mode = s.gameMode ?? {}, w = b.waveIndex, dex = s.gameData?.dexData ?? {};
+      const final = call(live, () => mode.isBattleClassicFinalBoss(w), !!mode.isClassic && w === 200);
+      const freshStart = call(live, () => mode.isFullFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === 4 && c.value === 1));
+      const endlessBoss = call(live, () => mode.isEndlessMinorBoss(w), !!mode.isEndless && w % 250 === 0);
+      const dailyFinal = !!mode.isDaily && call(live, () => mode.isWaveFinal(w), w === 50);
+      const uncaught = active.some(f => !big(dex[f.species?.speciesId]?.caughtAttr));
+      // starterData holds an entry for every starter (initStarterData), so its keys are getAllStarters().
+      const missing = Object.keys(s.gameData?.starterData ?? {}).filter(id => !big(dex[id]?.caughtAttr)).length;
+      if ((mode.isClassic && !final && uncaught) || (freshStart && !final) || (mode.isEndless && !endlessBoss)) return "End biome";
+      if ((mode.isClassic && final && missing > 1) || (freshStart && final) || (mode.isEndless && endlessBoss)
+        || (dailyFinal && !mode.dailyConfig?.boss?.catchable)) return "final boss";
     }
     return null;
   };
@@ -94,26 +110,39 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
   // ---- Team value
   const damagingTypes = p => (p.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } })
     .filter(mv => mv && mv.category !== 2 && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean);
-  const bstOf = p => p.species?.baseTotal ?? 0;
+  // A fusion's base stats are its two species' averaged stat by stat, rounded up (Pokemon.calculateBaseStats): a fused
+  // mon is judged by the pair, not by the species it shows.
+  const bstOf = p => {
+    const sp = p.species, fu = p.fusionSpecies;
+    if (!fu) return sp?.baseTotal ?? 0;
+    if (Array.isArray(sp?.baseStats) && Array.isArray(fu.baseStats)) return sp.baseStats.reduce((t, x, i) => t + Math.ceil((x + (fu.baseStats[i] ?? 0)) / 2), 0);
+    return Math.ceil(((sp?.baseTotal ?? 0) + (fu.baseTotal ?? 0)) / 2);
+  };
   const rootOf = (p, live) => call(live, () => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
   // A line's strength is its final evolution's BST, not the current stage's: an unevolved Spinarak (190) isn't weaker
   // than a wild 400. The game only exposes evolutions as species ids (PokemonSpecies.getEvolutionLevels() →
   // [[speciesId, level], …], every descendant flattened, a pure data read), so the final BST is estimated from how many
   // stages are left: two when the first two entries are consecutive ids at different levels (Charmander 5@16, 6@36;
   // Oddish 44@21, 45@item), else one (Eevee's and Tyrogue's branches share a level).
-  const stagesLeft = p => {
+  const stagesLeft = sp => {
     let evos;
-    try { evos = p.species?.getEvolutionLevels?.(); } catch { evos = null; }
+    try { evos = sp?.getEvolutionLevels?.(); } catch { evos = null; }
     if (!Array.isArray(evos) || !evos.length) return 0;
     const [a, b] = evos;
     return b && b[0] === a[0] + 1 && b[1] !== a[1] ? 2 : 1;
   };
   // Typical growth per stage: ×1.3, +110, and a floor near 400 for a line's final form (Spinarak 190 → Ariados 400,
   // Charmander 309 → Charizard 534, Pidgey 251 → Pidgeot 479).
-  const finalBstOf = p => {
-    const bst = bstOf(p), n = stagesLeft(p);
+  const speciesFinal = sp => {
+    const bst = sp?.baseTotal ?? 0, n = stagesLeft(sp);
     if (!n || !bst) return { bst, final: bst, estimated: false };
     return { bst, final: Math.round(Math.max(bst * 1.3 ** n, bst + 110 * n, 400 + 90 * (n - 1))), estimated: true };
+  };
+  // A fusion grows along both lines: the average of each half's final BST.
+  const finalBstOf = p => {
+    if (!p.fusionSpecies) return speciesFinal(p.species);
+    const a = speciesFinal(p.species), b = speciesFinal(p.fusionSpecies), bst = bstOf(p);
+    return a.estimated || b.estimated ? { bst, final: Math.ceil((a.final + b.final) / 2), estimated: true } : { bst, final: bst, estimated: false };
   };
   // A clear upgrade over our weakest member: this much more final BST, a real mon, not a route-1 one beating another,
   // and not so far below our weakest member's level that it would have to catch up first.
@@ -180,12 +209,13 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     const variant = foe.variant ?? 0;
     const attr = (foe.gender === -1 || foe.gender == null ? 0n : foe.gender === 1 ? 8n : 4n)
       | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
+    // Candy follows isShiny() (a shiny fusion half counts) with the base variant; the dex's shiny bit only the base.
+    const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
     if (foe.shiny) {
-      const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
       if (caught && !(caught & 2n)) out.push({ kind: "account", text: `first shiny · +${candy} candy`, w: 3 });
       else if (caught && (caught & attr & 112n) !== (attr & 112n)) out.push({ kind: "account", text: `new shiny variant · +${candy} candy`, w: 2.5 });
       else out.push({ kind: "account", text: `shiny · +${candy} candy`, w: 2 });
-    }
+    } else if (isShinyMon(foe, live)) out.push({ kind: "account", text: `shiny fusion · +${candy} candy`, w: 1.5 });
     if (caught && (caught & (attr & ~127n)) === 0n) out.push({ kind: "account", text: "new form", w: 2 });
 
     const ab = foe.abilityIndex ?? 0;
@@ -252,6 +282,33 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     return { kind: "escape", text: `ends it: ${how}${best.pKo >= 0.5 ? `, it KOs ${best.me.name}` : ""}`, w: 0 };
   };
 
+  // A throw's odds rise as HP falls, but a hit that KOs it ends the catch: name what brings it down safely. False Swipe
+  // and Hold Back (SurviveDamageAttr) leave at least 1 HP; otherwise the strongest attack on the field that can't KO it.
+  const RISKY_KO = 0.05;
+  const lowerHpTip = (s, foe, party) => {
+    const field = party.filter(x => x.isOnField?.());
+    const by = me => (field.length > 1 ? `${me.name}'s ` : "");
+    for (const me of field) {
+      for (const pm of (me.moveset ?? []).filter(Boolean)) {
+        let mv = null;
+        try { mv = pm.getMove(); } catch {}
+        if (mv && hasAttr(mv, "SurviveDamageAttr") && (pm.getMovePp?.() ?? 1) - (pm.ppUsed ?? 0) > 0) return `lower its HP with ${by(me)}${pm.getName()}`;
+      }
+    }
+    let safe = null, risky = false;
+    for (const me of field) {
+      let outs = [];
+      try { outs = moveOutcomes(s, me, foe); } catch {}
+      for (const o of outs) {
+        if (!(o.expected > 0)) continue;
+        if (o.pKo > RISKY_KO) risky = true;
+        else if (!safe || o.expected > safe.o.expected) safe = { me, o };
+      }
+    }
+    if (safe) return `lower its HP with ${by(safe.me)}${safe.o.name} (won't KO)`;
+    return risky ? "careful: our attacks can KO it" : "lower its HP first";
+  };
+
   // ---- Ball choice
   // The dearest ball a catch of this value deserves: Poké/Great for nothing special (Ultra when there are plenty),
   // Ultra for a solid catch, Rogue for a valuable one, Master only for something rare.
@@ -272,7 +329,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
       id: x.id, ball: x.ball, short: x.short, key: x.key, count: counts[x.id],
       p: bossLocked && x.id < 4 ? 0 : Math.round(captureChance({
         maxHp: foe.getMaxHp(), hp: foe.hp, catchRate: foe.species?.catchRate ?? 0, ball: x.id,
-        status: foe.status?.effect ?? 0, shiny: !!foe.shiny, critFactor: crit,
+        status: foe.status?.effect ?? 0, shiny: isShinyMon(foe, live), shinyMult: shinyMultOf(), critFactor: crit,
       }) * 1000) / 1000,
     }));
 
@@ -299,7 +356,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     if (multi && verdict !== "skip") { verdict = "maybe"; blockers.push("KO the other foe first"); }
     if (bossLocked && verdict !== "skip") blockers.push(counts[4] > 0 && value >= 5 ? "Master Ball, or break its bars first" : "break its bars first — only a Master Ball works now");
     else if (verdict !== "skip" && p < GOOD) {
-      if (hp > 0.5) tips.push("lower its HP first");
+      if (hp > 0.5) tips.push(lowerHpTip(s, foe, party));
       else if (!foe.status?.effect) {
         // The wave's status-cure tokens (EnemyStatusEffectHealChanceModifier): 2.5 % a stack at each turn end.
         const cure = (s.enemyModifiers ?? []).filter(m => m.constructor?.name === "EnemyStatusEffectHealChanceModifier")
@@ -325,7 +382,8 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     if (!b || !foes?.length || !party?.length) return null;
     const live = awaitingCommand(s);
     const counts = BALLS.map(x => s.pokeballCounts?.[x.id] ?? 0);
-    const key = [b.waveIndex, b.turn, counts.join(","), ...party.map(p => `${p.id}:${p.hp}`),
+    // The event multiplier arrives with the async table read, possibly mid-turn.
+    const key = [b.waveIndex, b.turn, counts.join(","), shinyMultOf(), ...party.map(p => `${p.id}:${p.hp}`),
       ...foes.map(f => `${f.id}:${f.hp}:${f.status?.effect ?? 0}:${f.bossSegmentIndex ?? ""}:${f.isOnField?.() ? 1 : 0}`)].join("|");
     // Numbers from the game's own code stay until the turn changes; outside the command phase don't replace them.
     if (cache.key === key && (cache.live || !live)) return cache.value;

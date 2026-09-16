@@ -112,11 +112,20 @@ export const HUD_DEPS = {
     `src/field/trainer.ts#Trainer.getNextSummonIndex`,
   ],
 
-  /** Catch odds and whether a ball is allowed at all, both re-implemented. */
+  /**
+   * Catch odds and whether a ball is allowed at all, both re-implemented; a fusion's
+   * averaged base stats, the fusion-aware shiny check and its candy, the event's shiny
+   * multiplier, and the move that leaves a foe at 1 HP.
+   */
   "45-catch.js": [
     `src/phases/attempt-capture-phase.ts#AttemptCapturePhase.start`,
     `src/data/pokeball.ts#getCriticalCaptureChance`,
     `src/phases/command-phase.ts#CommandPhase.checkCanUseBall`,
+    `${P}#Pokemon.calculateBaseStats`,
+    `${P}#Pokemon.isShiny`,
+    `src/system/game-data.ts#GameData.setPokemonSpeciesCaught`,
+    `src/timed-event-manager.ts#TimedEventManager.getShinyCatchMultiplier`,
+    `src/data/moves/move.ts#SurviveDamageAttr.getModifiedDamage`,
   ],
 
   /**

@@ -6,7 +6,7 @@ import { bundle } from "../hud-bundle.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-// moves: [name, type, power, cat, target=3]; sp: species fields
+// moves: [name, type, power, cat, target=3, attrs=[]]; sp: species fields
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, sp = {}, extra = {}) => ({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0,
   species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [] },
@@ -15,7 +15,7 @@ const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, fie
   isBoss: () => (extra.bossSegments ?? 0) > 0, bossSegments: 0, bossSegmentIndex: 0,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null, shiny: false, variant: 0, gender: 0, formIndex: 0, abilityIndex: 0,
   ivs: [15, 15, 15, 15, 15, 15],
-  moveset: moves.map(([n, t, p, c, target = 3]) => ({ getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, accuracy: 100, priority: 0 }), getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(([n, t, p, c, target = 3, attrs = []]) => ({ getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, accuracy: 100, priority: 0, attrs }), getMovePp: () => 10, ppUsed: 0 })),
   ...extra,
 });
 
@@ -31,20 +31,23 @@ const dexData = () => {
   return d;
 };
 
-// `owned`: extra caught species ids (dex IVs 20, abilityAttr 1).
-const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [] }) => {
+// `owned`: extra caught species ids (dex IVs 20, abilityAttr 1). `mode`: gameMode fields over classic. `events`: the
+// game's timed event manager, as 47-biome's chunk scan would hand it over.
+const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [],
+  wave = 23, biome = 3, mode = {}, starters = null, events = null }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : null) };
   for (const f of foes) f.getOpponents = () => party.filter(p => p.isOnField());
   const scene = {
     phaseManager: pm, getField: () => [...party, ...foes].filter(p => p.isOnField()),
-    currentBattle: { waveIndex: 23, turn: 1, double, battleType: trainer ? 1 : 0, enemySwitchCounter: 0, getBattlerCount: () => (double ? 2 : 1), trainer },
+    currentBattle: { waveIndex: wave, turn: 1, double, battleType: trainer ? 1 : 0, enemySwitchCounter: 0, getBattlerCount: () => (double ? 2 : 1), trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes,
-    pokeballCounts: counts, modifiers: [], enemyModifiers, arena: { biomeId: 3 },
-    gameMode: { isDaily: false, isClassic: true, challenges: [] },
+    pokeballCounts: counts, modifiers: [], enemyModifiers, arena: { biomeId: biome },
+    gameMode: { isDaily: false, isClassic: true, isEndless: false, challenges: [], ...mode },
     gameData: { dexData: dexData(), starterData: { 3: { abilityAttr: 1 }, 9: { abilityAttr: 1 }, 16: { abilityAttr: 1 }, 58: { abilityAttr: 1 } } },
   };
+  if (starters) scene.gameData.starterData = Object.fromEntries(starters.map(id => [id, { abilityAttr: 1 }]));
   for (const id of owned) {
     scene.gameData.dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [20,20,20,20,20,20] };
     scene.gameData.starterData[id] = { abilityAttr: 1 };
@@ -55,7 +58,8 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   // The catch coach lives inside the bundle's IIFE; expose it for the test only.
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__ca = { catchAdvice, captureChance, drawCatch, setViewMode: v => { view = v; } };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__ca = { catchAdvice, captureChance, drawCatch, finalBstOf, setGameTables, setViewMode: v => { view = v; } };\n})();\n"));
+  if (events) globalThis.__ca.setGameTables({ events });
   const advice = globalThis.__ca.catchAdvice(scene, scene.currentBattle, party.filter(p => p.hp > 0), foes.filter(f => f.hp > 0));
   return { advice, scene };
 };
@@ -265,5 +269,67 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.match(text ?? "", /stronger than Ariados \(final BST ~\d+ vs 400\)/, text);
   jsonSafe(grows, "final BST");
   show("unevolved upgrade", grows);
+}
+// ---- 12. A fusion is judged by the pair: a Rattata fused with Mewtwo isn't the weak member to release for a 480.
+{
+  const upgradeOf = advice => advice?.targets[0].reasons.find(r => r.text.startsWith("stronger than"))?.text ?? null;
+  const mewtwo = { speciesId: 150, baseTotal: 680, baseStats: [106, 110, 90, 154, 90, 130], getEvolutionLevels: () => [] };
+  const fused = mon("Rattwo", 45, ["Normal","Psychic"], "Guts", [140,90,70,100,70,120], [["Tackle","Normal",40,"P"]], true, undefined,
+    { id: 19, bst: 253 }, { fusionSpecies: mewtwo });
+  const wild = mon("Tauros", 44, ["Normal"], "Intimidate", [120,100,95,40,70,110], [["Tackle","Normal",40,"P"]], true, 60, { id: 128, bst: 490 });
+  const counts = { 0: 10, 1: 5, 2: 0, 3: 0, 4: 0 };
+  assert.equal(upgradeOf(run({ party: [venusaur(), fused], foes: [wild], counts }).advice), null, "the fused pair (467) isn't weaker than a 490");
+  // Per-stat when both species carry baseStats: ceil((30+106)/2) + … for Rattata's 30/56/35/25/35/72.
+  const perStat = { ...fused, species: { ...fused.species, baseStats: [30, 56, 35, 25, 35, 72] } };
+  assert.equal(globalThis.__ca.finalBstOf(perStat).final, [68, 83, 63, 90, 63, 101].reduce((t, x) => t + x, 0));
+  const unfused = { ...fused, fusionSpecies: undefined };
+  assert.match(upgradeOf(run({ party: [venusaur(), unfused], foes: [wild], counts }).advice) ?? "", /stronger than Rattwo \(BST 490 vs 253\)/);
+}
+
+// ---- 13. Shiny: a shiny fusion half counts (isShiny()), and an event's multiplier replaces ×2.
+{
+  const foe = extra => mon("Pikachu", 20, ["Electric"], "Static", [60,50,40,50,50,90], [["Thunderbolt","Electric",90,"S"]], true, undefined,
+    { id: 16, catchRate: 45, bst: 320 }, extra);
+  const ultra = t => t.chance.find(x => x.ball === "Ultra Ball").p;
+  const counts = { 0: 0, 1: 0, 2: 5, 3: 0, 4: 0 };
+  const expect = shinyMult => Math.round(globalThis.__ca.captureChance({ maxHp: 60, hp: 60, catchRate: 45, ball: 2, shiny: true, shinyMult, critFactor: 0.5 }) * 1000) / 1000;
+  const half = run({ party: [venusaur()], foes: [foe({ fusionSpecies: { speciesId: 26, baseTotal: 485 }, fusionShiny: true })], counts }).advice.targets[0];
+  assert.equal(ultra(half), expect(2), "a shiny fusion half gets the shiny multiplier");
+  assert.ok(half.reasons.some(r => r.text === "shiny fusion · +5 candy"), JSON.stringify(half.reasons));
+  const plain = run({ party: [venusaur()], foes: [foe()], counts }).advice.targets[0];
+  assert.ok(ultra(plain) < ultra(half), "a plain one doesn't");
+  const event = run({ party: [venusaur()], foes: [foe({ shiny: true })], counts, events: { getShinyCatchMultiplier: () => 3 } }).advice.targets[0];
+  assert.equal(ultra(event), expect(3), "the event's ×3");
+  assert.ok(ultra(event) > expect(2));
+}
+
+// ---- 14. "Lower its HP" names a move that can't KO it: False Swipe first, else the strongest safe attack, and warns
+// when every attack on the field can KO it.
+{
+  const SurviveDamageAttr = class SurviveDamageAttr {};
+  const target = () => mon("Pikachu", 20, ["Electric"], "Static", [60,40,40,40,40,90], [["Thundershock","Electric",40,"S"]], true, undefined, { id: 25, catchRate: 3, bst: 320 });
+  const counts = { 0: 10, 1: 0, 2: 0, 3: 0, 4: 0 };
+  const why = party => { const t = run({ party, foes: [target()], counts }).advice.targets[0]; assert.equal(t.verdict, "maybe", t.why); return t.why; };
+  const attacker = moves => mon("Venusaur", 50, ["Grass","Poison"], "Overgrow", [160,90,100,110,110,80], moves, true, undefined, { id: 3, bst: 525 });
+  const nuke = ["Sludge Bomb","Poison",90,"S"];
+  assert.match(why([attacker([nuke, ["False Swipe","Normal",40,"P",3,[new SurviveDamageAttr()]]])]), /lower its HP with False Swipe$/);
+  assert.match(why([attacker([nuke, ["Absorb","Grass",20,"S"]])]), /lower its HP with Absorb \(won't KO\)$/);
+  assert.match(why([attacker([nuke])]), /careful: our attacks can KO it$/);
+}
+
+// ---- 15. The End biome follows checkCanUseBall: classic before the final boss only for caught species, the classic final
+// boss while at most one starter is uncaught, endless never, daily away from its final boss.
+{
+  const blocked = opts => run({ party: [venusaur()], counts: { 0: 5, 1: 0, 2: 0, 3: 0, 4: 1 }, biome: 50, ...opts }).advice === null;
+  const foe = (id, lv = 60) => mon("Paradox", lv, ["Dragon"], "Protosynthesis", [200,120,100,120,100,100], [["Dragon Claw","Dragon",80,"P"]], true, 100, { id, catchRate: 10, bst: 570 });
+  assert.ok(blocked({ foes: [foe(25)], wave: 190 }), "classic: an uncaught species is refused");
+  assert.ok(!blocked({ foes: [foe(9)], wave: 190 }), "classic: a caught species can be thrown at");
+  // Starters 3, 9, 16, 58 are caught in the fixture; 25 and 1001 aren't.
+  assert.ok(!blocked({ foes: [foe(890, 200)], wave: 200, starters: [3, 9, 16, 58, 25] }), "final boss, one starter missing: catchable");
+  assert.ok(blocked({ foes: [foe(890, 200)], wave: 200, starters: [3, 9, 16, 58, 25, 777] }), "final boss, two starters missing: refused");
+  assert.ok(blocked({ foes: [foe(9)], wave: 190, mode: { isClassic: false, isEndless: true } }), "endless: never");
+  assert.ok(!blocked({ foes: [foe(25)], wave: 45, mode: { isClassic: false, isDaily: true } }), "daily before its final boss: allowed");
+  assert.ok(blocked({ foes: [foe(25)], wave: 50, mode: { isClassic: false, isDaily: true } }), "daily final boss: refused");
+  assert.ok(!blocked({ foes: [foe(25)], wave: 50, mode: { isClassic: false, isDaily: true, dailyConfig: { boss: { catchable: true } } } }), "unless the event boss is catchable");
 }
 console.log("ok");
