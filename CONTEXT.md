@@ -60,6 +60,10 @@ The one process allowed to press buttons in a given game tab. The server takes t
 
 A run that ended without the party wiping — the game tore itself down and dropped back to the title. Distinct from a **wipe**: a wipe is an ending the agent played its way into, while an interrupted run is a failure, and the run may still exist server-side. The two are never reported as the same thing, because treating an interruption as a wipe invites starting a new run over a run that is still alive.
 
+## Call outcome
+
+What a tool call reports about the game and the run, apart from its own payload: it did what it says, it is still waiting on the game, the agent is **stuck**, the run is over, or the run was **interrupted**. It is decided over the whole call: every wait, every press, and how the call ended (settled, out of time, or refused). A call that runs out of time can still report that the run was interrupted while it waited. When more than one applies, what happened to the run beats what the screen is doing, and both beat the clock.
+
 ## Preview
 
 What the **run seed** already decides about a **wave** the run has not reached yet, read out ahead of time. A preview is a read: it never advances the game or the run's own sequence of rolls.
