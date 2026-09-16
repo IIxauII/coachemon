@@ -68,6 +68,13 @@ export const HUD_DEPS = {
     // A move's flinch chance (Fake Out, Iron Head), read through the attr's own effect chance.
     `${M}#MoveEffectAttr.getMoveChance`,
     `${M}#AddBattlerTagAttr.apply`,
+    // Moves stopped before the damage step (primordial weather, Psychic Terrain), and what goes through Protect.
+    `src/field/arena.ts#Arena.isMoveWeatherCancelled`,
+    `src/field/arena.ts#Arena.isMoveTerrainCancelled`,
+    `src/phases/move-phase.ts#MovePhase.secondFailureCheck`,
+    `src/phases/move-phase.ts#MovePhase.thirdFailureCheck`,
+    `${M}#Move.doesFlagEffectApply`,
+    `src/phases/move-effect-phase.ts#MoveEffectPhase.protectedCheck`,
   ],
 
   /**
@@ -82,6 +89,8 @@ export const HUD_DEPS = {
     `${M}#Move.getTargetBenefitScore`,
     `${M}#Move.getUserBenefitScore`,
     `${M}#AttackMove.getTargetBenefitScore`,
+    // `aiReplay`: a foe's setup move scored per stage it can still add.
+    `${M}#StatStageChangeAttr.getTargetBenefitScore`,
   ],
 
   /** §5 turn order and §9 free switches: no safe call returns either, so both are re-derived. */
@@ -100,6 +109,24 @@ export const HUD_DEPS = {
     `${P}#Pokemon.resetSummonData`,
     `src/phases/switch-summon-phase.ts#SwitchSummonPhase.onEnd`,
     `src/phases/turn-end-phase.ts#TurnEndPhase.start`,
+    // Status moves as a turn's action: stat stages written onto a mon and read back, paralysis's 1-in-8, toxic's
+    // growing chip, a second Protect's odds, and what setup, status, heal and hazard moves do when they land.
+    `${P}#Pokemon.getStatStage`,
+    `src/phases/move-phase.ts#MovePhase.checkPara`,
+    `src/data/status-effect.ts#Status.incrementTurn`,
+    `${M}#ProtectAttr.getCondition`,
+    `${M}#StatStageChangeAttr.apply`,
+    `${M}#CutHpStatStageBoostAttr.apply`,
+    `${M}#StatusEffectAttr.apply`,
+    `${M}#HealAttr.apply`,
+    `${M}#PlantHealAttr.getWeatherHealRatio`,
+    `${M}#SandHealAttr.getWeatherHealRatio`,
+    `src/data/abilities/ab-attrs.ts#StatStageChangeMultiplierAbAttr.apply`,
+    `src/data/arena-tag.ts#EntryHazardTag.apply`,
+    `src/data/arena-tag.ts#DamagingTrapTag.activateTrap`,
+    `src/data/arena-tag.ts#SpikesTag.getDamageHpRatio`,
+    `src/data/arena-tag.ts#StealthRockTag.getDamageHpRatio`,
+    `src/data/arena-tag.ts#ToxicSpikesTag.activateTrap`,
   ],
 
   /**

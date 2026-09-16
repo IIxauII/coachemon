@@ -17,7 +17,7 @@ const reliability = mv => {
 const FOE_MARGIN = 1.15;
 
 // Private helpers live in this closure so their names can't collide with other hud modules.
-const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
+const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } = (() => {
   // Class names survive minification; subclasses count (FixedDamageAttr covers Super Fang, Seismic Toss…).
   const isA = (x, name) => {
     for (let c = x?.constructor; c?.name; c = Object.getPrototypeOf(c)) if (c.name === name) return true;
@@ -40,8 +40,9 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
   const cached = (s, key, fn) => {
     const turn = turnKey(s);
     if (cache.key !== turn) cache = { key: turn, map: new Map() };
-    if (!cache.map.has(key)) cache.map.set(key, fn());
-    return cache.map.get(key);
+    const k = `${key}|${hypothesisKey}`;
+    if (!cache.map.has(k)) cache.map.set(k, fn());
+    return cache.map.get(k);
   };
   // Sucker Punch and Thunderclap read the target's chosen command, which doesn't exist yet while we choose: their
   // condition is left to the planner (`needsAttack`). (Upper Hand needs a priority move from the target: dropped.)
@@ -50,10 +51,11 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
   // turn: restrictions checked for selection (Disable, Taunt, Encore, Torment, Imprison…) and the move's own
   // conditions (Fake Out / First Impression after the first turn, Dream Eater on an awake target, Belch, Steel
   // Roller…). Conditions can draw from the battle RNG, so they run with it forced, like the enemy AI's.
-  const usable = (p, def = null, s = null) => {
-    const base = p.moveset.filter(Boolean).filter(pm => pm.getMove().category !== 2 && pm.getMovePp() - pm.ppUsed > 0);
+  // `status`: the status moves instead.
+  const usable = (p, def = null, s = null, status = false) => {
+    const base = p.moveset.filter(Boolean).filter(pm => (pm.getMove().category === 2) === status && pm.getMovePp() - pm.ppUsed > 0);
     if (!def || !gameReady(s, p, def)) return base;
-    return cached(s, `u|${p.id}|${def.id}|${base.map(pm => pm.getMove().id)}`, () => guarded(s, () => base.filter(pm => {
+    return cached(s, `u|${p.id}|${def.id}|${status}|${base.map(pm => pm.getMove().id)}`, () => guarded(s, () => base.filter(pm => {
       if (typeof pm.isUsable === "function") {
         const r = pm.isUsable(p, false, true);
         if (!(Array.isArray(r) ? r[0] : r)) return false;
@@ -272,6 +274,30 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
   };
   const PRESENT = [[0, 0.4], [150, 0.3], [190, 0.1]]; // 40 / 80 / 120 power; the other 20 % heals the target
 
+  // Accuracy (§5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
+  const accuracy = (atk, def, move, ohko = false) => {
+    if (move.moveTarget === 0) return 1;
+    if (ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr") || atk.getTag?.("IGNORE_ACCURACY")
+      || def.getTag?.("ALWAYS_GET_HIT") || (def.getTag?.("TELEKINESIS") && !ohko)) return 1;
+    const w = typeof move.calculateBattleAccuracy === "function" ? move.calculateBattleAccuracy(atk, def, true) : move.accuracy;
+    if (w === -1 || w == null) return 1;
+    const mult = atk.getAccuracyMultiplier?.(def, move) ?? 1;
+    return Math.max(0, Math.min(100, Math.ceil(w * mult - 1e-9))) / 100;
+  };
+  // Primordial sun and rain stop a Water or Fire move before it runs, and Psychic Terrain a priority move into a
+  // grounded target (MovePhase, both checked before the damage step, so the simulated call never sees them).
+  const cancelledBy = (s, atk, def, move) => {
+    try {
+      if (s.arena?.isMoveWeatherCancelled?.(atk, move)) return "weather";
+      if (s.arena?.isMoveTerrainCancelled?.(atk, [def.getBattlerIndex?.()], move)) return "terrain";
+    } catch {}
+    return null;
+  };
+  // Protect-type moves block it unless it ignores them (Feint, Unseen Fist on contact).
+  const bypassesProtect = (atk, def, move) => {
+    try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: 2, user: atk, target: def }) : hasFlag(move, 2); } catch { return false; }
+  };
+
   const fromGame = (s, atk, def, pm, opts) => {
     const move = pm.getMove();
     if (attrs(move, "CounterDamageAttr").length) return null; // reacts to damage taken this turn: nothing yet
@@ -313,9 +339,10 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
     const first = call(0, false);
     const eGame = def.getMoveEffectiveness?.(atk, move, ignoreAbility, true);
     const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
-    const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0 };
-    if (first.cancelled || first.result === 7 || first.result === 13) {
-      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: ["no effect"], use: [{ d: 0, p: 1 }], focus: 0, flinch: 0 };
+    const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0, bypassProtect: bypassesProtect(atk, def, move) };
+    const blocked = cancelledBy(s, atk, def, move);
+    if (first.cancelled || first.result === 7 || first.result === 13 || blocked) {
+      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1 }], focus: 0, flinch: 0 };
     }
 
     const ohko = first.result === 6;
@@ -357,16 +384,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
       }
       perHit.push(m);
     }
-    // Accuracy (§5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
-    const acc = (() => {
-      if (move.moveTarget === 0) return 1;
-      if (ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr") || atk.getTag?.("IGNORE_ACCURACY")
-        || def.getTag?.("ALWAYS_GET_HIT") || (def.getTag?.("TELEKINESIS") && !ohko)) return 1;
-      const w = typeof move.calculateBattleAccuracy === "function" ? move.calculateBattleAccuracy(atk, def, true) : move.accuracy;
-      if (w === -1 || w == null) return 1;
-      const mult = atk.getAccuracyMultiplier?.(def, move) ?? 1;
-      return Math.max(0, Math.min(100, Math.ceil(w * mult - 1e-9))) / 100;
-    })();
+    const acc = accuracy(atk, def, move, ohko);
     const checkAll = hasFlag(move, 65536) && !skillLink;
     // Before Disguise takes this turn's first hit: a later use meets no disguise.
     const use = useDist(perHit, dist, acc, checkAll);
@@ -521,7 +539,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
     // A predicted Tera is set and taken back off around parts of a refresh (20-enemy-ai), and it changes types,
     // STAB and Tera Blast's type: both sides' flags belong in the key.
     const key = [atk.id, atk.hp, def.id, def.hp, atk.moveset.indexOf(pm), pm.getMove().id, !!opts.aiView, opts.crit,
-      !!atk.isTerastallized, !!def.isTerastallized].join("|");
+      !!atk.isTerastallized, !!def.isTerastallized, hypothesisKey].join("|");
     if (cache.map.has(key)) return cache.map.get(key);
     let out;
     try {
@@ -534,6 +552,25 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
     return out;
   };
   const moveOutcomes = (s, atk, def) => (gameReady(s, atk, def) ? guarded(s, () => usable(atk, def, s).map(pm => moveOutcome(s, atk, def, pm))) : usable(atk).map(pm => fromApprox(s, atk, def, pm))).filter(Boolean);
+  // `atk`'s status moves that can be picked and would work into `def` this turn, game calls only (empty otherwise):
+  // [{ pm, name, type, acc, e, priority, bypassProtect, bounce, blocked }]. `e`: 0 when the target is immune — a type
+  // the move respects (Thunder Wave into Ground), a powder move into Grass, an ability (Good as Gold), a Substitute;
+  // `bounce`: Magic Bounce sends it back. Accuracy and immunity only mean anything for a move aimed at `def`.
+  const statusMoves = (s, atk, def) => {
+    if (!gameReady(s, atk, def)) return [];
+    return cached(s, `st|${atk.id}|${def.id}|${atk.hp}|${def.hp}`, () => guarded(s, () => usable(atk, def, s, true).map(pm => {
+      const move = pm.getMove();
+      try {
+        if (def.turnData) def.turnData.moveEffectiveness = null;
+        const e = def.getMoveEffectiveness?.(atk, move, false, true) ?? 1;
+        return {
+          pm, name: pm.getName(), type: TYPES[atk.getMoveType(move)] ?? "Normal", cat: "status", acc: accuracy(atk, def, move), e,
+          priority: move.getPriority?.(atk, true) ?? move.priority ?? 0, bypassProtect: bypassesProtect(atk, def, move),
+          bounce: ability(def, "ReflectStatusMoveAbAttr") && !ability(atk, "MoveAbilityBypassAbAttr"), blocked: cancelledBy(s, atk, def, move),
+        };
+      } catch { return null; }
+    }).filter(Boolean)));
+  };
 
   // Per-move damage records for the planner and learn cards: `dmg` is the expected damage (discounted for moves
   // that may not land) for our moves, the max roll for a foe's. The game already applies the ¾ spread factor when
@@ -554,7 +591,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
     return out;
   };
 
-  return { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits };
+  return { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits };
 })();
 
 const bestMove = (a, d, foe = false) => hits(a, d, foe).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);

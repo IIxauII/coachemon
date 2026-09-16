@@ -11,12 +11,17 @@ import { bundle } from "../hud-bundle.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-const STUBBED = ["moveOutcome", "moveOutcomes", "endOfTurnHp", "enemyMoveDistribution", "predictSwitches", "enemyAction"];
+const STUBBED = ["moveOutcome", "moveOutcomes", "statusMoves", "endOfTurnHp", "enemyMoveDistribution", "aiReplay", "predictSwitches", "enemyAction"];
 const STUBS = `
 const moveOutcome = (s, atk, def, pm, opts = {}) => globalThis.__stub.outcome(atk, def, pm, opts);
 const moveOutcomes = (s, atk, def) => atk.moveset.map(pm => moveOutcome(s, atk, def, pm)).filter(Boolean);
+const statusMoves = (s, atk, def) => atk.moveset.filter(pm => pm.getMove().category === 2).map(pm => ({
+  pm, name: pm.getName(), type: TYPES[pm.getMove().type], cat: "status", acc: pm.getMove().accuracy > 0 ? pm.getMove().accuracy / 100 : 1,
+  e: 1, priority: pm.getMove().priority ?? 0, bypassProtect: false, bounce: false, blocked: null,
+}));
 const endOfTurnHp = (p, opts) => globalThis.__stub.heal?.(p, opts) ?? 0;
 const enemyMoveDistribution = (s, e) => globalThis.__stub.dist(e);
+const aiReplay = (s, e, target) => globalThis.__stub.replay?.(e, target) ?? null;
 const predictSwitches = (s, b, active) => globalThis.__stub.switches(active);
 const enemyAction = (s, e) => ({ kind: "move", dist: enemyMoveDistribution(s, e), tera: false });
 `;
@@ -30,11 +35,12 @@ const liveBundle = () => {
   assert.ok(at > 0, "bundle has 30-planner.js");
   src = src.slice(0, at) + STUBS + src.slice(at);
   const end = src.lastIndexOf("})();");
-  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, turnsToKo, koCurve, tokenActs };\n" + src.slice(end);
+  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, turnsToKo, koCurve, tokenActs, selfStages, setupRamp };\n" + src.slice(end);
 };
 
-// moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]
-const attr = n => new ({ [n]: class {} })[n]();
+// moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
+// [name, fields] for one that carries its constructor arguments.
+const attr = a => (Array.isArray(a) ? Object.assign(new ({ [a[0]]: class {} })[a[0]](), a[1]) : new ({ [a]: class {} })[a]());
 const mon = (name, lv, types, [hp, atk, def, spa, spd, spe], moves, field, curHp, extra = {}) => ({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), hasPassive: () => false,
@@ -61,7 +67,10 @@ const outcome = (atk, def, pm, { crit = false } = {}) => {
   const row = TABLE[`${atk.name}>${pm.getName()}>${def.name}`];
   if (!row) return null;
   const [per, acc, e] = row;
-  const mult = crit ? 1.5 : 1;
+  // Stat stages on the attacking and defending stat, and burn halving a physical hit, as the game's damage call has them.
+  const phys = pm.getMove().category === 0;
+  const stg = (p, i) => { const x = p.summonData?.statStages?.[i - 1] ?? 0; return x >= 0 ? (2 + x) / 2 : 2 / (2 - x); };
+  const mult = (crit ? 1.5 : 1) * stg(atk, phys ? 1 : 3) / stg(def, phys ? 2 : 4) * (phys && atk.status?.effect === 6 ? 0.5 : 1);
   const seg = def.getMaxHp() / (def.bossSegments || 1);
   const land = per.map((_, k) => (k < per.length - 1 ? acc ** (k + 1) * (1 - acc) : acc ** per.length));
   const play = (hits, roll) => {
@@ -399,6 +408,105 @@ Object.assign(TABLE, { "Garchomp>Dragon Claw>Snorlax": [[70], 1, 1], "Garchomp>S
   const kept = pick({ tempSummonData: { turnCount: 3 }, getLastXMoves: () => [{ move: 337, targets: [2], result: 1 }] });
   console.log(`== consistency: last turn's move (live)\n${kept}`);
   assert.match(kept, /Dragon Claw → Snorlax/, `keeps last turn's near-equal move:\n${kept}`);
+}
+
+// ---- 5e–5k. Status moves as this turn's action (#74), each against its own one-on-one.
+const oneOnOne = ({ party, foes, dist, stub = outcome, switches = () => new Map() }) => render({ party, foes, live: true, dist, switches, stubOutcome: stub });
+const lineOf = (field, name) => field.find(l => new RegExp(`^⚔ ${name}`).test(l)) ?? "";
+const only = move => () => [{ name: move, type: "Normal", p: 1, score: 10, targets: [0] }];
+const SWORDS_DANCE = ["Swords Dance", "Normal", 0, "X", 0, { target: 0, id: 14, attrs: [["StatStageChangeAttr", { stats: [1], stages: 2, selfTarget: true }]] }];
+
+// 5e. Swords Dance: Leaf Blade (77–90) needs six hits on Snorlax's 450 HP; at +2 (153–180) three, so a turn of setup
+// and three hits beat six, against a Body Slam that barely scratches Gallade.
+Object.assign(TABLE, { "Gallade>Leaf Blade>Snorlax": [[90], 1, 1], "Snorlax>Body Slam>Gallade": [[40], 1, 1] });
+{
+  const gallade = hit => [mon("Gallade", 80, ["Psychic", "Fighting"], [300, 200, 110, 90, 150, 100], [["Leaf Blade", "Grass", 90, "P"], SWORDS_DANCE], true)];
+  const snorlax = hp => [mon("Snorlax", 80, ["Normal"], [hp, 150, 110, 80, 150, 30], [["Body Slam", "Normal", 85, "P"]], true)];
+  const setupLine = lineOf(oneOnOne({ party: gallade(), foes: snorlax(450), dist: only("Body Slam") }).field, "Gallade");
+  console.log(`== setup: Swords Dance then Leaf Blade (live)\n${setupLine}`);
+  assert.match(setupLine, /Swords Dance .*\+2 Atk .*then Leaf Blade/, `set up, then attack:\n${setupLine}`);
+  assert.ok(!/→/.test(setupLine), "a move on the user aims at nobody");
+  // A Leaf Blade that already 2HKOs (213–250 into 400) gains nothing from a turn of setup.
+  TABLE["Gallade>Leaf Blade>Snorlax"] = [[250], 1, 1];
+  assert.match(lineOf(oneOnOne({ party: gallade(), foes: snorlax(400), dist: only("Body Slam") }).field, "Gallade"), /Leaf Blade → Snorlax/, "no setup when the hit already 2HKOs");
+}
+
+// 5f. Spore: Breloom is faster and 2HKOs Machamp, whose Close Combat 1HKOs it — trading hits loses on turn 1. Spore
+// lands before Machamp moves and cancels that attempt; the next is lost 2 times in 3 (sleep lasts 2 or 3 turns), so
+// two Seed Bombs usually land first.
+Object.assign(TABLE, { "Breloom>Seed Bomb>Machamp": [[200], 1, 1], "Machamp>Close Combat>Breloom": [[400], 1, 1] });
+{
+  const party = [mon("Breloom", 80, ["Grass", "Fighting"], [250, 200, 110, 60, 90, 100],
+    [["Seed Bomb", "Grass", 80, "P"], ["Spore", "Grass", 0, "X", 0, { id: 147, attrs: [["StatusEffectAttr", { effect: 4 }]] }]], true)];
+  const foes = [mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true)];
+  const line = lineOf(oneOnOne({ party, foes, dist: only("Close Combat") }).field, "Breloom");
+  console.log(`== status: Spore first (live)\n${line}`);
+  assert.match(line, /Spore → Machamp .*sleep .*then Seed Bomb/, `Spore, then attack:\n${line}`);
+  // Already asleep: nothing to add.
+  const asleep = [mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true, undefined, { status: { effect: 4, sleepTurnsRemaining: 2 } })];
+  assert.match(lineOf(oneOnOne({ party, foes: asleep, dist: only("Close Combat") }).field, "Breloom"), /Seed Bomb → Machamp/, "no Spore into a sleeping foe");
+}
+
+// 5g. Recovery: Slowbro at half HP (200/400) needs three Scalds; the faster Gengar's Shadow Ball (68–80) takes it down
+// in three. Slack Off first puts Gengar's count at five, and the three Scalds land in time.
+Object.assign(TABLE, { "Slowbro>Scald>Gengar": [[100], 1, 1], "Gengar>Shadow Ball>Slowbro": [[80], 1, 1] });
+{
+  const party = [mon("Slowbro", 80, ["Water", "Psychic"], [400, 90, 180, 120, 110, 30],
+    [["Scald", "Water", 80, "S"], ["Slack Off", "Normal", 0, "X", 0, { target: 0, id: 303, attrs: [["HealAttr", { healRatio: 0.5, selfTarget: true }]] }]], true, 200)];
+  const foes = [mon("Gengar", 80, ["Ghost", "Poison"], [250, 60, 90, 180, 100, 130], [["Shadow Ball", "Ghost", 80, "S"]], true)];
+  const line = lineOf(oneOnOne({ party, foes, dist: only("Shadow Ball") }).field, "Slowbro");
+  console.log(`== heal: Slack Off first (live)\n${line}`);
+  assert.match(line, /Slack Off .*heal 50% .*then Scald/, `heal, then attack:\n${line}`);
+}
+
+// 5h. Stealth Rock: Skarmory can't dent Chansey either way, and the trainer still has four mons weak to Rock to come.
+Object.assign(TABLE, { "Skarmory>Drill Peck>Chansey": [[60], 1, 1], "Chansey>Seismic Toss>Skarmory": [[30], 1, 1] });
+{
+  const rock = ["Stealth Rock", "Rock", 0, "X", 0, { target: 16, id: 446, attrs: [["AddArenaTrapTagAttr", { tagType: "STEALTH_ROCK" }]] }];
+  const party = [mon("Skarmory", 80, ["Steel", "Flying"], [330, 110, 200, 60, 100, 70], [["Drill Peck", "Flying", 80, "P"], rock], true)];
+  const bench = ["Charizard", "Talonflame", "Moltres", "Volcarona"].map(n => mon(n, 80, n === "Volcarona" ? ["Bug", "Fire"] : ["Fire", "Flying"], [300, 100, 100, 100, 100, 100], [], false));
+  const chansey = mon("Chansey", 80, ["Normal"], [600, 20, 20, 50, 200, 50], [["Seismic Toss", "Fighting", 0, "P"]], true);
+  const line = lineOf(oneOnOne({ party, foes: [chansey, ...bench], dist: e => (e === chansey ? only("Seismic Toss")() : []) }).field, "Skarmory");
+  console.log(`== hazard: Stealth Rock (live)\n${line}`);
+  assert.match(line, /Stealth Rock .*4 to come .*then Drill Peck/, `hazard first:\n${line}`);
+  // With nobody left to come it's worth nothing.
+  assert.match(lineOf(oneOnOne({ party, foes: [chansey], dist: only("Seismic Toss") }).field, "Skarmory"), /Drill Peck → Chansey/, "no hazard with no bench");
+}
+
+// 5i. A foe likely to Protect blocks this turn's hit: Garchomp's sure 1HKO on Snorlax is a coin flip into a 50 % Protect.
+Object.assign(TABLE, { "Garchomp>Earthquake>Snorlax": [[800], 1, 1] });
+{
+  const party = [mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Earthquake", "Ground", 100, "P"]], true)];
+  const snorlax = () => [mon("Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40],
+    [["Body Slam", "Normal", 85, "P"], ["Protect", "Normal", 0, "X", 4, { target: 0, attrs: ["ProtectAttr"], id: 182 }]], true)];
+  const pOf = protect => {
+    const foes = snorlax();
+    const dist = () => [{ name: "Body Slam", type: "Normal", p: 1 - protect, score: 10, targets: [0] }, ...(protect ? [{ name: "Protect", type: "Normal", p: protect, score: 10, targets: [2] }] : [])];
+    const { scene: s } = oneOnOne({ party, foes, dist });
+    return globalThis.__planner.exchange(s, party[0], party[0].moveset[0], foes[0]).turn1.we;
+  };
+  const open = pOf(0), guarded = pOf(0.5);
+  console.log(`== foe Protect: KO this turn ${open.toFixed(3)} → ${guarded.toFixed(3)}`);
+  assert.ok(open > 0.99 && Math.abs(guarded - open / 2) < 1e-6, `Protect halves this turn's KO: ${open} → ${guarded}`);
+}
+
+// 5j. A foe setting up: Snorlax picks Swords Dance half the time (+1 Atk a turn expected), so its later Body Slams hit
+// harder and Gallade falls sooner than to a foe that wastes the same turns on Splash.
+{
+  TABLE["Snorlax>Body Slam>Gallade"] = [[90], 1, 1];
+  const party = [mon("Gallade", 80, ["Psychic", "Fighting"], [300, 200, 110, 90, 150, 100], [["Leaf Blade", "Grass", 90, "P"]], true)];
+  const turns = second => {
+    const foes = [mon("Snorlax", 80, ["Normal"], [450, 150, 110, 80, 150, 30], [["Body Slam", "Normal", 85, "P"], second], true)];
+    const dist = () => [{ name: "Body Slam", type: "Normal", p: 0.5, score: 10, targets: [0] }, { name: second[0], type: "Normal", p: 0.5, score: 10, targets: [2] }];
+    const { scene: s } = oneOnOne({ party, foes, dist });
+    const { threatFrom, exchange } = globalThis.__planner;
+    return { t: threatFrom(s, foes[0], party[0]), x: exchange(s, party[0], party[0].moveset[0], foes[0]) };
+  };
+  const dancing = turns(SWORDS_DANCE), splashing = turns(["Splash", "Normal", 0, "X", 0, { target: 0, id: 150 }]);
+  console.log(`== foe setup: expected turns to KO Gallade ${splashing.x.eTurnsThey.toFixed(2)} → ${dancing.x.eTurnsThey.toFixed(2)}`);
+  assert.deepEqual(dancing.t.boost, { 1: 1 }, "half the time +2 Atk");
+  assert.equal(splashing.t.boost, null);
+  assert.ok(dancing.x.eTurnsThey < splashing.x.eTurnsThey - 0.5, "setup speeds up its KO");
 }
 
 // ---- 6–8. Doubles: where both slots aim is one decision.

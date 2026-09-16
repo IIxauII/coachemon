@@ -93,8 +93,8 @@ const aiNextTargets = (s, e, mv) => {
 
 // Step 7 of getNextMove for one target, as branches [{ score, p }]. A condition that draws (consecutive Protect
 // passes only on a 0) is evaluated with the draw forced both ways and weighted 1/range.
-const aiTargetScore = (s, e, mv, bi) => {
-  const p = s.getField()[bi];
+// `p`: the target when it isn't the mon at field index `bi` (a bench mon the foe would face after a switch).
+const aiTargetScore = (s, e, mv, bi, p = s.getField()[bi]) => {
   let n = mv.getUserBenefitScore(e, p, mv) + mv.getTargetBenefitScore(e, p, mv) * ((bi < 2) === e.isPlayer() ? 1 : -1);
   if (Number.isNaN(n)) n = 0;
   const rest = () => {
@@ -242,6 +242,66 @@ const aiDistribution = (s, e) => {
   }
   return finish(rows);
 };
+// getNextMove replayed against one target, `target`, which need not be on the field: what the foe picks next turn
+// against a mon of ours that isn't out yet, or against a field one move from now (our boosts after Swords Dance, our
+// HP after its hit). The same steps as `aiDistribution` — a queued move, Struggle, a single move, Encore, RANDOM, the
+// KO filter at max roll, the step-7 scores, the chain — with `target` at our slot 0 (`bi`) for every single-target and
+// spread move alike. `hp`: its HP by then. Rows as `enemyMoveDistribution`'s, without targets. Sandboxed per call.
+const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? target.getBattlerIndex() : 0 } = {}) =>
+  beforeTera(() => sandbox(s, () => forcedRng(s, () => {
+    const moveset = movesetOf(e);
+    const rows = new Map();
+    const add = (pm, p, score = null) => {
+      const k = moveset.indexOf(pm);
+      if (!rows.has(k)) {
+        const mv = pm?.getMove();
+        rows.set(k, { name: pm ? pm.getName() : "Struggle", id: mv?.id ?? STRUGGLE, slot: k, type: mv ? TYPES[e.getMoveType(mv)] ?? TYPES[mv.type] : "Normal",
+          cat: mv ? ["physical", "special", "status"][mv.category] : "physical", p: 0, score, targets: [], targetDist: [] });
+      }
+      rows.get(k).p += p;
+    };
+    const done = () => [...rows.values()].filter(r => r.p > 1e-12).sort((a, b) => b.p - a.p);
+    for (const q of e.getMoveQueue()) {
+      const pm = moveset.find(m => m.moveId === q.move);
+      if (pm && usableFor(pm, e, q.useMode >= 2)) { add(pm, 1); return done(); }
+    }
+    const pool = moveset.filter(pm => usableFor(pm, e));
+    if (!pool.length) { add(null, 1); return done(); }
+    const encore = e.getTag("ENCORE");
+    const only = pool.length === 1 ? pool[0] : encore && pool.find(pm => pm.moveId === encore.moveId);
+    if (only) { add(only, 1); return done(); }
+    if (e.aiType !== 1 && e.aiType !== 2) { pool.forEach(pm => add(pm, 1 / pool.length)); return done(); }
+    const aiView = { ignoreAbility: !target.waveData?.abilityRevealed, ignoreSourceAbility: false, ignoreAllyAbility: true, ignoreSourceAllyAbility: false, simulated: true };
+    const kos = pool.filter(pm => {
+      const mv = pm.getMove();
+      if (mv.moveTarget === 9 || mv.category === 2 || s.arena.isMoveWeatherCancelled(e, mv) || s.arena.isMoveTerrainCancelled(e, [bi], mv)) return false;
+      if (!(mv.applyConditions(e, target, -1) || NO_CONDITION_CHECK.includes(mv.id))) return false;
+      const crit = aiHas(mv, "CritOnlyAttr") || !!e.getTag("ALWAYS_CRIT");
+      return target.getAttackDamage({ source: e, move: mv, ...aiView, isCritical: crit }).damage >= hp;
+    });
+    const movePool = kos.length ? kos : pool;
+    // A move on its own side (setup, a heal) is scored on the foe itself, as the game does; one with no target at all
+    // (an ally move in a single battle, Counter) scores −∞.
+    const branchesOf = mv => {
+      const outs = aiMoveTargets(s, e, mv);
+      if (outs.every(o => !o.targets.length) || outs.some(o => o.targets.includes(-1))) return [{ score: -Infinity, p: 1 }];
+      if (outs.every(o => o.targets.every(t => (t < 2) === e.isPlayer()))) return aiMoveOptions(s, e, mv);
+      return aiTargetScore(s, e, mv, bi, target);
+    };
+    let combos = [{ picks: [], p: 1 }];
+    for (const pm of movePool) {
+      const branches = branchesOf(pm.getMove());
+      combos = combos.flatMap(c => branches.map(br => ({ picks: [...c.picks, br], p: c.p * br.p })));
+    }
+    for (const c of combos) {
+      const order = movePool.map((_, i) => i);
+      order.sort((a, b) => { const x = c.picks[a].score, y = c.picks[b].score; return x < y ? 1 : x > y ? -1 : 0; });
+      const chain = aiChain(e.aiType, order.map(i => c.picks[i].score));
+      order.forEach((i, k) => add(movePool[i], c.p * chain[k], c.picks[i].score));
+    }
+    return done();
+  })));
+
 // Rows out: chance-sorted; targets are battler indices (s.getField()[i]) by chance, targetDist the chance of each
 // given this move; score is the AI's average score for the move.
 const finish = rows => [...rows.values()].filter(r => r.p > 1e-12).map(({ tp, scoreW, score, ...r }) => {

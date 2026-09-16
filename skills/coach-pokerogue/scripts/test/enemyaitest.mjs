@@ -9,7 +9,7 @@ const src = (() => {
   const full = bundle("hud");
   const from = full.indexOf("// ---- 20-enemy-ai.js");
   const at = from + 1 + full.slice(from + 1).search(/\n\/\/ ---- [\w-]+\.js\n/);
-  return `${full.slice(0, at)}\nglobalThis.__ai = { enemyMoveDistribution, enemyAction, predictSwitches, aiChain, predictedTeras, withPredictedTera, teraTypeOf, sandboxBreaches: () => sandboxBreaches };\n})();\n`;
+  return `${full.slice(0, at)}\nglobalThis.__ai = { enemyMoveDistribution, enemyAction, predictSwitches, aiChain, aiReplay, predictedTeras, withPredictedTera, teraTypeOf, sandboxBreaches: () => sandboxBreaches };\n})();\n`;
 })();
 
 const calls = { game: 0 };
@@ -79,6 +79,25 @@ const setup = ({ player, enemy, double = false, phase = "CommandPhase", trainer 
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} ≠ ${b}`);
 const pOf = (dist, name) => dist.find(r => r.name === name)?.p ?? 0;
 const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
+
+// Replay against a mon of ours that isn't on the field (next turn's pick after a switch): the KO filter reads its HP,
+// and a setup move is scored on the foe itself as the game does. A 10 into the bench mon, D (Dance, on the user) 30:
+// SMART advances round(10/30·50) % = 17 % from D.
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
+    { id: 1, name: "A", target: -10 }, { id: 4, name: "D", category: 2, moveTarget: 0, user: 30 }] });
+  const bench = mkMon({ id: "bench", player: true, fieldIndex: null, hp: 100, dmg: { e: { 1: 60 } } });
+  const ai = setup({ player: [foe(), bench], enemy: [e] });
+  const seed = scene.currentBattle.battleSeedState;
+  const dist = ai.aiReplay(scene, e, bench);
+  near(pOf(dist, "D"), 0.83, "setup first");
+  near(pOf(dist, "A"), 0.17, "attack after");
+  assert.equal(bench.lastDamageCall.move.id, 1, "KO filter asks the bench mon's damage");
+  // A hit that KOs the bench mon's HP (or the HP it'll have then) is the only pick.
+  near(pOf(ai.aiReplay(scene, e, bench, { hp: 50 }), "A"), 1, "KO filter at the given HP");
+  assert.equal(scene.currentBattle.battleSeedState, seed, "no RNG drawn");
+  assert.doesNotThrow(() => JSON.stringify(dist));
+}
 
 // SMART: A 10×2 eff×1.5 STAB = 30, B 20, C 10, D 5 (status: no multipliers). Advance 33%, 25%, 25%.
 {

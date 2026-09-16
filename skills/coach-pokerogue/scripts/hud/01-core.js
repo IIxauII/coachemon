@@ -132,3 +132,40 @@ const awaitingDecision = s => {
   return null;
 };
 const awaitingCommand = s => awaitingDecision(s) !== null;
+
+// ---- Hypotheses: a state one move away
+// The planner asks the game's own damage and AI code about a state this turn's move would make — our stat stages
+// after Swords Dance, a foe paralysed by Thunder Wave — by writing that state onto the live mons for one synchronous
+// call and putting it back, the way a predicted Tera is (20-enemy-ai). `hypothesisKey` names the state, so every cache
+// keyed on a turn's numbers (10-damage's, the planner's memo) keeps hypothetical numbers apart from the real ones.
+// Patches: `{ mon, stages: { [stat 1–5]: change } }` (clamped to ±6), `{ mon, status: { effect, … } }`. Only inside
+// `sandbox`.
+let hypothesisKey = "";
+const withHypothesis = (patches, fn) => {
+  const undo = [];
+  const prevKey = hypothesisKey;
+  try {
+    const parts = [];
+    for (const { mon, stages, status } of patches) {
+      if (stages && Array.isArray(mon.summonData?.statStages)) {
+        const prev = mon.summonData.statStages;
+        const next = [...prev];
+        for (const [i, n] of Object.entries(stages)) next[i - 1] = Math.max(-6, Math.min(6, (next[i - 1] ?? 0) + n));
+        mon.summonData.statStages = next;
+        undo.push(() => { mon.summonData.statStages = prev; });
+        parts.push(`${mon.id}s${next.join(",")}`);
+      }
+      if (status) {
+        const own = Object.prototype.hasOwnProperty.call(mon, "status"), prev = mon.status;
+        mon.status = status;
+        undo.push(() => { if (own) mon.status = prev; else delete mon.status; });
+        parts.push(`${mon.id}x${status.effect}`);
+      }
+    }
+    hypothesisKey = parts.length ? `${prevKey}|${parts.join(";")}` : prevKey;
+    return fn();
+  } finally {
+    for (const f of undo.reverse()) f();
+    hypothesisKey = prevKey;
+  }
+};
