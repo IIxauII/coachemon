@@ -35,6 +35,10 @@ const tmLearners = (t, party) => {
   }
   return users && users.filter(p => !knowsMove(p, t.moveId));
 };
+// A fainted member can still be taught a TM: the party screen's TM mode offers TEACH whoever the cursor is on, and
+// the TM pool itself is drawn from the whole party. Only the Hardcore challenge (Challenges.HARDCORE, 9) takes it away,
+// by giving a fainted member nothing but Release (`PartyUiHandler.updateOptionsHardcore`).
+const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === 9 && c.value > 0);
 
 // TM advice: the learn decision (learnAdvice, the learn card's own) for every member who can learn the move, and the
 // best recipient. `take` true with the member gaining the most effective power (or, for a setup move, the member it
@@ -45,7 +49,7 @@ const tmLearners = (t, party) => {
 const tmAdvice = (mv, users, ctx) => {
   const all = users.map(p => ({ p, a: learnAdvice(p, mv, ctx) }));
   const recipient = x => ({ icon: iconOf(x.p), name: x.p.name, forget: x.a.forget, against: x.a.against, slot: x.a.slot, gain: x.a.gain, reason: x.a.reason,
-    ...(x.a.setup ? { setup: x.a.setup.text } : {}) });
+    ...(x.a.setup ? { setup: x.a.setup.text } : {}), ...(x.p.hp <= 0 ? { fainted: true } : {}) });
   const best = all.filter(x => x.a.learn).sort((a, b) => b.a.gain - a.a.gain)[0];
   if (best) return { take: true, best: recipient(best) };
   const setup = all.filter(x => x.a.setup).sort((a, b) => b.a.setup.value - a.a.setup.value)[0];
@@ -195,25 +199,27 @@ const shopModel = (s, h) => {
       const mv = learnMoveById(party, t.moveId);
       extra.moveId = t.moveId ?? null;
       extra.move = mv ? { name: mv.name, type: TYPES[mv.type] ?? "Normal", cat: ["physical", "special", "status"][mv.category] } : null;
-      const users = tmLearners(t, alive);
+      const users = tmLearners(t, isHardcore(s) ? alive : party);
       if (!users || !mv) { v = 5; why = "TM — can't check who learns it"; extra.tm = null; }
       else if (!users.length) { v = -6; why = "skip · nobody can learn it"; extra.users = []; extra.tm = "skip"; }
       else {
-        // The learn card's own decision on every member that can learn it: best recipient wins.
-        const advice = tmAdvice(mv, users, { double: !!s.currentBattle?.double, party });
+        // The learn card's own decision on every member that can learn it: best recipient wins. A TM is kept for the
+        // run, so a spread or ally move is judged by the share of double battles ahead, not by the wave just won.
+        const advice = tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party });
         const b = advice.best;
         extra.users = users.map(p => p.name);
         extra.tm = advice.take ? "take" : advice.take === false ? "skip" : "maybe";
-        if (b) extra.best = { icon: b.icon, name: b.name, forget: b.forget, gain: b.gain, ...(b.setup ? { setup: b.setup } : {}) };
+        if (b) extra.best = { icon: b.icon, name: b.name, forget: b.forget, gain: b.gain, ...(b.setup ? { setup: b.setup } : {}), ...(b.fainted ? { fainted: true } : {}) };
+        const to = b && `${b.name}${b.fainted ? " (fainted)" : ""}`;
         if (advice.take && b.setup) {
           // Setup moves: the member it suits best (boosts the stat it attacks with, no setup move yet).
           v = 10 + Math.min(10, Math.round(b.gain / 10));
-          why = `setup TM for ${b.name} (${b.setup})${b.forget ? ` over ${b.forget}` : ""}`;
+          why = `setup TM for ${to} (${b.setup})${b.forget ? ` over ${b.forget}` : ""}`;
         } else if (advice.take) {
           v = 5 + Math.min(20, Math.round(b.gain / 6));
-          why = `TM for ${b.name}${b.forget ? ` (over ${b.forget})` : " (free slot)"} · +${b.gain} power`;
+          why = `TM for ${to}${b.forget ? ` (over ${b.forget})` : " (free slot)"} · +${b.gain} power`;
         } else if (b) {
-          v = 3; why = `TM for ${b.name} — ${b.reason}, your call`;
+          v = 3; why = `TM for ${to} — ${b.reason}, your call`;
         } else if (advice.take === null) {
           v = 3; why = `status TM — ${users[0].name}${users.length > 1 ? ` +${users.length - 1}` : ""} can learn it`;
         } else {

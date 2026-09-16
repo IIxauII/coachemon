@@ -154,7 +154,7 @@ const drawShop = m => {
     const forget = b.forget ? `→ forget ${b.forget}` : "free slot";
     const what = b.setup ? `setup ${b.setup}${b.forget ? ` ${forget}` : ""}` : f.tm === "maybe" ? `${b.reason} — your call` : forget;
     const gain = view === "full" && f.tm === "take" && !b.setup && b.gain > 0 ? ` · +${b.gain} power` : "";
-    return [mon(b.icon, b.name, 20), h("span", style, what + gain)];
+    return [mon(b.icon, b.name, 20), h("span", style, `${b.fainted ? "(fainted) " : ""}${what}${gain}`)];
   };
   // A held item, mint, vitamin or candy names the member it should go to by icon, ahead of its reason — which then
   // drops the "<name> · " it opens with.

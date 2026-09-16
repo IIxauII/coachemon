@@ -27,7 +27,7 @@
 //
 // Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
 // which replays inside a seed fork. Nothing is called that the preview doesn't already call.
-const { aheadModel, partyLuck } = (() => {
+const { aheadModel, partyLuck, doubleOdds } = (() => {
   const SPAN = 30;        // how far ahead the schedule looks
   // How far ahead the roster is still worth reading. The calendar holds at any distance, but the replay feeds on the
   // party, the luck value and the biome, and a catch, an evolution or a shop pick re-rolls it — so a roster read more
@@ -94,6 +94,37 @@ const { aheadModel, partyLuck } = (() => {
       if (w % 10 === 1) return w;
     }
     return null;
+  };
+
+  // ---- Double battles. `checkIsDouble` rolls every wave, `randSeedInt(getDoubleBattleChance(w)) === 0`, and
+  // `generateNewBattleTrainer` rolls the same chance for a generic trainer's double variant. The chance is 8, or 32 on
+  // an X0 wave, divided by 4 for each lure held (`DoubleBattleChanceBoosterModifier`, one per lure kind) and for each
+  // mon on the field with Illuminate or Arena Trap (`DoubleBattleChanceAbAttr`), floored at 1. `BattleEndPhase` lapses
+  // a lure before the rewards screen, so its `battleCount` there is the number of battles ahead it still covers. The
+  // final wave and an Endless boss are never double; a fixed battle's config pins it when it says, and one that doesn't
+  // (an evil-team grunt rolls 1/3 on the trainer, unreadable without the draw) counts as single. A Mystery Encounter
+  // is never double either, but whether a wave is one is itself a roll, so every other wave counts as a battle.
+  // `doubleOdds` is the share of double battles over the next `n` waves at those odds: what a permanent choice (a TM)
+  // is judged against, rather than whichever way one roll falls.
+  const DOUBLE_HORIZON = 10;
+  const DOUBLE_ABILITIES = ["Illuminate", "Arena Trap"];
+  const doubleOdds = (s, from, n = DOUBLE_HORIZON) => {
+    const gm = s?.gameMode;
+    const lures = (s?.modifiers ?? []).filter(m => m?.constructor?.name === "DoubleBattleChanceBoosterModifier")
+      .map(m => tryDo(() => m.getBattleCount(), m.battleCount ?? 0));
+    const field = tryDo(() => s.getPlayerField(), null) ?? tryDo(() => s.getPlayerParty().filter(Boolean).slice(0, 1), []);
+    const abilities = field.filter(p => tryDo(() => p.hasAbilityWithAttr("DoubleBattleChanceAbAttr"), null)
+      ?? tryDo(() => abilitiesOf(p).some(a => DOUBLE_ABILITIES.includes(a)), false)).length;
+    let doubles = 0;
+    for (let i = 0; i < n; i++) {
+      const w = from + i;
+      if (tryDo(() => gm.isWaveFinal(w), false) || tryDo(() => gm.isEndlessBoss(w), false)) continue;
+      const fixed = tryDo(() => (gm.isFixedBattle(w) ? gm.getFixedBattle(w) : null));
+      if (fixed) { doubles += fixed.double === true ? 1 : 0; continue; }
+      const lured = lures.filter(left => left > i).length;
+      doubles += 1 / Math.max(1, (w % 10 === 0 ? 32 : 8) / 4 ** (lured + abilities));
+    }
+    return doubles / n;
   };
 
   // ---- Readiness: the party against the roster the preview hands over.
@@ -234,5 +265,5 @@ const { aheadModel, partyLuck } = (() => {
     };
   };
 
-  return { aheadModel, partyLuck };
+  return { aheadModel, partyLuck, doubleOdds };
 })();

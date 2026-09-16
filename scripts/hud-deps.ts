@@ -25,10 +25,9 @@
  * pin bump re-reads them these hashes are the doc's only tie to a fixed ref.
  *
  * Keys are HUD modules under `skills/coach-pokerogue/scripts/hud/`; a moved hash
- * names the modules to re-read. Modules absent from this map (`50-shop.js`)
- * build on the ones here and read live state directly; they own no game-code
- * claim of their own — its spending rules rest on
- * `49-ahead.js`'s calendar and its item judgements on `50-items.js`, which do.
+ * names the modules to re-read. `50-shop.js` owns only its TM claims (§16):
+ * its spending rules rest on `49-ahead.js`'s calendar and its item judgements
+ * on `50-items.js`, which are listed under those modules.
  */
 import type { SourceRef } from "../src/escape-ladder/types.ts";
 
@@ -307,6 +306,15 @@ export const HUD_DEPS = {
     `${P}#EnemyPokemon.generateAndPopulateMoveset`,
     `${P}#EnemyPokemon.getMinimumSegmentIndex`,
     `src/phases/damage-anim-phase.ts#DamageAnimPhase.end`,
+    // §16: `doubleOdds`, the share of double battles ahead a TM is judged by.
+    `${SCENE}#BattleScene.checkIsDouble`,
+    `${SCENE}#BattleScene.getDoubleBattleChance`,
+    `${SCENE}#BattleScene.generateNewBattleTrainer`,
+    `src/game-mode.ts#GameMode.isEndlessBoss`,
+    `src/modifier/modifier.ts#DoubleBattleChanceBoosterModifier.apply`,
+    `src/modifier/modifier.ts#LapsingPersistentModifier.lapse`,
+    `src/phases/battle-end-phase.ts#BattleEndPhase.start`,
+    `src/data/abilities/ab-attrs.ts#DoubleBattleChanceAbAttr.apply`,
   ],
 
   /**
@@ -345,5 +353,18 @@ export const HUD_DEPS = {
     `src/enums/stat.ts#Stat`,
     `src/enums/berry-type.ts#BerryType`,
     `src/enums/move-flags.ts#MoveFlags`,
+  ],
+
+  /**
+   * §16. Who a TM can be taught to: the select filter, the party screen's TM
+   * mode (a fainted member is offered TEACH) and Hardcore's exception, which
+   * gives a fainted member only Release. The challenge id comes through as a
+   * bare number.
+   */
+  "50-shop.js": [
+    `src/modifier/modifier-type.ts#TmModifierType.constructor`,
+    `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.updateOptions`,
+    `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.updateOptionsHardcore`,
+    `src/enums/challenges.ts#Challenges`,
   ],
 } satisfies Record<string, readonly SourceRef[]>;
