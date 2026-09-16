@@ -5,7 +5,7 @@
  * (PokéRogue v1.12.0.11 / e4e9b53) unless tagged `live`. Do not generate this
  * file: the classification is judgement over deep if/else chains gated on
  * runtime flags, and a classifier that gets `popStarter` wrong eats the team.
- * What is automated is the check — `npm run ladder:drift` hashes every `deps`
+ * What is automated is the check — `npm run drift:check` hashes every `deps`
  * method and refuses a pin bump until each moved entry is re-read.
  *
  * Keys are the v1 tool surface's composite screen ids. Lookup falls back
