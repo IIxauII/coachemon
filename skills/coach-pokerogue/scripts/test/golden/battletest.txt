@@ -105,6 +105,7 @@ summary {"kind":"battle","wave":89,"verdict":"danger","field":"Venusaur Power Wh
 == single (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
+⇄ Charizard out › Blastoise in · optional
 Ninetales Ninetales L72 Fire 100% ✦ ⚠ Flash Fire ▲ Water ✕ Fire ×0 ↯ Fire Flamethrower → Charizard 70% likely · moves after
 summary {"kind":"battle","wave":89,"verdict":"fight","field":"Charizard Air Slash → Ninetales · 3 hits","danger":[],"learn":null,"rewards":null,"next":null,"ahead":null}
 == single (mini)
@@ -159,7 +160,7 @@ Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼
 Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water ↯ Fire Flare Blitz → Blastoise 100% likely · moves first
 ♟ Fight plan likely lost
 ☠ Ludicolo Ludicolo KOs 1/1 · win condition
-1 Blastoise Water Wave Crash → Ludicolo falls · foe at 63%
+1 Blastoise Water Wave Crash → Ludicolo falls · foe at 66%
 ⚠ likely lost: nothing we have hurts Ludicolo — maximise damage before it comes in
 summary {"kind":"battle","wave":89,"verdict":"trainer","field":"Blastoise Wave Crash → Arcanine · 2 hits","danger":[],"learn":null,"rewards":null,"next":null,"ahead":null}
 == intimidateIn (mini)

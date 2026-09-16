@@ -107,6 +107,14 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const clamped = moveOutcome(scene, atk, edge, pmOf(bigHit), { crit: false });
   near(clamped.expected, 1, "clamped at the boundary");
   near(clamped.uncapped, avgRoll(120), "uncapped single hit");
+  // `use`: the whole use's damage, uncut by the boundary — it keeps the uncapped mean, and Triple Axel's first-hit miss
+  // (10 %) sits at 0 on its own; a single-hit move rolls 102–120 with no 0 at all.
+  const mean = use => use.reduce((t, x) => t + x.d * x.p, 0);
+  near(mean(clamped.use), clamped.uncapped, "use keeps the uncapped mean");
+  assert.ok(clamped.use.length <= 12 && !clamped.use.some(x => x.d === 0), `single hit: rolls only (${JSON.stringify(clamped.use)})`);
+  near(mean(ta.use), ta.uncapped, "Triple Axel use mean");
+  near(ta.use.find(x => x.d === 0)?.p ?? 0, 0.1, "Triple Axel misses its first hit 10 %");
+  assert.ok(Math.max(...ta.use.map(x => x.d)) <= 120, "nothing above all three hits at max roll");
   setup(atk, edge);
   near(moveOutcome(scene, atk, edge, pmOf(tripleAxel), { crit: false }).uncapped, ta.expected, "uncapped Triple Axel");
   assert.ok(ta.notes.includes("3 hits"));

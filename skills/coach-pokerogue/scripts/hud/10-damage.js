@@ -159,6 +159,37 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
     return [...done.values()];
   };
 
+  // Damage over one use of a move, before the target's HP or a boss bar cuts it: [{ d, p }] with a miss at 0, from the
+  // per-hit Maps, the hit counts and accuracy as `resolve` reads them. Held to USE_POINTS points (`squeezeDist`):
+  // later turns of a fight are played from it one KO-or-survive branch at a time (30-planner).
+  const USE_POINTS = 12;
+  const useDist = (perHit, dist, acc, checkAll) => {
+    const atLeast = n => dist.filter(x => x.n >= n).reduce((t, x) => t + x.p, 0);
+    const done = new Map();
+    const add = (m, d, p) => { if (p > 0) m.set(d, (m.get(d) ?? 0) + p); };
+    let live = new Map([[0, 1]]);
+    const hitsMax = Math.max(...dist.map(x => x.n));
+    for (let k = 0; k < hitsMax && live.size; k++) {
+      const go = (k ? atLeast(k + 1) / (atLeast(k) || 1) : atLeast(1)) * (k === 0 || checkAll ? acc : 1);
+      const next = new Map();
+      for (const [t, p] of live) {
+        add(done, t, p * (1 - go));
+        for (const [d, q] of perHit[Math.min(k, perHit.length - 1)]) add(next, t + d, p * go * q);
+      }
+      live = new Map(squeezeDist(next, 2 * USE_POINTS).map(x => [x.d, x.p]));
+    }
+    for (const [t, p] of live) add(done, t, p);
+    return squeezeDist(done, USE_POINTS);
+  };
+  // Chance a landed use of `move` flinches `def` (Fake Out, Iron Head): the move's effect chance as the game reads it
+  // (Serene Grace, Shield Dust), none through Inner Focus. It only matters if the user moves first (the planner's call).
+  const flinchChance = (atk, def, move, ignoreAbility) => {
+    const fl = attrs(move, "FlinchAttr")[0];
+    if (!fl || (!ignoreAbility && abilitiesOf(def).includes("Inner Focus"))) return 0;
+    const c = typeof fl.getMoveChance === "function" ? fl.getMoveChance(atk, def, move, false, false) : move.chance ?? -1;
+    return c < 0 ? 1 : Math.min(1, c / 100);
+  };
+
   // Resolve a fixed list of hit damages on `target` in order: boss clamp per hit, Sturdy, Disguise excluded.
   // `ko`/`hp` assume no luck; `pSurvive` is the chance Focus Band or the enemy endure token saves it anyway.
   const applyHits = (target, hitDamages, { s = sceneNow(), ignoreAbility = false, ohko = false } = {}) => {
@@ -284,7 +315,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
     const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
     const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0 };
     if (first.cancelled || first.result === 7 || first.result === 13) {
-      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: ["no effect"] };
+      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: ["no effect"], use: [{ d: 0, p: 1 }], focus: 0, flinch: 0 };
     }
 
     const ohko = first.result === 6;
@@ -326,10 +357,6 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
       }
       perHit.push(m);
     }
-    // Disguise / Ice Face take the first hit (the simulated call doesn't zero it).
-    const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
-    if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
-
     // Accuracy (§5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
     const acc = (() => {
       if (move.moveTarget === 0) return 1;
@@ -341,6 +368,11 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
       return Math.max(0, Math.min(100, Math.ceil(w * mult - 1e-9))) / 100;
     })();
     const checkAll = hasFlag(move, 65536) && !skillLink;
+    // Before Disguise takes this turn's first hit: a later use meets no disguise.
+    const use = useDist(perHit, dist, acc, checkAll);
+    // Disguise / Ice Face take the first hit (the simulated call doesn't zero it).
+    const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
+    if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
     const f = targetFacts(s, def, ignoreAbility);
     const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
@@ -426,6 +458,7 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
       ...base, acc, crit, dist, semi, self, selfKo, lock, noRepeat, drops,
       perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })),
       expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, notes,
+      use, focus: f.pFocus, flinch: flinchChance(atk, def, move, ignoreAbility),
     };
   };
 
@@ -461,11 +494,14 @@ const { moveOutcome, moveOutcomes, applyHits, endOfTurnHp, hits } = (() => {
     const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
     const max = Math.floor(x.dmg);
     const end = applyHits(def, [max], { s });
-    const revive = targetFacts(s, def).revive;
+    const { revive, pFocus } = targetFacts(s, def);
+    const rolls = new Map();
+    addRolls(rolls, max, 1);
     return {
       name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, ...traits(atk, mv, false), semi: false, self: 0,
       acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
       expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, notes: ["estimate"],
+      use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, flinch: flinchChance(atk, def, mv, false),
     };
   };
 

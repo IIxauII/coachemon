@@ -7,9 +7,9 @@ E Explosion: user faints
 E Outrage: locks 2–3 turns → confused
 E Overheat: −2 SpA
 E Gigaton Hammer: not twice in a row
-A Hyper Beam: 3 hits in 5 turns · Body Slam: 4 hits in 4 turns
+A Hyper Beam: 3 hits in 5 turns · Body Slam: 5 hits in 5 turns
 A Solar Beam: 6 turns, in sun 3
-A into an attacker: Focus Punch KO first 0 in 9, Sucker Punch 1 in 1; into a setup move: 1 in 1, 1 in 9
+A into an attacker: Focus Punch KO first 0 in 9, Sucker Punch 1 in 1; into a setup move: 1 in 1, 0 in 9
 A team plan: 3 hits take 3 turns, 5 with recharge, 6 charging, taking 2 hits (none while underground)
 F foe asleep 3 turns: 0 of its damage
 F foe asleep, wakes this turn: 1 of its damage
@@ -19,7 +19,7 @@ F foe frozen, last turn: 1 of its damage
 F foe paralysed: 0.88 of its damage
 F foe confused: 0.67 of its damage
 F foe recharging: 0 of its damage
-F our Snorlax: 2 turns awake, 4 asleep
+F our Snorlax: 3 turns awake, 5 asleep
 F foe underground: faster Strike 2 turns (KO first 1), Earthquake 1, slower Strike 1
 8 raw AI with no opponents: Tackle 100%
 8 threat on the replacement: Earthquake 100%, pKo 1

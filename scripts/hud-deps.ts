@@ -25,10 +25,10 @@
  * pin bump re-reads them these hashes are the doc's only tie to a fixed ref.
  *
  * Keys are HUD modules under `skills/coach-pokerogue/scripts/hud/`; a moved hash
- * names the modules to re-read. Modules absent from this map (`35-team-plan.js`,
- * `40-learn.js`, `50-shop.js`) build on the ones here and read live state
- * directly; they own no game-code claim of their own — `50-shop.js`'s spending
- * rules rest on `49-ahead.js`'s calendar, which does.
+ * names the modules to re-read. Modules absent from this map (`40-learn.js`,
+ * `50-shop.js`) build on the ones here and read live state directly; they own no
+ * game-code claim of their own — `50-shop.js`'s spending rules rest on
+ * `49-ahead.js`'s calendar, which does.
  */
 import type { SourceRef } from "../src/escape-ladder/types.ts";
 
@@ -65,6 +65,9 @@ export const HUD_DEPS = {
     `src/modifier/modifier.ts#EnemyEndureChanceModifier.apply`,
     `src/data/abilities/ab-attrs.ts#FormBlockDamageAbAttr.apply`,
     `src/phases/turn-end-phase.ts#TurnEndPhase.start`,
+    // A move's flinch chance (Fake Out, Iron Head), read through the attr's own effect chance.
+    `${M}#MoveEffectAttr.getMoveChance`,
+    `${M}#AddBattlerTagAttr.apply`,
   ],
 
   /**
@@ -92,6 +95,21 @@ export const HUD_DEPS = {
     `src/phases/check-switch-phase.ts#CheckSwitchPhase.start`,
     `src/phases/encounter-phase.ts#EncounterPhase.end`,
     `src/data/abilities/ab-attrs.ts#ForceSwitchOutHelper.switchOutLogic`,
+    // The consistency prior: a mon that came in last turn, read off `tempSummonData.turnCount` — reset on a switch-in,
+    // one short for a switch made as a command, counted up at turn end.
+    `${P}#Pokemon.resetSummonData`,
+    `src/phases/switch-summon-phase.ts#SwitchSummonPhase.onEnd`,
+    `src/phases/turn-end-phase.ts#TurnEndPhase.start`,
+  ],
+
+  /**
+   * The trainer's send-in after a faint, re-scored at the HP the plan has reached:
+   * `getMatchupScore`'s HP factor is re-implemented around one game call.
+   */
+  "35-team-plan.js": [
+    `${P}#Pokemon.getMatchupScore`,
+    `src/field/trainer.ts#Trainer.getPartyMemberMatchupScores`,
+    `src/field/trainer.ts#Trainer.getNextSummonIndex`,
   ],
 
   /** Catch odds and whether a ball is allowed at all, both re-implemented. */
