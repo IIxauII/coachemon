@@ -38,7 +38,7 @@ There is no project `.mcp.json`: a plugin at the repo root merges the root `.mcp
 
 The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (#5's command). It never closes the tab or Chrome. One driver per tab: a lock at `~/.pokerogue-mcp/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/pokerogue-mcp/issues/6) had three sessions interleaving presses on one live save.
 
-Dev scripts: `npm run smoke -- <tool> '<json args>'` calls tools over real stdio; `node scripts/autoplay.ts --waves N` drives waves with a dumb policy and logs every call to `.cache/autoplay.jsonl` (the soak driver for [#25](https://github.com/IIxauII/pokerogue-mcp/issues/25)); `node scripts/eval.ts '<js body>'` evaluates against the live scene; `npm run enums:gen` regenerates the enum tables from the pinned game tag; `npm run ladder:drift` checks the escape ladder against a candidate build.
+Dev scripts: `npm run smoke -- <tool> '<json args>'` calls tools over real stdio; `node scripts/autoplay.ts --waves N` drives waves with a dumb policy and logs every call to `.cache/autoplay.jsonl` (the soak driver for [#25](https://github.com/IIxauII/pokerogue-mcp/issues/25)); `node scripts/eval.ts '<js body>'` evaluates against the live scene; `npm run enums:gen` regenerates the enum tables from the pinned game tag; `npm run drift:check` checks the escape ladder and the coach HUD's game-code deps against a candidate build (`ladder:drift` is kept as an alias).
 
 ## Tool surface
 

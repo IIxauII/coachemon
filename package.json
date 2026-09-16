@@ -12,7 +12,8 @@
     "test": "node --test \"src/**/*.test.ts\"",
     "typecheck": "tsc",
     "enums:gen": "node scripts/gen-enums.ts",
-    "ladder:drift": "node scripts/ladder-drift.ts",
+    "drift:check": "node scripts/drift.ts",
+    "ladder:drift": "node scripts/drift.ts",
     "stuck:replay": "node scripts/stuck-replay.ts"
   },
   "devDependencies": {
