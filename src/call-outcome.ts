@@ -62,8 +62,8 @@ export class CallOutcomes {
   #counts: StallCounts = NO_STALL;
 
   /** Every settle poll: the run latch and the hang watch. */
-  poll(read: PredicateRead | null, t: number): void {
-    if (read === null || !read.ready) {
+  poll(read: PredicateRead, t: number): void {
+    if (!read.ready) {
       this.#hang.poll(null);
       return;
     }

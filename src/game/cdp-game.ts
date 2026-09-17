@@ -23,6 +23,8 @@ const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: numb
 };
 
 type PageAct = { ok: boolean; why?: string };
+/** An act the page ran, with what it read back; or why it did not. */
+type Ran<T> = Extract<Act, { ok: false }> | { ok: true; page: T };
 
 export class CdpGame implements GamePort {
   readonly #session: GameSession;
@@ -37,7 +39,7 @@ export class CdpGame implements GamePort {
     return this.#session.evaluate<T>(expression);
   }
 
-  async #act<T extends PageAct>(expression: string): Promise<{ ok: false; why: string; threw: boolean } | { ok: true; page: T }> {
+  async #act<T extends PageAct>(expression: string): Promise<Ran<T>> {
     const r = await this.#evaluate<T>(expression);
     if (isThrown(r)) return { ok: false, why: r.__throw, threw: true };
     if (!r.ok) return { ok: false, why: String(r.why), threw: false };
@@ -139,7 +141,7 @@ export class CdpGame implements GamePort {
 }
 
 /** A setCursor that ran is ok only once the handler's own cursor reads the target. */
-function landed<T extends PageAct>(r: { ok: false; why: string; threw: boolean } | { ok: true; page: T }, on: (p: T) => boolean, where: (p: T) => string): Act {
+function landed<T extends PageAct>(r: Ran<T>, on: (p: T) => boolean, where: (p: T) => string): Act {
   if (!r.ok) return r;
   return on(r.page) ? { ok: true } : { ok: false, why: `the cursor landed on ${where(r.page)}`, threw: false };
 }

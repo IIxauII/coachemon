@@ -3,7 +3,8 @@
  *
  * A page throw never leaves an adapter as a throw. Reads degrade to their own not-readable value; acts return
  * `{ ok: false, why, threw }`, so a throwing press and an unavailable scene stay distinct. A dropped socket or a tab
- * that cannot be attached still rejects as an `Error`. Every operation attaches lazily.
+ * that cannot be attached still rejects as an `Error`. Every operation that reaches the tab attaches first, so no
+ * caller attaches by hand.
  */
 import type { Button } from "../enums/generated.ts";
 import type { Discriminators } from "../screen.ts";

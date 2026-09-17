@@ -2,8 +2,9 @@
  * The in-memory game adapter (#127), for tests only. A test scripts one screen model: its closures hold the state and
  * answer the game operations. The fake brings the rest a Driver needs: a fake clock, a lock and a frame counter.
  *
- * Game operations are strict: one the screen does not script throws `unexpected <op>`, failing the test instead of
- * passing it through a fallback. Tab operations have benign defaults.
+ * What a screen reacts to is strict: `read`, `menu`, `starterGrid` and every act (`press`, `setCursor`, `modalButton`,
+ * `rawKey`) throw `unexpected <op>` when the screen does not script them, failing the test instead of passing it through
+ * a fallback. The rest have benign defaults: an advancing frame, an empty snapshot, an attached tab.
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

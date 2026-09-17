@@ -30,7 +30,7 @@ export const BEYOND_OBSERVED_MS = 90_000;
 export type SettleDeps = {
   poll: () => Promise<PredicateRead>;
   /** Every poll, for the hang watch and the phase latch. */
-  onPoll?: (read: PredicateRead | null, t: number) => void;
+  onPoll?: (read: PredicateRead, t: number) => void;
   /** Fired once the stall passes the notice threshold, then about once a second. */
   onStall?: (stallMs: number, reason: string) => void;
   signal?: AbortSignal;
