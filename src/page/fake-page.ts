@@ -7,6 +7,7 @@ import { dispatch } from "./dispatch.ts";
 import { COMMAND_HANDLERS } from "./handlers.ts";
 import { fine } from "./fine.ts";
 import { locate } from "./locate.ts";
+import { PAGE_MODES } from "./modes.ts";
 import { STORE_COMMANDS, type Args, type CommandName } from "../protocol/commands.ts";
 
 type Globals = { Phaser?: unknown; document?: unknown };
@@ -39,5 +40,5 @@ export function offPage(t: { after: (fn: () => void) => void }): void {
 
 /** Run one command against the installed tab, as a transport would. */
 export function send<N extends CommandName>(name: N, args: Args<N>): any {
-  return dispatch(locate, fine, disc, COMMAND_HANDLERS[name], name, STORE_COMMANDS[name].kind, args);
+  return dispatch(locate, fine, disc, COMMAND_HANDLERS[name], name, STORE_COMMANDS[name].kind, PAGE_MODES, args);
 }

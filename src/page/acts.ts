@@ -59,7 +59,7 @@ export function cursorOption(L: Located, args: { index: number; fine: string }):
 
 /** Shop: `setRowCursor` then `setCursor`; order is load-bearing (#7 §7). */
 export function cursorShop(L: Located, args: { row: number; col: number; fine: string }): CursorShopResult {
-  const h = L.ui.handlers[6];
+  const h = L.ui.handlers[L.m.MODIFIER_SELECT];
   h.setRowCursor(args.row);
   h.setCursor(args.col);
   return { ok: true, rowCursor: h.rowCursor, cursor: h.cursor, fine: L.fine() };
@@ -71,7 +71,7 @@ export function cursorShop(L: Located, args: { row: number; col: number; fine: s
  */
 export function cursorStarter(L: Located, args: { index: number; fine: string }): CursorStarterResult {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
-  const h = L.ui.handlers[10];
+  const h = L.ui.handlers[L.m.STARTER_SELECT];
   if (h.filterMode === true) return { ok: false, why: "filter-mode" };
   const n = (h.filteredStarterContainers || []).length;
   const rows = Math.ceil(n / 9);
@@ -89,7 +89,7 @@ export function cursorStarter(L: Located, args: { index: number; fine: string })
  * page, so it refuses instead.
  */
 export function cursorLearn(L: Located, args: { row: number; fine: string }): CursorLearnResult {
-  const h = L.ui.handlers[9];
+  const h = L.ui.handlers[L.m.SUMMARY];
   if (h.moveSelect !== true) return { ok: false, why: "move-select-off" };
   h.setCursor(args.row);
   return { ok: true, moveCursor: h.moveCursor, fine: L.fine() };

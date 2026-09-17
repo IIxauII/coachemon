@@ -549,6 +549,7 @@ Dispatches an untrusted `keydown` then `keyup` on `window`, with `keyCode` set i
 - `extension/entrypoints/page.ts` imports them, registers them in the dispatch table, and handles the relay protocol.
 - **During the opt-in period** the CDP transport evaluates the same functions: `((locate, handler, args) => { const L = locate(); return L.ready ? handler(L, args) : …; })(${locate}, ${handler}, ${JSON.stringify(args)})`. One source serves both transports until CDP is deleted.
 - `src/game/js.test.ts` moves to `src/page/*.test.ts`. The scene locator stays duplicated between `src/page/` and the HUD, as today.
+- **Generated enums travel as an argument.** A self-contained handler cannot import `UiMode`, so `src/page/modes.ts` exports `PAGE_MODES` (`{ m: UiMode, sm: SummaryUiMode }`) and each transport hands it to `dispatch`: the CDP link serializes it into the expression, the extension imports it. `dispatch` puts it on `L` as `L.m`/`L.sm`, so a pin bump that renumbers a mode moves every page comparison with it (#164). `src/page/modes.test.ts` scans the stringified handlers and fails on a bare numeric mode or handler index.
 
 ### 10.6 Dev-only table
 

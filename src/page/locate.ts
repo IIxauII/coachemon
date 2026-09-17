@@ -7,6 +7,7 @@
  * the page's globals. Type imports are fine; they are erased. The HUD keeps its own copy of this locator.
  */
 import type { Discriminators } from "./disc.ts";
+import type { PageModes } from "./modes.ts";
 
 /** A game object from the page: untyped, every path guarded where it is read. */
 export type Page = any;
@@ -16,8 +17,11 @@ export type LocatorWhy = "no-phaser" | "empty-pool" | "no-game-in-pool" | "not-b
 export type Scene = { ready: true; game: Page; scene: Page; ui: Page };
 export type Unlocated = { ready: false; why: LocatorWhy };
 
-/** What every handler is given: the located scene, the fine fingerprint of this very page turn, and the discriminators reader. */
-export type Located = Scene & { fine: () => string; disc: (h: Page) => Discriminators };
+/**
+ * What every handler is given: the located scene, the generated mode enums (`m`, `sm`), the fine fingerprint of this
+ * very page turn, and the discriminators reader.
+ */
+export type Located = Scene & PageModes & { fine: () => string; disc: (h: Page) => Discriminators };
 
 export function locate(): Scene | Unlocated {
   const P = (globalThis as Page).Phaser;

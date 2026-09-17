@@ -16,7 +16,7 @@ export type StartersResult = {
  */
 export function starters(L: Located, _args: Record<string, never>): StartersResult {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
-  const h = L.ui.handlers[10];
+  const h = L.ui.handlers[L.m.STARTER_SELECT];
   const gd = L.scene.gameData;
   const grid = (h.filteredStarterContainers || []).map((c: any, i: number) => ({ i, name: __try(() => c.species.name), id: __try(() => c.species.speciesId), cost: __try(() => gd.getSpeciesStarterValue(c.species.speciesId)) }));
   return {
