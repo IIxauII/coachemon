@@ -2,24 +2,26 @@
  * The driver: everything a tool does between the MCP request and the game.
  *
  * Every call settles before it reads (#7 Principle 1). Acting calls press,
- * settle, auto-advance `MESSAGE(0)`, record the decision for the stuck
- * detector and return the lean snapshot. Reading calls settle like an acting
- * call minus the press, which is what makes a timed-out wait resumable (#14).
+ * settle, auto-advance `MESSAGE(0)` and return the lean snapshot. Reading calls
+ * settle like an acting call minus the press, which is what makes a timed-out
+ * wait resumable (#14). What status a call returns is `CallOutcomes`' to decide
+ * (#126): every call opens with a settle, says so before its first press, and
+ * ends exactly once, refusals included. The driver only presents it.
  * No call ever judges a press by `processInput`'s return value (Principle 4),
  * and no call ever retries a press on its own (#13, #14).
  */
+import { CallOutcomes, type CallEnd, type Outcome } from "./call-outcome.ts";
 import { acquireLock, lockContended, type Lock } from "./cdp/lock.ts";
 import { CdpSession, DEFAULTS, isThrown, type Thrown } from "./cdp/session.ts";
 import { Button, NAMES, UiMode } from "./enums/generated.ts";
-import { Refusal, worst, type Diagnostic, type Status } from "./envelope.ts";
+import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import * as js from "./game/js.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { isSettingsMode, modeName, screenId } from "./screen.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
-import { BEYOND_OBSERVED_MS, CALL_BUDGET_MS, settle, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
-import { progressFingerprint, StuckDetector, type Assessment, type Choice } from "./stuck/detector.ts";
-import { HangWatch } from "./stuck/hang.ts";
+import { CALL_BUDGET_MS, settle, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
+import type { Choice } from "./stuck/detector.ts";
 
 /** Auto-advance press cap (#7 §6.8). Set here, as configuration: #13 never fixed a number. Twelve is the stuck window. */
 export const AUTO_ADVANCE_CAP = 12;
@@ -38,6 +40,29 @@ export type CallContext = {
    */
   deadline?: number;
 };
+
+/** One call in flight: its deadline, and what its `end` needs if it throws. */
+type Call = CallContext & {
+  deadline: number;
+  /** The call's latest settle. */
+  last: SettleResult | null;
+  /** What the call will press on, set once every check before the first press has passed. */
+  intent: { pre: Ready; choice: Choice; menuAction: boolean } | null;
+  /** Whether anything has been sent to the game yet. */
+  pressed: boolean;
+  ended: boolean;
+};
+
+/** A `start_run` setup step ran out of the call budget: a `timed_out` result, never a refusal. */
+class SetupTimedOut extends Error {
+  readonly settle: SettleResult;
+  readonly step: string;
+  constructor(settle: SettleResult, step: string) {
+    super(`start_run timed out at ${step}`);
+    this.settle = settle;
+    this.step = step;
+  }
+}
 
 /** The driver's clock: real by default, fake in tests. */
 export type Clock = { now: () => number; sleep: (ms: number) => Promise<void> };
@@ -64,8 +89,6 @@ export type MenuRead = {
   extra: Record<string, unknown>;
 };
 
-type RunState = "live" | "over" | "interrupted" | "none";
-
 const RAW_KEYS: Partial<Record<string, [key: string, code: string, keyCode: number]>> = {
   UP: ["ArrowUp", "ArrowUp", 38],
   DOWN: ["ArrowDown", "ArrowDown", 40],
@@ -85,18 +108,14 @@ const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
 export class Driver {
   readonly session: CdpSession;
   readonly lock: Lock;
-  readonly detector = new StuckDetector();
-  readonly hang = new HangWatch();
-  #latch = { sawRun: false, gameOver: false, interrupted: false };
-  #stall = { pending: false, resumeCount: 0, cumulativeMs: 0, aborted: false };
-  #menuActionInFlight = false;
+  readonly #outcomes = new CallOutcomes();
   readonly #clock: Clock;
 
   constructor(session: CdpSession, lock: Lock, clock: Clock = REAL_CLOCK) {
     this.session = session;
     this.lock = lock;
     this.#clock = clock;
-    session.onException = t => this.hang.unhandledRejection(t);
+    session.onException = t => this.#outcomes.rejection(t);
   }
 
   static create(home: string = DEFAULTS.home): Driver {
@@ -132,7 +151,7 @@ export class Driver {
       pinned_version: PINNED_GAME_VERSION,
       version_match: ready ? ready.gameVersion === PINNED_GAME_VERSION : null,
       run_live: ready?.runLive ?? false,
-      run: this.#runState(ready),
+      run: this.#outcomes.runState(ready),
       wave: ready?.wave ?? null,
       screen: ready ? screenId(ready.mode, ready.disc) : `UNKNOWN(${read && !isThrown(read) && !read.ready ? read.why : "-"})`,
       settled: ready?.settled ?? null,
@@ -144,151 +163,170 @@ export class Driver {
   }
 
   async getState(detail: "lean" | "party" | "items" | "full", ctx: CallContext): Promise<Record<string, unknown>> {
-    ctx = this.#begin(ctx);
-    await this.session.ensure();
-    const s = await this.#settleRead(ctx);
-    if (!s.settled) return this.#timedOut(s, "get_state");
-    const ready = s.last as Ready;
-    const snap = await this.session.evaluate<Record<string, unknown>>(js.snapshot(detail));
-    const menu = await this.#readMenu();
-    const assessment = this.#assessRead(ready, menu);
-    return this.#envelope(ready, assessment, s, {
-      ...(isThrown(snap) ? { snapshot_error: snap.__throw } : this.#cleanSnapshot(snap)),
-      run: { state: this.#runState(ready) },
+    return this.#call(ctx, async call => {
+      await this.session.ensure();
+      const s = await this.#settleRead(call);
+      if (!s.settled) return this.#openingTimedOut(call, s, "get_state");
+      const ready = s.last as Ready;
+      const snap = await this.session.evaluate<Record<string, unknown>>(js.snapshot(detail));
+      const menu = await this.#readMenu();
+      const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
+      return this.#settledResult(ready, outcome, {
+        ...(isThrown(snap) ? { snapshot_error: snap.__throw } : this.#cleanSnapshot(snap)),
+        run: { state: this.#outcomes.runState(ready) },
+      });
     });
   }
 
   async readMenu(ctx: CallContext): Promise<Record<string, unknown>> {
-    ctx = this.#begin(ctx);
-    await this.session.ensure();
-    const s = await this.#settleRead(ctx);
-    if (!s.settled) return this.#timedOut(s, "read_menu");
-    const ready = s.last as Ready;
-    const menu = await this.#readMenu();
-    const assessment = this.#assessRead(ready, menu);
-    return this.#envelope(ready, assessment, s, this.#menuPayload(ready, menu));
+    return this.#call(ctx, async call => {
+      await this.session.ensure();
+      const s = await this.#settleRead(call);
+      if (!s.settled) return this.#openingTimedOut(call, s, "read_menu");
+      const ready = s.last as Ready;
+      const menu = await this.#readMenu();
+      const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
+      return this.#settledResult(ready, outcome, this.#menuPayload(ready, menu));
+    });
   }
 
   async press(buttonName: string, ctx: CallContext): Promise<Record<string, unknown>> {
-    ctx = this.#begin(ctx);
-    const button = (Button as Record<string, number>)[buttonName];
-    if (button === undefined) throw new Refusal("unknown_button", `Unknown button ${JSON.stringify(buttonName)}`, { buttons: Object.keys(Button) });
-    await this.session.ensure();
-    const pre = await this.#settleRead(ctx);
-    if (!pre.settled) return this.#timedOut(pre, "press");
-    const ready = pre.last as Ready;
-    await this.#guard(ready);
-    this.#menuActionInFlight = MENU_MODES.has(ready.mode);
-    const before = progressFingerprint(this.#progress(ready));
-    const rawKey = RAW_KEYS[buttonName];
-    // Only a direction moves a cursor without moving the screen, so only a direction pays for the extra menu read.
-    const cursorBefore = ARROWS.has(buttonName) ? await this.#menuCursor() : null;
+    return this.#call(ctx, async call => {
+      const button = (Button as Record<string, number>)[buttonName];
+      if (button === undefined) throw new Refusal("unknown_button", `Unknown button ${JSON.stringify(buttonName)}`, { buttons: Object.keys(Button) });
+      await this.session.ensure();
+      const pre = await this.#settleRead(call);
+      if (!pre.settled) return this.#openingTimedOut(call, pre, "press");
+      const ready = pre.last as Ready;
+      await this.#guard(ready);
+      const choice: Choice = { kind: "button", button: buttonName };
+      this.#intend(call, ready, choice, MENU_MODES.has(ready.mode));
+      const rawKey = RAW_KEYS[buttonName];
+      // Only a direction moves a cursor without moving the screen, so only a direction pays for the extra menu read.
+      const cursorBefore = ARROWS.has(buttonName) ? await this.#menuCursor() : null;
 
-    let s = await this.#pressAndSettle(button, ready.fine, ctx);
-    let rawFallback = false;
-    const unmoved = s.settled && s.fpMoved === false;
-    // The press landed on a cursor the fine fingerprint does not carry: a retry would move it twice (#32).
-    let landedUnseen = false;
-    if (unmoved && cursorBefore !== null) {
-      const cursorAfter = await this.#menuCursor();
-      landedUnseen = cursorAfter !== null && cursorAfter !== cursorBefore;
-    }
-    if (unmoved && !landedUnseen && rawKey) {
-      // §6.4: retry once through the raw keyboard, never through processInput again.
-      rawFallback = true;
-      const [key, code, keyCode] = rawKey;
-      await this.session.rawKey(key, code, keyCode);
-      s = await this.#settle(ready.fine, ctx);
-    }
-    const adv = await this.#autoAdvance(s, ctx);
-    return this.#finishActing(ready, before, { kind: "button", button: buttonName }, adv, {
-      pressed: buttonName,
-      changed: landedUnseen || (adv.settle.fpMoved ?? null),
-      raw_keyboard_fallback: rawFallback,
+      let s = await this.#pressAndSettle(button, ready.fine, call);
+      let rawFallback = false;
+      const unmoved = s.settled && s.fpMoved === false;
+      // The press landed on a cursor the fine fingerprint does not carry: a retry would move it twice (#32).
+      let landedUnseen = false;
+      if (unmoved && cursorBefore !== null) {
+        const cursorAfter = await this.#menuCursor();
+        landedUnseen = cursorAfter !== null && cursorAfter !== cursorBefore;
+      }
+      if (unmoved && !landedUnseen && rawKey) {
+        // §6.4: retry once through the raw keyboard, never through processInput again.
+        rawFallback = true;
+        const [key, code, keyCode] = rawKey;
+        await this.session.rawKey(key, code, keyCode);
+        s = await this.#settle(ready.fine, call);
+      }
+      const adv = await this.#autoAdvance(s, call);
+      return this.#finishActing(call, ready, choice, adv, {
+        pressed: buttonName,
+        changed: landedUnseen || (adv.settle.fpMoved ?? null),
+        raw_keyboard_fallback: rawFallback,
+      });
     });
   }
 
   async selectOption(label: string | undefined, index: string | number | undefined, expectScreen: string | undefined, ctx: CallContext): Promise<Record<string, unknown>> {
-    ctx = this.#begin(ctx);
-    await this.session.ensure();
-    const pre = await this.#settleRead(ctx);
-    if (!pre.settled) return this.#timedOut(pre, "select_option");
-    const ready = pre.last as Ready;
-    await this.#guard(ready);
-    const screen = screenId(ready.mode, ready.disc);
-    if (expectScreen !== undefined && expectScreen !== screen) {
-      throw new Refusal("screen_changed", `Expected ${expectScreen} but the live screen is ${screen}. Nothing was pressed.`, { screen, expected: expectScreen });
-    }
-    const menu = await this.#readMenu();
-    const labels = menu.options.map(o => normalizeLabel(o.label));
-    const echo = { screen, options: labels, cursor: menu.cursor };
-    if (menu.extra.messagePending === true) {
-      throw new Refusal("message_pending", `${screen} is showing a message that swallows cursor presses until ACTION dismisses it: ${JSON.stringify(menu.text)}. Nothing was pressed.`, { ...echo, text: menu.text, next: DISMISS_MESSAGE });
-    }
-    if (menu.options.length === 0) {
-      throw new Refusal("no_options", `${screen} presents no options to select; use press (ACTION acknowledges a message, CANCEL leaves a viewer).`, echo);
-    }
-    let target: MenuOption;
-    if (index !== undefined) {
-      // The option's `i` as read_menu returned it this call — the way past a duplicated label (soak #25: "Revive" as
-      // both a free reward and a shop item). Still a value read this call, never a remembered position.
-      const hit = menu.options.find(o => String(o.i) === String(index));
-      if (!hit) throw new Refusal("no_match", `No option at index ${JSON.stringify(index)} on ${screen}.`, { ...echo, indices: menu.options.map(o => o.i) });
-      if (label !== undefined && !optionAnswersTo(hit, label)) {
-        throw new Refusal("screen_changed", `Option ${JSON.stringify(index)} is ${JSON.stringify(hit.label)}, not ${JSON.stringify(label)}. Nothing was pressed.`, echo);
+    return this.#call(ctx, async call => {
+      await this.session.ensure();
+      const pre = await this.#settleRead(call);
+      if (!pre.settled) return this.#openingTimedOut(call, pre, "select_option");
+      const ready = pre.last as Ready;
+      await this.#guard(ready);
+      const screen = screenId(ready.mode, ready.disc);
+      if (expectScreen !== undefined && expectScreen !== screen) {
+        throw new Refusal("screen_changed", `Expected ${expectScreen} but the live screen is ${screen}. Nothing was pressed.`, { screen, expected: expectScreen });
       }
-      target = hit;
-    } else {
-      if (label === undefined) throw new Refusal("bad_args", "select_option needs a label or an index.", echo);
-      const m = matchLabel(menu.options, label);
-      if (m.kind === "none") throw new Refusal("no_match", `No option labelled ${JSON.stringify(label)} on ${screen}.`, echo);
-      if (m.kind === "many") {
-        throw new Refusal("ambiguous", `${m.options.length} options match ${JSON.stringify(label)} on ${screen}; pass index to pick one.`, { ...echo, matches: m.options.map(o => ({ index: o.i, label: o.label, ...("cost" in o ? { cost: o.cost } : {}), ...("kind" in o ? { kind: o.kind } : {}) })) });
+      const menu = await this.#readMenu();
+      const labels = menu.options.map(o => normalizeLabel(o.label));
+      const echo = { screen, options: labels, cursor: menu.cursor };
+      if (menu.extra.messagePending === true) {
+        throw new Refusal("message_pending", `${screen} is showing a message that swallows cursor presses until ACTION dismisses it: ${JSON.stringify(menu.text)}. Nothing was pressed.`, { ...echo, text: menu.text, next: DISMISS_MESSAGE });
       }
-      target = m.option;
-    }
+      if (menu.options.length === 0) {
+        throw new Refusal("no_options", `${screen} presents no options to select; use press (ACTION acknowledges a message, CANCEL leaves a viewer).`, echo);
+      }
+      let target: MenuOption;
+      if (index !== undefined) {
+        // The option's `i` as read_menu returned it this call — the way past a duplicated label (soak #25: "Revive" as
+        // both a free reward and a shop item). Still a value read this call, never a remembered position.
+        const hit = menu.options.find(o => String(o.i) === String(index));
+        if (!hit) throw new Refusal("no_match", `No option at index ${JSON.stringify(index)} on ${screen}.`, { ...echo, indices: menu.options.map(o => o.i) });
+        if (label !== undefined && !optionAnswersTo(hit, label)) {
+          throw new Refusal("screen_changed", `Option ${JSON.stringify(index)} is ${JSON.stringify(hit.label)}, not ${JSON.stringify(label)}. Nothing was pressed.`, echo);
+        }
+        target = hit;
+      } else {
+        if (label === undefined) throw new Refusal("bad_args", "select_option needs a label or an index.", echo);
+        const m = matchLabel(menu.options, label);
+        if (m.kind === "none") throw new Refusal("no_match", `No option labelled ${JSON.stringify(label)} on ${screen}.`, echo);
+        if (m.kind === "many") {
+          throw new Refusal("ambiguous", `${m.options.length} options match ${JSON.stringify(label)} on ${screen}; pass index to pick one.`, { ...echo, matches: m.options.map(o => ({ index: o.i, label: o.label, ...("cost" in o ? { cost: o.cost } : {}), ...("kind" in o ? { kind: o.kind } : {}) })) });
+        }
+        target = m.option;
+      }
 
-    // Command.BALL is the second command; BALL rows carry a ballType, Cancel does not. Refused by position, not by the
-    // localised label (#56).
-    const throwsBall = (menu.family === "command" && Number(target.i) === 1) || (menu.family === "ball" && "ballType" in target);
-    if (throwsBall && menu.extra.catchable === false) {
-      throw new Refusal("cannot_catch_trainer", `This is a trainer battle: its Pokémon cannot be caught, so ${JSON.stringify(target.label)} is refused. Nothing was pressed.`, echo);
-    }
+      // Command.BALL is the second command; BALL rows carry a ballType, Cancel does not. Refused by position, not by the
+      // localised label (#56).
+      const throwsBall = (menu.family === "command" && Number(target.i) === 1) || (menu.family === "ball" && "ballType" in target);
+      if (throwsBall && menu.extra.catchable === false) {
+        throw new Refusal("cannot_catch_trainer", `This is a trainer battle: its Pokémon cannot be caught, so ${JSON.stringify(target.label)} is refused. Nothing was pressed.`, echo);
+      }
 
-    this.#menuActionInFlight = MENU_MODES.has(ready.mode);
-    const before = progressFingerprint(this.#progress(ready));
-    const choice: Choice = menu.family === "modal" ? { kind: "modal_button", index: Number(target.i) } : { kind: "option", label: normalizeLabel(target.label) };
+      const choice: Choice = menu.family === "modal" ? { kind: "modal_button", index: Number(target.i) } : { kind: "option", label: normalizeLabel(target.label) };
+      this.#intend(call, ready, choice, MENU_MODES.has(ready.mode));
 
-    const spread = menu.family === "target_select" && menu.extra.isMultipleTargets === true;
-    const extra = { selected: target.label, on: screen, ...(spread ? { targets: "all" } : {}) };
-    const walk = await this.#moveTo(menu, target, ctx);
-    if (walk) return this.#finishActing(ready, before, choice, { settle: walk, messages: [], presses: 0, capped: false }, extra);
-    const committed = await this.#commit(menu, target, ready.fine, ctx);
-    const adv = await this.#autoAdvance(committed, ctx);
-    return this.#finishActing(ready, before, choice, adv, extra);
+      const spread = menu.family === "target_select" && menu.extra.isMultipleTargets === true;
+      const extra = { selected: target.label, on: screen, ...(spread ? { targets: "all" } : {}) };
+      const walk = await this.#moveTo(menu, target, call);
+      if (walk) return this.#finishActing(call, ready, choice, { settle: walk, messages: [], presses: 0, capped: false }, extra);
+      const committed = await this.#commit(menu, target, ready.fine, call);
+      const adv = await this.#autoAdvance(committed, call);
+      return this.#finishActing(call, ready, choice, adv, extra);
+    });
   }
 
   async startRun(species: string[], slot: number | undefined, overwrite: boolean, ctx: CallContext): Promise<Record<string, unknown>> {
-    ctx = this.#begin(ctx);
-    await this.session.ensure();
-    const pre = await this.#settleRead(ctx);
-    if (!pre.settled) return this.#timedOut(pre, "start_run");
-    const ready = pre.last as Ready;
-    await this.#guard(ready);
-    if (ready.mode !== UiMode.TITLE) {
-      throw new Refusal("not_on_title", `start_run needs the TITLE screen; the game is on ${screenId(ready.mode, ready.disc)}.`, { screen: screenId(ready.mode, ready.disc) });
-    }
-    if (species.length === 0 || species.length > 6) throw new Refusal("bad_party", "species must name 1–6 starters.");
+    return this.#call(ctx, async call => {
+      await this.session.ensure();
+      const pre = await this.#settleRead(call);
+      if (!pre.settled) return this.#openingTimedOut(call, pre, "start_run");
+      const ready = pre.last as Ready;
+      await this.#guard(ready);
+      if (ready.mode !== UiMode.TITLE) {
+        throw new Refusal("not_on_title", `start_run needs the TITLE screen; the game is on ${screenId(ready.mode, ready.disc)}.`, { screen: screenId(ready.mode, ready.disc) });
+      }
+      if (species.length === 0 || species.length > 6) throw new Refusal("bad_party", "species must name 1–6 starters.");
 
-    if (slot !== undefined && (slot < 0 || slot > 4)) throw new Refusal("bad_slot", "slot must be 0–4.");
+      if (slot !== undefined && (slot < 0 || slot > 4)) throw new Refusal("bad_slot", "slot must be 0–4.");
 
-    const log: string[] = [];
-    const before = progressFingerprint(this.#progress(ready));
-    this.#menuActionInFlight = true;
+      const choice: Choice = { kind: "planned", name: "start_run" };
+      this.#intend(call, ready, choice, true);
+      const log: string[] = [];
+      try {
+        return await this.#startRunFromTitle(call, ready, choice, species, slot, overwrite, log);
+      } catch (e) {
+        if (!(e instanceof SetupTimedOut)) throw e;
+        const out = this.#timedOutResult(e.settle, this.#end(call, { kind: "acting", pre: ready, choice, settle: e.settle, options: null }), "start_run");
+        return {
+          ...out,
+          step: e.step,
+          log,
+          next: out.next ?? `the run setup stopped at ${e.step}: read_menu shows where. start_run needs TITLE, so finish the setup from there or back out to TITLE before calling start_run again`,
+        };
+      }
+    });
+  }
+
+  /** Everything `start_run` presses, from TITLE to the first decision of the run. A step that runs out of time throws `SetupTimedOut`. */
+  async #startRunFromTitle(call: Call, ready: Ready, choice: Choice, species: string[], slot: number | undefined, overwrite: boolean, log: string[]): Promise<Record<string, unknown>> {
     let presses = 0;
-    const timedOut = (s: SettleResult, step: string) => new Refusal("start_run_timed_out", `start_run timed out at ${step}`, { step, diagnostic: this.#diagnostic(s), log });
     const expect = async (s: SettleResult, mode: number, step: string): Promise<Ready> => {
-      if (!s.settled) throw timedOut(s, step);
+      if (!s.settled) throw new SetupTimedOut(s, step);
       const r = s.last as Ready;
       if (r.mode !== mode) {
         throw new Refusal("start_run_unexpected_screen", `start_run expected ${modeName(mode)} after ${step} but saw ${screenId(r.mode, r.disc)}`, { step, screen: screenId(r.mode, r.disc), log });
@@ -296,8 +334,8 @@ export class Driver {
       return r;
     };
     const moveTo = async (m: MenuRead, target: MenuOption, step: string): Promise<void> => {
-      const walk = await this.#moveTo(m, target, ctx);
-      if (walk) throw timedOut(walk, step);
+      const walk = await this.#moveTo(m, target, call);
+      if (walk) throw new SetupTimedOut(walk, step);
     };
     /**
      * A party refused on the grid, before any starter is added: CANCEL on the empty grid asks to return to the title and
@@ -305,15 +343,15 @@ export class Driver {
      */
     const refuseFromGrid = async (code: string, message: string, detail: Record<string, unknown>): Promise<never> => {
       try {
-        const confirm = await expect(await this.#pressAndSettle(Button.CANCEL, cur.fine, ctx), UiMode.CONFIRM, "back out");
+        const confirm = await expect(await this.#pressAndSettle(Button.CANCEL, cur.fine, call), UiMode.CONFIRM, "back out");
         const m = await this.#readMenu();
         const yes = matchLabel(m.options, "Yes");
         if (yes.kind !== "one") throw new Refusal("start_run_unexpected_screen", `no single Yes on the return-to-title confirm: ${m.options.map(o => o.label).join(" | ")}`);
         log.push(`back out: ${m.options.map(o => o.label).join(" | ")} → Yes`);
         await moveTo(m, yes.option, "back out");
-        let back = await this.#commit(m, yes.option, confirm.fine, ctx);
+        let back = await this.#commit(m, yes.option, confirm.fine, call);
         // Yes sets STARTER_SELECT again before the title phase shows TITLE (StarterSelectUiHandler.tryExit): wait past it.
-        if (back.settled && (back.last as Ready).mode === UiMode.STARTER_SELECT) back = await this.#settle((back.last as Ready).fine, ctx);
+        if (back.settled && (back.last as Ready).mode === UiMode.STARTER_SELECT) back = await this.#settle((back.last as Ready).fine, call);
         await expect(back, UiMode.TITLE, "back out");
       } catch (e) {
         const live = await this.#poll();
@@ -324,7 +362,7 @@ export class Driver {
           : mode === UiMode.STARTER_SELECT ? 'press(CANCEL), then select_option("Yes") on the CONFIRM to return to TITLE, then start_run again'
           : "read_menu to see where the game is; start_run needs TITLE";
         throw new Refusal(code, `${message} Backing out to TITLE failed (${(e as Error).message}).`, {
-          ...detail, screen, log, back_out_error: e instanceof Refusal ? e.code : "error", next,
+          ...detail, screen, log, back_out_error: e instanceof Refusal ? e.code : e instanceof SetupTimedOut ? "timed_out" : "error", next,
         });
       }
       throw new Refusal(code, `${message} Backed out to TITLE; call start_run again with a corrected party.`, { ...detail, screen: "TITLE", log });
@@ -335,14 +373,14 @@ export class Driver {
     const newGameIndex = menu.options.length >= 5 ? 1 : 0;
     log.push(`title: ${menu.options.map(o => o.label).join(" | ")} → index ${newGameIndex}`);
     await moveTo(menu, menu.options[newGameIndex], "title");
-    let s = await this.#commit(menu, menu.options[newGameIndex], ready.fine, ctx);
+    let s = await this.#commit(menu, menu.options[newGameIndex], ready.fine, call);
     presses++;
     let cur = await expect(s, UiMode.OPTION_SELECT, "title");
     // 2. Game mode: Classic is index 0.
     menu = await this.#readMenu();
     log.push(`game mode: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
     await moveTo(menu, menu.options[0], "game mode");
-    s = await this.#commit(menu, menu.options[0], cur.fine, ctx);
+    s = await this.#commit(menu, menu.options[0], cur.fine, call);
     presses++;
     cur = await expect(s, UiMode.STARTER_SELECT, "game mode");
 
@@ -368,13 +406,13 @@ export class Driver {
       if (moved.species && normalizeLabel(moved.species) !== normalizeLabel(pick.name ?? "")) {
         throw new Refusal("starter_cursor", `grid cursor landed on ${moved.species}, not ${pick.name}`, { log });
       }
-      s = await this.#pressAndSettle(Button.ACTION, cur.fine, ctx);
+      s = await this.#pressAndSettle(Button.ACTION, cur.fine, call);
       presses++;
       cur = await expect(s, UiMode.OPTION_SELECT, `select ${pick.name}`);
       menu = await this.#readMenu();
       log.push(`${pick.name}: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
       await moveTo(menu, menu.options[0], `add ${pick.name}`);
-      s = await this.#commit(menu, menu.options[0], cur.fine, ctx);
+      s = await this.#commit(menu, menu.options[0], cur.fine, call);
       presses++;
       cur = await expect(s, UiMode.STARTER_SELECT, `add ${pick.name}`);
     }
@@ -386,13 +424,13 @@ export class Driver {
     log.push(`party: ${after.party.join(", ")} valid=${after.partyValid}`);
 
     // 4. SUBMIT → CONFIRM [Yes, No] → SAVE_SLOT.
-    s = await this.#pressAndSettle(Button.SUBMIT, cur.fine, ctx);
+    s = await this.#pressAndSettle(Button.SUBMIT, cur.fine, call);
     presses++;
     cur = await expect(s, UiMode.CONFIRM, "submit");
     menu = await this.#readMenu();
     log.push(`confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
     await moveTo(menu, menu.options[0], "confirm");
-    s = await this.#commit(menu, menu.options[0], cur.fine, ctx);
+    s = await this.#commit(menu, menu.options[0], cur.fine, call);
     presses++;
     cur = await expect(s, UiMode.SAVE_SLOT, "confirm");
 
@@ -412,12 +450,12 @@ export class Driver {
       throw new Refusal("slot_occupied", `${chosenLabel} has a saved run. Free: ${free.join(", ") || "none"}. The run setup is waiting on the save-slot screen.`, leftOn);
     }
     await moveTo(menu, slotOpt, "save slot");
-    s = await this.#commit(menu, slotOpt, cur.fine, ctx);
+    s = await this.#commit(menu, slotOpt, cur.fine, call);
     presses++;
     // Only an occupied slot asks to overwrite; ACTION on a free one starts the run at once, and the first CONFIRM after
     // that is CheckSwitchPhase's "Will you switch Pokémon?" (#30). Here overwrite is true: occupied without it refused above.
     if (slotOpt.hasData === true) {
-      if (!s.settled) throw timedOut(s, "save slot");
+      if (!s.settled) throw new SetupTimedOut(s, "save slot");
       const r = s.last as Ready;
       if (!isOverwriteConfirm(r)) {
         throw new Refusal("start_run_unexpected_screen", `start_run expected the overwrite confirm after choosing ${chosenLabel} but saw ${screenId(r.mode, r.disc)} (phase ${r.phaseName}). Nothing was answered.`, { step: "save slot", screen: screenId(r.mode, r.disc), log });
@@ -426,14 +464,13 @@ export class Driver {
       menu = await this.#readMenu();
       log.push(`overwrite confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
       await moveTo(menu, menu.options[0], "overwrite confirm");
-      s = await this.#commit(menu, menu.options[0], r.fine, ctx);
+      s = await this.#commit(menu, menu.options[0], r.fine, call);
       presses++;
     }
 
-    this.detector.reset();
-    this.#latch = { sawRun: false, gameOver: false, interrupted: false };
-    const adv = await this.#autoAdvance(s, ctx);
-    return this.#finishActing(ready, before, { kind: "planned", name: "start_run" }, adv, {
+    this.#outcomes.newRun();
+    const adv = await this.#autoAdvance(s, call);
+    return this.#finishActing(call, ready, choice, adv, {
       started: true,
       slot: chosen,
       party: after.party,
@@ -447,74 +484,75 @@ export class Driver {
     return this.session.screenshot();
   }
 
-  // ---------------------------------------------------------------- settle
+  // ------------------------------------------------------------------ calls
 
-  /** Start the call's clock: one deadline for everything the call waits on (#34). */
-  #begin(ctx: CallContext): CallContext {
-    return { ...ctx, deadline: ctx.deadline ?? this.#clock.now() + CALL_BUDGET_MS };
+  /** One tool call: one deadline for everything it waits on (#34), and exactly one `end`, a thrown call included. */
+  async #call(ctx: CallContext, body: (call: Call) => Promise<Record<string, unknown>>): Promise<Record<string, unknown>> {
+    const call: Call = { ...ctx, deadline: ctx.deadline ?? this.#clock.now() + CALL_BUDGET_MS, last: null, intent: null, pressed: false, ended: false };
+    try {
+      return await body(call);
+    } catch (e) {
+      if (!call.ended) {
+        const sent = call.pressed ? call.intent : null;
+        this.#end(call, { kind: "refused", pre: sent?.pre ?? null, choice: sent?.choice ?? null, settle: call.last });
+      }
+      throw e;
+    }
   }
+
+  #end(call: Call, end: CallEnd): Outcome {
+    call.ended = true;
+    return this.#outcomes.end(end);
+  }
+
+  /** What the call is about to press on. Nothing is sent yet: `#sending` tells `CallOutcomes` when something is. */
+  #intend(call: Call, pre: Ready, choice: Choice, menuAction: boolean): void {
+    call.intent = { pre, choice, menuAction };
+  }
+
+  /** Right before anything reaches the game (a press, a setCursor, a modal button): `pressing`, once per call. */
+  #sending(call: Call): void {
+    if (call.pressed || call.intent === null) return;
+    call.pressed = true;
+    this.#outcomes.pressing({ menuAction: call.intent.menuAction, on: call.intent.pre });
+  }
+
+  // ---------------------------------------------------------------- settle
 
   async #poll(): Promise<PredicateRead | Thrown> {
     return this.session.evaluate<PredicateRead>(js.PREDICATE);
   }
 
-  #settle(preFp: string | null, ctx: CallContext): Promise<SettleResult> {
-    return settle(
+  async #settle(preFp: string | null, call: Call): Promise<SettleResult> {
+    const s = await settle(
       {
         poll: () => this.#poll(),
-        onPoll: (read, t) => this.#onPoll(read, t),
-        onStall: (stallMs, reason) => ctx.progress?.(`waiting for the game to settle: ${reason} for ${Math.round(stallMs / 1000)} s`),
-        signal: ctx.signal,
+        onPoll: (read, t) => this.#outcomes.poll(read, t),
+        onStall: (stallMs, reason) => call.progress?.(`waiting for the game to settle: ${reason} for ${Math.round(stallMs / 1000)} s`),
+        signal: call.signal,
         now: this.#clock.now,
         sleep: this.#clock.sleep,
-        budgetMs: ctx.deadline === undefined ? CALL_BUDGET_MS : Math.max(0, ctx.deadline - this.#clock.now()),
+        budgetMs: Math.max(0, call.deadline - this.#clock.now()),
       },
       preFp,
     );
-  }
-
-  /** A call that presses nothing settles like an acting call minus the press; if the last call timed out, this is a resume. */
-  async #settleRead(ctx: CallContext): Promise<SettleResult> {
-    const s = await this.#settle(null, ctx);
-    if (this.#stall.pending) {
-      this.#stall.resumeCount++;
-      this.#stall.cumulativeMs += s.stallMs;
-    }
-    if (s.settled) {
-      this.#stall.pending = false;
-      this.detector.recordRead({ fingerprint: progressFingerprint(this.#progress(s.last as Ready)), settled: true });
-    } else {
-      this.#stall.pending = true;
-      this.#stall.aborted = s.aborted;
-    }
+    call.last = s;
     return s;
   }
 
-  async #pressAndSettle(button: number, preFp: string, ctx: CallContext): Promise<SettleResult> {
+  /** The call's opening settle. A call that presses nothing settles like an acting call minus the press; if the last call timed out, this is a resume. */
+  async #settleRead(call: Call): Promise<SettleResult> {
+    const s = await this.#settle(null, call);
+    this.#outcomes.waited(s);
+    return s;
+  }
+
+  async #pressAndSettle(button: number, preFp: string, call: Call): Promise<SettleResult> {
+    this.#sending(call);
     const r = await this.session.evaluate<{ ok: boolean; why?: string }>(js.press(button));
     if (isThrown(r)) throw new Refusal("press_threw", `processInput threw: ${r.__throw}`);
     if (!r.ok) throw new Refusal("scene_unavailable", `the scene was unavailable when pressing: ${r.why}`);
-    return this.#settle(preFp, ctx);
-  }
-
-  #onPoll(read: PredicateRead | null, t: number): void {
-    if (read === null || !read.ready) {
-      this.hang.poll(null);
-      return;
-    }
-    this.hang.poll({ t, mode: read.mode, phaseName: read.phaseName, onActionInput: read.onActionInput });
-    if (read.runLive) {
-      if (!this.#latch.sawRun) this.#latch = { sawRun: true, gameOver: false, interrupted: false };
-    }
-    if (read.phaseName === "GameOverPhase") this.#latch.gameOver = true;
-    if (read.phaseName === "LoginPhase" && this.#latch.sawRun && !this.#latch.gameOver && !this.#menuActionInFlight) {
-      // #11: LoginPhase mid-session with no GameOverPhase and no menu action in flight ⇒ reset(true), the save failed.
-      this.#latch.interrupted = true;
-    }
-    if (read.mode === UiMode.TITLE && read.settled) {
-      // Back at the title: whatever ended the run has been latched by now.
-      this.#latch.sawRun = false;
-    }
+    return this.#settle(preFp, call);
   }
 
   // --------------------------------------------------------------- guards
@@ -525,8 +563,6 @@ export class Driver {
     if (c.contended) throw new Refusal("tab_contended", `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, { screen, holder: c.holder });
     if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
     if (ready.mode === UiMode.STARTER_SELECT && ready.disc.filterMode) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
-    // A deliberate choice on the title (Continue, Load Game, New Game) is the human's answer to run_interrupted: the latch clears.
-    if (this.#latch.interrupted && ready.mode === UiMode.TITLE) this.#latch = { sawRun: false, gameOver: false, interrupted: false };
     // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
     await this.session.keepAlive();
     const a = await this.session.evaluate<{ ready: boolean; frame: number | null }>(js.FRAME);
@@ -552,24 +588,26 @@ export class Driver {
   }
 
   /** Walk the cursor onto `target`. `null` once it is there; the unsettled result if the call's deadline ran out first. */
-  async #moveTo(menu: MenuRead, target: MenuOption, ctx: CallContext): Promise<SettleResult | null> {
+  async #moveTo(menu: MenuRead, target: MenuOption, call: Call): Promise<SettleResult | null> {
     switch (menu.family) {
       case "option_select": {
         const unskipped = (menu.extra.unskippedIndices as number[] | null) ?? null;
         const j = unskipped ? unskipped.indexOf(Number(target.i)) : Number(target.i);
         if (j < 0) throw new Refusal("option_skipped", `option ${target.label} is not selectable right now`, { options: menu.options.map(o => o.label) });
+        this.#sending(call);
         const r = await this.session.evaluate<{ ok: boolean; fullCursor: number }>(js.optionSelectSetCursor(j));
         if (!isThrown(r) && r.ok && r.fullCursor === j) return null;
-        return this.#walk(j, ctx, cur => (cur < j ? Button.DOWN : Button.UP));
+        return this.#walk(j, call, cur => (cur < j ? Button.DOWN : Button.UP));
       }
       case "command":
       case "fight":
       case "mystery_encounter": {
         // 2×2 grids: UP/DOWN are ±2, LEFT/RIGHT ±1.
         const t = Number(target.i);
-        return this.#walk(t, ctx, cur => (Math.floor(cur / 2) !== Math.floor(t / 2) ? (cur < t ? Button.DOWN : Button.UP) : cur < t ? Button.RIGHT : Button.LEFT));
+        return this.#walk(t, call, cur => (Math.floor(cur / 2) !== Math.floor(t / 2) ? (cur < t ? Button.DOWN : Button.UP) : cur < t ? Button.RIGHT : Button.LEFT));
       }
       case "modifier_select": {
+        this.#sending(call);
         const r = await this.session.evaluate<{ ok: boolean; rowCursor: number; cursor: number }>(js.shopSetCursor(Number(target.row), Number(target.col)));
         if (isThrown(r) || !r.ok || r.rowCursor !== target.row || r.cursor !== target.col) {
           throw new Refusal("cursor_unreachable", `could not position the shop cursor on ${target.label}`, { got: r });
@@ -577,6 +615,7 @@ export class Driver {
         return null;
       }
       case "starter_select": {
+        this.#sending(call);
         const r = await this.session.evaluate<{ ok: boolean; why?: string; cursor: number }>(js.starterSetCursor(Number(target.i)));
         if (isThrown(r) || !r.ok || r.cursor !== Number(target.i)) throw new Refusal("cursor_unreachable", `could not position the grid cursor on ${target.label}`, { got: r });
         return null;
@@ -584,9 +623,10 @@ export class Driver {
       case "learn_move": {
         // Rows 0..4 with UP/DOWN ±1, wrapping; ACTION on a moveset row forgets it, on row 4 declines the new move.
         const t = Number(target.i);
+        this.#sending(call);
         const r = await this.session.evaluate<{ ok: boolean; moveCursor: number }>(js.learnMoveSetCursor(t));
         if (!isThrown(r) && r.ok && r.moveCursor === t) return null;
-        return this.#walk(t, ctx, cur => (cur < t ? Button.DOWN : Button.UP));
+        return this.#walk(t, call, cur => (cur < t ? Button.DOWN : Button.UP));
       }
       case "target_select": {
         // A spread move ignores the cursor: ACTION hits every target and no direction moves it (#33).
@@ -595,19 +635,19 @@ export class Driver {
         // target in the other row, LEFT/RIGHT step ±1 within a row (TargetSelectUiHandler.processInput).
         const t = Number(target.i);
         const enemy = (i: number) => i >= 2;
-        return this.#walk(t, ctx, cur => (enemy(cur) !== enemy(t) ? (enemy(t) ? Button.UP : Button.DOWN) : cur < t ? Button.RIGHT : Button.LEFT));
+        return this.#walk(t, call, cur => (enemy(cur) !== enemy(t) ? (enemy(t) ? Button.UP : Button.DOWN) : cur < t ? Button.RIGHT : Button.LEFT));
       }
       case "party":
         // The slot list is a DOWN-cycle: 0..n-1 → 6 (Cancel) → 0; the option phase is a plain list (#7 §7: presses, always).
-        if (menu.extra.optionsMode === true) return this.#walk(Number(target.i), ctx, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
-        return this.#walk(Number(target.i), ctx, () => Button.DOWN);
+        if (menu.extra.optionsMode === true) return this.#walk(Number(target.i), call, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
+        return this.#walk(Number(target.i), call, () => Button.DOWN);
       case "modal":
         return null; // committed through the button action, no cursor
       case "save_slot":
       case "ball":
       case "menu":
       default:
-        return this.#walk(Number(target.i), ctx, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
+        return this.#walk(Number(target.i), call, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
     }
   }
 
@@ -615,7 +655,7 @@ export class Driver {
    * Press `step(cursor)` until the cursor reads `target`, each press settled against the call's deadline. A settled
    * press that leaves the cursor where it was refuses at once: the same press again does the same (#34).
    */
-  async #walk(target: number, ctx: CallContext, step: (cursor: number) => number): Promise<SettleResult | null> {
+  async #walk(target: number, call: Call, step: (cursor: number) => number): Promise<SettleResult | null> {
     let prev: number | null = null;
     for (let n = 0; n < NAV_CAP; n++) {
       const cur = Number((await this.#readMenu()).cursor);
@@ -624,7 +664,7 @@ export class Driver {
         throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a press toward ${target}; ${target} can't be reached by moving the cursor here. ${n} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target, presses: n });
       }
       prev = cur;
-      const s = await this.#pressAndSettle(step(cur), await this.#fine(), ctx);
+      const s = await this.#pressAndSettle(step(cur), await this.#fine(), call);
       if (!s.settled) return s;
     }
     throw new Refusal("cursor_unreachable", `cursor did not reach ${target} within ${NAV_CAP} presses`, { target, presses: NAV_CAP });
@@ -636,18 +676,19 @@ export class Driver {
   }
 
   /** The final commit: always `processInput(ACTION)`, except the modal family's own button action. */
-  async #commit(menu: MenuRead, target: MenuOption, preFp: string, ctx: CallContext): Promise<SettleResult> {
+  async #commit(menu: MenuRead, target: MenuOption, preFp: string, call: Call): Promise<SettleResult> {
     if (menu.family === "modal") {
+      this.#sending(call);
       const r = await this.session.evaluate<{ ok: boolean; why?: string }>(js.modalButton(Number(target.i)));
       if (isThrown(r) || !r.ok) throw new Refusal("modal_button", `button action ${target.i} unavailable: ${isThrown(r) ? r.__throw : r.why}`);
-      return this.#settle(preFp, ctx);
+      return this.#settle(preFp, call);
     }
-    return this.#pressAndSettle(Button.ACTION, preFp, ctx);
+    return this.#pressAndSettle(Button.ACTION, preFp, call);
   }
 
   // --------------------------------------------------------- auto-advance
 
-  async #autoAdvance(first: SettleResult, ctx: CallContext): Promise<{ settle: SettleResult; messages: string[]; presses: number; capped: boolean }> {
+  async #autoAdvance(first: SettleResult, call: Call): Promise<{ settle: SettleResult; messages: string[]; presses: number; capped: boolean }> {
     const messages: string[] = [];
     let s = first;
     let presses = 0;
@@ -657,7 +698,7 @@ export class Driver {
       if (r.mode !== UiMode.MESSAGE || !(r.awaitingActionInput && r.onActionInput)) break;
       if (presses >= AUTO_ADVANCE_CAP) return { settle: s, messages, presses, capped: true };
       if (r.messageText) messages.push(r.messageText);
-      s = await this.#pressAndSettle(Button.ACTION, r.fine, ctx);
+      s = await this.#pressAndSettle(Button.ACTION, r.fine, call);
       presses++;
     }
     return { settle: s, messages, presses, capped: false };
@@ -666,40 +707,24 @@ export class Driver {
   // ------------------------------------------------------------ results
 
   async #finishActing(
+    call: Call,
     pre: Ready,
-    beforeFp: string,
     choice: Choice,
     adv: { settle: SettleResult; messages: string[]; presses: number; capped: boolean },
     payload: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const s = adv.settle;
-    const preScreen = screenId(pre.mode, pre.disc);
-    const afterRead = s.last && s.last.ready ? s.last : null;
-    const afterFp = afterRead ? progressFingerprint(this.#progress(afterRead)) : beforeFp;
-    this.detector.recordActing({
-      screen: preScreen,
-      before: { fingerprint: beforeFp, settled: true },
-      after: { fingerprint: afterFp, settled: s.settled },
-      choice,
-      tutorialActive: pre.tutorialActive,
-    });
-    this.#stall.pending = !s.settled;
-    if (s.settled) {
-      this.#stall.resumeCount = 0;
-      this.#stall.cumulativeMs = 0;
+    if (!s.settled) {
+      const outcome = this.#end(call, { kind: "acting", pre, choice, settle: s, options: null });
+      return { ...this.#timedOutResult(s, outcome, "act"), messages: adv.messages, ...payload };
     }
-    this.#menuActionInFlight = false;
-
-    if (!s.settled || afterRead === null) {
-      return { ...this.#timedOut(s, "act"), messages: adv.messages, ...payload };
-    }
+    const afterRead = s.last as Ready;
     const menu = await this.#readMenu();
-    const assessment = this.#assessRead(afterRead, menu);
     const snap = await this.session.evaluate<Record<string, unknown>>(js.snapshot("lean"));
-    return this.#envelope(
+    const outcome = this.#end(call, { kind: "acting", pre, choice, settle: s, options: optionLabels(menu) });
+    return this.#settledResult(
       afterRead,
-      assessment,
-      s,
+      outcome,
       {
         ...payload,
         messages: adv.messages,
@@ -712,80 +737,39 @@ export class Driver {
     );
   }
 
-  #assessRead(ready: Ready, menu: MenuRead): Assessment {
-    const screen = screenId(ready.mode, ready.disc);
-    const options = menu.readable && menu.options.length > 0 ? menu.options.map(o => normalizeLabel(o.label)) : null;
-    return this.detector.assess({
-      screen,
-      fingerprint: progressFingerprint(this.#progress(ready)),
-      settled: ready.settled,
-      liveVersion: ready.gameVersion ?? "",
-      tutorialActive: ready.tutorialActive,
-      options,
-    });
-  }
-
-  #envelope(
+  #settledResult(
     ready: Ready,
-    assessment: Assessment,
-    s: SettleResult,
+    outcome: Outcome,
     payload: Record<string, unknown>,
     /** The call's suggested next step, returned only when the status is `ok`. */
     next?: string,
   ): Record<string, unknown> {
-    const screen = screenId(ready.mode, ready.disc);
-    const hang = this.hang.assess();
-    let status: Status = "ok";
-    let diagnostic: Diagnostic | undefined;
-    if (hang.status === "run_interrupted") {
-      status = "run_interrupted";
-      diagnostic = { ...this.#diagnostic(s), reason: "save-hang", cause: hang.cause, hang: hang.hang };
-    }
-    if (status === "ok" && !ready.settled) status = "timed_out";
-    if (assessment.status === "run_interrupted") {
-      status = worst(status, "run_interrupted");
-      diagnostic ??= { ...this.#diagnostic(s), reason: "ladder-exhausted", cause: assessment.cause, stuck: assessment.stuck };
-    } else if (assessment.status === "stuck") {
-      status = worst(status, "stuck");
-      diagnostic ??= { ...this.#diagnostic(s), reason: `stuck:${assessment.stuck?.verdict ?? "cap"}`, stuck: assessment.stuck };
-    }
-    if (this.#latch.interrupted) {
-      status = worst(status, "run_interrupted");
-      diagnostic ??= { ...this.#diagnostic(s), reason: "login-phase-mid-session", cause: "save_failed" };
-    } else if (this.#latch.gameOver && !ready.runLive) {
-      status = worst(status, "run_over");
-      diagnostic ??= { ...this.#diagnostic(s), reason: "game-over-phase" };
-    }
-    const out: Record<string, unknown> = { status, wave: ready.wave, screen, ...payload };
-    if (next !== undefined && status === "ok") out.next = next;
-    if (diagnostic) {
-      out.diagnostic = diagnostic;
+    const out: Record<string, unknown> = { status: outcome.status, wave: ready.wave, screen: screenId(ready.mode, ready.disc), ...payload };
+    if (next !== undefined && outcome.status === "ok") out.next = next;
+    if (outcome.diagnostic) {
+      out.diagnostic = outcome.diagnostic;
       out.console_tail = this.session.consoleTail();
     }
-    if (status === "stuck" && assessment.status === "stuck" && assessment.stuck) {
-      out.escape = {
-        verdict: assessment.stuck.verdict,
-        untried: assessment.stuck.untried,
-        tried: assessment.stuck.tried,
-        ladder: assessment.stuck.ladder,
-        cycle: assessment.stuck.cycle,
-      };
-    }
+    if (outcome.escape) out.escape = outcome.escape;
     return out;
   }
 
-  #timedOut(s: SettleResult, what: string): Record<string, unknown> {
+  /** The opening settle ran out of time: nothing was pressed, so the call ends as a read. */
+  #openingTimedOut(call: Call, s: SettleResult, tool: string): Record<string, unknown> {
+    return this.#timedOutResult(s, this.#end(call, { kind: "read", settle: s, options: null }), tool);
+  }
+
+  #timedOutResult(s: SettleResult, outcome: Outcome, what: string): Record<string, unknown> {
     const last = s.last && s.last.ready ? s.last : null;
-    const status: Status = this.#latch.interrupted ? "run_interrupted" : "timed_out";
     const alert = last?.mode === UiMode.ALERT_MODAL ? last.messageText : null;
     // The budget ran out with the game idle on a message that takes ACTION (#55): waiting on it would never end.
     // Not a doubled press: processInput clears onActionInput synchronously, so a live one is a fresh prompt.
     const pending = alert === null && last !== null && last.settled && last.mode === UiMode.MESSAGE && last.awaitingActionInput && last.onActionInput;
     return {
-      status,
+      status: outcome.status,
       wave: last?.wave ?? null,
       screen: last ? screenId(last.mode, last.disc) : "UNKNOWN(-1)",
-      diagnostic: this.#diagnostic(s),
+      diagnostic: outcome.diagnostic,
       ...(alert !== null ? { alert_text: alert } : {}),
       ...(pending ? { message_pending: true, text: last.messageText, next: DISMISS_MESSAGE } : {}),
       console_tail: this.session.consoleTail(),
@@ -796,35 +780,6 @@ export class Driver {
             ? `${what} ran out of call budget, but the game is waiting on a message: press(ACTION) moves it on. Waiting with get_state will not.`
             : `${what} did not settle within the call budget. Not fatal: call get_state or read_menu to keep waiting; nothing is pressed by that.`,
     };
-  }
-
-  #diagnostic(s: SettleResult): Diagnostic {
-    const last = s.last && s.last.ready ? s.last : null;
-    return {
-      reason: s.reason,
-      mode: { int: last?.mode ?? null, name: last ? modeName(last.mode) : null },
-      phase_name: last?.phaseName ?? null,
-      fingerprint: last?.fine ?? null,
-      elapsed_ms: s.elapsedMs,
-      stall_ms: s.stallMs,
-      fp_moved: s.fpMoved,
-      mode_from_dom: s.last?.domMode ?? null,
-      resume_count: this.#stall.resumeCount,
-      cumulative_stall_ms: this.#stall.cumulativeMs,
-      beyond_observed: this.#stall.cumulativeMs + s.stallMs >= BEYOND_OBSERVED_MS,
-      loop_frozen: s.loopFrozen,
-    };
-  }
-
-  #progress(r: Ready) {
-    return { phaseName: r.phaseName, mode: r.mode, modeChain: r.modeChain, cursor: r.cursor, messageText: r.messageText, wave: r.wave, turn: r.turn, money: r.money };
-  }
-
-  #runState(r: Ready | null): RunState {
-    if (this.#latch.interrupted) return "interrupted";
-    if (r?.runLive) return "live";
-    if (this.#latch.gameOver) return "over";
-    return "none";
   }
 
   #cleanSnapshot(snap: Record<string, unknown>): Record<string, unknown> {
@@ -879,3 +834,7 @@ export class Driver {
   }
 }
 
+/** The option labels the stuck detector judges untried against, or `null` when the menu gave none. */
+function optionLabels(menu: MenuRead): string[] | null {
+  return menu.readable && menu.options.length > 0 ? menu.options.map(o => normalizeLabel(o.label)) : null;
+}

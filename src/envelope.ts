@@ -1,18 +1,12 @@
 /**
  * The result envelope (#7 §3, #14): every tool result carries a status and the
  * `{wave, screen}` header; anything but `ok` carries a fixed diagnostic.
- * Precedence is `run_interrupted` > `run_over` > `stuck` > `timed_out` > `ok`:
- * the phase latch beats the clock.
+ * Which status a call returns, and the precedence between them, is
+ * `call-outcome.ts`'s to decide (#126).
  */
 import type { StuckReport } from "./stuck/detector.ts";
 
 export type Status = "ok" | "timed_out" | "stuck" | "run_over" | "run_interrupted";
-
-const RANK: Record<Status, number> = { ok: 0, timed_out: 1, stuck: 2, run_over: 3, run_interrupted: 4 };
-
-export function worst(...statuses: Status[]): Status {
-  return statuses.reduce((a, b) => (RANK[b] > RANK[a] ? b : a), "ok");
-}
 
 export type Diagnostic = {
   reason: string;
@@ -36,7 +30,11 @@ export type Diagnostic = {
 
 export type Header = { status: Status; wave: number | null; screen: string; diagnostic?: Diagnostic };
 
-/** Thrown by a tool to refuse: nothing was sent to the game. Becomes an MCP error result carrying the live screen. */
+/**
+ * Thrown by a tool to refuse: nothing was sent to the game, or (`start_run`) the screen was not the one the next step
+ * needs. Becomes an MCP error result carrying the live screen. Running out of call budget is never a refusal: that is
+ * a `timed_out` result, a `start_run` stopped mid-setup included.
+ */
 export class Refusal extends Error {
   code: string;
   detail: Record<string, unknown>;

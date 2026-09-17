@@ -281,9 +281,10 @@ test("select_option takes Ball on COMMAND in a wild battle (#56)", async () => {
  * empty. ACTION on a free slot starts the run and settles on CheckSwitchPhase's "Will you switch Pokémon?" CONFIRM, the
  * screen #30 mistook for the overwrite confirm; ACTION on Slot 1 opens the real overwrite confirm first. CANCEL on the
  * grid with an empty party asks to return to the title; Yes goes there (#41), after `yesLingers` settled polls still on
- * the grid, as the live handler sets STARTER_SELECT before the title phase shows TITLE.
+ * the grid, as the live handler sets STARTER_SELECT before the title phase shows TITLE. With `gameModeStalls` the
+ * game-mode select never settles.
  */
-function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean; yesIgnored?: boolean; yesLingers?: number } = {}) {
+function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean; yesIgnored?: boolean; yesLingers?: number; gameModeStalls?: boolean } = {}) {
   let t = 0;
   let frame = 0;
   const presses: number[] = [];
@@ -313,7 +314,7 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
     return readScreen();
   };
   const readScreen = (): Ready => ({
-    ready: true, settled: true, reason: "menu-open", mode: screen.mode, phaseName: screen.phase, wave: screen === switchConfirm ? 1 : null,
+    ready: true, ...(opts.gameModeStalls && screen === gameMode ? { settled: false, reason: "ui-transition" } : { settled: true, reason: "menu-open" }), mode: screen.mode, phaseName: screen.phase, wave: screen === switchConfirm ? 1 : null,
     turn: null, runLive: screen === switchConfirm, tutorialActive: false, handler: null, cursor, modeChain: screen.chain,
     messageText: screen.text ?? null, onActionInput: false, awaitingActionInput: false, fine: `${screen.mode}|${screen.phase}|${cursor}|${party.length}`,
     frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc: { ...disc, ...screen.disc }, ...money,
@@ -434,6 +435,18 @@ test("start_run whose back-out stops on the return-to-title CONFIRM says to answ
   assert.equal(r.screen, "CONFIRM");
   assert.match(String(r.next), /select_option\("Yes"\)/);
   assert.doesNotMatch(String(r.next), /CANCEL/);
+});
+
+test("start_run that runs out of budget mid-setup returns timed_out with the step, not a refusal (#141)", async () => {
+  const tab = startRunTab({ gameModeStalls: true });
+  const r = await outcome(tab.driver.startRun(["Bulbasaur"], undefined, false, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(r.status, "timed_out");
+  assert.equal(r.screen, "OPTION_SELECT");
+  assert.equal(r.step, "title");
+  assert.ok((r.log as string[]).some(l => l.startsWith("title:")));
+  assert.match(String(r.next), /start_run/);
+  assert.equal((r.diagnostic as { reason: string }).reason, "ui-transition");
 });
 
 /**
