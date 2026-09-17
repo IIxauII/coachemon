@@ -31,6 +31,8 @@ const cardNow = () => {
 };
 
 const stream = () => {
+  // One line per distinct message, the rule the watcher has always read errors by: the same failure repeating is one
+  // event, and a failure that comes back after a good refresh is news again.
   const failed = lastFailure();
   if (failed !== sentError) {
     sentError = failed;
@@ -39,7 +41,10 @@ const stream = () => {
   if (failed) return;
   const ev = eventNow();
   // Only the five streamed kinds, and only a card the subscriber can act on: the relay drops anything else anyway.
-  if (!ev || CARD_KINDS.indexOf(ev.kind) < 0 || typeof ev.wave !== "number" || typeof ev.key !== "string" || typeof ev.verdict !== "string") { sentCard = null; return; }
+  // A card that cannot be streamed leaves the last signature standing, so coming back to it is not a second event.
+  if (!ev || CARD_KINDS.indexOf(ev.kind) < 0 || typeof ev.wave !== "number" || typeof ev.key !== "string" || typeof ev.verdict !== "string") return;
+  // The kind rides in the signature because two kinds share a key on one wave: a biome choice and its battle are both
+  // keyed on the wave alone.
   const sig = `${ev.kind}|${ev.key}|${ev.verdict}`;
   if (sig === sentCard) return;
   let text = null;
@@ -49,13 +54,15 @@ const stream = () => {
   push(CARD_EVENT, { kind: ev.kind, key: ev.key, wave: ev.wave, verdict: ev.verdict, text });
 };
 
+// `stats()` is what a live check reads the refresh cost off, so the stream is inside the measurement: pushing a card
+// draws it a second time, and that is part of what a refresh costs.
 let lastTickMs = 0, maxTickMs = 0;
 const timedTick = () => {
   const t0 = performance.now();
   tick();
+  stream();
   lastTickMs = performance.now() - t0;
   maxTickMs = Math.max(maxTickMs, lastTickMs);
-  stream();
 };
 const timer = setInterval(timedTick, 1000);
 timedTick();

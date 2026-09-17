@@ -59,6 +59,23 @@ test("a login modal's buttons and form labels are read, its typed form text neve
   assert.equal(JSON.stringify(menu).includes("pikachu123"), false);
 });
 
+test("a reward offer carries the game's own description, the field probe.js's reward read had (§11.4)", t => {
+  const offer = (name: string, cost: number, desc: string) => ({ modifierTypeOption: { type: { name, getDescription: () => desc }, cost } });
+  const h = {
+    rowCursor: 1, cursor: 0, rerollCost: 250,
+    options: [offer("Leftovers", 0, "Heals 1/16 of max HP every turn.")],
+    shopOptionsRows: [[offer("Super Potion", 300, "Restores 50 HP.")]],
+  };
+  onPage(t, { ui: { mode: 6, handlers: { 6: h } }, money: 1000 });
+  const menu = send("menu", {});
+  assert.equal(menu.family, "modifier_select");
+  const free = menu.options.find((o: { label: string }) => o.label === "Leftovers");
+  assert.equal(free.desc, "Heals 1/16 of max HP every turn.");
+  assert.equal(menu.options.find((o: { label: string }) => o.label === "Super Potion").desc, "Restores 50 HP.");
+  // A button row has no offer behind it, so it has no description either.
+  assert.equal(menu.extra.rows[0].items.length, 0);
+});
+
 test("a mode without a handler is unreadable", t => {
   onPage(t, { ui: { mode: 2, handlers: {} } });
   assert.deepEqual(send("menu", {}), { readable: false, why: "no-handler", mode: 2 });

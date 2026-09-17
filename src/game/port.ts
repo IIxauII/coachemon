@@ -48,7 +48,7 @@ export type Ready = Extract<PredicateRead, { ready: true }>;
 
 export type FightMove = { name: string; pp: number; maxPp: number; power: number | null; category: number | null; type: number | null };
 
-export type ShopRow = { row: number; kind: "buttons" | "reward" | "shop"; items: { col: number; label: string | null; cost?: number | null; visible?: boolean }[] };
+export type ShopRow = { row: number; kind: "buttons" | "reward" | "shop"; items: { col: number; label: string | null; cost?: number | null; desc?: string | null; visible?: boolean }[] };
 
 /**
  * Each menu family's `extra`: what its branch of the in-page reader reads beside the options, plus the fields the

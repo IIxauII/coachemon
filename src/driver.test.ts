@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Driver } from "./driver.ts";
-import { Button, UiMode } from "./enums/generated.ts";
+import { Button, MoveCategory, PokemonType, StatusEffect, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
 import type { MenuRead } from "./game/port.ts";
@@ -927,6 +927,7 @@ test("read_card returns the card the panel is showing, in the settled envelope (
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.screen, "COMMAND");
   assert.equal(r.wave, 12);
+  assert.equal(r.card_wave, 12, "the wave the card is about, beside the settled game's");
   assert.equal(r.kind, "battle");
   assert.equal(r.key, "12");
   assert.equal(r.verdict, "danger");
@@ -978,6 +979,26 @@ test("read_starters reports a failed read rather than an empty grid", async () =
   const r = await outcome(tab.driver.readStarters({}));
   assert.equal(r.starters_error, "no-battle-scene");
   assert.equal(r.owned, undefined);
+});
+
+test("read_card keeps the panel's own wave when it is a refresh behind the game", async () => {
+  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "11", wave: 11, verdict: "easy", text: "⚔", summary: null }) });
+  const r = await outcome(tab.driver.readCard({}));
+  assert.equal(r.wave, 12, "the envelope is the settled game's wave");
+  assert.equal(r.card_wave, 11, "the card is still on the wave before it");
+});
+
+test("get_state names the coach's enums on both sides of the field (§11.4)", async () => {
+  const mon = (over: Record<string, unknown>) => ({ name: "Charizard", status: StatusEffect.BURN, types: [PokemonType.FIRE, PokemonType.FLYING], moves: [{ name: "Flamethrower", type: PokemonType.FIRE, category: MoveCategory.SPECIAL }], ...over });
+  const tab = coachTab({});
+  tab.game.snapshot = async () => ({ ok: true, snapshot: { ready: true, mode: 0, party: [mon({})], enemy: [mon({ name: "Gyarados", status: 0 })] } });
+  const r = await outcome(tab.driver.getState("full", {}));
+  const [party, enemy] = [r.party as Record<string, unknown>[], r.enemy as Record<string, unknown>[]];
+  assert.equal(party[0].status, "BURN");
+  assert.deepEqual(party[0].types, ["FIRE", "FLYING"]);
+  assert.deepEqual(party[0].moves, [{ name: "Flamethrower", type: "FIRE", category: "SPECIAL" }]);
+  assert.equal(enemy[0].status, "NONE", "the enemy's enums are named too, not left as integers");
+  assert.deepEqual(enemy[0].types, ["FIRE", "FLYING"]);
 });
 
 test("a coach tool refuses by rung when nothing can reach the game (§12.3)", async () => {

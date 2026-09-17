@@ -107,14 +107,15 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.readable = out.options.length > 0;
     } else if (mode === m.MODIFIER_SELECT) {
       out.family = "modifier_select";
-      const rows: { row: number; kind: string; items: { col: number; label: string | null; cost?: unknown }[] }[] = [];
+      const rows: { row: number; kind: string; items: { col: number; label: string | null; cost?: unknown; desc?: string | null }[] }[] = [];
       // Row 0 is the button bar, in the handler's own cursor order: reroll, manage items, check team, lock rarities.
       // Labels come from each container's text object, which the game filled from its i18n keys — never hardcoded.
       const btn = (c: any, col: number) => ({ col, label: __strip(__texts(c)[0]) || null, visible: !!(c && c.visible) });
       const buttons = [btn(h.rerollButtonContainer, 0), btn(h.transferButtonContainer, 1), btn(h.checkButtonContainer, 2), btn(h.lockRarityButtonContainer, 3)];
       if (h.continueButtonContainer && h.continueButtonContainer.visible) buttons.push(btn(h.continueButtonContainer, 4));
       rows.push({ row: 0, kind: "buttons", items: buttons.filter(b => b.visible && b.label) });
-      const item = (o: any, col: number) => ({ col, label: __try(() => o.modifierTypeOption.type.name), cost: __try(() => o.modifierTypeOption.cost) });
+      // `desc` is the game's own description of the offer, the one field of `probe.js`'s reward read nothing else carries (§11.4).
+      const item = (o: any, col: number) => ({ col, label: __try(() => o.modifierTypeOption.type.name), cost: __try(() => o.modifierTypeOption.cost), desc: __try(() => o.modifierTypeOption.type.getDescription()) });
       rows.push({ row: 1, kind: "reward", items: (h.options || []).map(item) });
       const shop = h.shopOptionsRows || [];
       for (let r = 0; r < shop.length; r++) {
@@ -122,7 +123,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         rows.push({ row: 2 + r, kind: "shop", items: (shop[shop.length - 1 - r] || []).map(item) });
       }
       out.extra.rows = rows;
-      out.options = rows.flatMap(r => r.items.map(it => opt(r.row + ":" + it.col, it.label, { row: r.row, col: it.col, cost: it.cost === undefined ? null : it.cost, kind: r.kind })));
+      out.options = rows.flatMap(r => r.items.map(it => opt(r.row + ":" + it.col, it.label, { row: r.row, col: it.col, cost: it.cost === undefined ? null : it.cost, kind: r.kind, desc: it.desc === undefined ? null : it.desc })));
       out.cursor = h.rowCursor + ":" + h.cursor;
       out.extra.rowCursor = h.rowCursor; out.extra.colCursor = h.cursor;
       out.extra.money = scene.money;

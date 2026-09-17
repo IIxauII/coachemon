@@ -36,16 +36,14 @@ export function starters(L: Located, _args: Record<string, never>): StartersResu
   const grid: StartersResult["grid"] = __try(() => (h.filteredStarterContainers || []).map((c: any, i: number) => ({
     i, name: __try(() => c.species.name), id: __try(() => c.species.speciesId), cost: __try(() => gd.getSpeciesStarterValue(c.species.speciesId)),
   }))) ?? [];
-  // The grid's own costs, so `owned` never prices a species differently from the row the player is looking at.
-  const cost = (id: number): number | null => {
-    for (let i = 0; i < grid.length; i++) if (grid[i].id === id) return grid[i].cost;
-    return null;
-  };
+  // The grid's own costs, keyed once, so `owned` never prices a species differently from the row the player sees.
+  const costs: Record<number, number | null> = {};
+  for (let i = 0; i < grid.length; i++) if (typeof grid[i].id === "number") costs[grid[i].id as number] = grid[i].cost;
   const owned: OwnedStarter[] = __try(() => Object.entries(gd.starterData)
     .filter(([id]) => __try(() => BigInt(gd.dexData[id].caughtAttr) > 0n) === true)
     .map(([id, st]: [string, any]) => ({
       id: +id,
-      cost: cost(+id),
+      cost: costs[+id] ?? null,
       ivTotal: __try(() => gd.dexData[id].ivs.reduce((a: number, b: number) => a + b, 0)),
       passiveUnlocked: __try(() => (st.passiveAttr & L.pa.UNLOCKED) === L.pa.UNLOCKED) === true,
       hiddenAbility: __try(() => (st.abilityAttr & L.ab.ABILITY_HIDDEN) === L.ab.ABILITY_HIDDEN) === true,

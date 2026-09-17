@@ -78,8 +78,16 @@ export const collapsedCard = card => !asText && current !== "closed" && hold !==
 // ---- The card as plain text (§11.1)
 // The stream's `text` is the card the panel draws, read back as lines: one source, so the two can never disagree. It
 // is always the full, uncollapsed card — the user's own view is theirs, and a subscriber asked for the whole thing.
+// 98-tick registers the draw for a kind here, the way it registers the redraw: dispatch stays its business.
 let asText = false;
-export const renderText = draw => {
+let drawFn = () => null;
+export const setDraw = fn => { drawFn = fn; };
+export const cardText = card => {
+  if (!card) return null;
+  const nodes = renderText(() => drawFn(card));
+  return nodes && nodes.length ? nodesText(nodes) : null;
+};
+const renderText = draw => {
   const wasView = current, wasText = asText;
   current = "full";
   asText = true;
@@ -112,11 +120,11 @@ const nodeLines = n => {
   if (inline) out.push(inline);
   return out;
 };
-export const nodesText = nodes => nodes.flatMap(nodeLines).map(l => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+const nodesText = nodes => nodes.flatMap(nodeLines).map(l => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
 
 // ---- The disclaimer (§3)
 // Fixed wording, on every listing and inside the extension. The panel has no About page, so the full view carries it.
-export const DISCLAIMER = "Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
+const DISCLAIMER = "Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
 export const disclaimer = () => h("div", { ...dim, fontSize: FS.tiny, marginTop: "4px" }, DISCLAIMER);
 
 // The refresh itself lives in 98-tick, above every renderer; it registers itself here so a view button can ask for

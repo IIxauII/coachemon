@@ -134,46 +134,47 @@ const EMPTY = {
 export const summaryKeys = () => Object.keys(EMPTY);
 
 // ---- The card event (§11.1)
-// What the panel pushes whenever the card it shows changes: the kind, the key it is deduplicated on, the wave and the
-// leading call. The watcher's old per-kind keys move here, so the stream and the card agree by construction.
-// The panel's `rewards` card goes out as `reward`; `starters` and `fusion` have no event kind and are read-only.
-const EVENT_KINDS = { battle: "battle", learn: "learn", rewards: "reward", biome: "biome", encounter: "encounter" };
-
-const cardKey = card => {
-  const w = card.wave ?? null;
-  if (card.kind === "learn") return `${w}|${card.name ?? ""}|${card.move?.name ?? ""}`;
-  // A reroll changes the offers, so the rewards screen is a new decision under the same wave.
-  if (card.kind === "rewards") return `${w}|${(card.free ?? []).map(f => f.name).join(",")}`;
-  if (card.kind === "encounter") return `${w}|${card.name ?? ""}`;
-  // A battle is keyed on the wave alone: the foes drop out of the list as they faint.
-  return `${w}`;
-};
-
-// The leading call of each summary, as the HUD already writes it: the learn call, the rewards line's first clause, the
-// biome pick, the encounter's `take …` / `your call` / `not judged`. A battle carries the glossary's verdict itself.
-const leading = s => (typeof s === "string" && s ? s.split(" · ")[0] : null);
+// What the panel pushes whenever the card it shows changes: the kind the stream uses, the key it is deduplicated on,
+// the wave and the leading call. The watcher's old per-kind keys move here, so the stream and the card agree by
+// construction. `starters` and `fusion` have no event kind of their own: they are read, never streamed.
+//
+// The call is read back out of the summary the panel already wrote (§11.1: "the leading call of the matching field of
+// cardSummary() as the HUD already writes it"), so each card's wording stays in the file that owns its model — at the
+// cost of knowing how that file joins its clauses. `SEP` is that join.
+const SEP = " · ";
+const leading = s => (typeof s === "string" && s ? s.split(SEP)[0] : null);
+// `Swamp 72 pick — …`: the option the card picked, not the first one it listed.
 const biomePick = s => {
-  const picked = (typeof s === "string" ? s : "").split(" · ").find(o => o.includes(" pick — "));
+  const picked = (typeof s === "string" ? s : "").split(SEP).find(o => o.includes(" pick — "));
   return picked ? picked.replace(/ \d+ pick — [\s\S]*$/, "") : null;
 };
+// `Mysterious Chest: take Open it — pick of 3 Ultra items`: the call alone, without what it would get us.
 const encounterCall = s => {
   const head = leading(typeof s === "string" ? s.slice(s.indexOf(": ") + 2) : null);
   return head ? head.split(" — ")[0] : null;
 };
 
-const verdictOfKind = (kind, s) => {
-  if (kind === "battle") return s.verdict;
-  if (kind === "learn") return leading(s.learn);
-  if (kind === "rewards") return leading(s.rewards);
-  if (kind === "biome") return biomePick(s.biome);
-  if (kind === "encounter") return encounterCall(s.encounter);
-  return leading(s[kind]);
+// One row per card kind: the name it streams under (the panel's `rewards` goes out as `reward`), the key it is
+// deduplicated on, and where its call comes from. Every kind the panel can show has a row; a row without `event` is
+// read-only. A battle is keyed on the wave alone, because its foes drop out of the list as they faint.
+const wave = card => `${card.wave ?? null}`;
+const KINDS = {
+  battle: { event: "battle", key: wave, call: s => s.verdict },
+  learn: { event: "learn", key: card => `${wave(card)}|${card.name ?? ""}|${card.move?.name ?? ""}`, call: s => leading(s.learn) },
+  // A reroll changes the offers, so the rewards screen is a new decision under the same wave.
+  rewards: { event: "reward", key: card => `${wave(card)}|${(card.free ?? []).map(f => f.name).join(",")}`, call: s => leading(s.rewards) },
+  biome: { event: "biome", key: wave, call: s => biomePick(s.biome) },
+  encounter: { event: "encounter", key: card => `${wave(card)}|${card.name ?? ""}`, call: s => encounterCall(s.encounter) },
+  starters: { event: null, key: wave, call: s => leading(s.starters) },
+  fusion: { event: null, key: wave, call: s => leading(s.fusion) },
 };
 
 export const cardEvent = card => {
   if (!card) return null;
+  const k = KINDS[card.kind];
+  if (!k) return null;
   const s = cardSummary(card);
-  return { kind: EVENT_KINDS[card.kind] ?? card.kind, key: cardKey(card), wave: card.wave ?? null, verdict: s ? verdictOfKind(card.kind, s) : null };
+  return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s) : null };
 };
 
 // `danger`: a likely KO of one of our mons this turn — `level` "ko" before it acts (the 💀 tags), "after" once it has

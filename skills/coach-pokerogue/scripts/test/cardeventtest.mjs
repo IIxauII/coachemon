@@ -83,6 +83,13 @@ const drawn = () => (el.kids ?? []).map(function text(n) {
   tick();
   assert.equal(cards().length, 2, "a new move on offer is a new decision");
   assert.equal(cards()[1].key, "12|Charmeleon|Fire Blast");
+
+  // A refresh with nothing to coach between two looks at the same card is not a second event.
+  scene = { currentBattle: null, ui: { getMode: () => 0, getHandler: () => ({}) }, getEnemyParty: () => [], getPlayerParty: () => [] };
+  tick();
+  scene = learnScene(["Fire Blast","Fire",110,"S"]);
+  tick();
+  assert.equal(cards().length, 2, "the same card after an empty refresh is not re-sent");
   console.log("dedupe ok");
 }
 

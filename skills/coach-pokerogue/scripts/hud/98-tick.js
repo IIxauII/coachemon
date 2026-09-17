@@ -3,7 +3,7 @@
 import { readCard } from "./60-card.js";
 import { previewCheck } from "./48-preview.js";
 import { rerollCheck } from "./50-reroll.js";
-import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, nodesText, renderText, setRedraw, setShownCardWave, view } from "./90-render.js";
+import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw, setShownCardWave, view } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
 import { drawEncounter } from "./96-render-encounter.js";
 import { drawFusion } from "./96-render-fusion.js";
@@ -22,9 +22,9 @@ export const shownCard = () => shown;
 let failure = null;
 export const lastFailure = () => failure;
 
-// The card as plain text, drawn by the very renderer the panel uses and read back as lines (§11.1). Full and
-// uncollapsed whatever view the user is on, and never the disclaimer: that is the panel's footer, not the card's.
-export const cardText = card => (card && DRAW[card.kind] ? nodesText(renderText(() => DRAW[card.kind](card))) : null);
+// The render layer draws a card as text through this, so `cardText` never has to know which draw goes with which kind
+// — that stays here (§11.1). The disclaimer is not in it: that is the panel's footer, not a card's.
+setDraw(card => (DRAW[card.kind] ? DRAW[card.kind](card) : null));
 
 export const tick = () => {
   try {
