@@ -1,33 +1,33 @@
 == Charizard ← Flare Blitz
-✚ Fire Flare Blitz 3rd Fire move · recoil 33% of damage · weak Atk power 57
+✚ Fire Flare Blitz 3rd Fire move · recoil 25% of damage · weak Atk power 64
 · Fire Heat Wave 2nd Fire move · spread · set move (Offensive Protect) power 133
 ↔ Dragon Dragon Breath SE on Dragon power 72
 · Flying Air Slash SE on Fighting power 126
 · Fire Flamethrower 2nd Fire move power 101
 team: −SE Dragon
-Skip — not an upgrade over Dragon Breath −15 power
+Skip — not an upgrade over Dragon Breath −8 power
 == Venusaur ← Solar Beam
 ✚ Grass Solar Beam 2nd Grass move · charge turn power 68
-↔ Normal Double-Edge neutral on Flying/Poison/Bug… · recoil 33% of damage power 84
+↔ Normal Double-Edge neutral on Flying/Poison/Bug… · recoil 25% of damage power 94
 · Grass Sleep Powder status
 · Grass Synthesis status
 · Grass Power Whip SE on Ground/Rock/Water power 186
-Skip — not an upgrade over Double-Edge −16 power
+Skip — not an upgrade over Double-Edge −26 power
 == Blastoise ← Skull Bash
 ✚ Normal Skull Bash neutral on Water · charge turn power 65
 ↔ Water Aqua Tail 3rd Water move power 72
 · Steel Flash Cannon SE on Ice/Fairy power 104
-· Water Wave Crash 3rd Water move · recoil 33% of damage · set move (Doubles Bulky Attacker) power 85
+· Water Wave Crash 3rd Water move · recoil 25% of damage · set move (Doubles Bulky Attacker) power 96
 · Water Hydro Pump 3rd Water move power 79
 Skip — not an upgrade over Aqua Tail −7 power
 == Scrafty ← Head Smash
-✚ Rock Head Smash SE on Flying/Bug/Fire · recoil 33% of damage power 105
+✚ Rock Head Smash SE on Flying/Bug/Fire · recoil 25% of damage power 117
 · Fighting Focus Punch 3rd Fighting move power 135
 · Normal Rock Climb neutral on Flying/Poison/Bug… power 84
 ✕ Fighting Brick Break 3rd Fighting move power 68
 · Fighting High Jump Kick 3rd Fighting move power 105
 team: +SE Flying/Bug/Fire
-Learn → forget Brick Break +37 power
+Learn → forget Brick Break +49 power
 == Nidoking ← Double Kick
 ✚ Fighting Double Kick 2 hits · SE on Normal/Ice power 76
 ✕ Normal Tackle power 40

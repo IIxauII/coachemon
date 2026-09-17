@@ -5,8 +5,20 @@ import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-// An attr: "Name" or ["Name", { fields }] — the game's attr instances, identified by constructor name.
-const attr = a => (typeof a === "string" ? { constructor: { name: a } } : Object.assign({ constructor: { name: a[0] } }, a[1]));
+// An attr: "Name" or ["Name", { fields }] — the game's attr instances, identified by constructor name. The HUD
+// matches through the prototype chain (a subclass counts), so the classes the game subclasses carry their parent
+// here too, or a WeatherInstantChargeAttr wouldn't read as an instant charge.
+const PARENTS = {
+  WeatherInstantChargeAttr: "InstantChargeAttr",
+  BoostHealAttr: "HealAttr", WeatherHealAttr: "HealAttr", PlantHealAttr: "HealAttr", SandHealAttr: "HealAttr",
+  LeechSeedAttr: "AddBattlerTagAttr", ConfuseAttr: "AddBattlerTagAttr", ProtectAttr: "AddBattlerTagAttr",
+  AddArenaTrapTagAttr: "AddArenaTagAttr",
+};
+const ctorFor = name => {
+  const parent = PARENTS[name];
+  return Object.assign(Object.create(parent ? ctorFor(parent) : null), { name });
+};
+const attr = a => (typeof a === "string" ? { constructor: ctorFor(a) } : Object.assign({ constructor: ctorFor(a[0]) }, a[1]));
 // [name, type, power, cat, acc, attrs, charging, target, extra]
 const mv = ([n, t, p, c, a = 100, attrs = [], charge = false, target = 3, extra = {}]) => ({
   name: n, type: TY.indexOf(t), power: p, category: cat[c], accuracy: a, moveTarget: target, priority: 0, chance: -1,
@@ -14,8 +26,12 @@ const mv = ([n, t, p, c, a = 100, attrs = [], charge = false, target = 3, extra 
   restrictions: extra.restrictions ?? [], conditions: (extra.conditions ?? []).map(attr), flags: extra.flags ?? 0,
   hasFlag(f) { return (this.flags & f) !== 0; }, ...extra.fields,
 });
+// The ability attributes 07-move-traits asks for, by the ability names these scenarios use: it reads abilities by
+// attribute, as the game does, not by name.
+const AB_ATTRS = { "Skill Link": ["MaxMultiHitAbAttr"], "Magic Guard": ["BlockNonDirectDamageAbAttr"], "Rock Head": ["BlockRecoilDamageAttr"], "Parental Bond": ["AddSecondStrikeAbAttr"] };
 const mon = (name, types, atk, spa, moves, extra = {}) => ({
   name, level: 64, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: extra.ability ?? "x" }),
+  hasAbilityWithAttr: a => (AB_ATTRS[extra.ability] ?? []).includes(a), getHeldItems: () => [],
   getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, friendship: 70,
   moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })),
 });
