@@ -133,3 +133,11 @@ The **likely** KO turn is the first by which the target is more likely down than
 What a move does beyond its damage number, read once from the move and its user: the turns it spends (a charging turn, a recharge turn, a lock-in, not twice in a row), what it costs its user (recoil, HP, fainting, its own stat drops), when it fails (hit first, a target that doesn't attack, past the first turn), how many times it hits, and what a status move sets up (stat stages, a status, a heal, a hazard). Traits hold no battle state: whether a condition holds this turn, and what a trait is worth, belong to whoever reads them.
 
 A move's **costs** are the traits that hurt its user, and are always named the same way wherever a card shows them. Not to be confused with a **drawback**, which is the coach's judgement that a move scores worse than it hits, taken from the game's own move scoring.
+
+## Turn read
+
+The **coach**'s look at a battle while the game waits on the player's decision (a command, a free switch or a faint replacement). Every damage number, enemy move, enemy switch and Terastallization the coach shows then comes from the game's own code, as the battle stands. Outside a decision the game can't be asked, so the coach falls back to numbers worked out from the type chart alone. A **card** built from a turn read stays up through the turn's animations, until the turn ends, the wave changes or a foe is sent in.
+
+## Hypothesis
+
+The battle as it would stand one move from now: our stat stages after a Swords Dance, or a foe paralysed by Thunder Wave. The coach asks the game's own code about it as if it were so, and a hypothesis is never played out: the battle is left exactly as it was. A foe predicted to Terastallize this turn is read the same way, but only for how hard hits land, never for what the foe decides, since it picks its move before it Terastallizes.
