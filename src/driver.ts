@@ -20,6 +20,7 @@ import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { LinkGame } from "./game/link-game.ts";
 import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
+import { planSelect, step, type Plan, type Walk } from "./menu-family.ts";
 import { isSettingsMode, modeName } from "./screen.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
@@ -219,7 +220,7 @@ export class Driver {
       refuseMovedScreen(ready, menu);
       const labels = menu.options.map(o => normalizeLabel(o.label));
       const echo = { screen, options: labels, cursor: menu.cursor };
-      if (menu.extra.messagePending === true) {
+      if (menu.messagePending) {
         throw new Refusal("message_pending", `${screen} is showing a message that swallows cursor presses until ACTION dismisses it: ${JSON.stringify(menu.text)}. Nothing was pressed.`, { ...echo, text: menu.text, next: DISMISS_MESSAGE });
       }
       if (menu.options.length === 0) {
@@ -245,23 +246,12 @@ export class Driver {
         target = m.option;
       }
 
-      // Command.BALL is the second command; BALL rows carry a ballType, Cancel does not. Refused by position, not by the
-      // localised label (#56).
-      const throwsBall = (menu.family === "command" && Number(target.i) === 1) || (menu.family === "ball" && "ballType" in target);
-      if (throwsBall && menu.extra.catchable === false) {
-        throw new Refusal("cannot_catch_trainer", `This is a trainer battle: its Pokémon cannot be caught, so ${JSON.stringify(target.label)} is refused. Nothing was pressed.`, echo);
-      }
-
-      const choice: Choice = menu.family === "modal" ? { kind: "modal_button", index: Number(target.i) } : { kind: "option", label: normalizeLabel(target.label) };
-      this.#intend(call, ready, choice, MENU_MODES.has(ready.mode));
-
-      const spread = menu.family === "target_select" && menu.extra.isMultipleTargets === true;
-      const extra = { selected: target.label, on: screen, ...(spread ? { targets: "all" } : {}) };
-      const walk = await this.#moveTo(menu, target, call);
-      if (walk) return this.#finishActing(call, ready, choice, { settle: walk, messages: [], presses: 0, capped: false }, extra);
-      const committed = await this.#commit(menu, target, ready.fine, call);
-      const adv = await this.#autoAdvance(committed, call);
-      return this.#finishActing(call, ready, choice, adv, extra);
+      const plan = planSelect(menu, target);
+      this.#intend(call, ready, plan.choice, MENU_MODES.has(ready.mode));
+      // A walk that ran out of time committed nothing and has nothing to advance: its unsettled result passes through.
+      const { settle: s } = await this.#execute(menu, target, plan, ready.fine, call);
+      const adv = await this.#autoAdvance(s, call);
+      return this.#finishActing(call, ready, plan.choice, adv, { selected: target.label, on: screen, ...plan.extra });
     });
   }
 
@@ -310,9 +300,11 @@ export class Driver {
       }
       return r;
     };
-    const moveTo = async (m: MenuRead, target: MenuOption, step: string): Promise<void> => {
-      const walk = await this.#moveTo(m, target, call);
-      if (walk) throw new SetupTimedOut(walk, step);
+    /** Reach and commit `target` on `m`, as `select_option` would. A walk that runs out of time stops the setup at `step`. */
+    const select = async (m: MenuRead, target: MenuOption, preFp: string, step: string, landed?: (species: string | undefined) => void): Promise<SettleResult> => {
+      const r = await this.#execute(m, target, planSelect(m, target), preFp, call, landed);
+      if (!r.committed) throw new SetupTimedOut(r.settle, step);
+      return r.settle;
     };
     /**
      * A party refused on the grid, before any starter is added: CANCEL on the empty grid asks to return to the title and
@@ -325,8 +317,7 @@ export class Driver {
         const yes = matchLabel(m.options, "Yes");
         if (yes.kind !== "one") throw new Refusal("start_run_unexpected_screen", `no single Yes on the return-to-title confirm: ${m.options.map(o => o.label).join(" | ")}`);
         log.push(`back out: ${m.options.map(o => o.label).join(" | ")} → Yes`);
-        await moveTo(m, yes.option, "back out");
-        let back = await this.#commit(m, yes.option, confirm.fine, call);
+        let back = await select(m, yes.option, confirm.fine, "back out");
         // Yes sets STARTER_SELECT again before the title phase shows TITLE (StarterSelectUiHandler.tryExit): wait past it.
         if (back.settled && (back.last as Ready).mode === UiMode.STARTER_SELECT) back = await this.#settle((back.last as Ready).fine, call);
         await expect(back, "TITLE", "back out");
@@ -350,15 +341,13 @@ export class Driver {
     refuseMovedScreen(ready, menu);
     const newGameIndex = menu.options.length >= 5 ? 1 : 0;
     log.push(`title: ${menu.options.map(o => o.label).join(" | ")} → index ${newGameIndex}`);
-    await moveTo(menu, menu.options[newGameIndex], "title");
-    let s = await this.#commit(menu, menu.options[newGameIndex], ready.fine, call);
+    let s = await select(menu, menu.options[newGameIndex], ready.fine, "title");
     presses++;
     let cur = await expect(s, "OPTION_SELECT", "title");
     // 2. Game mode: Classic is index 0.
     menu = await this.#game.menu();
     log.push(`game mode: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
-    await moveTo(menu, menu.options[0], "game mode");
-    s = await this.#commit(menu, menu.options[0], cur.fine, call);
+    s = await select(menu, menu.options[0], cur.fine, "game mode");
     presses++;
     cur = await expect(s, "STARTER_SELECT", "game mode");
 
@@ -378,18 +367,25 @@ export class Driver {
       await refuseFromGrid("party_over_budget", `Party costs ${cost} against a limit of ${info.valueLimit}.`, { picks: picks.map(p => ({ name: p.name, cost: p.cost })), limit: info.valueLimit });
     }
     for (const pick of picks) {
-      const placed = await this.#setCursor(call, { family: "starter_select", index: pick.i });
-      if (!placed.ok) throw new Refusal("starter_cursor", `could not position the grid cursor on ${pick.name}: ${placed.why}`, { log });
-      if (placed.species && normalizeLabel(placed.species) !== normalizeLabel(pick.name ?? "")) {
-        throw new Refusal("starter_cursor", `grid cursor landed on ${placed.species}, not ${pick.name}`, { log });
+      menu = await this.#game.menu();
+      refuseMovedScreen(cur, menu);
+      // The species under the cursor is checked before ACTION opens its menu.
+      const onPick = (species: string | undefined) => {
+        if (species && normalizeLabel(species) !== normalizeLabel(pick.name ?? "")) {
+          throw new Refusal("starter_cursor", `grid cursor landed on ${species}, not ${pick.name}`, { log });
+        }
+      };
+      try {
+        s = await select(menu, { i: pick.i, label: pick.name }, cur.fine, `select ${pick.name}`, onPick);
+      } catch (e) {
+        if (!(e instanceof Refusal && e.code === "cursor_unreachable")) throw e;
+        throw new Refusal("starter_cursor", `could not position the grid cursor on ${pick.name}: ${(e.detail.got as { why: string }).why}`, { log });
       }
-      s = await this.#pressAndSettle(Button.ACTION, cur.fine, call);
       presses++;
       cur = await expect(s, "OPTION_SELECT", `select ${pick.name}`);
       menu = await this.#game.menu();
       log.push(`${pick.name}: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
-      await moveTo(menu, menu.options[0], `add ${pick.name}`);
-      s = await this.#commit(menu, menu.options[0], cur.fine, call);
+      s = await select(menu, menu.options[0], cur.fine, `add ${pick.name}`);
       presses++;
       cur = await expect(s, "STARTER_SELECT", `add ${pick.name}`);
     }
@@ -406,8 +402,7 @@ export class Driver {
     cur = await expect(s, "CONFIRM", "submit");
     menu = await this.#game.menu();
     log.push(`confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
-    await moveTo(menu, menu.options[0], "confirm");
-    s = await this.#commit(menu, menu.options[0], cur.fine, call);
+    s = await select(menu, menu.options[0], cur.fine, "confirm");
     presses++;
     cur = await expect(s, "SAVE_SLOT/SAVE", "confirm");
 
@@ -426,8 +421,7 @@ export class Driver {
     if (slotOpt.hasData === true && !overwrite) {
       throw new Refusal("slot_occupied", `${chosenLabel} has a saved run. Free: ${free.join(", ") || "none"}. The run setup is waiting on the save-slot screen.`, leftOn);
     }
-    await moveTo(menu, slotOpt, "save slot");
-    s = await this.#commit(menu, slotOpt, cur.fine, call);
+    s = await select(menu, slotOpt, cur.fine, "save slot");
     presses++;
     // Only an occupied slot asks to overwrite; ACTION on a free one starts the run at once, and the first CONFIRM after
     // that is CheckSwitchPhase's "Will you switch Pokémon?" (#30). Here overwrite is true: occupied without it refused above.
@@ -440,8 +434,7 @@ export class Driver {
       // Yes deletes the session in that slot, then starts the run.
       menu = await this.#game.menu();
       log.push(`overwrite confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
-      await moveTo(menu, menu.options[0], "overwrite confirm");
-      s = await this.#commit(menu, menu.options[0], r.fine, call);
+      s = await select(menu, menu.options[0], r.fine, "overwrite confirm");
       presses++;
     }
 
@@ -586,100 +579,58 @@ export class Driver {
     return m.readable && (typeof m.cursor === "number" || typeof m.cursor === "string") ? m.cursor : null;
   }
 
-  /** Walk the cursor onto `target`. `null` once it is there; the unsettled result if the call's deadline ran out first. */
-  async #moveTo(menu: MenuRead, target: MenuOption, call: Call): Promise<SettleResult | null> {
-    switch (menu.family) {
-      case "option_select": {
-        const unskipped = (menu.extra.unskippedIndices as number[] | null) ?? null;
-        const j = unskipped ? unskipped.indexOf(Number(target.i)) : Number(target.i);
-        if (j < 0) throw new Refusal("option_skipped", `option ${target.label} is not selectable right now`, { options: menu.options.map(o => o.label) });
-        if ((await this.#setCursor(call, { family: "option_select", index: j })).ok) return null;
-        return this.#walk(menu, j, call, cur => (cur < j ? Button.DOWN : Button.UP));
-      }
-      case "command":
-      case "fight":
-      case "mystery_encounter": {
-        // 2×2 grids: UP/DOWN are ±2, LEFT/RIGHT ±1.
-        const t = Number(target.i);
-        return this.#walk(menu, t, call, cur => (Math.floor(cur / 2) !== Math.floor(t / 2) ? (cur < t ? Button.DOWN : Button.UP) : cur < t ? Button.RIGHT : Button.LEFT));
-      }
-      case "modifier_select": {
-        const r = await this.#setCursor(call, { family: "modifier_select", row: Number(target.row), col: Number(target.col) });
-        if (!r.ok) throw new Refusal("cursor_unreachable", `could not position the shop cursor on ${target.label}`, { got: r });
-        return null;
-      }
-      case "starter_select": {
-        const r = await this.#setCursor(call, { family: "starter_select", index: Number(target.i) });
-        if (!r.ok) throw new Refusal("cursor_unreachable", `could not position the grid cursor on ${target.label}`, { got: r });
-        return null;
-      }
-      case "learn_move": {
-        // Rows 0..4 with UP/DOWN ±1, wrapping; ACTION on a moveset row forgets it, on row 4 declines the new move.
-        const t = Number(target.i);
-        if ((await this.#setCursor(call, { family: "learn_move", row: t })).ok) return null;
-        return this.#walk(menu, t, call, cur => (cur < t ? Button.DOWN : Button.UP));
-      }
-      case "target_select": {
-        // A spread move ignores the cursor: ACTION hits every target and no direction moves it (#33).
-        if (menu.extra.isMultipleTargets === true) return null;
-        // BattlerIndex grid, nothing wraps (#40): enemies 2,3 on top, player field 0,1 below. UP/DOWN jump to the first
-        // target in the other row, LEFT/RIGHT step ±1 within a row (TargetSelectUiHandler.processInput).
-        const t = Number(target.i);
-        const enemy = (i: number) => i >= 2;
-        return this.#walk(menu, t, call, cur => (enemy(cur) !== enemy(t) ? (enemy(t) ? Button.UP : Button.DOWN) : cur < t ? Button.RIGHT : Button.LEFT));
-      }
-      case "party":
-        // The slot list is a DOWN-cycle: 0..n-1 → 6 (Cancel) → 0; the option phase is a plain list (#7 §7: presses, always).
-        if (menu.extra.optionsMode === true) return this.#walk(menu, Number(target.i), call, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
-        return this.#walk(menu, Number(target.i), call, () => Button.DOWN);
-      case "modal":
-        return null; // committed through the button action, no cursor
-      case "save_slot":
-      case "ball":
-      case "menu":
-      default:
-        return this.#walk(menu, Number(target.i), call, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
+  /**
+   * Carry out a plan on `menu`: reach `target` the way its family does, then commit. The committed settle, or the
+   * unsettled result with `committed: false` when a walk ran out of the call's deadline first. `landed` sees the species
+   * under a cursor `setCursor` put there, before the commit.
+   */
+  async #execute(menu: MenuRead, target: MenuOption, plan: Plan, preFp: string, call: Call, landed?: (species: string | undefined) => void): Promise<{ settle: SettleResult; committed: boolean }> {
+    const { reach, commit } = plan;
+    let walked: SettleResult | null = null;
+    if (reach.kind === "set") {
+      const r = await this.#setCursor(call, reach.to);
+      if (r.ok) landed?.(r.species);
+      else if (reach.miss === "refuse") throw new Refusal("cursor_unreachable", `could not position the ${reach.cursor} on ${target.label}`, { got: r });
+      else walked = await this.#walk(menu, reach.walk, call);
+    } else if (reach.kind === "walk") {
+      walked = await this.#walk(menu, reach, call);
     }
+    if (walked) return { settle: walked, committed: false };
+    if (commit.kind === "action") return { settle: await this.#pressAndSettle(Button.ACTION, preFp, call), committed: true };
+    const r = await this.#act(call, fine => this.#game.modalButton(commit.index, fine));
+    if (!r.ok && r.why === MOVED) return this.#refuseMoved(call, preFp, `the ${JSON.stringify(target.label)} button`);
+    if (!r.ok) throw new Refusal("modal_button", `button action ${commit.index} unavailable: ${r.why}`);
+    return { settle: await this.#settle(preFp, call), committed: true };
   }
 
   /**
-   * Press `step(cursor)` until the cursor reads `target`, each press settled against the call's deadline. A settled
-   * press that leaves the cursor where it was refuses at once: the same press again does the same (#34). So does a step
-   * that reads another Screen than `from`, the menu the walk was planned on: nothing is committed there. A press the game
-   * moved ahead of (§10.2) was never sent: the walk settles and steps again from wherever the cursor now is.
+   * Press the rule's step until the cursor reads `to`, each press settled against the call's deadline. `null` once it
+   * is there; the unsettled result if the deadline ran out first. A settled press that leaves the cursor where it was
+   * refuses at once: the same press again does the same (#34). So does a step that reads another Screen than `from`,
+   * the menu the walk was planned on: nothing is committed there. A press the game moved ahead of (§10.2) was never
+   * sent: the walk settles and steps again from wherever the cursor now is.
    */
-  async #walk(from: MenuRead, target: number, call: Call, step: (cursor: number) => Button): Promise<SettleResult | null> {
+  async #walk(from: MenuRead, { to, rule }: Walk, call: Call): Promise<SettleResult | null> {
     let prev: number | null = null;
     let sent = 0;
     for (let n = 0; n < NAV_CAP; n++) {
       const menu = await this.#game.menu();
       if (menu.readable && menu.screen !== from.screen) {
-        throw new Refusal("screen_changed", `The screen changed from ${from.screen} to ${menu.screen} while walking the cursor toward ${target}. ${sent} cursor press(es) were sent, nothing was committed.`, { screen: menu.screen, was: from.screen, target, presses: sent });
+        throw new Refusal("screen_changed", `The screen changed from ${from.screen} to ${menu.screen} while walking the cursor toward ${to}. ${sent} cursor press(es) were sent, nothing was committed.`, { screen: menu.screen, was: from.screen, target: to, presses: sent });
       }
       const cur = Number(menu.cursor);
-      if (cur === target) return null;
+      if (cur === to) return null;
       if (cur === prev) {
-        throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a press toward ${target}; ${target} can't be reached by moving the cursor here. ${sent} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target, presses: sent });
+        throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a ${rule} step toward ${to}; ${to} can't be reached by moving the cursor here. ${sent} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target: to, rule, presses: sent });
       }
       const pre = call.fine;
-      const pressed = await this.#tryPress(step(cur), call);
+      const pressed = await this.#tryPress(step(rule, cur, to), call);
       prev = pressed ? cur : null;
       if (pressed) sent++;
       const s = await this.#settle(pre, call);
       if (!s.settled) return s;
     }
-    throw new Refusal("cursor_unreachable", `cursor did not reach ${target} within ${NAV_CAP} presses`, { target, presses: sent });
-  }
-
-  /** The final commit: always `processInput(ACTION)`, except the modal family's own button action. */
-  async #commit(menu: MenuRead, target: MenuOption, preFp: string, call: Call): Promise<SettleResult> {
-    if (menu.family === "modal") {
-      const r = await this.#act(call, fine => this.#game.modalButton(Number(target.i), fine));
-      if (!r.ok && r.why === MOVED) return this.#refuseMoved(call, preFp, `the ${JSON.stringify(target.label)} button`);
-      if (!r.ok) throw new Refusal("modal_button", `button action ${target.i} unavailable: ${r.why}`);
-      return this.#settle(preFp, call);
-    }
-    return this.#pressAndSettle(Button.ACTION, preFp, call);
+    throw new Refusal("cursor_unreachable", `cursor did not reach ${to} within ${NAV_CAP} presses`, { target: to, presses: sent });
   }
 
   // --------------------------------------------------------- auto-advance
@@ -812,7 +763,7 @@ export class Driver {
 
   /** A handler's own message box is up and swallows presses (#44): flag it and name the way out. */
   #pendingMessage(menu: MenuRead): Record<string, unknown> {
-    return menu.extra.messagePending === true ? { message_pending: true, next: DISMISS_MESSAGE } : {};
+    return menu.messagePending ? { message_pending: true, next: DISMISS_MESSAGE } : {};
   }
 
   #menuPayload(ready: Ready, menu: MenuRead): Record<string, unknown> {
@@ -827,12 +778,13 @@ export class Driver {
       text: menu.text,
       ...this.#pendingMessage(menu),
       // While a handler's own message waits, CANCEL dismisses it exactly as ACTION does (PartyUiHandler.processInput).
-      cancel_effect: menu.extra.messagePending === true ? "consents" : ladder.status === "ladder" ? ladder.cancelEffect : "unknown",
+      cancel_effect: menu.messagePending ? "consents" : ladder.status === "ladder" ? ladder.cancelEffect : "unknown",
       screen_class: ladder.status === "ladder" ? ladder.class : null,
       ladder_note: ladder.status === "ladder" ? undefined : ladder.message,
       tutorial_active: ready.tutorialActive,
       phase: ready.phaseName,
-      extra: menu.extra,
+      // The reader's `extra` as read_menu has always shown it, the pending message included.
+      extra: menu.messagePending ? { ...menu.extra, messagePending: true } : menu.extra,
     };
   }
 }

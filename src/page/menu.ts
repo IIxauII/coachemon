@@ -19,6 +19,8 @@ export type MenuResult =
       options: MenuOption[];
       cursor: number | string | null;
       text: string | null;
+      /** A handler's own message box waits for ACTION and swallows every cursor press (#44). */
+      messagePending: boolean;
       extra: Record<string, unknown>;
       disc: Discriminators;
     }
@@ -41,7 +43,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
   const h = ui.handlers[mode];
   if (!h) return { readable: false, why: "no-handler", mode };
   const disc = L.disc(h);
-  const out: Extract<MenuResult, { handler: string }> = { mode, handler: h.constructor.name, family: null, options: [], cursor: null, readable: false, text: null, extra: {}, disc };
+  const out: Extract<MenuResult, { handler: string }> = { mode, handler: h.constructor.name, family: null, options: [], cursor: null, readable: false, text: null, messagePending: false, extra: {}, disc };
   const mh = ui.handlers[0];
   out.text = __try(() => (mh && mh.message && typeof mh.message.text === "string") ? mh.message.text : null);
   const opt = (i: number | string, label: string | null, more?: Record<string, unknown>): MenuOption => Object.assign({ i, label }, more || {});
@@ -139,7 +141,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         // ACTION/CANCEL until it is dismissed, so no option can be reached. Its text lives on h.message, not MESSAGE's.
         out.options = [];
         out.text = __try(() => __txt(h.message));
-        out.extra.messagePending = true;
+        out.messagePending = true;
         out.cursor = disc.optionsMode ? h.optionsCursor : h.cursor;
       } else if (disc.optionsMode) {
         // Sort by y ASCENDING: verb first, Cancel last (#6 corrected #4). Labels are BBCode.
@@ -156,7 +158,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         if (__try(() => h.isItemManageMode()) === true) out.options.push(opt(7, __try(() => __texts(h.partyDiscardModeButton || h.partyTransferModeButton)[0]) || "Toggle", { synthetic: true }));
         out.cursor = h.cursor;
       }
-      out.readable = out.options.length > 0 || out.extra.messagePending === true;
+      out.readable = out.options.length > 0 || out.messagePending;
     } else if (mode === 10) {
       out.family = "starter_select";
       const gd = scene.gameData;
