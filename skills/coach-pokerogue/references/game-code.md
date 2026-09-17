@@ -35,7 +35,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Trainers and fixed battles | §11 trainer parties, §12 fixed-battle calendar, heals, luck |
 | Biomes | §10 |
 | Mystery Encounters | §13 |
-| Rewards and shop | §15 rewards by holder, §16 TMs and double-battle odds, §19 reward roll and reroll |
+| Rewards and shop | §15 rewards by holder, §16 TMs, double-battle odds and status moves against the roster ahead, §19 reward roll and reroll |
 | Catching | §20 |
 | Team audit | §17 |
 | HUD API built on the above | Recommended API for the HUD |
@@ -1477,7 +1477,40 @@ battles, since whether a wave is one is itself a roll. At base odds that is ~12 
 **Spread damage.** `getAttackDamage` multiplies by 0.75 only when a move has more than one target
 (`src/field/pokemon.ts:3654-3656`), so a spread move loses nothing in a single battle; the bonus is only ever an upside.
 
-**Unmeasured.** The size of the spread bonus itself (a first cut).
+**Status moves against the roster ahead (#122).** A learned move is kept for the run, so both the learn card and the
+TM advice hand `learnAdvice` the same foes: the next big fight's, from `49-ahead.js` (`learnRoster`), which reads a
+roster only within 5 waves. With none, nothing below applies. Only an inflicted status and a disrupting tag are scaled,
+each decided from what the preview hands over per foe (types, ability, passive, moveset). Paths relative to `src/`:
+
+- **Can a status move reach the foe at all.** Status moves ignore the type chart unless they carry
+  `RespectAttackTypeImmunityAttr` (`field/pokemon.ts:2496-2500`), which only Thunder Wave has (`data/moves/move.ts:9726`):
+  it misses Ground types. Powder moves fail on Grass types (`Move.isTypeImmune`, `data/moves/move.ts:463-467`;
+  `field/pokemon.ts:2502-2504`) and on Overcoat (`data/abilities/init-abilities.ts:981-986`). A Prankster user's status
+  moves fail on Dark types (`data/moves/move.ts:469-472`). `TypeImmunityAbAttr.canApply` checks no move category
+  (`data/abilities/ab-attrs.ts:401-407`), so Volt Absorb / Lightning Rod / Motor Drive take Thunder Wave, Flash Fire /
+  Well-Baked Body Will-O-Wisp, Sap Sipper the Grass powders; Levitate only stops attacks (`ab-attrs.ts:431`). Magic
+  Bounce reflects every `REFLECTABLE` move (`init-abilities.ts:1074-1077`, `phases/move-effect-phase.ts:998-1004`), and
+  Good as Gold blocks every status move not aimed at a side (`init-abilities.ts:1973-1983`). Mold Breaker ignores all
+  of these but the unsuppressable Comatose and Shields Down (`init-abilities.ts:1509,1373`).
+- **Inflicted status** (`Pokemon.canSetStatus`, `field/pokemon.ts:4764`): Poison and Toxic miss Poison and Steel types
+  unless the user has Corrosion (`:4792-4815`, `init-abilities.ts:1497-1503`), paralysis Electric, freeze Ice, burn
+  Fire; sleep has no type immunity. Then `StatusEffectImmunityAbAttr` (`immuneEffects`, empty = every status,
+  `ab-attrs.ts:3206-3222`): Limber paralysis, Insomnia and Vital Spirit sleep, Immunity poison, Magma Armor freeze, Water
+  Veil / Water Bubble / Thermal Exchange burn, Purifying Salt and Comatose all; Leaf Guard (sun) and Shields Down (form)
+  are left out. The side-wide veils cover the foe itself (`field/pokemon.ts:4846-4858`): Pastel Veil poison, Sweet Veil
+  sleep, Flower Veil everything on a Grass type. Scaled by the share of the roster it lands on (a boss weighs one per
+  health bar), keeping 0.3 of its value into a roster that takes none of it.
+- **Disruption** (`data/battler-tags.ts`): Taunt stops every status move (`TauntTag.isMoveRestricted`, `:3384`); Heal
+  Block stops `healBlockedMoves` (`:2965`, `data/moves/invalid-moves.ts:276`: recovery and drain) and cancels every heal
+  in `PokemonHealPhase` (`phases/pokemon-heal-phase.ts:69-74`), Leftovers included, which the preview can't see; Encore
+  needs a last move to lock (`EncoreTag.canAdd`, `:1325`), and is worth most locking a foe into a status move. Oblivious
+  blocks only Taunt (`init-abilities.ts:276`), Aroma Veil Taunt, Encore, Heal Block, Disable and Torment
+  (`:1126-1133`). A disrupting move with something to take away is worth ×1.4 plus 0.4 × the share of the roster it
+  bites on, ×0.3 with nothing; Disable and Torment only by the share they land on. The preview lists a foe's
+  `statusMoves` and `healMoves` (recovery attrs and `HitHealAttr`) for this.
+- A roster whose foes aren't `exact` (a generic trainer's replay) moves a score half as far.
+
+**Unmeasured.** The size of the spread bonus itself (a first cut), and every roster multiplier above.
 
 ---
 

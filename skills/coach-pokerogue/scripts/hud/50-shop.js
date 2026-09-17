@@ -205,7 +205,8 @@ const shopModel = (s, h) => {
       else {
         // The learn card's own decision on every member that can learn it: best recipient wins. A TM is kept for the
         // run, so a spread or ally move is judged by the share of double battles ahead, not by the wave just won.
-        const advice = tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party });
+        // Disruption and inflicted status are weighed against the next big fight's roster, as on the learn card.
+        const advice = tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party, roster: learnRoster(ahead) });
         const b = advice.best;
         extra.users = users.map(p => p.name);
         extra.tm = advice.take ? "take" : advice.take === false ? "skip" : "maybe";

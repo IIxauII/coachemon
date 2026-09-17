@@ -285,7 +285,10 @@ export const HUD_DEPS = {
    * indexes tables with, `BattlerTagType` as the strings it keys `TAG_VALUE` by —
    * so a reordered member silently mis-scores every move that carries it. Fixed
    * damage is priced back into power through the base damage formula, and Present
-   * at its expected power.
+   * at its expected power. With a roster (#122) it re-implements who a status move
+   * can land on and what a disrupting tag takes away: the status and tag immunities
+   * of the abilities (read off `initAbilities` by name), the type checks, powder and
+   * Thunder Wave's type immunity, and the moves Taunt, Heal Block and Encore act on.
    */
   "40-learn.js": [
     `${P}#Pokemon.getBaseDamage`,
@@ -296,6 +299,14 @@ export const HUD_DEPS = {
     `${M}#AddBattlerTagAttr.constructor`,
     `${M}#StatStageChangeAttr.constructor`,
     `${M}#MultiHitAttr.constructor`,
+    `${P}#Pokemon.canSetStatus`,
+    `${P}#Pokemon.getMoveEffectiveness`,
+    `${M}#Move.isTypeImmune`,
+    `src/data/abilities/init-abilities.ts#initAbilities`,
+    `src/data/battler-tags.ts#TauntTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#HealBlockTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#EncoreTag.canAdd`,
+    `src/data/moves/invalid-moves.ts#healBlockedMoves`,
     `src/enums/move-target.ts#MoveTarget`,
     `src/enums/status-effect.ts#StatusEffect`,
     `src/enums/battler-tag-type.ts#BattlerTagType`,

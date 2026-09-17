@@ -94,7 +94,8 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
   };
   const drop = o => { try { o?.destroy?.(); } catch {} };
 
-  const foeOf = p => ({
+  const foeOf = p => foeData(p, (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getMove())).filter(Boolean));
+  const foeData = (p, moves) => ({
     name: p.name ?? tryDo(() => p.species.name, "?"),
     icon: iconOf(p),
     level: p.level ?? null,
@@ -108,9 +109,13 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
     shiny: !!p.shiny,
     moves: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getName())).filter(Boolean),
     // The types it can actually attack with: 49-ahead reads these to judge what the party is walking into.
-    moveTypes: [...new Set((p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getMove()))
-      .filter(mv => mv && mv.category !== MoveCategory.STATUS && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean))],
+    moveTypes: [...new Set(moves.filter(mv => mv.category !== MoveCategory.STATUS && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean))],
+    // What a disrupting move would take away from it (40-learn's roster fit): the status moves Taunt stops and
+    // Encore locks it into, and the heals Heal Block stops.
+    statusMoves: moves.filter(mv => mv.category === MoveCategory.STATUS).map(moveLabel),
+    healMoves: moves.filter(blockedByHealBlock).map(moveLabel),
   });
+  const moveLabel = mv => String(mv.name ?? "?").replace(/ \(N\)$/, "");
 
   const trainerName = t => tryDo(() => t.getName(TrainerSlot.NONE, true)) ?? tryDo(() => t.name) ?? "trainer";
   const meName = enc => tryDo(() => enc.localizationKey) ?? tryDo(() => enc.constructor?.name) ?? null;

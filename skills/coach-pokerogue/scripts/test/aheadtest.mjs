@@ -140,7 +140,7 @@ const mount = opts => {
   globalThis.setInterval = () => 0;
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__ah = { aheadModel, partyLuck, drawAhead, aheadSummary };\n})();\n"));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__ah = { aheadModel, partyLuck, drawAhead, aheadSummary, learnRoster };\n})();\n"));
   return { scene, ah: globalThis.__ah };
 };
 
@@ -161,6 +161,10 @@ const card = (ah, m, v = "full") => { globalThis.localStorage = { getItem: () =>
   const m2 = ah2.aheadModel(s2);
   console.log(`== schedule from wave 186 ${JSON.stringify(m2.schedule)}`);
   assert.deepEqual(m2.schedule.map(f => [f.wave, f.kind]), [[188, "fixed"], [190, "fixed"], [195, "fixed"], [200, "final"]]);
+  // What a move learned now is judged against (#122): the named fight's foes, with what a disrupting move takes away.
+  const roster = ah2.learnRoster(m2);
+  assert.deepEqual([roster.wave, roster.exact, roster.foes.map(f => f.name)], [188, true, ["Garchomp", "Lucario"]]);
+  assert.deepEqual([roster.foes[0].statusMoves, roster.foes[0].healMoves], [[], []]);
   // The gym rule follows the run's own gym offset.
   const { scene: s3, ah: ah3 } = mount({ wave: 11, party: team(), offsetGym: true });
   assert.equal(ah3.aheadModel(s3).schedule.find(f => f.kind === "gym").wave, 30);
@@ -280,6 +284,7 @@ const card = (ah, m, v = "full") => { globalThis.localStorage = { getItem: () =>
   assert.equal(far.next.trainer, null, "ten waves out, no roster is read");
   assert.equal(far.readiness, null);
   assert.deepEqual(far.next.foes, []);
+  assert.equal(ah2.learnRoster(far), null, "no roster to judge a learned move against either");
   console.log(`== far fight ${JSON.stringify({ wave: far.next.wave, kind: far.next.kind, foes: far.next.foes, readiness: far.readiness })}`);
 }
 

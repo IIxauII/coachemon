@@ -20,7 +20,7 @@ const learnMoveById = (party, id) => {
   try { return pm ? new pm.constructor(id).getMove() : null; } catch { return null; }
 };
 
-const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFixed } = (() => {
+const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFixed, blockedByHealBlock } = (() => {
   const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
   const attrsOf = (mv, name) => (mv.attrs || []).filter(a => a.constructor?.name === name);
   const isDamaging = mv => !!mv && mv.category !== MoveCategory.STATUS && (mv.power > 0 || mv.power === -1);
@@ -183,7 +183,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
   // mainline theory: recovery and sleep are worth a lot, a foe's −1 Atk very little.
   const STATUS_VALUE = [0, 30, 45, 45, 70, 55, 45]; // StatusEffect NONE, POISON, TOXIC, PARALYSIS, SLEEP, FREEZE, BURN
   const TAG_VALUE = {
-    // Shuts a foe's plan down. Worth most against the bosses that heal or set up — which the learn card can't see.
+    // Shuts a foe's plan down. Worth most against the bosses that heal or set up: the roster scales these.
     TAUNT: 30, ENCORE: 30, DISABLED: 25, HEAL_BLOCK: 25, TORMENT: 20, IMPRISON: 15,
     // Chip, drain or a clock.
     SEEDED: 35, SALT_CURED: 30, PERISH_SONG: 25, TRAPPED: 15, DROWSY: 45,
@@ -210,6 +210,102 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
 
   const doublesNote = share => `${Math.round(share * 100)}% doubles ahead`;
 
+  // ---- The roster a status move will face (#122)
+  // A level-up prompt has no opponent, and a TM is kept for the run, so both cards hand in the same foes: the next
+  // big fight's, once 49-ahead reads it (`learnRoster`). Only two classes of status move depend on who is across, and
+  // only they are scaled: an inflicted status, which is dead into a foe immune to it, and disruption, which is worth a
+  // lot against a foe that heals or sets up and little against one that just attacks. With no roster both are left
+  // as they are, so the two cards can't disagree. Every rule below is `Pokemon.canSetStatus`, the ability attrs and
+  // the battler tags as the pinned source has them (references/game-code.md §16), decided from what the preview hands
+  // over: a foe's types, ability, passive and moveset. Leaf Guard (sun), Shields Down (form) and held items (Leftovers
+  // under Heal Block) are out of its reach.
+  const MOLD_BREAKERS = ["Mold Breaker", "Teravolt", "Turboblaze"];
+  const UNSUPPRESSABLE = new Set(["Comatose", "Shields Down"]);
+  const SIDE_TARGETS = new Set([MoveTarget.USER_SIDE, MoveTarget.ENEMY_SIDE, MoveTarget.BOTH_SIDES]);
+  // StatusEffectImmunityAbAttr / UserFieldStatusEffectImmunityAbAttr: the effects each ability blocks, [] for all.
+  // A foe's own side-wide veil covers the foe itself. Flower Veil only covers Grass types.
+  const POISONS = [StatusEffect.POISON, StatusEffect.TOXIC];
+  const STATUS_ABILITIES = {
+    Limber: [StatusEffect.PARALYSIS], Insomnia: [StatusEffect.SLEEP], "Vital Spirit": [StatusEffect.SLEEP], "Sweet Veil": [StatusEffect.SLEEP],
+    Immunity: POISONS, "Pastel Veil": POISONS, "Magma Armor": [StatusEffect.FREEZE],
+    "Water Veil": [StatusEffect.BURN], "Water Bubble": [StatusEffect.BURN], "Thermal Exchange": [StatusEffect.BURN],
+    "Purifying Salt": [], Comatose: [], "Flower Veil": [],
+  };
+  const STATUS_TYPES = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"],
+    [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
+  // BattlerTagImmunityAbAttr: Oblivious stops only Taunt; Aroma Veil (side-wide) every disrupting tag.
+  const TAG_ABILITIES = { Oblivious: ["TAUNT"], "Aroma Veil": ["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"] };
+  // Disruption that needs something to take away: Taunt stops every status move, Encore is worth most locking a foe
+  // into one, Heal Block stops recovery and drain (the preview lists both as `healMoves`).
+  const DISRUPT_NEEDS = { TAUNT: "statusMoves", ENCORE: "statusMoves", HEAL_BLOCK: "healMoves" };
+  const DISRUPT_TAGS = new Set(["TAUNT", "ENCORE", "HEAL_BLOCK", "DISABLED", "TORMENT"]);
+  // First cuts. An inflicted status keeps STATUS_FLOOR of its value into a roster that can't take it at all (the
+  // move is still kept past that fight). Disruption with a target in the roster is worth DISRUPT_HIT plus
+  // DISRUPT_SPREAD × the share of the roster it bites on, and DISRUPT_NONE with none. A roster the preview isn't
+  // sure of (a generic trainer's replay) moves a score half as far.
+  const STATUS_FLOOR = 0.3, DISRUPT_HIT = 1.4, DISRUPT_SPREAD = 0.4, DISRUPT_NONE = 0.3, UNSURE = 0.5;
+  // Moves Heal Block stops, by attr: recovery (HealAttr and its kin, Rest, Wish, Swallow) and drain (HitHealAttr).
+  const HEAL_BLOCKED = ["HealAttr", "RestAttr", "WeatherHealAttr", "PlantHealAttr", "SandHealAttr", "BoostHealAttr",
+    "HealOnAllyAttr", "SwallowHealAttr", "WishAttr", "HitHealAttr"];
+  const blockedByHealBlock = mv => HEAL_BLOCKED.some(n => attrsOf(mv, n).length > 0);
+
+  // The foe's abilities that still apply: Mold Breaker and its kin ignore every one but the unsuppressable.
+  const foeAbilities = (pk, foe) => {
+    const all = [foe.ability, foe.passive].filter(Boolean);
+    return abilitiesOf(pk).some(a => MOLD_BREAKERS.includes(a)) ? all.filter(a => UNSUPPRESSABLE.has(a)) : all;
+  };
+  // What stops any status move from `pk` reaching `foe` before its effect is tried.
+  const statusMoveBlocked = (pk, mv, foe) => {
+    const ab = foeAbilities(pk, foe);
+    const types = foe.types ?? [];
+    const type = TYPES[mv.type];
+    if (ab.includes("Good as Gold") && !SIDE_TARGETS.has(mv.moveTarget)) return true;
+    if (ab.includes("Magic Bounce") && moveHasFlag(mv, MoveFlags.REFLECTABLE)) return true;
+    if (abilitiesOf(pk).includes("Prankster") && types.includes("Dark")) return true;
+    // Absorbing abilities check no move category (Volt Absorb takes Thunder Wave); Levitate only stops attacks.
+    if (ab.some(a => a !== "Levitate" && ABILITY_IMMUNE[a] === type)) return true;
+    if (moveHasFlag(mv, MoveFlags.POWDER_MOVE) && (types.includes("Grass") || ab.includes("Overcoat"))) return true;
+    // Thunder Wave alone carries RespectAttackTypeImmunityAttr: Ground takes nothing from it.
+    if (attrsOf(mv, "RespectAttackTypeImmunityAttr").length && types.some(d => vs(type, d) === 0)) return true;
+    return false;
+  };
+  const statusLands = (pk, mv, effect, foe) => {
+    if (statusMoveBlocked(pk, mv, foe)) return false;
+    const types = foe.types ?? [];
+    const corrosion = POISONS.includes(effect) && abilitiesOf(pk).includes("Corrosion");
+    if (!corrosion && (STATUS_TYPES[effect] ?? []).some(t => types.includes(t))) return false;
+    return !foeAbilities(pk, foe).some(a => {
+      const blocks = STATUS_ABILITIES[a];
+      if (!blocks || (a === "Flower Veil" && !types.includes("Grass"))) return false;
+      return !blocks.length || blocks.includes(effect);
+    });
+  };
+  const tagLands = (pk, mv, tag, foe) => !statusMoveBlocked(pk, mv, foe)
+    && !foeAbilities(pk, foe).some(a => (TAG_ABILITIES[a] ?? []).includes(tag));
+
+  // A boss counts once per health bar: the foe the fight is decided by weighs the most.
+  const weightOf = foe => Math.max(1, foe.segments ?? 0);
+  const shareOf = (foes, ok) => foes.reduce((t, f) => t + (ok(f) ? weightOf(f) : 0), 0) / foes.reduce((t, f) => t + weightOf(f), 0);
+  const unsure = (roster, mult) => (roster.exact ? mult : 1 + (mult - 1) * UNSURE);
+  const landNote = (n, roster) => (n === roster.foes.length ? null : n ? `lands on ${n} of ${roster.foes.length} at W${roster.wave}` : `can't land at W${roster.wave}`);
+  // How far the roster moves an inflicted status (its StatusEffect) or a disrupting tag: a multiplier and a note.
+  const statusFit = (pk, mv, effect, roster) => {
+    const lands = f => statusLands(pk, mv, effect, f);
+    return { mult: unsure(roster, STATUS_FLOOR + (1 - STATUS_FLOOR) * shareOf(roster.foes, lands)), note: landNote(roster.foes.filter(lands).length, roster) };
+  };
+  const disruptFit = (pk, mv, tag, roster) => {
+    const foes = roster.foes;
+    const need = DISRUPT_NEEDS[tag];
+    const lands = f => tagLands(pk, mv, tag, f);
+    if (!need) return { mult: unsure(roster, STATUS_FLOOR + (1 - STATUS_FLOOR) * shareOf(foes, lands)), note: landNote(foes.filter(lands).length, roster) };
+    const bites = f => lands(f) && (f[need] ?? []).length > 0;
+    const share = shareOf(foes, bites);
+    if (!share) return { mult: unsure(roster, DISRUPT_NONE), note: `nothing to stop at W${roster.wave}` };
+    // Named by the foe it matters most against: the most health bars, then the first.
+    const top = foes.filter(bites).sort((a, b) => weightOf(b) - weightOf(a))[0];
+    return { mult: unsure(roster, DISRUPT_HIT + DISRUPT_SPREAD * share), note: `vs ${top.name}'s ${top[need][0]} at W${roster.wave}` };
+  };
+
   // What a status move is worth, and why. null value when nothing here recognises it: the card says "your call"
   // rather than inventing a number, and the slot stays off the forget list.
   const statusScore = (pk, mv, others, double, ctx) => {
@@ -226,13 +322,20 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
       const ratio = a.healRatio ?? 0.5;
       add(Math.round(120 * ratio), `heal ${Math.round(ratio * 100)}%`);
     }
+    // What the roster says about each part, applied once the value is known to be scorable.
+    const roster = ctx.roster?.foes?.length ? ctx.roster : null;
+    const fits = [];
     for (const a of attrsOf(mv, "StatusEffectAttr")) {
       if (selfSide(mv, a)) continue;
-      add(STATUS_VALUE[a.effect] ?? 20, STATUS_FRAMES[a.effect] ?? "status");
+      const n = STATUS_VALUE[a.effect] ?? 20;
+      add(n, STATUS_FRAMES[a.effect] ?? "status");
+      if (roster) fits.push([n, statusFit(pk, mv, a.effect, roster)]);
     }
     for (const a of attrsOf(mv, "AddBattlerTagAttr")) {
       const n = TAG_VALUE[a.tagType];
-      if (n != null) add(n, String(a.tagType).toLowerCase().replace(/_/g, " "));
+      if (n == null) continue;
+      add(n, String(a.tagType).toLowerCase().replace(/_/g, " "));
+      if (roster && DISRUPT_TAGS.has(a.tagType) && !selfSide(mv, a)) fits.push([n, disruptFit(pk, mv, a.tagType, roster)]);
     }
     const setup = setupOf(pk, mv, others);
     if (setup) add(setup.value, setup.text);
@@ -245,6 +348,10 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
       add(n, `foe ${(a.stats ?? []).map(i => STAT_NAMES[i]).join("/")} −${-(a.stages ?? 0)}`);
     }
     if (!known) return { value: null, notes: [], status: true, se: [], neutral: [], teamSe: [], drawbacks: [] };
+    for (const [n, fit] of fits) {
+      value += n * (fit.mult - 1);
+      if (fit.note) notes.push(fit.note);
+    }
 
     // The same trick twice is worth less the second time, and a moveset that is mostly status has no room left.
     if (isRecovery(mv) && others.some(isRecovery)) { value *= 0.5; notes.push("already has recovery"); }
@@ -419,11 +526,11 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
   // What the learn scorer needs about a mon and its team, worked out once per mon: its moves, the types its teammates
   // already hit super-effectively and attack with, and the moveset prior's inputs — the species' competitive sets and
   // what this mon already knows, which is how "the role it is already playing" is worked out.
-  const scoringContext = (pk, double, party) => {
+  const scoringContext = (pk, double, party, roster = null) => {
     const current = movesOf(pk);
     const mates = party.filter(p => p && p !== pk);
     const teamTypes = new Set(mates.flatMap(movesOf).filter(isDamaging).map(m => TYPES[m.type]));
-    const ctx = { party, teamSe: seTypes(mates.flatMap(movesOf)), prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName) };
+    const ctx = { party, teamSe: seTypes(mates.flatMap(movesOf)), prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName), roster };
     return { current, mates, teamTypes, ctx };
   };
   const info = (pk, x, score) => ({ name: x.name, type: effectiveType(pk, x).type ?? "Normal", cat: ["physical", "special", "status"][x.category], ...score });
@@ -443,9 +550,10 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     const sc = scoringContext(pk, double, party);
     return { moves: scoreSlots(pk, double, sc).map(({ rest, ...m }) => m), atk: Math.round(atkOf(pk)), spa: Math.round(spaOf(pk)) };
   };
-  const learnPlan = (pk, mv, { double: flag = false, party = [pk] } = {}) => {
+  // `roster`: the foes the move will face (49-ahead's `learnRoster`), or null to judge it blind.
+  const learnPlan = (pk, mv, { double: flag = false, party = [pk], roster = null } = {}) => {
     const double = Math.min(1, Math.max(0, Number(flag) || 0));
-    const sc = scoringContext(pk, double, party);
+    const sc = scoringContext(pk, double, party, roster);
     const { current, ctx } = sc;
     const moves = scoreSlots(pk, double, sc).map(({ rest, ...m }) => ({ ...m, replacement: moveScore(pk, mv, rest, double, ctx).value }));
     const gainOf = m => (m.replacement ?? 0) - m.value;
@@ -496,11 +604,11 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     }[kind];
     return { learn, kind, slot, forget: slot >= 0 ? moves[slot].name : null, against: compare >= 0 ? moves[compare].name : null, gain: plan.gain, reason, setup, plan };
   };
-  return { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFixed };
+  return { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFixed, blockedByHealBlock };
 })();
 
-const learnModel = ({ pk, mv, double, party }) => {
-  const { plan } = learnAdvice(pk, mv, { double, party: party?.length ? party : [pk] });
+const learnModel = ({ pk, mv, double, party, roster = null }) => {
+  const { plan } = learnAdvice(pk, mv, { double, party: party?.length ? party : [pk], roster });
   const { moves, incoming, forget, compare, team } = plan;
   const verdict = {
     free: ["Learns it — free slot", "#6d6"],

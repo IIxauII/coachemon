@@ -444,7 +444,10 @@ const tick = () => {
     const handler = s.ui.getHandler();
     let m;
     if (learn) {
-      m = learnModel(learn);
+      // The same next-big-fight roster the rewards card judges a TM against, so the two cards weigh a move alike.
+      let roster = null;
+      try { roster = learnRoster(aheadModel(s)); } catch {}
+      m = learnModel({ ...learn, roster });
     } else if (s.ui.getMode() === UiMode.MODIFIER_SELECT && handler?.options?.length) {
       m = shopModel(s, handler);
     } else if (biomeScreen(s, handler)) {
