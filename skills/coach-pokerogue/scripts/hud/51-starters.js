@@ -324,3 +324,10 @@ const viewed = (h, m) => {
   return { name: v.name, icon: v.icon, cost: v.cost, value: Math.round(v.value), rank, of: m.values.size, inPick,
     why: v.why.filter(r => Math.abs(r.w) >= 1.5).slice(0, 3).map(r => (r.w < 0 ? `but ${r.text}` : r.text)) };
 };
+
+// ---- How the card and its one-line summary word a proposal.
+export const ptsText = x => `${Math.round(x * 100) / 100}`;
+
+// `best: Gible (carry) + Magikarp + Pikachu · 10/10 pts; without Gible: …`, for the watcher and the battle read.
+export const startersSummary = m =>
+  m.picks.map(t => `${t.label}: ${t.members.map(x => `${x.name}${x.role === "carry" ? " (carry)" : ""}`).join(" + ")} · ${ptsText(t.cost)}/${m.limit} pts${t.weak.length ? ` · weak ${t.weak.join("/")}` : ""}`).join("; ") || null;

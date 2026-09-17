@@ -386,3 +386,11 @@ const { encounterModel } = (() => {
 
   return { encounterModel };
 })();
+
+// `Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave`, for the watcher and the battle read.
+const encounterSummary = m => {
+  const pick = m.pick >= 0 ? m.options[m.pick] : null;
+  const avoid = m.options.filter(o => o.verdict === "avoid").map(o => o.label);
+  const head = pick ? `take ${pick.label}${pick.outcome ? ` — ${pick.outcome}` : ""}` : m.known ? "your call" : "not judged";
+  return `${m.name}: ${head}${avoid.length ? ` · avoid ${avoid.join(", ")}` : ""}`;
+};

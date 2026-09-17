@@ -598,3 +598,9 @@ const learnModel = ({ pk, mv, double, party, roster = null }) => {
     decision: plan.kind, gain: plan.gain, atk: plan.atk, spa: plan.spa, team,
   };
 };
+
+// `Learn → forget Tackle · ⚠ loses only Dark move`, for the watcher and the battle read.
+const learnSummary = m => {
+  const only = m.team?.onlyType && m.forget >= 0 ? ` · ⚠ loses only ${m.team.onlyType} move` : "";
+  return `${m.verdict[0]}${only}`;
+};

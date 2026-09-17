@@ -15,7 +15,7 @@
 ✓ 2 mons hit SE
 👑 W40 boss: Gurdurr 100%
 → ★Laboratory (1/3) · Factory
-summary {"kind":"biome","wave":30,"verdict":null,"field":null,"danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"next":null,"ahead":null,"audit":null,"biome":"Swamp 85 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · Construction Site 69"}
+summary {"kind":"biome","wave":30,"verdict":null,"field":null,"danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":"Swamp 85 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · Construction Site 69","fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
 == swamp vs construction site (mini)
 🗺 Next biome from Tall Grass + {Expand} × {Close}
 ★ Swamp 85 {offense 87 · defense -5 · catches 100 · big fight 100} — 2 mons hit SE

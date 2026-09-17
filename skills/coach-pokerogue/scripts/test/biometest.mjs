@@ -122,7 +122,7 @@ const mount = ({ view = "full", labels = ["Swamp", "Construction Site"], party =
   // The chunk scan finds nothing under node: hand over what it would have found, and draw the card again.
   const { setGameTables, spawnsFor, formsFor } = globalThis.__hud["47-biome"];
   setGameTables(t);
-  globalThis.__hud["90-render"].tick();
+  globalThis.__hud["98-tick"].tick();
   globalThis.__bm = { spawnsFor, formsFor };
   return { el, scene, handler, model: () => globalThis.__coachHud.last() };
 };

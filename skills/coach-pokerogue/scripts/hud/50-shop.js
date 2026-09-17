@@ -69,7 +69,7 @@ const shopTier = t => {
 // Forms that need the key item: mega forms for the Mega Bracelet, gigantamax for the Dynamax Band.
 const hasFormKey = (p, re) => [p.species, p.fusionSpecies].some(sp => (sp?.forms ?? []).some(f => re.test(f?.formKey ?? "")));
 
-const shopModel = (s, h) => {
+const rewardsModel = (s, h) => {
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
   // The reward before a big fight is the last chance to patch the team up. What counts as one comes from 49-ahead's
@@ -273,7 +273,7 @@ const shopModel = (s, h) => {
     : null;
   // How many shop items the money covers at all: often none early on, when the shop is irrelevant.
   const affordable = shop.filter(i => i.cost <= s.money).length;
-  return { kind: "shop", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
+  return { kind: "rewards", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
     affordable, ahead, audit: teamAudit(s, ahead) };
 };
 
@@ -296,4 +296,12 @@ const rerollAdvice = (preview, judge, now, money, afterBuys) => {
     return { lock: r.lock, cost: r.cost, offers, best, gain: Math.round(gain * 10) / 10, verdict };
   });
   return { n: preview.n, canLock: preview.canLock, locked: preview.locked, missed: preview.missed, rolls };
+};
+
+// `take Leftovers → Garchomp · buy Super Potion · reroll $500 → …`, for the watcher and the battle read.
+const rewardsSummary = m => {
+  const p = m.pick >= 0 ? m.free[m.pick] : null;
+  const take = p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null;
+  const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
+  return [take, buys, rerollSummary(m)].filter(Boolean).join(" · ") || null;
 };

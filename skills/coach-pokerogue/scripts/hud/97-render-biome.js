@@ -3,12 +3,14 @@
 // Mini: one line per option — `★ Swamp 72 — Garchomp resists, 3 mons hit SE`. Full adds the encounter type mix, the
 // species met most, the trainers met, every reason (the gym leader ahead among them), the best catch, the wild boss on
 // the tenth wave and where the biome leads next.
-const drawBiome = m => {
+import { FS, badge, bar, dim, h, line, mon, tab, view } from "./90-render.js";
+
+export const drawBiome = m => {
   const pick = m.pick >= 0 ? m.options[m.pick] : null;
-  if (view === "closed") return [tab("🗺", pick ? h("span", {}, pick.label) : null)];
+  if (view() === "closed") return [tab("🗺", pick ? h("span", {}, pick.label) : null)];
   const header = bar("🗺", "Next biome", m.from ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, `from ${m.from}`) : null);
   // Under Hardcore or a no-heal Limited Support the fainted don't come back at the X1 heal: say who the card left out.
-  const fainted = m.fainted && view === "full"
+  const fainted = m.fainted && view() === "full"
     ? line("✚", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, `judged without ${m.fainted} fainted — no revive at the next heal`)) : null;
   if (!m.options.some(o => o.score != null)) {
     return [header, ...m.options.map(o => line("·", "#9aa", h("span", {}, o.label))),
@@ -23,7 +25,7 @@ const drawBiome = m => {
     const name = h("span", { color, fontWeight: "bold", marginRight: "3px" }, o.label);
     const score = h("span", { color, marginRight: "3px" }, `${o.score}`);
     score.title = `offense ${o.offense} · defense ${o.defense} · catches ${o.opportunity} · big fight ${o.bossFit}`;
-    if (view === "mini") {
+    if (view() === "mini") {
       out.push(line(MARK[o.verdict], color, name, score, h("span", dim, `— ${o.reasons.filter(r => !r.catch).slice(0, 2).map(r => r.text).join(", ")}`)));
       continue;
     }
@@ -50,13 +52,4 @@ const drawBiome = m => {
     }
   }
   return out;
-};
-
-// `Swamp 72 pick — Garchomp resists, 3 mons hit SE · Construction Site 55`.
-// `base` is `hudSummary`'s shared shape: spread it rather than rebuilding it, so a field added there (`next`) can't
-// go missing from this one summary.
-const biomeSummary = (m, base) => {
-  const text = m.options.map(o => (o.score == null ? o.label
-    : o.verdict === "pick" ? `${o.label} ${o.score} pick — ${o.reasons.slice(0, 3).map(r => r.text).join(", ")}` : `${o.label} ${o.score}`)).join(" · ");
-  return { ...base, biome: text };
 };

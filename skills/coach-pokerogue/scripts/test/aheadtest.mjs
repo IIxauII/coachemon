@@ -142,7 +142,7 @@ const mount = opts => {
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   const { aheadModel, partyLuck, learnRoster } = globalThis.__hud["49-ahead"];
-  const { drawAhead, aheadSummary } = globalThis.__hud["98-render-ahead"];
+  const { drawAhead } = globalThis.__hud["95-render-ahead"], { aheadSummary } = globalThis.__hud["49-ahead"];
   return { scene, ah: { aheadModel, partyLuck, drawAhead, aheadSummary, learnRoster } };
 };
 

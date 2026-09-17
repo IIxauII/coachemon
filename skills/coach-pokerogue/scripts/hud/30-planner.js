@@ -1458,13 +1458,9 @@ const duel = (s, me, foe, partnered = false) => {
   return best ?? { me, mine: null, myTurns: 9, score: -9 };
 };
 
-// Plain data for one refresh. Its JSON is the change signature, so the DOM is
-// only rebuilt when something the panel shows has actually changed.
-// While the game waits for a command, the whole refresh runs in one sandbox (every game call it makes), with the
-// foes that Terastallize this turn flagged so every damage number is the post-Tera one (spec §7).
-const model = (s, b, party, foes) => (plannerReady(s)
-  ? sandbox(s, () => withPredictedTera(predictedTeras(s, b), () => battleModel(s, b, party, foes)))
-  : battleModel(s, b, party, foes));
+// Plain data for one refresh: the field, the switches and a row per foe. Its JSON is part of the change signature, so
+// the DOM is only rebuilt when something the panel shows has actually changed. 60-card composes it with the fight
+// plan and the catch advice, and opens the sandbox all three run in.
 const battleModel = (s, b, party, foes) => {
   const onField = foes.filter(f => f.isOnField?.());
   const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
@@ -1558,8 +1554,6 @@ const battleModel = (s, b, party, foes) => {
   return {
     kind: "battle",
     field: plan?.view ?? null,
-    teamPlan: b.trainer ? teamPlan(s, b, party, foes) : null,
-    catch: b.trainer ? null : catchAdvice(s, b, party, foes),
     enemySwitches: active.filter(f => predicted.has(f)).map(f => ({
       from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
     })),

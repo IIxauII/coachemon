@@ -4,16 +4,14 @@
 // stretch, what the wave's rewards are pinned to, party luck, and the Eternatus checklist before wave 200.
 // The card only ever says what the calendar and the seed already decided: the schedule is arithmetic on the wave
 // index, and a named trainer comes from the preview's replay, which marks its own confidence.
+import { aheadIn, aheadWho } from "./49-ahead.js";
+import { FS, dim, h, line, sep, view } from "./90-render.js";
+
 const AHEAD_COLOR = { ready: "#6d6", watch: "#ec4", risky: "#e55" };
 const AHEAD_MARK = { ready: "✓", watch: "≈", risky: "⚠" };
-const aheadIn = n => (n === 1 ? "next wave" : `in ${n}`);
-// `Cynthia`, `gym leader`, `boss` — the trainer's own name when the preview could name it, else what the calendar
-// says it is. A fight the preview can only half-believe carries the preview's own `~`.
-const aheadWho = a => (a.next.trainer ? `${a.next.trainer}${a.next.exact ? "" : "~"}` : a.next.label);
-
-const drawAhead = (a, viewOverride) => {
+export const drawAhead = (a, viewOverride) => {
   if (!a?.next) return [];
-  const v = viewOverride ?? view;
+  const v = viewOverride ?? view();
   const r = a.readiness;
   const color = r ? AHEAD_COLOR[r.verdict] : "#9aa";
   const head = h("span", { fontWeight: "bold", marginRight: "3px" }, `${aheadWho(a)} ${aheadIn(a.next.in)}`);
@@ -61,14 +59,4 @@ const drawAhead = (a, viewOverride) => {
     out.push(line(f.good ? "✓" : "☠", f.good ? "#6d6" : "#c9f", h("span", { fontSize: FS.tiny }, f.text)));
   }
   return out;
-};
-
-// `Cynthia in 3 (W195) risky — nothing hits Garchomp super-effectively; 2 big fights before the next full heal`.
-const aheadSummary = a => {
-  if (!a?.next) return null;
-  const reasons = [...(a.readiness?.notes ?? []).filter(n => !n.good).map(n => n.text),
-    !a.heal ? `no full heal left before the final wave`
-      : a.fightsBeforeHeal >= 2 ? `${a.fightsBeforeHeal} big fights before the next full heal` : null].filter(Boolean);
-  return `${aheadWho(a)} ${aheadIn(a.next.in)} (W${a.next.wave})${a.readiness ? ` ${a.readiness.verdict}` : ""}`
-    + (reasons.length ? ` — ${reasons.slice(0, 3).join("; ")}` : "");
 };

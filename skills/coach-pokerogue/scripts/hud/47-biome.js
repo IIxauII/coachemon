@@ -528,3 +528,7 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
 
   return { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor };
 })();
+
+// `Swamp 72 pick — Garchomp resists, 3 mons hit SE · Construction Site 55`, for the watcher and the battle read.
+const biomeSummary = m => m.options.map(o => (o.score == null ? o.label
+  : o.verdict === "pick" ? `${o.label} ${o.score} pick — ${o.reasons.slice(0, 3).map(r => r.text).join(", ")}` : `${o.label} ${o.score}`)).join(" · ");
