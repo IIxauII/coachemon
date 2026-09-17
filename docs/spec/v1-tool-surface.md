@@ -92,6 +92,8 @@ On any status other than `ok`, a fixed diagnostic block is attached — enough t
 | `run_over` | The party wiped. `GameOverPhase` latched during settle (it dwells ≥ 6 s) (#11). Stands for **wipes only**. | result |
 | `run_interrupted` | `LoginPhase` mid-session with no `GameOverPhase` and no menu action in flight ⇒ a `reset(true)` teardown, i.e. the per-wave save failed and dumped the run to TITLE (#11). The run may still exist server-side, so this must **never** read as an invitation to start a new one. | **error** |
 
+When more than one applies, the precedence is `run_interrupted` > `run_over` > `stuck` > `timed_out` > `ok`, and it is the same for every way a call ends: settled, out of time, or refused. A call that runs out of time still reports `run_interrupted` (a `LoginPhase` latched, or #11's save hang held while it waited) or `run_over`, keeping the timeout's `note`. Only `stuck` needs a settled end (#126).
+
 Detecting a run ending is a settle-loop concern, not a `get_state` concern: the phase is gone by the time the title screen settles. The settle loop latches `phaseManager.getCurrentPhase().phaseName` across the transition (0.21 ms / 21 B per poll, #11).
 
 ### Owned elsewhere — two open slots
@@ -247,6 +249,8 @@ This tool earns its place not on press count but on two hazards:
 - **Slot choice is destructive.** `sessionSlots[i].hasData` is readable *before* committing (**[live]**, all five read `false` in #8). If the target slot has data, `start_run` **refuses**, naming the occupied and free slots. `overwrite: true` is the only way past. #5 put this on the dev's real account, so overwriting a real save is never the default.
 
 The server should also read `scene.gameData.getSpeciesStarterValue(id)` for each requested species and refuse before pressing if the party exceeds the cost budget, rather than discovering it at a rejected START.
+
+**A setup step that runs out of the call budget is a result, not a refusal.** `start_run` returns `timed_out` (or whatever status outranks it, §3) with the setup's `step`, its `log` so far and a `next` hint: the setup is left part-way, and `start_run` needs TITLE again. Refusals stay for a screen that isn't the one the next step needs and for the checks made before anything is sent (#141).
 
 Per-mon cost is `2 presses + 3` using `setCursor` on the grid; ACTION opens a per-mon `OPTION_SELECT(15)` whose index 0 is `Add to Party`.
 
