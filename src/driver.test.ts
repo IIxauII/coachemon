@@ -115,7 +115,7 @@ test("a walk reach presses its step rule onto the target, then commits: TARGET_S
  * game-mode select never settles; with `filterBar` the grid opens with its filter bar active. `titleMenuScreen` is the
  * Screen the menu reader sees on TITLE, when it differs from the settled read's.
  */
-function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean; yesIgnored?: boolean; yesLingers?: number; gameModeStalls?: boolean; filterBar?: boolean; titleMenuScreen?: string } = {}) {
+function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean; yesIgnored?: boolean; yesLingers?: number; gameModeStalls?: boolean; filterBar?: boolean; titleMenuScreen?: string; gridLands?: "wrong_species" | "miss" } = {}) {
   const presses: number[] = [];
   const slots = [0, 1, 2, 3, 4].map(i => ({ i, label: `Slot ${i + 1}`, hasData: i === 0 }));
   type Screen = { mode: number; screen: string; phase: string; chain: number[]; family: "option_select" | "starter_select" | "save_slot"; options: string[]; text?: string };
@@ -180,6 +180,8 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
     starterGrid: () => ({ ok: true, grid: starterGrid, valueLimit: 10, party, partyValid: true }),
     onSetCursor: target => {
       if (target.family === "starter_select") {
+        if (opts.gridLands === "miss") return { ok: false, why: "filter-mode", threw: false };
+        if (opts.gridLands === "wrong_species") return { ok: true, species: "Mewtwo" };
         gridCursor = target.index;
         return { ok: true, species: starterGrid[target.index].name };
       }
@@ -268,6 +270,20 @@ test("start_run that runs out of budget mid-setup returns timed_out with the ste
   assert.ok((r.log as string[]).some(l => l.startsWith("title:")));
   assert.match(String(r.next), /start_run/);
   assert.equal((r.diagnostic as { reason: string }).reason, "ui-transition");
+});
+
+test("start_run refuses starter_cursor when the grid cursor lands on another species, before ACTION picks it", async () => {
+  const tab = startRunTab({ gridLands: "wrong_species" });
+  const r = await outcome(tab.driver.startRun(["Bulbasaur"], undefined, false, {}));
+  assert.equal(r.error, "starter_cursor", JSON.stringify(r));
+  assert.deepEqual(tab.presses, [Button.ACTION, Button.ACTION], "title and game mode only; nothing pressed on the grid");
+});
+
+test("start_run refuses starter_cursor when setCursor misses on the grid, pressing nothing there", async () => {
+  const tab = startRunTab({ gridLands: "miss" });
+  const r = await outcome(tab.driver.startRun(["Bulbasaur"], undefined, false, {}));
+  assert.equal(r.error, "starter_cursor", JSON.stringify(r));
+  assert.deepEqual(tab.presses, [Button.ACTION, Button.ACTION]);
 });
 
 test("start_run that arrives on the starter filter bar refuses filter_bar there, before reading the grid", async () => {

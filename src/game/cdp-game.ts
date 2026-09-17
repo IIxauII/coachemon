@@ -7,7 +7,7 @@ import { isThrown, type CdpSession, type Thrown } from "../cdp/session.ts";
 import { Button, UiMode } from "../enums/generated.ts";
 import { screenId, type Discriminators } from "../screen.ts";
 import * as js from "./js.ts";
-import type { Act, ConsoleLine, CursorTarget, Failed, Family, GamePort, MenuOption, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, ConsoleLine, CursorTarget, Failed, Family, GamePort, MenuRead, MenuReadBase, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** The part of `CdpSession` the adapter drives. */
 export type GameSession = Pick<CdpSession, "attached" | "launchedChrome" | "onException" | "ensure" | "evaluate" | "keepAlive" | "rawKey" | "screenshot" | "consoleTail">;
@@ -27,19 +27,7 @@ const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: numb
 /** What `PREDICATE` and `READER` return: the port's reads with the discriminators in place of the Screen. */
 type PageRead = Extract<PredicateRead, { ready: false }> | (Omit<Ready, "screen"> & { disc: Discriminators });
 type PageMenu =
-  | {
-      readable: boolean;
-      why?: string;
-      mode: number;
-      handler?: string;
-      family: Family | null;
-      options: MenuOption[];
-      cursor: number | string | null;
-      text: string | null;
-      messagePending: boolean;
-      extra: Record<string, unknown>;
-      disc: Discriminators;
-    }
+  | (Omit<MenuReadBase, "screen"> & { family: Family | null; extra: Record<string, unknown>; disc: Discriminators })
   /** Not located (no `mode`), or no handler for the mode. */
   | { readable: false; why: string; mode?: number; disc?: undefined };
 

@@ -84,7 +84,7 @@ export type FamilyExtra = {
 
 export type Family = keyof FamilyExtra;
 
-type MenuReadBase = {
+export type MenuReadBase = {
   readable: boolean;
   why?: string;
   mode: number;

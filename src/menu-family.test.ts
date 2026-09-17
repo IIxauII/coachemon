@@ -129,12 +129,12 @@ test("a spread move needs no cursor: any listed target commits with ACTION and r
 
 test("modifier_select sets row then column and refuses when that misses", () => {
   const menu = menuOf("modifier_select", { rows: [], rowCursor: 1, colCursor: 0, money: 1000, rerollCost: 250 }, [{ i: "2:1", label: "Revive", row: 2, col: 1 }]);
-  assert.deepEqual(planSelect(menu, menu.options[0]).reach, { kind: "set", to: { family: "modifier_select", row: 2, col: 1 }, miss: "refuse" });
+  assert.deepEqual(planSelect(menu, menu.options[0]).reach, { kind: "set", to: { family: "modifier_select", row: 2, col: 1 }, miss: "refuse", cursor: "shop cursor" });
 });
 
 test("starter_select sets the grid index and refuses when that misses", () => {
   const menu = menuOf("starter_select", { scrollCursor: 0, party: [], partyValue: 0, valueLimit: 10, partyValid: null, filterMode: false }, [{ i: 0, label: "Bulbasaur" }, { i: 7, label: "Charmander" }]);
-  assert.deepEqual(planSelect(menu, menu.options[1]).reach, { kind: "set", to: { family: "starter_select", index: 7 }, miss: "refuse" });
+  assert.deepEqual(planSelect(menu, menu.options[1]).reach, { kind: "set", to: { family: "starter_select", index: 7 }, miss: "refuse", cursor: "grid cursor" });
 });
 
 const learnMove = menuOf(

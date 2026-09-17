@@ -23,8 +23,8 @@ export type Reach =
   | { kind: "none" }
   /** `setCursor`, and on a miss walk the cursor by presses. */
   | { kind: "set"; to: CursorTarget; miss: "walk"; walk: Walk }
-  /** `setCursor`, and on a miss refuse `cursor_unreachable`. */
-  | { kind: "set"; to: CursorTarget; miss: "refuse" }
+  /** `setCursor`, and on a miss refuse `cursor_unreachable`, naming the cursor that missed. */
+  | { kind: "set"; to: CursorTarget; miss: "refuse"; cursor: "shop cursor" | "grid cursor" }
   /** Presses only. */
   | ({ kind: "walk" } & Walk);
 
@@ -98,10 +98,10 @@ export function planSelect(menu: MenuRead, target: MenuOption): Plan {
       return plan(walk("battler_grid"));
     // §7 MODIFIER_SELECT: setRowCursor then setCursor, measured live every wave.
     case "modifier_select":
-      return plan({ kind: "set", to: { family: "modifier_select", row: Number(target.row), col: Number(target.col) }, miss: "refuse" });
+      return plan({ kind: "set", to: { family: "modifier_select", row: Number(target.row), col: Number(target.col) }, miss: "refuse", cursor: "shop cursor" });
     // §7 STARTER_SELECT grid: setCursor, measured live (#8).
     case "starter_select":
-      return plan({ kind: "set", to: { family: "starter_select", index: i }, miss: "refuse" });
+      return plan({ kind: "set", to: { family: "starter_select", index: i }, miss: "refuse", cursor: "grid cursor" });
     // §7 SUMMARY/LEARN_MOVE: setCursor(row) while moveSelect is on; presses (UP/DOWN ±1, wrapping over rows 0–4) as
     // the fallback. ACTION on a moveset row forgets it, on row 4 declines the new move (#31).
     case "learn_move":

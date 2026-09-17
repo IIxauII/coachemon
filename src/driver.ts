@@ -551,7 +551,7 @@ export class Driver {
       this.#sending(call);
       const r = await this.#game.setCursor(reach.to);
       if (r.ok) landed?.(r.species);
-      else if (reach.miss === "refuse") throw new Refusal("cursor_unreachable", `could not position the cursor on ${target.label}`, { got: r });
+      else if (reach.miss === "refuse") throw new Refusal("cursor_unreachable", `could not position the ${reach.cursor} on ${target.label}`, { got: r });
       else walked = await this.#walk(menu, reach.walk, call);
     } else if (reach.kind === "walk") {
       walked = await this.#walk(menu, reach, call);
