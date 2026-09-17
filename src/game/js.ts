@@ -38,6 +38,21 @@ export function inGame(body: string): string {
 }
 
 /**
+ * The Screen's discriminators off the current handler `h`, which may be null.
+ * One snippet for the predicate and the menu reader, so the two reads cannot
+ * read them differently; the adapter turns them into the Screen id (#133).
+ */
+const DISC = `{
+  partyUiMode: h && typeof h.partyUiMode === 'number' ? h.partyUiMode : null,
+  optionsMode: h ? h.optionsMode === true : false,
+  saveSlotUiMode: h && typeof h.uiMode === 'number' ? h.uiMode : null,
+  summaryUiMode: h && typeof h.summaryUiMode === 'number' ? h.summaryUiMode : null,
+  alertClosable: h ? h.allowClosing === true : false,
+  filterMode: h ? h.filterMode === true : false,
+  transferMode: h ? h.transferMode === true : false,
+}`;
+
+/**
  * The settle predicate (#3, with #9's and #11's corrections) plus everything
  * the settle loop, the screen id and the progress fingerprint need, in one
  * read. Every field is guarded; a missing path yields null, never a throw.
@@ -117,15 +132,7 @@ return {
   frame: game.loop ? game.loop.frame : null,
   domMode: __domMode(),
   gameVersion: game.config ? (game.config.gameVersion || null) : null,
-  disc: {
-    partyUiMode: h && typeof h.partyUiMode === 'number' ? h.partyUiMode : null,
-    optionsMode: h ? h.optionsMode === true : false,
-    saveSlotUiMode: h && typeof h.uiMode === 'number' ? h.uiMode : null,
-    summaryUiMode: h && typeof h.summaryUiMode === 'number' ? h.summaryUiMode : null,
-    alertClosable: h ? h.allowClosing === true : false,
-    filterMode: h ? h.filterMode === true : false,
-    transferMode: h ? h.transferMode === true : false,
-  },
+  disc: ${DISC},
 };
 `);
 
@@ -138,6 +145,8 @@ return { ready: L.ready, frame: L.ready && L.game.loop ? L.game.loop.frame : nul
 /**
  * The generic menu reader (#4's families, corrected by #6 and #7 §7).
  * `config.options` first; scene geometry only where no option array exists.
+ * The discriminators come back once, as `disc`: the adapter fills each
+ * family's fields from them, so `extra` never copies one.
  */
 export const READER = inGame(`
 const L = __locate();
@@ -146,7 +155,8 @@ const { scene, ui } = L;
 const mode = ui.mode;
 const h = ui.handlers[mode];
 if (!h) return { readable: false, why: 'no-handler', mode };
-const out = { mode, handler: h.constructor.name, family: null, options: [], cursor: null, readable: false, text: null, extra: {} };
+const disc = ${DISC};
+const out = { mode, handler: h.constructor.name, family: null, options: [], cursor: null, readable: false, text: null, extra: {}, disc };
 const mh = ui.handlers[0];
 out.text = __try(() => (mh && mh.message && typeof mh.message.text === 'string') ? mh.message.text : null);
 const opt = (i, label, more) => Object.assign({ i, label }, more || {});
@@ -234,22 +244,18 @@ try {
     // hasData is undefined until the slot's server fetch resolves; the handler refuses ACTION on such a slot.
     out.options = (h.sessionSlots || []).map((s, i) => opt(i, 'Slot ' + (i + 1), { hasData: s.hasData === true ? true : s.hasData === false ? false : null, wave: __try(() => s.saveData ? s.saveData.waveIndex : null), gameMode: __try(() => s.saveData ? s.saveData.gameMode : null) }));
     out.cursor = (h.cursor || 0) + (h.scrollCursor || 0);
-    out.extra.uiMode = h.uiMode;
     out.readable = out.options.length > 0;
   } else if (mode === 8) {
     out.family = 'party';
-    out.extra.optionsMode = h.optionsMode === true;
-    out.extra.partyUiMode = h.partyUiMode;
     out.extra.optionsScroll = h.optionsScroll === true;
-    out.extra.transferMode = h.transferMode === true;
     if (h.awaitingActionInput === true && h.onActionInput != null) {
       // PartyUiHandler's own message box ("It won't have any effect.", #44): processInput swallows every button but
       // ACTION/CANCEL until it is dismissed, so no option can be reached. Its text lives on h.message, not MESSAGE's.
       out.options = [];
       out.text = __try(() => __txt(h.message));
       out.extra.messagePending = true;
-      out.cursor = h.optionsMode === true ? h.optionsCursor : h.cursor;
-    } else if (h.optionsMode === true) {
+      out.cursor = disc.optionsMode ? h.optionsCursor : h.cursor;
+    } else if (disc.optionsMode) {
       // Sort by y ASCENDING: verb first, Cancel last (#6 corrected #4). Labels are BBCode.
       const kids = __kids(h.optionsContainer).filter(k => typeof k.text === 'string');
       kids.sort((a, b) => a.y - b.y);
@@ -272,7 +278,6 @@ try {
     out.options = grid.map((c, i) => opt(i, __try(() => c.species.name), { cost: __try(() => gd.getSpeciesStarterValue(c.species.speciesId)) }));
     out.cursor = h.cursor;
     out.extra.scrollCursor = h.scrollCursor;
-    out.extra.filterMode = h.filterMode === true;
     out.extra.party = (h.starterSpecies || []).map(s => ({ name: s.name, cost: __try(() => gd.getSpeciesStarterValue(s.speciesId)) }));
     out.extra.partyValue = out.extra.party.reduce((t, s) => t + (s.cost || 0), 0);
     out.extra.valueLimit = __try(() => h.getValueLimit());
@@ -282,9 +287,9 @@ try {
     out.family = 'acknowledge';
     out.options = [];
     out.extra.awaitingActionInput = h.awaitingActionInput === true && h.onActionInput != null;
-    if (mode === 47) { out.text = __try(() => __txt(h.label)) || out.text; out.extra.closable = h.allowClosing === true; }
+    if (mode === 47) out.text = __try(() => __txt(h.label)) || out.text;
     out.readable = true;
-  } else if (mode === 9 && h.summaryUiMode === 1) {
+  } else if (mode === 9 && disc.summaryUiMode === 1) {
     // SUMMARY/LEARN_MOVE: rows 0..3 are the moveset, row 4 the new move (ACTION there declines, via CANCEL). The row
     // cursor is moveCursor; cursor is the page. Labels are read live from the moveset and newMove, never the text rows.
     out.family = 'learn_move';
@@ -478,7 +483,7 @@ return { ok: true, mode: L.ui.mode };
 `);
 }
 
-/** Starter-select facts `start_run` needs before it presses anything. */
+/** Starter-select facts `start_run` needs before it presses anything. The filter bar is its own Screen, refused before this read. */
 export const STARTER_INFO = inGame(`
 const L = __locate();
 if (!L.ready) return { ok: false, why: L.why };
@@ -486,7 +491,7 @@ const h = L.ui.handlers[10];
 const gd = L.scene.gameData;
 const grid = (h.filteredStarterContainers || []).map((c, i) => ({ i, name: __try(() => c.species.name), id: __try(() => c.species.speciesId), cost: __try(() => gd.getSpeciesStarterValue(c.species.speciesId)) }));
 return {
-  ok: true, filterMode: h.filterMode === true, cursor: h.cursor, scrollCursor: h.scrollCursor,
+  ok: true, cursor: h.cursor, scrollCursor: h.scrollCursor,
   grid, party: (h.starterSpecies || []).map(s => s.name),
   valueLimit: __try(() => h.getValueLimit()), partyValid: __try(() => h.isPartyValid()),
 };

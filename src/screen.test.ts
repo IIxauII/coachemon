@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { LADDER } from "./escape-ladder/table.ts";
 import { isSettingsMode, screenId, type Discriminators } from "./screen.ts";
 
@@ -22,6 +23,19 @@ test("SAVE_SLOT, SUMMARY and ALERT_MODAL discriminators", () => {
   assert.equal(screenId(9, { ...none, summaryUiMode: 1 }), "SUMMARY/LEARN_MOVE");
   assert.equal(screenId(9, { ...none, summaryUiMode: 0 }), "SUMMARY");
   assert.equal(screenId(47, { ...none, alertClosable: true }), "ALERT_MODAL/CLOSABLE");
+});
+
+test("STARTER_SELECT with the filter bar active is its own screen", () => {
+  assert.equal(screenId(10, none), "STARTER_SELECT");
+  assert.equal(screenId(10, { ...none, filterMode: true }), "STARTER_SELECT/FILTER");
+  // filterMode is the starter handler's own field: no other mode reads it.
+  assert.equal(screenId(8, { ...none, filterMode: true }), "PARTY");
+});
+
+test("the filter bar's ladder falls back to the STARTER_SELECT entry", () => {
+  const ladder = ladderFor({ screen: "STARTER_SELECT/FILTER", liveVersion: PINNED_GAME_VERSION, tutorialActive: false });
+  assert.equal(ladder.status, "ladder");
+  assert.equal(ladder.status === "ladder" && ladder.matched, "STARTER_SELECT");
 });
 
 test("unknown mode degrades to UNKNOWN(n)", () => {
