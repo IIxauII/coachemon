@@ -786,7 +786,7 @@ No auto-update, no Homebrew, no Sparkle: players re-download. Nothing in any bui
 
 ## 15. Licence and notices
 
-From [Licence and contribution grant before the first listing](https://github.com/IIxauII/pokerogue-mcp/issues/135). Nothing here is applied yet.
+From [Licence and contribution grant before the first listing](https://github.com/IIxauII/pokerogue-mcp/issues/135). Applied in [Extension: licence and third-party notices](https://github.com/IIxauII/pokerogue-mcp/issues/200), except `extension/package.json`, which ticket 4 creates.
 
 - **`LICENSE`** at the repo root: the full GNU AGPL-3.0 text. It covers the whole repo, the extension package included. Copyright holder `IIxauII`.
 - `"license": "AGPL-3.0-only"` in the root `package.json` and `extension/package.json`.

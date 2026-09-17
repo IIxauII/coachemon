@@ -1,3 +1,5 @@
+Quotes below are from `pagefaultgames/pokerogue` (https://github.com/pagefaultgames/pokerogue), tag `v1.12.0.11`, AGPL-3.0-only, Copyright Pagefault Games and contributors.
+
 # PokéRogue game-code spec for the coach HUD
 
 The game code the coach HUD (`skills/coach-pokerogue/scripts/hud/`) calls, replays or re-implements, read from the
