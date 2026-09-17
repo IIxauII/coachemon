@@ -9,7 +9,7 @@ import { createServer, type Server } from "node:http";
 import { WebSocketServer } from "ws";
 import { PROTOCOL } from "../protocol/version.ts";
 import { compareVersions, dial, HubClient } from "./client.ts";
-import { FakeExtension, settled } from "./fake-extension.ts";
+import { FakeExtension, delivered } from "./fake-extension.ts";
 import { Hub } from "./hub.ts";
 
 const open: { close: () => unknown }[] = [];
@@ -39,11 +39,11 @@ test("a refused port is not an error: the client starts the machine's hub and co
   // The spawned hub is a real detached process: retire it rather than leaving it on the port for ten minutes.
   const ext = await FakeExtension.connect(port);
   ext.tab(1);
-  await settled();
+  await delivered();
   assert.equal((await second.client.state()).tabs.length, 1);
   await ext.close();
   second.client.retire();
-  await settled();
+  await delivered();
 });
 
 test("a foreign process on the port is rung 1: it never proves itself with the product marker (§7.2)", async () => {
@@ -108,7 +108,7 @@ test("a dead socket answers everything waiting on it, so no tool call hangs on a
   assert.ok(d.ok);
   const client: HubClient = d.client;
   await h.close();
-  await settled();
+  await delivered();
   const reply = await client.send("menu", {});
   assert.equal(reply.ok, false);
   assert.deepEqual(await client.state(), { t: "state", extensions: [], tabs: [], driver: null });

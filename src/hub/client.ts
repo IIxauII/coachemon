@@ -76,41 +76,36 @@ export class HubClient {
         resolve(r);
       };
       const timer = setTimeout(() => done({ t: "reply", id, ok: false, code: "timeout", message: `${name} got no answer from the Coachemon hub.` }), REQUEST_MS);
-      timer.unref?.();
       this.#replies.set(id, done);
       if (!this.#write({ t: "cmd", id, name, args })) done({ t: "reply", id, ok: false, code: "timeout", message: "The Coachemon hub connection closed." });
     });
   }
 
   state(): Promise<HubState> {
-    return new Promise(resolve => {
-      const timer = setTimeout(() => resolve(EMPTY_STATE), REQUEST_MS);
-      timer.unref?.();
-      this.#states.push(s => {
-        clearTimeout(timer);
-        resolve(s);
-      });
-      if (!this.#write({ t: "state" })) {
-        clearTimeout(timer);
-        this.#states.pop();
-        resolve(EMPTY_STATE);
-      }
-    });
+    return this.#ask({ t: "state" }, this.#states, EMPTY_STATE);
   }
 
   /** Takes the driver grant (§7.5). `false`: another session holds it. */
-  claim(): Promise<boolean> {
+  async claim(): Promise<boolean> {
+    const c = await this.#ask<Claimed>({ t: "claim" }, this.#claims, { t: "claimed", ok: false, code: "contended" });
+    return c.ok;
+  }
+
+  /**
+   * Send a frame the hub answers with exactly one of its own, and wait for that answer. A hub that never answers, or a
+   * socket that is already gone, resolves `fallback`: nothing a tool call waits on is allowed to hang.
+   */
+  #ask<T>(frame: Record<string, unknown>, queue: ((v: T) => void)[], fallback: T): Promise<T> {
     return new Promise(resolve => {
-      const timer = setTimeout(() => resolve(false), REQUEST_MS);
-      timer.unref?.();
-      this.#claims.push(c => {
+      const timer = setTimeout(() => resolve(fallback), REQUEST_MS);
+      queue.push(v => {
         clearTimeout(timer);
-        resolve(c.ok);
+        resolve(v);
       });
-      if (!this.#write({ t: "claim" })) {
+      if (!this.#write(frame)) {
         clearTimeout(timer);
-        this.#claims.pop();
-        resolve(false);
+        queue.pop();
+        resolve(fallback);
       }
     });
   }
@@ -183,7 +178,7 @@ const EMPTY_STATE: HubState = { t: "state", extensions: [], tabs: [], driver: nu
 export async function dial(opts: DialOptions, retiring = false): Promise<Dialed> {
   const first = await connect(opts.port);
   if (first.kind === "squatter") return { ok: false, reach: foreignPort(opts.port) };
-  if (first.kind === "open") return settle(first.ws, first.welcome, opts, retiring);
+  if (first.kind === "open") return handshake(first.ws, first.welcome, opts, retiring);
   if (opts.spawnHub === false) return { ok: false, reach: hubWontStart("no hub is running and this client was told not to start one") };
 
   // Nothing is listening: start the per-machine hub, detached, and watch its stderr until it answers or dies.
@@ -208,7 +203,7 @@ export async function dial(opts: DialOptions, retiring = false): Promise<Dialed>
     const again = await connect(opts.port);
     if (again.kind === "open") {
       release();
-      return settle(again.ws, again.welcome, opts, retiring);
+      return handshake(again.ws, again.welcome, opts, retiring);
     }
     if (again.kind === "squatter") {
       release();
@@ -242,7 +237,6 @@ function connect(port: number): Promise<Attempt> {
       resolve(a);
     };
     const timer = setTimeout(() => finish({ kind: "squatter" }), WELCOME_MS);
-    timer.unref?.();
     ws.on("error", () => finish({ kind: "refused" }));
     ws.on("close", () => finish({ kind: "refused" }));
     ws.on("message", raw => {
@@ -259,8 +253,8 @@ function connect(port: number): Promise<Attempt> {
   });
 }
 
-/** Say hello, then decide what this plugin copy and this hub's versions mean for each other (§7.3). */
-async function settle(ws: WebSocket, welcome: Welcome, opts: DialOptions, retiring: boolean): Promise<Dialed> {
+/** Say hello, then decide what this plugin copy's and this hub's versions mean for each other (§7.3). */
+async function handshake(ws: WebSocket, welcome: Welcome, opts: DialOptions, retiring: boolean): Promise<Dialed> {
   ws.send(JSON.stringify({ t: "hello", role: opts.role, version: opts.version, pid: process.pid }));
   const order = compareVersions(opts.version, welcome.version);
   if (order === 0) return { ok: true, client: new HubClient(ws, welcome, null) };
@@ -281,7 +275,7 @@ async function settle(ws: WebSocket, welcome: Welcome, opts: DialOptions, retiri
   }
   client.close();
   const again = await connect(opts.port);
-  if (again.kind !== "open") return { ok: false, reach: foreignPort(opts.port) };
+  if (again.kind !== "open") return { ok: false, reach: hubWontStart("it stopped answering while this session reconnected to it") };
   again.ws.send(JSON.stringify({ t: "hello", role: opts.role, version: opts.version, pid: process.pid }));
   return {
     ok: true,
@@ -300,4 +294,5 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms).unref?.());
+/** Not unref'd: the dial is waiting on it, and a process with nothing else pending must not exit mid-retry. */
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));

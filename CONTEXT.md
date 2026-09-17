@@ -53,6 +53,8 @@ One of the game's own input actions (UP, DOWN, LEFT, RIGHT, ACTION, CANCEL, MENU
 
 For a given menu, the ordered **rungs** that leave it, safest first. Each rung is a press, a pick among options not yet tried, a wait, or, last of all, a page **reload**. Each carries a risk: **safe** (nothing lost), **lossy** (gives up an in-run choice such as a reward, a move or an evolution) or **destructive** (loses something lasting: a team member, a save slot, saved preferences, or progress since the last save). A **must-answer** menu is one the game won't release until an option is chosen, so backing out is the wrong move. A **no-escape** menu can't be left by any input at all. The ladder is only offered for the game version it was reviewed against.
 
+Its **rungs** are ways out of a menu. Not to be confused with **reach**'s rungs, which are reasons the game cannot be played at all; an escape ladder is only ever offered for a game the agent has already reached.
+
 ## Option
 
 A single selectable entry in a menu, with a visible **label**. Selecting an option by label is a decision; the cursor movement it takes is an implementation detail the server hides. Where the label decorates a plain name with live data (`Great Ball ×9`), the option also carries that **name**, and the name selects it too.
@@ -84,6 +86,24 @@ A battle card's one-word call on the wave: **easy**, **trainer**, **danger**, **
 The one process on a machine allowed to press buttons in the game. A process becomes the driver the first time it acts, not when it starts: reading the game never needs the role, so any number of readers can follow a game while one driver plays it. A second process that tries to act while a live driver exists finds the game **contended** and refuses, since two drivers interleaving presses on one save is indistinguishable from the game misbehaving.
 
 With more than one game tab reachable, there is nothing to drive or follow: acting and reading both refuse rather than guess which save they would touch.
+
+The **grant** is the **hub**'s record of who the driver is. It is held for as long as that process stays connected and released the moment it goes away, so a session that dies never leaves the game locked behind it.
+
+## Reach
+
+Whether the game can be played at all, before anything about the game itself is asked: is there a **hub**, has a **target browser** connected to it, is exactly one game tab ready. Unreachable is not a failure of a tool call but a condition of the machine, so every tool answers it the same way and `status` exists to report it.
+
+Reach is told as **rungs**, ordered from the furthest thing away to the nearest, and only the first failing rung is ever reported — there is one thing to do next, never a list. A rung names a condition and what the player does about it, so a rung with no action the player can take is not a rung.
+
+Not to be confused with the **escape ladder**, whose rungs leave a menu inside a game already reached.
+
+## Target browser
+
+A browser a player can install the extension into (Chrome, Firefox, Safari, Orion). What a **command** can do depends on the target it crosses: which browser it is, which version of the extension is installed there, and — on some targets — whether the player has agreed to let the extension read the page yet. More than one target may be connected at once, and game tabs are counted across all of them together.
+
+## Version skew
+
+The **hub** and a process talking to it come from different copies of the plugin. The newer of the two wins where it safely can: an idle hub steps aside for a newer one, and where it cannot step aside the older side refuses every call rather than speak a protocol it may get wrong. Skew is never worked around silently, because a mismatch that half-works is worse than one that says so.
 
 ## Hub
 

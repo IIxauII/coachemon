@@ -675,7 +675,9 @@ Every tool, acting or reading, first checks reachability. Unreachable → error 
 }
 ```
 
-`attached`, `tab_contended`, `lock_holder` and `chrome_launched_by_server` are removed.
+`attached`, `tab_contended`, `lock_holder` and `chrome_launched_by_server` are removed. A version skew (§7.3) is not a
+rung — the ladder has eight and none of them is this — so it rides as its own `skew` field, present only when there is
+one, and `reachable` is `false` while it stands (picked here).
 
 **When the game isn't reachable**, `status` returns the line from the **first failing rung**, evaluated over every connected browser. The watch CLI prints the same line. Wording picked here:
 

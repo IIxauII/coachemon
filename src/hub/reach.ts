@@ -13,6 +13,9 @@ import type { ExtensionInfo, HubState, TabInfo } from "../protocol/wire.ts";
 /** `missing` names the command the connected browser did not offer: the same rung, a different tool error (§12.2). */
 export type Reach = { rung: number; line: string; missing?: string };
 
+/** The rung for more than one ready tab: the one refusal a tool reports as its own error rather than as unreachable. */
+export const TABS_RUNG = 8;
+
 /** Everything `status` says about the fleet, and whether any tool can run at all. */
 export type Fleet = {
   browsers: ExtensionInfo[];
@@ -56,7 +59,7 @@ export function hubWontStart(stderrLine: string): Reach {
  * Rungs 3 to 8 over one `state` frame. `needed` are the commands the caller is about to send: a browser that did not
  * list one of them is rung 4, the same as a browser outside the protocol window, because the fix is the same.
  */
-export function ladder(state: HubState, needed: readonly string[] = []): Reach | null {
+export function reachLadder(state: HubState, needed: readonly string[] = []): Reach | null {
   const browsers = state.extensions;
   if (browsers.length === 0) return { rung: 3, line: `No browser has Coachemon connected. ${INSTALL}` };
 
@@ -81,13 +84,13 @@ export function ladder(state: HubState, needed: readonly string[] = []): Reach |
   if (ready.length === 0) return { rung: 7, line: "Coachemon is connected, but no pokerogue.net tab is ready. Open or reload pokerogue.net." };
   if (ready.length > 1) {
     const list = ready.map(t => `${NAME[t.target]}: ${t.title}`).join("; ");
-    return { rung: 8, line: `${ready.length} pokerogue.net tabs are open (${list}). Close all but one.` };
+    return { rung: TABS_RUNG, line: `${ready.length} pokerogue.net tabs are open (${list}). Close all but one.` };
   }
   return null;
 }
 
 /** The tabs the hub would route to: ready, and on a browser that has consent (§7.5). */
-export function readyTabs(state: HubState): TabInfo[] {
+export function readyTabs(state: { extensions: ExtensionInfo[]; tabs: TabInfo[] }): TabInfo[] {
   const consented = new Set(state.extensions.filter(e => e.consent).map(e => e.conn));
   return state.tabs.filter(t => t.state === "ready" && consented.has(t.conn));
 }

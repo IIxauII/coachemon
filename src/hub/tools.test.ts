@@ -93,11 +93,28 @@ test("an unreachable game is what status is for: the failing rung's line, and no
   assert.equal(s.run_live, false);
 });
 
-test("status shows a version skew as its own rung rather than pretending the game is reachable (§7.3)", async () => {
-  const { hub } = fakeHub({ skew: "This Claude session's Coachemon plugin is older than the running hub. Restart this Claude session." });
+test("a version skew is not a rung: it rides as its own field, and the game is not called reachable (§7.3, §12.3)", async () => {
+  const skew = "This Claude session's Coachemon plugin is older than the running hub. Restart this Claude session.";
+  const { hub } = fakeHub({ skew });
   const s = await drive(hub, { read: undefined }).driver.status();
   assert.equal(s.reachable, false);
-  assert.deepEqual(s.reach, { rung: 0, line: "This Claude session's Coachemon plugin is older than the running hub. Restart this Claude session." });
+  assert.equal(s.reach, null);
+  assert.equal(s.skew, skew);
+});
+
+test("status counts the tabs the hub would route to, not every tab a browser mentioned (§7.5)", async () => {
+  // A ready tab on a browser that has not consented is not one the game can be played in; rung 5 says why.
+  const waiting: ExtensionInfo = { ...BROWSER, target: "firefox", consent: false };
+  const { hub } = fakeHub({ browsers: [waiting], reach: { rung: 5, line: "Coachemon in Firefox is waiting for your OK: click the Coachemon icon in the toolbar once." } });
+  const s = await drive(hub, { read: undefined }).driver.status();
+  assert.equal(s.tabs, 0);
+  assert.equal(s.reachable, false);
+});
+
+test("start_run asks about starters too, because reading the grid is one of the commands it sends (§8.5)", async () => {
+  const { hub, asked } = fakeHub();
+  await drive(hub).driver.startRun(["Bulbasaur"], undefined, false, {}).catch(() => {});
+  assert.deepEqual(asked, [["probe", "menu", "press", "starters"]]);
 });
 
 // --------------------------------------------------------- §12.2 reachability

@@ -102,4 +102,4 @@ export class FakeExtension {
 }
 
 /** The frames a test sends are answered asynchronously; this waits for what they caused to arrive. */
-export const settled = (): Promise<void> => new Promise(r => setTimeout(r, 25).unref?.());
+export const delivered = (): Promise<void> => new Promise(r => setTimeout(r, 25));

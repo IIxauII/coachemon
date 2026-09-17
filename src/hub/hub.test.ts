@@ -5,10 +5,11 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import WebSocket from "ws";
+import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { PRODUCT, PROTOCOL } from "../protocol/version.ts";
 import type { Notice } from "../protocol/wire.ts";
 import { dial, HubClient } from "./client.ts";
-import { FakeExtension, settled } from "./fake-extension.ts";
+import { FakeExtension, delivered } from "./fake-extension.ts";
 import { Hub } from "./hub.ts";
 
 const open: (Hub | HubClient | FakeExtension)[] = [];
@@ -43,7 +44,7 @@ async function paired(opts: Parameters<typeof FakeExtension.connect>[1] = {}) {
   const ext = await extension(h, opts);
   ext.tab(1);
   const c = await client(h);
-  await settled();
+  await delivered();
   return { h, ext, c };
 }
 
@@ -66,7 +67,7 @@ test("an Origin that is not an extension scheme gets 403; no Origin is a local c
 test("the hub proves itself first: the welcome carries the product marker, so a squatter gets nothing (§7.4)", async () => {
   const h = await hub();
   const ext = await extension(h, { hello: false });
-  await settled();
+  await delivered();
   assert.deepEqual(ext.welcome, { t: "welcome", product: PRODUCT, protocol: PROTOCOL, version: "1.0.0" });
 });
 
@@ -77,12 +78,12 @@ test("a tab counts only once its relay says ready and its browser has consent (�
   const ext = await extension(h, { target: "firefox", consent: false });
   const c = await client(h);
   ext.tab(1);
-  await settled();
+  await delivered();
   assert.equal((await c.state()).tabs.filter(t => t.state === "ready").length, 1);
   // The hub still refuses to route: the tab is reported, but its browser has no consent yet.
   assert.equal((await c.send("menu", {})).ok, false);
   ext.consent(true);
-  await settled();
+  await delivered();
   assert.equal((await c.send("menu", {})).ok, true);
 });
 
@@ -93,13 +94,13 @@ test("tabs are counted across browsers, and a closed browser takes its tabs with
   const c = await client(h);
   chrome.tab(1);
   firefox.tab(7);
-  await settled();
+  await delivered();
   const two = await c.send("menu", {});
   assert.equal(two.ok, false);
   assert.equal(two.ok === false && two.code, "tabs");
   assert.deepEqual(two.ok === false && two.tabs?.map(t => t.target), ["chrome", "firefox"]);
   await firefox.close();
-  await settled();
+  await delivered();
   assert.equal((await c.send("menu", {})).ok, true);
 });
 
@@ -132,7 +133,32 @@ test("claim answers contended rather than taking a held grant, and the grant die
   assert.equal(await c.claim(), true);
   assert.equal(await other.claim(), false);
   c.close();
-  await settled();
+  await delivered();
+  assert.equal(await other.claim(), true);
+});
+
+test("a command that refuses for any other reason leaves no grant behind (§7.5)", async () => {
+  const h = await hub();
+  const ext = await extension(h);
+  const c = await client(h);
+  const other = await client(h);
+  await delivered();
+  // No tab: the act refuses `no-tab`, and must not have taken the grant on its way out.
+  assert.equal((await c.send("press", { button: 0, fine: "f" })).ok === false, true);
+  assert.equal(await other.claim(), true);
+  // Nor does a command the browser cannot answer.
+  ext.tab(1);
+  await delivered();
+  const third = await client(h);
+  assert.equal((await third.send("nonsense", {})).ok === false, true);
+  assert.equal((await other.state()).driver, "you");
+});
+
+test("a dev build's own commands never take the grant: only a store act does (§7.5, §10.6)", async () => {
+  const { h, ext, c } = await paired({ flavour: "dev", commands: [...COMMAND_NAMES, "screenshot"] });
+  ext.answers(() => ({ ok: true, png: "iVBOR" }));
+  const other = await client(h);
+  assert.equal((await c.send("screenshot", {})).ok, true);
   assert.equal(await other.claim(), true);
 });
 
@@ -160,7 +186,7 @@ test("zero tabs refuses no-tab at once, and the hub queues nothing (§7.5)", asy
   const h = await hub();
   await extension(h);
   const c = await client(h);
-  await settled();
+  await delivered();
   const r = await c.send("menu", {});
   assert.equal(r.ok === false && r.code, "no-tab");
 });
@@ -199,7 +225,7 @@ test("a browser that never answers times out rather than hanging the client (§7
   ext.tab(1);
   ext.answers(() => null);
   const c = await client(h);
-  await settled();
+  await delivered();
   const r = await c.send("menu", {});
   assert.equal(r.ok === false && r.code, "timeout");
 });
@@ -216,7 +242,7 @@ test("a browser that goes away mid-command answers tab-gone, not silence", async
   const { ext, c } = await paired();
   ext.answers(() => null);
   const pending = c.send("menu", {});
-  await settled();
+  await delivered();
   await ext.close();
   const r = await pending;
   assert.equal(r.ok === false && r.code, "tab-gone");
@@ -232,9 +258,9 @@ test("card events fan out to every subscribed client, and only to subscribers (�
   c.on({ event: (kind, body) => seen.push([kind, body]) });
   quiet.on({ event: (kind, body) => unseen.push([kind, body]) });
   c.subscribe();
-  await settled();
+  await delivered();
   ext.event(1, "card", { wave: 4 });
-  await settled();
+  await delivered();
   assert.deepEqual(seen, [["card", { wave: 4 }]]);
   assert.deepEqual(unseen, []);
 });
@@ -247,16 +273,16 @@ test("with more than one tab the hub forwards no events and notices once, then r
   c.subscribe();
   const second = await extension(h, { target: "firefox" });
   second.tab(9);
-  await settled();
+  await delivered();
   ext.event(1, "card", { wave: 4 });
-  await settled();
+  await delivered();
   assert.deepEqual(events, []);
   assert.deepEqual(notices.map(n => n.kind), ["tabs"]);
   await second.close();
-  await settled();
+  await delivered();
   assert.deepEqual(notices.map(n => n.kind), ["tabs", "resume"]);
   ext.event(1, "card", { wave: 5 });
-  await settled();
+  await delivered();
   assert.deepEqual(events, ["card"]);
 });
 
@@ -264,12 +290,12 @@ test("a client subscribing while the count is already off one is told at once, n
   const { h } = await paired();
   const second = await extension(h, { target: "firefox" });
   second.tab(9);
-  await settled();
+  await delivered();
   const late = await client(h);
   const notices: Notice[] = [];
   late.on({ notice: n => notices.push(n) });
   late.subscribe();
-  await settled();
+  await delivered();
   assert.deepEqual(notices.map(n => n.kind), ["tabs"]);
 });
 
@@ -282,7 +308,7 @@ test("retire is ignored while a driver holds the grant: the hub rechecks what th
   const newer = await client(h);
   assert.equal(await holder.claim(), true);
   newer.retire();
-  await settled();
+  await delivered();
   assert.equal(retired, 0);
   assert.equal(newer.open, true);
 });
@@ -293,9 +319,9 @@ test("retire closes every connection and ends the hub once nobody is driving (§
   const c = await client(h);
   const ext = await extension(h);
   ext.tab(1);
-  await settled();
+  await delivered();
   c.retire();
-  await settled();
+  await delivered();
   assert.equal(retired, 1);
   assert.equal(c.open, false);
 });
@@ -306,7 +332,7 @@ test("the hub exits once nothing has been connected for the idle window, and a c
   const c = await client(h);
   const ext = await extension(h);
   ext.tab(1);
-  await settled();
+  await delivered();
   c.close();
   await new Promise(r => setTimeout(r, 60));
   // A browser with a counted tab keeps it alive even with no client connected.

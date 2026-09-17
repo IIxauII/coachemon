@@ -27,7 +27,7 @@ type ExtConn = {
   tabs: Map<number, { state: TabState; title: string }>;
 };
 
-type ClientConn = { id: number; ws: WebSocket; version: string | null; subscribed: boolean };
+type ClientConn = { id: number; ws: WebSocket; subscribed: boolean };
 
 type Pending = { ext: ExtConn; client: ClientConn; clientId: number; timer: NodeJS.Timeout };
 
@@ -170,7 +170,7 @@ export class Hub {
       case "event":
         // More than one tab and the hub forwards nothing; the subscribers were told why by `#tabsChanged` (§7.5).
         if (this.#readyTabs().length !== 1) return;
-        for (const c of this.#clients.values()) if (c.subscribed) send(c.ws, { t: "event", kind: f.kind, body: f.body });
+        this.#broadcast({ t: "event", kind: f.kind, body: f.body });
         return;
       case "ping":
         return;
@@ -180,7 +180,7 @@ export class Hub {
   // --------------------------------------------------------------- clients
 
   #addClient(ws: WebSocket): void {
-    const client: ClientConn = { id: this.#nextConn++, ws, version: null, subscribed: false };
+    const client: ClientConn = { id: this.#nextConn++, ws, subscribed: false };
     this.#clients.set(ws, client);
     this.#welcome(ws);
     this.#armIdle();
@@ -199,7 +199,8 @@ export class Hub {
     if (!f) return;
     switch (f.t) {
       case "hello":
-        client.version = f.version;
+        // Nothing to do with it here: every outcome of a version skew is a client's to take (§7.3), and the hub's own
+        // version reached this client in the `welcome` it already has.
         return;
       case "retire":
         // The client sends this only when no driver held the grant; the hub checks again, because the two raced.
@@ -264,14 +265,15 @@ export class Hub {
       send(client.ws, { t: "reply", id: f.id, ok: false, code, message, ...(tabs ? { tabs } : {}) });
 
     const spec = (STORE_COMMANDS as Record<string, { kind: "read" | "act" } | undefined>)[f.name];
-    // An unknown name is gated as an act: the dev table's `eval` and `reload` both drive the game (§10.6).
-    const acts = spec?.kind !== "read";
+    const acts = spec?.kind === "act";
     const pumping = f.name === "probe" && f.args?.pump === true;
 
+    // Both gates only read the grant. Taking it waits until the command is about to go out, so a command that refuses
+    // for any other reason leaves no grant behind for the next session to trip over.
     if (pumping) {
       // The pump gate: a settle that advances the loop is an act for gating, and never claims (§7.5).
       if (this.#driver !== client) return refuse("not-driver", "Only the session holding the driver grant may pump the game loop.");
-    } else if (acts && !this.#grant(client)) {
+    } else if (acts && this.#driver !== null && this.#driver !== client) {
       return refuse("contended", "Another session holds the Coachemon driver grant.");
     }
 
@@ -293,6 +295,9 @@ export class Hub {
     } else if (!offered.includes(f.name)) {
       return refuse("missing-command", `Coachemon ${hello.version} in ${hello.target} does not offer ${f.name}.`);
     }
+
+    // The implicit claim (§7.5): the first act from a client takes the grant, at the moment the act is sent.
+    if (acts) this.#grant(client);
 
     const id = this.#nextCmd++;
     const timer = setTimeout(() => {
@@ -333,10 +338,10 @@ export class Hub {
     const tabs = this.#readyTabs();
     if (tabs.length > 1 && !this.#noticed) {
       this.#noticed = true;
-      for (const c of this.#clients.values()) if (c.subscribed) send(c.ws, { t: "notice", kind: "tabs", tabs });
+      this.#broadcast({ t: "notice", kind: "tabs", tabs });
     } else if (tabs.length === 1 && this.#noticed) {
       this.#noticed = false;
-      for (const c of this.#clients.values()) if (c.subscribed) send(c.ws, { t: "notice", kind: "resume", tabs });
+      this.#broadcast({ t: "notice", kind: "resume", tabs });
     }
     this.#armIdle();
   }
@@ -348,6 +353,11 @@ export class Hub {
     if (this.#closed || this.#clients.size > 0 || this.#readyTabs().length > 0) return;
     this.#idle = setTimeout(() => void this.close().then(() => this.#onIdle()), this.#idleMs);
     this.#idle.unref?.();
+  }
+
+  /** To every client that asked for events; a client that did not subscribe hears nothing (§7.5). */
+  #broadcast(frame: ToClient): void {
+    for (const c of this.#clients.values()) if (c.subscribed) send(c.ws, frame);
   }
 
   #welcome(ws: WebSocket): void {

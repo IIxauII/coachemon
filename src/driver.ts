@@ -17,10 +17,10 @@ import { CdpSession, DEFAULTS } from "./cdp/session.ts";
 import { Button, NAMES, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
+import { LinkGame } from "./game/link-game.ts";
 import { HubLink } from "./hub/link.ts";
 import { PLUGIN_VERSION } from "./hub/plugin-version.ts";
-import type { Fleet } from "./hub/reach.ts";
-import { LinkGame } from "./game/link-game.ts";
+import { readyTabs, TABS_RUNG, type Fleet } from "./hub/reach.ts";
 import { DEV_PORT, STORE_PORT } from "./protocol/version.ts";
 import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
@@ -91,10 +91,12 @@ const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
  * wording; every other tool keeps working (§8.5). The cursor commands are not here: a family without its setter falls
  * back to the press-walk (§10.1).
  */
-const NEEDS = {
-  menu: ["probe", "menu"],
-  state: ["probe", "menu", "snapshot"],
-  act: ["probe", "menu", "press"],
+const COMMANDS_PER_TOOL = {
+  read_menu: ["probe", "menu"],
+  get_state: ["probe", "menu", "snapshot"],
+  press: ["probe", "menu", "press"],
+  select_option: ["probe", "menu", "press"],
+  start_run: ["probe", "menu", "press", "starters"],
 } as const;
 
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
@@ -139,7 +141,7 @@ export class Driver {
     if (!reach) return fleet;
     const detail = { rung: reach.rung, line: reach.line };
     if (reach.missing !== undefined) throw new Refusal("missing_command", reach.line, { ...detail, command: reach.missing });
-    if (reach.rung === 8) throw new Refusal("tabs", reach.line, { ...detail, tabs: fleet.tabs });
+    if (reach.rung === TABS_RUNG) throw new Refusal("tabs", reach.line, { ...detail, tabs: fleet.tabs });
     throw new Refusal("unreachable", reach.line, detail);
   }
 
@@ -201,10 +203,13 @@ export class Driver {
   async #hubStatus(): Promise<Record<string, unknown>> {
     const fleet = await this.#game.hub!.fleet();
     const browsers = fleet.browsers.map(b => ({ target: b.target, version: b.version, flavour: b.flavour, protocol: b.protocol, consent: b.consent }));
-    const tabs = fleet.tabs.filter(t => t.state === "ready").length;
-    const reach = fleet.skew ? { rung: 0, line: fleet.skew } : fleet.reach;
-    const head = { status: "ok", reachable: reach === null, reach, browsers, tabs, driver: fleet.driver };
-    if (reach) {
+    // The tabs the hub would route to, not every tab a browser mentioned: a tab on a browser without consent is not
+    // one the game can be played in (§7.5), and `reach` says so on its own rung.
+    const tabs = readyTabs({ extensions: fleet.browsers, tabs: fleet.tabs }).length;
+    const reach = fleet.reach;
+    // A version skew is not a rung of the ladder (§12.3 has eight, and none of them is this): its own field says so.
+    const head = { status: "ok", reachable: reach === null && fleet.skew === null, reach, ...(fleet.skew ? { skew: fleet.skew } : {}), browsers, tabs, driver: fleet.driver };
+    if (reach || fleet.skew) {
       return { ...head, game_version: null, pinned_version: PINNED_GAME_VERSION, version_match: null, run_live: false, run: this.#outcomes.runState(null), wave: null, screen: "UNKNOWN(-1)", settled: null, busy_reason: null };
     }
     const read = await this.#game.read();
@@ -217,7 +222,7 @@ export class Driver {
       run_live: ready?.runLive ?? false,
       run: this.#outcomes.runState(ready),
       wave: ready?.wave ?? null,
-      screen: ready ? ready.screen : `UNKNOWN(${read.ready ? "-" : read.why})`,
+      screen: read.ready ? read.screen : `UNKNOWN(${read.why})`,
       settled: ready?.settled ?? null,
       busy_reason: ready && !ready.settled ? ready.reason : null,
     };
@@ -225,7 +230,7 @@ export class Driver {
 
   async getState(detail: SnapshotDetail, ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#call(ctx, async call => {
-      await this.#reachable(NEEDS.state);
+      await this.#reachable(COMMANDS_PER_TOOL.get_state);
       const s = await this.#settleRead(call);
       if (!s.settled) return this.#openingTimedOut(call, s, "get_state");
       const ready = s.last as Ready;
@@ -242,7 +247,7 @@ export class Driver {
 
   async readMenu(ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#call(ctx, async call => {
-      await this.#reachable(NEEDS.menu);
+      await this.#reachable(COMMANDS_PER_TOOL.read_menu);
       const s = await this.#settleRead(call);
       if (!s.settled) return this.#openingTimedOut(call, s, "read_menu");
       const ready = s.last as Ready;
@@ -256,7 +261,7 @@ export class Driver {
     return this.#call(ctx, async call => {
       const button = (Button as Record<string, Button | undefined>)[buttonName];
       if (button === undefined) throw new Refusal("unknown_button", `Unknown button ${JSON.stringify(buttonName)}`, { buttons: Object.keys(Button) });
-      await this.#reachable(NEEDS.act);
+      await this.#reachable(COMMANDS_PER_TOOL.press);
       await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "press");
@@ -292,7 +297,7 @@ export class Driver {
 
   async selectOption(label: string | undefined, index: string | number | undefined, expectScreen: string | undefined, ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#call(ctx, async call => {
-      await this.#reachable(NEEDS.act);
+      await this.#reachable(COMMANDS_PER_TOOL.select_option);
       await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "select_option");
@@ -343,7 +348,7 @@ export class Driver {
 
   async startRun(species: string[], slot: number | undefined, overwrite: boolean, ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#call(ctx, async call => {
-      await this.#reachable(NEEDS.act);
+      await this.#reachable(COMMANDS_PER_TOOL.start_run);
       await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "start_run");
@@ -646,15 +651,13 @@ export class Driver {
 
   async #guard(ready: Ready): Promise<void> {
     const screen = ready.screen;
-    if (!this.#game.hub) {
-      // The pidfile lock is the CDP path's; over the hub the grant was already taken by `#claim` (§7.5).
-      const c = lockContended(this.lock);
-      if (c.contended) throw new Refusal("tab_contended", `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, { screen, holder: c.holder });
-    }
     if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
     if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
-    // Over the hub the driver's own settles pump the loop, so there is nothing to emulate and nothing to freeze (§10.3).
+    // The rest is CDP's: over the hub the grant was taken by `#claim` in place of the pidfile lock, and the driver's
+    // own settles pump the loop in place of focus emulation, so neither check has anything to say (§13.2).
     if (this.#game.hub) return;
+    const c = lockContended(this.lock);
+    if (c.contended) throw new Refusal("tab_contended", `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, { screen, holder: c.holder });
     // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
     await this.#game.keepAlive();
     const a = await this.#game.frame();

@@ -19,7 +19,7 @@ import type { StartersResult } from "../page/starters.ts";
 import { KEY_BUTTONS, type Args, type CommandName } from "../protocol/commands.ts";
 import type { ClientReply } from "../protocol/wire.ts";
 import { dial, type HubClient } from "./client.ts";
-import { ladder, offeredCommands, type Fleet, type Reach } from "./reach.ts";
+import { offeredCommands, reachLadder, type Fleet, type Reach } from "./reach.ts";
 
 /** Each button's name in the `key` command's vocabulary; a button outside it has no raw fallback (§10.4). */
 const KEY_NAMES = new Set<string>(KEY_BUTTONS);
@@ -62,7 +62,7 @@ export class HubLink implements GameLink, Tab {
     if (!isClient(c)) return { browsers: [], tabs: [], driver: null, commands: new Set(), reach: c, skew: null };
     const state = await c.state();
     this.#commands = offeredCommands(state);
-    return { browsers: state.extensions, tabs: state.tabs, driver: state.driver, commands: this.#commands, reach: ladder(state, needed), skew: c.skew };
+    return { browsers: state.extensions, tabs: state.tabs, driver: state.driver, commands: this.#commands, reach: reachLadder(state, needed), skew: c.skew };
   }
 
   /** Takes the driver grant at an acting call's start (§7.5). `false`: another session holds it. */

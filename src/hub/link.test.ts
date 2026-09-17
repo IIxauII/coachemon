@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { Button, NAMES } from "../enums/generated.ts";
 import { isFault } from "../game/link.ts";
-import { FakeExtension, settled } from "./fake-extension.ts";
+import { FakeExtension, delivered } from "./fake-extension.ts";
 import { Hub } from "./hub.ts";
 import { HubLink } from "./link.ts";
 
@@ -26,7 +26,7 @@ async function linked(opts: Parameters<typeof FakeExtension.connect>[1] = {}) {
   ext.tab(1);
   const link = new HubLink({ port: hub.port, version: "1.0.0", names: NAMES.Button, spawnHub: false });
   open.push(link);
-  await settled();
+  await delivered();
   return { hub, ext, link };
 }
 
@@ -76,7 +76,7 @@ test("attach is a reachability check, not a launch: the server never starts a br
   const { ext, link } = await linked();
   assert.deepEqual(await link.attach(), { attached: true, launchedChrome: false });
   ext.tab(1, "gone");
-  await settled();
+  await delivered();
   assert.deepEqual(await link.attach(), { attached: false, launchedChrome: false });
 });
 
