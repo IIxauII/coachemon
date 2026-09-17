@@ -40,9 +40,11 @@ const tpOurMove = (s, me, f, live) => {
   if (live && typeof moveOutcomes === "function") {
     try {
       // Best by turns to KO it (a charge or recharge turn per hit counts), then by damage.
-      const turns = o => (o.expected > 0 ? (o.charge || o.recharge ? 2 : 1) * tpTurns(o, f) - (o.recharge ? 1 : 0) : 99);
+      const turns = o => (o.expected > 0 ? (o.traits?.charge || o.traits?.recharge ? 2 : 1) * tpTurns(o, f) - (o.traits?.recharge ? 1 : 0) : 99);
       const best = tpFastest(moveOutcomes(s, me, f) ?? [], f, turns, o => o.expected);
-      if (best?.expected > 0) return view(best, { charge: !!best.charge, recharge: !!best.recharge || !!best.noRepeat, semiCharge: !!best.semiCharge });
+      if (best?.expected > 0) {
+        return view(best, { charge: !!best.traits?.charge, recharge: !!best.traits?.recharge || !!best.traits?.noRepeat, semiCharge: !!best.traits?.charge && !!best.traits?.semiCharge });
+      }
     } catch {}
   }
   const m = tpFastest(hits(me, f).filter(x => x.dmg > 0), f);

@@ -26,13 +26,15 @@ class SemiInvulnerableTag extends BattlerTag {}
 
 // Damage per hit is the move's power unless a scenario's table says otherwise ("attacker>move>defender").
 let TABLE = {};
-const move = (id, name, power, { type = 0, cat = 0, acc = 100, attrs = [], flags = 0, cond = null, charging = false, chargeAttrs = [], conditions = [], restrictions = [], priority = 0 } = {}) => {
+// `userBenefit` is what the game's own move scoring takes off a move that costs its user (RecoilAttr,
+// HalfSacrificialAttr and their kin override `getUserBenefitScore`): the planner's drawback rule reads it.
+const move = (id, name, power, { type = 0, cat = 0, acc = 100, attrs = [], flags = 0, cond = null, charging = false, chargeAttrs = [], conditions = [], restrictions = [], priority = 0, userBenefit = 0 } = {}) => {
   const mv = {
     id, name, type, power, accuracy: acc, category: cat, moveTarget: 3, priority, flags, attrs, chance: -1, conditions, conditionsSeq2: [], conditionsSeq3: [], restrictions, chargeAttrs,
     hasFlag: f => !!(flags & f), getPriority: () => priority, calculateBattleAccuracy: () => acc,
     isChargingMove: () => charging, hasAttr: n => attrs.some(a => a.constructor.name === n), getAttrs: () => [], is: n => n === "AttackMove" && cat !== 2,
     applyConditions: (u, t) => (cond ? cond(u, t) : true),
-    getUserBenefitScore: () => 0, getTargetBenefitScore: () => -power / 5,
+    getUserBenefitScore: () => userBenefit, getTargetBenefitScore: () => -power / 5,
   };
   return mv;
 };
@@ -85,6 +87,7 @@ eval(bundle("hud", { expose: true }));
 const hud = globalThis.__hud;
 const E = { moveOutcome: hud["10-damage"].moveOutcome, moveOutcomes: hud["10-damage"].moveOutcomes, enemyMoveDistribution: hud["20-enemy-ai"].enemyMoveDistribution, threatFrom: hud["30-planner"].threatFrom,
   exchange: hud["30-planner"].exchange, duel: hud["30-planner"].duel, fieldPlan: hud["30-planner"].fieldPlan, actChance: hud["30-planner"].actChance,
+  planOutcomes: hud["30-planner"].planOutcomes, drawback: hud["30-planner"].drawback, moveTraits: hud["07-move-traits"].moveTraits, costNotes: hud["07-move-traits"].costNotes,
   tpFight: hud["35-team-plan"].tpFight, TRAPS: hud["01-core"].TRAPS };
 // Fresh field for each case: the turn number keys every per-turn cache.
 const setup = (ours, foes) => {
@@ -114,7 +117,7 @@ const log = (...a) => console.log(...a);
   phase = { phaseName: "MovePhase" };
   assert.equal(E.moveOutcomes(scene, me, foe).length, 5, "outside the command phase nothing is filtered by game calls");
   phase = { phaseName: "CommandPhase" };
-  assert.equal(E.moveOutcome(scene, me, foe, pmOf(fakeOut)).once, true, "Fake Out is first-turn only");
+  assert.equal(E.moveOutcome(scene, me, foe, pmOf(fakeOut)).traits.once, true, "Fake Out is first-turn only");
 }
 
 // ---- E. What a move costs its user, with a note per cost.
@@ -126,8 +129,8 @@ const log = (...a) => console.log(...a);
   setup([me], [ferro]);
   const o = E.moveOutcome(scene, me, ferro, pmOf(furySwipes), { crit: false });
   near(o.self, 25 * 3.1 * 0.8, "Iron Barbs: 1/8 max HP per landed contact hit");
-  log(`E ${o.notes.join(" · ")}`);
-  assert.ok(o.notes.includes("Iron Barbs: Fury Swipes ≈−31%"));
+  log(`E ${[...o.costs, ...o.notes].join(" · ")}`);
+  assert.ok(o.costs.includes("Iron Barbs: ≈−31%"));
   const guard = mon("Clefable", { hp: 200, abilities: ["BlockNonDirectDamageAbAttr"] });
   setup([guard], [ferro]);
   assert.equal(E.moveOutcome(scene, guard, ferro, pmOf(furySwipes), { crit: false }).self, 0, "Magic Guard takes no chip");
@@ -141,15 +144,15 @@ const log = (...a) => console.log(...a);
     [move(796, "Steel Beam", 140, { cat: 1, acc: 95, attrs: [new HalfSacrificialAttr()] }), o => near(o.self, 100, "Steel Beam half max HP")],
     [move(136, "High Jump Kick", 130, { acc: 90, attrs: [new MissEffectAttr()] }), o => near(o.self, 100 * 0.1, "crash half max HP on a 10 % miss")],
     [move(153, "Explosion", 250, { attrs: [new SacrificialAttr()] }), o => assert.equal(o.selfKo, 1)],
-    [move(200, "Outrage", 120, { attrs: [new FrenzyAttr(), new MissEffectAttr()] }), o => { assert.equal(o.lock, true); assert.equal(o.self, 0, "Outrage's miss isn't a crash"); }],
-    [move(315, "Overheat", 130, { cat: 1, acc: 90, attrs: [new StatStageChangeAttr([3], -2, true)] }), o => assert.deepEqual(o.drops, { 3: -2 })],
-    [move(893, "Gigaton Hammer", 160, { restrictions: [{ i18nkey: "battle:moveDisabledConsecutive" }] }), o => assert.equal(o.noRepeat, true)],
+    [move(200, "Outrage", 120, { attrs: [new FrenzyAttr(), new MissEffectAttr()] }), o => { assert.equal(o.traits.lock, true); assert.equal(o.self, 0, "Outrage's miss isn't a crash"); }],
+    [move(315, "Overheat", 130, { cat: 1, acc: 90, attrs: [new StatStageChangeAttr([3], -2, true)] }), o => assert.deepEqual(o.traits.drops, { 3: -2 })],
+    [move(893, "Gigaton Hammer", 160, { restrictions: [{ i18nkey: "battle:moveDisabledConsecutive" }] }), o => assert.equal(o.traits.noRepeat, true)],
   ];
   for (const [mv, check] of cases) {
     setup([me], [target]);
     const out = E.moveOutcome(scene, me, target, pmOf(mv), { crit: false });
     check(out);
-    log(`E ${out.notes.join(" · ")}`);
+    log(`E ${[...out.costs, ...out.notes].join(" · ")}`);
   }
 }
 
@@ -288,9 +291,10 @@ const log = (...a) => console.log(...a);
   phase = { phaseName: "CommandPhase" };
 }
 
-// ---- Drawbacks decide between moves. Steel Beam (−50 % HP) vs the slightly weaker, clean Flash Cannon.
+// ---- Drawbacks decide between moves, as the game's own scoring marks them: Steel Beam (−50 % HP, and a user
+// benefit score to match) vs the slightly weaker, clean Flash Cannon.
 {
-  const steelBeam = move(796, "Steel Beam", 140, { cat: 1, attrs: [new HalfSacrificialAttr()] });
+  const steelBeam = move(796, "Steel Beam", 140, { cat: 1, attrs: [new HalfSacrificialAttr()], userBenefit: -10 });
   const flashCannon = move(430, "Flash Cannon", 120, { cat: 1 });
   const pick = foeHp => {
     const foe = mon("Glaceon", { player: false, hp: foeHp, spe: 50, moves: [move(58, "Ice Beam", 30)] });
@@ -303,6 +307,17 @@ const log = (...a) => console.log(...a);
   };
   assert.deepEqual(pick(220), [2, 2, "Flash Cannon"], "same turns: the clean move");
   assert.deepEqual(pick(120), [1, 2, "Steel Beam"], "Steel Beam saves a turn");
+  // A move the game's own scoring puts below zero *is* a drawback, and the clean alternative is kept beside it.
+  {
+    const costly = move(796, "Steel Beam", 140, { cat: 1, attrs: [new HalfSacrificialAttr()], userBenefit: -60 });
+    const foe = mon("Glaceon", { player: false, hp: 220, spe: 50, moves: [move(58, "Ice Beam", 30)] });
+    const me = mon("Magnezone", { hp: 500, spe: 60, moves: [costly, flashCannon] });
+    setup([me], [foe]);
+    const [a, b] = E.planOutcomes(scene, me, foe);
+    log(`$ benefit: ${a.name} ${a.benefit} drawback=${E.drawback(a)} · ${b.name} ${b.benefit} drawback=${E.drawback(b)}`);
+    assert.deepEqual([E.drawback(a), E.drawback(b)], [true, false], "the AI's score names the drawback");
+    assert.equal(E.fieldPlan(scene, [me], [foe], false).view.slots[0].move, "Flash Cannon");
+  }
 
   // Outrage's confusion after the lock and Overheat's falling SpA stretch a long exchange.
   const outrage = move(200, "Outrage", 100, { attrs: [new FrenzyAttr()] });

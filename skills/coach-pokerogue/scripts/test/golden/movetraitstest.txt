@@ -1,0 +1,9 @@
+charge: true · semi true · skip {"weather":[3,4]} · now true
+turns: recharge true · once true · noRepeat true
+recoil: {"ratio":0.33,"useHp":false,"blocked":false} · blocked true
+hp: halfSac true · crash true · Outrage crash false · selfKo onHit
+drops: {"2":-1,"4":-1} · rolled {} · boost {"5":1}
+hits: 2–5 2@0.35 3@0.35 4@0.15 5@0.15 · Skill Link 5 · Beat Up 2 · lens 3
+status: burn 6 · Howl side true · heal 0.5 · hazard SPIKES · drain 0.5
+costs: recharge turn · recoil 33% of damage · −2 SpA after use
+move traits: ok

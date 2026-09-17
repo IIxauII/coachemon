@@ -549,4 +549,27 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(koChanceAt({ ...o, revive: 50 }, 90), 0, "a Reviver Seed");
 }
 
+// ---- The record carries the move's traits and the costs worded from them (#128). What the traits *are* is
+// movetraitstest's; here they have to reach the record, with this matchup's amounts in the wording.
+{
+  const recoiler = move(38, "Double-Edge", 0, 120, { attrs: [Object.assign(new (class RecoilAttr {})(), { damageRatio: 0.33 })] });
+  const hyperBeam = move(63, "Hyper Beam", 0, 150, { attrs: [new (class RechargeAttr {})()] });
+  const atk = mon("user", { maxHp: 400, moves: [hyperBeam] }), def = mon("target", { player: false });
+  setup(atk, def);
+  const rec = moveOutcome(scene, atk, def, pmOf(recoiler), { crit: false });
+  assert.deepEqual(rec.traits.recoil, { ratio: 0.33, useHp: false, blocked: false }, "the traits ride on the record");
+  near(rec.self, rec.expected * 0.33, "recoil off the damage this matchup deals");
+  assert.deepEqual(rec.costs, [`recoil \u2248\u2212${Math.round(rec.self / 400 * 100)}%`], "...and the wording carries its share of max HP");
+  const beam = moveOutcome(scene, atk, def, pmOf(hyperBeam), { crit: false });
+  assert.ok(beam.traits.recharge && beam.costs.includes("recharge turn"), `recharge: ${beam.costs}`);
+  assert.ok(!beam.notes.includes("recharge turn"), "a cost is in `costs`, not mixed into the notes");
+  // The approximation path carries them too, so a card outside the command phase shows the same costs.
+  phaseName = "MovePhase";
+  setup(atk, def);
+  const rough = moveOutcomes(scene, atk, def).find(o => o.name === "Hyper Beam");
+  phaseName = "CommandPhase";
+  assert.ok(rough.traits.recharge && rough.costs.includes("recharge turn"), `estimate: ${JSON.stringify(rough.costs)}`);
+  console.log(`traits: ${rec.costs.join(" \u00b7 ")} | ${beam.costs.join(" \u00b7 ")}`);
+}
+
 console.log("damage: ok");

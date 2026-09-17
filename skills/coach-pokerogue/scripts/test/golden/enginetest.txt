@@ -1,12 +1,12 @@
 D usable (awake foe): Sucker Punch, Tackle
-E Iron Barbs: Fury Swipes ≈−31% · 2–5 hits
+E Iron Barbs: ≈−31% · 2–5 hits
 E recoil ≈−18%
-E Steel Beam: −50% HP
-E High Jump Kick: crash −50% on a miss
-E Explosion: user faints
-E Outrage: locks 2–3 turns → confused
-E Overheat: −2 SpA
-E Gigaton Hammer: not twice in a row
+E −50% HP each use
+E −50% HP if it misses
+E user faints
+E locks 2–3 turns, then confused
+E −2 SpA after use
+E not twice in a row
 A Hyper Beam: 3 hits in 5 turns · Body Slam: 5 hits in 5 turns
 A Solar Beam: 6 turns, in sun 3
 A into an attacker: Focus Punch KO first 0 in 9, Sucker Punch 1 in 1; into a setup move: 1 in 1, 0 in 9
@@ -25,5 +25,6 @@ F foe underground: faster Strike 2 turns (KO first 1), Earthquake 1, slower Stri
 8 threat on the replacement: Earthquake 100%, pKo 1
 $ foe 220 HP: Steel Beam 2 turns cost 1 · Flash Cannon 2 turns · pick Flash Cannon
 $ foe 120 HP: Steel Beam 1 turns cost 0.5 · Flash Cannon 2 turns · pick Steel Beam
+$ benefit: Steel Beam -32 drawback=true · Flash Cannon 24 drawback=false
 $ 4 hits needed: Pound 4 turns · Outrage 5 (cost 0.15) · Overheat 9
 engine: ok

@@ -11,7 +11,7 @@ import { bundle } from "../hud-bundle.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-const STUBBED = ["moveOutcome", "moveOutcomes", "statusMoves", "endOfTurnHp", "enemyMoveDistribution", "aiReplay", "predictSwitches", "enemyAction"];
+const STUBBED = ["moveOutcome", "moveOutcomes", "statusMoves", "endOfTurnHp", "enemyMoveDistribution", "aiReplay", "predictSwitches", "enemyAction", "aiTargetScore"];
 const STUBS = `
 const moveOutcome = (s, atk, def, pm, opts = {}) => globalThis.__stub.outcome(atk, def, pm, opts);
 const moveOutcomes = (s, atk, def) => atk.moveset.map(pm => moveOutcome(s, atk, def, pm)).filter(Boolean);
@@ -24,6 +24,8 @@ const enemyMoveDistribution = (s, e) => globalThis.__stub.dist(e);
 const aiReplay = (s, e, target) => globalThis.__stub.replay?.(e, target) ?? null;
 const predictSwitches = (s, b, active) => globalThis.__stub.switches(active);
 const enemyAction = (s, e) => ({ kind: "move", dist: enemyMoveDistribution(s, e), tera: false });
+// The planner's benefit nudge is the AI's own score for our move (step 7). Scenarios that care set __stub.benefit.
+const aiTargetScore = (s, e, mv, bi, p) => [{ score: globalThis.__stub.benefit?.(e, mv, p) ?? 0, p: 1 }];
 `;
 const liveBundle = () => {
   let src = bundle("hud", { expose: true });
@@ -66,6 +68,12 @@ const TABLE = {
   "Lycanroc>Stone Edge>Charizard": [[500], 0.8, 4], "Lycanroc>Stone Edge>Blastoise": [[150], 0.8, 1],
   "Weavile>Knock Off>Morpeko": [[60], 1, 0.5], "Weavile>Knock Off>Scrafty": [[40], 1, 0.25], "Weavile>Knock Off>Metagross": [[140], 1, 2],
 };
+// The move traits the planner reads (07-move-traits' shape), faked alongside the numbers: a scenario that needs one
+// sets it on the record it hands back.
+const TRAITS = {
+  charge: false, semiCharge: false, recharge: false, interrupt: false, needsAttack: false, once: false, lock: false,
+  noRepeat: false, recoil: null, halfSac: false, crash: false, selfKo: null, drops: {}, removesType: false,
+};
 // Enumerates hits landed × 16 damage rolls, with boss bars clamping each hit at the bar's boundary.
 const outcome = (atk, def, pm, { crit = false } = {}) => {
   const row = TABLE[`${atk.name}>${pm.getName()}>${def.name}`];
@@ -101,7 +109,7 @@ const outcome = (atk, def, pm, { crit = false } = {}) => {
   return {
     name: pm.getName(), type: TY[mv.type], cat: mv.category ? "special" : "physical", e, priority: mv.priority, spread: [2, 4, 6, 8].includes(mv.moveTarget),
     acc, dist: [{ n: per.length, p: 1 }], perHit: per.map(x => ({ max: Math.floor(x * mult), min: Math.floor(x * mult * 0.85) })),
-    expected, uncapped, max: def.hp - Math.max(play(per.length, 1), 0), pKo, notes: [],
+    expected, uncapped, max: def.hp - Math.max(play(per.length, 1), 0), pKo, traits: { ...TRAITS }, costs: [], notes: [],
   };
 };
 
@@ -121,7 +129,7 @@ const cyrus = withMetagross => {
 
 // Mounts the HUD on a mocked scene and returns the rendered lines (`field`: everything above the foe rows).
 // `fieldIndex`: whose command phase it is; `turnCommands`: commands already chosen this turn.
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : live ? { phaseName: "CommandPhase", fieldIndex } : null), queueMessage() {} };
@@ -129,7 +137,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
   const [gyarados, weavile] = foes;
   globalThis.__stub = {
-    outcome: stubOutcome,
+    outcome: stubOutcome, benefit,
     dist: dist ?? (e => (e === gyarados ? [{ name: "Waterfall", type: "Water", p: 1, score: 10, targets: [0] }] : [])),
     switches: switches ?? (active => new Map(weavile && active.includes(gyarados) ? [[gyarados, { to: weavile, ratio: 1 }]] : [])),
   };
@@ -394,7 +402,7 @@ Object.assign(TABLE, { "Ambipom>Fake Out>Slowbro": [[60], 1, 1], "Ambipom>Return
 {
   const party = [mon("Ambipom", 70, ["Normal"], [250, 180, 120, 60, 120, 200], [["Fake Out", "Normal", 40, "P", 3], ["Return", "Normal", 102, "P"]], true)];
   const foes = [mon("Slowbro", 70, ["Water", "Psychic"], [320, 120, 200, 180, 150, 60], [["Psychic", "Psychic", 90, "S"]], true)];
-  const fakeOut = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Fake Out" ? { ...x, once: true, flinch: 1 } : x; };
+  const fakeOut = (a, d, pm, o) => { const x = outcome(a, d, pm, o); return x && pm.getName() === "Fake Out" ? { ...x, traits: { ...x.traits, once: true }, flinch: 1 } : x; };
   const dist = () => [{ name: "Psychic", type: "Psychic", p: 1, score: 10, targets: [0] }];
   const at = stub => render({ party, foes, live: true, dist, switches: () => new Map(), stubOutcome: stub }).field.find(l => /^⚔ Ambipom/.test(l)) ?? "";
   const withFakeOut = at(fakeOut);
@@ -699,7 +707,9 @@ Object.assign(TABLE, {
     foeAt(2, "Rattata", 30, ["Normal"], [80, 60, 40, 30, 40, 70], [["Hyper Fang", "Normal", 80, "P"]]),
     foeAt(3, "Pidgey", 30, ["Normal", "Flying"], [80, 50, 45, 40, 40, 60], [["Wing Attack", "Flying", 60, "P"]]),
   ];
-  const { lines, field } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  // Double-Edge's recoil is what the game's own move scoring marks down, so the drawback rule sees it there.
+  const benefit = (e, mv) => (mv.name === "Double-Edge" ? -20 : 10);
+  const { lines, field } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map(), benefit });
   console.log(`== doubles overkill (live)\n${lines.join("\n")}`);
   const slots = slotLines(field);
   assert.match(slots.find(l => /^⚔ Charizard/.test(l)) ?? "", /Heat Wave → both/);

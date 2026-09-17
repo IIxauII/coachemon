@@ -1,1 +1,2 @@
+traits: recoil ≈−9% | recharge turn
 damage: ok
