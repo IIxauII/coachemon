@@ -71,7 +71,8 @@ function harness(o: Partial<TransportDeps> = {}) {
   return { t, dials, toTab, connect, advance: c.advance, reply: (fn: (tab: number) => Promise<unknown>) => void (answer = fn) };
 }
 
-const ready = (tab = 1) => ({ t: "tab", state: "ready", title: "PokéRogue" }) as const;
+/** What a relay says when its tab is ready; the tab id is the argument to `fromTab`, not part of the frame. */
+const ready = () => ({ t: "tab", state: "ready", title: "PokéRogue" }) as const;
 
 test("no game tab, no loopback traffic (§8.1)", () => {
   const h = harness();

@@ -5,7 +5,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Target } from "../../src/protocol/wire.ts";
-import { ACTION_TITLE, DESCRIPTION, GECKO_ID, MATCHES, manifestFor, storeVersion } from "../src/build/manifest.ts";
+import {
+  ACTION_TITLE,
+  BANNED_MANIFEST_KEYS,
+  BANNED_MANIFEST_WORDS,
+  DESCRIPTION,
+  GECKO_ID,
+  MATCHES,
+  manifestFor,
+  storeVersion,
+} from "../src/build/manifest.ts";
 
 const TARGETS: Target[] = ["chrome", "firefox", "safari"];
 const store = (target: Target) => manifestFor({ target, flavour: "store", version: "1.2.3" });
@@ -13,10 +22,9 @@ const store = (target: Target) => manifestFor({ target, flavour: "store", versio
 test("a store build declares no permission of any kind, on any target (§6)", () => {
   for (const target of TARGETS) {
     const m = store(target);
-    for (const key of ["permissions", "optional_permissions", "host_permissions", "optional_host_permissions"]) {
-      assert.ok(!(key in m), `${target} store manifest has ${key}`);
-    }
-    assert.doesNotMatch(JSON.stringify(m), /nativeMessaging|scripting|activeTab|<all_urls>/);
+    for (const key of BANNED_MANIFEST_KEYS) assert.ok(!(key in m), `${target} store manifest has ${key}`);
+    const text = JSON.stringify(m);
+    for (const word of BANNED_MANIFEST_WORDS) assert.ok(!text.includes(word), `${target} store manifest mentions ${word}`);
   }
 });
 

@@ -105,26 +105,23 @@ Not to be confused with the game's own command menu (Fight, Ball, Pokémon, Run)
 
 ## Relay
 
-The one part of the extension that talks to both the browser and the game page. It sits in each game tab, beside the
-page but in a world of its own, and carries a **command** in and its answer straight back out — nothing else crosses.
-It is also what makes a tab count: a tab is reachable once its relay and the page have found each other.
+The extension's presence in one game tab: it carries a **command** in and its answer straight back out, and nothing
+else crosses. A tab becomes reachable only once its relay is there, so the relay is what the **hub** counts.
 
-Only the direction out of the page is guarded, and by shape alone: an answer the relay was not waiting for, or a
-**card** that is not exactly shaped like one, never leaves the tab. Nothing in the page is trusted, because anything
-already in the page could drive the game itself.
+Nothing the page says is trusted, because anything already in the page could drive the game itself. Only answers the
+relay is waiting for and **card**s shaped exactly as the coach sends them leave a tab.
 
 ## Flavour
 
 Which of two builds of the extension a player has: the **store** flavour, which is what a store reviews and ships and
 which asks for no permission of any kind, or the **dev** flavour, which carries the extra commands a developer needs
-and talks to a **hub** of its own so the two never count the same tab twice. A store build contains nothing the dev
-build added — that is checked on the built artifact, not trusted.
+and its own **hub**, so the two never count the same tab twice.
 
 ## Build id
 
-One string naming exactly which build of the extension a tab is running, carried on everything the extension says.
-Both halves in a tab must show the same build id to work together, which is what makes the newest copy of a script
-replace an older one cleanly and leaves an orphaned one unable to pair with anything.
+Which build of the extension a tab is running. Everything the extension says carries it, and the parts inside one tab
+work together only when their build ids agree — so a tab left on an older build is out of play rather than half
+working.
 
 ## Interrupted run
 

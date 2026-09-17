@@ -21,11 +21,12 @@ export type ToBackground = TabReport | Keepalive | EventReport;
 /** One command, forwarded from the hub frame unchanged but for the tab id (§7.6). */
 export type CmdMessage = { t: "cmd"; id: number; name: string; args: Record<string, unknown> };
 
-export type ToRelay = CmdMessage;
-
 /** What the relay answers through `sendResponse`, ready to go on the wire as it stands. */
 export type RelayReply =
   | { t: "reply"; id: number; ok: true; result: unknown }
   | { t: "reply"; id: number; ok: false; code: RelayCode; message: string };
 
 export const KEEPALIVE_MS = 20_000;
+
+/** What both caps say when they refuse (§8.3, §9.7): the relay's, on the detail, and the background's, on the frame. */
+export const TOO_LARGE = "reply over 1 MB";

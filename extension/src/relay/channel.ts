@@ -18,16 +18,9 @@ export const EVENT = {
 /** A reply or event over this is dropped at the relay, `too-large` (§9.7). The background caps the hub frame again. */
 export const MAX_DETAIL_BYTES = 1024 * 1024;
 
-export type Side = "relay" | "page" | "hud";
-
-export type HelloDetail = { build: string; side: Side; commands?: string[] };
-export type CmdDetail = { build: string; id: number; name: string; args: Record<string, unknown> };
-export type ReplyDetail =
-  | { build: string; id: number; ok: true; result: unknown }
-  | { build: string; id: number; ok: false; code: "threw"; message: string };
+/** The two shapes the relay has to recognise to forward them; every other detail is built inline where it is sent. */
 export type CardDetail = { build: string; kind: string; key: string; wave: number; verdict: string; text: string };
 export type CoachErrorDetail = { build: string; message: string };
-export type WrongWorldDetail = { build: string; side: "page" | "hud" };
 
 /** The kinds the HUD pushes (§11.1); the HUD model's `shop` arrives as `reward`. */
 export const CARD_KINDS = ["battle", "learn", "reward", "biome", "encounter"] as const;
@@ -48,15 +41,25 @@ export function encode(detail: unknown): string {
   return JSON.stringify(detail);
 }
 
-/** A detail that is not a JSON object is not ours: dropped without a word (§9.5). */
-export function decode(detail: unknown): Record<string, unknown> | null {
-  if (typeof detail !== "string" || detail.length > MAX_DETAIL_BYTES) return null;
+/**
+ * Like `decode`, but at any size. A reply has to be identified before it can be refused for being too large: the
+ * ownership checks come first, or any MAIN-world code could poison an in-flight command with one oversized reply
+ * (§9.5). Everything else uses the bounded `decode`.
+ */
+export function decodeAny(detail: unknown): Record<string, unknown> | null {
+  if (typeof detail !== "string") return null;
   try {
     const parsed = JSON.parse(detail);
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
   } catch {
     return null;
   }
+}
+
+/** A detail that is not a JSON object, or is over the cap, is not ours: dropped without a word (§9.5). */
+export function decode(detail: unknown): Record<string, unknown> | null {
+  if (typeof detail !== "string" || detail.length > MAX_DETAIL_BYTES) return null;
+  return decodeAny(detail);
 }
 
 const str = (v: unknown): v is string => typeof v === "string";
@@ -78,6 +81,12 @@ export function coachErrorBody(d: Record<string, unknown>): Omit<CoachErrorDetai
   if (keys !== "build,message" || !str(d.message)) return null;
   return { message: d.message };
 }
+
+/** Each HUD event kind with the event that carries it and the shape it must have, so nothing re-decides it elsewhere. */
+export const EVENT_BY_KIND: readonly [EventKind, string][] = [
+  ["card", EVENT.card],
+  ["coach-error", EVENT.coachError],
+];
 
 export function eventBody(kind: EventKind, d: Record<string, unknown>): Record<string, unknown> | null {
   return kind === "card" ? cardBody(d) : coachErrorBody(d);

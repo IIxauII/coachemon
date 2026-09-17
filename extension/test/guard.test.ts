@@ -8,6 +8,8 @@
 import assert from "node:assert/strict";
 import { createContext, runInContext } from "node:vm";
 import { readFileSync, readdirSync, statSync } from "node:fs";
+import { walk } from "../src/build/artifact.ts";
+import { BANNED_MANIFEST_KEYS, BANNED_MANIFEST_WORDS } from "../src/build/manifest.ts";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -16,10 +18,6 @@ import { DEV_COMMAND_NAMES } from "../../src/protocol/dev-commands.ts";
 import { EVENT, encode } from "../src/relay/channel.ts";
 
 const OUT = fileURLToPath(new URL("../.output/", import.meta.url));
-
-/** No permission of any kind reaches a store build, and none of these words appears anywhere in its manifest (§6). */
-const BANNED_MANIFEST_KEYS = ["permissions", "optional_permissions", "host_permissions", "optional_host_permissions"];
-const BANNED_MANIFEST_WORDS = ["nativeMessaging", "scripting", "tabs", "storage", "activeTab", "<all_urls>"];
 
 /** Anything that would be a dev affordance or the dev port, in a store artifact's files. */
 const BANNED_IN_STORE = ["47148", "eval(", "new Function(", "screenshot", "captureVisibleTab", "executeScript", "runtime.reload", "dev-reload"];
@@ -41,11 +39,7 @@ function artifacts(): Artifact[] {
 
 /** Every file in an artifact except the icons, which are the only binaries. */
 function files(dir: string): { path: string; rel: string }[] {
-  return readdirSync(dir).flatMap(name => {
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) return files(path).map(f => ({ ...f, rel: `${name}/${f.rel}` }));
-    return name.endsWith(".png") ? [] : [{ path, rel: name }];
-  });
+  return walk(dir, name => !name.endsWith(".png")).map(rel => ({ path: join(dir, rel), rel }));
 }
 
 const manifestOf = (a: Artifact) => JSON.parse(readFileSync(join(a.dir, "manifest.json"), "utf8")) as Record<string, unknown>;

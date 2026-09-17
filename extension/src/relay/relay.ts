@@ -5,9 +5,9 @@
  * It is the only part that talks to both the background and the page, and the only place the upward direction is
  * defended: a page-originated event becomes a hub event only if it is structurally exactly what the HUD sends (§9.5).
  */
-import { KEEPALIVE_MS, type CmdMessage, type RelayReply, type ToBackground } from "../messages.ts";
-import type { EventKind, TabState } from "../../../src/protocol/wire.ts";
-import { EVENT, MAX_DETAIL_BYTES, decode, encode, eventBody, type Channel, type MakeEvent } from "./channel.ts";
+import { KEEPALIVE_MS, TOO_LARGE, type CmdMessage, type RelayReply, type ToBackground } from "../messages.ts";
+import type { TabState } from "../../../src/protocol/wire.ts";
+import { EVENT, EVENT_BY_KIND, MAX_DETAIL_BYTES, decode, decodeAny, encode, eventBody, type Channel, type MakeEvent } from "./channel.ts";
 
 export type RelayDeps = {
   /** `document` in the real thing. */
@@ -57,8 +57,8 @@ export function startRelay(d: RelayDeps): Relay {
   };
 
   /** A detail from the page counts only with our own build id: the relay pairs only with page scripts of its build (§9.6). */
-  const mine = (detail: unknown): Record<string, unknown> | null => {
-    const parsed = decode(detail);
+  const mine = (detail: unknown, read: (d: unknown) => Record<string, unknown> | null = decode): Record<string, unknown> | null => {
+    const parsed = read(detail);
     return parsed && parsed.build === d.build ? parsed : null;
   };
 
@@ -77,19 +77,21 @@ export function startRelay(d: RelayDeps): Relay {
   d.channel.addEventListener(EVENT.reply, e => {
     if (!pending || pending.reply) return;
     const raw = e.detail;
+    // Ownership first, size second: otherwise any MAIN-world code could turn an in-flight command into `too-large`
+    // by dispatching one oversized reply, which is exactly what the structural defence is there to stop (§9.5).
+    const reply = mine(raw, decodeAny);
+    if (!reply || reply.id !== pending.id) return;
     if (typeof raw === "string" && overCap(raw)) {
-      pending.reply = { t: "reply", id: pending.id, ok: false, code: "too-large", message: "reply over 1 MB" };
+      pending.reply = { t: "reply", id: pending.id, ok: false, code: "too-large", message: TOO_LARGE };
       return;
     }
-    const reply = mine(raw);
-    if (!reply || reply.id !== pending.id) return;
     pending.reply = reply.ok === true
       ? { t: "reply", id: pending.id, ok: true, result: reply.result }
       : { t: "reply", id: pending.id, ok: false, code: "threw", message: typeof reply.message === "string" ? reply.message : "" };
   });
 
-  for (const kind of ["card", "coach-error"] as EventKind[]) {
-    d.channel.addEventListener(kind === "card" ? EVENT.card : EVENT.coachError, e => {
+  for (const [kind, event] of EVENT_BY_KIND) {
+    d.channel.addEventListener(event, e => {
       const raw = e.detail;
       // An oversized event is dropped here and nowhere else: nothing upward carries it (§9.7).
       if (typeof raw !== "string" || overCap(raw)) return;

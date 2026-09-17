@@ -143,10 +143,15 @@ extension/                       nested package, own lockfile, NOT an npm worksp
   tsconfig.json
   entrypoints/
     background.ts                transport (§8)
-    relay.content.ts             ISOLATED content script (§9)
+    relay.ts                     unlisted script → relay.js; the ISOLATED content script (§9)
     page.ts                      unlisted script → page.js; imports ../../src/page/*
   src/
+    messages.ts                  runtime messaging between a relay and the background (§8.3)
+    build-env.d.ts               the compile-time constants wxt.config.ts defines (§5.2)
     transport/                   hub socket, keepalive, backoff, consent
+    relay/                       the channel and the relay contract (§9)
+    page/                        the MAIN-world half: handler registration and the reply channel (§10.5)
+    build/                       manifests and hud.js, imported by wxt.config.ts (§5.2, §5.3)
     dev/                         dev dispatch table and reload client (dev mode only)
   public/icons/                  16, 32, 48, 128
   test/
@@ -168,7 +173,10 @@ src/page/                        command handlers as real functions (§10.5)
 - **WXT**, per-browser via `wxt build -b chrome|firefox|safari --mode store|dev`. MV3 is forced for Firefox and Safari (WXT defaults both to MV2).
 - **The HUD bypasses WXT's bundler.** A `build:publicAssets` hook (or equivalent WXT hook) calls `bundle("hud")` from `skills/coach-pokerogue/scripts/hud-bundle.mjs`, strips comments, wraps it in the world check and build id (§9.4, §9.6), and writes `hud.js` into the output. The manifest lists it by hand. The HUD tests keep exercising the raw `bundle()`.
 - **Comments are stripped from `hud.js` in every build**, dev and store. This removes the 17 comment lines that quote PokéRogue code.
-- **`page.js`** is a WXT unlisted script, listed by hand in the manifest next to `hud.js`.
+- **`page.js` and `relay.js`** are WXT unlisted scripts, listed by hand in the manifest next to `hud.js`. A WXT
+  content script would emit to `content-scripts/relay.js` and generate a `content_scripts` entry of its own; as
+  unlisted scripts both land at the output root and every content script is declared in one place, exactly as §5.3
+  spells them out ([The extension package](https://github.com/IIxauII/pokerogue-mcp/issues/203)).
 - **Build id.** Every script gets `COACHEMON_BUILD = "<version>+<first 12 hex of sha256 over hud.js and page.js before stamping>"` (picked here), injected by define.
 - **`LICENSE` and `THIRD_PARTY_NOTICES.md`** from the repo root are copied into every output folder (§15).
 - **Outputs** use WXT's defaults, `extension/.output/<browser>-mv3-<mode>/` (`-store` or `-dev`), gitignored. `wxt zip` makes per-browser store zips and the Firefox sources zip.

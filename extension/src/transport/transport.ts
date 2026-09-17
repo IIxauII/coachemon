@@ -8,7 +8,7 @@
 import { PRODUCT, PROTOCOL } from "../../../src/protocol/version.ts";
 import type { ExtensionHello, Flavour, FromExtension, TabState, Target, ToExtension } from "../../../src/protocol/wire.ts";
 import { MAX_DETAIL_BYTES } from "../relay/channel.ts";
-import type { EventReport, RelayReply, ToBackground } from "../messages.ts";
+import { TOO_LARGE, type EventReport, type RelayReply, type ToBackground } from "../messages.ts";
 
 /** No `welcome` with the hub's product marker in this long and the port belongs to someone else (§8.1). */
 export const WELCOME_MS = 2_000;
@@ -266,7 +266,7 @@ export class Transport {
     // that is still over refuses rather than goes out, and an event — which nothing is waiting for — is dropped.
     if (data.length > MAX_DETAIL_BYTES) {
       if (frame.t !== "reply") return;
-      const over: FromExtension = { t: "reply", id: frame.id, ok: false, code: "too-large", message: "reply over 1 MB" };
+      const over: FromExtension = { t: "reply", id: frame.id, ok: false, code: "too-large", message: TOO_LARGE };
       this.#socket?.send(JSON.stringify(over));
       return;
     }

@@ -16,6 +16,6 @@ export default defineUnlistedScript(() => {
     build: COACHEMON_BUILD,
     // The relay's marker belongs to the isolated world: seeing it from here means this script ran isolated (§9.4).
     isolated: (globalThis as Record<string, unknown>).__coachemonIsolated !== undefined,
-    host: window as unknown as { __coachemonPage?: PageInstance },
+    global: window as unknown as { __coachemonPage?: PageInstance },
   });
 });

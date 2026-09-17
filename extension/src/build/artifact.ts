@@ -3,6 +3,8 @@
  * Build-time only — `wxt.config.ts` and the tests import this, never the extension bundle.
  */
 import { createHash } from "node:crypto";
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { stripComments } from "../../../skills/coach-pokerogue/scripts/hud-bundle.mjs";
 import { EVENT } from "../relay/channel.ts";
 
@@ -41,6 +43,18 @@ export function buildId(version: string, parts: string[]): string {
 /** Puts the real id in wherever the define left the placeholder. */
 export function stamp(text: string, build: string): string {
   return text.replaceAll(BUILD_PLACEHOLDER, build);
+}
+
+/**
+ * Every file under `dir`, recursively, whose name `keep` accepts, as paths relative to `dir`. The build stamps the
+ * scripts with it and the guard reads every text file with it.
+ */
+export function walk(dir: string, keep: (name: string) => boolean): string[] {
+  return readdirSync(dir).flatMap(name => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return walk(path, keep).map(rel => join(name, rel));
+    return keep(name) ? [name] : [];
+  });
 }
 
 /** `THIRD_PARTY_NOTICES.md` with its corresponding-source version filled in (§15). */

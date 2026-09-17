@@ -28,6 +28,13 @@ export const MATCHES = ["https://pokerogue.net/*"];
 export type Manifest = Record<string, unknown>;
 
 /**
+ * What a store manifest may not have, and may not so much as mention (§5.5 check 1). One list, read by the guard that
+ * checks the built artifact and by the test that checks `manifestFor`: two copies drift, and the first pair did.
+ */
+export const BANNED_MANIFEST_KEYS = ["permissions", "optional_permissions", "host_permissions", "optional_host_permissions"];
+export const BANNED_MANIFEST_WORDS = ["nativeMessaging", "scripting", "tabs", "storage", "activeTab", "<all_urls>"];
+
+/**
  * Safari's background: `scripts` rather than `service_worker`, which is an accepted premise (§16). WXT normalises an
  * MV3 background to a service worker, so `wxt.config.ts` puts this back in `build:manifestGenerated`.
  */

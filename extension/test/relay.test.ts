@@ -37,7 +37,7 @@ function tab(o: { build?: string } = {}) {
       makeEvent,
       build: p.build ?? BUILD,
       isolated: p.isolated ?? false,
-      host: {},
+      global: {},
       extra: p.extra,
     });
   const emit = (type: string, detail: unknown) => channel.dispatchEvent(makeEvent(type, encode(detail)));
@@ -135,6 +135,31 @@ test("a reply over 1 MB is dropped at the relay as `too-large` (§9.7)", (c: Tes
   assert.equal((reply as { code: string }).code, "too-large");
 });
 
+test("a forged oversized reply cannot poison an in-flight command (§9.5)", (c: TestContext) => {
+  onPage(c, { ui: { mode: 0, handlers: {} } });
+  const t = tab();
+  const r = t.relay();
+  // A page copy of another build answers first, oversized. Ownership is checked before size, so it is simply ignored
+  // and the real handler's answer still stands.
+  t.page({
+    extra: {
+      slow: {
+        kind: "read",
+        run: () => {
+          t.emit(EVENT.reply, { build: "9.9.9+ffffffffffff", id: 11, ok: true, result: "x".repeat(MAX_DETAIL_BYTES + 1) });
+          return { ok: true };
+        },
+      },
+    },
+  });
+  assert.deepEqual(r.command({ t: "cmd", id: 11, name: "slow", args: {} }), {
+    t: "reply",
+    id: 11,
+    ok: true,
+    result: { ok: true },
+  });
+});
+
 test("page scripts that ran isolated report `wrong-world` and register nothing (§9.4)", () => {
   const t = tab();
   const r = t.relay();
@@ -154,7 +179,7 @@ test("the newest page script replaces the running one in place (§9.6)", (c: Tes
   onPage(c, { ui: { mode: 0, handlers: {} } });
   const channel = new EventTarget() as unknown as Channel;
   const host: { __coachemonPage?: { build: string; stop: () => void } } = {};
-  const start = (build: string) => startPage({ channel, makeEvent, build, isolated: false, host });
+  const start = (build: string) => startPage({ channel, makeEvent, build, isolated: false, global: host });
   const first = start(BUILD);
   const second = start("9.9.9+ffffffffffff");
   assert.equal(host.__coachemonPage, second);

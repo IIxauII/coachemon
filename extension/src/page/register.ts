@@ -29,17 +29,19 @@ export type PageDeps = {
    * can see the relay's own-world global, it ran isolated and must do nothing but say so (§9.4).
    */
   isolated: boolean;
-  /** `window`, for the stale-instance handshake. */
-  host: { __coachemonPage?: PageInstance };
+  /**
+   * `window`. Never `host`: CONTEXT.md reserves that word for Apple's host app, which is the browser.
+   */
+  global: { __coachemonPage?: PageInstance };
   /** Beyond the store table: the dev commands, in a dev build only (§10.6). */
   extra?: Record<string, Handler>;
 };
 
-/** The store table as handlers: exactly `STORE_COMMANDS`, which is what the guard asserts the artifact registers (§5.5). */
-export function storeHandlers(): Record<string, Handler> {
+/** The store table as handlers: exactly `STORE_COMMANDS`, one per command, and nothing else in a store build (§10.1). */
+function storeHandlers(): Record<string, Handler> {
   const out: Record<string, Handler> = {};
   for (const [name, spec] of Object.entries(STORE_COMMANDS)) {
-    out[name] = { kind: spec.kind, run: (COMMAND_HANDLERS as Record<string, (L: any, args: any) => unknown>)[name] };
+    out[name] = { kind: spec.kind, run: (COMMAND_HANDLERS as Record<string, Handler["run"]>)[name] };
   }
   return out;
 }
@@ -56,7 +58,7 @@ export function startPage(d: PageDeps): PageInstance {
   }
 
   // The newest copy always wins, including over a copy with no build id left by `read.sh` (§9.6).
-  d.host.__coachemonPage?.stop();
+  d.global.__coachemonPage?.stop();
 
   const table = { ...storeHandlers(), ...d.extra };
   const commands = Object.keys(table);
@@ -94,10 +96,10 @@ export function startPage(d: PageDeps): PageInstance {
     stop: () => {
       d.channel.removeEventListener(EVENT.hello, onHello);
       d.channel.removeEventListener(EVENT.cmd, onCmd);
-      if (d.host.__coachemonPage === instance) delete d.host.__coachemonPage;
+      if (d.global.__coachemonPage === instance) delete d.global.__coachemonPage;
     },
   };
-  d.host.__coachemonPage = instance;
+  d.global.__coachemonPage = instance;
 
   // Both sides announce on load; whoever is second answers the other's hello (§9.3).
   dispatchEvent(EVENT.hello, { side: "page", commands });
