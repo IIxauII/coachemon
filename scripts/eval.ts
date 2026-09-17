@@ -4,14 +4,14 @@
  *
  *   node scripts/eval.ts 'return { biome: scene.arena.biomeType, wave: scene.currentBattle.waveIndex }'
  *
- * `L`, `scene`, `ui`, `game` are in scope, as in src/game/js.ts.
+ * `L`, `scene`, `ui`, `game` are in scope, as in the handlers under src/page/.
  */
 import { CdpSession, isThrown } from "../src/cdp/session.ts";
-import { inGame } from "../src/game/js.ts";
+import { locate } from "../src/page/locate.ts";
 
 const body = process.argv[2] ?? "return { mode: ui.mode }";
 const session = new CdpSession();
 await session.ensure();
-const r = await session.evaluate<unknown>(inGame(`const L = __locate(); if (!L.ready) return { ready: false, why: L.why }; const { game, scene, ui } = L;\n${body}`));
+const r = await session.evaluate<unknown>(`((locate) => { const L = locate(); if (!L.ready) return L; const { game, scene, ui } = L;\n${body}\n})(${locate})`);
 console.log(isThrown(r) ? `THREW: ${r.__throw}` : JSON.stringify(r, null, 1));
 session.detach();

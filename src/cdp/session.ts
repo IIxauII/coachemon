@@ -200,7 +200,7 @@ export class CdpSession {
     });
   }
 
-  /** Evaluate a pre-wrapped expression (see `inGame`) and return its JSON value, or the page's throw. */
+  /** Evaluate a self-contained expression (see `src/cdp/link.ts`) and return its JSON value, or the page's throw. */
   async evaluate<T>(expression: string): Promise<T | Thrown> {
     const r = await this.send<{ result: { value: T }; exceptionDetails?: { text: string; exception?: { description?: string } } }>(
       "Runtime.evaluate",

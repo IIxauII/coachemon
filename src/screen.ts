@@ -7,16 +7,9 @@
  * adapter computes it: every read arrives with its Screen.
  */
 import { NAMES, SaveSlotUiMode, SummaryUiMode, UiMode } from "./enums/generated.ts";
+import type { Discriminators } from "./page/disc.ts";
 
-export type Discriminators = {
-  partyUiMode: number | null;
-  optionsMode: boolean;
-  saveSlotUiMode: number | null;
-  summaryUiMode: number | null;
-  alertClosable: boolean;
-  filterMode: boolean;
-  transferMode: boolean;
-};
+export type { Discriminators };
 
 export function modeName(mode: number): string | null {
   return NAMES.UiMode[mode] ?? null;

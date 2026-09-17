@@ -77,7 +77,7 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
   ```
 
   A lean settled read through this costs **0.21 ms / 338 bytes**, measured. The production
-  form is `src/game/js.ts`; see
+  form is `src/page/locate.ts`; see
   [#9](https://github.com/IIxauII/pokerogue-mcp/issues/9) for the measurements and
   the ruled-out alternatives.
 
@@ -114,9 +114,11 @@ src/server.ts        MCP entry: seven tools over stdio
 src/driver.ts        settle → press → auto-advance → detect → envelope
 src/settle.ts        the settle loop and its budgets (#14)
 src/game/port.ts     the typed game operations the driver reaches the game through (#127)
-src/game/cdp-game.ts the CDP adapter behind that port; a page throw never leaves it as a throw
-src/game/js.ts       the adapter's JavaScript injected into the tab: locator, predicate, menu reader, snapshot
-src/cdp/             the page session (attach-else-launch) and the driver lock
+src/game/link-game.ts that port over a GameLink; a page throw never leaves it as a throw
+src/game/link.ts     GameLink, the transport seam: one method per store command
+src/page/            the command handlers that run in the tab: locator, probe, menu reader, snapshot, acts
+src/protocol/        the store command table, hub frames and ports, shared with the hub and the extension
+src/cdp/             the CDP link, the page session (attach-else-launch) and the driver lock
 src/screen.ts        composite screen ids
 src/enums/           generated from the pinned game tag (scripts/gen-enums.ts)
 src/escape-ladder/   the hand-curated per-screen escape ladder and its drift check (#15)

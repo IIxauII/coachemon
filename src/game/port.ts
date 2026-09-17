@@ -7,6 +7,10 @@
  * caller attaches by hand.
  */
 import type { Button } from "../enums/generated.ts";
+import type { ConsoleLine } from "../page/errors.ts";
+import type { MenuOption } from "../page/menu.ts";
+import type { SnapshotDetail } from "../page/snapshot.ts";
+import type { Tab } from "./link.ts";
 
 /**
  * The settle predicate's read: everything the settle loop, the Screen and the fingerprints need, in one read.
@@ -40,13 +44,6 @@ export type PredicateRead =
 
 export type Ready = Extract<PredicateRead, { ready: true }>;
 
-export type MenuOption = {
-  i: number | string;
-  label: string | null;
-  /** The plain name a decorated label is built from (`Great Ball` in `Great Ball ×9`); selects the option too. */
-  name?: string | null;
-  [k: string]: unknown;
-};
 
 /**
  * The menu reader's read. `screen` is identified from the same read as the family, and the fields a family takes from
@@ -68,8 +65,14 @@ export type MenuRead = {
 
 export type Failed = { ok: false; why: string };
 
-/** What an act did. `threw`: the page threw, as opposed to refusing (no scene, no button action, cursor elsewhere). */
-export type Act = { ok: true } | { ok: false; why: string; threw: boolean };
+/**
+ * What an act did. `threw`: the page threw, as opposed to refusing (no scene, no button action, cursor elsewhere).
+ * Every act carries the fine fingerprint it was decided on; `why: "moved"` means the game had left it, so nothing was
+ * done (§10.2). `fine`, when present, is the fingerprint the act left the game on: the next act's to expect.
+ */
+export type Act = { ok: true; fine?: string } | { ok: false; why: string; threw: boolean; fine?: string };
+
+export const MOVED = "moved";
 
 /** Where `setCursor` puts a family's cursor. `ok` means it landed there. */
 export type CursorTarget =
@@ -88,11 +91,10 @@ export type StarterGrid = {
   partyValid: boolean | null;
 };
 
-export type SnapshotDetail = "lean" | "party" | "items" | "full";
+export type { MenuOption, SnapshotDetail, ConsoleLine };
 
-export type ConsoleLine = { t: string; level: string; text: string };
-
-export interface GamePort {
+/** The Driver's way to the game: typed game operations, plus the tab's CDP side until the flip (§13.2). */
+export interface GamePort extends Tab {
   // game operations
   /** The settle predicate. A throw → `{ ready: false, why }`. */
   read(): Promise<PredicateRead>;
@@ -100,23 +102,13 @@ export interface GamePort {
   frame(): Promise<number | null>;
   /** The menu reader. A throw → `{ readable: false, why, … }`. */
   menu(): Promise<MenuRead>;
-  /** One button through the game's own input path. */
-  press(b: Button): Promise<Act>;
-  setCursor(t: CursorTarget): Promise<Act & { species?: string }>;
-  /** The modal family's own button action. */
-  modalButton(i: number): Promise<Act>;
+  /** One button through the game's own input path, if the game is still on `fine`. */
+  press(b: Button, fine: string): Promise<Act>;
+  setCursor(t: CursorTarget, fine: string): Promise<Act & { species?: string }>;
+  /** The modal family's own button action, if the game is still on `fine`. */
+  modalButton(i: number, fine: string): Promise<Act>;
   starterGrid(): Promise<StarterGrid | Failed>;
   snapshot(d: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed>;
-  // tab operations
-  /** The button through the raw keyboard. `false`: it has no keyboard equivalent, and nothing was sent. */
-  rawKey(b: Button): Promise<boolean>;
-  /** Re-apply focus emulation (#23). */
-  keepAlive(): Promise<void>;
-  attach(): Promise<{ attached: boolean; launchedChrome: boolean }>;
   /** A base64 PNG. */
   screenshot(): Promise<string>;
-  /** The page's recent console errors and warnings, for diagnostics. */
-  consoleTail(): ConsoleLine[];
-  /** Called for every unhandled page exception (#16's hang corroboration). */
-  onRejection(cb: (t: number) => void): void;
 }
