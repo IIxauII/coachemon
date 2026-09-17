@@ -168,6 +168,17 @@ summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely los
 ⇆ Ludicolo → Arcanine switches — moves aimed at it
 ⚔ Blastoise Water Wave Crash → Arcanine ⚠ Intimidate 2 hits
 ♟ likely lost · ☠ Ludicolo · 1 step + {Show the fight plan}
+== soundproof (full)
+🎯 W89 − {Minimal overview} × {Close}
+⚔ Exploud no damaging move
+⚔ Venusaur Grass Power Whip → Whismur 1 hit
+Whismur Whismur L30 Normal 100% ✦ ⚠ Soundproof ▲ — ↯ Normal Pound → Venusaur 100% likely · moves after
+Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Tackle → Exploud 100% likely · moves after
+summary fight | Exploud — ; Venusaur Power Whip → Whismur · 1 hit
+== soundproof (mini)
+🎯 W89 + {Expand} × {Close}
+⚔ Exploud no damaging move
+⚔ Venusaur Grass Power Whip → Whismur 1 hit
 == intimidate (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Scrafty Fighting Brick Break → Granbull 3 hits
