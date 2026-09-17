@@ -11,6 +11,7 @@ import { disc } from "../../../src/page/disc.ts";
 import { fine } from "../../../src/page/fine.ts";
 import { locate } from "../../../src/page/locate.ts";
 import { COMMAND_HANDLERS } from "../../../src/page/handlers.ts";
+import { PAGE_MODES } from "../../../src/page/modes.ts";
 import { STORE_COMMANDS } from "../../../src/protocol/commands.ts";
 
 export type Handler = { kind: "read" | "act"; run: (L: any, args: any) => unknown };
@@ -80,7 +81,8 @@ export function startPage(d: PageDeps): PageInstance {
     if (!handler) return;
     const args = (cmd.args && typeof cmd.args === "object" ? cmd.args : {}) as Record<string, unknown>;
     try {
-      const result = dispatch(locate, fine, disc, handler.run, cmd.name, handler.kind, args);
+      // The extension hands the generated mode enums in by importing them; the CDP link inlines them as JSON (#164).
+      const result = dispatch(locate, fine, disc, handler.run, cmd.name, handler.kind, PAGE_MODES, args);
       dispatchEvent(EVENT.reply, { id: cmd.id, ok: true, result });
     } catch (e) {
       // Only the message crosses: a stack is page internals and the server treats `threw` as a failed read (§9.7).
