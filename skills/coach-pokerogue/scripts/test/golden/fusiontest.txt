@@ -1,0 +1,94 @@
+== full party (full)
+🧬 Splice − ×
+★ Snorlax Snorlax ← Salamence Salamence +7
+Normal Flying spends Salamence L22 · Snorlax BST 540 → 572 · Thick Fat → Intimidate · offers Dragon Rush/Bounce
+· Garchomp Garchomp ← Salamence Salamence +3
+Dragon Flying spends Salamence L22 · Rough Skin → Intimidate · Dragon/Ground → Dragon/Flying · offers Dragon Rush/Bounce · keeps passive Sand Force
+· Mimikyu Mimikyu ← Salamence Salamence −2
+Ghost Flying spends Salamence L22 · Disguise → Intimidate · Mimikyu BST 476 → 539 · offers Dragon Rush/Bounce
+pick Snorlax first, then Salamence
+== full party (mini)
+🧬 Splice + ×
+★ Snorlax Snorlax ← Salamence Salamence +7
+pick Snorlax first, then Salamence
+summary Snorlax ← Salamence (+7) · pick Snorlax first, then Salamence
+== Magikarp picked first (full)
+🧬 Splice Magikarp with − ×
+· Magikarp Magikarp ← Salamence Salamence −3
+Water Flying spends Salamence L22 · Magikarp BST 200 → 402 · Swift Swim → Intimidate · offers Dragon Rush/Bounce · Magikarp still evolves
+· Magikarp Magikarp ← Mimikyu Mimikyu −6
+Water Fairy spends Mimikyu L30 · Magikarp BST 200 → 340 · Swift Swim → no ability (Disguise doesn't work fused) · offers Shadow Claw · Magikarp still evolves
+· Magikarp Magikarp ← Azumarill Azumarill −15
+Water Fairy spends Azumarill L42 · Magikarp BST 200 → 311 · Swift Swim → Huge Power · offers Aqua Tail/Play Rough · Magikarp still evolves
+back out: Snorlax ← Salamence is better (+7)
+== Magikarp picked first (mini)
+🧬 Splice Magikarp with + ×
+· Magikarp Magikarp ← Salamence Salamence −3
+back out: Snorlax ← Salamence is better (+7)
+summary Magikarp ← Salamence (−3) · back out: Snorlax ← Salamence is better (+7)
+== Hardcore, Salamence fainted (full)
+🧬 Splice − ×
+· Mimikyu Mimikyu ← Magikarp Magikarp −4
+Ghost Water Mimikyu BST 476 → 340 · spends Magikarp L20 · Disguise → Swift Swim · offers Tackle · Magikarp still evolves
+· Magikarp Magikarp ← Mimikyu Mimikyu −8
+Water Fairy spends Mimikyu L30 · Magikarp BST 200 → 340 · Swift Swim → no ability (Disguise doesn't work fused) · offers Shadow Claw · Magikarp still evolves
+· Snorlax Snorlax ← Mimikyu Mimikyu −8
+Normal Fairy spends Mimikyu L30 · Thick Fat → no ability (Disguise doesn't work fused) · Normal → Normal/Fairy · offers Shadow Claw
+no fusion worth a member — back out, the Splicer stays unspent
+== Hardcore, Salamence fainted (mini)
+🧬 Splice + ×
+· Mimikyu Mimikyu ← Magikarp Magikarp −4
+no fusion worth a member — back out, the Splicer stays unspent
+summary Mimikyu ← Magikarp (−4) · no fusion worth a member — back out, the Splicer stays unspent
+== two members (full)
+🧬 Splice − ×
+· Garchomp Garchomp ← Magikarp Magikarp −31
+Dragon Water Garchomp BST 600 → 401 · spends Magikarp L20 · Rough Skin → Swift Swim · offers Tackle · Magikarp still evolves · keeps passive Sand Force
+· Magikarp Magikarp ← Garchomp Garchomp −75
+Water Ground spends Garchomp L50 · Magikarp BST 200 → 401 · Swift Swim → Rough Skin · offers Dragon Claw/Earthquake · Magikarp still evolves
+no fusion worth a member — back out, the Splicer stays unspent
+== two members (mini)
+🧬 Splice + ×
+· Garchomp Garchomp ← Magikarp Magikarp −31
+no fusion worth a member — back out, the Splicer stays unspent
+summary Garchomp ← Magikarp (−31) · no fusion worth a member — back out, the Splicer stays unspent
+== Spliced Endless (full)
+🧬 Splice − ×
+★ Garchomp Garchomp ← Salamence Salamence +81
+Dragon Flying Garchomp BST 301 → 602 · spends Salamence L22 · Rough Skin → Intimidate · offers Dragon Rush/Bounce · keeps passive Sand Force
+· Garchomp Garchomp ← Azumarill Azumarill +72
+Dragon Fairy Garchomp BST 301 → 511 · spends Azumarill L42 · Dragon/Ground → Dragon/Fairy · offers Aqua Tail/Play Rough · keeps passive Sand Force
+· Snorlax Snorlax ← Salamence Salamence +65
+Normal Flying Snorlax BST 271 → 572 · spends Salamence L22 · Thick Fat → Intimidate · offers Dragon Rush/Bounce
+pick Garchomp first, then Salamence
+Spliced Endless: unfused mons run on half their base stats
+== Spliced Endless (mini)
+🧬 Splice + ×
+★ Garchomp Garchomp ← Salamence Salamence +81
+pick Garchomp first, then Salamence
+summary Garchomp ← Salamence (+81) · pick Garchomp first, then Salamence
+== Snorlax ← Mimikyu
+spends Mimikyu L30 · Thick Fat → no ability (Disguise doesn't work fused) · Normal → Normal/Fairy · Snorlax BST 540 → 510
+== party screen, not splicing
+kind null
+== rewards, full party (full)
+🛒 $500 nothing affordable − ×
+🎁 DNA Splicers Snorlax fuse Snorlax ← Salamence · +7 · spends Salamence L22
+· Potion party healthy
+🩺 team: 4 issues · 2 of 6 weak to Fairy, nobody resists +
+== rewards, full party (mini)
+🛒 $500 + ×
+🎁 DNA Splicers Snorlax fuse Snorlax ← Salamence · +7 · spends Salamence L22
+🩺 team: 4 issues · 2 of 6 weak to Fairy, nobody resists +
+summary take DNA Splicers → Snorlax
+== rewards, two members (full)
+🛒 $500 nothing affordable − ×
+🎁 DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −31
+· Potion party healthy
+🩺 team: 3 issues · Magikarp: no Water attack (no STAB) +
+== rewards, two members (mini)
+🛒 $500 + ×
+🎁 DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −31
+🩺 team: 3 issues · Magikarp: no Water attack (no STAB) +
+summary take DNA Splicers
+ok

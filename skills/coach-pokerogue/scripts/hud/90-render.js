@@ -229,6 +229,7 @@ const hudSummary = m => {
   const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], plan: null, learn: null, rewards: null, encounter: null,
     next: previewSummary(m.preview), ahead: aheadSummary(m.ahead), audit: auditSummary(m.audit) };
   if (m.kind === "starters") return startersSummary(m, base);
+  if (m.kind === "fusion") return fusionSummary(m, base);
   if (m.kind === "biome") return biomeSummary(m, base);
   if (m.kind === "encounter") return encounterSummary(m, base);
   if (m.kind === "learn") {
@@ -452,6 +453,8 @@ const tick = () => {
       let roster = null;
       try { roster = learnRoster(aheadModel(s)); } catch {}
       m = learnModel({ ...learn, roster });
+    } else if (spliceScreen(s, handler)) {
+      m = fusionModel(s, handler);
     } else if (s.ui.getMode() === UiMode.MODIFIER_SELECT && handler?.options?.length) {
       m = shopModel(s, handler);
     } else if (biomeScreen(s, handler)) {
@@ -483,7 +486,7 @@ const tick = () => {
     el.style.width = view === "full" && !collapsed ? "300px" : "auto";
     if (sig !== last) {
       missed = false;
-      el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle, biome: drawBiome, encounter: drawEncounter, starters: drawStarters }[m.kind])(m));
+      el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle, biome: drawBiome, encounter: drawEncounter, starters: drawStarters, fusion: drawFusion }[m.kind])(m));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missed ? "" : sig;
     }

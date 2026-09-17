@@ -22,6 +22,13 @@ The pokémon the player controls in the current run. The **active pokémon** is 
 
 The **party** judged as a whole rather than member by member: the types it hits super-effectively, the types it can't, the types several members are weak to, and its weakest member. Any would-be newcomer (a wild pokémon, a species in a biome, a trade offer) is judged against the profile, so every card gives the same reasons for the same pokémon.
 
+## Fusion
+
+Two **party** members made one by a DNA Splicer. The member picked first is the **base**: it keeps its level, nature,
+moves and passive. The one picked second is the **other half**: it lends its ability, a type and half of every base
+stat, then leaves the party for good. Order matters, so a fusion is always named base first (`Garchomp ← Salamence`).
+A fusion is judged on the party it leaves, not on the base alone: it spends a member.
+
 ## Settled
 
 The state of the game when it is waiting for player input: no animation playing, no phase resolving, no message auto-advancing. Reading state or sending a press while **unsettled** races the game's own queue. Every tool call returns a settled game.
