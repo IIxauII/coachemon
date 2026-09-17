@@ -92,6 +92,23 @@ export const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABI
 export const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
 export const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
+// ---- Which build the page is running
+// The HUD is written against one pinned version of the game, so a rule that changed between builds has to ask which
+// one it is in rather than pick a side. `gameVersionOf` is the dotted string the game keeps on its Phaser config
+// ("1.12.0.11"); `versionAtLeast` compares two of those segment by segment, missing segments counting as 0.
+// A version that can't be read is older than everything: the pinned reading is what the HUD has, so it is what it
+// falls back to.
+export const gameVersionOf = s => { try { return s?.game?.config?.gameVersion ?? null; } catch { return null; } };
+export const versionAtLeast = (version, least) => {
+  if (!version) return false;
+  const a = String(version).split("."), b = String(least).split(".");
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const d = (parseInt(a[i], 10) || 0) - (parseInt(b[i], 10) || 0);
+    if (d) return d > 0;
+  }
+  return true;
+};
+
 // ---- Calling the game's own code safely
 // Even the game's "simulated" paths have hidden effects (see game-code.md §0): they can
 // queue ability displays/messages, record abilities in waveData/summonData.abilitiesApplied, draw from the battle

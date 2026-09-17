@@ -167,7 +167,12 @@ Call it only inside `sandbox`.
    `ignoreAbility` skips the defender's ability steps.
 3. **Fixed damage and OHKO.**
    - `FixedDamageAttr` (`:3604`) returns `{ EFFECTIVE, toDmgValue(fixed × Multi-Lens factor) }` (`:3605-3621`). This
-     happens **before** the Sturdy step below.
+     happens **before** the Sturdy step below, so at this pin a fixed-damage hit — Seismic Toss, Night Shade, Super
+     Fang, Dragon Rage, Final Gambit, and Psywave through `RandomLevelDamageAttr extends FixedDamageAttr`
+     (`src/data/moves/move.ts:2143`) — takes a full-HP Sturdy mon down. Upstream
+     [#7620](https://github.com/pagefaultgames/pokerogue/pull/7620) reorders this and is on the game's master,
+     unreleased: it is the live build's version that decides, which is why `hud/10-damage.js` keys the rule on a
+     version constant rather than picking a side.
    - `OneHitKOAttr.apply` (`:3626`; `src/data/moves/move.ts:3667-3676`) returns `{ ONE_HIT_KO, damage: this.hp }`.
      A boss is `isBossImmune`, so it falls through to the normal formula. The level check and Sturdy's block live in
      the attr's condition, not here.
@@ -249,7 +254,12 @@ Call it only inside `sandbox`.
    MOSTLY_INEFFECTIVE, ≤0.5 NOT_VERY_EFFECTIVE, anything else EFFECTIVE.
 
 **What `simulated: true` changes:**
-- The roll is fixed at 1, so the call returns the **max roll** (`:3683`).
+- The roll is fixed at 1, so the call returns the **max roll** (`:3683`) — and it is the *finished* max roll, with
+  step 7's multipliers and `ModifiedDamageAttr`'s cap already applied to it. A caller that wants the other 15 rolls
+  cannot take 85–100 % of that number and be right: the multipliers commute with the roll only to within a HP of
+  rounding, and a cap doesn't commute at all (False Swipe's `min(damage, hp − 1)` lands on every roll alike). The
+  roll can be re-asked of the game instead, by scaling `calculateStabMultiplier` (`:3492`, `:3686`): it is a factor
+  of the same product under the same `toDmgValue`, and reads nothing off the mon it is called on.
 - No strong-winds message.
 - Flash Fire's tag, Volt Absorb's heal and Sturdy's tag are skipped.
 - `FormBlockDamageAbAttr.apply` returns early (`src/data/abilities/ab-attrs.ts:5445-5448`), so simulated damage
