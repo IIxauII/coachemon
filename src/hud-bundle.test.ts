@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 // @ts-expect-error: plain .mjs without type declarations
-import { bundle, topNames } from "../skills/coach-pokerogue/scripts/hud-bundle.mjs";
+import { bundle, stripComments, topNames } from "../skills/coach-pokerogue/scripts/hud-bundle.mjs";
 
 type Files = [string, string][];
 const hud = (files: Files, expose = false): string => bundle("hud", { files, expose });
@@ -128,4 +128,22 @@ test("the probe names Stellar, which the HUD's type chart leaves out", () => {
   } finally {
     delete scope.Phaser; delete scope.document; delete scope.window;
   }
+});
+
+test("stripComments drops comments and keeps everything else", () => {
+  assert.equal(stripComments("const a = 1; // trailing\nconst b = 2;\n"), "const a = 1;\nconst b = 2;\n");
+  assert.equal(stripComments('const s = "// not a comment";\n'), 'const s = "// not a comment";\n');
+  assert.equal(stripComments("const r = /\\/\\//.test(x);\n"), "const r = /\\/\\//.test(x);\n");
+  assert.equal(stripComments("const t = `a // b ${x} d`;\n"), "const t = `a // b ${x} d`;\n");
+  // A block comment leaves its newlines behind, so the two statements stay on their own lines.
+  assert.equal(stripComments("const a = 1 /* one\ntwo */\nconst b = 2\n"), "const a = 1\nconst b = 2\n");
+});
+
+test("the HUD bundle ships comment-stripped and still parses (§5.2)", () => {
+  const stripped = stripComments(bundle("hud"));
+  assert.match(bundle("hud"), /Pokemon\.getAttackDamage,/);
+  assert.doesNotMatch(stripped, /Pokemon\.getAttackDamage,/);
+  assert.doesNotMatch(stripped, /^\/\//m);
+  assert.doesNotMatch(stripped, /^\s*\/\*/m);
+  assert.doesNotThrow(() => new Function(stripped));
 });

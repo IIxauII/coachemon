@@ -103,6 +103,29 @@ One step the **hub** carries to a game tab: either a read or an act, each a sing
 
 Not to be confused with the game's own command menu (Fight, Ball, Pokémon, Run), which is a **screen**.
 
+## Relay
+
+The one part of the extension that talks to both the browser and the game page. It sits in each game tab, beside the
+page but in a world of its own, and carries a **command** in and its answer straight back out — nothing else crosses.
+It is also what makes a tab count: a tab is reachable once its relay and the page have found each other.
+
+Only the direction out of the page is guarded, and by shape alone: an answer the relay was not waiting for, or a
+**card** that is not exactly shaped like one, never leaves the tab. Nothing in the page is trusted, because anything
+already in the page could drive the game itself.
+
+## Flavour
+
+Which of two builds of the extension a player has: the **store** flavour, which is what a store reviews and ships and
+which asks for no permission of any kind, or the **dev** flavour, which carries the extra commands a developer needs
+and talks to a **hub** of its own so the two never count the same tab twice. A store build contains nothing the dev
+build added — that is checked on the built artifact, not trusted.
+
+## Build id
+
+One string naming exactly which build of the extension a tab is running, carried on everything the extension says.
+Both halves in a tab must show the same build id to work together, which is what makes the newest copy of a script
+replace an older one cleanly and leaves an orphaned one unable to pair with anything.
+
 ## Interrupted run
 
 A run that ended without the party wiping — the game tore itself down and dropped back to the title. Distinct from a **wipe**: a wipe is an ending the agent played its way into, while an interrupted run is a failure, and the run may still exist server-side. The two are never reported as the same thing, because treating an interruption as a wipe invites starting a new run over a run that is still alive.
