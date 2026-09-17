@@ -28,7 +28,7 @@
 //
 // Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
 // which replays inside a seed fork. Nothing is called that the preview doesn't already call.
-const { aheadModel, partyLuck, doubleOdds } = (() => {
+const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
   const SPAN = 30;        // how far ahead the schedule looks
   // How far ahead the roster is still worth reading. The calendar holds at any distance, but the replay feeds on the
   // party, the luck value and the biome, and a catch, an evolution or a shop pick re-rolls it — so a roster read more
@@ -266,5 +266,15 @@ const { aheadModel, partyLuck, doubleOdds } = (() => {
     };
   };
 
-  return { aheadModel, partyLuck, doubleOdds };
+  // ---- The foes a move being learned now will be used against (#122). A learned move is kept for the run, so it is
+  // judged against the next big fight rather than whatever the next wave rolls: that is where a Taunt or a burn
+  // decides a run, and the roster is only read once the fight is near (LOOKAHEAD), so both the learn card and the
+  // rewards card see the same foes or none. Plain data, as the preview hands it over.
+  const learnRoster = model => {
+    const next = model?.next;
+    if (!next?.foes?.length) return null;
+    return { wave: next.wave, exact: !!next.exact, foes: next.foes };
+  };
+
+  return { aheadModel, partyLuck, doubleOdds, learnRoster };
 })();

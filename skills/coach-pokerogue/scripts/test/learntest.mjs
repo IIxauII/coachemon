@@ -20,7 +20,7 @@ const mon = (name, types, atk, spa, moves, extra = {}) => ({
   moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })),
 });
 
-const run = (pk, newMove, { double = false, party = [pk] } = {}) => {
+const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) => {
   let el; const ds = {};
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const scene = { currentBattle: { double }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: pk, newMove: mv(newMove) }) }, getEnemyParty: () => [], getPlayerParty: () => party };
@@ -29,8 +29,8 @@ const run = (pk, newMove, { double = false, party = [pk] } = {}) => {
   globalThis.document = { documentElement: { dataset: ds }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__lm = { learnModel, learnState, learnAdvice };\n})();\n"));
-  const model = globalThis.__lm.learnModel(globalThis.__lm.learnState(scene));
+  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__lm = { learnModel, learnState, learnAdvice, tmAdvice, blockedByHealBlock };\n})();\n"));
+  const model = globalThis.__lm.learnModel({ ...globalThis.__lm.learnState(scene), roster });
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");
   const txt = n => typeof n === "string" ? n : n.children.map(txt).join(" ");
   return { model, text: el.kids.slice(1).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
@@ -304,5 +304,61 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const quick = boost(["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }]);
   const espeed = boost(["Extreme Speed","Normal",80,"P",100,[],false,3,{ fields: { priority: 2 } }]);
   assert.ok(quick > 1 && quick < espeed, `priority is worth more on a move that can finish something (${quick} vs ${espeed})`);
+}
+// ---- The roster a status move will face (#122)
+// Both cards hand in the next big fight's foes as the preview has them. Disruption is worth what it takes away from
+// that roster, an inflicted status what it can land on; with no roster both stay as they were.
+{
+  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null, segments: extra.segments ?? 0,
+    statusMoves: extra.statusMoves ?? [], healMoves: extra.healMoves ?? [] });
+  const at30 = (...foes) => ({ wave: 30, exact: true, foes });
+  // Wave 30 on #70: Whitney's Miltank drinks milk behind two health bars.
+  const whitney = at30(foe("Clefairy", ["Fairy"]), foe("Miltank", ["Normal"], { segments: 2, statusMoves: ["Milk Drink"], healMoves: ["Milk Drink"] }));
+  const brutes = at30(foe("Machoke", ["Fighting"]), foe("Graveler", ["Rock","Ground"]));
+  const sableye = ability => mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"]], { ability });
+  const judge = (move, roster, ability) => globalThis.__lm.learnAdvice(sableye(ability), mv(move), { roster }).plan.incoming;
+
+  const blind = judge(TAUNT, null);
+  const healer = judge(TAUNT, whitney);
+  const attackers = judge(TAUNT, brutes);
+  assert.ok(healer.value > blind.value * 1.3, `Taunt against a healing boss (${healer.value} vs ${blind.value})`);
+  assert.ok(healer.notes.includes("vs Miltank's Milk Drink at W30"), `named by what it stops: ${healer.notes}`);
+  assert.ok(attackers.value < blind.value * 0.5 && attackers.notes.includes("nothing to stop at W30"), `Taunt into plain attackers (${attackers.value})`);
+  const unsure = judge(TAUNT, { ...whitney, exact: false });
+  assert.ok(unsure.value > blind.value && unsure.value < healer.value, "a roster the preview isn't sure of moves the score half as far");
+  // Oblivious stops Taunt and nothing else; Heal Block still reaches the milk.
+  const HEAL_BLOCK = ["Heal Block","Psychic",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "HEAL_BLOCK" }]],false,6,{ flags: 262144 }];
+  const oblivious = at30(foe("Miltank", ["Normal"], { ability: "Oblivious", segments: 2, statusMoves: ["Milk Drink"], healMoves: ["Milk Drink"] }));
+  assert.ok(judge(TAUNT, oblivious).notes.includes("nothing to stop at W30"));
+  assert.ok(judge(HEAL_BLOCK, oblivious).notes.includes("vs Miltank's Milk Drink at W30"));
+
+  // Will-O-Wisp: a Fire type can't be burned, and Flash Fire takes the move itself.
+  const WISP = ["Will-O-Wisp","Fire",-1,"X",85,[["StatusEffectAttr",{ effect: 6 }]],false,3,{ flags: 262144 }];
+  const wispBlind = judge(WISP, null);
+  const half = judge(WISP, at30(foe("Arcanine", ["Fire"]), foe("Machoke", ["Fighting"])));
+  const none = judge(WISP, at30(foe("Arcanine", ["Fire"]), foe("Lampent", ["Ghost"], { ability: "Flash Fire" })));
+  assert.ok(half.notes.includes("lands on 1 of 2 at W30") && half.value < wispBlind.value && half.value > none.value, `${half.notes}`);
+  assert.ok(none.notes.includes("can't land at W30") && none.value <= Math.round(wispBlind.value * 0.3) + 1, `${none.value} vs ${wispBlind.value}`);
+  assert.equal(judge(WISP, brutes).value, wispBlind.value, "a roster that can take it all changes nothing");
+
+  // Thunder Wave alone respects type immunity; Magic Bounce sends any of these back, unless Mold Breaker ignores it.
+  const TWAVE = ["Thunder Wave","Electric",-1,"X",90,[["StatusEffectAttr",{ effect: 3 }],"RespectAttackTypeImmunityAttr"],false,3,{ flags: 262144 }];
+  assert.ok(judge(TWAVE, brutes).notes.includes("lands on 1 of 2 at W30"), "Graveler is Ground");
+  const bouncer = at30(foe("Espeon", ["Psychic"], { ability: "Magic Bounce" }));
+  assert.ok(judge(TWAVE, bouncer).notes.includes("can't land at W30"));
+  assert.ok(!judge(TWAVE, bouncer, "Mold Breaker").notes.some(n => /W30/.test(n)), "Mold Breaker ignores Magic Bounce");
+  // Powder moves fail on Grass types.
+  const SPORE = ["Spore","Grass",-1,"X",100,[["StatusEffectAttr",{ effect: 4 }]],false,3,{ flags: 262144 | 2048 }];
+  assert.ok(judge(SPORE, at30(foe("Venusaur", ["Grass","Poison"]), foe("Snorlax", ["Normal"]))).notes.includes("lands on 1 of 2 at W30"));
+
+  // What the preview lists as a foe's heals: recovery and drain, not a status cure.
+  const hb = m => globalThis.__lm.blockedByHealBlock(mv(m));
+  assert.deepEqual([hb(["Milk Drink","Normal",-1,"X",-1,[["HealAttr",{ healRatio: 0.5 }]]]), hb(["Giga Drain","Grass",75,"S",100,[["HitHealAttr",{}]]]),
+    hb(["Rest","Psychic",-1,"X",-1,["RestAttr"]]), hb(["Refresh","Normal",-1,"X",-1,["HealStatusEffectAttr"]])], [true, true, true, false]);
+
+  // The learn card and the rewards card's TM advice read the same roster through the same decision.
+  const tm = globalThis.__lm.tmAdvice(mv(TAUNT), [sableye()], { roster: whitney });
+  assert.equal(tm.best?.gain, globalThis.__lm.learnAdvice(sableye(), mv(TAUNT), { roster: whitney }).gain, "the TM card and the learn card agree");
+  assert.ok(run(sableye(), TAUNT, { roster: whitney }).model.move.notes.includes("vs Miltank's Milk Drink at W30"), "the learn card model carries the roster");
 }
 console.log("ok");

@@ -112,6 +112,7 @@ const { teamAudit, relearnBest } = (() => {
   // what it knows — the list `RememberMoveModifier` indexes. A pure read of learnsets. `double` as for the learn card.
   // null when nothing is an upgrade.
   const RELEARN_MIN_GAIN = 10;
+  // Judged blind to the roster ahead (#122), like the slot scores whose dead slot it fixes: both are party checks.
   // Memoised: the rewards card asks every tick, and each call runs the learn decision once per relearnable move.
   const relearnMemo = new Map();
   const relearnBest = (p, party, double = 0) => {
