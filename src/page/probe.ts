@@ -51,6 +51,7 @@ export function probe(L: Located | Unlocated, args: ProbeArgs): ProbeResult {
   const always: Always = { pumped: false, errorAt: rec ? rec.at : null };
   if (args.tail === true) always.console = rec ? rec.lines.slice() : [];
   if (!L.ready) return { ready: false, why: L.why, frame: null, domMode: __domMode(), ...always };
+  const m = L.m;
   const { game, scene, ui } = L;
 
   const loop = game.loop || null;
@@ -63,8 +64,7 @@ export function probe(L: Located | Unlocated, args: ProbeArgs): ProbeResult {
   const pm = scene.phaseManager;
   const mode = ui.mode;
   const h = ui.handlers[mode] || null;
-  const mh = ui.handlers[0] || null;
-  const MESSAGE = 0, MODIFIER_SELECT = 6, SAVE_SLOT = 7, EVOLUTION_SCENE = 11, EGG_HATCH_SCENE = 12, LOADING = 35, UNAVAILABLE = 36, ALERT_MODAL = 47;
+  const mh = ui.handlers[m.MESSAGE] || null;
 
   const cur = pm ? (pm.currentPhase || null) : null;
   const phaseName = cur ? (cur.phaseName || null) : null;
@@ -81,22 +81,22 @@ export function probe(L: Located | Unlocated, args: ProbeArgs): ProbeResult {
   else if (h.blockExit === true)             { reason = "block-exit"; }
   else if (h.pendingPrompt === true)         { reason = "pending-prompt"; }
   else if (typing(h) || typing(mh))          { reason = "text-animating"; }
-  else if (mode === LOADING || mode === UNAVAILABLE) { reason = "modal-blocking"; }
+  else if (mode === m.LOADING || mode === m.UNAVAILABLE) { reason = "modal-blocking"; }
   // An alert shown with a closeDelay is unclosable until it elapses; one shown without stays so forever (#15).
   // Busy, not a screen: a closable alert settles as ALERT_MODAL/CLOSABLE, a permanent one times out with its text.
-  else if (mode === ALERT_MODAL && h.allowClosing !== true) { reason = "alert-unclosable"; }
+  else if (mode === m.ALERT_MODAL && h.allowClosing !== true) { reason = "alert-unclosable"; }
   // Save slots resolve from the server one by one; until every hasData is a boolean the screen cannot be acted on.
-  else if (mode === SAVE_SLOT && Array.isArray(h.sessionSlots) && h.sessionSlots.some((s: any) => typeof s.hasData !== "boolean")) { reason = "slots-loading"; }
-  else if (mode === MESSAGE || mode === EVOLUTION_SCENE || mode === MODIFIER_SELECT) {
+  else if (mode === m.SAVE_SLOT && Array.isArray(h.sessionSlots) && h.sessionSlots.some((s: any) => typeof s.hasData !== "boolean")) { reason = "slots-loading"; }
+  else if (mode === m.MESSAGE || mode === m.EVOLUTION_SCENE || mode === m.MODIFIER_SELECT) {
     settled = awaiting(h); reason = settled ? "awaiting-action" : "resolving";
   }
-  else if (mode === EGG_HATCH_SCENE) { settled = awaiting(mh); reason = settled ? "awaiting-action" : "hatching"; }
+  else if (mode === m.EGG_HATCH_SCENE) { settled = awaiting(mh); reason = settled ? "awaiting-action" : "hatching"; }
   else { settled = true; reason = "menu-open"; }
 
   const battle = scene.currentBattle || null;
   const modeChain = Array.isArray(ui.modeChain) ? ui.modeChain.slice() : [];
   const messageText = __try(() => (mh && mh.message && typeof mh.message.text === "string") ? mh.message.text : null)
-    || (mode === ALERT_MODAL ? __try(() => __txt(h.label)) : null);
+    || (mode === m.ALERT_MODAL ? __try(() => __txt(h.label)) : null);
   const cursor = h && typeof h.cursor === "number" ? h.cursor : null;
 
   return {
