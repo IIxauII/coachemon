@@ -14,11 +14,15 @@ import type { MenuResult } from "../page/menu.ts";
 import type { ProbeArgs, ProbeResult } from "../page/probe.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
 import type { StartersResult } from "../page/starters.ts";
+import type { Reach } from "../hub/ladder.ts";
 import type { Args, CommandName } from "../protocol/commands.ts";
 import type { HubCode, RelayCode } from "../protocol/wire.ts";
 
-/** A command that got no answer from its handler: the page threw, the handler was missing, the tab went away (§9.7). */
-export type Fault = { fault: RelayCode | HubCode; message: string };
+/**
+ * A command that got no answer: the page threw, the handler was missing, the tab went away (§9.7), the hub refused to
+ * route it (§7.6), or there was no hub to ask at all.
+ */
+export type Fault = { fault: RelayCode | HubCode | "unreachable"; message: string };
 
 export const isFault = (v: unknown): v is Fault => typeof v === "object" && v !== null && "fault" in v;
 
@@ -45,17 +49,37 @@ export interface GameLink {
 }
 
 /**
- * What the CDP transport does to the tab outside the command table, until the flip replaces each (§13.2): attaching,
- * focus emulation, the trusted raw keyboard, and CDP's own exception and console events.
+ * What a transport does outside the command table: whether the game can be reached at all, who may act on it, the raw
+ * keyboard, and the page's own errors. The CDP side of each is a tab it attaches to; the hub side is the ladder, the
+ * driver grant and the `key` command (§12.1, §12.3).
  */
 export interface Tab {
-  attach(): Promise<{ attached: boolean; launchedChrome: boolean }>;
-  /** Re-apply focus emulation (#23). */
+  /**
+   * Whether a command can reach a game tab right now, and what `status` says about the transport. `needs` are the
+   * commands the caller is about to use: one the connected extension never registered refuses alone (§8.5).
+   */
+  presence(needs?: readonly CommandName[]): Promise<Presence>;
+  /** Takes the right to act on the game for this session (§7.5). A refusal is a tool's, so it carries its own wording. */
+  claim(): Promise<Claim>;
+  /** Whether this transport's own reads advance a frozen game loop (§10.3): CDP cannot, the hub's pumping probe does. */
+  readonly pumps: boolean;
+  /** Re-apply focus emulation (#23); nothing to do where the loop is pumped instead. */
   keepAlive(): Promise<void>;
-  /** The button through the raw keyboard. `false`: it has no keyboard equivalent, and nothing was sent. */
-  rawKey(b: Button): Promise<boolean>;
-  /** The page's recent console errors and warnings, for diagnostics. */
-  consoleTail(): ConsoleLine[];
+  /** The button through the raw keyboard, on the fingerprint it was decided on. `false`: it has no keyboard equivalent. */
+  rawKey(b: Button, fine: string): Promise<boolean>;
+  /** The page's recent console errors and warnings, for diagnostics; asked for only when a result is not `ok` (§12.4). */
+  tail(): Promise<ConsoleLine[]>;
   /** Called for every unhandled page exception (#16's hang corroboration). */
   onRejection(cb: (t: number) => void): void;
 }
+
+/** What the transport says about getting to a game tab, for `status` and for every tool's opening check (§12.3). */
+export type Presence = {
+  /** Null when a command can reach the one ready tab; otherwise the first failing rung, in the words the tool shows. */
+  reach: Reach | null;
+  /** The transport's own `status` fields: the CDP tab's attachment, or the hub's browsers, tabs and driver. */
+  facts: Record<string, unknown>;
+};
+
+/** `contended` is the hub's word for a held grant and `tab_contended` the pidfile lock's: each transport refuses in its own (§7.5). */
+export type Claim = { ok: true } | { ok: false; code: "contended" | "tab_contended"; message: string; detail?: Record<string, unknown> };

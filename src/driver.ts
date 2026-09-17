@@ -11,13 +11,16 @@
  * and no call ever retries a press on its own (#13, #14).
  */
 import { CallOutcomes, type CallEnd, type Outcome } from "./call-outcome.ts";
-import { acquireLock, lockContended, type Lock } from "./cdp/lock.ts";
+import { acquireLock } from "./cdp/lock.ts";
 import { CdpLink } from "./cdp/link.ts";
 import { CdpSession, DEFAULTS } from "./cdp/session.ts";
 import { Button, NAMES, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { LinkGame } from "./game/link-game.ts";
+import { HubLink, hubPort } from "./hub/link.ts";
+import { PLUGIN_VERSION } from "./plugin-version.ts";
+import type { CommandName } from "./protocol/commands.ts";
 import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { isSettingsMode, modeName } from "./screen.ts";
@@ -81,41 +84,57 @@ const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 /** The starter grid with its filter bar active, where the server never acts (§6.5). */
 const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
+/**
+ * What each tool sends into the tab, so a tool whose commands the installed extension never registered refuses alone
+ * and every other one keeps working (§8.5). The cursor commands are not here: a family without its setter is walked
+ * with presses instead, which the link's refusal already falls back to.
+ */
+const TOOL_COMMANDS = {
+  get_state: ["probe", "menu", "snapshot"],
+  read_menu: ["probe", "menu"],
+  press: ["probe", "press"],
+  select_option: ["probe", "menu", "press"],
+  start_run: ["probe", "menu", "starters", "press"],
+  // `screenshot` is not in the store table at all: an unreachable game still refuses by rung, and a store build then
+  // says the picture needs a dev build (§10.6, §12.2).
+  screenshot: [],
+} as const satisfies Record<string, readonly CommandName[]>;
+
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
 
 export class Driver {
-  readonly lock: Lock;
   readonly #game: GamePort;
   readonly #outcomes = new CallOutcomes();
   readonly #clock: Clock;
 
-  constructor(game: GamePort, lock: Lock, clock: Clock = REAL_CLOCK) {
+  constructor(game: GamePort, clock: Clock = REAL_CLOCK) {
     this.#game = game;
-    this.lock = lock;
     this.#clock = clock;
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 
+  /**
+   * The transport is CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub, which only the dev sets until the flip
+   * deletes both the variable and the CDP link (§12.1). The pidfile lock rides with CDP and goes with it.
+   */
   static create(home: string = DEFAULTS.home): Driver {
-    const link = new CdpLink(new CdpSession({ home }));
-    return new Driver(new LinkGame(link, link), acquireLock(home));
+    if (process.env.COACHEMON_TRANSPORT === "hub") {
+      const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
+      return new Driver(new LinkGame(hub, hub));
+    }
+    const link = new CdpLink(new CdpSession({ home }), acquireLock(home));
+    return new Driver(new LinkGame(link, link));
   }
 
   // ------------------------------------------------------------------ tools
 
+  /** The only tool that answers when the game is out of reach: it reports the failing rung instead of refusing (§12.3). */
   async status(): Promise<Record<string, unknown>> {
-    let attached = false;
-    let launchedChrome = false;
-    let error: string | null = null;
-    try {
-      ({ attached, launchedChrome } = await this.#game.attach());
-    } catch (e) {
-      error = (e as Error).message;
-    }
-    const contended = lockContended(this.lock);
-    if (!attached) {
-      return { status: "ok", attached, error, wave: null, screen: "UNKNOWN(-1)", run_live: false, game_version: null, tab_contended: contended.contended, lock_holder: contended.holder };
+    const presence = await this.#game.presence();
+    const head = { status: "ok", reachable: presence.reach === null, reach: presence.reach && { rung: presence.reach.rung, line: presence.reach.line }, ...presence.facts };
+    if (presence.reach !== null) {
+      return { ...head, game_version: null, pinned_version: PINNED_GAME_VERSION, version_match: null, run_live: false, run: this.#outcomes.runState(null), wave: null, screen: "UNKNOWN(-1)", settled: null, busy_reason: null };
     }
     // The page may still be booting (locator not ready for a few seconds after launch): give it a short grace.
     let read = await this.#game.read();
@@ -125,8 +144,7 @@ export class Driver {
     }
     const ready = read.ready ? read : null;
     return {
-      status: "ok",
-      attached,
+      ...head,
       game_version: ready?.gameVersion ?? null,
       pinned_version: PINNED_GAME_VERSION,
       version_match: ready ? ready.gameVersion === PINNED_GAME_VERSION : null,
@@ -136,13 +154,11 @@ export class Driver {
       screen: ready ? ready.screen : `UNKNOWN(${read.ready ? "-" : read.why})`,
       settled: ready?.settled ?? null,
       busy_reason: ready && !ready.settled ? ready.reason : null,
-      tab_contended: contended.contended,
-      lock_holder: contended.holder,
-      chrome_launched_by_server: launchedChrome,
     };
   }
 
   async getState(detail: SnapshotDetail, ctx: CallContext): Promise<Record<string, unknown>> {
+    await this.#reachable("get_state");
     return this.#call(ctx, async call => {
       const s = await this.#settleRead(call);
       if (!s.settled) return this.#openingTimedOut(call, s, "get_state");
@@ -151,7 +167,7 @@ export class Driver {
       const menu = await this.#game.menu();
       const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
       // A read-only call never refuses on a Screen that moved since the settle: it reports the newer one.
-      return this.#settledResult(ready, screenOf(ready, menu), outcome, {
+      return await this.#settledResult(ready, screenOf(ready, menu), outcome, {
         ...(snap.ok ? this.#cleanSnapshot(snap.snapshot) : { snapshot_error: snap.why }),
         run: { state: this.#outcomes.runState(ready) },
       });
@@ -159,20 +175,23 @@ export class Driver {
   }
 
   async readMenu(ctx: CallContext): Promise<Record<string, unknown>> {
+    await this.#reachable("read_menu");
     return this.#call(ctx, async call => {
       const s = await this.#settleRead(call);
       if (!s.settled) return this.#openingTimedOut(call, s, "read_menu");
       const ready = s.last as Ready;
       const menu = await this.#game.menu();
       const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
-      return this.#settledResult(ready, screenOf(ready, menu), outcome, this.#menuPayload(ready, menu));
+      return await this.#settledResult(ready, screenOf(ready, menu), outcome, this.#menuPayload(ready, menu));
     });
   }
 
   async press(buttonName: string, ctx: CallContext): Promise<Record<string, unknown>> {
+    await this.#reachable("press");
     return this.#call(ctx, async call => {
       const button = (Button as Record<string, Button | undefined>)[buttonName];
       if (button === undefined) throw new Refusal("unknown_button", `Unknown button ${JSON.stringify(buttonName)}`, { buttons: Object.keys(Button) });
+      await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "press");
       const ready = pre.last as Ready;
@@ -193,7 +212,7 @@ export class Driver {
       }
       // §6.4: retry once through the raw keyboard, never through processInput again.
       if (unmoved && !landedUnseen) {
-        rawFallback = await this.#game.rawKey(button);
+        rawFallback = await this.#game.rawKey(button, ready.fine);
         if (rawFallback) s = await this.#settle(ready.fine, call);
       }
       const adv = await this.#autoAdvance(s, call);
@@ -206,7 +225,9 @@ export class Driver {
   }
 
   async selectOption(label: string | undefined, index: string | number | undefined, expectScreen: string | undefined, ctx: CallContext): Promise<Record<string, unknown>> {
+    await this.#reachable("select_option");
     return this.#call(ctx, async call => {
+      await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "select_option");
       const ready = pre.last as Ready;
@@ -266,7 +287,9 @@ export class Driver {
   }
 
   async startRun(species: string[], slot: number | undefined, overwrite: boolean, ctx: CallContext): Promise<Record<string, unknown>> {
+    await this.#reachable("start_run");
     return this.#call(ctx, async call => {
+      await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "start_run");
       const ready = pre.last as Ready;
@@ -285,7 +308,7 @@ export class Driver {
         return await this.#startRunFromTitle(call, ready, choice, species, slot, overwrite, log);
       } catch (e) {
         if (!(e instanceof SetupTimedOut)) throw e;
-        const out = this.#timedOutResult(e.settle, this.#end(call, { kind: "acting", pre: ready, choice, settle: e.settle, options: null }), "start_run");
+        const out = await this.#timedOutResult(e.settle, this.#end(call, { kind: "acting", pre: ready, choice, settle: e.settle, options: null }), "start_run");
         return {
           ...out,
           step: e.step,
@@ -457,6 +480,7 @@ export class Driver {
   }
 
   async screenshot(): Promise<string> {
+    await this.#reachable("screenshot");
     return this.#game.screenshot();
   }
 
@@ -562,12 +586,31 @@ export class Driver {
 
   // --------------------------------------------------------------- guards
 
+  /**
+   * Every tool's first move: can a command reach the game at all, and does the connected extension have what this tool
+   * needs (§12.2)? The refusal is the ladder's line, with its rung, so the agent reads the same words `status` gives.
+   *
+   * It sits outside the call, before the deadline is set: nothing has been asked of the game, so there is no call for
+   * `CallOutcomes` to end. The grant is taken inside the call, where a refusal does end one.
+   */
+  async #reachable(tool: keyof typeof TOOL_COMMANDS): Promise<void> {
+    const { reach } = await this.#game.presence(TOOL_COMMANDS[tool]);
+    if (reach === null) return;
+    throw new Refusal(reach.code, reach.line, { rung: reach.rung, ...(reach.tabs ? { tabs: reach.tabs } : {}) });
+  }
+
+  /** An acting call takes the right to act before it reads anything, so nothing is settled on a game we may not touch (§7.5). */
+  async #claim(): Promise<void> {
+    const c = await this.#game.claim();
+    if (!c.ok) throw new Refusal(c.code, c.message, c.detail ?? {});
+  }
+
   async #guard(ready: Ready): Promise<void> {
     const screen = ready.screen;
-    const c = lockContended(this.lock);
-    if (c.contended) throw new Refusal("tab_contended", `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, { screen, holder: c.holder });
     if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
     if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
+    // A transport whose settles pump has no frozen loop to refuse: the driver's own polls keep it turning (§10.3).
+    if (this.#game.pumps) return;
     // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
     await this.#game.keepAlive();
     const a = await this.#game.frame();
@@ -717,13 +760,13 @@ export class Driver {
     const s = adv.settle;
     if (!s.settled) {
       const outcome = this.#end(call, { kind: "acting", pre, choice, settle: s, options: null });
-      return { ...this.#timedOutResult(s, outcome, "act"), messages: adv.messages, ...payload };
+      return { ...(await this.#timedOutResult(s, outcome, "act")), messages: adv.messages, ...payload };
     }
     const afterRead = s.last as Ready;
     const menu = await this.#game.menu();
     const snap = await this.#game.snapshot("lean");
     const outcome = this.#end(call, { kind: "acting", pre, choice, settle: s, options: optionLabels(menu) });
-    return this.#settledResult(
+    return await this.#settledResult(
       afterRead,
       afterRead.screen,
       outcome,
@@ -739,7 +782,7 @@ export class Driver {
     );
   }
 
-  #settledResult(
+  async #settledResult(
     ready: Ready,
     /** The Screen the result reports: a read-only call's is its menu read's, newer than the settle's. */
     screen: string,
@@ -747,23 +790,23 @@ export class Driver {
     payload: Record<string, unknown>,
     /** The call's suggested next step, returned only when the status is `ok`. */
     next?: string,
-  ): Record<string, unknown> {
+  ): Promise<Record<string, unknown>> {
     const out: Record<string, unknown> = { status: outcome.status, wave: ready.wave, screen, ...payload };
     if (next !== undefined && outcome.status === "ok") out.next = next;
     if (outcome.diagnostic) {
       out.diagnostic = outcome.diagnostic;
-      out.console_tail = this.#game.consoleTail();
+      out.console_tail = await this.#game.tail();
     }
     if (outcome.escape) out.escape = outcome.escape;
     return out;
   }
 
   /** The opening settle ran out of time: nothing was pressed, so the call ends as a read. */
-  #openingTimedOut(call: Call, s: SettleResult, tool: string): Record<string, unknown> {
+  #openingTimedOut(call: Call, s: SettleResult, tool: string): Promise<Record<string, unknown>> {
     return this.#timedOutResult(s, this.#end(call, { kind: "read", settle: s, options: null }), tool);
   }
 
-  #timedOutResult(s: SettleResult, outcome: Outcome, what: string): Record<string, unknown> {
+  async #timedOutResult(s: SettleResult, outcome: Outcome, what: string): Promise<Record<string, unknown>> {
     const last = s.last && s.last.ready ? s.last : null;
     const alert = last?.mode === UiMode.ALERT_MODAL ? last.messageText : null;
     // The budget ran out with the game idle on a message that takes ACTION (#55): waiting on it would never end.
@@ -776,7 +819,7 @@ export class Driver {
       diagnostic: outcome.diagnostic,
       ...(alert !== null ? { alert_text: alert } : {}),
       ...(pending ? { message_pending: true, text: last.messageText, next: DISMISS_MESSAGE } : {}),
-      console_tail: this.#game.consoleTail(),
+      console_tail: await this.#game.tail(),
       note:
         alert !== null
           ? `${what}: the game is showing an alert that no input can close yet. If it stays, only a page reload leaves it (destructive: progress since the last save).`

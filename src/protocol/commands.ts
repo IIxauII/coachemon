@@ -66,3 +66,10 @@ function freeze<T>(value: T): T {
 export const STORE_COMMANDS: { readonly [N in CommandName]: CommandSpec } = freeze(TABLE);
 
 export const COMMAND_NAMES = Object.freeze(Object.keys(STORE_COMMANDS) as CommandName[]);
+
+/**
+ * The dev-only commands (§10.6). They sit outside the protocol integer, because a dev build always pairs with a server
+ * from the same checkout; the hub routes them to a `flavour: "dev"` extension and to nothing else. The shapes live with
+ * the extension's dev table: the hub only needs the names.
+ */
+export const DEV_COMMAND_NAMES = Object.freeze(["eval", "screenshot", "reload"] as const);

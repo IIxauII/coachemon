@@ -8,7 +8,8 @@ import type { Refused } from "../page/acts.ts";
 import { disc } from "../page/disc.ts";
 import type { MenuResult } from "../page/menu.ts";
 import { screenId, type Discriminators } from "../screen.ts";
-import { isFault, type Fault, type GameLink, type Tab, type Unready } from "./link.ts";
+import type { CommandName } from "../protocol/commands.ts";
+import { isFault, type Claim, type Fault, type GameLink, type Presence, type Tab, type Unready } from "./link.ts";
 import type { Act, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** A menu read that located no handler has no discriminators: they read as off. */
@@ -96,20 +97,28 @@ export class LinkGame implements GamePort {
 
   // -------------------------------------------------------- tab operations
 
-  attach(): Promise<{ attached: boolean; launchedChrome: boolean }> {
-    return this.#tab.attach();
+  get pumps(): boolean {
+    return this.#tab.pumps;
+  }
+
+  presence(needs?: readonly CommandName[]): Promise<Presence> {
+    return this.#tab.presence(needs);
+  }
+
+  claim(): Promise<Claim> {
+    return this.#tab.claim();
   }
 
   keepAlive(): Promise<void> {
     return this.#tab.keepAlive();
   }
 
-  rawKey(b: Button): Promise<boolean> {
-    return this.#tab.rawKey(b);
+  rawKey(b: Button, fine: string): Promise<boolean> {
+    return this.#tab.rawKey(b, fine);
   }
 
-  consoleTail(): ConsoleLine[] {
-    return this.#tab.consoleTail();
+  tail(): Promise<ConsoleLine[]> {
+    return this.#tab.tail();
   }
 
   onRejection(cb: (t: number) => void): void {

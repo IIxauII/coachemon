@@ -55,10 +55,13 @@ export type StateRequest = { t: "state" };
 
 export type HubState = {
   t: "state";
-  extensions: { conn: number; target: Target; version: string; flavour: Flavour; protocol: number; consent: boolean }[];
+  extensions: ExtensionInfo[];
   tabs: TabInfo[];
   driver: "you" | "other" | null;
 };
+
+/** A connected browser as the hub sees it. `commands` is its hello's list: what the server reads to pick a route (§10.1). */
+export type ExtensionInfo = { conn: number; target: Target; version: string; flavour: Flavour; protocol: number; consent: boolean; commands: string[] };
 
 export type TabInfo = { conn: number; tab: number; target: Target; title: string; state: TabState };
 
