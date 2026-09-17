@@ -248,28 +248,12 @@ const hudSummary = m => {
     plan: planSummary(m.teamPlan) };
 };
 
-// Trap abilities on a slot's target that its planned move runs into: by type, by category (Fluffy) or a
-// super-effective hit (Filter and co.). Rows carry names and types only, so this is by name. Intimidate only on a
-// predicted switch-in (on the field its drop is already in our stat stages); never Sturdy (the damage model already
-// counts it in the KO).
-const trapsHit = (m, sl) => {
-  if (!sl.move) return [];
-  const foes = m.rows.filter(r => (sl.target === "both" ? !r.pick?.later : r.name === sl.target?.name));
-  const incoming = new Set(m.rows.filter(r => r.switchTo?.sure).map(r => r.switchTo.name));
-  const phys = sl.cat === "physical";
-  const hits = (a, r) => ABILITY_IMMUNE[a] === sl.type
-    || (a === "Thick Fat" && (sl.type === "Fire" || sl.type === "Ice")) || (a === "Heatproof" && sl.type === "Fire")
-    || (a === "Fluffy" && (phys || sl.type === "Fire")) || (a === "Intimidate" && phys && incoming.has(r.name))
-    || a === "Wonder Guard"
-    || (["Filter", "Solid Rock", "Prism Armor"].includes(a) && r.types.reduce((x, d) => x * vs(sl.type, d), 1) >= 2);
-  return [...new Set(foes.flatMap(r => r.abilities.filter(a => TRAPS.has(a) && hits(a, r))))];
-};
-
 let collapsed = false; // set per draw by tick: this battle panel is the one-line easy-wave view
 const drawBattle = m => {
   if (view === "closed") return [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)];
   const f = m.field;
-  const trapTag = sl => trapsHit(m, sl).map(a => h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "3px" }, `⚠ ${a}`));
+  // The trap abilities the planner already found on the foes this slot's move hits.
+  const trapTag = sl => (sl.traps ?? []).map(a => h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "3px" }, `⚠ ${a}`));
 
   // Easy wild wave: one line, one ⚔ per slot. `+` shows the chosen view for the rest of the wave.
   if (collapsed) {

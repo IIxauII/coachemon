@@ -46,7 +46,8 @@ const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) 
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  const { learnModel, learnState, learnAdvice, blockedByHealBlock } = globalThis.__hud["40-learn"];
+  const { learnModel, learnAdvice, blockedByHealBlock } = globalThis.__hud["40-learn"];
+  const { learnState } = globalThis.__hud["02-screens"];
   globalThis.__lm = { learnModel, learnState, learnAdvice, tmAdvice: globalThis.__hud["50-shop"].tmAdvice, blockedByHealBlock };
   const model = learnModel({ ...learnState(scene), roster });
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");

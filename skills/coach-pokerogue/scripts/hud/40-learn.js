@@ -1,18 +1,5 @@
-// Learn-move card model.
-// Learn-move: the SUMMARY screen (summaryUiMode LEARN_MOVE) holds the new move; before it opens, the
-// "forget a move?" prompt only has LearnMovePhase's moveId, so the move is built from a PokemonMove.
+// Learn-move card model. The screen itself is detected in 02-screens (`learnState`), which the probe shares.
 // No game functions run here (the game isn't waiting on a battle command): only move/attr fields are read.
-const learnState = s => {
-  const h = s.ui.getHandler();
-  const double = !!s.currentBattle?.double;
-  const party = s.getPlayerParty?.() ?? [];
-  if (s.ui.getMode() === UiMode.SUMMARY && h?.summaryUiMode === SummaryUiMode.LEARN_MOVE && h.newMove) return { pk: h.pokemon, mv: h.newMove, double, party };
-  const phase = s.phaseManager?.getCurrentPhase?.();
-  if (phase?.phaseName !== "LearnMovePhase") return null;
-  const pk = party[phase.partyMemberIndex];
-  const pm = pk?.moveset.find(Boolean);
-  return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double, party } : null;
-};
 
 // A Move object for a move id, built the way LearnMovePhase's prompt is: from any PokemonMove's constructor.
 const learnMoveById = (party, id) => {

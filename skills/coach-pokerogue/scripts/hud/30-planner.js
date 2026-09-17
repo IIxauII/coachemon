@@ -732,6 +732,25 @@ const exchange = (s, me, pm, foe, opts = {}) => {
 // no turn, so every candidate field starts the coming turn fresh.
 // `locked`: slot 1's command phase, with slot 0's command already in (`lockedCommand`): that slot is kept as chosen
 // and only its partner is searched.
+// Trap abilities on the foes a slot's move actually hits: an immunity (by type, or by move flag - Soundproof and
+// co.), a damage cut, or an ability that punishes the hit. Read off the engine mons the plan still holds, so it
+// sees the move's flags and the foe's real abilities. Intimidate only on a foe coming in (on the field its drop is
+// already in our stat stages); never Sturdy, which the KO model already counts.
+const trapsOn = (p, active) => {
+  const mv = p.move?.pm?.getMove?.();
+  if (!mv || p.self || p.target === null || p.target === undefined) return [];
+  const type = p.move.type;
+  const phys = p.move.cat === "physical";
+  const foes = p.target === "both" ? active : [active[p.target]];
+  const bites = (a, foe) => ABILITY_IMMUNE[a] === type
+    || (ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a]))
+    || (a === "Thick Fat" && (type === "Fire" || type === "Ice")) || (a === "Heatproof" && type === "Fire")
+    || (a === "Fluffy" && (phys || type === "Fire")) || (a === "Intimidate" && phys && !foe.isOnField?.())
+    || a === "Wonder Guard"
+    || (["Filter", "Solid Rock", "Prism Armor"].includes(a) && typesOf(foe).reduce((x, d) => x * vs(type, d), 1) >= 2);
+  return [...new Set(foes.filter(Boolean).flatMap(foe => abilitiesOf(foe).filter(a => TRAPS.has(a) && bites(a, foe))))];
+};
+
 const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = false, locked = null } = {}) => {
   // Our side has two slots whenever two of us can stand, even if only one foe is left; `pair`: two foes to aim at.
   const slots = double && party.length >= 2 ? 2 : 1;
@@ -1274,6 +1293,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
           threat: slotThreat(p, enter),
+          traps: sup ? [] : trapsOn(p, active),
           locked: !!p.locked,
           support: sup?.kind ?? null,
           spare: !sup && spare,

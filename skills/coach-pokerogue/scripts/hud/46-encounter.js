@@ -21,7 +21,7 @@
 // ---- Judging (first cuts, all of them)
 // A fight is "hard" when the foe is 5+ levels over our best, or nothing hits it super-effectively and it's at our level
 // (a boss: within 3 levels under it). Money is spent freely only while it leaves RESERVE_WAVES waves' worth of reward money.
-const { encounterScreen, encounterModel } = (() => {
+const { encounterModel } = (() => {
   // MysteryEncounterType, in enum order.
   const NAMES = ["Mysterious Challengers", "Mysterious Chest", "Dark Deal", "Fight or Flight", "Slumbering Snorlax",
     "Training Session", "Department Store Sale", "Shady Vitamin Dealer", "Field Trip", "Safari Zone", "Lost at Sea",
@@ -51,9 +51,6 @@ const { encounterScreen, encounterModel } = (() => {
   const joinNames = names => (names.length > 2 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names.join(" & "));
   // The game's `randSeedInt(range, min)` on whatever stream is sown.
   const int = (range, min = 0) => (range <= 1 ? min : Phaser.Math.RND.integerInRange(min, range - 1 + min));
-
-  const encounterScreen = (s, h) => s.ui.getMode() === UiMode.MYSTERY_ENCOUNTER && !!s.currentBattle?.mysteryEncounter
-    && Array.isArray(h?.encounterOptions) && h.encounterOptions.length > 0;
 
   // ---- Generic reading of the options, any encounter
   const readOptions = (s, h, me, party) => {
@@ -387,5 +384,5 @@ const { encounterScreen, encounterModel } = (() => {
     return value;
   };
 
-  return { encounterScreen, encounterModel };
+  return { encounterModel };
 })();
