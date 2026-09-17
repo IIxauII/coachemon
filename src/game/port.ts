@@ -7,9 +7,11 @@
  * caller attaches by hand.
  */
 import type { Button } from "../enums/generated.ts";
-import type { Discriminators } from "../screen.ts";
 
-/** The settle predicate's read: everything the settle loop, the screen id and the fingerprints need, in one read. */
+/**
+ * The settle predicate's read: everything the settle loop, the Screen and the fingerprints need, in one read.
+ * `screen` is the composite Screen id (`PARTY/SWITCH:options`, `STARTER_SELECT/FILTER`), identified by the adapter.
+ */
 export type PredicateRead =
   | { ready: false; why: string; frame: number | null; domMode: string | null }
   | {
@@ -17,6 +19,7 @@ export type PredicateRead =
       settled: boolean;
       reason: string;
       mode: number;
+      screen: string;
       phaseName: string | null;
       wave: number | null;
       turn: number | null;
@@ -33,7 +36,6 @@ export type PredicateRead =
       frame: number | null;
       domMode: string | null;
       gameVersion: string | null;
-      disc: Discriminators;
     };
 
 export type Ready = Extract<PredicateRead, { ready: true }>;
@@ -46,10 +48,16 @@ export type MenuOption = {
   [k: string]: unknown;
 };
 
+/**
+ * The menu reader's read. `screen` is identified from the same read as the family, and the fields a family takes from
+ * the Screen's discriminators (party `optionsMode`/`partyUiMode`/`transferMode`, save_slot `uiMode`, the alert's
+ * `closable`, starter `filterMode`) are filled into `extra` from that one read too.
+ */
 export type MenuRead = {
   readable: boolean;
   why?: string;
   mode: number;
+  screen: string;
   handler?: string;
   family: string | null;
   options: MenuOption[];
@@ -74,7 +82,6 @@ export type CursorTarget =
 /** The starter-select facts `start_run` needs before it presses anything. */
 export type StarterGrid = {
   ok: true;
-  filterMode: boolean;
   grid: { i: number; name: string | null; cost: number | null }[];
   valueLimit: number | null;
   party: string[];

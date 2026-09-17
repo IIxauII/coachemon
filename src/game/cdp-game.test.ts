@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Thrown } from "../cdp/session.ts";
-import { Button } from "../enums/generated.ts";
+import { Button, UiMode } from "../enums/generated.ts";
+import type { Discriminators } from "../screen.ts";
 import { CdpGame, type GameSession } from "./cdp-game.ts";
 import * as js from "./js.ts";
 import type { CursorTarget } from "./port.ts";
@@ -41,6 +42,60 @@ test("a page throw on a read degrades to that read's not-readable value", async 
   assert.deepEqual(menu.options, []);
   assert.deepEqual(await game.starterGrid(), { ok: false, why: THROW.__throw });
   assert.deepEqual(await game.snapshot("lean"), { ok: false, why: THROW.__throw });
+});
+
+test("a page throw on a menu read is the UNKNOWN(-1) screen", async () => {
+  assert.equal((await throwing().menu()).screen, "UNKNOWN(-1)");
+});
+
+const NO_DISC: Discriminators = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summaryUiMode: null, alertClosable: false, filterMode: false, transferMode: false };
+
+/** A page on one screen: the predicate and the menu reader each read `disc` off the same handler, as js.ts's one DISC snippet does. */
+function pageOn(mode: number, family: string, disc: Partial<Discriminators>, extra: Record<string, unknown> = {}) {
+  const d = { ...NO_DISC, ...disc };
+  return stubSession(expr => {
+    if (expr === js.PREDICATE) {
+      return {
+        ready: true, settled: true, reason: "menu-open", mode, phaseName: null, wave: null, turn: null, money: null, runLive: false,
+        tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
+        awaitingActionInput: false, fine: "f", frame: 1, domMode: null, gameVersion: null, disc: d,
+      };
+    }
+    if (expr === js.READER) return { readable: true, mode, handler: "H", family, options: [], cursor: 0, text: null, extra, disc: d };
+    throw new Error("unexpected expression");
+  });
+}
+
+/** Each family whose typed fields come from `disc`: the Screen both reads derive, and the fields the menu read carries. */
+const screens: { name: string; mode: number; family: string; disc: Partial<Discriminators>; screen: string; fields: Record<string, unknown> }[] = [
+  { name: "party", mode: UiMode.PARTY, family: "party", disc: { partyUiMode: 1, optionsMode: true, transferMode: true }, screen: "PARTY/FAINT_SWITCH:options", fields: { optionsMode: true, partyUiMode: 1, transferMode: true } },
+  { name: "save_slot", mode: UiMode.SAVE_SLOT, family: "save_slot", disc: { saveSlotUiMode: 1 }, screen: "SAVE_SLOT/SAVE", fields: { uiMode: 1 } },
+  { name: "alert", mode: UiMode.ALERT_MODAL, family: "acknowledge", disc: { alertClosable: true }, screen: "ALERT_MODAL/CLOSABLE", fields: { closable: true } },
+  { name: "starter filter bar", mode: UiMode.STARTER_SELECT, family: "starter_select", disc: { filterMode: true }, screen: "STARTER_SELECT/FILTER", fields: { filterMode: true } },
+  { name: "learn move", mode: UiMode.SUMMARY, family: "learn_move", disc: { summaryUiMode: 1 }, screen: "SUMMARY/LEARN_MOVE", fields: {} },
+];
+
+for (const s of screens) {
+  test(`read and menu derive the same Screen from one disc, and the menu's typed fields come from it: ${s.name}`, async () => {
+    const game = new CdpGame(pageOn(s.mode, s.family, s.disc, { kept: 1 }).session);
+    const read = await game.read();
+    const menu = await game.menu();
+    assert.equal(read.ready && read.screen, s.screen);
+    assert.equal(menu.screen, s.screen);
+    assert.deepEqual(menu.extra, { kept: 1, ...s.fields });
+    assert.ok(!("disc" in read) && !("disc" in menu), "disc stops at the adapter");
+  });
+}
+
+test("a menu read with no handler is unreadable and carries its mode's Screen", async () => {
+  const game = new CdpGame(stubSession(() => ({ readable: false, why: "no-handler", mode: UiMode.COMMAND })).session);
+  const menu = await game.menu();
+  assert.equal(menu.readable, false);
+  assert.equal(menu.why, "no-handler");
+  assert.equal(menu.screen, "COMMAND");
+  const located = await new CdpGame(stubSession(() => ({ readable: false, why: "no-phaser" })).session).menu();
+  assert.equal(located.mode, -1);
+  assert.equal(located.screen, "UNKNOWN(-1)");
 });
 
 test("a page throw on an act says it threw", async () => {

@@ -115,12 +115,14 @@ So every tool reports a **composite screen id**, and this is the string Claude r
 
 ```
 <UiModeName>                       e.g. "COMMAND", "MODIFIER_SELECT"
-<UiModeName>/<discriminator>       e.g. "PARTY/FAINT_SWITCH"
+<UiModeName>/<discriminator>       e.g. "PARTY/FAINT_SWITCH", "STARTER_SELECT/FILTER"
 <UiModeName>/<discriminator>:options   the option phase of a two-phase screen
 UNKNOWN(<int>)                     mode not in the generated table
 ```
 
-The raw `{ int, name }` stays in the `read_menu` payload for debugging; the composite id is what the surface talks in.
+The discriminated screens are `PARTY/<PartyUiMode>[:options]`, `SAVE_SLOT/SAVE` and `SAVE_SLOT/LOAD`, `SUMMARY/LEARN_MOVE`, `ALERT_MODAL/CLOSABLE` and `STARTER_SELECT/FILTER` (the starter grid with its filter bar active, §6.5). The escape ladder falls back from a composite id to its mode, so `STARTER_SELECT/FILTER` answers to the `STARTER_SELECT` entry.
+
+The game adapter identifies the Screen once per read (`CdpGame`, from one discriminator snippet shared by the settle predicate and the menu reader), and both reads carry it. The raw `{ int, name }` stays in the `read_menu` payload for debugging; the composite id is what the surface talks in.
 
 ### PARTY discrimination
 
@@ -210,6 +212,7 @@ expect_screen?: string    // a composite screen id from read_menu
 - **No match** → error `no_match`, echoing the actual normalized option list and the current cursor position, so the next attempt uses a real label.
 - **More than one match** → error `ambiguous`, echoing the same.
 - **`expect_screen` given and the live screen differs** → error `screen_changed`, carrying the live screen. Nothing is pressed. This is advisory and optional: auto-advance (§6.8) and a contended tab both mean the screen can move between reading and acting, and on a party screen the wrong option destroys a run. Omitted ⇒ act on whatever is live.
+- **The screen moves between the settled read and the menu read** → error `screen_changed`, carrying the menu read's screen and the settled one as `was`. Nothing is pressed. `start_run` refuses the same way on TITLE. A cursor-walk step whose menu read shows another screen than the walk started on also stops as `screen_changed`; its detail counts the presses already sent, and nothing is committed. Read-only calls (`read_menu`, `get_state`) never refuse on it: they report the menu read's newer screen.
 
 **Movement** follows the per-family table in §7. The final commit is always `ui.processInput(Button.ACTION)`.
 
@@ -230,7 +233,7 @@ Delivery: try `ui.processInput(button)`. If the settle fingerprint has not left 
 The server refuses, rather than pressing, in three cases. A refusal is an error carrying the live screen; nothing is sent to the game.
 
 1. **Settings modes.** Six settings carry `requireReload` and the reload fires on *leaving* Settings, killing a live run (#11). If the game is ever on a settings screen, every acting tool refuses and reports it.
-2. **The `STARTER_SELECT` filter bar.** Entered only by `STATS` from the grid or UP from row 0, and fully avoidable since `setCursor` is safe in grid mode. The server never navigates into it, and refuses to act while `filterMode === true` — where `setCursor(n)` silently writes `filterBarCursor` instead of the grid cursor (**[live]** #8).
+2. **The `STARTER_SELECT` filter bar, the `STARTER_SELECT/FILTER` screen.** Entered only by `STATS` from the grid or UP from row 0, and fully avoidable since `setCursor` is safe in grid mode. The server never navigates into it, and refuses `filter_bar` on `STARTER_SELECT/FILTER` — where `setCursor(n)` silently writes `filterBarCursor` instead of the grid cursor (**[live]** #8). The refusal is decided from the screen id alone: every acting tool's guard, and `start_run` when a setup step arrives on it. The in-page `starterSetCursor` keeps its own `filterMode` check as a last-moment safety.
 3. **`start_run` onto an occupied slot** — see below.
 
 ### 6.6 `start_run(species, slot?, overwrite?)`

@@ -15,7 +15,7 @@
 import { UiMode } from "./enums/generated.ts";
 import type { Diagnostic, Status } from "./envelope.ts";
 import type { PredicateRead, Ready } from "./game/port.ts";
-import { modeName, screenId } from "./screen.ts";
+import { modeName } from "./screen.ts";
 import { BEYOND_OBSERVED_MS, type SettleResult } from "./settle.ts";
 import { progressFingerprint, StuckDetector, type Choice, type StuckReport } from "./stuck/detector.ts";
 import { HangWatch } from "./stuck/hang.ts";
@@ -146,7 +146,7 @@ export class CallOutcomes {
     const before = progressOf(pre);
     const read = after?.settled && after.last?.ready ? after.last : null;
     this.#detector.recordActing({
-      screen: screenId(pre.mode, pre.disc),
+      screen: pre.screen,
       before: { fingerprint: before, settled: true },
       after: { fingerprint: read ? progressOf(read) : before, settled: read !== null },
       choice,
@@ -174,7 +174,7 @@ export class CallOutcomes {
     if (s !== null && s.settled && last !== null) {
       // Only a settled fingerprint is ever judged stuck.
       const a = this.#detector.assess({
-        screen: screenId(last.mode, last.disc),
+        screen: last.screen,
         fingerprint: progressOf(last),
         settled: true,
         liveVersion: last.gameVersion ?? "",
