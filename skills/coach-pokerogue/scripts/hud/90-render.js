@@ -429,7 +429,7 @@ document.body.appendChild(el);
 
 // Damaging move types across the living party: the foe rows only list weaknesses we can hit.
 const moveTypesOf = party => [...new Set(party.flatMap(p => p.moveset.filter(Boolean).map(pm => {
-  try { const mv = pm.getMove(); return mv.category !== 2 && mv.power > 0 ? TYPES[mv.type] : null; } catch { return null; }
+  try { const mv = pm.getMove(); return mv.category !== MoveCategory.STATUS && mv.power > 0 ? TYPES[mv.type] : null; } catch { return null; }
 })).filter(Boolean))];
 
 const tick = () => {
@@ -445,7 +445,7 @@ const tick = () => {
     let m;
     if (learn) {
       m = learnModel(learn);
-    } else if (s.ui.getMode() === 6 && handler?.options?.length) {
+    } else if (s.ui.getMode() === UiMode.MODIFIER_SELECT && handler?.options?.length) {
       m = shopModel(s, handler);
     } else if (biomeScreen(s, handler)) {
       m = biomeModel(s, handler);

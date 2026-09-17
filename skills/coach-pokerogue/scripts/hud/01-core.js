@@ -28,8 +28,8 @@ const ABILITY_IMMUNE = {
   "Volt Absorb": "Electric", "Lightning Rod": "Electric", "Motor Drive": "Electric",
   "Sap Sipper": "Grass",
 };
-// Immunities by move flag rather than type (MoveFlags bits at the pinned game ref).
-const ABILITY_IMMUNE_FLAG = { "Soundproof": 1 << 2, "Bulletproof": 1 << 10, "Overcoat": 1 << 11, "Wind Rider": 1 << 13 };
+// Immunities by move flag rather than type.
+const ABILITY_IMMUNE_FLAG = { "Soundproof": MoveFlags.SOUND_BASED, "Bulletproof": MoveFlags.BALLBOMB_MOVE, "Overcoat": MoveFlags.POWDER_MOVE, "Wind Rider": MoveFlags.WIND_MOVE };
 const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
 
 const typesOf = p => p.getTypes().map(t => TYPES[t]).filter(Boolean);
@@ -52,7 +52,7 @@ const effectiveness = (type, p, mv) => {
 // Natures: the enum is the grid 5·raised + lowered over [Atk, Def, Spe, SpA, SpD], neutral on the diagonal.
 // `upStat` / `downStat` are Stat indices (1 atk, 2 def, 3 spa, 4 spd, 5 spe); null when neutral.
 const NATURE_STATS = ["Atk", "Def", "Spe", "SpA", "SpD"];
-const NATURE_STAT_IDS = [1, 2, 5, 3, 4];
+const NATURE_STAT_IDS = [Stat.ATK, Stat.DEF, Stat.SPD, Stat.SPATK, Stat.SPDEF];
 const NATURES = ["Hardy", "Lonely", "Brave", "Adamant", "Naughty", "Bold", "Docile", "Relaxed", "Impish", "Lax", "Timid",
   "Hasty", "Serious", "Jolly", "Naive", "Modest", "Mild", "Quiet", "Bashful", "Rash", "Calm", "Gentle", "Sassy",
   "Careful", "Quirky"];
@@ -80,7 +80,7 @@ const squeezeDist = (points, k) => {
   return out;
 };
 
-const SPREAD_TARGETS = [2, 4, 6, 8]; // MoveTarget ALL_OTHERS, ALL_NEAR_OTHERS, ALL_NEAR_ENEMIES, ALL_ENEMIES
+const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
 const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
 
 const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IMMUNE_FLAG), "Wonder Guard", "Thick Fat", "Heatproof", "Solid Rock", "Filter", "Prism Armor", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple",
@@ -88,11 +88,11 @@ const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IM
   "Iron Barbs", "Rough Skin", "Static", "Flame Body", "Poison Point", "Effect Spore", "Cursed Body", "Gooey", "Tangling Hair", "Mummy", "Weak Armor", "Stamina",
   // Turn our hits, stat drops or KOs into boosts; undo chip or status; ignore our boosts or residual damage.
   "Justified", "Defiant", "Competitive", "Moxie", "Beast Boost", "Speed Boost", "Shed Skin", "Natural Cure", "Regenerator", "Unaware", "Magic Guard", "Marvel Scale", "Fur Coat"]);
-const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"];
+const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
 const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
 // ---- Calling the game's own code safely
-// Even the game's "simulated" paths have hidden effects (read from the live build; see the coach spec): they can
+// Even the game's "simulated" paths have hidden effects (see game-code.md §0): they can
 // queue ability displays/messages, record abilities in waveData/summonData.abilitiesApplied, draw from the battle
 // RNG (Outrage-type targeting, consecutive Protect, Shell Side Arm ties, Psywave) or Phaser's global RNG (Present),
 // and write turnData (Tera Shell's moveEffectiveness; our own multi-hit hitCount/hitsLeft). `sandbox` runs `fn`

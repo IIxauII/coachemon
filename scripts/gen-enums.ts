@@ -20,7 +20,7 @@ const RAW = "https://raw.githubusercontent.com/pagefaultgames/pokerogue";
 const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
 const OUT = new URL("../src/enums/generated.ts", import.meta.url);
 
-/** Enum name → file it lives in. Both `enum X {}` and `const X = {} as const` forms are parsed. */
+/** Enum name → file it lives in. `enum X {}`, `const X = {} as const` and `Object.freeze({})` forms are parsed. */
 const ENUMS: Record<string, string> = {
   Button: "src/enums/buttons.ts",
   UiMode: "src/enums/ui-mode.ts",
@@ -30,6 +30,45 @@ const ENUMS: Record<string, string> = {
   SaveSlotUiMode: "src/ui/handlers/save-slot-select-ui-handler.ts",
   SummaryUiMode: "src/ui/handlers/summary-ui-handler.ts",
   PartyOption: "src/ui/handlers/party-ui-handler.ts",
+  // The coach HUD's enums (#94). The game's build inlines enums as numbers, so no
+  // names exist at runtime: `hud-bundle.mjs` injects the members the HUD names.
+  AbilityAttr: "src/enums/ability-attr.ts",
+  AbilityId: "src/enums/ability-id.ts",
+  AiType: "src/enums/ai-type.ts",
+  ArenaTagSide: "src/enums/arena-tag-side.ts",
+  BattleType: "src/enums/battle-type.ts",
+  BattlerIndex: "src/enums/battler-index.ts",
+  BerryType: "src/enums/berry-type.ts",
+  BiomePoolTier: "src/enums/biome-pool-tier.ts",
+  Challenges: "src/enums/challenges.ts",
+  Command: "src/enums/command.ts",
+  EvoLevelThresholdKind: "src/enums/evo-level-threshold-kind.ts",
+  Gender: "src/data/gender.ts",
+  HitResult: "src/enums/hit-result.ts",
+  ModifierPoolType: "src/enums/modifier-pool-type.ts",
+  ModifierTier: "src/enums/modifier-tier.ts",
+  MoveCategory: "src/enums/move-category.ts",
+  MoveFlags: "src/enums/move-flags.ts",
+  MoveId: "src/enums/move-id.ts",
+  MovePriorityInBracket: "src/enums/move-priority-in-bracket.ts",
+  MoveResult: "src/enums/move-result.ts",
+  MoveTarget: "src/enums/move-target.ts",
+  MoveUseMode: "src/enums/move-use-mode.ts",
+  MultiHitType: "src/enums/multi-hit-type.ts",
+  MysteryEncounterOptionMode: "src/enums/mystery-encounter-option-mode.ts",
+  MysteryEncounterTier: "src/enums/mystery-encounter-tier.ts",
+  MysteryEncounterType: "src/enums/mystery-encounter-type.ts",
+  Nature: "src/enums/nature.ts",
+  Passive: "src/enums/passive.ts",
+  PokeballType: "src/enums/pokeball.ts",
+  PokemonType: "src/enums/pokemon-type.ts",
+  SpeciesId: "src/enums/species-id.ts",
+  Stat: "src/enums/stat.ts",
+  TerrainType: "src/data/terrain.ts",
+  TimeOfDay: "src/enums/time-of-day.ts",
+  TrainerPoolTier: "src/enums/trainer-pool-tier.ts",
+  TrainerSlot: "src/enums/trainer-slot.ts",
+  WeatherType: "src/enums/weather-type.ts",
 };
 
 const { values: args } = parseArgs({

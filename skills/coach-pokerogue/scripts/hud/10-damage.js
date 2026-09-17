@@ -46,14 +46,14 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
   };
   // Sucker Punch and Thunderclap read the target's chosen command, which doesn't exist yet while we choose: their
   // condition is left to the planner (`needsAttack`). (Upper Hand needs a priority move from the target: dropped.)
-  const COMMAND_CONDITION = [389, 909];
+  const COMMAND_CONDITION = [MoveId.SUCKER_PUNCH, MoveId.THUNDERCLAP];
   // Damaging moves with PP left. With `def` and game calls allowed, also only what can be picked and would work this
   // turn: restrictions checked for selection (Disable, Taunt, Encore, Torment, Imprison…) and the move's own
   // conditions (Fake Out / First Impression after the first turn, Dream Eater on an awake target, Belch, Steel
   // Roller…). Conditions can draw from the battle RNG, so they run with it forced, like the enemy AI's.
   // `status`: the status moves instead.
   const usable = (p, def = null, s = null, status = false) => {
-    const base = p.moveset.filter(Boolean).filter(pm => (pm.getMove().category === 2) === status && pm.getMovePp() - pm.ppUsed > 0);
+    const base = p.moveset.filter(Boolean).filter(pm => (pm.getMove().category === MoveCategory.STATUS) === status && pm.getMovePp() - pm.ppUsed > 0);
     if (!def || !gameReady(s, p, def)) return base;
     return cached(s, `u|${p.id}|${def.id}|${status}|${base.map(pm => pm.getMove().id)}`, () => guarded(s, () => base.filter(pm => {
       if (typeof pm.isUsable === "function") {
@@ -79,13 +79,13 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
       semiCharge: charging && !instant && chargeAttrs.some(a => isA(a, "SemiInvulnerableAttr")),
       recharge: attrs(mv, "RechargeAttr").length > 0,
       interrupt: attrs(mv, "PreUseInterruptAttr").length > 0,
-      needsAttack: mv.id === 389 || mv.id === 909,
+      needsAttack: COMMAND_CONDITION.includes(mv.id),
       once: [mv.conditions, mv.conditionsSeq2, mv.conditionsSeq3].some(cs => (cs ?? []).some(c => isA(c, "FirstMoveCondition"))),
     };
   };
 
   // ---- Boss segments and survival (spec §3, §8). Pure math on read fields.
-  // EnemyPokemon's module-private calculateBossSegmentDamage, verbatim.
+  // calculateBossSegmentDamage (utils/damage, exported; EnemyPokemon.damage calls it), verbatim.
   const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
     const a = idx ?? Math.ceil(hp / segSize) - 1;
     if (a <= 0) return [dmg, 1];
@@ -227,15 +227,15 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
   const abAttrs = (p, name) => (ability(p, name)
     ? [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null].flatMap(a => a?.getAttrs?.(name) ?? []) : []);
   const frac = (max, n) => Math.max(1, Math.floor(max / n));
-  const WEATHER_SPARED = { 3: [4, 5, 8], 4: [14] }; // sandstorm: Ground, Rock, Steel; hail: Ice
-  const ORB_SPARED = { 1: [3, 8], 2: [3, 8], 6: [9] }; // poison: Poison, Steel; burn: Fire
+  const WEATHER_SPARED = { [WeatherType.SANDSTORM]: [PokemonType.GROUND, PokemonType.ROCK, PokemonType.STEEL], [WeatherType.HAIL]: [PokemonType.ICE] };
+  const ORB_SPARED = { [StatusEffect.POISON]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.TOXIC]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.BURN]: [PokemonType.FIRE] };
   const endOfTurnHp = (p, { s = sceneNow(), tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
     if (hp <= 0) return 0;
     const max = p.getMaxHp();
     const types = p.getTypes?.() ?? [];
     const guard = ability(p, "BlockNonDirectDamageAbAttr");
-    const w = s?.arena?.weather?.weatherType ?? 0;
-    const weather = w && !(s.getField?.(true) ?? []).some(q => q && ability(q, "SuppressWeatherEffectAbAttr")) ? w : 0;
+    const w = s?.arena?.weather?.weatherType ?? WeatherType.NONE;
+    const weather = w && !(s.getField?.(true) ?? []).some(q => q && ability(q, "SuppressWeatherEffectAbAttr")) ? w : WeatherType.NONE;
     const inWeather = a => (a.weatherTypes ?? []).includes(weather);
     let chip = 0;
     if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
@@ -246,9 +246,9 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     // Toxic / Flame Orb put their status on at turn end: counted as if already on, a turn early.
     const orb = p.status?.effect ? null : items(p).find(m => m.constructor.name === "TurnStatusEffectModifier" && !types.some(t => ORB_SPARED[m.effect]?.includes(t)));
     const effect = p.status?.effect || orb?.effect || 0;
-    if ([1, 2, 6].includes(effect) && !guard && !abAttrs(p, "BlockStatusDamageAbAttr").some(a => (a.effects ?? []).includes(effect))) {
-      let d = effect === 1 ? frac(max, 8) : effect === 2 ? Math.max(1, Math.floor(max * ((p.status?.toxicTurnCount ?? 0) + 1) / 16)) : frac(max, 16);
-      if (effect === 6) for (const a of abAttrs(p, "ReduceBurnDamageAbAttr")) d = Math.max(1, Math.floor(d * (a.multiplier ?? 0.5)));
+    if ([StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.BURN].includes(effect) && !guard && !abAttrs(p, "BlockStatusDamageAbAttr").some(a => (a.effects ?? []).includes(effect))) {
+      let d = effect === StatusEffect.POISON ? frac(max, 8) : effect === StatusEffect.TOXIC ? Math.max(1, Math.floor(max * ((p.status?.toxicTurnCount ?? 0) + 1) / 16)) : frac(max, 16);
+      if (effect === StatusEffect.BURN) for (const a of abAttrs(p, "ReduceBurnDamageAbAttr")) d = Math.max(1, Math.floor(d * (a.multiplier ?? 0.5)));
       chip += d;
     }
     const left = hp - chip;
@@ -257,10 +257,10 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     const quarter = Math.max(1, Math.floor(max / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
     const berry = t => items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === t);
     let heal = 0;
-    if (berry(0) && left / max < 0.5) heal += quarter;
-    if (berry(2) && tookSuperEffective) heal += quarter;
+    if (berry(BerryType.SITRUS) && left / max < 0.5) heal += quarter;
+    if (berry(BerryType.ENIGMA) && tookSuperEffective) heal += quarter;
     heal += frac(max, 16) * stack(p, "TurnHealModifier");
-    if (s?.arena?.terrain?.terrainType === 3 && (p.isGrounded?.() ?? !types.includes(2))) heal += frac(max, 16);
+    if (s?.arena?.terrain?.terrainType === TerrainType.GRASSY && (p.isGrounded?.() ?? !types.includes(PokemonType.FLYING))) heal += frac(max, 16);
     if (p.isPlayer?.() === false) {
       const n = (s?.enemyModifiers ?? []).filter(m => m.constructor.name === "EnemyTurnHealModifier").reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
       if (n) heal += Math.max(Math.floor(max / 50) * n, 1);
@@ -273,7 +273,8 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
 
   // ---- Game path (spec §1, §2, §4, §5)
   const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
-  const RESULT_MULT = { 1: 1, 2: 4, 3: 2, 4: 0.5, 5: 0.25, 6: 1, 7: 0, 13: 0 };
+  const RESULT_MULT = { [HitResult.EFFECTIVE]: 1, [HitResult.EXTREMELY_EFFECTIVE]: 4, [HitResult.SUPER_EFFECTIVE]: 2, [HitResult.NOT_VERY_EFFECTIVE]: 0.5,
+    [HitResult.MOSTLY_INEFFECTIVE]: 0.25, [HitResult.ONE_HIT_KO]: 1, [HitResult.NO_EFFECT]: 0, [HitResult.IMMUNE]: 0 };
   // The random roll is 85..100 %, uniform over 16 values; the simulated call returns the 100 % one.
   const addRolls = (m, max, p) => {
     for (let r = 85; r <= 100; r++) {
@@ -291,7 +292,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
 
   // Accuracy (§5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
   const accuracy = (atk, def, move, ohko = false) => {
-    if (move.moveTarget === 0) return 1;
+    if (move.moveTarget === MoveTarget.USER) return 1;
     if (ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr") || atk.getTag?.("IGNORE_ACCURACY")
       || def.getTag?.("ALWAYS_GET_HIT") || (def.getTag?.("TELEKINESIS") && !ohko)) return 1;
     const w = typeof move.calculateBattleAccuracy === "function" ? move.calculateBattleAccuracy(atk, def, true) : move.accuracy;
@@ -310,34 +311,34 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
   };
   // Protect-type moves block it unless it ignores them (Feint, Unseen Fist on contact).
   const bypassesProtect = (atk, def, move) => {
-    try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: 2, user: atk, target: def }) : hasFlag(move, 2); } catch { return false; }
+    try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user: atk, target: def }) : hasFlag(move, MoveFlags.IGNORE_PROTECT); } catch { return false; }
   };
 
   const fromGame = (s, atk, def, pm, opts) => {
     const move = pm.getMove();
     if (attrs(move, "CounterDamageAttr").length) return null; // reacts to damage taken this turn: nothing yet
     const aiBlind = !!opts.aiView && !def.waveData?.abilityRevealed;
-    const ignoreAbility = aiBlind || ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, 32768);
+    const ignoreAbility = aiBlind || ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, MoveFlags.IGNORE_ABILITIES);
     const ignoreAllyAbility = !!opts.aiView && !def.getAlly?.()?.waveData?.abilityRevealed;
     // A cached Tera Shell result from an earlier call would leak into this move; the sandbox restores it.
     if (def.turnData) def.turnData.moveEffectiveness = null;
 
     const type = TYPES[atk.getMoveType(move)] ?? "Normal";
-    const cat = (atk.getMoveCategory?.(def, move) ?? move.category) === 0 ? "physical" : "special";
+    const cat = (atk.getMoveCategory?.(def, move) ?? move.category) === MoveCategory.PHYSICAL ? "physical" : "special";
     const priority = move.getPriority?.(atk, true) ?? move.priority ?? 0;
     const spread = SPREAD_TARGETS.includes(move.moveTarget);
     const others = (s.getField?.(true) ?? []).filter(p => p && p !== atk && p.hp > 0 && (p.isOnField?.() ?? true));
-    const spreadApplied = spread && (move.moveTarget === 2 || move.moveTarget === 4 ? others : others.filter(p => p.isPlayer?.() !== atk.isPlayer?.())).length > 1;
+    const spreadApplied = spread && (move.moveTarget === MoveTarget.ALL_OTHERS || move.moveTarget === MoveTarget.ALL_NEAR_OTHERS ? others : others.filter(p => p.isPlayer?.() !== atk.isPlayer?.())).length > 1;
 
     // Hit counts (§2): MultiHitAttr type, Skill Link, Beat Up, plus Parental Bond / Multi-Lens strikes.
     const mh = attrs(move, "MultiHitAttr")[0];
     let mhType = mh ? mh.multiHitType ?? mh.intrinsicMultiHitType : null;
-    if (mh && attrs(move, "ChangeMultiHitTypeAttr").length && atk.species?.speciesId === 658 && atk.formIndex === 2) mhType = 2;
+    if (mh && attrs(move, "ChangeMultiHitTypeAttr").length && atk.species?.speciesId === SpeciesId.GRENINJA && atk.formIndex === 2) mhType = MultiHitType.THREE;
     const skillLink = ability(atk, "MaxMultiHitAbAttr");
     const party = () => (atk.isPlayer?.() ? s.getPlayerParty() : s.getEnemyParty()) ?? [];
     let dist = mhType == null ? [{ n: 1, p: 1 }]
-      : mhType === 1 ? (skillLink ? [{ n: 5, p: 1 }] : [{ n: 2, p: 0.35 }, { n: 3, p: 0.35 }, { n: 4, p: 0.15 }, { n: 5, p: 0.15 }])
-      : [{ n: mhType === 0 ? 2 : mhType === 2 ? 3 : mhType === 3 ? 10 : party().reduce((t, n) => t + (n.id === atk.id ? 1 : n?.status && n.status.effect !== 0 ? 0 : 1), 0), p: 1 }];
+      : mhType === MultiHitType.TWO_TO_FIVE ? (skillLink ? [{ n: 5, p: 1 }] : [{ n: 2, p: 0.35 }, { n: 3, p: 0.35 }, { n: 4, p: 0.15 }, { n: 5, p: 0.15 }])
+      : [{ n: mhType === MultiHitType.TWO ? 2 : mhType === MultiHitType.THREE ? 3 : mhType === MultiHitType.TEN ? 10 : party().reduce((t, n) => t + (n.id === atk.id ? 1 : n?.status && n.status.effect !== StatusEffect.NONE ? 0 : 1), 0), p: 1 }];
     const enhanced = (...args) => (typeof move.canBeMultiStrikeEnhanced === "function" ? !!move.canBeMultiStrikeEnhanced(...args) : !mh && !spread);
     const lenses = stack(atk, "PokemonMultiHitModifier");
     const extra = (ability(atk, "AddSecondStrikeAbAttr") && enhanced(atk, true, def) ? 1 : 0) + (lenses && enhanced(atk) ? lenses : 0);
@@ -356,19 +357,19 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
     const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0, bypassProtect: bypassesProtect(atk, def, move) };
     const blocked = cancelledBy(s, atk, def, move);
-    if (first.cancelled || first.result === 7 || first.result === 13 || blocked) {
+    if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
       return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1 }], focus: 0, flinch: 0 };
     }
 
-    const ohko = first.result === 6;
+    const ohko = first.result === HitResult.ONE_HIT_KO;
     const fixed = !ohko && attrs(move, "FixedDamageAttr").length > 0;
     const psywave = attrs(move, "RandomLevelDamageAttr").length > 0;
     const present = attrs(move, "PresentPowerAttr").length > 0;
     const crit = opts.crit === true ? 1 : opts.crit === false || fixed || ohko ? 0 : (() => {
       if (!ignoreAbility && ability(def, "BlockCritAbAttr")) return 0;
-      const side = def.isPlayer?.() ? 1 : 2;
+      const side = def.isPlayer?.() ? ArenaTagSide.PLAYER : ArenaTagSide.ENEMY;
       if ((s.arena?.tags ?? []).some(t => t.constructor.name === "NoCritTag" && (!t.side || t.side === side))) return 0;
-      if (attrs(move, "CritOnlyAttr").length || atk.getTag?.("ALWAYS_CRIT") || (ability(atk, "ConditionalCritAbAttr") && [1, 2].includes(def.status?.effect))) return 1;
+      if (attrs(move, "CritOnlyAttr").length || atk.getTag?.("ALWAYS_CRIT") || (ability(atk, "ConditionalCritAbAttr") && [StatusEffect.POISON, StatusEffect.TOXIC].includes(def.status?.effect))) return 1;
       return [1 / 24, 1 / 8, 1 / 2, 1][Math.max(0, Math.min(3, def.getCritStage?.(atk, move) ?? 0))];
     })();
 
@@ -400,7 +401,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
       perHit.push(m);
     }
     const acc = accuracy(atk, def, move, ohko);
-    const checkAll = hasFlag(move, 65536) && !skillLink;
+    const checkAll = hasFlag(move, MoveFlags.CHECK_ALL_HITS) && !skillLink;
     // Before Disguise takes this turn's first hit: a later use meets no disguise.
     const use = useDist(perHit, dist, acc, checkAll);
     // Disguise / Ice Face take the first hit (the simulated call doesn't zero it).
@@ -419,7 +420,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     // A target mid-Dig / Fly / Dive / Shadow Force is only hit if it moves first and comes out (spec §5), unless the
     // move reaches it there (Earthquake into Dig) or accuracy is bypassed. The planner knows the order.
     const semiTag = (def.summonData?.tags ?? []).find(t => isA(t, "SemiInvulnerableTag"));
-    const semi = !!semiTag && move.moveTarget !== 0 && !(ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr")
+    const semi = !!semiTag && move.moveTarget !== MoveTarget.USER && !(ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr")
       || atk.getTag?.("IGNORE_ACCURACY") || attrs(move, "HitsTagAttr").some(h => h.tagType === semiTag.tagType));
     const notes = [];
 
@@ -432,7 +433,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     const landed = checkAll
       ? Array.from({ length: hitsMax }, (_, k) => acc ** (k + 1) * dist.filter(x => x.n > k).reduce((t, x) => t + x.p, 0)).reduce((t, x) => t + x, 0)
       : acc * dist.reduce((t, x) => t + x.n * x.p, 0);
-    const contact = typeof move.doesFlagEffectApply === "function" ? move.doesFlagEffectApply({ flag: 1, user: atk, target: def }) : hasFlag(move, 1);
+    const contact = typeof move.doesFlagEffectApply === "function" ? move.doesFlagEffectApply({ flag: MoveFlags.MAKES_CONTACT, user: atk, target: def }) : hasFlag(move, MoveFlags.MAKES_CONTACT);
     if (contact && !guard && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
       const [abName, ratio] = [def.getAbility?.(), def.hasPassive?.() ? def.getPassiveAbility?.() : null]
         .flatMap(a => (a?.getAttrs?.("PostDefendContactDamageAbAttr") ?? []).map(x => [a.name, x.damageRatio])).find(Boolean) ?? ["contact", 8];
@@ -503,18 +504,18 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
   // Rough max-roll damage of one move, or null when it isn't a damaging move with power.
   const approx = (a, d, pm) => {
     const mv = pm.getMove();
-    if (mv.category === 2 || !(mv.power > 0) || pm.getMovePp() - pm.ppUsed <= 0) return null;
+    if (mv.category === MoveCategory.STATUS || !(mv.power > 0) || pm.getMovePp() - pm.ppUsed <= 0) return null;
     const ab = abilitiesOf(a);
     let type = TYPES[mv.type];
     let power = mv.power;
     const ate = ab.map(x => ATE[x]).find(Boolean);
     if (ate && type === "Normal") { type = ate; power *= 1.2; }
     if (ab.includes("Technician") && power <= 60) power *= 1.5;
-    const phys = mv.category === 0;
-    let atk = stat(a, phys ? 1 : 3);
+    const phys = mv.category === MoveCategory.PHYSICAL;
+    let atk = stat(a, phys ? Stat.ATK : Stat.SPATK);
     if (phys && (ab.includes("Huge Power") || ab.includes("Pure Power"))) atk *= 2;
     if (phys && ab.includes("Hustle")) atk *= 1.5;
-    const base = ((2 * a.level / 5 + 2) * power * atk / stat(d, phys ? 2 : 4)) / 50 + 2;
+    const base = ((2 * a.level / 5 + 2) * power * atk / stat(d, phys ? Stat.DEF : Stat.SPDEF)) / 50 + 2;
     const e = effectiveness(type, d, mv);
     const stab = typesOf(a).includes(type) ? (ab.includes("Adaptability") ? 2 : 1.5) : 1;
     let dmg = base * stab * e;
@@ -626,6 +627,6 @@ const matchup = (me, foe) => {
   const theirs = bestMove(foe, me, true);
   const myTurns = mine?.dmg > 0 ? Math.min(9, Math.ceil(foe.hp / mine.dmg)) : 9;
   const theirTurns = theirs?.dmg > 0 ? Math.min(9, Math.ceil(me.hp / theirs.dmg)) : 9;
-  const faster = stat(me, 5) >= stat(foe, 5);
+  const faster = stat(me, Stat.SPD) >= stat(foe, Stat.SPD);
   return { me, mine, myTurns, score: theirTurns - myTurns + (faster ? 0.5 : -0.5) };
 };

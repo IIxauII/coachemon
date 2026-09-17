@@ -1,7 +1,8 @@
 // Predictions of what the enemy AI does this turn: switch (EnemyCommandPhase) or move (EnemyPokemon.getNextMove).
-// Both are re-implemented from the live build (spec §6, §7) so the HUD gets every outcome with its chance instead
-// of one random draw. getNextMove/getNextTargets themselves are never called: they draw from the battle RNG and
-// rewrite the move queue.
+// Both are re-implemented from the pinned source (spec §6, §7) so the HUD gets every outcome with its chance, which
+// doubles and later turns need. getNextMove/getNextTargets themselves aren't called. In singles at the command
+// prompt a sandboxed getNextMove would return the move the enemy actually picks, not a sample (§6, #158; verified
+// from source only, not on a live tab).
 const muted = sandbox; // older name, kept for callers
 
 // The enemy decides after the player's commands and nothing it reads changes while the game waits for a command,
@@ -11,10 +12,10 @@ const aiTurnKey = (s, b) => [b.waveIndex, b.turn, b.enemySwitchCounter, ...s.get
 const sameTurn = (b, c) => c.wave === b.waveIndex && c.turn === b.turn;
 
 // Game-code helpers (only inside sandbox)
-const NO_CONDITION_CHECK = [389, 918, 909]; // Sucker Punch, Upper Hand, Thunderclap: the AI ignores their conditions
-const STRUGGLE = 165;
+const NO_CONDITION_CHECK = [MoveId.SUCKER_PUNCH, MoveId.UPPER_HAND, MoveId.THUNDERCLAP]; // the AI ignores their conditions
+const STRUGGLE = MoveId.STRUGGLE;
 const aiHas = (mv, name) => (mv.hasAttr ? mv.hasAttr(name) : hasAttr(mv, name));
-const isAttackMove = mv => (mv.is ? mv.is("AttackMove") : mv.category !== 2);
+const isAttackMove = mv => (mv.is ? mv.is("AttackMove") : mv.category !== MoveCategory.STATUS);
 const usableFor = (pm, e, ignorePp = false) => {
   const r = pm.isUsable(e, ignorePp, true);
   return Array.isArray(r) ? r[0] : !!r;
@@ -49,16 +50,17 @@ const aiMoveTargets = (s, e, mv) => {
   const own = ally == null ? [e] : [e, ally];
   const out = (set, multiple, p = 1) => ({ targets: set.filter(x => x?.isActive(true)).map(x => x.getBattlerIndex()).filter(x => x !== undefined), multiple, p });
   switch (t) {
-    case 0: case 18: return [out([e], false)];
-    case 19: if (!e.isOfType(7, { returnOriginalTypesIfStellar: true })) return [out([e], false)];
+    case MoveTarget.USER: case MoveTarget.PARTY: return [out([e], false)];
+    case MoveTarget.CURSE: if (!e.isOfType(PokemonType.GHOST, { returnOriginalTypesIfStellar: true })) return [out([e], false)];
     // falls through: a Ghost's Curse targets like OTHER
-    case 1: case 2: case 3: case 4: return [out(ally == null ? opponents : [...opponents, ally], t === 2 || t === 4)];
-    case 5: case 6: case 8: case 16: return [out(opponents, t !== 5)];
-    case 7: return opponents.length <= 1 ? [out([opponents[0]], false)] : opponents.map(o => out([o], false, 1 / opponents.length));
-    case 9: return [{ targets: [-1], multiple: false, p: 1 }];
-    case 10: case 11: return [out(ally == null ? [] : [ally], false)];
-    case 12: case 13: case 15: return [out(own, t !== 12)];
-    case 14: case 17: return [out([...own, ...opponents], true)];
+    case MoveTarget.OTHER: case MoveTarget.ALL_OTHERS: case MoveTarget.NEAR_OTHER: case MoveTarget.ALL_NEAR_OTHERS:
+      return [out(ally == null ? opponents : [...opponents, ally], t === MoveTarget.ALL_OTHERS || t === MoveTarget.ALL_NEAR_OTHERS)];
+    case MoveTarget.NEAR_ENEMY: case MoveTarget.ALL_NEAR_ENEMIES: case MoveTarget.ALL_ENEMIES: case MoveTarget.ENEMY_SIDE: return [out(opponents, t !== MoveTarget.NEAR_ENEMY)];
+    case MoveTarget.RANDOM_NEAR_ENEMY: return opponents.length <= 1 ? [out([opponents[0]], false)] : opponents.map(o => out([o], false, 1 / opponents.length));
+    case MoveTarget.ATTACKER: return [{ targets: [BattlerIndex.ATTACKER], multiple: false, p: 1 }];
+    case MoveTarget.NEAR_ALLY: case MoveTarget.ALLY: return [out(ally == null ? [] : [ally], false)];
+    case MoveTarget.USER_OR_NEAR_ALLY: case MoveTarget.USER_AND_ALLIES: case MoveTarget.USER_SIDE: return [out(own, t !== MoveTarget.USER_OR_NEAR_ALLY)];
+    case MoveTarget.ALL: case MoveTarget.BOTH_SIDES: return [out([...own, ...opponents], true)];
   }
   return [out([], false)];
 };
@@ -74,7 +76,7 @@ const aiNextTargets = (s, e, mv) => {
     if (mt.multiple) { dist.push({ targets: cands.map(p => p.getBattlerIndex()), p: mt.p }); continue; }
     const scored = cands.map(p => [p.getBattlerIndex(), mv.getTargetBenefitScore(e, p, mv) * (p.isPlayer() === e.isPlayer() ? 1 : -1)]);
     scored.sort((a, b) => (a[1] < b[1] ? 1 : a[1] > b[1] ? -1 : 0));
-    if (!scored.length) { dist.push({ targets: aiHas(mv, "CounterDamageAttr") ? [-1] : [], p: mt.p }); continue; }
+    if (!scored.length) { dist.push({ targets: aiHas(mv, "CounterDamageAttr") ? [BattlerIndex.ATTACKER] : [], p: mt.p }); continue; }
     let w = scored.map(x => x[1]);
     const lowest = w.at(-1) ?? 0;
     if (lowest < 1) w = w.map(x => x + Math.abs(lowest - 1));
@@ -95,7 +97,7 @@ const aiNextTargets = (s, e, mv) => {
 // passes only on a 0) is evaluated with the draw forced both ways and weighted 1/range.
 // `p`: the target when it isn't the mon at field index `bi` (a bench mon the foe would face after a switch).
 const aiTargetScore = (s, e, mv, bi, p = s.getField()[bi]) => {
-  let n = mv.getUserBenefitScore(e, p, mv) + mv.getTargetBenefitScore(e, p, mv) * ((bi < 2) === e.isPlayer() ? 1 : -1);
+  let n = mv.getUserBenefitScore(e, p, mv) + mv.getTargetBenefitScore(e, p, mv) * ((bi < BattlerIndex.ENEMY) === e.isPlayer() ? 1 : -1);
   if (Number.isNaN(n)) n = 0;
   const rest = () => {
     if (s.arena.isMoveWeatherCancelled(e, mv) || s.arena.isMoveTerrainCancelled(e, [bi], mv)) return -20;
@@ -122,7 +124,7 @@ const aiTargetScore = (s, e, mv, bi, p = s.getField()[bi]) => {
 const aiMoveOptions = (s, e, mv) => aiNextTargets(s, e, mv).flatMap(({ targets, p }) => {
   let combos = [{ score: -Infinity, p }];
   for (const bi of targets) {
-    if (bi === -1) break;
+    if (bi === BattlerIndex.ATTACKER) break;
     const branches = aiTargetScore(s, e, mv, bi);
     combos = combos.flatMap(c => branches.map(br => ({ score: Math.max(c.score, br.score), p: c.p * br.p })));
   }
@@ -133,7 +135,7 @@ const aiMoveOptions = (s, e, mv) => aiNextTargets(s, e, mv).flatMap(({ targets, 
 // damage reaching a foe's HP, with the abilities the AI hasn't seen ignored.
 const aiKoChance = (s, e, pm) => {
   const mv = pm.getMove();
-  if (mv.moveTarget === 9 || mv.category === 2) return 0;
+  if (mv.moveTarget === MoveTarget.ATTACKER || mv.category === MoveCategory.STATUS) return 0;
   const f = s.getField();
   const crit = aiHas(mv, "CritOnlyAttr") || !!e.getTag("ALWAYS_CRIT");
   let chance = 0;
@@ -156,7 +158,7 @@ const aiChain = (aiType, scores) => {
   scores.forEach((x, i) => {
     let adv = 0;
     if (i < scores.length - 1) {
-      if (aiType === 1) adv = 3 / 8;
+      if (aiType === AiType.SMART_RANDOM) adv = 3 / 8;
       else { const r = scores[i + 1] / x; adv = r >= 0 ? Math.min(Math.max(Math.round(r * 50), 0), 100) / 100 : 0; }
     }
     out.push(reach * (1 - adv));
@@ -195,7 +197,7 @@ const aiDistribution = (s, e) => {
   // 1. A usable queued move (charging, Outrage lock, …) is used again.
   for (const q of e.getMoveQueue()) {
     const pm = moveset.find(m => m.moveId === q.move);
-    if (q.useMode >= 3 || (pm && usableFor(pm, e, q.useMode >= 2))) {
+    if (q.useMode >= MoveUseMode.INDIRECT || (pm && usableFor(pm, e, q.useMode >= MoveUseMode.IGNORE_PP))) {
       add(row(pm, q.move), 1, [{ targets: q.targets ?? [], p: 1 }]);
       return finish(rows);
     }
@@ -212,7 +214,7 @@ const aiDistribution = (s, e) => {
   const encored = encore && pool.find(pm => pm.moveId === encore.moveId);
   if (encored) { whole(encored); return finish(rows); }
   // 4. RANDOM.
-  if (e.aiType !== 1 && e.aiType !== 2) { pool.forEach(pm => whole(pm, 1 / pool.length)); return finish(rows); }
+  if (e.aiType !== AiType.SMART_RANDOM && e.aiType !== AiType.SMART) { pool.forEach(pm => whole(pm, 1 / pool.length)); return finish(rows); }
 
   // 5. KO filter: each move passes with some chance; enumerate which pass.
   let outcomes = [{ passing: [], p: 1 }];
@@ -247,7 +249,7 @@ const aiDistribution = (s, e) => {
 // HP after its hit). The same steps as `aiDistribution` — a queued move, Struggle, a single move, Encore, RANDOM, the
 // KO filter at max roll, the step-7 scores, the chain — with `target` at our slot 0 (`bi`) for every single-target and
 // spread move alike. `hp`: its HP by then. Rows as `enemyMoveDistribution`'s, without targets. Sandboxed per call.
-const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? target.getBattlerIndex() : 0 } = {}) =>
+const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? target.getBattlerIndex() : BattlerIndex.PLAYER } = {}) =>
   beforeTera(() => sandbox(s, () => forcedRng(s, () => {
     const moveset = movesetOf(e);
     const rows = new Map();
@@ -263,18 +265,18 @@ const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? ta
     const done = () => [...rows.values()].filter(r => r.p > 1e-12).sort((a, b) => b.p - a.p);
     for (const q of e.getMoveQueue()) {
       const pm = moveset.find(m => m.moveId === q.move);
-      if (pm && usableFor(pm, e, q.useMode >= 2)) { add(pm, 1); return done(); }
+      if (pm && usableFor(pm, e, q.useMode >= MoveUseMode.IGNORE_PP)) { add(pm, 1); return done(); }
     }
     const pool = moveset.filter(pm => usableFor(pm, e));
     if (!pool.length) { add(null, 1); return done(); }
     const encore = e.getTag("ENCORE");
     const only = pool.length === 1 ? pool[0] : encore && pool.find(pm => pm.moveId === encore.moveId);
     if (only) { add(only, 1); return done(); }
-    if (e.aiType !== 1 && e.aiType !== 2) { pool.forEach(pm => add(pm, 1 / pool.length)); return done(); }
+    if (e.aiType !== AiType.SMART_RANDOM && e.aiType !== AiType.SMART) { pool.forEach(pm => add(pm, 1 / pool.length)); return done(); }
     const aiView = { ignoreAbility: !target.waveData?.abilityRevealed, ignoreSourceAbility: false, ignoreAllyAbility: true, ignoreSourceAllyAbility: false, simulated: true };
     const kos = pool.filter(pm => {
       const mv = pm.getMove();
-      if (mv.moveTarget === 9 || mv.category === 2 || s.arena.isMoveWeatherCancelled(e, mv) || s.arena.isMoveTerrainCancelled(e, [bi], mv)) return false;
+      if (mv.moveTarget === MoveTarget.ATTACKER || mv.category === MoveCategory.STATUS || s.arena.isMoveWeatherCancelled(e, mv) || s.arena.isMoveTerrainCancelled(e, [bi], mv)) return false;
       if (!(mv.applyConditions(e, target, -1) || NO_CONDITION_CHECK.includes(mv.id))) return false;
       const crit = aiHas(mv, "CritOnlyAttr") || !!e.getTag("ALWAYS_CRIT");
       return target.getAttackDamage({ source: e, move: mv, ...aiView, isCritical: crit }).damage >= hp;
@@ -284,8 +286,8 @@ const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? ta
     // (an ally move in a single battle, Counter) scores −∞.
     const branchesOf = mv => {
       const outs = aiMoveTargets(s, e, mv);
-      if (outs.every(o => !o.targets.length) || outs.some(o => o.targets.includes(-1))) return [{ score: -Infinity, p: 1 }];
-      if (outs.every(o => o.targets.every(t => (t < 2) === e.isPlayer()))) return aiMoveOptions(s, e, mv);
+      if (outs.every(o => !o.targets.length) || outs.some(o => o.targets.includes(BattlerIndex.ATTACKER))) return [{ score: -Infinity, p: 1 }];
+      if (outs.every(o => o.targets.every(t => (t < BattlerIndex.ENEMY) === e.isPlayer()))) return aiMoveOptions(s, e, mv);
       return aiTargetScore(s, e, mv, bi, target);
     };
     let combos = [{ picks: [], p: 1 }];
@@ -325,7 +327,7 @@ const approxDistribution = e => {
     let pool = [...best.values()];
     if (pool.some(x => x.ko)) pool = pool.filter(x => x.ko);
     pool.sort((a, b) => b.dmg - a.dmg);
-    const chain = aiChain(e.aiType === 1 ? 1 : 2, pool.map(x => x.dmg));
+    const chain = aiChain(e.aiType === AiType.SMART_RANDOM ? AiType.SMART_RANDOM : AiType.SMART, pool.map(x => x.dmg));
     return pool.map((x, i) => ({
       name: x.name, type: x.type, cat: x.cat, spread: x.spread, p: chain[i], score: x.dmg, approx: true,
       targets: x.target == null ? [] : [x.target], targetDist: x.target == null ? [] : [{ battlerIndex: x.target, p: 1 }],
@@ -384,7 +386,7 @@ const predictedTeras = (s, b) => {
 // Commander: a Tatsugiri inside its Dondozo (and mystery encounters that skip enemy turns) gets its command
 // marked skip, which TurnStartPhase drops — no move and no switch.
 const skipsTurn = (b, e) => !!b.mysteryEncounter?.skipEnemyBattleTurns
-  || !!(b.double && e.getAlly?.()?.getTag?.("COMMANDED") && [e.getAbility?.(), e.hasPassive?.() && e.getPassiveAbility?.()].some(a => a?.id === 279));
+  || !!(b.double && e.getAlly?.()?.getTag?.("COMMANDED") && [e.getAbility?.(), e.hasPassive?.() && e.getPassiveAbility?.()].some(a => a?.id === AbilityId.COMMANDER));
 
 // Trainer switch prediction (EnemyCommandPhase): an active mon that isn't trapped or locked into a move switches when
 //   bestBenchScore × (1 − 0.1^(1/enemySwitchCounter)) ≥ avg own matchup score × (boss ? 2 : 3)

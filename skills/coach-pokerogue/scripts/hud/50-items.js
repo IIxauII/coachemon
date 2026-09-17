@@ -7,10 +7,10 @@
 const { rewardContext, rewardValue } = (() => {
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
   const STAT_SHORT = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
-  // MoveId values the game's own pool weights check (init-modifier-pools.ts): status-orb users and weather / terrain
-  // setters. MoveFlags.MAKES_CONTACT is bit 0.
-  const FACADE = 263, PSYCHO_SHIFT = 375;
-  const FIELD_MOVES = new Set([201, 240, 241, 258, 580, 581, 604, 678, 912, 914]);
+  // The moves the game's own pool weights check (init-modifier-pools.ts): status-orb users and weather / terrain
+  // setters.
+  const FIELD_MOVES = new Set([MoveId.SUNNY_DAY, MoveId.RAIN_DANCE, MoveId.SANDSTORM, MoveId.SNOWSCAPE, MoveId.HAIL, MoveId.CHILLY_RECEPTION,
+    MoveId.ELECTRIC_TERRAIN, MoveId.PSYCHIC_TERRAIN, MoveId.GRASSY_TERRAIN, MoveId.MISTY_TERRAIN]);
   const FIELD_ABILITIES = new Set(["Drought", "Orichalcum Pulse", "Drizzle", "Sand Stream", "Sand Spit", "Snow Warning", "Electric Surge",
     "Hadron Engine", "Psychic Surge", "Grassy Surge", "Seed Sower", "Misty Surge"]);
   const ORB = {
@@ -22,20 +22,20 @@ const { rewardContext, rewardValue } = (() => {
   const STATUS_ABILITIES = ["Quick Feet", "Guts", "Marvel Scale", "Magic Guard"];
   // SpeciesStatBoosterModifierTypeGenerator.items: [SpeciesId…], the stats it doubles.
   const SPECIES_BOOSTERS = {
-    LIGHT_BALL: [[25], [1, 3]], THICK_CLUB: [[104, 105, 2105], [1]], METAL_POWDER: [[132], [2]], QUICK_POWDER: [[132], [5]],
-    DEEP_SEA_SCALE: [[366], [4]], DEEP_SEA_TOOTH: [[366], [3]],
+    LIGHT_BALL: [[SpeciesId.PIKACHU], [Stat.ATK, Stat.SPATK]], THICK_CLUB: [[SpeciesId.CUBONE, SpeciesId.MAROWAK, SpeciesId.ALOLA_MAROWAK], [Stat.ATK]],
+    METAL_POWDER: [[SpeciesId.DITTO], [Stat.DEF]], QUICK_POWDER: [[SpeciesId.DITTO], [Stat.SPD]],
+    DEEP_SEA_SCALE: [[SpeciesId.CLAMPERL], [Stat.SPDEF]], DEEP_SEA_TOOTH: [[SpeciesId.CLAMPERL], [Stat.SPATK]],
   };
-  const LEEK_SPECIES = new Set([83, 865, 4083]);
-  // BerryType: SITRUS, LUM, ENIGMA, LIECHI, GANLON, PETAYA, APICOT, SALAC, LANSAT, STARF, LEPPA. Pinch berries raise
-  // the stat at index − 2 (Liechi → Atk …) below a quarter HP.
+  const LEEK_SPECIES = new Set([SpeciesId.FARFETCHD, SpeciesId.SIRFETCHD, SpeciesId.GALAR_FARFETCHD]);
+  // Indexed by BerryType. Pinch berries Liechi…Salac raise Atk…Spe in order below a quarter HP.
   const BERRY_NAMES = ["Sitrus", "Lum", "Enigma", "Liechi", "Ganlon", "Petaya", "Apicot", "Salac", "Lansat", "Starf", "Leppa"];
 
   const movesOf = p => (p.moveset ?? []).filter(Boolean).map(pm => tryDo(() => pm.getMove())).filter(Boolean);
-  const attacks = p => movesOf(p).filter(mv => mv.category !== 2);
+  const attacks = p => movesOf(p).filter(mv => mv.category !== MoveCategory.STATUS);
   const statOf = (p, i) => tryDo(() => p.getStat(i, false), 0) || tryDo(() => p.getStat(i), 0);
   // The stat a member attacks with: the higher of Atk and SpA.
-  const mainStat = p => (statOf(p, 1) >= statOf(p, 3) ? 1 : 3);
-  const bulk = p => tryDo(() => p.getMaxHp(), 0) * (statOf(p, 2) + statOf(p, 4)) / 2;
+  const mainStat = p => (statOf(p, Stat.ATK) >= statOf(p, Stat.SPATK) ? Stat.ATK : Stat.SPATK);
+  const bulk = p => tryDo(() => p.getMaxHp(), 0) * (statOf(p, Stat.DEF) + statOf(p, Stat.SPDEF)) / 2;
   const has = (p, names) => abilitiesOf(p).some(a => names.includes(a));
   const typesSafe = p => tryDo(() => typesOf(p), []);
   const flagged = (mv, bit) => tryDo(() => moveHasFlag(mv, bit), false);
@@ -45,8 +45,8 @@ const { rewardContext, rewardValue } = (() => {
   const statWeight = (p, i) => {
     const main = mainStat(p);
     if (i === main) return 1;
-    if (i === 5) return 0.6;
-    if (i === 1 || i === 3) return attacks(p).some(mv => mv.category === (i === 1 ? 0 : 1)) ? 0.35 : 0.05;
+    if (i === Stat.SPD) return 0.6;
+    if (i === Stat.ATK || i === Stat.SPATK) return attacks(p).some(mv => mv.category === (i === Stat.ATK ? MoveCategory.PHYSICAL : MoveCategory.SPECIAL)) ? 0.35 : 0.05;
     return 0.4;
   };
   const natureValue = (p, n) => {
@@ -66,7 +66,7 @@ const { rewardContext, rewardValue } = (() => {
     const cap = tryDo(() => s.getMaxExpLevel(), null) ?? capOf();
     const carry = [...alive].sort((a, b) => b.level - a.level || statOf(b, mainStat(b)) - statOf(a, mainStat(a)))[0] ?? null;
     const maxBulk = Math.max(1, ...alive.map(bulk));
-    const maxSpeed = Math.max(1, ...alive.map(p => statOf(p, 5)));
+    const maxSpeed = Math.max(1, ...alive.map(p => statOf(p, Stat.SPD)));
     const held = p => (s.modifiers ?? []).filter(m => m?.pokemonId != null && m.pokemonId === p.id);
     const holds = (p, id) => held(p).find(m => m.type?.id === id) ?? null;
     const stacks = (p, id) => tryDo(() => holds(p, id)?.getStackCount(), holds(p, id)?.stackCount ?? 0) ?? 0;
@@ -74,7 +74,7 @@ const { rewardContext, rewardValue } = (() => {
     // A member's share of the fight: the carry in full, the rest by how close to its level they are.
     const role = p => (!carry || p === carry ? 1 : Math.max(0.4, Math.min(1, p.level / Math.max(1, carry.level))));
     return { s, wave, cap, carry, alive, bossNext, gauntlet, double, held, holds, stacks, owned, role,
-      bulkShare: p => bulk(p) / maxBulk, speedShare: p => statOf(p, 5) / maxSpeed };
+      bulkShare: p => bulk(p) / maxBulk, speedShare: p => statOf(p, Stat.SPD) / maxSpeed };
   };
 
   // The member an item does the most for, and what it is worth there: `fit(p)` → [value, reason] or null.
@@ -119,7 +119,7 @@ const { rewardContext, rewardValue } = (() => {
       return fit > 0 && [4 + 80 * fit, `${p.name} · ${natureOf(n).name} nature 10% stronger${stackText(c, p, "SOUL_DEW", 10)}`];
     },
     GRIP_CLAW: (p, c) => {
-      const share = attacks(p).filter(mv => flagged(mv, 1)).length / Math.max(1, attacks(p).length);
+      const share = attacks(p).filter(mv => flagged(mv, MoveFlags.MAKES_CONTACT)).length / Math.max(1, attacks(p).length);
       return share > 0 && [3 + 6 * share, `${p.name} · 10% to steal an item on contact${stackText(c, p, "GRIP_CLAW", 5)}`];
     },
     MINI_BLACK_HOLE: p => [22, `${p.name} · steals an item every turn`],
@@ -142,22 +142,22 @@ const { rewardContext, rewardValue } = (() => {
     HELD[id] = (p, c) => {
       if (c.holds(p, "TOXIC_ORB") || c.holds(p, "FLAME_ORB")) return null;
       const statusable = !typesSafe(p).some(t => o.immuneTypes.includes(t)) && !has(p, o.immuneAbilities);
-      const moves = (p.moveset ?? []).some(m => m?.moveId === FACADE || m?.moveId === PSYCHO_SHIFT);
+      const moves = (p.moveset ?? []).some(m => m?.moveId === MoveId.FACADE || m?.moveId === MoveId.PSYCHO_SHIFT);
       const good = statusable && (has(p, o.specific) || (has(p, STATUS_ABILITIES) && !has(p, o.opposite)) || moves);
       const reason = abilitiesOf(p).find(a => o.specific.includes(a)) ?? abilitiesOf(p).find(a => STATUS_ABILITIES.includes(a))
-        ?? ((p.moveset ?? []).some(m => m?.moveId === FACADE) ? "Facade" : "Psycho Shift");
+        ?? ((p.moveset ?? []).some(m => m?.moveId === MoveId.FACADE) ? "Facade" : "Psycho Shift");
       return good && [14, `${p.name} · ${reason} wants the status`];
     };
   }
   const berry = (t, p, c) => {
     const b = t.berryType;
     const name = BERRY_NAMES[b] ?? "berry";
-    if (b === 0 || b === 2) return [3 + 3 * c.bulkShare(p), `${p.name} · ${name} heals ¼ HP`];
-    if (b === 1) return [4, `${p.name} · Lum cures a status once`];
-    if (b === 10) return [2 + (attacks(p).some(mv => (mv.pp ?? 20) <= 10) ? 2 : 0), `${p.name} · Leppa refills a move at 0 PP`];
-    if (b >= 3 && b <= 7) {
-      const stat = b - 2;
-      return [(stat === mainStat(p) || stat === 5 ? 4 : 1) + (has(p, ["Gluttony", "Ripen"]) ? 2 : 0), `${p.name} · +1 ${STAT_SHORT[stat]} in a pinch`];
+    if (b === BerryType.SITRUS || b === BerryType.ENIGMA) return [3 + 3 * c.bulkShare(p), `${p.name} · ${name} heals ¼ HP`];
+    if (b === BerryType.LUM) return [4, `${p.name} · Lum cures a status once`];
+    if (b === BerryType.LEPPA) return [2 + (attacks(p).some(mv => (mv.pp ?? 20) <= 10) ? 2 : 0), `${p.name} · Leppa refills a move at 0 PP`];
+    if (b >= BerryType.LIECHI && b <= BerryType.SALAC) {
+      const stat = b - BerryType.LIECHI + Stat.ATK;
+      return [(stat === mainStat(p) || stat === Stat.SPD ? 4 : 1) + (has(p, ["Gluttony", "Ripen"]) ? 2 : 0), `${p.name} · +1 ${STAT_SHORT[stat]} in a pinch`];
     }
     return [2, `${p.name} · ${name} in a pinch`];
   };
@@ -176,7 +176,7 @@ const { rewardContext, rewardValue } = (() => {
         const moves = attacks(p).filter(mv => mv.type === t.moveType);
         if (!moves.length) return null;
         const stab = typesSafe(p).includes(type);
-        return [6 + (stab ? 6 : 2) + (mainStat(p) === (moves[0].category === 0 ? 1 : 3) ? 2 : 0), `${p.name} · +20% ${type} for ${moves[0].name}`];
+        return [6 + (stab ? 6 : 2) + (mainStat(p) === (moves[0].category === MoveCategory.PHYSICAL ? Stat.ATK : Stat.SPATK) ? 2 : 0), `${p.name} · +20% ${type} for ${moves[0].name}`];
       };
       return verdict(bestHolder(pool, ctx, fit), `no ${type} attacker`, pool);
     }
@@ -189,7 +189,7 @@ const { rewardContext, rewardValue } = (() => {
     // Vitamins: +10% base stat a stack, up to the stat's IV — the select filter already drops a member at its limit.
     if (cls("BaseStatBoosterModifierType")) {
       const stat = t.stat ?? 0;
-      const fit = p => [3 + 9 * (stat === 0 ? 0.45 : statWeight(p, stat)), `${p.name} · +10% base ${STAT_SHORT[stat]}${p === ctx.carry ? " (carry)" : ""}`];
+      const fit = p => [3 + 9 * (stat === Stat.HP ? 0.45 : statWeight(p, stat)), `${p.name} · +10% base ${STAT_SHORT[stat]}${p === ctx.carry ? " (carry)" : ""}`];
       return verdict(bestHolder(pool, ctx, fit), "nobody can take more", pool);
     }
     if (cls("PokemonHeldItemModifierType") && HELD[id]) {

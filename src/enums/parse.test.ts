@@ -17,6 +17,16 @@ test("negative members and a preceding unrelated enum", () => {
   assert.deepEqual(parseEnum(src, "PartyOption"), [["CANCEL", -1], ["SEND_OUT", 0], ["SCROLL_UP", 1000]]);
 });
 
+test("Object.freeze form", () => {
+  const src = `export const MovePriorityInBracket = Object.freeze({\n  /** doc */\n  LAST: 0,\n  NORMAL: 1,\n  FIRST: 2,\n});\n`;
+  assert.deepEqual(parseEnum(src, "MovePriorityInBracket"), [["LAST", 0], ["NORMAL", 1], ["FIRST", 2]]);
+});
+
+test("bit flag members", () => {
+  const src = `export enum MoveFlags {\n  NONE = 0,\n  MAKES_CONTACT = 1 << 0,\n  // note\n  CHECK_ALL_HITS = 1 << 16,\n}\n`;
+  assert.deepEqual(parseEnum(src, "MoveFlags"), [["NONE", 0], ["MAKES_CONTACT", 1], ["CHECK_ALL_HITS", 65536]]);
+});
+
 test("missing enum throws", () => {
   assert.throws(() => parseEnum("nothing here", "UiMode"), /not found/);
 });

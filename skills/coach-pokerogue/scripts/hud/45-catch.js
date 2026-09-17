@@ -1,7 +1,7 @@
 // Catch coach: for a wild foe, the chance each ball we hold catches it, what catching it is worth (to the team, to
 // the account) and whether a throw ends a dangerous encounter cheaper than fighting it out.
 //
-// ---- How the game decides (read from battle-scene-BmkpVc5x.js / loading-scene-BqCzRPcm.js, not called live)
+// ---- How the game decides (see game-code.md §20; not called live)
 // AttemptCapturePhase.start (B = the scene):
 //   B.pokeballCounts[this.pokeballType]--; let m=3*e.getMaxHp(),v=2*e.hp,y=e.species.catchRate,
 //   x=getPokeballCatchMultiplier(ball), S=e.status?getStatusEffectCatchRateMultiplier(e.status.effect):1,
@@ -46,14 +46,16 @@
 
 const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamWeakTypes } = (() => {
   const BALLS = [
-    { id: 0, ball: "Poké Ball", short: "PB", key: "pb", mult: 1 },
-    { id: 1, ball: "Great Ball", short: "GB", key: "gb", mult: 1.5 },
-    { id: 2, ball: "Ultra Ball", short: "UB", key: "ub", mult: 2 },
-    { id: 3, ball: "Rogue Ball", short: "RB", key: "rb", mult: 3 },
-    { id: 4, ball: "Master Ball", short: "MB", key: "mb", mult: -1 },
+    { id: PokeballType.POKEBALL, ball: "Poké Ball", short: "PB", key: "pb", mult: 1 },
+    { id: PokeballType.GREAT_BALL, ball: "Great Ball", short: "GB", key: "gb", mult: 1.5 },
+    { id: PokeballType.ULTRA_BALL, ball: "Ultra Ball", short: "UB", key: "ub", mult: 2 },
+    { id: PokeballType.ROGUE_BALL, ball: "Rogue Ball", short: "RB", key: "rb", mult: 3 },
+    { id: PokeballType.MASTER_BALL, ball: "Master Ball", short: "MB", key: "mb", mult: -1 },
   ];
-  const STATUS_MULT = { 1: 1.5, 2: 1.5, 3: 1.5, 4: 2.5, 5: 2.5, 6: 1.5 };
-  const END_BIOME = 50;
+  const STATUS_MULT = {
+    [StatusEffect.POISON]: 1.5, [StatusEffect.TOXIC]: 1.5, [StatusEffect.PARALYSIS]: 1.5,
+    [StatusEffect.SLEEP]: 2.5, [StatusEffect.FREEZE]: 2.5, [StatusEffect.BURN]: 1.5,
+  };
 
   // P(catch) for one throw, in closed form. `critFactor`: the multiplier in front of min(255, w)/6 (0 = no criticals).
   const captureChance = ({ maxHp, hp, catchRate, ball, status = 0, shiny = false, critFactor = 0, shinyMult = 2 }) => {
@@ -79,7 +81,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
 
   const critFactorOf = (s, live) => {
     const mode = s.gameMode ?? {};
-    if (call(live, () => mode.isFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === 4 && c.value > 0))) return 0;
+    if (call(live, () => mode.isFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === Challenges.FRESH_START && c.value > 0))) return 0;
     let n = 0;
     for (const d of Object.values(s.gameData?.dexData ?? {})) if (d && big(d.caughtAttr)) n++;
     const charm = (s.modifiers ?? []).find(x => x.constructor?.name === "CriticalCatchChanceBoosterModifier");
@@ -89,12 +91,12 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
 
   // Why no ball can be thrown at all this battle, or null.
   const battleBlocked = (s, b, active, live) => {
-    if (!b || b.trainer || b.battleType === 1) return "trainer";
-    if (b.battleType === 3 && !b.mysteryEncounter?.catchAllowed) return "mystery encounter";
-    if (s.arena?.biomeId === END_BIOME && (b.battleType ?? 0) === 0) {
+    if (!b || b.trainer || b.battleType === BattleType.TRAINER) return "trainer";
+    if (b.battleType === BattleType.MYSTERY_ENCOUNTER && !b.mysteryEncounter?.catchAllowed) return "mystery encounter";
+    if (s.arena?.biomeId === BiomeId.END && (b.battleType ?? BattleType.WILD) === BattleType.WILD) {
       const mode = s.gameMode ?? {}, w = b.waveIndex, dex = s.gameData?.dexData ?? {};
       const final = call(live, () => mode.isBattleClassicFinalBoss(w), !!mode.isClassic && w === 200);
-      const freshStart = call(live, () => mode.isFullFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === 4 && c.value === 1));
+      const freshStart = call(live, () => mode.isFullFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === Challenges.FRESH_START && c.value === 1));
       const endlessBoss = call(live, () => mode.isEndlessMinorBoss(w), !!mode.isEndless && w % 250 === 0);
       const dailyFinal = !!mode.isDaily && call(live, () => mode.isWaveFinal(w), w === 50);
       const uncaught = active.some(f => !big(dex[f.species?.speciesId]?.caughtAttr));
@@ -109,7 +111,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
 
   // ---- Team value
   const damagingTypes = p => (p.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } })
-    .filter(mv => mv && mv.category !== 2 && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean);
+    .filter(mv => mv && mv.category !== MoveCategory.STATUS && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean);
   // A fusion's base stats are its two species' averaged stat by stat, rounded up (Pokemon.calculateBaseStats): a fused
   // mon is judged by the pair, not by the species it shows.
   const bstOf = p => {
@@ -157,7 +159,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
   const teamReasons = (s, foe, b, live) => {
     const all = (s.getPlayerParty?.() ?? []).filter(Boolean);
     const out = [];
-    const limited = (s.gameMode?.challenges ?? []).some(c => c.id === 7 && c.value > 0) && b.waveIndex % 10 !== 1;
+    const limited = (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.LIMITED_CATCH && c.value > 0) && b.waveIndex % 10 !== 1;
     if (limited) return { out: [{ kind: "team", text: "Limited Catch: won't join the party", w: 0 }], replace: null };
     // Its line is already on the team: a second one adds nothing.
     if (!all.length || all.some(p => rootOf(p, live) === rootOf(foe, live))) return { out, replace: null };
@@ -207,7 +209,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     }
     // getDexAttr(): gender, shiny, variant, form bits.
     const variant = foe.variant ?? 0;
-    const attr = (foe.gender === -1 || foe.gender == null ? 0n : foe.gender === 1 ? 8n : 4n)
+    const attr = (foe.gender === Gender.GENDERLESS || foe.gender == null ? 0n : foe.gender === Gender.FEMALE ? 8n : 4n)
       | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
     // Candy follows isShiny() (a shiny fusion half counts) with the base variant; the dex's shiny bit only the base.
     const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
@@ -219,7 +221,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     if (caught && (caught & (attr & ~127n)) === 0n) out.push({ kind: "account", text: "new form", w: 2 });
 
     const ab = foe.abilityIndex ?? 0;
-    const bit = ab !== 1 || sp.ability2 ? 1 << ab : 4;
+    const bit = ab !== 1 || sp.ability2 ? 1 << ab : AbilityAttr.ABILITY_HIDDEN;
     // Unknown root (no game call to find it): don't guess.
     const known = gd.starterData?.[root]?.abilityAttr;
     if (known != null && !(known & bit)) {
@@ -250,12 +252,12 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     if (!(p > 0)) return null;
     let best = null;
     for (const me of party.filter(x => x.isOnField?.())) {
-      let turns = 9, first = stat(me, 5) >= stat(foe, 5) ? 1 : 0, theyFirst = 0;
+      let turns = 9, first = stat(me, Stat.SPD) >= stat(foe, Stat.SPD) ? 1 : 0, theyFirst = 0;
       try {
         if (typeof exchange === "function") {
           for (const pm of (me.moveset ?? []).filter(Boolean)) {
             const mv = pm.getMove?.();
-            if (!mv || mv.category === 2) continue;
+            if (!mv || mv.category === MoveCategory.STATUS) continue;
             const x = exchange(s, me, pm, foe);
             if (x && (x.turnsWe < turns || (x.turnsWe === turns && x.pTheyKoFirst < theyFirst))) {
               turns = x.turnsWe; theyFirst = x.pTheyKoFirst ?? 0; first = x.pFirst ?? first;
@@ -312,7 +314,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
   // ---- Ball choice
   // The dearest ball a catch of this value deserves: Poké/Great for nothing special (Ultra when there are plenty),
   // Ultra for a solid catch, Rogue for a valuable one, Master only for something rare.
-  const maxBallFor = (value, counts) => (value >= 5 ? 4 : value >= 2.5 ? 3 : value >= 1.5 || counts[2] >= 5 ? 2 : 1);
+  const maxBallFor = (value, counts) => (value >= 5 ? PokeballType.MASTER_BALL : value >= 2.5 ? PokeballType.ROGUE_BALL : value >= 1.5 || counts[PokeballType.ULTRA_BALL] >= 5 ? PokeballType.ULTRA_BALL : PokeballType.GREAT_BALL);
   const GOOD = 0.6;
   // The least value that earns a card: one real reason (new species/form, hidden ability, shiny, clear upgrade, a big
   // IV gain on the team's line) or two lesser ones together.
@@ -324,10 +326,10 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
 
   const targetAdvice = (s, b, foe, party, crit, counts, multi, live) => {
     const bossLocked = !!foe.isBoss?.() && (foe.bossSegmentIndex ?? 0) >= 1
-      && !call(live, () => foe.hasAbility(25, false, true), abilitiesOf(foe).includes("Wonder Guard"));
+      && !call(live, () => foe.hasAbility(AbilityId.WONDER_GUARD, false, true), abilitiesOf(foe).includes("Wonder Guard"));
     const chance = BALLS.filter(x => counts[x.id] > 0).map(x => ({
       id: x.id, ball: x.ball, short: x.short, key: x.key, count: counts[x.id],
-      p: bossLocked && x.id < 4 ? 0 : Math.round(captureChance({
+      p: bossLocked && x.id < PokeballType.MASTER_BALL ? 0 : Math.round(captureChance({
         maxHp: foe.getMaxHp(), hp: foe.hp, catchRate: foe.species?.catchRate ?? 0, ball: x.id,
         status: foe.status?.effect ?? 0, shiny: isShinyMon(foe, live), shinyMult: shinyMultOf(), critFactor: crit,
       }) * 1000) / 1000,
@@ -354,7 +356,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     // What blocks a throw goes first; how to raise a middling chance goes last.
     const blockers = [], tips = [];
     if (multi && verdict !== "skip") { verdict = "maybe"; blockers.push("KO the other foe first"); }
-    if (bossLocked && verdict !== "skip") blockers.push(counts[4] > 0 && value >= 5 ? "Master Ball, or break its bars first" : "break its bars first — only a Master Ball works now");
+    if (bossLocked && verdict !== "skip") blockers.push(counts[PokeballType.MASTER_BALL] > 0 && value >= 5 ? "Master Ball, or break its bars first" : "break its bars first — only a Master Ball works now");
     else if (verdict !== "skip" && p < GOOD) {
       if (hp > 0.5) tips.push(lowerHpTip(s, foe, party));
       else if (!foe.status?.effect) {

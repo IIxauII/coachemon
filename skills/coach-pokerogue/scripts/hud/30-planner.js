@@ -3,14 +3,14 @@
 // 10-damage, `enemyMoveDistribution` in 20-enemy-ai); otherwise — and in mocks without those — from the `hits`
 // approximation, so the panel always renders.
 
-// ---- When a switch is free (read from the live build's phases; see game-code.md §9)
+// ---- When a switch is free (read from the game's phases; see game-code.md §9)
 // - CheckSwitchPhase ("Will you switch Pokémon?" → CONFIRM): queued only when an encounter starts — EncounterPhase.end,
 //   a mystery-encounter battle, a loaded save, a retry — never in trainer battles (battleType 1) and never when a
 //   trainer sends in its next mon; skipped under battle style "Set", or when the mon is trapped, frenzied or
 //   commanded, or no bench mon is healthy. Doubles ask once per slot. Yes → SwitchPhase → the swap happens before
 //   TurnInitPhase: no enemy hit, no turn lost, and the enemy picks its first command against our new field.
 // - Faint replacement (FaintPhase → SwitchPhase modal, no return) runs after TurnEndPhase: free too.
-// - U-turn / Volt Switch / Baton Pass / Eject Button (a deferred SwitchPhase with return) switch mid-turn: the
+// - U-turn / Volt Switch / Baton Pass (a deferred SwitchPhase with return) switch mid-turn: the
 //   enemy's already-chosen moves still land on the switch-in if it moves later. Not free.
 // - A regular switch command resolves before moves: the switch-in takes the hit, its move waits a turn.
 // Both prompts wait on UI input with no phase mid-execution, so the sandboxed game calls are as safe as in the
@@ -91,7 +91,7 @@ const NO_MOVE_INFO = { priority: 0 };
 const quickChance = (p, mv) => {
   let stack = 0;
   for (const m of p.getHeldItems?.() ?? []) if (m.constructor?.name === "BypassSpeedChanceModifier") stack += m.getStackCount?.() ?? 1;
-  const draw = abilitiesOf(p).includes("Quick Draw") && mv?.category !== 2 ? 0.3 : 0;
+  const draw = abilitiesOf(p).includes("Quick Draw") && mv?.category !== MoveCategory.STATUS ? 0.3 : 0;
   return 1 - (1 - Math.min(1, 0.1 * stack)) * (1 - draw);
 };
 const actionOrder = (s, a, aPm, b, bPm) => {
@@ -99,18 +99,18 @@ const actionOrder = (s, a, aPm, b, bPm) => {
   const info = (p, pm) => {
     const mv = pm.getMove?.() ?? pm;
     const priority = mv.getPriority ? mv.getPriority(p, true) : mv.priority ?? 0;
-    const bracket = mv.getPriorityModifier ? mv.getPriorityModifier(p, true) : 1;
-    return { priority, bracket, quick: bracket === 1 ? quickChance(p, mv) : 0 };
+    const bracket = mv.getPriorityModifier ? mv.getPriorityModifier(p, true) : MovePriorityInBracket.NORMAL;
+    return { priority, bracket, quick: bracket === MovePriorityInBracket.NORMAL ? quickChance(p, mv) : 0 };
   };
   const x = info(a, aPm), y = info(b, bPm);
   if (x.priority !== y.priority) return x.priority > y.priority ? 1 : 0;
-  const speed = p => (p.getEffectiveStat ? p.getEffectiveStat(5) : stat(p, 5));
+  const speed = p => (p.getEffectiveStat ? p.getEffectiveStat(Stat.SPD) : stat(p, Stat.SPD));
   const sa = speed(a), sb = speed(b);
   const trickRoom = !!s.arena?.getTag?.("TRICK_ROOM");
   const bySpeed = sa === sb ? 0.5 : (sa > sb) !== trickRoom ? 1 : 0;
   const cmp = (ba, bb) => (ba === bb ? bySpeed : ba > bb ? 1 : 0);
   const qa = x.quick, qb = y.quick;
-  return qa * qb * cmp(2, 2) + qa * (1 - qb) * cmp(2, y.bracket) + (1 - qa) * qb * cmp(x.bracket, 2) + (1 - qa) * (1 - qb) * cmp(x.bracket, y.bracket);
+  return qa * qb * cmp(MovePriorityInBracket.FIRST, MovePriorityInBracket.FIRST) + qa * (1 - qb) * cmp(MovePriorityInBracket.FIRST, y.bracket) + (1 - qa) * qb * cmp(x.bracket, MovePriorityInBracket.FIRST) + (1 - qa) * (1 - qb) * cmp(x.bracket, y.bracket);
 };
 
 // What `foe` is likely to use on `me`, as [{ o (outcome or null for status moves), name, type, p }]. The enemy AI's
@@ -159,8 +159,8 @@ const likelyMoves = (s, foe, me, outs, next) => {
   }
   const kos = pool.filter(o => (o.perHit?.[0]?.max ?? o.max) >= me.hp);
   const list = kos.length ? kos : pool;
-  if (foe.aiType === 0) return list.map(o => ({ o, name: o.name, type: o.type, p: 1 / list.length }));
-  const advance = i => (foe.aiType === 1 ? 0.375 : Math.min(1, Math.round(list[i + 1].expected / list[i].expected * 50) / 100));
+  if (foe.aiType === AiType.RANDOM) return list.map(o => ({ o, name: o.name, type: o.type, p: 1 / list.length }));
+  const advance = i => (foe.aiType === AiType.SMART_RANDOM ? 0.375 : Math.min(1, Math.round(list[i + 1].expected / list[i].expected * 50) / 100));
   let reach = 1;
   return list.map((o, i) => {
     const stop = i < list.length - 1 ? 1 - advance(i) : 1;
@@ -170,7 +170,7 @@ const likelyMoves = (s, foe, me, outs, next) => {
   });
 };
 
-// P(`p` gets to use `mv` this turn, or next turn with `next`), as MovePhase rolls it in the live build: recharging
+// P(`p` gets to use `mv` this turn, or next turn with `next`), as MovePhase rolls it: recharging
 // after Hyper Beam → 0 (this turn only); asleep → 0 until its sleep counter runs out (one faster with Early Bird)
 // unless the move works asleep (Sleep Talk, Snore); frozen → 1/4 thaw, sure once its freeze counter runs out, or a
 // move that thaws the user; paralysis → 7/8; confused with turns left → 2/3.
@@ -180,12 +180,12 @@ const actChance = (p, mv = null, next = false) => {
   const moveHas = (name, test = () => true) => (mv?.attrs ?? []).some(a => a.constructor?.name === name && test(a));
   const st = p.status;
   let q = 1;
-  if (st?.effect === 4 && !moveHas("BypassSleepAttr")) {
+  if (st?.effect === StatusEffect.SLEEP && !moveHas("BypassSleepAttr")) {
     const early = p.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr") ? 1 : 0;
     if ((st.sleepTurnsRemaining ?? 0) - 1 - later - early * (1 + later) > 0) return 0;
   }
-  if (st?.effect === 5 && !moveHas("HealStatusEffectAttr", a => a.selfTarget) && (st.freezeTurnsRemaining ?? 0) - 1 - later > 0) q *= 0.25;
-  if (st?.effect === 3) q *= 7 / 8;
+  if (st?.effect === StatusEffect.FREEZE && !moveHas("HealStatusEffectAttr", a => a.selfTarget) && (st.freezeTurnsRemaining ?? 0) - 1 - later > 0) q *= 0.25;
+  if (st?.effect === StatusEffect.PARALYSIS) q *= 7 / 8;
   const confused = p.getTag?.("CONFUSED");
   if (confused && (confused.turnCount ?? 0) - later > 1) q *= 2 / 3;
   return q;
@@ -194,7 +194,7 @@ const actChance = (p, mv = null, next = false) => {
 const actDelay = p => {
   if (p.getTag?.("RECHARGING")) return 1;
   const st = p.status;
-  if (st?.effect !== 4) return 0;
+  if (st?.effect !== StatusEffect.SLEEP) return 0;
   const early = p.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr") ? 1 : 0;
   return Math.max(0, Math.ceil((st.sleepTurnsRemaining ?? 0) / (1 + early)) - 1);
 };
@@ -252,13 +252,13 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
 // Stat stages a status move of `p`'s changes on `p` itself (Swords Dance, Dragon Dance, Shell Smash, Belly Drum):
 // { [stat 1–5]: change } after Simple / Contrary and the ±6 cap, or null. Accuracy and evasion aren't counted.
 // A move aimed at the user's own side counts even when its attribute doesn't say so (Howl carries no `selfTarget`).
-const SELF_SIDE_TARGETS = new Set([0, 12, 13, 15, 18]); // USER, USER_OR_NEAR_ALLY, USER_AND_ALLIES, USER_SIDE, PARTY
+const SELF_SIDE_TARGETS = new Set([MoveTarget.USER, MoveTarget.USER_OR_NEAR_ALLY, MoveTarget.USER_AND_ALLIES, MoveTarget.USER_SIDE, MoveTarget.PARTY]);
 const attrIs = (a, name) => {
   for (let c = a?.constructor; c?.name; c = Object.getPrototypeOf(c)) if (c.name === name) return true;
   return false;
 };
 const selfStages = (p, mv) => {
-  if (!mv || mv.category !== 2) return null;
+  if (!mv || mv.category !== MoveCategory.STATUS) return null;
   let mult = 1;
   try {
     for (const a of [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null]) {
@@ -270,7 +270,7 @@ const selfStages = (p, mv) => {
     if (!attrIs(a, "StatStageChangeAttr") || !(a.selfTarget || SELF_SIDE_TARGETS.has(mv.moveTarget))) continue;
     let n = a.stages ?? 0;
     try { if (typeof a.getLevels === "function") n = a.getLevels(p); } catch {}
-    for (const st of a.stats ?? []) if (st >= 1 && st <= 5) out[st] = (out[st] ?? 0) + n * mult;
+    for (const st of a.stats ?? []) if (st >= Stat.ATK && st <= Stat.SPD) out[st] = (out[st] ?? 0) + n * mult;
   }
   for (const st of Object.keys(out)) {
     const cur = p.summonData?.statStages?.[st - 1] ?? 0;
@@ -296,7 +296,7 @@ const koBoost = p => {
           const changes = whose
             ? [{ stat: typeof x.stat === "function" ? x.stat(p) : x.stat, stages: x.stages }]
             : typeof x.changes === "function" ? x.changes(p) : x.changes ?? [];
-          for (const c of changes) if (c.stat >= 1 && c.stat <= 5 && c.stages) up[c.stat] = (up[c.stat] ?? 0) + c.stages;
+          for (const c of changes) if (c.stat >= Stat.ATK && c.stat <= Stat.SPD && c.stages) up[c.stat] = (up[c.stat] ?? 0) + c.stages;
           name ??= a.name;
           any ||= whose;
         }
@@ -319,20 +319,20 @@ const koBoostText = b => Object.entries(b.up).map(([st, n]) => `${n > 0 ? "+" : 
 const feedCost = (foe, others) => {
   const b = others > 0 ? koBoost(foe) : null;
   if (!b) return 0;
-  return Object.entries(b.up).reduce((t, [st, n]) => t + Math.max(0, n) * ([2, 4].includes(+st) ? 0.5 : 1), 0) * FEED_COST;
+  return Object.entries(b.up).reduce((t, [st, n]) => t + Math.max(0, n) * ([Stat.DEF, Stat.SPDEF].includes(+st) ? 0.5 : 1), 0) * FEED_COST;
 };
 // A foe that sets up hits harder each turn it does: its damage on turn j (1 = this turn) against this turn's, from the
 // Atk / SpA stages it's expected to have added by then (`t.boost`), weighed by how much of its damage is physical.
 // Null when it isn't raising an attacking stat.
 const setupRamp = (foe, t) => {
   const g = t?.boost;
-  if (!foe || !g || !(g[1] || g[3]) || !t.moves.length) return null;
+  if (!foe || !g || !(g[Stat.ATK] || g[Stat.SPATK]) || !t.moves.length) return null;
   const phys = t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / (t.moves.reduce((sum, m) => sum + m.p, 0) || 1);
   const up = (st, j) => {
     const s0 = foe.summonData?.statStages?.[st - 1] ?? 0;
     return stage(Math.max(-6, Math.min(6, s0 + (g[st] ?? 0) * (j - 1)))) / stage(s0);
   };
-  return j => phys * up(1, j) + (1 - phys) * up(3, j);
+  return j => phys * up(Stat.ATK, j) + (1 - phys) * up(Stat.SPATK, j);
 };
 // What a foe's setup this turn adds to its next two turns of hits on `me`, as a share of `me`'s max HP.
 const setupDanger = (foe, t, me) => {
@@ -355,7 +355,7 @@ const koChanceAt = (t, hp) => {
 };
 // Can `me` be given status `effect` by `foe`? The game's own check (quiet, so no messages) when it can be called;
 // otherwise the type immunities.
-const TYPE_STATUS_IMMUNE = { 1: ["Poison", "Steel"], 2: ["Poison", "Steel"], 3: ["Electric"], 5: ["Ice"], 6: ["Fire"] };
+const TYPE_STATUS_IMMUNE = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"], [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
 const canTakeStatus = (s, me, effect, foe) => {
   if (plannerReady(s) && typeof me.canSetStatus === "function") {
     try { return !!me.canSetStatus(effect, true, false, foe); } catch {}
@@ -375,8 +375,8 @@ const statusTokens = (s, foe, me) => {
 // at 3 and cancels each of the first two attempts ¾ of the time (a ¼ thaw), the third always thaws. Paralysis
 // cancels 1 in 8 for good (`attemptsLost`).
 const STATUS_SKIP = {
-  4: (a, early) => (early ? (a === 0 ? 2 / 3 : 0) : a === 0 ? 1 : a === 1 ? 2 / 3 : 0),
-  5: a => (a === 0 ? 3 / 4 : a === 1 ? 9 / 16 : 0),
+  [StatusEffect.SLEEP]: (a, early) => (early ? (a === 0 ? 2 / 3 : 0) : a === 0 ? 1 : a === 1 ? 2 / 3 : 0),
+  [StatusEffect.FREEZE]: a => (a === 0 ? 3 / 4 : a === 1 ? 9 / 16 : 0),
 };
 // The wave tokens `foe`'s hits can hand `me`: `by(x)`, P(`me` has a token's status after x landed hits), and each
 // token's `share` of that. Null when none can land.
@@ -403,7 +403,7 @@ const tokenShift = (odds, me, heal) => {
 const attemptsLost = (odds, by, k, pFoeFirst) => {
   let lost = 0;
   for (const x of odds.tokens) {
-    if (x.effect === 3) { lost += x.share / 8 * (pFoeFirst * by(k) + (1 - pFoeFirst) * by(k - 1)); continue; }
+    if (x.effect === StatusEffect.PARALYSIS) { lost += x.share / 8 * (pFoeFirst * by(k) + (1 - pFoeFirst) * by(k - 1)); continue; }
     if (!STATUS_SKIP[x.effect]) continue;
     const skip = a => (a < 0 ? 0 : STATUS_SKIP[x.effect](a, odds.early));
     for (let t = 1; t <= k; t++) lost += x.share * (by(t) - by(t - 1)) * (pFoeFirst * skip(k - t) + (1 - pFoeFirst) * skip(k - t - 1));
@@ -415,11 +415,11 @@ const attemptsLost = (odds, by, k, pFoeFirst) => {
 // Null when no token can cancel anything.
 const tokenActs = (s, foe, me, hitsPerTurn, pFoeFirst) => {
   const odds = hitsPerTurn > 0 ? tokenOdds(s, foe, me) : null;
-  if (!odds?.tokens.some(x => x.effect === 3 || STATUS_SKIP[x.effect])) return null;
+  if (!odds?.tokens.some(x => x.effect === StatusEffect.PARALYSIS || STATUS_SKIP[x.effect])) return null;
   const by = t => odds.by(hitsPerTurn * t);
   return {
     act: k => 1 - attemptsLost(odds, by, k, pFoeFirst),
-    para: k => odds.tokens.filter(x => x.effect === 3).reduce((sum, x) => sum + x.share, 0) * by(k),
+    para: k => odds.tokens.filter(x => x.effect === StatusEffect.PARALYSIS).reduce((sum, x) => sum + x.share, 0) * by(k),
   };
 };
 
@@ -490,8 +490,8 @@ const afterSteals = (me, heal) => {
 // Toxic's chip grows by a 16th each turn it stays on.
 const turnEndCourse = (s, me, foe, hitsPerTurn, dealt = 0) => {
   const base = healAtEnd(s, me, dealt);
-  const toxic = me.status?.effect === 2
-    ? j => healAtEnd(s, Object.create(me, { status: { value: { ...me.status, effect: 2, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
+  const toxic = me.status?.effect === StatusEffect.TOXIC
+    ? j => healAtEnd(s, Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
     : null;
   const flat = toxic ? { base, flat: false, at: toxic } : { base, flat: true, at: () => base };
   if (!foe || !(hitsPerTurn >= 0)) return flat;
@@ -629,7 +629,7 @@ const hitsToKo = (chunks, dmgAt, heal = 0, per = []) => {
 const barBreakFactors = (s, foe, st, bars, offence = false) => {
   const out = [1];
   if (bars <= 1 || (foe.hasTrainer?.() ?? !!s.currentBattle?.trainer)) return Array(Math.max(1, bars)).fill(1);
-  const w = [1, 2, 3, 4, 5].map(i => Math.max(0, foe.getStat?.(i, false) || 0));
+  const w = [Stat.ATK, Stat.DEF, Stat.SPATK, Stat.SPDEF, Stat.SPD].map(i => Math.max(0, foe.getStat?.(i, false) || 0));
   const share = w[st - 1] / (w.reduce((t, x) => t + x, 0) || 1);
   const s0 = foe.summonData?.statStages?.[st - 1] ?? 0;
   let up = 0;
@@ -674,7 +674,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   const guard = opts.free || opts.next || after || mine?.bypassProtect ? 0 : protectChance(s, foe);
   // King's Rock: 10 % a stack to flinch us with each attack that lands before we move.
   const flinch = Math.min(1, 0.1 * heldStack(foe, "FlinchChanceModifier")) * foeAttacks;
-  const steady = (me.status?.effect === 3 ? 7 / 8 : 1) * needs * (1 - flinch * (1 - pF));
+  const steady = (me.status?.effect === StatusEffect.PARALYSIS ? 7 / 8 : 1) * needs * (1 - flinch * (1 - pF));
   // Wave status tokens: sleep, freeze and paralysis the foe's hits may hand us cancel some of our later attempts.
   const acts = opts.free || !t ? null : tokenActs(s, foe, me, hitsOn(t), 1 - pF);
   const now = actChance(me, pm?.getMove?.() ?? null, !!opts.next) * needs * (mine?.semi ? 1 - pF : 1) * (acts ? acts.act(1) : 1) * (1 - guard);
@@ -690,7 +690,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const perTurn = (mine.uncapped ?? mine.expected) / Math.max(mine.acc ?? 1, 0.3) * steady;
     const seg = foe.getMaxHp() / (foe.bossSegments || 1);
     // Overheat-type drops to the stat the move attacks with weaken every repeat.
-    const atkStat = mine.cat === "special" ? 3 : 1;
+    const atkStat = mine.cat === "special" ? Stat.SPATK : Stat.ATK;
     const drop = mine.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
     // Its turn-end HP change, with our item thieves on it (`steady` of our hits land a turn).
@@ -701,9 +701,9 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     // HP to get through: what's left of this bar, each bar after it, and half its HP again after a Reviver Seed.
     const chunks = [...(bars > 1 ? [foe.hp - seg * (bars - 1), ...Array(bars - 1).fill(seg)] : [foe.hp]), ...(mine.revive ? [mine.revive] : [])];
     const caps = t?.drain ? chunks.map((_, c) => (c < bars ? (bars > 1 ? seg : foe.getMaxHp()) : foe.getMaxHp())) : null;
-    const barFactor = [...barBreakFactors(s, foe, mine.cat === "special" ? 4 : 2, bars), 1];
+    const barFactor = [...barBreakFactors(s, foe, mine.cat === "special" ? Stat.SPDEF : Stat.DEF, bars), 1];
     // Its own setup raising (or Shell Smash lowering) the defence this move meets, by our i-th use.
-    const defStat = mine.cat === "special" ? 4 : 2;
+    const defStat = mine.cat === "special" ? Stat.SPDEF : Stat.DEF;
     const defUpBy = t?.boost?.[defStat] ?? 0;
     const d0 = foe.summonData?.statStages?.[defStat - 1] ?? 0;
     const scale = (i, c) => barFactor[c] * stage(Math.max(-6, s0 + drop * i)) / stage(s0)
@@ -741,7 +741,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     // each bar: that turn's hit from it is boosted only if we moved first.
     if (bars > 1 && t?.moves.length && !trainerBoss) {
       const phys = t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / (t.moves.reduce((sum, m) => sum + m.p, 0) || 1);
-      const [fa, fs] = [1, 3].map(st => barBreakFactors(s, foe, st, bars, true));
+      const [fa, fs] = [Stat.ATK, Stat.SPATK].map(st => barBreakFactors(s, foe, st, bars, true));
       const pace = cycle / Math.max(1, hitsWe);
       let hitsSoFar = 0;
       const breaks = perChunk.slice(0, bars - 1).map(n => Math.ceil(delay + (hitsSoFar += n) * pace - 1e-9));
@@ -752,11 +752,11 @@ const exchange = (s, me, pm, foe, opts = {}) => {
       };
     }
     // Confusion hurts itself with a typeless 40-power physical hit a third of the time.
-    const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, 1) / stat(me, 2) / 50 + 2) * 0.925;
+    const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, Stat.ATK) / stat(me, Stat.DEF) / 50 + 2) * 0.925;
     selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + confusedHits * 1.5 * confusionHit / 3;
     // Lowered Def / SpD (Close Combat, V-create) after the first use: the foe hits harder on the rest.
     const soften = st => (mine.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mine.drops[st])) : 1);
-    if (hitsWe > 1 && (mine.drops?.[2] || mine.drops?.[4])) defUp = 1 + ((soften(2) + soften(4)) / 2 - 1) * (hitsWe - 1) / hitsWe;
+    if (hitsWe > 1 && (mine.drops?.[Stat.DEF] || mine.drops?.[Stat.SPDEF])) defUp = 1 + ((soften(Stat.DEF) + soften(Stat.SPDEF)) / 2 - 1) * (hitsWe - 1) / hitsWe;
   }
   // Our own toll comes off the HP the foe has to get through (front-loaded); if it alone would drop us, we go down
   // around our last hit.
@@ -789,17 +789,17 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   let pLast = pFirst;
   const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
   if (pPara > 0) {
-    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: 3 } } };
-    if (typeof me.getEffectiveStat !== "function") slowed.getEffectiveStat = { value: i => stat(me, i) / (i === 5 ? 2 : 1) };
+    const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
+    if (typeof me.getEffectiveStat !== "function") slowed.getEffectiveStat = { value: i => stat(me, i) / (i === Stat.SPD ? 2 : 1) };
     const tp = threatFrom(s, foe, Object.create(me, slowed), pm, { next: !!opts.next });
     pLast = (1 - pPara) * pFirst + pPara * (tp ? 1 - (tp.pKo > 0 ? tp.koFirst : tp.first) : pFirst);
   }
   // A foe boosting its Speed (Dragon Dance) passes us once it has the stages it needs, unless our move has priority:
   // our share of moving first on the deciding turn falls with the stages it's expected to have gained by then.
-  const speedUp = t?.boost?.[5] ?? 0;
+  const speedUp = t?.boost?.[Stat.SPD] ?? 0;
   if (speedUp > 0 && turnsWe > 1 && turnsWe < 9 && !((mine?.priority ?? 0) > 0) && pLast > 0) {
-    const spe = p => (p.getEffectiveStat ? p.getEffectiveStat(5) : stat(p, 5));
-    const mySpe = spe(me), foeSpe = spe(foe), s5 = foe.summonData?.statStages?.[4] ?? 0;
+    const spe = p => (p.getEffectiveStat ? p.getEffectiveStat(Stat.SPD) : stat(p, Stat.SPD));
+    const mySpe = spe(me), foeSpe = spe(foe), s5 = foe.summonData?.statStages?.[Stat.SPD - 1] ?? 0;
     let need = 0;
     while (s5 + need < 6 && foeSpe * stage(s5 + need) / stage(s5) <= mySpe) need++;
     if (need > 0 && foeSpe * stage(s5 + need) / stage(s5) > mySpe) pLast *= Math.max(0, 1 - speedUp * (turnsWe - 1) / need);
@@ -1029,7 +1029,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       const o = mine.target == null ? null : planOutcomes(s, me, active[mine.target === "both" ? 0 : mine.target]).find(x => x.name === name);
       const p = o && (mine.target === "both" ? (pair ? both(o) : one(o, 0)) : one(o, mine.target));
       const mv = mine.pm?.getMove?.();
-      const bare = { me, move: { name, type: TYPES[mv?.type] ?? null, cat: mv?.category === 2 ? "status" : null, pm: mine.pm, expected: 0 }, target: null, turns: 9, hits: 9, score: 0, hp };
+      const bare = { me, move: { name, type: TYPES[mv?.type] ?? null, cat: mv?.category === MoveCategory.STATUS ? "status" : null, pm: mine.pm, expected: 0 }, target: null, turns: 9, hits: 9, score: 0, hp };
       return [{ ...(p ?? bare), locked: true }];
     }
     const out = [];
@@ -1315,7 +1315,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   // A Protect after a successful one only works 1 time in 3.
   const protectedLast = me => {
     const last = me.getLastXMoves?.(1)?.[0];
-    return !!last && last.result === 1 && me.moveset.some(pm => pm?.moveId === last.move && hasAttr(pm.getMove(), "ProtectAttr"));
+    return !!last && last.result === MoveResult.SUCCESS && me.moveset.some(pm => pm?.moveId === last.move && hasAttr(pm.getMove(), "ProtectAttr"));
   };
   const boostedKo = (b, X) => {
     if (bossBarsLeft(X) > 1) return 0;
@@ -1342,7 +1342,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
         });
         if (X) { out.set(a, { kind: "protect", pm: protect, note: `${b.me.name} KOs ${X.name} first` }); return; }
       }
-      const hh = a.me.moveset.find(pm => usablePm(pm) && (pm.getMove().id === 270 || pmName(pm) === "Helping Hand"));
+      const hh = a.me.moveset.find(pm => usablePm(pm) && (pm.getMove().id === MoveId.HELPING_HAND || pmName(pm) === "Helping Hand"));
       if (!hh) return;
       const ts = b.target === "both" ? active.map((_, t) => t) : [b.target];
       let gain = 0, turned = null;
@@ -1406,7 +1406,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
 };
 
 // Moves that hit every other pokémon on the field, our partner included (MoveTarget ALL_OTHERS, ALL_NEAR_OTHERS).
-const hitsAlly = o => [2, 4].includes(o?.pm?.getMove?.()?.moveTarget);
+const hitsAlly = o => [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS].includes(o?.pm?.getMove?.()?.moveTarget);
 // A cost beyond the turn: recoil, fainting, a recharge turn, or lowering the user's own stats.
 const DRAWBACK_ATTRS = ["RecoilAttr", "SacrificialAttr", "SacrificialAttrOnHit", "HalfSacrificialAttr", "RechargeAttr"];
 const drawback = o => {
@@ -1454,16 +1454,16 @@ const statusPlay = (s, me, f, info) => {
       note: Object.entries(up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${names[st]}`).join(" "),
     };
   }
-  const inflict = attrs("StatusEffectAttr").find(a => [1, 2, 3, 4, 6].includes(a.effect));
+  const inflict = attrs("StatusEffectAttr").find(a => [StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.PARALYSIS, StatusEffect.SLEEP, StatusEffect.BURN].includes(a.effect));
   if (inflict) {
     if (f.status?.effect || !canTakeStatus(s, f, inflict.effect, me)) return null;
     const early = !!f.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr");
-    const skip = a => STATUS_SKIP[4](a, early);
+    const skip = a => STATUS_SKIP[StatusEffect.SLEEP](a, early);
     return {
       kind: "status", self: false, patches: [{ mon: f, status: { effect: inflict.effect, toxicTurnCount: 0, sleepTurnsRemaining: 0 } }],
-      skip0: inflict.effect === 4 ? skip(0) : inflict.effect === 3 ? 1 / 8 : 0,
+      skip0: inflict.effect === StatusEffect.SLEEP ? skip(0) : inflict.effect === StatusEffect.PARALYSIS ? 1 / 8 : 0,
       // Given it landed on turn 1, the foe's next attempt is its second if we moved first, else its first.
-      foeAct: inflict.effect === 4 ? pF => i => 1 - (pF * skip(i + 1) + (1 - pF) * skip(i)) : null,
+      foeAct: inflict.effect === StatusEffect.SLEEP ? pF => i => 1 - (pF * skip(i + 1) + (1 - pF) * skip(i)) : null,
       note: STATUS_FRAMES[inflict.effect],
     };
   }
@@ -1473,7 +1473,7 @@ const statusPlay = (s, me, f, info) => {
     if (me.hp >= max) return null;
     let ratio = heal.healRatio ?? 0.5;
     try {
-      const w = s.arena?.weather && !s.arena.weather.isEffectSuppressed?.() ? s.arena.weather.weatherType : 0;
+      const w = s.arena?.weather && !s.arena.weather.isEffectSuppressed?.() ? s.arena.weather.weatherType : WeatherType.NONE;
       if (typeof heal.getWeatherHealRatio === "function") ratio = heal.getWeatherHealRatio(w);
       else if (attrIs(heal, "BoostHealAttr")) ratio = heal.condition?.(me, f, mv) ? heal.boostedHealRatio ?? ratio : heal.normalHealRatio ?? ratio;
     } catch {}
@@ -1495,7 +1495,7 @@ const hazardValue = (s, me, tagType) => {
   const coming = (s.getEnemyParty?.() ?? []).filter(p => p && p.hp > 0 && !p.isOnField?.());
   if (!coming.length) return null;
   let layers = 0;
-  try { layers = s.arena?.getTagOnSide?.(tagType, 2)?.layers ?? 0; } catch {}
+  try { layers = s.arena?.getTagOnSide?.(tagType, ArenaTagSide.ENEMY)?.layers ?? 0; } catch {}
   const grounded = p => { try { return p.isGrounded?.() ?? !typesOf(p).includes("Flying"); } catch { return true; } };
   const guarded = p => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr");
   if (tagType === "TOXIC_SPIKES" && coming.some(p => grounded(p) && typesOf(p).includes("Poison"))) return null;
@@ -1503,12 +1503,12 @@ const hazardValue = (s, me, tagType) => {
   const share = p => {
     if (tagType === "STEALTH_ROCK") {
       if (guarded(p)) return 0;
-      try { return 0.125 * p.getAttackTypeEffectiveness(5, { ignoreStrongWinds: true }); } catch { return 0.125 * effectiveness("Rock", p); }
+      try { return 0.125 * p.getAttackTypeEffectiveness(PokemonType.ROCK, { ignoreStrongWinds: true }); } catch { return 0.125 * effectiveness("Rock", p); }
     }
     if (!grounded(p)) return 0;
     if (tagType === "SPIKES") return guarded(p) ? 0 : spikes(layers + 1) - spikes(layers);
     // Poison's chip over a few turns out, then a smaller step to toxic.
-    if (tagType === "TOXIC_SPIKES") return guarded(p) || !canTakeStatus(s, p, 1, me) ? 0 : layers ? 0.1 : 0.25;
+    if (tagType === "TOXIC_SPIKES") return guarded(p) || !canTakeStatus(s, p, StatusEffect.POISON, me) ? 0 : layers ? 0.1 : 0.25;
     return 0;
   };
   const shares = coming.map(p => Math.min(p.hp / p.getMaxHp(), share(p)));
@@ -1526,19 +1526,19 @@ const lockedCommand = (s, b, party, active, pair) => {
   const ph = s.phaseManager?.getCurrentPhase?.();
   if (!b.double || ph?.phaseName !== "CommandPhase" || ph.fieldIndex !== 1) return null;
   const cmd = b.turnCommands?.[0];
-  const me = party.find(p => p.isOnField?.() && p.getBattlerIndex?.() === 0);
+  const me = party.find(p => p.isOnField?.() && p.getBattlerIndex?.() === BattlerIndex.PLAYER);
   if (!cmd || cmd.skip || !me) return null;
-  if (cmd.command === 2) {
+  if (cmd.command === Command.POKEMON) {
     const switchIn = s.getPlayerParty?.()?.[cmd.cursor];
     return switchIn && party.includes(switchIn) ? { me, switchIn } : null;
   }
-  if (cmd.command !== 0) return null;
+  if (cmd.command !== Command.FIGHT) return null;
   const pm = me.moveset[cmd.cursor] ?? me.moveset.find(m => m && m.moveId === cmd.move?.move) ?? null;
   const mv = pm?.getMove?.();
   const bi = (cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [])[0];
   let target = null;
   if (mv && SPREAD_TARGETS.includes(mv.moveTarget)) target = pair ? "both" : 0;
-  else if (bi != null && bi >= 2) {
+  else if (bi != null && bi >= BattlerIndex.ENEMY) {
     const i = active.findIndex(f => f.getBattlerIndex?.() === bi);
     target = i >= 0 ? i : active.length === 1 ? 0 : null;
   }

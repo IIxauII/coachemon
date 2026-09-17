@@ -54,7 +54,10 @@
 const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRewardFns, spawnsFor, formsFor } = (() => {
   const TIER_CUTS = [156, 32, 6, 1, 0];
   const BOSS_CUTS = [20, 6, 1, 0];
-  const ABYSS = 24, END = 50;
+  // Pool tiers in the order TIER_CUTS / BOSS_CUTS cut them: a biome's pools by BiomePoolTier, a trainer config's by TrainerPoolTier.
+  const POOL_TIERS = [BiomePoolTier.COMMON, BiomePoolTier.UNCOMMON, BiomePoolTier.RARE, BiomePoolTier.SUPER_RARE, BiomePoolTier.ULTRA_RARE];
+  const BOSS_POOL_TIERS = [BiomePoolTier.BOSS, BiomePoolTier.BOSS_RARE, BiomePoolTier.BOSS_SUPER_RARE, BiomePoolTier.BOSS_ULTRA_RARE];
+  const TRAINER_POOL_TIERS = [TrainerPoolTier.COMMON, TrainerPoolTier.UNCOMMON, TrainerPoolTier.RARE, TrainerPoolTier.SUPER_RARE, TrainerPoolTier.ULTRA_RARE];
   const WINDOW = 10;
   // What a tier is worth as a catch: a common one is there to meet, an ultra rare one mostly isn't.
   const CATCH_TIER = [1, 1, 0.6, 0.3, 0.15];
@@ -63,7 +66,7 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
   // `determineEnemySpecies`'s random factor, by EvoLevelThresholdKind (0 STRONG, 1 NORMAL, 2 WILD).
   const EVO_SPREAD = [1, 1.1, 1.2];
   // Rare destinations worth naming when an option can lead there.
-  const RARE_ONWARD = new Set([25, 28, 41]); // SPACE, FAIRY_CAVE, LABORATORY
+  const RARE_ONWARD = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 
   let tables = null, triedAt = -Infinity;
   const setGameTables = t => { tables = t; formsCache.clear(); trainerCache.clear(); };
@@ -122,7 +125,7 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
   // `{ regenerate, options }`: the reward roll's module functions, or null while they aren't found (starts the read).
   const gameRewardFns = () => { loadGameTables(); return rewardFns; };
 
-  const biomeScreen = (s, h) => s.ui.getMode() === 15 && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectBiomePhase"
+  const biomeScreen = (s, h) => s.ui.getMode() === UiMode.OPTION_SELECT && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectBiomePhase"
     && !!h?.config?.options?.length;
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -219,9 +222,9 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
     if (cfg) {
       let species = [];
       if (cfg.speciesPools) {
-        const pools = [0, 1, 2, 3, 4].map(t => (tryDo(() => cfg.speciesPools[t], []) ?? []).filter(x => typeof x === "number"));
+        const pools = TRAINER_POOL_TIERS.map(t => (tryDo(() => cfg.speciesPools[t], []) ?? []).filter(x => typeof x === "number"));
         const byId = new Map();
-        for (const { list, p } of odds(pools, [0, 1, 2, 3, 4], TIER_CUTS, 512)) for (const id of list) byId.set(id, (byId.get(id) ?? 0) + p / list.length);
+        for (const { list, p } of odds(pools, TRAINER_POOL_TIERS, TIER_CUTS, 512)) for (const id of list) byId.set(id, (byId.get(id) ?? 0) + p / list.length);
         species = [...byId].map(([id, p]) => ({ id, p }));
       } else if (typeof cfg.speciesFilter === "function") {
         const ids = new Set();
@@ -241,19 +244,19 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
     const gm = s.gameMode;
     const gymAt = w => w % 30 === (s.offsetGym ? 0 : 20);
     const fixedAt = w => tryDo(() => gm.isWaveFinal(w), false) || tryDo(() => gm.isFixedBattle(w), false);
-    const bossTrainers = (biome.trainerPool?.[5] ?? []).length > 0;
+    const bossTrainers = (biome.trainerPool?.[BiomePoolTier.BOSS] ?? []).length > 0;
     const out = [];
     for (let w = wave + 1; w <= wave + WINDOW; w++) {
       if (fixedAt(w)) continue;
       const c = (w + (s.waveCycleOffset ?? 0)) % 40;
-      const tod = biome.biomeId === ABYSS ? 3 : c < 15 ? 1 : c < 20 ? 2 : c < 35 ? 3 : 0;
+      const tod = biome.biomeId === BiomeId.ABYSS ? TimeOfDay.NIGHT : c < 15 ? TimeOfDay.DAY : c < 20 ? TimeOfDay.DUSK : c < 35 ? TimeOfDay.NIGHT : TimeOfDay.DAWN;
       let trainer = 0, gym = false;
       if (gm?.isDaily) {
         trainer = w % 10 === 5 || (w % 10 === 0 && w > 10) ? 1 : 0;
         gym = trainer && bossTrainers && w > 10 && w < 50 && w % 10 === 0;
       } else if (gymAt(w)) {
         trainer = 1;
-        gym = bossTrainers && (biome.biomeId !== END || !!gm?.isClassic || tryDo(() => gm.isWaveFinal(w), false));
+        gym = bossTrainers && (biome.biomeId !== BiomeId.END || !!gm?.isClassic || tryDo(() => gm.isWaveFinal(w), false));
       } else if (w % 10 > 1) {
         const chance = biome.trainerChance ?? 0;
         if (chance) {
@@ -300,10 +303,10 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
         };
         // `isBossSpecies` asks only the BOSS tier (5) for this time of day, and never an Endless or Daily End boss
         // short of the final wave.
-        const bossWave = wv.boss && (biome.pokemonPool?.[5]?.[-1] ?? []).length + (biome.pokemonPool?.[5]?.[wv.tod] ?? []).length > 0
-          && (biome.biomeId !== END || !!gm?.isClassic);
-        const tiers = bossWave ? [5, 6, 7, 8] : [0, 1, 2, 3, 4];
-        const pools = tiers.map(t => [...(biome.pokemonPool?.[t]?.[-1] ?? []), ...(biome.pokemonPool?.[t]?.[wv.tod] ?? [])].filter(legalAt));
+        const bossWave = wv.boss && (biome.pokemonPool?.[BiomePoolTier.BOSS]?.[TimeOfDay.ALL] ?? []).length + (biome.pokemonPool?.[BiomePoolTier.BOSS]?.[wv.tod] ?? []).length > 0
+          && (biome.biomeId !== BiomeId.END || !!gm?.isClassic);
+        const tiers = bossWave ? BOSS_POOL_TIERS : POOL_TIERS;
+        const pools = tiers.map(t => [...(biome.pokemonPool?.[t]?.[TimeOfDay.ALL] ?? []), ...(biome.pokemonPool?.[t]?.[wv.tod] ?? [])].filter(legalAt));
         const forced = gm?.isDaily ? tryDo(() => gm.dailyConfig.forcedWaves.find(f => f.waveIndex === wv.w).tier) : null;
         const max = bossWave ? 64 - luck * 0.5 : 512 - luck * 2;
         for (const { tier, list, p } of odds(pools, tiers, bossWave ? BOSS_CUTS : TIER_CUTS, max, forced)) {
@@ -312,7 +315,7 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
         if (bossWave) bigFight = { wave: wv.w, gym: false };
       }
       if (wv.trainer > 0 && tables?.trainers) {
-        const tiers = wv.gym ? [5, 6, 7, 8] : [0, 1, 2, 3, 4];
+        const tiers = wv.gym ? BOSS_POOL_TIERS : POOL_TIERS;
         const pools = tiers.map(t => biome.trainerPool?.[t] ?? []);
         for (const { list, p } of odds(pools, tiers, wv.gym ? BOSS_CUTS : TIER_CUTS, wv.gym ? 64 : 512)) {
           for (const type of list) {
@@ -339,13 +342,13 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
   const joinNames = names => (names.length > 2 ? `${names.length} mons` : names.join(" & "));
   // Entering an X1 revives the fainted (PartyHealPhase), unless Hardcore prevents revives or Limited Support (1 no heal,
   // 3 neither) skips the heal.
-  const staysFainted = s => (s.gameMode?.challenges ?? []).some(c => (c.id === 9 && c.value > 0) || (c.id === 8 && (c.value === 1 || c.value === 3)));
+  const staysFainted = s => (s.gameMode?.challenges ?? []).some(c => (c.id === Challenges.HARDCORE && c.value > 0) || (c.id === Challenges.LIMITED_SUPPORT && (c.value === 1 || c.value === 3)));
 
   const judge = (s, id, party, level, wave, luck) => {
     const biome = tryDo(() => tables.biomes.get(id));
     if (!biome) return null;
     const enc = encounters(s, biome, wave, luck);
-    const spawnList = enc.list.flatMap(e => [...formsAt(e.id, level, e.wild > 0 ? 2 : 1)].map(([fid, fp]) => {
+    const spawnList = enc.list.flatMap(e => [...formsAt(e.id, level, e.wild > 0 ? EvoLevelThresholdKind.WILD : EvoLevelThresholdKind.NORMAL)].map(([fid, fp]) => {
       const sp = speciesById(fid);
       return sp && { ...e, sp, types: typesOfSpecies(sp), w: e.w * fp, wild: e.wild * fp, boss: e.boss * fp };
     })).filter(e => e?.types.length);
@@ -415,7 +418,7 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
     const dex = s.gameData?.dexData ?? {};
     const catches = new Map();
     for (const e of spawnList) {
-      if (e.tier > 4 || !(e.wild > 0) || roots.has(rootIdOf(e.sp))) continue;
+      if (e.tier > BiomePoolTier.ULTRA_RARE || !(e.wild > 0) || roots.has(rootIdOf(e.sp))) continue;
       const covers = weakTypes.filter(t => mult(t, e.types) <= 0.5);
       const bst = finalBstOf({ species: e.sp }).final;
       const upgrade = weakest && bst >= 400 && bst >= weakest + 100;
@@ -512,7 +515,7 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
   // The weighted encounters of one biome as the ten waves after `wave` would see them, and a species' chance of each
   // form at a level (tests, live checks).
   const spawnsFor = (s, id, wave, luck = 0) => (tables?.biomes?.get(id) ? encounters(s, tables.biomes.get(id), wave, luck) : null);
-  const formsFor = (id, level, kind = 2) => Object.fromEntries(formsAt(id, level, kind));
+  const formsFor = (id, level, kind = EvoLevelThresholdKind.WILD) => Object.fromEntries(formsAt(id, level, kind));
 
   return { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRewardFns, spawnsFor, formsFor };
 })();
