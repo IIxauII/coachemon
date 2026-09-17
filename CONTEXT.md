@@ -84,6 +84,12 @@ The one local process on a machine that the browser extension connects to. Every
 
 Never called the *host*: Apple's *host app* is the browser that hosts an extension, the opposite sense.
 
+## Command
+
+One step the **hub** carries to a game tab: either a read or an act, each a single look at the game or a single input to it. The set of commands is closed, fixed by the extension a player installed, and nothing else can be sent. A tool call issues many commands, and all the waiting, walking and judging between them belongs to the process that issued them. Only acts need the **driver**.
+
+Not to be confused with the game's own command menu (Fight, Ball, Pokémon, Run), which is a **screen**.
+
 ## Interrupted run
 
 A run that ended without the party wiping — the game tore itself down and dropped back to the title. Distinct from a **wipe**: a wipe is an ending the agent played its way into, while an interrupted run is a failure, and the run may still exist server-side. The two are never reported as the same thing, because treating an interruption as a wipe invites starting a new run over a run that is still alive.
