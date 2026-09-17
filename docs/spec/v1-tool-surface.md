@@ -287,6 +287,8 @@ The text is returned, never discarded: level-ups, faints and item effects are an
 
 `select_option` does cursor math server-side, but the evidence for `setCursor` being safe is thin: it was exercised live on exactly **two** screens. So the rule is **`setCursor` only where measured or provably safe; directional presses everywhere else; presses for anything unknown.**
 
+The rules below live in `src/menu-family.ts`: one plan per menu family (reach, step rule, `setCursor` miss, commit, family refusals), each citing its row here.
+
 | Screen | Movement | Why |
 |---|---|---|
 | `MODIFIER_SELECT` | **`setCursor`** — `setRowCursor(row)` **then** `setCursor(col)`. Order is load-bearing: `setRowCursor` sets `this.cursor = -1` before re-entering `setCursor` | **[live]**, every wave, worked every time (#6) |

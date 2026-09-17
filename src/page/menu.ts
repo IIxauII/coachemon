@@ -19,6 +19,8 @@ export type MenuResult =
       options: MenuOption[];
       cursor: number | string | null;
       text: string | null;
+      /** A handler's own message box waits for ACTION and swallows every cursor press (#44). */
+      messagePending: boolean;
       extra: Record<string, unknown>;
       disc: Discriminators;
     }
@@ -36,13 +38,14 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
   const __texts = (c: any): string[] => __kids(c).map(__txt).filter((t: string | null) => t !== null);
   const __strip = (s: any) => typeof s === "string" ? s.replace(/\[\/?[^\]]*\]/g, "").trim() : s;
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
+  const { m, sm } = L;
   const { scene, ui } = L;
   const mode = ui.mode;
   const h = ui.handlers[mode];
   if (!h) return { readable: false, why: "no-handler", mode };
   const disc = L.disc(h);
-  const out: Extract<MenuResult, { handler: string }> = { mode, handler: h.constructor.name, family: null, options: [], cursor: null, readable: false, text: null, extra: {}, disc };
-  const mh = ui.handlers[0];
+  const out: Extract<MenuResult, { handler: string }> = { mode, handler: h.constructor.name, family: null, options: [], cursor: null, readable: false, text: null, messagePending: false, extra: {}, disc };
+  const mh = ui.handlers[m.MESSAGE];
   out.text = __try(() => (mh && mh.message && typeof mh.message.text === "string") ? mh.message.text : null);
   const opt = (i: number | string, label: string | null, more?: Record<string, unknown>): MenuOption => Object.assign({ i, label }, more || {});
   // A trainer's Pokémon cannot be caught: the thrown ball is wasted (#56).
@@ -58,14 +61,14 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const unskipped = out.extra.unskippedIndices as number[] | null;
       out.extra.selectedIndex = unskipped && typeof unskipped[out.cursor as number] === "number" ? unskipped[out.cursor as number] : out.cursor;
       out.readable = out.options.length > 0;
-    } else if (mode === 2) {
+    } else if (mode === m.COMMAND) {
       out.family = "command";
       out.options = __texts(h.commandsContainer).map((t, i) => opt(i, t));
       out.cursor = h.getCursor ? h.getCursor() : h.cursor;
       out.extra.fieldIndex = h.fieldIndex || 0;
       out.extra.catchable = catchable();
       out.readable = out.options.length > 0;
-    } else if (mode === 3) {
+    } else if (mode === m.FIGHT) {
       out.family = "fight";
       out.options = __texts(h.movesContainer).map((t, i) => opt(i, t));
       out.cursor = h.getCursor ? h.getCursor() : h.cursor;
@@ -77,7 +80,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         return { name: m.getName(), pp: m.getMovePp() - m.ppUsed, maxPp: m.getMovePp(), power: mv ? mv.power : null, category: mv ? mv.category : null, type: mv ? mv.type : null };
       }) : null);
       out.readable = out.options.length > 0;
-    } else if (mode === 4) {
+    } else if (mode === m.BALL) {
       out.family = "ball";
       // Two multi-line texts (BallUiHandler.setup, #46): the names, one per ball type then Cancel, and countsText. Counts come
       // from pokeballCounts, which countsText mirrors in the same key order; the row after the last ball is Cancel.
@@ -92,7 +95,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.cursor = h.cursor;
       out.extra.catchable = catchable();
       out.readable = out.options.length > 0;
-    } else if (mode === 5) {
+    } else if (mode === m.TARGET_SELECT) {
       out.family = "target_select";
       const field = __try(() => scene.getField()) || [];
       out.options = (h.targets || []).map((bi: number) => {
@@ -102,7 +105,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.cursor = h.cursor;
       out.extra.isMultipleTargets = h.isMultipleTargets === true;
       out.readable = out.options.length > 0;
-    } else if (mode === 6) {
+    } else if (mode === m.MODIFIER_SELECT) {
       out.family = "modifier_select";
       const rows: { row: number; kind: string; items: { col: number; label: string | null; cost?: unknown }[] }[] = [];
       // Row 0 is the button bar, in the handler's own cursor order: reroll, manage items, check team, lock rarities.
@@ -125,13 +128,13 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.extra.money = scene.money;
       out.extra.rerollCost = __try(() => h.rerollCost);
       out.readable = true;
-    } else if (mode === 7) {
+    } else if (mode === m.SAVE_SLOT) {
       out.family = "save_slot";
       // hasData is undefined until the slot's server fetch resolves; the handler refuses ACTION on such a slot.
       out.options = (h.sessionSlots || []).map((s: any, i: number) => opt(i, "Slot " + (i + 1), { hasData: s.hasData === true ? true : s.hasData === false ? false : null, wave: __try(() => s.saveData ? s.saveData.waveIndex : null), gameMode: __try(() => s.saveData ? s.saveData.gameMode : null) }));
       out.cursor = (h.cursor || 0) + (h.scrollCursor || 0);
       out.readable = out.options.length > 0;
-    } else if (mode === 8) {
+    } else if (mode === m.PARTY) {
       out.family = "party";
       out.extra.optionsScroll = h.optionsScroll === true;
       if (h.awaitingActionInput === true && h.onActionInput != null) {
@@ -139,7 +142,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         // ACTION/CANCEL until it is dismissed, so no option can be reached. Its text lives on h.message, not MESSAGE's.
         out.options = [];
         out.text = __try(() => __txt(h.message));
-        out.extra.messagePending = true;
+        out.messagePending = true;
         out.cursor = disc.optionsMode ? h.optionsCursor : h.cursor;
       } else if (disc.optionsMode) {
         // Sort by y ASCENDING: verb first, Cancel last (#6 corrected #4). Labels are BBCode.
@@ -156,8 +159,8 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
         if (__try(() => h.isItemManageMode()) === true) out.options.push(opt(7, __try(() => __texts(h.partyDiscardModeButton || h.partyTransferModeButton)[0]) || "Toggle", { synthetic: true }));
         out.cursor = h.cursor;
       }
-      out.readable = out.options.length > 0 || out.extra.messagePending === true;
-    } else if (mode === 10) {
+      out.readable = out.options.length > 0 || out.messagePending;
+    } else if (mode === m.STARTER_SELECT) {
       out.family = "starter_select";
       const gd = scene.gameData;
       const grid = h.filteredStarterContainers || [];
@@ -170,13 +173,13 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.extra.valueLimit = __try(() => h.getValueLimit());
       out.extra.partyValid = __try(() => h.isPartyValid());
       out.readable = out.options.length > 0;
-    } else if (mode === 0 || mode === 11 || mode === 12 || mode === 13 || mode === 35 || mode === 36 || mode === 47) {
+    } else if (mode === m.MESSAGE || mode === m.EVOLUTION_SCENE || mode === m.EGG_HATCH_SCENE || mode === m.EGG_HATCH_SUMMARY || mode === m.LOADING || mode === m.UNAVAILABLE || mode === m.ALERT_MODAL) {
       out.family = "acknowledge";
       out.options = [];
       out.extra.awaitingActionInput = h.awaitingActionInput === true && h.onActionInput != null;
-      if (mode === 47) out.text = __try(() => __txt(h.label)) || out.text;
+      if (mode === m.ALERT_MODAL) out.text = __try(() => __txt(h.label)) || out.text;
       out.readable = true;
-    } else if (mode === 9 && disc.summaryUiMode === 1) {
+    } else if (mode === m.SUMMARY && disc.summaryUiMode === sm.LEARN_MOVE) {
       // SUMMARY/LEARN_MOVE: rows 0..3 are the moveset, row 4 the new move (ACTION there declines, via CANCEL). The row
       // cursor is moveCursor; cursor is the page. Labels are read live from the moveset and newMove, never the text rows.
       out.family = "learn_move";
@@ -194,7 +197,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       // Off the move list (LEFT to another page) the rows take no cursor: nothing to select until RIGHT returns to it.
       if (h.moveSelect !== true) out.options = [];
       out.readable = true;
-    } else if (mode === 9 || mode === 26 || mode === 31 || mode === 41) {
+    } else if (mode === m.SUMMARY || mode === m.GAME_STATS || mode === m.POKEDEX_PAGE || mode === m.RUN_INFO) {
       out.family = "paged_viewer";
       out.cursor = h.cursor;
       out.extra.page = h.cursor;
@@ -206,12 +209,12 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.extra.formLabels = (h.formLabels || []).map(__txt);
       out.cursor = null;
       out.readable = out.options.length > 0;
-    } else if (mode === 16) {
+    } else if (mode === m.MENU) {
       out.family = "menu";
       out.options = (__txt(h.optionSelectText) || "").split("\n").map((t: string, i: number) => opt(i, t));
       out.cursor = h.cursor;
       out.readable = out.options.length > 0;
-    } else if (mode === 45) {
+    } else if (mode === m.MYSTERY_ENCOUNTER) {
       out.family = "mystery_encounter";
       out.options = __texts(h.optionsContainer).map((t, i) => opt(i, __strip(t)));
       out.cursor = h.cursor;

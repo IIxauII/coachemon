@@ -3,6 +3,7 @@
 // isolated-world caller (Orion's `do JavaScript`) can pick it up from the DOM.
 // hud-bundle.mjs replaces the MODE literal with "battle" or "starters", and bundles the HUD modules imported here.
 import { TYPES } from "./hud/01-core.js";
+import { learnState, rewardsScreen } from "./hud/02-screens.js";
 
 (() => {
   const MODE = "__MODE__";
@@ -63,41 +64,28 @@ import { TYPES } from "./hud/01-core.js";
       });
       const b = s.currentBattle;
       const party = s.getPlayerParty();
-      const h = s.ui.getHandler();
-      const uiModeId = s.ui.getMode();
-      const phase = s.phaseManager?.getCurrentPhase?.();
+      // Learn-move and rewards: the same detection the HUD's cards use (02-screens), so the two can't disagree.
+      // The extraction below is the probe's own: the raw move and item names the watcher reads without a HUD.
+      const st = learnState(s);
+      const learn = st ? { pokemon: st.pk.name, move: moveInfo(st.mv) } : null;
 
-      // Learn-move: the SUMMARY screen in LEARN_MOVE mode holds the new move; before it opens, the
-      // "forget a move?" prompt only has LearnMovePhase's moveId, so build the move from a PokemonMove.
-      let learn = null;
-      if (uiModeId === UiMode.SUMMARY && h?.summaryUiMode === SummaryUiMode.LEARN_MOVE && h.newMove) {
-        learn = { pokemon: h.pokemon.name, move: moveInfo(h.newMove) };
-      } else if (phase?.phaseName === "LearnMovePhase") {
-        const pk = party[phase.partyMemberIndex];
-        const pm = pk?.moveset.find(Boolean);
-        if (pk && pm) learn = { pokemon: pk.name, move: moveInfo(new pm.constructor(phase.moveId).getMove()) };
-      }
-
-      // Rewards: MODIFIER_SELECT. Free rewards in options, shop rows in shopOptionsRows.
+      const rh = rewardsScreen(s);
       let rewards = null;
-      if (uiModeId === UiMode.MODIFIER_SELECT && h?.options) {
+      if (rh) {
         const item = o => {
           const t = o.modifierTypeOption?.type;
           let desc = null;
           try { desc = t?.getDescription?.(); } catch {}
           return { name: t?.name, desc, cost: o.modifierTypeOption?.cost ?? 0 };
         };
-        rewards = { free: h.options.map(item), shop: (h.shopOptionsRows || []).flat().map(item), rerollCost: h.rerollCost ?? null };
+        rewards = { free: rh.options.map(item), shop: (rh.shopOptionsRows || []).flat().map(item), rerollCost: rh.rerollCost ?? null };
       }
 
-      // The HUD's own verdict on what it shows (easy / trainer / danger / catch / fight, the ⚔ line, the fight plan,
-      // learn and reward calls, the team audit), when it is running. `danger`: our mons likely KO'd this turn, before
-      // (`level` "ko") or after they act.
+      // The HUD's own summary of what it shows (its verdict, the ⚔ line, the fight plan, learn and reward calls, the
+      // team audit), when it is running. Passed through whole: the summary has one declared shape, checked by a
+      // contract test, so there is no key list to keep in step here.
       let hud = null;
-      try {
-        const x = window.__coachHud?.summary?.();
-        if (x) hud = { wave: x.wave, verdict: x.verdict, field: x.field, danger: x.danger, plan: x.plan ?? null, learn: x.learn, rewards: x.rewards, biome: x.biome ?? null, encounter: x.encounter ?? null, next: x.next ?? null, ahead: x.ahead ?? null, audit: x.audit ?? null };
-      } catch {}
+      try { hud = window.__coachHud?.summary?.() ?? null; } catch {}
 
       out = {
         wave: b?.waveIndex ?? null,

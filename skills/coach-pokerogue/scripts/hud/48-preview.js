@@ -309,3 +309,25 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
 
   return { previewFor, previewNext, previewCheck, previewStats };
 })();
+
+// ---- How the card and its one-line summary word a field, and how sure the replay is of it.
+// A field the preview can't pin is marked: `~` it holds only while the game draws what this replay draws, `?` it is
+// a guess, `!` it has already been wrong once this run.
+const PREVIEW_MARK = { exact: "", replay: "~", estimate: "?" };
+const previewMark = (m, field) => (m.missed?.includes(field) ? "!" : PREVIEW_MARK[m.confidence?.[field]] ?? "");
+const previewKind = m => (m.type === "me" ? "mystery" : m.fixed ? `★ ${m.type}` : m.type);
+// `Machop L9, Geodude L10`, or `2 mons L9–10` when there are too many to name.
+const previewFoes = (m, long) => {
+  if (!m.foes?.length) return m.me?.name ? m.me.name : "—";
+  if (long || m.foes.length <= 2) return m.foes.map(f => `${f.name} L${f.level}`).join(", ");
+  const lv = m.foes.map(f => f.level);
+  return `${m.foes.length} mons L${Math.min(...lv)}–${Math.max(...lv)}`;
+};
+
+// `W13 trainer Youngster Ben (double) — Machop L9, Geodude L10`, for the watcher and the battle read.
+const previewSummary = m => {
+  if (!m || m.unavailable) return null;
+  const who = m.trainer ? ` ${m.trainer.name}` : "";
+  const marks = [...new Set(["type", "trainer", "foes", "double"].map(f => previewMark(m, f)).filter(Boolean))].join("");
+  return `W${m.wave} ${previewKind(m)}${who}${m.double ? " (double)" : ""} — ${previewFoes(m, true)}${marks ? ` [${marks}]` : ""}`;
+};

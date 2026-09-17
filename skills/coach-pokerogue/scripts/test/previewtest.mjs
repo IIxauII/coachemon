@@ -199,7 +199,7 @@ const mount = opts => {
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   const { previewFor, previewNext, previewCheck, previewStats } = globalThis.__hud["48-preview"];
-  const { drawPreview, previewSummary } = globalThis.__hud["98-render-preview"];
+  const { drawPreview } = globalThis.__hud["95-render-preview"], { previewSummary } = globalThis.__hud["48-preview"];
   return { scene, offsets, pv: { previewFor, previewNext, previewCheck, previewStats, drawPreview, previewSummary } };
 };
 

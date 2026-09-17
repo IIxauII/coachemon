@@ -167,7 +167,12 @@ Call it only inside `sandbox`.
    `ignoreAbility` skips the defender's ability steps.
 3. **Fixed damage and OHKO.**
    - `FixedDamageAttr` (`:3604`) returns `{ EFFECTIVE, toDmgValue(fixed × Multi-Lens factor) }` (`:3605-3621`). This
-     happens **before** the Sturdy step below.
+     happens **before** the Sturdy step below, so at this pin a fixed-damage hit — Seismic Toss, Night Shade, Super
+     Fang, Dragon Rage, Final Gambit, and Psywave through `RandomLevelDamageAttr extends FixedDamageAttr`
+     (`src/data/moves/move.ts:2143`) — takes a full-HP Sturdy mon down. Upstream
+     [#7620](https://github.com/pagefaultgames/pokerogue/pull/7620) reorders this and is on the game's master,
+     unreleased: it is the live build's version that decides, which is why `hud/10-damage.js` keys the rule on a
+     version constant rather than picking a side.
    - `OneHitKOAttr.apply` (`:3626`; `src/data/moves/move.ts:3667-3676`) returns `{ ONE_HIT_KO, damage: this.hp }`.
      A boss is `isBossImmune`, so it falls through to the normal formula. The level check and Sturdy's block live in
      the attr's condition, not here.
@@ -249,7 +254,12 @@ Call it only inside `sandbox`.
    MOSTLY_INEFFECTIVE, ≤0.5 NOT_VERY_EFFECTIVE, anything else EFFECTIVE.
 
 **What `simulated: true` changes:**
-- The roll is fixed at 1, so the call returns the **max roll** (`:3683`).
+- The roll is fixed at 1, so the call returns the **max roll** (`:3683`) — and it is the *finished* max roll, with
+  step 7's multipliers and `ModifiedDamageAttr`'s cap already applied to it. A caller that wants the other 15 rolls
+  cannot take 85–100 % of that number and be right: the multipliers commute with the roll only to within a HP of
+  rounding, and a cap doesn't commute at all (False Swipe's `min(damage, hp − 1)` lands on every roll alike). The
+  roll can be re-asked of the game instead, by scaling `calculateStabMultiplier` (`:3492`, `:3686`): it is a factor
+  of the same product under the same `toDmgValue`, and reads nothing off the mon it is called on.
 - No strong-winds message.
 - Flash Fire's tag, Volt Absorb's heal and Sturdy's tag are skipped.
 - `FormBlockDamageAbAttr.apply` returns early (`src/data/abilities/ab-attrs.ts:5445-5448`), so simulated damage
@@ -790,6 +800,11 @@ Game calls are cited where they're named; unmarked names are HUD functions.
 - `heldItems(p)` → `Map<constructorName, {stack, list}>` via `Pokemon.getHeldItems()` (`src/field/pokemon.ts:1194`); `berries(p)` → `[{ type: m.berryType, stack }]` (`BerryModifier`, `src/modifier/modifier.ts:1795`).
 - `SKIP_RNG_MOVE = m => m.hasAttr("PresentPowerAttr") || m.hasAttr("RandomLevelDamageAttr")`: Present draws global RNG (§4), and Psywave draws battle RNG inside `getAttackDamage` (`src/data/moves/move.ts:2143-2150`). Use modelled values for both.
 
+### Move traits (07-move-traits.js)
+- `moveTraits(mv, user, { party, target })` → the move read once, by attribute: `charge` (`false`, or `{ skip, now(user) }` — the instant-charge condition as data and judged live), `semiCharge`, `recharge`, `interrupt`, `needsAttack` (Sucker Punch / Thunderclap), `once` (`FirstMoveCondition` across `conditions` / `conditionsSeq2` / `conditionsSeq3`), `lock` (`FrenzyAttr`), `noRepeat` (`consecutiveUseRestriction`'s exact `battle:moveDisabledConsecutive` key), `recoil` (`{ ratio, useHp, blocked }`, default ratio 0.25, blocked by Magic Guard / Rock Head *by ability attribute* unless `unblockable`), `halfSac`, `crash`, `selfKo` (`"always"` / `"onHit"`), `drops` (guaranteed self stat changes, signed), `removesType`, `guarded`, `hits` (`{ dist, mean, checkAll, grows }`, §2), `flinches`, `stages` / `inflicts` / `tags` (each with `self` / `side` / `ally` and the concrete `cls`), `heal` (`{ ratio, ratioIn(weather), self, cls }`), `hazard`, `protect`, `cutHp`, `drain`, `attrNames`. **No game calls and no battle state**, so the learn card uses it outside a battle. Attributes match through the prototype chain; `attrNames` holds concrete class names for callers whose tables are keyed that way.
+- `costNotes(traits, amounts)` → the wording for each cost, shared by the ⚔ line's `costs` and the learn card's drawbacks. `amounts` carries this matchup's numbers when the caller has them: `recoil` (share of max HP), `sun`, `type`.
+- What a trait is *worth* stays with the caller: 10-damage's `reliability`, the learn card's multipliers, the planner's benefit nudge.
+
 ### Damage (10-damage.js)
 - `moveInfo(s, atk, def, pm)` → `{ move, type: atk.getMoveType(move), category: atk.getMoveCategory(def, move), power: move.calculateBattlePower(atk, def, true), priority: move.getPriority(atk, true), spread: [2,4,6,8].includes(move.moveTarget), acc: hitChance(...), critChance }`. `getPriority` is at `move.ts:1191`. The spread targets 2/4/6/8 are ALL_OTHERS / ALL_NEAR_OTHERS / ALL_NEAR_ENEMIES / ALL_ENEMIES (`src/enums/move-target.ts`). Sandbox.
 - `hitChance(atk, def, move, hitIndex = 0)` → 0..1. Uses `move.calculateBattleAccuracy(atk, def, true)` (`move.ts:1051`, where `simulated` defaults to false), `atk.getAccuracyMultiplier(def, move)` (`pokemon.ts:3334`), and `hasAbilityWithAttr("AlwaysHitAbAttr")` on either side (`MoveEffectPhase.checkBypassAccAndInvuln`, `src/phases/move-effect-phase.ts:455-457`). Later hits are 1 unless `move.hasFlag(MoveFlags.CHECK_ALL_HITS)` and the user lacks Skill Link (§2). Sandbox.
@@ -801,7 +816,7 @@ Game calls are cited where they're named; unmarked names are HUD functions.
   - Boss clamp by `calculateBossSegmentDamage` (exported; §3) with `getMaxHp() / bossSegments`, `bossSegmentIndex`, the classic final-boss minimum index and its HP − 1 cap (`EnemyPokemon.damage`, `pokemon.ts:6918-6939`; the cap checks the bar index before the hit).
   - Sturdy at full HP → 1 HP, except against `FixedDamageAttr` moves (§3).
   - Focus Band 0.1·stack, and the enemy Endure token 0.02·stack, rolled when the hit would faint it.
-- `moveOutcome(s, atk, def, pm)` → `{ type, cat, e: result→multiplier, perHit: [{max,min}], dist: [{n,p}], acc, expected, uncapped, max, pKo, revive, use, targetHp, name, priority, spread }`. It combines the above; `targetHp` is the HP the odds were worked out for. It also sets `bypassProtect` from `move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user, target })` (`move.ts:893`; flag `1 << 1`, `src/enums/move-flags.ts:12`). A move cancelled by primordial weather or Psychic Terrain comes back as "no effect" (`stopped by weather` / `terrain`), from `arena.isMoveWeatherCancelled(user, move)` / `isMoveTerrainCancelled(user, targets, move)` (`src/field/arena.ts:323`, `:487`; §14).
+- `moveOutcome(s, atk, def, pm)` → `{ type, cat, e: result→multiplier, perHit: [{max,min}], dist: [{n,p}], acc, expected, uncapped, max, pKo, revive, use, targetHp, name, priority, spread, traits, costs, notes }`. `traits` is 07-move-traits' record with the charging turn judged against this moment; `costs` is `costNotes` with this matchup's amounts, plus the target's contact chip; `notes` keeps the rest (hit counts, boss bars, Sturdy, Focus Band, a crit, an estimate). It combines the above; `targetHp` is the HP the odds were worked out for. It also sets `bypassProtect` from `move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user, target })` (`move.ts:893`; flag `1 << 1`, `src/enums/move-flags.ts:12`). A move cancelled by primordial weather or Psychic Terrain comes back as "no effect" (`stopped by weather` / `terrain`), from `arena.isMoveWeatherCancelled(user, move)` / `isMoveTerrainCancelled(user, targets, move)` (`src/field/arena.ts:323`, `:487`; §14).
 - `endOfTurnHp(p, { s, hp, tookSuperEffective, dealt })` → the signed turn-end HP change, following the game's phase order (`src/phase-manager.ts:227-233`):
   1. weather chip and Dry Skin / Solar Power (`WeatherEffectPhase`);
   2. berries (`BerryPhase`, §3: Sitrus below a rounded 50 %, Enigma on a SE hit, Ripen, Unnerve);

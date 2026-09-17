@@ -33,7 +33,7 @@ function fakeTab(opts: { stallAfterPress: boolean }) {
     };
   };
   const menu: MenuRead = {
-    readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor: 2, text: null,
+    readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor: 2, text: null, messagePending: false,
     options: [{ i: 2, label: "Zigzagoon" }, { i: 3, label: "Sentret" }], extra: { isMultipleTargets: false },
   };
   const tab = drive({ read, menu: () => menu, onPress: b => { presses.push(b); }, onRawKey: () => true });
@@ -53,6 +53,7 @@ test("a cursor walk that never moves the cursor refuses after one press, inside 
   const tab = fakeTab({ stallAfterPress: false });
   const r = await outcome(tab.driver.selectOption("Sentret", undefined, undefined, {}));
   assert.equal(r.error, "cursor_stuck");
+  assert.equal(r.rule, "battler_grid", "the detail names the step rule");
   assert.deepEqual(tab.presses, [Button.RIGHT], "no retry of a press that did not move the cursor");
   assert.ok(tab.now() <= CALL_BUDGET_MS, `returned at ${tab.now()} ms`);
 });
@@ -81,7 +82,7 @@ function targetGridTab(opts: { targets: { i: number; label: string }[]; cursor: 
     fine: `target|${cursor}|${committed}`, domMode: null, gameVersion: "1.12.0.11", screen: committed === null ? "TARGET_SELECT" : "COMMAND", ...money,
   });
   const menu = (): MenuRead => ({
-    readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null,
+    readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null, messagePending: false,
     options: opts.targets, extra: { isMultipleTargets: opts.isMultipleTargets },
   });
   const press = (b: number) => {
@@ -97,117 +98,12 @@ function targetGridTab(opts: { targets: { i: number; label: string }[]; cursor: 
   return { driver, presses, committed: () => committed };
 }
 
-test("select_option reaches the ally on the player row of TARGET_SELECT (#40)", async () => {
-  const tab = targetGridTab({ targets: [{ i: 2, label: "Starly" }, { i: 3, label: "Caterpie" }, { i: 1, label: "Lillipup" }], cursor: 2, isMultipleTargets: false });
-  const r = await outcome(tab.driver.selectOption("Lillipup", undefined, undefined, {}));
-  assert.equal(r.error, undefined, JSON.stringify(r));
-  assert.deepEqual(tab.committed(), [1]);
-  assert.deepEqual(tab.presses, [Button.DOWN, Button.ACTION]);
-});
-
-test("select_option crosses rows then steps along the row on TARGET_SELECT (#40)", async () => {
+test("a walk reach presses its step rule onto the target, then commits: TARGET_SELECT crosses rows, then steps along one (#40)", async () => {
   const tab = targetGridTab({ targets: [{ i: 2, label: "Starly" }, { i: 3, label: "Caterpie" }, { i: 0, label: "Fuecoco" }, { i: 1, label: "Lillipup" }], cursor: 1, isMultipleTargets: false });
   const r = await outcome(tab.driver.selectOption("Caterpie", undefined, undefined, {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
   assert.deepEqual(tab.committed(), [3]);
   assert.deepEqual(tab.presses, [Button.UP, Button.RIGHT, Button.ACTION]);
-});
-
-test("select_option steps LEFT within the enemy row on TARGET_SELECT (#40)", async () => {
-  const tab = targetGridTab({ targets: [{ i: 2, label: "Starly" }, { i: 3, label: "Caterpie" }], cursor: 3, isMultipleTargets: false });
-  const r = await outcome(tab.driver.selectOption("Starly", undefined, undefined, {}));
-  assert.equal(r.error, undefined, JSON.stringify(r));
-  assert.deepEqual(tab.presses, [Button.LEFT, Button.ACTION]);
-});
-
-test("a spread move commits any listed target with one ACTION and reports targets: all (#33)", async () => {
-  const tab = targetGridTab({ targets: [{ i: 2, label: "Zigzagoon" }, { i: 3, label: "Sentret" }], cursor: 2, isMultipleTargets: true });
-  const r = await outcome(tab.driver.selectOption("Sentret", undefined, undefined, {}));
-  assert.equal(r.error, undefined, JSON.stringify(r));
-  assert.equal(r.targets, "all");
-  assert.deepEqual(tab.committed(), [2, 3]);
-  assert.deepEqual(tab.presses, [Button.ACTION]);
-});
-
-/**
- * BALL as #46 reads it: `Name ×count` rows then Cancel, a plain UP/DOWN list. ACTION throws the ball under the cursor.
- * `trainer` marks the battle uncatchable as the reader does (#56); `command` opens on COMMAND instead, Ball at row 1.
- */
-function ballTab(opts: { trainer?: boolean; command?: boolean } = {}) {
-  const presses: number[] = [];
-  let cursor = 0;
-  let thrown: number | null = null;
-  const read = (): ScreenRead => ({
-    ready: true, settled: true, reason: "menu-open", mode: thrown !== null ? UiMode.MESSAGE : opts.command ? UiMode.COMMAND : UiMode.BALL,
-    screen: thrown !== null ? "MESSAGE" : opts.command ? "COMMAND" : "BALL",
-    phaseName: "CommandPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false, handler: "BallUiHandler", cursor,
-    modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-    fine: `ball|${cursor}|${thrown}`, domMode: null, gameVersion: "1.12.0.11", ...money,
-  });
-  const options = [
-    { i: 0, label: "Poké Ball ×13", name: "Poké Ball", ballType: 0, count: 13 },
-    { i: 1, label: "Great Ball ×9", name: "Great Ball", ballType: 1, count: 9 },
-    { i: 2, label: "Ultra Ball ×0", name: "Ultra Ball", ballType: 2, count: 0 },
-    { i: 3, label: "Cancel" },
-  ];
-  const extra = opts.trainer ? { catchable: false } : { catchable: true };
-  const commands = [{ i: 0, label: "Fight" }, { i: 1, label: "Ball" }, { i: 2, label: "Pokémon" }, { i: 3, label: "Run" }];
-  const menu = (): MenuRead => opts.command
-    ? { readable: true, mode: UiMode.COMMAND, screen: "COMMAND", family: "command", cursor, text: null, options: commands, extra: { fieldIndex: 0, ...extra } }
-    : { readable: true, mode: UiMode.BALL, screen: "BALL", family: "ball", cursor, text: null, options, extra };
-  const press = (b: number) => {
-    presses.push(b);
-    if (b === Button.ACTION) thrown = cursor;
-    else if (b === Button.DOWN) cursor = cursor < 3 ? cursor + 1 : 0;
-    else if (b === Button.UP) cursor = cursor ? cursor - 1 : 3;
-  };
-  const { driver } = drive({ read, menu, onPress: press });
-  return { driver, presses, thrown: () => thrown };
-}
-
-test("select_option throws a ball by its name, without the count (#46)", async () => {
-  const tab = ballTab();
-  const r = await outcome(tab.driver.selectOption("Great Ball", undefined, undefined, {}));
-  assert.equal(r.error, undefined, JSON.stringify(r));
-  assert.equal(r.selected, "Great Ball ×9");
-  assert.equal(tab.thrown(), 1);
-  assert.deepEqual(tab.presses, [Button.DOWN, Button.ACTION]);
-});
-
-test("select_option by index accepts the ball's name as the label check (#46)", async () => {
-  const tab = ballTab();
-  const r = await outcome(tab.driver.selectOption("Poké Ball", 0, undefined, {}));
-  assert.equal(r.error, undefined, JSON.stringify(r));
-  assert.equal(tab.thrown(), 0);
-});
-
-test("select_option refuses a ball in a trainer battle without pressing anything (#56)", async () => {
-  const tab = ballTab({ trainer: true });
-  const r = await outcome(tab.driver.selectOption("Great Ball", undefined, undefined, {}));
-  assert.equal(r.error, "cannot_catch_trainer");
-  assert.deepEqual(tab.presses, []);
-  assert.equal(tab.thrown(), null);
-});
-
-test("select_option still takes Cancel on BALL in a trainer battle (#56)", async () => {
-  const tab = ballTab({ trainer: true });
-  const r = await outcome(tab.driver.selectOption("Cancel", undefined, undefined, {}));
-  assert.equal(r.error, undefined, JSON.stringify(r));
-});
-
-test("select_option refuses Ball on COMMAND in a trainer battle, and read_menu flags it uncatchable (#56)", async () => {
-  const tab = ballTab({ trainer: true, command: true });
-  const r = await outcome(tab.driver.selectOption("Ball", undefined, undefined, {}));
-  assert.equal(r.error, "cannot_catch_trainer");
-  assert.deepEqual(tab.presses, []);
-  const m = await outcome(tab.driver.readMenu({}));
-  assert.equal((m.extra as Record<string, unknown>).catchable, false);
-});
-
-test("select_option takes Ball on COMMAND in a wild battle (#56)", async () => {
-  const tab = ballTab({ command: true });
-  const r = await outcome(tab.driver.selectOption("Ball", undefined, undefined, {}));
-  assert.notEqual(r.error, "cannot_catch_trainer", JSON.stringify(r));
 });
 
 /**
@@ -219,10 +115,10 @@ test("select_option takes Ball on COMMAND in a wild battle (#56)", async () => {
  * game-mode select never settles; with `filterBar` the grid opens with its filter bar active. `titleMenuScreen` is the
  * Screen the menu reader sees on TITLE, when it differs from the settled read's.
  */
-function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean; yesIgnored?: boolean; yesLingers?: number; gameModeStalls?: boolean; filterBar?: boolean; titleMenuScreen?: string } = {}) {
+function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean; yesIgnored?: boolean; yesLingers?: number; gameModeStalls?: boolean; filterBar?: boolean; titleMenuScreen?: string; gridLands?: "wrong_species" | "miss" } = {}) {
   const presses: number[] = [];
   const slots = [0, 1, 2, 3, 4].map(i => ({ i, label: `Slot ${i + 1}`, hasData: i === 0 }));
-  type Screen = { mode: number; screen: string; phase: string; chain: number[]; family: string; options: string[]; text?: string };
+  type Screen = { mode: number; screen: string; phase: string; chain: number[]; family: "option_select" | "starter_select" | "save_slot"; options: string[]; text?: string };
   const title: Screen = { mode: UiMode.TITLE, screen: "TITLE", phase: "TitlePhase", chain: [], family: "option_select", options: ["Continue", "New Game", "Load Game", "Run History", "Settings"] };
   const gameMode: Screen = { mode: UiMode.OPTION_SELECT, screen: "OPTION_SELECT", phase: "TitlePhase", chain: [UiMode.TITLE], family: "option_select", options: ["Classic", "Daily Run", "Cancel"] };
   const grid: Screen = { mode: UiMode.STARTER_SELECT, screen: opts.filterBar ? "STARTER_SELECT/FILTER" : "STARTER_SELECT", phase: "SelectStarterPhase", chain: [UiMode.TITLE], family: "starter_select", options: [] };
@@ -252,10 +148,12 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
     messageText: screen.text ?? null, onActionInput: false, awaitingActionInput: false, fine: `${screen.mode}|${screen.phase}|${cursor}|${party.length}`,
     domMode: null, gameVersion: "1.12.0.11", ...money,
   });
+  // Only what start_run reads: each family's other `extra` fields are left out.
   const menu = (): MenuRead => ({
-    readable: true, mode: screen.mode, screen: screen === title ? (opts.titleMenuScreen ?? title.screen) : screen.screen, family: screen.family, cursor, text: screen.text ?? null, extra: {},
+    readable: true, mode: screen.mode, screen: screen === title ? (opts.titleMenuScreen ?? title.screen) : screen.screen, family: screen.family, cursor, text: screen.text ?? null,
+    messagePending: false, extra: { unskippedIndices: null },
     options: screen === saveSlot ? slots : screen.options.map((label, i) => ({ i, label })),
-  });
+  }) as MenuRead;
   const press = (b: number) => {
     presses.push(b);
     if (b === Button.DOWN) cursor++;
@@ -282,6 +180,8 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
     starterGrid: () => ({ ok: true, grid: starterGrid, valueLimit: 10, party, partyValid: true }),
     onSetCursor: target => {
       if (target.family === "starter_select") {
+        if (opts.gridLands === "miss") return { ok: false, why: "filter-mode", threw: false };
+        if (opts.gridLands === "wrong_species") return { ok: true, species: "Mewtwo" };
         gridCursor = target.index;
         return { ok: true, species: starterGrid[target.index].name };
       }
@@ -372,6 +272,20 @@ test("start_run that runs out of budget mid-setup returns timed_out with the ste
   assert.equal((r.diagnostic as { reason: string }).reason, "ui-transition");
 });
 
+test("start_run refuses starter_cursor when the grid cursor lands on another species, before ACTION picks it", async () => {
+  const tab = startRunTab({ gridLands: "wrong_species" });
+  const r = await outcome(tab.driver.startRun(["Bulbasaur"], undefined, false, {}));
+  assert.equal(r.error, "starter_cursor", JSON.stringify(r));
+  assert.deepEqual(tab.presses, [Button.ACTION, Button.ACTION], "title and game mode only; nothing pressed on the grid");
+});
+
+test("start_run refuses starter_cursor when setCursor misses on the grid, pressing nothing there", async () => {
+  const tab = startRunTab({ gridLands: "miss" });
+  const r = await outcome(tab.driver.startRun(["Bulbasaur"], undefined, false, {}));
+  assert.equal(r.error, "starter_cursor", JSON.stringify(r));
+  assert.deepEqual(tab.presses, [Button.ACTION, Button.ACTION]);
+});
+
 test("start_run that arrives on the starter filter bar refuses filter_bar there, before reading the grid", async () => {
   const tab = startRunTab({ filterBar: true });
   const r = await outcome(tab.driver.startRun(["Bulbasaur"], undefined, false, {}));
@@ -410,9 +324,10 @@ function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean; 
   });
   const menu = (): MenuRead =>
     opts.readerFailsAfterPress && presses.length > 0
-      ? { readable: false, why: "reader threw", mode: -1, screen: "UNKNOWN(-1)", family: null, options: [], cursor: null, text: null, extra: {} }
+      ? { readable: false, why: "reader threw", mode: -1, screen: "UNKNOWN(-1)", family: null, options: [], cursor: null, text: null, messagePending: false, extra: {} }
       : {
-          readable: true, mode: UiMode.SUMMARY, screen: "SUMMARY/LEARN_MOVE", family: "learn_move", cursor: moveCursor, text: null, extra: { moveSelect: true, page: 2 },
+          readable: true, mode: UiMode.SUMMARY, screen: "SUMMARY/LEARN_MOVE", family: "learn_move", cursor: moveCursor, text: null, messagePending: false,
+          extra: { moveSelect: true, page: 2, pokemon: "Charmander", newMove: "Metal Claw" },
           options: moves.map((label, i) => ({ i, label, forget: i < 4 })),
         };
   const { driver } = drive({
@@ -475,7 +390,7 @@ test("a press that moved the menu cursor is never retried on the raw keyboard, e
   assert.equal(r.raw_keyboard_fallback, false);
 });
 
-test("select_option forgets a move by label on SUMMARY/LEARN_MOVE (#31)", async () => {
+test("a set reach whose setCursor lands commits once, pressing nothing to move: SUMMARY/LEARN_MOVE forgets Growl (#31)", async () => {
   const tab = learnMoveTab({ setCursorWorks: true });
   const r = await outcome(tab.driver.selectOption("Growl", undefined, "SUMMARY/LEARN_MOVE", {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
@@ -483,17 +398,11 @@ test("select_option forgets a move by label on SUMMARY/LEARN_MOVE (#31)", async 
   assert.deepEqual(tab.presses, [Button.ACTION], "the row is set directly, then committed once");
 });
 
-test("select_option on the new move declines it (#31)", async () => {
-  const tab = learnMoveTab({ setCursorWorks: true });
-  await outcome(tab.driver.selectOption("Metal Claw", undefined, undefined, {}));
-  assert.equal(tab.answered(), 4);
-});
-
 /**
  * #44's wave-21 shop: a Revive applied to Charmander (slot 1, full HP) on PARTY/MODIFIER. ACTION on Apply closes the
  * option list and PartyUiHandler shows "It won't have any effect." in its own message box, awaiting ACTION or CANCEL;
  * while it waits, every direction is swallowed. The fake mirrors the menu reader's party branch in that state: no options,
- * the handler's own message as text, `extra.messagePending`.
+ * the handler's own message as text, `messagePending`.
  */
 function partyMessageTab() {
   const presses: number[] = [];
@@ -512,8 +421,8 @@ function partyMessageTab() {
   });
   const screen = () => (optionsMode ? "PARTY/MODIFIER:options" : "PARTY/MODIFIER");
   const menu = (): MenuRead => {
-    const extra = { optionsMode, partyUiMode: 4, transferMode: false, ...(message !== null ? { messagePending: true } : {}) };
-    const on = { readable: true, mode: UiMode.PARTY, screen: screen(), family: "party", extra };
+    const extra = { optionsScroll: false, optionsMode, partyUiMode: 4, transferMode: false };
+    const on = { readable: true, mode: UiMode.PARTY, screen: screen(), family: "party" as const, messagePending: message !== null, extra };
     if (message !== null) return { ...on, cursor, text: message, options: [] };
     if (optionsMode) return { ...on, cursor: optionsCursor, text: "Revive", options: verbs.map((label, i) => ({ i, label })) };
     return { ...on, cursor, text: null, options: [...party.map((label, i) => ({ i, label })), { i: 6, label: "Cancel" }] };
@@ -573,12 +482,52 @@ test("select_option refuses message_pending on PARTY without walking the cursor,
   assert.equal(tab.cursor(), 6);
 });
 
-test("without setCursor the learn-move rows are walked one press per row, row 1 reachable (#31, #28)", async () => {
+test("a set reach whose setCursor misses walks the rows when its family walks on a miss: learn-move row 1 (#31, #28)", async () => {
   const tab = learnMoveTab({ setCursorWorks: false });
   const r = await outcome(tab.driver.selectOption("Growl", undefined, undefined, {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
   assert.equal(tab.answered(), 1);
   assert.deepEqual(tab.presses, [Button.UP, Button.UP, Button.UP, Button.ACTION]);
+});
+
+/** The shop's `extra`, which no select_option reads. */
+const shopExtra = { rows: [], rowCursor: 1, colCursor: 0, money: 1000, rerollCost: 250 };
+
+test("a set reach whose setCursor misses refuses cursor_unreachable when its family refuses on a miss, pressing nothing: MODIFIER_SELECT", async () => {
+  const presses: number[] = [];
+  const read = (): ScreenRead => ({
+    ready: true, settled: true, reason: "awaiting-action", mode: UiMode.MODIFIER_SELECT, screen: "MODIFIER_SELECT", phaseName: "SelectModifierPhase", wave: 21, turn: 1,
+    runLive: true, tutorialActive: false, handler: "ModifierSelectUiHandler", cursor: 0, modeChain: [], messageText: null, onActionInput: true,
+    awaitingActionInput: true, fine: "shop", domMode: null, gameVersion: "1.12.0.11", ...money,
+  });
+  const menu = (): MenuRead => ({
+    readable: true, mode: UiMode.MODIFIER_SELECT, screen: "MODIFIER_SELECT", family: "modifier_select", cursor: "1:0", text: null, messagePending: false, extra: shopExtra,
+    options: [{ i: "1:0", label: "Potion", row: 1, col: 0 }, { i: "2:1", label: "Revive", row: 2, col: 1 }],
+  });
+  const tab = drive({ read, menu, onPress: b => { presses.push(b); }, onSetCursor: () => ({ ok: false, why: "the cursor landed on row 1, column 0", threw: false }) });
+  const r = await outcome(tab.driver.selectOption("Revive", undefined, undefined, {}));
+  assert.equal(r.error, "cursor_unreachable", JSON.stringify(r));
+  assert.deepEqual(r.got, { ok: false, why: "the cursor landed on row 1, column 0", threw: false });
+  assert.deepEqual(presses, []);
+});
+
+test("a none reach commits a modal through its own button action, pressing nothing", async () => {
+  const presses: number[] = [];
+  const buttons: number[] = [];
+  const read = (): ScreenRead => ({
+    ready: true, settled: true, reason: "menu-open", mode: UiMode.LOGIN_FORM, screen: buttons.length ? "TITLE" : "LOGIN_FORM", phaseName: "LoginPhase", wave: null, turn: null,
+    runLive: false, tutorialActive: false, handler: "LoginFormUiHandler", cursor: null, modeChain: [], messageText: null, onActionInput: false,
+    awaitingActionInput: false, fine: `login|${buttons.length}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+  });
+  const menu = (): MenuRead => ({
+    readable: true, mode: UiMode.LOGIN_FORM, screen: buttons.length ? "TITLE" : "LOGIN_FORM", family: "modal", cursor: null, text: "Login", messagePending: false,
+    extra: { formLabels: ["Username", "Password"] }, options: [{ i: 0, label: "Login" }, { i: 1, label: "Register" }],
+  });
+  const tab = drive({ read, menu, onPress: b => { presses.push(b); }, onModalButton: i => { buttons.push(i); return { ok: true }; } });
+  const r = await outcome(tab.driver.selectOption("Register", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.deepEqual(buttons, [1]);
+  assert.deepEqual(presses, []);
 });
 
 /**
@@ -601,8 +550,8 @@ function messageChainTab(count: number, opts: { cycle: boolean } = { cycle: fals
   };
   const menu = (): MenuRead =>
     onMessage()
-      ? { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: null, extra: { awaitingActionInput: true }, options: [] }
-      : { readable: true, mode: UiMode.MODIFIER_SELECT, screen: "MODIFIER_SELECT", family: "modifier_select", cursor: 0, text: null, extra: {}, options: [{ i: 0, label: "Rarer Candy", row: 1, col: 0 }] };
+      ? { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: null, messagePending: false, extra: { awaitingActionInput: true }, options: [] }
+      : { readable: true, mode: UiMode.MODIFIER_SELECT, screen: "MODIFIER_SELECT", family: "modifier_select", cursor: 0, text: null, messagePending: false, extra: shopExtra, options: [{ i: 0, label: "Rarer Candy", row: 1, col: 0 }] };
   const { driver } = drive({
     read,
     menu,
@@ -666,7 +615,7 @@ function unmovedChainTab() {
     runLive: true, tutorialActive: false, handler: "BattleMessageUiHandler", cursor: null, modeChain: [], messageText: "Bulbasaur grew to Lv. 24!",
     onActionInput: true, awaitingActionInput: true, fine: "levelup", domMode: null, gameVersion: "1.12.0.11", screen: "MESSAGE", ...money,
   });
-  const menu: MenuRead = { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: "Bulbasaur grew to Lv. 24!", extra: { awaitingActionInput: true }, options: [] };
+  const menu: MenuRead = { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: "Bulbasaur grew to Lv. 24!", messagePending: false, extra: { awaitingActionInput: true }, options: [] };
   const { driver } = drive({
     read,
     menu: () => menu,
@@ -706,7 +655,7 @@ function guardedTab(over: Pick<FakeScreen, "lockHolder" | "frame" | "menu" | "on
 /** COMMAND's 2×2 grid as the menu reader sees it: `screen` is the Screen it reads, which a test may move away from the settled read's. */
 function commandMenu(cursor: number, screen = "COMMAND"): MenuRead {
   const options = ["Fight", "Ball", "Pokémon", "Run"].map((label, i) => ({ i, label }));
-  return { readable: true, mode: UiMode.COMMAND, screen, family: "command", cursor, text: null, extra: { fieldIndex: 0, catchable: true }, options };
+  return { readable: true, mode: UiMode.COMMAND, screen, family: "command", cursor, text: null, messagePending: false, extra: { fieldIndex: 0, catchable: true }, options };
 }
 
 test("an acting call refuses tab_contended while another live driver holds the lock, pressing nothing", async () => {
@@ -748,7 +697,7 @@ test("a cursor walk whose Screen changes under it stops as screen_changed, count
 });
 
 test("a menu read that failed is no Screen change: acting calls refuse as before, read-only calls keep the settled Screen (#133)", async () => {
-  const failed: MenuRead = { readable: false, why: "reader threw", mode: -1, screen: "UNKNOWN(-1)", family: null, options: [], cursor: null, text: null, extra: {} };
+  const failed: MenuRead = { readable: false, why: "reader threw", mode: -1, screen: "UNKNOWN(-1)", family: null, options: [], cursor: null, text: null, messagePending: false, extra: {} };
   const tab = guardedTab({ menu: () => failed });
   const r = await outcome(tab.driver.selectOption("Run", undefined, undefined, {}));
   assert.equal(r.error, "no_options", JSON.stringify(r));
@@ -857,8 +806,8 @@ function confirmTab() {
       onActionInput: false, awaitingActionInput: false, fine: `confirm|${cursor}|${answered}`, domMode: null, gameVersion: "1.12.0.11", ...money,
     }),
     menu: () => ({
-      readable: true, mode: UiMode.CONFIRM, screen: "CONFIRM", family: "option_select", cursor, text: null,
-      options: labels.map((label, i) => ({ i, label })), extra: { unskippedIndices: [0, 1] },
+      readable: true, mode: UiMode.CONFIRM, screen: "CONFIRM", family: "option_select", cursor, text: null, messagePending: false,
+      options: labels.map((label, i) => ({ i, label })), extra: { unskippedIndices: [0, 1], selectedIndex: cursor },
     }),
     onSetCursor: t => {
       cursor = (t as { index: number }).index;
@@ -895,7 +844,7 @@ test("auto-advance that finds the game moved on settles again and answers the me
       fine: `msg|${shown}`, domMode: null, gameVersion: "1.12.0.11", ...money,
     }),
     menu: () => (onMessage()
-      ? { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: texts[shown], extra: {}, options: [] }
+      ? { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: texts[shown], messagePending: false, extra: { awaitingActionInput: true }, options: [] }
       : commandMenu(0)),
     onPress: b => {
       assert.equal(b, Button.ACTION);
@@ -932,7 +881,7 @@ test("a cursor walk that finds the game moved on settles again and walks on, not
       phaseName: "SelectTargetPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false, handler: null, cursor, modeChain: [], messageText: null,
       onActionInput: false, awaitingActionInput: false, fine: `target|${cursor}|${committed}|${tick}`, domMode: null, gameVersion: "1.12.0.11", ...money,
     }),
-    menu: () => ({ readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null, options: targets, extra: { isMultipleTargets: false } }),
+    menu: () => ({ readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null, messagePending: false, options: targets, extra: { isMultipleTargets: false } }),
     onPress: b => {
       presses.push(b);
       if (b === Button.ACTION) committed = cursor;

@@ -557,6 +557,7 @@ Dispatches an untrusted `keydown` then `keyup` on `window`, with `keyCode` set i
 - `extension/entrypoints/page.ts` imports them, registers them in the dispatch table, and handles the relay protocol.
 - **During the opt-in period** the CDP transport evaluates the same functions: `((locate, handler, args) => { const L = locate(); return L.ready ? handler(L, args) : …; })(${locate}, ${handler}, ${JSON.stringify(args)})`. One source serves both transports until CDP is deleted.
 - `src/game/js.test.ts` moves to `src/page/*.test.ts`. The scene locator stays duplicated between `src/page/` and the HUD, as today.
+- **Generated enums travel as an argument.** A self-contained handler cannot import `UiMode`, so `src/page/modes.ts` exports `PAGE_MODES` (`{ m: UiMode, sm: SummaryUiMode }`) and each transport hands it to `dispatch`: the CDP link serializes it into the expression, the extension imports it. `dispatch` puts it on `L` as `L.m`/`L.sm`, so a pin bump that renumbers a mode moves every page comparison with it (#164). `src/page/modes.test.ts` scans the stringified handlers and fails on a bare numeric mode or handler index.
 
 ### 10.6 Dev-only table
 
@@ -574,12 +575,12 @@ Bump when removing a command, renaming one, or changing what an existing argumen
 
 ### 11.1 The `card` event
 
-- **The HUD pushes a `card` event whenever the card it shows changes**: a new decision, or a changed verdict. It dispatches `coachemon:card` from `hud/99-start.js`'s tick, deduplicated on `key` + `verdict`.
+- **The HUD pushes a `card` event whenever the card it shows changes**: a new decision, or a changed verdict. It dispatches `coachemon:card` from `hud/98-tick.js`'s tick, deduplicated on `key` + `verdict`.
 - Fields:
-  - `kind`: `battle`, `learn`, `reward`, `biome` or `encounter` (the HUD model's `shop` is sent as `reward`).
+  - `kind`: `battle`, `learn`, `reward`, `biome` or `encounter` (the HUD's `rewards` card is sent as `reward`).
   - `key`: the dedupe key the HUD already derives per kind (wave for a battle; wave + pokémon + move for learn; wave + free reward names for rewards; wave for a biome choice; wave + encounter for an encounter).
   - `wave`.
-  - `verdict`: for a battle, the glossary's **verdict** (`easy`, `trainer`, `danger`, `catch`, `fight`); for other kinds, the leading call of the matching field of `hudSummary()` as the HUD already writes it (the learn call, the rewards line's first clause, the biome pick, the encounter's `take …`, `your call` or `not judged`).
+  - `verdict`: for a battle, the glossary's **verdict** (`easy`, `trainer`, `danger`, `catch`, `fight`); for other kinds, the leading call of the matching field of `cardSummary()` as the HUD already writes it (the learn call, the rewards line's first clause, the biome pick, the encounter's `take …`, `your call` or `not judged`).
   - `text`: **the card's own plain-text rendering**, produced by a new `cardText(model)` in the HUD's render layer from the same model the panel draws, so the stream and the drawn card share one source.
 - A HUD failure dispatches `coachemon:coach-error` once per distinct message.
 - **Late join:** a subscriber issues a `card` read right after subscribing.

@@ -1,18 +1,5 @@
-// Learn-move card model.
-// Learn-move: the SUMMARY screen (summaryUiMode LEARN_MOVE) holds the new move; before it opens, the
-// "forget a move?" prompt only has LearnMovePhase's moveId, so the move is built from a PokemonMove.
+// Learn-move card model. The screen itself is detected in 02-screens (`learnState`), which the probe shares.
 // No game functions run here (the game isn't waiting on a battle command): only move/attr fields are read.
-const learnState = s => {
-  const h = s.ui.getHandler();
-  const double = !!s.currentBattle?.double;
-  const party = s.getPlayerParty?.() ?? [];
-  if (s.ui.getMode() === UiMode.SUMMARY && h?.summaryUiMode === SummaryUiMode.LEARN_MOVE && h.newMove) return { pk: h.pokemon, mv: h.newMove, double, party };
-  const phase = s.phaseManager?.getCurrentPhase?.();
-  if (phase?.phaseName !== "LearnMovePhase") return null;
-  const pk = party[phase.partyMemberIndex];
-  const pm = pk?.moveset.find(Boolean);
-  return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double, party } : null;
-};
 
 // A Move object for a move id, built the way LearnMovePhase's prompt is: from any PokemonMove's constructor.
 const learnMoveById = (party, id) => {
@@ -62,23 +49,18 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     return { power: 60, note: "variable power", fixed: false };
   };
 
-  // Expected hits and the per-hit power multiple they add up to. TWO_TO_FIVE averages 3.1 (Skill Link 5), BEAT_UP
-  // hits once per healthy party member. Triple Axel/Kick grow by the base power each hit and check accuracy per hit
-  // (CHECK_ALL_HITS): Σ a^(k+1)·(k+1). Otherwise only the first hit can miss.
-  const multiHit = (pk, mv, acc, party) => {
-    const mh = attrsOf(mv, "MultiHitAttr")[0];
-    if (!mh) return { hits: 1, factor: acc };
-    const skillLink = abilitiesOf(pk).includes("Skill Link");
-    const type = mh.intrinsicMultiHitType ?? mh.multiHitType ?? MultiHitType.TWO_TO_FIVE;
-    const n = type === MultiHitType.TWO_TO_FIVE ? (skillLink ? 5 : 3.1) : type === MultiHitType.TWO ? 2 : type === MultiHitType.THREE ? 3 : type === MultiHitType.TEN ? 10
-      : Math.max(1, party.filter(p => p?.hp > 0 && !(p.status?.effect > StatusEffect.NONE)).length);
-    const grows = attrsOf(mv, "MultiHitPowerIncrementAttr").length > 0;
-    const checkAll = (mv.hasFlag ? mv.hasFlag(MoveFlags.CHECK_ALL_HITS) : grows) && !skillLink;
-    if (!checkAll && !grows) return { hits: n, factor: acc * n };
+  // Expected hits and the per-hit power multiple they add up to, from the traits' one hit model (07-move-traits):
+  // TWO_TO_FIVE's 2–5 distribution averages 3.1 (Skill Link 5), BEAT_UP counts the party the way the game does,
+  // Parental Bond and Multi-Lens add their strikes. Triple Axel/Kick grow by the base power each hit and check
+  // accuracy per hit (CHECK_ALL_HITS): Σ a^(k+1)·(k+1). Otherwise only the first hit can miss.
+  const multiHit = (t, acc) => {
+    const n = t.hits.mean;
+    if (n <= 1) return { hits: 1, factor: acc };
+    if (!t.hits.checkAll && !t.hits.grows) return { hits: n, factor: acc * n };
     let factor = 0, reach = 1, hits = 0;
     for (let k = 0; k < Math.round(n); k++) {
-      reach *= checkAll || k === 0 ? acc : 1;
-      factor += reach * (grows ? k + 1 : 1);
+      reach *= t.hits.checkAll || k === 0 ? acc : 1;
+      factor += reach * (t.hits.grows ? k + 1 : 1);
       hits += reach;
     }
     return { hits: Math.round(hits * 10) / 10, factor };
@@ -105,26 +87,26 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
   // stat change here is a buff, not a drop — Howl's attr carries no `selfTarget`, only this target.
   const SELF_TARGETS = new Set([MoveTarget.USER, MoveTarget.NEAR_ALLY, MoveTarget.ALLY, MoveTarget.USER_OR_NEAR_ALLY, MoveTarget.USER_AND_ALLIES, MoveTarget.USER_SIDE, MoveTarget.PARTY]);
   const ALLY_TARGETS = new Set([MoveTarget.NEAR_ALLY, MoveTarget.ALLY]); // there is nobody to aim at in a single battle
-  const selfSide = (mv, a) => !!a?.selfTarget || SELF_TARGETS.has(mv.moveTarget);
 
   // A status move that raises the user's own stats (Calm Mind, Swords Dance, Dragon Dance): worth something when it
   // boosts the stat this mon attacks with and it has no such setup move yet. `value` is in the same rough units as
   // effective power; null when the move isn't setup.
   const setupOf = (pk, mv, current) => {
     if (mv.category !== MoveCategory.STATUS) return null;
-    const boosts = attrsOf(mv, "StatStageChangeAttr").filter(a => selfSide(mv, a) && (a.stages ?? 0) > 0);
+    const ownBoosts = m => moveTraits(m, pk).stages.filter(x => (x.self || x.side) && x.stages > 0);
+    const boosts = ownBoosts(mv);
     if (!boosts.length) return null;
     const main = mainStats(pk);
     const weight = i => (main.has(i) ? 30 : i === Stat.SPD ? 20 : i === Stat.DEF || i === Stat.SPDEF ? 10 : i === Stat.ATK || i === Stat.SPATK ? 5 : 3);
     let value = 0;
     const parts = [];
     for (const a of boosts) {
-      for (const i of a.stats ?? []) value += weight(i) * a.stages;
-      parts.push(`+${a.stages} ${(a.stats ?? []).map(i => STAT_NAMES[i]).join("/")}`);
+      for (const i of a.stats) value += weight(i) * a.stages;
+      parts.push(`+${a.stages} ${a.stats.map(i => STAT_NAMES[i]).join("/")}`);
     }
-    const boostsMain = boosts.some(a => (a.stats ?? []).some(i => main.has(i)));
-    const hasSetup = current.some(o => o !== mv && o.category === MoveCategory.STATUS && attrsOf(o, "StatStageChangeAttr")
-      .some(a => selfSide(o, a) && (a.stages ?? 0) > 0 && (a.stats ?? []).some(i => main.has(i))));
+    const boostsMain = boosts.some(a => a.stats.some(i => main.has(i)));
+    const hasSetup = current.some(o => o !== mv && o.category === MoveCategory.STATUS
+      && ownBoosts(o).some(a => a.stats.some(i => main.has(i))));
     if (!boostsMain) value *= 0.5;
     if (hasSetup) value *= 0.3;
     return { value: Math.round(value), text: parts.join(" "), fits: boostsMain && !hasSetup };
@@ -204,9 +186,8 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
   // Recovery. HealAttr carries its own ratio; the weather-gated ones (Synthesis, Moonlight) heal half that in the
   // wrong weather, so they take a flat, discounted value instead.
   const HEAL_FLAT = { WeatherHealAttr: 45, PlantHealAttr: 45, SandHealAttr: 45 };
-  const isRecovery = mv => attrsOf(mv, "HealAttr").length > 0 || attrsOf(mv, "BoostHealAttr").length > 0
-    || Object.keys(HEAL_FLAT).some(n => attrsOf(mv, n).length > 0);
-  const inflictsStatus = mv => (mv.attrs || []).some(a => a.constructor?.name === "StatusEffectAttr" && !selfSide(mv, a));
+  const isRecovery = mv => ["HealAttr", "BoostHealAttr", ...Object.keys(HEAL_FLAT)].some(n => moveTraits(mv).attrNames.has(n));
+  const inflictsStatus = mv => moveTraits(mv).inflicts.some(x => x.cls === "StatusEffectAttr" && !(x.self || x.side));
 
   const doublesNote = share => `${Math.round(share * 100)}% doubles ahead`;
 
@@ -247,7 +228,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
   // Moves Heal Block stops, by attr: recovery (HealAttr and its kin, Rest, Wish, Swallow) and drain (HitHealAttr).
   const HEAL_BLOCKED = ["HealAttr", "RestAttr", "WeatherHealAttr", "PlantHealAttr", "SandHealAttr", "BoostHealAttr",
     "HealOnAllyAttr", "SwallowHealAttr", "WishAttr", "HitHealAttr"];
-  const blockedByHealBlock = mv => HEAL_BLOCKED.some(n => attrsOf(mv, n).length > 0);
+  const blockedByHealBlock = mv => HEAL_BLOCKED.some(n => moveTraits(mv).attrNames.has(n));
 
   // The foe's abilities that still apply: Mold Breaker and its kin ignore every one but the unsuppressable.
   const foeAbilities = (pk, foe) => {
@@ -266,7 +247,7 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     if (ab.some(a => a !== "Levitate" && ABILITY_IMMUNE[a] === type)) return true;
     if (moveHasFlag(mv, MoveFlags.POWDER_MOVE) && (types.includes("Grass") || ab.includes("Overcoat"))) return true;
     // Thunder Wave alone carries RespectAttackTypeImmunityAttr: Ground takes nothing from it.
-    if (attrsOf(mv, "RespectAttackTypeImmunityAttr").length && types.some(d => vs(type, d) === 0)) return true;
+    if (moveTraits(mv).attrNames.has("RespectAttackTypeImmunityAttr") && types.some(d => vs(type, d) === 0)) return true;
     return false;
   };
   const statusLands = (pk, mv, effect, foe) => {
@@ -316,36 +297,39 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     if (ALLY_TARGETS.has(mv.moveTarget) && !double) {
       return { value: 0, notes: ["ally only"], status: true, why: "nothing to target in a single battle", se: [], neutral: [], teamSe: [], drawbacks: [] };
     }
-    for (const [name, [n, text]] of Object.entries(STATUS_ATTR)) if (attrsOf(mv, name).length) add(n, text);
-    for (const [name, n] of Object.entries(HEAL_FLAT)) if (attrsOf(mv, name).length) add(n, "heal (weather)");
-    for (const a of [...attrsOf(mv, "HealAttr"), ...attrsOf(mv, "BoostHealAttr")]) {
-      const ratio = a.healRatio ?? 0.5;
-      add(Math.round(120 * ratio), `heal ${Math.round(ratio * 100)}%`);
+    // What the move does comes from its traits (07-move-traits); the values below are this card's. The flat table is
+    // keyed by the *concrete* attribute class, so a LeechSeedAttr is valued there rather than as a bare battler tag.
+    const tr = moveTraits(mv, pk, { party: ctx.party ?? [pk] });
+    const aimedAtFoe = x => !(x.self || x.side);
+    for (const [name, [n, text]] of Object.entries(STATUS_ATTR)) if (tr.attrNames.has(name)) add(n, text);
+    for (const [name, n] of Object.entries(HEAL_FLAT)) if (tr.attrNames.has(name)) add(n, "heal (weather)");
+    if (tr.heal && (tr.heal.cls === "HealAttr" || tr.heal.cls === "BoostHealAttr")) {
+      add(Math.round(120 * tr.heal.ratio), `heal ${Math.round(tr.heal.ratio * 100)}%`);
     }
     // What the roster says about each part, applied once the value is known to be scorable.
     const roster = ctx.roster?.foes?.length ? ctx.roster : null;
     const fits = [];
-    for (const a of attrsOf(mv, "StatusEffectAttr")) {
-      if (selfSide(mv, a)) continue;
-      const n = STATUS_VALUE[a.effect] ?? 20;
-      add(n, STATUS_FRAMES[a.effect] ?? "status");
-      if (roster) fits.push([n, statusFit(pk, mv, a.effect, roster)]);
+    for (const x of tr.inflicts) {
+      if (!aimedAtFoe(x)) continue;
+      const n = STATUS_VALUE[x.effect] ?? 20;
+      add(n, STATUS_FRAMES[x.effect] ?? "status");
+      if (roster) fits.push([n, statusFit(pk, mv, x.effect, roster)]);
     }
-    for (const a of attrsOf(mv, "AddBattlerTagAttr")) {
-      const n = TAG_VALUE[a.tagType];
+    for (const x of tr.tags) {
+      if (x.cls !== "AddBattlerTagAttr") continue; // a subclass is valued by STATUS_ATTR above
+      const n = TAG_VALUE[x.tag];
       if (n == null) continue;
-      add(n, String(a.tagType).toLowerCase().replace(/_/g, " "));
-      if (roster && DISRUPT_TAGS.has(a.tagType) && !selfSide(mv, a)) fits.push([n, disruptFit(pk, mv, a.tagType, roster)]);
+      add(n, String(x.tag).toLowerCase().replace(/_/g, " "));
+      if (roster && DISRUPT_TAGS.has(x.tag) && aimedAtFoe(x)) fits.push([n, disruptFit(pk, mv, x.tag, roster)]);
     }
     const setup = setupOf(pk, mv, others);
     if (setup) add(setup.value, setup.text);
     // A foe's stat drop is worth a fraction of the same boost on us: it lasts only while that foe is out, and the
     // wave replaces it. This is what makes Growl and Leer the slot to forget rather than an attacking move.
-    for (const a of attrsOf(mv, "StatStageChangeAttr")) {
-      if (selfSide(mv, a) || (a.stages ?? 0) >= 0) continue;
+    for (const x of tr.stages) {
+      if (!aimedAtFoe(x) || x.stages >= 0) continue;
       const drop = i => (i === Stat.ATK || i === Stat.SPATK || i === Stat.SPD ? 8 : i === Stat.ACC ? 6 : 4);
-      const n = (a.stats ?? []).reduce((t, i) => t + drop(i) * -(a.stages ?? 0), 0);
-      add(n, `foe ${(a.stats ?? []).map(i => STAT_NAMES[i]).join("/")} −${-(a.stages ?? 0)}`);
+      add(x.stats.reduce((t, i) => t + drop(i) * -x.stages, 0), `foe ${x.stats.map(i => STAT_NAMES[i]).join("/")} −${-x.stages}`);
     }
     if (!known) return { value: null, notes: [], status: true, se: [], neutral: [], teamSe: [], drawbacks: [] };
     for (const [n, fit] of fits) {
@@ -403,6 +387,9 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     const type = et.type;
     if (unimplemented(mv)) return { value: 0, notes: ["not implemented"], power: 0 };
     const ability = abilitiesOf(pk);
+    const tr = moveTraits(mv, pk, { party });
+    // A party that brings its own sun keeps Solar Beam's charge turn off the board most waves.
+    const sun = party.some(p => { try { return p && abilitiesOf(p).some(a => SUN_ABILITIES.has(a)); } catch { return false; } });
     const atk = atkOf(pk), spa = spaOf(pk);
     // Hustle buys its 50% Atk with 20% accuracy on physical moves; the Atk is already in `atk`.
     let acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
@@ -417,9 +404,8 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     if (et.note) notes.push(et.note);
     if (et.boost && !fixed) power *= et.boost;
     // Technician: ×1.5 on hits of base power ≤ 60 (after variable power).
-    const grows = attrsOf(mv, "MultiHitPowerIncrementAttr").length > 0;
-    if (!fixed && ability.includes("Technician") && power * (grows ? 3 : 1) <= 60) { power *= 1.5; notes.push("Technician"); }
-    const mh = multiHit(pk, mv, acc, party);
+    if (!fixed && ability.includes("Technician") && power * (tr.hits.grows ? 3 : 1) <= 60) { power *= 1.5; notes.push("Technician"); }
+    const mh = multiHit(tr, acc);
     if (mh.hits > 1) notes.push(`${mh.hits} hits`);
     const fit = fixed ? 1 : (mv.category === MoveCategory.PHYSICAL ? atk : spa) / Math.max(atk, spa);
     // A type the card can't pin down claims no STAB and no coverage: a wrong claim reads worse than a missing one.
@@ -446,40 +432,33 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
     const sameType = et.variable ? 0 : others.filter(o => isDamaging(o) && TYPES[o.type] === type).length;
     if (sameType >= 1) { value *= sameType >= 2 ? 0.6 : 0.75; notes.push(`${sameType + 1}× ${type}`); }
 
-    // The move's own drawbacks, from its attrs: each one discounts the value and is named in `drawbacks` (and notes).
-    const drawbacks = [];
-    const cost = (mult, text) => { value *= mult; drawbacks.push(text); };
-    const ab = abilitiesOf(pk);
-    const noIndirect = ab.includes("Magic Guard");
-    const recoil = attrsOf(mv, "RecoilAttr")[0];
-    if (recoil) {
-      const ratio = recoil.damageRatio ?? 0.33;
-      // useHp: a share of max HP each use (Chloroblast); else a share of the damage dealt (Rock Head blocks it).
-      if (recoil.useHp) { if (!noIndirect) cost(Math.max(0.5, 1 - 0.9 * ratio), `−${Math.round(ratio * 100)}% HP each use`); }
-      else if (ab.includes("Rock Head") || noIndirect) notes.push("recoil (blocked)");
-      else cost(Math.min(0.8, Math.max(0.5, 1 - ratio)), `recoil ${Math.round(ratio * 100)}% of damage`);
+    // The move's own costs: which ones it carries is the traits' (07-move-traits), what each is worth is this card's,
+    // in the same units as effective power. The wording is `costNotes`, the same the ⚔ line shows, so the two cards
+    // can't describe one cost two ways. Magic Guard and Rock Head are already off the traits that they block.
+    let drag = 1;
+    const times = m => { drag *= m; };
+    if (tr.recoil && !tr.recoil.blocked) {
+      // useHp: a share of max HP each use (Chloroblast); else a share of the damage dealt.
+      times(tr.recoil.useHp ? Math.max(0.5, 1 - 0.9 * tr.recoil.ratio) : Math.min(0.8, Math.max(0.5, 1 - tr.recoil.ratio)));
     }
-    if (hasAttr(mv, "SacrificialAttr") || hasAttr(mv, "SacrificialAttrOnHit")) cost(0.3, "user faints");
-    else if (hasAttr(mv, "HalfSacrificialAttr") && !noIndirect) cost(0.55, "−50% HP each use");
-    const frenzy = hasAttr(mv, "FrenzyAttr");
+    if (tr.selfKo) times(0.3);
+    else if (tr.halfSac) times(0.55);
     // Crash damage: High Jump Kick-style moves lose half max HP on a miss or into an immunity.
-    if (!frenzy && hasAttr(mv, "MissEffectAttr") && !noIndirect) cost(Math.max(0.7, 0.95 - 0.6 * (1 - acc)), "−50% HP if it misses");
-    if (frenzy) cost(0.7, "locks 2–3 turns, then confused");
-    if ((mv.restrictions ?? []).some(r => /Consecutive/i.test(r?.i18nkey ?? ""))) cost(0.7, "not twice in a row");
-    if (hasAttr(mv, "RemoveTypeAttr")) cost(0.6, `loses its ${type} type`);
-    if (hasAttr(mv, "PreUseInterruptAttr")) cost(0.4, "fails if hit first");
-    else if (mv.isChargingMove?.()) {
-      const charge = mv.chargeAttrs ?? [];
-      if (charge.some(a => a.constructor?.name === "SemiInvulnerableAttr")) cost(0.6, "two-turn (dodges)");
-      else if (charge.some(a => a.constructor?.name === "WeatherInstantChargeAttr")) {
-        // Solar Beam skips its charge turn in sun. A party that brings its own sun has it up most waves; without
-        // a setter the charge turn is real, and costs what any other two-turn move costs.
-        const sun = party.some(p => { try { return p && abilitiesOf(p).some(a => SUN_ABILITIES.has(a)); } catch { return false; } });
-        cost(sun ? 0.85 : 0.5, sun ? "charge turn (skipped in sun)" : "charge turn (not in sun)");
-      } else cost(0.5, "charge turn");
-    } else if (hasAttr(mv, "RechargeAttr")) cost(0.5, "recharge turn");
-    else if ((mv.priority ?? 0) < 0) cost(0.8, "moves last");
-    if ((mv.conditions ?? []).some(c => c?.constructor?.name === "FirstMoveCondition")) cost(0.4, "first turn only");
+    if (tr.crash) times(Math.max(0.7, 0.95 - 0.6 * (1 - acc)));
+    if (tr.lock) times(0.7);
+    if (tr.noRepeat) times(0.7);
+    if (tr.removesType) times(0.6);
+    // Sucker Punch and Thunderclap do nothing unless the foe attacks that turn (first cut).
+    if (tr.needsAttack) times(0.6);
+    let movesLast = null;
+    if (tr.interrupt) times(0.4);
+    else if (tr.charge) {
+      // Solar Beam skips its charge turn in sun. A party that brings its own sun has it up most waves; without a
+      // setter the charge turn is real, and costs what any other two-turn move costs.
+      times(tr.semiCharge ? 0.6 : !tr.charge.skip ? 0.5 : sun ? 0.85 : 0.5);
+    } else if (tr.recharge) times(0.5);
+    else if ((mv.priority ?? 0) < 0) { times(0.8); movesLast = "moves last"; }
+    if (tr.once) times(0.4);
     // Priority picks off weakened foes and faster threats before they act — but only if the hit is big enough to
     // finish something. Going first with a 40-power Quick Attack rarely decides a wave; Extreme Speed does, and a
     // move that outspeeds the other priority moves (+2 and up) does a little more.
@@ -488,21 +467,18 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
       value *= 1 + (0.15 + 0.2 * punch) * (mv.priority >= 2 ? 1.2 : 1);
       notes.push(`priority +${mv.priority}`);
     }
-
-    // Guaranteed self stat changes (chance −1/100): drops cost more on the stat the move attacks with (Overheat's SpA)
-    // than on defences (Close Combat); boosts (Flame Charge) add.
+    // Guaranteed self stat changes: drops cost more on the stat the move attacks with (Overheat's SpA) than on
+    // defences (Close Combat); boosts (Flame Charge) add.
     const attackStat = mv.category === MoveCategory.PHYSICAL ? Stat.ATK : Stat.SPATK;
-    for (const a of attrsOf(mv, "StatStageChangeAttr")) {
-      if (!a.selfTarget || !(mv.chance === -1 || mv.chance === undefined || mv.chance >= 100)) continue;
-      const stages = a.stages ?? 0;
-      const stats = a.stats ?? [];
-      const names = stats.map(i => STAT_NAMES[i]).filter(Boolean).join("/");
-      if (!names || !stages) continue;
-      if (stages < 0) {
-        const loss = stats.reduce((t, i) => t + (i === attackStat ? 0.1 : 0.05) * -stages, 0);
-        cost(Math.max(0.7, 1 - loss), `−${-stages} ${names} after use`);
-      } else { value *= 1.1; notes.push(`+${stages} ${names}`); }
+    let loss = 0;
+    for (const [st, stages] of Object.entries(tr.drops)) {
+      const i = Number(st);
+      if (stages < 0) loss += (i === attackStat ? 0.1 : 0.05) * -stages;
+      else { value *= 1.1; notes.push(`+${stages} ${STAT_NAMES[i]}`); }
     }
+    if (loss) times(Math.max(0.7, 1 - loss));
+    value *= drag;
+    const drawbacks = [...costNotes(tr, { sun, type }), ...(movesLast ? [movesLast] : [])];
     notes.push(...drawbacks);
     if (double && SPREAD_TARGETS.includes(mv.moveTarget)) {
       value *= 1 + 0.15 * double;
@@ -621,4 +597,10 @@ const learnModel = ({ pk, mv, double, party, roster = null }) => {
     kind: "learn", icon: iconOf(pk), name: pk.name, move: incoming, moves, forget, compare, verdict,
     decision: plan.kind, gain: plan.gain, atk: plan.atk, spa: plan.spa, team,
   };
+};
+
+// `Learn → forget Tackle · ⚠ loses only Dark move`, for the watcher and the battle read.
+const learnSummary = m => {
+  const only = m.team?.onlyType && m.forget >= 0 ? ` · ⚠ loses only ${m.team.onlyType} move` : "";
+  return `${m.verdict[0]}${only}`;
 };

@@ -7,10 +7,11 @@
 // approximation keeps the panel rendering.
 
 // Per-turn damage discount for moves that often don't land when chosen: Focus Punch fails if the user is hit
-// first, charging and recharging moves spend a second turn, negative priority moves go last.
-const reliability = mv => {
-  if (hasAttr(mv, "PreUseInterruptAttr")) return 0.4;
-  if (mv.isChargingMove?.() || hasAttr(mv, "RechargeAttr")) return 0.5;
+// first, charging and recharging moves spend a second turn, negative priority moves go last. The kinds come from
+// 07-move-traits; the numbers are this module's — a per-turn damage discount, not the learn card's move value.
+const reliability = (mv, t = moveTraits(mv)) => {
+  if (t.interrupt) return 0.4;
+  if (t.charge || t.recharge) return 0.5;
   return mv.priority < 0 ? 0.8 : 1;
 };
 // Only used by the approximation: enemy damage estimated without rolls, crits or items gets a safety margin.
@@ -44,9 +45,6 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     if (!cache.map.has(k)) cache.map.set(k, fn());
     return cache.map.get(k);
   };
-  // Sucker Punch and Thunderclap read the target's chosen command, which doesn't exist yet while we choose: their
-  // condition is left to the planner (`needsAttack`). (Upper Hand needs a priority move from the target: dropped.)
-  const COMMAND_CONDITION = [MoveId.SUCKER_PUNCH, MoveId.THUNDERCLAP];
   // Damaging moves with PP left. With `def` and game calls allowed, also only what can be picked and would work this
   // turn: restrictions checked for selection (Disable, Taunt, Encore, Torment, Imprison…) and the move's own
   // conditions (Fake Out / First Impression after the first turn, Dream Eater on an awake target, Belch, Steel
@@ -61,27 +59,22 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
         if (!(Array.isArray(r) ? r[0] : r)) return false;
       }
       const mv = pm.getMove();
-      if (typeof mv.applyConditions !== "function" || COMMAND_CONDITION.includes(mv.id)) return true;
+      // A move that reads the target's chosen command (Sucker Punch, Thunderclap) has no condition to check yet:
+      // `needsAttack` is left to the planner.
+      if (typeof mv.applyConditions !== "function" || moveTraits(mv).needsAttack) return true;
       try { return !!forcedRng(s, () => mv.applyConditions(p, def, -1)); } catch { return true; }
     })));
   };
-  // What a move costs over turns and what it depends on. `charge`: a charging turn before the hit (Solar Beam
-  // outside sun, Sky Attack, Skull Bash; Dig / Fly / Dive / Bounce semi-invulnerable meanwhile, `semiCharge`) —
-  // unless its instant-charge condition holds now; `recharge`: a lost turn after it (Hyper Beam, Giga Impact);
-  // `interrupt`: fails if the user is hit first (Focus Punch); `needsAttack`: fails unless the target attacks
-  // (Sucker Punch, Thunderclap); `once`: only on the user's first turn out (Fake Out, First Impression).
-  const traits = (atk, mv, live) => {
-    const charging = !!mv.isChargingMove?.();
-    const chargeAttrs = mv.chargeAttrs ?? [];
-    const instant = charging && live && chargeAttrs.some(a => isA(a, "InstantChargeAttr") && a.condition?.(atk, mv));
-    return {
-      charge: charging && !instant,
-      semiCharge: charging && !instant && chargeAttrs.some(a => isA(a, "SemiInvulnerableAttr")),
-      recharge: attrs(mv, "RechargeAttr").length > 0,
-      interrupt: attrs(mv, "PreUseInterruptAttr").length > 0,
-      needsAttack: COMMAND_CONDITION.includes(mv.id),
-      once: [mv.conditions, mv.conditionsSeq2, mv.conditionsSeq3].some(cs => (cs ?? []).some(c => isA(c, "FirstMoveCondition"))),
-    };
+  // The side `p` is on, which only Beat Up's hit count needs.
+  const partyOf = (s, p) => {
+    try { return (p?.isPlayer?.() ? s?.getPlayerParty?.() : s?.getEnemyParty?.()) ?? null; } catch { return null; }
+  };
+  // The move's traits (07-move-traits), with the charging turn judged against this moment: a charging move whose
+  // instant-charge condition holds now (Solar Beam in sun) costs no turn and hides nowhere. `live` false — the
+  // approximation, outside the command phase — leaves the condition unjudged, as it has nothing to judge it with.
+  const traitsNow = (s, atk, mv, live, def = null) => {
+    const t = moveTraits(mv, atk, { party: partyOf(s, atk), target: def });
+    return live && t.charge && t.charge.now(atk) ? { ...t, charge: false, semiCharge: false } : t;
   };
 
   // ---- Boss segments and survival (spec §3, §8). Pure math on read fields.
@@ -96,6 +89,16 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     const c = Math.min(Math.max(Math.floor(Math.log2(excess / segSize)), 0), a - minIdx);
     return [Math.max(Math.floor(hp - floorHp + segSize * c), 1), a - c];
   };
+  // Sturdy against a fixed-damage move (spec §4.3). `getAttackDamage` returns from its `FixedDamageAttr` branch
+  // before the `PreDefendFullHpEndureAbAttr` step, so at our pin Seismic Toss, Night Shade, Super Fang, Psywave and
+  // Final Gambit take a full-HP Sturdy mon down. Upstream's #7620 ("Sturdy now applies to moves that deal fixed
+  // damage") moves the branch and is on the game's master, unreleased. So this is the live build's call, not ours:
+  // set the constant to the first game version that ships the fix and every older build keeps the old rule. While it
+  // is null no released build has it. `scripts/hud-deps.ts` names this on `Pokemon.getAttackDamage`, so a pin bump
+  // whose hash moved asks the question again.
+  const STURDY_VS_FIXED_FROM = null;
+  const fixedIgnoresSturdy = s => !STURDY_VS_FIXED_FROM || !versionAtLeast(gameVersionOf(s), STURDY_VS_FIXED_FROM);
+
   // What decides how a hit resolves on `t`. `ignoreAbility`: Mold Breaker, or the AI not knowing the ability.
   const targetFacts = (s, t, ignoreAbility = false) => {
     const maxHp = t.getMaxHp();
@@ -200,10 +203,9 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
   // it and a player's Healing Charm raises it (×(1 + 0.1·stack)). A target with Liquid Ooze (ReverseDrainAbAttr) turns
   // the heal into that much damage to the user instead, unless the user has Magic Guard. Strength Sap heals by a stat,
   // not by damage, and is a status move: not counted.
-  const drainRatio = (s, atk, def, move) => {
-    const a = attrs(move, "HitHealAttr").find(x => x.healStat == null);
-    if (!a) return 0;
-    const ratio = a.healRatio ?? 0.5;
+  const drainRatio = (s, atk, def, t) => {
+    if (!t.drain) return 0;
+    const ratio = t.drain.ratio;
     if (ability(def, "ReverseDrainAbAttr")) return ability(atk, "BlockNonDirectDamageAbAttr") ? 0 : -ratio;
     if (atk.getTag?.("HEAL_BLOCK")) return 0;
     const charm = (atk.isPlayer?.() === false ? s?.enemyModifiers : s?.modifiers) ?? [];
@@ -408,7 +410,6 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
   };
 
   // ---- Game path (spec §1, §2, §4, §5)
-  const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
   const RESULT_MULT = { [HitResult.EFFECTIVE]: 1, [HitResult.EXTREMELY_EFFECTIVE]: 4, [HitResult.SUPER_EFFECTIVE]: 2, [HitResult.NOT_VERY_EFFECTIVE]: 0.5,
     [HitResult.MOSTLY_INEFFECTIVE]: 0.25, [HitResult.ONE_HIT_KO]: 1, [HitResult.NO_EFFECT]: 0, [HitResult.IMMUNE]: 0 };
   // The random roll is 85..100 %, uniform over 16 values; the simulated call returns the 100 % one.
@@ -425,6 +426,20 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     try { return fn(); } finally { if (own) R.integerInRange = orig; else delete R.integerInRange; }
   };
   const PRESENT = [[0, 0.4], [150, 0.3], [190, 0.1]]; // 40 / 80 / 120 power; the other 20 % heals the target
+
+  // The game's own damage at roll `r` (spec §4.6–7). A simulated call pins the roll at 1 and hands back the finished
+  // number, so `addRolls` spreads what the post-roll steps have already been applied to. Multipliers barely notice
+  // that — they commute with the roll to within a HP of rounding — but `ModifiedDamageAttr` is a *cap*: False Swipe's
+  // `min(damage, hp − 1)` lands on every roll alike, and spreading it invents a range the game never produces. For
+  // those moves each roll is asked of the game instead, by multiplying the STAB factor: it sits beside the roll in
+  // the same product under one `toDmgValue`, and reads nothing off the mon, so scaling it scales exactly what the
+  // roll would and the real post steps and caps then run on the result.
+  const atRoll = (def, r, fn) => {
+    if (r >= 1 || typeof def.calculateStabMultiplier !== "function") return fn();
+    const own = Object.prototype.hasOwnProperty.call(def, "calculateStabMultiplier"), orig = def.calculateStabMultiplier;
+    def.calculateStabMultiplier = function (...a) { return orig.apply(this, a) * r; };
+    try { return fn(); } finally { if (own) def.calculateStabMultiplier = orig; else delete def.calculateStabMultiplier; }
+  };
 
   // Accuracy (§5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
   const accuracy = (atk, def, move, ohko = false) => {
@@ -466,19 +481,9 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     const others = (s.getField?.(true) ?? []).filter(p => p && p !== atk && p.hp > 0 && (p.isOnField?.() ?? true));
     const spreadApplied = spread && (move.moveTarget === MoveTarget.ALL_OTHERS || move.moveTarget === MoveTarget.ALL_NEAR_OTHERS ? others : others.filter(p => p.isPlayer?.() !== atk.isPlayer?.())).length > 1;
 
-    // Hit counts (§2): MultiHitAttr type, Skill Link, Beat Up, plus Parental Bond / Multi-Lens strikes.
-    const mh = attrs(move, "MultiHitAttr")[0];
-    let mhType = mh ? mh.multiHitType ?? mh.intrinsicMultiHitType : null;
-    if (mh && attrs(move, "ChangeMultiHitTypeAttr").length && atk.species?.speciesId === SpeciesId.GRENINJA && atk.formIndex === 2) mhType = MultiHitType.THREE;
-    const skillLink = ability(atk, "MaxMultiHitAbAttr");
-    const party = () => (atk.isPlayer?.() ? s.getPlayerParty() : s.getEnemyParty()) ?? [];
-    let dist = mhType == null ? [{ n: 1, p: 1 }]
-      : mhType === MultiHitType.TWO_TO_FIVE ? (skillLink ? [{ n: 5, p: 1 }] : [{ n: 2, p: 0.35 }, { n: 3, p: 0.35 }, { n: 4, p: 0.15 }, { n: 5, p: 0.15 }])
-      : [{ n: mhType === MultiHitType.TWO ? 2 : mhType === MultiHitType.THREE ? 3 : mhType === MultiHitType.TEN ? 10 : party().reduce((t, n) => t + (n.id === atk.id ? 1 : n?.status && n.status.effect !== StatusEffect.NONE ? 0 : 1), 0), p: 1 }];
-    const enhanced = (...args) => (typeof move.canBeMultiStrikeEnhanced === "function" ? !!move.canBeMultiStrikeEnhanced(...args) : !mh && !spread);
-    const lenses = stack(atk, "PokemonMultiHitModifier");
-    const extra = (ability(atk, "AddSecondStrikeAbAttr") && enhanced(atk, true, def) ? 1 : 0) + (lenses && enhanced(atk) ? lenses : 0);
-    if (extra) dist = dist.map(x => ({ n: x.n + extra, p: x.p }));
+    // Hit counts (§2) come from the traits: MultiHitAttr type, Skill Link, Beat Up, Parental Bond / Multi-Lens strikes.
+    const t = traitsNow(s, atk, move, true, def);
+    const dist = t.hits.dist;
     const hitsMax = Math.max(...dist.map(x => x.n));
 
     // One hit at the max roll. Multi-hit power steps and Parental Bond / Multi-Lens factors read the user's
@@ -491,10 +496,10 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     const first = call(0, false);
     const eGame = def.getMoveEffectiveness?.(atk, move, ignoreAbility, true);
     const e = first.cancelled ? 0 : typeof eGame === "number" ? eGame : RESULT_MULT[first.result] ?? 1;
-    const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0, bypassProtect: bypassesProtect(atk, def, move) };
+    const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, traits: t, self: 0, bypassProtect: bypassesProtect(atk, def, move) };
     const blocked = cancelledBy(s, atk, def, move);
     if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
-      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, flinch: 0 };
+      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, costs: [], notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, flinch: 0 };
     }
 
     const ohko = first.result === HitResult.ONE_HIT_KO;
@@ -509,8 +514,14 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
       return [1 / 24, 1 / 8, 1 / 2, 1][Math.max(0, Math.min(3, def.getCritStage?.(atk, move) ?? 0))];
     })();
 
-    // Damage outcomes per hit index: Map damage → probability, plus the non-crit max roll for the worst case.
+    // A move whose damage is capped rather than scaled after the roll (False Swipe, Hold Back): every roll is asked
+    // of the game, instead of spreading the capped max over 85–100 %.
+    const capped = attrs(move, "ModifiedDamageAttr").length > 0;
+
+    // Damage outcomes per hit index: Map damage → probability, plus the non-crit max roll for the worst case, and the
+    // lowest roll where the spread isn't the plain 85 % of it.
     const maxes = [];
+    const lows = [];
     const perHit = [];
     for (let k = 0; k < hitsMax; k++) {
       const m = new Map();
@@ -527,9 +538,24 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
       } else {
         let top = 0;
         for (const [seed, pv] of present ? PRESENT : [[null, 1]]) {
-          const run = isCritical => (seed === null ? (k || isCritical ? call(k, isCritical) : first) : withSeed(seed, () => call(k, isCritical))).damage;
-          if (crit < 1) { const d = run(false); top = Math.max(top, d); addRolls(m, d, pv * (1 - crit)); }
-          if (crit > 0) { const d = run(true); if (crit === 1) top = Math.max(top, d); addRolls(m, d, pv * crit); }
+          const run = (isCritical, r = 1) => {
+            const one = () => atRoll(def, r, () => (seed === null && !k && !isCritical && r === 1 ? first : call(k, isCritical))).damage;
+            return seed === null ? one() : withSeed(seed, one);
+          };
+          // The max roll is what the record reports; the spread under it is the game's own 16 rolls when a cap
+          // applies to each of them, and that number's 85–100 % otherwise.
+          const spread = (isCritical, p) => {
+            const d = run(isCritical, 1);
+            if (!capped) { addRolls(m, d, p); return d; }
+            for (let r = 85; r <= 100; r++) {
+              const v = r === 100 ? d : run(isCritical, r / 100);
+              m.set(v, (m.get(v) ?? 0) + p / 16);
+              lows[k] = Math.min(lows[k] ?? Infinity, v);
+            }
+            return d;
+          };
+          if (crit < 1) top = Math.max(top, spread(false, pv * (1 - crit)));
+          if (crit > 0) { const d = spread(true, pv * crit); if (crit === 1) top = Math.max(top, d); }
         }
         if (present) m.set(0, (m.get(0) ?? 0) + 0.2);
         maxes.push(top);
@@ -537,14 +563,16 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
       perHit.push(m);
     }
     const acc = accuracy(atk, def, move, ohko);
-    const checkAll = hasFlag(move, MoveFlags.CHECK_ALL_HITS) && !skillLink;
+    const checkAll = t.hits.checkAll;
     // Before Disguise takes this turn's first hit: a later use meets no disguise.
     const use = useDist(perHit, dist, acc, checkAll);
     // Disguise / Ice Face take the first hit (the simulated call doesn't zero it).
     const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
     if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
-    const f = targetFacts(s, def, ignoreAbility);
+    // Sturdy doesn't reach a fixed-damage hit on this build (§4.3), so the target's facts lose it for this move only.
+    const facts = targetFacts(s, def, ignoreAbility);
+    const f = fixed && facts.sturdy && fixedIgnoresSturdy(s) ? { ...facts, sturdy: false } : facts;
     const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
     const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
     const pKo = f.revive ? 0 : ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
@@ -560,58 +588,37 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
       || atk.getTag?.("IGNORE_ACCURACY") || attrs(move, "HitsTagAttr").some(h => h.tagType === semiTag.tagType));
     const notes = [];
 
-    // What the move costs its user per use: the target's contact-chip ability (Rough Skin / Iron Barbs, 1/8 max HP)
-    // for each landed contact hit, and recoil (a share of the damage dealt, or of max HP). Magic Guard blocks both,
-    // Rock Head the recoil. Hits are counted as if the target doesn't faint before the last one.
+    // What the move costs its user per use, in HP (`self`): the target's contact-chip ability (Rough Skin / Iron
+    // Barbs, 1/8 max HP) for each landed contact hit, recoil (a share of the damage dealt, or of max HP), Steel
+    // Beam's half, and a crash on a miss. Which of these apply is the traits'; what they come to here is this
+    // matchup's, so `costs` is `costNotes` with those amounts — the wording the learn card's drawbacks use too.
+    // Hits are counted as if the target doesn't faint before the last one.
     const maxHp = atk.getMaxHp?.() ?? 0;
-    const guard = ability(atk, "BlockNonDirectDamageAbAttr");
     let self = 0;
     const landed = checkAll
       ? Array.from({ length: hitsMax }, (_, k) => acc ** (k + 1) * dist.filter(x => x.n > k).reduce((t, x) => t + x.p, 0)).reduce((t, x) => t + x, 0)
       : acc * dist.reduce((t, x) => t + x.n * x.p, 0);
     const contact = typeof move.doesFlagEffectApply === "function" ? move.doesFlagEffectApply({ flag: MoveFlags.MAKES_CONTACT, user: atk, target: def }) : hasFlag(move, MoveFlags.MAKES_CONTACT);
-    if (contact && !guard && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
+    const fromTarget = [];
+    if (contact && !t.guarded && maxHp && ability(def, "PostDefendContactDamageAbAttr")) {
       const [abName, ratio] = [def.getAbility?.(), def.hasPassive?.() ? def.getPassiveAbility?.() : null]
         .flatMap(a => (a?.getAttrs?.("PostDefendContactDamageAbAttr") ?? []).map(x => [a.name, x.damageRatio])).find(Boolean) ?? ["contact", 8];
       const chip = Math.max(1, Math.floor(maxHp / (ratio || 8))) * landed;
       self += chip;
-      notes.push(`${abName}: ${base.name} ≈−${Math.round(chip / maxHp * 100)}%`);
+      fromTarget.push(`${abName}: ≈−${Math.round(chip / maxHp * 100)}%`);
     }
-    const pctOf = x => Math.round(x / maxHp * 100);
-    const recoil = attrs(move, "RecoilAttr")[0];
-    if (recoil && maxHp && !(!recoil.unblockable && (guard || ability(atk, "BlockRecoilDamageAttr")))) {
-      const hurt = recoil.useHp ? Math.max(1, Math.floor(maxHp * recoil.damageRatio)) * acc : expected * (recoil.damageRatio ?? 0.25);
+    let recoilShare = null;
+    if (t.recoil && !t.recoil.blocked && maxHp) {
+      const hurt = t.recoil.useHp ? Math.max(1, Math.floor(maxHp * t.recoil.ratio)) * acc : expected * t.recoil.ratio;
       self += hurt;
-      notes.push(`recoil ≈−${pctOf(hurt)}%`);
+      recoilShare = hurt / maxHp;
     }
-    // Steel Beam / Mind Blown cost half max HP, hit or miss; High Jump Kick-type moves crash for half on a miss
-    // (Outrage's miss effect only ends its lock). Magic Guard blocks all three.
-    if (maxHp && !guard && attrs(move, "HalfSacrificialAttr").length) {
-      self += Math.max(1, Math.floor(maxHp / 2));
-      notes.push(`${base.name}: −50% HP`);
-    }
-    if (maxHp && !guard && acc < 1 && attrs(move, "MissEffectAttr").length && !attrs(move, "FrenzyAttr").length) {
-      self += Math.max(1, Math.floor(maxHp / 2)) * (1 - acc);
-      notes.push(`${base.name}: crash −50% on a miss`);
-    }
+    if (t.halfSac && maxHp) self += Math.max(1, Math.floor(maxHp / 2));
+    if (t.crash && maxHp && acc < 1) self += Math.max(1, Math.floor(maxHp / 2)) * (1 - acc);
     // Explosion / Self-Destruct faint the user regardless; Final Gambit only when it hits.
-    const selfKo = attrs(move, "SacrificialAttrOnHit").length ? acc : attrs(move, "SacrificialAttr").length ? 1 : 0;
-    if (selfKo) notes.push(`${base.name}: user faints`);
-    // Outrage / Thrash / Petal Dance / Raging Fury: locked in for 2–3 turns, then confused.
-    const lock = attrs(move, "FrenzyAttr").length > 0;
-    if (lock) notes.push(`${base.name}: locks 2–3 turns → confused`);
-    // Gigaton Hammer / Blood Moon can't be selected twice in a row.
-    const noRepeat = (move.restrictions ?? []).some(r => r.i18nkey === "battle:moveDisabledConsecutive");
-    if (noRepeat) notes.push(`${base.name}: not twice in a row`);
-    // Guaranteed drops to the user's own stats (Overheat −2 SpA, Close Combat −1 Def/SpD): { stat index: stages }.
-    const drops = {};
-    for (const a of attrs(move, "StatStageChangeAttr")) {
-      if (!a.selfTarget || !(a.stages < 0) || (move.chance > 0 && move.chance < 100)) continue;
-      for (const st of a.stats ?? []) drops[st] = (drops[st] ?? 0) + a.stages;
-    }
-    const dropText = Object.entries(drops).map(([st, n]) => `−${-n} ${STAT_NAMES[st] ?? st}`);
-    if (dropText.length) notes.push(`${base.name}: ${dropText.join(" ")}`);
-    const drain = drainRatio(s, atk, def, move);
+    const selfKo = t.selfKo === "onHit" ? acc : t.selfKo === "always" ? 1 : 0;
+    const costs = [...fromTarget, ...costNotes(t, { recoil: recoilShare, type })];
+    const drain = drainRatio(s, atk, def, t);
     if (drain > 0) notes.push(`drains ${Math.round(drain * 100)}%`);
     else if (drain < 0) notes.push(`Liquid Ooze: ${base.name} hurts ${Math.round(-drain * 100)}%`);
 
@@ -623,14 +630,11 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     if (f.revive) notes.push("reviver seed");
     if (disguise) notes.push("disguise");
     if (crit === 1) notes.push("crit");
-    if (base.charge) notes.push("charges a turn");
-    if (base.recharge) notes.push("recharges a turn");
-    if (base.interrupt) notes.push("fails if hit");
     if (semi) notes.push("target semi-invulnerable");
     return {
-      ...base, acc, crit, dist, semi, self, selfKo, lock, noRepeat, drops, drain,
-      perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })), targetHp: f.hp,
-      expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, notes,
+      ...base, acc, crit, dist, semi, self, selfKo, drain,
+      perHit: maxes.map((max, k) => ({ max, min: Math.min(max, lows[k] ?? Math.floor(max * 0.85)) })), targetHp: f.hp,
+      expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, costs, notes,
       use, focus: f.pFocus, flinch: flinchChance(atk, def, move, ignoreAbility),
     };
   };
@@ -670,11 +674,13 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     const { revive, pFocus } = targetFacts(s, def);
     const rolls = new Map();
     addRolls(rolls, max, 1);
+    const t = traitsNow(s, atk, mv, false, def);
     return {
-      name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, ...traits(atk, mv, false), semi: false, self: 0,
+      name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, traits: t, semi: false, self: 0,
       acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
-      expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, notes: ["estimate"],
-      use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(s, atk, def, mv),
+      expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive,
+      costs: costNotes(t, { type: x.type }), notes: ["estimate"],
+      use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(s, atk, def, t),
     };
   };
 

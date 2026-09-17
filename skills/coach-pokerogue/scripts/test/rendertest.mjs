@@ -27,7 +27,7 @@ for (const view of ["full", "mini"]) {
   const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
   const el = mount(scene, view);
   console.log(`== learn (${view})\n${lines(el)}`);
-  if (view === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+  if (view === "full") console.log(`summary ${globalThis.__coachHud.summary().learn}`);
 }
 
 // Fight plan: a plain win is one line until `+` opens it for the wave.
@@ -61,7 +61,7 @@ for (const view of ["full", "mini"]) {
   const scene = { currentBattle: { waveIndex: 27, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: espeon, newMove: mv(["Earth Power","Ground",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [espeon, lapras] };
   const el = mount(scene, view);
   console.log(`== learn team (${view})\n${lines(el)}`);
-  if (view === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+  if (view === "full") console.log(`summary ${globalThis.__coachHud.summary().learn}`);
 }
 
 // Rewards before a boss: the TM row shows its best recipient and the move it replaces, full view adds who can use the
@@ -93,6 +93,6 @@ for (const view of ["full", "mini"]) {
     const scene = { money: 500, pokeballCounts: { 1: 20 }, modifiers: [], currentBattle: { waveIndex: 29 }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => team, getEnemyParty: () => [] };
     const el = mount(scene, view);
     console.log(`== rewards boss next (${view})\n${lines(el)}`);
-    if (view === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+    if (view === "full") console.log(`summary ${globalThis.__coachHud.summary().rewards}`);
   }
 }

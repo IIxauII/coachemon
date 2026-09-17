@@ -53,6 +53,66 @@ export const HUD_DEPS = {
   ],
 
   /**
+   * The one place the HUD reads a move's *attributes*. It calls nothing: it reads
+   * the shape of every attribute the damage module, the planner and the learn card
+   * used to walk for themselves (#128) — which field holds the recoil ratio and
+   * whether it is a share of damage or of max HP, the heal ratio and the weather
+   * one, the inflicted status, the battler tag, the arena trap, the stat change and
+   * whether it is self-targeted, the multi-hit type. A renamed field silently
+   * changes what every card says a move costs. The hit count is re-implemented from
+   * `getHitCount` and the two extra-strike sources, so a changed roll or a changed
+   * `canBeMultiStrikeEnhanced` makes every multi-hit number wrong at once. Three
+   * things are matched by name rather than by field: the abilities that block a
+   * cost (Magic Guard, Rock Head, Skill Link, Parental Bond) by their *attribute*,
+   * the consecutive-use restriction by its exact i18n key, and Ash-Greninja's form.
+   */
+  "07-move-traits.js": [
+    `${M}#MoveAttr.constructor`,
+    // Turns and failure.
+    `src/data/moves/move-condition.ts#FirstMoveCondition.constructor`,
+    `src/data/moves/move-condition.ts#consecutiveUseRestriction`,
+    `${M}#RechargeAttr.constructor`,
+    `${M}#PreUseInterruptAttr.apply`,
+    `${M}#InstantChargeAttr.constructor`,
+    `${M}#WeatherInstantChargeAttr.constructor`,
+    `${M}#SemiInvulnerableAttr.apply`,
+    // What a move costs its user, and who blocks it.
+    `${M}#RecoilAttr.constructor`,
+    `${M}#RecoilAttr.apply`,
+    `${M}#HalfSacrificialAttr.apply`,
+    `${M}#SacrificialAttr.apply`,
+    `${M}#SacrificialAttrOnHit.apply`,
+    `${M}#MissEffectAttr.apply`,
+    `${M}#FrenzyAttr.apply`,
+    `${M}#RemoveTypeAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#BlockNonDirectDamageAbAttr.constructor`,
+    `src/data/abilities/ab-attrs.ts#BlockRecoilDamageAttr.apply`,
+    // §2 hit counts: the multi-hit type and the strikes Parental Bond and Multi-Lens add.
+    `${M}#MultiHitAttr.getHitCount`,
+    `${M}#MultiHitAttr.apply`,
+    `${M}#MultiHitPowerIncrementAttr.apply`,
+    `${M}#WaterShurikenMultiHitTypeAttr.apply`,
+    `${M}#Move.canBeMultiStrikeEnhanced`,
+    `src/data/abilities/ab-attrs.ts#MaxMultiHitAbAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#AddSecondStrikeAbAttr.canApply`,
+    `src/modifier/modifier.ts#PokemonMultiHitModifier.apply`,
+    // Status effects, as data: the fields each attribute carries.
+    `${M}#StatStageChangeAttr.constructor`,
+    `${M}#CutHpStatStageBoostAttr.constructor`,
+    `${M}#StatusEffectAttr.constructor`,
+    `${M}#AddBattlerTagAttr.constructor`,
+    `${M}#AddArenaTrapTagAttr.getCondition`,
+    `${M}#HealAttr.constructor`,
+    `${M}#BoostHealAttr.constructor`,
+    `${M}#PlantHealAttr.getWeatherHealRatio`,
+    `${M}#HitHealAttr.constructor`,
+    `${M}#FlinchAttr.constructor`,
+    `${M}#ProtectAttr.constructor`,
+    `src/enums/multi-hit-type.ts#MultiHitType`,
+    `src/enums/move-target.ts#MoveTarget`,
+  ],
+
+  /**
    * §1–§5, §8, §18 drain, §21 end of turn. `getAttackDamage` is called (simulated,
    * sandboxed); everything the simulated call leaves out is re-implemented: the
    * damage roll, crits, accuracy, multi-hit counts, boss segments, Sturdy / Focus
@@ -60,7 +120,18 @@ export const HUD_DEPS = {
    * berries, status chip and the turn-end heals.
    */
   "10-damage.js": [
+    // Two orderings inside this one function are load-bearing, and both are named in `hud/10-damage.js`:
+    // its `FixedDamageAttr` branch returns *before* the `PreDefendFullHpEndureAbAttr` step, so Sturdy does not
+    // save a full-HP mon from Seismic Toss (upstream #7620 moves that and is unreleased — if this hash moves,
+    // check whether it landed and set `STURDY_VS_FIXED_FROM` to the version that ships it); and the roll sits
+    // inside the main product, *before* the post-roll multipliers and `ModifiedDamageAttr`'s cap, which is why
+    // every roll of a capped move is asked of the game rather than spread from its max.
     `${P}#Pokemon.getAttackDamage`,
+    // The factor the HUD scales to ask for a given roll: it reads nothing off the mon it is called on, and sits
+    // beside the roll under the same `toDmgValue`, so scaling it scales exactly what the roll would.
+    `${P}#Pokemon.calculateStabMultiplier`,
+    `${M}#ModifiedDamageAttr.apply`,
+    `${M}#SurviveDamageAttr.getModifiedDamage`,
     `${P}#Pokemon.getCriticalHitResult`,
     `${P}#Pokemon.getAccuracyMultiplier`,
     `${P}#Pokemon.getEffectiveStat`,
@@ -186,6 +257,13 @@ export const HUD_DEPS = {
 
   /** §5 turn order and §9 free switches: no safe call returns either, so both are re-derived. */
   "30-planner.js": [
+    // The benefit nudge (#128): a move's cost to its user, as the game's own move scoring measures it — full step 7
+    // of getNextMove for *our* move, through 20-enemy-ai's `aiTargetScore`. A changed benefit score changes which
+    // move the ⚔ line picks between two that hit alike, and which count as drawbacks.
+    `${M}#MoveAttr.getUserBenefitScore`,
+    `${M}#MoveAttr.getTargetBenefitScore`,
+    `${M}#Move.getUserBenefitScore`,
+    `${M}#Move.getTargetBenefitScore`,
     `${M}#Move.getPriority`,
     `${M}#Move.getPriorityModifier`,
     `src/utils/speed-order.ts#sortInSpeedOrder`,
@@ -281,27 +359,22 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * The learn card calls nothing, but it reads a move apart by the *shape* of its
-   * attributes: which field holds the heal ratio, the inflicted status, the battler
-   * tag, the stat change and whether it is self-targeted (#70). Three enums come
-   * through as bare values — `MoveTarget` and `StatusEffect` as numbers the card
-   * indexes tables with, `BattlerTagType` as the strings it keys `TAG_VALUE` by —
-   * so a reordered member silently mis-scores every move that carries it. Fixed
-   * damage is priced back into power through the base damage formula, and Present
-   * at its expected power. With a roster (#122) it re-implements who a status move
-   * can land on and what a disrupting tag takes away: the status and tag immunities
-   * of the abilities (read off `initAbilities` by name), the type checks, powder and
-   * Thunder Wave's type immunity, and the moves Taunt, Heal Block and Encore act on.
+   * The learn card calls nothing. What a move *does* now comes from
+   * `07-move-traits.js`, which owns the attribute shapes; what is left here is what
+   * the card prices itself: the stand-in power of a move whose power is set by the
+   * target or the moment (fixed damage priced back through the base damage formula,
+   * Present at its expected power) and the type a move actually lands as. Two enums
+   * come through as bare values — `MoveTarget` and `StatusEffect` as numbers the
+   * card indexes tables with, `BattlerTagType` as the strings it keys `TAG_VALUE`
+   * by — so a reordered member silently mis-scores every move that carries it. With
+   * a roster (#122) it re-implements who a status move can land on and what a
+   * disrupting tag takes away: the status and tag immunities of the abilities (read
+   * off `initAbilities` by name), the type checks, powder and Thunder Wave's type
+   * immunity, and the moves Taunt, Heal Block and Encore act on.
    */
   "40-learn.js": [
     `${P}#Pokemon.getBaseDamage`,
     `${M}#PresentPowerAttr.apply`,
-    `${M}#MoveAttr.constructor`,
-    `${M}#HealAttr.constructor`,
-    `${M}#StatusEffectAttr.constructor`,
-    `${M}#AddBattlerTagAttr.constructor`,
-    `${M}#StatStageChangeAttr.constructor`,
-    `${M}#MultiHitAttr.constructor`,
     `${P}#Pokemon.canSetStatus`,
     `${P}#Pokemon.getMoveEffectiveness`,
     `${M}#Move.isTypeImmune`,

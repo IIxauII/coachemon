@@ -15,6 +15,7 @@ import { dispatch } from "../page/dispatch.ts";
 import type { ConsoleLine } from "../page/errors.ts";
 import { fine } from "../page/fine.ts";
 import { COMMAND_HANDLERS, type Result } from "../page/handlers.ts";
+import { PAGE_MODES } from "../page/modes.ts";
 import { locate } from "../page/locate.ts";
 import { COMMAND_NAMES, STORE_COMMANDS, type Args, type CommandName } from "../protocol/commands.ts";
 import { isThrown, type CdpSession } from "./session.ts";
@@ -34,9 +35,9 @@ const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: numb
   [Button.MENU]: ["Escape", "Escape", 27],
 };
 
-/** Each command's expression up to its arguments: the functions stringify once. */
+/** Each command's expression up to its arguments: the functions stringify once, the mode enums serialize with them (#164). */
 const PREFIX = Object.fromEntries(
-  COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${COMMAND_HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, `]),
+  COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${COMMAND_HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, ${JSON.stringify(PAGE_MODES)}, `]),
 ) as Record<CommandName, string>;
 
 export class CdpLink implements GameLink, Tab {

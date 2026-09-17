@@ -2,11 +2,13 @@
 // a summary, never at load time.
 // Full: every proposal with its cost, the types its STAB hits and what it's weak to, one line per pick with its role and
 // reasons, then the species under the cursor. Mini: the best proposal on one line.
-const ptsText = x => `${Math.round(x * 100) / 100}`;
-const drawStarters = m => {
+import { ptsText } from "./51-starters.js";
+import { FS, bar, dim, h, line, mon, sep, tab, view } from "./90-render.js";
+
+export const drawStarters = m => {
   const best = m.picks[0];
   const lead = best?.members.find(x => x.role === "carry") ?? best?.members[0];
-  if (view === "closed") return [tab("🌱", lead ? mon(lead.icon, lead.name, 20) : null)];
+  if (view() === "closed") return [tab("🌱", lead ? mon(lead.icon, lead.name, 20) : null)];
   const header = bar("🌱", "Starters", h("span", { ...dim, fontWeight: "normal" }, `${ptsText(m.spent)}/${m.limit} pts`));
   const ROLE = { carry: "#8cf", support: "#c9f" };
   const chosen = m.chosen.length
@@ -17,7 +19,7 @@ const drawStarters = m => {
   const teamTail = t => [h("span", { ...dim, marginLeft: "4px" }, `${ptsText(t.cost)} pts · SE vs ${t.covers} types`),
     t.weak.length ? h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "4px" }, `· weak ${t.weak.join("/")}`) : null,
     t.noCarry ? h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "4px" }, "· no carry") : null];
-  if (view === "mini") {
+  if (view() === "mini") {
     return [header, chosen,
       line("★", "#6d6", ...best.members.flatMap((x, i) => [i ? h("span", dim, "+") : null, mon(x.icon, x.name, 20),
         x.chosen ? null : h("span", { fontWeight: x.role === "carry" ? "bold" : "normal" }, x.name)]), ...teamTail(best))].filter(Boolean);
@@ -45,9 +47,3 @@ const drawStarters = m => {
   if (notes.length) out.push(line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, notes.join(" · "))));
   return out.filter(Boolean);
 };
-
-// `best: Gible (carry) + Magikarp + Pikachu · 10/10 pts; without Gible: …`
-const startersSummary = (m, base) => ({
-  ...base,
-  starters: m.picks.map(t => `${t.label}: ${t.members.map(x => `${x.name}${x.role === "carry" ? " (carry)" : ""}`).join(" + ")} · ${ptsText(t.cost)}/${m.limit} pts${t.weak.length ? ` · weak ${t.weak.join("/")}` : ""}`).join("; ") || null,
-});

@@ -45,7 +45,8 @@ export class LinkGame implements GamePort {
     if ("ok" in r) return unreadable(r.why, -1);
     if (r.disc === undefined) return unreadable(r.why, r.mode);
     const { disc, ...menu } = r;
-    return { ...menu, screen: screenId(r.mode, disc), extra: { ...menu.extra, ...screenFields(r.family, r.mode, disc) } };
+    // Each family's `extra` is what its reader branch wrote: the page's JSON is untyped, so the union is asserted here.
+    return { ...menu, messagePending: menu.messagePending === true, screen: screenId(r.mode, disc), extra: { ...menu.extra, ...screenFields(r.family, r.mode, disc) } } as MenuRead;
   }
 
   async press(button: Button, fine: string): Promise<Act> {
@@ -127,7 +128,7 @@ export class LinkGame implements GamePort {
 }
 
 function unreadable(why: string, mode: number): MenuRead {
-  return { readable: false, why, mode, screen: screenId(mode, NO_DISC), family: null, options: [], cursor: null, text: null, extra: {} };
+  return { readable: false, why, mode, screen: screenId(mode, NO_DISC), family: null, options: [], cursor: null, text: null, messagePending: false, extra: {} };
 }
 
 /** The fields a family takes from the Screen's discriminators, so they always agree with `screen`. */

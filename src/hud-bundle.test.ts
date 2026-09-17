@@ -104,8 +104,10 @@ test("hud-off is the prelude alone, and the probe carries only its imports", () 
   assert.doesNotMatch(off, /01-core/);
   const probe = bundle("starters");
   assert.match(probe, /const MODE = "starters";/);
-  assert.deepEqual([...probe.matchAll(/^\/\/ ---- ([\w-]+\.js|enums)\b/gm)].map(m => m[1]), ["enums", "01-core.js", "probe.js"]);
+  // The probe imports the shared screen detection (02-screens) as well as the type chart, and nothing else.
+  assert.deepEqual([...probe.matchAll(/^\/\/ ---- ([\w-]+\.js|enums)\b/gm)].map(m => m[1]), ["enums", "01-core.js", "02-screens.js", "probe.js"]);
   assert.match(probe, /^const \{ TYPES \} = __hud\["01-core"\];$/m);
+  assert.match(probe, /^const \{ learnState, rewardsScreen \} = __hud\["02-screens"\];$/m);
 });
 
 test("the probe names Stellar, which the HUD's type chart leaves out", () => {

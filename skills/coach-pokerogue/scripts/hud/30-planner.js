@@ -31,7 +31,6 @@ const planMemo = (s, k, fn) => {
   return plannerMemo.map.get(kk);
 };
 
-const COST_NOTE = /−|recoil|locks|twice in a row|faints|charges a turn|recharges a turn|fails if hit/;
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
 // Turn-end HP change, signed: heals +, weather / status chip −. `dealt`: damage `p` deals a turn (Shell Bell).
@@ -50,7 +49,7 @@ const protectChance = (s, foe) => planMemo(s, `protect:${foe.id}`, () => {
   return (enemyMoveDistribution(s, foe) ?? []).reduce((sum, d) => {
     const pm = foe.moveset[d.slot] ?? foe.moveset.find(m => m?.getName() === d.name);
     const mv = pm?.getMove?.();
-    return sum + (mv && hasAttr(mv, "ProtectAttr") ? d.p : 0);
+    return sum + (mv && moveTraits(mv).protect ? d.p : 0);
   }, 0);
 });
 
@@ -62,20 +61,43 @@ const spreadMult = (s, atk) => {
   return (s.getField?.() ?? []).filter(p => p && p.hp > 0 && enemies.includes(p) !== mine).length >= 2 ? 0.75 : 1;
 };
 
+// What a move costs its user, the way the game itself measures it. The game's only such notion is the enemy AI's
+// move scoring, so the planner uses that rather than a hand-kept list of attributes: `benefit` is the expected score
+// of **full step 7** of `getNextMove` for our move against this target (20-enemy-ai's `aiTargetScore`), which covers
+// `getUserBenefitScore` + `getTargetBenefitScore × sign`, the condition branches, × effectiveness × 1.5 STAB, and
+// the 0 → −20 rule. Both signs count, so Stone Edge's HighCrit +3 is a bonus and Brave Bird's recoil a penalty.
+// Without game functions (the approximation, the mocks) it is 0 and nothing is nudged.
+const AI_POINT = 0.25 / 6;
+const benefitOf = (s, atk, def, mv) => {
+  if (!mv || !plannerReady(s) || typeof aiTargetScore !== "function") return 0;
+  return planMemo(s, `ai:${atk.id}>${mv.id ?? mv.name}>${def.id}`, () => {
+    try {
+      const bi = def.getBattlerIndex?.();
+      const n = sandbox(s, () => (aiTargetScore(s, atk, mv, bi ?? BattlerIndex.ENEMY, def) ?? []).reduce((t, b) => t + b.score * b.p, 0));
+      return Number.isFinite(n) ? n : 0;
+    } catch { return 0; }
+  });
+};
+
 // Every usable damaging move of `atk` into `def`, in the damage module's record shape plus `pm` (the moveset entry,
-// for turn order) and `dmg` (expected damage, what the rows show).
+// for turn order), `dmg` (expected damage, what the rows show) and `benefit` (the AI's own score for it, above).
 const planOutcomes = (s, atk, def) => planMemo(s, `o:${atk.id}>${def.id}`, () => {
   const pmOf = name => atk.moveset.find(m => m?.getName() === name) ?? null;
   if (plannerReady(s) && typeof moveOutcomes === "function") {
     const live = moveOutcomes(s, atk, def);
-    if (live?.length) return live.map(o => ({ ...o, pm: pmOf(o.name), dmg: o.expected, live: true }));
+    if (live?.length) {
+      return live.map(o => {
+        const pm = pmOf(o.name);
+        return { ...o, pm, dmg: o.expected, benefit: benefitOf(s, atk, def, pm?.getMove?.()), live: true };
+      });
+    }
   }
   const foe = (s.getEnemyParty?.() ?? []).includes(atk);
   const mult = spreadMult(s, atk);
   const bars = bossBarsLeft(def);
   return hits(atk, def, foe).map(x => {
     const dmg = x.dmg * (x.spread ? mult : 1);
-    return { ...x, dmg, pm: pmOf(x.name) ?? x, expected: dmg, max: dmg, acc: 1, dist: [{ n: 1, p: 1 }], notes: [], pKo: bars <= 1 && dmg >= def.hp ? 1 : 0, targetHp: def.hp, live: false };
+    return { ...x, dmg, pm: pmOf(x.name) ?? x, expected: dmg, max: dmg, acc: 1, dist: [{ n: 1, p: 1 }], benefit: 0, costs: [], notes: [], pKo: bars <= 1 && dmg >= def.hp ? 1 : 0, targetHp: def.hp, live: false };
   });
 });
 
@@ -246,12 +268,9 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
 
 // Stat stages a status move of `p`'s changes on `p` itself (Swords Dance, Dragon Dance, Shell Smash, Belly Drum):
 // { [stat 1–5]: change } after Simple / Contrary and the ±6 cap, or null. Accuracy and evasion aren't counted.
-// A move aimed at the user's own side counts even when its attribute doesn't say so (Howl carries no `selfTarget`).
-const SELF_SIDE_TARGETS = new Set([MoveTarget.USER, MoveTarget.USER_OR_NEAR_ALLY, MoveTarget.USER_AND_ALLIES, MoveTarget.USER_SIDE, MoveTarget.PARTY]);
-const attrIs = (a, name) => {
-  for (let c = a?.constructor; c?.name; c = Object.getPrototypeOf(c)) if (c.name === name) return true;
-  return false;
-};
+// Which stages a move moves is the traits' (a move aimed at the user's own side counts even when its attribute
+// doesn't say so — Howl carries no `selfTarget`); a move aimed at a partner's slot moves the partner's stats, not
+// ours. The ability multiplier and the cap are live, so they stay here.
 const selfStages = (p, mv) => {
   if (!mv || mv.category !== MoveCategory.STATUS) return null;
   let mult = 1;
@@ -261,11 +280,9 @@ const selfStages = (p, mv) => {
     }
   } catch {}
   const out = {};
-  for (const a of mv.attrs ?? []) {
-    if (!attrIs(a, "StatStageChangeAttr") || !(a.selfTarget || SELF_SIDE_TARGETS.has(mv.moveTarget))) continue;
-    let n = a.stages ?? 0;
-    try { if (typeof a.getLevels === "function") n = a.getLevels(p); } catch {}
-    for (const st of a.stats ?? []) if (st >= Stat.ATK && st <= Stat.SPD) out[st] = (out[st] ?? 0) + n * mult;
+  for (const x of moveTraits(mv, p).stages) {
+    if (!(x.self || (x.side && !x.ally))) continue;
+    for (const st of x.stats) if (st >= Stat.ATK && st <= Stat.SPD) out[st] = (out[st] ?? 0) + x.stages * mult;
   }
   for (const st of Object.keys(out)) {
     const cur = p.summonData?.statStages?.[st - 1] ?? 0;
@@ -535,13 +552,16 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   const after = opts.after ?? null;
   const exact = !after;
   const mine = opts.outcome ?? planOutcomes(s, me, foe).find(o => o.name === pmName(pm)) ?? null;
+  // What the move itself costs over turns (07-move-traits, through the outcome record); what those turns are worth
+  // is this module's.
+  const mt = mine?.traits ?? {};
   const t = threatFrom(s, foe, me, pm, { next: !!opts.next });
   const pFirst = t ? 1 - (t.pKo > 0 ? t.koFirst : t.first) : 1;
   const pF = opts.free ? 1 : pFirst;
   // Chance our move does its job when chosen: we get to act, Focus Punch isn't hit first, Sucker Punch meets an
   // attack, a foe mid-Dig / Fly has come out first. `steady`: the part that recurs on later turns.
   const foeAttacks = opts.free || !t ? 0 : Math.min(1, t.moves.reduce((sum, m) => sum + m.p, 0));
-  const needs = (mine?.interrupt ? 1 - foeAttacks * (1 - pF) : 1) * (mine?.needsAttack ? foeAttacks * pF : 1);
+  const needs = (mt.interrupt ? 1 - foeAttacks * (1 - pF) : 1) * (mt.needsAttack ? foeAttacks * pF : 1);
   // Protect this turn only: a second one in a row mostly fails, and the replay of later turns can't see the first.
   const guard = opts.free || opts.next || after || mine?.bypassProtect ? 0 : protectChance(s, foe);
   // King's Rock: 10 % a stack to flinch us with each attack that lands before we move.
@@ -560,7 +580,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   if (mine?.expected > 0) {
     // Overheat-type drops to the stat the move attacks with weaken every repeat.
     const atkStat = mine.cat === "special" ? Stat.SPATK : Stat.ATK;
-    const drop = mine.drops?.[atkStat] ?? 0;
+    const drop = mt.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
     // Its turn-end HP change, with our item thieves on it (`steady` of our hits land a turn).
     const course = turnEndCourse(s, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0);
@@ -577,7 +597,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     // 2–3 turns and the confusion after it wastes a third of up to two more hits.
     delay = actDelay(me) + (mine.semi && pF >= 0.5 ? 1 : 0);
     // Use 1 is this turn's move unless it charges or waits: then this turn's exact odds are its own.
-    const nowUse = !mine.charge && delay === 0;
+    const nowUse = !mt.charge && delay === 0;
     qWe = nowUse ? (mine.pKo ?? 0) * now : 0;
     // Through what's left of its bars (a wild boss's Def / SpD rising as each breaks) and a Reviver Seed's second life.
     const curve = koCurve(foe, useOf(mine), {
@@ -589,16 +609,16 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const perChunk = curve.perChunk;
     if (!exact && nowUse) qWe = curve.by[0];
     hitsWe = koTurn(curve.by);
-    const cycle = mine.recharge || mine.noRepeat ? 2 * hitsWe - 1 : mine.charge ? 2 * hitsWe : hitsWe;
-    const confusedHits = mine.lock ? Math.min(Math.max(0, hitsWe - 2), 2) : 0;
+    const cycle = mt.recharge || mt.noRepeat ? 2 * hitsWe - 1 : mt.charge ? 2 * hitsWe : hitsWe;
+    const confusedHits = mt.lock ? Math.min(Math.max(0, hitsWe - 2), 2) : 0;
     confusion = confusedHits * 0.5;
-    turnsWe = mine.once && hitsWe > 1 ? 9 : Math.min(9, Math.ceil(delay + cycle + confusedHits * 0.5));
+    turnsWe = mt.once && hitsWe > 1 ? 9 : Math.min(9, Math.ceil(delay + cycle + confusedHits * 0.5));
     // Uses made by the end of turn j, for the race.
     const usesBy = j => {
       const k = j - delay;
       if (k <= 0) return 0;
-      const n = mine.charge ? Math.floor(k / 2) : mine.recharge || mine.noRepeat ? Math.ceil(k / 2) : k;
-      return Math.min(9, mine.once ? Math.min(1, n) : n);
+      const n = mt.charge ? Math.floor(k / 2) : mt.recharge || mt.noRepeat ? Math.ceil(k / 2) : k;
+      return Math.min(9, mt.once ? Math.min(1, n) : n);
     };
     weBy = j => (usesBy(j) ? curve.by[usesBy(j) - 1] : 0);
     if (nowUse) foeAfter1 = curve.after1;
@@ -620,16 +640,16 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, Stat.ATK) / stat(me, Stat.DEF) / 50 + 2) * 0.925;
     selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + confusedHits * 1.5 * confusionHit / 3;
     // Lowered Def / SpD (Close Combat, V-create) after the first use: the foe hits harder on the rest.
-    const soften = st => (mine.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mine.drops[st])) : 1);
-    if (hitsWe > 1 && (mine.drops?.[Stat.DEF] || mine.drops?.[Stat.SPDEF])) defUp = 1 + ((soften(Stat.DEF) + soften(Stat.SPDEF)) / 2 - 1) * (hitsWe - 1) / hitsWe;
+    const soften = st => (mt.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mt.drops[st])) : 1);
+    if (hitsWe > 1 && (mt.drops?.[Stat.DEF] || mt.drops?.[Stat.SPDEF])) defUp = 1 + ((soften(Stat.DEF) + soften(Stat.SPDEF)) / 2 - 1) * (hitsWe - 1) / hitsWe;
   }
   // Our own toll comes off the HP the foe has to get through (front-loaded); if it alone would drop us, we go down
   // around our last hit.
-  const selfKo = mine?.selfKo ?? 0;
+  const selfKo = mt.selfKo === "always" ? 1 : mt.selfKo === "onHit" ? mine?.acc ?? 1 : 0;
   const budget = hp - selfSpent;
   const foeT = defUp !== 1 && t ? { ...t, expected: t.expected * defUp } : t;
   // Its attacks our flinch cancels: this turn's if we move first and act, later ones only for a repeatable move.
-  const foeAct = i => (1 - ourFlinch * (i === 0 ? pF * now : mine?.once ? 0 : pFirst * steady)) * (opts.foeAct ? opts.foeAct(i) : 1);
+  const foeAct = i => (1 - ourFlinch * (i === 0 ? pF * now : mt.once ? 0 : pFirst * steady)) * (opts.foeAct ? opts.foeAct(i) : 1);
   const mult = foeMult || defUp !== 1 ? j => (foeMult ? foeMult(j) : 1) * defUp : null;
   const myStart = after?.me.map(x => ({ ...x, hp: x.revived ? x.hp : x.hp - selfSpent })).filter(x => x.hp > 0);
   // Our drain move wins back its share of what it deals on each turn it lands.
@@ -689,7 +709,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     expectedHpLeft: Math.round(hpLeft),
     turnsWe, turnsThey, pFirst, hitsWe,
     eTurnsWe: Math.min(9, expTurns(weBy) + confusion), eTurnsThey: expTurns(theyBy),
-    cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mine?.lock ? 0.1 : 0),
+    cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 : 0),
     turn1: (() => {
       // Our branches in real HP: the curve front-loaded every use's self-cost, turn 1 has only paid one.
       const me1 = opts.free || !theirs ? [{ hp, p: 1 }]
@@ -712,6 +732,25 @@ const exchange = (s, me, pm, foe, opts = {}) => {
 // no turn, so every candidate field starts the coming turn fresh.
 // `locked`: slot 1's command phase, with slot 0's command already in (`lockedCommand`): that slot is kept as chosen
 // and only its partner is searched.
+// Trap abilities on the foes a slot's move actually hits: an immunity (by type, or by move flag - Soundproof and
+// co.), a damage cut, or an ability that punishes the hit. Read off the engine mons the plan still holds, so it
+// sees the move's flags and the foe's real abilities. Intimidate only on a foe coming in (on the field its drop is
+// already in our stat stages); never Sturdy, which the KO model already counts.
+const trapsOn = (p, active) => {
+  const mv = p.move?.pm?.getMove?.();
+  if (!mv || p.self || p.target === null || p.target === undefined) return [];
+  const type = p.move.type;
+  const phys = p.move.cat === "physical";
+  const foes = p.target === "both" ? active : [active[p.target]];
+  const bites = (a, foe) => ABILITY_IMMUNE[a] === type
+    || (ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a]))
+    || (a === "Thick Fat" && (type === "Fire" || type === "Ice")) || (a === "Heatproof" && type === "Fire")
+    || (a === "Fluffy" && (phys || type === "Fire")) || (a === "Intimidate" && phys && !foe.isOnField?.())
+    || a === "Wonder Guard"
+    || (["Filter", "Solid Rock", "Prism Armor"].includes(a) && typesOf(foe).reduce((x, d) => x * vs(type, d), 1) >= 2);
+  return [...new Set(foes.filter(Boolean).flatMap(foe => abilitiesOf(foe).filter(a => TRAPS.has(a) && bites(a, foe))))];
+};
+
 const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = false, locked = null } = {}) => {
   // Our side has two slots whenever two of us can stand, even if only one foe is left; `pair`: two foes to aim at.
   const slots = double && party.length >= 2 ? 2 : 1;
@@ -755,7 +794,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     const danger = Math.min(...active.map(f => Math.min(9, foeTurns(s, threatFrom(s, f, me, null, { next }), me, hp, { foe: f }) + (free(f) ? 1 : 0))));
     const trade = (o, f) => exchange(s, me, o.pm, f, { hp, outcome: o, free: free(f), next });
     const last = entering ? null : lastMoveOf(me);
-    const cost = o => (drawback(o) ? DRAWBACK_COST : 0) - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
+    const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     // Falling to a foe with an on-KO boost (Beast Boost, Moxie) arms it against whoever comes next.
     const feed = f => feedCost(f, party.length - 1);
     const one = (o, fi) => {
@@ -769,11 +808,11 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     // beats repeating the move by more than a rounding error (DEPTH_GAIN); `then` names the follow-up.
     const deeper = x => {
       const o = x.move, f = active[x.target], t1 = x.trade?.turn1;
-      if (!t1 || o.charge || o.recharge || o.lock || o.selfKo || o.semi || actDelay(me)) return x;
+      if (!t1 || o.traits?.charge || o.traits?.recharge || o.traits?.lock || o.traits?.selfKo || o.semi || actDelay(me)) return x;
       const standing = 1 - t1.we - t1.they;
       if (standing < 0.05) return x;
       // A follow-up that also hits our partner isn't weighed here: the joint scoring only sees this turn's hits.
-      const pool = planOutcomes(s, me, f).filter(y => y.expected > 0 && !(pair && y.spread) && !(slots === 2 && hitsAlly(y)) && !(y === o && o.once));
+      const pool = planOutcomes(s, me, f).filter(y => y.expected > 0 && !(pair && y.spread) && !(slots === 2 && hitsAlly(y)) && !(y === o && o.traits?.once));
       const cands = [...new Set([...[...pool].sort((a, b) => b.expected - a.expected).slice(0, 2), ...pool.filter(y => (y.priority ?? 0) > 0).slice(0, 1),
         ...(pool.includes(o) ? [o] : [])])];
       const value = y => {
@@ -804,7 +843,8 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       if (hits + lost >= 9) return null;
       const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
       const slow = Math.max(...xs.map(x => x?.eTurnsWe ?? 9));
-      return { me, move: o, target: "both", turns: hits + lost, hits, each, score: danger - slow - lost + 1 + edge - cost(o), hp };
+      const both0 = other ? { ...o, benefit: Math.max(o.benefit ?? 0, other.benefit ?? 0) } : o;
+      return { me, move: o, target: "both", turns: hits + lost, hits, each, score: danger - slow - lost + 1 + edge - cost(both0), hp };
     };
     // Status moves (single battles): this turn spent on a setup move, a status, a heal or a hazard, then the best
     // attack from what it leaves. Turn 1 is an `exchange` in which we deal nothing; its effect is written onto the mons
@@ -847,7 +887,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       const t1p = { ...t1, we: 0, they, me: mine1, hp: mine1.reduce((sum, b) => sum + b.p * b.hp, 0) / mass };
       const follow = patches => {
         const run = () => {
-          const pool = planOutcomes(s, me, f).filter(y => y.expected > 0 && !y.once);
+          const pool = planOutcomes(s, me, f).filter(y => y.expected > 0 && !y.traits?.once);
           const cands = [...new Set([...[...pool].sort((a, b) => b.expected - a.expected).slice(0, 2), ...pool.filter(y => (y.priority ?? 0) > 0).slice(0, 1)])];
           let best = null;
           for (const y of cands) {
@@ -869,10 +909,12 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       const spent = (play.hpCost ?? 0) / maxHp + mix("cost");
       const bonus = play.kind === "hazard" ? play.value * works : 0;
       const keep = last != null && pm.moveId === last ? KEEP_BONUS : 0;
+      // The same nudge every attacking option gets: what the game's own scoring makes of this move here.
+      const nudge = benefitOf(s, me, f, mv) * AI_POINT;
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
-        turns: hits + lost, hits, score: danger - eTurns - lost + edge - spent + keep + bonus - STATUS_COST, hp, then: landed.y,
+        turns: hits + lost, hits, score: danger - eTurns - lost + edge - spent + keep + bonus + nudge - STATUS_COST, hp, then: landed.y,
         effect: `${play.note}${aimed && works < 0.995 ? ` ${Math.round(works * 100)}%` : ""}`,
       };
     };
@@ -907,7 +949,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       // Depth 2 for every move of a single slot; in doubles the three best and any move that lives on turn 1
       // (priority, a flinch, first turn only).
       const deep = slots === 1 ? scored : [...[...scored].sort((a, b) => b.score - a.score).slice(0, 3),
-        ...scored.filter(x => x.move.once || x.move.flinch > 0 || (x.move.priority ?? 0) > 0)];
+        ...scored.filter(x => x.move.traits?.once || x.move.flinch > 0 || (x.move.priority ?? 0) > 0)];
       for (const x of scored.map(x => (entering || !deep.includes(x) ? x : deeper(x)))) {
         const o = x.move;
         if (better(best, x)) best = x;
@@ -958,7 +1000,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       let score = p.score - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, partner.score)) : 0);
       if (spare && drawback(p.move)) {
         const clean = opt(p.me, payers.includes(p.me)).filter(x => x.move && !drawback(x.move)).reduce((b, x) => (!b || x.score > b.score ? x : b), null);
-        if (clean) score = Math.min(score, clean.score) - DRAWBACK_COST;
+        if (clean) score = Math.min(score, clean.score) + (p.move.benefit ?? 0) * AI_POINT;
       }
       return { ally, spare, score };
     });
@@ -1128,8 +1170,9 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     if (fed) out.push(`KO feeds ${foe.name}'s ${fed.ability} (${koBoostText(fed)})`);
     const n = hitCounts(p.move);
     if (n) out.push(`${p.move.name} ×${n}`);
-    // What the move costs its user (10-damage): HP, lock-in, stat drops, lost turns.
-    out.push(...(p.move?.notes ?? []).filter(x => COST_NOTE.test(x)));
+    // What the move costs its user (07-move-traits' wording, with 10-damage's amounts): HP, lock-in, stat drops,
+    // lost turns.
+    out.push(...(p.move?.costs ?? []));
     // A foe that can take this mon's items.
     for (const f of foe ? [foe] : active) {
       for (const m of thieves(f, p.me)) {
@@ -1180,7 +1223,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   // A Protect after a successful one only works 1 time in 3.
   const protectedLast = me => {
     const last = me.getLastXMoves?.(1)?.[0];
-    return !!last && last.result === MoveResult.SUCCESS && me.moveset.some(pm => pm?.moveId === last.move && hasAttr(pm.getMove(), "ProtectAttr"));
+    return !!last && last.result === MoveResult.SUCCESS && me.moveset.some(pm => pm?.moveId === last.move && moveTraits(pm.getMove()).protect);
   };
   const boostedKo = (b, X) => {
     if (bossBarsLeft(X) > 1) return 0;
@@ -1198,7 +1241,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       const b = plan.picks[1 - i];
       if (a.locked || !a.move || !b.move?.pm || b.target == null || plan.payers.includes(a.me) || plan.payers.includes(b.me)) return;
       const alone = joint([b], plan.payers, mons);
-      const protect = a.me.moveset.find(pm => usablePm(pm) && hasAttr(pm.getMove(), "ProtectAttr"));
+      const protect = a.me.moveset.find(pm => usablePm(pm) && moveTraits(pm.getMove()).protect);
       if (protect && !protectedLast(a.me) && plan.joint.value - alone.value < 0.5) {
         const X = attackers.find(f => {
           const xi = active.indexOf(f);
@@ -1250,6 +1293,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
           threat: slotThreat(p, enter),
+          traps: sup ? [] : trapsOn(p, active),
           locked: !!p.locked,
           support: sup?.kind ?? null,
           spare: !sup && spare,
@@ -1272,13 +1316,9 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
 
 // Moves that hit every other pokémon on the field, our partner included (MoveTarget ALL_OTHERS, ALL_NEAR_OTHERS).
 const hitsAlly = o => [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS].includes(o?.pm?.getMove?.()?.moveTarget);
-// A cost beyond the turn: recoil, fainting, a recharge turn, or lowering the user's own stats.
-const DRAWBACK_ATTRS = ["RecoilAttr", "SacrificialAttr", "SacrificialAttrOnHit", "HalfSacrificialAttr", "RechargeAttr"];
-const drawback = o => {
-  const mv = o?.pm?.getMove?.();
-  return !!mv && (DRAWBACK_ATTRS.some(n => hasAttr(mv, n)) || (mv.attrs || []).some(a => a.constructor.name === "StatStageChangeAttr" && a.selfTarget && a.stages < 0));
-};
-const DRAWBACK_COST = 0.25;
+// A move the game's own scoring marks down: recoil, fainting, a self stat drop, a condition it can't meet. With no
+// game functions every move is 0, so nothing counts as a drawback and the clean alternative is simply the best move.
+const drawback = o => (o?.benefit ?? 0) < 0;
 const ALLY_KO_COST = 4;
 // Consistency (after PokéLLMon): between near-equal options the advice shouldn't flip from turn to turn. A mon out
 // since before last turn keeps a small edge for the move it used last; switching a mon straight back out the turn
@@ -1308,18 +1348,17 @@ const FEED_COST = 0.5;
 const statusPlay = (s, me, f, info) => {
   const mv = info.pm.getMove?.();
   if (!mv || info.blocked) return null;
-  const attrs = name => (mv.attrs ?? []).filter(a => attrIs(a, name));
-  if (attrs("StatusEffectAttr").some(a => a.selfTarget)) return null;
+  const t = moveTraits(mv, me, { target: f });
+  if (t.inflicts.some(x => x.self)) return null;
   const up = selfStages(me, mv);
   if (up) {
-    const cut = attrs("CutHpStatStageBoostAttr")[0];
     const names = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
     return {
-      kind: "setup", self: true, patches: [{ mon: me, stages: up }], hpCost: cut ? Math.max(1, Math.floor(me.getMaxHp() / (cut.cutRatio ?? 2))) : 0,
+      kind: "setup", self: true, patches: [{ mon: me, stages: up }], hpCost: t.cutHp ? Math.max(1, Math.floor(me.getMaxHp() / t.cutHp.ratio)) : 0,
       note: Object.entries(up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${names[st]}`).join(" "),
     };
   }
-  const inflict = attrs("StatusEffectAttr").find(a => [StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.PARALYSIS, StatusEffect.SLEEP, StatusEffect.BURN].includes(a.effect));
+  const inflict = t.inflicts.find(x => [StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.PARALYSIS, StatusEffect.SLEEP, StatusEffect.BURN].includes(x.effect));
   if (inflict) {
     if (f.status?.effect || !canTakeStatus(s, f, inflict.effect, me)) return null;
     const early = !!f.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr");
@@ -1332,21 +1371,17 @@ const statusPlay = (s, me, f, info) => {
       note: STATUS_FRAMES[inflict.effect],
     };
   }
-  const heal = attrs("HealAttr").find(a => a.selfTarget !== false);
-  if (heal) {
+  if (t.heal?.self) {
     const max = me.getMaxHp?.() ?? me.hp;
     if (me.hp >= max) return null;
-    let ratio = heal.healRatio ?? 0.5;
-    try {
-      const w = s.arena?.weather && !s.arena.weather.isEffectSuppressed?.() ? s.arena.weather.weatherType : WeatherType.NONE;
-      if (typeof heal.getWeatherHealRatio === "function") ratio = heal.getWeatherHealRatio(w);
-      else if (attrIs(heal, "BoostHealAttr")) ratio = heal.condition?.(me, f, mv) ? heal.boostedHealRatio ?? ratio : heal.normalHealRatio ?? ratio;
-    } catch {}
+    // The weather the heal is judged in is live; how much it heals there is the attribute's own answer.
+    let w = WeatherType.NONE;
+    try { w = s.arena?.weather && !s.arena.weather.isEffectSuppressed?.() ? s.arena.weather.weatherType : WeatherType.NONE; } catch {}
+    const ratio = t.heal.ratioIn(w, me, f);
     return { kind: "heal", self: true, amount: Math.max(1, Math.floor(max * ratio)), note: `heal ${Math.round(ratio * 100)}%` };
   }
-  const trap = attrs("AddArenaTrapTagAttr")[0];
-  if (trap) {
-    const v = hazardValue(s, me, trap.tagType);
+  if (t.hazard) {
+    const v = hazardValue(s, me, t.hazard.tag);
     return v && { kind: "hazard", self: true, value: v.turns, note: `${v.n} to come` };
   }
   return null;
@@ -1423,13 +1458,9 @@ const duel = (s, me, foe, partnered = false) => {
   return best ?? { me, mine: null, myTurns: 9, score: -9 };
 };
 
-// Plain data for one refresh. Its JSON is the change signature, so the DOM is
-// only rebuilt when something the panel shows has actually changed.
-// While the game waits for a command, the whole refresh runs in one sandbox (every game call it makes), with the
-// foes that Terastallize this turn flagged so every damage number is the post-Tera one (spec §7).
-const model = (s, b, party, foes) => (plannerReady(s)
-  ? sandbox(s, () => withPredictedTera(predictedTeras(s, b), () => battleModel(s, b, party, foes)))
-  : battleModel(s, b, party, foes));
+// Plain data for one refresh: the field, the switches and a row per foe. Its JSON is part of the change signature, so
+// the DOM is only rebuilt when something the panel shows has actually changed. 60-card composes it with the fight
+// plan and the catch advice, and opens the sandbox all three run in.
 const battleModel = (s, b, party, foes) => {
   const onField = foes.filter(f => f.isOnField?.());
   const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
@@ -1523,8 +1554,6 @@ const battleModel = (s, b, party, foes) => {
   return {
     kind: "battle",
     field: plan?.view ?? null,
-    teamPlan: b.trainer ? teamPlan(s, b, party, foes) : null,
-    catch: b.trainer ? null : catchAdvice(s, b, party, foes),
     enemySwitches: active.filter(f => predicted.has(f)).map(f => ({
       from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
     })),
