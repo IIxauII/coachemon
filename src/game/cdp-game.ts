@@ -7,7 +7,7 @@ import { isThrown, type CdpSession, type Thrown } from "../cdp/session.ts";
 import { Button, UiMode } from "../enums/generated.ts";
 import { screenId, type Discriminators } from "../screen.ts";
 import * as js from "./js.ts";
-import type { Act, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, ConsoleLine, CursorTarget, Failed, Family, GamePort, MenuOption, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** The part of `CdpSession` the adapter drives. */
 export type GameSession = Pick<CdpSession, "attached" | "launchedChrome" | "onException" | "ensure" | "evaluate" | "keepAlive" | "rawKey" | "screenshot" | "consoleTail">;
@@ -27,7 +27,19 @@ const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: numb
 /** What `PREDICATE` and `READER` return: the port's reads with the discriminators in place of the Screen. */
 type PageRead = Extract<PredicateRead, { ready: false }> | (Omit<Ready, "screen"> & { disc: Discriminators });
 type PageMenu =
-  | (Omit<MenuRead, "screen"> & { disc: Discriminators })
+  | {
+      readable: boolean;
+      why?: string;
+      mode: number;
+      handler?: string;
+      family: Family | null;
+      options: MenuOption[];
+      cursor: number | string | null;
+      text: string | null;
+      messagePending: boolean;
+      extra: Record<string, unknown>;
+      disc: Discriminators;
+    }
   /** Not located (no `mode`), or no handler for the mode. */
   | { readable: false; why: string; mode?: number; disc?: undefined };
 
@@ -77,7 +89,8 @@ export class CdpGame implements GamePort {
     if (isThrown(r)) return unreadable(r.__throw, -1);
     if (r.disc === undefined) return unreadable(r.why, r.mode ?? -1);
     const { disc, ...menu } = r;
-    return { ...menu, screen: screenId(r.mode, disc), extra: { ...menu.extra, ...screenFields(r.family, r.mode, disc) } };
+    // Each family's `extra` is what its READER branch wrote: the page's JSON is untyped, so the union is asserted here.
+    return { ...menu, messagePending: menu.messagePending === true, screen: screenId(r.mode, disc), extra: { ...menu.extra, ...screenFields(r.family, r.mode, disc) } } as MenuRead;
   }
 
   async press(b: Button): Promise<Act> {
@@ -158,7 +171,7 @@ export class CdpGame implements GamePort {
 }
 
 function unreadable(why: string, mode: number): MenuRead {
-  return { readable: false, why, mode, screen: screenId(mode, NO_DISC), family: null, options: [], cursor: null, text: null, extra: {} };
+  return { readable: false, why, mode, screen: screenId(mode, NO_DISC), family: null, options: [], cursor: null, text: null, messagePending: false, extra: {} };
 }
 
 /** The fields a family takes from the Screen's discriminators, so they always agree with `screen`. */

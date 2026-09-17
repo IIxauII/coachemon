@@ -156,7 +156,7 @@ const mode = ui.mode;
 const h = ui.handlers[mode];
 if (!h) return { readable: false, why: 'no-handler', mode };
 const disc = ${DISC};
-const out = { mode, handler: h.constructor.name, family: null, options: [], cursor: null, readable: false, text: null, extra: {}, disc };
+const out = { mode, handler: h.constructor.name, family: null, options: [], cursor: null, readable: false, text: null, messagePending: false, extra: {}, disc };
 const mh = ui.handlers[0];
 out.text = __try(() => (mh && mh.message && typeof mh.message.text === 'string') ? mh.message.text : null);
 const opt = (i, label, more) => Object.assign({ i, label }, more || {});
@@ -253,7 +253,7 @@ try {
       // ACTION/CANCEL until it is dismissed, so no option can be reached. Its text lives on h.message, not MESSAGE's.
       out.options = [];
       out.text = __try(() => __txt(h.message));
-      out.extra.messagePending = true;
+      out.messagePending = true;
       out.cursor = disc.optionsMode ? h.optionsCursor : h.cursor;
     } else if (disc.optionsMode) {
       // Sort by y ASCENDING: verb first, Cancel last (#6 corrected #4). Labels are BBCode.
@@ -270,7 +270,7 @@ try {
       if (__try(() => h.isItemManageMode()) === true) out.options.push(opt(7, __try(() => __texts(h.partyDiscardModeButton || h.partyTransferModeButton)[0]) || 'Toggle', { synthetic: true }));
       out.cursor = h.cursor;
     }
-    out.readable = out.options.length > 0 || out.extra.messagePending === true;
+    out.readable = out.options.length > 0 || out.messagePending;
   } else if (mode === 10) {
     out.family = 'starter_select';
     const gd = scene.gameData;

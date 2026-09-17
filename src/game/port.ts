@@ -48,23 +48,64 @@ export type MenuOption = {
   [k: string]: unknown;
 };
 
+export type FightMove = { name: string; pp: number; maxPp: number; power: number | null; category: number | null; type: number | null };
+
+export type ShopRow = { row: number; kind: "buttons" | "reward" | "shop"; items: { col: number; label: string | null; cost?: number | null; visible?: boolean }[] };
+
 /**
- * The menu reader's read. `screen` is identified from the same read as the family, and the fields a family takes from
- * the Screen's discriminators (party `optionsMode`/`partyUiMode`/`transferMode`, save_slot `uiMode`, the alert's
- * `closable`, starter `filterMode`) are filled into `extra` from that one read too.
+ * Each menu family's `extra`: what its branch of the in-page reader reads beside the options, plus the fields the
+ * adapter fills from the Screen's discriminators.
  */
-export type MenuRead = {
+export type FamilyExtra = {
+  option_select: { unskippedIndices: number[] | null; selectedIndex: number };
+  command: { fieldIndex: number; catchable: boolean | null };
+  fight: { fieldIndex: number; moves?: (FightMove | null)[] };
+  ball: { catchable: boolean | null };
+  target_select: { isMultipleTargets: boolean };
+  modifier_select: { rows: ShopRow[]; rowCursor: number; colCursor: number; money: number; rerollCost: number | null };
+  save_slot: { uiMode: number | null };
+  party: { optionsScroll: boolean; optionsMode: boolean; partyUiMode: number | null; transferMode: boolean };
+  starter_select: {
+    scrollCursor: number;
+    party: { name: string; cost: number | null }[];
+    partyValue: number;
+    valueLimit: number | null;
+    partyValid: boolean | null;
+    filterMode: boolean;
+  };
+  acknowledge: { awaitingActionInput: boolean; closable?: boolean };
+  learn_move: { moveSelect: boolean; page: number; pokemon: string | null; newMove: string | null };
+  paged_viewer: { page: number };
+  modal: { formLabels: (string | null)[]; inputs: (string | null)[] };
+  menu: {};
+  mystery_encounter: {};
+  unmapped: { ownKeys: string[]; texts: string[] | null };
+};
+
+export type Family = keyof FamilyExtra;
+
+type MenuReadBase = {
   readable: boolean;
   why?: string;
   mode: number;
   screen: string;
   handler?: string;
-  family: string | null;
   options: MenuOption[];
   cursor: number | string | null;
   text: string | null;
-  extra: Record<string, unknown>;
+  /** A handler's own message box waits for ACTION and swallows every cursor press (#44). */
+  messagePending: boolean;
 };
+
+/**
+ * The menu reader's read, keyed by `family`; `family: null` is a read that identified no menu (a throw, no handler).
+ * `screen` is identified from the same read as the family, and the fields a family takes from the Screen's
+ * discriminators (party `optionsMode`/`partyUiMode`/`transferMode`, save_slot `uiMode`, the alert's `closable`, starter
+ * `filterMode`) are filled into `extra` from that one read too. A reader branch that threw carries `extra.error`.
+ */
+export type MenuRead =
+  | { [F in Family]: MenuReadBase & { family: F; extra: FamilyExtra[F] & { error?: string } } }[Family]
+  | (MenuReadBase & { family: null; extra: { error?: string } });
 
 export type Failed = { ok: false; why: string };
 
