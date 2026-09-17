@@ -73,7 +73,7 @@ const REAL_CLOCK: Clock = { now: Date.now, sleep: ms => new Promise(r => setTime
 const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 
 /** The starter grid with its filter bar active, where the server never acts (§6.5). */
-const FILTER_BAR = "STARTER_SELECT/FILTER";
+const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
@@ -144,7 +144,7 @@ export class Driver {
       const menu = await this.#game.menu();
       const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
       // A read-only call never refuses on a Screen that moved since the settle: it reports the newer one.
-      return this.#settledResult(ready, menu.screen, outcome, {
+      return this.#settledResult(ready, screenOf(ready, menu), outcome, {
         ...(snap.ok ? this.#cleanSnapshot(snap.snapshot) : { snapshot_error: snap.why }),
         run: { state: this.#outcomes.runState(ready) },
       });
@@ -158,7 +158,7 @@ export class Driver {
       const ready = s.last as Ready;
       const menu = await this.#game.menu();
       const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
-      return this.#settledResult(ready, menu.screen, outcome, this.#menuPayload(ready, menu));
+      return this.#settledResult(ready, screenOf(ready, menu), outcome, this.#menuPayload(ready, menu));
     });
   }
 
@@ -295,7 +295,7 @@ export class Driver {
     const expect = async (s: SettleResult, screen: string, step: string): Promise<Ready> => {
       if (!s.settled) throw new SetupTimedOut(s, step);
       const r = s.last as Ready;
-      if (r.screen === FILTER_BAR) {
+      if (r.screen === FILTER_BAR_SCREEN) {
         throw new Refusal("filter_bar", `start_run arrived on the starter filter bar after ${step}; the server never drives it. Leave it by hand.`, { step, screen: r.screen, log });
       }
       if (r.screen !== screen) {
@@ -325,11 +325,11 @@ export class Driver {
         await expect(back, "TITLE", "back out");
       } catch (e) {
         const live = await this.#game.read();
-        const mode = live.ready ? live.mode : null;
         const screen = live.ready ? live.screen : "UNKNOWN(-1)";
+        // By Screen, not mode: on the filter bar a press(CANCEL) is refused, so only read_menu is a way on.
         const next =
-          mode === UiMode.CONFIRM ? 'select_option("Yes") on this CONFIRM to return to TITLE, then start_run again'
-          : mode === UiMode.STARTER_SELECT ? 'press(CANCEL), then select_option("Yes") on the CONFIRM to return to TITLE, then start_run again'
+          screen === "CONFIRM" ? 'select_option("Yes") on this CONFIRM to return to TITLE, then start_run again'
+          : screen === "STARTER_SELECT" ? 'press(CANCEL), then select_option("Yes") on the CONFIRM to return to TITLE, then start_run again'
           : "read_menu to see where the game is; start_run needs TITLE";
         throw new Refusal(code, `${message} Backing out to TITLE failed (${(e as Error).message}).`, {
           ...detail, screen, log, back_out_error: e instanceof Refusal ? e.code : e instanceof SetupTimedOut ? "timed_out" : "error", next,
@@ -527,7 +527,7 @@ export class Driver {
     const c = lockContended(this.lock);
     if (c.contended) throw new Refusal("tab_contended", `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, { screen, holder: c.holder });
     if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
-    if (screen === FILTER_BAR) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
+    if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
     // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
     await this.#game.keepAlive();
     const a = await this.#game.frame();
@@ -615,7 +615,7 @@ export class Driver {
     let prev: number | null = null;
     for (let n = 0; n < NAV_CAP; n++) {
       const menu = await this.#game.menu();
-      if (menu.screen !== from.screen) {
+      if (menu.readable && menu.screen !== from.screen) {
         throw new Refusal("screen_changed", `The screen changed from ${from.screen} to ${menu.screen} while walking the cursor toward ${target}. ${n} cursor press(es) were sent, nothing was committed.`, { screen: menu.screen, was: from.screen, target, presses: n });
       }
       const cur = Number(menu.cursor);
@@ -759,7 +759,7 @@ export class Driver {
 
   #menuSummary(ready: Ready, menu: MenuRead): Record<string, unknown> {
     return {
-      screen: menu.screen,
+      screen: ready.screen,
       family: menu.family,
       options: menu.options.map(o => o.label),
       cursor: menu.cursor,
@@ -775,7 +775,7 @@ export class Driver {
   }
 
   #menuPayload(ready: Ready, menu: MenuRead): Record<string, unknown> {
-    const ladder = ladderFor({ screen: menu.screen, liveVersion: ready.gameVersion ?? "", tutorialActive: ready.tutorialActive });
+    const ladder = ladderFor({ screen: screenOf(ready, menu), liveVersion: ready.gameVersion ?? "", tutorialActive: ready.tutorialActive });
     return {
       mode: { int: ready.mode, name: modeName(ready.mode) },
       handler: menu.handler ?? ready.handler,
@@ -796,9 +796,17 @@ export class Driver {
   }
 }
 
-/** The menu read is a second read after the settle: an acting call refuses before its first press if the Screen moved between them. */
+/**
+ * The Screen a menu read reports, newer than the settle's. A read that failed (a throw, no handler, an unmapped family)
+ * identified no menu, so it says nothing newer: the settled Screen stands (#133).
+ */
+function screenOf(ready: Ready, menu: MenuRead): string {
+  return menu.readable ? menu.screen : ready.screen;
+}
+
+/** The menu read is a second read after the settle: an acting call refuses before its first press if the Screen moved between them (#133). */
 function refuseMovedScreen(ready: Ready, menu: MenuRead): void {
-  if (menu.screen === ready.screen) return;
+  if (screenOf(ready, menu) === ready.screen) return;
   throw new Refusal("screen_changed", `The screen changed from ${ready.screen} to ${menu.screen} between the settled read and the menu read. Nothing was pressed.`, { screen: menu.screen, was: ready.screen });
 }
 

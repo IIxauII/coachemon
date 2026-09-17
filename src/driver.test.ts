@@ -747,6 +747,16 @@ test("a cursor walk whose Screen changes under it stops as screen_changed, count
   assert.deepEqual(presses, [Button.DOWN], "nothing committed on the new screen");
 });
 
+test("a menu read that failed is no Screen change: acting calls refuse as before, read-only calls keep the settled Screen (#133)", async () => {
+  const failed: MenuRead = { readable: false, why: "reader threw", mode: -1, screen: "UNKNOWN(-1)", family: null, options: [], cursor: null, text: null, extra: {} };
+  const tab = guardedTab({ menu: () => failed });
+  const r = await outcome(tab.driver.selectOption("Run", undefined, undefined, {}));
+  assert.equal(r.error, "no_options", JSON.stringify(r));
+  const menu = await outcome(tab.driver.readMenu({}));
+  assert.equal(menu.screen, "COMMAND");
+  assert.equal(menu.cancel_effect, "rejected", "the ladder answers for the settled Screen");
+});
+
 test("read-only calls never refuse on a Screen mismatch and report the menu read's newer Screen (#133)", async () => {
   const tab = guardedTab({ menu: () => commandMenu(0, "FIGHT") });
   const menu = await outcome(tab.driver.readMenu({}));
