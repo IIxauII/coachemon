@@ -1,15 +1,21 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { CdpSession } from "./cdp/session.ts";
-import { Driver, type MenuRead } from "./driver.ts";
+import { Driver } from "./driver.ts";
 import { Button, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
-import * as js from "./game/js.ts";
-import { CALL_BUDGET_MS, type Ready } from "./settle.ts";
+import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts";
+import type { MenuRead } from "./game/port.ts";
+import { CALL_BUDGET_MS } from "./settle.ts";
 
 // `money` joins Ready with #38; spread so this fixture compiles with and without it.
 const money = { money: 1000 };
 const disc = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summaryUiMode: null, alertClosable: false, filterMode: false, transferMode: false };
+
+/** A Driver on a scripted screen, with the fake's clock and lock. */
+function drive(screen: FakeScreen) {
+  const fake = fakeGame(screen);
+  return { ...fake, driver: new Driver(fake.game, fake.lock, fake.clock) };
+}
 
 /**
  * A game tab on a fake clock: every settle poll advances time by its sleep, nothing else does. The screen is #28's
@@ -17,47 +23,22 @@ const disc = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summ
  * the game stops settling once the first press lands.
  */
 function fakeTab(opts: { stallAfterPress: boolean }) {
-  let t = 0;
-  let frame = 0;
   const presses: number[] = [];
-  const read = (): Ready => {
+  const read = (): ScreenRead => {
     const settled = !(opts.stallAfterPress && presses.length > 0);
     return {
       ready: true, settled, reason: settled ? "menu-open" : "ui-transition", mode: UiMode.TARGET_SELECT,
       phaseName: "SelectTargetPhase", wave: 13, turn: 1, runLive: true, tutorialActive: false, handler: "TargetSelectUiHandler",
       cursor: 2, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false, fine: "target|2",
-      frame: ++frame, domMode: "TARGET_SELECT", gameVersion: "1.12.0.11", disc, ...money,
+      domMode: "TARGET_SELECT", gameVersion: "1.12.0.11", disc, ...money,
     };
   };
   const menu: MenuRead = {
     readable: true, mode: UiMode.TARGET_SELECT, family: "target_select", cursor: 2, text: null,
     options: [{ i: 2, label: "Zigzagoon" }, { i: 3, label: "Sentret" }], extra: { isMultipleTargets: false },
   };
-  const session = {
-    onException: null,
-    attached: true,
-    ensure: async () => {},
-    keepAlive: async () => {},
-    rawKey: async () => {},
-    consoleTail: () => [],
-    evaluate: async (expr: string) => {
-      if (expr === js.PREDICATE) return read();
-      if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) return menu;
-      for (const b of Object.values(Button)) {
-        if (expr === js.press(b)) {
-          presses.push(b);
-          return { ok: true };
-        }
-      }
-      return {};
-    },
-  } as unknown as CdpSession;
-  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
-    now: () => t,
-    sleep: async ms => { t += ms; },
-  });
-  return { driver, presses, now: () => t };
+  const tab = drive({ read, menu: () => menu, onPress: b => { presses.push(b); }, onRawKey: () => true });
+  return { driver: tab.driver, presses, now: tab.now };
 }
 
 async function outcome(p: Promise<Record<string, unknown>>): Promise<Record<string, unknown>> {
@@ -90,17 +71,15 @@ test("a cursor walk whose presses never settle returns timed_out at the call dea
  * nothing wraps. A spread move (`isMultipleTargets`) ignores every direction; ACTION commits all targets.
  */
 function targetGridTab(opts: { targets: { i: number; label: string }[]; cursor: number; isMultipleTargets: boolean }) {
-  let t = 0;
-  let frame = 0;
   const presses: number[] = [];
   const targets = opts.targets.map(o => o.i);
   let cursor = opts.cursor;
   let committed: number[] | null = null;
-  const read = (): Ready => ({
+  const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: committed === null ? UiMode.TARGET_SELECT : UiMode.COMMAND,
     phaseName: committed === null ? "SelectTargetPhase" : "CommandPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false,
     handler: "TargetSelectUiHandler", cursor, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-    fine: `target|${cursor}|${committed}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
+    fine: `target|${cursor}|${committed}`, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
   });
   const menu = (): MenuRead => ({
     readable: true, mode: UiMode.TARGET_SELECT, family: "target_select", cursor, text: null,
@@ -115,30 +94,7 @@ function targetGridTab(opts: { targets: { i: number; label: string }[]; cursor: 
     else if (b === Button.LEFT && cursor % 2 && targets.includes(cursor - 1)) cursor--;
     else if (b === Button.RIGHT && !(cursor % 2) && targets.includes(cursor + 1)) cursor++;
   };
-  const session = {
-    onException: null,
-    attached: true,
-    ensure: async () => {},
-    keepAlive: async () => {},
-    rawKey: async () => {},
-    consoleTail: () => [],
-    evaluate: async (expr: string) => {
-      if (expr === js.PREDICATE) return read();
-      if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) return menu();
-      for (const b of Object.values(Button)) {
-        if (expr === js.press(b)) {
-          press(b);
-          return { ok: true };
-        }
-      }
-      return {};
-    },
-  } as unknown as CdpSession;
-  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
-    now: () => t,
-    sleep: async ms => { t += ms; },
-  });
+  const { driver } = drive({ read, menu, onPress: press });
   return { driver, presses, committed: () => committed };
 }
 
@@ -179,16 +135,14 @@ test("a spread move commits any listed target with one ACTION and reports target
  * `trainer` marks the battle uncatchable as the reader does (#56); `command` opens on COMMAND instead, Ball at row 1.
  */
 function ballTab(opts: { trainer?: boolean; command?: boolean } = {}) {
-  let t = 0;
-  let frame = 0;
   const presses: number[] = [];
   let cursor = 0;
   let thrown: number | null = null;
-  const read = (): Ready => ({
+  const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: thrown !== null ? UiMode.MESSAGE : opts.command ? UiMode.COMMAND : UiMode.BALL,
     phaseName: "CommandPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false, handler: "BallUiHandler", cursor,
     modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
-    fine: `ball|${cursor}|${thrown}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
+    fine: `ball|${cursor}|${thrown}`, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
   });
   const options = [
     { i: 0, label: "Poké Ball ×13", name: "Poké Ball", ballType: 0, count: 13 },
@@ -201,33 +155,13 @@ function ballTab(opts: { trainer?: boolean; command?: boolean } = {}) {
   const menu = (): MenuRead => opts.command
     ? { readable: true, mode: UiMode.COMMAND, family: "command", cursor, text: null, options: commands, extra: { fieldIndex: 0, ...extra } }
     : { readable: true, mode: UiMode.BALL, family: "ball", cursor, text: null, options, extra };
-  const session = {
-    onException: null,
-    attached: true,
-    ensure: async () => {},
-    keepAlive: async () => {},
-    rawKey: async () => {},
-    consoleTail: () => [],
-    evaluate: async (expr: string) => {
-      if (expr === js.PREDICATE) return read();
-      if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) return menu();
-      for (const b of Object.values(Button)) {
-        if (expr === js.press(b)) {
-          presses.push(b);
-          if (b === Button.ACTION) thrown = cursor;
-          else if (b === Button.DOWN) cursor = cursor < 3 ? cursor + 1 : 0;
-          else if (b === Button.UP) cursor = cursor ? cursor - 1 : 3;
-          return { ok: true };
-        }
-      }
-      return {};
-    },
-  } as unknown as CdpSession;
-  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
-    now: () => t,
-    sleep: async ms => { t += ms; },
-  });
+  const press = (b: number) => {
+    presses.push(b);
+    if (b === Button.ACTION) thrown = cursor;
+    else if (b === Button.DOWN) cursor = cursor < 3 ? cursor + 1 : 0;
+    else if (b === Button.UP) cursor = cursor ? cursor - 1 : 3;
+  };
+  const { driver } = drive({ read, menu, onPress: press });
   return { driver, presses, thrown: () => thrown };
 }
 
@@ -285,8 +219,6 @@ test("select_option takes Ball on COMMAND in a wild battle (#56)", async () => {
  * game-mode select never settles.
  */
 function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean; yesIgnored?: boolean; yesLingers?: number; gameModeStalls?: boolean } = {}) {
-  let t = 0;
-  let frame = 0;
   const presses: number[] = [];
   const slots = [0, 1, 2, 3, 4].map(i => ({ i, label: `Slot ${i + 1}`, hasData: i === 0 }));
   type Screen = { mode: number; phase: string; chain: number[]; family: string; options: string[]; disc?: Record<string, unknown>; text?: string };
@@ -309,15 +241,15 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
   let gridCursor = 0;
   let lingering = 0;
   const go = (next: Screen) => { screen = next; cursor = 0; };
-  const read = (): Ready => {
+  const read = (): ScreenRead => {
     if (lingering > 0 && --lingering === 0) go(title);
     return readScreen();
   };
-  const readScreen = (): Ready => ({
+  const readScreen = (): ScreenRead => ({
     ready: true, ...(opts.gameModeStalls && screen === gameMode ? { settled: false, reason: "ui-transition" } : { settled: true, reason: "menu-open" }), mode: screen.mode, phaseName: screen.phase, wave: screen === switchConfirm ? 1 : null,
     turn: null, runLive: screen === switchConfirm, tutorialActive: false, handler: null, cursor, modeChain: screen.chain,
     messageText: screen.text ?? null, onActionInput: false, awaitingActionInput: false, fine: `${screen.mode}|${screen.phase}|${cursor}|${party.length}`,
-    frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc: { ...disc, ...screen.disc }, ...money,
+    domMode: null, gameVersion: "1.12.0.11", disc: { ...disc, ...screen.disc }, ...money,
   });
   const menu = (): MenuRead => ({
     readable: true, mode: screen.mode, family: screen.family, cursor, text: screen.text ?? null, extra: {},
@@ -342,32 +274,22 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
       else if (screen === overwriteConfirm) go(switchConfirm);
     }
   };
-  const session = {
-    onException: null,
-    attached: true,
-    ensure: async () => {},
-    keepAlive: async () => {},
-    rawKey: async () => {},
-    consoleTail: () => [],
-    evaluate: async (expr: string) => {
-      if (expr === js.PREDICATE) return read();
-      if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) return menu();
-      if (expr === js.STARTER_INFO) return { ok: true, filterMode: false, grid: starterGrid, valueLimit: 10, party, partyValid: true };
-      for (const g of starterGrid) if (expr === js.starterSetCursor(g.i)) { gridCursor = g.i; return { ok: true, species: g.name, cursor: g.i }; }
-      for (let j = 0; j < 5; j++) if (expr === js.optionSelectSetCursor(j)) { cursor = j; return { ok: true, fullCursor: j }; }
-      for (const b of Object.values(Button)) {
-        if (expr === js.press(b)) {
-          press(b);
-          return { ok: true };
-        }
+  const { driver } = drive({
+    read,
+    menu,
+    onPress: press,
+    starterGrid: () => ({ ok: true, filterMode: false, grid: starterGrid, valueLimit: 10, party, partyValid: true }),
+    onSetCursor: target => {
+      if (target.family === "starter_select") {
+        gridCursor = target.index;
+        return { ok: true, species: starterGrid[target.index].name };
       }
-      return {};
+      if (target.family === "option_select") {
+        cursor = target.index;
+        return { ok: true };
+      }
+      throw new Error(`unexpected setCursor on ${target.family}`);
     },
-  } as unknown as CdpSession;
-  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
-    now: () => t,
-    sleep: async ms => { t += ms; },
   });
   return { driver, presses, screen: () => screen };
 }
@@ -457,73 +379,46 @@ test("start_run that runs out of budget mid-setup returns timed_out with the ste
  * button has been pressed. Raw arrow keys move the row like processInput does.
  */
 function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean; readerFailsAfterPress?: boolean }) {
-  let t = 0;
-  let frame = 0;
   const presses: number[] = [];
-  const rawKeys: string[] = [];
+  const rawKeys: number[] = [];
   const moves = ["Scratch", "Growl", "Ember", "Flare Blitz", "Metal Claw"];
   let moveCursor = 4;
   let answered: number | null = null;
-  const read = (): Ready => ({
+  const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: answered === null ? UiMode.SUMMARY : UiMode.MESSAGE, phaseName: "LearnMovePhase",
     wave: 16, turn: 1, runLive: true, tutorialActive: false, handler: "SummaryUiHandler", cursor: 2, modeChain: [], messageText: null,
-    onActionInput: false, awaitingActionInput: false, fine: `summary|2|${opts.fineTracksRow === false ? "" : moveCursor}|${answered}`, frame: ++frame, domMode: null,
+    onActionInput: false, awaitingActionInput: false, fine: `summary|2|${opts.fineTracksRow === false ? "" : moveCursor}|${answered}`, domMode: null,
     gameVersion: "1.12.0.11", disc: { ...disc, summaryUiMode: answered === null ? 1 : null }, ...money,
   });
-  const menu = (): MenuRead => ({
-    readable: true, mode: UiMode.SUMMARY, family: "learn_move", cursor: moveCursor, text: null, extra: { moveSelect: true, page: 2 },
-    options: moves.map((label, i) => ({ i, label, forget: i < 4 })),
-  });
-  const session = {
-    onException: null,
-    attached: true,
-    ensure: async () => {},
-    keepAlive: async () => {},
+  const menu = (): MenuRead =>
+    opts.readerFailsAfterPress && presses.length > 0
+      ? { readable: false, why: "reader threw", mode: -1, family: null, options: [], cursor: null, text: null, extra: {} }
+      : {
+          readable: true, mode: UiMode.SUMMARY, family: "learn_move", cursor: moveCursor, text: null, extra: { moveSelect: true, page: 2 },
+          options: moves.map((label, i) => ({ i, label, forget: i < 4 })),
+        };
+  const { driver } = drive({
+    read,
+    menu,
+    onPress: b => {
+      presses.push(b);
+      if (b === Button.UP) moveCursor = moveCursor ? moveCursor - 1 : 4;
+      else if (b === Button.DOWN) moveCursor = moveCursor < 4 ? moveCursor + 1 : 0;
+      else if (b === Button.ACTION) answered = moveCursor;
+    },
     // The raw keyboard reaches the same handler: an arrow key moves the row exactly as processInput does.
-    rawKey: async (key: string) => {
-      rawKeys.push(key);
-      if (key === "ArrowUp") moveCursor = moveCursor ? moveCursor - 1 : 4;
-      else if (key === "ArrowDown") moveCursor = moveCursor < 4 ? moveCursor + 1 : 0;
+    onRawKey: b => {
+      rawKeys.push(b);
+      if (b === Button.UP) moveCursor = moveCursor ? moveCursor - 1 : 4;
+      else if (b === Button.DOWN) moveCursor = moveCursor < 4 ? moveCursor + 1 : 0;
+      return true;
     },
-    consoleTail: () => [],
-    evaluate: async (expr: string) => {
-      if (expr === js.PREDICATE) return read();
-      if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) {
-        if (opts.readerFailsAfterPress && presses.length > 0) throw new Error("reader threw");
-        return menu();
-      }
-      for (let j = 0; j < 5; j++) {
-        if (expr === js.learnMoveSetCursor(j)) {
-          if (!opts.setCursorWorks) throw new Error("setCursor unavailable");
-          moveCursor = j;
-          return { ok: true, moveCursor };
-        }
-      }
-      for (const b of Object.values(Button)) {
-        if (expr === js.press(b)) {
-          presses.push(b);
-          if (b === Button.UP) moveCursor = moveCursor ? moveCursor - 1 : 4;
-          else if (b === Button.DOWN) moveCursor = moveCursor < 4 ? moveCursor + 1 : 0;
-          else if (b === Button.ACTION) answered = moveCursor;
-          return { ok: true };
-        }
-      }
-      return {};
+    onSetCursor: target => {
+      if (target.family !== "learn_move") throw new Error(`unexpected setCursor on ${target.family}`);
+      if (!opts.setCursorWorks) return { ok: false, why: "setCursor unavailable", threw: true };
+      moveCursor = target.row;
+      return { ok: true };
     },
-  } as unknown as CdpSession;
-  // evaluate() of a throwing expression surfaces as { __throw } in the real session.
-  const guarded = session.evaluate;
-  session.evaluate = (async (expr: string) => {
-    try {
-      return await guarded(expr);
-    } catch (e) {
-      return { __throw: (e as Error).message };
-    }
-  }) as CdpSession["evaluate"];
-  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
-    now: () => t,
-    sleep: async ms => { t += ms; },
   });
   return { driver, presses, rawKeys, answered: () => answered, moveCursor: () => moveCursor };
 }
@@ -579,12 +474,10 @@ test("select_option on the new move declines it (#31)", async () => {
 /**
  * #44's wave-21 shop: a Revive applied to Charmander (slot 1, full HP) on PARTY/MODIFIER. ACTION on Apply closes the
  * option list and PartyUiHandler shows "It won't have any effect." in its own message box, awaiting ACTION or CANCEL;
- * while it waits, every direction is swallowed. The fake mirrors js.READER's party branch in that state: no options,
+ * while it waits, every direction is swallowed. The fake mirrors the menu reader's party branch in that state: no options,
  * the handler's own message as text, `extra.messagePending`.
  */
 function partyMessageTab() {
-  let t = 0;
-  let frame = 0;
   const presses: number[] = [];
   const party = ["Fletchling", "Charmander"];
   const verbs = ["Apply", "Summary", "Cancel"];
@@ -592,11 +485,11 @@ function partyMessageTab() {
   let cursor = 1;
   let optionsCursor = 0;
   let message: string | null = null;
-  const read = (): Ready => ({
+  const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: UiMode.PARTY, phaseName: "SelectModifierPhase", wave: 21, turn: 1,
     runLive: true, tutorialActive: false, handler: "PartyUiHandler", cursor, modeChain: [UiMode.MODIFIER_SELECT], messageText: null,
     onActionInput: message !== null, awaitingActionInput: message !== null,
-    fine: `party|${optionsMode}|${cursor}|${optionsCursor}|${message}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11",
+    fine: `party|${optionsMode}|${cursor}|${optionsCursor}|${message}`, domMode: null, gameVersion: "1.12.0.11",
     disc: { ...disc, partyUiMode: 4, optionsMode }, ...money,
   });
   const menu = (): MenuRead => {
@@ -619,30 +512,7 @@ function partyMessageTab() {
     }
     if (b === Button.DOWN) cursor = cursor === 6 ? 0 : cursor + 1 < party.length ? cursor + 1 : 6;
   };
-  const session = {
-    onException: null,
-    attached: true,
-    ensure: async () => {},
-    keepAlive: async () => {},
-    rawKey: async () => {},
-    consoleTail: () => [],
-    evaluate: async (expr: string) => {
-      if (expr === js.PREDICATE) return read();
-      if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) return menu();
-      for (const b of Object.values(Button)) {
-        if (expr === js.press(b)) {
-          press(b);
-          return { ok: true };
-        }
-      }
-      return {};
-    },
-  } as unknown as CdpSession;
-  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
-    now: () => t,
-    sleep: async ms => { t += ms; },
-  });
+  const { driver } = drive({ read, menu, onPress: press });
   return { driver, presses, cursor: () => cursor };
 }
 
@@ -696,46 +566,33 @@ test("without setCursor the learn-move rows are walked one press per row, row 1 
  * on one shows the next; after the last the shop comes back. Every press moves `messageText`, so the chain is progress.
  */
 function messageChainTab(count: number, opts: { cycle: boolean } = { cycle: false }) {
-  let t = 0;
-  let frame = 0;
   const texts = Array.from({ length: count }, (_, i) => `Pokémon ${i + 1} grew to Lv. ${20 + i}!`);
   let shown: number | null = null;
-  const read = (): Ready => {
+  const read = (): ScreenRead => {
     const onMessage = shown !== null && (opts.cycle || shown < count);
     const text = shown === null ? null : texts[shown % count];
     return {
       ready: true, settled: true, reason: onMessage ? "awaiting-action" : "menu-open", mode: onMessage ? UiMode.MESSAGE : UiMode.MODIFIER_SELECT,
       phaseName: onMessage ? "LevelUpPhase" : "SelectModifierPhase", wave: 18, turn: 1, runLive: true, tutorialActive: false, handler: null,
       cursor: 0, modeChain: [], messageText: onMessage ? text : null, onActionInput: onMessage, awaitingActionInput: onMessage,
-      fine: `chain|${shown}`, frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
+      fine: `chain|${shown}`, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
     };
   };
   const menu = (): MenuRead =>
     shown === null
       ? { readable: true, mode: UiMode.MODIFIER_SELECT, family: "modifier_select", cursor: 0, text: null, extra: {}, options: [{ i: 0, label: "Rarer Candy", row: 1, col: 0 }] }
       : { readable: true, mode: UiMode.MESSAGE, family: "message", cursor: null, text: null, extra: {}, options: [] };
-  const session = {
-    onException: null,
-    attached: true,
-    ensure: async () => {},
-    keepAlive: async () => {},
-    rawKey: async () => {},
-    consoleTail: () => [],
-    evaluate: async (expr: string) => {
-      if (expr === js.PREDICATE) return read();
-      if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) return menu();
-      if (expr === js.shopSetCursor(1, 0)) return { ok: true, rowCursor: 1, cursor: 0 };
-      if (expr === js.press(Button.ACTION)) {
-        shown = shown === null ? 0 : shown + 1;
-        return { ok: true };
-      }
-      return {};
+  const { driver } = drive({
+    read,
+    menu,
+    onSetCursor: target => {
+      assert.deepEqual(target, { family: "modifier_select", row: 1, col: 0 });
+      return { ok: true };
     },
-  } as unknown as CdpSession;
-  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
-    now: () => t,
-    sleep: async ms => { t += ms; },
+    onPress: b => {
+      assert.equal(b, Button.ACTION);
+      shown = shown === null ? 0 : shown + 1;
+    },
   });
   return { driver, shown: () => shown };
 }
@@ -782,36 +639,21 @@ test("a chain the cap does not reach carries no next hint (#45)", async () => {
  * while the game sits on a prompt waiting for ACTION.
  */
 function unmovedChainTab() {
-  let t = 0;
-  let frame = 0;
   let presses = 0;
-  const read = (): Ready => ({
+  const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "awaiting-action", mode: UiMode.MESSAGE, phaseName: "LevelUpPhase", wave: 30, turn: 2,
     runLive: true, tutorialActive: false, handler: "BattleMessageUiHandler", cursor: null, modeChain: [], messageText: "Bulbasaur grew to Lv. 24!",
-    onActionInput: true, awaitingActionInput: true, fine: "levelup", frame: ++frame, domMode: null, gameVersion: "1.12.0.11", disc, ...money,
+    onActionInput: true, awaitingActionInput: true, fine: "levelup", domMode: null, gameVersion: "1.12.0.11", disc, ...money,
   });
   const menu: MenuRead = { readable: true, mode: UiMode.MESSAGE, family: "message", cursor: null, text: "Bulbasaur grew to Lv. 24!", extra: {}, options: [] };
-  const session = {
-    onException: null,
-    attached: true,
-    ensure: async () => {},
-    keepAlive: async () => {},
-    rawKey: async () => {},
-    consoleTail: () => [],
-    evaluate: async (expr: string) => {
-      if (expr === js.PREDICATE) return read();
-      if (expr === js.FRAME) return { ready: true, frame: ++frame };
-      if (expr === js.READER) return menu;
-      if (expr === js.press(Button.ACTION)) {
-        presses++;
-        return { ok: true };
-      }
-      return {};
+  const { driver } = drive({
+    read,
+    menu: () => menu,
+    onPress: b => {
+      assert.equal(b, Button.ACTION);
+      presses++;
     },
-  } as unknown as CdpSession;
-  const driver = new Driver(session, { path: "/nonexistent/driver.lock", contended: false, holder: null }, {
-    now: () => t,
-    sleep: async ms => { t += ms; },
+    onRawKey: () => true,
   });
   return { driver, presses: () => presses };
 }
@@ -823,4 +665,54 @@ test("an acting call that runs out of budget on a MESSAGE waiting for ACTION say
   assert.equal(r.message_pending, true);
   assert.match(String(r.next), /press\(ACTION\)/);
   assert.match(String(r.note), /ACTION/);
+});
+
+/**
+ * The guards every acting call passes before its first press (#126 left them in the Driver). Unless `onPress` is given
+ * the screen scripts no press: a guard that let the call through fails the test with `unexpected press`.
+ */
+function guardedTab(over: Pick<FakeScreen, "lockHolder" | "frame" | "menu" | "onPress" | "onRawKey"> & { mode?: number; filterMode?: boolean } = {}) {
+  const mode = over.mode ?? UiMode.COMMAND;
+  const read = (): ScreenRead => ({
+    ready: true, settled: true, reason: "menu-open", mode, phaseName: "CommandPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false,
+    handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false, fine: `guard|${mode}`,
+    domMode: null, gameVersion: "1.12.0.11", disc: { ...disc, filterMode: over.filterMode ?? false }, ...money,
+  });
+  const { mode: _mode, filterMode: _filterMode, ...screen } = over;
+  return drive({ ...screen, read });
+}
+
+test("an acting call refuses tab_contended while another live driver holds the lock, pressing nothing", async () => {
+  const tab = guardedTab({ lockHolder: process.ppid });
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.error, "tab_contended", JSON.stringify(r));
+  assert.equal(r.holder, process.ppid);
+});
+
+test("an acting call refuses settings_mode on a settings screen, pressing nothing", async () => {
+  const tab = guardedTab({ mode: UiMode.SETTINGS });
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.error, "settings_mode", JSON.stringify(r));
+});
+
+test("an acting call refuses filter_bar while the starter filter bar is active, pressing nothing", async () => {
+  const tab = guardedTab({ mode: UiMode.STARTER_SELECT, filterMode: true });
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.error, "filter_bar", JSON.stringify(r));
+});
+
+test("an acting call refuses loop_frozen when the frame does not advance across the check, pressing nothing (#23)", async () => {
+  const tab = guardedTab({ frame: () => 7 });
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.error, "loop_frozen", JSON.stringify(r));
+  assert.equal(r.frame, 7);
+});
+
+test("a frame read that fails is not a frozen loop", async () => {
+  let presses = 0;
+  const menu: MenuRead = { readable: true, mode: UiMode.COMMAND, family: "command", cursor: 0, text: null, extra: {}, options: [{ i: 0, label: "Fight" }] };
+  const tab = guardedTab({ frame: () => null, menu: () => menu, onPress: () => { presses++; }, onRawKey: () => true });
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(presses, 1);
 });

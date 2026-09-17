@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CallOutcomes, worst } from "./call-outcome.ts";
 import { UiMode } from "./enums/generated.ts";
-import { CALL_BUDGET_MS, POLL_MS, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
+import type { PredicateRead, Ready } from "./game/port.ts";
+import { CALL_BUDGET_MS, POLL_MS, type SettleResult } from "./settle.ts";
 import { THRESHOLD, type Choice } from "./stuck/detector.ts";
 import { HANG_CORROBORATED_MS, HANG_DWELL_MS } from "./stuck/hang.ts";
 

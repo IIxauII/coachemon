@@ -14,7 +14,7 @@
  * as a frame delta of zero across two polls: busy reason `loop-frozen`,
  * outranking whatever the predicate says.
  */
-import type { Discriminators } from "./screen.ts";
+import type { PredicateRead } from "./game/port.ts";
 
 export const POLL_MS = 100;
 export const AGREE = 3;
@@ -27,36 +27,8 @@ export const CALL_BUDGET_MS = 30_000;
 /** Cumulative stall beyond anything observed on a healthy game; a label, not a verdict (#14). */
 export const BEYOND_OBSERVED_MS = 90_000;
 
-export type PredicateRead =
-  | { ready: false; why: string; frame: number | null; domMode: string | null }
-  | {
-      ready: true;
-      settled: boolean;
-      reason: string;
-      mode: number;
-      phaseName: string | null;
-      wave: number | null;
-      turn: number | null;
-      money: number | null;
-      runLive: boolean;
-      tutorialActive: boolean;
-      handler: string | null;
-      cursor: number | null;
-      modeChain: number[];
-      messageText: string | null;
-      onActionInput: boolean;
-      awaitingActionInput: boolean;
-      fine: string;
-      frame: number | null;
-      domMode: string | null;
-      gameVersion: string | null;
-      disc: Discriminators;
-    };
-
-export type Ready = Extract<PredicateRead, { ready: true }>;
-
 export type SettleDeps = {
-  poll: () => Promise<PredicateRead | { __throw: string }>;
+  poll: () => Promise<PredicateRead>;
   /** Every poll, for the hang watch and the phase latch. */
   onPoll?: (read: PredicateRead | null, t: number) => void;
   /** Fired once the stall passes the notice threshold, then about once a second. */
@@ -101,28 +73,19 @@ export async function settle(deps: SettleDeps, preFp: string | null): Promise<Se
 
   for (;;) {
     const t = now();
-    const raw = await deps.poll();
+    const read = await deps.poll();
     polls++;
-    let read: PredicateRead | null;
-    if ("__throw" in raw) {
-      read = null;
-      reason = `evaluate-threw: ${raw.__throw}`;
-    } else {
-      read = raw;
-      last = raw;
-    }
+    last = read;
     deps.onPoll?.(read, t);
 
     // Frame delta: a loop that has not advanced across two polls is frozen, whatever the predicate says (#23).
-    const frame = read?.frame ?? null;
+    const frame = read.frame;
     if (frame !== null && lastFrame !== null && frame === lastFrame) frozenPolls++;
     else frozenPolls = 0;
     lastFrame = frame;
     const loopFrozen = frozenPolls >= 1;
 
-    if (read === null) {
-      agree = 0;
-    } else if (!read.ready) {
+    if (!read.ready) {
       // #14: locator failure during a settle is a busy reason, never a thrown error (reset(true) re-runs launchBattle).
       agree = 0;
       reason = `scene-unavailable: ${read.why}`;

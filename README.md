@@ -113,7 +113,9 @@ Thin wrapper. The server holds no game logic — the game is the source of truth
 src/server.ts        MCP entry: seven tools over stdio
 src/driver.ts        settle → press → auto-advance → detect → envelope
 src/settle.ts        the settle loop and its budgets (#14)
-src/game/js.ts       the JavaScript injected into the tab: locator, predicate, menu reader, snapshot
+src/game/port.ts     the typed game operations the driver reaches the game through (#127)
+src/game/cdp-game.ts the CDP adapter behind that port; a page throw never leaves it as a throw
+src/game/js.ts       the adapter's JavaScript injected into the tab: locator, predicate, menu reader, snapshot
 src/cdp/             the page session (attach-else-launch) and the driver lock
 src/screen.ts        composite screen ids
 src/enums/           generated from the pinned game tag (scripts/gen-enums.ts)

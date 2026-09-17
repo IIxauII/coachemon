@@ -6,7 +6,8 @@
  *
  * `L`, `scene`, `ui`, `game` are in scope, as in src/game/js.ts.
  */
-import { CdpSession, inGame, isThrown } from "../src/cdp/session.ts";
+import { CdpSession, isThrown } from "../src/cdp/session.ts";
+import { inGame } from "../src/game/js.ts";
 
 const body = process.argv[2] ?? "return { mode: ui.mode }";
 const session = new CdpSession();

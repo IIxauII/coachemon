@@ -14,8 +14,9 @@
  */
 import { UiMode } from "./enums/generated.ts";
 import type { Diagnostic, Status } from "./envelope.ts";
+import type { PredicateRead, Ready } from "./game/port.ts";
 import { modeName, screenId } from "./screen.ts";
-import { BEYOND_OBSERVED_MS, type PredicateRead, type Ready, type SettleResult } from "./settle.ts";
+import { BEYOND_OBSERVED_MS, type SettleResult } from "./settle.ts";
 import { progressFingerprint, StuckDetector, type Choice, type StuckReport } from "./stuck/detector.ts";
 import { HangWatch } from "./stuck/hang.ts";
 
