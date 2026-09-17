@@ -1,0 +1,102 @@
+== classic, 10 points (full)
+🌱 Starters 0/10 pts − ×
+★ best 10 pts · SE vs 10 types
+Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+· without Gible 10 pts · SE vs 9 types · weak Rock
+Dratini Dratini 4 carry final BST 600 (Dragonite)
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+· fuller 10 pts · SE vs 13 types
+Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
+👁 Rattata Rattata 1 pts · #9 of 10 IVs 186/186 · final BST 413 (Raticate)
+== classic, 10 points (mini)
+🌱 Starters 0/10 pts + ×
+★ Gible Gible + Magikarp Magikarp + Squirtle Squirtle 10 pts · SE vs 10 types
+summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+== Gible picked (full)
+🌱 Starters 6/10 pts − ×
+✓ picked: Gible
+★ best 10 pts · SE vs 10 types
+Gible Gible ✓ 6 carry final BST 600 (Garchomp) · but Rough Skin is off
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+· without Magikarp 10 pts · SE vs 9 types
+Gible Gible ✓ 6 carry final BST 600 (Garchomp) · but Rough Skin is off
+Squirtle Squirtle 3 final BST 530 (Blastoise) · luck +3
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+· fuller 10 pts · SE vs 13 types
+Gible Gible ✓ 6 carry final BST 600 (Garchomp) · but Rough Skin is off
+Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
+== Gible picked (mini)
+🌱 Starters 6/10 pts + ×
+✓ picked: Gible
+★ Gible + Magikarp Magikarp + Squirtle Squirtle 10 pts · SE vs 10 types
+summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+== no tables (full)
+🌱 Starters 0/10 pts − ×
+★ best 10 pts · SE vs 12 types
+Squirtle Squirtle 3 carry final BST ~534 · luck +3
+Bulbasaur Bulbasaur 3 final BST ~538
+Charmander Charmander 3 final BST ~529
+Azurill Azurill 1 final BST ~490 · but evolves by item or condition
+· without Squirtle 9 pts · SE vs 12 types
+Bulbasaur Bulbasaur 3 carry final BST ~538
+Charmander Charmander 3 final BST ~529
+Magikarp Magikarp 1 passive · rare egg move
+Azurill Azurill 1 final BST ~490 · but evolves by item or condition
+Rattata Rattata 1 IVs 186/186 · final BST ~400
+· trio 9 pts · SE vs 9 types
+Squirtle Squirtle 3 carry final BST ~534 · luck +3
+Bulbasaur Bulbasaur 3 final BST ~538
+Charmander Charmander 3 final BST ~529
+final forms estimated until the game's tables load
+== no tables (mini)
+🌱 Starters 0/10 pts + ×
+★ Squirtle Squirtle + Bulbasaur Bulbasaur + Charmander Charmander + Azurill Azurill 10 pts · SE vs 12 types
+summary best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
+== single type, 1 point (full)
+🌱 Starters 0/1 pts − ×
+★ best 1 pts · SE vs 6 types
+Magikarp Magikarp 1 carry final BST 540 (Gyarados) · passive Moxie
+single type: shared weaknesses not counted
+== single type, 1 point (mini)
+🌱 Starters 0/1 pts + ×
+★ Magikarp Magikarp 1 pts · SE vs 6 types
+summary best: Magikarp (carry) · 1/1 pts
+== Fresh Start (full)
+🌱 Starters 0/10 pts − ×
+★ best 10 pts · SE vs 12 types · weak Rock
+Dratini Dratini 4 carry final BST 600 (Dragonite)
+Charmander Charmander 3 final BST 534 (Charizard)
+Magikarp Magikarp 1 final BST 540 (Gyarados)
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
+· without Dratini 10 pts · SE vs 13 types
+Gible Gible 6 carry final BST 600 (Garchomp)
+Magikarp Magikarp 1 final BST 540 (Gyarados)
+Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
+Pidgey Pidgey 1 final BST 479 (Pidgeot)
+Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
+· trio 10 pts · SE vs 11 types
+Gible Gible 6 carry final BST 600 (Garchomp)
+Charmander Charmander 3 final BST 534 (Charizard)
+Magikarp Magikarp 1 final BST 540 (Gyarados)
+👁 Magikarp Magikarp 1 pts · #4 of 10 · in best final BST 540 (Gyarados) · IVs 60/186
+Fresh Start: no passives, egg moves or luck
+== Fresh Start (mini)
+🌱 Starters 0/10 pts + ×
+★ Dratini Dratini + Charmander Charmander + Magikarp Magikarp + Pikachu Pikachu + Azurill Azurill 10 pts · SE vs 12 types · weak Rock
+summary best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
+== not choosing a team
+kind null

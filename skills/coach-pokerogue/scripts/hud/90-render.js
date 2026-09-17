@@ -228,6 +228,7 @@ const hudSummary = m => {
   if (!m) return null;
   const base = { kind: m.kind, wave: m.wave ?? null, verdict: null, field: null, danger: [], plan: null, learn: null, rewards: null, encounter: null,
     next: previewSummary(m.preview), ahead: aheadSummary(m.ahead), audit: auditSummary(m.audit) };
+  if (m.kind === "starters") return startersSummary(m, base);
   if (m.kind === "biome") return biomeSummary(m, base);
   if (m.kind === "encounter") return encounterSummary(m, base);
   if (m.kind === "learn") {
@@ -442,8 +443,11 @@ const tick = () => {
     rerollCheck(s);
     const learn = learnState(s);
     const handler = s.ui.getHandler();
+    const starters = starterScreen(s);
     let m;
-    if (learn) {
+    if (starters) {
+      m = starterModel(s, starters);
+    } else if (learn) {
       // The same next-big-fight roster the rewards card judges a TM against, so the two cards weigh a move alike.
       let roster = null;
       try { roster = learnRoster(aheadModel(s)); } catch {}
@@ -479,7 +483,7 @@ const tick = () => {
     el.style.width = view === "full" && !collapsed ? "300px" : "auto";
     if (sig !== last) {
       missed = false;
-      el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle, biome: drawBiome, encounter: drawEncounter }[m.kind])(m));
+      el.replaceChildren(...({ learn: drawLearn, shop: drawShop, battle: drawBattle, biome: drawBiome, encounter: drawEncounter, starters: drawStarters }[m.kind])(m));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missed ? "" : sig;
     }

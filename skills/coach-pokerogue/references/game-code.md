@@ -40,6 +40,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Rewards and shop | §15 rewards by holder, §16 TMs, double-battle odds and status moves against the roster ahead, §19 reward roll and reroll |
 | Catching | §20 |
 | Team audit | §17 |
+| Starter select | §23 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -1956,5 +1957,84 @@ Facts about the served build at `https://pokerogue.net`, not the source. Most of
 - Whether `regenerateModifierPoolThresholds` / `getPlayerModifierTypeOptions` are found under those names (§19),
   whether every generated reward type exposes `nature` / `stat` / `key` / `berryType` / `teraType` as plain
   properties (§15), and whether Beast Boost's `changes` and `HitHealAttr.healRatio` read under those names (§18).
+- Whether the chunk scan's shapes find `allAbilities` (an array whose entry 1 has `id` 1, a `name` and `attrs`),
+  `allMoves` (entry 1 has `power` and `pp`) and `speciesEggMoves` (entries 1, 4 and 7 are four move ids) (§23); until
+  they are, the starter card names no passive, hidden ability or rare egg move.
 - Cost: ~0.05–0.2 ms per `getAttackDamage` call, ~300 calls a refresh, was a live-tab estimate; `__coachHud.stats()`
   is the measurement.
+
+---
+
+## 23. Starter select: the grid, the budget, and what a starter brings to a run
+
+Read at the pinned tag (`v1.12.0.11`). The starter card (`51-starters.js`) calls only the pure reads marked below; nothing
+here draws from an RNG stream or queues a phase, so it runs outside `sandbox`.
+
+**The screen.** `StarterSelectUiHandler` (`src/ui/handlers/starter-select-ui-handler.ts:296`) serves
+`UiMode.STARTER_SELECT` (10). Its own pop-ups change the UI mode (`OPTION_SELECT` for add / moves / nature, `:2114`;
+`CONFIRM` for start and exit, `:4483,4525`), so `ui.getHandler()` stops returning it; `ui.handlers[STARTER_SELECT]` is the
+same instance throughout (`src/ui/ui.ts:117`). `SelectStarterPhase.start` (`src/phases/select-starter-phase.ts:22`) is the
+only outside caller; `starterSelectCallback` is set by `show` (`:1199`) and cleared when the run starts (`:4533`), so a
+set callback during `SelectStarterPhase` means a team is being chosen. The Pokédex is a different handler
+(`src/ui/handlers/pokedex-ui-handler.ts:213`). Daily runs never show the grid (`getDailyRunStarters`,
+`src/phases/title-phase.ts:245`). `gameMode` and its challenges are final before the grid opens
+(`src/phases/title-phase.ts:360-365`, `src/ui/handlers/challenges-select-ui-handler.ts:377`).
+
+**What is offered.** `starterContainers` holds every starter (`:302`, from `speciesDataRegistry.getAllStarters()`,
+`:801-811`); each container has `species`, `cost` and an `icon` sprite (`src/ui/containers/starter-container.ts:6-17`).
+`validStarterContainers` (`:304`) is the list the active challenges allow, by the **soft** check: the species or any
+evolution or item form change passes (`checkStarterValidForChallenge(species, props, true)`,
+`src/utils/challenge-utils.ts:359-388`); outside challenge mode it is every starter (`:3141`). Uncaught species are in it:
+`dexData[id].caughtAttr` tells them apart. `filteredStarterContainers` is that list after the filter bar (`:3159-3380`).
+No container carries a validity flag: the grid greys an icon (`icon.alpha` 0.375) in `tryUpdateValue` (`:4419-4465`),
+which is a state write — never call it.
+
+**The team being built.** `starterSpecies` (`:392`) with a parallel `starters` (`:391`), each built in `addToParty`
+(`:2831-2845`): `{ speciesId, shiny, variant, formIndex, female, abilityIndex, passive, nature, moveset, pokerus,
+nickname, teraType, ivs }`, `passive` true only when `passiveAttr` is `UNLOCKED | ENABLED` (`:2838`). At most
+`PLAYER_PARTY_MAX_SIZE` 6 (`:1946`), no duplicates (`:1943`). **A team may start** once `isPartyValid()` (`:4561-4578`,
+pure): at least one member passes the **strict** check (`soft` false: each active challenge's
+`applyStarterChoice(species, holder, props)` on the species itself); the others need only the soft one.
+
+**The budget.** `getValueLimit()` (`:3076-3090`, pure): 15 in Endless and Spliced Endless, 10 otherwise, less
+`LowerStarterPointsChallenge`'s value (`src/data/challenge.ts:1057`). A species costs
+`gameData.getSpeciesStarterValue(id)` (`src/system/game-data.ts:2148-2170`, pure): the base cost from the species registry
+less `starterData[id].valueReduction` steps (−1 while above 1, then halve; the grid allows two, `:210,1465`), then
+`ChallengeType.STARTER_COST`, where Fresh Start restores the base cost (`src/data/challenge.ts:867-869`).
+`LowerStarterMaxCostChallenge` excludes base costs above `10 − value` (`:1031-1037`).
+
+**Account data, challenge-adjusted.** `getSpeciesData(id)` (`:3856-3871`, pure) returns copies of `dexData[id]` and
+`starterData[id]` after `ChallengeType.STARTER_SELECT_MODIFY`. Fresh Start's (`src/data/challenge.ts:872-908`) clears egg
+moves and the passive, masks `abilityAttr` to abilities 1 and 2, resets `valueReduction`, caps IVs at 15, removes
+shiny and variant bits and limits natures to the neutral five. `dexData` carries `caughtAttr` (bigint: NON_SHINY 1n,
+SHINY 2n, MALE 4n, FEMALE 8n, DEFAULT_VARIANT 16n, VARIANT_2 32n, VARIANT_3 64n, form *i* `1n << (7 + i)`) and `ivs`
+(HP, Atk, Def, SpA, SpD, Spe); `starterData` carries `eggMoves` (a 4-bit mask over `speciesEggMoves[id]`, bit 3 the
+rare move, `src/system/game-data.ts:1981`), `abilityAttr` (ABILITY_1 1, ABILITY_2 2, ABILITY_HIDDEN 4), `passiveAttr`
+(UNLOCKED 1, ENABLED 2), `candyCount`, `valueReduction`. `getCurrentDexProps(id)` (`:4608-4630`, pure) and
+`gameData.getSpeciesDexAttrProps(species, props)` (`src/system/game-data.ts:2086`, pure) give the props a challenge
+check takes.
+
+**Challenges on the grid** (`s.gameMode.challenges`, active when `value !== 0`): Single Generation
+(`species.generation === value`, `src/data/challenge.ts:460-466`), Single Type (the form's types include `value − 1`,
+`:780-788`), Fresh Start (value 1: default starters and their evolutions only, `:859-865`), Lower Starter Max Cost and
+Lower Starter Points. Inverse Battle flips each defending type's multiplier (below 1 → 2, above 1 → 0.5,
+`:979-990`, applied per type in `getTypeDamageMultiplier`, `src/data/type.ts:19-23`). Flip Stat, Limited Catch,
+Hardcore, Limited Support and Passives don't change the grid.
+
+**Species reads** (on `container.species`, all pure): `baseStats`, `baseTotal`, `type1` / `type2`, `abilityHidden`,
+`generation`; `getEvolutionLevels()` (`src/data/pokemon-species.ts:1094-1112`: every descendant flattened as
+`[speciesId, level]`, item evolutions at level 1); `getPassiveAbility(formIndex)` (`:211`). The registry
+(`SpeciesDataRegistry`, found by the chunk scan, §10) adds `getSpecies(id)` for the evolved forms and
+`getEvolutions(id)` (`src/data/species-data-registry.ts:316`: `level`, `item`, `condition`). Ability and move names
+need `allAbilities` / `allMoves` (`src/data/data-lists.ts:8-9`) and egg-move ids `speciesEggMoves`
+(`src/data/balance/moves/egg-moves.ts:16`), all module exports (§22). `h.lastSpecies` is the species in the info panel
+(`:3620`); `h.pokerusSpecies` the day's Pokérus starters (`:393`), which earn 1.5× EXP (`src/battle-scene.ts:3390-3392`).
+
+**What a run starts with.** `getStartingLevel()` (`src/game-mode.ts:137-149`): 5, or 20 in Daily. `SelectStarterPhase`
+(`src/phases/select-starter-phase.ts:63-101`) adds each starter with its ability index, form, gender, shiny, variant,
+dex IVs and nature; the moveset the grid chose; passive, Pokérus and nickname copied; then `STARTER_MODIFY`, which only
+Fresh Start uses (ability index `% 2`, passive off, egg moves replaced by level 1–5 moves, not shiny, IVs capped at 15,
+`src/data/challenge.ts:913-943`). **Luck**: each starter adds `getDexAttrLuck(dexData[id].caughtAttr)`
+(`src/system/game-data.ts:2126-2128`: VARIANT_3 3, VARIANT_2 2, SHINY 1) — the best tier ever caught, even when the
+non-shiny form is picked (`src/phases/select-starter-phase.ts:80-82`) — capped at 14 for the party, none under Fresh
+Start (`src/data/challenge.ts:928`).
