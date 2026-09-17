@@ -151,7 +151,7 @@ assert.equal(plan.approxDoubles, false);
 {
   const { tpFight } = globalThis.__tp;
   const rolls = [{ r: 0.92, p: 0.5 }, { r: 1.08, p: 0.5 }];
-  const T = { ours: [[{ hits: [100], use: rolls }]], theirs: [[{ dmg: 100, e: 1, use: rolls }]], first: [[0.5]], boss: [null], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null] };
+  const T = { ours: [[{ dmg: 100, use: rolls }]], theirs: [[{ dmg: 100, e: 1, use: rolls }]], first: [[0.5]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null] };
   const r = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
   console.log(`== mirror at a speed tie\nwin ${r.pWin.toFixed(3)} · loss ${r.pLoss.toFixed(3)}`);
   // Two turns: each side's two hits KO when at least one of them rolls high (¾); on the turn both would, the tie.
@@ -164,14 +164,14 @@ assert.equal(plan.approxDoubles, false);
 // healing 30 of its 60 a turn, it stands through the third (300 → 230 → 160 → 90) and takes a fourth.
 {
   const { tpFight } = globalThis.__tp;
-  const T = drain => ({ ours: [[{ hits: [100] }]], theirs: [[{ dmg: 60, e: 1, drain }]], first: [[0]], boss: [null], ourMax: [400], foeMax: [300], ourHeal: [null], foeHeal: [null] });
+  const T = drain => ({ ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 60, e: 1, drain }]], first: [[0]], ourMax: [400], foeMax: [300], ourHeal: [null], foeHeal: [null] });
   const st = () => ({ oh: [400], ob: [0], fh: [300], fs: [0], fb: [0] });
   const [plain, drained] = [0, 0.5].map(d => tpFight(T(d), st(), 0, 0, "free"));
   console.log(`== drain\n${plain.turns} → ${drained.turns} turns`);
   assert.deepEqual([plain.turns, drained.turns], [3, 4], "the foe's drain costs us a turn");
   // …and ours: moving first, our three hits win back 50 each against its two of 60 — 200 ends on 230 — and never past
   // our max: from 390 the first 50 tops out at 400, so it ends on 380, not 420.
-  const ours = { ...T(0), ours: [[{ hits: [100], drain: 0.5 }]] };
+  const ours = { ...T(0), ours: [[{ dmg: 100, drain: 0.5 }]] };
   assert.equal(tpFight(ours, { ...st(), oh: [200] }, 0, 0, "free").mh, 230, "our drain heals on every hit");
   assert.equal(tpFight(ours, { ...st(), oh: [390] }, 0, 0, "free").mh, 380, "never past max");
 }
@@ -185,7 +185,8 @@ assert.equal(plan.approxDoubles, false);
     getAbility: () => ({ name: "Beast Boost", getAttrs: a => (a === "PostVictoryStatStageChangeAbAttr" ? [{ changes: () => [{ stat: 1, stages: 1 }] }] : []) }),
   };
   const buzzwole = extra => Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Beast Boost", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"]], true), extra);
-  // Faster, and Hydro Pump 2HKOs: Blastoise takes one Lunge, however many KOs Buzzwole has had.
+  // Faster, and Hydro Pump (179–210 over the rolls) 2HKOs only on high rolls: Blastoise takes about two
+  // Lunges, however many KOs Buzzwole has had.
   const blastoise = mon("Blastoise", 100, ["Water"], "Torrent", [400,150,300,150,300,250], [["Hydro Pump","Water",110,"S"]], false);
   const hitsOn = (foe, fk) => {
     const T = tpTables(s, [blastoise], [foe], false);
@@ -197,7 +198,7 @@ assert.equal(plan.approxDoubles, false);
   assert.ok(plainHits.every(x => x === plainHits[0]), "no ability, no change");
   assert.ok(boosted[0] === plainHits[0] && boosted[1] > boosted[0] && boosted[2] > boosted[1], "each KO fed makes its hits hurt more");
   // The plan says so on the step that feeds it. A worn Pidgey is out, faster, and Brave Bird takes more than half off
-  // Buzzwole before Thunder Punch KOs it; Blastoise then comes in free and finishes it before it moves. Switching
+  // Buzzwole before Thunder Punch KOs it; Blastoise then comes in free and mostly finishes it before it moves. Switching
   // Blastoise in instead would cost it three quarters of its HP.
   const fodder = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,450,30,30,30,300], [["Brave Bird","Flying",120,"P"]], true, 10);
   const puncher = Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Beast Boost", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"],["Thunder Punch","Electric",75,"P"]], true), beastBoost);

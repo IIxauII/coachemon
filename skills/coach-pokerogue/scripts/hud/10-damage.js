@@ -1,4 +1,4 @@
-// Damage: what each move does to a target this turn, and 1-v-1 matchups.
+// Damage: what each move does to a target this turn, and how the target's HP holds up over repeated uses (KO pacing).
 // While the game waits for a command, the numbers come from the game's own damage code (Pokemon.getAttackDamage,
 // simulated, inside `sandbox`), so held items, abilities, stat stages, weather, screens and form-dependent types
 // are the game's. Everything the simulated call leaves out is modelled here from the coach spec (game-code.md):
@@ -17,7 +17,7 @@ const reliability = mv => {
 const FOE_MARGIN = 1.15;
 
 // Private helpers live in this closure so their names can't collide with other hud modules.
-const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } = (() => {
+const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitOn, koCurve } = (() => {
   // Class names survive minification; subclasses count (FixedDamageAttr covers Super Fang, Seismic Toss…).
   const isA = (x, name) => {
     for (let c = x?.constructor; c?.name; c = Object.getPrototypeOf(c)) if (c.name === name) return true;
@@ -103,7 +103,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     const enemy = typeof t.isPlayer === "function" && !t.isPlayer();
     const endure = enemy && !t.waveData?.endured ? (s?.enemyModifiers ?? []).find(m => m.constructor.name === "EnemyEndureChanceModifier") : null;
     return {
-      maxHp, hp: t.hp, boss: segs > 0, segs, segSize: segs ? maxHp / segs : 0, idx: t.bossSegmentIndex ?? 0,
+      maxHp, hp: t.hp, boss: segs > 0, segs, segSize: segs ? maxHp / segs : 0, idx: segs ? t.bossSegmentIndex ?? segs - 1 : 0,
       minIdx: s?.currentBattle?.isClassicFinalBoss && !t.formIndex ? 1 : 0,
       finalBoss: enemy && !!s?.currentBattle?.isClassicFinalBoss && !t.formIndex,
       sturdy: !ignoreAbility && maxHp > 1 && ability(t, "PreDefendFullHpEndureAbAttr"),
@@ -113,17 +113,24 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
       revive: stack(t, "PokemonInstantReviveModifier") ? Math.max(1, Math.floor(maxHp / 2)) : 0,
     };
   };
+  // A landed hit of `d` at `hp` on boss bar `bar`, as EnemyPokemon.damage takes it before any survival: the bar rule
+  // clamps it (a hit past a bar by 2^k bars' worth breaks k more at once), then the classic final boss's first form
+  // stops at 1 HP on its last bar. [damage, bar after]. OHKO results skip segments.
+  const barStep = (f, hp, bar, d, ohko = false) => {
+    let after = bar;
+    if (f.boss && !ohko) {
+      const [bd, seg] = bossSegmentDamage(d, hp, f.segSize, f.minIdx, bar);
+      d = bd;
+      after = Math.max(0, Math.min(bar, seg - 1));
+    }
+    if (f.finalBoss && bar < 1) d = Math.min(d, hp - 1);
+    return [d, after];
+  };
   // One landed hit of `d` on state {hp, idx, tok} as EnemyPokemon.damage / Pokemon.damage resolve it:
   // [[state, probability], ...]. `tok`: the enemy endure token is up, so every later lethal hit this turn leaves 1 HP.
-  // OHKO results skip segments.
   const landHit = (f, st, d, ohko) => {
-    let idx = st.idx;
-    if (f.boss && !ohko) {
-      const [bd, seg] = bossSegmentDamage(d, st.hp, f.segSize, f.minIdx, st.idx);
-      d = bd;
-      idx = Math.max(0, Math.min(st.idx, seg - 1));
-    }
-    if (f.finalBoss && st.idx < 1) d = Math.min(d, st.hp - 1);
+    let idx;
+    [d, idx] = barStep(f, st.hp, st.idx, d, ohko);
     if (st.hp - d > 0) return [[{ hp: st.hp - d, idx, tok: st.tok }, 1]];
     if (st.tok || (f.sturdy && st.hp >= f.maxHp)) return [[{ hp: 1, idx, tok: st.tok }, 1]];
     return [
@@ -161,27 +168,32 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     return [...done.values()];
   };
 
-  // Damage over one use of a move, before the target's HP or a boss bar cuts it: [{ d, p }] with a miss at 0, from the
-  // per-hit Maps, the hit counts and accuracy as `resolve` reads them. Held to USE_POINTS points (`squeezeDist`):
-  // later turns of a fight are played from it one KO-or-survive branch at a time (30-planner).
+  // Damage over one use of a move, before the target's HP or a boss bar cuts it: [{ d, p, n }] with a miss at 0, from
+  // the per-hit Maps, the hit counts and accuracy as `resolve` reads them; `n` is the hits it lands in (a mean where
+  // points were merged), which `koCurve` clamps at a boss bar one by one. Held to USE_POINTS points (`squeezeDist`):
+  // later turns of a fight are played from it one KO-or-survive branch at a time.
   const USE_POINTS = 12;
   const useDist = (perHit, dist, acc, checkAll) => {
     const atLeast = n => dist.filter(x => x.n >= n).reduce((t, x) => t + x.p, 0);
     const done = new Map();
-    const add = (m, d, p) => { if (p > 0) m.set(d, (m.get(d) ?? 0) + p); };
-    let live = new Map([[0, 1]]);
+    const add = (m, d, p, n) => {
+      if (!(p > 0)) return;
+      const e = m.get(d);
+      if (e) { e.n = (e.n * e.p + n * p) / (e.p + p); e.p += p; } else m.set(d, { d, p, n });
+    };
+    let live = [{ d: 0, p: 1, n: 0 }];
     const hitsMax = Math.max(...dist.map(x => x.n));
-    for (let k = 0; k < hitsMax && live.size; k++) {
+    for (let k = 0; k < hitsMax && live.length; k++) {
       const go = (k ? atLeast(k + 1) / (atLeast(k) || 1) : atLeast(1)) * (k === 0 || checkAll ? acc : 1);
       const next = new Map();
-      for (const [t, p] of live) {
-        add(done, t, p * (1 - go));
-        for (const [d, q] of perHit[Math.min(k, perHit.length - 1)]) add(next, t + d, p * go * q);
+      for (const x of live) {
+        add(done, x.d, x.p * (1 - go), x.n);
+        for (const [d, q] of perHit[Math.min(k, perHit.length - 1)]) add(next, x.d + d, x.p * go * q, k + 1);
       }
-      live = new Map(squeezeDist(next, 2 * USE_POINTS).map(x => [x.d, x.p]));
+      live = squeezeDist([...next.values()], 2 * USE_POINTS);
     }
-    for (const [t, p] of live) add(done, t, p);
-    return squeezeDist(done, USE_POINTS);
+    for (const x of live) add(done, x.d, x.p, x.n);
+    return squeezeDist([...done.values()], USE_POINTS);
   };
   // Drain (Giga Drain, Leech Life, Draining Kiss): the share of the damage a hit deals that heals its user, signed.
   // HitHealAttr queues a PokemonHealPhase for floor(damage dealt × healRatio) after each hit; there a Heal Block stops
@@ -207,16 +219,140 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     return c < 0 ? 1 : Math.min(1, c / 100);
   };
 
-  // Resolve a fixed list of hit damages on `target` in order: boss clamp per hit, Sturdy, Disguise excluded.
-  // `ko`/`hp` assume no luck; `pSurvive` is the chance Focus Band or the enemy endure token saves it anyway.
-  const applyHits = (target, hitDamages, { s = sceneNow(), ignoreAbility = false, ohko = false } = {}) => {
-    const f = targetFacts(s, target, ignoreAbility);
-    const perHit = hitDamages.length ? hitDamages.map(d => new Map([[Math.max(0, Math.floor(d)), 1]])) : [new Map([[0, 1]])];
-    const dist = [{ n: perHit.length, p: 1 }];
-    const [end] = resolve({ ...f, pFocus: 0, pEndure: 0 }, perHit, dist, 1, false, ohko);
-    const ko = end.hp <= 0;
-    const pSurvive = ko ? resolve(f, perHit, dist, 1, false, ohko).filter(x => x.hp > 0).reduce((t, x) => t + x.p, 0) : 1;
-    return { hp: Math.max(0, end.hp), segIdx: end.idx, ko, pSurvive };
+  // One hit of `d` on `target` with no luck (Sturdy counts, Focus Band and the endure token don't): { hp, ko }.
+  const applyHit = (s, target, d) => {
+    const [end] = resolve({ ...targetFacts(s, target), pFocus: 0, pEndure: 0 }, [new Map([[Math.max(0, Math.floor(d)), 1]])], [{ n: 1, p: 1 }], 1, false);
+    return { hp: Math.max(0, end.hp), ko: end.hp <= 0 };
+  };
+
+  // ---- KO pacing: how a target's HP holds up over repeated uses of a move — the chance it is down by each use, with
+  // its boss bars, a Reviver Seed's second life, Focus Band and the enemy endure token behind it. Callers bring what
+  // only they know (turn order, the AI's move mix, lost turns, stat changes over the fight) as `scale` and `act`.
+  // A target's standing (`stateOf`): `hp`; its boss `bar` (bossSegmentIndex, 0 on the last or for a non-boss); whether
+  // its Reviver Seed has been used (`revived`) and the enemy endure token (`tok`: 1 up this use, 2 spent for the wave);
+  // and `facts`, what decides a hit on it (read once).
+  const stateAt = (s, target, hp = target.hp, bar = null) => {
+    const facts = targetFacts(s, target);
+    return { hp, bar: bar ?? facts.idx, revived: false, tok: 0, facts };
+  };
+  const stateOf = (target, hp, bar) => stateAt(sceneNow(), target, hp, bar);
+  // One landed hit of `dmg` on `state`, with no luck (no Focus Band, endure token or Reviver Seed): the state after it,
+  // HP at least 0. The boss bar rule is the game's, per hit. A state without `facts` just loses the HP.
+  const hitOn = (state, dmg) => {
+    const [d, bar] = state.facts ? barStep(state.facts, state.hp, state.bar, Math.max(0, dmg)) : [Math.max(0, dmg), state.bar];
+    return { ...state, hp: Math.max(0, state.hp - d), bar };
+  };
+  // A branch of a curve: a state (without its facts) with its probability `p`; `stop`: its use has ended (a revive).
+  const branch = (hp, bar, revived, tok, p, stop = false) => ({ hp, bar, revived, tok, p, stop });
+  // Lands a hit of `d` on branch `b` of a target with facts `f` and pushes what stands onto `out`; returns the probability
+  // that goes down. A lethal hit meets the endure token (once a wave, then every lethal hit of that use leaves 1 HP),
+  // Focus Band (each time) and a Reviver Seed (back at half HP, ending the use); without `luck` (status chip:
+  // PostTurnStatusEffectPhase prevents enduring) only the seed.
+  const land = (f, b, d, out, luck = true) => {
+    const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d));
+    if (b.hp - dealt > 0) { out.push(branch(b.hp - dealt, bar, b.revived, b.tok, b.p)); return 0; }
+    let gone = b.p;
+    if (luck) {
+      if (b.tok === 1) { out.push(branch(1, bar, b.revived, 1, b.p)); return 0; }
+      const endure = b.tok ? 0 : f.pEndure;
+      if (endure) out.push(branch(1, bar, b.revived, 1, b.p * endure));
+      if (f.pFocus) out.push(branch(1, bar, b.revived, b.tok, b.p * (1 - endure) * f.pFocus));
+      gone = b.p * (1 - endure) * (1 - f.pFocus);
+    }
+    if (!(gone > 0)) return 0;
+    if (f.revive && !b.revived) { out.push(branch(f.revive, bar, true, b.tok, gone, true)); return 0; }
+    return gone;
+  };
+  const KO_USES = 9;
+  const KO_LEVELS = 4;
+  // P(the target is down by the end of use n), `by[n - 1]` for n = 1..9. Each use splits every standing branch by the
+  // damage points of `use` ([{ d, p, n }], `useOf`), landing its `n` hits one at a time on the game's bar rule, scaled by
+  // `scale(i, broken)` on the i-th use (0-based; `broken`: bars broken since the start) and made with chance `act(i)`
+  // (a lost turn deals nothing); the standing ones are merged back to a few HP levels per bar. `turnEnd`: the target's
+  // HP change after each use it survives (heal +, capped at max HP; chip −, which a bar also stops and which can finish
+  // it; a function of the use count when it changes over the fight). `cat` ("physical" / "special"): a wild boss's
+  // Def / SpD rises as its bars break (`barBreakFactors`). `firstKo`: this turn's exact KO odds for use 1 (Sturdy, the
+  // roll against the real HP), when the caller has them; the HP left still comes from the distribution. `hp`, `bar`:
+  // where it starts, if not where it stands; `start`: the branches to begin from ([{ hp, bar, revived, tok, p }], p
+  // summing to 1) when an earlier turn has already been played.
+  // `after1`: the branches standing after use 1 and its turn end, p summing to 1 (none if it can't stand). `perChunk`:
+  // the uses each bar takes before it breaks more likely than not, the last one's until the KO.
+  const koCurve = (target, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null } = {}) => {
+    const s = sceneNow();
+    const init = stateAt(s, target, hp ?? target.hp, bar);
+    const f = init.facts;
+    const bars = init.bar + 1;
+    const guard = cat && bars > 1 ? barBreakFactors(s, target, cat === "special" ? Stat.SPDEF : Stat.DEF, bars) : null;
+    const points = use.map(x => ({ d: x.d, p: x.p, n: x.d > 0 ? Math.max(1, Math.round(x.n ?? 1)) : 0 }));
+    let states = start?.length
+      ? start.map(x => branch(x.hp, x.bar ?? init.bar, !!x.revived, x.tok ?? 0, x.p))
+      : [branch(init.hp, init.bar, false, 0, 1)];
+    const by = [];
+    const brokeAt = Array(bars).fill(KO_USES);
+    let down = 0, after1 = [];
+    for (let i = 0; i < KO_USES; i++) {
+      const a = Math.max(0, Math.min(1, act(i)));
+      // The damage factor on this use, by bars broken so far.
+      const factors = [];
+      const factor = broken => (factors[broken] ??= scale(i, broken) * (guard ? guard[Math.min(broken, bars - 1)] : 1));
+      const hit = [];
+      let fell = 0;
+      for (const st of states) {
+        if (a < 1) hit.push(branch(st.hp, st.bar, st.revived, st.tok, st.p * (1 - a)));
+        for (const x of points) {
+          const q = st.p * a * x.p;
+          if (!(q > 0)) continue;
+          let branches = [branch(st.hp, st.bar, st.revived, st.tok, q)];
+          for (let k = 0; k < x.n; k++) {
+            const next = [];
+            for (const b of branches) {
+              if (b.stop) next.push(b);
+              else fell += land(f, b, x.d / x.n * factor(init.bar - b.bar), next);
+            }
+            branches = next;
+          }
+          for (const b of branches) { b.stop = false; hit.push(b); }
+        }
+      }
+      if (i === 0 && firstKo != null && !start) {
+        const standing = hit.reduce((t, x) => t + x.p, 0);
+        const k = Math.min(1, firstKo);
+        if (standing > 0) for (const x of hit) x.p *= (1 - k) / standing;
+        else if (k < 1) hit.push(branch(1, init.bar, false, 0, 1 - k));
+        fell = k;
+      }
+      down += fell;
+      // Turn end on each branch, then at most KO_LEVELS branches per bar (and seed and token state), the closest HPs
+      // averaged: a hit or two left apart stay apart, rolls a few HP apart don't.
+      const h = typeof turnEnd === "function" ? turnEnd(i + 1) : turnEnd;
+      const groups = new Map();
+      for (let b of hit) {
+        if (b.tok) b.tok = 2;
+        if (h > 0) b.hp = Math.min(f.maxHp, b.hp + h);
+        else if (h < 0) {
+          const out = [];
+          down += land(f, b, -h, out, false);
+          if (!out.length) continue;
+          b = out[0];
+        }
+        const key = `${b.bar}|${b.revived}|${b.tok}`;
+        if (!groups.has(key)) groups.set(key, { b, pts: [] });
+        groups.get(key).pts.push({ d: b.hp, p: b.p });
+      }
+      states = [...groups.values()].flatMap(({ b, pts }) => squeezeDist(pts, KO_LEVELS).filter(x => x.p > 1e-9).map(x => branch(x.d, b.bar, b.revived, b.tok, x.p)));
+      if (i === 0) {
+        const p = states.reduce((t, x) => t + x.p, 0);
+        after1 = p > 0 ? states.map(x => ({ hp: x.hp, bar: x.bar, revived: x.revived, tok: x.tok, p: x.p / p })) : [];
+      }
+      by.push(Math.min(1, down));
+      for (let k = 1; k <= bars; k++) {
+        if (brokeAt[k - 1] < KO_USES) continue;
+        const gone = down + (k < bars ? states.reduce((t, x) => t + (init.bar - x.bar >= k ? x.p : 0), 0) : 0);
+        if (gone >= 0.5) brokeAt[k - 1] = i + 1;
+      }
+    }
+    const perChunk = brokeAt.map((n, k) => Math.max(0, n - (k ? brokeAt[k - 1] : 0)));
+    return { by, after1, perChunk };
   };
 
   // ---- Turn end (spec §8). The HP a pokémon gains (+) or loses (−) between this turn's moves and the next command,
@@ -358,7 +494,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     const base = { name: pm.getName(), type, cat, e, priority, spread, spreadApplied, ...traits(atk, move, true), self: 0, bypassProtect: bypassesProtect(atk, def, move) };
     const blocked = cancelledBy(s, atk, def, move);
     if (first.cancelled || first.result === HitResult.NO_EFFECT || first.result === HitResult.IMMUNE || blocked) {
-      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1 }], focus: 0, flinch: 0 };
+      return { ...base, acc: 0, crit: 0, dist, perHit: [{ max: 0, min: 0 }], targetHp: def.hp, expected: 0, uncapped: 0, max: 0, pKo: 0, revive: 0, notes: [blocked ? `stopped by ${blocked}` : "no effect"], use: [{ d: 0, p: 1, n: 0 }], focus: 0, flinch: 0 };
     }
 
     const ohko = first.result === HitResult.ONE_HIT_KO;
@@ -493,7 +629,7 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     if (semi) notes.push("target semi-invulnerable");
     return {
       ...base, acc, crit, dist, semi, self, selfKo, lock, noRepeat, drops, drain,
-      perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })),
+      perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })), targetHp: f.hp,
       expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, notes,
       use, focus: f.pFocus, flinch: flinchChance(atk, def, move, ignoreAbility),
     };
@@ -530,13 +666,13 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     const mv = pm.getMove();
     const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
     const max = Math.floor(x.dmg);
-    const end = applyHits(def, [max], { s });
+    const end = applyHit(s, def, max);
     const { revive, pFocus } = targetFacts(s, def);
     const rolls = new Map();
     addRolls(rolls, max, 1);
     return {
       name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority, spread: x.spread, spreadApplied: false, ...traits(atk, mv, false), semi: false, self: 0,
-      acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }],
+      acc, crit: 0, dist: [{ n: 1, p: 1 }], perHit: [{ max, min: Math.floor(max * 0.85) }], targetHp: def.hp,
       expected: Math.min(def.hp - end.hp, max * 0.925) * acc, uncapped: max * 0.925 * acc, max: def.hp - end.hp, pKo: end.ko && !revive ? acc : 0, revive, notes: ["estimate"],
       use: useDist([rolls], [{ n: 1, p: 1 }], acc, false), focus: pFocus, flinch: flinchChance(atk, def, mv, false), drain: drainRatio(s, atk, def, mv),
     };
@@ -610,23 +746,64 @@ const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits } =
     return out;
   };
 
-  return { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits };
+  return { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitOn, koCurve };
 })();
 
-const bestMove = (a, d, foe = false) => hits(a, d, foe).reduce((best, x) => (!best || x.dmg > best.dmg ? x : best), null);
-// `heal`: turn-end HP change. A heal (+) comes only on turns the target survives the hit; chip (−) lands every turn,
-// the KO turn included.
-const turnsToKo = (hp, dmg, heal = 0) => {
-  if (heal < 0) return Math.min(9, Math.ceil(hp / (Math.max(0, dmg) - heal)));
-  return !(dmg > 0) ? 9 : hp <= dmg ? Math.ceil(hp / dmg) : dmg > heal ? Math.min(9, Math.ceil((hp - heal) / (dmg - heal))) : 9;
+// ---- KO pacing, the parts that read no target
+// The use a curve's target is more likely down than not by: what the panel calls "2 hits".
+const koTurn = by => { const k = by.findIndex(x => x >= 0.5); return k < 0 ? 9 : k + 1; };
+// The use it's expected to fall to, 9 at most: what scoring compares, so a sure 5HKO beats a 5HKO that is a coin
+// flip on the 5th.
+const koTurns = by => Math.min(9, 1 + by.slice(0, 8).reduce((t, x) => t + (1 - x), 0));
+
+// All hits of the likeliest hit count at max roll, before any boss-bar clamp.
+const rawMax = o => {
+  const n = o.dist?.length ? o.dist.reduce((b, d) => (d.p > b.p ? d : b)).n : 1;
+  return o.perHit?.length ? o.perHit.slice(0, n).reduce((t, h) => t + (h.max ?? 0), 0) : o.max;
+};
+// The damage over one use of an outcome record, as `koCurve` takes it: its own `use`, or — for a record without one
+// (an approximation, a `hits` record) — the 16 rolls of the likeliest hit count's max damage, missing with the record's
+// accuracy, and centred on the record's own mean a use (an approximation's `max` is often that mean already).
+const useOf = o => {
+  if (o?.use?.length) return o.use;
+  const max = o ? rawMax(o) || o.max || o.dmg || 0 : 0;
+  if (!(max > 0)) return [{ d: 0, p: 1, n: 0 }];
+  const acc = Math.min(1, o.acc ?? 1);
+  const n = o.dist?.length ? o.dist.reduce((b, d) => (d.p > b.p ? d : b)).n : 1;
+  const pts = Array.from({ length: 16 }, (_, r) => ({ d: Math.max(1, Math.floor(max * (85 + r) / 100)), p: acc / 16 }));
+  const mean = o.uncapped ?? o.expected;
+  const k = mean > 0 ? mean / pts.reduce((t, x) => t + x.d * x.p, 0) : 1;
+  return squeezeDist([...(acc < 1 ? [{ d: 0, p: 1 - acc, n: 0 }] : []), ...pts.map(x => ({ d: x.d * k, p: x.p, n }))], 12);
+};
+// P(an outcome record KOs its target at `hp` instead of the HP it was worked out for (`targetHp`), after an incoming
+// hit): below the max roll the chance grows with how deep into the 85–100 % roll range the HP sits. A record not
+// from game code (`live === false`) is all or nothing, like the rest of the approximation.
+const koChanceAt = (o, hp) => {
+  if (!o) return 0;
+  if (hp <= 0) return 1;
+  if (o.revive) return 0;
+  if (hp >= (o.targetHp ?? Infinity)) return o.pKo ?? 0;
+  if (!(o.max >= hp)) return 0;
+  return o.live === false ? 1 : Math.max(o.pKo ?? 0, (o.acc ?? 1) * Math.min(1, (o.max - hp) / (0.15 * o.max) + 1 / 16));
 };
 
-// Positive score = we KO it in fewer turns than it KOs us.
-const matchup = (me, foe) => {
-  const mine = bestMove(me, foe);
-  const theirs = bestMove(foe, me, true);
-  const myTurns = mine?.dmg > 0 ? Math.min(9, Math.ceil(foe.hp / mine.dmg)) : 9;
-  const theirTurns = theirs?.dmg > 0 ? Math.min(9, Math.ceil(me.hp / theirs.dmg)) : 9;
-  const faster = stat(me, Stat.SPD) >= stat(foe, Stat.SPD);
-  return { me, mine, myTurns, score: theirTurns - myTurns + (faster ? 0.5 : -0.5) };
+// A wild boss gains stat stages each time a bar breaks (EnemyPokemon.handleBossSegmentCleared): +1 to a random stat
+// not yet at +6, weighted by its stats; +2 for the last bar of a 3+ bar boss and for the last two of a 5+ bar one.
+// Returns the damage factor on each bar from now (1 for the current one) from the expected rise of `st` (1 Atk,
+// 2 Def, 3 SpA, 4 SpD): what hits into it lose for a defence (`koCurve`), what its own hits gain for an attack
+// (`offence`, the planner's). A trainer's boss gets none.
+const barBreakFactors = (s, foe, st, bars, offence = false) => {
+  const out = [1];
+  if (bars <= 1 || (foe.hasTrainer?.() ?? !!s?.currentBattle?.trainer)) return Array(Math.max(1, bars)).fill(1);
+  const w = [Stat.ATK, Stat.DEF, Stat.SPATK, Stat.SPDEF, Stat.SPD].map(i => Math.max(0, foe.getStat?.(i, false) || 0));
+  const share = w[st - 1] / (w.reduce((t, x) => t + x, 0) || 1);
+  const s0 = foe.summonData?.statStages?.[st - 1] ?? 0;
+  let up = 0;
+  for (let i = 1; i < bars; i++) {
+    const idx = bars - 1 - i;
+    up += share * (1 + (foe.bossSegments >= 3 && idx === 0 ? 1 : 0) + (foe.bossSegments >= 5 && idx === 1 ? 1 : 0));
+    const f = stage(s0) / stage(Math.min(6, s0 + up));
+    out.push(offence ? 1 / f : f);
+  }
+  return out;
 };

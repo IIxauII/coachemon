@@ -1,7 +1,7 @@
 ♟ Fight plan likely lost
 ☠ Weavile Weavile 👑 KOs 4/4 · win condition
 🛡 Scrafty save for Weavile ~100%/turn · KO'd first
-🛡 Blastoise save for Weavile ~80%/turn
+🛡 Blastoise save for Weavile ~74%/turn
 1 Morpeko Electric Aura Wheel → Honchkrow KO · 100% left
 2 Venusaur ⇄ Poison Sludge Bomb → Weavile switch in, takes a hit · sacrifice → Blastoise in free
 3 Blastoise free Fighting Focus Blast → Weavile falls · foe at 50%
@@ -18,8 +18,8 @@ win 0.500 · loss 0.500
 == drain
 3 → 4 turns
 == beast boost
-Blastoise loses 119 / 179 / 239 HP after 0 / 1 / 2 KOs (no ability: 119 / 119 / 119)
+Blastoise loses 213 / 319 / 400 HP after 0 / 1 / 2 KOs (no ability: 213 / 213 / 213)
 == feeding Beast Boost
-Pidgey → Buzzwole: falls · foe at 43% · feeds Beast Boost +1 Atk
-Blastoise → Buzzwole: KO · 100% left
+Pidgey → Buzzwole: falls · foe at 47% · feeds Beast Boost +1 Atk
+Blastoise → Buzzwole: KO · 86% left
 ok

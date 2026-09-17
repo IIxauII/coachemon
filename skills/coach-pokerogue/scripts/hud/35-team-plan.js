@@ -17,32 +17,36 @@ const TP_TURNS = 15;
 const TP_BRANCHES = 4;
 let teamPlanCache = { key: null, live: false, value: null };
 
-// A use's damage distribution (`use`, [{ d, p }]) as up to four levels relative to its mean ([{ r, p }]): the miss, the
-// low and high rolls, the crit. Null when there's nothing to spread.
+// A use's damage distribution (`use`, [{ d, p, n }]) as up to four levels relative to its mean ([{ r, p, n }]): the
+// miss, the low and high rolls, the crit, each with the hits it lands in. Null when there's nothing to spread.
 const tpSpread = use => {
   const mean = (use ?? []).reduce((t, x) => t + x.d * x.p, 0);
-  return mean > 0 ? squeezeDist(use.map(x => ({ d: x.d / mean, p: x.p })), 4).map(x => ({ r: x.d, p: x.p })) : null;
+  return mean > 0 ? squeezeDist(use.map(x => ({ d: x.d / mean, p: x.p, n: x.n ?? 1 })), 4).map(x => ({ r: x.d, p: x.p, n: x.n })) : null;
 };
+// Turns `o` (an outcome or `hits` record) needs to KO `target` on its own: the KO pacing core's expected use.
+const tpTurns = (o, target) => koTurns(koCurve(target, useOf(o)).by);
+// The record in `list` that KOs `target` soonest (`turns`), then the hardest hitting (`dmg`).
+const tpFastest = (list, target, turns = o => tpTurns(o, target), dmg = o => o.dmg) => list
+  .map(o => ({ o, n: turns(o) }))
+  .reduce((b, x) => (!b || x.n < b.n || (x.n === b.n && dmg(x.o) > dmg(b.o)) ? x : b), null)?.o ?? null;
 
-// Our best move into `f` as per-hit damage (expected roll × accuracy): boss bars clamp each hit separately.
+// Our best move into `f`: its mean damage a use (`dmg`, uncut by `f`'s HP or bars) and its damage levels (`use`),
+// whose hits land one by one on the game's bar rule (`hitOn`).
 const tpOurMove = (s, me, f, live) => {
+  const view = (o, extra) => {
+    const use = useOf(o);
+    return { name: o.name, type: o.type, cat: o.cat, e: o.e, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0, ...extra };
+  };
   if (live && typeof moveOutcomes === "function") {
     try {
       // Best by turns to KO it (a charge or recharge turn per hit counts), then by damage.
-      const turns = o => (o.expected > 0 ? (o.charge || o.recharge ? 2 : 1) * Math.ceil(f.hp / o.expected) - (o.recharge ? 1 : 0) : 99);
-      const best = (moveOutcomes(s, me, f) ?? []).reduce((b, o) => (!b || turns(o) < turns(b) || (turns(o) === turns(b) && o.expected > b.expected) ? o : b), null);
-      if (best?.expected > 0) {
-        const n = best.dist?.length ? Math.max(1, Math.round(best.dist.reduce((t, d) => t + d.n * d.p, 0))) : 1;
-        const per = best.perHit?.length
-          ? Array.from({ length: n }, (_, k) => best.perHit[Math.min(k, best.perHit.length - 1)]).map(x => (x.max + x.min) / 2 * (best.acc ?? 1))
-          : [best.expected];
-        return { name: best.name, type: best.type, cat: best.cat, e: best.e, priority: best.priority ?? 0, hits: per, charge: !!best.charge, recharge: !!best.recharge || !!best.noRepeat, semiCharge: !!best.semiCharge,
-          use: tpSpread(useOf(best)), drain: best.drain ?? 0 };
-      }
+      const turns = o => (o.expected > 0 ? (o.charge || o.recharge ? 2 : 1) * tpTurns(o, f) - (o.recharge ? 1 : 0) : 99);
+      const best = tpFastest(moveOutcomes(s, me, f) ?? [], f, turns, o => o.expected);
+      if (best?.expected > 0) return view(best, { charge: !!best.charge, recharge: !!best.recharge || !!best.noRepeat, semiCharge: !!best.semiCharge });
     } catch {}
   }
-  const m = bestMove(me, f);
-  return m?.dmg > 0 ? { name: m.name, type: m.type, cat: m.cat, e: m.e, priority: m.priority ?? 0, hits: [m.dmg], drain: m.drain ?? 0 } : null;
+  const m = tpFastest(hits(me, f).filter(x => x.dmg > 0), f);
+  return m ? view(m) : null;
 };
 
 // What `f` does to `me` per turn (its mean, uncut by `me`'s HP, and its damage levels), and P(f acts first) when the
@@ -67,7 +71,7 @@ const tpTheirMove = (s, f, me, live) => {
       }
     } catch {}
   }
-  const m = bestMove(f, me, true);
+  const m = tpFastest(hits(f, me, true).filter(x => x.dmg > 0), me);
   return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, first: null, priority: m?.priority ?? 0, hits: m?.dmg > 0 ? 1 : 0,
     drain: m?.drain ?? 0, phys: m?.cat === "special" ? 0 : 1 };
 };
@@ -133,28 +137,16 @@ const tpHealProfile = (s, p) => {
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
 
-// calculateBossSegmentDamage (spec §3) → [damage dealt, bossSegmentIndex after the hit].
-const tpBossHit = (dmg, hp, seg, minIdx, idx) => {
-  if (idx <= 0) return [Math.min(dmg, hp), 0];
-  const floorHp = seg * idx;
-  const excess = dmg - (hp - Math.round(floorHp));
-  if (excess < 0) return [dmg, idx];
-  if (excess === 0) return [dmg, idx - 1];
-  const c = Math.min(Math.max(Math.floor(Math.log2(excess / seg)), 0), idx - minIdx);
-  return [Math.max(Math.floor(hp - floorHp + seg * c), 1), idx - c - 1];
-};
-
 const tpTables = (s, party, foes, live) => {
   const ours = party.map(me => foes.map(f => tpOurMove(s, me, f, live)));
   const theirs = foes.map(f => party.map(me => tpTheirMove(s, f, me, live)));
-  const final = !!s.currentBattle?.isClassicFinalBoss;
   return {
     ours, theirs,
     first: party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(s, me, f, ours[mi][fi], theirs[fi][mi], live))),
     send: foes.map(f => party.map(me => tpSendBase(s, f, me, live))),
     memo: new Map(),
-    boss: foes.map(f => (f.isBoss?.() && f.bossSegments > 1
-      ? { seg: f.getMaxHp() / f.bossSegments, min: final && !f.formIndex ? 1 : 0, idx: f.bossSegmentIndex ?? f.bossSegments - 1 } : null)),
+    // Each foe's standing as the KO pacing core reads it (boss bars, the final boss's floor); its HP and bar are carried.
+    foeState: foes.map(f => stateOf(f)),
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
     ourHeal: party.map(p => tpHealProfile(s, p)), foeHeal: foes.map(p => tpHealProfile(s, p)),
     foeStart: foes.map(f => f.hp),
@@ -222,7 +214,7 @@ const tpFight = (T, st, mi, fi, entry) => {
   const key = T.memo && [mi, fi, entry, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], nUs, nFoe,
     ...[st.ox?.[mi], st.od?.[mi], st.og?.[mi], st.fd?.[fi], st.fg?.[fi]].map(x => Math.round((x ?? 0) * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
-  const us = T.ours[mi][fi], them = T.theirs[fi][mi], boss = T.boss[fi];
+  const us = T.ours[mi][fi], them = T.theirs[fi][mi], foeState = T.foeState?.[fi] ?? { bar: 0 };
   // Those boosts on either side, as factors on each side's hits (Speed boosts aren't modelled).
   const usMul = us && (nUs || nFoe) && T.koMult ? T.koMult(T.party[mi], T.ourKo[mi], nUs, T.foes[fi], T.foeKo[fi], nFoe, us.cat === "special" ? 0 : 1) : 1;
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
@@ -233,17 +225,18 @@ const tpFight = (T, st, mi, fi, entry) => {
   let turns = 0;
   // P(token status by the end of turn t), t = 0 before this exchange, from the landed hits expected by then.
   const by = t => (!tok ? 0 : tok.odds.by(ox0 + (entry === "switch" ? them.hits ?? 0 : 0) + (them.hits ?? 0) * Math.max(0, t)));
-  // A drain move (Giga Drain, Leech Life) wins back its share of the HP each hit actually took.
-  const hitFoe = (b, r) => {
-    let dealt = 0;
-    for (const d of us?.hits ?? []) {
-      if (b.fh < 1) break;
-      const before = b.fh;
-      if (boss) { const [x, idx] = tpBossHit(d * r * usMul, b.fh, boss.seg, boss.min, b.fs); b.fh -= x; b.fs = idx; } else b.fh -= d * r * usMul;
-      dealt += before - Math.max(0, b.fh);
+  // Our damage level `o` lands its hits one by one on the foe's bars (`hitOn`). A drain move (Giga Drain, Leech Life)
+  // wins back its share of the HP they actually took.
+  const hitFoe = (b, o) => {
+    const n = Math.max(1, Math.round(o.n ?? 1));
+    let st = { ...foeState, hp: b.fh, bar: b.fs };
+    for (let k = 0; k < n && st.hp >= 1; k++) {
+      st = hitOn(st, us.dmg * o.r * usMul / n);
       b.fg += robFoe?.perHit ?? 0;
     }
-    if (us?.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + dealt * us.drain);
+    if (us.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + (b.fh - st.hp) * us.drain);
+    b.fh = st.hp;
+    b.fs = st.bar;
   };
   const foeHit = (b, r, dmg = them.dmg) => {
     const hit = dmg * r * themMul;
@@ -282,7 +275,7 @@ const tpFight = (T, st, mi, fi, entry) => {
     // recharging one, or one that can't repeat, loses the turn after each hit.
     const hits = !!us && (us.charge ? turns % 2 === 0 : us.recharge ? turns % 2 === 1 : true);
     const hidden = !!us && !hits && !!us.semiCharge;
-    const ours = hits ? [...(act < 1 ? [{ r: 0, p: 1 - act }] : []), ...ourUse.map(x => ({ r: x.r, p: x.p * act }))] : [{ r: 0, p: 1 }];
+    const ours = hits ? [...(act < 1 ? [{ r: 0, p: 1 - act }] : []), ...ourUse.map(x => ({ ...x, p: x.p * act }))] : [{ r: 0, p: 1 }];
     const next = [];
     for (const b of standing) {
       for (const [foeFirst, w] of [[false, 1 - pFoe], [true, pFoe]]) {
@@ -290,14 +283,14 @@ const tpFight = (T, st, mi, fi, entry) => {
         for (const o of ours) {
           if (!foeFirst) {
             const a = { ...b, p: b.p * w * o.p };
-            if (o.r > 0) hitFoe(a, o.r);
+            if (o.r > 0) hitFoe(a, o);
             if (a.fh < 1 || hidden) { endTurn(a); settle(a, next); continue; }
             for (const t of theirUse) { const c = { ...a, p: a.p * t.p }; foeHit(c, t.r); endTurn(c); settle(c, next); }
           } else {
             for (const t of theirUse) {
               const c = { ...b, p: b.p * w * o.p * t.p };
               foeHit(c, t.r);
-              if (c.mh >= 1 && o.r > 0) hitFoe(c, o.r);
+              if (c.mh >= 1 && o.r > 0) hitFoe(c, o);
               endTurn(c);
               settle(c, next);
             }
@@ -439,7 +432,7 @@ const tpView = (T, party, foes, double = false) => {
   const foeOnField = foes.findIndex(f => f.isOnField?.());
   const start = {
     oh: party.map(p => p.hp), ob: party.map(() => 0),
-    fh: foes.map(f => f.hp), fs: T.boss.map(x => x?.idx ?? 0), fb: foes.map(() => 0),
+    fh: foes.map(f => f.hp), fs: T.foeState.map(x => x.bar), fb: foes.map(() => 0),
     ox: party.map(() => 0), od: party.map(() => 0), og: party.map(() => 0), fd: foes.map(() => 0), fg: foes.map(() => 0),
     ok: party.map(() => 0), fk: foes.map(() => 0),
     cur: onField >= 0 ? onField : null, fcur: foeOnField >= 0 ? foeOnField : null, steps: [],
@@ -461,7 +454,7 @@ const tpView = (T, party, foes, double = false) => {
   };
   const alive = tpAlive(start.oh).length;
   const kills = foes.map((_, fi) => sweep(fi));
-  const hurt = fi => party.reduce((t, _, mi) => t + (T.ours[mi][fi]?.hits.reduce((x, d) => x + d, 0) ?? 0) / foes[fi].hp, 0);
+  const hurt = fi => party.reduce((t, _, mi) => t + (T.ours[mi][fi]?.dmg ?? 0) / foes[fi].hp, 0);
   let win = -1;
   foes.forEach((_, fi) => {
     if (kills[fi] < Math.min(2, alive)) return;
@@ -470,7 +463,7 @@ const tpView = (T, party, foes, double = false) => {
 
   // Answers: who takes the most off it per turn if they get to act. They're only credible if they do act.
   const answers = win < 0 ? [] : tpAlive(start.oh)
-    .map(mi => ({ mi, per: (T.ours[mi][win]?.hits.reduce((x, d) => x + d, 0) ?? 0) / foes[win].hp, r: tpFight(T, start, mi, win, "free") }))
+    .map(mi => ({ mi, per: (T.ours[mi][win]?.dmg ?? 0) / foes[win].hp, r: tpFight(T, start, mi, win, "free") }))
     .map(a => ({ ...a, acts: a.r.fh < foes[win].hp }))
     .filter(a => a.per >= 0.2)
     .sort((a, b) => b.per - a.per)

@@ -160,7 +160,7 @@ Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼
 Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water ↯ Fire Flare Blitz → Blastoise 100% likely · moves first
 ♟ Fight plan likely lost
 ☠ Ludicolo Ludicolo KOs 1/1 · win condition
-1 Blastoise Water Wave Crash → Ludicolo falls · foe at 66%
+1 Blastoise Water Wave Crash → Ludicolo falls · foe at 67%
 ⚠ likely lost: nothing we have hurts Ludicolo — maximise damage before it comes in
 summary {"kind":"battle","wave":89,"verdict":"trainer","field":"Blastoise Wave Crash → Arcanine · 2 hits","danger":[],"plan":"likely lost · ☠ Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in","learn":null,"rewards":null,"encounter":null,"next":null,"ahead":null,"audit":null}
 == intimidateIn (mini)

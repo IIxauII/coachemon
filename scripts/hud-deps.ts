@@ -69,6 +69,9 @@ export const HUD_DEPS = {
     `${P}#EnemyPokemon.damage`,
     `${P}#EnemyPokemon.handleBossSegmentCleared`,
     `src/utils/damage.ts#calculateBossSegmentDamage`,
+    // KO pacing over later turns: a heal stops at max HP and never raises the bar index back; a Reviver Seed's second life.
+    `${P}#Pokemon.heal`,
+    `src/modifier/modifier.ts#PokemonInstantReviveModifier.apply`,
     `src/utils/common.ts#toDmgValue`,
     `src/phases/move-effect-phase.ts#MoveEffectPhase.hitCheck`,
     `src/phases/move-effect-phase.ts#MoveEffectPhase.checkBypassAccAndInvuln`,

@@ -206,6 +206,7 @@
     "src/field/pokemon.ts#Pokemon.getStatStage": "fe91d16de12ba0ba",
     "src/field/pokemon.ts#Pokemon.hasAbility": "30be40c6ffc6421e",
     "src/field/pokemon.ts#Pokemon.hasPassive": "c64cc8bbb5071e44",
+    "src/field/pokemon.ts#Pokemon.heal": "886f327f0596e46f",
     "src/field/pokemon.ts#Pokemon.isAllowedInBattle": "9c1b5cee9f51b4c7",
     "src/field/pokemon.ts#Pokemon.isShiny": "d30b5f624e8f35ab",
     "src/field/pokemon.ts#Pokemon.isTrapped": "82f1f65eeb7b3f35",

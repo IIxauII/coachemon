@@ -102,7 +102,7 @@ Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → N
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
 ♟ Fight plan likely lost
 ☠ Tyranitar Tyranitar KOs 2/2 · win condition
-🛡 Swampert save for Tyranitar ~54%/turn
+🛡 Swampert save for Tyranitar ~50%/turn
 1 Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
 2 Swampert free Water Surf → Rhyperior KO (75%) · 29% left
 3 Swampert Water Surf → Tyranitar falls · foe at 100%
@@ -117,7 +117,7 @@ Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → S
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
 ♟ Fight plan likely lost
 ☠ Tyranitar Tyranitar KOs 2/2 · win condition
-🛡 Swampert save for Tyranitar ~54%/turn
+🛡 Swampert save for Tyranitar ~50%/turn
 1 Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
 2 Swampert free Water Surf → Rhyperior KO (75%) · 29% left
 3 Swampert Water Surf → Tyranitar falls · foe at 100%
@@ -132,10 +132,10 @@ Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → S
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
 ♟ Fight plan likely lost
 ☠ Tyranitar Tyranitar KOs 2/2 · win condition
-🛡 Swampert save for Tyranitar ~54%/turn
+🛡 Swampert save for Tyranitar ~50%/turn
 1 Swampert Water Surf → Rhyperior KO (60%) · 28% left
 2 Swampert Water Surf → Tyranitar falls · foe at 100%
-3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 65%
+3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 68%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
 == doubles spread move KOs our partner (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}

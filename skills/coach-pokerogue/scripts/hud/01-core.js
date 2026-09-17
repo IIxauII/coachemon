@@ -67,7 +67,7 @@ const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ??
 
 // A damage distribution ([{ d, p }] or a Map d → p) cut down to at most `k` points by joining the two closest
 // neighbours into their weighted mean, over and over: the KO thresholds that matter keep their sharp edges, a miss
-// (0) and a crit stay apart from the rolls.
+// (0) and a crit stay apart from the rolls. A point's hit count `n`, where given, is averaged the same way.
 const squeezeDist = (points, k) => {
   const out = [...(points instanceof Map ? [...points].map(([d, p]) => ({ d, p })) : points.map(x => ({ ...x })))]
     .filter(x => x.p > 0).sort((a, b) => a.d - b.d);
@@ -75,7 +75,8 @@ const squeezeDist = (points, k) => {
     let at = 0;
     for (let i = 1; i < out.length - 1; i++) if (out[i + 1].d - out[i].d < out[at + 1].d - out[at].d) at = i;
     const [a, b] = [out[at], out[at + 1]];
-    out.splice(at, 2, { d: (a.d * a.p + b.d * b.p) / (a.p + b.p), p: a.p + b.p });
+    const p = a.p + b.p;
+    out.splice(at, 2, { d: (a.d * a.p + b.d * b.p) / p, p, ...(a.n != null || b.n != null ? { n: ((a.n ?? 1) * a.p + (b.n ?? 1) * b.p) / p } : {}) });
   }
   return out;
 };

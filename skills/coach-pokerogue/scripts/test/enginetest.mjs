@@ -197,12 +197,12 @@ const log = (...a) => console.log(...a);
   assert.deepEqual([fp.turnsWe, sp.turnsWe, fpFree.turnsWe, spFree.turnsWe], [9, 1, 1, 9]);
 
   // Team plan: the same exchange, turn by turn.
-  const T = { ours: [[{ hits: [35], recharge: true }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], boss: [null], ourMax: [300], foeMax: [100], ourHeal: [null], foeHeal: [null] };
+  const T = { ours: [[{ dmg: 35, recharge: true }]], theirs: [[{ dmg: 1, e: 1 }]], first: [[0]], ourMax: [300], foeMax: [100], ourHeal: [null], foeHeal: [null] };
   const st = { oh: [300], ob: [0], fh: [100], fs: [0], fb: [0] };
   const withRecharge = E.tpFight(T, st, 0, 0, "free").turns;
-  T.ours[0][0] = { hits: [35] };
+  T.ours[0][0] = { dmg: 35 };
   const plain = E.tpFight(T, st, 0, 0, "free").turns;
-  T.ours[0][0] = { hits: [35], charge: true, semiCharge: true };
+  T.ours[0][0] = { dmg: 35, charge: true, semiCharge: true };
   const dig = E.tpFight(T, st, 0, 0, "free");
   log(`A team plan: 3 hits take ${plain} turns, ${withRecharge} with recharge, ${dig.turns} charging, taking ${300 - dig.mh} hits (none while underground)`);
   assert.deepEqual([plain, withRecharge, dig.turns, 300 - dig.mh], [3, 5, 6, 2]);

@@ -120,7 +120,7 @@ A prior is always named on the card that used it, along with the **role** — th
 
 ## Boss bar
 
-One of the segments a boss pokémon's HP is split into. A hit that would carry past a bar's boundary stops there, unless it is big enough to break more than one bar at once. A wild boss grows stronger each time one of its bars breaks.
+One of the segments a boss pokémon's HP is split into. A hit that would carry past a bar's boundary stops there, unless it is big enough to break more than one bar at once. A wild boss grows stronger each time one of its bars breaks. A broken bar stays broken: a heal can lift the boss's HP past the boundary, but the next hit is judged against the bars it has left.
 
 ## KO pacing
 
