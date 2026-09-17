@@ -7,6 +7,7 @@ Dragon Flying spends Salamence L22 · Rough Skin → Intimidate · Dragon/Ground
 · Mimikyu Mimikyu ← Salamence Salamence −2
 Ghost Flying spends Salamence L22 · Disguise → Intimidate · Mimikyu BST 476 → 539 · offers Dragon Rush/Bounce
 pick Snorlax first, then Salamence
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == full party (mini)
 🧬 Splice + ×
 ★ Snorlax Snorlax ← Salamence Salamence +7
@@ -21,6 +22,7 @@ Water Fairy spends Mimikyu L30 · Magikarp BST 200 → 340 · Swift Swim → no 
 · Magikarp Magikarp ← Azumarill Azumarill −15
 Water Fairy spends Azumarill L42 · Magikarp BST 200 → 311 · Swift Swim → Huge Power · offers Aqua Tail/Play Rough · Magikarp still evolves
 back out: Snorlax ← Salamence is better (+7)
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Magikarp picked first (mini)
 🧬 Splice Magikarp with + ×
 · Magikarp Magikarp ← Salamence Salamence −3
@@ -35,6 +37,7 @@ Water Fairy spends Mimikyu L30 · Magikarp BST 200 → 340 · Swift Swim → no 
 · Snorlax Snorlax ← Mimikyu Mimikyu −8
 Normal Fairy spends Mimikyu L30 · Thick Fat → no ability (Disguise doesn't work fused) · Normal → Normal/Fairy · offers Shadow Claw
 no fusion worth a member — back out, the Splicer stays unspent
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Hardcore, Salamence fainted (mini)
 🧬 Splice + ×
 · Mimikyu Mimikyu ← Magikarp Magikarp −4
@@ -47,6 +50,7 @@ Dragon Water Garchomp BST 600 → 401 · spends Magikarp L20 · Rough Skin → S
 · Magikarp Magikarp ← Garchomp Garchomp −75
 Water Ground spends Garchomp L50 · Magikarp BST 200 → 401 · Swift Swim → Rough Skin · offers Dragon Claw/Earthquake · Magikarp still evolves
 no fusion worth a member — back out, the Splicer stays unspent
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == two members (mini)
 🧬 Splice + ×
 · Garchomp Garchomp ← Magikarp Magikarp −31
@@ -62,6 +66,7 @@ Dragon Fairy Garchomp BST 301 → 511 · spends Azumarill L42 · Dragon/Ground �
 Normal Flying Snorlax BST 271 → 572 · spends Salamence L22 · Thick Fat → Intimidate · offers Dragon Rush/Bounce
 pick Garchomp first, then Salamence
 Spliced Endless: unfused mons run on half their base stats
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Spliced Endless (mini)
 🧬 Splice + ×
 ★ Garchomp Garchomp ← Salamence Salamence +81
@@ -76,6 +81,7 @@ kind null
 🎁 DNA Splicers Snorlax fuse Snorlax ← Salamence · +7 · spends Salamence L22
 · Potion party healthy
 🩺 team: 4 issues · 2 of 6 weak to Fairy, nobody resists +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == rewards, full party (mini)
 🛒 $500 + ×
 🎁 DNA Splicers Snorlax fuse Snorlax ← Salamence · +7 · spends Salamence L22
@@ -86,6 +92,7 @@ summary take DNA Splicers → Snorlax
 🎁 DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −31
 · Potion party healthy
 🩺 team: 3 issues · Magikarp: no Water attack (no STAB) +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == rewards, two members (mini)
 🛒 $500 + ×
 🎁 DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −31

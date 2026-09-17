@@ -10,7 +10,7 @@ import type { MenuResult } from "../page/menu.ts";
 import { screenId, type Discriminators } from "../screen.ts";
 import type { CommandName } from "../protocol/commands.ts";
 import { isFault, type Claim, type Fault, type GameLink, type Presence, type Tab, type Unready } from "./link.ts";
-import type { Act, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, CardRead, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** A menu read that located no handler has no discriminators: they read as off. */
 const NO_DISC: Discriminators = disc(null);
@@ -79,8 +79,14 @@ export class LinkGame implements GamePort {
     return done(await this.#link.modal({ index, fine }));
   }
 
-  async starterGrid(): Promise<StarterGrid | Failed> {
+  async starters(): Promise<StarterGrid | Failed> {
     const r = await this.#link.starters();
+    if (isFault(r)) return { ok: false, why: r.message };
+    return r.ok ? r : { ok: false, why: String(r.why) };
+  }
+
+  async card(): Promise<CardRead | Failed> {
+    const r = await this.#link.card();
     if (isFault(r)) return { ok: false, why: r.message };
     return r.ok ? r : { ok: false, why: String(r.why) };
   }

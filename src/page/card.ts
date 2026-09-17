@@ -5,20 +5,29 @@ export type CardResult =
   | { ok: false; why: "no-hud" };
 
 /**
- * The card the HUD is showing (§10.1, §11.4): `summary` is `__coachHud.summary()`, the fields `read.sh battle`'s `hud`
- * had. `kind`, `key` and `text` stay null until the HUD derives them for its card events (§11.1). Self-contained (§10.5).
+ * The card the HUD is showing (§10.1, §11.4): `__coachHud.card()` is the very payload its `coachemon:card` events
+ * carry — kind, dedupe key, wave, verdict and the card's plain text — and `summary` is `__coachHud.summary()`, the
+ * fields `read.sh battle`'s `hud` had. A subscriber's late join reads here and gets the event it missed (§11.1).
+ *
+ * Only a page with no panel at all refuses: a panel with nothing to coach, or one whose refresh threw, reads as a card
+ * of nulls, since the coach's read is not the place a HUD failure surfaces — `coachemon:coach-error` is.
+ * Self-contained (§10.5).
  */
 export function card(_L: Located, _args: Record<string, never>): CardResult {
+  const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
   const hud = (globalThis as any).__coachHud;
   if (!hud || typeof hud.summary !== "function") return { ok: false, why: "no-hud" };
-  const summary = hud.summary() || null;
+  const summary = __try(() => hud.summary()) || null;
+  const ev = typeof hud.card === "function" ? __try(() => hud.card()) || null : null;
+  const str = (v: unknown) => (typeof v === "string" ? v : null);
+  const num = (v: unknown) => (typeof v === "number" ? v : null);
   return {
     ok: true,
-    kind: null,
-    key: null,
-    wave: summary && typeof summary.wave === "number" ? summary.wave : null,
-    verdict: summary && typeof summary.verdict === "string" ? summary.verdict : null,
-    text: null,
+    kind: str(ev && ev.kind) ?? str(summary && summary.kind),
+    key: str(ev && ev.key),
+    wave: num(ev && ev.wave) ?? num(summary && summary.wave),
+    verdict: str(ev && ev.verdict) ?? str(summary && summary.verdict),
+    text: str(ev && ev.text),
     summary,
   };
 }

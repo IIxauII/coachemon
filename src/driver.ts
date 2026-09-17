@@ -85,6 +85,11 @@ const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 /** The starter grid with its filter bar active, where the server never acts (§6.5). */
 const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
+/** What `read_card` shows when the tab has no coach panel on it: a card of nothing, with `card_error` saying why (§11.4). */
+const NO_CARD = { ok: true, kind: null, key: null, wave: null, verdict: null, text: null, summary: null } as const;
+
+const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
+
 /**
  * What each tool sends into the tab, so a tool whose commands the installed extension never registered refuses alone
  * and every other one keeps working (§8.5). The cursor commands are not here: a family without its setter is walked
@@ -93,6 +98,8 @@ const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 const TOOL_COMMANDS = {
   get_state: ["probe", "menu", "snapshot"],
   read_menu: ["probe", "menu"],
+  read_card: ["probe", "menu", "card"],
+  read_starters: ["probe", "menu", "starters"],
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
@@ -172,6 +179,46 @@ export class Driver {
         ...(snap.ok ? this.#cleanSnapshot(snap.snapshot) : { snapshot_error: snap.why }),
         run: { state: this.#outcomes.runState(ready) },
       });
+    });
+  }
+
+  /**
+   * The card the coach panel is showing (§11.4): read-only, no grant, settled like every other read. It is the same
+   * payload the HUD's `card` events carry, so a subscriber that has just joined reads the event it missed (§11.1).
+   * The envelope's `wave` is the settled game's; the panel's own wave rides along inside `summary`.
+   */
+  async readCard(ctx: CallContext): Promise<Record<string, unknown>> {
+    await this.#reachable("read_card");
+    return this.#call(ctx, async call => {
+      const s = await this.#settleRead(call);
+      if (!s.settled) return this.#openingTimedOut(call, s, "read_card");
+      const ready = s.last as Ready;
+      const card = await this.#game.card();
+      const menu = await this.#game.menu();
+      const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
+      const { ok: _ok, wave: _wave, ...shown } = card.ok ? card : NO_CARD;
+      return await this.#settledResult(
+        ready,
+        screenOf(ready, menu),
+        outcome,
+        { ...shown, ...(card.ok ? {} : { card_error: card.why }) },
+        card.ok ? undefined : NO_CARD_NEXT,
+      );
+    });
+  }
+
+  /** Every starter this account has unlocked, and the grid `start_run` picks from when it is open (§11.4). Read-only. */
+  async readStarters(ctx: CallContext): Promise<Record<string, unknown>> {
+    await this.#reachable("read_starters");
+    return this.#call(ctx, async call => {
+      const s = await this.#settleRead(call);
+      if (!s.settled) return this.#openingTimedOut(call, s, "read_starters");
+      const ready = s.last as Ready;
+      const read = await this.#game.starters();
+      const menu = await this.#game.menu();
+      const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
+      const { ok: _ok, ...starters } = read;
+      return await this.#settledResult(ready, screenOf(ready, menu), outcome, read.ok ? starters : { starters_error: read.why });
     });
   }
 
@@ -375,7 +422,7 @@ export class Driver {
     cur = await expect(s, "STARTER_SELECT", "game mode");
 
     // 3. Starters, by name, resolved against the live filtered grid.
-    const info = await this.#game.starterGrid();
+    const info = await this.#game.starters();
     if (!info.ok) throw new Refusal("starter_unreadable", info.why);
     const picks: typeof info.grid = [];
     for (const name of species) {
@@ -412,7 +459,7 @@ export class Driver {
       presses++;
       cur = await expect(s, "STARTER_SELECT", `add ${pick.name}`);
     }
-    const after = await this.#game.starterGrid();
+    const after = await this.#game.starters();
     if (!after.ok) throw new Refusal("starter_unreadable", "could not re-read the starter screen", { log });
     if (after.party.length !== picks.length) {
       throw new Refusal("party_mismatch", `Expected ${picks.length} starters in the party, the screen shows ${after.party.length}: ${after.party.join(", ")}`, { log });

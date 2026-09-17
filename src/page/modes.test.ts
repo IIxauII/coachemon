@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { SummaryUiMode, UiMode } from "../enums/generated.ts";
+import { AbilityAttr, Passive, SummaryUiMode, UiMode } from "../enums/generated.ts";
 import { disc } from "./disc.ts";
 import { dispatch } from "./dispatch.ts";
 import { fine } from "./fine.ts";
@@ -34,6 +34,21 @@ test("no page function compares a mode or indexes a handler by a bare number (#1
 test("the enums handed into the page are the generated ones (#164)", () => {
   assert.equal(PAGE_MODES.m, UiMode);
   assert.equal(PAGE_MODES.sm, SummaryUiMode);
+  // The starter bit flags `starters` reads out of `gameData` travel the same way (§11.4).
+  assert.equal(PAGE_MODES.pa, Passive);
+  assert.equal(PAGE_MODES.ab, AbilityAttr);
+});
+
+test("every starter flag the page functions read exists in the generated enums (#164)", () => {
+  const flags = { pa: new Set<string>(), ab: new Set<string>() };
+  for (const fn of Object.values(PAGE_FUNCTIONS)) {
+    for (const [, prop, key] of String(fn).matchAll(/\b(?:L\.)?(pa|ab)\.([A-Z][A-Z0-9_]*)\b/g)) {
+      flags[prop as "pa" | "ab"].add(key);
+    }
+  }
+  for (const key of flags.pa) assert.ok(key in Passive, `Passive.${key} is not generated`);
+  for (const key of flags.ab) assert.ok(key in AbilityAttr, `AbilityAttr.${key} is not generated`);
+  assert.ok(flags.pa.has("UNLOCKED") && flags.ab.has("ABILITY_HIDDEN"), "the starters read names both starter flags");
 });
 
 test("every mode name the page functions read exists in the generated enums (#164)", () => {

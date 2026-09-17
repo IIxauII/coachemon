@@ -71,8 +71,53 @@ export const view = () => current;
 export const shownCardWave = () => shownWave;
 export const setShownCardWave = w => { shownWave = w; };
 export const heldWave = () => hold;
-// An easy wild wave is one line, until the user picks a view for this wave.
-export const collapsedCard = card => current !== "closed" && hold !== shownWave && card?.verdict === "easy";
+// An easy wild wave is one line, until the user picks a view for this wave. Never while rendering for text: the card
+// event carries the whole card, whatever the user has the panel collapsed to (§11.1).
+export const collapsedCard = card => !asText && current !== "closed" && hold !== shownWave && card?.verdict === "easy";
+
+// ---- The card as plain text (§11.1)
+// The stream's `text` is the card the panel draws, read back as lines: one source, so the two can never disagree. It
+// is always the full, uncollapsed card — the user's own view is theirs, and a subscriber asked for the whole thing.
+let asText = false;
+export const renderText = draw => {
+  const wasView = current, wasText = asText;
+  current = "full";
+  asText = true;
+  try { return draw(); } finally { current = wasView; asText = wasText; }
+};
+
+const tagOf = n => String(n.tagName ?? "").toUpperCase();
+// A div is the panel's only block: everything else sits on the line it was appended to.
+const isBlock = n => n != null && typeof n === "object" && tagOf(n) === "DIV";
+const kidsOf = n => (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? []);
+// A sprite reads as what it stands for: `img` titles every icon with the name it drew.
+const nodeLines = n => {
+  if (n == null) return [];
+  if (typeof n !== "object") return [String(n)];
+  // A control the panel draws for the mouse — a view button, the tab — is not part of what the card says.
+  if (n.style && n.style.cursor === "pointer") return [];
+  if (tagOf(n) === "IMG") return [String(n.title ?? "")];
+  const kids = kidsOf(n);
+  if (!kids.length) return [String(n.textContent ?? "")];
+  const out = [];
+  let inline = "";
+  for (const k of kids) {
+    const lines = nodeLines(k).filter(Boolean);
+    if (!lines.length) continue;
+    if (isBlock(k)) {
+      if (inline) { out.push(inline); inline = ""; }
+      out.push(...lines);
+    } else inline = inline ? `${inline} ${lines.join(" ")}` : lines.join(" ");
+  }
+  if (inline) out.push(inline);
+  return out;
+};
+export const nodesText = nodes => nodes.flatMap(nodeLines).map(l => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+
+// ---- The disclaimer (§3)
+// Fixed wording, on every listing and inside the extension. The panel has no About page, so the full view carries it.
+export const DISCLAIMER = "Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
+export const disclaimer = () => h("div", { ...dim, fontSize: FS.tiny, marginTop: "4px" }, DISCLAIMER);
 
 // The refresh itself lives in 98-tick, above every renderer; it registers itself here so a view button can ask for
 // a redraw without this file knowing what a card is.

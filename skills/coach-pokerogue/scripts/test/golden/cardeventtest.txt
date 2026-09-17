@@ -1,0 +1,13 @@
+verdict Learn → forget Ember
+text
+🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80
+✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186
+· Normal Tackle 2nd Normal move · weak Atk power 24
+✕ Fire Ember SE on Bug/Steel/Grass… power 78
+· Dragon Dragon Breath SE on Dragon power 72
+· Normal Scratch 2nd Normal move · weak Atk power 24
+Learn → forget Ember +108 power
+dedupe ok
+mid-wave easy → danger
+footer Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+coach error scene gone

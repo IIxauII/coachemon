@@ -9,3 +9,4 @@ biome: Swamp 85 pick — 2 mons hit SE
 encounter: Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave
 starters: best: Gible (carry) · 10/10 pts
 fusion: Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite
+card events ok

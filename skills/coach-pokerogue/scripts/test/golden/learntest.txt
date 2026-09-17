@@ -6,6 +6,7 @@
 · Fire Flamethrower 2nd Fire move power 101
 team: −SE Dragon
 Skip — not an upgrade over Dragon Breath −8 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Venusaur ← Solar Beam
 ✚ Grass Solar Beam 2nd Grass move · charge turn power 68
 ↔ Normal Double-Edge neutral on Flying/Poison/Bug… · recoil 25% of damage power 94
@@ -13,6 +14,7 @@ Skip — not an upgrade over Dragon Breath −8 power
 · Grass Synthesis status
 · Grass Power Whip SE on Ground/Rock/Water power 186
 Skip — not an upgrade over Double-Edge −26 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Blastoise ← Skull Bash
 ✚ Normal Skull Bash neutral on Water · charge turn power 65
 ↔ Water Aqua Tail 3rd Water move power 72
@@ -20,6 +22,7 @@ Skip — not an upgrade over Double-Edge −26 power
 · Water Wave Crash 3rd Water move · recoil 25% of damage · set move (Doubles Bulky Attacker) power 96
 · Water Hydro Pump 3rd Water move power 79
 Skip — not an upgrade over Aqua Tail −7 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Scrafty ← Head Smash
 ✚ Rock Head Smash SE on Flying/Bug/Fire · recoil 25% of damage power 117
 · Fighting Focus Punch 3rd Fighting move power 135
@@ -28,6 +31,7 @@ Skip — not an upgrade over Aqua Tail −7 power
 · Fighting High Jump Kick 3rd Fighting move power 105
 team: +SE Flying/Bug/Fire
 Learn → forget Brick Break +49 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Nidoking ← Double Kick
 ✚ Fighting Double Kick 2 hits · SE on Normal/Ice power 76
 ✕ Normal Tackle power 40
@@ -36,12 +40,14 @@ Learn → forget Brick Break +49 power
 · Bug Pin Missile 3.1 hits · SE on Psychic/Dark power 93
 team: +SE Normal/Ice
 Learn → forget Tackle +36 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Cloyster (Skill Link) ← Triple Axel
 ✚ Ice Triple Axel 2.7 hits · 2nd Ice move power 122
 · Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon · set move (Fast Attacker) power 293
 · Rock Rock Blast 5 hits · SE on Bug/Fire/Ice · set move (Fast Attacker) power 176
 · Normal Tackle power 40
 Learns it — free slot
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Gengar ← Shadow Ball
 ✚ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move · set move (Wallbreaker) power 140
 · Ghost Night Shade damage = level power 116
@@ -50,6 +56,7 @@ Learns it — free slot
 · Poison Sludge Bomb SE on Grass/Fairy power 176
 team: +SE Ghost/Psychic
 Learn → forget Super Fang +81 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Metagross ← Steel Beam
 ✚ Steel Steel Beam 2nd Steel move · −50% HP each use power 76
 · Psychic Zen Headbutt SE on Fighting power 127
@@ -57,6 +64,7 @@ Learn → forget Super Fang +81 power
 · Steel Iron Head 2nd Steel move power 90
 ✕ Steel Bullet Punch 2nd Steel move · priority +1 · set move (Bulky Support) power 66
 Learn → forget Bullet Punch +10 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Dragonite ← Outrage
 ✚ Dragon Outrage SE on Dragon · locks 2–3 turns, then confused · set move (Bulky Setup) power 178
 ✕ Dragon Dragon Claw SE on Dragon power 142
@@ -64,6 +72,7 @@ Learn → forget Bullet Punch +10 power
 · Fire Fire Punch SE on Bug/Steel/Grass… power 98
 · Electric Thunder Punch SE on Flying/Water power 95
 Learn → forget Dragon Claw +36 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Arcanine ← Overheat
 ✚ Fire Overheat 2nd Fire move · −2 SpA after use power 105
 · Fire Flamethrower SE on Bug/Steel/Grass… power 176
@@ -72,6 +81,7 @@ Learn → forget Dragon Claw +36 power
 · Dark Crunch SE on Ghost/Psychic power 92
 team: −SE Flying/Water
 Learn → forget Wild Charge +27 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Emolga ← Spark
 ✚ Electric Spark 2nd Electric move power 73
 · Electric Thunder Shock SE on Water power 72
@@ -79,6 +89,7 @@ Learn → forget Wild Charge +27 power
 · Ice Icicle Crash SE on Ground/Grass/Dragon power 99
 ✕ Electric Charge +1 SpD power 5
 Learn → forget Charge +68 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Tyranitar ← Iron Head (team)
 ✚ Steel Iron Head SE on Rock/Fairy power 99
 · Dark Crunch 2nd Dark move power 90
@@ -87,6 +98,7 @@ Learn → forget Charge +68 power
 · Dark Bite 2nd Dark move power 68
 team: +SE Fairy
 Learn → forget Tackle +58 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Houndoom ← Nasty Plot (TM)
 ✚ Dark Nasty Plot +2 SpA · set move (Fast Attacker) power 72
 · Dark Crunch 2nd Dark move · weak Atk power 68
@@ -94,6 +106,7 @@ Learn → forget Tackle +58 power
 · Dark Snarl 2nd Dark move power 59
 · Fire Incinerate SE on Bug/Steel/Grass… power 117
 Learn → forget Howl +69 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Fletchinder ← Roost
 ✚ Flying Roost heal 50% · set move (Bulky Attacker, evolved) power 67
 · Flying Acrobatics SE on Fighting power 97
@@ -101,6 +114,7 @@ Learn → forget Howl +69 power
 · Fire Flame Charge SE on Steel/Ice power 95
 · Normal Quick Attack priority +1 power 47
 Learn → forget Growl +59 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Minccino ← Triple Axel
 ✚ Ice Triple Axel 2.4 hits · SE on Flying/Ground/Grass… · set move (Fast Attacker, evolved) power 137
 · Normal Pound power 78
@@ -109,6 +123,7 @@ Learn → forget Growl +59 power
 · Normal Sing sleep · 3 status moves · 55% acc power 23
 team: +SE Flying/Ground/Grass…
 Learn → forget Helping Hand +137 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Houndour ← Nasty Plot
 ✚ Dark Nasty Plot +2 SpA · set move (Fast Attacker, evolved) power 67
 · Dark Bite SE on Ghost/Psychic · weak Atk power 88
@@ -116,6 +131,7 @@ Learn → forget Helping Hand +137 power
 · Normal Leer foe Def −1 power 4
 · Fire Incinerate SE on Bug/Steel/Grass… power 117
 Learn → forget Howl +64 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Azumarill (Huge Power) ← Liquidation
 ✚ Water Liquidation 2nd Water move · set move (Bulky Attacker) power 115
 · Water Aqua Jet 2nd Water move · priority +1 · set move (Bulky Attacker) power 66
@@ -123,6 +139,7 @@ Learn → forget Howl +64 power
 · Ice Ice Beam SE on Flying/Grass · weak SpA power 69
 ✕ Water Surf 2nd Water move · weak SpA power 62
 Learn → forget Surf +53 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Sylveon (Pixilate) ← Hyper Voice
 ✚ Fairy Hyper Voice Pixilate · SE on Dragon/Dark · set move (Bulky Setup) power 245
 · Ghost Shadow Ball SE on Ghost/Psychic power 101
@@ -130,10 +147,12 @@ Learn → forget Surf +53 power
 · Fire Mystical Fire SE on Bug/Steel/Grass… power 98
 team: +SE Dragon/Dark
 Learns it — free slot
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Venusaur ← Solar Beam (no sun)
 ✚ Grass Solar Beam 2nd Grass move · charge turn (not in sun) power 68
 · Poison Sludge Bomb SE on Grass/Fairy · set move (Bulky Support) power 211
 · Grass Giga Drain SE on Ground/Rock/Water · set move (Bulky Support) power 176
 · Grass Sleep Powder sleep · 75% acc · set move (Bulky Support) power 63
 Learns it — free slot
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 ok

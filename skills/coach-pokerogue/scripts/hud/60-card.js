@@ -133,6 +133,49 @@ const EMPTY = {
 };
 export const summaryKeys = () => Object.keys(EMPTY);
 
+// ---- The card event (§11.1)
+// What the panel pushes whenever the card it shows changes: the kind, the key it is deduplicated on, the wave and the
+// leading call. The watcher's old per-kind keys move here, so the stream and the card agree by construction.
+// The panel's `rewards` card goes out as `reward`; `starters` and `fusion` have no event kind and are read-only.
+const EVENT_KINDS = { battle: "battle", learn: "learn", rewards: "reward", biome: "biome", encounter: "encounter" };
+
+const cardKey = card => {
+  const w = card.wave ?? null;
+  if (card.kind === "learn") return `${w}|${card.name ?? ""}|${card.move?.name ?? ""}`;
+  // A reroll changes the offers, so the rewards screen is a new decision under the same wave.
+  if (card.kind === "rewards") return `${w}|${(card.free ?? []).map(f => f.name).join(",")}`;
+  if (card.kind === "encounter") return `${w}|${card.name ?? ""}`;
+  // A battle is keyed on the wave alone: the foes drop out of the list as they faint.
+  return `${w}`;
+};
+
+// The leading call of each summary, as the HUD already writes it: the learn call, the rewards line's first clause, the
+// biome pick, the encounter's `take …` / `your call` / `not judged`. A battle carries the glossary's verdict itself.
+const leading = s => (typeof s === "string" && s ? s.split(" · ")[0] : null);
+const biomePick = s => {
+  const picked = (typeof s === "string" ? s : "").split(" · ").find(o => o.includes(" pick — "));
+  return picked ? picked.replace(/ \d+ pick — [\s\S]*$/, "") : null;
+};
+const encounterCall = s => {
+  const head = leading(typeof s === "string" ? s.slice(s.indexOf(": ") + 2) : null);
+  return head ? head.split(" — ")[0] : null;
+};
+
+const verdictOfKind = (kind, s) => {
+  if (kind === "battle") return s.verdict;
+  if (kind === "learn") return leading(s.learn);
+  if (kind === "rewards") return leading(s.rewards);
+  if (kind === "biome") return biomePick(s.biome);
+  if (kind === "encounter") return encounterCall(s.encounter);
+  return leading(s[kind]);
+};
+
+export const cardEvent = card => {
+  if (!card) return null;
+  const s = cardSummary(card);
+  return { kind: EVENT_KINDS[card.kind] ?? card.kind, key: cardKey(card), wave: card.wave ?? null, verdict: s ? verdictOfKind(card.kind, s) : null };
+};
+
 // `danger`: a likely KO of one of our mons this turn — `level` "ko" before it acts (the 💀 tags), "after" once it has
 // acted; `saveFor` names the foe the fight plan keeps that mon for. `plan`: the fight plan's line (trainer battles).
 export const cardSummary = card => {

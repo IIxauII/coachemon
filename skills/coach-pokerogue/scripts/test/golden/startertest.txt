@@ -17,6 +17,7 @@ Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by
 Pidgey Pidgey 1 final BST 479 (Pidgeot)
 Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 👁 Rattata Rattata 1 pts · #9 of 10 IVs 186/186 · final BST 413 (Raticate)
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == classic, 10 points (mini)
 🌱 Starters 0/10 pts + ×
 ★ Gible Gible + Magikarp Magikarp + Squirtle Squirtle 10 pts · SE vs 10 types
@@ -38,6 +39,7 @@ Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
 Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
 Pidgey Pidgey 1 final BST 479 (Pidgeot)
 Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Gible picked (mini)
 🌱 Starters 6/10 pts + ×
 ✓ picked: Gible
@@ -61,6 +63,7 @@ Squirtle Squirtle 3 carry final BST ~534 · luck +3
 Bulbasaur Bulbasaur 3 final BST ~538
 Charmander Charmander 3 final BST ~529
 final forms estimated until the game's tables load
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == no tables (mini)
 🌱 Starters 0/10 pts + ×
 ★ Squirtle Squirtle + Bulbasaur Bulbasaur + Charmander Charmander + Azurill Azurill 10 pts · SE vs 12 types
@@ -70,6 +73,7 @@ summary best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; 
 ★ best 1 pts · SE vs 6 types
 Magikarp Magikarp 1 carry final BST 540 (Gyarados) · passive Moxie
 single type: shared weaknesses not counted
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == single type, 1 point (mini)
 🌱 Starters 0/1 pts + ×
 ★ Magikarp Magikarp 1 pts · SE vs 6 types
@@ -94,6 +98,7 @@ Charmander Charmander 3 final BST 534 (Charizard)
 Magikarp Magikarp 1 final BST 540 (Gyarados)
 👁 Magikarp Magikarp 1 pts · #4 of 10 · in best final BST 540 (Gyarados) · IVs 60/186
 Fresh Start: no passives, egg moves or luck
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Fresh Start (mini)
 🌱 Starters 0/10 pts + ×
 ★ Dratini Dratini + Charmander Charmander + Magikarp Magikarp + Pikachu Pikachu + Azurill Azurill 10 pts · SE vs 12 types · weak Rock

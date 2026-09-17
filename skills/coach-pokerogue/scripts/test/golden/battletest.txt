@@ -5,6 +5,7 @@ summary easy | Charizard Heat Wave → Rattata · 1 hit
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Fire Heat Wave → Rattata 1 hit
 Rattata Rattata L20 Normal 100% ▲ Fighting ↯ Normal Tackle → Charizard 50% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == easy (mini)
 🎯 W89 ⚔ Charizard Heat Wave → Rattata · 1 hit + {Show details} × {Close}
 -- after + (mini)
@@ -19,6 +20,7 @@ summary easy | Charizard Heat Wave → both · 1 hit ; Venusaur Double-Edge → 
 ⚔ Venusaur Normal Double-Edge → Rattata 1 hit spare hit — KO without it
 Rattata Rattata L20 Normal 100% ▲ Fighting ↯ Normal Tackle → Venusaur 100% likely · moves after
 Pidgey Pidgey L20 Normal Flying 100% ▲ — ↯ Flying Gust → Charizard 100% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == easyDouble (mini)
 🎯 W89 ⚔ Charizard Heat Wave → both · 1 hit ⚔ Venusaur Double-Edge → Rattata · 1 hit + {Show details} × {Close}
 -- after + (mini)
@@ -34,6 +36,7 @@ summary easy | Charizard Heat Wave → both · 2 hits ; Venusaur Power Whip → 
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
 Bisharp Bisharp L60 Dark Steel 100% ▲ Fighting ×4 Fire ↯ Steel Iron Head → Charizard 55% likely · moves after
 Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → Venusaur 55% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == double (mini)
 🎯 W89 ⚔ Charizard Heat Wave → both · 2 hits ⚔ Venusaur Power Whip → Nidoqueen · 2 hits + {Show details} × {Close}
 -- after + (mini)
@@ -49,6 +52,7 @@ summary easy | Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
 ◎ focus Nidoqueen : KO before it moves
 Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → Charizard 55% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == lastFoe (mini)
 🎯 W89 ⚔ Charizard Heat Wave → Nidoqueen · 2 hits ⚔ Venusaur Power Whip → Nidoqueen · 2 hits + {Show details} × {Close}
 -- after + (mini)
@@ -61,6 +65,7 @@ Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → 
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100% likely · moves first
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary danger | Charizard Flamethrower → Lycanroc | 💀 Charizard
 == threat (mini)
 🎯 W89 + {Expand} × {Close}
@@ -71,6 +76,7 @@ summary danger | Charizard Flamethrower → Lycanroc | 💀 Charizard
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 Lycanroc Lycanroc L90 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100% likely · moves first
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary danger | Charizard Flamethrower → Lycanroc | 💀 Charizard
 == switchin (mini)
 🎯 W89 + {Expand} × {Close}
@@ -87,6 +93,7 @@ foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water
 Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼ ↯ Water Surf → Venusaur 80% likely · moves after
 ♟ winnable · 2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary trainer | Venusaur Power Whip → Ludicolo · 2 hits | plan: winnable · Blastoise › Venusaur
 == predict (mini)
 🎯 W89 · Tester Venusaur + {Expand} × {Close}
@@ -98,6 +105,7 @@ next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Venusaur ⚠ Ice ×2 75% {Aurorus's Ice Beam: ~75% of current HP} Grass Power Whip → Aurorus 1 hit
 Aurorus Aurorus L66 Rock Ice 100% ▲ Grass ↯ Ice Ice Beam → Venusaur 100% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary danger | Venusaur Power Whip → Aurorus · 1 hit
 == risk (mini)
 🎯 W89 + {Expand} × {Close}
@@ -107,6 +115,7 @@ summary danger | Venusaur Power Whip → Aurorus · 1 hit
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
 ⇄ Charizard out › Blastoise in · optional · takes ~19% · resists Flamethrower
 Ninetales Ninetales L72 Fire 100% ✦ ⚠ Flash Fire ▲ Water ✕ Fire ×0 ↯ Fire Flamethrower → Charizard 70% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary fight | Charizard Air Slash → Ninetales · 3 hits
 == single (mini)
 🎯 W89 + {Expand} × {Close}
@@ -121,6 +130,7 @@ Lycanroc Lycanroc L70 Steel TERA 100% ▲ Fire ↯ Rock Stone Edge → Charizard
 🛡 Charizard save for Lycanroc ~100%/turn · KO'd first
 1 Charizard Fire Flamethrower → Lycanroc falls · foe at 100%
 ⚠ likely lost: nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary trainer | Charizard Flamethrower → Lycanroc · 1 hit | 💀 Charizard | plan: likely lost · ☠ Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 == tera (mini)
 🎯 W89 · Tester Charizard + {Expand} × {Close}
@@ -133,6 +143,7 @@ summary easy | Charizard Flamethrower → Swinub · 1 hit
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Fire Flamethrower → Swinub 1 hit
 Swinub Swinub L20 Ice Ground 100% ✦ ⚠ Thick Fat ▲ — ↯ Normal Tackle → Charizard 100% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == trap (mini)
 🎯 W89 ⚔ Charizard Flamethrower → Swinub · 1 hit ⚠ Thick Fat + {Show details} × {Close}
 -- after + (mini)
@@ -145,6 +156,7 @@ summary easy | Scrafty Brick Break → Pineco · 1 hit
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Scrafty Fighting Brick Break → Pineco 1 hit
 Pineco Pineco L20 Bug 100% ✦ ⚠ Sturdy ▲ — ↯ Normal Tackle → Scrafty 100% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == modelled (mini)
 🎯 W89 ⚔ Scrafty Brick Break → Pineco · 1 hit + {Show details} × {Close}
 -- after + (mini)
@@ -162,6 +174,7 @@ Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water ↯ Fire Flare Blit
 ☠ Ludicolo Ludicolo KOs 1/1 · win condition
 1 Blastoise Water Wave Crash → Ludicolo falls · foe at 67%
 ⚠ likely lost: nothing we have hurts Ludicolo — maximise damage before it comes in
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely lost · ☠ Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
 == intimidateIn (mini)
 🎯 W89 · Tester Blastoise + {Expand} × {Close}
@@ -174,6 +187,7 @@ summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely los
 ⚔ Venusaur Grass Power Whip → Whismur 1 hit
 Whismur Whismur L30 Normal 100% ✦ ⚠ Soundproof ▲ — ↯ Normal Pound → Venusaur 100% likely · moves after
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Tackle → Exploud 100% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary fight | Exploud — ; Venusaur Power Whip → Whismur · 1 hit
 == soundproof (mini)
 🎯 W89 + {Expand} × {Close}
@@ -183,6 +197,7 @@ summary fight | Exploud — ; Venusaur Power Whip → Whismur · 1 hit
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Scrafty Fighting Brick Break → Granbull 3 hits
 Granbull Granbull L30 Fairy 100% ✦ ⚠ Intimidate ▲ — ↯ Normal Tackle → Scrafty 100% likely · moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary fight | Scrafty Brick Break → Granbull · 3 hits
 == intimidate (mini)
 🎯 W89 + {Expand} × {Close}

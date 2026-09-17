@@ -130,7 +130,7 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
   const switchConfirm: Screen = { ...begin, phase: "CheckSwitchPhase", chain: [UiMode.TITLE], text: "Will you switch\nPokémon?" };
   const exitConfirm: Screen = { ...begin, text: "Return to the title screen?" };
   const costs = opts.costs ?? { Bulbasaur: 3 };
-  const starterGrid = Object.entries(costs).map(([name, cost], i) => ({ i, name, cost }));
+  const starterGrid = Object.entries(costs).map(([name, cost], i) => ({ i, name, id: i + 1, cost }));
 
   let screen = title;
   let cursor = 0;
@@ -177,7 +177,7 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
     read,
     menu,
     onPress: press,
-    starterGrid: () => ({ ok: true, grid: starterGrid, valueLimit: 10, party, partyValid: true }),
+    starters: () => ({ ok: true, cursor: gridCursor, scrollCursor: 0, owned: [], grid: starterGrid, valueLimit: 10, party, partyValid: true }),
     onSetCursor: target => {
       if (target.family === "starter_select") {
         if (opts.gridLands === "miss") return { ok: false, why: "filter-mode", threw: false };
@@ -906,4 +906,85 @@ test("a frame read that fails is not a frozen loop", async () => {
   const r = await outcome(tab.driver.press("ACTION", {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
   assert.equal(presses, 1);
+});
+
+// ---- The coach's read-only tools (§11.4)
+
+/** A settled COMMAND screen that scripts nothing but the reads a coach tool makes. */
+function coachTab(over: Pick<FakeScreen, "card" | "starters" | "unreachable">) {
+  const read = (): ScreenRead => ({
+    ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,
+    runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
+    awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: "1.12.0.11", ...money,
+  });
+  return drive({ ...over, read, menu: () => commandMenu(0) });
+}
+
+test("read_card returns the card the panel is showing, in the settled envelope (§11.4)", async () => {
+  const summary = { kind: "battle", wave: 12, verdict: "danger", plan: null };
+  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", text: "⚔ Charizard Ember → Rattata", summary }) });
+  const r = await outcome(tab.driver.readCard({}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.screen, "COMMAND");
+  assert.equal(r.wave, 12);
+  assert.equal(r.kind, "battle");
+  assert.equal(r.key, "12");
+  assert.equal(r.verdict, "danger");
+  assert.equal(r.text, "⚔ Charizard Ember → Rattata");
+  assert.deepEqual(r.summary, summary);
+  assert.equal(r.card_error, undefined);
+});
+
+test("read_card on a tab with no panel says so and keeps reading the game (§11.4)", async () => {
+  const tab = coachTab({ card: () => ({ ok: false, why: "no-hud" }) });
+  const r = await outcome(tab.driver.readCard({}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.card_error, "no-hud");
+  assert.equal(r.kind, null);
+  assert.equal(r.summary, null);
+  assert.match(String(r.next), /coach panel is not running/);
+});
+
+test("read_card needs no grant: it never claims the tab another driver holds", async () => {
+  const fake = fakeGame({
+    lockHolder: 4242,
+    card: () => ({ ok: true, kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "your call", text: "🎓 Flamethrower", summary: null }),
+    read: (): ScreenRead => ({
+      ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 14, turn: 1,
+      runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
+      awaitingActionInput: false, fine: "coach|0", domMode: null, gameVersion: "1.12.0.11", ...money,
+    }),
+    menu: () => commandMenu(0),
+  });
+  const r = await outcome(new Driver(fake.game, fake.clock).readCard({}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.kind, "learn");
+});
+
+test("read_starters returns the unlocks and the grid, without the read's own ok flag (§11.4)", async () => {
+  const owned = [{ id: 4, cost: 3, ivTotal: 81, passiveUnlocked: true, hiddenAbility: false, eggMoves: 3, costReduction: 1, candy: 40 }];
+  const tab = coachTab({ starters: () => ({ ok: true, cursor: 2, scrollCursor: 0, grid: [{ i: 0, name: "Charmander", id: 4, cost: 3 }], party: ["Charmander"], valueLimit: 10, partyValid: true, owned }) });
+  const r = await outcome(tab.driver.readStarters({}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.ok, undefined, "the page read's flag is the envelope's status, not a field");
+  assert.deepEqual(r.owned, owned);
+  assert.deepEqual(r.party, ["Charmander"]);
+  assert.equal(r.valueLimit, 10);
+  assert.equal(r.cursor, 2);
+});
+
+test("read_starters reports a failed read rather than an empty grid", async () => {
+  const tab = coachTab({ starters: () => ({ ok: false, why: "no-battle-scene" }) });
+  const r = await outcome(tab.driver.readStarters({}));
+  assert.equal(r.starters_error, "no-battle-scene");
+  assert.equal(r.owned, undefined);
+});
+
+test("a coach tool refuses by rung when nothing can reach the game (§12.3)", async () => {
+  const unreachable = { rung: 2, code: "unreachable", line: "No browser is connected to the hub." } as const;
+  for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({})]) {
+    const r = await outcome(call(coachTab({ unreachable }).driver));
+    assert.equal(r.error, "unreachable", JSON.stringify(r));
+    assert.equal(r.rung, 2);
+  }
 });
