@@ -1,0 +1,31 @@
+== new battle
+0 NEW BATTLE w12 wild · fight | Rattata L12 Normal [Run Away] 40/40
+== easy and trainer
+0 NEW BATTLE w12 wild · easy | Rattata L12
+1 NEW BATTLE w13 double Youngster Ben · trainer | Machop L9 Normal [Run Away] 40/40 · Geodude L10 Normal [Run Away] 40/40 | plan: winnable · ☠ Charizard KOs 2/2
+== HUD verdict trails the read
+3 NEW BATTLE w12 wild | Rattata L12 Normal [Run Away] 40/40
+== danger mid-wave
+0 NEW BATTLE w20 Bug Catcher · trainer | Rattata L12 Normal [Run Away] 40/40 | plan: winnable
+1 DANGER w20 Charizard ← Butterfree Gust
+2 LIKELY LOST w20 turn 3 | likely lost · nothing outspeeds Butterfree
+== danger after acting
+0 NEW BATTLE w21 Lass · trainer | Rattata L12 Normal [Run Away] 40/40 ⚠ Charizard (after acting, saved for Vileplume)
+== learn and rewards
+0 LEARN MOVE w12 Charizard wants Flamethrower (Fire Special 90 100%) | has: Ember (Fire Special 40 100%) | Charizard Atk84/SpA109 | HUD: learn → forget Ember
+1 REWARDS w12 money $500 reroll $250 | free: Leftovers | shop: Potion $200 | HUD: take Leftovers → Charizard | audit: 2 issues: Charizard has one answer
+2 REWARDS w12 money $500 reroll $500 | free: Revive | shop: Potion $200 | HUD: take Revive
+== biome and encounter
+1 BIOME w30 | HUD: Swamp 85 pick — 2 mons hit SE · Construction Site 69
+2 ENCOUNTER w31 | HUD: Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave
+== no hud
+0 NEW BATTLE w12 wild | Rattata L12 Normal [Run Away] 40/40
+1 LEARN MOVE w12 Charizard wants Flamethrower (Fire Special 90 100%) | has: Ember (Fire Special 40 100%) | Charizard Atk84/SpA109
+2 REWARDS w12 money $500 reroll $250 | free: Leftovers | shop: 
+== errors and loading
+0 COACH ERROR no pokerogue.net tab in Orion
+3 COACH ERROR Orion is not running JavaScript
+4 NEW BATTLE w12 wild · fight | Rattata L12 Normal [Run Away] 40/40
+== resumed
+0 NEW BATTLE w12 wild · fight (resumed, turn 4) | Rattata L12 Normal [Run Away] 40/40
+1 NEW BATTLE w13 wild · fight | Pidgey L13 Normal [Run Away] 40/40

@@ -55,7 +55,7 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
 
   // The tiers this wave's rewards are pinned to, and whether luck can still move them. A fixed battle's config
   // carries them; every other wave rolls freely. `TIER_NAMES` lives in 50-shop.js, which loads after this file —
-  // safe because nothing here runs at load time (see the header of 98-render-preview.js for the same rule).
+  // safe because nothing here runs at load time (see the header of 95-render-preview.js for the same rule).
   const rewardRules = (s, wave) => {
     const cfg = tryDo(() => (s.gameMode?.isFixedBattle?.(wave) ? s.gameMode.getFixedBattle(wave) : null));
     const custom = cfg?.customModifierRewardSettings;

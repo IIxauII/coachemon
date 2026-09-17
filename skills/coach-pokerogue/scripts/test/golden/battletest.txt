@@ -1,6 +1,6 @@
 == easy (full)
 🎯 W89 ⚔ Charizard Heat Wave → Rattata · 1 hit + {Show details} × {Close}
-summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Heat Wave → Rattata · 1 hit","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary easy | Charizard Heat Wave → Rattata · 1 hit
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Fire Heat Wave → Rattata 1 hit
@@ -12,7 +12,7 @@ Rattata Rattata L20 Normal 100% ▲ Fighting ↯ Normal Tackle → Charizard 50%
 ⚔ Charizard Fire Heat Wave → Rattata 1 hit
 == easyDouble (full)
 🎯 W89 ⚔ Charizard Heat Wave → both · 1 hit ⚔ Venusaur Double-Edge → Rattata · 1 hit + {Show details} × {Close}
-summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Heat Wave → both · 1 hit ; Venusaur Double-Edge → Rattata · 1 hit","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary easy | Charizard Heat Wave → both · 1 hit ; Venusaur Double-Edge → Rattata · 1 hit
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Fire Heat Wave → both 1 hit
@@ -27,7 +27,7 @@ Pidgey Pidgey L20 Normal Flying 100% ▲ — ↯ Flying Gust → Charizard 100% 
 ⚔ Venusaur Normal Double-Edge → Rattata 1 hit spare hit — KO without it
 == double (full)
 🎯 W89 ⚔ Charizard Heat Wave → both · 2 hits ⚔ Venusaur Power Whip → Nidoqueen · 2 hits + {Show details} × {Close}
-summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Heat Wave → both · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary easy | Charizard Heat Wave → both · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Fire Heat Wave → both Bisharp 1 hit · Nidoqueen 2 hits
@@ -42,7 +42,7 @@ Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → 
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
 == lastFoe (full)
 🎯 W89 ⚔ Charizard Heat Wave → Nidoqueen · 2 hits ⚔ Venusaur Power Whip → Nidoqueen · 2 hits + {Show details} × {Close}
-summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary easy | Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Fire Heat Wave → Nidoqueen 2 hits
@@ -61,7 +61,7 @@ Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → 
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100% likely · moves first
-summary {"kind":"battle","wave":89,"verdict":"danger","field":"Charizard Flamethrower → Lycanroc","danger":[{"mon":"Charizard","from":"Lycanroc","move":"Stone Edge","level":"ko","saveFor":null}],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary danger | Charizard Flamethrower → Lycanroc | 💀 Charizard
 == threat (mini)
 🎯 W89 + {Expand} × {Close}
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc
@@ -71,7 +71,7 @@ summary {"kind":"battle","wave":89,"verdict":"danger","field":"Charizard Flameth
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 Lycanroc Lycanroc L90 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100% likely · moves first
-summary {"kind":"battle","wave":89,"verdict":"danger","field":"Charizard Flamethrower → Lycanroc","danger":[{"mon":"Charizard","from":"Lycanroc","move":"Stone Edge","level":"ko","saveFor":null}],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary danger | Charizard Flamethrower → Lycanroc | 💀 Charizard
 == switchin (mini)
 🎯 W89 + {Expand} × {Close}
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc
@@ -87,7 +87,7 @@ foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water
 Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼ ↯ Water Surf → Venusaur 80% likely · moves after
 ♟ winnable · 2 steps + {Show the fight plan}
-summary {"kind":"battle","wave":89,"verdict":"trainer","field":"Venusaur Power Whip → Ludicolo · 2 hits","danger":[],"plan":"winnable · Blastoise › Venusaur","learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary trainer | Venusaur Power Whip → Ludicolo · 2 hits | plan: winnable · Blastoise › Venusaur
 == predict (mini)
 🎯 W89 · Tester Venusaur + {Expand} × {Close}
 ⇆ Arcanine → Ludicolo switches — moves aimed at it
@@ -98,7 +98,7 @@ next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Venusaur ⚠ Ice ×2 75% {Aurorus's Ice Beam: ~75% of current HP} Grass Power Whip → Aurorus 1 hit
 Aurorus Aurorus L66 Rock Ice 100% ▲ Grass ↯ Ice Ice Beam → Venusaur 100% likely · moves after
-summary {"kind":"battle","wave":89,"verdict":"danger","field":"Venusaur Power Whip → Aurorus · 1 hit","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary danger | Venusaur Power Whip → Aurorus · 1 hit
 == risk (mini)
 🎯 W89 + {Expand} × {Close}
 ⚔ Venusaur ⚠ Ice ×2 75% {Aurorus's Ice Beam: ~75% of current HP} Grass Power Whip → Aurorus 1 hit
@@ -107,7 +107,7 @@ summary {"kind":"battle","wave":89,"verdict":"danger","field":"Venusaur Power Wh
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
 ⇄ Charizard out › Blastoise in · optional · takes ~19% · resists Flamethrower
 Ninetales Ninetales L72 Fire 100% ✦ ⚠ Flash Fire ▲ Water ✕ Fire ×0 ↯ Fire Flamethrower → Charizard 70% likely · moves after
-summary {"kind":"battle","wave":89,"verdict":"fight","field":"Charizard Air Slash → Ninetales · 3 hits","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary fight | Charizard Air Slash → Ninetales · 3 hits
 == single (mini)
 🎯 W89 + {Expand} × {Close}
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
@@ -121,14 +121,14 @@ Lycanroc Lycanroc L70 Steel TERA 100% ▲ Fire ↯ Rock Stone Edge → Charizard
 🛡 Charizard save for Lycanroc ~100%/turn · KO'd first
 1 Charizard Fire Flamethrower → Lycanroc falls · foe at 100%
 ⚠ likely lost: nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
-summary {"kind":"battle","wave":89,"verdict":"trainer","field":"Charizard Flamethrower → Lycanroc · 1 hit","danger":[{"mon":"Charizard","from":"Lycanroc","move":"Stone Edge","level":"ko","saveFor":"Lycanroc"}],"plan":"likely lost · ☠ Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy","learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary trainer | Charizard Flamethrower → Lycanroc · 1 hit | 💀 Charizard | plan: likely lost · ☠ Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 == tera (mini)
 🎯 W89 · Tester Charizard + {Expand} × {Close}
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, before it can act} Fire Flamethrower → Lycanroc 1 hit
 ♟ likely lost · ☠ Lycanroc · 1 step + {Show the fight plan}
 == trap (full)
 🎯 W89 ⚔ Charizard Flamethrower → Swinub · 1 hit ⚠ Thick Fat + {Show details} × {Close}
-summary {"kind":"battle","wave":89,"verdict":"easy","field":"Charizard Flamethrower → Swinub · 1 hit","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary easy | Charizard Flamethrower → Swinub · 1 hit
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Fire Flamethrower → Swinub 1 hit
@@ -140,7 +140,7 @@ Swinub Swinub L20 Ice Ground 100% ✦ ⚠ Thick Fat ▲ — ↯ Normal Tackle �
 ⚔ Charizard Fire Flamethrower → Swinub ⚠ Thick Fat 1 hit
 == modelled (full)
 🎯 W89 ⚔ Scrafty Brick Break → Pineco · 1 hit + {Show details} × {Close}
-summary {"kind":"battle","wave":89,"verdict":"easy","field":"Scrafty Brick Break → Pineco · 1 hit","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary easy | Scrafty Brick Break → Pineco · 1 hit
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Scrafty Fighting Brick Break → Pineco 1 hit
@@ -162,7 +162,7 @@ Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water ↯ Fire Flare Blit
 ☠ Ludicolo Ludicolo KOs 1/1 · win condition
 1 Blastoise Water Wave Crash → Ludicolo falls · foe at 67%
 ⚠ likely lost: nothing we have hurts Ludicolo — maximise damage before it comes in
-summary {"kind":"battle","wave":89,"verdict":"trainer","field":"Blastoise Wave Crash → Arcanine · 2 hits","danger":[],"plan":"likely lost · ☠ Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in","learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely lost · ☠ Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
 == intimidateIn (mini)
 🎯 W89 · Tester Blastoise + {Expand} × {Close}
 ⇆ Ludicolo → Arcanine switches — moves aimed at it
@@ -172,7 +172,7 @@ summary {"kind":"battle","wave":89,"verdict":"trainer","field":"Blastoise Wave C
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Scrafty Fighting Brick Break → Granbull 3 hits
 Granbull Granbull L30 Fairy 100% ✦ ⚠ Intimidate ▲ — ↯ Normal Tackle → Scrafty 100% likely · moves after
-summary {"kind":"battle","wave":89,"verdict":"fight","field":"Scrafty Brick Break → Granbull · 3 hits","danger":[],"plan":null,"learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+summary fight | Scrafty Brick Break → Granbull · 3 hits
 == intimidate (mini)
 🎯 W89 + {Expand} × {Close}
 ⚔ Scrafty Fighting Brick Break → Granbull 3 hits

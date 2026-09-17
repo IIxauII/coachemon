@@ -105,7 +105,11 @@ for (const [label, sc] of Object.entries(scenarios)) {
     eval(bundle("hud"));
     if (sc.trainer && VIEW === "full") console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
     console.log(`== ${label} (${VIEW})\n${lines(el)}`);
-    if (VIEW === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+    if (VIEW === "full") {
+      // The card's own line, the way the watcher prints it; its full shape is cardtest's business.
+      const x = globalThis.__coachHud.summary();
+      console.log(`summary ${x.verdict} | ${x.field}${x.danger.length ? ` | ${x.danger.map(d => `${d.level === "ko" ? "\u{1F480}" : "\u26a0"} ${d.mon}`).join(" ")}` : ""}${x.plan ? ` | plan: ${x.plan}` : ""}`);
+    }
     // A collapsed wave: `+` shows the chosen view, and it holds for the rest of the wave.
     const plus = (el.kids ?? []).length === 1 ? buttons(el.kids[0]).find(b => b.children.includes("+")) : null;
     if (plus) {

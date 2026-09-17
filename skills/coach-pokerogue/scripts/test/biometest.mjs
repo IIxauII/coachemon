@@ -135,7 +135,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   for (const view of ["full", "mini"]) {
     const { el } = mount({ view });
     console.log(`== swamp vs construction site (${view})\n${lines(el)}`);
-    if (view === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+    if (view === "full") console.log(`summary ${globalThis.__coachHud.summary().biome}`);
   }
   const m = mount().model();
   jsonSafe(m, "model");
