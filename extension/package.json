@@ -1,0 +1,23 @@
+{
+  "name": "coachemon-extension",
+  "version": "0.0.0-placeholder",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "engines": {
+    "node": ">=23.6"
+  },
+  "scripts": {
+    "build": "wxt build",
+    "build:all": "wxt build -b chrome --mode store && wxt build -b chrome --mode dev && wxt build -b firefox --mode store && wxt build -b firefox --mode dev && wxt build -b safari --mode store && wxt build -b safari --mode dev",
+    "zip": "wxt zip -b chrome --mode store && wxt zip -b firefox --mode store && wxt zip -b safari --mode store",
+    "icons": "node scripts/icons.mjs",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "wxt prepare && tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "wxt": "^0.21.4"
+  }
+}

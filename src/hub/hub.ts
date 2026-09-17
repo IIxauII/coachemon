@@ -11,7 +11,8 @@
 import { createServer, type IncomingHttpHeaders, type Server } from "node:http";
 import type { Duplex } from "node:stream";
 import { WebSocketServer, type WebSocket } from "ws";
-import { DEV_COMMAND_NAMES, STORE_COMMANDS } from "../protocol/commands.ts";
+import { STORE_COMMANDS } from "../protocol/commands.ts";
+import { DEV_COMMAND_NAMES, type DevCommandName } from "../protocol/dev-commands.ts";
 import { PRODUCT, PROTOCOL } from "../protocol/version.ts";
 import type { ClientReply, ExtensionHello, FromClient, FromExtension, HubCode, TabInfo, ToClient, ToExtension } from "../protocol/wire.ts";
 
@@ -276,7 +277,7 @@ export class Hub {
   #route(c: Client, id: number, name: string, args: Record<string, unknown>): void {
     const refuse = (code: HubCode, message: string, tabs?: TabInfo[]) => send(c.ws, { t: "reply", id, ok: false, code, message, ...(tabs ? { tabs } : {}) } satisfies ClientReply);
     const store = Object.hasOwn(STORE_COMMANDS, name) ? STORE_COMMANDS[name as keyof typeof STORE_COMMANDS] : null;
-    const dev = DEV_COMMAND_NAMES.includes(name as (typeof DEV_COMMAND_NAMES)[number]);
+    const dev = DEV_COMMAND_NAMES.includes(name as DevCommandName);
     if (!store && !dev) return refuse("unknown-command", `${name} is not a Coachemon command.`);
 
     const counted = this.#counted();

@@ -103,6 +103,26 @@ One step the **hub** carries to a game tab: either a read or an act, each a sing
 
 Not to be confused with the game's own command menu (Fight, Ball, Pokémon, Run), which is a **screen**.
 
+## Relay
+
+The extension's presence in one game tab: it carries a **command** in and its answer straight back out, and nothing
+else crosses. A tab becomes reachable only once its relay is there, so the relay is what the **hub** counts.
+
+Nothing the page says is trusted, because anything already in the page could drive the game itself. Only answers the
+relay is waiting for and **card**s shaped exactly as the coach sends them leave a tab.
+
+## Flavour
+
+Which of two builds of the extension a player has: the **store** flavour, which is what a store reviews and ships and
+which asks for no permission of any kind, or the **dev** flavour, which carries the extra commands a developer needs
+and its own **hub**, so the two never count the same tab twice.
+
+## Build id
+
+Which build of the extension a tab is running. Everything the extension says carries it, and the parts inside one tab
+work together only when their build ids agree — so a tab left on an older build is out of play rather than half
+working.
+
 ## Interrupted run
 
 A run that ended without the party wiping — the game tore itself down and dropped back to the title. Distinct from a **wipe**: a wipe is an ending the agent played its way into, while an interrupted run is a failure, and the run may still exist server-side. The two are never reported as the same thing, because treating an interruption as a wipe invites starting a new run over a run that is still alive.

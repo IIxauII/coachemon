@@ -76,13 +76,15 @@ const skipLiteral = (src, i, prev) => {
     while (j < src.length && src[j] !== "`") {
       if (src[j] === "\\") { j += 2; continue; }
       if (src[j] === "$" && src[j + 1] === "{") {
-        let depth = 1;
+        // A substitution is code: `prev` is tracked through it, or `a / b` inside one reads as the start of a regex.
+        let depth = 1, p = "{";
         j += 2;
         while (j < src.length && depth) {
-          const k = skipLiteral(src, j, "{");
-          if (k !== j) { j = k; continue; }
+          const k = skipLiteral(src, j, p);
+          if (k !== j) { p = src[k - 1] ?? p; j = k; continue; }
           if (src[j] === "{") depth++;
           else if (src[j] === "}") depth--;
+          if (!/\s/.test(src[j])) p = src[j];
           j++;
         }
         continue;
@@ -106,6 +108,31 @@ const skipLiteral = (src, i, prev) => {
     return j;
   }
   return i;
+};
+
+// Strips every comment from a bundled script. The extension ships `hud.js` comment-stripped in every flavour (§5.2 of
+// docs/spec/extension-distribution.md), which is what removes the comment lines that quote PokéRogue's own code. A
+// block comment leaves its newlines behind, so nothing that relied on a line break gets joined; blank lines and
+// trailing whitespace then collapse. Uses the same literal scanner as the import rules, so a `//` inside a string, a
+// template or a regex survives.
+export const stripComments = src => {
+  let out = "", i = 0, prev = "";
+  while (i < src.length) {
+    const c = src[i], d = src[i + 1];
+    if (c === "/" && d === "/") { const e = src.indexOf("\n", i); i = e < 0 ? src.length : e; continue; }
+    if (c === "/" && d === "*") {
+      const e = src.indexOf("*/", i + 2), end = e < 0 ? src.length : e + 2;
+      out += src.slice(i, end).replace(/[^\n]/g, "");
+      i = end;
+      continue;
+    }
+    const k = skipLiteral(src, i, prev);
+    if (k !== i) { out += src.slice(i, k); prev = src[k - 1] ?? prev; i = k; continue; }
+    out += c;
+    if (!/\s/.test(c)) prev = c;
+    i++;
+  }
+  return out.replace(/[ \t]+$/gm, "").replace(/\n{2,}/g, "\n");
 };
 
 // The names a destructuring pattern's braces or brackets declare (`{ a, b: c, d = 1, ...e }` → a, c, d, e).

@@ -1,0 +1,44 @@
+name: Extension
+
+on: [push, pull_request]
+
+concurrency:
+  group: extension-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            extension/package-lock.json
+
+      # The root install is what `src/page/` and `src/protocol/` are typechecked against; the extension package has
+      # its own lockfile on purpose, so WXT never lands in a player's plugin cache (§5.1).
+      - run: npm ci --ignore-scripts
+      - run: npm ci
+        working-directory: extension
+
+      - run: npm run typecheck
+        working-directory: extension
+
+      # Three browsers × two modes. MV3 is forced in wxt.config.ts; the HUD hook and the build id run per build (§5.2).
+      - run: npm run build:all
+        working-directory: extension
+
+      # The guard reads the artifacts that were just built, so it has to come after them (§5.5).
+      - run: npm test
+        working-directory: extension
+
+      # The Firefox store zip and the AMO sources zip, built but not uploaded: releases are their own ticket (§5.6).
+      - run: npx wxt zip -b firefox --mode store
+        working-directory: extension
