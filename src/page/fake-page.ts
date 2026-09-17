@@ -4,7 +4,7 @@
  */
 import { disc } from "./disc.ts";
 import { dispatch } from "./dispatch.ts";
-import { HANDLERS } from "./handlers.ts";
+import { COMMAND_HANDLERS } from "./handlers.ts";
 import { fine } from "./fine.ts";
 import { locate } from "./locate.ts";
 import { STORE_COMMANDS, type Args, type CommandName } from "../protocol/commands.ts";
@@ -39,5 +39,5 @@ export function offPage(t: { after: (fn: () => void) => void }): void {
 
 /** Run one command against the installed tab, as a transport would. */
 export function send<N extends CommandName>(name: N, args: Args<N>): any {
-  return dispatch(locate, fine, disc, HANDLERS[name], name, STORE_COMMANDS[name].kind, args);
+  return dispatch(locate, fine, disc, COMMAND_HANDLERS[name], name, STORE_COMMANDS[name].kind, args);
 }

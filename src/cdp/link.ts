@@ -13,7 +13,7 @@ import { disc } from "../page/disc.ts";
 import { dispatch } from "../page/dispatch.ts";
 import type { ConsoleLine } from "../page/errors.ts";
 import { fine } from "../page/fine.ts";
-import { HANDLERS, type Result } from "../page/handlers.ts";
+import { COMMAND_HANDLERS, type Result } from "../page/handlers.ts";
 import { locate } from "../page/locate.ts";
 import { COMMAND_NAMES, STORE_COMMANDS, type Args, type CommandName } from "../protocol/commands.ts";
 import { isThrown, type CdpSession } from "./session.ts";
@@ -35,7 +35,7 @@ const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: numb
 
 /** Each command's expression up to its arguments: the functions stringify once. */
 const PREFIX = Object.fromEntries(
-  COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, `]),
+  COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${COMMAND_HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, `]),
 ) as Record<CommandName, string>;
 
 export class CdpLink implements GameLink, Tab {

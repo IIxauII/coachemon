@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { HANDLERS } from "../page/handlers.ts";
+import { COMMAND_HANDLERS } from "../page/handlers.ts";
 import { COMMAND_NAMES, STORE_COMMANDS } from "./commands.ts";
 
 test("the page registers exactly the store table's commands (§10.1)", () => {
-  assert.deepEqual(Object.keys(HANDLERS).sort(), [...COMMAND_NAMES].sort());
+  assert.deepEqual(Object.keys(COMMAND_HANDLERS).sort(), [...COMMAND_NAMES].sort());
   assert.deepEqual([...COMMAND_NAMES].sort(), ["card", "cursor.learn", "cursor.option", "cursor.shop", "cursor.starter", "key", "menu", "modal", "press", "probe", "snapshot", "starters"]);
 });
 

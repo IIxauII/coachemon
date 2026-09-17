@@ -3,15 +3,16 @@
  * here, reads degrade to their not-readable values, acts say whether the page threw, refused or found the game `moved`,
  * and both reads' discriminators become the Screen (#133). It knows nothing of the transport underneath.
  */
-import type { Button } from "../enums/generated.ts";
-import type { MenuResult } from "../page/menu.ts";
+import { UiMode, type Button } from "../enums/generated.ts";
 import type { Refused } from "../page/acts.ts";
+import { disc } from "../page/disc.ts";
+import type { MenuResult } from "../page/menu.ts";
 import { screenId, type Discriminators } from "../screen.ts";
-import { UiMode } from "../enums/generated.ts";
 import { isFault, type Fault, type GameLink, type Tab, type Unready } from "./link.ts";
 import type { Act, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SnapshotDetail, StarterGrid } from "./port.ts";
 
-const NO_DISC: Discriminators = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summaryUiMode: null, alertClosable: false, filterMode: false, transferMode: false };
+/** A menu read that located no handler has no discriminators: they read as off. */
+const NO_DISC: Discriminators = disc(null);
 
 export class LinkGame implements GamePort {
   readonly #link: GameLink;

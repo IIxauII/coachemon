@@ -44,7 +44,6 @@ export type PredicateRead =
 
 export type Ready = Extract<PredicateRead, { ready: true }>;
 
-
 /**
  * The menu reader's read. `screen` is identified from the same read as the family, and the fields a family takes from
  * the Screen's discriminators (party `optionsMode`/`partyUiMode`/`transferMode`, save_slot `uiMode`, the alert's

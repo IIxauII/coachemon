@@ -10,7 +10,7 @@ import { probe } from "./probe.ts";
 import { snapshot } from "./snapshot.ts";
 import { starters } from "./starters.ts";
 
-export const HANDLERS = Object.freeze({
+export const COMMAND_HANDLERS = Object.freeze({
   probe,
   menu,
   snapshot,
@@ -26,4 +26,4 @@ export const HANDLERS = Object.freeze({
 } satisfies Record<CommandName, (L: any, args: any) => unknown>);
 
 /** What a command's handler answers. */
-export type Result<N extends CommandName> = ReturnType<(typeof HANDLERS)[N]>;
+export type Result<N extends CommandName> = ReturnType<(typeof COMMAND_HANDLERS)[N]>;

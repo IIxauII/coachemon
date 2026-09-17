@@ -378,7 +378,7 @@ export class Driver {
       await refuseFromGrid("party_over_budget", `Party costs ${cost} against a limit of ${info.valueLimit}.`, { picks: picks.map(p => ({ name: p.name, cost: p.cost })), limit: info.valueLimit });
     }
     for (const pick of picks) {
-      const placed = await this.#setCursor(call, { family: "starter_select", index: pick.i }, cur.fine);
+      const placed = await this.#setCursor(call, { family: "starter_select", index: pick.i });
       if (!placed.ok) throw new Refusal("starter_cursor", `could not position the grid cursor on ${pick.name}: ${placed.why}`, { log });
       if (placed.species && normalizeLabel(placed.species) !== normalizeLabel(pick.name ?? "")) {
         throw new Refusal("starter_cursor", `grid cursor landed on ${placed.species}, not ${pick.name}`, { log });
@@ -509,7 +509,7 @@ export class Driver {
       preFp,
     );
     call.last = s;
-    if (s.last?.ready) call.fine = s.last.fine;
+    if (s.settled && s.last?.ready) call.fine = s.last.fine;
     return s;
   }
 
@@ -546,7 +546,8 @@ export class Driver {
    * A cursor move on the call's fingerprint. A game that moved first is refused like any act; any other outcome is the
    * caller's to judge.
    */
-  async #setCursor(call: Call, target: CursorTarget, preFp: string): Promise<Act & { species?: string }> {
+  async #setCursor(call: Call, target: CursorTarget): Promise<Act & { species?: string }> {
+    const preFp = call.fine;
     const r = await this.#act(call, fine => this.#game.setCursor(target, fine));
     if (!r.ok && r.why === MOVED) return this.#refuseMoved(call, preFp, `moving the ${target.family} cursor`);
     return r;
@@ -592,7 +593,7 @@ export class Driver {
         const unskipped = (menu.extra.unskippedIndices as number[] | null) ?? null;
         const j = unskipped ? unskipped.indexOf(Number(target.i)) : Number(target.i);
         if (j < 0) throw new Refusal("option_skipped", `option ${target.label} is not selectable right now`, { options: menu.options.map(o => o.label) });
-        if ((await this.#setCursor(call, { family: "option_select", index: j }, call.fine)).ok) return null;
+        if ((await this.#setCursor(call, { family: "option_select", index: j })).ok) return null;
         return this.#walk(menu, j, call, cur => (cur < j ? Button.DOWN : Button.UP));
       }
       case "command":
@@ -603,19 +604,19 @@ export class Driver {
         return this.#walk(menu, t, call, cur => (Math.floor(cur / 2) !== Math.floor(t / 2) ? (cur < t ? Button.DOWN : Button.UP) : cur < t ? Button.RIGHT : Button.LEFT));
       }
       case "modifier_select": {
-        const r = await this.#setCursor(call, { family: "modifier_select", row: Number(target.row), col: Number(target.col) }, call.fine);
+        const r = await this.#setCursor(call, { family: "modifier_select", row: Number(target.row), col: Number(target.col) });
         if (!r.ok) throw new Refusal("cursor_unreachable", `could not position the shop cursor on ${target.label}`, { got: r });
         return null;
       }
       case "starter_select": {
-        const r = await this.#setCursor(call, { family: "starter_select", index: Number(target.i) }, call.fine);
+        const r = await this.#setCursor(call, { family: "starter_select", index: Number(target.i) });
         if (!r.ok) throw new Refusal("cursor_unreachable", `could not position the grid cursor on ${target.label}`, { got: r });
         return null;
       }
       case "learn_move": {
         // Rows 0..4 with UP/DOWN ±1, wrapping; ACTION on a moveset row forgets it, on row 4 declines the new move.
         const t = Number(target.i);
-        if ((await this.#setCursor(call, { family: "learn_move", row: t }, call.fine)).ok) return null;
+        if ((await this.#setCursor(call, { family: "learn_move", row: t })).ok) return null;
         return this.#walk(menu, t, call, cur => (cur < t ? Button.DOWN : Button.UP));
       }
       case "target_select": {

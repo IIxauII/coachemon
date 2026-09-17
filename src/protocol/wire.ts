@@ -31,7 +31,7 @@ export type ExtensionHello = {
   commands: string[];
 };
 
-export type TabFrame = { t: "tab"; tab: number; state: TabState; title?: string };
+export type TabFrame = { t: "tab"; tab: number; state: TabState; title: string };
 export type ConsentFrame = { t: "consent"; consent: boolean };
 export type Ping = { t: "ping" };
 export type ExtensionCmd = { t: "cmd"; id: number; tab: number; name: string; args: Record<string, unknown> };
@@ -62,7 +62,8 @@ export type HubState = {
 
 export type TabInfo = { conn: number; tab: number; target: Target; title: string; state: TabState };
 
-export type ClientCmd = { t: "cmd"; id: number; name: CommandName; args: Record<string, unknown> };
+/** `name` is whatever the client sent: the hub refuses one outside `CommandName` with `unknown-command`. */
+export type ClientCmd = { t: "cmd"; id: number; name: CommandName | (string & {}); args: Record<string, unknown> };
 export type ClientReply = ReplyOk | { t: "reply"; id: number; ok: false; code: HubCode | RelayCode; message: string; tabs?: TabInfo[] };
 export type Subscribe = { t: "subscribe" };
 export type ClientEvent = { t: "event"; kind: EventKind; body: Record<string, unknown> };
