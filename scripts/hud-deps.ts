@@ -120,7 +120,18 @@ export const HUD_DEPS = {
    * berries, status chip and the turn-end heals.
    */
   "10-damage.js": [
+    // Two orderings inside this one function are load-bearing, and both are named in `hud/10-damage.js`:
+    // its `FixedDamageAttr` branch returns *before* the `PreDefendFullHpEndureAbAttr` step, so Sturdy does not
+    // save a full-HP mon from Seismic Toss (upstream #7620 moves that and is unreleased — if this hash moves,
+    // check whether it landed and set `STURDY_VS_FIXED_FROM` to the version that ships it); and the roll sits
+    // inside the main product, *before* the post-roll multipliers and `ModifiedDamageAttr`'s cap, which is why
+    // every roll of a capped move is asked of the game rather than spread from its max.
     `${P}#Pokemon.getAttackDamage`,
+    // The factor the HUD scales to ask for a given roll: it reads nothing off the mon it is called on, and sits
+    // beside the roll under the same `toDmgValue`, so scaling it scales exactly what the roll would.
+    `${P}#Pokemon.calculateStabMultiplier`,
+    `${M}#ModifiedDamageAttr.apply`,
+    `${M}#SurviveDamageAttr.getModifiedDamage`,
     `${P}#Pokemon.getCriticalHitResult`,
     `${P}#Pokemon.getAccuracyMultiplier`,
     `${P}#Pokemon.getEffectiveStat`,

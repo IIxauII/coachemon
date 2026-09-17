@@ -1,2 +1,3 @@
 traits: recoil ≈−9% | recharge turn
+false swipe: 93–99 of 100 HP, pKo 0
 damage: ok

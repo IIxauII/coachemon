@@ -89,6 +89,16 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     const c = Math.min(Math.max(Math.floor(Math.log2(excess / segSize)), 0), a - minIdx);
     return [Math.max(Math.floor(hp - floorHp + segSize * c), 1), a - c];
   };
+  // Sturdy against a fixed-damage move (spec §4.3). `getAttackDamage` returns from its `FixedDamageAttr` branch
+  // before the `PreDefendFullHpEndureAbAttr` step, so at our pin Seismic Toss, Night Shade, Super Fang, Psywave and
+  // Final Gambit take a full-HP Sturdy mon down. Upstream's #7620 ("Sturdy now applies to moves that deal fixed
+  // damage") moves the branch and is on the game's master, unreleased. So this is the live build's call, not ours:
+  // set the constant to the first game version that ships the fix and every older build keeps the old rule. While it
+  // is null no released build has it. `scripts/hud-deps.ts` names this on `Pokemon.getAttackDamage`, so a pin bump
+  // whose hash moved asks the question again.
+  const STURDY_VS_FIXED_FROM = null;
+  const fixedIgnoresSturdy = s => !STURDY_VS_FIXED_FROM || !versionAtLeast(gameVersionOf(s), STURDY_VS_FIXED_FROM);
+
   // What decides how a hit resolves on `t`. `ignoreAbility`: Mold Breaker, or the AI not knowing the ability.
   const targetFacts = (s, t, ignoreAbility = false) => {
     const maxHp = t.getMaxHp();
@@ -417,6 +427,20 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
   };
   const PRESENT = [[0, 0.4], [150, 0.3], [190, 0.1]]; // 40 / 80 / 120 power; the other 20 % heals the target
 
+  // The game's own damage at roll `r` (spec §4.6–7). A simulated call pins the roll at 1 and hands back the finished
+  // number, so `addRolls` spreads what the post-roll steps have already been applied to. Multipliers barely notice
+  // that — they commute with the roll to within a HP of rounding — but `ModifiedDamageAttr` is a *cap*: False Swipe's
+  // `min(damage, hp − 1)` lands on every roll alike, and spreading it invents a range the game never produces. For
+  // those moves each roll is asked of the game instead, by multiplying the STAB factor: it sits beside the roll in
+  // the same product under one `toDmgValue`, and reads nothing off the mon, so scaling it scales exactly what the
+  // roll would and the real post steps and caps then run on the result.
+  const atRoll = (def, r, fn) => {
+    if (r >= 1 || typeof def.calculateStabMultiplier !== "function") return fn();
+    const own = Object.prototype.hasOwnProperty.call(def, "calculateStabMultiplier"), orig = def.calculateStabMultiplier;
+    def.calculateStabMultiplier = function (...a) { return orig.apply(this, a) * r; };
+    try { return fn(); } finally { if (own) def.calculateStabMultiplier = orig; else delete def.calculateStabMultiplier; }
+  };
+
   // Accuracy (§5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
   const accuracy = (atk, def, move, ohko = false) => {
     if (move.moveTarget === MoveTarget.USER) return 1;
@@ -490,8 +514,14 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
       return [1 / 24, 1 / 8, 1 / 2, 1][Math.max(0, Math.min(3, def.getCritStage?.(atk, move) ?? 0))];
     })();
 
-    // Damage outcomes per hit index: Map damage → probability, plus the non-crit max roll for the worst case.
+    // A move whose damage is capped rather than scaled after the roll (False Swipe, Hold Back): every roll is asked
+    // of the game, instead of spreading the capped max over 85–100 %.
+    const capped = attrs(move, "ModifiedDamageAttr").length > 0;
+
+    // Damage outcomes per hit index: Map damage → probability, plus the non-crit max roll for the worst case, and the
+    // lowest roll where the spread isn't the plain 85 % of it.
     const maxes = [];
+    const lows = [];
     const perHit = [];
     for (let k = 0; k < hitsMax; k++) {
       const m = new Map();
@@ -508,9 +538,24 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
       } else {
         let top = 0;
         for (const [seed, pv] of present ? PRESENT : [[null, 1]]) {
-          const run = isCritical => (seed === null ? (k || isCritical ? call(k, isCritical) : first) : withSeed(seed, () => call(k, isCritical))).damage;
-          if (crit < 1) { const d = run(false); top = Math.max(top, d); addRolls(m, d, pv * (1 - crit)); }
-          if (crit > 0) { const d = run(true); if (crit === 1) top = Math.max(top, d); addRolls(m, d, pv * crit); }
+          const run = (isCritical, r = 1) => {
+            const one = () => atRoll(def, r, () => (seed === null && !k && !isCritical && r === 1 ? first : call(k, isCritical))).damage;
+            return seed === null ? one() : withSeed(seed, one);
+          };
+          // The max roll is what the record reports; the spread under it is the game's own 16 rolls when a cap
+          // applies to each of them, and that number's 85–100 % otherwise.
+          const spread = (isCritical, p) => {
+            const d = run(isCritical, 1);
+            if (!capped) { addRolls(m, d, p); return d; }
+            for (let r = 85; r <= 100; r++) {
+              const v = r === 100 ? d : run(isCritical, r / 100);
+              m.set(v, (m.get(v) ?? 0) + p / 16);
+              lows[k] = Math.min(lows[k] ?? Infinity, v);
+            }
+            return d;
+          };
+          if (crit < 1) top = Math.max(top, spread(false, pv * (1 - crit)));
+          if (crit > 0) { const d = spread(true, pv * crit); if (crit === 1) top = Math.max(top, d); }
         }
         if (present) m.set(0, (m.get(0) ?? 0) + 0.2);
         maxes.push(top);
@@ -525,7 +570,9 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
     if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
-    const f = targetFacts(s, def, ignoreAbility);
+    // Sturdy doesn't reach a fixed-damage hit on this build (§4.3), so the target's facts lose it for this move only.
+    const facts = targetFacts(s, def, ignoreAbility);
+    const f = fixed && facts.sturdy && fixedIgnoresSturdy(s) ? { ...facts, sturdy: false } : facts;
     const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
     const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
     const pKo = f.revive ? 0 : ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
@@ -586,7 +633,7 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     if (semi) notes.push("target semi-invulnerable");
     return {
       ...base, acc, crit, dist, semi, self, selfKo, drain,
-      perHit: maxes.map(max => ({ max, min: Math.floor(max * 0.85) })), targetHp: f.hp,
+      perHit: maxes.map((max, k) => ({ max, min: Math.min(max, lows[k] ?? Math.floor(max * 0.85)) })), targetHp: f.hp,
       expected, uncapped, max: f.hp - Math.max(0, worst.hp), pKo, revive: f.revive, costs, notes,
       use, focus: f.pFocus, flinch: flinchChance(atk, def, move, ignoreAbility),
     };

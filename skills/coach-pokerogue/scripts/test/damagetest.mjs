@@ -4,6 +4,9 @@ import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
+// Applied after the roll and the post-roll multipliers, before the Sturdy step: False Swipe's min(damage, hp − 1).
+class ModifiedDamageAttr {}
+class SurviveDamageAttr extends ModifiedDamageAttr {}
 class MultiHitPowerIncrementAttr { constructor(n) { this.maxHits = n; } }
 class SurviveDamageModifier { getStackCount() { return 1; } }
 class PokemonMoveAccuracyBoosterModifier { getStackCount() { return 1; } }
@@ -36,6 +39,8 @@ const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = []
     getMoveCategory: (_, mv) => mv.category,
     getAccuracyMultiplier: () => 1, getCritStage: () => 0,
     getMoveEffectiveness: () => 1,
+    // The damage module reads every roll by scaling this, the factor beside the roll in the game's own product.
+    calculateStabMultiplier: () => 1,
     getAttackDamage({ source, move: mv, isCritical, simulated }) {
       assert.equal(simulated, true);
       damageCalls++;
@@ -47,7 +52,10 @@ const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = []
       // Side effects the real call can have: RNG draws and a Tera Shell turnData write.
       Phaser.Math.RND.state("!rnd,dirty");
       this.turnData.moveEffectiveness = 0.5;
-      return { cancelled: false, result: 1, damage: Math.max(1, Math.floor(power * (isCritical ? 1.5 : 1))) };
+      // One floor over the whole product (the roll rides in on the STAB factor), then the post-roll cap.
+      let damage = Math.max(1, Math.floor(power * (isCritical ? 1.5 : 1) * this.calculateStabMultiplier(source, mv, false, true)));
+      if (mv.attrs.some(a => a instanceof SurviveDamageAttr)) damage = Math.min(damage, this.hp - 1);
+      return { cancelled: false, result: 1, damage };
     },
   };
   p.moveset = moves.map(pmOf);
@@ -62,6 +70,7 @@ const scene = {
   currentBattle: { waveIndex: 10, turn: 1, enemySwitchCounter: 0, battleSeedState: "seed" },
   getField: () => [...party, ...enemies], getPlayerParty: () => party, getEnemyParty: () => enemies,
   enemyModifiers: [], arena: { tags: [] },
+  game: { config: { gameVersion: "1.12.0.11" } },
 };
 globalThis.window = globalThis;
 globalThis.Phaser = {
@@ -74,7 +83,7 @@ globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitOn, koCurve, koTurn, koTurns, useOf, koChanceAt } = globalThis.__hud["10-damage"];
-const { sandbox } = globalThis.__hud["01-core"];
+const { sandbox, gameVersionOf, versionAtLeast } = globalThis.__hud["01-core"];
 
 // Expected damage of one hit whose max roll is `max`: the mean of the 16 rolls 85..100 %.
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
@@ -570,6 +579,55 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   phaseName = "CommandPhase";
   assert.ok(rough.traits.recharge && rough.costs.includes("recharge turn"), `estimate: ${JSON.stringify(rough.costs)}`);
   console.log(`traits: ${rec.costs.join(" \u00b7 ")} | ${beam.costs.join(" \u00b7 ")}`);
+}
+
+// Which build the page is running, the one thing the Sturdy rule below turns on.
+{
+  assert.equal(gameVersionOf(scene), "1.12.0.11");
+  assert.equal(gameVersionOf(null), null);
+  assert.equal(versionAtLeast("1.12.0.11", "1.12.0.11"), true, "at the version counts as at least it");
+  assert.equal(versionAtLeast("1.12.0.11", "1.12.0.12"), false);
+  assert.equal(versionAtLeast("1.12.1", "1.12.0.99"), true, "compared segment by segment, not as text");
+  assert.equal(versionAtLeast("1.13", "1.12.9.9"), true, "a missing segment is 0");
+  assert.equal(versionAtLeast(null, "1.0.0"), false, "an unreadable version is older than everything");
+}
+
+// A fixed-damage hit returns before the Sturdy step (§4.3), so it takes a full-HP Sturdy mon down; a rolled hit
+// still doesn't. Upstream #7620 flips this, and the version constant is what will flip with it.
+{
+  class FixedDamageAttr {}
+  const atk = mon("tosser");
+  const pineco = mon("pineco", { hp: 40, abilities: ["PreDefendFullHpEndureAbAttr"] });
+  const real = pineco.getAttackDamage;
+  pineco.getAttackDamage = function (args) {
+    return args.move.attrs.some(a => a instanceof FixedDamageAttr)
+      ? { cancelled: false, result: 1, damage: 50 } : real.call(this, args);
+  };
+  setup(atk, pineco);
+  const toss = moveOutcome(scene, atk, pineco, pmOf(move(64, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })));
+  assert.equal(toss.pKo, 1, "fixed damage goes through Sturdy");
+  assert.equal(toss.max, 40);
+  assert.ok(!toss.notes.includes("sturdy"), `no sturdy note on a fixed hit: ${toss.notes}`);
+  const rolled = moveOutcome(scene, atk, pineco, pmOf(move(65, "Nuke", 0, 300)), { crit: false });
+  assert.equal(rolled.pKo, 0, "Sturdy still holds a rolled hit");
+  assert.ok(rolled.notes.includes("sturdy"));
+}
+
+// False Swipe's cap is applied to each roll, not spread over the capped max: at 100 HP a 110-power hit rolls
+// 93–97 below the cap and 99 on every roll from 90 % up, so there is no 84-damage low and never a KO.
+{
+  const atk = mon("swiper");
+  const prey = mon("prey", { hp: 100 });
+  setup(atk, prey);
+  const swipe = moveOutcome(scene, atk, prey, pmOf(move(66, "False Swipe", 0, 110, { attrs: [new SurviveDamageAttr()] })), { crit: false });
+  assert.equal(swipe.pKo, 0, "False Swipe never KOs");
+  assert.equal(swipe.max, 99, "the cap is the max roll");
+  assert.equal(swipe.perHit[0].min, 93, "the lowest roll is the game's, not 85 % of the cap");
+  near(swipe.expected, (93 + 94 + 95 + 96 + 97 + 99 * 11) / 16, "every roll is capped, so the mean sits just under 99");
+  const plain = moveOutcome(scene, atk, prey, pmOf(move(67, "Cut", 0, 110)), { crit: false });
+  assert.equal(plain.perHit[0].min, Math.floor(110 * 0.85), "an uncapped move keeps the cheap spread");
+  near(plain.pKo, 10 / 16, "...and reaches on 10 of its 16 rolls the KO the cap denies");
+  console.log(`false swipe: ${swipe.perHit[0].min}–${swipe.max} of ${prey.hp} HP, pKo ${swipe.pKo}`);
 }
 
 console.log("damage: ok");
