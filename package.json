@@ -1,7 +1,8 @@
 {
   "name": "pokerogue-mcp",
-  "version": "0.26.0",
+  "version": "0.29.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "engines": {
     "node": ">=23.6"

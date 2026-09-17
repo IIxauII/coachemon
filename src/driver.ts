@@ -12,12 +12,13 @@
  */
 import { CallOutcomes, type CallEnd, type Outcome } from "./call-outcome.ts";
 import { acquireLock, lockContended, type Lock } from "./cdp/lock.ts";
+import { CdpLink } from "./cdp/link.ts";
 import { CdpSession, DEFAULTS } from "./cdp/session.ts";
 import { Button, NAMES, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
-import { CdpGame } from "./game/cdp-game.ts";
-import type { GamePort, MenuOption, MenuRead, Ready, SnapshotDetail } from "./game/port.ts";
+import { LinkGame } from "./game/link-game.ts";
+import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { planSelect, step, type Plan, type Walk } from "./menu-family.ts";
 import { isSettingsMode, modeName } from "./screen.ts";
@@ -48,6 +49,11 @@ type Call = CallContext & {
   deadline: number;
   /** The call's latest settle. */
   last: SettleResult | null;
+  /**
+   * The fine fingerprint of the latest game the call has seen, from its settles and its own cursor moves. Every act is
+   * sent on it, and the page refuses one the game has moved off (§10.2).
+   */
+  fine: string;
   /** What the call will press on, set once every check before the first press has passed. */
   intent: { pre: Ready; choice: Choice; menuAction: boolean } | null;
   /** Whether anything has been sent to the game yet. */
@@ -93,7 +99,8 @@ export class Driver {
   }
 
   static create(home: string = DEFAULTS.home): Driver {
-    return new Driver(new CdpGame(new CdpSession({ home })), acquireLock(home));
+    const link = new CdpLink(new CdpSession({ home }));
+    return new Driver(new LinkGame(link, link), acquireLock(home));
   }
 
   // ------------------------------------------------------------------ tools
@@ -450,7 +457,7 @@ export class Driver {
 
   /** One tool call: one deadline for everything it waits on (#34), and exactly one `end`, a thrown call included. */
   async #call(ctx: CallContext, body: (call: Call) => Promise<Record<string, unknown>>): Promise<Record<string, unknown>> {
-    const call: Call = { ...ctx, deadline: ctx.deadline ?? this.#clock.now() + CALL_BUDGET_MS, last: null, intent: null, pressed: false, ended: false };
+    const call: Call = { ...ctx, deadline: ctx.deadline ?? this.#clock.now() + CALL_BUDGET_MS, last: null, fine: "", intent: null, pressed: false, ended: false };
     try {
       return await body(call);
     } catch (e) {
@@ -495,6 +502,7 @@ export class Driver {
       preFp,
     );
     call.last = s;
+    if (s.settled && s.last?.ready) call.fine = s.last.fine;
     return s;
   }
 
@@ -506,11 +514,43 @@ export class Driver {
   }
 
   async #pressAndSettle(button: Button, preFp: string, call: Call): Promise<SettleResult> {
-    this.#sending(call);
-    const r = await this.#game.press(button);
-    if (!r.ok && r.threw) throw new Refusal("press_threw", `processInput threw: ${r.why}`);
-    if (!r.ok) throw new Refusal("scene_unavailable", `the scene was unavailable when pressing: ${r.why}`);
+    if (!(await this.#tryPress(button, call))) return this.#refuseMoved(call, preFp, `press(${NAMES.Button[button] ?? button})`);
     return this.#settle(preFp, call);
+  }
+
+  /** One press on the call's fingerprint. `false`: the game had moved off it, and nothing was pressed (§10.2). */
+  async #tryPress(button: Button, call: Call): Promise<boolean> {
+    const r = await this.#act(call, fine => this.#game.press(button, fine));
+    if (r.ok) return true;
+    if (r.why === MOVED) return false;
+    if (r.threw) throw new Refusal("press_threw", `processInput threw: ${r.why}`);
+    throw new Refusal("scene_unavailable", `the scene was unavailable when pressing: ${r.why}`);
+  }
+
+  /** Send one act on the call's fingerprint, and keep the fingerprint it answers with: where a cursor move left the game. */
+  async #act<T extends Act>(call: Call, send: (fine: string) => Promise<T>): Promise<T> {
+    this.#sending(call);
+    const r = await send(call.fine);
+    if (typeof r.fine === "string") call.fine = r.fine;
+    return r;
+  }
+
+  /**
+   * A cursor move on the call's fingerprint. A game that moved first is refused like any act; any other outcome is the
+   * caller's to judge.
+   */
+  async #setCursor(call: Call, target: CursorTarget): Promise<Act & { species?: string }> {
+    const preFp = call.fine;
+    const r = await this.#act(call, fine => this.#game.setCursor(target, fine));
+    if (!r.ok && r.why === MOVED) return this.#refuseMoved(call, preFp, `moving the ${target.family} cursor`);
+    return r;
+  }
+
+  /** The game moved between the read an act was decided on and the act (§10.2): settle on where it went, then refuse. */
+  async #refuseMoved(call: Call, preFp: string, what: string): Promise<never> {
+    const s = await this.#settle(preFp, call);
+    const screen = s.last?.ready ? s.last.screen : "UNKNOWN(-1)";
+    throw new Refusal("game_moved", `The game changed after the read ${what} was decided on, so ${what} was not sent. It is now on ${screen}: read_menu, then decide again.`, { screen });
   }
 
   // --------------------------------------------------------------- guards
@@ -548,8 +588,7 @@ export class Driver {
     const { reach, commit } = plan;
     let walked: SettleResult | null = null;
     if (reach.kind === "set") {
-      this.#sending(call);
-      const r = await this.#game.setCursor(reach.to);
+      const r = await this.#setCursor(call, reach.to);
       if (r.ok) landed?.(r.species);
       else if (reach.miss === "refuse") throw new Refusal("cursor_unreachable", `could not position the ${reach.cursor} on ${target.label}`, { got: r });
       else walked = await this.#walk(menu, reach.walk, call);
@@ -558,8 +597,8 @@ export class Driver {
     }
     if (walked) return { settle: walked, committed: false };
     if (commit.kind === "action") return { settle: await this.#pressAndSettle(Button.ACTION, preFp, call), committed: true };
-    this.#sending(call);
-    const r = await this.#game.modalButton(commit.index);
+    const r = await this.#act(call, fine => this.#game.modalButton(commit.index, fine));
+    if (!r.ok && r.why === MOVED) return this.#refuseMoved(call, preFp, `the ${JSON.stringify(target.label)} button`);
     if (!r.ok) throw new Refusal("modal_button", `button action ${commit.index} unavailable: ${r.why}`);
     return { settle: await this.#settle(preFp, call), committed: true };
   }
@@ -568,30 +607,30 @@ export class Driver {
    * Press the rule's step until the cursor reads `to`, each press settled against the call's deadline. `null` once it
    * is there; the unsettled result if the deadline ran out first. A settled press that leaves the cursor where it was
    * refuses at once: the same press again does the same (#34). So does a step that reads another Screen than `from`,
-   * the menu the walk was planned on: nothing is committed there.
+   * the menu the walk was planned on: nothing is committed there. A press the game moved ahead of (§10.2) was never
+   * sent: the walk settles and steps again from wherever the cursor now is.
    */
   async #walk(from: MenuRead, { to, rule }: Walk, call: Call): Promise<SettleResult | null> {
     let prev: number | null = null;
+    let sent = 0;
     for (let n = 0; n < NAV_CAP; n++) {
       const menu = await this.#game.menu();
       if (menu.readable && menu.screen !== from.screen) {
-        throw new Refusal("screen_changed", `The screen changed from ${from.screen} to ${menu.screen} while walking the cursor toward ${to}. ${n} cursor press(es) were sent, nothing was committed.`, { screen: menu.screen, was: from.screen, target: to, presses: n });
+        throw new Refusal("screen_changed", `The screen changed from ${from.screen} to ${menu.screen} while walking the cursor toward ${to}. ${sent} cursor press(es) were sent, nothing was committed.`, { screen: menu.screen, was: from.screen, target: to, presses: sent });
       }
       const cur = Number(menu.cursor);
       if (cur === to) return null;
       if (cur === prev) {
-        throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a ${rule} step toward ${to}; ${to} can't be reached by moving the cursor here. ${n} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target: to, rule, presses: n });
+        throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a ${rule} step toward ${to}; ${to} can't be reached by moving the cursor here. ${sent} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target: to, rule, presses: sent });
       }
-      prev = cur;
-      const s = await this.#pressAndSettle(step(rule, cur, to), await this.#fine(), call);
+      const pre = call.fine;
+      const pressed = await this.#tryPress(step(rule, cur, to), call);
+      prev = pressed ? cur : null;
+      if (pressed) sent++;
+      const s = await this.#settle(pre, call);
       if (!s.settled) return s;
     }
-    throw new Refusal("cursor_unreachable", `cursor did not reach ${to} within ${NAV_CAP} presses`, { target: to, presses: NAV_CAP });
-  }
-
-  async #fine(): Promise<string> {
-    const r = await this.#game.read();
-    return r.ready ? r.fine : "";
+    throw new Refusal("cursor_unreachable", `cursor did not reach ${to} within ${NAV_CAP} presses`, { target: to, presses: sent });
   }
 
   // --------------------------------------------------------- auto-advance
@@ -605,8 +644,13 @@ export class Driver {
       // Only MESSAGE(0) with a live prompt; CONFIRM is never advanced — ACTION is consent (#8).
       if (r.mode !== UiMode.MESSAGE || !(r.awaitingActionInput && r.onActionInput)) break;
       if (presses >= AUTO_ADVANCE_CAP) return { settle: s, messages, presses, capped: true };
+      // A message that went away before its ACTION arrived was never answered (§10.2): settle, and look again.
+      if (!(await this.#tryPress(Button.ACTION, call))) {
+        s = await this.#settle(r.fine, call);
+        continue;
+      }
       if (r.messageText) messages.push(r.messageText);
-      s = await this.#pressAndSettle(Button.ACTION, r.fine, call);
+      s = await this.#settle(r.fine, call);
       presses++;
     }
     return { settle: s, messages, presses, capped: false };

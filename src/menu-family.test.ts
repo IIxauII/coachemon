@@ -169,7 +169,7 @@ test("save_slot and menu walk a list", () => {
 });
 
 test("modal needs no cursor and commits through its own button action", () => {
-  const menu = menuOf("modal", { formLabels: ["Username"], inputs: [""] }, labelled("Login", "Register"));
+  const menu = menuOf("modal", { formLabels: ["Username"] }, labelled("Login", "Register"));
   const plan = planSelect(menu, menu.options[1]);
   assert.deepEqual(plan.reach, { kind: "none" });
   assert.deepEqual(plan.commit, { kind: "modal_button", index: 1 });

@@ -528,6 +528,30 @@ export const HUD_DEPS = {
   ],
 
   /**
+   * The fusion advisor (§24): the Splicer's select filter and party screen, pick order (first = base), and what a
+   * fusion is — averaged base stats, the stat formula, the second type rule, the other half's ability (and the
+   * abilities that don't work fused) — all re-implemented from species data.
+   */
+  "49-fusion.js": [
+    `src/modifier/modifier-type.ts#FusePokemonModifierType.constructor`,
+    `src/modifier/modifier.ts#FusePokemonModifier.apply`,
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.openFusionMenu`,
+    `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.show`,
+    `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.getFilterResult`,
+    `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.processActionButtonForOptions`,
+    `src/data/challenge.ts#HardcoreChallenge.applyPokemonFusion`,
+    `${P}#PlayerPokemon.fuse`,
+    `${P}#Pokemon.calculateBaseStats`,
+    `${P}#Pokemon.calculateStats`,
+    `${P}#Pokemon.getBaseTypes`,
+    `${P}#Pokemon.getAbility`,
+    `${P}#Pokemon.canApplyAbility`,
+    `src/data/pokemon-species.ts#PokemonSpeciesForm.getAbility`,
+    `src/modifier/init-modifier-pools.ts#initGreatModifierPool`,
+    `src/modifier/init-modifier-pools.ts#initMasterModifierPool`,
+  ],
+
+  /**
    * §15. The rewards card judges held items, mints, vitamins, EXP items, candy
    * and evolution items by the member they would go to. It calls only select
    * filters and `getMaxExpLevel`; what an item does is re-implemented from its
@@ -608,5 +632,40 @@ export const HUD_DEPS = {
     `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.updateOptions`,
     `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.updateOptionsHardcore`,
     `src/enums/challenges.ts#Challenges`,
+  ],
+
+  /**
+   * §23. The starter card: the grid's handler (which starters are valid, the
+   * point budget, the challenge-adjusted account data, the strict check a team
+   * needs one member to pass), what a starter costs and the luck it brings,
+   * the species' own evolution and passive reads, what the run starts with,
+   * and the challenges that change the grid (Fresh Start strips unlocks,
+   * single type and generation narrow it, the two starter-point rules).
+   */
+  "51-starters.js": [
+    `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.show`,
+    `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getValueLimit`,
+    `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getSpeciesData`,
+    `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.getCurrentDexProps`,
+    `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.isPartyValid`,
+    `src/ui/handlers/starter-select-ui-handler.ts#StarterSelectUiHandler.addToParty`,
+    `src/utils/challenge-utils.ts#checkStarterValidForChallenge`,
+    `src/system/game-data.ts#GameData.getSpeciesStarterValue`,
+    `src/system/game-data.ts#GameData.getSpeciesDexAttrProps`,
+    `src/system/game-data.ts#GameData.getDexAttrLuck`,
+    `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
+    `src/data/pokemon-species.ts#PokemonSpeciesForm.getPassiveAbility`,
+    `src/data/species-data-registry.ts#SpeciesDataRegistry.getEvolutions`,
+    `src/phases/select-starter-phase.ts#SelectStarterPhase.start`,
+    `src/game-mode.ts#GameMode.getStartingLevel`,
+    `src/data/challenge.ts#SingleGenerationChallenge.applyStarterChoice`,
+    `src/data/challenge.ts#SingleTypeChallenge.applyStarterChoice`,
+    `src/data/challenge.ts#FreshStartChallenge.applyStarterChoice`,
+    `src/data/challenge.ts#FreshStartChallenge.applyStarterCost`,
+    `src/data/challenge.ts#FreshStartChallenge.applyStarterSelectModify`,
+    `src/data/challenge.ts#LowerStarterMaxCostChallenge.applyStarterChoice`,
+    `src/data/challenge.ts#LowerStarterPointsChallenge.applyStarterPoints`,
+    `src/data/challenge.ts#InverseBattleChallenge.applyTypeEffectiveness`,
+    `src/data/type.ts#getTypeDamageMultiplier`,
   ],
 } satisfies Record<string, readonly SourceRef[]>;

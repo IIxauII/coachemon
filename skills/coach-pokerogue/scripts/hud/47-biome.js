@@ -36,7 +36,9 @@
 // modules again — the browser hands back the same module instances, nothing re-runs — and picks the exports by shape:
 // a Map whose values carry biomeLinks + pokemonPool, an object with getSpecies/getAllSpecies, a function named
 // getBiomeName, the trainer configs (an object whose values carry trainerType + partyTemplates), and the timed event
-// manager (getShinyCatchMultiplier; the catch card's shiny odds). It's async, so the first refresh or two draw the card
+// manager (getShinyCatchMultiplier; the catch card's shiny odds), and for the starter card the ability and move lists
+// (arrays indexed by id: an ability has a name and no power, a move has power and pp) and the egg moves (species id →
+// four move ids). It's async, so the first refresh or two draw the card
 // without spawn data. Without the trainer configs the trainer waves are left out, as fixed waves are. Nothing is copied
 // from the game.
 //
@@ -51,7 +53,7 @@
 //   for one, minus the share weak to it. It already counts as one wave of ten above; this is on top, because it's the
 //   fight that ends a run.
 // score = 50·offense + 25·(defense + 1) + up to 8 for catches ± 10 for the big fight. Ties go to the unrounded score.
-const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRewardFns, spawnsFor, formsFor } = (() => {
+const { biomeScreen, biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor } = (() => {
   const TIER_CUTS = [156, 32, 6, 1, 0];
   const BOSS_CUTS = [20, 6, 1, 0];
   // Pool tiers in the order TIER_CUTS / BOSS_CUTS cut them: a biome's pools by BiomePoolTier, a trainer config's by TrainerPoolTier.
@@ -91,10 +93,17 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
         found[v.name] ??= v;
       } else if (typeof v === "object" && typeof v.getShinyCatchMultiplier === "function") {
         found.events ??= v;
-      } else if (typeof v === "object" && !Array.isArray(v) && !found.trainers) {
+      } else if (Array.isArray(v)) {
+        let first;
+        try { first = v[1]; } catch { continue; }
+        if (!first || typeof first !== "object" || first.id !== 1 || v.length < 100) continue;
+        if ("power" in first && "pp" in first) found.moves ??= v;
+        else if (!("power" in first) && typeof first.name === "string" && "attrs" in first) found.abilities ??= v;
+      } else if (typeof v === "object" && !Array.isArray(v)) {
         let first;
         try { first = v[Object.keys(v)[0]]; } catch { continue; }
-        if (first && typeof first === "object" && "trainerType" in first && "partyTemplates" in first) found.trainers = v;
+        if (!found.trainers && first && typeof first === "object" && "trainerType" in first && "partyTemplates" in first) found.trainers = v;
+        else if (!found.eggMoves && [1, 4, 7].every(id => { try { return Array.isArray(v[id]) && v[id].length === 4 && v[id].every(Number.isInteger); } catch { return false; } })) found.eggMoves = v;
       }
     }
   };
@@ -124,6 +133,9 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
   const gameEvents = () => { loadGameTables(); return tables?.events ?? null; };
   // `{ regenerate, options }`: the reward roll's module functions, or null while they aren't found (starts the read).
   const gameRewardFns = () => { loadGameTables(); return rewardFns; };
+  // The tables themselves (`species`, `abilities`, `moves`, `eggMoves` among them), or null while they aren't read
+  // (starts the read).
+  const gameTables = () => { loadGameTables(); return tables; };
 
   const biomeScreen = (s, h) => s.ui.getMode() === UiMode.OPTION_SELECT && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectBiomePhase"
     && !!h?.config?.options?.length;
@@ -517,5 +529,5 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRe
   const spawnsFor = (s, id, wave, luck = 0) => (tables?.biomes?.get(id) ? encounters(s, tables.biomes.get(id), wave, luck) : null);
   const formsFor = (id, level, kind = EvoLevelThresholdKind.WILD) => Object.fromEntries(formsAt(id, level, kind));
 
-  return { biomeScreen, biomeModel, gameEvents, gameRewardFns, setGameTables, setRewardFns, spawnsFor, formsFor };
+  return { biomeScreen, biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor };
 })();

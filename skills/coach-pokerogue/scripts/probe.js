@@ -35,6 +35,8 @@ import { TYPES } from "./hud/01-core.js";
             costReduction: st.valueReduction,
             candy: st.candyCount,
           })),
+        // The HUD's starter card as one line (its proposals), when the panel is running on the grid.
+        hud: (() => { try { return window.__coachHud?.summary?.()?.starters ?? null; } catch { return null; } })(),
       };
     } else {
       const CATS = ["Physical","Special","Status"];
