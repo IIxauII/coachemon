@@ -91,7 +91,7 @@ export class CdpLink implements GameLink, Tab {
     return true;
   }
 
-  consoleTail(): ConsoleLine[] {
+  async consoleTail(): Promise<ConsoleLine[]> {
     return this.#session.consoleTail();
   }
 

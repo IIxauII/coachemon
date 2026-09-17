@@ -148,7 +148,9 @@ server.registerTool(
       const data = await driver.screenshot();
       return { content: [{ type: "image" as const, data, mimeType: "image/png" }] };
     } catch (e) {
-      return json({ error: "screenshot_failed", message: (e as Error).message }, true);
+      // A store build of Coachemon carries no screenshot command: that is `unavailable`, not a failed capture (§12.2).
+      const body = e instanceof Refusal ? { error: e.code, message: e.message, ...e.detail } : { error: "screenshot_failed", message: (e as Error).message };
+      return json(body, true);
     }
   },
 );

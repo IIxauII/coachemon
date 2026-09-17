@@ -53,9 +53,16 @@ export type Claim = { t: "claim" };
 export type Claimed = { t: "claimed"; ok: true } | { t: "claimed"; ok: false; code: "contended" };
 export type StateRequest = { t: "state" };
 
+/**
+ * `commands` is beyond §7.6's table: the server needs each browser's command list to tell a missing command from an
+ * unknown one (§12.2) and to decide per menu family whether to jump or press-walk (§10.1). It is client-facing only,
+ * so it is outside `PROTOCOL`, which governs the hub↔browser frames.
+ */
+export type ExtensionInfo = { conn: number; target: Target; version: string; flavour: Flavour; protocol: number; consent: boolean; commands: string[] };
+
 export type HubState = {
   t: "state";
-  extensions: { conn: number; target: Target; version: string; flavour: Flavour; protocol: number; consent: boolean }[];
+  extensions: ExtensionInfo[];
   tabs: TabInfo[];
   driver: "you" | "other" | null;
 };

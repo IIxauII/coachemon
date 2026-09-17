@@ -55,7 +55,7 @@ export interface Tab {
   /** The button through the raw keyboard. `false`: it has no keyboard equivalent, and nothing was sent. */
   rawKey(b: Button): Promise<boolean>;
   /** The page's recent console errors and warnings, for diagnostics. */
-  consoleTail(): ConsoleLine[];
+  consoleTail(): Promise<ConsoleLine[]>;
   /** Called for every unhandled page exception (#16's hang corroboration). */
   onRejection(cb: (t: number) => void): void;
 }

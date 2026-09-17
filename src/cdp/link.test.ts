@@ -114,12 +114,12 @@ test("rawKey sends a button's keyboard equivalent, and nothing for a button with
   assert.deepEqual(s.keys, ["ArrowUp"]);
 });
 
-test("the page's unhandled exceptions reach onRejection, and its console tail is the session's", () => {
+test("the page's unhandled exceptions reach onRejection, and its console tail is the session's", async () => {
   const s = tabSession({});
   const link = new CdpLink(s.session);
   const seen: number[] = [];
   link.onRejection(t => seen.push(t));
   s.session.onException?.(42);
   assert.deepEqual(seen, [42]);
-  assert.deepEqual(link.consoleTail(), [{ t: "t", level: "error", text: "x" }]);
+  assert.deepEqual(await link.consoleTail(), [{ t: "t", level: "error", text: "x" }]);
 });

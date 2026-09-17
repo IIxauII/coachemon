@@ -27,7 +27,7 @@ function stubLink(answers: Partial<Record<keyof GameLink, (args: any) => unknown
     attach: async () => ({ attached: true, launchedChrome: false }),
     keepAlive: async () => {},
     rawKey: async () => true,
-    consoleTail: () => [],
+    consoleTail: async () => [],
     onRejection: () => {},
   };
   return { game: new LinkGame(link, tab), sent, tab };

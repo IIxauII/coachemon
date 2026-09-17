@@ -17,7 +17,11 @@ import { CdpSession, DEFAULTS } from "./cdp/session.ts";
 import { Button, NAMES, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
+import { HubLink } from "./hub/link.ts";
+import { PLUGIN_VERSION } from "./hub/plugin-version.ts";
+import type { Fleet } from "./hub/reach.ts";
 import { LinkGame } from "./game/link-game.ts";
+import { DEV_PORT, STORE_PORT } from "./protocol/version.ts";
 import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { planSelect, step, type Plan, type Walk } from "./menu-family.ts";
@@ -82,6 +86,17 @@ const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 /** The starter grid with its filter bar active, where the server never acts (§6.5). */
 const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
+/**
+ * What each tool sends into the tab. A browser that did not list one of these refuses that tool alone, with the rung 4
+ * wording; every other tool keeps working (§8.5). The cursor commands are not here: a family without its setter falls
+ * back to the press-walk (§10.1).
+ */
+const NEEDS = {
+  menu: ["probe", "menu"],
+  state: ["probe", "menu", "snapshot"],
+  act: ["probe", "menu", "press"],
+} as const;
+
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
 
@@ -98,14 +113,49 @@ export class Driver {
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 
+  /**
+   * The transport seam (§12.1). `COACHEMON_TRANSPORT=hub` opts in to the extension; unset stays on CDP until the flip
+   * deletes both. `COACHEMON_DEV=1` reaches a dev build on the dev hub's port (§7.2), which is how `scripts/eval.ts`,
+   * `smoke.ts` and `autoplay.ts` run against a checkout.
+   */
   static create(home: string = DEFAULTS.home): Driver {
+    if (process.env.COACHEMON_TRANSPORT === "hub") {
+      const port = process.env.COACHEMON_DEV === "1" ? DEV_PORT : STORE_PORT;
+      const hub = new HubLink({ port, version: PLUGIN_VERSION, names: NAMES.Button });
+      // The pidfile lock stays on the CDP path: over the hub the driver grant is what keeps two sessions apart (§7.5).
+      return new Driver(new LinkGame(hub, hub, hub), { path: "", contended: false, holder: null });
+    }
     const link = new CdpLink(new CdpSession({ home }));
     return new Driver(new LinkGame(link, link), acquireLock(home));
+  }
+
+  /** Every tool's first move over the hub (§12.2): is the game reachable at all, and does this browser speak enough. */
+  async #reachable(needed: readonly string[] = []): Promise<Fleet | null> {
+    const hub = this.#game.hub;
+    if (!hub) return null;
+    const fleet = await hub.fleet(needed);
+    if (fleet.skew) throw new Refusal("version_skew", fleet.skew, {});
+    const reach = fleet.reach;
+    if (!reach) return fleet;
+    const detail = { rung: reach.rung, line: reach.line };
+    if (reach.missing !== undefined) throw new Refusal("missing_command", reach.line, { ...detail, command: reach.missing });
+    if (reach.rung === 8) throw new Refusal("tabs", reach.line, { ...detail, tabs: fleet.tabs });
+    throw new Refusal("unreachable", reach.line, detail);
+  }
+
+  /** An acting call takes the driver grant before it settles, so a contended tab refuses having pressed nothing (§7.5). */
+  async #claim(): Promise<void> {
+    const hub = this.#game.hub;
+    if (!hub) return;
+    if (!(await hub.claim())) {
+      throw new Refusal("contended", "Another Claude session is driving this game. Finish or close that session, then retry. Nothing was pressed.", {});
+    }
   }
 
   // ------------------------------------------------------------------ tools
 
   async status(): Promise<Record<string, unknown>> {
+    if (this.#game.hub) return this.#hubStatus();
     let attached = false;
     let launchedChrome = false;
     let error: string | null = null;
@@ -143,8 +193,39 @@ export class Driver {
     };
   }
 
+  /**
+   * `status` over the hub (§12.3): who is connected, how many tabs, who is driving, and — when the game is reachable —
+   * the same run facts the CDP payload carries. It never launches a browser, and never refuses: an unreachable game is
+   * exactly what this tool is for, so the failing rung's line is the answer rather than an error.
+   */
+  async #hubStatus(): Promise<Record<string, unknown>> {
+    const fleet = await this.#game.hub!.fleet();
+    const browsers = fleet.browsers.map(b => ({ target: b.target, version: b.version, flavour: b.flavour, protocol: b.protocol, consent: b.consent }));
+    const tabs = fleet.tabs.filter(t => t.state === "ready").length;
+    const reach = fleet.skew ? { rung: 0, line: fleet.skew } : fleet.reach;
+    const head = { status: "ok", reachable: reach === null, reach, browsers, tabs, driver: fleet.driver };
+    if (reach) {
+      return { ...head, game_version: null, pinned_version: PINNED_GAME_VERSION, version_match: null, run_live: false, run: this.#outcomes.runState(null), wave: null, screen: "UNKNOWN(-1)", settled: null, busy_reason: null };
+    }
+    const read = await this.#game.read();
+    const ready = read.ready ? read : null;
+    return {
+      ...head,
+      game_version: ready?.gameVersion ?? null,
+      pinned_version: PINNED_GAME_VERSION,
+      version_match: ready ? ready.gameVersion === PINNED_GAME_VERSION : null,
+      run_live: ready?.runLive ?? false,
+      run: this.#outcomes.runState(ready),
+      wave: ready?.wave ?? null,
+      screen: ready ? ready.screen : `UNKNOWN(${read.ready ? "-" : read.why})`,
+      settled: ready?.settled ?? null,
+      busy_reason: ready && !ready.settled ? ready.reason : null,
+    };
+  }
+
   async getState(detail: SnapshotDetail, ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#call(ctx, async call => {
+      await this.#reachable(NEEDS.state);
       const s = await this.#settleRead(call);
       if (!s.settled) return this.#openingTimedOut(call, s, "get_state");
       const ready = s.last as Ready;
@@ -161,6 +242,7 @@ export class Driver {
 
   async readMenu(ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#call(ctx, async call => {
+      await this.#reachable(NEEDS.menu);
       const s = await this.#settleRead(call);
       if (!s.settled) return this.#openingTimedOut(call, s, "read_menu");
       const ready = s.last as Ready;
@@ -174,6 +256,8 @@ export class Driver {
     return this.#call(ctx, async call => {
       const button = (Button as Record<string, Button | undefined>)[buttonName];
       if (button === undefined) throw new Refusal("unknown_button", `Unknown button ${JSON.stringify(buttonName)}`, { buttons: Object.keys(Button) });
+      await this.#reachable(NEEDS.act);
+      await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "press");
       const ready = pre.last as Ready;
@@ -208,6 +292,8 @@ export class Driver {
 
   async selectOption(label: string | undefined, index: string | number | undefined, expectScreen: string | undefined, ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#call(ctx, async call => {
+      await this.#reachable(NEEDS.act);
+      await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "select_option");
       const ready = pre.last as Ready;
@@ -257,6 +343,8 @@ export class Driver {
 
   async startRun(species: string[], slot: number | undefined, overwrite: boolean, ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#call(ctx, async call => {
+      await this.#reachable(NEEDS.act);
+      await this.#claim();
       const pre = await this.#settleRead(call);
       if (!pre.settled) return this.#openingTimedOut(call, pre, "start_run");
       const ready = pre.last as Ready;
@@ -275,7 +363,7 @@ export class Driver {
         return await this.#startRunFromTitle(call, ready, choice, species, slot, overwrite, log);
       } catch (e) {
         if (!(e instanceof SetupTimedOut)) throw e;
-        const out = this.#timedOutResult(e.settle, this.#end(call, { kind: "acting", pre: ready, choice, settle: e.settle, options: null }), "start_run");
+        const out = await this.#timedOutResult(e.settle, this.#end(call, { kind: "acting", pre: ready, choice, settle: e.settle, options: null }), "start_run");
         return {
           ...out,
           step: e.step,
@@ -450,6 +538,7 @@ export class Driver {
   }
 
   async screenshot(): Promise<string> {
+    await this.#reachable();
     return this.#game.screenshot();
   }
 
@@ -557,10 +646,15 @@ export class Driver {
 
   async #guard(ready: Ready): Promise<void> {
     const screen = ready.screen;
-    const c = lockContended(this.lock);
-    if (c.contended) throw new Refusal("tab_contended", `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, { screen, holder: c.holder });
+    if (!this.#game.hub) {
+      // The pidfile lock is the CDP path's; over the hub the grant was already taken by `#claim` (§7.5).
+      const c = lockContended(this.lock);
+      if (c.contended) throw new Refusal("tab_contended", `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, { screen, holder: c.holder });
+    }
     if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
     if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
+    // Over the hub the driver's own settles pump the loop, so there is nothing to emulate and nothing to freeze (§10.3).
+    if (this.#game.hub) return;
     // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
     await this.#game.keepAlive();
     const a = await this.#game.frame();
@@ -668,7 +762,7 @@ export class Driver {
     const s = adv.settle;
     if (!s.settled) {
       const outcome = this.#end(call, { kind: "acting", pre, choice, settle: s, options: null });
-      return { ...this.#timedOutResult(s, outcome, "act"), messages: adv.messages, ...payload };
+      return { ...(await this.#timedOutResult(s, outcome, "act")), messages: adv.messages, ...payload };
     }
     const afterRead = s.last as Ready;
     const menu = await this.#game.menu();
@@ -690,7 +784,7 @@ export class Driver {
     );
   }
 
-  #settledResult(
+  async #settledResult(
     ready: Ready,
     /** The Screen the result reports: a read-only call's is its menu read's, newer than the settle's. */
     screen: string,
@@ -698,23 +792,24 @@ export class Driver {
     payload: Record<string, unknown>,
     /** The call's suggested next step, returned only when the status is `ok`. */
     next?: string,
-  ): Record<string, unknown> {
+  ): Promise<Record<string, unknown>> {
     const out: Record<string, unknown> = { status: outcome.status, wave: ready.wave, screen, ...payload };
     if (next !== undefined && outcome.status === "ok") out.next = next;
     if (outcome.diagnostic) {
       out.diagnostic = outcome.diagnostic;
-      out.console_tail = this.#game.consoleTail();
+      // §12.4: the console tail is fetched only here, when the result is already not `ok`.
+      out.console_tail = await this.#game.consoleTail();
     }
     if (outcome.escape) out.escape = outcome.escape;
     return out;
   }
 
   /** The opening settle ran out of time: nothing was pressed, so the call ends as a read. */
-  #openingTimedOut(call: Call, s: SettleResult, tool: string): Record<string, unknown> {
+  #openingTimedOut(call: Call, s: SettleResult, tool: string): Promise<Record<string, unknown>> {
     return this.#timedOutResult(s, this.#end(call, { kind: "read", settle: s, options: null }), tool);
   }
 
-  #timedOutResult(s: SettleResult, outcome: Outcome, what: string): Record<string, unknown> {
+  async #timedOutResult(s: SettleResult, outcome: Outcome, what: string): Promise<Record<string, unknown>> {
     const last = s.last && s.last.ready ? s.last : null;
     const alert = last?.mode === UiMode.ALERT_MODAL ? last.messageText : null;
     // The budget ran out with the game idle on a message that takes ACTION (#55): waiting on it would never end.
@@ -727,7 +822,7 @@ export class Driver {
       diagnostic: outcome.diagnostic,
       ...(alert !== null ? { alert_text: alert } : {}),
       ...(pending ? { message_pending: true, text: last.messageText, next: DISMISS_MESSAGE } : {}),
-      console_tail: this.#game.consoleTail(),
+      console_tail: await this.#game.consoleTail(),
       note:
         alert !== null
           ? `${what}: the game is showing an alert that no input can close yet. If it stays, only a page reload leaves it (destructive: progress since the last save).`

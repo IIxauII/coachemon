@@ -7,6 +7,7 @@
  * caller attaches by hand.
  */
 import type { Button } from "../enums/generated.ts";
+import type { HubSide } from "../hub/reach.ts";
 import type { ConsoleLine } from "../page/errors.ts";
 import type { MenuOption } from "../page/menu.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
@@ -135,6 +136,11 @@ export type { MenuOption, SnapshotDetail, ConsoleLine };
 
 /** The Driver's way to the game: typed game operations, plus the tab's CDP side until the flip (§13.2). */
 export interface GamePort extends Tab {
+  /**
+   * The hub under this port, when the transport is the hub (§12.1): who else is connected, whether the game is
+   * reachable at all, and the driver grant. `null` on CDP, where the pidfile lock still does that job.
+   */
+  readonly hub: HubSide | null;
   // game operations
   /** The settle predicate. A throw → `{ ready: false, why }`. */
   read(): Promise<PredicateRead>;

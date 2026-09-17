@@ -382,11 +382,15 @@ All frames are JSON text messages. Types live in `src/protocol/wire.ts`. `PRODUC
 | hub → client | `{"t":"welcome","product":"coachemon-hub","protocol":1,"version":"<plugin version>"}` |
 | client → hub | `{"t":"retire"}` (§7.3) |
 | client → hub | `{"t":"claim"}` → `{"t":"claimed","ok":true}` or `{"t":"claimed","ok":false,"code":"contended"}` |
-| client → hub | `{"t":"state"}` → `{"t":"state","extensions":[{"conn":1,"target":"firefox","version":"1.2.0","flavour":"store","protocol":1,"consent":false}],"tabs":[{"conn":1,"tab":123,"target":"firefox","title":"PokéRogue","state":"ready"}],"driver":"you"\|"other"\|null}` |
+| client → hub | `{"t":"state"}` → `{"t":"state","extensions":[{"conn":1,"target":"firefox","version":"1.2.0","flavour":"store","protocol":1,"consent":false,"commands":["probe","menu",…]}],"tabs":[{"conn":1,"tab":123,"target":"firefox","title":"PokéRogue","state":"ready"}],"driver":"you"\|"other"\|null}` |
 | client → hub | `{"t":"cmd","id":5,"name":"press","args":{…}}` |
 | hub → client | `{"t":"reply","id":5,"ok":true,"result":{…}}` or `{"t":"reply","id":5,"ok":false,"code":"<hub or relay code>","message":"…","tabs":[…]}` |
 | client → hub | `{"t":"subscribe"}` |
 | hub → client | `{"t":"event","kind":"card"\|"coach-error","body":{…}}`, `{"t":"notice","kind":"tabs"\|"resume","tabs":[…]}` |
+
+`state`'s `commands` is each browser's hello list, echoed to the client: the server needs it to tell `missing-command`
+from `unknown-command` before it sends anything (§12.2) and to decide per menu family whether to jump or press-walk
+(§10.1). It is client-facing only, so it sits outside `PROTOCOL`, which governs the hub↔browser frames.
 
 **Hub-level refusal codes:** `no-tab`, `tabs`, `unknown-command` (not in the shared table), `missing-command` (in the table but not in that extension's hello), `protocol` (extension outside the window, §8.5), `contended`, `not-driver`, `timeout` (no reply from the extension within **5 s**, picked here). Relay-level codes pass through unchanged (§9.7).
 

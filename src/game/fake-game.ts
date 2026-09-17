@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Lock } from "../cdp/lock.ts";
 import type { Clock } from "../driver.ts";
+import type { HubSide } from "../hub/reach.ts";
 import type { Button } from "../enums/generated.ts";
 import type { Act, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
 
@@ -36,6 +37,8 @@ export type FakeScreen = {
   lockHolder?: number;
   /** Acts refuse `moved` off the screen's current fingerprint, as the page does. */
   guardFine?: boolean;
+  /** The hub under the port, for the tools that ride on the hub link (§12.2). Absent means the CDP transport. */
+  hub?: HubSide;
 };
 
 export function fakeGame(screen: FakeScreen) {
@@ -77,7 +80,8 @@ export function fakeGame(screen: FakeScreen) {
     keepAlive: async () => {},
     attach: async () => ({ attached: true, launchedChrome: false }),
     screenshot: async () => "",
-    consoleTail: () => [],
+    consoleTail: async () => [],
+    hub: screen.hub ?? null,
     onRejection: cb => {
       rejection = cb;
     },

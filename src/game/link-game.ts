@@ -4,6 +4,7 @@
  * and both reads' discriminators become the Screen (#133). It knows nothing of the transport underneath.
  */
 import { UiMode, type Button } from "../enums/generated.ts";
+import type { HubSide } from "../hub/reach.ts";
 import type { Refused } from "../page/acts.ts";
 import { disc } from "../page/disc.ts";
 import type { MenuResult } from "../page/menu.ts";
@@ -15,12 +16,14 @@ import type { Act, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, Predic
 const NO_DISC: Discriminators = disc(null);
 
 export class LinkGame implements GamePort {
+  readonly hub: HubSide | null;
   readonly #link: GameLink;
   readonly #tab: Tab;
 
-  constructor(link: GameLink, tab: Tab) {
+  constructor(link: GameLink, tab: Tab, hub: HubSide | null = null) {
     this.#link = link;
     this.#tab = tab;
+    this.hub = hub;
   }
 
   // ------------------------------------------------------- game operations
@@ -109,7 +112,7 @@ export class LinkGame implements GamePort {
     return this.#tab.rawKey(b);
   }
 
-  consoleTail(): ConsoleLine[] {
+  async consoleTail(): Promise<ConsoleLine[]> {
     return this.#tab.consoleTail();
   }
 
