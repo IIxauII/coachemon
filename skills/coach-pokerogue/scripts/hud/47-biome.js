@@ -10,11 +10,10 @@
 // -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT. Arena.getTimeOfDay: ABYSS always night, else (wave + waveCycleOffset) % 40:
 // < 15 day, < 20 dusk, < 35 night, else dawn.
 //
-// What each of the ten waves the choice covers holds:
-// - A fixed battle or the final wave: not the biome's (the rival, the evil team, the Elite Four); left out.
-// - `isWaveTrainer`, classic: the gym wave `w % 30 === (offsetGym ? 0 : 20)` always; X1 and X0 never; any other wave
-//   rolls 1/trainerChance, blocked by a gym or fixed wave within two waves (inside X2…X10) and by a roll that hit on
-//   either of the two waves before it (forks at offset w, one draw each). Daily: X5 and X0 past 10.
+// What each of the ten waves the choice covers holds. Which wave is which, and how likely a trainer is on it, is the
+// **run calendar**'s (`03-calendar.js`): a fixed battle or the final wave is not the biome's and is left out, a gym
+// wave is always a trainer, X1 and X0 never are, and any other wave rolls 1/trainerChance with its look-back. What is
+// left below is what the biome itself decides.
 // - A trainer: `Arena.randomTrainerType` rolls randSeedInt(512) over trainerPool tiers 0–4 (156+ common, 32+ uncommon,
 //   6+ rare, 1+ super rare, 0 ultra; no luck), or randSeedInt(64) over the boss tiers 5–8 (20+, 6+, 1+, 0) when the
 //   biome has a BOSS trainer and `isTrainerBoss` (the gym wave; Daily: X0 in 20–40): the gym leader is the biome's.
@@ -44,8 +43,8 @@
 //
 // ---- Scoring (per offered biome, explainable on purpose)
 // Encounters: every wave's wild and trainer species at those odds, each wave counting once, evolved at the party's top
-// level. The party is everyone: entering an X1 heals and revives, except under Hardcore (no revive) or Limited Support's
-// no-heal settings, where the fainted stay out.
+// level. The party is everyone, because entering an X1 heals and revives — except where the calendar says that heal
+// doesn't revive, and then the fainted stay out.
 // - offense: per encounter, the best multiplier any party move reaches (STAB ×1.5): SE 1, neutral 0.5, resisted 0.
 // - defense: per encounter, share of the party resisting all its types minus the share weak to one of them.
 // - catch: wild species that cover a team weakness, clearly outclass the weakest member, or are new to the dex (light).
@@ -248,39 +247,25 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
     return value;
   };
 
-  // ---- What each of the ten waves holds in this biome: [{ w, tod, wild, trainer, boss, gym }], the fixed waves left out.
+  // ---- What each of the ten waves holds in this biome: [{ w, tod, wild, trainer, boss, gym }], the fixed waves left
+  // out. Which wave is which, and how likely a trainer is on it, is the run calendar's (03-calendar.js); what is left
+  // here is the biome's own part — the time of day, and whether the tenth wave's trainer is a gym leader this biome
+  // can field (`isTrainerBoss`).
   const wavesIn = (s, biome, wave) => {
     const gm = s.gameMode;
-    const gymAt = w => w % 30 === (s.offsetGym ? 0 : 20);
-    const fixedAt = w => tryDo(() => gm.isWaveFinal(w), false) || tryDo(() => gm.isFixedBattle(w), false);
     const bossTrainers = (biome.trainerPool?.[BiomePoolTier.BOSS] ?? []).length > 0;
     const out = [];
     for (let w = wave + 1; w <= wave + WINDOW; w++) {
-      if (fixedAt(w)) continue;
+      const kind = waveKind(s, w);
+      if (kind === "final" || kind === "fixed") continue; // not the biome's: the run's own table holds them
       const c = (w + (s.waveCycleOffset ?? 0)) % 40;
       const tod = biome.biomeId === BiomeId.ABYSS ? TimeOfDay.NIGHT : c < 15 ? TimeOfDay.DAY : c < 20 ? TimeOfDay.DUSK : c < 35 ? TimeOfDay.NIGHT : TimeOfDay.DAWN;
-      let trainer = 0, gym = false;
-      if (gm?.isDaily) {
-        trainer = w % 10 === 5 || (w % 10 === 0 && w > 10) ? 1 : 0;
-        gym = trainer && bossTrainers && w > 10 && w < 50 && w % 10 === 0;
-      } else if (gymAt(w)) {
-        trainer = 1;
-        gym = bossTrainers && (biome.biomeId !== BiomeId.END || !!gm?.isClassic || tryDo(() => gm.isWaveFinal(w), false));
-      } else if (w % 10 > 1) {
-        const chance = biome.trainerChance ?? 0;
-        if (chance) {
-          const base = Math.floor(w / 10) * 10;
-          let blocked = false, before = 0;
-          for (let v = Math.max(w - 2, base + 2); v <= Math.min(w + 2, base + 10); v++) {
-            if (v === w) continue;
-            if (gymAt(v) || tryDo(() => gm.isFixedBattle(v), false)) { blocked = true; break; }
-            if (v < w) before++;
-          }
-          trainer = blocked ? 0 : (1 - 1 / chance) ** before / chance;
-        }
-      }
-      const boss = trainer < 1 && tryDo(() => gm.isBoss(w), w % 10 === 0);
-      out.push({ w, tod, wild: 1 - trainer, trainer, boss, gym });
+      const trainer = trainerOdds(s, w, biome);
+      // `isTrainerBoss`: the gym wave outside END unless the run is classic, and in Daily an X0 from 20 to 40.
+      const gym = !!trainer && bossTrainers && (gm?.isDaily
+        ? w > 10 && w < 50 && w % 10 === 0
+        : kind === "gym" && (biome.biomeId !== BiomeId.END || !!gm?.isClassic));
+      out.push({ w, tod, wild: 1 - trainer, trainer, boss: trainer < 1 && kind === "boss", gym });
     }
     return out;
   };
@@ -349,9 +334,6 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
   const big = x => { try { return BigInt(x ?? 0); } catch { return 0n; } };
   const rootIdOf = sp => tryDo(() => sp.getRootSpeciesId(true), sp?.speciesId);
   const joinNames = names => (names.length > 2 ? `${names.length} mons` : names.join(" & "));
-  // Entering an X1 revives the fainted (PartyHealPhase), unless Hardcore prevents revives or Limited Support (1 no heal,
-  // 3 neither) skips the heal.
-  const staysFainted = s => (s.gameMode?.challenges ?? []).some(c => (c.id === Challenges.HARDCORE && c.value > 0) || (c.id === Challenges.LIMITED_SUPPORT && (c.value === 1 || c.value === 3)));
 
   const judge = (s, id, party, level, wave, luck) => {
     const biome = tryDo(() => tables.biomes.get(id));
@@ -494,7 +476,9 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
     const labels = h.config.options.map(o => String(o.label ?? ""));
     const wave = s.currentBattle?.waveIndex ?? 0;
     const everyone = s.getPlayerParty().filter(Boolean);
-    const party = staysFainted(s) ? everyone.filter(p => p.hp > 0) : everyone;
+    // Everyone fights in the next biome, because entering an X1 revives the fallen — except where the run calendar
+    // says that heal doesn't revive (Hardcore, or a Limited Support with no heal at all).
+    const party = healRevives(s) ? everyone : everyone.filter(p => p.hp > 0);
     const key = JSON.stringify([!!tables, wave, labels, party.map(p => [p.id, p.level, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
       (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
     if (cache.key === key) return cache.value;

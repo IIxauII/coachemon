@@ -1,0 +1,26 @@
+== waveKind, classic
+early                     1:—  5:fixed  8:fixed  10:boss  11:—  20:gym  25:fixed  30:boss
+late                      170:gym  182:fixed  188:fixed  190:fixed  195:fixed  199:—  200:final
+== waveKind, offsetGym
+gym waves                 20:boss  30:gym  50:boss  60:gym  90:gym
+== waveKind, daily / endless
+daily                     20:gym  30:boss  45:—  50:final
+endless                   20:gym  200:gym  210:boss  250:final  500:final
+== schedule from 1  [[5,"fixed"],[8,"fixed"],[10,"boss"],[20,"gym"],[25,"fixed"],[30,"boss"]]
+== schedule from 181 [[182,"fixed"],[184,"fixed"],[186,"fixed"],[188,"fixed"],[190,"fixed"],[195,"fixed"],[200,"final"]]
+== heals, classic
+next heal                 10→11  11→21  17→21  181→191  191→none  195→none
+== heals, challenges
+none                      heal 21  revives true
+limited support 1         heal none  revives false
+limited support 2         heal 21  revives true
+limited support 3         heal none  revives false
+hardcore                  heal 21  revives false
+hardcore + ls 1           heal none  revives false
+== trainer odds, trainerChance 8
+waves 41–50               41:0.000  42:0.125  43:0.109  44:0.096  47:0.096  48:0.000  49:0.000  50:1.000
+== trainer odds, daily
+waves 11–20               11:0  15:1  16:0  20:1
+== game-less fallbacks
+classic                   1:—  10:boss  20:gym  199:—  200:final
+ok

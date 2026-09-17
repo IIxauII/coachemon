@@ -4,6 +4,7 @@
 == wave 180: next heal W181 · 0 big fights before it · next fixed W182
 == wave 181: next heal W191 · 5 big fights before it · next fixed W182
 == wave 185: next heal W191 · 3 big fights before it · next fixed W186
+== limited support 1: heal null · 5 fights before it
 == ready {"who":"Rival 2","exact":true,"verdict":"ready","notes":["we're +5 levels on them","2 mons hit super-effectively"]}
 == card
 ⚑ Next big fight Rival 2 next wave W25
