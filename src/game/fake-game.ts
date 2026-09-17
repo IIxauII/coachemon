@@ -5,6 +5,9 @@
  * What a screen reacts to is strict: `read`, `menu`, `starterGrid` and every act (`press`, `setCursor`, `modalButton`,
  * `rawKey`) throw `unexpected <op>` when the screen does not script them, failing the test instead of passing it through
  * a fallback. The rest have benign defaults: an advancing frame, an empty snapshot, an attached tab.
+ *
+ * With `guardFine` the fake checks acts the way the page does (§10.2): an act whose fingerprint is not the screen's
+ * current one refuses `moved` without reaching the screen, and a cursor act answers the fingerprint it left.
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -21,16 +24,18 @@ export type FakeScreen = {
   read?: () => ScreenRead;
   menu?: () => MenuRead;
   starterGrid?: () => StarterGrid | Failed;
-  /** A press the screen reacts to; returning nothing means it reached `processInput`. */
-  onPress?: (b: Button) => Act | void;
-  onSetCursor?: (t: CursorTarget) => Act & { species?: string };
-  onModalButton?: (i: number) => Act;
+  /** A press the screen reacts to, given the fingerprint it was sent on; returning nothing means it reached `processInput`. */
+  onPress?: (b: Button, fine: string) => Act | void;
+  onSetCursor?: (t: CursorTarget, fine: string) => Act & { species?: string };
+  onModalButton?: (i: number, fine: string) => Act;
   onRawKey?: (b: Button) => boolean;
   /** Replaces the advancing frame counter: a constant freezes the loop. */
   frame?: () => number | null;
   snapshot?: (d: SnapshotDetail) => Record<string, unknown>;
   /** Another live process holding the driver lock. */
   lockHolder?: number;
+  /** Acts refuse `moved` off the screen's current fingerprint, as the page does. */
+  guardFine?: boolean;
 };
 
 export function fakeGame(screen: FakeScreen) {
@@ -40,6 +45,16 @@ export function fakeGame(screen: FakeScreen) {
   const unexpected = (op: string): never => {
     throw new Error(`unexpected ${op}`);
   };
+  const current = (): string | null => {
+    const r = (screen.read ?? unexpected("read"))();
+    return r.ready ? r.fine : null;
+  };
+  /** The page's check before an act: `null` lets it through. */
+  const moved = (fine: string): Act | null => {
+    if (!screen.guardFine) return null;
+    const now = current();
+    return now === fine ? null : { ok: false, why: "moved", threw: false, fine: now ?? "" };
+  };
 
   const game: GamePort = {
     read: async () => {
@@ -48,9 +63,14 @@ export function fakeGame(screen: FakeScreen) {
     },
     frame: async () => (screen.frame ? screen.frame() : ++frame),
     menu: async () => (screen.menu ?? unexpected("menu"))(),
-    press: async b => (screen.onPress ?? unexpected("press"))(b) ?? { ok: true },
-    setCursor: async target => (screen.onSetCursor ?? unexpected("setCursor"))(target),
-    modalButton: async i => (screen.onModalButton ?? unexpected("modalButton"))(i),
+    press: async (b, fine) => moved(fine) ?? (screen.onPress ?? unexpected("press"))(b, fine) ?? { ok: true },
+    setCursor: async (target, fine) => {
+      const refused = moved(fine);
+      if (refused) return refused;
+      const r = (screen.onSetCursor ?? unexpected("setCursor"))(target, fine);
+      return screen.guardFine ? { ...r, fine: current() ?? "" } : r;
+    },
+    modalButton: async (i, fine) => moved(fine) ?? (screen.onModalButton ?? unexpected("modalButton"))(i, fine),
     starterGrid: async () => (screen.starterGrid ?? unexpected("starterGrid"))(),
     snapshot: async d => ({ ok: true, snapshot: screen.snapshot?.(d) ?? {} }),
     rawKey: async b => (screen.onRawKey ?? unexpected("rawKey"))(b),

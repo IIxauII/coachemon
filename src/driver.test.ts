@@ -774,6 +774,132 @@ test("an acting call refuses loop_frozen when the frame does not advance across 
   assert.equal(r.frame, 7);
 });
 
+test("a press decided on a screen the game has since left refuses game_moved, pressing nothing (§10.2)", async () => {
+  // The game moves on its own during the guard's frame check, between the settled read and the press.
+  let frames = 0;
+  const presses: number[] = [];
+  const tab = drive({
+    guardFine: true,
+    read: () => ({
+      ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 5, turn: 1, runLive: true,
+      tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
+      fine: frames >= 2 ? "command|turn 2" : "command|turn 1", domMode: null, gameVersion: "1.12.0.11", ...money,
+    }),
+    frame: () => ++frames,
+    onPress: b => { presses.push(b); },
+  });
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.error, "game_moved", JSON.stringify(r));
+  assert.deepEqual(presses, []);
+});
+
+/** CONFIRM [Yes, No] whose `setCursor` moves the cursor the fine fingerprint carries; ACTION answers the option under it. */
+function confirmTab() {
+  let cursor = 0;
+  let answered: string | null = null;
+  const labels = ["Yes", "No"];
+  const tab = drive({
+    guardFine: true,
+    read: () => ({
+      ready: true, settled: true, reason: "menu-open", mode: answered === null ? UiMode.CONFIRM : UiMode.COMMAND, screen: answered === null ? "CONFIRM" : "COMMAND",
+      phaseName: "CheckSwitchPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false, handler: null, cursor, modeChain: [], messageText: null,
+      onActionInput: false, awaitingActionInput: false, fine: `confirm|${cursor}|${answered}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+    }),
+    menu: () => ({
+      readable: true, mode: UiMode.CONFIRM, screen: "CONFIRM", family: "option_select", cursor, text: null,
+      options: labels.map((label, i) => ({ i, label })), extra: { unskippedIndices: [0, 1] },
+    }),
+    onSetCursor: t => {
+      cursor = (t as { index: number }).index;
+      return { ok: true };
+    },
+    onPress: b => {
+      assert.equal(b, Button.ACTION);
+      answered = labels[cursor];
+    },
+  });
+  return { ...tab, answered: () => answered };
+}
+
+test("select_option commits on the fingerprint its own cursor move left, not the one it settled on (§10.2)", async () => {
+  const tab = confirmTab();
+  const r = await outcome(tab.driver.selectOption("No", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(tab.answered(), "No");
+});
+
+test("auto-advance that finds the game moved on settles again and answers the message now showing (§10.2)", async () => {
+  // Two messages; the second replaces itself with a third just before the auto-advance press reaches it.
+  let shown = 0;
+  let raced = false;
+  const texts = ["Wild Pidgey fainted!", "Bulbasaur gained 30 EXP!", "Bulbasaur grew to Lv. 6!"];
+  const onMessage = () => shown < texts.length;
+  const pressed: string[] = [];
+  const tab = drive({
+    guardFine: true,
+    read: () => ({
+      ready: true, settled: true, reason: onMessage() ? "awaiting-action" : "menu-open", mode: onMessage() ? UiMode.MESSAGE : UiMode.COMMAND,
+      screen: onMessage() ? "MESSAGE" : "COMMAND", phaseName: "VictoryPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false, handler: null,
+      cursor: 0, modeChain: [], messageText: onMessage() ? texts[shown] : null, onActionInput: onMessage(), awaitingActionInput: onMessage(),
+      fine: `msg|${shown}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+    }),
+    menu: () => (onMessage()
+      ? { readable: true, mode: UiMode.MESSAGE, screen: "MESSAGE", family: "acknowledge", cursor: null, text: texts[shown], extra: {}, options: [] }
+      : commandMenu(0)),
+    onPress: b => {
+      assert.equal(b, Button.ACTION);
+      pressed.push(texts[shown]);
+      shown++;
+    },
+  });
+  const game = tab.game;
+  const press = game.press;
+  game.press = async (b, fine) => {
+    if (shown === 1 && !raced) {
+      raced = true;
+      shown = 2;
+    }
+    return press(b, fine);
+  };
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.status, "ok", JSON.stringify(r));
+  assert.equal(r.screen, "COMMAND");
+  assert.deepEqual(pressed, ["Wild Pidgey fainted!", "Bulbasaur grew to Lv. 6!"], "nothing pressed on the message that went away");
+});
+
+test("a cursor walk that finds the game moved on settles again and walks on, not mistaking the unsent press for a stuck cursor", async () => {
+  // The double-battle TARGET_SELECT of #40; the game moves once on its own before the first press, leaving the cursor alone.
+  let cursor = 2;
+  let tick = 0;
+  let committed: number | null = null;
+  const presses: number[] = [];
+  const targets = [{ i: 2, label: "Starly" }, { i: 3, label: "Caterpie" }, { i: 1, label: "Lillipup" }];
+  const tab = drive({
+    guardFine: true,
+    read: () => ({
+      ready: true, settled: true, reason: "menu-open", mode: committed === null ? UiMode.TARGET_SELECT : UiMode.COMMAND, screen: committed === null ? "TARGET_SELECT" : "COMMAND",
+      phaseName: "SelectTargetPhase", wave: 7, turn: 1, runLive: true, tutorialActive: false, handler: null, cursor, modeChain: [], messageText: null,
+      onActionInput: false, awaitingActionInput: false, fine: `target|${cursor}|${committed}|${tick}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+    }),
+    menu: () => ({ readable: true, mode: UiMode.TARGET_SELECT, screen: "TARGET_SELECT", family: "target_select", cursor, text: null, options: targets, extra: { isMultipleTargets: false } }),
+    onPress: b => {
+      presses.push(b);
+      if (b === Button.ACTION) committed = cursor;
+      else if (b === Button.DOWN && cursor >= 2) cursor = 1;
+      else if (b === Button.RIGHT && cursor === 2) cursor = 3;
+    },
+  });
+  const press = tab.game.press;
+  tab.game.press = async (b, fine) => {
+    if (tick === 0) tick = 1;
+    return press(b, fine);
+  };
+  const r = await outcome(tab.driver.selectOption("Lillipup", undefined, undefined, {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(committed, 1);
+  assert.deepEqual(presses, [Button.DOWN, Button.ACTION]);
+});
+
 test("a frame read that fails is not a frozen loop", async () => {
   let presses = 0;
   const tab = guardedTab({ frame: () => null, menu: () => commandMenu(0), onPress: () => { presses++; }, onRawKey: () => true });

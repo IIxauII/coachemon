@@ -12,12 +12,13 @@
  */
 import { CallOutcomes, type CallEnd, type Outcome } from "./call-outcome.ts";
 import { acquireLock, lockContended, type Lock } from "./cdp/lock.ts";
+import { CdpLink } from "./cdp/link.ts";
 import { CdpSession, DEFAULTS } from "./cdp/session.ts";
 import { Button, NAMES, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
-import { CdpGame } from "./game/cdp-game.ts";
-import type { GamePort, MenuOption, MenuRead, Ready, SnapshotDetail } from "./game/port.ts";
+import { LinkGame } from "./game/link-game.ts";
+import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
 import { isSettingsMode, modeName } from "./screen.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
@@ -47,6 +48,11 @@ type Call = CallContext & {
   deadline: number;
   /** The call's latest settle. */
   last: SettleResult | null;
+  /**
+   * The fine fingerprint of the latest game the call has seen, from its settles and its own cursor moves. Every act is
+   * sent on it, and the page refuses one the game has moved off (§10.2).
+   */
+  fine: string;
   /** What the call will press on, set once every check before the first press has passed. */
   intent: { pre: Ready; choice: Choice; menuAction: boolean } | null;
   /** Whether anything has been sent to the game yet. */
@@ -92,7 +98,8 @@ export class Driver {
   }
 
   static create(home: string = DEFAULTS.home): Driver {
-    return new Driver(new CdpGame(new CdpSession({ home })), acquireLock(home));
+    const link = new CdpLink(new CdpSession({ home }));
+    return new Driver(new LinkGame(link, link), acquireLock(home));
   }
 
   // ------------------------------------------------------------------ tools
@@ -371,10 +378,10 @@ export class Driver {
       await refuseFromGrid("party_over_budget", `Party costs ${cost} against a limit of ${info.valueLimit}.`, { picks: picks.map(p => ({ name: p.name, cost: p.cost })), limit: info.valueLimit });
     }
     for (const pick of picks) {
-      const moved = await this.#game.setCursor({ family: "starter_select", index: pick.i });
-      if (!moved.ok) throw new Refusal("starter_cursor", `could not position the grid cursor on ${pick.name}: ${moved.why}`, { log });
-      if (moved.species && normalizeLabel(moved.species) !== normalizeLabel(pick.name ?? "")) {
-        throw new Refusal("starter_cursor", `grid cursor landed on ${moved.species}, not ${pick.name}`, { log });
+      const placed = await this.#setCursor(call, { family: "starter_select", index: pick.i });
+      if (!placed.ok) throw new Refusal("starter_cursor", `could not position the grid cursor on ${pick.name}: ${placed.why}`, { log });
+      if (placed.species && normalizeLabel(placed.species) !== normalizeLabel(pick.name ?? "")) {
+        throw new Refusal("starter_cursor", `grid cursor landed on ${placed.species}, not ${pick.name}`, { log });
       }
       s = await this.#pressAndSettle(Button.ACTION, cur.fine, call);
       presses++;
@@ -457,7 +464,7 @@ export class Driver {
 
   /** One tool call: one deadline for everything it waits on (#34), and exactly one `end`, a thrown call included. */
   async #call(ctx: CallContext, body: (call: Call) => Promise<Record<string, unknown>>): Promise<Record<string, unknown>> {
-    const call: Call = { ...ctx, deadline: ctx.deadline ?? this.#clock.now() + CALL_BUDGET_MS, last: null, intent: null, pressed: false, ended: false };
+    const call: Call = { ...ctx, deadline: ctx.deadline ?? this.#clock.now() + CALL_BUDGET_MS, last: null, fine: "", intent: null, pressed: false, ended: false };
     try {
       return await body(call);
     } catch (e) {
@@ -502,6 +509,7 @@ export class Driver {
       preFp,
     );
     call.last = s;
+    if (s.settled && s.last?.ready) call.fine = s.last.fine;
     return s;
   }
 
@@ -513,11 +521,43 @@ export class Driver {
   }
 
   async #pressAndSettle(button: Button, preFp: string, call: Call): Promise<SettleResult> {
-    this.#sending(call);
-    const r = await this.#game.press(button);
-    if (!r.ok && r.threw) throw new Refusal("press_threw", `processInput threw: ${r.why}`);
-    if (!r.ok) throw new Refusal("scene_unavailable", `the scene was unavailable when pressing: ${r.why}`);
+    if (!(await this.#tryPress(button, call))) return this.#refuseMoved(call, preFp, `press(${NAMES.Button[button] ?? button})`);
     return this.#settle(preFp, call);
+  }
+
+  /** One press on the call's fingerprint. `false`: the game had moved off it, and nothing was pressed (§10.2). */
+  async #tryPress(button: Button, call: Call): Promise<boolean> {
+    const r = await this.#act(call, fine => this.#game.press(button, fine));
+    if (r.ok) return true;
+    if (r.why === MOVED) return false;
+    if (r.threw) throw new Refusal("press_threw", `processInput threw: ${r.why}`);
+    throw new Refusal("scene_unavailable", `the scene was unavailable when pressing: ${r.why}`);
+  }
+
+  /** Send one act on the call's fingerprint, and keep the fingerprint it answers with: where a cursor move left the game. */
+  async #act<T extends Act>(call: Call, send: (fine: string) => Promise<T>): Promise<T> {
+    this.#sending(call);
+    const r = await send(call.fine);
+    if (typeof r.fine === "string") call.fine = r.fine;
+    return r;
+  }
+
+  /**
+   * A cursor move on the call's fingerprint. A game that moved first is refused like any act; any other outcome is the
+   * caller's to judge.
+   */
+  async #setCursor(call: Call, target: CursorTarget): Promise<Act & { species?: string }> {
+    const preFp = call.fine;
+    const r = await this.#act(call, fine => this.#game.setCursor(target, fine));
+    if (!r.ok && r.why === MOVED) return this.#refuseMoved(call, preFp, `moving the ${target.family} cursor`);
+    return r;
+  }
+
+  /** The game moved between the read an act was decided on and the act (§10.2): settle on where it went, then refuse. */
+  async #refuseMoved(call: Call, preFp: string, what: string): Promise<never> {
+    const s = await this.#settle(preFp, call);
+    const screen = s.last?.ready ? s.last.screen : "UNKNOWN(-1)";
+    throw new Refusal("game_moved", `The game changed after the read ${what} was decided on, so ${what} was not sent. It is now on ${screen}: read_menu, then decide again.`, { screen });
   }
 
   // --------------------------------------------------------------- guards
@@ -553,8 +593,7 @@ export class Driver {
         const unskipped = (menu.extra.unskippedIndices as number[] | null) ?? null;
         const j = unskipped ? unskipped.indexOf(Number(target.i)) : Number(target.i);
         if (j < 0) throw new Refusal("option_skipped", `option ${target.label} is not selectable right now`, { options: menu.options.map(o => o.label) });
-        this.#sending(call);
-        if ((await this.#game.setCursor({ family: "option_select", index: j })).ok) return null;
+        if ((await this.#setCursor(call, { family: "option_select", index: j })).ok) return null;
         return this.#walk(menu, j, call, cur => (cur < j ? Button.DOWN : Button.UP));
       }
       case "command":
@@ -565,22 +604,19 @@ export class Driver {
         return this.#walk(menu, t, call, cur => (Math.floor(cur / 2) !== Math.floor(t / 2) ? (cur < t ? Button.DOWN : Button.UP) : cur < t ? Button.RIGHT : Button.LEFT));
       }
       case "modifier_select": {
-        this.#sending(call);
-        const r = await this.#game.setCursor({ family: "modifier_select", row: Number(target.row), col: Number(target.col) });
+        const r = await this.#setCursor(call, { family: "modifier_select", row: Number(target.row), col: Number(target.col) });
         if (!r.ok) throw new Refusal("cursor_unreachable", `could not position the shop cursor on ${target.label}`, { got: r });
         return null;
       }
       case "starter_select": {
-        this.#sending(call);
-        const r = await this.#game.setCursor({ family: "starter_select", index: Number(target.i) });
+        const r = await this.#setCursor(call, { family: "starter_select", index: Number(target.i) });
         if (!r.ok) throw new Refusal("cursor_unreachable", `could not position the grid cursor on ${target.label}`, { got: r });
         return null;
       }
       case "learn_move": {
         // Rows 0..4 with UP/DOWN ±1, wrapping; ACTION on a moveset row forgets it, on row 4 declines the new move.
         const t = Number(target.i);
-        this.#sending(call);
-        if ((await this.#game.setCursor({ family: "learn_move", row: t })).ok) return null;
+        if ((await this.#setCursor(call, { family: "learn_move", row: t })).ok) return null;
         return this.#walk(menu, t, call, cur => (cur < t ? Button.DOWN : Button.UP));
       }
       case "target_select": {
@@ -609,37 +645,37 @@ export class Driver {
   /**
    * Press `step(cursor)` until the cursor reads `target`, each press settled against the call's deadline. A settled
    * press that leaves the cursor where it was refuses at once: the same press again does the same (#34). So does a step
-   * that reads another Screen than `from`, the menu the walk was planned on: nothing is committed there.
+   * that reads another Screen than `from`, the menu the walk was planned on: nothing is committed there. A press the game
+   * moved ahead of (§10.2) was never sent: the walk settles and steps again from wherever the cursor now is.
    */
   async #walk(from: MenuRead, target: number, call: Call, step: (cursor: number) => Button): Promise<SettleResult | null> {
     let prev: number | null = null;
+    let sent = 0;
     for (let n = 0; n < NAV_CAP; n++) {
       const menu = await this.#game.menu();
       if (menu.readable && menu.screen !== from.screen) {
-        throw new Refusal("screen_changed", `The screen changed from ${from.screen} to ${menu.screen} while walking the cursor toward ${target}. ${n} cursor press(es) were sent, nothing was committed.`, { screen: menu.screen, was: from.screen, target, presses: n });
+        throw new Refusal("screen_changed", `The screen changed from ${from.screen} to ${menu.screen} while walking the cursor toward ${target}. ${sent} cursor press(es) were sent, nothing was committed.`, { screen: menu.screen, was: from.screen, target, presses: sent });
       }
       const cur = Number(menu.cursor);
       if (cur === target) return null;
       if (cur === prev) {
-        throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a press toward ${target}; ${target} can't be reached by moving the cursor here. ${n} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target, presses: n });
+        throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a press toward ${target}; ${target} can't be reached by moving the cursor here. ${sent} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target, presses: sent });
       }
-      prev = cur;
-      const s = await this.#pressAndSettle(step(cur), await this.#fine(), call);
+      const pre = call.fine;
+      const pressed = await this.#tryPress(step(cur), call);
+      prev = pressed ? cur : null;
+      if (pressed) sent++;
+      const s = await this.#settle(pre, call);
       if (!s.settled) return s;
     }
-    throw new Refusal("cursor_unreachable", `cursor did not reach ${target} within ${NAV_CAP} presses`, { target, presses: NAV_CAP });
-  }
-
-  async #fine(): Promise<string> {
-    const r = await this.#game.read();
-    return r.ready ? r.fine : "";
+    throw new Refusal("cursor_unreachable", `cursor did not reach ${target} within ${NAV_CAP} presses`, { target, presses: sent });
   }
 
   /** The final commit: always `processInput(ACTION)`, except the modal family's own button action. */
   async #commit(menu: MenuRead, target: MenuOption, preFp: string, call: Call): Promise<SettleResult> {
     if (menu.family === "modal") {
-      this.#sending(call);
-      const r = await this.#game.modalButton(Number(target.i));
+      const r = await this.#act(call, fine => this.#game.modalButton(Number(target.i), fine));
+      if (!r.ok && r.why === MOVED) return this.#refuseMoved(call, preFp, `the ${JSON.stringify(target.label)} button`);
       if (!r.ok) throw new Refusal("modal_button", `button action ${target.i} unavailable: ${r.why}`);
       return this.#settle(preFp, call);
     }
@@ -657,8 +693,13 @@ export class Driver {
       // Only MESSAGE(0) with a live prompt; CONFIRM is never advanced — ACTION is consent (#8).
       if (r.mode !== UiMode.MESSAGE || !(r.awaitingActionInput && r.onActionInput)) break;
       if (presses >= AUTO_ADVANCE_CAP) return { settle: s, messages, presses, capped: true };
+      // A message that went away before its ACTION arrived was never answered (§10.2): settle, and look again.
+      if (!(await this.#tryPress(Button.ACTION, call))) {
+        s = await this.#settle(r.fine, call);
+        continue;
+      }
       if (r.messageText) messages.push(r.messageText);
-      s = await this.#pressAndSettle(Button.ACTION, r.fine, call);
+      s = await this.#settle(r.fine, call);
       presses++;
     }
     return { settle: s, messages, presses, capped: false };
