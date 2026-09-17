@@ -76,7 +76,13 @@ A battle card's one-word call on the wave: **easy**, **trainer**, **danger**, **
 
 The one process on a machine allowed to press buttons in the game. A process becomes the driver the first time it acts, not when it starts: reading the game never needs the role, so any number of readers can follow a game while one driver plays it. A second process that tries to act while a live driver exists finds the game **contended** and refuses, since two drivers interleaving presses on one save is indistinguishable from the game misbehaving.
 
-With more than one game tab reachable, there is nothing to drive: acting refuses rather than guess which save it would touch.
+With more than one game tab reachable, there is nothing to drive or follow: acting and reading both refuse rather than guess which save they would touch.
+
+## Hub
+
+The one local process on a machine that the browser extension connects to. Every process that reads or drives the game reaches it through the hub; none of them talks to a browser directly. The hub knows which game tabs are reachable, across every browser, and which process is the **driver**. It carries commands and never decides anything about the game itself.
+
+Never called the *host*: Apple's *host app* is the browser that hosts an extension, the opposite sense.
 
 ## Interrupted run
 
