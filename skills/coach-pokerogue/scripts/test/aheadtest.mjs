@@ -140,8 +140,10 @@ const mount = opts => {
   globalThis.setInterval = () => 0;
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__ah = { aheadModel, partyLuck, drawAhead, aheadSummary, learnRoster };\n})();\n"));
-  return { scene, ah: globalThis.__ah };
+  eval(bundle("hud", { expose: true }));
+  const { aheadModel, partyLuck, learnRoster } = globalThis.__hud["49-ahead"];
+  const { drawAhead, aheadSummary } = globalThis.__hud["98-render-ahead"];
+  return { scene, ah: { aheadModel, partyLuck, drawAhead, aheadSummary, learnRoster } };
 };
 
 // Ice Beam answers the rival's Garchomp (Dragon/Ground), Earthquake its Lucario (Fighting/Steel).

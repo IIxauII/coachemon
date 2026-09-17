@@ -26,7 +26,7 @@ const planMemo = (s, k, fn) => {
   const key = [b?.waveIndex, b?.turn, b?.enemySwitchCounter, awaitingDecision(s),
     ...mons.map(p => p && `${p.id}:${p.hp}:${p.bossSegmentIndex ?? ""}:${p.isOnField?.() ? 1 : 0}:${p.isTerastallized ? 1 : 0}`)].join("|");
   if (plannerMemo.key !== key) plannerMemo = { key, map: new Map() };
-  const kk = hypothesisKey ? `${k}#${hypothesisKey}` : k;
+  const kk = activeHypothesisKey() ? `${k}#${activeHypothesisKey()}` : k;
   if (!plannerMemo.map.has(kk)) plannerMemo.map.set(kk, fn());
   return plannerMemo.map.get(kk);
 };

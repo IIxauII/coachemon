@@ -1,7 +1,7 @@
 // Shared building blocks: type chart, ability immunities, stats, move attributes, icons.
-const TYPES = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
+export const TYPES = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // attacker: [super effective, not very effective, no effect]
-const CHART = {
+export const CHART = {
   Normal: [[], ["Rock","Steel"], ["Ghost"]],
   Fighting: [["Normal","Rock","Steel","Ice","Dark"], ["Flying","Poison","Bug","Psychic","Fairy"], ["Ghost"]],
   Flying: [["Fighting","Bug","Grass"], ["Rock","Steel","Electric"], []],
@@ -21,7 +21,7 @@ const CHART = {
   Dark: [["Ghost","Psychic"], ["Fighting","Dark","Fairy"], []],
   Fairy: [["Fighting","Dragon","Dark"], ["Poison","Steel","Fire"], []],
 };
-const ABILITY_IMMUNE = {
+export const ABILITY_IMMUNE = {
   "Levitate": "Ground", "Earth Eater": "Ground",
   "Flash Fire": "Fire", "Well-Baked Body": "Fire",
   "Water Absorb": "Water", "Storm Drain": "Water", "Dry Skin": "Water",
@@ -30,16 +30,16 @@ const ABILITY_IMMUNE = {
 };
 // Immunities by move flag rather than type.
 const ABILITY_IMMUNE_FLAG = { "Soundproof": MoveFlags.SOUND_BASED, "Bulletproof": MoveFlags.BALLBOMB_MOVE, "Overcoat": MoveFlags.POWDER_MOVE, "Wind Rider": MoveFlags.WIND_MOVE };
-const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
+export const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
 
-const typesOf = p => p.getTypes().map(t => TYPES[t]).filter(Boolean);
-const abilitiesOf = p => [p.getAbility()?.name, p.hasPassive?.() ? p.getPassiveAbility()?.name : null].filter(Boolean);
-const vs = (atk, def) => {
+export const typesOf = p => p.getTypes().map(t => TYPES[t]).filter(Boolean);
+export const abilitiesOf = p => [p.getAbility()?.name, p.hasPassive?.() ? p.getPassiveAbility()?.name : null].filter(Boolean);
+export const vs = (atk, def) => {
   const [se, nve, none] = CHART[atk] ?? [[], [], []];
   return none.includes(def) ? 0 : se.includes(def) ? 2 : nve.includes(def) ? 0.5 : 1;
 };
 // `mv` (optional): the move, so flag immunities (Soundproof and co.) apply too.
-const effectiveness = (type, p, mv) => {
+export const effectiveness = (type, p, mv) => {
   const ab = abilitiesOf(p);
   if (ab.some(a => ABILITY_IMMUNE[a] === type || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;
   let m = typesOf(p).reduce((x, d) => x * vs(type, d), 1);
@@ -56,19 +56,19 @@ const NATURE_STAT_IDS = [Stat.ATK, Stat.DEF, Stat.SPD, Stat.SPATK, Stat.SPDEF];
 const NATURES = ["Hardy", "Lonely", "Brave", "Adamant", "Naughty", "Bold", "Docile", "Relaxed", "Impish", "Lax", "Timid",
   "Hasty", "Serious", "Jolly", "Naive", "Modest", "Mild", "Quiet", "Bashful", "Rash", "Calm", "Gentle", "Sassy",
   "Careful", "Quirky"];
-const natureOf = n => {
+export const natureOf = n => {
   const up = Math.floor(n / 5), down = n % 5, neutral = up === down;
   return { name: NATURES[n] ?? `#${n}`, up: neutral ? null : NATURE_STATS[up], down: neutral ? null : NATURE_STATS[down],
     upStat: neutral ? null : NATURE_STAT_IDS[up], downStat: neutral ? null : NATURE_STAT_IDS[down] };
 };
-const stage = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
+export const stage = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
 // i: 1 atk, 2 def, 3 spa, 4 spd, 5 spe. statStages has no HP slot.
-const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ?? 0);
+export const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ?? 0);
 
 // A damage distribution ([{ d, p }] or a Map d → p) cut down to at most `k` points by joining the two closest
 // neighbours into their weighted mean, over and over: the KO thresholds that matter keep their sharp edges, a miss
 // (0) and a crit stay apart from the rolls. A point's hit count `n`, where given, is averaged the same way.
-const squeezeDist = (points, k) => {
+export const squeezeDist = (points, k) => {
   const out = [...(points instanceof Map ? [...points].map(([d, p]) => ({ d, p })) : points.map(x => ({ ...x })))]
     .filter(x => x.p > 0).sort((a, b) => a.d - b.d);
   while (out.length > k) {
@@ -81,16 +81,16 @@ const squeezeDist = (points, k) => {
   return out;
 };
 
-const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
-const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
+export const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
+export const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
 
-const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IMMUNE_FLAG), "Wonder Guard", "Thick Fat", "Heatproof", "Solid Rock", "Filter", "Prism Armor", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple",
+export const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IMMUNE_FLAG), "Wonder Guard", "Thick Fat", "Heatproof", "Solid Rock", "Filter", "Prism Armor", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple",
   // Punish contact or being hit: chip, status, stat drops, a lost ability.
   "Iron Barbs", "Rough Skin", "Static", "Flame Body", "Poison Point", "Effect Spore", "Cursed Body", "Gooey", "Tangling Hair", "Mummy", "Weak Armor", "Stamina",
   // Turn our hits, stat drops or KOs into boosts; undo chip or status; ignore our boosts or residual damage.
   "Justified", "Defiant", "Competitive", "Moxie", "Beast Boost", "Speed Boost", "Shed Skin", "Natural Cure", "Regenerator", "Unaware", "Magic Guard", "Marvel Scale", "Fur Coat"]);
-const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
-const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
+export const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
+export const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
 // ---- Calling the game's own code safely
 // Even the game's "simulated" paths have hidden effects (see game-code.md §0): they can
@@ -102,7 +102,8 @@ const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())];
 // unless the spec lists them as pure reads.
 const QUEUE_METHODS = ["pushPhase", "unshiftPhase", "pushNew", "unshiftNew", "queueMessage", "queueAbilityDisplay", "hideAbilityBar", "queueFaintPhase"];
 let sandboxBreaches = 0; // times a restore didn't match — surfaced on the panel, never expected
-const sandbox = (s, fn) => {
+export const sandboxBreachCount = () => sandboxBreaches;
+export const sandbox = (s, fn) => {
   const pm = s.phaseManager;
   const queue = QUEUE_METHODS.filter(k => typeof pm[k] === "function").map(k => [k, Object.prototype.hasOwnProperty.call(pm, k), pm[k]]);
   const rnd = Phaser.Math.RND.state();
@@ -136,7 +137,7 @@ const sandbox = (s, fn) => {
 // enemy's decisions for the turn haven't been made yet. "check-switch" is the free "Will you switch?" prompt at an
 // encounter's start (and its party screen); "faint-switch" replaces a fainted mon. A U-turn-style mid-turn switch
 // (modal SwitchPhase with doReturn) is excluded: the turn is still resolving. See references/game-code.md §9.
-const awaitingDecision = s => {
+export const awaitingDecision = s => {
   const ph = s.phaseManager?.getCurrentPhase?.();
   if (ph?.phaseName === "CommandPhase") return "command";
   // SwitchPhase(0, slot, isModal false, doReturn true) is the party screen after answering Yes.
@@ -144,17 +145,18 @@ const awaitingDecision = s => {
   if (ph?.phaseName === "SwitchPhase" && ph.isModal && !ph.doReturn) return "faint-switch";
   return null;
 };
-const awaitingCommand = s => awaitingDecision(s) !== null;
+export const awaitingCommand = s => awaitingDecision(s) !== null;
 
 // ---- Hypotheses: a state one move away
 // The planner asks the game's own damage and AI code about a state this turn's move would make — our stat stages
 // after Swords Dance, a foe paralysed by Thunder Wave — by writing that state onto the live mons for one synchronous
-// call and putting it back, the way a predicted Tera is (20-enemy-ai). `hypothesisKey` names the state, so every cache
-// keyed on a turn's numbers (10-damage's, the planner's memo) keeps hypothetical numbers apart from the real ones.
+// call and putting it back, the way a predicted Tera is (20-enemy-ai). `activeHypothesisKey()` names the state, so every
+// cache keyed on a turn's numbers (10-damage's, the planner's memo) keeps hypothetical numbers apart from the real ones.
 // Patches: `{ mon, stages: { [stat 1–5]: change } }` (clamped to ±6), `{ mon, status: { effect, … } }`. Only inside
 // `sandbox`.
 let hypothesisKey = "";
-const withHypothesis = (patches, fn) => {
+export const activeHypothesisKey = () => hypothesisKey;
+export const withHypothesis = (patches, fn) => {
   const undo = [];
   const prevKey = hypothesisKey;
   try {

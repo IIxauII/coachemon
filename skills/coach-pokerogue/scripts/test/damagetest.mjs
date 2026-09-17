@@ -72,9 +72,9 @@ const node = () => { const n = { style: {}, children: [], addEventListener() {},
 globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
 globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
-const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, sandbox, stateOf, hitOn, koCurve, koTurn, koTurns, useOf, koChanceAt };\n})();\n");
-eval(src);
-const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, sandbox, stateOf, hitOn, koCurve, koTurn, koTurns, useOf, koChanceAt } = globalThis.__dmg;
+eval(bundle("hud", { expose: true }));
+const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitOn, koCurve, koTurn, koTurns, useOf, koChanceAt } = globalThis.__hud["10-damage"];
+const { sandbox } = globalThis.__hud["01-core"];
 
 // Expected damage of one hit whose max roll is `max`: the mean of the 16 rolls 85..100 %.
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };

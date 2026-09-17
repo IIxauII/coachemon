@@ -118,12 +118,12 @@ const mount = ({ view = "full", labels = ["Swamp", "Construction Site"], party =
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => view, setItem() {} };
-  // Inject the tables before the first tick; expose the model builders for the test only.
-  const src = bundle("hud")
-    .replace("// ---- 50-shop.js", `setGameTables(globalThis.__biomeTables);\n// ---- 50-shop.js`)
-    .replace(/\}\)\(\);\s*$/, "globalThis.__bm = { spawnsFor, formsFor };\n})();\n");
-  globalThis.__biomeTables = t;
-  eval(src);
+  eval(bundle("hud", { expose: true }));
+  // The chunk scan finds nothing under node: hand over what it would have found, and draw the card again.
+  const { setGameTables, spawnsFor, formsFor } = globalThis.__hud["47-biome"];
+  setGameTables(t);
+  globalThis.__hud["90-render"].tick();
+  globalThis.__bm = { spawnsFor, formsFor };
   return { el, scene, handler, model: () => globalThis.__coachHud.last() };
 };
 

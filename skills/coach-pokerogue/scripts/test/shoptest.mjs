@@ -517,7 +517,12 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__sm = shopModel; globalThis.__api = { learnAdvice, doubleOdds, shopModel, rerollCheck, rerollStats, hudSummary, setRewardFns, tick };\n})();\n"));
+  eval(bundle("hud", { expose: true }));
+  const hud = globalThis.__hud;
+  const { shopModel } = hud["50-shop"], { rerollCheck, rerollStats } = hud["50-reroll"], { hudSummary, tick } = hud["90-render"];
+  globalThis.__sm = shopModel;
+  globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, shopModel, rerollCheck, rerollStats, hudSummary,
+    setRewardFns: hud["47-biome"].setRewardFns, tick };
   // The chunk scan finds nothing under node: hand the reroll preview its functions, and draw the card again.
   if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
