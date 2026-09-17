@@ -57,8 +57,10 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  // The catch coach lives inside the bundle's IIFE; expose it for the test only.
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__ca = { catchAdvice, captureChance, drawCatch, finalBstOf, setGameTables, setViewMode: v => { view = v; } };\n})();\n"));
+  eval(bundle("hud", { expose: true }));
+  const { catchAdvice, captureChance, finalBstOf } = globalThis.__hud["45-catch"];
+  globalThis.__ca = { catchAdvice, captureChance, drawCatch: globalThis.__hud["96-render-catch"].drawCatch, finalBstOf,
+    setGameTables: globalThis.__hud["47-biome"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
   if (events) globalThis.__ca.setGameTables({ events });
   const advice = globalThis.__ca.catchAdvice(scene, scene.currentBattle, party.filter(p => p.hp > 0), foes.filter(f => f.hp > 0));
   return { advice, scene };

@@ -4,13 +4,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
-// The HUD bundle cut after 20-enemy-ai.js, exposing its functions instead of starting the panel.
-const src = (() => {
-  const full = bundle("hud");
-  const from = full.indexOf("// ---- 20-enemy-ai.js");
-  const at = from + 1 + full.slice(from + 1).search(/\n\/\/ ---- [\w-]+\.js\n/);
-  return `${full.slice(0, at)}\nglobalThis.__ai = { enemyMoveDistribution, enemyAction, predictSwitches, aiChain, aiReplay, predictedTeras, withPredictedTera, teraTypeOf, sandboxBreaches: () => sandboxBreaches };\n})();\n`;
-})();
+const src = bundle("hud", { expose: true });
 
 const calls = { game: 0 };
 const spy = (name, fn) => (...a) => { calls.game++; calls[name] = (calls[name] ?? 0) + 1; return fn(...a); };
@@ -72,9 +66,13 @@ const setup = ({ player, enemy, double = false, phase = "CommandPhase", trainer 
   };
   globalThis.window = globalThis;
   globalThis.Phaser = { Math: { RND: rnd } };
-  globalThis.document = { documentElement: { dataset: {} } };
+  // The panel starts too, with nothing to show: the page has no game canvas.
+  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: () => ({ style: {}, addEventListener() {}, remove() {} }) };
+  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   eval(src);
-  return globalThis.__ai;
+  const { enemyMoveDistribution, enemyAction, predictSwitches, aiChain, aiReplay, predictedTeras, withPredictedTera, teraTypeOf } = globalThis.__hud["20-enemy-ai"];
+  return { enemyMoveDistribution, enemyAction, predictSwitches, aiChain, aiReplay, predictedTeras, withPredictedTera, teraTypeOf,
+    sandboxBreaches: globalThis.__hud["01-core"].sandboxBreachCount };
 };
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} ≠ ${b}`);
 const pOf = (dist, name) => dist.find(r => r.name === name)?.p ?? 0;

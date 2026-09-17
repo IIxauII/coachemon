@@ -172,18 +172,20 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  // The look-ahead is the audit's input, not what this test is about: hand over the roster the scenario names.
-  const src = bundle("hud").replace("audit: teamAudit(s, ahead) };", "audit: teamAudit(s, globalThis.__ahead ?? ahead) };")
-    .replace(/\}\)\(\);\s*$/, "globalThis.__api = { shopModel, teamAudit, drawShop, hudSummary };\n})();\n");
-  globalThis.__ahead = sc.ahead ?? null;
-  eval(src);
+  eval(bundle("hud", { expose: true }));
+  const { shopModel } = globalThis.__hud["50-shop"], { teamAudit } = globalThis.__hud["49-audit"];
+  const { drawShop, hudSummary } = globalThis.__hud["90-render"], { previewNext } = globalThis.__hud["48-preview"];
+  assert.ok(!el.textContent, `${label}: panel error ${el.textContent}`);
+  // The look-ahead is the audit's input, not what this test is about: hand over the roster the scenario names, and
+  // draw the card the panel would draw from that audit.
+  const m = shopModel(scene, handler);
+  if (sc.ahead) m.audit = teamAudit(scene, sc.ahead);
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-  console.log(`== ${label}\n` + (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
-  const m = globalThis.__api.shopModel(scene, handler);
+  console.log(`== ${label}\n` + drawShop({ ...m, wave: sc.wave, preview: previewNext(scene) }).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
   const a = m.audit;
   for (const f of a.findings) console.log(`${f.level === "high" ? "✗" : "·"} ${f.kind} ${f.text}${f.relearn ? ` ↺ ${f.relearn.move} over ${f.relearn.forget ?? "(free slot)"} +${f.relearn.gain}` : ""}`);
   console.log(`mushroom ${m.free.map(f => `${f.name}: ${f.v} ${f.why}`).join(" | ")}`);
-  const summary = globalThis.__api.hudSummary(m);
+  const summary = hudSummary(m);
   console.log(`summary ${summary.audit}`);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   sc.expect?.(a, m, summary);

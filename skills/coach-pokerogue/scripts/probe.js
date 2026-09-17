@@ -1,10 +1,13 @@
 // Runs in the PokéRogue page world. Read-only: presses nothing, writes nothing
 // to the game. Result is JSON on document.documentElement.dataset.mcpOut so an
 // isolated-world caller (Orion's `do JavaScript`) can pick it up from the DOM.
-// __MODE__ is replaced by read.sh with "battle" or "starters".
+// hud-bundle.mjs replaces the MODE literal with "battle" or "starters", and bundles the HUD modules imported here.
+import { TYPES } from "./hud/01-core.js";
+
 (() => {
   const MODE = "__MODE__";
-  const TYPES = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy","Stellar"];
+  // The HUD's TYPES are the type chart's eighteen. Stellar, a Tera type with no chart row, comes after them.
+  const typeName = t => TYPES[t] ?? (t === PokemonType.STELLAR ? "Stellar" : undefined);
   const STATS = ["hp","atk","def","spa","spd","spe"];
   let out;
   try {
@@ -35,12 +38,12 @@
       };
     } else {
       const CATS = ["Physical","Special","Status"];
-      const moveInfo = mv => ({ name: mv.name, type: TYPES[mv.type], power: mv.power, category: CATS[mv.category], accuracy: mv.accuracy });
+      const moveInfo = mv => ({ name: mv.name, type: typeName(mv.type), power: mv.power, category: CATS[mv.category], accuracy: mv.accuracy });
       const mon = p => ({
         name: p.name,
         lv: p.level,
         hp: `${p.hp}/${p.getMaxHp()}`,
-        types: p.getTypes().map(t => TYPES[t] ?? t),
+        types: p.getTypes().map(t => typeName(t) ?? t),
         ability: p.getAbility()?.name,
         passive: p.hasPassive?.() ? p.getPassiveAbility()?.name : null,
         stats: Object.fromEntries(STATS.map((k, i) => [k, p.getStat(i)])),

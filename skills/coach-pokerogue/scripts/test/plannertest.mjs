@@ -2,7 +2,7 @@
 //
 // The planner's numbers come from 10-damage (`moveOutcome(s)`, `endOfTurnHp`) and 20-enemy-ai
 // (`enemyMoveDistribution`, `predictSwitches`, `enemyAction`), which call real game code. A plain mock can't feed
-// those, and top-level consts in the one-IIFE bundle can't be redefined afterwards. So the "live" scenarios rewrite
+// those, and top-level consts in the bundle's shared scope can't be redefined afterwards. So the "live" scenarios rewrite
 // the bundle text: those definitions are renamed to `__real_*` and small stand-ins reading `globalThis.__stub` are
 // inserted before 30-planner, with the mocked scene in the CommandPhase. The "fallback" scenario runs the untouched
 // bundle outside the CommandPhase, where the planner must still render from the approximation.
@@ -26,16 +26,20 @@ const predictSwitches = (s, b, active) => globalThis.__stub.switches(active);
 const enemyAction = (s, e) => ({ kind: "move", dist: enemyMoveDistribution(s, e), tera: false });
 `;
 const liveBundle = () => {
-  let src = bundle("hud");
+  let src = bundle("hud", { expose: true });
   for (const n of STUBBED) {
     src = src.replace(new RegExp(`^(const|let|function)\\s+${n}\\b`, "m"), `$1 __real_${n}`);
     src = src.replace(/^const \{([^}]*)\}\s*=/gm, (all, names) => all.replace(names, names.replace(new RegExp(`(^|[,\\s])${n}(?=\\s*[,}]|\\s*$)`), `$1${n}: __real_${n}`)));
   }
   const at = src.indexOf("// ---- 30-planner.js");
   assert.ok(at > 0, "bundle has 30-planner.js");
-  src = src.slice(0, at) + STUBS + src.slice(at);
-  const end = src.lastIndexOf("})();");
-  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, koCurve, tokenActs, selfStages, setupRamp, koBoost, hudSummary };\n" + src.slice(end);
+  return src.slice(0, at) + STUBS + src.slice(at);
+};
+// The planner's pieces, from expose mode.
+const plannerApi = () => {
+  const { actionOrder, threatFrom, exchange, tokenActs, selfStages, setupRamp, koBoost } = globalThis.__hud["30-planner"];
+  return { actionOrder, threatFrom, exchange, koCurve: globalThis.__hud["10-damage"].koCurve, tokenActs, selfStages, setupRamp, koBoost,
+    hudSummary: globalThis.__hud["90-render"].hudSummary };
 };
 
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
@@ -140,6 +144,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(live ? liveBundle() : bundle("hud"));
+  if (live) globalThis.__planner = plannerApi();
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
   assert.ok(!el.textContent, `panel error: ${el.textContent}`);
   const lines = (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);

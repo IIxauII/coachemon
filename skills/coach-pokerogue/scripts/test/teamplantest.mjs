@@ -48,8 +48,9 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  // The planner lives inside the bundle's IIFE; expose it for the test only.
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__tp = { teamPlan, drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables };\n})();\n"));
+  eval(bundle("hud", { expose: true }));
+  const { teamPlan, tpHealProfile, tpSendScore, tpFight, tpTables } = globalThis.__hud["35-team-plan"];
+  globalThis.__tp = { teamPlan, drawTeamPlan: globalThis.__hud["95-render-team"].drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables };
   const plan = globalThis.__tp.teamPlan(scene, scene.currentBattle, party, foes);
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };

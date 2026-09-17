@@ -12,7 +12,7 @@ const timer = setInterval(timedTick, 1000);
 timedTick();
 window.__coachHud = {
   stop: () => { clearInterval(timer); el.remove(); delete window.__coachHud; },
-  stats: () => ({ breaches: sandboxBreaches, lastTickMs, maxTickMs }),
+  stats: () => ({ breaches: sandboxBreachCount(), lastTickMs, maxTickMs }),
   last: () => shown,
   summary: () => hudSummary(shown),
   // How the next-wave preview has actually scored this run: hits and misses per field, and the last wave it got

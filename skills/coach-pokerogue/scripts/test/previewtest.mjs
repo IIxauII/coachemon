@@ -197,8 +197,10 @@ const mount = opts => {
   globalThis.setInterval = () => 0;
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__pv = { previewFor, previewNext, previewCheck, previewStats, drawPreview, previewSummary };\n})();\n"));
-  return { scene, offsets, pv: globalThis.__pv };
+  eval(bundle("hud", { expose: true }));
+  const { previewFor, previewNext, previewCheck, previewStats } = globalThis.__hud["48-preview"];
+  const { drawPreview, previewSummary } = globalThis.__hud["98-render-preview"];
+  return { scene, offsets, pv: { previewFor, previewNext, previewCheck, previewStats, drawPreview, previewSummary } };
 };
 
 const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.double, levels: m.levels,

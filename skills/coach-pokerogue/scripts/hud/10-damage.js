@@ -40,7 +40,7 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
   const cached = (s, key, fn) => {
     const turn = turnKey(s);
     if (cache.key !== turn) cache = { key: turn, map: new Map() };
-    const k = `${key}|${hypothesisKey}`;
+    const k = `${key}|${activeHypothesisKey()}`;
     if (!cache.map.has(k)) cache.map.set(k, fn());
     return cache.map.get(k);
   };
@@ -694,7 +694,7 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     // A predicted Tera is set and taken back off around parts of a refresh (20-enemy-ai), and it changes types,
     // STAB and Tera Blast's type: both sides' flags belong in the key.
     const key = [atk.id, atk.hp, def.id, def.hp, atk.moveset.indexOf(pm), pm.getMove().id, !!opts.aiView, opts.crit,
-      !!atk.isTerastallized, !!def.isTerastallized, hypothesisKey].join("|");
+      !!atk.isTerastallized, !!def.isTerastallized, activeHypothesisKey()].join("|");
     if (cache.map.has(key)) return cache.map.get(key);
     let out;
     try {

@@ -78,15 +78,14 @@ globalThis.Phaser = {
   Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } },
   Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene } } } }] } } },
 };
-globalThis.document = { documentElement: { dataset: {} } };
-// The bundle up to the team plan, exposing the engine instead of starting the panel.
-const src = (() => {
-  const full = bundle("hud");
-  const at = full.indexOf("// ---- 40-learn.js");
-  return `${full.slice(0, at)}\nglobalThis.__engine = { moveOutcome, moveOutcomes, enemyMoveDistribution, threatFrom, exchange, duel, fieldPlan, actChance, tpFight, TRAPS };\n})();\n`;
-})();
-eval(src);
-const E = globalThis.__engine;
+// The panel starts too, with nothing to show: the scene has no UI.
+globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: () => ({ style: {}, addEventListener() {} }) };
+globalThis.setInterval = () => 0;
+eval(bundle("hud", { expose: true }));
+const hud = globalThis.__hud;
+const E = { moveOutcome: hud["10-damage"].moveOutcome, moveOutcomes: hud["10-damage"].moveOutcomes, enemyMoveDistribution: hud["20-enemy-ai"].enemyMoveDistribution, threatFrom: hud["30-planner"].threatFrom,
+  exchange: hud["30-planner"].exchange, duel: hud["30-planner"].duel, fieldPlan: hud["30-planner"].fieldPlan, actChance: hud["30-planner"].actChance,
+  tpFight: hud["35-team-plan"].tpFight, TRAPS: hud["01-core"].TRAPS };
 // Fresh field for each case: the turn number keys every per-turn cache.
 const setup = (ours, foes) => {
   party = ours; enemies = foes;
