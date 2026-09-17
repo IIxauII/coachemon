@@ -19,10 +19,12 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.1",
     "typescript": "^5.9.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "ws": "^8.21.3",
     "zod": "^4.6.2"
   }
 }

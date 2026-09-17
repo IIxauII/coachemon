@@ -148,6 +148,8 @@ server.registerTool(
       const data = await driver.screenshot();
       return { content: [{ type: "image" as const, data, mimeType: "image/png" }] };
     } catch (e) {
+      // `unavailable` when the transport has no screenshot at all: a store build of Coachemon has no dev table (§12.2).
+      if (e instanceof Refusal) return json({ error: e.code, message: e.message, ...e.detail }, true);
       return json({ error: "screenshot_failed", message: (e as Error).message }, true);
     }
   },

@@ -10,10 +10,10 @@ import { CALL_BUDGET_MS } from "./settle.ts";
 // `money` joins Ready with #38; spread so this fixture compiles with and without it.
 const money = { money: 1000 };
 
-/** A Driver on a scripted screen, with the fake's clock and lock. */
+/** A Driver on a scripted screen, with the fake's clock. */
 function drive(screen: FakeScreen) {
   const fake = fakeGame(screen);
-  return { ...fake, driver: new Driver(fake.game, fake.lock, fake.clock) };
+  return { ...fake, driver: new Driver(fake.game, fake.clock) };
 }
 
 /**
@@ -641,7 +641,7 @@ test("an acting call that runs out of budget on a MESSAGE waiting for ACTION say
  * The guards every acting call passes before its first press (#126 left them in the Driver). Unless `onPress` is given
  * the screen scripts no press: a guard that let the call through fails the test with `unexpected press`.
  */
-function guardedTab(over: Pick<FakeScreen, "lockHolder" | "frame" | "menu" | "onPress" | "onRawKey"> & { mode?: number; screen?: string } = {}) {
+function guardedTab(over: Pick<FakeScreen, "lockHolder" | "frame" | "menu" | "onPress" | "onRawKey" | "pumps" | "unreachable"> & { mode?: number; screen?: string } = {}) {
   const mode = over.mode ?? UiMode.COMMAND;
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode, screen: over.screen ?? "COMMAND", phaseName: "CommandPhase", wave: 5, turn: 1, runLive: true, tutorialActive: false,
@@ -721,6 +721,57 @@ test("an acting call refuses loop_frozen when the frame does not advance across 
   const r = await outcome(tab.driver.press("ACTION", {}));
   assert.equal(r.error, "loop_frozen", JSON.stringify(r));
   assert.equal(r.frame, 7);
+});
+
+test("a transport whose settles pump has no frozen loop to refuse (§10.3, §12.2)", async () => {
+  const presses: number[] = [];
+  // The fingerprint never moves on this scripted screen, so the press takes §6.4's one raw-keyboard retry.
+  const tab = guardedTab({ pumps: true, frame: () => 7, onPress: b => { presses.push(b); }, onRawKey: () => true, menu: () => commandMenu(0) });
+  const r = await outcome(tab.driver.press("ACTION", {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.deepEqual(presses, [Button.ACTION]);
+});
+
+test("every tool refuses with the failing rung's line before it reads anything (§12.2, §12.3)", async () => {
+  const unreachable = { code: "unreachable" as const, rung: 7, line: "Coachemon is connected, but no pokerogue.net tab is ready. Open or reload pokerogue.net." };
+  // No `read` is scripted: a tool that got as far as settling would fail with `unexpected read`.
+  const tab = drive({ unreachable });
+  for (const call of [tab.driver.getState("lean", {}), tab.driver.readMenu({}), tab.driver.press("ACTION", {}), tab.driver.selectOption("Fight", undefined, undefined, {})]) {
+    const r = await outcome(call);
+    assert.equal(r.error, "unreachable", JSON.stringify(r));
+    assert.equal(r.rung, 7);
+  }
+});
+
+test("more than one tab refuses `tabs` with the list, and a missing command refuses alone (§7.5, §8.5)", async () => {
+  const tabs = [{ conn: 1, tab: 1, target: "chrome" as const, title: "PokéRogue", state: "ready" as const }];
+  const many = drive({ unreachable: { code: "tabs", rung: 8, line: "2 pokerogue.net tabs are open (Chrome: PokéRogue; Firefox: PokéRogue). Close all but one.", tabs } });
+  const r = await outcome(many.driver.getState("lean", {}));
+  assert.equal(r.error, "tabs", JSON.stringify(r));
+  assert.deepEqual(r.tabs, tabs);
+
+  const short = drive({ unreachable: { code: "missing_command", rung: 4, line: "Coachemon 1.0.0 in Chrome is too old for this plugin. Update the extension." } });
+  const s = await outcome(short.driver.readMenu({}));
+  assert.equal(s.error, "missing_command", JSON.stringify(s));
+});
+
+test("status reports reachability, the transport's own facts and the game, and answers when nothing is reachable (§12.3)", async () => {
+  const tab = guardedTab();
+  const ok = await tab.driver.status();
+  assert.equal(ok.reachable, true);
+  assert.equal(ok.reach, null);
+  assert.equal(ok.attached, true, "the transport's facts ride along");
+  assert.equal(ok.screen, "COMMAND");
+  assert.equal(ok.wave, 5);
+  assert.equal(ok.game_version, "1.12.0.11");
+
+  const reach = { code: "unreachable" as const, rung: 3, line: "No browser has Coachemon connected." };
+  const out = await drive({ unreachable: reach }).driver.status();
+  assert.equal(out.status, "ok", "status answers rather than refusing: it is the tool that says why");
+  assert.equal(out.reachable, false);
+  assert.deepEqual(out.reach, { rung: 3, line: reach.line });
+  assert.equal(out.screen, "UNKNOWN(-1)");
+  assert.equal(out.run_live, false);
 });
 
 test("a press decided on a screen the game has since left refuses game_moved, pressing nothing (§10.2)", async () => {

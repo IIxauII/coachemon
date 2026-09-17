@@ -9,12 +9,9 @@
  * With `guardFine` the fake checks acts the way the page does (§10.2): an act whose fingerprint is not the screen's
  * current one refuses `moved` without reaching the screen, and a cursor act answers the fingerprint it left.
  */
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import type { Lock } from "../cdp/lock.ts";
 import type { Clock } from "../driver.ts";
 import type { Button } from "../enums/generated.ts";
+import type { Reach } from "../hub/ladder.ts";
 import type { Act, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** A predicate read as a screen gives it: the fake stamps the frame. */
@@ -32,8 +29,12 @@ export type FakeScreen = {
   /** Replaces the advancing frame counter: a constant freezes the loop. */
   frame?: () => number | null;
   snapshot?: (d: SnapshotDetail) => Record<string, unknown>;
-  /** Another live process holding the driver lock. */
+  /** Another live process holding the driver lock: this fake's claim is refused, as the CDP link's is (§7.5). */
   lockHolder?: number;
+  /** The transport's settles pump, so no acting call checks the frame for a frozen loop (§10.3). */
+  pumps?: boolean;
+  /** Nothing can reach the game: every tool refuses with this rung's line before it reads anything (§12.3). */
+  unreachable?: Reach;
   /** Acts refuse `moved` off the screen's current fingerprint, as the page does. */
   guardFine?: boolean;
 };
@@ -75,9 +76,14 @@ export function fakeGame(screen: FakeScreen) {
     snapshot: async d => ({ ok: true, snapshot: screen.snapshot?.(d) ?? {} }),
     rawKey: async b => (screen.onRawKey ?? unexpected("rawKey"))(b),
     keepAlive: async () => {},
-    attach: async () => ({ attached: true, launchedChrome: false }),
+    pumps: screen.pumps ?? false,
+    presence: async () => (screen.unreachable ? { reach: screen.unreachable, facts: {} } : { reach: null, facts: { attached: true } }),
+    claim: async () =>
+      screen.lockHolder === undefined
+        ? { ok: true }
+        : { ok: false, code: "tab_contended", message: `Another driver (pid ${screen.lockHolder}) holds the tab. Nothing was pressed.`, detail: { holder: screen.lockHolder } },
     screenshot: async () => "",
-    consoleTail: () => [],
+    tail: async () => [],
     onRejection: cb => {
       rejection = cb;
     },
@@ -93,18 +99,8 @@ export function fakeGame(screen: FakeScreen) {
   return {
     game,
     clock,
-    lock: screen.lockHolder === undefined ? { path: "/nonexistent/driver.lock", contended: false, holder: null } : heldLock(screen.lockHolder),
     now: () => t,
     /** Fire the page's unhandled rejection at `at`. */
     reject: (at: number) => rejection?.(at),
   };
-}
-
-/** A lock file naming `pid` as the holder, removed when the test process exits. */
-function heldLock(pid: number): Lock {
-  const dir = mkdtempSync(path.join(tmpdir(), "pokerogue-mcp-lock-"));
-  const file = path.join(dir, "driver.lock");
-  writeFileSync(file, JSON.stringify({ pid }));
-  process.once("exit", () => rmSync(dir, { recursive: true, force: true }));
-  return { path: file, contended: false, holder: null };
 }

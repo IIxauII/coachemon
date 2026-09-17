@@ -24,10 +24,12 @@ function stubLink(answers: Partial<Record<keyof GameLink, (args: any) => unknown
     cursorStarter: method("cursorStarter"), cursorLearn: method("cursorLearn"), modal: method("modal"), screenshot: method("screenshot"),
   } as unknown as GameLink;
   const tab: Tab = {
-    attach: async () => ({ attached: true, launchedChrome: false }),
+    pumps: false,
+    presence: async () => ({ reach: null, facts: { attached: true } }),
+    claim: async () => ({ ok: true }),
     keepAlive: async () => {},
     rawKey: async () => true,
-    consoleTail: () => [],
+    tail: async () => [],
     onRejection: () => {},
   };
   return { game: new LinkGame(link, tab), sent, tab };

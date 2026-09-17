@@ -8,7 +8,8 @@
  * exception and console events.
  */
 import { Button } from "../enums/generated.ts";
-import type { Fault, GameLink, Tab } from "../game/link.ts";
+import type { Claim, Fault, GameLink, Presence, Tab } from "../game/link.ts";
+import { lockContended, type Lock } from "./lock.ts";
 import { disc } from "../page/disc.ts";
 import { dispatch } from "../page/dispatch.ts";
 import type { ConsoleLine } from "../page/errors.ts";
@@ -40,10 +41,14 @@ const PREFIX = Object.fromEntries(
 
 export class CdpLink implements GameLink, Tab {
   readonly commands: ReadonlySet<CommandName> = new Set(COMMAND_NAMES);
+  /** CDP reads never advance a frozen loop: the guard still checks the frame and refuses `loop_frozen` (#23, §10.3). */
+  readonly pumps = false;
   readonly #session: LinkSession;
+  readonly #lock: Lock | null;
 
-  constructor(session: LinkSession) {
+  constructor(session: LinkSession, lock: Lock | null = null) {
     this.#session = session;
+    this.#lock = lock;
   }
 
   /** Every command attaches first: attach-else-launch is the session's, and idempotent. */
@@ -73,9 +78,35 @@ export class CdpLink implements GameLink, Tab {
 
   // ------------------------------------------------------------------ tab
 
-  async attach(): Promise<{ attached: boolean; launchedChrome: boolean }> {
-    await this.#session.ensure();
-    return { attached: this.#session.attached, launchedChrome: this.#session.launchedChrome };
+  /**
+   * Attach-else-launch is this transport's whole reachability: there is no hub, no browser list and no tab count, so
+   * none of the ladder's rungs can be evaluated and a tab that will not attach is simply not there (§12.3).
+   */
+  async presence(): Promise<Presence> {
+    let error: string | null = null;
+    try {
+      await this.#session.ensure();
+    } catch (e) {
+      error = (e as Error).message;
+    }
+    const contended = this.#contention();
+    const attached = error === null && this.#session.attached;
+    return {
+      reach: attached ? null : { code: "unreachable", rung: null, line: error ?? "The server is not attached to a PokéRogue tab." },
+      facts: { attached, error, tab_contended: contended.contended, lock_holder: contended.holder, chrome_launched_by_server: this.#session.launchedChrome },
+    };
+  }
+
+  /** The pidfile lock is CDP's driver grant, and stays until the flip deletes this link (§7.5, §13.2). */
+  async claim(): Promise<Claim> {
+    const c = this.#contention();
+    if (!c.contended) return { ok: true };
+    return { ok: false, code: "tab_contended", message: `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, detail: { holder: c.holder } };
+  }
+
+  /** Whether another live driver holds the lock; with no lock (a test, a second link) nothing is contended. */
+  #contention(): { contended: boolean; holder: number | null } {
+    return this.#lock ? lockContended(this.#lock) : { contended: false, holder: null };
   }
 
   async keepAlive(): Promise<void> {
@@ -91,7 +122,8 @@ export class CdpLink implements GameLink, Tab {
     return true;
   }
 
-  consoleTail(): ConsoleLine[] {
+  /** CDP's own console events, already collected: nothing is asked of the page (§12.4). */
+  async tail(): Promise<ConsoleLine[]> {
     return this.#session.consoleTail();
   }
 

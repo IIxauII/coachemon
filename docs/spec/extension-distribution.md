@@ -382,7 +382,7 @@ All frames are JSON text messages. Types live in `src/protocol/wire.ts`. `PRODUC
 | hub → client | `{"t":"welcome","product":"coachemon-hub","protocol":1,"version":"<plugin version>"}` |
 | client → hub | `{"t":"retire"}` (§7.3) |
 | client → hub | `{"t":"claim"}` → `{"t":"claimed","ok":true}` or `{"t":"claimed","ok":false,"code":"contended"}` |
-| client → hub | `{"t":"state"}` → `{"t":"state","extensions":[{"conn":1,"target":"firefox","version":"1.2.0","flavour":"store","protocol":1,"consent":false}],"tabs":[{"conn":1,"tab":123,"target":"firefox","title":"PokéRogue","state":"ready"}],"driver":"you"\|"other"\|null}` |
+| client → hub | `{"t":"state"}` → `{"t":"state","extensions":[{"conn":1,"target":"firefox","version":"1.2.0","flavour":"store","protocol":1,"consent":false,"commands":["probe",…]}],"tabs":[{"conn":1,"tab":123,"target":"firefox","title":"PokéRogue","state":"ready"}],"driver":"you"\|"other"\|null}` |
 | client → hub | `{"t":"cmd","id":5,"name":"press","args":{…}}` |
 | hub → client | `{"t":"reply","id":5,"ok":true,"result":{…}}` or `{"t":"reply","id":5,"ok":false,"code":"<hub or relay code>","message":"…","tabs":[…]}` |
 | client → hub | `{"t":"subscribe"}` |

@@ -91,6 +91,12 @@ The one local process on a machine that the browser extension connects to. Every
 
 Never called the *host*: Apple's *host app* is the browser that hosts an extension, the opposite sense.
 
+## Reach
+
+Whether anything can be asked of a game tab at all, and when it cannot, the one thing standing in the way. The obstacles are ordered — no **hub**, no browser, an extension too old, a browser still waiting for the player's consent, no tab, more than one tab — and the first one that applies is the only one reported, because fixing it is what uncovers the next. Every tool checks reach before it does anything else, and refuses with the same words the player would read from a status check.
+
+The ordered steps here are also called **rungs**, as on the **escape ladder**, but the two ladders are unrelated: an escape ladder's rungs are presses that leave a menu, a reach's rungs are things wrong between a process and the game.
+
 ## Command
 
 One step the **hub** carries to a game tab: either a read or an act, each a single look at the game or a single input to it. The set of commands is closed, fixed by the extension a player installed, and nothing else can be sent. A tool call issues many commands, and all the waiting, walking and judging between them belongs to the process that issued them. Only acts need the **driver**.
