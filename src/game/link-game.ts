@@ -80,15 +80,12 @@ export class LinkGame implements GamePort {
   }
 
   async starters(): Promise<StarterGrid | Failed> {
-    const r = await this.#link.starters();
-    if (isFault(r)) return { ok: false, why: r.message };
-    return r.ok ? r : { ok: false, why: String(r.why) };
+    return answered(await this.#link.starters());
   }
 
   async card(): Promise<CardRead | Failed> {
-    const r = await this.#link.card();
-    if (isFault(r)) return { ok: false, why: r.message };
-    return r.ok ? r : { ok: false, why: String(r.why) };
+    // `no-hud` is the page's own refusal (§10.1), so it degrades like any other unreadable read.
+    return answered<CardRead>(await this.#link.card());
   }
 
   async snapshot(detail: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed> {
@@ -131,6 +128,12 @@ export class LinkGame implements GamePort {
   onRejection(cb: (t: number) => void): void {
     this.#tab.onRejection(cb);
   }
+}
+
+/** A read the Driver takes whole: a command that never got an answer and one the page refused both degrade to `Failed`. */
+function answered<T extends { ok: true }>(r: T | Unready | Fault): T | Failed {
+  if (isFault(r)) return { ok: false, why: r.message };
+  return r.ok ? r : { ok: false, why: String(r.why) };
 }
 
 function unreadable(why: string, mode: number): MenuRead {
