@@ -514,8 +514,8 @@ The check is `Arena.isMoveTerrainCancelled` (`src/field/arena.ts:487`, pure), ca
 Net effect: **pure**. It forks the seed and moves neither the global nor the battle stream, and the speed read is simulated.
 A speed tie is therefore **not a coin flip**. `waveSeed`, the turn, the number of groups and the input order fix the result,
 and the function is exported. In singles, the first pop sorts the two MovePhases in field order (player, then enemy).
-So `sortInSpeedOrder([playerMon, enemyMon])` at the command prompt, with the same `currentBattle.turn`, should name the tie winner.
-This has not been checked on a live tab (#158).
+So `sortInSpeedOrder([playerMon, enemyMon])` at the command prompt, with the same `currentBattle.turn`, names the tie winner.
+Checked once on a live tab (#158): a forced tie in a double, the list in field order (player slots, then enemy slots), named the order the moves ran in.
 
 To rank moves before the turn, use the key `[priority, bracket, speed]`. Speed is `getEffectiveStat(Stat.SPD)` (`pokemon.ts:1456`), which includes
 stat items, speed abilities, Tailwind ×2, Grass/Water Pledge ×¼, Slow Start ½, paralysis ½ and Unburden ×2 (`:1543-1560`).
@@ -620,9 +620,14 @@ command prompt and `EnemyCommandPhase` in a single battle, nothing draws from it
 - the switch check before `getNextMove` uses only a seed fork (§7).
 
 So `getNextMove()` at the command prompt, inside `sandbox` with `summonData.moveQueue` saved and restored, returns
-**the move and target the enemy will use**, not a sample (issue #158). That is verified from source only, not on a
-live tab. The exceptions:
-- **Doubles:** slot 0's draws, and our random-target moves, move the stream first.
+**the move and target the enemy will use**, not a sample. Checked on a live tab (#158): 69 of 69 enemy moves over
+waves 1–12, move and target, singles 32 and doubles 37, wild, trainer and boss, with no sandbox breach and the battle
+stream at the real call equal to the stream the prediction started from. That includes a queued move and picks the
+distribution gave 4–5 %. In doubles it holds when every foe is called **in field order inside one sandbox**, so slot 1's
+call sees slot 0's draws. The exceptions:
+- **Our random-target moves** (`RANDOM_NEAR_ENEMY` with two or more opponents) draw in our `CommandPhase` first. On a live
+  tab one such draw changed the pick (Charm → Absorb), and a prediction replayed after the same draw matched. Predict per
+  candidate command: make that draw, then call `getNextMove`.
 - **Present:** its power draws the *global* stream (`randSeedInt`, `src/data/moves/move.ts:5165`), which the prompt
   can't pin down.
 - **Payback into a ball command** (above).
@@ -746,10 +751,10 @@ Moved to §21.
 
 - `EnemyPokemon.getNextMove()` (`pokemon.ts:6560`) draws from the battle RNG and splices or clears `summonData.moveQueue` (`:6570`, `:6576`).
   It also calls `getNextTargets` (`:6808`), which draws from the battle RNG. If you call it inside the sandbox, save and restore `moveQueue` as well.
-  At the command prompt in singles, a sandboxed call should reproduce the move `EnemyCommandPhase` picks
+  At the command prompt, a sandboxed call reproduces the move `EnemyCommandPhase` picks
   (`src/phases/enemy-command-phase.ts:91`) rather than a random sample. The battle stream re-sows from `battleSeed` and the turn
   whenever `battleSeedState` is null (`src/battle.ts:491-509`), and `TurnEndPhase` nulls it (`:175`). A trainer's switch
-  check runs first. This has not been checked on a live tab (#158).
+  check runs first. Checked on a live tab (#158, §6); the exceptions are listed there.
 - `Pokemon.getCriticalHitResult` (`pokemon.ts:3821`) draws from the battle RNG (`:3836`).
 - `Pokemon.damage` (`:3863`), `damageAndUpdate` (`:3910`) and `heal` (`:3963`) write HP, run endure and Focus Band, and queue faint or animation phases.
   `EnemyPokemon.damage` (`:6918`) also breaks boss bars. The private `handleBossSegmentCleared` draws from the global RNG and queues a stat change.
@@ -822,7 +827,7 @@ Game calls are cited where they're named; unmarked names are HUD functions.
   - attack moves × `target.getMoveEffectiveness(e, move, !target.waveData.abilityRevealed, undefined, undefined, true)` (the trailing `true` is `useIllusion`, `pokemon.ts:6712-6719`);
   - STAB ×1.5 via `e.isOfType(move.type)`, which checks the base move type, not `getMoveType`;
   - divided instead for an ally target.
-- `enemyMoveDistribution(s, e)` → `[{ pm, move, targets: [{battlerIndex, p}], p, score }]` (§6 algorithm: move queue, Struggle, Encore, `aiType` RANDOM / SMART_RANDOM / SMART = 0/1/2 from `src/enums/ai-type.ts`, Protect branch). Cache it per turn key. `EnemyPokemon.getNextMove()` (`pokemon.ts:6560`) draws battle RNG and rewrites `summonData.moveQueue` (`:6563-6576`). In singles at the command prompt, a sandboxed call returns the move the enemy actually picks, not a sample: the battle seed is re-sown each turn and nothing draws before `EnemyCommandPhase` (#158). The distribution is for doubles and for later turns.
+- `enemyMoveDistribution(s, e)` → `[{ pm, move, targets: [{battlerIndex, p}], p, score }]` (§6 algorithm: move queue, Struggle, Encore, `aiType` RANDOM / SMART_RANDOM / SMART = 0/1/2 from `src/enums/ai-type.ts`, Protect branch). Cache it per turn key. `EnemyPokemon.getNextMove()` (`pokemon.ts:6560`) draws battle RNG and rewrites `summonData.moveQueue` (`:6563-6576`). At the command prompt, a sandboxed call returns the move the enemy actually picks, not a sample: the battle seed is re-sown each turn and, unless one of our commands draws a random target, nothing draws before `EnemyCommandPhase` (#158, checked live in singles and doubles). The distribution is for later turns and for turns where our command draws.
 - `aiReplay(s, e, target, { hp })` → rows like `enemyMoveDistribution`'s, without targets: `getNextMove` replayed against one of our mons, which needn't be on the field (§6), status moves included. Sandbox per call.
 - `predictSwitches(s, b, active)` mirrors `EnemyCommandPhase.start` (`src/phases/enemy-command-phase.ts:36-106`). A trainer mon that isn't trapped (`isTrapped`) and has an empty move queue switches when `best bench score × (1 − 0.1^(1/enemySwitchCounter)) ≥ avg own score × (isBoss ? 2 : 3)`, sending `getNextSummonIndex`. The counter goes +1 on a switch and −1 (floor 0) on a move. Keep it, run it in `sandbox`, and sequence the counter across doubles slots. A Commander Tatsugiri's command carries `skip` (`skipTurn`, `:40-46`), and `TurnStartPhase` drops that command (`src/phases/turn-start-phase.ts:84`).
 - `enemyAction(s, e)` → `{ kind: 'switch', to } | { kind: 'move', dist, tera: b.trainer?.shouldTera(e) ?? false }`. `Trainer.shouldTera` (`src/field/trainer.ts:784-795`, pure) is true in INSTANT_TERA mode for a listed `initialTeamIndex` that isn't yet Terastallized and hasn't fainted.
@@ -1910,8 +1915,8 @@ Facts about the served build at `https://pokerogue.net`, not the source. Most of
 **Unverified on a live tab.**
 - Whether a chunk exports `calculateBossSegmentDamage` or only inlines it into `EnemyPokemon.damage` (#134 §7.1
   suggests calling it through `EnemyPokemon.prototype.damage` on a stub).
-- Whether a sandboxed `getNextMove()` at the command prompt returns the enemy's actual singles choice (§6), and
-  whether `sortInSpeedOrder([player, enemy])` reproduces the queue's tie grouping (§5) — both source-verified only (#158).
+- Whether a speed tie with priority or Quick Claw in play still follows `sortInSpeedOrder` at the prompt (§5): #158
+  checked one plain tie. Present and Payback into a ball command (§6) weren't met.
 - Whether `regenerateModifierPoolThresholds` / `getPlayerModifierTypeOptions` are found under those names (§19),
   whether every generated reward type exposes `nature` / `stat` / `key` / `berryType` / `teraType` as plain
   properties (§15), and whether Beast Boost's `changes` and `HitHealAttr.healRatio` read under those names (§18).
