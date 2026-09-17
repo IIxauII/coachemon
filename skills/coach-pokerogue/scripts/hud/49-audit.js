@@ -272,3 +272,12 @@ const { teamAudit, relearnBest } = (() => {
 
   return { teamAudit, relearnBest };
 })();
+
+// `4 issues: Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon …`, what loses
+// fights first.
+const auditSummary = a => {
+  const found = a?.findings ?? [];
+  if (!found.length) return null;
+  const text = f => `${f.text}${f.relearn ? ` (relearn ${f.relearn.move}${f.relearn.forget ? ` over ${f.relearn.forget}` : ""})` : ""}`;
+  return `${found.length} issue${found.length === 1 ? "" : "s"}: ${found.slice(0, 3).map(text).join("; ")}`;
+};

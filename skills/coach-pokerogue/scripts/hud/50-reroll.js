@@ -139,3 +139,16 @@ const { rerollPreview, rerollCheck, rerollStats } = (() => {
 
   return { rerollPreview, rerollCheck, rerollStats };
 })();
+
+// ---- How the card and its one-line summary word a roll. Every line is `~`: it holds while nothing else draws from
+// the stream before the press; `!` once a reroll this run came out different from its preview.
+const rerollMark = r => (r.missed ? "!" : "~");
+const rerollLabel = (r, roll) => (!r.canLock ? "reroll" : roll.lock === r.locked ? (roll.lock ? "reroll locked" : "reroll")
+  : roll.lock ? "lock, reroll" : "unlock, reroll");
+
+// `reroll $500 → Leftovers, TM Crunch, Revive (reroll) [~]`, for the watcher and the rewards read.
+const rerollSummary = m => {
+  const r = m.rerollAhead;
+  if (!r) return null;
+  return r.rolls.map(roll => `${rerollLabel(r, roll)} $${roll.cost} → ${roll.offers.map(f => f.name).join(", ")} (${roll.verdict}) [${rerollMark(r)}]`).join(" · ");
+};

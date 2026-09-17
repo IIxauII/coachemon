@@ -217,3 +217,17 @@ export const fusionModel = (s, h) => {
     better: picked && best?.fuse && (!rows[0] || best.value > rows[0].value + 2) ? best : null,
   };
 };
+
+// ---- How the card and its one-line summary word a fusion.
+export const signed = n => `${n >= 0 ? "+" : "−"}${Math.abs(n)}`;
+export const fusionCall = m => {
+  const top = m.rows[0];
+  if (!top) return m.picked ? `nothing to fuse ${m.picked.name} with` : "no two members can be fused";
+  if (m.better) return `back out: ${m.better.base.name} ← ${m.better.other.name} is better (${signed(m.better.value)})`;
+  if (!top.fuse) return "no fusion worth a member — back out, the Splicer stays unspent";
+  return m.picked ? `then pick ${top.other.name}` : `pick ${top.base.name} first, then ${top.other.name}`;
+};
+
+// `Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite`, for the watcher and the battle read.
+export const fusionSummary = m =>
+  [m.rows[0] ? `${m.rows[0].base.name} ← ${m.rows[0].other.name} (${signed(m.rows[0].value)})` : null, fusionCall(m)].filter(Boolean).join(" · ");

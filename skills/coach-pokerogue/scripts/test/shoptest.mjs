@@ -434,9 +434,9 @@ const scenarios = {
       assert.equal(log.filter(x => x[0] === "regenerate" && x[2] === 1).length, 2, "each roll regenerates for reroll 1");
       assert.equal(console.log, sc.consoleLog, "console restored");
       const before = log.length;
-      api.shopModel(scene, scene.ui.getHandler());
+      api.rewardsModel(scene, scene.ui.getHandler());
       assert.equal(log.length, before, "an unchanged screen is served from the cache");
-      assert.match(api.hudSummary(m).rewards, /reroll \$250 → .* \(reroll\) \[~\]/);
+      assert.match(api.cardSummary(m).rewards, /reroll \$250 → .* \(reroll\) \[~\]/);
 
       // The player rerolls: the new phase shows exactly the previewed offers — a hit.
       const rolled = sc.pool.filter(t => plain.offers.some(f => f.name === t.name));
@@ -447,15 +447,15 @@ const scenarios = {
       assert.deepEqual([api.rerollStats().hit, api.rerollStats().miss], [1, 0]);
       // Read again on the new screen, then a reroll that comes out different — a miss, marked `!` from then on.
       Phaser.Math.RND._s = "!rnd,7";
-      assert.equal(api.shopModel(scene, scene.ui.getHandler()).rerollAhead.missed, false);
+      assert.equal(api.rewardsModel(scene, scene.ui.getHandler()).rerollAhead.missed, false);
       const third = new SelectModifierPhase(2, [0, 0, 0]);
       third.typeOptions = [0, 1, 2].map(() => ({ type: { name: "Nope", tier: 0 } }));
       scene.phase = third;
       api.rerollCheck(scene);
       assert.deepEqual([api.rerollStats().hit, api.rerollStats().miss], [1, 1]);
-      const m3 = api.shopModel(scene, scene.ui.getHandler());
+      const m3 = api.rewardsModel(scene, scene.ui.getHandler());
       assert.equal(m3.rerollAhead.missed, true);
-      assert.match(api.hudSummary(m3).rewards, /\[!\]/);
+      assert.match(api.cardSummary(m3).rewards, /\[!\]/);
     } },
   // A good screen and little money: the reroll is read, but keeping the screen wins, and the locked roll can't be paid.
   "reroll keep": { wave: 14, money: 400, party: [snorlax(), jolteon()], modifiers: [new LockModifierTiersModifier()],
@@ -519,9 +519,10 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   const hud = globalThis.__hud;
-  const { shopModel } = hud["50-shop"], { rerollCheck, rerollStats } = hud["50-reroll"], { hudSummary, tick } = hud["90-render"];
-  globalThis.__sm = shopModel;
-  globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, shopModel, rerollCheck, rerollStats, hudSummary,
+  const { rewardsModel } = hud["50-shop"], { rerollCheck, rerollStats } = hud["50-reroll"];
+  const { cardSummary } = hud["60-card"], { tick } = hud["98-tick"];
+  globalThis.__sm = rewardsModel;
+  globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollCheck, rerollStats, cardSummary,
     setRewardFns: hud["47-biome"].setRewardFns, tick };
   // The chunk scan finds nothing under node: hand the reroll preview its functions, and draw the card again.
   if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }

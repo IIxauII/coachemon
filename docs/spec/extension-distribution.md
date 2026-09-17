@@ -567,12 +567,12 @@ Bump when removing a command, renaming one, or changing what an existing argumen
 
 ### 11.1 The `card` event
 
-- **The HUD pushes a `card` event whenever the card it shows changes**: a new decision, or a changed verdict. It dispatches `coachemon:card` from `hud/99-start.js`'s tick, deduplicated on `key` + `verdict`.
+- **The HUD pushes a `card` event whenever the card it shows changes**: a new decision, or a changed verdict. It dispatches `coachemon:card` from `hud/98-tick.js`'s tick, deduplicated on `key` + `verdict`.
 - Fields:
-  - `kind`: `battle`, `learn`, `reward`, `biome` or `encounter` (the HUD model's `shop` is sent as `reward`).
+  - `kind`: `battle`, `learn`, `reward`, `biome` or `encounter` (the HUD's `rewards` card is sent as `reward`).
   - `key`: the dedupe key the HUD already derives per kind (wave for a battle; wave + pokémon + move for learn; wave + free reward names for rewards; wave for a biome choice; wave + encounter for an encounter).
   - `wave`.
-  - `verdict`: for a battle, the glossary's **verdict** (`easy`, `trainer`, `danger`, `catch`, `fight`); for other kinds, the leading call of the matching field of `hudSummary()` as the HUD already writes it (the learn call, the rewards line's first clause, the biome pick, the encounter's `take …`, `your call` or `not judged`).
+  - `verdict`: for a battle, the glossary's **verdict** (`easy`, `trainer`, `danger`, `catch`, `fight`); for other kinds, the leading call of the matching field of `cardSummary()` as the HUD already writes it (the learn call, the rewards line's first clause, the biome pick, the encounter's `take …`, `your call` or `not judged`).
   - `text`: **the card's own plain-text rendering**, produced by a new `cardText(model)` in the HUD's render layer from the same model the panel draws, so the stream and the drawn card share one source.
 - A HUD failure dispatches `coachemon:coach-error` once per distinct message.
 - **Late join:** a subscriber issues a `card` read right after subscribing.

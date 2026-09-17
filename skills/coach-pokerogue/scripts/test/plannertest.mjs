@@ -41,7 +41,7 @@ const liveBundle = () => {
 const plannerApi = () => {
   const { actionOrder, threatFrom, exchange, tokenActs, selfStages, setupRamp, koBoost } = globalThis.__hud["30-planner"];
   return { actionOrder, threatFrom, exchange, koCurve: globalThis.__hud["10-damage"].koCurve, tokenActs, selfStages, setupRamp, koBoost,
-    hudSummary: globalThis.__hud["90-render"].hudSummary };
+    cardSummary: globalThis.__hud["60-card"].cardSummary };
 };
 
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
@@ -864,7 +864,7 @@ Object.assign(TABLE, {
 // danger level, naming the foe the fight plan saves that mon for, and the fight plan's verdict comes along — Guzma's
 // turn 1, where Mamoswine acts once and then falls to Iron Head.
 {
-  const { hudSummary } = globalThis.__planner;
+  const { cardSummary } = globalThis.__planner;
   const threat = (level, after) => ({ level, after, from: "Mega Golisopod", move: "Iron Head" });
   const m = {
     kind: "battle", wave: 165, trainer: true, rows: [],
@@ -875,10 +875,10 @@ Object.assign(TABLE, {
       warnings: ["likely lost: nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat", "Mamoswine goes down before Buzzwole comes in"],
     },
   };
-  const sum = hudSummary(m);
+  const sum = cardSummary(m);
   console.log(`== summary\n${JSON.stringify({ danger: sum.danger, plan: sum.plan })}`);
   assert.deepEqual(sum.danger, [{ mon: "Mamoswine", from: "Mega Golisopod", move: "Iron Head", level: "after", saveFor: "Xurkitree" }]);
   assert.equal(sum.plan, "likely lost · ☠ Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in");
   // A plain ⚠ (a real KO chance, not a likely KO) stays off the list.
-  assert.deepEqual(hudSummary({ ...m, field: { ...m.field, slots: [{ ...m.field.slots[0], threat: threat("risk", false) }] } }).danger, []);
+  assert.deepEqual(cardSummary({ ...m, field: { ...m.field, slots: [{ ...m.field.slots[0], threat: threat("risk", false) }] } }).danger, []);
 }

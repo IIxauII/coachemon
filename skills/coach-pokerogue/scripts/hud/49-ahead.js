@@ -55,7 +55,7 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
 
   // The tiers this wave's rewards are pinned to, and whether luck can still move them. A fixed battle's config
   // carries them; every other wave rolls freely. `TIER_NAMES` lives in 50-shop.js, which loads after this file —
-  // safe because nothing here runs at load time (see the header of 98-render-preview.js for the same rule).
+  // safe because nothing here runs at load time (see the header of 95-render-preview.js for the same rule).
   const rewardRules = (s, wave) => {
     const cfg = tryDo(() => (s.gameMode?.isFixedBattle?.(wave) ? s.gameMode.getFixedBattle(wave) : null));
     const custom = cfg?.customModifierRewardSettings;
@@ -278,3 +278,20 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
 
   return { aheadModel, partyLuck, doubleOdds, learnRoster };
 })();
+
+// ---- How the card and its one-line summary name the fight ahead.
+const aheadIn = n => (n === 1 ? "next wave" : `in ${n}`);
+
+// `Cynthia`, `gym leader`, `boss` — the trainer's own name when the preview could name it, else what the calendar
+// says it is. A fight the preview can only half-believe carries the preview's own `~`.
+const aheadWho = a => (a.next.trainer ? `${a.next.trainer}${a.next.exact ? "" : "~"}` : a.next.label);
+
+// `Cynthia in 3 (W195) risky — nothing hits Garchomp super-effectively; 2 big fights before the next full heal`.
+const aheadSummary = a => {
+  if (!a?.next) return null;
+  const reasons = [...(a.readiness?.notes ?? []).filter(n => !n.good).map(n => n.text),
+    !a.heal ? `no full heal left before the final wave`
+      : a.fightsBeforeHeal >= 2 ? `${a.fightsBeforeHeal} big fights before the next full heal` : null].filter(Boolean);
+  return `${aheadWho(a)} ${aheadIn(a.next.in)} (W${a.next.wave})${a.readiness ? ` ${a.readiness.verdict}` : ""}`
+    + (reasons.length ? ` — ${reasons.slice(0, 3).join("; ")}` : "");
+};

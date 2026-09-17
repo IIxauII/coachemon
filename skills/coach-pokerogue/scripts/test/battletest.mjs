@@ -1,13 +1,14 @@
 import { bundle } from "../hud-bundle.mjs";
+import { MoveFlags } from "../../../../src/enums/generated.ts";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-// moves: [name, type, power, cat, target=3]
+// moves: [name, type, power, cat, target=3, flags=0]
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp) => ({
   getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field, isBoss: () => false,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null,
-  moveset: moves.map(([n, t, p, c, target = 3]) => ({ getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target }), getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(([n, t, p, c, target = 3, flags = 0]) => ({ getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, flags }), getMovePp: () => 10, ppUsed: 0 })),
 });
 // A mon whose types follow its Tera flag, the way the game's getTypes does once TeraPhase has run.
 const teraMon = (...args) => {
@@ -73,6 +74,16 @@ const scenarios = {
     foes: [
       mon("Ludicolo", 80, ["Water","Grass"], "Swift Swim", [250,110,120,150,170,110], [["Giga Drain","Grass",75,"S"]], true),
       mon("Arcanine", 80, ["Fire"], "Intimidate", [260,170,130,150,130,140], [["Flare Blitz","Fire",120,"P"]], false)] },
+  // An immunity by move flag, not by type: Soundproof answers Hyper Voice, so the spread move is worth nothing even
+  // though it would hit the other foe, and Exploud is left with no damaging move. The slot's trap tags come off the
+  // planner's own engine mons now, so the flag rules (Soundproof, Bulletproof, Overcoat, Wind Rider) apply to them
+  // the way they already do to the damage.
+  soundproof: { double: true, party: [
+    mon("Exploud", 66, ["Normal"], "Scrappy", [200,110,80,140,80,120], [["Hyper Voice","Normal",90,"S",6,MoveFlags.SOUND_BASED]], true),
+    mon("Venusaur", 65, ["Grass","Poison"], "Overgrow", [200,135,122,144,144,118], [["Power Whip","Grass",120,"P"]], true)],
+    foes: [
+      mon("Whismur", 30, ["Normal"], "Soundproof", [90,60,50,60,50,40], [["Pound","Normal",40,"P"]], true),
+      mon("Rattata", 30, ["Normal"], "Run Away", [80,60,50,40,50,90], [["Tackle","Normal",40,"P"]], true)] },
   // Nor an Intimidate foe already on the field: its drop is in our stat stages.
   intimidate: { double: false, party: [
     mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
@@ -105,7 +116,11 @@ for (const [label, sc] of Object.entries(scenarios)) {
     eval(bundle("hud"));
     if (sc.trainer && VIEW === "full") console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
     console.log(`== ${label} (${VIEW})\n${lines(el)}`);
-    if (VIEW === "full") console.log(`summary ${JSON.stringify(globalThis.__coachHud.summary())}`);
+    if (VIEW === "full") {
+      // The card's own line, the way the watcher prints it; its full shape is cardtest's business.
+      const x = globalThis.__coachHud.summary();
+      console.log(`summary ${x.verdict} | ${x.field}${x.danger.length ? ` | ${x.danger.map(d => `${d.level === "ko" ? "\u{1F480}" : "\u26a0"} ${d.mon}`).join(" ")}` : ""}${x.plan ? ` | plan: ${x.plan}` : ""}`);
+    }
     // A collapsed wave: `+` shows the chosen view, and it holds for the rest of the wave.
     const plus = (el.kids ?? []).length === 1 ? buttons(el.kids[0]).find(b => b.children.includes("+")) : null;
     if (plus) {

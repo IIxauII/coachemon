@@ -732,6 +732,25 @@ const exchange = (s, me, pm, foe, opts = {}) => {
 // no turn, so every candidate field starts the coming turn fresh.
 // `locked`: slot 1's command phase, with slot 0's command already in (`lockedCommand`): that slot is kept as chosen
 // and only its partner is searched.
+// Trap abilities on the foes a slot's move actually hits: an immunity (by type, or by move flag - Soundproof and
+// co.), a damage cut, or an ability that punishes the hit. Read off the engine mons the plan still holds, so it
+// sees the move's flags and the foe's real abilities. Intimidate only on a foe coming in (on the field its drop is
+// already in our stat stages); never Sturdy, which the KO model already counts.
+const trapsOn = (p, active) => {
+  const mv = p.move?.pm?.getMove?.();
+  if (!mv || p.self || p.target === null || p.target === undefined) return [];
+  const type = p.move.type;
+  const phys = p.move.cat === "physical";
+  const foes = p.target === "both" ? active : [active[p.target]];
+  const bites = (a, foe) => ABILITY_IMMUNE[a] === type
+    || (ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a]))
+    || (a === "Thick Fat" && (type === "Fire" || type === "Ice")) || (a === "Heatproof" && type === "Fire")
+    || (a === "Fluffy" && (phys || type === "Fire")) || (a === "Intimidate" && phys && !foe.isOnField?.())
+    || a === "Wonder Guard"
+    || (["Filter", "Solid Rock", "Prism Armor"].includes(a) && typesOf(foe).reduce((x, d) => x * vs(type, d), 1) >= 2);
+  return [...new Set(foes.filter(Boolean).flatMap(foe => abilitiesOf(foe).filter(a => TRAPS.has(a) && bites(a, foe))))];
+};
+
 const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = false, locked = null } = {}) => {
   // Our side has two slots whenever two of us can stand, even if only one foe is left; `pair`: two foes to aim at.
   const slots = double && party.length >= 2 ? 2 : 1;
@@ -1274,6 +1293,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
           threat: slotThreat(p, enter),
+          traps: sup ? [] : trapsOn(p, active),
           locked: !!p.locked,
           support: sup?.kind ?? null,
           spare: !sup && spare,
@@ -1438,13 +1458,9 @@ const duel = (s, me, foe, partnered = false) => {
   return best ?? { me, mine: null, myTurns: 9, score: -9 };
 };
 
-// Plain data for one refresh. Its JSON is the change signature, so the DOM is
-// only rebuilt when something the panel shows has actually changed.
-// While the game waits for a command, the whole refresh runs in one sandbox (every game call it makes), with the
-// foes that Terastallize this turn flagged so every damage number is the post-Tera one (spec §7).
-const model = (s, b, party, foes) => (plannerReady(s)
-  ? sandbox(s, () => withPredictedTera(predictedTeras(s, b), () => battleModel(s, b, party, foes)))
-  : battleModel(s, b, party, foes));
+// Plain data for one refresh: the field, the switches and a row per foe. Its JSON is part of the change signature, so
+// the DOM is only rebuilt when something the panel shows has actually changed. 60-card composes it with the fight
+// plan and the catch advice, and opens the sandbox all three run in.
 const battleModel = (s, b, party, foes) => {
   const onField = foes.filter(f => f.isOnField?.());
   const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
@@ -1538,8 +1554,6 @@ const battleModel = (s, b, party, foes) => {
   return {
     kind: "battle",
     field: plan?.view ?? null,
-    teamPlan: b.trainer ? teamPlan(s, b, party, foes) : null,
-    catch: b.trainer ? null : catchAdvice(s, b, party, foes),
     enemySwitches: active.filter(f => predicted.has(f)).map(f => ({
       from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
     })),

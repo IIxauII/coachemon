@@ -1,0 +1,11 @@
+verdicts ok
+battle summary ok
+{"kind":"battle","wave":12,"verdict":"trainer","field":"Charizard Ember → Rattata · 2 hits ; Venusaur Vine Whip → both · 3 hits","danger":[{"mon":"Charizard","from":"Butterfree","move":"Gust","level":"ko","saveFor":null},{"mon":"Pidgey","from":"Rattata","move":"Tackle","level":"after","saveFor":"Butterfree"}],"plan":"winnable · ☠ Charizard KOs 2/3 · Butterfree outspeeds","learn":null,"rewards":null,"encounter":null,"biome":null,"fusion":null,"starters":null,"next":null,"ahead":null,"audit":null}
+contract ok: kind wave verdict field danger plan learn rewards encounter biome fusion starters next ahead audit
+battle: easy
+learn: Learn → forget Ember · ⚠ loses only Dark move
+rewards: take Leftovers → Charizard
+biome: Swamp 85 pick — 2 mons hit SE
+encounter: Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave
+starters: best: Gible (carry) · 10/10 pts
+fusion: Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite

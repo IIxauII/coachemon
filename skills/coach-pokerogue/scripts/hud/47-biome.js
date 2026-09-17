@@ -53,7 +53,7 @@
 //   for one, minus the share weak to it. It already counts as one wave of ten above; this is on top, because it's the
 //   fight that ends a run.
 // score = 50·offense + 25·(defense + 1) + up to 8 for catches ± 10 for the big fight. Ties go to the unrounded score.
-const { biomeScreen, biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor } = (() => {
+const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor } = (() => {
   const TIER_CUTS = [156, 32, 6, 1, 0];
   const BOSS_CUTS = [20, 6, 1, 0];
   // Pool tiers in the order TIER_CUTS / BOSS_CUTS cut them: a biome's pools by BiomePoolTier, a trainer config's by TrainerPoolTier.
@@ -136,9 +136,6 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, gameTables, setGameT
   // The tables themselves (`species`, `abilities`, `moves`, `eggMoves` among them), or null while they aren't read
   // (starts the read).
   const gameTables = () => { loadGameTables(); return tables; };
-
-  const biomeScreen = (s, h) => s.ui.getMode() === UiMode.OPTION_SELECT && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectBiomePhase"
-    && !!h?.config?.options?.length;
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
   const nameOf = id => tryDo(() => tables.biomeName(id), `#${id}`);
@@ -529,5 +526,9 @@ const { biomeScreen, biomeModel, gameEvents, gameRewardFns, gameTables, setGameT
   const spawnsFor = (s, id, wave, luck = 0) => (tables?.biomes?.get(id) ? encounters(s, tables.biomes.get(id), wave, luck) : null);
   const formsFor = (id, level, kind = EvoLevelThresholdKind.WILD) => Object.fromEntries(formsAt(id, level, kind));
 
-  return { biomeScreen, biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor };
+  return { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor };
 })();
+
+// `Swamp 72 pick — Garchomp resists, 3 mons hit SE · Construction Site 55`, for the watcher and the battle read.
+const biomeSummary = m => m.options.map(o => (o.score == null ? o.label
+  : o.verdict === "pick" ? `${o.label} ${o.score} pick — ${o.reasons.slice(0, 3).map(r => r.text).join(", ")}` : `${o.label} ${o.score}`)).join(" · ");

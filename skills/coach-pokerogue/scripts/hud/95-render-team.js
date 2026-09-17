@@ -2,25 +2,27 @@
 // never at load time. Takes the `teamPlan` view, or a battle model carrying it as `teamPlan`.
 // A plain win collapses to `♟ winnable · N steps [+]`; a likely loss, a sacrifice or a mon to save opens it. Mini
 // always shows the one line. Doubles: the plan is worked out one-on-one, so its steps are approximate.
+import { FS, badge, button, dim, h, line, mon, redraw, setView, shownCardWave, view } from "./90-render.js";
+
 let planOpen = null; // the wave whose plan the user opened
-const drawTeamPlan = m => {
+export const drawTeamPlan = m => {
   const tp = m?.steps ? m : m?.teamPlan;
-  if (!tp || view === "closed") return [];
+  if (!tp || view() === "closed") return [];
   const red = "#e55", amber = "#fa4";
   const small = { color: "#9aa", fontSize: FS.tiny };
   const lost = tp.result !== "win";
   const approx = !!m?.double;
   const steps = `${approx ? "~" : ""}${tp.steps.length} step${tp.steps.length === 1 ? "" : "s"}`;
   const eventful = lost || tp.warnings.length || tp.sacrifice.length || tp.reserve.length;
-  const opened = planOpen !== null && planOpen === shownWave;
-  if (view === "mini" || (!eventful && !opened)) {
+  const opened = planOpen !== null && planOpen === shownCardWave();
+  if (view() === "mini" || (!eventful && !opened)) {
     return [line("♟", "#c9f",
       h("span", { color: lost ? red : "#6d6", fontWeight: "bold", marginRight: "3px" }, lost ? "likely lost" : "winnable"),
       tp.win ? [h("span", dim, "· ☠"), mon(tp.win.icon, tp.win.name, 18)] : null,
       h("span", dim, `· ${steps}`),
       tp.sacrifice.length ? h("span", { color: amber, marginLeft: "3px" }, `· ✝ ${tp.sacrifice.map(x => x.name).join(", ")}`) : null,
       h("span", { flex: "1" }),
-      button("+", "Show the fight plan", () => { planOpen = shownWave; view === "full" ? redraw() : setView("full"); }))];
+      button("+", "Show the fight plan", () => { planOpen = shownCardWave(); view() === "full" ? redraw() : setView("full"); }))];
   }
   const entryTag = { free: ["free", "#6d6"], switch: ["⇄", amber] }; // a switch-in also says so in `why`
   const out = [
