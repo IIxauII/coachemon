@@ -13,7 +13,6 @@ import { spawn } from "node:child_process";
 import { mkdirSync, openSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import { inGame } from "../game/js.ts";
 
 export type SessionOptions = {
   port: number;
@@ -247,4 +246,3 @@ export class CdpSession {
   }
 }
 
-export { inGame };

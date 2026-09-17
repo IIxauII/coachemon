@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AGREE, CHANGE_GRACE_MS, POLL_MS, settle, type PredicateRead, type Ready } from "./settle.ts";
+import type { PredicateRead, Ready } from "./game/port.ts";
+import { AGREE, CHANGE_GRACE_MS, POLL_MS, settle } from "./settle.ts";
 
 const disc = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summaryUiMode: null, alertClosable: false, filterMode: false, transferMode: false };
 
@@ -13,7 +14,7 @@ function ready(over: Partial<Ready> = {}): Ready {
 }
 
 /** A scripted poller with a fake clock: each poll advances time by POLL_MS. */
-function scripted(reads: (PredicateRead | { __throw: string })[]) {
+function scripted(reads: PredicateRead[]) {
   let t = 0;
   let i = 0;
   return {
@@ -81,12 +82,6 @@ test("locator failure is a busy reason, never a throw (#14)", async () => {
   const r = await settle(deps, null);
   assert.equal(r.settled, true);
   assert.equal(r.polls, 6);
-});
-
-test("a page-side throw degrades the poll rather than the call", async () => {
-  const { deps } = scripted([{ __throw: "TypeError: boom" }, ready({ frame: 1 }), ready({ frame: 2 }), ready({ frame: 3 })]);
-  const r = await settle(deps, null);
-  assert.equal(r.settled, true);
 });
 
 test("an aborted signal returns promptly and says so", async () => {

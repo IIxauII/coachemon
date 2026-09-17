@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { MenuRead } from "../driver.ts";
+import type { MenuRead } from "./port.ts";
 import { PREDICATE, READER } from "./js.ts";
 
 /** Run an injected expression against a fake tab: a Phaser CanvasPool whose one entry carries a booted game. */
