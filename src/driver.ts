@@ -19,7 +19,7 @@ import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { CdpGame } from "./game/cdp-game.ts";
 import type { GamePort, MenuOption, MenuRead, Ready, SnapshotDetail } from "./game/port.ts";
 import { matchLabel, normalizeLabel, optionAnswersTo } from "./labels.ts";
-import { isSettingsMode, modeName, screenId } from "./screen.ts";
+import { isSettingsMode, modeName } from "./screen.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
 import type { Choice } from "./stuck/detector.ts";
@@ -72,6 +72,9 @@ const REAL_CLOCK: Clock = { now: Date.now, sleep: ms => new Promise(r => setTime
 
 const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 
+/** The starter grid with its filter bar active, where the server never acts (§6.5). */
+const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
+
 /** Modes where an acting tool's own press legitimately leads to `LoginPhase` (Save & Quit, Log Out). */
 const MENU_MODES = new Set<number>([UiMode.MENU, UiMode.MENU_OPTION_SELECT]);
 
@@ -123,7 +126,7 @@ export class Driver {
       run_live: ready?.runLive ?? false,
       run: this.#outcomes.runState(ready),
       wave: ready?.wave ?? null,
-      screen: ready ? screenId(ready.mode, ready.disc) : `UNKNOWN(${read.ready ? "-" : read.why})`,
+      screen: ready ? ready.screen : `UNKNOWN(${read.ready ? "-" : read.why})`,
       settled: ready?.settled ?? null,
       busy_reason: ready && !ready.settled ? ready.reason : null,
       tab_contended: contended.contended,
@@ -140,7 +143,8 @@ export class Driver {
       const snap = await this.#game.snapshot(detail);
       const menu = await this.#game.menu();
       const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
-      return this.#settledResult(ready, outcome, {
+      // A read-only call never refuses on a Screen that moved since the settle: it reports the newer one.
+      return this.#settledResult(ready, screenOf(ready, menu), outcome, {
         ...(snap.ok ? this.#cleanSnapshot(snap.snapshot) : { snapshot_error: snap.why }),
         run: { state: this.#outcomes.runState(ready) },
       });
@@ -154,7 +158,7 @@ export class Driver {
       const ready = s.last as Ready;
       const menu = await this.#game.menu();
       const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
-      return this.#settledResult(ready, outcome, this.#menuPayload(ready, menu));
+      return this.#settledResult(ready, screenOf(ready, menu), outcome, this.#menuPayload(ready, menu));
     });
   }
 
@@ -200,11 +204,12 @@ export class Driver {
       if (!pre.settled) return this.#openingTimedOut(call, pre, "select_option");
       const ready = pre.last as Ready;
       await this.#guard(ready);
-      const screen = screenId(ready.mode, ready.disc);
+      const screen = ready.screen;
       if (expectScreen !== undefined && expectScreen !== screen) {
         throw new Refusal("screen_changed", `Expected ${expectScreen} but the live screen is ${screen}. Nothing was pressed.`, { screen, expected: expectScreen });
       }
       const menu = await this.#game.menu();
+      refuseMovedScreen(ready, menu);
       const labels = menu.options.map(o => normalizeLabel(o.label));
       const echo = { screen, options: labels, cursor: menu.cursor };
       if (menu.extra.messagePending === true) {
@@ -260,7 +265,7 @@ export class Driver {
       const ready = pre.last as Ready;
       await this.#guard(ready);
       if (ready.mode !== UiMode.TITLE) {
-        throw new Refusal("not_on_title", `start_run needs the TITLE screen; the game is on ${screenId(ready.mode, ready.disc)}.`, { screen: screenId(ready.mode, ready.disc) });
+        throw new Refusal("not_on_title", `start_run needs the TITLE screen; the game is on ${ready.screen}.`, { screen: ready.screen });
       }
       if (species.length === 0 || species.length > 6) throw new Refusal("bad_party", "species must name 1–6 starters.");
 
@@ -287,11 +292,14 @@ export class Driver {
   /** Everything `start_run` presses, from TITLE to the first decision of the run. A step that runs out of time throws `SetupTimedOut`. */
   async #startRunFromTitle(call: Call, ready: Ready, choice: Choice, species: string[], slot: number | undefined, overwrite: boolean, log: string[]): Promise<Record<string, unknown>> {
     let presses = 0;
-    const expect = async (s: SettleResult, mode: number, step: string): Promise<Ready> => {
+    const expect = async (s: SettleResult, screen: string, step: string): Promise<Ready> => {
       if (!s.settled) throw new SetupTimedOut(s, step);
       const r = s.last as Ready;
-      if (r.mode !== mode) {
-        throw new Refusal("start_run_unexpected_screen", `start_run expected ${modeName(mode)} after ${step} but saw ${screenId(r.mode, r.disc)}`, { step, screen: screenId(r.mode, r.disc), log });
+      if (r.screen === FILTER_BAR_SCREEN) {
+        throw new Refusal("filter_bar", `start_run arrived on the starter filter bar after ${step}; the server never drives it. Leave it by hand.`, { step, screen: r.screen, log });
+      }
+      if (r.screen !== screen) {
+        throw new Refusal("start_run_unexpected_screen", `start_run expected ${screen} after ${step} but saw ${r.screen}`, { step, screen: r.screen, log });
       }
       return r;
     };
@@ -305,7 +313,7 @@ export class Driver {
      */
     const refuseFromGrid = async (code: string, message: string, detail: Record<string, unknown>): Promise<never> => {
       try {
-        const confirm = await expect(await this.#pressAndSettle(Button.CANCEL, cur.fine, call), UiMode.CONFIRM, "back out");
+        const confirm = await expect(await this.#pressAndSettle(Button.CANCEL, cur.fine, call), "CONFIRM", "back out");
         const m = await this.#game.menu();
         const yes = matchLabel(m.options, "Yes");
         if (yes.kind !== "one") throw new Refusal("start_run_unexpected_screen", `no single Yes on the return-to-title confirm: ${m.options.map(o => o.label).join(" | ")}`);
@@ -314,14 +322,14 @@ export class Driver {
         let back = await this.#commit(m, yes.option, confirm.fine, call);
         // Yes sets STARTER_SELECT again before the title phase shows TITLE (StarterSelectUiHandler.tryExit): wait past it.
         if (back.settled && (back.last as Ready).mode === UiMode.STARTER_SELECT) back = await this.#settle((back.last as Ready).fine, call);
-        await expect(back, UiMode.TITLE, "back out");
+        await expect(back, "TITLE", "back out");
       } catch (e) {
         const live = await this.#game.read();
-        const mode = live.ready ? live.mode : null;
-        const screen = live.ready ? screenId(live.mode, live.disc) : "UNKNOWN(-1)";
+        const screen = live.ready ? live.screen : "UNKNOWN(-1)";
+        // By Screen, not mode: on the filter bar a press(CANCEL) is refused, so only read_menu is a way on.
         const next =
-          mode === UiMode.CONFIRM ? 'select_option("Yes") on this CONFIRM to return to TITLE, then start_run again'
-          : mode === UiMode.STARTER_SELECT ? 'press(CANCEL), then select_option("Yes") on the CONFIRM to return to TITLE, then start_run again'
+          screen === "CONFIRM" ? 'select_option("Yes") on this CONFIRM to return to TITLE, then start_run again'
+          : screen === "STARTER_SELECT" ? 'press(CANCEL), then select_option("Yes") on the CONFIRM to return to TITLE, then start_run again'
           : "read_menu to see where the game is; start_run needs TITLE";
         throw new Refusal(code, `${message} Backing out to TITLE failed (${(e as Error).message}).`, {
           ...detail, screen, log, back_out_error: e instanceof Refusal ? e.code : e instanceof SetupTimedOut ? "timed_out" : "error", next,
@@ -332,24 +340,24 @@ export class Driver {
 
     // 1. TITLE → game-mode select. New Game is the first option unless Continue is offered (source order: [Continue,] New Game, Load Game, Daily Run, Settings).
     let menu = await this.#game.menu();
+    refuseMovedScreen(ready, menu);
     const newGameIndex = menu.options.length >= 5 ? 1 : 0;
     log.push(`title: ${menu.options.map(o => o.label).join(" | ")} → index ${newGameIndex}`);
     await moveTo(menu, menu.options[newGameIndex], "title");
     let s = await this.#commit(menu, menu.options[newGameIndex], ready.fine, call);
     presses++;
-    let cur = await expect(s, UiMode.OPTION_SELECT, "title");
+    let cur = await expect(s, "OPTION_SELECT", "title");
     // 2. Game mode: Classic is index 0.
     menu = await this.#game.menu();
     log.push(`game mode: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
     await moveTo(menu, menu.options[0], "game mode");
     s = await this.#commit(menu, menu.options[0], cur.fine, call);
     presses++;
-    cur = await expect(s, UiMode.STARTER_SELECT, "game mode");
+    cur = await expect(s, "STARTER_SELECT", "game mode");
 
     // 3. Starters, by name, resolved against the live filtered grid.
     const info = await this.#game.starterGrid();
     if (!info.ok) throw new Refusal("starter_unreadable", info.why);
-    if (info.filterMode) throw new Refusal("filter_bar", "The starter filter bar is active; the server never drives it. Leave it by hand.");
     const picks: typeof info.grid = [];
     for (const name of species) {
       const hit = info.grid.filter(g => g.name !== null && normalizeLabel(g.name) === normalizeLabel(name));
@@ -370,13 +378,13 @@ export class Driver {
       }
       s = await this.#pressAndSettle(Button.ACTION, cur.fine, call);
       presses++;
-      cur = await expect(s, UiMode.OPTION_SELECT, `select ${pick.name}`);
+      cur = await expect(s, "OPTION_SELECT", `select ${pick.name}`);
       menu = await this.#game.menu();
       log.push(`${pick.name}: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
       await moveTo(menu, menu.options[0], `add ${pick.name}`);
       s = await this.#commit(menu, menu.options[0], cur.fine, call);
       presses++;
-      cur = await expect(s, UiMode.STARTER_SELECT, `add ${pick.name}`);
+      cur = await expect(s, "STARTER_SELECT", `add ${pick.name}`);
     }
     const after = await this.#game.starterGrid();
     if (!after.ok) throw new Refusal("starter_unreadable", "could not re-read the starter screen", { log });
@@ -388,13 +396,13 @@ export class Driver {
     // 4. SUBMIT → CONFIRM [Yes, No] → SAVE_SLOT.
     s = await this.#pressAndSettle(Button.SUBMIT, cur.fine, call);
     presses++;
-    cur = await expect(s, UiMode.CONFIRM, "submit");
+    cur = await expect(s, "CONFIRM", "submit");
     menu = await this.#game.menu();
     log.push(`confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
     await moveTo(menu, menu.options[0], "confirm");
     s = await this.#commit(menu, menu.options[0], cur.fine, call);
     presses++;
-    cur = await expect(s, UiMode.SAVE_SLOT, "confirm");
+    cur = await expect(s, "SAVE_SLOT/SAVE", "confirm");
 
     // 5. Slot: only the screen knows. A logged-in account's slots live server-side, so localStorage cannot pre-check
     // them (measured: every key absent while slot 0 held a run). Refusing here leaves the setup on SAVE_SLOT/SAVE,
@@ -420,7 +428,7 @@ export class Driver {
       if (!s.settled) throw new SetupTimedOut(s, "save slot");
       const r = s.last as Ready;
       if (!isOverwriteConfirm(r)) {
-        throw new Refusal("start_run_unexpected_screen", `start_run expected the overwrite confirm after choosing ${chosenLabel} but saw ${screenId(r.mode, r.disc)} (phase ${r.phaseName}). Nothing was answered.`, { step: "save slot", screen: screenId(r.mode, r.disc), log });
+        throw new Refusal("start_run_unexpected_screen", `start_run expected the overwrite confirm after choosing ${chosenLabel} but saw ${r.screen} (phase ${r.phaseName}). Nothing was answered.`, { step: "save slot", screen: r.screen, log });
       }
       // Yes deletes the session in that slot, then starts the run.
       menu = await this.#game.menu();
@@ -515,11 +523,11 @@ export class Driver {
   // --------------------------------------------------------------- guards
 
   async #guard(ready: Ready): Promise<void> {
-    const screen = screenId(ready.mode, ready.disc);
+    const screen = ready.screen;
     const c = lockContended(this.lock);
     if (c.contended) throw new Refusal("tab_contended", `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, { screen, holder: c.holder });
     if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
-    if (ready.mode === UiMode.STARTER_SELECT && ready.disc.filterMode) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
+    if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
     // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
     await this.#game.keepAlive();
     const a = await this.#game.frame();
@@ -547,14 +555,14 @@ export class Driver {
         if (j < 0) throw new Refusal("option_skipped", `option ${target.label} is not selectable right now`, { options: menu.options.map(o => o.label) });
         this.#sending(call);
         if ((await this.#game.setCursor({ family: "option_select", index: j })).ok) return null;
-        return this.#walk(j, call, cur => (cur < j ? Button.DOWN : Button.UP));
+        return this.#walk(menu, j, call, cur => (cur < j ? Button.DOWN : Button.UP));
       }
       case "command":
       case "fight":
       case "mystery_encounter": {
         // 2×2 grids: UP/DOWN are ±2, LEFT/RIGHT ±1.
         const t = Number(target.i);
-        return this.#walk(t, call, cur => (Math.floor(cur / 2) !== Math.floor(t / 2) ? (cur < t ? Button.DOWN : Button.UP) : cur < t ? Button.RIGHT : Button.LEFT));
+        return this.#walk(menu, t, call, cur => (Math.floor(cur / 2) !== Math.floor(t / 2) ? (cur < t ? Button.DOWN : Button.UP) : cur < t ? Button.RIGHT : Button.LEFT));
       }
       case "modifier_select": {
         this.#sending(call);
@@ -573,7 +581,7 @@ export class Driver {
         const t = Number(target.i);
         this.#sending(call);
         if ((await this.#game.setCursor({ family: "learn_move", row: t })).ok) return null;
-        return this.#walk(t, call, cur => (cur < t ? Button.DOWN : Button.UP));
+        return this.#walk(menu, t, call, cur => (cur < t ? Button.DOWN : Button.UP));
       }
       case "target_select": {
         // A spread move ignores the cursor: ACTION hits every target and no direction moves it (#33).
@@ -582,30 +590,35 @@ export class Driver {
         // target in the other row, LEFT/RIGHT step ±1 within a row (TargetSelectUiHandler.processInput).
         const t = Number(target.i);
         const enemy = (i: number) => i >= 2;
-        return this.#walk(t, call, cur => (enemy(cur) !== enemy(t) ? (enemy(t) ? Button.UP : Button.DOWN) : cur < t ? Button.RIGHT : Button.LEFT));
+        return this.#walk(menu, t, call, cur => (enemy(cur) !== enemy(t) ? (enemy(t) ? Button.UP : Button.DOWN) : cur < t ? Button.RIGHT : Button.LEFT));
       }
       case "party":
         // The slot list is a DOWN-cycle: 0..n-1 → 6 (Cancel) → 0; the option phase is a plain list (#7 §7: presses, always).
-        if (menu.extra.optionsMode === true) return this.#walk(Number(target.i), call, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
-        return this.#walk(Number(target.i), call, () => Button.DOWN);
+        if (menu.extra.optionsMode === true) return this.#walk(menu, Number(target.i), call, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
+        return this.#walk(menu, Number(target.i), call, () => Button.DOWN);
       case "modal":
         return null; // committed through the button action, no cursor
       case "save_slot":
       case "ball":
       case "menu":
       default:
-        return this.#walk(Number(target.i), call, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
+        return this.#walk(menu, Number(target.i), call, cur => (cur < Number(target.i) ? Button.DOWN : Button.UP));
     }
   }
 
   /**
    * Press `step(cursor)` until the cursor reads `target`, each press settled against the call's deadline. A settled
-   * press that leaves the cursor where it was refuses at once: the same press again does the same (#34).
+   * press that leaves the cursor where it was refuses at once: the same press again does the same (#34). So does a step
+   * that reads another Screen than `from`, the menu the walk was planned on: nothing is committed there.
    */
-  async #walk(target: number, call: Call, step: (cursor: number) => Button): Promise<SettleResult | null> {
+  async #walk(from: MenuRead, target: number, call: Call, step: (cursor: number) => Button): Promise<SettleResult | null> {
     let prev: number | null = null;
     for (let n = 0; n < NAV_CAP; n++) {
-      const cur = Number((await this.#game.menu()).cursor);
+      const menu = await this.#game.menu();
+      if (menu.readable && menu.screen !== from.screen) {
+        throw new Refusal("screen_changed", `The screen changed from ${from.screen} to ${menu.screen} while walking the cursor toward ${target}. ${n} cursor press(es) were sent, nothing was committed.`, { screen: menu.screen, was: from.screen, target, presses: n });
+      }
+      const cur = Number(menu.cursor);
       if (cur === target) return null;
       if (cur === prev) {
         throw new Refusal("cursor_stuck", `The cursor stayed on ${cur} after a press toward ${target}; ${target} can't be reached by moving the cursor here. ${n} cursor press(es) were sent, nothing was committed.`, { cursor: cur, target, presses: n });
@@ -671,6 +684,7 @@ export class Driver {
     const outcome = this.#end(call, { kind: "acting", pre, choice, settle: s, options: optionLabels(menu) });
     return this.#settledResult(
       afterRead,
+      afterRead.screen,
       outcome,
       {
         ...payload,
@@ -686,12 +700,14 @@ export class Driver {
 
   #settledResult(
     ready: Ready,
+    /** The Screen the result reports: a read-only call's is its menu read's, newer than the settle's. */
+    screen: string,
     outcome: Outcome,
     payload: Record<string, unknown>,
     /** The call's suggested next step, returned only when the status is `ok`. */
     next?: string,
   ): Record<string, unknown> {
-    const out: Record<string, unknown> = { status: outcome.status, wave: ready.wave, screen: screenId(ready.mode, ready.disc), ...payload };
+    const out: Record<string, unknown> = { status: outcome.status, wave: ready.wave, screen, ...payload };
     if (next !== undefined && outcome.status === "ok") out.next = next;
     if (outcome.diagnostic) {
       out.diagnostic = outcome.diagnostic;
@@ -715,7 +731,7 @@ export class Driver {
     return {
       status: outcome.status,
       wave: last?.wave ?? null,
-      screen: last ? screenId(last.mode, last.disc) : "UNKNOWN(-1)",
+      screen: last ? last.screen : "UNKNOWN(-1)",
       diagnostic: outcome.diagnostic,
       ...(alert !== null ? { alert_text: alert } : {}),
       ...(pending ? { message_pending: true, text: last.messageText, next: DISMISS_MESSAGE } : {}),
@@ -743,7 +759,7 @@ export class Driver {
 
   #menuSummary(ready: Ready, menu: MenuRead): Record<string, unknown> {
     return {
-      screen: screenId(ready.mode, ready.disc),
+      screen: ready.screen,
       family: menu.family,
       options: menu.options.map(o => o.label),
       cursor: menu.cursor,
@@ -759,8 +775,7 @@ export class Driver {
   }
 
   #menuPayload(ready: Ready, menu: MenuRead): Record<string, unknown> {
-    const screen = screenId(ready.mode, ready.disc);
-    const ladder = ladderFor({ screen, liveVersion: ready.gameVersion ?? "", tutorialActive: ready.tutorialActive });
+    const ladder = ladderFor({ screen: screenOf(ready, menu), liveVersion: ready.gameVersion ?? "", tutorialActive: ready.tutorialActive });
     return {
       mode: { int: ready.mode, name: modeName(ready.mode) },
       handler: menu.handler ?? ready.handler,
@@ -779,6 +794,20 @@ export class Driver {
       extra: menu.extra,
     };
   }
+}
+
+/**
+ * The Screen a menu read reports, newer than the settle's. A read that failed (a throw, no handler, an unmapped family)
+ * identified no menu, so it says nothing newer: the settled Screen stands (#133).
+ */
+function screenOf(ready: Ready, menu: MenuRead): string {
+  return menu.readable ? menu.screen : ready.screen;
+}
+
+/** The menu read is a second read after the settle: an acting call refuses before its first press if the Screen moved between them (#133). */
+function refuseMovedScreen(ready: Ready, menu: MenuRead): void {
+  if (screenOf(ready, menu) === ready.screen) return;
+  throw new Refusal("screen_changed", `The screen changed from ${ready.screen} to ${menu.screen} between the settled read and the menu read. Nothing was pressed.`, { screen: menu.screen, was: ready.screen });
 }
 
 /** The option labels the stuck detector judges untried against, or `null` when the menu gave none. */

@@ -1,9 +1,10 @@
 /**
  * Composite screen id (#7 §4): `ui.mode` alone does not identify a screen.
  * `PARTY(8)` is fourteen screens told apart by `partyUiMode`, each with a
- * different meaning and escape; `SAVE_SLOT`, `SUMMARY` and `ALERT_MODAL`
- * carry their own discriminators. The id is what Claude reasons about and the
- * key the escape ladder answers to.
+ * different meaning and escape; `SAVE_SLOT`, `SUMMARY`, `ALERT_MODAL` and
+ * `STARTER_SELECT` carry their own discriminators. The id is what Claude
+ * reasons about and the key the escape ladder answers to. Only the game
+ * adapter computes it: every read arrives with its Screen.
  */
 import { NAMES, SaveSlotUiMode, SummaryUiMode, UiMode } from "./enums/generated.ts";
 
@@ -38,6 +39,9 @@ export function screenId(mode: number, d: Discriminators): string {
       return d.summaryUiMode === SummaryUiMode.LEARN_MOVE ? `${name}/LEARN_MOVE` : name;
     case UiMode.ALERT_MODAL:
       return d.alertClosable ? `${name}/CLOSABLE` : name;
+    // The filter bar asks for different input and is left differently: `setCursor` writes `filterBarCursor` there.
+    case UiMode.STARTER_SELECT:
+      return d.filterMode ? `${name}/FILTER` : name;
     default:
       return name;
   }

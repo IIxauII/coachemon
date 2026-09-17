@@ -1,6 +1,6 @@
 {
   "name": "pokerogue-mcp",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -15,8 +15,7 @@
     "enums:gen": "node scripts/gen-enums.ts",
     "randbats:gen": "node scripts/gen-randbats.ts",
     "drift:check": "node scripts/drift.ts",
-    "ladder:drift": "node scripts/drift.ts",
-    "stuck:replay": "node scripts/stuck-replay.ts"
+    "ladder:drift": "node scripts/drift.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

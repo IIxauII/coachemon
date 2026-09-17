@@ -7,13 +7,11 @@ import { CALL_BUDGET_MS, POLL_MS, type SettleResult } from "./settle.ts";
 import { THRESHOLD, type Choice } from "./stuck/detector.ts";
 import { HANG_CORROBORATED_MS, HANG_DWELL_MS } from "./stuck/hang.ts";
 
-const disc = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summaryUiMode: null, alertClosable: false, filterMode: false, transferMode: false };
-
 function read(over: Partial<Ready> = {}): Ready {
   return {
     ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, phaseName: "CommandPhase", wave: 5, turn: 1, money: 1000,
     runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
-    awaitingActionInput: false, fine: "command|0", frame: 1, domMode: null, gameVersion: "1.12.0.11", disc, ...over,
+    awaitingActionInput: false, fine: "command|0", frame: 1, domMode: null, gameVersion: "1.12.0.11", screen: "COMMAND", ...over,
   };
 }
 
@@ -25,13 +23,13 @@ function timedOut(last: PredicateRead | null, over: Partial<SettleResult> = {}):
   return { settled: false, last, reason: "ui-transition", elapsedMs: CALL_BUDGET_MS, stallMs: CALL_BUDGET_MS, polls: 300, fpMoved: null, loopFrozen: false, aborted: false, ...over };
 }
 
-const title = read({ mode: UiMode.TITLE, phaseName: "TitlePhase", runLive: false, wave: null, turn: null, fine: "title" });
-const menu = read({ mode: UiMode.MENU, phaseName: "CommandPhase", fine: "menu" });
-const login = read({ settled: false, reason: "ui-transition", mode: UiMode.LOADING, phaseName: "LoginPhase", runLive: false, wave: null, turn: null, fine: "login" });
+const title = read({ mode: UiMode.TITLE, screen: "TITLE", phaseName: "TitlePhase", runLive: false, wave: null, turn: null, fine: "title" });
+const menu = read({ mode: UiMode.MENU, screen: "MENU", phaseName: "CommandPhase", fine: "menu" });
+const login = read({ settled: false, reason: "ui-transition", mode: UiMode.LOADING, screen: "LOADING", phaseName: "LoginPhase", runLive: false, wave: null, turn: null, fine: "login" });
 /** #11's save hang: `EncounterPhase` on `MESSAGE` with no `onActionInput`, which the predicate reads as busy. */
-const hung = read({ settled: false, reason: "encounter", mode: UiMode.MESSAGE, phaseName: "EncounterPhase", onActionInput: false, fine: "encounter" });
+const hung = read({ settled: false, reason: "encounter", mode: UiMode.MESSAGE, screen: "MESSAGE", phaseName: "EncounterPhase", onActionInput: false, fine: "encounter" });
 /** A screen with no ladder entry, so a repeat there is `stuck` and never `ladder-exhausted`. */
-const unmodelled = read({ mode: 999, phaseName: "UnmodelledPhase", runLive: false, fine: "unmodelled" });
+const unmodelled = read({ mode: 999, screen: "UNKNOWN(999)", phaseName: "UnmodelledPhase", runLive: false, fine: "unmodelled" });
 const fight: Choice = { kind: "option", label: "Fight" };
 
 /** A reading call that settles on `r`. */
@@ -276,7 +274,7 @@ test("pressing on TITLE clears the interrupted latch; a call refused on TITLE do
 
   o.waited(settled(title));
   o.pressing({ menuAction: false, on: title });
-  const after = read({ mode: UiMode.OPTION_SELECT, phaseName: "TitlePhase", runLive: false, wave: null, fine: "mode" });
+  const after = read({ mode: UiMode.OPTION_SELECT, screen: "OPTION_SELECT", phaseName: "TitlePhase", runLive: false, wave: null, fine: "mode" });
   const r = o.end({ kind: "acting", pre: title, choice: { kind: "option", label: "Continue" }, settle: settled(after), options: null });
   assert.equal(r.status, "ok");
   assert.equal(o.runState(after), "none");

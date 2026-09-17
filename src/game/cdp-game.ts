@@ -1,11 +1,13 @@
 /**
  * The CDP adapter behind the game port (#127). It alone knows the JavaScript sent into the tab (`js.ts` is its
  * implementation), the `Runtime.evaluate` round trip and what a page throw becomes: every `Thrown` ends here.
+ * It also identifies the Screen: both reads return the page's discriminators, and they stop here (#133).
  */
 import { isThrown, type CdpSession, type Thrown } from "../cdp/session.ts";
-import { Button } from "../enums/generated.ts";
+import { Button, UiMode } from "../enums/generated.ts";
+import { screenId, type Discriminators } from "../screen.ts";
 import * as js from "./js.ts";
-import type { Act, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** The part of `CdpSession` the adapter drives. */
 export type GameSession = Pick<CdpSession, "attached" | "launchedChrome" | "onException" | "ensure" | "evaluate" | "keepAlive" | "rawKey" | "screenshot" | "consoleTail">;
@@ -21,6 +23,15 @@ const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: numb
   [Button.SUBMIT]: ["Enter", "Enter", 13],
   [Button.MENU]: ["Escape", "Escape", 27],
 };
+
+/** What `PREDICATE` and `READER` return: the port's reads with the discriminators in place of the Screen. */
+type PageRead = Extract<PredicateRead, { ready: false }> | (Omit<Ready, "screen"> & { disc: Discriminators });
+type PageMenu =
+  | (Omit<MenuRead, "screen"> & { disc: Discriminators })
+  /** Not located (no `mode`), or no handler for the mode. */
+  | { readable: false; why: string; mode?: number; disc?: undefined };
+
+const NO_DISC: Discriminators = { partyUiMode: null, optionsMode: false, saveSlotUiMode: null, summaryUiMode: null, alertClosable: false, filterMode: false, transferMode: false };
 
 type PageAct = { ok: boolean; why?: string };
 /** An act the page ran, with what it read back; or why it did not. */
@@ -49,8 +60,11 @@ export class CdpGame implements GamePort {
   // ------------------------------------------------------- game operations
 
   async read(): Promise<PredicateRead> {
-    const r = await this.#evaluate<PredicateRead>(js.PREDICATE);
-    return isThrown(r) ? { ready: false, why: r.__throw, frame: null, domMode: null } : r;
+    const r = await this.#evaluate<PageRead>(js.PREDICATE);
+    if (isThrown(r)) return { ready: false, why: r.__throw, frame: null, domMode: null };
+    if (!r.ready) return r;
+    const { disc, ...read } = r;
+    return { ...read, screen: screenId(r.mode, disc) };
   }
 
   async frame(): Promise<number | null> {
@@ -59,8 +73,11 @@ export class CdpGame implements GamePort {
   }
 
   async menu(): Promise<MenuRead> {
-    const r = await this.#evaluate<MenuRead>(js.READER);
-    return isThrown(r) ? { readable: false, why: r.__throw, mode: -1, family: null, options: [], cursor: null, text: null, extra: {} } : r;
+    const r = await this.#evaluate<PageMenu>(js.READER);
+    if (isThrown(r)) return unreadable(r.__throw, -1);
+    if (r.disc === undefined) return unreadable(r.why, r.mode ?? -1);
+    const { disc, ...menu } = r;
+    return { ...menu, screen: screenId(r.mode, disc), extra: { ...menu.extra, ...screenFields(r.family, r.mode, disc) } };
   }
 
   async press(b: Button): Promise<Act> {
@@ -137,6 +154,26 @@ export class CdpGame implements GamePort {
 
   onRejection(cb: (t: number) => void): void {
     this.#session.onException = cb;
+  }
+}
+
+function unreadable(why: string, mode: number): MenuRead {
+  return { readable: false, why, mode, screen: screenId(mode, NO_DISC), family: null, options: [], cursor: null, text: null, extra: {} };
+}
+
+/** The fields a family takes from the Screen's discriminators, so they always agree with `screen`. */
+function screenFields(family: string | null, mode: number, d: Discriminators): Record<string, unknown> {
+  switch (family) {
+    case "party":
+      return { optionsMode: d.optionsMode, partyUiMode: d.partyUiMode, transferMode: d.transferMode };
+    case "save_slot":
+      return { uiMode: d.saveSlotUiMode };
+    case "acknowledge":
+      return mode === UiMode.ALERT_MODAL ? { closable: d.alertClosable } : {};
+    case "starter_select":
+      return { filterMode: d.filterMode };
+    default:
+      return {};
   }
 }
 
