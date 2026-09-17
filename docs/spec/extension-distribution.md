@@ -43,6 +43,8 @@ Four target browsers, three stores. Every target carries the HUD **and** the tra
 | **Safari** (macOS) | Developer ID-signed, notarized download from the GitHub Release | `safari-mv3` → packager | 18 | `scripts` | unmeasured **[unverified]** |
 | **Orion** (macOS) | the CWS or AMO listing, player's choice | none of its own | Orion 1.1.2 tested | runs `service_worker` as a persistent page **[live]** | none needed **[live]** |
 
+**Transport pass bar**, the same for every target: the hub delivers a command to an open `pokerogue.net` tab **within about 1 s after 5 or more minutes idle**, by whatever the extension does (held socket, keepalive, reconnect) ([What Safari without a transport costs](https://github.com/IIxauII/pokerogue-mcp/issues/120)). The per-engine smoke checks in §16 use it as their acceptance line.
+
 The floors are set by `content_scripts[].world: "MAIN"`: Chrome 111, Firefox 128, Safari 18 **[doc]** ([Page-world execution across Chrome, Firefox and Safari](https://github.com/IIxauII/pokerogue-mcp/issues/99)). Every build carries **both** keepalives plus reconnect-on-wake, since the combination is untested and Safari's is unmeasured (§8.2).
 
 ### 2.1 Where the targets differ, and what each difference costs
@@ -50,7 +52,7 @@ The floors are set by `content_scripts[].world: "MAIN"`: Chrome 111, Firefox 128
 - **Page world.** `world: "MAIN"` works on Chrome, Firefox 128+, Safari 26.2 **[live]** and Orion 1.1.2 **[live]**. Firefox 102–127 silently runs such a script isolated; the manifest floor makes those versions uninstallable (§9.4). `browser` is defined in Safari's MAIN world and undefined in Orion's **[live]**, so nothing detects the world by `browser`.
 - **`pokerogue.net` serves no CSP** of any kind **[live]** 2026-09-16. If it ever ships one, Chrome applies it to MAIN-world code and Firefox does not **[doc]**. Nothing watches for that (out of scope, §18).
 - **Site access.** Safari runs nothing until the player grants access in Safari › Settings › Extensions; no prompt appears, and the grant injects into an already open tab without a reload **[live]** Safari 26.2. Chrome and Orion do **not** inject into tabs open at install; the player reloads **[live]** Orion.
-- **Loopback.** Chrome and Firefox pass the transport bar with no `127.0.0.1` host permission and no Local Network Access prompt **[live]** Chrome 153, Firefox 156. Orion passes **[live]**. Safari's background page reached `127.0.0.1` over `fetch` and WebSocket on an unsigned temporary build **[live]** Safari 26.2; a signed build is **[unverified]** and ships anyway, with no HUD-only fallback.
+- **Loopback.** Chrome and Firefox pass the transport bar with no `127.0.0.1` host permission and no Local Network Access prompt **[live]** Chrome 153, Firefox 156. Orion passes **[live]**, but only unsigned sideloads were tested, and only with `http://127.0.0.1/*` declared; the store builds declare none **[unverified]** on Orion. Safari's background page reached `127.0.0.1` over `fetch` and WebSocket on an unsigned temporary build **[live]** Safari 26.2; a signed build is **[unverified]** and ships anyway, with no HUD-only fallback.
 - **Firefox's default MV3 CSP breaks `ws://127.0.0.1`** (close code 1015) **[live]**. The Firefox build overrides `extension_pages` (§5.3).
 - **Hidden tabs freeze the game loop.** On Chrome a background tab, a minimised window and a window covered by another app all stop `requestAnimationFrame` **[live]** Chrome 153. The driver's settles pump the loop (§10.3). Firefox, Safari and Orion are unmeasured.
 - **Origins are not stable.** Firefox's `moz-extension://` UUID is per install; Safari's `safari-web-extension://` UUID changes on re-add; Orion's AMO build flipped from `moz-extension://` to `chrome-extension://` across a restart **[live]**. Nothing pins an extension id or scheme (§7.4).
@@ -70,8 +72,8 @@ From [Name and listing identity](https://github.com/IIxauII/pokerogue-mcp/issues
 | Game in copy | "PokéRogue" named plainly in the description body as the site the extension works on. Never in the title or keywords. "Pokémon" appears only in the disclaimer. |
 | Orion | Named in the CWS and AMO description bodies only. |
 | Positioning | HUD first. One closing paragraph says it can also connect a local AI agent over MCP, naming Claude nominatively with no implied endorsement. |
-| Disclaimer | Fixed, on every listing and in the extension's About text: *"Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company."* |
-| Publisher | `IIxauII` on CWS and AMO. The Safari download is signed with the dev's individual Developer ID, which shows the legal name in Gatekeeper, unavoidably. |
+| Disclaimer | Fixed, on every listing and inside the extension: *"Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company."* The extension has no About page, so it goes in the manifest `description` (shown on every browser's extension page) and as a dim footer line of the HUD's full view, a HUD source change **(picked here)**. |
+| Publisher | `IIxauII` on CWS and AMO. The Safari download is signed with the dev's individual Developer ID; it has no product page. |
 | Language | English only. |
 | Support | Email only, the listing's contact address. The repo is public but not a support surface. |
 | Homepage | Manifest `homepage_url` is the repo (`https://github.com/IIxauII/coachemon` after the rename). |
@@ -169,7 +171,7 @@ src/page/                        command handlers as real functions (§10.5)
 - **`page.js`** is a WXT unlisted script, listed by hand in the manifest next to `hud.js`.
 - **Build id.** Every script gets `COACHEMON_BUILD = "<version>+<first 12 hex of sha256 over hud.js and page.js before stamping>"` (picked here), injected by define.
 - **`LICENSE` and `THIRD_PARTY_NOTICES.md`** from the repo root are copied into every output folder (§15).
-- **Outputs** use WXT's defaults, `extension/.output/<browser>-mv3[-dev]/`, gitignored. `wxt zip` makes per-browser store zips and the Firefox sources zip.
+- **Outputs** use WXT's defaults, `extension/.output/<browser>-mv3-<mode>/` (`-store` or `-dev`), gitignored. `wxt zip` makes per-browser store zips and the Firefox sources zip.
 - **The build stays offline.** `hud/05-randbats.js` is bundled as committed, so AMO's reviewer build reproduces.
 - **`wxt dev` is not used**: it force-adds `tabs` and `scripting`, runs a throwaway profile, does not watch `hud/`, and covers neither Safari nor Orion.
 
@@ -254,7 +256,7 @@ Chrome needs no `key`: nothing pins the extension id.
 `extension/test/guard.test.ts` runs after every build in CI and fails the job on any of:
 
 1. A store manifest with any key from `permissions`, `optional_permissions`, `host_permissions`, `optional_host_permissions`, or containing `nativeMessaging`, `scripting`, `tabs`, `storage`, `activeTab` or `<all_urls>` anywhere.
-2. A store artifact's files containing `47148`, `captureVisibleTab`, `executeScript`, `runtime.reload` or `dev-reload`; or **not** containing `ws://127.0.0.1:47147`.
+2. A store artifact's files containing `47148`, `eval(`, `new Function(`, `screenshot`, `captureVisibleTab`, `executeScript`, `runtime.reload` or `dev-reload`; or **not** containing `ws://127.0.0.1:47147`. (The HUD contains none of these today.)
 3. A dev artifact containing `47147`.
 4. **Dispatch keys.** The guard loads the built `page.js` in a `node:vm` context with a fake `document`, dispatches a relay hello, and reads the command list from the page's hello (§9.3). For a store artifact that list must **equal** `STORE_COMMANDS` from `src/protocol/commands.ts`, and contain none of the dev names.
 5. `LICENSE` or `THIRD_PARTY_NOTICES.md` missing from any artifact.
@@ -273,8 +275,8 @@ A `extension` job in a new `.github/workflows/extension.yml` (picked here) on ev
 
 ```
 Requires Node >= 23.6 (TypeScript type stripping) and npm.
-cd extension && npm ci && npx wxt build -b firefox
-Output: extension/.output/firefox-mv3/
+cd extension && npm ci && npx wxt build -b firefox --mode store
+Output: extension/.output/firefox-mv3-store/
 ```
 
 `hud-bundle.mjs` imports `src/enums/generated.ts`, which is why that file is included. CI stamps `extension/package.json` before zipping (§14.2), so the sources zip already carries the real version.
@@ -321,7 +323,7 @@ From [Pairing protocol: MCP server and extension](https://github.com/IIxauII/pok
 3. Two clients spawning at once is harmless: the second hub gets `EADDRINUSE` and exits 0 silently.
 4. **Connected but no valid `welcome` within 1 s** (§7.6) → a foreign process holds the port: status rung 1.
 5. **Child exited with a non-zero code and no hub answers** → status rung 2, with the first stderr line.
-6. **Idle exit:** the hub exits after **10 minutes** with no clients **and** no extension connections.
+6. **Idle exit:** the hub exits after **10 minutes** with no clients **and** no counted tabs. Open extension connections without a counted tab do not keep it alive; those extensions redial on their next keepalive tick.
 
 The store hub listens on **47147**, the dev hub on **47148** (picked here; both in IANA's unassigned 47101–47556 block, and below macOS's ephemeral range). Both are hardcoded, with no override, because the extension cannot read configuration. Which port a server uses: 47147, or 47148 when run from a checkout with `COACHEMON_DEV=1` (picked here), which is how `scripts/eval.ts`, `smoke.ts` and `autoplay.ts` reach a dev build.
 
@@ -419,7 +421,7 @@ All frames are JSON text messages. Types live in `src/protocol/wire.ts`. `PRODUC
 - **Firefox 140 and later**, detected by a `data_collection` key in `permissions.getAll()`: `action.onClicked` → `permissions.request({ data_collection: ["websiteContent"] })`. Consent is `permissions.contains` on the same.
 - **Firefox 128–139** have no built-in data consent, and Mozilla's guidance is a custom consent experience **[doc]**. The toolbar click is that experience (picked here): the action title states what the click allows (§5.3), and the click records consent in the extension origin's own `localStorage` (no `storage` permission).
 - Consent granted → the background sends `{"t":"consent","consent":true}` and the tabs.
-- Chrome, Safari and Orion have no consent step and always send `consent: true`.
+- Chrome, Safari and Orion have no consent step and always send `consent: true`. The Firefox build tells Firefox from Orion by `runtime.getBrowserInfo()`: only `name: "Firefox"` takes either consent path above; anything else, Orion running the AMO build included, counts as consented **[unverified]** (Orion's answer to `getBrowserInfo` was never observed).
 - If AMO forces `required: ["websiteContent"]` (§5.3), consent is implied by install and the click goes away.
 
 ### 8.5 Protocol window
@@ -593,7 +595,7 @@ TABS <rung 8 line>
 RESUMED
 ```
 
-The first line of `text` is cut at 300 characters. `NEW BATTLE`, `DANGER` and `LIKELY LOST` are gone: a battle whose card turns dangerous mid-wave is a new `BATTLE … · danger` line for the same wave.
+On a `resume` notice the CLI prints `RESUMED` and issues a `card` read again, printing its line. The first line of `text` is cut at 300 characters. `NEW BATTLE`, `DANGER` and `LIKELY LOST` are gone: a battle whose card turns dangerous mid-wave is a new `BATTLE … · danger` line for the same wave.
 
 ### 11.3 Coach reply rules, rewritten against verdicts
 
@@ -623,7 +625,7 @@ The coach reads through the same MCP server, never through `read.sh`. The coach 
 
 `read_card` and `read_starters` settle like every reading tool, return the envelope, and need no grant.
 
-**The HUD's on/off switch is the HUD's own header control** (full / mini / closed, persisted in the page's `localStorage["coach-hud-view"]`). There is no popup, no stored extension flag and no `storage` permission. `read.sh hud` / `hud-off` are gone.
+**The extension toggle that turns the HUD on or off is the HUD's own header control** (full / mini / closed, persisted in the page's `localStorage["coach-hud-view"]`), which ships inside the extension. It is not a popup or an extension setting, because the permission set has no `storage` and the pairing ticket leaves the extension no UI. `read.sh hud` / `hud-off` are gone.
 
 ---
 
@@ -741,7 +743,7 @@ From [Release channel, versioning, and how fixes reach users](https://github.com
 ### 14.2 Second semantic-release run
 
 - **Config:** `extension/.releaserc.json`, `tagFormat: "extension-v${version}"`, `branches: ["master"]`. semantic-release runs with `extension/` as its working directory.
-- **Path filter:** a local plugin, `scripts/release/extension-commits.mjs` (picked here), wraps `@semantic-release/commit-analyzer` and `@semantic-release/release-notes-generator`. It keeps only commits whose `git diff-tree --no-commit-id --name-only -r <sha>` touches `extension/`, `src/protocol/`, `src/page/` or `skills/coach-pokerogue/scripts/hud/`. A HUD fix bumps both streams, which is correct. A server-only commit never bumps the extension. `src/protocol/` and `src/page/` are included because they ship in the extension; the ticket's two paths predate them.
+- **Path filter:** a local plugin, `scripts/release/extension-commits.mjs` (picked here), wraps `@semantic-release/commit-analyzer` and `@semantic-release/release-notes-generator`. It keeps only commits whose `git diff-tree --no-commit-id --name-only -r <sha>` touches `extension/`, `src/protocol/`, `src/page/` or `skills/coach-pokerogue/scripts/hud/`. A HUD fix bumps both streams, which is correct. A server-only commit never bumps the extension. **(picked here, amending the release ticket's two paths)** `src/protocol/` and `src/page/` are added because they ship in the extension and did not exist when the release ticket fixed the filter; leaving them out would let a change to shipped page code skip the extension stream.
 - **The plugin's `chore(release)` commit** rewrites `hud/05-randbats.js` but is a `chore`, so it bumps nothing.
 - **Stamping:** `@semantic-release/exec` `prepareCmd` runs `node ../scripts/release/stamp-extension.ts ${nextRelease.version}`, which writes the version into `extension/package.json` **in the workspace only**, then builds and zips. **Nothing is committed**; there is no `@semantic-release/git` in this run. The tag is the source of truth.
 - **Artifacts** on the GitHub Release: `coachemon-chrome-<v>.zip`, `coachemon-firefox-<v>.zip`, `coachemon-<v>-sources.zip`, `coachemon-safari-web-extension-<v>.zip` (the unpackaged folder), via `@semantic-release/github`.
@@ -813,6 +815,8 @@ Each was accepted knowingly by a closed ticket. None blocks building; a build ti
 | Synchronous `CustomEvent` dispatch across worlds on Firefox, Safari and Orion; the marker's visibility to a mis-worlded script | [MAIN↔isolated relay contract](https://github.com/IIxauII/pokerogue-mcp/issues/193) | **relay check per engine in `scripts/smoke.ts`**: one `probe` must come back synchronously; fallback in §9.2 |
 | The pump settles a hidden tab on Firefox, Safari and Orion | [Game loop in a hidden tab without focus emulation](https://github.com/IIxauII/pokerogue-mcp/issues/174) | none; readers time out, the driver pumps |
 | `key` (untrusted keydown) drives the game on Firefox and Safari | [Synthetic input a Phaser game accepts](https://github.com/IIxauII/pokerogue-mcp/issues/101) | the retry rung only |
+| Orion reaches loopback without a `127.0.0.1` host permission, from a store-installed build (tested only as unsigned sideloads with the permission declared) | [Agent transport on Orion](https://github.com/IIxauII/pokerogue-mcp/issues/150) | smoke run on Orion with the store zip |
+| Orion's opt-in auto-update of store installs clears site permissions (orionfeedback #7361) | [Orion after the AppleScript route retires](https://github.com/IIxauII/pokerogue-mcp/issues/118) | none; rung 7 covers the missing tab |
 | Orion after sleep/wake (orionfeedback #14474), long idle, hidden tab | [Agent transport on Orion](https://github.com/IIxauII/pokerogue-mcp/issues/150) | reconnect-on-wake |
 | AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/pokerogue-mcp/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110) | named fallbacks (§5.3, §8.1) |
 | A CWS reviewer accepts the declared remote code (`47-biome.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110) | declared Yes (§6) |
@@ -857,7 +861,7 @@ Ruled beyond this delivery on the map, and not specified here:
 - Store rejection recovery.
 - Data versus art exposure for species and move names in a listing.
 - Firefox site-access revocation after install.
-- Drift watches on `pokerogue.net`'s headers and the input path.
+- Drift watches on `pokerogue.net`'s response headers, and on the input path beyond `keyboardKeyDown` and `getButtonWithKeycode` (those two do join the drift list, §10.4).
 - Chrome's two-extension cap for new publishers and median review latency.
 - Measuring off-Chrome behaviour beyond the smoke checks in §16.
 - Daily Run and leaderboard rules for agent-driven runs and seed previews.
