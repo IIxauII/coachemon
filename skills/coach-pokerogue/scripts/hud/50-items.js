@@ -208,6 +208,8 @@ const { rewardContext, rewardValue } = (() => {
       const best = bestHolder(pool, ctx, fit);
       return best ? verdict(best, "", pool) : { v: -3, why: `${label} · no better for anyone`, users: pool.map(p => p.name) };
     }
+    // DNA Splicers: worth what the best fusion it allows does for the party (49-fusion), a pass when none clears the bar.
+    if (cls("FusePokemonModifierType")) return splicerReward(ctx.s, t);
     if (id === "ABILITY_CHARM") {
       return { v: ctx.wave >= 150 ? 1 : 5, why: "hidden abilities on wild mons more often (catching only)" };
     }

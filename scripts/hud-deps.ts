@@ -528,6 +528,30 @@ export const HUD_DEPS = {
   ],
 
   /**
+   * The fusion advisor (§24): the Splicer's select filter and party screen, pick order (first = base), and what a
+   * fusion is — averaged base stats, the stat formula, the second type rule, the other half's ability (and the
+   * abilities that don't work fused) — all re-implemented from species data.
+   */
+  "49-fusion.js": [
+    `src/modifier/modifier-type.ts#FusePokemonModifierType.constructor`,
+    `src/modifier/modifier.ts#FusePokemonModifier.apply`,
+    `src/phases/select-modifier-phase.ts#SelectModifierPhase.openFusionMenu`,
+    `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.show`,
+    `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.getFilterResult`,
+    `src/ui/handlers/party-ui-handler.ts#PartyUiHandler.processActionButtonForOptions`,
+    `src/data/challenge.ts#HardcoreChallenge.applyPokemonFusion`,
+    `${P}#PlayerPokemon.fuse`,
+    `${P}#Pokemon.calculateBaseStats`,
+    `${P}#Pokemon.calculateStats`,
+    `${P}#Pokemon.getBaseTypes`,
+    `${P}#Pokemon.getAbility`,
+    `${P}#Pokemon.canApplyAbility`,
+    `src/data/pokemon-species.ts#PokemonSpeciesForm.getAbility`,
+    `src/modifier/init-modifier-pools.ts#initGreatModifierPool`,
+    `src/modifier/init-modifier-pools.ts#initMasterModifierPool`,
+  ],
+
+  /**
    * §15. The rewards card judges held items, mints, vitamins, EXP items, candy
    * and evolution items by the member they would go to. It calls only select
    * filters and `getMaxExpLevel`; what an item does is re-implemented from its

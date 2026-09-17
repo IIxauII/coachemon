@@ -41,6 +41,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Catching | §20 |
 | Team audit | §17 |
 | Starter select | §23 |
+| DNA Splicers and fusion | §24 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -2038,3 +2039,52 @@ Fresh Start uses (ability index `% 2`, passive off, egg moves replaced by level 
 (`src/system/game-data.ts:2126-2128`: VARIANT_3 3, VARIANT_2 2, SHINY 1) — the best tier ever caught, even when the
 non-shiny form is picked (`src/phases/select-starter-phase.ts:80-82`) — capped at 14 for the party, none under Fresh
 Start (`src/data/challenge.ts:928`).
+
+## 24. DNA Splicers: who can be fused, pick order, and what a fusion is
+
+Read at the pinned tag (`v1.12.0.11`). The fusion advisor (`49-fusion.js`) re-implements everything below from species
+data and calls only pure reads (species forms, `getAbility`, the select filter), so it runs outside `sandbox`. The game
+has no fusion preview: the party screen offers only APPLY / SPLICE / UNSPLICE (`src/ui/handlers/party-ui-handler.ts:1456-1468`).
+
+**The item.** `DNA_SPLICERS` is a `FusePokemonModifierType` (`src/modifier/modifier-type.ts:1263-1283`, `:2197`); its
+modifier is consumable and `apply` is `playerPokemon.fuse(playerPokemon2)` (`src/modifier/modifier.ts:2363`, `:2390-2393`),
+so it can't be held or kept for later. There is no reverse item: unsplicing is a free party option. Pools: **Great**,
+weight 4 in Spliced Endless, 2 in classic (challenge runs included) during a fusion event
+(`timedEventManager.areFusionsBoosted()`), else 0 (`src/modifier/init-modifier-pools.ts:310-323`); **Master**, weight 24
+outside Spliced Endless and that event (`:625-633`). Both need more than one unfused member. Never sold in the shop;
+no Mystery Encounter names it, though a Master-tier roll (Mysterious Chest, Fight or Flight past wave 160) can bring it.
+
+**The party screen.** Taking it runs `SelectModifierPhase.openFusionMenu` (`src/phases/select-modifier-phase.ts:175-180`,
+`:299-325`): `UiMode.PARTY` with `PartyUiMode.SPLICE` and `modifierType.selectFilter` as the handler's `selectFilter`
+(`src/ui/handlers/party-ui-handler.ts:282-290`). The first pick (APPLY) records `transferCursor` and sets `transferMode`
+(`:833-834`, `:1731-1738`); SPLICE on another slot calls back `(transferCursor, cursor)` (`:830-832`), and the phase
+builds the modifier with `party[fromSlotIndex]` first (`select-modifier-phase.ts:309-318`). Backing out clears the first
+pick (`party-ui-handler.ts:1019-1026`) and then returns to the rewards screen with the Splicer unspent
+(`select-modifier-phase.ts:322-324`).
+**Filter** (both picks, `modifier-type.ts:1270-1275`): not `isFusion()`, and `ChallengeType.POKEMON_FUSION`, which only
+Hardcore uses, refusing a fainted member (`src/data/challenge.ts:1151-1157`). Same species, legendaries and fainted
+members (outside Hardcore) are allowed.
+
+**`PlayerPokemon.fuse(other)`** (`src/field/pokemon.ts:6233-6294`; party write, phase queue, an unseeded status draw).
+The **first pick is the base**: it keeps its level, EXP and growth rate, IVs, nature, Tera type, friendship, passive
+unlock, Pokérus, used TMs and moveset. From the second it copies `fusionSpecies`, `fusionFormIndex`,
+`fusionAbilityIndex`, shiny, variant, gender, luck and custom data (`:6234-6244`). HP becomes the halves' mean HP share
+of the base's pre-fusion max, then `updateModifiers` recalculates (`:6250-6265`, `:6283`). Every held item of the second
+moves over, `isTransferable` unchecked, up to the base's stack limits; the rest is lost (`:6276-6285`,
+`src/battle-scene.ts:2537-2610`). The second leaves the party (`:6285`), and a `LearnMovePhase` is queued for each of its
+moves the base doesn't know (`:6287-6291`). No evolution check.
+
+**What a fusion is.** Base stats (`calculateBaseStats`, `:1618-1640`): each stat `Math.ceil((base + other) / 2)`, after
+the base half's Shuckle Juice / Old Gateau and before vitamins; Spliced Endless halves an **unfused** mon's instead.
+Stats (`calculateStats`, `:1575-1616`): `floor((2·base + iv) · level / 100)`, HP `+ level + 10` (1 with Wonder Guard),
+the rest `+ 5` then the nature (×1.1 ceil, ×0.9 floor). Types (`getBaseTypes`, `:2004-2034`): type 1 is the base's;
+type 2 is the other half's type2 when set and not type 1, else its type1 when that differs, else the base's own type2.
+Ability (`getAbility`, `:2076-2104`): the **other half's** at its `fusionAbilityIndex` (`PokemonSpeciesForm.getAbility`:
+0 / 1 / 2 hidden, `src/data/pokemon-species.ts:194-204`), with no fallback to ability 1; `canApplyAbility` turns off one
+carrying `NoFusionAbilityAbAttr` (`pokemon.ts:2247-2254`: Disguise, Zen Mode, Schooling, Stance Change, …). The passive
+stays the base's (`:2115-2135`). Learnsets merge both halves (`src/field/learnsets.ts:213-236`), TMs are the union
+(`pokemon.ts:5858-5875`), egg moves the base's only (`:1899-1913`). Evolution checks the base's line first, then the
+other half's, one at a time (`:2771-2793`). Shiny if either half, luck summed (`:1734-1736`, `:1815-1817`).
+
+**Unsplice** (`party-ui-handler.ts:353-395`, `pokemon.ts:3079-3091`): free, in SPLICE mode or on the party check screen
+during the reward phase; the second half is gone for good, its moves and items stay with the base.
