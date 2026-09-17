@@ -1,0 +1,177 @@
+battle/easy                        agree         ⚔ Charizard Heat Wave→Rattata
+                                                ♟ Charizard Heat Wave→Rattata (KO · 100% left)
+                                                · 
+                                                · cost total 1.78 ms · ♟ cold 0.36 ms · warm 0.02 ms · after command: ♟ cached true, agree → agree
+battle/easyDouble                  agree         ⚔ Charizard Heat Wave→both ; Venusaur Double-Edge→Rattata
+                                                ♟ Charizard Heat Wave→Rattata (KO · 100% left)
+                                                · double
+                                                · cost total 2.15 ms · ♟ cold 0.52 ms · warm 0.02 ms · after command: ♟ cached true, agree → agree
+battle/double                      agree         ⚔ Charizard Heat Wave→both ; Venusaur Power Whip→Nidoqueen
+                                                ♟ Charizard Heat Wave→Bisharp (KO · 100% left)
+                                                · double
+                                                · cost total 5.52 ms · ♟ cold 2.14 ms · warm 0.02 ms · after command: ♟ cached true, agree → agree
+battle/lastFoe                     agree         ⚔ Charizard Heat Wave→Nidoqueen ; Venusaur Power Whip→Nidoqueen
+                                                ♟ Charizard Heat Wave→Nidoqueen (KO · 84% left)
+                                                · double
+                                                · cost total 2.42 ms · ♟ cold 0.94 ms · warm 0.02 ms · after command: ♟ cached true, agree → agree
+battle/threat                      agree         ⚔ Charizard Flamethrower→Lycanroc
+                                                ♟ Charizard Flamethrower→Lycanroc (sacrifice → Blastoise in free)
+                                                · doomedStaying planStaysAndFalls noSafeSwitch
+                                                · cost total 0.36 ms · ♟ cold 0.18 ms · warm 0.01 ms · after command: ♟ cached true, agree → agree
+battle/switchin                    mon    5      ⚔ Charizard Flamethrower→Lycanroc
+                                                ♟ ⇄Blastoise Wave Crash→Lycanroc (switch in, takes a hit · falls · foe at 100%)
+                                                · reserveActive doomedStaying planSwitches noSafeSwitch laterStepIsTurnMon planHeld reserve=Blastoise>Lycanroc,Morpeko>Lycanroc pinPlan Δval=0 loss→loss pinTurn Δscore=-92.9 [Blastoise in, —]
+                                                · cost total 0.43 ms · ♟ cold 0.32 ms · warm 0.01 ms · after command: ♟ cached true, mon → mon
+battle/predict                     mon    6      ⚔ ⇄Venusaur Power Whip→Ludicolo
+                                                ♟ Blastoise Wave Crash→Arcanine (KO · 57% left)
+                                                · predictedSwitch planAimsAtLeaving turnAimsAtSwitchIn paidSwitch laterStepIsTurnMon pinPlan Δval=-207.6 win→loss pinTurn Δscore=-11.87 [Blastoise Wave Crash]
+                                                · cost total 4.09 ms · ♟ cold 3.26 ms · warm 0.02 ms · after command: ♟ cached true, mon → mon
+battle/risk                        agree         ⚔ Venusaur Power Whip→Aurorus
+                                                ♟ Venusaur Power Whip→Aurorus (KO · 70% left)
+                                                · 
+                                                · cost total 0.11 ms · ♟ cold 0.06 ms · warm 0.01 ms · after command: ♟ cached true, agree → agree
+battle/single                      mon    9      ⚔ Charizard Air Slash→Ninetales
+                                                ♟ ⇄Blastoise Wave Crash→Ninetales (switch in, takes a hit · KO · 61% left)
+                                                · planSwitches optionalSwitchToPlanMon pinPlan Δval=-1.1 win→win pinTurn Δscore=0.54 [Blastoise in, Wave Crash]
+                                                · cost total 2.12 ms · ♟ cold 1.58 ms · warm 0.01 ms · after command: ♟ cached true, mon → mon
+battle/tera                        agree         ⚔ Charizard Flamethrower→Lycanroc
+                                                ♟ Charizard Flamethrower→Lycanroc (falls · foe at 100%)
+                                                · reserveActive doomedStaying planStaysAndFalls reserve=Charizard>Lycanroc
+                                                · cost total 0.14 ms · ♟ cold 0.06 ms · warm 0.01 ms · after command: ♟ cached true, agree → agree
+battle/trap                        agree         ⚔ Charizard Flamethrower→Swinub
+                                                ♟ Charizard Flamethrower→Swinub (KO · 100% left)
+                                                · 
+                                                · cost total 0.13 ms · ♟ cold 0.07 ms · warm 0.02 ms · after command: ♟ cached true, agree → agree
+battle/modelled                    agree         ⚔ Scrafty Brick Break→Pineco
+                                                ♟ Scrafty Brick Break→Pineco (KO · 98% left)
+                                                · 
+                                                · cost total 0.17 ms · ♟ cold 0.07 ms · warm 0.01 ms · after command: ♟ cached true, agree → agree
+battle/intimidateIn                target 6      ⚔ Blastoise Wave Crash→Arcanine
+                                                ♟ Blastoise Wave Crash→Ludicolo (falls · foe at 66%)
+                                                · predictedSwitch planAimsAtLeaving turnAimsAtSwitchIn planStaysAndFalls
+                                                · cost total 1.02 ms · ♟ cold 0.81 ms · warm 0.03 ms · after command: ♟ cached true, target → target
+battle/intimidate                  agree         ⚔ Scrafty Brick Break→Granbull
+                                                ♟ Scrafty Brick Break→Granbull (KO · 94% left)
+                                                · 
+                                                · cost total 0.21 ms · ♟ cold 0.13 ms · warm 0.02 ms · after command: ♟ cached true, agree → agree
+teamplan/cyrus-4v6                 agree         ⚔ Morpeko Aura Wheel→Honchkrow
+                                                ♟ Morpeko Aura Wheel→Honchkrow (KO · 100% left)
+                                                · reserveActive reserve=Scrafty>Weavile,Blastoise>Weavile
+                                                · cost total 7.8 ms · ♟ cold 4.85 ms · warm 1.18 ms · after command: ♟ cached true, agree → agree
+teamplan/cyrus-4v6 (answer on field) agree         ⚔ ⇄Morpeko Aura Wheel→Honchkrow
+                                                ♟ ⇄Morpeko Aura Wheel→Honchkrow (switch in, takes a hit · KO · 53% left)
+                                                · reserveActive doomedOut paidSwitch planSwitches reserve=Scrafty>Weavile,Blastoise>Weavile
+                                                · cost total 6.76 ms · ♟ cold 4.6 ms · warm 1.12 ms · after command: ♟ cached true, agree → agree
+teamplan/cyrus-4v6 (Blastoise vs Houndoom) mon    1      ⚔ Blastoise Hydro Pump→Houndoom
+                                                ♟ ⇄Scrafty High Jump Kick→Houndoom (switch in, takes a hit · KO (80%) · 7% left)
+                                                · reserveActive turnSpendsReserve planSwitches reserve=Scrafty>Weavile,Blastoise>Weavile pinPlan Δval=-33.3 loss→loss pinTurn Δscore=-1.74 [Scrafty in, High Jump Kick]
+                                                · cost total 10.61 ms · ♟ cold 8.4 ms · warm 1.01 ms · after command: ♟ cached true, mon → mon
+teamplan/youngster                 agree         ⚔ Charizard Flamethrower→Rattata
+                                                ♟ Charizard Flamethrower→Rattata (KO · 100% left)
+                                                · 
+                                                · cost total 0.34 ms · ♟ cold 0.17 ms · warm 0.04 ms · after command: ♟ cached true, agree → agree
+teamplan/youngster-double          agree         ⚔ Charizard Flamethrower→Rattata ; Blastoise Surf→Pidgey
+                                                ♟ Charizard Flamethrower→Rattata (KO · 100% left)
+                                                · double
+                                                · cost total 0.39 ms · ♟ cold 0.12 ms · warm 0.02 ms · after command: ♟ cached true, agree → agree
+teamplan/beast-boost-fodder        mon    5      ⚔ ⇄Blastoise Hydro Pump→Buzzwole
+                                                ♟ Pidgey Brave Bird→Buzzwole (falls · foe at 47% · feeds Beast Boost +1 Atk)
+                                                · doomedOut paidSwitch planStaysAndFalls laterStepIsTurnMon pinPlan Δval=-12 win→win pinTurn Δscore=-2.83 [Pidgey Brave Bird]
+                                                · cost total 0.51 ms · ♟ cold 0.37 ms · warm 0.01 ms · after command: ♟ cached true, mon → mon
+planner/cyrus-switch-predicted     mon    6      ⚔ ⇄Scrafty High Jump Kick→Weavile
+                                                ♟ Morpeko Aura Wheel→Gyarados (KO · 82% left)
+                                                · predictedSwitch planAimsAtLeaving turnAimsAtSwitchIn paidSwitch pinPlan Δval=-29.9 win→win pinTurn Δscore=-1.29 [Morpeko Aura Wheel]
+                                                · cost total 6.72 ms · ♟ cold 6.11 ms · warm 0.02 ms · after command: ♟ cached true, mon → target
+planner/cyrus-no-metagross         mon    6      ⚔ ⇄Scrafty High Jump Kick→Weavile
+                                                ♟ Morpeko Aura Wheel→Gyarados (KO · 82% left)
+                                                · predictedSwitch planAimsAtLeaving turnAimsAtSwitchIn paidSwitch pinPlan Δval=-124.7 win→loss pinTurn Δscore=-1.29 [Morpeko Aura Wheel]
+                                                · cost total 3.28 ms · ♟ cold 2.97 ms · warm 0.02 ms · after command: ♟ cached true, mon → target
+planner/cyrus-no-switch            agree         ⚔ Morpeko Aura Wheel→Gyarados
+                                                ♟ Morpeko Aura Wheel→Gyarados (KO · 82% left)
+                                                · 
+                                                · cost total 6.78 ms · ♟ cold 6.31 ms · warm 0.14 ms · after command: ♟ cached true, agree → agree
+planner/switch-in-never-acts       agree         ⚔ Charizard Flamethrower→Lycanroc
+                                                ♟ Charizard Flamethrower→Lycanroc (sacrifice → Blastoise in free)
+                                                · doomedStaying planStaysAndFalls noSafeSwitch
+                                                · cost total 2.41 ms · ♟ cold 2.25 ms · warm 0.01 ms · after command: ♟ cached true, agree → agree
+planner/fake-out                   agree         ⚔ Ambipom Return→Slowbro
+                                                ♟ Ambipom Return→Slowbro (falls · foe at 26%)
+                                                · reserveActive planStaysAndFalls reserve=Ambipom>Slowbro
+                                                · cost total 0.79 ms · ♟ cold 0.43 ms · warm 0.01 ms · after command: ♟ cached true, agree → agree
+planner/swords-dance               move   7      ⚔ Gallade Swords Dance,then Leaf Blade→·
+                                                ♟ Gallade Leaf Blade→Snorlax (falls · foe at 30%)
+                                                · reserveActive turnSpendsReserve planStaysAndFalls statusPick statusThenPlanMove planHeld reserve=Gallade>Snorlax
+                                                · cost total 0.71 ms · ♟ cold 0.42 ms · warm 0.01 ms · after command: ♟ cached true, move → agree
+planner/spore                      move   7      ⚔ Breloom Spore,then Seed Bomb→Machamp
+                                                ♟ Breloom Seed Bomb→Machamp (falls · foe at 7%)
+                                                · reserveActive planStaysAndFalls statusPick statusThenPlanMove planHeld reserve=Breloom>Machamp
+                                                · cost total 0.54 ms · ♟ cold 0.27 ms · warm 0.01 ms · after command: ♟ cached true, move → agree
+planner/slack-off                  agree         ⚔ Slowbro Scald→Gengar
+                                                ♟ Slowbro Scald→Gengar (falls · foe at 100%)
+                                                · reserveActive doomedStaying planStaysAndFalls reserve=Slowbro>Gengar
+                                                · cost total 0.28 ms · ♟ cold 0.1 ms · warm 0.01 ms · after command: ♟ cached true, agree → agree
+planner/stealth-rock               move   7      ⚔ Skarmory Stealth Rock,then Drill Peck→·
+                                                ♟ Skarmory Drill Peck→Chansey (KO · 99% left)
+                                                · statusPick statusThenPlanMove
+                                                · cost total 2.4 ms · ♟ cold 2.66 ms · warm 0.34 ms · after command: ♟ cached true, move → agree
+planner/doubles-focus              action 7      ⚔ Garchomp Dragon Claw→Hydreigon ; Lucario Aura Sphere→Hydreigon
+                                                ♟ ⇄Lucario Aura Sphere→Hydreigon (switch in, takes a hit · KO · 100% left)
+                                                · double planSwitches
+                                                · cost total 2.35 ms · ♟ cold 1.46 ms · warm 0.12 ms · after command: ♟ cached true, action → action
+planner/doubles-leaving-foe        target 6,7    ⚔ Garchomp Dragon Claw→Snorlax ; Lucario Aura Sphere→Ferrothorn
+                                                ♟ ⇄Lucario Aura Sphere→Hydreigon (switch in, takes a hit · KO · 100% left)
+                                                · double predictedSwitch planAimsAtLeaving turnAimsAtSwitchIn planSwitches
+                                                · cost total 5.39 ms · ♟ cold 3.96 ms · warm 0.02 ms · after command: ♟ cached true, target → target
+built/guzma-t1 (reserve)           agree         ⚔ ⇄Golduck Surf→Golisopod
+                                                ♟ ⇄Golduck Surf→Golisopod (switch in, takes a hit · falls · foe at 62%)
+                                                · doomedOut paidSwitch planSwitches
+                                                · cost total 263.12 ms · ♟ cold 249.65 ms · warm 6.1 ms · after command: ♟ cached true, agree → mon
+built/guzma-t3 (doomed lead)       agree         ⚔ Golduck Surf→Golisopod
+                                                ♟ Golduck Surf→Golisopod (sacrifice → Metagross in free)
+                                                · doomedStaying planStaysAndFalls noSafeSwitch
+                                                · cost total 227.86 ms · ♟ cold 211.18 ms · warm 7.18 ms · after command: ♟ cached true, agree → agree
+built/doomed-lead                  mon    5      ⚔ Jolteon Shadow Ball→Garchomp
+                                                ♟ ⇄Mamoswine Icicle Crash→Garchomp (switch in, takes a hit · KO (62%) · 9% left)
+                                                · doomedStaying planSwitches noSafeSwitch pinPlan Δval=-21.7 win→win pinTurn Δscore=-93.02 [Mamoswine in, —]
+                                                · cost total 11.86 ms · ♟ cold 11.56 ms · warm 0.21 ms · after command: ♟ cached true, mon → mon
+built/answer-on-field (reserve)    mon    1      ⚔ Mamoswine Earthquake→Kleavor
+                                                ♟ ⇄Golduck Surf→Kleavor (switch in, takes a hit · falls · foe at 28%)
+                                                · planSwitches noSafeSwitch laterStepIsTurnMon pinPlan Δval=-22.6 loss→loss pinTurn Δscore=-1.14 [Golduck in, Surf]
+                                                · cost total 3.41 ms · ♟ cold 2.25 ms · warm 0.26 ms · after command: ♟ cached true, mon → mon
+built/recoil-vs-clean              move   2      ⚔ Blaziken Blaze Kick→Scizor
+                                                ♟ Blaziken Flare Blitz→Scizor (KO · 91% left)
+                                                · sameMatchupMoveDiffers
+                                                · cost total 32.57 ms · ♟ cold 31.55 ms · warm 0.22 ms · after command: ♟ cached true, move → move
+built/charge-vs-reliable           agree         ⚔ Sceptile Solar Beam→Quagsire
+                                                ♟ Sceptile Solar Beam→Quagsire (KO · 100% left)
+                                                · 
+                                                · cost total 0.56 ms · ♟ cold 0.11 ms · warm 0.09 ms · after command: ♟ cached true, agree → agree
+built/stay-margin                  agree         ⚔ ⇄Heatran Flamethrower→Tangrowth
+                                                ♟ ⇄Heatran Flamethrower→Tangrowth (switch in, takes a hit · KO · 93% left)
+                                                · doomedOut paidSwitch planSwitches
+                                                · cost total 1.72 ms · ♟ cold 1.31 ms · warm 0.13 ms · after command: ♟ cached true, agree → agree
+built/predicted-switch             mon    6      ⚔ ⇄Togekiss Air Slash→Ludicolo
+                                                ♟ Swampert Earthquake→Arcanine (KO · 64% left)
+                                                · predictedSwitch planAimsAtLeaving turnAimsAtSwitchIn paidSwitch laterStepIsTurnMon pinPlan Δval=-198.7 win→loss pinTurn Δscore=-3.31 [Swampert Ice Punch]
+                                                · cost total 11.64 ms · ♟ cold 10.47 ms · warm 0.02 ms · after command: ♟ cached true, mon → mon
+built/lead-wins-trade              agree         ⚔ Lucario Aura Sphere→Tyranitar
+                                                ♟ Lucario Aura Sphere→Tyranitar (KO · 56% left)
+                                                · 
+                                                · cost total 1.72 ms · ♟ cold 1.12 ms · warm 0.12 ms · after command: ♟ cached true, agree → agree
+live1/w12-glenn-adelaide (Bulbasaur first) action 7      ⚔ Bulbasaur Tackle→Budew ; Charmander Scratch→Budew
+                                                ♟ ⇄Charmander Scratch→Budew (switch in, takes a hit · KO · 53% left)
+                                                · double planSwitches
+                                                · cost total 1.96 ms · ♟ cold 0.97 ms · warm 0.14 ms · after command: ♟ cached true, action → move
+live1/w12-glenn-adelaide (Charmander first) agree         ⚔ Charmander Scratch→Budew ; Bulbasaur Tackle→Budew
+                                                ♟ Charmander Scratch→Budew (KO · 72% left)
+                                                · double
+                                                · cost total 1.82 ms · ♟ cold 0.93 ms · warm 0.12 ms · after command: ♟ cached true, agree → move
+
+42 scenarios compared (0 skipped) · verdicts {"agree":24,"mon":10,"target":2,"move":4,"action":2}
+buckets, any label: {"1":2,"2":1,"5":3,"6":6,"7":6,"9":1}
+buckets, primary:   {"1":2,"2":1,"5":3,"6":6,"7":5,"9":1}
+cost built/guzma-t1 (reserve) (6v6): ♟ tables 2.5 ms · ♟ search 246 ms · pinned re-search on warm tables 3.5 ms · ⚔ fieldPlan cold 1.9 ms · whole model per mid-turn HP change 12.6 ms
+cost teamplan/cyrus-4v6 (4v6): ♟ tables 1.2 ms · ♟ search 3.5 ms · pinned re-search on warm tables 0.5 ms · ⚔ fieldPlan cold 0.3 ms · whole model per mid-turn HP change 2.4 ms
+cost planner/cyrus-no-switch (3v2): ♟ tables 0.2 ms · ♟ search 5.8 ms · pinned re-search on warm tables 0 ms · ⚔ fieldPlan cold 0.2 ms · whole model per mid-turn HP change 0.3 ms
+cost live1/w12-glenn-adelaide (Charmander first) (3v2): ♟ tables 0.2 ms · ♟ search 0.7 ms · pinned re-search on warm tables 0 ms · ⚔ fieldPlan cold 0.8 ms · whole model per mid-turn HP change 1.6 ms
+after the command is chosen (animation): verdict changed in 8 of 42
