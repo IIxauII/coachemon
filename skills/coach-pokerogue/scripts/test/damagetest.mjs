@@ -72,9 +72,9 @@ const node = () => { const n = { style: {}, children: [], addEventListener() {},
 globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
 globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
-const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits, bestMove, sandbox };\n})();\n");
+const src = bundle("hud").replace(/\}\)\(\);\s*$/, "globalThis.__dmg = { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, sandbox, stateOf, hitOn, koCurve, koTurn, koTurns, useOf, koChanceAt };\n})();\n");
 eval(src);
-const { moveOutcome, moveOutcomes, statusMoves, applyHits, endOfTurnHp, hits, bestMove, sandbox } = globalThis.__dmg;
+const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, sandbox, stateOf, hitOn, koCurve, koTurn, koTurns, useOf, koChanceAt } = globalThis.__dmg;
 
 // Expected damage of one hit whose max roll is `max`: the mean of the 16 rolls 85..100 %.
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
@@ -165,10 +165,10 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const big = moveOutcome(scene, atk, boss, pmOf(move(5, "Bigger Nuke", 0, 320)), { crit: false });
   near(big.pKo, 7 / 16, "boss break chance");
   // Each hit clamps separately; the second continues from the new bar.
-  assert.deepEqual(applyHits(boss, [150]), { hp: 100, segIdx: 0, ko: false, pSurvive: 1 });
-  assert.deepEqual(applyHits(boss, [150, 150]), { hp: 0, segIdx: 0, ko: true, pSurvive: 0 });
-  const plain = mon("plain", { hp: 200 });
-  assert.equal(applyHits(plain, [250]).ko, true);
+  const once = hitOn(stateOf(boss), 150);
+  assert.deepEqual([once.hp, once.bar], [100, 0]);
+  assert.deepEqual([hitOn(once, 150).hp, hitOn(once, 150).bar], [0, 0]);
+  assert.equal(hitOn(stateOf(mon("plain", { hp: 200 })), 250).hp, 0);
 }
 
 // Sturdy at full HP, Focus Band, Mold Breaker.
@@ -190,10 +190,11 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const band = mon("band", { hp: 100, items: [new SurviveDamageModifier()] });
   setup(atk, band);
   near(moveOutcome(scene, atk, band, nuke, { crit: false }).pKo, 0.9, "Focus Band");
-  assert.equal(applyHits(band, [300]).ko, true);
-  near(applyHits(band, [300]).pSurvive, 0.1, "Focus Band pSurvive");
-  // Two lethal hits need two Focus Band saves.
-  near(applyHits(band, [300, 300]).pSurvive, 0.01, "Focus Band twice");
+  assert.equal(hitOn(stateOf(band), 300).hp, 0, "hitOn has no luck");
+  // Over uses, two lethal hits need two Focus Band saves.
+  const banded = koCurve(band, [{ d: 300, p: 1 }]).by;
+  near(banded[0], 0.9, "Focus Band over a use");
+  near(banded[1], 0.99, "Focus Band twice");
 }
 
 // Accuracy scales expected damage; form-dependent type from getMoveType.
@@ -231,7 +232,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.equal(during, turnData[0], "multi-hit turnData restored before the next game call");
 }
 
-// hits / bestMove keep the old record shape, backed by the game path: expected for ours, max for a foe's.
+// hits keeps the old record shape, backed by the game path: expected for ours, max for a foe's.
 {
   const ours = mon("ours", { moves: [bigHit, move(10, "Growl", 0, 0, { cat: 2 })] });
   const foe = mon("foe", { player: false, moves: [bigHit] });
@@ -241,7 +242,6 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.deepEqual(Object.keys(mine[0]).filter(k => ["name", "type", "cat", "e", "dmg", "spread", "priority"].includes(k)).sort(), ["cat", "dmg", "e", "name", "priority", "spread", "type"]);
   assert.ok(mine[0].dmg < 120 && mine[0].dmg > 102);
   assert.ok(hits(foe, ours, true)[0].dmg >= 120, "foe damage is the max roll (crit-weighted rolls don't lower it)");
-  assert.equal(bestMove(ours, foe).name, "Big Hit");
   assert.equal(moveOutcomes(scene, ours, foe).length, 1);
   JSON.stringify(mine);
 }
@@ -464,6 +464,89 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   delete scene.modifiers;
   const sap = move(668, "Strength Sap", 11, -1, { cat: 2, attrs: [hitHeal(null, 1)] });
   assert.equal(drainOf(mon("venusaur"), mon("target"), { ...sap, category: 1, power: 10 }).drain, 0, "a heal by a stat isn't a drain");
+}
+
+// KO pacing: `hitOn` lands one hit on the game's bar rule; `koCurve` plays uses of a damage distribution through a
+// target's HP, bars, Reviver Seed, Focus Band and endure token. Each row: [what, target, use, options, P(down) by use].
+{
+  const round = by => by.map(x => Math.round(x * 1000) / 1000);
+  const sure = (d, n) => [{ d, p: 1, ...(n ? { n } : {}) }];
+  const seed = held("PokemonInstantReviveModifier");
+  const boss3 = (hp = 300) => mon("boss3", { hp, maxHp: 300, boss: 3, player: false });
+  const TABLE = [
+    ["plain 2HKO", mon("t", { hp: 100 }), sure(60), {}, [0, 1]],
+    ["a bar stops a hit at its boundary", mon("b", { hp: 200, boss: 2, player: false }), sure(150), {}, [0, 1]],
+    ["hits of a multi-hit use clamp one by one", boss3(250), sure(150, 3), {}, [0, 1]],
+    ["…where one hit of the same total wastes its overflow at each bar", boss3(250), sure(150), {}, [0, 0, 1]],
+    ["a hit past a bar by twice its size breaks two", boss3(), sure(350), {}, [0, 1]],
+    ["heals only on turns survived", mon("t", { hp: 100 }), sure(60), { turnEnd: 30 }, [0, 0, 1]],
+    ["chip counts on the KO turn", mon("t", { hp: 250 }), sure(64.3), { turnEnd: -61 }, [0, 1]],
+    ["hit and chip finish it this turn", mon("t", { hp: 40 }), sure(30), { turnEnd: -10 }, [1]],
+    ["chip alone", mon("t", { hp: 100 }), sure(0), { turnEnd: -30 }, [0, 0, 0, 1]],
+    // 200 → 120 → 100 (the bar) → 20 → down; without bars it would go on the third.
+    ["a bar also stops chip", mon("b", { hp: 200, boss: 2, player: false }), sure(0), { turnEnd: -80 }, [0, 0, 0, 1]],
+    ["Reviver Seed: a second life at half HP", mon("t", { hp: 100, maxHp: 200, items: [seed] }), sure(100), {}, [0, 1]],
+    ["firstKo sets use 1, the rolls the HP after it", mon("t", { hp: 100 }), [{ d: 90, p: 0.5 }, { d: 110, p: 0.5 }], { firstKo: 0.2 }, [0.2, 1]],
+    ["a wild boss's Def rises as a bar breaks", mon("b", { hp: 200, boss: 2, player: false }), sure(100), { cat: "physical" }, [0, 0, 1]],
+    ["…a trainer's doesn't", Object.assign(mon("b", { hp: 200, boss: 2, player: false }), { hasTrainer: () => true }), sure(100), { cat: "physical" }, [0, 1]],
+    ["lost turns deal nothing", mon("t", { hp: 100 }), sure(100), { act: i => (i === 0 ? 0.5 : 1) }, [0.5, 1]],
+  ];
+  for (const [what, target, use, opts, want] of TABLE) {
+    setup(mon("a"), target);
+    const by = round(koCurve(target, use, opts).by);
+    assert.deepEqual(by.slice(0, want.length), want, `${what}: ${by}`);
+    assert.equal(by[want.length - 1], 1, `${what}: down by then`);
+  }
+  // The same hits one at a time: 150 into the 3-bar boss at 250 goes 250 → 100 in three hits of 50 (each bar breaks on
+  // an exact hit), 250 → 200 as one hit.
+  const b = boss3(250);
+  const three = [50, 50, 50].reduce(hitOn, stateOf(b));
+  assert.deepEqual([three.hp, three.bar], [100, 0]);
+  assert.deepEqual([hitOn(stateOf(b), 150).hp, hitOn(stateOf(b), 150).bar], [200, 1]);
+  // Enough damage goes through every bar at once: 400 past the first bar's floor is four bars' worth.
+  assert.equal(hitOn(stateOf(boss3()), 500).hp, 0, "a big enough hit KOs through the bars");
+  // The classic final boss's first form can't fall on its last bar.
+  scene.currentBattle.isClassicFinalBoss = true;
+  const eternatus = mon("eternatus", { hp: 100, player: false });
+  assert.equal(hitOn(stateOf(eternatus), 999).hp, 1, "final boss floor");
+  assert.ok(koCurve(eternatus, sure(999)).by.every(x => x === 0), "never down");
+  delete scene.currentBattle.isClassicFinalBoss;
+  // Heals stop at max HP; the branches standing after use 1 carry their bar.
+  assert.deepEqual(koCurve(mon("t", { hp: 100 }), sure(10), { turnEnd: 30 }).after1.map(x => x.hp), [100]);
+  assert.deepEqual(koCurve(mon("b", { hp: 200, boss: 2, player: false }), sure(150)).after1.map(x => [x.hp, x.bar]), [[100, 0]]);
+  // `start`: an earlier turn's branches.
+  assert.deepEqual(round(koCurve(mon("t", { hp: 100 }), sure(60), { start: [{ hp: 50, p: 0.5 }, { hp: 100, p: 0.5 }] }).by).slice(0, 2), [0.5, 1]);
+  // The endure token saves once a wave, and every lethal hit of the use it went up in.
+  scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 50 })];
+  const tough = mon("tough", { hp: 100, player: false });
+  assert.deepEqual(round(koCurve(tough, sure(300)).by).slice(0, 2), [0.5, 1], "once a wave");
+  assert.deepEqual(round(koCurve(tough, sure(600, 2)).by).slice(0, 2), [0.5, 1], "the rest of that use too");
+  scene.enemyModifiers = [];
+  // Uses each bar takes: one a bar at 100 a use.
+  assert.deepEqual(koCurve(boss3(), sure(100)).perChunk, [1, 1, 1]);
+  assert.deepEqual(koCurve(boss3(), sure(60)).perChunk, [2, 2, 2]);
+  // The likely KO use against the expected one.
+  assert.equal(koTurn([0.4, 0.6, 1]), 2);
+  near(koTurns([0.4, 0.6, 1, 1, 1, 1, 1, 1, 1]), 2, "expected use");
+  assert.equal(koTurn([0.5, 1]), 1);
+  near(koTurns([0.5, 1, 1, 1, 1, 1, 1, 1, 1]), 1.5, "a coin flip on use 1");
+
+  // useOf: a record's own `use` carries its hit counts (a miss lands none); one without falls back on the likeliest hit
+  // count's rolls, or on a `hits` record's damage.
+  const atk = mon("weavile", { player: false }), def = mon("target");
+  setup(atk, def);
+  const ta = moveOutcome(scene, atk, def, pmOf(tripleAxel), { crit: false });
+  assert.equal(ta.use.find(x => x.d === 0).n, 0);
+  assert.ok(ta.use.every(x => x.d === 0 || (x.n > 1 - 1e-9 && x.n < 3 + 1e-9)), `hit counts ${JSON.stringify(ta.use)}`);
+  assert.ok(ta.use.some(x => Math.round(x.n) === 2) && ta.use.some(x => Math.round(x.n) === 3), "two-hit and three-hit uses stay apart");
+  assert.ok(useOf({ max: 100, acc: 1, dist: [{ n: 2, p: 0.6 }, { n: 3, p: 0.4 }], perHit: [{ max: 50 }, { max: 50 }, { max: 50 }] }).every(x => x.n === 2));
+  near(useOf({ dmg: 100 }).reduce((t, x) => t + x.p, 0), 1, "a hits record rolls its damage");
+  // koChanceAt: the record's own odds at the HP it was worked out for, the rolls below it.
+  const o = { max: 100, pKo: 0.2, acc: 1, targetHp: 150 };
+  assert.deepEqual([koChanceAt(o, 150), koChanceAt(o, 200), koChanceAt(o, 101)], [0.2, 0.2, 0]);
+  near(koChanceAt(o, 90), 10 / 15 + 1 / 16, "into the roll range");
+  assert.equal(koChanceAt({ ...o, live: false }, 90), 1, "an estimate is all or nothing");
+  assert.equal(koChanceAt({ ...o, revive: 50 }, 90), 0, "a Reviver Seed");
 }
 
 console.log("damage: ok");

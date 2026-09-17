@@ -248,11 +248,16 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
   // Chip damage over the whole fight that makes it dangerous, as a share of our HP: only a fight that wears us down to a
   // KO. A slow fight that costs HP a heal fixes isn't worth a ball and a party slot.
   const CHIP = 1;
+  // Without the planner: the `hits` record that KOs `target` soonest by the KO pacing core, then the hardest hitting.
+  const fastestHit = (a, target, foe = false) => hits(a, target, foe).filter(x => x.dmg > 0)
+    .map(x => ({ x, turns: koTurn(koCurve(target, useOf(x)).by) }))
+    .reduce((b, y) => (!b || y.turns < b.turns || (y.turns === b.turns && y.x.dmg > b.x.dmg) ? y : b), null);
   const escapeReason = (s, foe, party, p) => {
     if (!(p > 0)) return null;
     let best = null;
     for (const me of party.filter(x => x.isOnField?.())) {
       let turns = 9, first = stat(me, Stat.SPD) >= stat(foe, Stat.SPD) ? 1 : 0, theyFirst = 0;
+      const fallback = () => fastestHit(me, foe)?.turns ?? 9;
       try {
         if (typeof exchange === "function") {
           for (const pm of (me.moveset ?? []).filter(Boolean)) {
@@ -263,13 +268,13 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
               turns = x.turnsWe; theyFirst = x.pTheyKoFirst ?? 0; first = x.pFirst ?? first;
             }
           }
-        } else turns = matchup(me, foe).myTurns;
-      } catch { turns = matchup(me, foe).myTurns; }
+        } else turns = fallback();
+      } catch { turns = fallback(); }
       let dmg = 0, pKo = 0;
       try {
         const t = typeof threatFrom === "function" ? threatFrom(s, foe, me) : null;
         if (t) { dmg = t.expected ?? 0; pKo = t.pKo ?? 0; }
-        else { dmg = bestMove(foe, me, true)?.dmg ?? 0; pKo = dmg >= me.hp ? 1 : 0; }
+        else { dmg = fastestHit(foe, me, true)?.x.dmg ?? 0; pKo = dmg >= me.hp ? 1 : 0; }
       } catch {}
       // Foe turns before our finishing blow, against failed throws (each gives it one).
       const hitsFight = turns >= 9 ? 9 : Math.max(0, turns - first);

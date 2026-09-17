@@ -35,7 +35,7 @@ const liveBundle = () => {
   assert.ok(at > 0, "bundle has 30-planner.js");
   src = src.slice(0, at) + STUBS + src.slice(at);
   const end = src.lastIndexOf("})();");
-  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, turnsToKo, koCurve, tokenActs, selfStages, setupRamp, koBoost, hudSummary };\n" + src.slice(end);
+  return src.slice(0, end) + "globalThis.__planner = { actionOrder, threatFrom, exchange, koCurve, tokenActs, selfStages, setupRamp, koBoost, hudSummary };\n" + src.slice(end);
 };
 
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
@@ -186,7 +186,7 @@ const assertNoImmediateScrafty = field => {
 {
   const { party, foes } = cyrus(true);
   const { scene: s } = render({ party, foes, live: true });
-  const { actionOrder, threatFrom, exchange, turnsToKo } = globalThis.__planner;
+  const { actionOrder, threatFrom, exchange } = globalThis.__planner;
   const [morpeko, scrafty] = party;
   const [gyarados, weavile] = foes;
   const plain = { priority: 0 };
@@ -215,19 +215,16 @@ const assertNoImmediateScrafty = field => {
   // One HP above the bar boundary: Aura Wheel (77–90) breaks the bar for 1 HP, then needs two more for the last 150.
   const edge = { ...weavile, id: "Weavile at the boundary", hp: 151 };
   assert.equal(exchange(s, morpeko, morpeko.moveset[0], edge).turnsWe, 3, "a clamped first hit doesn't set the pace for later bars");
-  // Turn-end heals come every turn the target survives. Meteor Mash lands for 64.3 on average, 57.9 a use with its 10 %
-  // misses, into a Gyarados healing 30: 250 HP falls 27.9 a turn, so it stands on 82.6 before the 7th use (out of
-  // reach of a 70 max roll) and falls to the 8th. Waterfall (55.1) into a Metagross healing 10: 240 / 45.1 → 6 turns.
-  // Healing once would say 5 and 5.
+  // Turn-end heals come every turn the target survives, and never past max HP (Pokemon.heal). Meteor Mash lands for
+  // 64.3 on average, 57.9 a use with its 10 % misses, into a Gyarados healing 30: 250 HP falls 27.9 a turn on the mean,
+  // but a miss at full HP heals nothing, so the 8th use finishes it only 49.96 % of the time and the likely turn is the
+  // 9th (8.0 expected). Waterfall (55.1) into a Metagross healing 10: 240 / 45.1 → 6 turns. Healing once would say 5 and 5.
   globalThis.__stub.heal = p => ({ Gyarados: 30, Metagross: 10 })[p.name] ?? 0;
   const [, , metagross] = party;
   const healing = exchange(s, { ...metagross, id: "healing Metagross" }, metagross.moveset[0], { ...gyarados, id: "healing Gyarados" });
   delete globalThis.__stub.heal;
-  assert.deepEqual([healing.turnsWe, healing.turnsThey], [8, 6], "heals land every turn on both sides");
-  // Chip lands every turn, the last one included: 250 HP under 64.3 a hit and 61 chip goes in 2, not 3.
-  assert.equal(turnsToKo(250, 64.3, -61), 2, "chip counts on the KO turn");
-  assert.equal(turnsToKo(40, 30, -10), 1, "chip finishes it the turn it's hit");
-  assert.equal(turnsToKo(100, 0, -30), 4, "chip alone");
+  assert.deepEqual([healing.turnsWe, healing.turnsThey], [9, 6], "heals land every turn on both sides");
+  assert.ok(Math.abs(healing.eTurnsWe - 8) < 0.05, `expected turns (${healing.eTurnsWe})`);
   // Meteor Mash and 61 chip a turn into 250 HP: two turns do it only 47.8 % of the time (the rolls and a 10 % miss
   // decide), three 98 %. The mean (64.3 + 61 a turn) would call it a sure two.
   globalThis.__stub.heal = p => (p.name === "Gyarados" ? -61 : 0);
@@ -243,13 +240,19 @@ const assertNoImmediateScrafty = field => {
   exchange(s, { ...metagross, id: "Metagross with a bell" }, metagross.moveset[0], { ...gyarados, id: "Gyarados vs bell" });
   delete globalThis.__stub.heal;
   assert.ok(asked.some(([n, d]) => n === "Metagross" && d > 50), `our turn-end HP is asked with the damage dealt (${JSON.stringify(asked)})`);
-  // Reviver Seed: Aura Wheel's KO brings Gyarados back at 125, so it takes a second turn.
+  // Reviver Seed: Aura Wheel's KO brings Gyarados back at 125, so it takes a second turn. The outcome says so this turn
+  // (`revive`, no pKo); the KO pacing core reads the held seed for the turns after.
   const seededOutcome = globalThis.__stub.outcome;
-  globalThis.__stub.outcome = (a, d, pm, o) => { const x = seededOutcome(a, d, pm, o); return x && d.revive ? { ...x, pKo: 0, revive: d.revive } : x; };
-  assert.equal(exchange(s, morpeko, morpeko.moveset[0], { ...gyarados, id: "seeded Gyarados", revive: 125 }).turnsWe, 2, "Reviver Seed adds half its HP to get through");
+  const seed = new (class PokemonInstantReviveModifier { getStackCount() { return 1; } })();
+  const seeded = (x, id) => ({ ...x, id, getHeldItems: () => [seed] });
+  globalThis.__stub.outcome = (a, d, pm, o) => {
+    const x = seededOutcome(a, d, pm, o);
+    return x && d.getHeldItems().includes(seed) ? { ...x, pKo: 0, revive: Math.floor(d.getMaxHp() / 2) } : x;
+  };
+  assert.equal(exchange(s, morpeko, morpeko.moveset[0], seeded(gyarados, "seeded Gyarados")).turnsWe, 2, "Reviver Seed adds half its HP to get through");
   // …and our own: Waterfall can't finish a seeded Morpeko at 60 HP this turn.
   const bare = exchange(s, { ...morpeko, id: "Morpeko at 60" }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs 60" }, { hp: 60 });
-  const saved = exchange(s, { ...morpeko, id: "seeded Morpeko at 60", revive: 110 }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs seed" }, { hp: 60 });
+  const saved = exchange(s, seeded(morpeko, "seeded Morpeko at 60"), morpeko.moveset[0], { ...gyarados, id: "Gyarados vs seed" }, { hp: 60 });
   globalThis.__stub.outcome = seededOutcome;
   assert.ok(bare.turnsThey === 1 && saved.turnsThey > 2, `seed buys turns (${bare.turnsThey} → ${saved.turnsThey})`);
   // King's Rock: a faster foe flinches us 10 % a stack. High Jump Kick (55.1 a use) into Gyarados: 5 turns, 7 at 30 %.
@@ -281,7 +284,7 @@ const assertNoImmediateScrafty = field => {
   const mashRolls = Array.from({ length: 16 }, (_, r) => ({ d: Math.floor(80 * (85 + r) / 100), p: 1 / 16 }));
   const tokenCurve = id => {
     const a = tokenActs(s, ursaring(`${id} Ursaring`, true), { ...metagross, id: `Metagross vs ${id}` }, 1, 0);
-    return koCurve([200, 200], mashRolls, { act: i => a.act(i + 1) }).by.map(x => Math.round(x * 1000) / 1000);
+    return koCurve(ursaring(`${id} Ursaring, two 200 HP bars`, true), mashRolls, { act: i => a.act(i + 1) }).by.map(x => Math.round(x * 1000) / 1000);
   };
   const sleepToken = new (class EnemyAttackStatusEffectChanceModifier { effect = 4; chance = 0.025; getStackCount() { return 4; } })();
   s.enemyModifiers = [sleepToken];
@@ -330,10 +333,10 @@ const assertNoImmediateScrafty = field => {
   assert.equal(exchange(s, { ...metagross, id: "Metagross, Leftovers and a 4-stack", getHeldItems: () => [heldItem("TurnHealModifier"), heldItem("BaseStatModifier", 4)] },
     metagross.moveset[0], { ...gyarados, id: "Gyarados vs 4-stack", getHeldItems: () => [heldItem("TurnHeldItemTransferModifier")] }).turnsThey, 7, "a steal picks an item, then a stack");
   globalThis.__stub.heal = p => (p.getHeldItems().some(m => m.constructor.name === "TurnHealModifier") ? { Metagross: 10, Gyarados: 30 }[p.name] ?? 0 : 0);
-  // …and ours from it: Meteor Mash (57.9 a use, misses counted) into a Gyarados healing 30 takes 8 turns, 5 once our
-  // black hole has its Leftovers.
+  // …and ours from it: Meteor Mash (57.9 a use, misses counted) into a Gyarados healing 30 takes 9 turns (as above), 5
+  // once our black hole has its Leftovers.
   const mash = (id, items) => exchange(s, { ...metagross, id, getHeldItems: () => items }, metagross.moveset[0], { ...gyarados, id: `Gyarados vs ${id}`, getHeldItems: leftovers }).turnsWe;
-  assert.equal(mash("Metagross, no black hole", []), 8);
+  assert.equal(mash("Metagross, no black hole", []), 9);
   assert.equal(mash("Metagross with black hole", [heldItem("TurnHeldItemTransferModifier")]), 5, "our Mini Black Hole takes its Leftovers");
   delete globalThis.__stub.heal;
   console.log("== building blocks ok");
