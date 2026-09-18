@@ -167,6 +167,57 @@ test("a command goes to its tab and the relay's reply goes back unchanged (§8.3
   assert.deepEqual(wire.sent.at(-1), { t: "reply", id: 17, ok: true, result: { mode: 3 } });
 });
 
+test("a command the background answers itself never reaches the tab (§10.6)", async () => {
+  const asked: string[] = [];
+  const h = harness({
+    local: cmd => {
+      asked.push(cmd.name);
+      return cmd.name === "screenshot" ? Promise.resolve({ t: "reply", id: cmd.id, ok: true, result: { png: "x" } }) : null;
+    },
+  });
+  h.t.fromTab(1, ready());
+  const wire = h.connect();
+  wire.h.message(JSON.stringify({ t: "cmd", id: 9, tab: 1, name: "screenshot", args: {} }));
+  await Promise.resolve();
+  assert.deepEqual(h.toTab, [], "a background command was forwarded to the tab");
+  assert.deepEqual(wire.sent.at(-1), { t: "reply", id: 9, ok: true, result: { png: "x" } });
+  // A name it does not own still goes to the tab, so the seam costs the store table nothing.
+  wire.h.message(JSON.stringify({ t: "cmd", id: 10, tab: 1, name: "probe", args: {} }));
+  await Promise.resolve();
+  assert.deepEqual(asked, ["screenshot", "probe"]);
+  assert.equal(h.toTab.length, 1);
+});
+
+test("a frame only this build knows is handled by it and answered by nobody (§5.4)", () => {
+  const seen: string[] = [];
+  const h = harness({
+    extra: frame => {
+      seen.push(frame.t);
+      return frame.t === "dev-reload";
+    },
+  });
+  h.t.fromTab(1, ready());
+  const wire = h.connect();
+  const before = wire.sent.length;
+  wire.h.message(JSON.stringify({ t: "dev-reload" }));
+  assert.deepEqual(seen, ["dev-reload"]);
+  assert.equal(wire.sent.length, before, "a dev-reload was answered");
+  assert.deepEqual(h.toTab, [], "a dev-reload was forwarded to a tab");
+  // A frame it does not claim still takes its usual route: the seam costs the store table nothing.
+  wire.h.message(JSON.stringify({ t: "cmd", id: 3, tab: 1, name: "probe", args: {} }));
+  assert.deepEqual(seen, ["dev-reload", "cmd"]);
+});
+
+test("a store build knows no such frame, and one it cannot have is dropped in silence", () => {
+  const h = harness();
+  h.t.fromTab(1, ready());
+  const wire = h.connect();
+  const before = wire.sent.length;
+  wire.h.message(JSON.stringify({ t: "dev-reload" }));
+  assert.deepEqual(h.toTab, []);
+  assert.equal(wire.sent.length, before);
+});
+
 test("a tab that closed under us is `tab-gone`, the code only the background adds (§9.7)", async () => {
   for (const answer of [() => Promise.reject(new Error("no receiving end")), () => Promise.resolve(undefined)]) {
     const h = harness();

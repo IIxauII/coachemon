@@ -18,7 +18,7 @@ import { Button, NAMES, UiMode } from "./enums/generated.ts";
 import { Refusal } from "./envelope.ts";
 import { ladderFor, PINNED_GAME_VERSION } from "./escape-ladder/lookup.ts";
 import { LinkGame } from "./game/link-game.ts";
-import { HubLink, hubPort } from "./hub/link.ts";
+import { HubLink, hubPort, usesHub } from "./hub/link.ts";
 import { PLUGIN_VERSION } from "./plugin-version.ts";
 import type { CommandName } from "./protocol/commands.ts";
 import { MOVED, type Act, type CursorTarget, type GamePort, type MenuOption, type MenuRead, type Ready, type SnapshotDetail } from "./game/port.ts";
@@ -128,7 +128,7 @@ export class Driver {
    * takes nothing: the lock is only taken when the link first claims the tab, so a server that only reads never holds it.
    */
   static create(home: string = DEFAULTS.home): Driver {
-    if (process.env.COACHEMON_TRANSPORT === "hub") {
+    if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
       return new Driver(new LinkGame(hub, hub));
     }

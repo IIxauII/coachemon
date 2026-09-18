@@ -163,8 +163,26 @@ test("screenshot against a store build says what to use instead (§12.2)", async
 test("screenshot works against a dev build, which registered it (§10.6)", async () => {
   const { ext, link } = await linked({ flavour: "dev", commands: [...COMMAND_NAMES, "screenshot"] });
   const png = link.screenshot();
-  await answer(ext, { ok: true, png: "iVBOR" });
+  const asked = await answer(ext, { ok: true, id: 1, part: 0, parts: 1, png: "iVBOR" });
+  assert.deepEqual(asked.args, {}, "the first call names no capture: there is none yet");
   assert.equal(await png, "iVBOR");
+});
+
+test("a capture too large for one frame is asked for part by part, all from the one capture (§10.6)", async () => {
+  const { ext, link } = await linked({ flavour: "dev", commands: [...COMMAND_NAMES, "screenshot"] });
+  const png = link.screenshot();
+  await answer(ext, { ok: true, id: 4, part: 0, parts: 3, png: "iVB" });
+  assert.deepEqual((await answer(ext, { ok: true, id: 4, part: 1, parts: 3, png: "OR0" })).args, { id: 4, part: 1 });
+  assert.deepEqual((await answer(ext, { ok: true, id: 4, part: 2, parts: 3, png: "KGg" })).args, { id: 4, part: 2 });
+  assert.equal(await png, "iVBOR0KGg");
+});
+
+test("a capture that expired under us is `unavailable`, not half an image (§10.6)", async () => {
+  const { ext, link } = await linked({ flavour: "dev", commands: [...COMMAND_NAMES, "screenshot"] });
+  const png = link.screenshot();
+  await answer(ext, { ok: true, id: 4, part: 0, parts: 2, png: "iVB" });
+  await answer(ext, { ok: false, why: "expired" });
+  await assert.rejects(png, (e: Refusal) => e.code === "unavailable" && e.detail.why === "expired");
 });
 
 test("an unreachable hub is a reach, not a throw: every tool refuses with the rung's line (§12.3)", async () => {

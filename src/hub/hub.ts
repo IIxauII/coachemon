@@ -250,6 +250,10 @@ export class Hub {
       case "cmd":
         this.#route(c, f.id, f.name, f.args ?? {});
         return;
+      case "dev-reload":
+        // The dev loop, not a command: fanned out to every dev build, needing no tab and answering nothing (§5.4).
+        for (const b of this.#browsers) if (b.hello?.flavour === "dev") send(b.ws, { t: "dev-reload" });
+        return;
     }
   }
 

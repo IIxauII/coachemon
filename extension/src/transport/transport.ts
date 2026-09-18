@@ -43,6 +43,19 @@ export type TransportDeps = {
   after: (ms: number, fn: () => void) => () => void;
   /** `tabs.sendMessage`, which needs no `tabs` permission for a tab we have a content script in (§8.3). */
   toTab: (tab: number, message: unknown) => Promise<unknown>;
+  /**
+   * Commands the background answers itself rather than forwarding, or `null` for a name that is not one of them. Only
+   * a dev build has any: `screenshot` needs the browser's capture API and `reload` ends the extension (§10.6). The
+   * transport never learns what they are — it only asks first.
+   */
+  local?: (cmd: Extract<ToExtension, { t: "cmd" }>) => Promise<RelayReply> | null;
+  /**
+   * A frame this build knows and the transport does not; `true` means it was handled and nothing else looks at it.
+   * Only a dev build has one, for the dev loop's `dev-reload` (§5.4). The transport never learns the name, so a store
+   * artifact does not contain it — which is exactly what the guard checks (§5.5). Named for `PageDeps.extra`, which is
+   * the same idea one world down.
+   */
+  extra?: (frame: ToExtension) => boolean;
   /** Firefox until the player clicks (§8.4); every other target starts consented. */
   consent: boolean;
 };
@@ -173,7 +186,9 @@ export class Transport {
       return;
     }
     if (frame.t === "welcome") return this.#welcomed(frame.product);
-    if (frame.t === "cmd" && this.#phase === "live") void this.#forward(frame);
+    if (this.#phase !== "live") return;
+    if (this.#d.extra?.(frame)) return;
+    if (frame.t === "cmd") void this.#forward(frame);
   }
 
   #welcomed(product: string): void {
@@ -228,6 +243,9 @@ export class Transport {
   // -------------------------------------------------------------- forwarding
 
   async #forward(cmd: Extract<ToExtension, { t: "cmd" }>): Promise<void> {
+    // The background's own commands never reach a tab, and a tab is not needed to answer them (§10.6).
+    const mine = this.#d.local?.(cmd);
+    if (mine) return this.#send(await mine);
     let reply: RelayReply;
     try {
       const answer = await this.#d.toTab(cmd.tab, { t: "cmd", id: cmd.id, name: cmd.name, args: cmd.args });

@@ -11,6 +11,7 @@
     "build": "wxt build",
     "build:all": "wxt build -b chrome --mode store && wxt build -b chrome --mode dev && wxt build -b firefox --mode store && wxt build -b firefox --mode dev && wxt build -b safari --mode store && wxt build -b safari --mode dev",
     "zip": "wxt zip -b chrome --mode store && wxt zip -b firefox --mode store && wxt zip -b safari --mode store",
+    "dev": "node scripts/dev.ts",
     "icons": "node scripts/icons.mjs",
     "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "wxt prepare && tsc --noEmit"

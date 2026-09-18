@@ -19,8 +19,12 @@ import { EVENT, encode } from "../src/relay/channel.ts";
 
 const OUT = fileURLToPath(new URL("../.output/", import.meta.url));
 
-/** Anything that would be a dev affordance or the dev port, in a store artifact's files. */
-const BANNED_IN_STORE = ["47148", "eval(", "new Function(", "screenshot", "captureVisibleTab", "executeScript", "runtime.reload", "dev-reload"];
+/**
+ * Anything that would be a dev affordance or the dev port, in a store artifact's files. §5.5 spells the interpreter
+ * check as `new Function(`; the minifier drops the `new`, which no artifact would ever have tripped on, so the bare
+ * call is banned too.
+ */
+const BANNED_IN_STORE = ["47148", "eval(", "new Function(", "Function(", "screenshot", "captureVisibleTab", "executeScript", "runtime.reload", "dev-reload"];
 
 /** The store hub's URL, which a store build must actually dial (§8.1). */
 const REQUIRED_IN_STORE = "ws://127.0.0.1:47147";
@@ -91,6 +95,10 @@ for (const a of all) {
     } else {
       // A dev build may add to the table but never drop a store command.
       for (const name of COMMAND_NAMES) assert.ok(commands.includes(name), `dev build is missing ${name}`);
+      // Only the page's half of the dev table is here: the other two are the background's, and never reach a tab (§10.6).
+      const [inPage, ...inBackground] = DEV_COMMAND_NAMES;
+      assert.ok(commands.includes(inPage), `dev build does not register ${inPage}`);
+      for (const name of inBackground) assert.ok(!commands.includes(name), `the page registered ${name}`);
     }
   });
 

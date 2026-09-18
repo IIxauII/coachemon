@@ -6,11 +6,14 @@
  * the opt-in period, so one source serves both transports until CDP is deleted.
  */
 import { defineUnlistedScript } from "wxt/utils/define-unlisted-script";
+import { DEV_PAGE_HANDLERS } from "../src/dev/commands.ts";
 import { startPage, type PageInstance } from "../src/page/register.ts";
 import type { Channel } from "../src/relay/channel.ts";
 
 export default defineUnlistedScript(() => {
   startPage({
+    // A build-time constant, so a store build drops the branch and the dev handlers with it (§5.5).
+    extra: COACHEMON_FLAVOUR === "dev" ? DEV_PAGE_HANDLERS : undefined,
     channel: document as unknown as Channel,
     makeEvent: (type, detail) => new CustomEvent(type, { detail }),
     build: COACHEMON_BUILD,
