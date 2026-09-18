@@ -31,11 +31,18 @@ export class Peer<In, Out> {
   readonly ws: WebSocket;
   readonly seen: In[] = [];
   #waiting: { match: (f: In) => boolean; resolve: (f: In) => void }[] = [];
+  #standing: { match: (f: In) => boolean; reply: (f: In) => Out }[] = [];
 
   constructor(ws: WebSocket) {
     this.ws = ws;
     ws.on("message", raw => {
       const f = JSON.parse(String(raw)) as In;
+      // A standing answer is checked first, so `take` and `answering` on one peer never both reply to a frame.
+      const standing = this.#standing.find(s => s.match(f));
+      if (standing !== undefined) {
+        this.send(standing.reply(f));
+        return;
+      }
       // A frame a waiter takes never reaches the queue, so `seen` is exactly what no test asked for.
       const i = this.#waiting.findIndex(w => w.match(f));
       if (i >= 0) this.#waiting.splice(i, 1)[0].resolve(f);
@@ -45,6 +52,15 @@ export class Peer<In, Out> {
 
   send(frame: Out): void {
     this.ws.send(JSON.stringify(frame));
+  }
+
+  /**
+   * Answers every matching frame for the rest of the test, rather than the one `take` waits for. It is what a test
+   * needs to assert that something was *not* asked twice: a second request the code should not have made comes back
+   * as a second line rather than as silence.
+   */
+  answering<T extends In>(match: (f: In) => f is T, reply: (f: T) => Out): void {
+    this.#standing.push({ match: match as (f: In) => boolean, reply: reply as (f: In) => Out });
   }
 
   /** The next frame matching `match`, from the queue or the wire. */

@@ -3,7 +3,7 @@ import { after, test } from "node:test";
 import { cardLine, feedLine, runWatch } from "./watch.ts";
 import { deadSpawn, fakeClient, freePort, readyTab, type Peer } from "./fake-ext.ts";
 import { startHub, type Hub } from "./hub.ts";
-import type { FromExtension, HubState, ToExtension } from "../protocol/wire.ts";
+import type { ExtensionCmd, FromExtension, HubState, ToExtension } from "../protocol/wire.ts";
 
 const shut: (() => void)[] = [];
 
@@ -52,10 +52,10 @@ async function answerCard(ext: Peer<ToExtension, FromExtension>, result: Record<
 
 /** Answers every `card` read, so a read the CLI should not have made shows up as a line rather than as silence. */
 function autoCard(ext: Peer<ToExtension, FromExtension>, result: Record<string, unknown>): void {
-  ext.ws.on("message", raw => {
-    const f = JSON.parse(String(raw)) as ToExtension;
-    if (f.t === "cmd" && f.name === "card") ext.send({ t: "reply", id: f.id, ok: true, result });
-  });
+  ext.answering(
+    (f): f is ExtensionCmd => f.t === "cmd" && f.name === "card",
+    f => ({ t: "reply", id: f.id, ok: true, result }),
+  );
 }
 
 const CARD = { ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", text: "Gyarados L34 will KO Pikachu\nswitch to Blissey", summary: null };
