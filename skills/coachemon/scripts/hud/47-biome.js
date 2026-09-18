@@ -548,7 +548,7 @@ export const biomeModel = (s, h) => {
 };
 
 // The weighted encounters of one biome as the ten waves after `wave` would see them, and a species' chance of each
-// form at a level (tests, live checks).
+// form at a level. Neither is on any card's path: they are what a test, or a hand check against a live tab, reads.
 export const spawnsFor = (s, id, wave, luck = 0) => (tables?.biomes?.get(id) ? encounters(s, tables.biomes.get(id), wave, luck) : null);
 export const formsFor = (id, level, kind = EvoLevelThresholdKind.WILD) => Object.fromEntries(formsAt(id, level, kind));
 

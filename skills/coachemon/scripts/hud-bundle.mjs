@@ -4,8 +4,9 @@
 //
 // Modules. The page can't load real ES modules (read.sh injects a classic inline <script>, and tests `eval` it), so
 // every file is turned into a function with its own scope. There is no shared scope: a file reaches another file's
-// name only by importing it, and a reference to a name it never imported is a ReferenceError when the bundle runs —
-// which `npm test` does. The rules, each failing the bundle with a named error (`err.code`):
+// name only by importing it, and a reference to a name it never imported is a ReferenceError when that line runs —
+// not a bundle error, since finding a free name would need a parser here. The rules below are what the bundle itself
+// refuses, each with a named error (`err.code`):
 //   - Named imports only, at the top of the file, before any code: `import { a, b } from "./NN-name.js";`
 //     (`"./hud/NN-name.js"` from probe.js). Default, star, side-effect imports, `as` renames and an import below code
 //     are `unsupported-form`.
@@ -224,7 +225,6 @@ const check = (files, entry) => {
       }
     }
   }
-  return byId;
 };
 
 const braces = list => (list.length ? `{ ${list.join(", ")} }` : "{}");

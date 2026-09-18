@@ -1,6 +1,5 @@
 // Learn-move card model. The screen itself is detected in 02-screens (`learnState`), which the probe shares.
 // No game functions run here (the game isn't waiting on a battle command): only move/attr fields are read.
-
 import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";

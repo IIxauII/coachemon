@@ -111,7 +111,7 @@ let cache = { key: null, value: null };
 export const rerollPreview = s => {
   const ph = rewardPhase(s);
   if (!ph) return null;
-  const fns = typeof gameRewardFns === "function" ? gameRewardFns() : null;
+  const fns = gameRewardFns();
   if (!fns) return { unavailable: "the reward roll isn't found in the live build yet" };
   if (typeof ph.getRerollCost !== "function" || typeof ph.constructor?.prototype?.getModifierCount !== "function") {
     return { unavailable: "the live build's reward phase moved past the pin" };
