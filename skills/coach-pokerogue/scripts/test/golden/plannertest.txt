@@ -69,6 +69,10 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ⚔ Skarmory Rock Stealth Rock 4 to come · then Drill Peck
 == foe Protect: KO this turn 1.000 → 0.500
 == foe setup: expected turns to KO Gallade 7.27 → 4.94
+== types: Soak first (live)
+⚔ Primarina Water Soak → Golisopod pure Water · then Energy Ball
+== types: no Soak into a Terastallized foe
+⚔ Primarina Grass Energy Ball → Golisopod
 == doubles focus (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 2 hits

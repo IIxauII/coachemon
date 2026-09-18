@@ -134,6 +134,12 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   // Drain (Giga Drain, Leech Life): the share of a hit's damage that heals its user. Strength Sap heals by a stat,
   // not by damage, and carries `healStat`: not drain. Heal Block, Healing Charm and Liquid Ooze are the caller's.
   const drainAttr = attrsNamed(mv, "HitHealAttr").find(a => a.healStat == null) ?? null;
+  // Typing written onto the move's target: `set` replaces its types with one (Soak, Magic Powder: `summonData.types`),
+  // `add` puts a third type on top (Forest's Curse, Trick-or-Treat: `summonData.addedType`). The type is the game's
+  // own `PokemonType` index. When the move may do nothing (a Terastallized target, Multitype / RKS System, a typing
+  // the target already has) is the caller's, live — those are the attribute's `getCondition`, not its data.
+  const setType = firstAttr(mv, "ChangeTypeAttr"), addType = firstAttr(mv, "AddTypeAttr");
+  const typeChange = setType ? { kind: "set", type: setType.type } : addType ? { kind: "add", type: addType.type } : null;
   return {
     charge, semiCharge: charging && chargeAttrs.some(a => isAttr(a, "SemiInvulnerableAttr")),
     recharge: attrsNamed(mv, "RechargeAttr").length > 0,
@@ -146,7 +152,7 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
     crash: !guarded && !lock && attrsNamed(mv, "MissEffectAttr").length > 0,
     // Explosion faints its user either way; Final Gambit only when it hits.
     selfKo: attrsNamed(mv, "SacrificialAttrOnHit").length ? "onHit" : attrsNamed(mv, "SacrificialAttr").length ? "always" : null,
-    drops, removesType: attrsNamed(mv, "RemoveTypeAttr").length > 0, guarded,
+    drops, removesType: attrsNamed(mv, "RemoveTypeAttr").length > 0, guarded, typeChange,
     hits: hitShape(mv, user, party, target),
     flinches: attrsNamed(mv, "FlinchAttr").length > 0,
     stages, inflicts, tags, heal, hazard: trap ? { tag: trap.tagType } : null,

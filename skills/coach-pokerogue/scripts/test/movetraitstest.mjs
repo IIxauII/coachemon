@@ -181,11 +181,20 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.deepEqual(moveTraits(leechSeed).tags.map(x => [x.tag, x.cls]), [["SEEDED", "LeechSeedAttr"]]);
   assert.ok(moveTraits(leechSeed).attrNames.has("LeechSeedAttr") && !moveTraits(leechSeed).attrNames.has("AddBattlerTagAttr"), "attrNames holds the concrete class only");
 
+  // Typing written onto the target: Soak replaces its types with one, Trick-or-Treat adds a third. Whether the move
+  // would do anything (a Tera target, Multitype, a typing it already has) is the caller's, live: that is the
+  // attribute's condition, not its data.
+  const soak = move({ name: "Soak", attrs: [["ChangeTypeAttr", { type: 10 }]] });
+  const trickOrTreat = move({ name: "Trick-or-Treat", attrs: [["AddTypeAttr", { type: 7 }]] });
+  assert.deepEqual(moveTraits(soak).typeChange, { kind: "set", type: 10 });
+  assert.deepEqual(moveTraits(trickOrTreat).typeChange, { kind: "add", type: 7 });
+  assert.equal(moveTraits(move({ name: "Tackle" })).typeChange, null);
+
   const gigaDrain = move({ name: "Giga Drain", attrs: [["HitHealAttr", { healRatio: 0.5 }]] });
   const strengthSap = move({ name: "Strength Sap", attrs: [["HitHealAttr", { healStat: Stat.ATK }]] });
   assert.deepEqual(moveTraits(gigaDrain).drain, { ratio: 0.5 });
   assert.equal(moveTraits(strengthSap).drain, null, "healing by a stat isn't drain");
-  log("status", `burn ${moveTraits(willowisp).inflicts[0].effect} · Howl side ${moveTraits(howl).stages[0].side} · heal ${moveTraits(recover).heal.ratio} · hazard ${moveTraits(spikes).hazard.tag} · drain ${moveTraits(gigaDrain).drain.ratio}`);
+  log("status", `burn ${moveTraits(willowisp).inflicts[0].effect} · Howl side ${moveTraits(howl).stages[0].side} · heal ${moveTraits(recover).heal.ratio} · hazard ${moveTraits(spikes).hazard.tag} · drain ${moveTraits(gigaDrain).drain.ratio} · types ${moveTraits(soak).typeChange.kind}/${moveTraits(trickOrTreat).typeChange.kind}`);
 }
 
 // ---- The wording every card shares

@@ -813,7 +813,7 @@ Game calls are cited where they're named; unmarked names are HUD functions.
 - **The only game-less fallbacks in the HUD live here**, each marked where it sits: the last wave per mode (classic 200, Daily 50, Endless every 250) and the tenth-wave boss rule. No caller writes `% 10` or `% 30` for itself.
 
 ### Move traits (07-move-traits.js)
-- `moveTraits(mv, user, { party, target })` → the move read once, by attribute: `charge` (`false`, or `{ skip, now(user) }` — the instant-charge condition as data and judged live), `semiCharge`, `recharge`, `interrupt`, `needsAttack` (Sucker Punch / Thunderclap), `once` (`FirstMoveCondition` across `conditions` / `conditionsSeq2` / `conditionsSeq3`), `lock` (`FrenzyAttr`), `noRepeat` (`consecutiveUseRestriction`'s exact `battle:moveDisabledConsecutive` key), `recoil` (`{ ratio, useHp, blocked }`, default ratio 0.25, blocked by Magic Guard / Rock Head *by ability attribute* unless `unblockable`), `halfSac`, `crash`, `selfKo` (`"always"` / `"onHit"`), `drops` (guaranteed self stat changes, signed), `removesType`, `guarded`, `hits` (`{ dist, mean, checkAll, grows }`, §2), `flinches`, `stages` / `inflicts` / `tags` (each with `self` / `side` / `ally` and the concrete `cls`), `heal` (`{ ratio, ratioIn(weather), self, cls }`), `hazard`, `protect`, `cutHp`, `drain`, `attrNames`. **No game calls and no battle state**, so the learn card uses it outside a battle. Attributes match through the prototype chain; `attrNames` holds concrete class names for callers whose tables are keyed that way.
+- `moveTraits(mv, user, { party, target })` → the move read once, by attribute: `charge` (`false`, or `{ skip, now(user) }` — the instant-charge condition as data and judged live), `semiCharge`, `recharge`, `interrupt`, `needsAttack` (Sucker Punch / Thunderclap), `once` (`FirstMoveCondition` across `conditions` / `conditionsSeq2` / `conditionsSeq3`), `lock` (`FrenzyAttr`), `noRepeat` (`consecutiveUseRestriction`'s exact `battle:moveDisabledConsecutive` key), `recoil` (`{ ratio, useHp, blocked }`, default ratio 0.25, blocked by Magic Guard / Rock Head *by ability attribute* unless `unblockable`), `halfSac`, `crash`, `selfKo` (`"always"` / `"onHit"`), `drops` (guaranteed self stat changes, signed), `removesType`, `guarded`, `hits` (`{ dist, mean, checkAll, grows }`, §2), `flinches`, `stages` / `inflicts` / `tags` (each with `self` / `side` / `ally` and the concrete `cls`), `heal` (`{ ratio, ratioIn(weather), self, cls }`), `hazard`, `protect`, `cutHp`, `drain`, `typeChange` (`{ kind: "set" | "add", type }` — Soak and Magic Powder replace a target's types, Forest's Curse and Trick-or-Treat add a third; whether it would do anything is the caller's, live), `attrNames`. **No game calls and no battle state**, so the learn card uses it outside a battle. Attributes match through the prototype chain; `attrNames` holds concrete class names for callers whose tables are keyed that way.
 - `costNotes(traits, amounts)` → the wording for each cost, shared by the ⚔ line's `costs` and the learn card's drawbacks. `amounts` carries this matchup's numbers when the caller has them: `recoil` (share of max HP), `sun`, `type`.
 - What a trait is *worth* stays with the caller: 10-damage's `reliability`, the learn card's multipliers, the planner's benefit nudge.
 
@@ -902,9 +902,10 @@ The **party** judged as a whole, and one query for whether a newcomer is worth i
 - Depth 2 (`fieldPlan`): each option's turn 1 is played exactly. From its standing branches, the planner tries the best of our top two moves and a priority move, and keeps one that beats repeating the move by 0.1 (Fake Out then an attack). No minimax: the foe's reply is the AI replica's distribution, re-picked for turn 2. Doubles keep the three best options per slot plus any priority / flinch / first-turn-only move. A follow-up that also hits our partner is never proposed.
 - Consistency prior (after PokéLLMon): +0.15 for the move last used (`getLastXMoves(1)`, `pokemon.ts:4392`) by a mon that has been out since before last turn (`tempSummonData.turnCount ≥ 2`). −0.5 for a plan that switches out a mon that came in last turn (`turnCount ≤ 1` past turn 1). `turnCount` starts at 1 (`src/data/pokemon/pokemon-data.ts:268`) and is reset by `resetSummonData` on a switch-in (`pokemon.ts:5147-5156`). `SwitchSummonPhase.onEnd` takes one off for a command or forced switch (`src/phases/switch-summon-phase.ts:238-245`), and `TurnEndPhase.start` adds one (`turn-end-phase.ts:61`).
 - Next turn's pick (`likelyMoves` with `next`, or a foe not on the field) is `aiReplay` against our mon. The old damage stand-in for the move score is used only where the replay can't run.
-- Status moves as this turn's action (singles; §14). Each status move `statusPlay` can price (setup, a status on the foe, a heal, a hazard in a trainer battle) is turn 1 of an `exchange` in which we deal nothing.
+- Status moves as this turn's action (singles; §14). Each status move `statusPlay` can price (setup, a status on the foe, a heal, a hazard in a trainer battle, a typing written onto the foe) is turn 1 of an `exchange` in which we deal nothing.
   - Turn 2 is the best of our top two moves and a priority move from its branches, as in depth 2.
-  - The effect is written onto the mons (`withHypothesis`: stat stages, a status), so the game's own damage, order and AI replay price the turns after.
+  - The effect is written onto the mons (`withHypothesis`: stat stages, a status, a typing — `summonData.types` and `summonData.addedType`, the two fields `Pokemon.getTypes` reads), so the game's own damage, order and AI replay price the turns after.
+  - A typing (Soak, Magic Powder, Forest's Curse, Trick-or-Treat) is ruled out by the game's own conditions where it would do nothing: a Terastallized target, Multitype or RKS System, or a typing the target already has. This turn's incoming hit is still priced on the typing as it stands, as every play here is.
   - It lands with P(we act, not flinched) × accuracy × (1 − P(Protect)), and not at all through an immunity or Magic Bounce. A second Protect succeeds 1 in 3^n (`ProtectAttr.getCondition`, `move.ts:6930-6950`, draws battle RNG). A miss plays on from the unchanged state.
   - A sleep or paralysis that lands before the foe moves cancels this turn's hit too: all of it for sleep, 1 in 8 for paralysis (`MovePhase.checkPara`: `randBattleSeedInt(8) === 0`, `src/phases/move-phase.ts:518-530`). Sleep's later lost attempts go by `STATUS_SKIP`.
   - A heal lifts our HP branches (before its hit when we're faster).
@@ -1375,6 +1376,18 @@ Read at the pinned tag. The refs are under `30-planner.js`, `10-damage.js` and `
     (`:945-948`), both through `DamagingTrapTag.activateTrap`, where Magic Guard (`BlockNonDirectDamageAbAttr`) cancels
     them (`:877-890`).
   - Toxic Spikes poison, or badly poison at 2 layers, and a grounded Poison type removes them (`:1016-1030`).
+- **Typing.** Both moves write one field and nothing else, which is why a hypothesis can stand in for them.
+  - `ChangeTypeAttr.apply` sets `target.summonData.types = [type]` (Soak → Water, Magic Powder → Psychic;
+    `src/data/moves/move.ts:7836-7838`). Its `getCondition` (`:7850-7858`) fails on a Terastallized target, on
+    Multitype or RKS System, and when the target is already that one type.
+  - `AddTypeAttr.apply` sets `target.summonData.addedType` (Forest's Curse → Grass, Trick-or-Treat → Ghost;
+    `:7872-7873`). Its `getCondition` (`:7886-7888`) fails on a Terastallized target and on one already of that type.
+  - `Pokemon.getTypes` (`src/field/pokemon.ts:1962-1999`) returns `[teraType]` alone when Terastallized — hence both
+    conditions — else `getBaseTypes`, which is `summonData.types` whenever that array is non-empty
+    (`:2004-2007`), with `summonData.addedType` added on top (`:1994-1995`). So writing those two fields moves every
+    number the game computes from typing: the chart, STAB, the AI's own scores, and a foe's matchup score.
+  - Neither field is `summonData` state the HUD has to invent: the write is exactly the game's, and `withHypothesis`
+    puts the previous value back.
 - **Protect.** `ProtectAttr.getCondition` (`src/data/moves/move.ts:6930-6951`): the n-th success in a row passes when
   `randBattleSeedInt(3^n) === 0`, a battle-stream draw. `MoveEffectPhase.protectedCheck` lets a move through when
   `doesFlagEffectApply({ flag: IGNORE_PROTECT })` holds (Feint; Unseen Fist on contact;
@@ -1390,6 +1403,25 @@ Swords Dance half the time keeps doing so until capped or until an attack KOs. T
 SpA boost scores 0 on a mon with no physical attack. The planner takes the stages the foe is expected to add a turn
 (`threatFrom(...).boost`). It ramps the foe's later hits by the Atk / SpA they raise, our hits into it by the Def / SpD
 they raise, and the Speed order once a Speed boost has had the turns it needs.
+
+**Toxic stall is not searched, and the source says why.** A stall line — Toxic on a foe, then our mons spending
+turns, even fainting, while the chip adds up — spans several exchanges, so it would have to live in the team plan
+(35-team-plan). Two rules of the game take it apart against a trainer, which is the only battle where our mons can be
+spent for turns at all:
+- **A switch resets the counter.** `PostSummonPhase.start` sets `status.toxicTurnCount = 0` on every summon
+  (`src/phases/post-summon-phase.ts:18-19`), and the chip is `toDmgValue(maxHp × toxicTurnCount / 16)`
+  (`post-turn-status-effect-phase.ts:46`). A toxiced foe that leaves and comes back starts again at a sixteenth, so
+  every turn bought before the switch is spent for nothing.
+- **The chip itself invites that switch.** `EnemyCommandPhase` switches when a bench mon's matchup score is 3× the
+  active one's (2× for a boss trainer; §7), and `getMatchupScore` scales its type scores by
+  `min(1, its HP ratio + 1 − ours)` — halved while it sits between 20 % and 40 % HP, and replaced by a sacrifice
+  branch below 20 % (`src/field/pokemon.ts:2734-2760`). So the further the chip drives the foe, the lower its own
+  score and the likelier the trainer swaps it out: a stall line pays for the switch it provokes.
+Against a wild boss, which never switches, the stall *is* worth pricing — and there it is already one exchange, which
+the planner models: Toxic is a `statusPlay`, and its growing chip is in `turnEndCourse` and in `koCurve`'s pacing. What
+is left out is only the multi-mon trainer line. Modelling it would also need what the plan deliberately does not carry
+(§ the team plan's own note: status, stat changes and mid-exchange enemy switches are not modelled), and a way to
+price a mon spent as a cost to the rest of the run, not just to this fight.
 
 **Unmeasured.** None of the status plays has met a live fight. The hypothesis writes plain
 `{ effect, toxicTurnCount, sleepTurnsRemaining }` objects as statuses, so a game read that calls a `Status` method on

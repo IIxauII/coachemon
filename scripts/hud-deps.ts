@@ -50,6 +50,12 @@ export const HUD_DEPS = {
     `${M}#ShellSideArmCategoryAttr.apply`,
     `${M}#PresentPowerAttr.apply`,
     `src/data/abilities/ab-attrs.ts#FullHpResistTypeAbAttr.apply`,
+    // §14 a typing written onto a mon: the two fields `withHypothesis` sets are the ones the game's own type read
+    // goes through, so a changed read (or a changed write) silently stops a retype from reaching any number.
+    `${P}#Pokemon.getTypes`,
+    `${P}#Pokemon.getBaseTypes`,
+    `${M}#ChangeTypeAttr.apply`,
+    `${M}#AddTypeAttr.apply`,
   ],
 
   /**
@@ -132,6 +138,8 @@ export const HUD_DEPS = {
     `${M}#HitHealAttr.constructor`,
     `${M}#FlinchAttr.constructor`,
     `${M}#ProtectAttr.constructor`,
+    `${M}#ChangeTypeAttr.constructor`,
+    `${M}#AddTypeAttr.constructor`,
     `src/enums/multi-hit-type.ts#MultiHitType`,
     `src/enums/move-target.ts#MoveTarget`,
   ],
@@ -308,6 +316,9 @@ export const HUD_DEPS = {
     `src/phases/move-phase.ts#MovePhase.checkPara`,
     `src/data/status-effect.ts#Status.incrementTurn`,
     `${M}#ProtectAttr.getCondition`,
+    `${M}#ChangeTypeAttr.getCondition`,
+    `${M}#AddTypeAttr.getCondition`,
+    `${P}#Pokemon.isOfType`,
     `${M}#StatStageChangeAttr.apply`,
     `${M}#CutHpStatStageBoostAttr.apply`,
     `${M}#StatusEffectAttr.apply`,
