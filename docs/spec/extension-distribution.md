@@ -739,7 +739,7 @@ Install Coachemon in their browser, install the plugin, open (or reload) pokerog
 
 ## 14. Release
 
-From [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109). §14.1–§14.4 applied in [Extension: release pipeline and store submission](https://github.com/IIxauII/pokerogue-mcp/issues/207); §14.6 is ticket 10's.
+From [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109). §14.1–§14.4 applied in [Extension: release pipeline and store submission](https://github.com/IIxauII/pokerogue-mcp/issues/207); §14.6 in [Extension: Safari release checklist](https://github.com/IIxauII/pokerogue-mcp/issues/209).
 
 ### 14.1 Scheme
 
@@ -790,6 +790,8 @@ On the dev's Mac, with an individual Apple Developer Program membership (enrolle
 5. `gh release upload extension-v<v> Coachemon-safari-<v>.zip`, with the `.app` zipped by `ditto -c -k --keepParent`.
 
 No auto-update, no Homebrew, no Sparkle: players re-download. Nothing in any build scripts or automates turning the extension on, per Attachment 7 §1.1.
+
+Carried out by `npm run release:safari -- <version>` (`scripts/release/safari-release.ts`), whose plan is the pure `scripts/release/safari.ts` and whose setup is [the runbook](../runbooks/safari-release.md). Two corrections the script makes to the steps above, both found while writing it: the zip handed to `notarytool` is a scratch file and the release's asset is cut from the app **after** stapling, because notarization writes nothing back into the submitted zip; and the asset is named `Coachemon-safari-<v>.zip` so it sits on the same release as `coachemon-safari-web-extension-<v>.zip` without colliding.
 
 ---
 
