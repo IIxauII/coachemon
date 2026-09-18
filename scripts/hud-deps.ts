@@ -26,9 +26,9 @@
  * which of its readings to redo.
  *
  * Keys are HUD modules under `skills/coachemon/scripts/hud/`; a moved hash
- * names the modules to re-read. `50-shop.js` owns only its TM claims (§16):
+ * names the modules to re-read. `52-shop.js` owns only its TM claims (§16):
  * its spending rules rest on `03-calendar.js`'s run calendar and its item
- * judgements on `50-items.js`, which are listed under those modules.
+ * judgements on `51-items.js`, which are listed under those modules.
  */
 import type { SourceRef } from "../src/escape-ladder/types.ts";
 
@@ -699,7 +699,7 @@ export const HUD_DEPS = {
    * priority an ability grants an attack, raw Speed for turn order, and the
    * EXP split behind "at the level cap" and "EXP. All feeds the bench".
    */
-  "49-audit.js": [
+  "50-audit.js": [
     `${P}#Pokemon.getLearnableLevelMoves`,
     `src/modifier/modifier-type.ts#RememberMoveModifierType.constructor`,
     `src/modifier/modifier.ts#RememberMoveModifier.apply`,
@@ -747,7 +747,7 @@ export const HUD_DEPS = {
    * mint is read with, the Stat a vitamin names, and the BerryType. The
    * species-booster and Leek species ids are the generators' tables.
    */
-  "50-items.js": [
+  "51-items.js": [
     `src/modifier/modifier-type.ts#PokemonHeldItemModifierType.constructor`,
     `src/modifier/modifier-type.ts#PokemonNatureChangeModifierType.constructor`,
     `src/modifier/modifier-type.ts#EvolutionItemModifierType.constructor`,
@@ -809,7 +809,7 @@ export const HUD_DEPS = {
    * gives a fainted member only Release. The challenge id comes through as a
    * bare number.
    */
-  "50-shop.js": [
+  "52-shop.js": [
     `src/modifier/modifier-type.ts#TmModifierType.constructor`,
     `src/modifier/modifier-type.ts#TmModifierTypeGenerator.constructor`,
     `${P}#PlayerPokemon.isTmCompatible`,

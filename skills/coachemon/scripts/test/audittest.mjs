@@ -1,4 +1,4 @@
-// Team audit (49-audit) against the two runs that asked for it (#89): the wave-29 party that lost four of six to
+// Team audit (50-audit) against the two runs that asked for it (#89): the wave-29 party that lost four of six to
 // Whitney, and the wave-165 party that lost to Guzma at level parity, with Guzma's roster as the look-ahead hands it
 // over. Also the rewards card's Memory Mushroom, which now goes to the member whose relearn list holds the biggest
 // upgrade. Prints the rendered card and the findings (golden) and asserts the calls that matter.
@@ -173,7 +173,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  const { rewardsModel } = globalThis.__hud["50-shop"], { teamAudit } = globalThis.__hud["49-audit"];
+  const { rewardsModel } = globalThis.__hud["52-shop"], { teamAudit } = globalThis.__hud["50-audit"];
   const { drawRewards } = globalThis.__hud["96-render-rewards"], { cardSummary } = globalThis.__hud["60-card"];
   const { previewNext } = globalThis.__hud["48-preview"];
   assert.ok(!el.textContent, `${label}: panel error ${el.textContent}`);
