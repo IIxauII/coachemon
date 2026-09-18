@@ -1412,6 +1412,20 @@ const HAZARD_TURNS = 2;
 const FEED_COST = 0.5;
 
 // ---- Status moves as this turn's action
+// The weather a move of `user`'s is judged in (`getEffectiveWeatherForMove`, `src/data/weather.ts:233`): an ability
+// that overrides it (`PreAttackWeatherOverrideAbAttr`, Mega Sol) answers first and **supersedes suppression**, so a
+// Cloud Nine on the field doesn't take the overridden weather away; only the live weather is suppressible. An
+// override the live bundle carries under another field name is simply not found, and the live weather stands.
+const effectiveWeather = (s, user) => {
+  try {
+    if (user?.hasAbilityWithAttr?.("PreAttackWeatherOverrideAbAttr")) {
+      for (const a of [user.getAbility?.(), user.hasPassive?.() ? user.getPassiveAbility?.() : null]) {
+        for (const x of a?.getAttrs?.("PreAttackWeatherOverrideAbAttr") ?? []) if (x?.weatherType) return x.weatherType;
+      }
+    }
+  } catch {}
+  try { return s.arena?.weather && !s.arena.weather.isEffectSuppressed?.() ? s.arena.weather.weatherType : WeatherType.NONE; } catch { return WeatherType.NONE; }
+};
 // What a status move of `me`'s does to a fight with `f`, if it's one the planner can price, or null:
 // - setup: its own stat stages (`selfStages`), and Belly Drum's HP (`hpCost`);
 // - status: poison, toxic, paralysis, sleep or burn on a foe that can take it (`canSetStatus`). Written on as a status
@@ -1472,9 +1486,7 @@ const statusPlay = (s, me, f, info) => {
     const max = me.getMaxHp?.() ?? me.hp;
     if (me.hp >= max) return null;
     // The weather the heal is judged in is live; how much it heals there is the attribute's own answer.
-    let w = WeatherType.NONE;
-    try { w = s.arena?.weather && !s.arena.weather.isEffectSuppressed?.() ? s.arena.weather.weatherType : WeatherType.NONE; } catch {}
-    const ratio = t.heal.ratioIn(w, me, f);
+    const ratio = t.heal.ratioIn(effectiveWeather(s, me), me, f);
     return { kind: "heal", self: true, amount: Math.max(1, Math.floor(max * ratio)), note: `heal ${Math.round(ratio * 100)}%` };
   }
   if (t.hazard) {

@@ -26,11 +26,14 @@ const move = (id, name, type, power, { acc = 100, attrs = [], flags = 0, cat = 0
   },
 });
 const pmOf = mv => ({ getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0 });
-const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [] } = {}) => {
+// `battlerTags`: the instances `summonData.tags` holds, which the turn-end model reads by class; `bi`: the battler
+// index a Leech Seed names its seeder by.
+const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [], battlerTags = [], bi = 0 } = {}) => {
   const p = {
     id, name: id, level: 50, hp, formIndex, getMaxHp: () => maxHp, isPlayer: () => player, isOnField: () => true,
     getTypes: () => types, getAbility: () => ({ name: "x", getAttrs: n => attrs.filter(a => a.constructor.name === n) }), hasPassive: () => false, status,
-    getStat: () => 100, summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], abilitiesApplied: new Set() },
+    getBattlerIndex: () => bi,
+    getStat: () => 100, summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], abilitiesApplied: new Set(), tags: battlerTags },
     waveData: { abilitiesApplied: new Set(), abilityRevealed: true },
     turnData: { hitCount: 0, hitsLeft: -1, moveEffectiveness: null },
     bossSegments: boss, bossSegmentIndex: boss ? boss - 1 : 0, isBoss: () => boss > 0,
@@ -351,11 +354,22 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ items: [held("TurnStatusEffectModifier", { effect: 2 })] }), { s: at() }), -10, "Toxic Orb");
   assert.equal(endOfTurnHp(m({ types: [8], items: [held("TurnStatusEffectModifier", { effect: 2 })] }), { s: at() }), 0, "Toxic Orb on Steel");
   assert.equal(endOfTurnHp(m({ items: [held("TurnStatusEffectModifier", { effect: 6 })] }), { s: at() }), -10, "Flame Orb");
-  // Chip comes before berries (Sitrus reads the HP after it) and can faint the mon, which then heals nothing.
+  // The weather chip comes before berries (Sitrus reads the HP after it), and berries come before the status chip.
   const sitrus = [new BerryModifier(0), new TurnHealModifier()];
   assert.equal(endOfTurnHp(m({ hp: 90, items: sitrus }), { s: at(SAND) }), -10 + 10, "80/160 isn't below half");
   assert.equal(endOfTurnHp(m({ hp: 85, items: sitrus }), { s: at(SAND) }), -10 + 40 + 10, "75/160 is");
-  assert.equal(endOfTurnHp(m({ hp: 5, items: sitrus, status: { effect: 1 } }), { s: at() }), -5, "poison faints it");
+  // §21's order decides survival here: Sitrus eats at 5/160, and the poison chip then lands on 45, not on 5.
+  assert.equal(endOfTurnHp(m({ hp: 5, items: sitrus, status: { effect: 1 } }), { s: at() }), 40 - 20 + 10, "Sitrus beats the poison chip");
+  // A chip big enough to get there first still faints it, and a fainted mon heals nothing.
+  assert.equal(endOfTurnHp(m({ hp: 5, maxHp: 400, items: sitrus, status: { effect: 1 } }), { s: at(SAND) }), -5, "the weather chip faints it first");
+  // `getHpRatio()` rounds to a whole percent, so the Sitrus bar is < 0.495, not < 0.5.
+  const justOver = mon("just over", { hp: 99, maxHp: 200, items: [new BerryModifier(0)] });
+  assert.equal(endOfTurnHp(justOver, { s: at() }), 0, "99/200 rounds to 50 %");
+  assert.equal(endOfTurnHp(mon("just under", { hp: 98, maxHp: 200, items: [new BerryModifier(0)] }), { s: at() }), 50, "98/200 rounds to 49 %");
+  // An opposing Unnerve skips every berry the mon holds.
+  const unnerve = mon("unnerve", { player: false, abilities: ["PreventBerryUseAbAttr"] });
+  const hungry = m({ hp: 5, items: sitrus });
+  assert.equal(endOfTurnHp(hungry, { s: at(0, 0, { getField: () => [hungry, unnerve] }) }), 10, "Unnerve keeps the Sitrus down");
   // Grassy Terrain: 1/16 to grounded mons.
   assert.equal(endOfTurnHp(m(), { s: at(0, 3) }), 10, "Grassy Terrain");
   assert.equal(endOfTurnHp(m({ types: [2] }), { s: at(0, 3) }), 0, "Flying isn't grounded");
@@ -367,6 +381,46 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   // Shell Bell: 1/8 of the damage dealt this turn per stack.
   assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 24, "Shell Bell ×2");
   assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier")] }), { s: at() }), 0, "Shell Bell without damage");
+  // It heals in MoveEffectPhase, before every turn-end phase, so its HP is already there when Sitrus reads the ratio:
+  // 70/160 is under the bar, 80/160 is not.
+  assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0)] }), { s: at() }), 40, "70/160 eats the berry");
+  assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0), held("HitHealModifier")] }), { s: at(), dealt: 80 }), 10, "Shell Bell lifts it over the bar first");
+
+  // Every turn-end heal is queued as a `PokemonHealPhase`: Heal Block cancels it, and Healing Charm on the healed
+  // mon's own side scales it, floored.
+  assert.equal(endOfTurnHp(m({ tags: ["HEAL_BLOCK"], items: [new TurnHealModifier()] }), { s: at() }), 0, "Heal Block");
+  const charmed = at(0, 0, { modifiers: [held("HealingBoosterModifier", { multiplier: 1.1 }, 2)] });
+  assert.equal(endOfTurnHp(m({ items: [new TurnHealModifier()] }), { s: charmed }), 12, "Healing Charm ×2 on Leftovers");
+  assert.equal(endOfTurnHp(m({ player: false, items: [new TurnHealModifier()] }), { s: charmed }), 10, "which is the player's, not the foe's");
+  // The enemy's wave-heal token carries `preventFullHeal`: it stops a HP short of full.
+  assert.equal(endOfTurnHp(m({ hp: 155, player: false }), { s: at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] }) }), 4, "the token stops at max − 1");
+
+  // The TURN_END battler tags, read by class: Leech Seed and the binding moves take a 1/8, Nightmare and Curse a
+  // quarter, Salt Cure a 16th — doubled on a Water or Steel mon — and Ingrain / Aqua Ring heal a 16th.
+  const tag = name => new ({ [name]: class {} })[name]();
+  class DamagingTrapTag {}
+  class BindTag extends DamagingTrapTag {}
+  assert.equal(endOfTurnHp(m({ battlerTags: [tag("NightmareTag")] }), { s: at() }), -40, "Nightmare");
+  assert.equal(endOfTurnHp(m({ battlerTags: [tag("CursedTag")] }), { s: at() }), -40, "Curse");
+  assert.equal(endOfTurnHp(m({ battlerTags: [new BindTag()] }), { s: at() }), -20, "a binding move");
+  assert.equal(endOfTurnHp(m({ battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -10, "Salt Cure");
+  assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -20, "Salt Cure on a Water mon");
+  assert.equal(endOfTurnHp(m({ battlerTags: [tag("AquaRingTag")] }), { s: at() }), 10, "Aqua Ring");
+  assert.equal(endOfTurnHp(m({ abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("NightmareTag")] }), { s: at() }), 0, "Magic Guard vs Nightmare");
+  // Leech Seed takes its 1/8 off the seeded mon and hands it to the seeder it names by battler index — turned into
+  // damage on the seeder by Liquid Ooze on the seeded mon.
+  const seed = Object.assign(tag("SeedTag"), { sourceIndex: 1 });
+  const seeder = mon("seeder", { hp: 50, maxHp: 160, bi: 1 });
+  const seeded = mon("seeded", { hp: 160, maxHp: 160, player: false, battlerTags: [seed], bi: 2 });
+  const seedField = at(0, 0, { getField: () => [seeder, seeded] });
+  assert.equal(endOfTurnHp(seeded, { s: seedField }), -20, "the seed takes a 1/8");
+  assert.equal(endOfTurnHp(seeder, { s: seedField }), 20, "and hands it over");
+  const oozed = mon("oozed", { hp: 160, maxHp: 160, player: false, abilities: ["ReverseDrainAbAttr"], battlerTags: [seed], bi: 2 });
+  assert.equal(endOfTurnHp(seeder, { s: at(0, 0, { getField: () => [seeder, oozed] }) }), -20, "Liquid Ooze sends it back");
+  // Bad Dreams: an opposing ability takes a 1/8 off a sleeping mon.
+  const sleeper = m({ status: { effect: 4 } });
+  const dreamer = mon("dreamer", { player: false, abilities: ["PostTurnHurtIfSleepingAbAttr"] });
+  assert.equal(endOfTurnHp(sleeper, { s: at(0, 0, { getField: () => [sleeper, dreamer] }) }), -20, "Bad Dreams");
 }
 
 // Reviver Seed: a lethal hit isn't a KO — it's back at half HP.
@@ -523,6 +577,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   // Heals stop at max HP; the branches standing after use 1 carry their bar.
   assert.deepEqual(koCurve(mon("t", { hp: 100 }), sure(10), { turnEnd: 30 }).after1.map(x => x.hp), [100]);
   assert.deepEqual(koCurve(mon("b", { hp: 200, boss: 2, player: false }), sure(150)).after1.map(x => [x.hp, x.bar]), [[100, 0]]);
+  // A boss's status chip goes through `damage(dmg, false, true)`, so a bar boundary stops it: 30 off a 220/400 boss
+  // with 200-HP bars deals 20 and breaks the bar, where an unclamped chip would have left it on 190.
+  assert.deepEqual(koCurve(mon("bar", { hp: 220, maxHp: 400, boss: 2, player: false }), sure(0), { turnEnd: -30 }).after1.map(x => [x.hp, x.bar]), [[200, 0]]);
   // `start`: an earlier turn's branches.
   assert.deepEqual(round(koCurve(mon("t", { hp: 100 }), sure(60), { start: [{ hp: 50, p: 0.5 }, { hp: 100, p: 0.5 }] }).by).slice(0, 2), [0.5, 1]);
   // The endure token saves once a wave, and every lethal hit of the use it went up in.
