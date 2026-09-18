@@ -1,23 +1,48 @@
 /**
- * The fake extension and fake client the hub's tests drive it with. Both are real `ws` sockets on the loopback port
- * the hub bound, so the tests exercise the upgrade check too: a browser sends an extension-scheme `Origin` and a local
- * client sends none, exactly as the real ones do (§7.4).
+ * The fakes the hub's tests drive it with: an extension, a client, a port to bind and a hub start that never comes up.
+ * The two sockets are real `ws` sockets on the loopback port the hub bound, so the tests exercise the upgrade check
+ * too: a browser sends an extension-scheme `Origin` and a local client sends none, exactly as the real ones do (§7.4).
  */
+import { createServer } from "node:net";
 import { WebSocket } from "ws";
+import type { HubProcess } from "./client.ts";
 import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { PROTOCOL } from "../protocol/version.ts";
 import type { ExtensionHello, Flavour, FromClient, FromExtension, Target, ToClient, ToExtension } from "../protocol/wire.ts";
+
+/** A port nothing is listening on right now: the hub's ports are fixed, so the tests pick their own. */
+export function freePort(): Promise<number> {
+  return new Promise(resolve => {
+    const s = createServer();
+    s.listen(0, "127.0.0.1", () => {
+      const port = (s.address() as { port: number }).port;
+      s.close(() => resolve(port));
+    });
+  });
+}
+
+/** A hub start that never comes up, saying why: the default for tests that must not spawn a real process. */
+export function deadSpawn(stderr = "no hub here"): HubProcess {
+  return { pid: null, stderr: () => stderr, exited: Promise.resolve(1), release: () => {} };
+}
 
 /** A socket with a frame queue: `take` waits for the next frame a predicate accepts, and fails the test on silence. */
 export class Peer<In, Out> {
   readonly ws: WebSocket;
   readonly seen: In[] = [];
   #waiting: { match: (f: In) => boolean; resolve: (f: In) => void }[] = [];
+  #standing: { match: (f: In) => boolean; reply: (f: In) => Out }[] = [];
 
   constructor(ws: WebSocket) {
     this.ws = ws;
     ws.on("message", raw => {
       const f = JSON.parse(String(raw)) as In;
+      // A standing answer is checked first, so `take` and `answering` on one peer never both reply to a frame.
+      const standing = this.#standing.find(s => s.match(f));
+      if (standing !== undefined) {
+        this.send(standing.reply(f));
+        return;
+      }
       // A frame a waiter takes never reaches the queue, so `seen` is exactly what no test asked for.
       const i = this.#waiting.findIndex(w => w.match(f));
       if (i >= 0) this.#waiting.splice(i, 1)[0].resolve(f);
@@ -27,6 +52,15 @@ export class Peer<In, Out> {
 
   send(frame: Out): void {
     this.ws.send(JSON.stringify(frame));
+  }
+
+  /**
+   * Answers every matching frame for the rest of the test, rather than the one `take` waits for. It is what a test
+   * needs to assert that something was *not* asked twice: a second request the code should not have made comes back
+   * as a second line rather than as silence.
+   */
+  answering<T extends In>(match: (f: In) => f is T, reply: (f: T) => Out): void {
+    this.#standing.push({ match: match as (f: In) => boolean, reply: reply as (f: In) => Out });
   }
 
   /** The next frame matching `match`, from the queue or the wire. */
