@@ -140,9 +140,12 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.equal(moveTraits(tackle, mon({ abilities: ["AddSecondStrikeAbAttr"] })).hits.mean, 2);
   assert.equal(moveTraits(tackle, mon({ items: [lens(2)] })).hits.mean, 3);
   assert.equal(moveTraits(twoToFive, mon({ items: [lens(2)] })).hits.mean, 3.1, "a multi-hit move takes no lens strikes");
-  // Ash-Greninja's Water Shuriken is three hits, not two to five.
+  // Ash-Greninja's Water Shuriken is three hits, not two to five. The game checks BATTLE_BOND_GRENINJA's form 1, a
+  // separate species from plain Greninja — whose own form 2 is somebody else's, and takes no extra strikes (#178.2).
   const shuriken = move({ name: "Water Shuriken", attrs: [["MultiHitAttr", { multiHitType: MultiHitType.TWO_TO_FIVE }], "ChangeMultiHitTypeAttr"] });
-  assert.equal(moveTraits(shuriken, mon({ species: SpeciesId.GRENINJA, formIndex: 2 })).hits.mean, 3);
+  assert.equal(moveTraits(shuriken, mon({ species: SpeciesId.BATTLE_BOND_GRENINJA, formIndex: 1 })).hits.mean, 3);
+  assert.equal(moveTraits(shuriken, mon({ species: SpeciesId.BATTLE_BOND_GRENINJA, formIndex: 0 })).hits.mean, 3.1, "the un-bonded form is two to five");
+  assert.equal(moveTraits(shuriken, mon({ species: SpeciesId.GRENINJA, formIndex: 2 })).hits.mean, 3.1, "plain Greninja is two to five");
   log("hits", `2–5 ${counts(t)} · Skill Link ${moveTraits(twoToFive, mon({ abilities: ["MaxMultiHitAbAttr"] })).hits.mean} · Beat Up ${moveTraits(beatUp, party[0], { party }).hits.mean} · lens ${moveTraits(tackle, mon({ items: [lens(2)] })).hits.mean}`);
 }
 

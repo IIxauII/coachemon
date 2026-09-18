@@ -2,6 +2,7 @@
 // reading the user's turnData the way the game's multi-hit attrs do, so the numbers below are exact.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
 // Applied after the roll and the post-roll multipliers, before the Sturdy step: False Swipe's min(damage, hp − 1).
@@ -271,8 +272,11 @@ const bigHit = move(1, "Big Hit", 14, 120);
   def.getAttackDamage = function (args) {
     const mv = args.move;
     if (mv.attrs.some(a => a instanceof PresentPowerAttr)) {
-      const seed = Phaser.Math.RND.integerInRange?.(0, 254) ?? 0;
-      return { cancelled: false, result: 1, damage: seed <= 102 ? 40 : seed <= 178 ? 80 : seed <= 204 ? 120 : 0 };
+      // PresentPowerAttr's own branch: `randSeedInt(firstHit ? 100 : 80)`, then ≤ 40 / 41–70 / 71–80 / else heal.
+      const td = args.source.turnData ?? {};
+      const first = td.hitCount === td.hitsLeft;
+      const seed = Phaser.Math.RND.integerInRange?.(0, (first ? 100 : 80) - 1) ?? 0;
+      return { cancelled: false, result: 1, damage: seed <= 40 ? 40 : seed <= 70 ? 80 : seed <= 80 ? 120 : 0 };
     }
     if (mv.attrs.some(a => a instanceof FixedDamageAttr)) return { cancelled: false, result: 1, damage: 50 };
     if (mv.attrs.some(a => a instanceof OneHitKOAttr)) return { cancelled: false, result: 6, damage: this.hp };
@@ -280,11 +284,24 @@ const bigHit = move(1, "Big Hit", 14, 120);
   };
   setup(atk, def);
   const present = moveOutcome(scene, atk, def, pmOf(move(11, "Present", 0, 0, { attrs: [new PresentPowerAttr()] })), { crit: false });
-  near(present.expected, 0.4 * avgRoll(40) + 0.3 * avgRoll(80) + 0.1 * avgRoll(120), "Present expected");
+  near(present.expected, 0.41 * avgRoll(40) + 0.3 * avgRoll(80) + 0.1 * avgRoll(120), "Present expected");
   assert.equal(present.max, 120);
+  // The draw is 0–99, so 41 / 30 / 10 % over the three powers and 19 % a heal — not the 40 / 30 / 10 / 20 the
+  // out-of-range seeds used to read as, which left every row at ~1 damage (#178.1).
+  near(present.use.find(u => u.d === 0)?.p ?? 0, 0.19, "Present heals 19 % of the time");
+  assert.ok(present.use.every(u => u.d !== 1), "no row falls back to a powerless 1 damage");
   assert.equal(Object.prototype.hasOwnProperty.call(Phaser.Math.RND, "integerInRange"), false, "RNG pin removed");
   const psy = moveOutcome(scene, atk, def, pmOf(move(12, "Psywave", 13, 1, { attrs: [new PsywaveAttr(), new RandomLevelDamageAttr()] })));
   assert.ok(Math.abs(psy.expected - 50) < 1, `Psywave ~ level: ${psy.expected}`);
+  // Multi-Lens reaches a fixed-damage move too: the game floors `fixed × multiLensMultiplier`, so one lens leaves the
+  // first strike three quarters of the roll and the added strike a quarter of it — 76 → 56 + 18 at the top roll, not
+  // two full 75s (#178.3).
+  const psywave = move(12, "Psywave", 13, 1, { attrs: [new PsywaveAttr(), new RandomLevelDamageAttr()] });
+  const lensAtk = mon("lens-a", { items: [held("PokemonMultiHitModifier")] });
+  setup(lensAtk, def);
+  const psyLens = moveOutcome(scene, lensAtk, def, pmOf(psywave));
+  assert.equal(psyLens.dist[0].n, 2, "one lens adds a strike");
+  assert.deepEqual(psyLens.perHit.map(h => h.max), [56, 18], "0.75 then 0.25 of the level-1.5 roll");
   const fixed = moveOutcome(scene, atk, def, pmOf(move(13, "Seismic Toss", 1, 1, { attrs: [new FixedDamageAttr()] })));
   assert.equal(fixed.expected, 50);
   assert.equal(fixed.crit, 0);
@@ -305,6 +322,38 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const ms = performance.now() - t0;
   assert.ok(pop.expected > 0 && pop.notes.includes("10 hits"));
   assert.ok(ms < 50, `10-hit resolve took ${ms} ms`);
+}
+
+// The enemy's endure token is rolled on the hit as it stands, before the boss bar clamps it (#178.4): a 2-bar boss at
+// its bar boundary takes a 250 hit down to 100, and still spends a roll on it. With a 50 % token that is two rolls
+// across a two-strike move rather than one, so the boss goes down a quarter of the time, not half.
+{
+  const atk = mon("a");
+  const boss = mon("endureboss", { hp: 200, maxHp: 200, boss: 2, player: false });
+  scene.enemyModifiers.push(held("EnemyEndureChanceModifier", { chance: 50 }));
+  setup(atk, boss);
+  const twin = move(20, "Twin Nuke", 0, 250, { attrs: [new MultiHitAttr(MultiHitType.TWO)] });
+  const o = moveOutcome(scene, atk, boss, pmOf(twin), { crit: false });
+  assert.equal(o.dist[0].n, 2);
+  near(o.pKo, 0.25, "both rolls have to miss the token");
+  scene.enemyModifiers.length = 0;
+}
+
+// Lock-On / Mind Reader only cover the mon they were aimed at (#178.7): the other foe in a double still rolls.
+{
+  const sniper = mon("sniper", { tags: ["IGNORE_ACCURACY"] });
+  sniper.getLastXMoves = () => [{ move: MoveId.LOCK_ON, targets: [2] }];
+  const aimed = mon("aimed", { player: false, bi: 2 });
+  const other = mon("other", { player: false, bi: 3 });
+  const shaky = move(21, "Shaky", 0, 100, { acc: 50 });
+  setup(sniper, aimed);
+  assert.equal(moveOutcome(scene, sniper, aimed, pmOf(shaky), { crit: false }).acc, 1, "the locked-on target is a sure hit");
+  setup(sniper, other);
+  assert.equal(moveOutcome(scene, sniper, other, pmOf(shaky), { crit: false }).acc, 0.5, "the foe it wasn't aimed at rolls");
+  // No move history to read (every other mock here): the tag stands on its own, as it did before.
+  const blind = mon("blind", { tags: ["IGNORE_ACCURACY"] });
+  setup(blind, other);
+  assert.equal(moveOutcome(scene, blind, other, pmOf(shaky), { crit: false }).acc, 1, "no history: the tag stands");
 }
 
 assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.lastError?.stack}`);

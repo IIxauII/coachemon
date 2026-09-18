@@ -253,18 +253,23 @@ const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? ta
   beforeTera(() => sandbox(s, () => forcedRng(s, () => {
     const moveset = movesetOf(e);
     const rows = new Map();
-    const add = (pm, p, score = null) => {
-      const k = moveset.indexOf(pm);
+    // A virtual move the foe has queued need not be in its moveset, so a row with no slot is keyed by move id.
+    const add = (pm, p, score = null, id = STRUGGLE) => {
+      const k = pm ? moveset.indexOf(pm) : id === STRUGGLE ? -1 : `id${id}`;
       if (!rows.has(k)) {
         const mv = pm?.getMove();
-        rows.set(k, { name: pm ? pm.getName() : "Struggle", id: mv?.id ?? STRUGGLE, slot: k, type: mv ? TYPES[e.getMoveType(mv)] ?? TYPES[mv.type] : "Normal",
+        rows.set(k, { name: pm ? pm.getName() : id === STRUGGLE ? "Struggle" : `#${id}`, id: mv?.id ?? id, slot: typeof k === "number" ? k : null,
+          type: mv ? TYPES[e.getMoveType(mv)] ?? TYPES[mv.type] : "Normal",
           cat: mv ? ["physical", "special", "status"][mv.category] : "physical", p: 0, score, targets: [], targetDist: [] });
       }
       rows.get(k).p += p;
     };
     const done = () => [...rows.values()].filter(r => r.p > 1e-12).sort((a, b) => b.p - a.p);
+    // `getNextMove` takes a queued move that was called indirectly whether or not it is in the moveset, and skips
+    // every PP and usability check for it (`isVirtual(useMode)`); `aiDistribution` already reads the queue this way.
     for (const q of e.getMoveQueue()) {
       const pm = moveset.find(m => m.moveId === q.move);
+      if (q.useMode >= MoveUseMode.INDIRECT) { add(pm ?? null, 1, null, q.move); return done(); }
       if (pm && usableFor(pm, e, q.useMode >= MoveUseMode.IGNORE_PP)) { add(pm, 1); return done(); }
     }
     const pool = moveset.filter(pm => usableFor(pm, e));
@@ -273,7 +278,11 @@ const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? ta
     const only = pool.length === 1 ? pool[0] : encore && pool.find(pm => pm.moveId === encore.moveId);
     if (only) { add(only, 1); return done(); }
     if (e.aiType !== AiType.SMART_RANDOM && e.aiType !== AiType.SMART) { pool.forEach(pm => add(pm, 1 / pool.length)); return done(); }
-    const aiView = { ignoreAbility: !target.waveData?.abilityRevealed, ignoreSourceAbility: false, ignoreAllyAbility: true, ignoreSourceAllyAbility: false, simulated: true };
+    // The KO filter hides from the AI what it hasn't seen — the target's ability, and its ally's, each only until that
+    // mon's ability has been revealed this wave (`getNextMove`). With no ally there is nothing to hide, and the flag
+    // stands as it did.
+    const aiView = { ignoreAbility: !target.waveData?.abilityRevealed, ignoreSourceAbility: false,
+      ignoreAllyAbility: !target.getAlly?.()?.waveData?.abilityRevealed, ignoreSourceAllyAbility: false, simulated: true };
     const kos = pool.filter(pm => {
       const mv = pm.getMove();
       if (mv.moveTarget === MoveTarget.ATTACKER || mv.category === MoveCategory.STATUS || s.arena.isMoveWeatherCancelled(e, mv) || s.arena.isMoveTerrainCancelled(e, [bi], mv)) return false;

@@ -57,7 +57,7 @@ const NO_REPEAT_KEY = "battle:moveDisabledConsecutive";
 const hitShape = (mv, user, party, target) => {
   const mh = firstAttr(mv, "MultiHitAttr");
   let type = mh ? mh.multiHitType ?? mh.intrinsicMultiHitType : null;
-  if (mh && attrsNamed(mv, "ChangeMultiHitTypeAttr").length && user?.species?.speciesId === SpeciesId.GRENINJA && user?.formIndex === 2) type = MultiHitType.THREE;
+  if (mh && attrsNamed(mv, "ChangeMultiHitTypeAttr").length && user?.species?.speciesId === SpeciesId.BATTLE_BOND_GRENINJA && user?.formIndex === 1) type = MultiHitType.THREE;
   const skillLink = hasAbAttr(user, "MaxMultiHitAbAttr");
   const beatUp = () => (party ?? []).reduce((t, p) => t + (p && (p.id === user?.id || !(p.status?.effect > StatusEffect.NONE)) ? 1 : 0), 0);
   let dist = type == null ? [{ n: 1, p: 1 }]
@@ -66,14 +66,15 @@ const hitShape = (mv, user, party, target) => {
   const spread = SPREAD_TARGETS.includes(mv?.moveTarget);
   const enhanced = (...args) => (typeof mv?.canBeMultiStrikeEnhanced === "function" ? !!mv.canBeMultiStrikeEnhanced(...args) : !mh && !spread);
   const lenses = heldStackOf(user, "PokemonMultiHitModifier");
-  const extra = (hasAbAttr(user, "AddSecondStrikeAbAttr") && enhanced(user, true, target ?? undefined) ? 1 : 0) + (lenses && enhanced(user) ? lenses : 0);
+  const lensStrikes = lenses && enhanced(user) ? lenses : 0;
+  const extra = (hasAbAttr(user, "AddSecondStrikeAbAttr") && enhanced(user, true, target ?? undefined) ? 1 : 0) + lensStrikes;
   if (extra) dist = dist.map(x => ({ n: x.n + extra, p: x.p }));
   // Triple Kick / Axel grow by the base power each strike; CHECK_ALL_HITS rolls accuracy for every strike, unless
   // Skill Link is holding the count at its maximum.
   const grows = attrsNamed(mv, "MultiHitPowerIncrementAttr").length > 0;
   // `mean` is rounded off the last binary bits so 2–5 reads as 3.1, the number the cards print.
   const mean = Math.round(dist.reduce((t, x) => t + x.n * x.p, 0) * 1e4) / 1e4;
-  return { dist, mean, checkAll: moveFlag(mv, MoveFlags.CHECK_ALL_HITS) && !skillLink, grows };
+  return { dist, mean, checkAll: moveFlag(mv, MoveFlags.CHECK_ALL_HITS) && !skillLink, grows, lenses: lensStrikes };
 };
 
 // Everything the coach reads off `mv`'s attributes, for `user`. `party` is only Beat Up's count; `target` only

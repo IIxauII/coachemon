@@ -97,6 +97,43 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.doesNotThrow(() => JSON.stringify(dist));
 }
 
+// A queued move called by another move is used whether or not it is in the moveset, and skips every usability check
+// — `getNextMove`'s `isVirtual(useMode)` (MoveUseMode.INDIRECT is 3). The replay used to drop such a move and score
+// the moveset instead; `enemyMoveDistribution` already read it this way (#178.8).
+{
+  const moves = [{ id: 1, name: "A", target: -10 }, { id: 4, name: "D", category: 2, moveTarget: 0, user: 30 }];
+  const bench = mkMon({ id: "bench", player: true, fieldIndex: null, hp: 100 });
+  const called = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 99, useMode: 3, targets: [0] }] });
+  let ai = setup({ player: [foe(), bench], enemy: [called] });
+  assert.deepEqual(ai.aiReplay(scene, called, bench).map(r => [r.name, r.p, r.id, r.slot]), [["#99", 1, 99, null]],
+    "a virtual move outside the moveset is the whole answer");
+  // One that *is* in the moveset keeps its name and slot.
+  const own = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 1, useMode: 3, targets: [0] }] });
+  ai = setup({ player: [foe(), bench], enemy: [own] });
+  assert.deepEqual(ai.aiReplay(scene, own, bench).map(r => [r.name, r.p, r.slot]), [["A", 1, 0]]);
+  // An unusable move queued normally is still skipped.
+  const normal = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 99, useMode: 1, targets: [0] }] });
+  ai = setup({ player: [foe(), bench], enemy: [normal] });
+  assert.ok(ai.aiReplay(scene, normal, bench).every(r => r.name !== "#99"), "a normal queued move must be in the moveset");
+}
+
+// The replay's KO filter hides the target's ally's ability only until it has been revealed this wave, as `getNextMove`
+// does — it used to hide it always (#178.8).
+{
+  const moves = [{ id: 1, name: "A", target: -10 }, { id: 2, name: "B", target: -5 }];
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves });
+  const target = mkMon({ id: "me", player: true, fieldIndex: 0 });
+  const ally = mkMon({ id: "ally", player: true, fieldIndex: 1, revealed: true });
+  let ai = setup({ player: [target, ally], enemy: [e], double: true });
+  ai.aiReplay(scene, e, target);
+  assert.equal(target.lastDamageCall.ignoreAllyAbility, false, "a revealed ally's ability is in the AI's view");
+  const hidden = mkMon({ id: "ally", player: true, fieldIndex: 1 });
+  const target2 = mkMon({ id: "me", player: true, fieldIndex: 0 });
+  ai = setup({ player: [target2, hidden], enemy: [mkMon({ id: "e", player: false, fieldIndex: 0, moves })], double: true });
+  ai.aiReplay(scene, scene.getEnemyParty()[0], target2);
+  assert.equal(target2.lastDamageCall.ignoreAllyAbility, true, "an unrevealed one is still hidden");
+}
+
 // SMART: A 10×2 eff×1.5 STAB = 30, B 20, C 10, D 5 (status: no multipliers). Advance 33%, 25%, 25%.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, types: [9], moves: [
