@@ -185,7 +185,7 @@ test("the watcher rebuilds for what the build reads (§5.4)", () => {
     "src/protocol/commands.ts",
     "extension/entrypoints/background.ts",
     "extension/wxt.config.ts",
-    "skills/coach-pokerogue/scripts/hud/05-randbats.js",
+    "skills/coachemon/scripts/hud/05-randbats.js",
     "extension/package.json",
   ]) {
     assert.ok(interesting(path), `${path} should rebuild`);

@@ -20,12 +20,12 @@
  *    `newBattle`'s draws, so a reordered call there desynchronises every field
  *    after it.
  *
- * `skills/coach-pokerogue/references/game-code.md` is the reading these rest on,
+ * `skills/coachemon/references/game-code.md` is the reading these rest on,
  * read from the pinned tag; what is true only of the live minified bundle sits
  * apart in its §22. Its line citations go stale at a pin bump; these hashes name
  * which of its readings to redo.
  *
- * Keys are HUD modules under `skills/coach-pokerogue/scripts/hud/`; a moved hash
+ * Keys are HUD modules under `skills/coachemon/scripts/hud/`; a moved hash
  * names the modules to re-read. `50-shop.js` owns only its TM claims (§16):
  * its spending rules rest on `03-calendar.js`'s run calendar and its item
  * judgements on `50-items.js`, which are listed under those modules.

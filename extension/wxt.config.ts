@@ -10,7 +10,7 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "wxt";
 import { sourcesZipName, zipName } from "../scripts/release/artifacts.ts";
-import { bundle } from "../skills/coach-pokerogue/scripts/hud-bundle.mjs";
+import { bundle } from "../skills/coachemon/scripts/hud-bundle.mjs";
 import { DEV_PORT, STORE_PORT } from "../src/protocol/version.ts";
 import type { Flavour, Target } from "../src/protocol/wire.ts";
 import { BUILD_PLACEHOLDER, buildId, hudScript, notices, stamp, walk } from "./src/build/artifact.ts";
@@ -64,8 +64,8 @@ export default defineConfig({
       "src/enums/generated.ts",
       // This config imports it for the artifact names, so `wxt build` inside the zip needs it to load at all (§5.7).
       "scripts/release/artifacts.ts",
-      "skills/coach-pokerogue/scripts/hud-bundle.mjs",
-      "skills/coach-pokerogue/scripts/hud/**",
+      "skills/coachemon/scripts/hud-bundle.mjs",
+      "skills/coachemon/scripts/hud/**",
       "LICENSE",
       "THIRD_PARTY_NOTICES.md",
       "SOURCES.md",

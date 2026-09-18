@@ -11,7 +11,7 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["package.json", "package-lock.json", ".claude-plugin/plugin.json", "skills/coach-pokerogue/scripts/hud/05-randbats.js"],
+        "assets": ["package.json", "package-lock.json", ".claude-plugin/plugin.json", "skills/coachemon/scripts/hud/05-randbats.js"],
         "message": "chore(release): ${nextRelease.version} [skip ci]"
       }
     ],

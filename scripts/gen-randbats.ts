@@ -21,7 +21,7 @@ import { parseArgs } from "node:util";
 const RANDBATS = "https://data.pkmn.cc/randbats";
 /** Showdown's dex, for evolution chains only: randbats has no not-fully-evolved species. */
 const DEX = "https://play.pokemonshowdown.com/data/pokedex.json";
-const OUT = new URL("../skills/coach-pokerogue/scripts/hud/05-randbats.js", import.meta.url);
+const OUT = new URL("../skills/coachemon/scripts/hud/05-randbats.js", import.meta.url);
 /** The snapshot rides in the injected HUD bundle, so it stays small enough to paste. */
 const MAX_BYTES = 150 * 1024;
 

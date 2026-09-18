@@ -1,6 +1,6 @@
 # The v1 tool surface
 
-The MCP tool surface for `pokerogue-mcp` v1. Settled by [#7 The v1 tool surface](https://github.com/IIxauII/pokerogue-mcp/issues/7); the build tickets are cut from this document.
+The MCP tool surface for `coachemon` v1. Settled by [#7 The v1 tool surface](https://github.com/IIxauII/coachemon/issues/7); the build tickets are cut from this document.
 
 Every claim here is either a decision taken in #7 or a fact carried from a closed ticket. Facts are tagged **[live]** (observed against the running game) or **[source]** (read from PokéRogue source at `v1.12.0.11` / `e4e9b53`, never exercised). A **[source]** tag is a standing instruction to the build ticket: verify it before depending on it.
 
@@ -100,8 +100,8 @@ Detecting a run ending is a settle-loop concern, not a `get_state` concern: the 
 
 This spec fixes the **shape**. Two behaviours behind it are owned by open sibling tickets, and a build ticket must read them as TBD rather than inventing a number:
 
-- **[#14 The settle timeout contract](https://github.com/IIxauII/pokerogue-mcp/issues/14)** — the no-progress and hard budgets, whether they are counted in seconds or in presses, what the server does after a `timed_out` (keep polling, return partial, hand to Claude), and whether any retry is ever automatic.
-- **[#13 Detecting and escaping a stuck screen](https://github.com/IIxauII/pokerogue-mcp/issues/13)** — the stuck detector (N identical presses against an unchanged fingerprint, and what N is), the safe escape ladder, and whether the server escapes on its own or reports `stuck` and hands the decision to Claude.
+- **[#14 The settle timeout contract](https://github.com/IIxauII/coachemon/issues/14)** — the no-progress and hard budgets, whether they are counted in seconds or in presses, what the server does after a `timed_out` (keep polling, return partial, hand to Claude), and whether any retry is ever automatic.
+- **[#13 Detecting and escaping a stuck screen](https://github.com/IIxauII/coachemon/issues/13)** — the stuck detector (N identical presses against an unchanged fingerprint, and what N is), the safe escape ladder, and whether the server escapes on its own or reports `stuck` and hands the decision to Claude.
 
 Neither blocks building the happy path. Both must be a **fingerprint-repetition** counter over a sliding window rather than a same-mode streak counter: #6's 147-iteration failure alternated `MODIFIER_SELECT(6) → PARTY(8) → 6 → 8`, which a same-mode counter cannot see.
 
@@ -140,7 +140,7 @@ Three fields on `scene.ui.handlers[8]`, all read in the one-wave prototype:
 
 ## 5. CANCEL is not "back"
 
-There is no back button, and no tool offers a generic "go back". `read_menu` reports a `cancel_effect` field, which is **derived from the escape ladder** ([#15](https://github.com/IIxauII/pokerogue-mcp/issues/15), `src/escape-ladder/table.ts` on master once [#21](https://github.com/IIxauII/pokerogue-mcp/pull/21) merges). That table is the single source for what CANCEL does on every screen. This section used to keep its own table, and it is gone because the audit showed it was wrong in several places:
+There is no back button, and no tool offers a generic "go back". `read_menu` reports a `cancel_effect` field, which is **derived from the escape ladder** ([#15](https://github.com/IIxauII/coachemon/issues/15), `src/escape-ladder/table.ts` on master once [#21](https://github.com/IIxauII/coachemon/pull/21) merges). That table is the single source for what CANCEL does on every screen. This section used to keep its own table, and it is gone because the audit showed it was wrong in several places:
 
 - `TITLE` is `rejected`, not `selects_last_option` (`TitlePhase` passes `noCancel: true`).
 - Nothing `reopens` on the shop's party screens. CANCEL returns to `MODIFIER_SELECT`, and #6's loop was a policy bug (#13). The only real `reopens` is `PARTY/RELEASE`.
@@ -355,7 +355,7 @@ Each inherits Principle 4 (never trust `processInput`'s return) and the **[sourc
 
 ## 10. Corrections from the build
 
-[#24 Build the v1 server end to end](https://github.com/IIxauII/pokerogue-mcp/issues/24) built all eight in one pass and played a run from `start_run` to `run_over` through the server. What the live game corrected in this document, each **[live]**:
+[#24 Build the v1 server end to end](https://github.com/IIxauII/coachemon/issues/24) built all eight in one pass and played a run from `start_run` to `run_over` through the server. What the live game corrected in this document, each **[live]**:
 
 - **§6.2 `biome`:** the field is `scene.arena.biomeId`, not `biomeType`. `biomeType` reads `undefined` for the whole run.
 - **§7 `PARTY` slot phase:** Cancel is the **fixed cursor 6**, not `party.length`; item-manage modes add the transfer/discard toggle at 7. DOWN walks `0 … n-1 → 6 → 0` (`PartyUiHandler.processInput`), so the driver navigates the slot list as a DOWN-cycle. A ±1 walk to index 3 oscillated between 2 and 6.

@@ -1,10 +1,10 @@
 {
-  "name": "pokerogue-mcp",
+  "name": "coachemon",
   "owner": { "name": "xau" },
   "metadata": { "description": "PokéRogue for Claude Code: MCP server + play skill." },
   "plugins": [
     {
-      "name": "pokerogue",
+      "name": "coachemon",
       "source": "./",
       "description": "Let Claude play PokéRogue through a live pokerogue.net tab."
     }

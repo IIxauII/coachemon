@@ -19,7 +19,7 @@ export const EXTENSION_PATHS = [
   "extension/",
   "src/protocol/",
   "src/page/",
-  "skills/coach-pokerogue/scripts/hud/",
+  "skills/coachemon/scripts/hud/",
 ];
 
 /** Whether one commit's changed paths reach the extension. One shipped path among server-only ones is enough. */

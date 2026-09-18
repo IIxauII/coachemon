@@ -4,7 +4,7 @@ This repository is licensed AGPL-3.0-only (see `LICENSE`). It includes material 
 
 ## pkmn/randbats
 
-`skills/coach-pokerogue/scripts/hud/05-randbats.js` is a trimmed snapshot of the random battle sets data from
+`skills/coachemon/scripts/hud/05-randbats.js` is a trimmed snapshot of the random battle sets data from
 pkmn/randbats (https://github.com/pkmn/randbats), used under the MIT licence:
 
 ```

@@ -16,7 +16,7 @@ test("a commit counts for the extension when it touched anything the extension s
   assert.equal(touches(["extension/src/background/index.ts"]), true);
   assert.equal(touches(["src/protocol/wire.ts"]), true);
   assert.equal(touches(["src/page/dispatch.ts"]), true);
-  assert.equal(touches(["skills/coach-pokerogue/scripts/hud/90-render.js"]), true);
+  assert.equal(touches(["skills/coachemon/scripts/hud/90-render.js"]), true);
   // One shipped path among server-only ones is still a bump: a HUD fix bumps both streams (§14.2).
   assert.equal(touches(["src/hub/hub.ts", "docs/spec/extension-distribution.md", "src/page/acts.ts"]), true);
 });
@@ -41,7 +41,7 @@ test("keep drops the commits whose diff missed the extension", () => {
     b: ["src/hub/hub.ts"],
     // A merge commit has no diff of its own under `git diff-tree -r`, so it drops out.
     c: [],
-    d: ["skills/coach-pokerogue/scripts/hud/05-randbats.js"],
+    d: ["skills/coachemon/scripts/hud/05-randbats.js"],
   };
   const commits = Object.keys(paths).map(hash => ({ hash }));
   assert.deepEqual(keep(commits, (hash: string) => paths[hash]).map((c: { hash: string }) => c.hash), ["a", "d"]);

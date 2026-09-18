@@ -1,6 +1,6 @@
 # Extension distribution
 
-How the coach HUD and the agent transport ship as one public browser extension, **Coachemon**, on Chrome, Firefox, Safari and Orion, and how the MCP server moves off CDP and Apple Events onto it. Settled by [Map: HUD as a browser extension](https://github.com/IIxauII/pokerogue-mcp/issues/98); written by [Write the distribution spec](https://github.com/IIxauII/pokerogue-mcp/issues/111). The build tickets are cut from this document (§17).
+How the coach HUD and the agent transport ship as one public browser extension, **Coachemon**, on Chrome, Firefox, Safari and Orion, and how the MCP server moves off CDP and Apple Events onto it. Settled by [Map: HUD as a browser extension](https://github.com/IIxauII/coachemon/issues/98); written by [Write the distribution spec](https://github.com/IIxauII/coachemon/issues/111). The build tickets are cut from this document (§17).
 
 Every claim here is a decision from a closed ticket on that map or a fact carried from one, linked by the ticket's name. A few details the tickets explicitly left to "the spec" are chosen here and marked **(picked here)**: port numbers, event names, envelope fields, status wording, secret names, job order and a handful of identifiers. They carry no evidence beyond fitting the decisions around them, and are the cheap part to change.
 
@@ -12,7 +12,7 @@ Facts are tagged the way [The v1 tool surface](v1-tool-surface.md) tags them:
 
 Vocabulary is `CONTEXT.md`. *Hub*, *command*, *driver*, *card*, *verdict*, *settled*, *snapshot*, *menu*, *screen* and *progress fingerprint* are defined there. This document also says **target browser** (Chrome, Firefox, Safari, Orion) and **store** (Chrome Web Store, AMO, the Safari download), because Orion installs the Chrome and Firefox builds and so engine no longer lines up with store. Never call the local process a *host*: Apple's *host app* is the browser. Apple's own words are used as-is: **containing app**, **native app extension**, **packager**, **notarization**.
 
-The repo, plugin and skill rename to `coachemon` happens outside this spec, in [Rename repo, plugin and skill to coachemon](https://github.com/IIxauII/pokerogue-mcp/issues/138). Paths below are today's; names that only exist after the rename (`IIxauII/coachemon`, the Pages URL) say so.
+The repo, plugin and skill rename to `coachemon` happens outside this spec, in [Rename repo, plugin and skill to coachemon](https://github.com/IIxauII/coachemon/issues/138). Paths below are today's; names that only exist after the rename (`IIxauII/coachemon`, the Pages URL) say so.
 
 ---
 
@@ -20,21 +20,21 @@ The repo, plugin and skill rename to `coachemon` happens outside this spec, in [
 
 A build ticket that cannot satisfy one of these reopens the decision; it does not work around it.
 
-1. **One extension, one build per store, one source.** The HUD runs for every player. The agent transport comes alive only when a hub answers on the loopback port. `skills/coach-pokerogue/scripts/hud/*.js` stays the single HUD source, bundled unchanged by `hud-bundle.mjs`.
-2. **The store build contains no interpreter.** Everything that crosses into the page is a named **command** from one closed, shared table with typed arguments. No arbitrary JS, no fetched logic, no remote data table. Chrome bans "an interpreter to run complex commands fetched from a remote source, even if those commands are fetched as data" **[doc]** ([Store cost, review latency and policy exposure](https://github.com/IIxauII/pokerogue-mcp/issues/102)).
-3. **Logic that may change stays out of review.** The extension answers single reads and single acts in one page turn. Settling, stuck detection, auto-advance, cursor walks, label matching and `start_run` live in the MCP server, which ships with the plugin ([Command vocabulary between hub clients and the extension](https://github.com/IIxauII/pokerogue-mcp/issues/188)).
-4. **Nothing is written to the player's machine.** No setup command, no native-messaging manifest, no shim, no config file. Pairing is installing the extension and the plugin ([Pairing protocol: MCP server and extension](https://github.com/IIxauII/pokerogue-mcp/issues/107)).
+1. **One extension, one build per store, one source.** The HUD runs for every player. The agent transport comes alive only when a hub answers on the loopback port. `skills/coachemon/scripts/hud/*.js` stays the single HUD source, bundled unchanged by `hud-bundle.mjs`.
+2. **The store build contains no interpreter.** Everything that crosses into the page is a named **command** from one closed, shared table with typed arguments. No arbitrary JS, no fetched logic, no remote data table. Chrome bans "an interpreter to run complex commands fetched from a remote source, even if those commands are fetched as data" **[doc]** ([Store cost, review latency and policy exposure](https://github.com/IIxauII/coachemon/issues/102)).
+3. **Logic that may change stays out of review.** The extension answers single reads and single acts in one page turn. Settling, stuck detection, auto-advance, cursor walks, label matching and `start_run` live in the MCP server, which ships with the plugin ([Command vocabulary between hub clients and the extension](https://github.com/IIxauII/coachemon/issues/188)).
+4. **Nothing is written to the player's machine.** No setup command, no native-messaging manifest, no shim, no config file. Pairing is installing the extension and the plugin ([Pairing protocol: MCP server and extension](https://github.com/IIxauII/coachemon/issues/107)).
 5. **Web pages are the threat.** The loopback listener defends against drive-by pages and DNS rebinding. Same-user local processes and other installed extensions are outside the model, because the vocabulary is closed and never carries typed form text.
-6. **Never guess which save.** With more than one connected game tab, reads refuse as well as acts ([Migration off CDP and Apple Events](https://github.com/IIxauII/pokerogue-mcp/issues/108)).
+6. **Never guess which save.** With more than one connected game tab, reads refuse as well as acts ([Migration off CDP and Apple Events](https://github.com/IIxauII/coachemon/issues/108)).
 7. **Nothing reloads the player's tab.** A reload is destructive on the escape ladder, so no build executes one on its own.
 8. **Zero telemetry, ever.** The extension's only network traffic is the loopback socket, and the HUD's `import()` of `pokerogue.net`'s own chunks.
-9. **Artwork never ships.** No Pokémon or PokéRogue art in the icon, screenshots or bundle. Everything drawn comes from the live page ([Trademark exposure for a public listing](https://github.com/IIxauII/pokerogue-mcp/issues/104)).
+9. **Artwork never ships.** No Pokémon or PokéRogue art in the icon, screenshots or bundle. Everything drawn comes from the live page ([Trademark exposure for a public listing](https://github.com/IIxauII/coachemon/issues/104)).
 
 ---
 
 ## 2. Targets and stores
 
-Four target browsers, three stores. Every target carries the HUD **and** the transport on day one ([Orion after the AppleScript route retires](https://github.com/IIxauII/pokerogue-mcp/issues/118), [What Safari without a transport costs](https://github.com/IIxauII/pokerogue-mcp/issues/120)).
+Four target browsers, three stores. Every target carries the HUD **and** the transport on day one ([Orion after the AppleScript route retires](https://github.com/IIxauII/coachemon/issues/118), [What Safari without a transport costs](https://github.com/IIxauII/coachemon/issues/120)).
 
 | Target | Installs from | Build | Floor | Background | Keepalive that holds it |
 |---|---|---|---|---|---|
@@ -43,9 +43,9 @@ Four target browsers, three stores. Every target carries the HUD **and** the tra
 | **Safari** (macOS) | Developer ID-signed, notarized download from the GitHub Release | `safari-mv3` → packager | 18 | `scripts` | unmeasured **[unverified]** |
 | **Orion** (macOS) | the CWS or AMO listing, player's choice | none of its own | Orion 1.1.2 tested | runs `service_worker` as a persistent page **[live]** | none needed **[live]** |
 
-**Transport pass bar**, the same for every target: the hub delivers a command to an open `pokerogue.net` tab **within about 1 s after 5 or more minutes idle**, by whatever the extension does (held socket, keepalive, reconnect) ([What Safari without a transport costs](https://github.com/IIxauII/pokerogue-mcp/issues/120)). The per-engine smoke checks in §16 use it as their acceptance line.
+**Transport pass bar**, the same for every target: the hub delivers a command to an open `pokerogue.net` tab **within about 1 s after 5 or more minutes idle**, by whatever the extension does (held socket, keepalive, reconnect) ([What Safari without a transport costs](https://github.com/IIxauII/coachemon/issues/120)). The per-engine smoke checks in §16 use it as their acceptance line.
 
-The floors are set by `content_scripts[].world: "MAIN"`: Chrome 111, Firefox 128, Safari 18 **[doc]** ([Page-world execution across Chrome, Firefox and Safari](https://github.com/IIxauII/pokerogue-mcp/issues/99)). Every build carries **both** keepalives plus reconnect-on-wake, since the combination is untested and Safari's is unmeasured (§8.2).
+The floors are set by `content_scripts[].world: "MAIN"`: Chrome 111, Firefox 128, Safari 18 **[doc]** ([Page-world execution across Chrome, Firefox and Safari](https://github.com/IIxauII/coachemon/issues/99)). Every build carries **both** keepalives plus reconnect-on-wake, since the combination is untested and Safari's is unmeasured (§8.2).
 
 ### 2.1 Where the targets differ, and what each difference costs
 
@@ -62,7 +62,7 @@ The floors are set by `content_scripts[].world: "MAIN"`: Chrome 111, Firefox 128
 
 ## 3. Listing identity
 
-From [Name and listing identity](https://github.com/IIxauII/pokerogue-mcp/issues/105), with Apple's App Store removed by [Ask Pagefault Games for written permission](https://github.com/IIxauII/pokerogue-mcp/issues/123).
+From [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105), with Apple's App Store removed by [Ask Pagefault Games for written permission](https://github.com/IIxauII/coachemon/issues/123).
 
 | Element | Decision |
 |---|---|
@@ -131,7 +131,7 @@ Wording is free; the order and the fixed lines are not.
 
 ## 5. The extension package
 
-From [Build pipeline for three engines](https://github.com/IIxauII/pokerogue-mcp/issues/106), amended by the pairing, vocabulary and relay tickets.
+From [Build pipeline for three engines](https://github.com/IIxauII/coachemon/issues/106), amended by the pairing, vocabulary and relay tickets.
 
 ### 5.1 Layout
 
@@ -171,12 +171,12 @@ src/page/                        command handlers as real functions (§10.5)
 ### 5.2 Build
 
 - **WXT**, per-browser via `wxt build -b chrome|firefox|safari --mode store|dev`. MV3 is forced for Firefox and Safari (WXT defaults both to MV2).
-- **The HUD bypasses WXT's bundler.** A `build:publicAssets` hook (or equivalent WXT hook) calls `bundle("hud")` from `skills/coach-pokerogue/scripts/hud-bundle.mjs`, strips comments, wraps it in the world check and build id (§9.4, §9.6), and writes `hud.js` into the output. The manifest lists it by hand. The HUD tests keep exercising the raw `bundle()`.
+- **The HUD bypasses WXT's bundler.** A `build:publicAssets` hook (or equivalent WXT hook) calls `bundle("hud")` from `skills/coachemon/scripts/hud-bundle.mjs`, strips comments, wraps it in the world check and build id (§9.4, §9.6), and writes `hud.js` into the output. The manifest lists it by hand. The HUD tests keep exercising the raw `bundle()`.
 - **Comments are stripped from `hud.js` in every build**, dev and store. This removes the 17 comment lines that quote PokéRogue code.
 - **`page.js` and `relay.js`** are WXT unlisted scripts, listed by hand in the manifest next to `hud.js`. A WXT
   content script would emit to `content-scripts/relay.js` and generate a `content_scripts` entry of its own; as
   unlisted scripts both land at the output root and every content script is declared in one place, exactly as §5.3
-  spells them out ([The extension package](https://github.com/IIxauII/pokerogue-mcp/issues/203)).
+  spells them out ([The extension package](https://github.com/IIxauII/coachemon/issues/203)).
 - **Build id.** Every script gets `COACHEMON_BUILD = "<version>+<first 12 hex of sha256 over hud.js and page.js before stamping>"` (picked here), injected by define.
 - **`LICENSE` and `THIRD_PARTY_NOTICES.md`** from the repo root are copied into every output folder (§15).
 - **Outputs** use WXT's defaults, `extension/.output/<browser>-mv3-<mode>/` (`-store` or `-dev`), gitignored. `wxt zip` makes per-browser store zips and the Firefox sources zip.
@@ -257,7 +257,7 @@ Chrome needs no `key`: nothing pins the extension id.
 | hub port **47148** instead of 47147 | a dev build next to a store install never double-counts a tab |
 | the reload client | the dev loop below |
 
-**Dev loop.** A watcher (`extension/scripts/dev.ts`, picked here) over `skills/coach-pokerogue/scripts/hud/`, `src/page/`, `src/protocol/` and `extension/` reruns the dev build per target, then sends a `dev-reload` frame through the dev hub. The dev background calls `runtime.reload()` and, after restarting, re-injects `page.js` and `hud.js` into open `pokerogue.net` tabs with `scripting.executeScript`; both scripts replace an older copy in place (§9.6), so a run keeps its place. Where an engine cannot, the dev reloads by hand. Whether Firefox, Safari and Orion honour this is unmeasured.
+**Dev loop.** A watcher (`extension/scripts/dev.ts`, picked here) over `skills/coachemon/scripts/hud/`, `src/page/`, `src/protocol/` and `extension/` reruns the dev build per target, then sends a `dev-reload` frame through the dev hub. The dev background calls `runtime.reload()` and, after restarting, re-injects `page.js` and `hud.js` into open `pokerogue.net` tabs with `scripting.executeScript`; both scripts replace an older copy in place (§9.6), so a run keeps its place. Where an engine cannot, the dev reloads by hand. Whether Firefox, Safari and Orion honour this is unmeasured.
 
 ### 5.5 The store-artifact guard
 
@@ -279,7 +279,7 @@ A `extension` job in a new `.github/workflows/extension.yml` (picked here) on ev
 
 `wxt zip -b firefox` also produces the sources zip. `sourcesRoot` is the repo root, limited to:
 
-`extension/` (without `.output/` and `node_modules/`), `src/protocol/`, `src/page/`, `src/enums/generated.ts`, `scripts/release/artifacts.ts`, `skills/coach-pokerogue/scripts/hud-bundle.mjs`, `skills/coach-pokerogue/scripts/hud/`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, and a `SOURCES.md` for the reviewer:
+`extension/` (without `.output/` and `node_modules/`), `src/protocol/`, `src/page/`, `src/enums/generated.ts`, `scripts/release/artifacts.ts`, `skills/coachemon/scripts/hud-bundle.mjs`, `skills/coachemon/scripts/hud/`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, and a `SOURCES.md` for the reviewer:
 
 ```
 Requires Node >= 23.6 (TypeScript type stripping) and npm.
@@ -293,7 +293,7 @@ Output: extension/.output/firefox-mv3-store/
 
 ## 6. Permissions and privacy disclosure
 
-From [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110), as amended by the pairing ticket.
+From [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110), as amended by the pairing ticket.
 
 **The permission set is the static content-script match on `https://pokerogue.net/*` and nothing else, on every target.** Optional `nativeMessaging` is dropped everywhere, no loopback host permission is declared anywhere, and there is no `scripting`, `tabs` or `storage`. The HUD's view preference stays in the page's own `localStorage["coach-hud-view"]`. Not `*.pokerogue.net`: the beta site was never reviewed against.
 
@@ -315,7 +315,7 @@ From [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogu
 
 ## 7. The hub
 
-From [Pairing protocol: MCP server and extension](https://github.com/IIxauII/pokerogue-mcp/issues/107) and [Command vocabulary between hub clients and the extension](https://github.com/IIxauII/pokerogue-mcp/issues/188).
+From [Pairing protocol: MCP server and extension](https://github.com/IIxauII/coachemon/issues/107) and [Command vocabulary between hub clients and the extension](https://github.com/IIxauII/coachemon/issues/188).
 
 ### 7.1 Process
 
@@ -444,7 +444,7 @@ All frames are JSON text messages. Types live in `src/protocol/wire.ts`. `PRODUC
 
 ## 9. Relay contract
 
-From [MAIN↔isolated relay contract](https://github.com/IIxauII/pokerogue-mcp/issues/193). Names and fields picked here.
+From [MAIN↔isolated relay contract](https://github.com/IIxauII/coachemon/issues/193). Names and fields picked here.
 
 ### 9.1 Channel
 
@@ -510,7 +510,7 @@ The background adds `tab-gone` when `tabs.sendMessage` fails because the tab clo
 
 ## 10. Command vocabulary
 
-From [Command vocabulary between hub clients and the extension](https://github.com/IIxauII/pokerogue-mcp/issues/188). The table's contents are fixed there; names, argument and result shapes are finalised here.
+From [Command vocabulary between hub clients and the extension](https://github.com/IIxauII/coachemon/issues/188). The table's contents are fixed there; names, argument and result shapes are finalised here.
 
 ### 10.1 The store table
 
@@ -587,7 +587,7 @@ Bump when removing a command, renaming one, or changing what an existing argumen
 
 ### 11.2 The watch CLI
 
-Replaces `skills/coach-pokerogue/scripts/watch.mjs`. File: `skills/coach-pokerogue/scripts/watch.ts`, run under `Monitor` as `node <skill dir>/scripts/watch.ts` (picked here). It is a hub client with `role: "watch"`: no JS, no injection, never claims the grant.
+Replaces `skills/coachemon/scripts/watch.mjs`. File: `skills/coachemon/scripts/watch.ts`, run under `Monitor` as `node <skill dir>/scripts/watch.ts` (picked here). It is a hub client with `role: "watch"`: no JS, no injection, never claims the grant.
 
 1. Connect (spawning the hub if needed, §7.2). If the game isn't reachable, print the status ladder line (§12.3), then retry every 5 s, printing the line again only when it changes.
 2. `subscribe`, then issue a `card` read and print it.
@@ -703,7 +703,7 @@ The fixed diagnostic block keeps its shape. `console_tail` comes from `probe { t
 
 ## 13. Migration off CDP and Apple Events
 
-From [Migration off CDP and Apple Events](https://github.com/IIxauII/pokerogue-mcp/issues/108), with Orion's carve-out removed by [Agent transport on Orion](https://github.com/IIxauII/pokerogue-mcp/issues/150) and the pump from [Game loop in a hidden tab without focus emulation](https://github.com/IIxauII/pokerogue-mcp/issues/174).
+From [Migration off CDP and Apple Events](https://github.com/IIxauII/coachemon/issues/108), with Orion's carve-out removed by [Agent transport on Orion](https://github.com/IIxauII/coachemon/issues/150) and the pump from [Game loop in a hidden tab without focus emulation](https://github.com/IIxauII/coachemon/issues/174).
 
 ### 13.1 Opt-in, then one hard flip
 
@@ -716,7 +716,7 @@ From [Migration off CDP and Apple Events](https://github.com/IIxauII/pokerogue-m
 | Today | After the flip |
 |---|---|
 | `src/cdp/session.ts`, `src/cdp/link.ts`, `COACHEMON_TRANSPORT` | deleted |
-| Launching or attaching Chrome, `~/.pokerogue-mcp/chrome-profile`, port 9222 | deleted. The server never starts a browser. The profile directory is left on disk. |
+| Launching or attaching Chrome, `~/.coachemon/chrome-profile`, port 9222 | deleted. The server never starts a browser. The profile directory is left on disk. |
 | `keepAlive` (CDP focus emulation), `loop_frozen` | deleted; the driver's settles pump (§10.3) |
 | `rawKey` (CDP `Input.dispatchKeyEvent`) | the `key` command |
 | `onException`, `consoleTail` | `probe`'s `errorAt` and `tail` |
@@ -724,11 +724,11 @@ From [Migration off CDP and Apple Events](https://github.com/IIxauII/pokerogue-m
 | `src/cdp/lock.ts`, `driver.lock` | deleted; the hub's grant |
 | Tab choice (first page in `/json/list`) | exactly one ready tab, or refuse |
 | `src/game/js.ts` | deleted; `src/page/*.ts` |
-| `skills/coach-pokerogue/scripts/read.sh`, `probe.js`, `watch.mjs` (Chrome and Orion branches) | deleted; `read_card`, `read_starters`, `get_state`, `watch.ts` |
+| `skills/coachemon/scripts/read.sh`, `probe.js`, `watch.mjs` (Chrome and Orion branches) | deleted; `read_card`, `read_starters`, `get_state`, `watch.ts` |
 | Orion "Allow JavaScript from Apple Events" instructions | deleted |
 | `scripts/eval.ts`, `smoke.ts`, `autoplay.ts` | kept, run against a paired dev build on port 47148 with `COACHEMON_DEV=1` |
 | Escape ladder `reload` rung, effect "CDP page reload…" | kept as a reported rung; effect text becomes "reload the pokerogue.net tab by hand; the run resumes from the last synced save via Continue" |
-| README; `play-pokerogue` and `coach-pokerogue` `SKILL.md`; `plugin.json` description and the `cdp` keyword; code comments naming CDP | rewritten. `play-pokerogue` relies on `read_menu`/`get_state` for unknown and stuck screens, since store builds have no screenshot. `coach-pokerogue` gets §11.3's rules. |
+| README; `play-pokerogue` and `coachemon` `SKILL.md`; `plugin.json` description and the `cdp` keyword; code comments naming CDP | rewritten. `play-pokerogue` relies on `read_menu`/`get_state` for unknown and stuck screens, since store builds have no screenshot. `coachemon` gets §11.3's rules. |
 | `docs/spec/v1-tool-surface.md` | kept as a historical record, with a one-line banner pointing here |
 
 ### 13.3 What the player does
@@ -739,7 +739,7 @@ Install Coachemon in their browser, install the plugin, open (or reload) pokerog
 
 ## 14. Release
 
-From [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109). §14.1–§14.4 applied in [Extension: release pipeline and store submission](https://github.com/IIxauII/pokerogue-mcp/issues/207); §14.6 in [Extension: Safari release checklist](https://github.com/IIxauII/pokerogue-mcp/issues/209).
+From [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/coachemon/issues/109). §14.1–§14.4 applied in [Extension: release pipeline and store submission](https://github.com/IIxauII/coachemon/issues/207); §14.6 in [Extension: Safari release checklist](https://github.com/IIxauII/coachemon/issues/209).
 
 ### 14.1 Scheme
 
@@ -752,7 +752,7 @@ From [Release channel, versioning, and how fixes reach users](https://github.com
 ### 14.2 Second semantic-release run
 
 - **Config:** `extension/.releaserc.json`, `tagFormat: "extension-v${version}"`, `branches: ["master"]`. semantic-release runs with `extension/` as its working directory.
-- **Path filter:** a local plugin, `scripts/release/extension-commits.mjs` (picked here), wraps `@semantic-release/commit-analyzer` and `@semantic-release/release-notes-generator`. It keeps only commits whose `git diff-tree --no-commit-id --name-only -r <sha>` touches `extension/`, `src/protocol/`, `src/page/` or `skills/coach-pokerogue/scripts/hud/`. A HUD fix bumps both streams, which is correct. A server-only commit never bumps the extension. **(picked here, amending the release ticket's two paths)** `src/protocol/` and `src/page/` are added because they ship in the extension and did not exist when the release ticket fixed the filter; leaving them out would let a change to shipped page code skip the extension stream.
+- **Path filter:** a local plugin, `scripts/release/extension-commits.mjs` (picked here), wraps `@semantic-release/commit-analyzer` and `@semantic-release/release-notes-generator`. It keeps only commits whose `git diff-tree --no-commit-id --name-only -r <sha>` touches `extension/`, `src/protocol/`, `src/page/` or `skills/coachemon/scripts/hud/`. A HUD fix bumps both streams, which is correct. A server-only commit never bumps the extension. **(picked here, amending the release ticket's two paths)** `src/protocol/` and `src/page/` are added because they ship in the extension and did not exist when the release ticket fixed the filter; leaving them out would let a change to shipped page code skip the extension stream.
 - **The plugin's `chore(release)` commit** rewrites `hud/05-randbats.js` but is a `chore`, so it bumps nothing.
 - **Stamping:** `@semantic-release/exec` `prepareCmd` runs `node ../scripts/release/stamp-extension.ts ${nextRelease.version}`, which writes the version into `extension/package.json` **in the workspace only**, then builds and zips. **Nothing is committed**; there is no `@semantic-release/git` in this run. The tag is the source of truth.
 - **Artifacts** on the GitHub Release: `coachemon-chrome-<v>.zip`, `coachemon-firefox-<v>.zip`, `coachemon-<v>-sources.zip`, `coachemon-safari-web-extension-<v>.zip` (the unpackaged folder), via `@semantic-release/github`. A fifth, `Coachemon-safari-<v>.zip`, is added to the same release by hand afterwards (§14.6); CI neither writes nor checks for it.
@@ -803,7 +803,7 @@ Carried out by `npm run release:safari -- <version>` (`scripts/release/safari-re
 
 ## 15. Licence and notices
 
-From [Licence and contribution grant before the first listing](https://github.com/IIxauII/pokerogue-mcp/issues/135). Applied in [Extension: licence and third-party notices](https://github.com/IIxauII/pokerogue-mcp/issues/200), except `extension/package.json`, which ticket 4 creates.
+From [Licence and contribution grant before the first listing](https://github.com/IIxauII/coachemon/issues/135). Applied in [Extension: licence and third-party notices](https://github.com/IIxauII/coachemon/issues/200), except `extension/package.json`, which ticket 4 creates.
 
 - **`LICENSE`** at the repo root: the full GNU AGPL-3.0 text. It covers the whole repo, the extension package included. Copyright holder `IIxauII`.
 - `"license": "AGPL-3.0-only"` in the root `package.json` and `extension/package.json`.
@@ -812,7 +812,7 @@ From [Licence and contribution grant before the first listing](https://github.co
   - `pkmn/randbats`: the full MIT licence text, naming `hud/05-randbats.js` (today it says "MIT" and carries no notice).
   - PokéRogue: "The coach overlay contains code modified from PokéRogue (https://github.com/pagefaultgames/pokerogue), Copyright Pagefault Games and contributors, licensed AGPL-3.0-only." (AGPL §5)
   - Corresponding source: "The complete source for this version is at https://github.com/IIxauII/coachemon/tree/extension-v<version>." The build fills in the version.
-- **`skills/coach-pokerogue/references/game-code.md`** keeps its quotes and gains one line at the top: source repo `pagefaultgames/pokerogue`, the tag the quotes were read from (`v1.12.0.11`), AGPL-3.0-only, Pagefault Games contributors.
+- **`skills/coachemon/references/game-code.md`** keeps its quotes and gains one line at the top: source repo `pagefaultgames/pokerogue`, the tag the quotes were read from (`v1.12.0.11`), AGPL-3.0-only, Pagefault Games contributors.
 - **No per-file SPDX headers.**
 - The AMO sources zip already covers Firefox's corresponding source.
 
@@ -824,23 +824,23 @@ Each was accepted knowingly by a closed ticket. None blocks building; a build ti
 
 | Premise | From | What the build does about it |
 |---|---|---|
-| Loopback reaches `127.0.0.1` on a Developer ID-signed, notarized Safari build, without a host permission | [Loopback transport on a signed Safari build](https://github.com/IIxauII/pokerogue-mcp/issues/160) (ruled out of scope) | ships anyway; no HUD-only fallback |
+| Loopback reaches `127.0.0.1` on a Developer ID-signed, notarized Safari build, without a host permission | [Loopback transport on a signed Safari build](https://github.com/IIxauII/coachemon/issues/160) (ruled out of scope) | ships anyway; no HUD-only fallback |
 | Safari's background page survives idle long enough, given both keepalives plus reconnect-on-wake (the unsigned page unloaded after about 32 s) | same | reconnect-on-wake (§8.2) |
 | `background.scripts` is right for Safari rather than `service_worker` | same | `scripts` (§5.3) |
 | Developer ID can carry a Safari web extension at all | same | the first Safari release is the check |
-| One build carrying both keepalives works on Chrome and Firefox | [Loopback transport on Chrome and Firefox](https://github.com/IIxauII/pokerogue-mcp/issues/161) | smoke run per engine |
-| Synchronous `CustomEvent` dispatch across worlds on Firefox, Safari and Orion; the marker's visibility to a mis-worlded script | [MAIN↔isolated relay contract](https://github.com/IIxauII/pokerogue-mcp/issues/193) | **relay check per engine in `scripts/smoke.ts`**: one `probe` must come back synchronously; fallback in §9.2 |
-| The pump settles a hidden tab on Firefox, Safari and Orion | [Game loop in a hidden tab without focus emulation](https://github.com/IIxauII/pokerogue-mcp/issues/174) | none; readers time out, the driver pumps |
-| `key` (untrusted keydown) drives the game on Firefox and Safari | [Synthetic input a Phaser game accepts](https://github.com/IIxauII/pokerogue-mcp/issues/101) | the retry rung only |
-| Orion reaches loopback without a `127.0.0.1` host permission, from a store-installed build (tested only as unsigned sideloads with the permission declared) | [Agent transport on Orion](https://github.com/IIxauII/pokerogue-mcp/issues/150) | smoke run on Orion with the store zip |
-| Orion's opt-in auto-update of store installs clears site permissions (orionfeedback #7361) | [Orion after the AppleScript route retires](https://github.com/IIxauII/pokerogue-mcp/issues/118) | none; rung 7 covers the missing tab |
-| Orion after sleep/wake (orionfeedback #14474), long idle, hidden tab | [Agent transport on Orion](https://github.com/IIxauII/pokerogue-mcp/issues/150) | reconnect-on-wake |
-| AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/pokerogue-mcp/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110) | named fallbacks (§5.3, §8.1) |
-| A CWS reviewer accepts the declared remote code (`47-biome.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110) | declared Yes (§6) |
-| Chrome Web Store API v2 can cancel a pending review — **confirmed, no longer a premise** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
+| One build carrying both keepalives works on Chrome and Firefox | [Loopback transport on Chrome and Firefox](https://github.com/IIxauII/coachemon/issues/161) | smoke run per engine |
+| Synchronous `CustomEvent` dispatch across worlds on Firefox, Safari and Orion; the marker's visibility to a mis-worlded script | [MAIN↔isolated relay contract](https://github.com/IIxauII/coachemon/issues/193) | **relay check per engine in `scripts/smoke.ts`**: one `probe` must come back synchronously; fallback in §9.2 |
+| The pump settles a hidden tab on Firefox, Safari and Orion | [Game loop in a hidden tab without focus emulation](https://github.com/IIxauII/coachemon/issues/174) | none; readers time out, the driver pumps |
+| `key` (untrusted keydown) drives the game on Firefox and Safari | [Synthetic input a Phaser game accepts](https://github.com/IIxauII/coachemon/issues/101) | the retry rung only |
+| Orion reaches loopback without a `127.0.0.1` host permission, from a store-installed build (tested only as unsigned sideloads with the permission declared) | [Agent transport on Orion](https://github.com/IIxauII/coachemon/issues/150) | smoke run on Orion with the store zip |
+| Orion's opt-in auto-update of store installs clears site permissions (orionfeedback #7361) | [Orion after the AppleScript route retires](https://github.com/IIxauII/coachemon/issues/118) | none; rung 7 covers the missing tab |
+| Orion after sleep/wake (orionfeedback #14474), long idle, hidden tab | [Agent transport on Orion](https://github.com/IIxauII/coachemon/issues/150) | reconnect-on-wake |
+| AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/coachemon/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | named fallbacks (§5.3, §8.1) |
+| A CWS reviewer accepts the declared remote code (`47-biome.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | declared Yes (§6) |
+| Chrome Web Store API v2 can cancel a pending review — **confirmed, no longer a premise** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/coachemon/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
 | Firefox 128–139's toolbar-click consent satisfies AMO | this spec (§8.4) | if AMO objects, `required: ["websiteContent"]` |
-| Nintendo does not act on the -ÉMON name | [Name and listing identity](https://github.com/IIxauII/pokerogue-mcp/issues/105) | no trademark filed; answer the listing email |
-| Chrome's Local Network Access leaves extension workers alone as enforcement rolls out | [Loopback transport on Chrome and Firefox](https://github.com/IIxauII/pokerogue-mcp/issues/161) | none |
+| Nintendo does not act on the -ÉMON name | [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105) | no trademark filed; answer the listing email |
+| Chrome's Local Network Access leaves extension workers alone as enforcement rolls out | [Loopback transport on Chrome and Firefox](https://github.com/IIxauII/coachemon/issues/161) | none |
 
 ---
 

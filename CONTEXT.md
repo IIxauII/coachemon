@@ -1,6 +1,6 @@
 # Context
 
-Vocabulary for pokerogue-mcp. Glossary only — no implementation detail.
+Vocabulary for Coachemon. Glossary only — no implementation detail.
 
 ## Run
 

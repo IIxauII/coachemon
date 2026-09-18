@@ -216,7 +216,7 @@ if (args.stamp) {
 if (shown(moved).length + shown(missing).length + shown(unreviewed).length + shownMisplaced.length > 0) {
   console.log(
     "\nFAIL: re-read the named entries — screens in src/escape-ladder/table.ts, HUD modules in " +
-      "skills/coach-pokerogue/scripts/hud/ (their deps are listed in scripts/hud-deps.ts) — then re-run with --stamp.",
+      "skills/coachemon/scripts/hud/ (their deps are listed in scripts/hud-deps.ts) — then re-run with --stamp.",
   );
   process.exit(1);
 }
