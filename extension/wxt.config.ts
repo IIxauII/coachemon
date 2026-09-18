@@ -5,10 +5,11 @@
  * `wxt dev` is deliberately not used: it force-adds `tabs` and `scripting`, runs a throwaway profile, does not watch
  * `hud/`, and covers neither Safari nor Orion (§5.2). Builds are `wxt build -b chrome|firefox|safari --mode store|dev`.
  */
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "wxt";
+import { sourcesZipName, zipName } from "../scripts/release/artifacts.ts";
 import { bundle } from "../skills/coach-pokerogue/scripts/hud-bundle.mjs";
 import { DEV_PORT, STORE_PORT } from "../src/protocol/version.ts";
 import type { Flavour, Target } from "../src/protocol/wire.ts";
@@ -49,6 +50,11 @@ export default defineConfig({
     },
   }),
   zip: {
+    // `{{version}}` is the manifest's, so the stamped `package.json`'s three numbers. Only store builds are ever
+    // zipped, so no mode suffix is needed. `zip:extension:done` below renames whatever this writes to what `zipName`
+    // says, which is the one name an artifact has (§14.2); the template only has to tell the browsers apart.
+    artifactTemplate: "coachemon-{{browser}}-{{version}}.zip",
+    sourcesTemplate: sourcesZipName("{{version}}"),
     // The AMO sources zip (§5.7): the repo root, limited to what `npx wxt build -b firefox` actually needs.
     sourcesRoot: "..",
     includeSources: [
@@ -56,6 +62,8 @@ export default defineConfig({
       "src/protocol/**",
       "src/page/**",
       "src/enums/generated.ts",
+      // This config imports it for the artifact names, so `wxt build` inside the zip needs it to load at all (§5.7).
+      "scripts/release/artifacts.ts",
       "skills/coach-pokerogue/scripts/hud-bundle.mjs",
       "skills/coach-pokerogue/scripts/hud/**",
       "LICENSE",
@@ -100,6 +108,21 @@ export default defineConfig({
         if (after !== before) writeFileSync(path, after);
       }
       wxt.logger.info(`Coachemon build ${build}`);
+    },
+    /**
+     * `artifactTemplate` cannot branch on the browser, and Safari's artifact is named for what it holds rather than
+     * for the browser: §14.6 unzips it and hands the folder to `xcrun safari-web-extension-packager`. So the one name
+     * the template cannot write is written here (§14.2).
+     */
+    "zip:extension:done": (wxt, zipPath) => {
+      // A release artifact is a store build by definition, and these names carry no mode: zipping a dev build would
+      // write it over the store zip's exact name (§5.4).
+      if (flavourOf(wxt.config.mode) !== "store") {
+        throw new Error(`wxt zip is for store builds only; --mode ${wxt.config.mode} would overwrite a store artifact`);
+      }
+      const named = join(dirname(zipPath), zipName(targetOf(wxt.config.browser), version));
+      if (named !== zipPath) renameSync(zipPath, named);
+      wxt.logger.info(`Coachemon artifact ${basename(named)}`);
     },
   },
 });
