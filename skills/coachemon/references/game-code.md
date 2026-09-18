@@ -1533,7 +1533,9 @@ is on, fainted or not. The one exception is Hardcore (`Challenges.HARDCORE`, 9):
 (`TmModifierTypeGenerator`, `src/modifier/modifier-type.ts:1500` — draws global RND) takes
 `getCompatibleTms(true, true, true)` over the **whole** party (known, level-up and already-used TMs removed), keeps the
 tier's, and picks with `randSeedInt`. The card considers every member outside Hardcore, the living ones in it, and marks
-a fainted recipient.
+a fainted recipient. It also reads that pool rule per member: one the TM could never have been drawn from learns the
+move by levelling or can relearn it, so it stands aside while anyone else can take the TM, and when nobody else can the
+card says so rather than pricing a slot for it.
 
 **Double battles.** `newBattle` asks `checkIsDouble` (`src/battle-scene.ts:1512`, draws global RND) every wave:
 

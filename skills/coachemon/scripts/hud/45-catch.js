@@ -29,14 +29,18 @@
 //   % 250 bosses included); daily only away from its final boss, or at a final boss its event seed marks catchable;
 // - only one foe on the field (`t.length>1 → noPokeballMulti`): in doubles, KO one first;
 // - bosses: `x.isBoss()&&x.bossSegmentIndex>=1&&!x.hasAbility(25 /* Wonder Guard */)` → the classic final boss
-//   refuses everything but a challenge-free Master Ball; any other boss refuses every ball but Master (`e<4`)
-//   until its last bar. The formula itself has no boss term: on the last bar hp ≤ maxHp/segments.
+//   refuses everything but a challenge-free Master Ball (`hasAnyChallenges()` — true for every challenge run, since
+//   the mode copies the whole challenge list); any other boss refuses every ball but Master (`e<4`) until its last
+//   bar, and a *catchable Daily* final boss refuses that one too (`isCatchableDailyBoss||e<4`). The formula itself
+//   has no boss term: on the last bar hp ≤ maxHp/segments.
 // What a catch does (AttemptCapturePhase.catch):
 // - `unshiftNew('VictoryPhase')` → full EXP and the win (battle ends if it was the last wild foe on the field);
 // - `gameData.setPokemonCaught(e)` → dexData[species].caughtAttr |= getDexAttr() (gender 4n/8n, shiny 2n/non 1n,
 //   variant 16n/32n/64n, form 1n<<(7+formIndex)), the same up the prevolution chain (so the root starter unlocks),
 //   starterData[starter].abilityAttr |= 1<<abilityIndex (ABILITY_1 1, ABILITY_2 2, ABILITY_HIDDEN 4), candy to the
-//   root: `isShiny()?5*2**variant:1`, ×2 for a boss; `updateSpeciesDexIvs(root, ivs)` keeps the max IV per stat;
+//   root: `isShiny()?5*2**variant:1`, ×2 for a boss — but in a Daily run only when the catch adds a dex attribute
+//   (`!isDaily||hasNewAttr||fromEgg`, `hasNewAttr = (caughtAttr & dexAttr) !== dexAttr`); `updateSpeciesDexIvs(root,
+//   ivs)` keeps the max IV per stat;
 // - LimitedCatchChallenge (challenge 7) keeps it out of the party unless met on a wave ending in 1; otherwise a full
 //   party (6) asks to release someone or let it go.
 // A failed throw uses the turn: the ball command resolves before any move, then the foe acts.
@@ -112,6 +116,20 @@ const { captureChance, catchAdvice, catchWorth } = (() => {
     return null;
   };
 
+  // A boss with bars left refuses every ball but a Master Ball — except where `CommandPhase.handleBallCommand`
+  // refuses that one too: the classic final boss of a **challenge** run (`hasAnyChallenges()`, which is every
+  // challenge run — the mode copies the whole challenge list, values and all), and a Daily final boss its event seed
+  // marks catchable (`isCatchableDailyBoss`), the one boss the End-biome rule above lets a ball through to at all.
+  const masterBlocked = (s, b, live) => {
+    const mode = s.gameMode ?? {}, w = b.waveIndex;
+    const lastWave = () => waveKind(s, w) === "final";
+    if (call(live, () => mode.isBattleClassicFinalBoss(w), !!mode.isClassic && lastWave())) {
+      return call(live, () => mode.hasAnyChallenges(), (mode.challenges ?? []).length > 0);
+    }
+    const dailyFinal = !!mode.isDaily && call(live, () => mode.isWaveFinal(w), lastWave());
+    return dailyFinal && !!mode.dailyConfig?.boss?.catchable;
+  };
+
   // ---- Team value
   // What the foe is worth to *this* party is the party profile's call (`08-party.js`), so the biome card judging the
   // same species reaches the same verdict. What each reason is worth in a ball is this card's own: `w` below.
@@ -171,11 +189,15 @@ const { captureChance, catchAdvice, catchWorth } = (() => {
       | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
     // Candy follows isShiny() (a shiny fusion half counts) with the base variant; the dex's shiny bit only the base.
     const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
+    // A Daily run pays candy only for a catch that adds a dex attribute of its own (`!isDaily || hasNewAttr`, and the
+    // candy goes to the root of the line, so the root's entry is the one that decides): a shiny already in the dex
+    // with this gender, variant and form is worth the same shiny it always was, and no candy.
+    const candyText = !!s.gameMode?.isDaily && (big(rootDex?.caughtAttr) & attr) === attr ? "" : ` · +${candy} candy`;
     if (foe.shiny) {
-      if (caught && !(caught & 2n)) out.push({ kind: "account", text: `first shiny · +${candy} candy`, w: 3 });
-      else if (caught && (caught & attr & 112n) !== (attr & 112n)) out.push({ kind: "account", text: `new shiny variant · +${candy} candy`, w: 2.5 });
-      else out.push({ kind: "account", text: `shiny · +${candy} candy`, w: 2 });
-    } else if (isShinyMon(foe, live)) out.push({ kind: "account", text: `shiny fusion · +${candy} candy`, w: 1.5 });
+      if (caught && !(caught & 2n)) out.push({ kind: "account", text: `first shiny${candyText}`, w: 3 });
+      else if (caught && (caught & attr & 112n) !== (attr & 112n)) out.push({ kind: "account", text: `new shiny variant${candyText}`, w: 2.5 });
+      else out.push({ kind: "account", text: `shiny${candyText}`, w: 2 });
+    } else if (isShinyMon(foe, live)) out.push({ kind: "account", text: `shiny fusion${candyText}`, w: 1.5 });
     if (caught && (caught & (attr & ~127n)) === 0n) out.push({ kind: "account", text: "new form", w: 2 });
 
     const ab = foe.abilityIndex ?? 0;
@@ -287,12 +309,14 @@ const { captureChance, catchAdvice, catchWorth } = (() => {
     return allowed.find(c => c.p >= GOOD) ?? allowed.reduce((b, c) => (!b || c.p > b.p ? c : b), null);
   };
 
-  const targetAdvice = (s, b, foe, party, crit, counts, multi, live) => {
+  const targetAdvice = (s, b, foe, party, crit, counts, multi, live, noMaster) => {
     const bossLocked = !!foe.isBoss?.() && (foe.bossSegmentIndex ?? 0) >= 1
       && !call(live, () => foe.hasAbility(AbilityId.WONDER_GUARD, false, true), abilitiesOf(foe).includes("Wonder Guard"));
+    // With bars left this boss refuses every ball there is, Master included.
+    const sealed = bossLocked && noMaster;
     const chance = BALLS.filter(x => counts[x.id] > 0).map(x => ({
       id: x.id, ball: x.ball, short: x.short, key: x.key, count: counts[x.id],
-      p: bossLocked && x.id < PokeballType.MASTER_BALL ? 0 : Math.round(captureChance({
+      p: bossLocked && (sealed || x.id < PokeballType.MASTER_BALL) ? 0 : Math.round(captureChance({
         maxHp: foe.getMaxHp(), hp: foe.hp, catchRate: foe.species?.catchRate ?? 0, ball: x.id,
         status: foe.status?.effect ?? 0, shiny: isShinyMon(foe, live), shinyMult: shinyMultOf(), critFactor: crit,
       }) * 1000) / 1000,
@@ -319,7 +343,8 @@ const { captureChance, catchAdvice, catchWorth } = (() => {
     // What blocks a throw goes first; how to raise a middling chance goes last.
     const blockers = [], tips = [];
     if (multi && verdict !== "skip") { verdict = "maybe"; blockers.push("KO the other foe first"); }
-    if (bossLocked && verdict !== "skip") blockers.push(counts[PokeballType.MASTER_BALL] > 0 && value >= 5 ? "Master Ball, or break its bars first" : "break its bars first — only a Master Ball works now");
+    if (sealed && verdict !== "skip") blockers.push("break its bars first — no ball works on this boss");
+    else if (bossLocked && verdict !== "skip") blockers.push(counts[PokeballType.MASTER_BALL] > 0 && value >= 5 ? "Master Ball, or break its bars first" : "break its bars first — only a Master Ball works now");
     else if (verdict !== "skip" && p < GOOD) {
       if (hp > 0.5) tips.push(lowerHpTip(s, foe, party));
       else if (!foe.status?.effect) {
@@ -358,7 +383,8 @@ const { captureChance, catchAdvice, catchWorth } = (() => {
       if (battleBlocked(s, b, active, live) || !counts.some(Boolean)) return null;
       const crit = critFactorOf(s, live);
       const multi = active.length > 1;
-      const targets = active.map(f => targetAdvice(s, b, f, party, crit, counts, multi, live));
+      const noMaster = masterBlocked(s, b, live);
+      const targets = active.map(f => targetAdvice(s, b, f, party, crit, counts, multi, live, noMaster));
       // Two foes out: no ball can be thrown yet, so only speak up for one worth keeping alive.
       if (multi && targets.every(t => t.verdict === "skip")) return null;
       return { targets };
