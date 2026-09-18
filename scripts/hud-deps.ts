@@ -231,7 +231,9 @@ export const HUD_DEPS = {
     `${P}#EnemyPokemon.getMinimumSegmentIndex`,
     `src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr.canApply`,
     // §21 `endOfTurnHp`: the turn-end phase order, weather chip and who it spares, berries, status chip and the
-    // status orbs, Leftovers, Shell Bell, the enemy's per-turn heal, and the weather and status abilities.
+    // status orbs, the TURN_END tags, Leftovers, Shell Bell, the enemy's per-turn heal, and the weather, status and
+    // turn-end abilities. The order between these phases is the model, not a detail: the weather chip lands before
+    // the berry predicate reads the HP, and the berry before the status chip, which is what decides survival.
     `src/phase-manager.ts#turnEndPhases`,
     `src/phases/weather-effect-phase.ts#WeatherEffectPhase.start`,
     `src/data/weather.ts#Weather.isTypeDamageImmune`,
@@ -247,6 +249,19 @@ export const HUD_DEPS = {
     `src/data/abilities/ab-attrs.ts#PostWeatherLapseDamageAbAttr.apply`,
     `src/data/abilities/ab-attrs.ts#PostWeatherLapseHealAbAttr.apply`,
     `src/data/abilities/ab-attrs.ts#PostTurnStatusHealAbAttr.apply`,
+    `src/data/abilities/ab-attrs.ts#PostTurnHurtIfSleepingAbAttr.apply`,
+    // The Sitrus bar is a *rounded* ratio: `getHpRatio()` to the whole percent, so < 0.495 rather than < 0.5.
+    `${P}#Pokemon.getHpRatio`,
+    // The TURN_END tags, each read by its class rather than its `BattlerTagType` member (inlined by then). A tag that
+    // changes its share of max HP, or moves off TURN_END, silently drops out of the turn-end number.
+    `${P}#Pokemon.lapseTags`,
+    `src/data/battler-tags.ts#SeedTag.lapse`,
+    `src/data/battler-tags.ts#NightmareTag.lapse`,
+    `src/data/battler-tags.ts#DamagingTrapTag.lapse`,
+    `src/data/battler-tags.ts#SaltCuredTag.lapse`,
+    `src/data/battler-tags.ts#CursedTag.lapse`,
+    `src/data/battler-tags.ts#IngrainTag.lapse`,
+    `src/data/battler-tags.ts#AquaRingTag.lapse`,
   ],
 
   /**
@@ -346,6 +361,10 @@ export const HUD_DEPS = {
     `src/data/abilities/ab-attrs.ts#ReduceStatusEffectDurationAbAttr.apply`,
     // `statusPlay` reads a weather-boosted heal's fields by name.
     `${M}#BoostHealAttr.constructor`,
+    // …and the weather it prices that heal in is the move's, not the arena's: an override answers first and beats
+    // suppression, so a Cloud Nine on the field doesn't take it away.
+    `src/data/weather.ts#getEffectiveWeatherForMove`,
+    `src/data/abilities/ab-attrs.ts#PreAttackWeatherOverrideAbAttr.apply`,
   ],
 
   /**

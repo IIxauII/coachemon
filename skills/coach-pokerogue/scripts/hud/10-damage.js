@@ -203,14 +203,18 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
   // it and a player's Healing Charm raises it (×(1 + 0.1·stack)). A target with Liquid Ooze (ReverseDrainAbAttr) turns
   // the heal into that much damage to the user instead, unless the user has Magic Guard. Strength Sap heals by a stat,
   // not by damage, and is a status move: not counted.
+  // Healing Charm on the healed mon's own side: `× (1 + 0.1·stack)` on every queued heal, and on a negative one too
+  // (`PokemonHealPhase.end` scales before it checks the sign), so it also deepens what Liquid Ooze takes back.
+  const healingCharm = (s, p) => ((p?.isPlayer?.() === false ? s?.enemyModifiers : s?.modifiers) ?? [])
+    .filter(m => m.constructor?.name === "HealingBoosterModifier")
+    .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
   const drainRatio = (s, atk, def, t) => {
     if (!t.drain) return 0;
     const ratio = t.drain.ratio;
-    if (ability(def, "ReverseDrainAbAttr")) return ability(atk, "BlockNonDirectDamageAbAttr") ? 0 : -ratio;
+    const charm = healingCharm(s, atk);
+    if (ability(def, "ReverseDrainAbAttr")) return ability(atk, "BlockNonDirectDamageAbAttr") ? 0 : -ratio * charm;
     if (atk.getTag?.("HEAL_BLOCK")) return 0;
-    const charm = (atk.isPlayer?.() === false ? s?.enemyModifiers : s?.modifiers) ?? [];
-    return ratio * charm.filter(m => m.constructor?.name === "HealingBoosterModifier")
-      .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
+    return ratio * charm;
   };
   // Chance a landed use of `move` flinches `def` (Fake Out, Iron Head): the move's effect chance as the game reads it
   // (Serene Grace, Shield Dust), none through Inner Focus. It only matters if the user moves first (the planner's call).
@@ -357,56 +361,158 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     return { by, after1, perChunk };
   };
 
-  // ---- Turn end (spec §8). The HP a pokémon gains (+) or loses (−) between this turn's moves and the next command,
-  // in the game's order: weather chip (WeatherEffectPhase), status chip (PostTurnStatusEffectPhase), berries
-  // (BerryPhase), then TurnEndPhase heals. Chip can faint it, and a fainted mon heals nothing. `hp`: the HP it will
-  // have by then, if not its current HP; `tookSuperEffective`: Enigma; `dealt`: damage it dealt this turn (Shell Bell).
+  // ---- Turn end (spec §21). The HP a pokémon gains (+) or loses (−) between this turn's moves and the next command,
+  // in the game's own phase order (`turnEndPhases`, `src/phase-manager.ts:228`): the moves' own Shell Bell, then
+  // WeatherEffectPhase (the chip, then the weather abilities), BerryPhase, CheckStatusEffectPhase /
+  // PostTurnStatusEffectPhase (the status chip), and TurnEndPhase (TURN_END tags, Leftovers, terrain, the enemy's
+  // tokens, the turn-end abilities). A heal a phase queues resolves as soon as that phase returns, so each phase's
+  // heals land before the next phase reads the HP — and that order decides survival: the weather chip lands before
+  // Sitrus reads the HP, and Sitrus lands before the status chip, so a mon the old chip-first order buried walks away.
+  // `endOfTurnSteps` is that order as a list, `endOfTurnHp` folds it into one signed number on a mon with no bars.
+  // A step is `{ d, cap }`: `d < 0` is damage, `d > 0` a heal that stops at `cap` (max HP, or max − 1 for the enemy
+  // token's `preventFullHeal`) and never lowers HP. Chip can faint it, and a fainted mon heals nothing. `hp`: the HP
+  // it will have by then, if not its current HP; `tookSuperEffective`: Enigma; `dealt`: what it dealt (Shell Bell).
+  //
+  // Deliberately left out, each either rare at a command prompt or not a HP number: PositionalTagPhase (Future Sight,
+  // Wish), Perish Song's count and Yawn's sleep (a faint or a status, not a change in HP), Cheek Pouch and Cud Chew,
+  // the stat berries and Lum, the Shed Skin / Hydration / Healer cures, Harvest and Moody, and the enemy's 2.5 %
+  // status cure. One more is left out of the KO curve alone: the weather chip's `ignoreSegments`. `koCurve` takes a
+  // single net turn-end number per use (`turnEndCourse` builds it from expectations over statuses and steals), so the
+  // whole of it meets the bar rule; a max/16 chip is smaller than any bar, so the most that costs is the HP between a
+  // bar boundary and the chip's far side, once a turn.
   // Reads fields and item/ability attributes only.
   const abAttrs = (p, name) => (ability(p, name)
     ? [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null].flatMap(a => a?.getAttrs?.(name) ?? []) : []);
   const frac = (max, n) => Math.max(1, Math.floor(max / n));
   const WEATHER_SPARED = { [WeatherType.SANDSTORM]: [PokemonType.GROUND, PokemonType.ROCK, PokemonType.STEEL], [WeatherType.HAIL]: [PokemonType.ICE] };
   const ORB_SPARED = { [StatusEffect.POISON]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.TOXIC]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.BURN]: [PokemonType.FIRE] };
-  const endOfTurnHp = (p, { s = sceneNow(), tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
-    if (hp <= 0) return 0;
+  const SALT_DOUBLED = [PokemonType.WATER, PokemonType.STEEL];
+  // The mons on the other side, for Unnerve, Bad Dreams and a Leech Seed's seeder. `getOpponents` is the game's own
+  // read; without it (mocks, a replayed preview mon) the field does.
+  const opponentsOf = (s, p) => {
+    try { const o = p.getOpponents?.(); if (Array.isArray(o)) return o.filter(Boolean); } catch {}
+    try { return (s?.getField?.(true) ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
+  };
+  // The tags that lapse at TURN_END are read by class, not by `getTag` name: class names survive minification, the
+  // `BattlerTagType` members behind them are inlined numbers by then.
+  const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
+  const endOfTurnSteps = (p, { s = sceneNow(), tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
+    const steps = [];
+    if (hp <= 0) return steps;
     const max = p.getMaxHp();
     const types = p.getTypes?.() ?? [];
     const guard = ability(p, "BlockNonDirectDamageAbAttr");
     const w = s?.arena?.weather?.weatherType ?? WeatherType.NONE;
     const weather = w && !(s.getField?.(true) ?? []).some(q => q && ability(q, "SuppressWeatherEffectAbAttr")) ? w : WeatherType.NONE;
     const inWeather = a => (a.weatherTypes ?? []).includes(weather);
-    let chip = 0;
+    // Every turn-end heal is queued as a `PokemonHealPhase`: Heal Block cancels a positive one outright, and the
+    // healed mon's side scales it by Healing Charm and floors it, before any cap. The running HP is this module's
+    // reading of where the mon stands at each step, which is what the berry predicate and the below-full-HP
+    // conditions are asked at.
+    const blocked = !!p.getTag?.("HEAL_BLOCK");
+    const charm = healingCharm(s, p);
+    let cur = hp;
+    const chip = n => {
+      if (cur <= 0 || !(n > 0)) return;
+      steps.push({ d: -n });
+      cur = Math.max(0, cur - n);
+    };
+    const queued = (n, cap = max) => {
+      const v = blocked ? 0 : Math.floor(n * charm);
+      if (cur <= 0 || !(v > 0) || cur >= cap) return;
+      steps.push({ d: v, cap });
+      cur = Math.min(cap, cur + v);
+    };
+    // A negative heal (Liquid Ooze on a Leech Seed) is dealt as indirect damage; Heal Block doesn't stop it, and
+    // Healing Charm scales it just the same.
+    const reverse = n => chip(Math.floor(n * charm));
+
+    // 0. The moves' own Shell Bell (`MoveEffectPhase.end`), which lands before any turn-end phase.
+    if (dealt > 0) queued(frac(dealt, 8) * stack(p, "HitHealModifier"));
+
+    // 1. WeatherEffectPhase. Sand and hail take max/16 (the game lets that one past a boss bar; see above), then the
+    // weather abilities deal at once (Dry Skin, Solar Power in sun) or queue a heal below full HP (Rain Dish, Ice
+    // Body, Dry Skin in rain).
     if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
       && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
-      && !p.getTag?.("UNDERGROUND") && !p.getTag?.("UNDERWATER")) chip += frac(max, 16);
-    // Dry Skin / Solar Power in sun.
-    if (!guard) for (const a of abAttrs(p, "PostWeatherLapseDamageAbAttr")) if (inWeather(a)) chip += frac(max, 16 / (a.damageFactor ?? 2));
-    // Toxic / Flame Orb put their status on at turn end: counted as if already on, a turn early.
+      && !p.getTag?.("UNDERGROUND") && !p.getTag?.("UNDERWATER")) chip(frac(max, 16));
+    if (!guard) for (const a of abAttrs(p, "PostWeatherLapseDamageAbAttr")) if (inWeather(a)) chip(frac(max, 16 / (a.damageFactor ?? 2)));
+    for (const a of abAttrs(p, "PostWeatherLapseHealAbAttr")) if (inWeather(a)) queued(frac(max, 16 / (a.healFactor ?? 1)));
+
+    // 2. BerryPhase, which reads the HP here — after the weather chip and the heals it queued, before the status chip.
+    // `getBerryPredicate` asks `getHpRatio()`, rounded to a whole percent, so Sitrus wants hp/max < 0.495, not < 0.5.
+    // An opposing Unnerve (`PreventBerryUseAbAttr`) skips the mon's berries altogether.
+    if (cur > 0 && !opponentsOf(s, p).some(q => ability(q, "PreventBerryUseAbAttr"))) {
+      const quarter = Math.max(1, Math.floor(max / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
+      const berry = t => items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === t);
+      if (berry(BerryType.SITRUS) && Math.round((cur / max) * 100) / 100 < 0.5) queued(quarter);
+      if (berry(BerryType.ENIGMA) && tookSuperEffective) queued(quarter);
+    }
+
+    // 3. CheckStatusEffectPhase / PostTurnStatusEffectPhase. Toxic and Flame Orb put their status on at the end of
+    // this turn: counted as if already on, a turn early. The chip goes through `damage(dmg, false, true)`, so a boss
+    // bar stops it and nothing endures it.
     const orb = p.status?.effect ? null : items(p).find(m => m.constructor.name === "TurnStatusEffectModifier" && !types.some(t => ORB_SPARED[m.effect]?.includes(t)));
     const effect = p.status?.effect || orb?.effect || 0;
     if ([StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.BURN].includes(effect) && !guard && !abAttrs(p, "BlockStatusDamageAbAttr").some(a => (a.effects ?? []).includes(effect))) {
       let d = effect === StatusEffect.POISON ? frac(max, 8) : effect === StatusEffect.TOXIC ? Math.max(1, Math.floor(max * ((p.status?.toxicTurnCount ?? 0) + 1) / 16)) : frac(max, 16);
       if (effect === StatusEffect.BURN) for (const a of abAttrs(p, "ReduceBurnDamageAbAttr")) d = Math.max(1, Math.floor(d * (a.multiplier ?? 0.5)));
-      chip += d;
+      chip(d);
     }
-    const left = hp - chip;
-    if (left <= 0) return -hp;
 
-    const quarter = Math.max(1, Math.floor(max / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
-    const berry = t => items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === t);
-    let heal = 0;
-    if (berry(BerryType.SITRUS) && left / max < 0.5) heal += quarter;
-    if (berry(BerryType.ENIGMA) && tookSuperEffective) heal += quarter;
-    heal += frac(max, 16) * stack(p, "TurnHealModifier");
-    if (s?.arena?.terrain?.terrainType === TerrainType.GRASSY && (p.isGrounded?.() ?? !types.includes(PokemonType.FLYING))) heal += frac(max, 16);
-    if (p.isPlayer?.() === false) {
-      const n = (s?.enemyModifiers ?? []).filter(m => m.constructor.name === "EnemyTurnHealModifier").reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
-      if (n) heal += Math.max(Math.floor(max / 50) * n, 1);
+    // 4. TurnEndPhase, in its own order. The TURN_END tags first: Magic Guard cancels each of their chips (and, for
+    // Leech Seed, the heal that rides on it), Ingrain and Aqua Ring heal below full HP.
+    for (const t of tagsOf(p)) {
+      if (isA(t, "IngrainTag") || isA(t, "AquaRingTag")) { queued(frac(max, 16)); continue; }
+      if (guard) continue;
+      if (isA(t, "SeedTag") || isA(t, "DamagingTrapTag")) chip(frac(max, 8));
+      else if (isA(t, "NightmareTag") || isA(t, "CursedTag")) chip(frac(max, 4));
+      else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 8 : 16));
     }
-    for (const a of abAttrs(p, "PostWeatherLapseHealAbAttr")) if (inWeather(a)) heal += frac(max, 16 / (a.healFactor ?? 1));
-    if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) heal += frac(max, 8);
-    if (dealt > 0) heal += frac(dealt, 8) * stack(p, "HitHealModifier");
-    return Math.min(max, left + heal) - hp;
+    // The other side of a Leech Seed: the seeder takes what the seed took, turned into damage by Liquid Ooze on the
+    // seeded mon. The seed names its source by battler index. The seeded mon's HP is read as it stands, not as this
+    // same turn's earlier chip would leave it, so a seed the game's own weather or status chip fells the mon before
+    // still pays out here — a mon's own turn end is one number, and the two mons' are not played against each other.
+    const mine = (() => { try { return p.getBattlerIndex?.(); } catch { return undefined; } })();
+    if (mine != null) for (const q of opponentsOf(s, p)) {
+      if (ability(q, "BlockNonDirectDamageAbAttr") || !(q.hp > 0)) continue;
+      if (!tagsOf(q).some(t => isA(t, "SeedTag") && t.sourceIndex === mine)) continue;
+      const taken = Math.min(frac(q.getMaxHp(), 8), q.hp);
+      if (ability(q, "ReverseDrainAbAttr")) reverse(taken); else queued(taken);
+    }
+    // Leftovers, Grassy Terrain, then the enemy's own tokens — the token's heal is the one with `preventFullHeal`,
+    // so it stops a HP short of full.
+    queued(frac(max, 16) * stack(p, "TurnHealModifier"));
+    if (s?.arena?.terrain?.terrainType === TerrainType.GRASSY && (p.isGrounded?.() ?? !types.includes(PokemonType.FLYING))) queued(frac(max, 16));
+    if (p.isPlayer?.() === false) {
+      for (const m of (s?.enemyModifiers ?? []).filter(x => x.constructor.name === "EnemyTurnHealModifier")) {
+        queued(Math.max(Math.floor(max / (100 / (m.healPercent ?? 2))) * (m.getStackCount?.() ?? 1), 1), max - 1);
+      }
+    }
+    // The turn-end abilities: Poison Heal's 1/8, and an opposing Bad Dreams on a sleeping mon. Which Magic Guard
+    // stops it is split in the game's own code — `canApply` asks the sleeper's, `apply` asks the *holder's*
+    // (`ab-attrs.ts:4394`, `:4413`) — so a Magic Guard holder deals none of it, to anyone. In singles the two
+    // readings agree; in doubles they part, and a sleeper with Magic Guard standing beside one without it still
+    // takes the chip in game. That half is left out: this asks the sleeper's, like `canApply`.
+    if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) queued(frac(max, 8));
+    const asleep = p.status?.effect === StatusEffect.SLEEP || (() => { try { return !!p.hasAbility?.(AbilityId.COMATOSE); } catch { return false; } })();
+    const badDreams = q => ability(q, "PostTurnHurtIfSleepingAbAttr") && !ability(q, "BlockNonDirectDamageAbAttr");
+    if (asleep && !guard && opponentsOf(s, p).some(badDreams)) chip(frac(max, 8));
+    return steps;
+  };
+  // The steps folded onto one HP, with no boss bars in the way: what the mon stands at when the next command comes.
+  const applyTurnEnd = (steps, hp, max) => {
+    let cur = hp;
+    for (const st of steps) {
+      if (cur <= 0) return 0;
+      cur = st.d > 0 ? Math.max(cur, Math.min(st.cap ?? max, cur + st.d)) : Math.max(0, cur + st.d);
+    }
+    return cur;
+  };
+  const endOfTurnHp = (p, opts = {}) => {
+    const hp = opts.hp ?? p.hp;
+    if (hp <= 0) return 0;
+    return applyTurnEnd(endOfTurnSteps(p, opts), hp, p.getMaxHp()) - hp;
   };
 
   // ---- Game path (spec §1, §2, §4, §5)

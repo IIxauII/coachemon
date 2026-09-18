@@ -1370,7 +1370,10 @@ Read at the pinned tag. The refs are under `30-planner.js`, `10-damage.js` and `
     (`src/data/moves/move.ts:2461-2478`).
   - `HealAttr.canApply` fails at full HP, and queues a message only inside a `MovePhase` (`:2487-2503`).
   - `WeatherHealAttr` reads `getEffectiveWeatherForMove(user)` (`:2743`), which honours
-    `PreAttackWeatherOverrideAbAttr` before suppression (`src/data/weather.ts:233-248`).
+    `PreAttackWeatherOverrideAbAttr` before suppression (`src/data/weather.ts:233-248`). The HUD's `effectiveWeather`
+    (`30-planner.js`) does the same, so an override beats a Cloud Nine on the field and only the live weather is
+    suppressible. It reads the attribute's `weatherType` by name: an override the live bundle carries under another
+    name is simply not found, and the live weather stands — a quiet miss, so it wants a live look.
   - `PlantHealAttr` (Synthesis, Moonlight, Morning Sun) heals ⅔ in sun or harsh sun; ¼ in rain, heavy rain, sand,
     hail, snow or fog; ½ otherwise (`src/data/moves/move.ts:2752-2769`).
   - `SandHealAttr` (Shore Up) heals ⅔ in sand (`:2771-2780`), and `BoostHealAttr` its boosted ratio when its condition
@@ -1998,7 +2001,30 @@ Nothing in §21 is pure. RNG, by stream:
 - A fainted player mon's replacement (`SwitchPhase`, `faint-phase.ts:181`) and a trainer's send-in (`SwitchSummonPhase`, `:192`) are also pushed.
   They arrive after `TurnEndPhase`, so the newcomer gets no turn-end effect that turn.
 
-The HUD's version is `endOfTurnHp` in `10-damage.js` (steps 2, 4 for Sitrus and Enigma, 5, and the heals in step 6).
+**The HUD's version** is `endOfTurnSteps` / `endOfTurnHp` in `10-damage.js`, and it follows the order above rather than
+summing it, because the order is what decides survival: the weather chip lands before the berry predicate reads the HP,
+and the berry before the status chip, so a mon that a chip-first reading buried walks away. The steps it carries, in
+order: the moves' own Shell Bell (`MoveEffectPhase.end`, before any turn-end phase), the weather chip and the two
+weather-lapse abilities, the berries (Sitrus on the *rounded* ratio, `< 0.495`; Enigma; an opposing Unnerve skips both),
+the status chip and the status orbs, the TURN_END tags (Leech Seed and its heal to the seeder — reversed by Liquid Ooze,
+cancelled whole by Magic Guard — the binding moves, Nightmare, Curse, Salt Cure, Ingrain and Aqua Ring), then Leftovers,
+Grassy Terrain, the enemy's wave-heal token with its `preventFullHeal` cap at max − 1, Poison Heal and an opposing Bad
+Dreams. Every one of those heals is a queued `PokemonHealPhase`, so Heal Block cancels it and the healed mon's own side
+scales it by Healing Charm, floored — which is also what deepens a Liquid Ooze drain (§18).
+
+Deliberately left out, each either rare at a command prompt or not a change in HP: `PositionalTagPhase` (Future Sight,
+Wish), Perish Song's count and Yawn's sleep, Cheek Pouch and Cud Chew, the stat berries and Lum, the Shed Skin /
+Hydration / Healer cures, Harvest and Moody, and the enemy's 2.5 % status cure. Two more come of the model being **one
+mon's turn end at a time**, not the field's: a Leech Seed's payout to the seeder is read off the seeded mon's HP as it
+stands, so a seed that this same turn's weather or status chip would fell the mon before it ever lapsed still pays; and
+Bad Dreams asks the *sleeper's* Magic Guard, like `canApply`, where `apply` asks the **holder's**
+(`ab-attrs.ts:4394`, `:4413`) — the holder's is modelled, so a Magic Guard holder deals none, but in doubles a sleeper
+with Magic Guard beside one without it takes the chip in game and is spared here. One more is left out of the KO curve
+alone: the weather chip's `ignoreSegments`. `koCurve` takes one net turn-end number per use — `turnEndCourse` builds it
+from expectations over statuses and item steals, so there is no per-part signal left to carry — and the whole of it
+meets the bar rule, where the game lets the weather chip through. A max/16 chip is smaller than any bar, so the cost is
+the HP between a bar boundary and the chip's far side, once a turn. The status chip's clamp, which the same code gives
+it, *is* the game's (`damage(dmg, false, true)`).
 
 ---
 

@@ -125,6 +125,10 @@ assert.equal(plan.approxDoubles, false);
   const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
   s.arena = { weather: { weatherType: 3 } };
   assert.deepEqual(globalThis.__tp.tpHealProfile(s, zard), { base: -6, sitrus: 0, enigma: 0 }, "sandstorm chip in the profile");
+  // With a Sitrus on it the berry still reaches the profile, and it is read at the HP *after* the chip (§21): the
+  // probe stands at 38/96, the chip takes it to 32, and a quarter of max comes back.
+  const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
+  assert.deepEqual(globalThis.__tp.tpHealProfile(s, Object.assign(zard, { getHeldItems: () => [held] })), { base: -6, sitrus: 24, enigma: 0 }, "Sitrus after the chip");
 }
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {
