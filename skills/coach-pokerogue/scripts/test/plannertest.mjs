@@ -135,7 +135,7 @@ const cyrus = withMetagross => {
 
 // Mounts the HUD on a mocked scene and returns the rendered lines (`field`: everything above the foe rows).
 // `fieldIndex`: whose command phase it is; `turnCommands`: commands already chosen this turn.
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : live ? { phaseName: "CommandPhase", fieldIndex } : null), queueMessage() {} };
@@ -143,7 +143,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
   const [gyarados, weavile] = foes;
   globalThis.__stub = {
-    outcome: stubOutcome, benefit,
+    outcome: stubOutcome, benefit, ...(heal ? { heal } : {}),
     dist: dist ?? (e => (e === gyarados ? [{ name: "Waterfall", type: "Water", p: 1, score: 10, targets: [0] }] : [])),
     switches: switches ?? (active => new Map(weavile && active.includes(gyarados) ? [[gyarados, { to: weavile, ratio: 1 }]] : [])),
   };
@@ -167,7 +167,8 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
 };
 // The Cyrus mistake: Scrafty sent in "→ High Jump Kick" as if the move happened this turn.
 const assertNoImmediateScrafty = field => {
-  assert.ok(!field.some(l => /Scrafty in(?! · optional)/.test(l) && !/^now:/.test(l)) || field.some(l => /^next: ⚔ Scrafty/.test(l)), "a Scrafty switch must be split into now/next");
+  // A ⇄ switch line, not the ⤵ free entry a doomed mon's faint buys (#170 §E), which names no switch at all.
+  assert.ok(!field.some(l => /⇄.*Scrafty in(?! · optional)/.test(l) && !/^now:/.test(l)) || field.some(l => /^next: ⚔ Scrafty/.test(l)), "a Scrafty switch must be split into now/next");
   assert.ok(!field.some(l => /High Jump Kick/.test(l) && !/^next:/.test(l) && !/^↺/.test(l)), `High Jump Kick shown as an immediate action:\n${field.join("\n")}`);
 };
 
@@ -177,7 +178,7 @@ const assertNoImmediateScrafty = field => {
   const { lines, field } = render({ party, foes, live: true });
   console.log(`== cyrus (live)\n${lines.join("\n")}`);
   assertNoImmediateScrafty(field);
-  assert.ok(!field.some(l => /Scrafty in/.test(l) && !/optional/.test(l)), "Scrafty isn't the switch-in: Weavile KOs it before it acts");
+  assert.ok(!field.some(l => /⇄.*Scrafty in/.test(l) && !/optional/.test(l)), "Scrafty isn't the switch-in: Weavile KOs it before it acts");
   const now = field.find(l => /^now: ⇄/.test(l));
   assert.match(now ?? "", /Morpeko .*out › .*Metagross .*in/, "the switch is the `now` step");
   const next = field.find(l => /^next: ⚔/.test(l));
@@ -195,7 +196,7 @@ const assertNoImmediateScrafty = field => {
   const { lines, field } = render({ party, foes, live: true });
   console.log(`== cyrus, no Metagross (live)\n${lines.join("\n")}`);
   assertNoImmediateScrafty(field);
-  assert.ok(!field.some(l => /Scrafty in/.test(l) && !/optional/.test(l)), "no switch into a KO");
+  assert.ok(!field.some(l => /⇄.*Scrafty in/.test(l) && !/optional/.test(l)), "no switch into a KO");
   const stay = field.find(l => /^⚔ Morpeko/.test(l));
   assert.match(stay ?? "", /💀 Ice .*3-hit .*\{next turn: Weavile's Triple Axel/, "next-turn 💀 on the staying mon, multi-hit shown");
   assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
@@ -380,7 +381,8 @@ const assertNoImmediateScrafty = field => {
   const foes = [mon("Lycanroc", 70, ["Rock"], [200, 190, 100, 80, 90, 140], [["Stone Edge", "Rock", 100, "P"]], true)];
   const { lines, field } = render({ party, foes, live: true, dist: () => [{ name: "Stone Edge", type: "Rock", p: 1, score: 10, targets: [0] }] });
   console.log(`== switch-in never acts (live)\n${lines.join("\n")}`);
-  assert.ok(!field.some(l => /Blastoise in(?! · optional)/.test(l)), `Blastoise is KO'd before it acts, so it isn't the switch-in:\n${field.join("\n")}`);
+  // A ⇄ line: the ⤵ free entry a doomed Charizard buys is not a switch, and costs nothing.
+  assert.ok(!field.some(l => /⇄.*Blastoise in(?! · optional)/.test(l)), `Blastoise is KO'd before it acts, so it isn't the switch-in:\n${field.join("\n")}`);
   assert.ok(field.some(l => /^⚔ Charizard/.test(l)), "staying wins");
   assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
 }
@@ -657,7 +659,8 @@ const rhyperiorSwitches = foes => active => new Map(active.includes(foes[0]) ? [
   const { party, foes } = freeSwitchCase(false);
   const { lines, field } = render({ party, foes, live: true, dist: stoneEdge, switches: () => new Map() });
   console.log(`== free switch — same field in the command phase (live)\n${lines.join("\n")}`);
-  assert.ok(!field.some(l => /Swampert in(?! · optional)/.test(l)), `Swampert would be KO'd coming in:\n${field.join("\n")}`);
+  // A ⇄ line again: Ninetales is going down this turn, so the ⤵ names the free entry its faint buys (#170 §E).
+  assert.ok(!field.some(l => /⇄.*Swampert in(?! · optional)/.test(l)), `Swampert would be KO'd coming in:\n${field.join("\n")}`);
 }
 
 // 10. CheckSwitchPhase: Swampert comes in without a hit and no turn lost.
@@ -919,4 +922,77 @@ Object.assign(TABLE, {
   assert.equal(sum.plan, "likely lost · ☠ Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in");
   // A plain ⚠ (a real KO chance, not a likely KO) stays off the list.
   assert.deepEqual(cardSummary({ ...m, field: { ...m.field, slots: [{ ...m.field.slots[0], threat: threat("risk", false) }] } }).danger, []);
+  // `saveFor` also reads the foes only this mon beats (#170 §A), which the win condition's reserve never covered.
+  const only = { ...m, teamPlan: { ...m.teamPlan, reserve: [], only: [{ name: "Mamoswine", for: [{ name: "Xurkitree" }, { name: "Buzzwole" }] }] } };
+  assert.equal(cardSummary(only).danger[0].saveFor, "Xurkitree, Buzzwole");
 }
+
+// ---- 23–25. Guzma w165 (#170, the worked example in #90), on the real rosters from that ticket's state dump, cut
+// down to the three of ours and the three foes the decisions turn on and given one move each. Mamoswine is the only
+// answer to Xurkitree (faster, immune to Discharge, Ground hits it ×2) and the only one that beats Buzzwole; both are
+// still on the bench, so the fight plan holds Mamoswine back and the ⚔ line has to price spending it.
+Object.assign(TABLE, {
+  "Mamoswine>Precipice Blades>Mega Golisopod": [[180], 1, 1], "Mamoswine>Precipice Blades>Xurkitree": [[500], 1, 2],
+  "Mamoswine>Precipice Blades>Buzzwole": [[200], 1, 1],
+  "Golduck>Surf>Mega Golisopod": [[150], 1, 1], "Golduck>Surf>Xurkitree": [[100], 1, 1], "Golduck>Surf>Buzzwole": [[130], 1, 1],
+  "Metagross>Meteor Mash>Mega Golisopod": [[110], 1, 0.5], "Metagross>Meteor Mash>Xurkitree": [[120], 1, 1],
+  "Metagross>Meteor Mash>Buzzwole": [[100], 1, 1],
+  // Iron Head is ×2 into Mamoswine's Ice half and takes it in one, which is why turn 1 cost the run.
+  "Mega Golisopod>Iron Head>Mamoswine": [[600], 1, 2], "Mega Golisopod>Iron Head>Golduck": [[190], 1, 1],
+  "Mega Golisopod>Iron Head>Metagross": [[120], 1, 0.5],
+  // Discharge has no entry into Mamoswine: Ground is immune, so nothing else on the team answers Xurkitree.
+  "Xurkitree>Discharge>Golduck": [[180], 1, 1], "Xurkitree>Discharge>Metagross": [[150], 1, 1],
+  "Buzzwole>Lunge>Mamoswine": [[170], 1, 1], "Buzzwole>Lunge>Golduck": [[150], 1, 1], "Buzzwole>Lunge>Metagross": [[140], 1, 1],
+});
+{
+  const guzma = ({ golduckHp, field }) => ({
+    party: [
+      mon("Mamoswine", 162, ["Ice", "Ground"], [546, 414, 290, 260, 220, 328], [["Precipice Blades", "Ground", 120, "P"]], field === "Mamoswine"),
+      mon("Golduck", 162, ["Water"], [431, 324, 301, 322, 277, 316], [["Surf", "Water", 90, "S"]], field === "Golduck", golduckHp),
+      mon("Metagross", 162, ["Steel", "Psychic"], [474, 456, 504, 346, 352, 256], [["Meteor Mash", "Steel", 90, "P"]], false),
+    ],
+    foes: [
+      mon("Mega Golisopod", 153, ["Bug", "Steel"], [439, 581, 568, 289, 456, 176], [["Iron Head", "Steel", 80, "P"]], true, undefined, { bossSegments: 2, bossSegmentIndex: 1 }),
+      mon("Xurkitree", 153, ["Electric"], [484, 318, 274, 578, 286, 254], [["Discharge", "Electric", 80, "S"]], false),
+      mon("Buzzwole", 159, ["Bug", "Fighting"], [579, 478, 478, 201, 245, 334], [["Lunge", "Bug", 80, "P"]], false, undefined, { bossSegments: 2, bossSegmentIndex: 1 }),
+    ],
+  });
+  const ironHead = () => [{ name: "Iron Head", type: "Steel", p: 1, score: 10, targets: [0] }];
+  const at = opts => render({ ...guzma(opts), live: true, dist: ironHead, switches: () => new Map() });
+
+  // 23. §A — turn 1: Mamoswine is on the field against Mega Golisopod. Its Precipice Blades is neutral and needs
+  // three hits through two boss bars; Iron Head is ×2 and takes it in one, right after it acts. Spending it here is
+  // spending the only Xurkitree answer, so the ⚔ line puts Golduck in and the plan says what is kept for what.
+  {
+    const { lines, field } = at({ field: "Mamoswine" });
+    console.log(`== guzma w165 turn 1 (live)\n${lines.join("\n")}`);
+    assert.ok(!field.some(l => /^⚔ Mamoswine/.test(l)), `turn 1 must not spend Mamoswine on Golisopod:\n${field.join("\n")}`);
+    // Metagross, not Golduck: Iron Head is ×0.5 into it, so it is the cheapest mon to put in front of Golisopod —
+    // the same pivot the coaching session made two turns later.
+    assert.match(field.find(l => /^now: ⇄/.test(l)) ?? "", /Mamoswine .*out › Metagross in · takes ~\d+% · resists Iron Head/, `something else comes in:\n${field.join("\n")}`);
+    assert.ok(lines.some(l => /^🔒 Mamoswine only answer to Xurkitree/.test(l)), `the plan names what Mamoswine is for:\n${lines.join("\n")}`);
+  }
+
+  // 24. The same turn with the later foes gone: nothing is being saved, so the ⚔ line stays with Mamoswine. The
+  // switch in 23 is the fight plan's doing and nothing else's.
+  {
+    const { party, foes } = guzma({ field: "Mamoswine" });
+    const { field } = render({ party, foes: [foes[0]], live: true, dist: ironHead, switches: () => new Map() });
+    console.log(`== guzma w165 turn 1, no later foes (live)\n${field.join("\n")}`);
+    assert.match(lineOf(field, "Mamoswine"), /Precipice Blades → Mega Golisopod/, `with nothing to save it for, Mamoswine attacks:\n${field.join("\n")}`);
+  }
+
+  // 25. §E — turn 3: Golduck is on 23 HP and poisoned in front of Golisopod, which takes it this turn anyway. A
+  // switch would pay an entry hit to save a mon that is going down regardless and throw away its last attack, while
+  // a faint brings the next mon in for nothing — so the ⚔ line stays and attacks and names the free entry.
+  {
+    const poison = p => (p.name === "Golduck" ? -27 : 0);
+    const { party, foes } = guzma({ field: "Golduck", golduckHp: 23 });
+    const { lines, field } = render({ party, foes, live: true, dist: ironHead, switches: () => new Map(), heal: poison });
+    console.log(`== guzma w165 turn 3 (live)\n${lines.join("\n")}`);
+    assert.match(lineOf(field, "Golduck"), /Surf → Mega Golisopod/, `stay and attack:\n${field.join("\n")}`);
+    assert.ok(!field.some(l => /^now: ⇄/.test(l)), `no paid switch while a free entry is one faint away:\n${field.join("\n")}`);
+    assert.match(field.find(l => /^⤵/.test(l)) ?? "", /Golduck falls this turn › Metagross in free/, `names the free entry:\n${field.join("\n")}`);
+  }
+}
+console.log("ok");

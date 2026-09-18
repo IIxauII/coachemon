@@ -154,8 +154,22 @@ nothing hits) plus each member's moveset and level (dead move slots, members lef
 big fight's foes from a **preview** (who outspeeds them, a foe with a single **answer**, the weakest member against
 that roster). A finding either loses fights or only costs tempo, and the card leads with the first kind.
 
-An **answer** to a foe is a member's attack that hits it super-effectively off the stat that member actually attacks
-with. A foe with one answer is a single point of failure: lose that member and the fight is gone.
+An **answer** to a foe is a member that can deal with it. A foe with one answer is a single point of failure: lose
+that member and the fight is gone. The word has one meaning and two readings, by what the reader can afford: the team
+audit answers between waves off the type chart and the stat a member attacks with, while the **fight plan**, which has
+the battle in front of it, plays the one-on-one out and asks who wins it. A card says which reading it used.
+
+## Fight plan
+
+The **coach**'s read of a whole trainer battle: which of our **party** takes which foe, in the order the trainer sends
+them, with HP carried from one exchange to the next. It exists because a single turn's advice cannot see that spending
+the only **answer** to a foe still on the bench loses the fight three foes later.
+
+The fight plan does not decide a turn. The **turn line** does — the coach's call for the decision in front of the
+player, which alone reads the battle at full fidelity. The plan is re-searched with the turn line's action as its own
+first step, so what it shows always explains the turn rather than arguing with it; where it would rather have played
+the turn differently, it says so in one priced line and leaves the call where it was. What it contributes to the turn
+line is a price: what the rest of the fight loses by taking the turn this way.
 
 ## Moveset prior
 

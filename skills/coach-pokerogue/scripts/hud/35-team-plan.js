@@ -30,13 +30,17 @@ const tpFastest = (list, target, turns = o => tpTurns(o, target), dmg = o => o.d
   .map(o => ({ o, n: turns(o) }))
   .reduce((b, x) => (!b || x.n < b.n || (x.n === b.n && dmg(x.o) > dmg(b.o)) ? x : b), null)?.o ?? null;
 
-// Our best move into `f`: its mean damage a use (`dmg`, uncut by `f`'s HP or bars) and its damage levels (`use`),
-// whose hits land one by one on the game's bar rule (`hitOn`).
+// One of our moves as the plan reads it: its mean damage a use (`dmg`, uncut by the target's HP or bars) and its
+// damage levels (`use`). Takes an outcome record, so the ⚔ line's own pick can be handed straight to the plan.
+const tpMoveOf = (o, extra) => {
+  const use = useOf(o);
+  return { name: o.name, type: o.type, cat: o.cat, e: o.e, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
+    charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
+};
+
+// Our best move into `f`, by turns to KO it then damage, whose hits land one by one on the game's bar rule (`hitOn`).
 const tpOurMove = (s, me, f, live) => {
-  const view = (o, extra) => {
-    const use = useOf(o);
-    return { name: o.name, type: o.type, cat: o.cat, e: o.e, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0, ...extra };
-  };
+  const view = (o, extra) => tpMoveOf(o, extra);
   if (live && typeof moveOutcomes === "function") {
     try {
       // Best by turns to KO it (a charge or recharge turn per hit counts), then by damage.
@@ -139,11 +143,13 @@ const tpHealProfile = (s, p) => {
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
 
-const tpTables = (s, party, foes, live) => {
+const tpTables = (s, party, foes, live, double = false) => {
   const ours = party.map(me => foes.map(f => tpOurMove(s, me, f, live)));
   const theirs = foes.map(f => party.map(me => tpTheirMove(s, f, me, live)));
   return {
     ours, theirs,
+    // How many of ours stand at once. In a double both field mons are out, so neither pays to act (#113 bucket 7).
+    slots: double && party.length >= 2 ? 2 : 1,
     first: party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(s, me, f, ours[mi][fi], theirs[fi][mi], live))),
     send: foes.map(f => party.map(me => tpSendBase(s, f, me, live))),
     memo: new Map(),
@@ -208,15 +214,17 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // and each side's damage levels (`use`; a table without them hits for its mean); what's left standing is merged back
 // to TP_BRANCHES by closeness. Returns the likelier ending in the old shape ({ mh, fh, … , turns }) with `pWin` (the
 // foe falls first), `pLoss`, `pStall` and `ends` ({ win, loss, stall }, each such a state or null).
-const tpFight = (T, st, mi, fi, entry) => {
+// `over`: our move for this exchange only — the ⚔ line's own pick, pinned into the plan's first step (#113
+// prerequisite 3). It is never memoised, since the key names the pair, not the move.
+const tpFight = (T, st, mi, fi, entry, over = null) => {
   // KOs each side's on-KO boost has had so far (Soul-Heart counts every faint).
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
   const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok?.[mi] ?? 0) : 0;
   const nFoe = T.foeKo?.[fi] ? (T.foeKo[fi].any ? faints : st.fk?.[fi] ?? 0) : 0;
-  const key = T.memo && [mi, fi, entry, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], nUs, nFoe,
+  const key = !over && T.memo && [mi, fi, entry, Math.round(st.oh[mi]), st.ob[mi], Math.round(st.fh[fi]), st.fs[fi], st.fb[fi], nUs, nFoe,
     ...[st.ox?.[mi], st.od?.[mi], st.og?.[mi], st.fd?.[fi], st.fg?.[fi]].map(x => Math.round((x ?? 0) * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
-  const us = T.ours[mi][fi], them = T.theirs[fi][mi], foeState = T.foeState?.[fi] ?? { bar: 0 };
+  const us = over ?? T.ours[mi][fi], them = T.theirs[fi][mi], foeState = T.foeState?.[fi] ?? { bar: 0 };
   // Those boosts on either side, as factors on each side's hits (Speed boosts aren't modelled).
   const usMul = us && (nUs || nFoe) && T.koMult ? T.koMult(T.party[mi], T.ourKo[mi], nUs, T.foes[fi], T.foeKo[fi], nFoe, us.cat === "special" ? 0 : 1) : 1;
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
@@ -348,11 +356,13 @@ const tpApply = (c, mi, fi, r) => {
 };
 const tpAlive = hps => hps.flatMap((hp, i) => (hp >= 1 ? [i] : []));
 
-// The trainer's next mon: best matchup score against the mon we have on the field, at the HP it's on by then.
+// The trainer's next mon: best matchup score against the mon we have on the field, at the HP it's on by then. In a
+// double that is the mon that just acted, since the plan runs one exchange at a time.
 const tpNextFoe = (T, st) => {
   const alive = tpAlive(st.fh);
-  if (st.cur == null) return alive[0];
-  return alive.reduce((b, fi) => (tpSendScore(T, st, fi, st.cur) > tpSendScore(T, st, b, st.cur) ? fi : b), alive[0]);
+  const me = st.act ?? st.cur?.[0];
+  if (me == null) return alive[0];
+  return alive.reduce((b, fi) => (tpSendScore(T, st, fi, me) > tpSendScore(T, st, b, me) ? fi : b), alive[0]);
 };
 
 // Progress toward winning: each KO'd foe counts fully; a standing foe counts the damage already dealt plus what our
@@ -372,25 +382,39 @@ const tpValue = (T, st, end) => {
   return v;
 };
 
-// `reserve`: party indices kept away from every foe but `win` while anyone else can still fight.
-const tpSearch = (T, start, reserve, win) => {
+// `reserve`: [{ mi, fi }] — our `mi` is kept away from every foe but `fi` while anyone else can still fight.
+// `pin`: this turn's action as the ⚔ line decided it — `{ mi, move }`, the mon that acts and, when the planner scored
+// a damaging move for it, that move. It fixes the first exchange only; the rest of the fight is searched as usual.
+// This is #113's "⚔ seeds ♟": the plan explains the rest of the fight instead of contradicting the turn.
+const tpSearch = (T, start, reserve, pin = null) => {
   let beam = [start];
   const done = [];
+  const slots = T.slots ?? 1;
   for (let depth = 0; beam.length && depth <= start.oh.length + start.fh.length + 1; depth++) {
     const next = new Map();
     for (const st of beam) {
       const fi = st.fcur ?? tpNextFoe(T, st);
-      let cands = tpAlive(st.oh).map(mi => [mi, st.cur == null ? "free" : mi === st.cur ? "stay" : "switch"]);
-      if (reserve.length && fi !== win) {
-        const spare = cands.filter(([mi]) => !reserve.includes(mi));
+      // Every mon on the field is out: only a mon coming off the bench into a full field pays an entry hit. The game
+      // asking "will you switch?" before the turn is the exception — that switch is free (`pin.free`).
+      const entryOf = (mi, free) => (st.cur.includes(mi) ? "stay" : free || st.cur.length < slots ? "free" : "switch");
+      const alive = tpAlive(st.oh);
+      let cands = alive.map(mi => [mi, entryOf(mi, false)]);
+      if (depth === 0 && pin && alive.includes(pin.mi)) cands = [[pin.mi, entryOf(pin.mi, pin.free)]];
+      else if (reserve.length) {
+        const spare = cands.filter(([mi]) => !reserve.some(r => r.mi === mi && r.fi !== fi));
         if (spare.length) cands = spare;
       }
       for (const [mi, entry] of cands) {
-        const r = tpFight(T, st, mi, fi, entry);
+        const r = tpFight(T, st, mi, fi, entry, depth === 0 && pin?.move && mi === pin.mi ? pin.move : null);
         const child = end => {
           const c = tpClone(st);
           tpApply(c, mi, fi, end);
-          c.cur = end.mh >= 1 ? mi : null;
+          // Who else is left on the field: a mon already out just leaves its own slot when it falls, a mon coming
+          // into an empty slot displaces nobody, and one coming into a full field takes the place of the mon that
+          // was standing there — whether it paid for the switch or the game handed it one.
+          const rest = st.cur.includes(mi) ? st.cur.filter(i => i !== mi) : st.cur.length < slots ? st.cur : st.cur.slice(1);
+          c.cur = (end.mh >= 1 ? [...rest, mi] : rest).sort((a, b) => a - b);
+          c.act = end.mh >= 1 ? mi : rest[0] ?? null;
           c.fcur = end.fh >= 1 ? fi : null;
           c.result = c.fh.every(hp => hp < 1) ? "win" : c.oh.every(hp => hp < 1) ? "loss" : end.mh >= 1 && end.fh >= 1 ? "stall" : null;
           return c;
@@ -405,7 +429,7 @@ const tpSearch = (T, start, reserve, win) => {
           return v + p * tpValue(T, x, !!x.result);
         }, 0) / Math.max(1e-9, (r.ends.win ? r.pWin : 0) + (r.ends.loss ? r.pLoss : 0) + (r.ends.stall ? r.pStall : 0));
         if (c.result) { done.push(c); continue; }
-        const sig = [c.cur, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round), ...c.ok, ...c.fk].join(",");
+        const sig = [c.cur.join("-"), c.act, c.fcur, ...c.oh.map(Math.round), ...c.fh.map(Math.round), ...c.ok, ...c.fk].join(",");
         if (!next.has(sig) || next.get(sig).val < c.val) next.set(sig, c);
       }
     }
@@ -414,31 +438,44 @@ const tpSearch = (T, start, reserve, win) => {
   return done.reduce((b, st) => (!b || st.val > b.val ? st : b), null);
 };
 
-const teamPlan = (s, b, party, foes) => {
-  if (!b?.trainer || !party.length || !foes.length) return null;
-  const live = awaitingCommand(s);
-  const key = [b.waveIndex, b.turn, b.enemySwitchCounter, !!b.double, ...party.map(p => `${p.id}:${p.hp}`), ...foes.map(f => `${f.id}:${f.hp}`)].join("|");
-  // A plan built from the game's own numbers stays until the turn changes; outside the command phase only the
-  // approximation is available, so don't let it replace one.
-  if (teamPlanCache.key === key && (teamPlanCache.live || !live)) return teamPlanCache.value;
-  const T = live ? sandbox(s, () => tpTables(s, party, foes, true)) : tpTables(s, party, foes, false);
-  const value = tpView(T, party, foes, !!b.double);
-  teamPlanCache = { key, live, value };
-  return value;
+
+// The foe the plan should aim at: the one the ⚔ line plans against, which is the predicted switch-in when a foe is
+// leaving (#113 bucket 6 — ♟ used to aim at the mon that was walking away, and ⚔ was right every time). Outside a
+// command phase, and during a free switch where the enemy has decided nothing, it is simply the foe on the field.
+const tpFacing = (s, b, foes) => {
+  const onField = foes.filter(f => f.isOnField?.());
+  const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
+  const here = active[0] ?? null;
+  if (!here || !awaitingCommand(s) || awaitingDecision(s) === "check-switch" || typeof predictSwitches !== "function") return here;
+  try {
+    const p = predictSwitches(s, b, active).get(here);
+    return (p?.ratio ?? 0) >= 1 && foes.includes(p.to) ? p.to : here;
+  } catch { return here; }
 };
 
-const tpView = (T, party, foes, double = false) => {
+// How far ahead of the pinned plan the free one has to be before the panel says so (#113: ~a fifth of a KO).
+const TP_PREFER = 20;
+// How much better spending an answer early has to be before the plan gives up holding it back.
+const TP_HOLD = 10;
+
+// Everything the fight plan knows before this turn's action is chosen: the tables, the starting state, the win
+// condition, who answers which foe, and the searches. `at(pin)` re-searches with the ⚔ line's action pinned as step 1,
+// `after(pin)` reads what that plan says comes next, and `view(pin)` renders it. #113 made ⚔ the authority for the
+// turn and this the model that explains the rest of the fight around it.
+const tpModel = (T, b, party, foes, facing) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
   const pctOf = (hp, max) => Math.round(hp / max * 100);
-  const onField = party.findIndex(p => p.isOnField?.());
-  const foeOnField = foes.findIndex(f => f.isOnField?.());
+  const double = !!b.double;
+  const fcur = foes.indexOf(facing);
   const start = {
     oh: party.map(p => p.hp), ob: party.map(() => 0),
     fh: foes.map(f => f.hp), fs: T.foeState.map(x => x.bar), fb: foes.map(() => 0),
     ox: party.map(() => 0), od: party.map(() => 0), og: party.map(() => 0), fd: foes.map(() => 0), fg: foes.map(() => 0),
     ok: party.map(() => 0), fk: foes.map(() => 0),
-    cur: onField >= 0 ? onField : null, fcur: foeOnField >= 0 ? foeOnField : null, steps: [],
+    // Every mon standing on the field, not just the first: in a double neither of ours pays to act.
+    cur: party.flatMap((p, i) => (p.isOnField?.() ? [i] : [])), fcur: fcur >= 0 ? fcur : null, steps: [],
   };
+  start.act = start.cur[0] ?? null;
 
   // Win condition: the foe that KOs the most of our team when we throw everyone at it, best answer first.
   const sweep = fi => {
@@ -463,20 +500,108 @@ const tpView = (T, party, foes, double = false) => {
     if (win < 0 || kills[fi] > kills[win] || (kills[fi] === kills[win] && hurt(fi) < hurt(win))) win = fi;
   });
 
-  // Answers: who takes the most off it per turn if they get to act. They're only credible if they do act.
-  const answers = win < 0 ? [] : tpAlive(start.oh)
-    .map(mi => ({ mi, per: (T.ours[mi][win]?.dmg ?? 0) / foes[win].hp, r: tpFight(T, start, mi, win, "free") }))
-    .map(a => ({ ...a, acts: a.r.fh < foes[win].hp }))
-    .filter(a => a.per >= 0.2)
-    .sort((a, b) => b.per - a.per)
-    .slice(0, 2);
-  const reserve = answers.map(a => a.mi);
+  // The per-foe answer matrix (#170 §A): who answers each foe 1-on-1 — `per` the share of its HP they take a turn,
+  // `beats` they win the exchange outright, `acts` they get to hurt it at all. It is an input, not a panel section:
+  // it picks the win condition's answers and the foes only one of ours beats, which are what the ⚔ line prices.
+  const matrix = foes.map((f, fi) => tpAlive(start.oh)
+    .map(mi => {
+      const r = tpFight(T, start, mi, fi, "free");
+      return { mi, per: (T.ours[mi][fi]?.dmg ?? 0) / f.hp, beats: r.fh < 1 && r.mh >= 1, acts: r.fh < f.hp };
+    })
+    .filter(a => a.beats || a.per >= 0.2)
+    .sort((a, b) => b.per - a.per));
 
-  // The beam is myopic: left alone it spends the answers on whatever is in front of them. So also search with the
-  // answers held back for the win condition, and keep that plan unless spending them early is clearly better.
-  const held = reserve.length ? tpSearch(T, start, reserve, win) : null;
-  const free = tpSearch(T, start, [], win);
-  const plan = held && (!free || held.val >= free.val - 10) ? held : free;
+  // Answers to the win condition: the two hardest hitters, kept back for it.
+  const answers = win < 0 ? [] : matrix[win].filter(a => a.per >= 0.2).slice(0, 2);
+  // A foe only one of ours beats is its own reason to hold that mon back, even when it is not the win condition
+  // (`sweep` needs two KOs to call something a win condition, so Guzma's Xurkitree never was one). Only for a foe
+  // still to come — there is nothing to save a mon for against the one it is standing in front of — and only with a
+  // bench worth choosing from: with two mons left, "only one of them beats it" is not news.
+  const only = foes.flatMap((f, fi) => {
+    if (fi === win || alive < 3 || f.isOnField?.()) return [];
+    const beat = matrix[fi].filter(a => a.beats);
+    return beat.length === 1 ? [{ mi: beat[0].mi, fi, per: beat[0].per, acts: beat[0].acts }] : [];
+  });
+  const hold = [...answers.map(a => ({ mi: a.mi, fi: win })), ...only.map(o => ({ mi: o.mi, fi: o.fi }))];
+  const reserve = [...new Set(hold.map(h => h.mi))];
+  // One line per mon, not per foe: a mon that is the only answer to two foes is one thing to know.
+  const onlyBy = [...new Set(only.map(o => o.mi))].map(mi => {
+    const mine = only.filter(o => o.mi === mi);
+    return { mi, fis: mine.map(o => o.fi), per: Math.max(...mine.map(o => o.per)), acts: mine.some(o => o.acts) };
+  });
+
+  // The beam is myopic: left alone it spends the answers on whatever is in front of them. So also search with them
+  // held back, and keep that plan unless spending them early is clearly better.
+  const held = hold.length ? tpSearch(T, start, hold) : null;
+  const free = tpSearch(T, start, []);
+  const base = held && (!free || held.val >= free.val - TP_HOLD) ? held : free;
+
+  const atMemo = new Map();
+  // The plan with this turn's ⚔ action as its first step. `pin`: `{ mi, move }` — the mon that acts and, when the
+  // planner picked a damaging move for it, that move as an outcome record.
+  const at = pin => {
+    if (!pin || pin.mi == null || pin.mi < 0) return base;
+    const k = `${pin.mi}|${pin.outcome?.name ?? ""}|${pin.free ? "f" : ""}`;
+    if (!atMemo.has(k)) {
+      const move = pin.outcome?.expected > 0 ? tpMoveOf(pin.outcome) : null;
+      atMemo.set(k, tpSearch(T, start, hold, { mi: pin.mi, move, free: !!pin.free }) ?? base);
+    }
+    return atMemo.get(k);
+  };
+  // What the pinned plan says happens after this turn (#170 §E and §G): the mon that comes in free when ours falls,
+  // and the foe the trainer then sends, with the answer the plan puts in front of it.
+  const after = pin => {
+    const plan = at(pin);
+    const [now, next] = plan?.steps ?? [];
+    if (!now || !next) return null;
+    return {
+      // Only for a mon that is already out: a switch-in falling at the end of its own exchange is several turns off,
+      // and the caller checks that this turn is the one it falls on.
+      freeEntry: now.entry === "stay" && now.hp < 1 && next.entry === "free" ? { out: ref(party[now.mi]), in: ref(party[next.mi]) } : null,
+      // Worth saying only when the plan wants a different mon in front of the foe the trainer is about to send: when
+      // it is the same mon that is fighting now, the foe rows already show the order.
+      nextIn: now.foeHp < 1 && next.fi !== now.fi && next.mi !== now.mi ? { foe: ref(foes[next.fi]), answer: ref(party[next.mi]) } : null,
+    };
+  };
+
+  const viewMemo = new Map();
+  const view = pin => {
+    const k = pin && pin.mi != null && pin.mi >= 0 ? `${pin.mi}|${pin.outcome?.name ?? ""}|${pin.free ? "f" : ""}` : "";
+    if (!viewMemo.has(k)) viewMemo.set(k, tpView({ T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf }, at(pin), !!k));
+    return viewMemo.get(k);
+  };
+  // The foe the plan is keeping `mi` back for, if any — what the ⚔ line spends when it sends that mon in now. Only
+  // for a foe still to come: a mon standing in front of the very foe it is the answer to is not being saved.
+  const holdFor = mi => {
+    const waiting = hold.filter(x => x.mi === mi && x.fi !== start.fcur && !foes[x.fi].isOnField?.());
+    return waiting.length ? { name: waiting.map(x => foes[x.fi].name).join(", ") } : null;
+  };
+  return { value: base?.val ?? 0, at, after, view, holdFor, reserve, matrix, win };
+};
+
+const teamPlanner = (s, b, party, foes) => {
+  if (!b?.trainer || !party.length || !foes.length) return null;
+  const live = awaitingCommand(s);
+  const key = [b.waveIndex, b.turn, b.enemySwitchCounter, !!b.double, ...party.map(p => `${p.id}:${p.hp}`), ...foes.map(f => `${f.id}:${f.hp}`)].join("|");
+  // A plan built from the game's own numbers stays until the turn changes; outside the command phase only the
+  // approximation is available, so don't let it replace one.
+  if (teamPlanCache.key === key && (teamPlanCache.live || !live)) return teamPlanCache.value;
+  // Both game reads go through the one sandbox: the tables, and the enemy switch `tpFacing` asks about (§0).
+  const read = () => ({ T: tpTables(s, party, foes, live, !!b.double), facing: tpFacing(s, b, foes) });
+  const { T, facing } = live ? sandbox(s, read) : read();
+  // The searches read only those tables, so they need no sandbox of their own.
+  const value = tpModel(T, b, party, foes, facing);
+  teamPlanCache = { key, live, value };
+  return value;
+};
+
+// The plan with nothing pinned — the shape 95-render-team and the summary read.
+const teamPlan = (s, b, party, foes) => teamPlanner(s, b, party, foes)?.view(null) ?? null;
+
+// One plan rendered. `plan` is the search result being shown (pinned to the ⚔ line when `pinned`); everything the
+// fight is judged by comes from the model around it.
+const tpView = (M, plan, pinned) => {
+  const { T, party, foes, double, start, win, kills, alive, answers, only, onlyBy, reserve, base, ref, pctOf } = M;
   if (!plan) return null;
   // A sacrifice is a low-value mon: little HP left, or no foe it beats 1-on-1.
   const beats = party.map((_, mi) => foes.filter((_, fi) => tpFight(T, start, mi, fi, "free").fh < 1).length);
@@ -516,16 +641,30 @@ const tpView = (T, party, foes, double = false) => {
     const faster = tpAlive(start.oh).every(mi => T.first[mi][win] > 0.5);
     if (!answers.length) warnings.push(`${lost}nothing we have hurts ${w} — maximise damage before it comes in`);
     else if (!acting.length) {
-      warnings.push(`${lost}${faster ? `nobody outspeeds ${w}` : `nobody survives ${w}`} and it KOs ${kills[win]} of ${alive} — maximise damage before it comes in, keep ${names(reserve)} healthy`);
-    } else if (!answers.some(a => a.r.fh < 1)) {
+      warnings.push(`${lost}${faster ? `nobody outspeeds ${w}` : `nobody survives ${w}`} and it KOs ${kills[win]} of ${alive} — maximise damage before it comes in, keep ${names(answers.map(a => a.mi))} healthy`);
+    } else if (!answers.some(a => a.beats)) {
       warnings.push(`${lost}nobody KOs ${w} 1-on-1${faster ? " or outspeeds it" : ""} — maximise damage before it comes in, chip it with ${names(acting.map(a => a.mi))}`);
     } else if (lost) warnings.push(`${lost}the plan runs out with ${left} foe${left > 1 ? "s" : ""} standing — maximise damage into ${w}`);
-    const spent = reserve.filter(mi => plan.steps.some((x, i) => x.mi === mi && x.hp < 1 && (winStep < 0 || i < winStep)));
+    const spent = answers.map(a => a.mi).filter(mi => plan.steps.some((x, i) => x.mi === mi && x.hp < 1 && (winStep < 0 || i < winStep)));
     if (spent.length) warnings.push(`${names(spent)} goes down before ${w} comes in`);
   } else if (lost) warnings.push(`${lost}the plan runs out with ${left} foe${left > 1 ? "s" : ""} standing — maximise damage`);
 
+  // The free plan's own first move, priced, when it is clearly better than the turn the ⚔ line chose (#113). Never a
+  // competing step list: one line, so the user still has one decision to follow.
+  const prefers = (() => {
+    if (!pinned || !base || base === plan) return null;
+    const gain = base.val - plan.val;
+    if (!(gain >= TP_PREFER || (plan.result !== "win" && base.result === "win"))) return null;
+    const [a, nxt] = base.steps;
+    if (!a) return null;
+    const what = a.hp < 1 && nxt?.entry === "free" ? `let ${party[a.mi].name} fall → ${party[nxt.mi].name} in free`
+      : a.entry === "switch" ? `${party[a.mi].name} in`
+      : `${party[a.mi].name} ${T.ours[a.mi][a.fi]?.name ?? "—"} → ${foes[a.fi].name}`;
+    return { text: what, gain: Math.round(gain), flips: plan.result !== "win" && base.result === "win" };
+  })();
+
   // Nothing to plan around (an easy trainer): one line instead of the step list.
-  const compact = plan.result === "win" && !warnings.length && !sacrifice.length && !answers.length;
+  const compact = plan.result === "win" && !warnings.length && !sacrifice.length && !answers.length && !only.length && !prefers;
   return {
     result: plan.result,
     win: win >= 0 ? { ...ref(foes[win]), kills: kills[win], of: alive, boss: !!foes[win].isBoss?.() } : null,
@@ -533,6 +672,10 @@ const tpView = (T, party, foes, double = false) => {
     reserve: answers.map(a => ({
       ...ref(party[a.mi]), for: ref(foes[win]), per: Math.min(100, Math.round(a.per * 100)), acts: a.acts,
     })),
+    // Foes only one of ours beats, and who that is (#170 §A). The ⚔ line prices exposing them.
+    only: onlyBy.map(o => ({ ...ref(party[o.mi]), for: o.fis.map(fi => ref(foes[fi])), per: Math.min(100, Math.round(o.per * 100)), acts: o.acts })),
+    prefers,
+    pinned: !!pinned,
     sacrifice,
     warnings,
     compact,

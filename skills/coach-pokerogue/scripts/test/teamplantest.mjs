@@ -112,6 +112,12 @@ assert.equal(plan.approxDoubles, false);
   const double = run(null, { party: ours, foes: youngster, double: true }).plan;
   assert.ok(double.approxDoubles, "doubles are flagged as approximated");
   assert.ok(double.compact);
+  // Both of ours stand on the field, so neither pays to act: the plan used to count one of them as `cur` and read
+  // the other as a switch, which put "⇄ switch in X" on screen for a mon already out (#113 bucket 7, the biggest
+  // cause of ⚔/♟ disagreement on real waves).
+  // (Charizard sweeps both foes here, so only it takes an exchange — the point is that neither of ours is charged
+  // for standing where it already stands.)
+  assert.deepEqual(double.steps.map(x => x.entry), double.steps.map(() => "stay"), `no step pays to switch in a mon already out: ${JSON.stringify(double.steps)}`);
 }
 // Turn-end chip carries into the fight as a negative per-turn change: a sandstorm takes 1/16 a turn.
 {

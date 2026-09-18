@@ -13,7 +13,7 @@ export const drawTeamPlan = m => {
   const lost = tp.result !== "win";
   const approx = !!m?.double;
   const steps = `${approx ? "~" : ""}${tp.steps.length} step${tp.steps.length === 1 ? "" : "s"}`;
-  const eventful = lost || tp.warnings.length || tp.sacrifice.length || tp.reserve.length;
+  const eventful = lost || tp.warnings.length || tp.sacrifice.length || tp.reserve.length || tp.only?.length || tp.prefers;
   const opened = planOpen !== null && planOpen === shownCardWave();
   if (view() === "mini" || (!eventful && !opened)) {
     return [line("♟", "#c9f",
@@ -39,6 +39,12 @@ export const drawTeamPlan = m => {
     out.push(line("🛡", "#6d6", mon(r.icon, r.name, 20), h("span", { ...dim, margin: "0 3px" }, "save for"), mon(r.for.icon, r.for.name, 18),
       h("span", { flex: "1" }), h("span", r.acts ? dim : { color: amber }, `~${r.per}%/turn${r.acts ? "" : " · KO'd first"}`)));
   }
+  // Foes still to come that only one of ours beats: the ⚔ line prices spending it, this says who and for what.
+  for (const r of tp.only ?? []) {
+    out.push(line("🔒", "#6d6", mon(r.icon, r.name, 20), h("span", { ...dim, margin: "0 3px" }, "only answer to"),
+      ...r.for.flatMap((f, i) => [i ? h("span", dim, ",") : null, mon(f.icon, f.name, 18)]),
+      h("span", { flex: "1" }), h("span", r.acts ? dim : { color: amber }, `~${r.per}%/turn${r.acts ? "" : " · KO'd first"}`)));
+  }
   tp.steps.forEach((st, i) => {
     const tag = entryTag[st.entry];
     out.push(line(`${approx ? "~" : ""}${i + 1}`, "#8cf",
@@ -54,6 +60,12 @@ export const drawTeamPlan = m => {
     out.push(line("✝", amber, mon(x.icon, x.name, 20), h("span", { color: amber, margin: "0 3px" }, `${x.hp}% · sacrifice to`),
       mon(x.vs.icon, x.vs.name, 18), h("span", { ...dim, margin: "0 3px" }, "so"), mon(x.frees.icon, x.frees.name, 18),
       h("span", dim, "comes in free")));
+  }
+  // The plan's own preferred turn, priced, when it is clearly better than the one the ⚔ line chose (#113). One line,
+  // never a competing step list: the ⚔ line still decides the turn.
+  if (tp.prefers) {
+    out.push(line("♟", amber, h("span", { color: amber, marginRight: "3px" }, "prefers:"), h("span", {}, tp.prefers.text),
+      h("span", { ...dim, marginLeft: "4px" }, tp.prefers.flips ? `(+${tp.prefers.gain} · turns the fight)` : `(+${tp.prefers.gain})`)));
   }
   for (const w of tp.warnings) out.push(line("⚠", red, h("span", { color: red }, w)));
   if (tp.notes?.length) out.push(line("·", "#9aa", h("span", small, tp.notes.join(" · "))));
