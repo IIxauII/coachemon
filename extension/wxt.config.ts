@@ -115,6 +115,11 @@ export default defineConfig({
      * the template cannot write is written here (§14.2).
      */
     "zip:extension:done": (wxt, zipPath) => {
+      // A release artifact is a store build by definition, and these names carry no mode: zipping a dev build would
+      // write it over the store zip's exact name (§5.4).
+      if (flavourOf(wxt.config.mode) !== "store") {
+        throw new Error(`wxt zip is for store builds only; --mode ${wxt.config.mode} would overwrite a store artifact`);
+      }
       const named = join(dirname(zipPath), zipName(targetOf(wxt.config.browser), version));
       if (named !== zipPath) renameSync(zipPath, named);
       wxt.logger.info(`Coachemon artifact ${basename(named)}`);

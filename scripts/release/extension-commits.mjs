@@ -31,11 +31,18 @@ export const touches = paths => paths.some(path => EXTENSION_PATHS.some(prefix =
  */
 export const keep = (commits, pathsOf) => commits.filter(commit => touches(pathsOf(commit.hash)));
 
-/** `git diff-tree` prints paths from the repo root whatever the cwd is, which is what `EXTENSION_PATHS` are. */
+/**
+ * The paths one commit changed, from the repo root whatever the cwd is, which is what `EXTENSION_PATHS` are.
+ *
+ * `-z` matters: without it `git` C-quotes any path that is not plain ASCII, so `extension/src/café.ts` arrives as
+ * `"extension/src/caf\303\251.ts"` — leading quote and all — and would miss every prefix.
+ */
+export const splitPaths = stdout => stdout.split("\0").filter(Boolean);
+
 const gitPaths = cwd => hash =>
-  execFileSync("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", hash], { cwd, encoding: "utf8" })
-    .split("\n")
-    .filter(Boolean);
+  splitPaths(
+    execFileSync("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", "-z", hash], { cwd, encoding: "utf8" }),
+  );
 
 const wrapped = new Map();
 

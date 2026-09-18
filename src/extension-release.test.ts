@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 // @ts-expect-error: plain .mjs without type declarations, because semantic-release loads it as a plugin
-import { EXTENSION_PATHS, keep, touches } from "../scripts/release/extension-commits.mjs";
-import { releaseVersion, sourcesZipName, submitsToStores, zipName } from "../scripts/release/artifacts.ts";
+import { EXTENSION_PATHS, keep, splitPaths, touches } from "../scripts/release/extension-commits.mjs";
+import {
+  missingSubmitEnv,
+  releaseArtifacts,
+  releaseVersion,
+  sourcesZipName,
+  submitsToStores,
+  zipName,
+} from "../scripts/release/artifacts.ts";
 import { isSemver, stampVersion } from "../scripts/release/version.ts";
 
 test("a commit counts for the extension when it touched anything the extension ships", () => {
@@ -70,6 +77,27 @@ test("a prerelease is refused, because the artifacts could not be named for it",
   // build wrote under a different name. `isSemver` admits a prerelease; the release stream does not.
   assert.equal(releaseVersion("0.1.0"), "0.1.0");
   assert.throws(() => releaseVersion("1.0.0-beta.1"), /cannot release a prerelease \(1\.0\.0-beta\.1\)/);
+});
+
+test("a NUL-separated diff keeps a non-ASCII path whole", () => {
+  // `git diff-tree -z` writes the bytes as they are and ends every path with a NUL, including the last.
+  const paths = ["extension/src/café.ts", "src/hub/hub.ts"];
+  assert.deepEqual(splitPaths(`${paths.join("\0")}\0`), paths);
+  assert.equal(touches(splitPaths("extension/src/café.ts\0")), true);
+  assert.deepEqual(splitPaths(""), []);
+});
+
+test("a release ships four artifacts, and the submit credentials are named once", () => {
+  assert.deepEqual(releaseArtifacts("0.1.0"), [
+    "coachemon-chrome-0.1.0.zip",
+    "coachemon-firefox-0.1.0.zip",
+    "coachemon-safari-web-extension-0.1.0.zip",
+    "coachemon-0.1.0-sources.zip",
+  ]);
+  assert.deepEqual(missingSubmitEnv({}).length, 6);
+  assert.deepEqual(missingSubmitEnv({ CHROME_EXTENSION_ID: "x" }).includes("CHROME_EXTENSION_ID"), false);
+  // An empty string is as absent as an unset variable: that is what an unconfigured GitHub secret expands to.
+  assert.deepEqual(missingSubmitEnv({ CHROME_EXTENSION_ID: "" }).includes("CHROME_EXTENSION_ID"), true);
 });
 
 test("the release artifacts are named as the spec lists them", () => {

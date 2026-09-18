@@ -4,13 +4,6 @@
   "plugins": [
     "../scripts/release/extension-commits.mjs",
     [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "node ../scripts/release/stamp-extension.ts ${nextRelease.version}",
-        "publishCmd": "node ../scripts/release/submit-extension.ts ${nextRelease.version}"
-      }
-    ],
-    [
       "@semantic-release/github",
       {
         "assets": [
@@ -19,9 +12,16 @@
           { "path": ".output/coachemon-safari-web-extension-*.zip", "label": "Safari (unpackaged web extension)" },
           { "path": ".output/coachemon-*-sources.zip", "label": "Sources (AMO)" }
         ],
-        "successComment": false,
-        "failComment": false,
-        "failTitle": false
+        "successCommentCondition": false,
+        "failCommentCondition": false
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "verifyReleaseCmd": "node ../scripts/release/submit-extension.ts ${nextRelease.version} --verify",
+        "prepareCmd": "node ../scripts/release/stamp-extension.ts ${nextRelease.version}",
+        "publishCmd": "node ../scripts/release/submit-extension.ts ${nextRelease.version}"
       }
     ]
   ]

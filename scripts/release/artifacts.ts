@@ -8,6 +8,9 @@ import type { Target } from "../../src/protocol/wire.ts";
 /** The extension package: the directory every `wxt` command runs in, and where `.output/` ends up. */
 export const EXTENSION_DIR = fileURLToPath(new URL("../../extension/", import.meta.url));
 
+/** The three store builds, in the order they are built and zipped. Orion is never a target of its own (§2). */
+export const TARGETS: Target[] = ["chrome", "firefox", "safari"];
+
 /** 0.x is unlisted and sideloaded from its GitHub Release; from 1.0.0 on every release submits to both (§14.1). */
 export const submitsToStores = (version: string): boolean => Number(version.split(".")[0]) >= 1;
 
@@ -30,3 +33,26 @@ export const zipName = (target: Target, version: string): string =>
 
 /** The AMO sources zip (§5.7), written by the Firefox zip run alone. */
 export const sourcesZipName = (version: string): string => `coachemon-${version}-sources.zip`;
+
+/** Every file a release carries (§14.2). `stamp-extension.ts` checks all four exist before the tag is cut. */
+export const releaseArtifacts = (version: string): string[] => [
+  ...TARGETS.map(target => zipName(target, version)),
+  sourcesZipName(version),
+];
+
+/**
+ * The environment `wxt submit` needs, mapped from the repo's secrets in `release.yml` (§14.4). Checked at
+ * `verifyRelease`, which runs before the tag, so an accidental 1.0.0 with no secrets configured fails while failing is
+ * still cheap rather than after `extension-v1.0.0` has been pushed.
+ */
+export const SUBMIT_ENV = [
+  "CHROME_EXTENSION_ID",
+  "CHROME_PUBLISHER_ID",
+  "CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL",
+  "CHROME_SERVICE_ACCOUNT_PRIVATE_KEY",
+  "FIREFOX_JWT_ISSUER",
+  "FIREFOX_JWT_SECRET",
+];
+
+export const missingSubmitEnv = (env: Record<string, string | undefined>): string[] =>
+  SUBMIT_ENV.filter(name => !env[name]);

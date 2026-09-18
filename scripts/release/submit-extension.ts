@@ -15,13 +15,33 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { EXTENSION_DIR, releaseVersion, sourcesZipName, submitsToStores, zipName } from "./artifacts.ts";
+import {
+  EXTENSION_DIR,
+  missingSubmitEnv,
+  releaseVersion,
+  sourcesZipName,
+  submitsToStores,
+  zipName,
+} from "./artifacts.ts";
 import { versionArg } from "./version.ts";
 
 const version = releaseVersion(versionArg("scripts/release/submit-extension.ts"));
+// `verifyRelease` passes `--verify`: check that a submission could succeed, and submit nothing. It runs before the tag
+// is cut, so an accidental 1.0.0 with no store secrets configured fails while nothing has been published yet.
+const verifyOnly = process.argv.includes("--verify");
 
 if (!submitsToStores(version)) {
   console.log(`extension-v${version} is a 0.x release: unlisted, so nothing is submitted to a store (§14.1)`);
+  process.exit(0);
+}
+
+const missing = missingSubmitEnv(process.env);
+if (missing.length > 0) {
+  console.error(`cannot submit extension-v${version}: ${missing.join(", ")} missing from the environment (§14.4)`);
+  process.exit(1);
+}
+if (verifyOnly) {
+  console.log(`extension-v${version} submits to both stores, and every credential it needs is present (§14.4)`);
   process.exit(0);
 }
 
