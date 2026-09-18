@@ -1,48 +1,54 @@
 // Planner scenarios with explicit assertions. Usage: node test/plannertest.mjs
 //
-// The planner's numbers come from 10-damage (`moveOutcome(s)`, `endOfTurnHp`) and 20-enemy-ai
-// (`enemyMoveDistribution`, `predictSwitches`, `enemyAction`), which call real game code. A plain mock can't feed
-// those, and top-level consts in the bundle's shared scope can't be redefined afterwards. So the "live" scenarios rewrite
-// the bundle text: those definitions are renamed to `__real_*` and small stand-ins reading `globalThis.__stub` are
-// inserted before 30-planner, with the mocked scene in the CommandPhase. The "fallback" scenario runs the untouched
-// bundle outside the CommandPhase, where the planner must still render from the approximation.
+// The planner reads the live battle through one **turn** (`hud/25-turn.js`) and nothing else, so a scenario here is
+// a turn built from tables: what each move does (`__stub.outcome`), what the enemy AI picks (`dist`), what the
+// trainer switches to (`switches`), what a turn end costs (`heal`), what the game's own move scoring makes of a move
+// of ours (`benefit`). `test/fake-turn.mjs` turns those into a turn, `60-card` composes the card from it, and the
+// panel's own renderer draws it — the same path the page takes, with the scene left out.
+//
+// The "fallback" scenario builds an approximate turn instead (`live: false`), where the planner must still render a
+// plan from nothing but the type chart.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { fakeTurn } from "./fake-turn.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-const STUBBED = ["moveOutcome", "moveOutcomes", "statusMoves", "endOfTurnHp", "enemyMoveDistribution", "aiReplay", "predictSwitches", "enemyAction", "aiTargetScore"];
-const STUBS = `
-const moveOutcome = (s, atk, def, pm, opts = {}) => globalThis.__stub.outcome(atk, def, pm, opts);
-const moveOutcomes = (s, atk, def) => atk.moveset.map(pm => moveOutcome(s, atk, def, pm)).filter(Boolean);
-const statusMoves = (s, atk, def) => atk.moveset.filter(pm => pm.getMove().category === 2).map(pm => ({
-  pm, name: pm.getName(), type: TYPES[pm.getMove().type], cat: "status", acc: pm.getMove().accuracy > 0 ? pm.getMove().accuracy / 100 : 1,
-  e: 1, priority: pm.getMove().priority ?? 0, bypassProtect: false, bounce: false, blocked: null,
-}));
-const endOfTurnHp = (p, opts) => globalThis.__stub.heal?.(p, opts) ?? 0;
-const enemyMoveDistribution = (s, e) => globalThis.__stub.dist(e);
-const aiReplay = (s, e, target) => globalThis.__stub.replay?.(e, target) ?? null;
-const predictSwitches = (s, b, active) => globalThis.__stub.switches(active);
-const enemyAction = (s, e) => ({ kind: "move", dist: enemyMoveDistribution(s, e), tera: false });
-// The planner's benefit nudge is the AI's own score for our move (step 7). Scenarios that care set __stub.benefit.
-const aiTargetScore = (s, e, mv, bi, p) => [{ score: globalThis.__stub.benefit?.(e, mv, p) ?? 0, p: 1 }];
-`;
-const liveBundle = () => {
-  let src = bundle("hud", { expose: true });
-  for (const n of STUBBED) {
-    src = src.replace(new RegExp(`^(const|let|function)\\s+${n}\\b`, "m"), `$1 __real_${n}`);
-    src = src.replace(/^const \{([^}]*)\}\s*=/gm, (all, names) => all.replace(names, names.replace(new RegExp(`(^|[,\\s])${n}(?=\\s*[,}]|\\s*$)`), `$1${n}: __real_${n}`)));
-  }
-  const at = src.indexOf("// ---- 30-planner.js");
-  assert.ok(at > 0, "bundle has 30-planner.js");
-  return src.slice(0, at) + STUBS + src.slice(at);
+// The tables a scenario sets, as the turn asks for them. `__stub` is rebound per scenario, so every op reads it at
+// call time rather than closing over it.
+const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands }) => {
+  const active = () => {
+    const out = foes.filter(f => f.isOnField?.());
+    return (out.length ? out : foes).slice(0, double ? 2 : 1);
+  };
+  const cmd = double && fieldIndex === 1 ? turnCommands[0] : null;
+  return fakeTurn({
+    live, wave: 200, turn: 3, double, trainer, party, foes,
+    decision: phase === "CheckSwitchPhase" ? "check-switch" : "command",
+    trickRoom: !!arena?.getTag?.("TRICK_ROOM"),
+    command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] } : null,
+    outcome: (atk, def, pm, opts) => globalThis.__stub.outcome(atk, def, pm, opts),
+    // A status move's own record: what the game would say about aiming it at `def`.
+    statusMoves: (atk, def) => atk.moveset.filter(pm => pm.getMove().category === 2).map(pm => ({
+      pm, name: pm.getName(), type: TY[pm.getMove().type], cat: "status", acc: pm.getMove().accuracy > 0 ? pm.getMove().accuracy / 100 : 1,
+      e: 1, priority: pm.getMove().priority ?? 0, bypassProtect: false, bounce: false, blocked: null,
+    })),
+    heal: (p, opts) => globalThis.__stub.heal?.(p, opts) ?? 0,
+    moves: e => globalThis.__stub.dist(e),
+    switchTo: f => globalThis.__stub.switches(active()).get(f)?.to ?? null,
+    replay: (e, target) => globalThis.__stub.replay?.(e, target) ?? null,
+    benefit: (atk, def, mv) => globalThis.__stub.benefit?.(atk, mv, def) ?? 0,
+    // The trainer's send-in score, the way the scene adapter asks the game for it.
+    sendIn: (f, me) => f.getMatchupScore?.(me) ?? null,
+  });
 };
-// The planner's pieces, from expose mode.
-const plannerApi = () => {
-  const { actionOrder, threatFrom, exchange, tokenActs, selfStages, setupRamp, koBoost } = globalThis.__hud["30-planner"];
-  return { actionOrder, threatFrom, exchange, koCurve: globalThis.__hud["10-damage"].koCurve, tokenActs, selfStages, setupRamp, koBoost,
-    cardSummary: globalThis.__hud["60-card"].cardSummary };
-};
+// The planner's pieces, from expose mode. They take the turn where they used to take the scene, so a scenario hands
+// them the one it built; `koCurve` takes the turn's per-mon record, so it is wrapped to look that up.
+const plannerApi = turn => ({
+  ...globalThis.__hud["30-planner"],
+  koCurve: (target, use, opts) => globalThis.__hud["10-damage"].koCurve(turn.mon(target), use, opts),
+  cardSummary: globalThis.__hud["60-card"].cardSummary,
+});
 
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
 // [name, fields] for one that carries its constructor arguments.
@@ -133,12 +139,11 @@ const cyrus = withMetagross => {
   return { party, foes };
 };
 
-// Mounts the HUD on a mocked scene and returns the rendered lines (`field`: everything above the foe rows).
-// `fieldIndex`: whose command phase it is; `turnCommands`: commands already chosen this turn.
+// Builds this scenario's turn, composes the battle card from it and draws it, returning the rendered lines
+// (`field`: everything above the foe rows). `fieldIndex`: whose command phase it is; `turnCommands`: commands
+// already chosen this turn.
 const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null }) => {
-  let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
-  const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : live ? { phaseName: "CommandPhase", fieldIndex } : null), queueMessage() {} };
   const onField = () => party.filter(p => p.isOnField());
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
   const [gyarados, weavile] = foes;
@@ -149,21 +154,21 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   };
   const trainer = { getName: () => "Cyrus", config: { isBoss: true }, isDouble: () => false,
     getPartyMemberMatchupScores: () => [[1, 5]], getSortedPartyMemberMatchupScores: x => x, getNextSummonIndex: () => 1 };
-  const scene = { phaseManager: pm, arena, getField: () => [...onField(), ...foes.filter(f => f.isOnField())],
-    currentBattle: { waveIndex: 200, turn: 3, double, turnCommands, enemySwitchCounter: 0, getBattlerCount: () => (double ? 2 : 1), trainer },
-    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
-  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
+  // The panel's own globals: the renderers build DOM nodes and read the view mode.
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
+  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
+  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [] } } } };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(live ? liveBundle() : bundle("hud"));
-  if (live) globalThis.__planner = plannerApi();
+  eval(bundle("hud", { expose: true }));
+  const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands });
+  globalThis.__planner = plannerApi(turn);
+  const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-  assert.ok(!el.textContent, `panel error: ${el.textContent}`);
-  const lines = (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const lines = globalThis.__hud["96-render-battle"].drawBattle(card).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
   const firstRow = lines.findIndex(l => /^(foes weak to:|(\S+) \2 L\d+)/.test(l));
-  return { lines, field: lines.slice(1, firstRow < 0 ? undefined : firstRow), scene };
+  // `scene` is the turn now: what the planner is handed, and what a scenario tweaks.
+  return { lines, field: lines.slice(1, firstRow < 0 ? undefined : firstRow), card, scene: turn };
 };
 // The Cyrus mistake: Scrafty sent in "→ High Jump Kick" as if the move happened this turn.
 const assertNoImmediateScrafty = field => {
@@ -216,7 +221,7 @@ const assertNoImmediateScrafty = field => {
   assert.equal(actionOrder(s, morpeko, plain, { ...morpeko, id: "twin" }, plain), 0.5, "speed tie is a coin flip");
   const claw = { ...scrafty, getHeldItems: () => [new (class BypassSpeedChanceModifier { getStackCount() { return 1; } })()] };
   assert.ok(Math.abs(actionOrder(s, claw, plain, weavile, plain) - 0.1) < 1e-9, "Quick Claw: 10 % to go first");
-  assert.equal(actionOrder({ ...s, arena: { getTag: t => t === "TRICK_ROOM" } }, weavile, plain, scrafty, plain), 0, "Trick Room reverses speed");
+  assert.equal(actionOrder({ ...s, facts: { ...s.facts, trickRoom: true } }, weavile, plain, scrafty, plain), 0, "Trick Room reverses speed");
 
   // The BYPASS_SPEED tag is read before any ability bracket, so Quick Claw puts its holder first whatever the bracket
   // would have said; Mycelium Might stops the tag going on at all, but only for a status move (#178.6).
@@ -229,25 +234,17 @@ const assertNoImmediateScrafty = field => {
   assert.equal(actionOrder(s, mycelium, { priority: 0, category: 2 }, weavile, plain), 0, "Mycelium Might blocks the bypass on a status move");
   assert.ok(Math.abs(actionOrder(s, mycelium, plain, weavile, plain) - 0.1) < 1e-9, "\u2026but not on an attack");
 
-  // A speed tie in a single battle is settled by the turn's own shuffle, not a coin flip (#178.5). The queue is
-  // [ours, theirs]; a Fisher-Yates draw of 0 swaps it, and Trick Room reverses the sorted pair, swapping it back.
+  // A speed tie on the turn the game is waiting on is settled by that turn's own shuffle, not a coin flip (#178.5).
+  // Reading the shuffle is the turn's (`turn.speedTie`, tested against a fake scene in damagetest); what the planner
+  // owns is when to ask for it — only for this turn, and only while the turn has an answer.
   {
     const ours = { ...morpeko, isPlayer: () => true };
     const theirs = { ...morpeko, id: "twin", isPlayer: () => false };
-    const tieScene = (over = {}) => ({ ...s, waveSeed: "w", executeWithSeedOffset: fn => fn(),
-      currentBattle: { ...s.currentBattle, double: false, turn: 3 }, ...over });
-    const tied = (draw, over) => {
-      const rnd = Phaser.Math.RND;
-      const had = Object.prototype.hasOwnProperty.call(rnd, "integerInRange"), orig = rnd.integerInRange;
-      rnd.integerInRange = () => draw;
-      try { return actionOrder(tieScene(over), ours, plain, theirs, plain, { thisTurn: true }); }
-      finally { if (had) rnd.integerInRange = orig; else delete rnd.integerInRange; }
-    };
-    assert.equal(tied(1), 1, "the queue's order stands: ours first");
-    assert.equal(tied(0), 0, "the shuffle swaps them: theirs first");
-    assert.equal(tied(0, { arena: { getTag: t => t === "TRICK_ROOM" } }), 1, "Trick Room reverses the tie too");
-    assert.equal(tied(0, { currentBattle: { ...s.currentBattle, double: true, turn: 3 } }), 0.5, "doubles keep the coin flip");
-    assert.equal(actionOrder(tieScene(), ours, plain, theirs, plain), 0.5, "a later turn keeps the coin flip");
+    const tied = tie => ({ ...s, speedTie: () => tie });
+    assert.equal(actionOrder(tied(1), ours, plain, theirs, plain, { thisTurn: true }), 1, "the shuffle put ours first");
+    assert.equal(actionOrder(tied(0), ours, plain, theirs, plain, { thisTurn: true }), 0, "…and here theirs");
+    assert.equal(actionOrder(tied(null), ours, plain, theirs, plain, { thisTurn: true }), 0.5, "nothing settles it: coin flip");
+    assert.equal(actionOrder(tied(0), ours, plain, theirs, plain), 0.5, "a later turn keeps the coin flip");
   }
 
   const t = threatFrom(s, weavile, scrafty, null, { next: true });
@@ -339,35 +336,35 @@ const assertNoImmediateScrafty = field => {
     return koCurve(ursaring(`${id} Ursaring, two 200 HP bars`, true), mashRolls, { act: i => a.act(i + 1) }).by.map(x => Math.round(x * 1000) / 1000);
   };
   const sleepToken = new (class EnemyAttackStatusEffectChanceModifier { effect = 4; chance = 0.025; getStackCount() { return 4; } })();
-  s.enemyModifiers = [sleepToken];
+  s.facts.enemyModifiers = [sleepToken];
   assert.deepEqual(tokenCurve("sleep").slice(4, 7), [0, 0.504, 0.837], "each attempt is one KO-or-not branch, not a share of a hit");
   assert.equal(slam(ursaring("trainer Ursaring vs sleep", true)).turnsWe, 6, "sleep tokens cost our turns");
   // Freeze at 10 stacks (25 % a hit): ¾ then 9/16 of the next two attempts lost, acting 1, .81, .72, .79, .84, .88,
   // .91: six of the first seven land 71.9 % of the time, so 7 turns (the mean said 8).
-  s.enemyModifiers = [new (class EnemyAttackStatusEffectChanceModifier { effect = 5; chance = 0.025; getStackCount() { return 10; } })()];
+  s.facts.enemyModifiers = [new (class EnemyAttackStatusEffectChanceModifier { effect = 5; chance = 0.025; getStackCount() { return 10; } })()];
   assert.deepEqual(tokenCurve("freeze").slice(5, 7), [0.342, 0.719]);
   assert.equal(slam(ursaring("trainer Ursaring vs freeze", true)).turnsWe, 7, "freeze tokens cost our turns");
   // Paralysis halves Speed: a Speed-100 Ursaring then outspeeds Metagross (120). Both KO on turn 6 more likely than
   // not; paralysed by turn 5 with 1 − .75⁵ = .763, Metagross gets the last hit in only .237 of the time — and its 6th
   // use itself only lands in time 70.3 % of the time (a paralysed turn is lost 1 in 8), so .703 × .237 = .167.
-  s.enemyModifiers = [new (class EnemyAttackStatusEffectChanceModifier { effect = 3; chance = 0.025; getStackCount() { return 10; } })()];
+  s.facts.enemyModifiers = [new (class EnemyAttackStatusEffectChanceModifier { effect = 3; chance = 0.025; getStackCount() { return 10; } })()];
   const quick = id => ({ ...ursaring(id, true), getStat: i => [400, 1000, 10, 10, 10, 100][i] });
   const tie = exchange(s, { ...metagross, id: "Metagross at 200 vs para" }, metagross.moveset[0], quick("quick Ursaring vs para"), { hp: 200 });
   assert.deepEqual([tie.turnsWe, tie.turnsThey], [6, 6]);
   assert.equal(tokenCurve("para")[5], 0.703);
   assert.ok(Math.abs(tie.pWeKoFirst - 0.167) < 0.005, `paralysis flips the order of the last turn (${tie.pWeKoFirst})`);
-  delete s.enemyModifiers;
+  s.facts.enemyModifiers = [];
   // Wave poison tokens: each landed enemy attack poisons 5 % a stack. Waterfall (73.9 a turn) needs 3 turns for 150 HP;
   // at 10 stacks Morpeko is poisoned half the time by turn 1's end, and the expected 1/8 chip finishes it in 2.
   const token = new (class EnemyAttackStatusEffectChanceModifier { effect = 1; chance = 0.05; getStackCount() { return 10; } })();
   globalThis.__stub.heal = p => (p.status?.effect === 1 ? -22 : 0);
   const gyaradosVs = id => exchange(s, { ...morpeko, id }, morpeko.moveset[0], { ...gyarados, id: `Gyarados vs ${id}` }, { hp: 150 }).turnsThey;
   assert.equal(gyaradosVs("Morpeko without tokens"), 3);
-  s.enemyModifiers = [token];
+  s.facts.enemyModifiers = [token];
   assert.equal(gyaradosVs("Morpeko vs tokens"), 2, "poison tokens chip over the fight");
   assert.equal(exchange(s, { ...morpeko, id: "burned Morpeko", status: { effect: 6 } }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs burned" }, { hp: 150 }).turnsThey, 3,
     "a statused mon can't be poisoned");
-  delete s.enemyModifiers;
+  s.facts.enemyModifiers = [];
   // Item thieves take one stack a steal. Leftovers healing Metagross 10 a turn makes Waterfall (55.1) take 6 turns; a
   // Mini Black Hole takes them at the end of turn 1, a 5-stack Grip Claw half the time each hit: 5 either way.
   const heldItem = (name, n = 1) => new ({ [name]: class { isTransferable = true; getStackCount() { return n; } } })[name]();

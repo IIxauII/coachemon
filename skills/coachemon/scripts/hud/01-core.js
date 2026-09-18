@@ -178,58 +178,32 @@ export const awaitingDecision = s => {
   if (ph?.phaseName === "SwitchPhase" && ph.isModal && !ph.doReturn) return "faint-switch";
   return null;
 };
-export const awaitingCommand = s => awaitingDecision(s) !== null;
 
-// ---- Hypotheses: a state one move away
-// The planner asks the game's own damage and AI code about a state this turn's move would make — our stat stages
-// after Swords Dance, a foe paralysed by Thunder Wave — by writing that state onto the live mons for one synchronous
-// call and putting it back, the way a predicted Tera is (20-enemy-ai). `activeHypothesisKey()` names the state, so every
-// cache keyed on a turn's numbers (10-damage's, the planner's memo) keeps hypothetical numbers apart from the real ones.
-// Patches: `{ mon, stages: { [stat 1–5]: change } }` (clamped to ±6), `{ mon, status: { effect, … } }`,
-// `{ mon, types: [PokemonType] }` (Soak, Magic Powder) and `{ mon, addedType: PokemonType }` (Forest's Curse,
-// Trick-or-Treat) — the two fields `getTypes` reads (`summonData.types`, `summonData.addedType`), so the game's own
-// damage, STAB and AI code price a retyped mon. Only inside `sandbox`.
-let hypothesisKey = "";
-export const activeHypothesisKey = () => hypothesisKey;
-export const withHypothesis = (patches, fn) => {
-  const undo = [];
-  const prevKey = hypothesisKey;
-  try {
-    const parts = [];
-    for (const { mon, stages, status, types, addedType } of patches) {
-      if (stages && Array.isArray(mon.summonData?.statStages)) {
-        const prev = mon.summonData.statStages;
-        const next = [...prev];
-        for (const [i, n] of Object.entries(stages)) next[i - 1] = Math.max(-6, Math.min(6, (next[i - 1] ?? 0) + n));
-        mon.summonData.statStages = next;
-        undo.push(() => { mon.summonData.statStages = prev; });
-        parts.push(`${mon.id}s${next.join(",")}`);
-      }
-      if (status) {
-        const own = Object.prototype.hasOwnProperty.call(mon, "status"), prev = mon.status;
-        mon.status = status;
-        undo.push(() => { if (own) mon.status = prev; else delete mon.status; });
-        parts.push(`${mon.id}x${status.effect}`);
-      }
-      // A written-on typing is the game's own two fields: `summonData.types` replaces the base types (an empty array
-      // means the species' own), `summonData.addedType` is the third type on top of them.
-      if (types && mon.summonData) {
-        const prev = mon.summonData.types;
-        mon.summonData.types = [...types];
-        undo.push(() => { mon.summonData.types = prev; });
-        parts.push(`${mon.id}t${types.join(",")}`);
-      }
-      if (addedType != null && mon.summonData) {
-        const prev = mon.summonData.addedType;
-        mon.summonData.addedType = addedType;
-        undo.push(() => { mon.summonData.addedType = prev; });
-        parts.push(`${mon.id}+${addedType}`);
-      }
-    }
-    hypothesisKey = parts.length ? `${prevKey}|${parts.join(";")}` : prevKey;
-    return fn();
-  } finally {
-    for (const f of undo.reverse()) f();
-    hypothesisKey = prevKey;
-  }
+// A game call writes `turnData` as it goes — our own multi-hit hitCount/hitsLeft, Tera Shell's moveEffectiveness —
+// and the next call in the same turn would read what the last one left. The turn's sandbox puts all of it back, but
+// only when the whole refresh ends, so a read that writes turnData undoes it as soon as it is done. This is what the
+// old per-call sandboxes were really for; unlike them it nests nothing and touches nothing else.
+export const keepTurnData = (mons, fn) => {
+  const saved = mons.filter(p => p?.turnData).map(p => [p.turnData, { hitCount: p.turnData.hitCount, hitsLeft: p.turnData.hitsLeft, moveEffectiveness: p.turnData.moveEffectiveness }]);
+  try { return fn(); } finally { for (const [td, v] of saved) Object.assign(td, v); }
+};
+
+// ---- Forcing the battle RNG
+// Game code the HUD calls draws from the battle RNG in a few places — the enemy AI's Outrage-type targeting and
+// consecutive Protect, a move's own `applyConditions`. `forcedRng` answers those draws from `pick(range)` instead and
+// records the ranges asked for, so each branch can be evaluated and weighed by its chance rather than sampled;
+// `withPick` sets the answer for one call and hands back the ranges it drew. The sandbox restores the seed either way,
+// so these only decide *which* branch the call takes. Only inside `sandbox`.
+let rngPick = range => (range - 1) >> 1;
+let rngRanges = [];
+export const forcedRng = (s, fn) => {
+  const battle = s.currentBattle;
+  const own = Object.prototype.hasOwnProperty.call(battle, "randSeedInt"), prev = battle.randSeedInt;
+  battle.randSeedInt = (range, min = 0) => (range <= 1 ? min : (rngRanges.push(range), min + rngPick(range)));
+  try { return fn(); } finally { if (own) battle.randSeedInt = prev; else delete battle.randSeedInt; }
+};
+export const withPick = (pick, fn) => {
+  const prevPick = rngPick, prevRanges = rngRanges;
+  rngPick = pick; rngRanges = [];
+  try { return [fn(), rngRanges]; } finally { rngPick = prevPick; rngRanges = prevRanges; }
 };

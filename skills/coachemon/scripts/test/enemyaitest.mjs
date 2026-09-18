@@ -1,6 +1,10 @@
 // Enemy AI prediction (hud/20-enemy-ai.js) against mocked game objects: move distribution for each AI type,
 // KO filter, Encore, move queue, Struggle, target weighting, Protect branches, doubles switch sequencing, and that
 // nothing touches the RNG or runs outside the command phase.
+//
+// Every question goes through a **turn read** (`hud/25-turn.js`), which is the only thing that opens a sandbox,
+// settles a predicted Tera and keys the answers — the same door the panel uses. The scenarios below are therefore
+// also the test of that adapter: one sandbox per read, restored afterwards, AI answers asked pre-Tera.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
@@ -70,9 +74,17 @@ const setup = ({ player, enemy, double = false, phase = "CommandPhase", trainer 
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: () => ({ style: {}, addEventListener() {}, remove() {} }) };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   eval(src);
-  const { enemyMoveDistribution, enemyAction, predictSwitches, aiChain, aiReplay, predictedTeras, withPredictedTera, teraTypeOf } = globalThis.__hud["20-enemy-ai"];
-  return { enemyMoveDistribution, enemyAction, predictSwitches, aiChain, aiReplay, predictedTeras, withPredictedTera, teraTypeOf,
-    sandboxBreaches: globalThis.__hud["01-core"].sandboxBreachCount };
+  const { readTurn } = globalThis.__hud["25-turn"];
+  const ask = fn => readTurn(scene, fn);
+  return {
+    ask,
+    dist: e => ask(t => t.enemyAction(e).moves),
+    action: e => ask(t => t.enemyAction(e)),
+    switches: () => ask(t => t.switches()),
+    replay: (e, target, opts) => ask(t => t.replayAI(e, target, opts)),
+    teraOf: e => ask(t => t.mon(e).tera),
+    sandboxBreaches: globalThis.__hud["01-core"].sandboxBreachCount,
+  };
 };
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} ≠ ${b}`);
 const pOf = (dist, name) => dist.find(r => r.name === name)?.p ?? 0;
@@ -87,12 +99,12 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   const bench = mkMon({ id: "bench", player: true, fieldIndex: null, hp: 100, dmg: { e: { 1: 60 } } });
   const ai = setup({ player: [foe(), bench], enemy: [e] });
   const seed = scene.currentBattle.battleSeedState;
-  const dist = ai.aiReplay(scene, e, bench);
+  const dist = ai.replay(e, bench);
   near(pOf(dist, "D"), 0.83, "setup first");
   near(pOf(dist, "A"), 0.17, "attack after");
   assert.equal(bench.lastDamageCall.move.id, 1, "KO filter asks the bench mon's damage");
   // A hit that KOs the bench mon's HP (or the HP it'll have then) is the only pick.
-  near(pOf(ai.aiReplay(scene, e, bench, { hp: 50 }), "A"), 1, "KO filter at the given HP");
+  near(pOf(ai.replay(e, bench, { hp: 50 }), "A"), 1, "KO filter at the given HP");
   assert.equal(scene.currentBattle.battleSeedState, seed, "no RNG drawn");
   assert.doesNotThrow(() => JSON.stringify(dist));
 }
@@ -105,16 +117,16 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   const bench = mkMon({ id: "bench", player: true, fieldIndex: null, hp: 100 });
   const called = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 99, useMode: 3, targets: [0] }] });
   let ai = setup({ player: [foe(), bench], enemy: [called] });
-  assert.deepEqual(ai.aiReplay(scene, called, bench).map(r => [r.name, r.p, r.id, r.slot]), [["#99", 1, 99, null]],
+  assert.deepEqual(ai.replay(called, bench).map(r => [r.name, r.p, r.id, r.slot]), [["#99", 1, 99, null]],
     "a virtual move outside the moveset is the whole answer");
   // One that *is* in the moveset keeps its name and slot.
   const own = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 1, useMode: 3, targets: [0] }] });
   ai = setup({ player: [foe(), bench], enemy: [own] });
-  assert.deepEqual(ai.aiReplay(scene, own, bench).map(r => [r.name, r.p, r.slot]), [["A", 1, 0]]);
+  assert.deepEqual(ai.replay(own, bench).map(r => [r.name, r.p, r.slot]), [["A", 1, 0]]);
   // An unusable move queued normally is still skipped.
   const normal = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 99, useMode: 1, targets: [0] }] });
   ai = setup({ player: [foe(), bench], enemy: [normal] });
-  assert.ok(ai.aiReplay(scene, normal, bench).every(r => r.name !== "#99"), "a normal queued move must be in the moveset");
+  assert.ok(ai.replay(normal, bench).every(r => r.name !== "#99"), "a normal queued move must be in the moveset");
 }
 
 // The replay's KO filter hides the target's ally's ability only until it has been revealed this wave, as `getNextMove`
@@ -125,12 +137,12 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   const target = mkMon({ id: "me", player: true, fieldIndex: 0 });
   const ally = mkMon({ id: "ally", player: true, fieldIndex: 1, revealed: true });
   let ai = setup({ player: [target, ally], enemy: [e], double: true });
-  ai.aiReplay(scene, e, target);
+  ai.replay(e, target);
   assert.equal(target.lastDamageCall.ignoreAllyAbility, false, "a revealed ally's ability is in the AI's view");
   const hidden = mkMon({ id: "ally", player: true, fieldIndex: 1 });
   const target2 = mkMon({ id: "me", player: true, fieldIndex: 0 });
   ai = setup({ player: [target2, hidden], enemy: [mkMon({ id: "e", player: false, fieldIndex: 0, moves })], double: true });
-  ai.aiReplay(scene, scene.getEnemyParty()[0], target2);
+  ai.replay(scene.getEnemyParty()[0], target2);
   assert.equal(target2.lastDamageCall.ignoreAllyAbility, true, "an unrevealed one is still hidden");
 }
 
@@ -139,7 +151,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, types: [9], moves: [
     { id: 3, name: "C", target: -10 }, { id: 1, name: "A", type: 9, target: -10 }, { id: 4, name: "D", category: 2, user: 5 }, { id: 2, name: "B", target: -20 }] });
   const ai = setup({ player: [foe({ eff: { 1: 2 } })], enemy: [e] });
-  const dist = ai.enemyMoveDistribution(scene, e);
+  const dist = ai.dist(e);
   near(pOf(dist, "A"), 0.67, "SMART A");
   near(pOf(dist, "B"), 0.33 * 0.75, "SMART B");
   near(pOf(dist, "C"), 0.33 * 0.25 * 0.75, "SMART C");
@@ -150,10 +162,10 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.deepEqual(dist[0].targets, [0]);
   assert.equal(dist[0].slot, 1);
   assert.doesNotThrow(() => JSON.stringify(dist));
-  // Cached for the turn: a second call makes no game calls.
-  const before = calls.game;
-  assert.equal(ai.enemyMoveDistribution(scene, e), dist);
-  assert.equal(calls.game, before);
+  // Memoised on the turn: asking the same turn twice makes no further game calls.
+  const twice = ai.ask(t => { const a = t.enemyAction(e).moves; const before = calls.game; return [a, t.enemyAction(e).moves, calls.game - before]; });
+  assert.equal(twice[0], twice[1], "one answer per turn");
+  assert.equal(twice[2], 0, "and no second round of game calls");
 }
 
 // Ties keep moveset order: 10/10/10 → 50%, 25%, 25% in moveset order.
@@ -161,7 +173,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
     { id: 1, name: "X", target: -10 }, { id: 2, name: "Y", target: -10 }, { id: 3, name: "Z", target: -10 }] });
   const ai = setup({ player: [foe()], enemy: [e] });
-  const dist = ai.enemyMoveDistribution(scene, e);
+  const dist = ai.dist(e);
   near(pOf(dist, "X"), 0.5, "tie X"); near(pOf(dist, "Y"), 0.25, "tie Y"); near(pOf(dist, "Z"), 0.25, "tie Z");
 }
 
@@ -172,7 +184,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
     { id: 1, name: "A", type: 9, target: -10 }, { id: 2, name: "B", target: -20 }, { id: 3, name: "C", target: -10 }, { id: 4, name: "S", category: 2, user: 50 }] });
   me.getAttackDamage = spy("getAttackDamage", o => { me.lastDamageCall = o; return { damage: { 2: 100, 3: 120, 1: 99 }[o.move.id] ?? 0 }; });
   const ai = setup({ player: [me], enemy: [e] });
-  const dist = ai.enemyMoveDistribution(scene, e);
+  const dist = ai.dist(e);
   near(pOf(dist, "B"), 0.75, "KO B");
   near(pOf(dist, "C"), 0.25, "KO C");
   assert.equal(pOf(dist, "A") + pOf(dist, "S"), 0);
@@ -186,7 +198,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, aiType: 1, moves: [
     { id: 1, name: "A", target: -30 }, { id: 2, name: "B", target: -20 }, { id: 3, name: "C", target: -1 }] });
   const ai = setup({ player: [foe()], enemy: [e] });
-  const dist = ai.enemyMoveDistribution(scene, e);
+  const dist = ai.dist(e);
   near(pOf(dist, "A"), 5 / 8, "SR A"); near(pOf(dist, "B"), 3 / 8 * 5 / 8, "SR B"); near(pOf(dist, "C"), 9 / 64, "SR C");
 }
 
@@ -194,7 +206,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, aiType: 0, moves: [{ id: 1, name: "A", target: -30 }, { id: 2, name: "B" }, { id: 3, name: "C" }, { id: 4, name: "D" }] });
   const ai = setup({ player: [foe()], enemy: [e] });
-  for (const n of "ABCD") near(pOf(ai.enemyMoveDistribution(scene, e), n), 0.25, `RANDOM ${n}`);
+  for (const n of "ABCD") near(pOf(ai.dist(e), n), 0.25, `RANDOM ${n}`);
 }
 
 // Encore forces the encored move; a usable queued move wins over everything; nothing usable → Struggle.
@@ -202,15 +214,15 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   const moves = [{ id: 1, name: "A", target: -30 }, { id: 2, name: "B", target: -1 }];
   let e = mkMon({ id: "e", player: false, fieldIndex: 0, moves, tags: { ENCORE: { moveId: 2 } } });
   let ai = setup({ player: [foe()], enemy: [e] });
-  assert.deepEqual(ai.enemyMoveDistribution(scene, e).map(r => [r.name, r.p]), [["B", 1]]);
+  assert.deepEqual(ai.dist(e).map(r => [r.name, r.p]), [["B", 1]]);
 
   e = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 2, useMode: 1, targets: [0] }] });
   ai = setup({ player: [foe()], enemy: [e] });
-  assert.deepEqual(ai.enemyMoveDistribution(scene, e).map(r => [r.name, r.p, r.targets]), [["B", 1, [0]]]);
+  assert.deepEqual(ai.dist(e).map(r => [r.name, r.p, r.targets]), [["B", 1, [0]]]);
 
   e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: moves.map(m => ({ ...m, usable: false })) });
   ai = setup({ player: [foe()], enemy: [e] });
-  assert.deepEqual(ai.enemyMoveDistribution(scene, e).map(r => [r.name, r.p, r.slot, r.targets]), [["Struggle", 1, -1, [0]]]);
+  assert.deepEqual(ai.dist(e).map(r => [r.name, r.p, r.slot, r.targets]), [["Struggle", 1, -1, [0]]]);
 }
 
 // Consecutive Protect: the condition passes only when randBattleSeedInt(9) is 0 → branch 1/9 (score 10) vs −20.
@@ -218,7 +230,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
     { id: 1, name: "A", target: -20 }, { id: 182, name: "Protect", category: 2, moveTarget: 0, user: 10, attrs: ["ProtectAttr"], cond: s => s.currentBattle.randSeedInt(9) === 0 }] });
   const ai = setup({ player: [foe()], enemy: [e] });
-  const dist = ai.enemyMoveDistribution(scene, e);
+  const dist = ai.dist(e);
   near(pOf(dist, "Protect"), 0.25 / 9, "Protect");
   near(pOf(dist, "A"), 1 - 0.25 / 9, "A vs Protect");
   assert.equal(scene.currentBattle.battleSeedState, "seed0", "battle seed untouched");
@@ -232,7 +244,7 @@ for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
   const ally = mkMon({ id: "ally", player: false, fieldIndex: 1, moves: [{ id: 9, name: "Z" }] });
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: bi => ({ 0: top, 1: -4, 3: -5 })[bi] }] });
   const ai = setup({ player, enemy: [e, ally], double: true });
-  const [row] = ai.enemyMoveDistribution(scene, e);
+  const [row] = ai.dist(e);
   assert.deepEqual(row.targets, [0, 1]);
   near(row.targetDist[0].p, p0, `target weight ${top}`);
   near(row.targetDist[1].p, 1 - p0, `target weight ${top} (other)`);
@@ -243,7 +255,7 @@ for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 217, name: "Present", target: -10 }, { id: 2, name: "B", target: -5 }] });
   e.moveset[0].getMove().getTargetBenefitScore = () => { Phaser.Math.RND.integerInRange(0, 9); return -10; };
   const ai = setup({ player: [foe()], enemy: [e] });
-  ai.enemyMoveDistribution(scene, e);
+  ai.dist(e);
   assert.equal(Phaser.Math.RND.state(), "!rnd,0");
   assert.equal(ai.sandboxBreaches(), 0);
 }
@@ -253,11 +265,11 @@ for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -30 }, { id: 2, name: "B" }] });
   const ai = setup({ player: [foe()], enemy: [e], phase: "TurnStartPhase", trainer: { getPartyMemberMatchupScores: spy("scores", () => [[1, 9]]), config: {} } });
   const before = calls.game;
-  const dist = ai.enemyMoveDistribution(scene, e);
-  const action = ai.enemyAction(scene, e);
+  const dist = ai.dist(e);
+  const action = ai.action(e);
   assert.equal(calls.game, before, "no game calls outside CommandPhase");
   assert.ok(dist.every(r => r.approx));
-  assert.equal(action.kind, "move");
+  assert.deepEqual([action.switchTo, action.skip], [null, false], "still a move, from the approximation");
 }
 
 // Doubles switch sequencing. Counter 1 → slot 0 (w 0.9: 10·0.9 ≥ 1·3) switches, counter becomes 2 → slot 1
@@ -276,12 +288,12 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   };
   const ai = setup({ player, enemy: [e1, e0, ...bench], double: true, counter: 1, trainer });
   scene.getField = active => [player[0], player[1], e0, e1].filter(x => !active || x);
-  const out = ai.predictSwitches(scene, scene.currentBattle, [e1, e0]);
+  const out = ai.switches();
   assert.deepEqual([...out.keys()].map(p => p.id), expect, `slot 0 best ${slot0Best}`);
   assert.equal(scene.currentBattle.enemySwitchCounter, 1, "counter itself untouched");
-  const a0 = ai.enemyAction(scene, e0);
-  if (expect[0] === "e0") { assert.equal(a0.kind, "switch"); assert.equal(a0.to.id, "b0"); }
-  else { assert.equal(a0.kind, "move"); assert.equal(a0.tera, true); }
+  const a0 = ai.action(e0);
+  if (expect[0] === "e0") assert.equal(a0.switchTo?.id, "b0");
+  else { assert.equal(a0.switchTo, null); assert.equal(a0.tera, true); }
 }
 
 // Commander: a Tatsugiri whose ally is Commanded takes no action (its switch would be skipped too).
@@ -292,8 +304,8 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   tatsu.getAbility = () => ({ id: 279 });
   const trainer = { config: { isBoss: false }, getPartyMemberMatchupScores: () => [[2, 99]], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 2, shouldTera: () => false };
   const ai = setup({ player, enemy: [tatsu, dozo, mkMon({ id: "b", player: false })], double: true, trainer });
-  const act = ai.enemyAction(scene, tatsu);
-  assert.deepEqual([act.kind, act.skip, act.dist], ["move", true, []]);
+  const act = ai.action(tatsu);
+  assert.deepEqual([act.switchTo, act.skip, act.moves], [null, true, []]);
 }
 
 // Predicted Tera: the flag is on for the caller's work and off again afterwards, and every prediction is still
@@ -308,18 +320,18 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
     getPartyMemberMatchupScores: () => [[1, 1]], getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 1,
   };
   const ai = setup({ player: [foe()], enemy: [e, bench], trainer });
-  assert.deepEqual(ai.predictedTeras(scene, scene.currentBattle).map(m => m.id), ["e"]);
 
   const seenAi = [], seenSwitch = [];
   e.getMoveType = mv => (seenAi.push(!!e.isTerastallized), mv.type);
   e.getMatchupScore = () => (seenSwitch.push(!!e.isTerastallized), 1);
-  const inside = ai.withPredictedTera([e], () => {
-    assert.equal(e.isTerastallized, true, "flag on inside");
+  const inside = ai.ask(t => {
+    // The turn has already asked the AI what `e` does — that is how it knows `e` Terastallizes — and sets the flag
+    // for everything the caller then asks. No caller wraps anything.
+    assert.equal(e.isTerastallized, true, "flag on for the caller's work");
     assert.equal(e.summonData.addedType, null, "TeraPhase clears an added type");
-    assert.equal(ai.teraTypeOf(e), "Steel");
-    e.hp = 90; // a fresh turn key, so both predictions are really recomputed under the flag
-    ai.enemyMoveDistribution(scene, e);
-    ai.predictSwitches(scene, scene.currentBattle, [e]);
+    assert.equal(t.mon(e).tera, "Steel");
+    assert.equal(t.enemyAction(e).tera, true, "and it is the foe the trainer Terastallizes");
+    t.switches();
     return "ok";
   });
   assert.equal(inside, "ok");
@@ -327,7 +339,7 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   assert.ok(seenSwitch.length && seenSwitch.every(x => x === false), "switch choice is made pre-Tera");
   assert.equal(e.isTerastallized, undefined, "flag restored");
   assert.equal(e.summonData.addedType, 11, "added type restored");
-  assert.equal(ai.teraTypeOf(e), null, "no Tera predicted outside the wrapper");
+  assert.equal(ai.teraOf(bench), null, "a foe the trainer isn't Terastallizing carries no Tera type");
 }
 
 console.log("enemy AI: all assertions passed");

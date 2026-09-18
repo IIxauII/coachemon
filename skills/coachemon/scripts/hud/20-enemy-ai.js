@@ -3,15 +3,14 @@
 // doubles and later turns need. getNextMove/getNextTargets themselves aren't called. In singles at the command
 // prompt a sandboxed getNextMove would return the move the enemy actually picks, not a sample (§6, #158; verified
 // from source only, not on a live tab).
-const muted = sandbox; // older name, kept for callers
+//
+// **This file calls game code; it never decides when that is allowed.** `25-turn.js` is the only importer of the
+// `scene*` exports (the `@only` lines below): it opens the one sandbox, takes a predicted Tera back off (the AI
+// chose before TeraPhase ran), and keys every answer on the turn. `env` is the scene state these reads need, built
+// once by the turn (25-turn's `sceneEnv`).
+import { SPREAD_TARGETS, TYPES, forcedRng, hasAttr, keepTurnData, withPick } from "./01-core.js";
 
-// The enemy decides after the player's commands and nothing it reads changes while the game waits for a command,
-// so each prediction is computed once per turn key. Outside the command phase the last prediction of the same
-// turn is still what the enemy chose from.
-const aiTurnKey = (s, b) => [b.waveIndex, b.turn, b.enemySwitchCounter, ...s.getField().map(p => p && `${p.id}:${p.hp}`)].join("|");
-const sameTurn = (b, c) => c.wave === b.waveIndex && c.turn === b.turn;
-
-// Game-code helpers (only inside sandbox)
+// Game-code helpers (only inside the turn's sandbox)
 const NO_CONDITION_CHECK = [MoveId.SUCKER_PUNCH, MoveId.UPPER_HAND, MoveId.THUNDERCLAP]; // the AI ignores their conditions
 const STRUGGLE = MoveId.STRUGGLE;
 const aiHas = (mv, name) => (mv.hasAttr ? mv.hasAttr(name) : hasAttr(mv, name));
@@ -22,26 +21,9 @@ const usableFor = (pm, e, ignorePp = false) => {
 };
 const movesetOf = e => (e.getMoveset?.() ?? e.moveset).filter(Boolean);
 
-// Runs `fn` with the battle RNG answering `pick(range)` instead of drawing, and records the ranges asked for. The
-// AI's own path draws for Outrage-type targeting and consecutive Protect; forcing the draw lets each branch be
-// evaluated and weighed by its chance. The sandbox restores the seed either way.
-let rngPick = range => (range - 1) >> 1;
-const forcedRng = (s, fn) => {
-  const battle = s.currentBattle;
-  const own = Object.prototype.hasOwnProperty.call(battle, "randSeedInt"), prev = battle.randSeedInt;
-  battle.randSeedInt = (range, min = 0) => (range <= 1 ? min : (rngRanges.push(range), min + rngPick(range)));
-  try { return fn(); } finally { if (own) battle.randSeedInt = prev; else delete battle.randSeedInt; }
-};
-let rngRanges = [];
-const withPick = (pick, fn) => {
-  const prevPick = rngPick, prevRanges = rngRanges;
-  rngPick = pick; rngRanges = [];
-  try { return [fn(), rngRanges]; } finally { rngPick = prevPick; rngRanges = prevRanges; }
-};
-
 // getMoveTargets (move-utils) as outcomes [{ targets: battler indices, multiple, p }]: one per opponent for
 // RANDOM_NEAR_ENEMY, which draws its target, else a single outcome.
-const aiMoveTargets = (s, e, mv) => {
+const aiMoveTargets = (e, mv) => {
   const holder = { value: mv.moveTarget };
   const opponents = e.getOpponents(false);
   for (const o of opponents) for (const a of mv.getAttrs?.("VariableTargetAttr") ?? []) a.apply(e, o, mv, [holder]);
@@ -68,10 +50,10 @@ const aiMoveTargets = (s, e, mv) => {
 // getNextTargets as a distribution [{ targets, p }]. Single-target moves weigh candidates by target benefit score
 // (sorted desc, shifted so the lowest is 1, cut below half the top) and draw randBattleSeedInt(total) =
 // floor(U·total) against the cumulative weights: candidate i wins when that integer is in [c(i−1), c(i)).
-const aiNextTargets = (s, e, mv) => {
+const aiNextTargets = (env, e, mv) => {
   const dist = [];
-  const active = s.getField(true);
-  for (const mt of aiMoveTargets(s, e, mv)) {
+  const active = env.field;
+  for (const mt of aiMoveTargets(e, mv)) {
     const cands = active.filter(p => mt.targets.includes(p.getBattlerIndex()));
     if (mt.multiple) { dist.push({ targets: cands.map(p => p.getBattlerIndex()), p: mt.p }); continue; }
     const scored = cands.map(p => [p.getBattlerIndex(), mv.getTargetBenefitScore(e, p, mv) * (p.isPlayer() === e.isPlayer() ? 1 : -1)]);
@@ -96,11 +78,11 @@ const aiNextTargets = (s, e, mv) => {
 // Step 7 of getNextMove for one target, as branches [{ score, p }]. A condition that draws (consecutive Protect
 // passes only on a 0) is evaluated with the draw forced both ways and weighted 1/range.
 // `p`: the target when it isn't the mon at field index `bi` (a bench mon the foe would face after a switch).
-const aiTargetScore = (s, e, mv, bi, p = s.getField()[bi]) => {
+export const aiTargetScore = (env, e, mv, bi, p = env.slots[bi]) => {
   let n = mv.getUserBenefitScore(e, p, mv) + mv.getTargetBenefitScore(e, p, mv) * ((bi < BattlerIndex.ENEMY) === e.isPlayer() ? 1 : -1);
   if (Number.isNaN(n)) n = 0;
   const rest = () => {
-    if (s.arena.isMoveWeatherCancelled(e, mv) || s.arena.isMoveTerrainCancelled(e, [bi], mv)) return -20;
+    if (env.s.arena.isMoveWeatherCancelled(e, mv) || env.s.arena.isMoveTerrainCancelled(e, [bi], mv)) return -20;
     if (!isAttackMove(mv)) return n;
     let x = n;
     const eff = p.getMoveEffectiveness(e, mv, !p.waveData.abilityRevealed, undefined, undefined, true);
@@ -121,11 +103,11 @@ const aiTargetScore = (s, e, mv, bi, p = s.getField()[bi]) => {
 
 // A move's options [{ targets, score, p }]: target outcome × condition branches; score = max over its targets
 // (the loop stops at the "attacker" index −1; no targets scores −Infinity like Math.max()).
-const aiMoveOptions = (s, e, mv) => aiNextTargets(s, e, mv).flatMap(({ targets, p }) => {
+const aiMoveOptions = (env, e, mv) => aiNextTargets(env, e, mv).flatMap(({ targets, p }) => {
   let combos = [{ score: -Infinity, p }];
   for (const bi of targets) {
     if (bi === BattlerIndex.ATTACKER) break;
-    const branches = aiTargetScore(s, e, mv, bi);
+    const branches = aiTargetScore(env, e, mv, bi);
     combos = combos.flatMap(c => branches.map(br => ({ score: Math.max(c.score, br.score), p: c.p * br.p })));
   }
   return combos.map(c => ({ targets, ...c }));
@@ -133,15 +115,15 @@ const aiMoveOptions = (s, e, mv) => aiNextTargets(s, e, mv).flatMap(({ targets, 
 
 // Step 5: chance this move passes the KO filter — max-roll, non-crit (unless crit-only/Laser Focus) single-hit
 // damage reaching a foe's HP, with the abilities the AI hasn't seen ignored.
-const aiKoChance = (s, e, pm) => {
+const aiKoChance = (env, e, pm) => {
   const mv = pm.getMove();
   if (mv.moveTarget === MoveTarget.ATTACKER || mv.category === MoveCategory.STATUS) return 0;
-  const f = s.getField();
+  const f = env.slots;
   const crit = aiHas(mv, "CritOnlyAttr") || !!e.getTag("ALWAYS_CRIT");
   let chance = 0;
-  for (const mt of aiMoveTargets(s, e, mv)) {
+  for (const mt of aiMoveTargets(e, mv)) {
     const ko = mt.targets.map(i => f[i]).filter(p => e.isPlayer() !== p.isPlayer()).some(p =>
-      !s.arena.isMoveWeatherCancelled(e, mv) && !s.arena.isMoveTerrainCancelled(e, [p.getBattlerIndex()], mv)
+      !env.s.arena.isMoveWeatherCancelled(e, mv) && !env.s.arena.isMoveTerrainCancelled(e, [p.getBattlerIndex()], mv)
       && (mv.applyConditions(e, p, -1) || NO_CONDITION_CHECK.includes(mv.id))
       && p.getAttackDamage({ source: e, move: mv, ignoreAbility: !p.waveData.abilityRevealed, ignoreSourceAbility: false,
         ignoreAllyAbility: !p.getAlly?.()?.waveData.abilityRevealed, ignoreSourceAllyAbility: false, isCritical: crit, simulated: true }).damage >= p.hp);
@@ -168,7 +150,7 @@ const aiChain = (aiType, scores) => {
 };
 
 // getNextMove, every outcome with its chance. Returns JSON-safe rows sorted by chance.
-const aiDistribution = (s, e) => {
+const aiDistribution = (env, e) => {
   const moveset = movesetOf(e);
   const rows = new Map();
   const typeOf = mv => { try { return TYPES[e.getMoveType(mv)] ?? TYPES[mv.type]; } catch { return TYPES[mv.type]; } };
@@ -192,7 +174,7 @@ const aiDistribution = (s, e) => {
     if (score != null) { r.score = (r.score ?? 0) + score * inPool; r.scoreW += inPool; }
     for (const t of targetDist) for (const bi of t.targets) r.tp.set(bi, (r.tp.get(bi) ?? 0) + p * t.p);
   };
-  const whole = (pm, p = 1) => add(row(pm), p, aiNextTargets(s, e, pm.getMove()));
+  const whole = (pm, p = 1) => add(row(pm), p, aiNextTargets(env, e, pm.getMove()));
 
   // 1. A usable queued move (charging, Outrage lock, …) is used again.
   for (const q of e.getMoveQueue()) {
@@ -219,7 +201,7 @@ const aiDistribution = (s, e) => {
   // 5. KO filter: each move passes with some chance; enumerate which pass.
   let outcomes = [{ passing: [], p: 1 }];
   for (const pm of pool) {
-    const c = aiKoChance(s, e, pm);
+    const c = aiKoChance(env, e, pm);
     outcomes = outcomes.flatMap(o => [
       ...(c > 0 ? [{ passing: [...o.passing, pm], p: o.p * c }] : []),
       ...(c < 1 ? [{ passing: o.passing, p: o.p * (1 - c) }] : []),
@@ -227,7 +209,7 @@ const aiDistribution = (s, e) => {
   }
   // 6–8. Each pool's target/condition outcomes, stable sort by score, then the chain.
   const options = new Map();
-  const optionsOf = pm => { if (!options.has(pm)) options.set(pm, aiMoveOptions(s, e, pm.getMove())); return options.get(pm); };
+  const optionsOf = pm => { if (!options.has(pm)) options.set(pm, aiMoveOptions(env, e, pm.getMove())); return options.get(pm); };
   for (const o of outcomes) {
     const movePool = o.passing.length ? o.passing : pool;
     let combos = [{ picks: [], p: o.p }];
@@ -249,8 +231,8 @@ const aiDistribution = (s, e) => {
 // HP after its hit). The same steps as `aiDistribution` — a queued move, Struggle, a single move, Encore, RANDOM, the
 // KO filter at max roll, the step-7 scores, the chain — with `target` at our slot 0 (`bi`) for every single-target and
 // spread move alike. `hp`: its HP by then. Rows as `enemyMoveDistribution`'s, without targets. Sandboxed per call.
-const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? target.getBattlerIndex() : BattlerIndex.PLAYER } = {}) =>
-  beforeTera(() => sandbox(s, () => forcedRng(s, () => {
+export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOnField?.() ? target.getBattlerIndex() : BattlerIndex.PLAYER } = {}) =>
+  keepTurnData([...env.field, target], () => forcedRng(env.s, () => {
     const moveset = movesetOf(e);
     const rows = new Map();
     // A virtual move the foe has queued need not be in its moveset, so a row with no slot is keyed by move id.
@@ -285,7 +267,7 @@ const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? ta
       ignoreAllyAbility: !target.getAlly?.()?.waveData?.abilityRevealed, ignoreSourceAllyAbility: false, simulated: true };
     const kos = pool.filter(pm => {
       const mv = pm.getMove();
-      if (mv.moveTarget === MoveTarget.ATTACKER || mv.category === MoveCategory.STATUS || s.arena.isMoveWeatherCancelled(e, mv) || s.arena.isMoveTerrainCancelled(e, [bi], mv)) return false;
+      if (mv.moveTarget === MoveTarget.ATTACKER || mv.category === MoveCategory.STATUS || env.s.arena.isMoveWeatherCancelled(e, mv) || env.s.arena.isMoveTerrainCancelled(e, [bi], mv)) return false;
       if (!(mv.applyConditions(e, target, -1) || NO_CONDITION_CHECK.includes(mv.id))) return false;
       const crit = aiHas(mv, "CritOnlyAttr") || !!e.getTag("ALWAYS_CRIT");
       return target.getAttackDamage({ source: e, move: mv, ...aiView, isCritical: crit }).damage >= hp;
@@ -294,10 +276,10 @@ const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? ta
     // A move on its own side (setup, a heal) is scored on the foe itself, as the game does; one with no target at all
     // (an ally move in a single battle, Counter) scores −∞.
     const branchesOf = mv => {
-      const outs = aiMoveTargets(s, e, mv);
+      const outs = aiMoveTargets(e, mv);
       if (outs.every(o => !o.targets.length) || outs.some(o => o.targets.includes(BattlerIndex.ATTACKER))) return [{ score: -Infinity, p: 1 }];
-      if (outs.every(o => o.targets.every(t => (t < BattlerIndex.ENEMY) === e.isPlayer()))) return aiMoveOptions(s, e, mv);
-      return aiTargetScore(s, e, mv, bi, target);
+      if (outs.every(o => o.targets.every(t => (t < BattlerIndex.ENEMY) === e.isPlayer()))) return aiMoveOptions(env, e, mv);
+      return aiTargetScore(env, e, mv, bi, target);
     };
     let combos = [{ picks: [], p: 1 }];
     for (const pm of movePool) {
@@ -311,7 +293,7 @@ const aiReplay = (s, e, target, { hp = target.hp, bi = target.isOnField?.() ? ta
       order.forEach((i, k) => add(movePool[i], c.p * chain[k], c.picks[i].score));
     }
     return done();
-  })));
+  }));
 
 // Rows out: chance-sorted; targets are battler indices (s.getField()[i]) by chance, targetDist the chance of each
 // given this move; score is the AI's average score for the move.
@@ -320,13 +302,14 @@ const finish = rows => [...rows.values()].filter(r => r.p > 1e-12).map(({ tp, sc
   return { ...r, score: score == null ? null : Number.isFinite(score / (scoreW || 1)) ? score / (scoreW || 1) : null, targets: targetDist.map(t => t.battlerIndex), targetDist };
 }).sort((a, b) => b.p - a.p);
 
-// Without game calls (not the command phase, or the functions are missing): the foe's damaging moves ranked by
-// rough damage into their best target, KO moves first, with the SMART chain on those numbers.
-const approxDistribution = e => {
+// Without game calls (the approximate turn, or a mock without the functions): the foe's damaging moves ranked by
+// rough damage into their best target, KO moves first, with the SMART chain on those numbers. `outcomesOf(e, foe)`
+// is the turn's own read of what `e` does to `foe` — no game call of this file's own.
+export const approxDistribution = (e, outcomesOf) => {
   try {
     const best = new Map();
     for (const o of e.getOpponents?.() ?? []) {
-      for (const x of hits(e, o, true)) {
+      for (const x of outcomesOf(e, o)) {
         const cur = best.get(x.name);
         const ko = x.dmg >= o.hp || !!cur?.ko;
         if (!cur || x.dmg > cur.dmg) best.set(x.name, { ...x, ko, target: o.getBattlerIndex?.() });
@@ -344,107 +327,55 @@ const approxDistribution = e => {
   } catch { return []; }
 };
 
-let moveCache = { key: null, wave: null, turn: null, value: new Map() };
 // `[{ name, id, slot /* index in e's moveset, −1 Struggle */, type, cat, spread, p, score, targets, targetDist }]`
-const enemyMoveDistribution = (s, e) => {
-  const b = s.currentBattle;
-  const key = aiTurnKey(s, b);
-  if ((moveCache.key === key || (!awaitingCommand(s) && sameTurn(b, moveCache))) && moveCache.value.has(e.id)) return moveCache.value.get(e.id);
-  if (!awaitingCommand(s)) return approxDistribution(e);
-  if (moveCache.key !== key) moveCache = { key, wave: b.waveIndex, turn: b.turn, value: new Map() };
-  let dist;
-  try { dist = beforeTera(() => sandbox(s, () => forcedRng(s, () => aiDistribution(s, e)))); } catch { dist = approxDistribution(e); }
-  moveCache.value.set(e.id, dist);
-  return dist;
-};
-
-// ---- Predicted Terastallization (spec §7)
-// TeraPhase runs at TurnStart, before any move, so a trainer mon that Terastallizes this turn already defends with
-// [getTeraType()] and gets Tera STAB by the time damage is dealt. The game computes all of that itself once
-// `isTerastallized` is set (TeraPhase also clears an added type), so the planner runs its whole refresh with the
-// flag set on the foes that will Tera, inside its sandbox, and restores it afterwards.
-// The AI's own choices came first (EnemyCommandPhase runs before TeraPhase), so every prediction here is computed
-// with the flag taken back off — `beforeTera`.
-const teraSaved = new Map(); // mon → its pre-Tera { isTerastallized, addedType }
-const teraOn = (e, on) => {
-  e.isTerastallized = on ? true : teraSaved.get(e).isTerastallized;
-  if (e.summonData) e.summonData.addedType = on ? null : teraSaved.get(e).addedType;
-};
-const withPredictedTera = (mons, fn) => {
-  const fresh = mons.filter(e => e && !teraSaved.has(e));
-  for (const e of fresh) {
-    teraSaved.set(e, { isTerastallized: e.isTerastallized, addedType: e.summonData?.addedType ?? null });
-    teraOn(e, true);
-  }
-  try { return fn(); } finally { for (const e of fresh) { teraOn(e, false); teraSaved.delete(e); } }
-};
-const beforeTera = fn => {
-  const on = [...teraSaved.keys()];
-  for (const e of on) teraOn(e, false);
-  try { return fn(); } finally { for (const e of on) teraOn(e, true); }
-};
-const isTeraPredicted = e => teraSaved.has(e);
-const teraTypeOf = e => { try { return isTeraPredicted(e) ? TYPES[e.getTeraType?.()] ?? null : null; } catch { return null; } };
-// The foes that Terastallize before they move this turn: on the field, acting, and the trainer says so.
-const predictedTeras = (s, b) => {
-  if (!b?.trainer?.shouldTera) return [];
-  const active = (s.getEnemyParty?.() ?? []).filter(p => p.isOnField?.()).slice(0, b.double ? 2 : 1);
-  return active.filter(e => { try { return enemyAction(s, e).tera; } catch { return false; } });
-};
+// @only 25-turn, tests: sceneDistribution, sceneReplayAI, sceneSwitches, sceneSendInScore, aiTargetScore
+export const sceneDistribution = (env, e) => keepTurnData(env.field, () => forcedRng(env.s, () => aiDistribution(env, e)));
 
 // Commander: a Tatsugiri inside its Dondozo (and mystery encounters that skip enemy turns) gets its command
 // marked skip, which TurnStartPhase drops — no move and no switch.
-const skipsTurn = (b, e) => !!b.mysteryEncounter?.skipEnemyBattleTurns
-  || !!(b.double && e.getAlly?.()?.getTag?.("COMMANDED") && [e.getAbility?.(), e.hasPassive?.() && e.getPassiveAbility?.()].some(a => a?.id === AbilityId.COMMANDER));
+export const skipsTurn = (env, e) => !!env.mysteryEncounter?.skipEnemyBattleTurns
+  || !!(env.double && e.getAlly?.()?.getTag?.("COMMANDED") && [e.getAbility?.(), e.hasPassive?.() && e.getPassiveAbility?.()].some(a => a?.id === AbilityId.COMMANDER));
 
 // Trainer switch prediction (EnemyCommandPhase): an active mon that isn't trapped or locked into a move switches when
 //   bestBenchScore × (1 − 0.1^(1/enemySwitchCounter)) ≥ avg own matchup score × (boss ? 2 : 3)
 // and sends trainer.getNextSummonIndex(). Slots decide in field order and each decision moves the counter
 // (+1 on a switch, −1 floored at 0 otherwise) before the next slot reads it. Switches resolve before moves, so our
 // attack lands on the switch-in.
-let switchCache = { key: null, wave: null, turn: null, value: new Map() };
-const predictSwitches = (s, b, active) => {
-  const tr = b.trainer;
-  if (!tr?.getPartyMemberMatchupScores) return new Map();
-  const key = aiTurnKey(s, b);
-  if (switchCache.key === key) return switchCache.value;
-  if (!awaitingCommand(s)) return sameTurn(b, switchCache) ? switchCache.value : new Map();
+export const sceneSwitches = (env, active) => {
+  const tr = env.trainer;
   const out = new Map();
-  const enemies = s.getEnemyParty();
+  if (!tr?.getPartyMemberMatchupScores) return out;
+  const enemies = env.foes;
   const slots = [...active].sort((x, y) => (x.getFieldIndex?.() ?? 0) - (y.getFieldIndex?.() ?? 0));
-  let counter = b.enemySwitchCounter ?? 0;
-  beforeTera(() => sandbox(s, () => {
-    for (const e of slots) {
-      let switched = false;
-      try {
-        if (!e.getMoveQueue().length && !e.isTrapped()) {
-          const scores = tr.getPartyMemberMatchupScores(e.trainerSlot, true);
-          if (scores.length) {
-            const own = e.getOpponents().map(o => e.getMatchupScore(o));
-            const avg = own.reduce((t, x) => t + x, 0) / own.length;
-            const best = tr.getSortedPartyMemberMatchupScores(scores)[0][1];
-            const w = 1 - (counter ? 0.1 ** (1 / counter) : 0);
-            if (best * w >= avg * (tr.config.isBoss ? 2 : 3)) {
-              switched = true;
-              const to = enemies[tr.getNextSummonIndex(e.trainerSlot, scores)];
-              if (to && !skipsTurn(b, e) && ![...out.values()].some(v => v.to === to)) out.set(e, { to, ratio: 1 });
-            }
+  let counter = env.enemySwitchCounter ?? 0;
+  for (const e of slots) {
+    let switched = false;
+    try {
+      if (!e.getMoveQueue().length && !e.isTrapped()) {
+        const scores = tr.getPartyMemberMatchupScores(e.trainerSlot, true);
+        if (scores.length) {
+          const own = e.getOpponents().map(o => e.getMatchupScore(o));
+          const avg = own.reduce((t, x) => t + x, 0) / own.length;
+          const best = tr.getSortedPartyMemberMatchupScores(scores)[0][1];
+          const w = 1 - (counter ? 0.1 ** (1 / counter) : 0);
+          if (best * w >= avg * (tr.config.isBoss ? 2 : 3)) {
+            switched = true;
+            const to = enemies[tr.getNextSummonIndex(e.trainerSlot, scores)];
+            if (to && !skipsTurn(env, e) && ![...out.values()].some(v => v.to === to)) out.set(e, { to, ratio: 1 });
           }
         }
-      } catch {}
-      counter = switched ? counter + 1 : Math.max(counter - 1, 0);
-    }
-  }));
-  switchCache = { key, wave: b.waveIndex, turn: b.turn, value: out };
+      }
+    } catch {}
+    counter = switched ? counter + 1 : Math.max(counter - 1, 0);
+  }
   return out;
 };
 
-// `{ kind: "switch", to }` or `{ kind: "move", dist, tera, skip? }`. A switching mon doesn't Terastallize.
-const enemyAction = (s, e) => {
-  const b = s.currentBattle;
-  const active = s.getEnemyParty().filter(p => p.isOnField?.()).slice(0, b.double ? 2 : 1);
-  const sw = predictSwitches(s, b, active).get(e);
-  if (sw) return { kind: "switch", to: sw.to };
-  if (skipsTurn(b, e)) return { kind: "move", dist: [], tera: false, skip: true };
-  return { kind: "move", dist: enemyMoveDistribution(s, e), tera: !!b.trainer?.shouldTera?.(e) };
+// The trainer's send-in score for bench mon `f` against our `me` (Pokemon.getMatchupScore, pinned source): its
+// attack and defence type scores, times min(1, its HP ratio + 1 − ours), ×1.25 when it outspeeds us, else ×0.5 at
+// 20–40 % HP. The whole-fight plan moves our HP over the fight, so the game is asked once with ours at 0 — the HP
+// factor then caps at 1 and the call returns the type scores alone — and the plan puts the HP back itself.
+export const sceneSendInScore = (env, f, me) => {
+  const v = f.getMatchupScore(Object.create(me, { hp: { value: 0 } }));
+  return Number.isFinite(v) ? v : null;
 };

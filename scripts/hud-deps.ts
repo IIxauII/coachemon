@@ -50,12 +50,6 @@ export const HUD_DEPS = {
     `${M}#ShellSideArmCategoryAttr.apply`,
     `${M}#PresentPowerAttr.apply`,
     `src/data/abilities/ab-attrs.ts#FullHpResistTypeAbAttr.apply`,
-    // §14 a typing written onto a mon: the two fields `withHypothesis` sets are the ones the game's own type read
-    // goes through, so a changed read (or a changed write) silently stops a retype from reaching any number.
-    `${P}#Pokemon.getTypes`,
-    `${P}#Pokemon.getBaseTypes`,
-    `${M}#ChangeTypeAttr.apply`,
-    `${M}#AddTypeAttr.apply`,
   ],
 
   /**
@@ -296,17 +290,52 @@ export const HUD_DEPS = {
     `src/enums/move-use-mode.ts#isVirtual`,
     `src/enums/move-use-mode.ts#isIgnorePP`,
     `${P}#Pokemon.getMoveType`,
-    // The prediction is cached per turn key: the enemy decides after our command.
-    `src/phases/turn-init-phase.ts#TurnInitPhase.start`,
-    // Tera: `shouldTera` is called, `teraOn` replays TeraPhase's writes.
-    `src/field/trainer.ts#Trainer.shouldTera`,
-    `src/phases/tera-phase.ts#TeraPhase.end`,
-    // `predictSwitches`.
+    // `sceneSwitches`.
     `${P}#Pokemon.getMatchupScore`,
     `${P}#Pokemon.isTrapped`,
     `src/field/trainer.ts#Trainer.getPartyMemberMatchupScores`,
     `src/field/trainer.ts#Trainer.getSortedPartyMemberMatchupScores`,
     `src/field/trainer.ts#Trainer.getNextSummonIndex`,
+  ],
+
+  /**
+   * §0, §7, §14. The one door between the coach engine and the live battle: it opens the single sandbox, settles the
+   * Tera a trainer is about to use, writes a hypothesis on and off, and makes every per-mon game call the planner,
+   * the fight plan and the catch card used to make for themselves. Nothing below it decides *when* a game call is
+   * allowed, so a change to any of these reaches all three cards at once.
+   */
+  "25-turn.js": [
+    // §7 predicted Tera: `shouldTera` is called, and the flag replays what TeraPhase writes — the added type it
+    // clears included. Damage is asked with it on, the AI with it off (EnemyCommandPhase runs first).
+    `src/field/trainer.ts#Trainer.shouldTera`,
+    `src/phases/tera-phase.ts#TeraPhase.end`,
+    `src/phases/enemy-command-phase.ts#EnemyCommandPhase.start`,
+    // §14 a typing written onto a mon: the two fields `assuming` sets are the ones the game's own type read goes
+    // through, so a changed read (or a changed write) silently stops a retype from reaching any number.
+    `${P}#Pokemon.getTypes`,
+    `${P}#Pokemon.getBaseTypes`,
+    `${M}#ChangeTypeAttr.apply`,
+    `${M}#AddTypeAttr.apply`,
+    // The turn key: the enemy decides after our command, so one read of this moment answers every question in it.
+    `src/phases/turn-init-phase.ts#TurnInitPhase.start`,
+    // The per-mon record. Turn order's priority and bracket, and the effective Speed they are compared at.
+    `${M}#Move.getPriority`,
+    `${M}#Move.getPriorityModifier`,
+    `${P}#Pokemon.getEffectiveStat`,
+    // Whether a status can be put on a mon at all, and the Stealth Rock share a hazard would take off it.
+    `${P}#Pokemon.canSetStatus`,
+    `${P}#Pokemon.getAttackTypeEffectiveness`,
+    `${P}#Pokemon.isOfType`,
+    // The stages a setup move of its own would add: the attribute's own count, the ability multiplier, the ±6 cap.
+    `${M}#StatStageChangeAttr.getLevels`,
+    `src/data/abilities/ab-attrs.ts#StatStageChangeMultiplierAbAttr.apply`,
+    `${P}#Pokemon.getStatStage`,
+    // The weather a move of its own is judged in: an override answers first and beats suppression, so a Cloud Nine
+    // on the field doesn't take it away.
+    `src/data/weather.ts#getEffectiveWeatherForMove`,
+    `src/data/abilities/ab-attrs.ts#PreAttackWeatherOverrideAbAttr.apply`,
+    // The trainer's send-in score, asked once with our HP at 0 so the fight plan can put the HP back itself.
+    `${P}#Pokemon.getMatchupScore`,
   ],
 
   /** §5 turn order and §9 free switches: no safe call returns either, so both are re-derived. */
@@ -318,8 +347,6 @@ export const HUD_DEPS = {
     `${M}#MoveAttr.getTargetBenefitScore`,
     `${M}#Move.getUserBenefitScore`,
     `${M}#Move.getTargetBenefitScore`,
-    `${M}#Move.getPriority`,
-    `${M}#Move.getPriorityModifier`,
     `src/utils/speed-order.ts#sortInSpeedOrder`,
     `src/modifier/modifier.ts#BypassSpeedChanceModifier.apply`,
     `src/phases/turn-start-phase.ts#TurnStartPhase.start`,
@@ -334,20 +361,17 @@ export const HUD_DEPS = {
     `src/phases/turn-end-phase.ts#TurnEndPhase.start`,
     // Status moves as a turn's action: stat stages written onto a mon and read back, paralysis's 1-in-8, toxic's
     // growing chip, a second Protect's odds, and what setup, status, heal and hazard moves do when they land.
-    `${P}#Pokemon.getStatStage`,
     `src/phases/move-phase.ts#MovePhase.checkPara`,
     `src/data/status-effect.ts#Status.incrementTurn`,
     `${M}#ProtectAttr.getCondition`,
     `${M}#ChangeTypeAttr.getCondition`,
     `${M}#AddTypeAttr.getCondition`,
-    `${P}#Pokemon.isOfType`,
     `${M}#StatStageChangeAttr.apply`,
     `${M}#CutHpStatStageBoostAttr.apply`,
     `${M}#StatusEffectAttr.apply`,
     `${M}#HealAttr.apply`,
     `${M}#PlantHealAttr.getWeatherHealRatio`,
     `${M}#SandHealAttr.getWeatherHealRatio`,
-    `src/data/abilities/ab-attrs.ts#StatStageChangeMultiplierAbAttr.apply`,
     `src/data/arena-tag.ts#EntryHazardTag.apply`,
     `src/data/arena-tag.ts#DamagingTrapTag.activateTrap`,
     `src/data/arena-tag.ts#SpikesTag.getDamageHpRatio`,
@@ -374,12 +398,8 @@ export const HUD_DEPS = {
     `${P}#Pokemon.doSetStatus`,
     `src/phases/move-phase.ts#MovePhase.checkSleep`,
     `src/data/abilities/ab-attrs.ts#ReduceStatusEffectDurationAbAttr.apply`,
-    // `statusPlay` reads a weather-boosted heal's fields by name.
+    // `statusPlay` reads a weather-boosted heal's fields by name; the weather it is priced in is the turn's read.
     `${M}#BoostHealAttr.constructor`,
-    // …and the weather it prices that heal in is the move's, not the arena's: an override answers first and beats
-    // suppression, so a Cloud Nine on the field doesn't take it away.
-    `src/data/weather.ts#getEffectiveWeatherForMove`,
-    `src/data/abilities/ab-attrs.ts#PreAttackWeatherOverrideAbAttr.apply`,
   ],
 
   /**

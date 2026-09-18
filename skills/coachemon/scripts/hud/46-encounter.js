@@ -72,7 +72,7 @@ const { encounterModel } = (() => {
   };
 
   // ---- What the rules share
-  const context = (s, me, options) => {
+  const context = (s, me, options, account) => {
     const b = s.currentBattle;
     const wave = b.waveIndex;
     const party = s.getPlayerParty().filter(Boolean);
@@ -115,7 +115,7 @@ const { encounterModel } = (() => {
       return { hard, text };
     };
     const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
-    return { s, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare,
+    return { s, account, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare,
       pre: seeded(1), during: seeded(500), post: seeded(2000) };
   };
 
@@ -309,7 +309,7 @@ const { encounterModel } = (() => {
       const mon = c.me.misc?.pokemon;
       const f = c.foe(0);
       const fight = c.fight(f);
-      const worth = mon ? tryDo(() => catchWorth(c.s, mon, true)) : null;
+      const worth = mon ? tryDo(() => catchWorth(c.account, mon)) : null;
       const wanted = worth && worth.value >= worth.show;
       const name = mon ? `${mon.name}${mon.shiny ? " ★shiny" : ""}` : "it";
       const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
@@ -352,7 +352,7 @@ const { encounterModel } = (() => {
   };
 
   // ---- The model
-  const build = (s, h) => {
+  const build = (s, h, account) => {
     const me = s.currentBattle.mysteryEncounter;
     const party = s.getPlayerParty().filter(Boolean);
     const options = readOptions(s, h, me, party);
@@ -362,7 +362,7 @@ const { encounterModel } = (() => {
     let judged = null;
     // A secondary menu (override options) is not the encounter's own option list: read it, don't judge it.
     if (rule && options.every(o => o.index >= 0)) {
-      try { judged = rule(context(s, me, options)); } catch (e) { notes.push(`couldn't judge this encounter: ${e.message}`); }
+      try { judged = rule(context(s, me, options, account)); } catch (e) { notes.push(`couldn't judge this encounter: ${e.message}`); }
     }
     for (const o of options) {
       const r = judged?.[o.index];
@@ -379,14 +379,14 @@ const { encounterModel } = (() => {
   };
 
   let cache = { key: null, value: null };
-  const encounterModel = (s, h) => {
+  const encounterModel = (s, h, account) => {
     const me = s.currentBattle.mysteryEncounter;
     const party = s.getPlayerParty().filter(Boolean);
     const key = JSON.stringify([s.currentBattle.waveIndex, me.encounterType, tryDo(() => me.getSeedOffset()), s.money,
       h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []), (s.modifiers ?? []).length,
       party.map(p => [p.id, p.level, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
     if (cache.key === key) return cache.value;
-    const value = sandbox(s, () => build(s, h));
+    const value = sandbox(s, () => build(s, h, account));
     cache = { key, value };
     return value;
   };

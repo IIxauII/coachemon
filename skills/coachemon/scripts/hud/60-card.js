@@ -8,11 +8,10 @@
 // `cardSummary` is the plain-text read of a card (`window.__coachHud.summary()`, which probe.js passes through whole
 // to the watcher and to Claude's battle read). Pure and lazy: a draw never calls it. Each card's own wording lives
 // beside its model builder, so a summary change lands in the file that owns the model it reads.
-import { sandbox } from "./01-core.js";
 import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-screens.js";
 import { partyProfile } from "./08-party.js";
-import { predictedTeras, withPredictedTera } from "./20-enemy-ai.js";
-import { battleModel, plannerReady } from "./30-planner.js";
+import { readTurn } from "./25-turn.js";
+import { battleModel } from "./30-planner.js";
 import { teamPlanner } from "./35-team-plan.js";
 import { learnModel, learnSummary } from "./40-learn.js";
 import { catchAdvice } from "./45-catch.js";
@@ -34,29 +33,51 @@ export const slowestKo = sl => (sl.koEach?.length ? Math.max(...sl.koEach) : sl.
 const moveTypesOf = party => partyProfile(party).ourTypes;
 
 // The battle card: the planner's field model, the whole-fight plan (trainer battles) and the catch advice (wild), put
-// together here rather than inside the planner. All three run inside the one sandbox the refresh opens, with the foes
-// that Terastallize this turn flagged, so every damage number is the post-Tera one (spec §7).
+// together here rather than inside the planner. All three read one **turn** (`25-turn.js`), which is the refresh's
+// single sandbox and its single set of answers — every damage number post-Tera, every AI number pre-Tera (spec §7).
 //
 // The order is the authority decided in #113: the fight plan's tables and searches are built first, the ⚔ line reads
 // them to price what a turn costs the rest of the fight, and the plan is then rendered **pinned to the turn the ⚔
 // line chose** — so its step 1 is that action by construction and the panel never shows two answers to one turn.
-const battleCard = (s, b, party, foes) => {
-  const build = () => {
-    const team = b.trainer ? teamPlanner(s, b, party, foes) : null;
-    // `pin` carries the live outcome the ⚔ line picked, so it stays off the card: the card's JSON is the panel's
-    // change signature (98-tick).
-    const { pin, ...model } = battleModel(s, b, party, foes, { team });
-    return {
-      ...model,
-      teamPlan: team ? team.view(pin) : null,
-      catch: b.trainer ? null : catchAdvice(s, b, party, foes),
-      trainer: !!b.trainer,
-      double: !!b.double,
-      moveTypes: moveTypesOf(party),
-    };
+//
+// One turn in, one card out: everything the battle card says about this moment. Exported so a scenario can hand it a
+// turn built from tables (`test/fake-turn.mjs`) and get the card the panel would draw, with no scene in sight.
+// @only tests: composeBattleCard
+export const composeBattleCard = (turn, account) => {
+  const { trainer, double, party } = turn.facts;
+  const team = trainer ? teamPlanner(turn) : null;
+  // `pin` carries the live outcome the ⚔ line picked, so it stays off the card: the card's JSON is the panel's
+  // change signature (98-tick).
+  const { pin, ...model } = battleModel(turn, { team });
+  const card = {
+    ...model,
+    teamPlan: team ? team.view(pin) : null,
+    catch: trainer ? null : catchAdvice(turn, account),
+    trainer: !!trainer,
+    double,
+    moveTypes: moveTypesOf(party.filter(p => p && p.hp > 0)),
   };
-  return plannerReady(s) ? sandbox(s, () => withPredictedTera(predictedTeras(s, b), build)) : build();
+  card.verdict = verdictOf(card);
+  return card;
 };
+
+// ---- The hold
+// The panel refreshes every second and a turn's answers cost real work, so a card built from a live turn is kept
+// until the turn itself moves on: a new wave, a new turn, or an enemy switch. **Not HP** — HP runs down through the
+// turn's animations, and a hold keyed on it would collapse on the first hit and rebuild the card from a scene that
+// is halfway through resolving. An approximate card is never kept, and never replaces a live one. This is the one
+// hold in the engine: 30-planner, 35-team-plan and 45-catch each used to keep their own, on keys that disagreed.
+let held = { key: null, card: null };
+const battleCard = (s, account) => readTurn(s, turn => {
+  const { wave, turn: t, enemySwitchCounter, party, foes } = turn.facts;
+  // Who is in the battle as well as when it is: a wave 1 turn 1 of a new run is not the last run's, and a mon's
+  // faint changes the field without changing the turn.
+  const key = [wave, t, enemySwitchCounter, ...party.map(p => p?.id), "|", ...foes.map(f => f?.id)].join(",");
+  if (held.key === key && held.card) return held.card;
+  const card = composeBattleCard(turn, account);
+  if (turn.live) held = { key, card };
+  return card;
+});
 
 // ---- The battle verdict
 // Danger the panel flags on our side: the 💀 / ⚠ tags on field slots and on mons a switch takes out. `after`: a ⚠ that
@@ -79,7 +100,9 @@ const verdictOf = m => (easyWave(m) ? "easy" : m.trainer ? "trainer"
 
 // ---- Reading the screen
 // The card on show, or null when there is nothing to coach (mid-reload, the title screen, a wave with no field).
-export const readCard = s => {
+// `account`: the run's own data, read once a refresh by 98-tick (dex, starter table, party, the event's shiny
+// multiplier). The catch card and the Mystery Encounter card weigh a mon by it, and neither is turn state.
+export const readCard = (s, account) => {
   if (!s?.ui) return null;
   const handler = s.ui.getHandler();
   const starters = starterScreen(s);
@@ -100,13 +123,13 @@ export const readCard = s => {
   } else if (biomeScreen(s, handler)) {
     card = biomeModel(s, handler);
   } else if (encounterScreen(s, handler)) {
-    card = encounterModel(s, handler);
+    card = encounterModel(s, handler, account);
   } else {
     const b = s.currentBattle;
     const foes = s.getEnemyParty().filter(p => p.hp > 0);
     const party = s.getPlayerParty().filter(p => p.hp > 0);
     if (!b || !foes.length || !party.length) return null;
-    card = battleCard(s, b, party, foes);
+    card = battleCard(s, account);
   }
   if (!card) return null;
   card.wave = s.currentBattle?.waveIndex ?? null;
@@ -115,7 +138,6 @@ export const readCard = s => {
     // The rewards card builds its own (it spends against it); every other card just draws it.
     card.ahead ??= aheadModel(s);
   }
-  if (card.kind === "battle") card.verdict = verdictOf(card);
   return card;
 };
 

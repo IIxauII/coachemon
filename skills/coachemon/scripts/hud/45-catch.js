@@ -45,362 +45,333 @@
 //   party (6) asks to release someone or let it go.
 // A failed throw uses the turn: the ball command resolves before any move, then the foe acts.
 //
-// Every game method call here (hasAbility, getRootSpeciesId, gameMode checks, the planner's damage code) runs inside
-// `sandbox` while the game waits for a command; otherwise field reads and the approximations stand in.
+// What this card reads, and from where. The **turn** (`25-turn.js`) answers everything about the battle — the
+// damage that would lower the foe's HP, what it does back, the mode flags a ball is refused on, the ball counts.
+// The **account** is the run's own data, read once a refresh by 98-tick and handed in: the dex, the starter table,
+// the party and the event's shiny multiplier. Neither is the scene, so this file has no path to it — and
+// 46-encounter, which judges a mon a Mystery Encounter hands over with no battle turn at all, reads `catchWorth`
+// with the same account.
+import { abilitiesOf, hasAttr, iconOf, typesOf } from "./01-core.js";
+import { damagingTypes, partyProfile, partyReasons } from "./08-party.js";
+import { koCurve, koTurn, useOf } from "./10-damage.js";
+import { exchange, threatFrom } from "./30-planner.js";
 
-const { captureChance, catchAdvice, catchWorth } = (() => {
-  const BALLS = [
-    { id: PokeballType.POKEBALL, ball: "Poké Ball", short: "PB", key: "pb", mult: 1 },
-    { id: PokeballType.GREAT_BALL, ball: "Great Ball", short: "GB", key: "gb", mult: 1.5 },
-    { id: PokeballType.ULTRA_BALL, ball: "Ultra Ball", short: "UB", key: "ub", mult: 2 },
-    { id: PokeballType.ROGUE_BALL, ball: "Rogue Ball", short: "RB", key: "rb", mult: 3 },
-    { id: PokeballType.MASTER_BALL, ball: "Master Ball", short: "MB", key: "mb", mult: -1 },
-  ];
-  const STATUS_MULT = {
-    [StatusEffect.POISON]: 1.5, [StatusEffect.TOXIC]: 1.5, [StatusEffect.PARALYSIS]: 1.5,
-    [StatusEffect.SLEEP]: 2.5, [StatusEffect.FREEZE]: 2.5, [StatusEffect.BURN]: 1.5,
-  };
+const BALLS = [
+  { id: PokeballType.POKEBALL, ball: "Poké Ball", short: "PB", key: "pb", mult: 1 },
+  { id: PokeballType.GREAT_BALL, ball: "Great Ball", short: "GB", key: "gb", mult: 1.5 },
+  { id: PokeballType.ULTRA_BALL, ball: "Ultra Ball", short: "UB", key: "ub", mult: 2 },
+  { id: PokeballType.ROGUE_BALL, ball: "Rogue Ball", short: "RB", key: "rb", mult: 3 },
+  { id: PokeballType.MASTER_BALL, ball: "Master Ball", short: "MB", key: "mb", mult: -1 },
+];
+const STATUS_MULT = {
+  [StatusEffect.POISON]: 1.5, [StatusEffect.TOXIC]: 1.5, [StatusEffect.PARALYSIS]: 1.5,
+  [StatusEffect.SLEEP]: 2.5, [StatusEffect.FREEZE]: 2.5, [StatusEffect.BURN]: 1.5,
+};
 
-  // P(catch) for one throw, in closed form. `critFactor`: the multiplier in front of min(255, w)/6 (0 = no criticals).
-  const captureChance = ({ maxHp, hp, catchRate, ball, status = 0, shiny = false, critFactor = 0, shinyMult = 2 }) => {
-    const mult = BALLS[ball]?.mult ?? 1;
-    if (mult === -1) return 1;
-    const m = 3 * maxHp;
-    const w = Math.round((m - 2 * hp) * catchRate * mult / m * (STATUS_MULT[status] ?? 1) * (shiny ? shinyMult : 1));
-    if (w >= 255) return 1;
-    if (!(w > 0)) return 0;
-    const shake = Math.min(1, Math.round(65536 / (255 / w) ** 0.1875) / 65536);
-    const crit = Math.max(0, Math.min(256, Math.floor(critFactor * Math.min(255, w) / 6))) / 256;
-    return crit * shake + (1 - crit) * shake ** 3;
-  };
+// P(catch) for one throw, in closed form. `critFactor`: the multiplier in front of min(255, w)/6 (0 = no criticals).
+export const captureChance = ({ maxHp, hp, catchRate, ball, status = 0, shiny = false, critFactor = 0, shinyMult = 2 }) => {
+  const mult = BALLS[ball]?.mult ?? 1;
+  if (mult === -1) return 1;
+  const m = 3 * maxHp;
+  const w = Math.round((m - 2 * hp) * catchRate * mult / m * (STATUS_MULT[status] ?? 1) * (shiny ? shinyMult : 1));
+  if (w >= 255) return 1;
+  if (!(w > 0)) return 0;
+  const shake = Math.min(1, Math.round(65536 / (255 / w) ** 0.1875) / 65536);
+  const crit = Math.max(0, Math.min(256, Math.floor(critFactor * Math.min(255, w) / 6))) / 256;
+  return crit * shake + (1 - crit) * shake ** 3;
+};
 
-  const big = x => { try { return BigInt(x ?? 0); } catch { return 0n; } };
-  const call = (live, fn, fallback) => { if (!live) return fallback; try { return fn(); } catch { return fallback; } };
+const big = x => { try { return BigInt(x ?? 0); } catch { return 0n; } };
+const tryDo = (fn, fallback = null) => { try { const v = fn(); return v === undefined ? fallback : v; } catch { return fallback; } };
+const isShinyMon = p => tryDo(() => p.isShiny(), !!p.shiny || (!!p.fusionSpecies && !!p.fusionShiny));
 
-  // The event's shiny multiplier, when 47-biome has found the game's event manager.
-  const shinyMultOf = () => {
-    try { return (typeof gameEvents === "function" ? gameEvents()?.getShinyCatchMultiplier() : null) ?? 2; } catch { return 2; }
-  };
-  const isShinyMon = (p, live) => call(live, () => p.isShiny(), !!p.shiny || (!!p.fusionSpecies && !!p.fusionShiny));
+const critFactorOf = (turn, account) => {
+  const { mode, modifiers } = turn.facts;
+  if (mode.noCriticalCatch) return 0;
+  let n = 0;
+  for (const d of Object.values(account.dex)) if (d && big(d.caughtAttr)) n++;
+  const charm = modifiers.find(x => x.constructor?.name === "CriticalCatchChanceBoosterModifier");
+  const boost = charm ? 1.5 + (charm.getStackCount?.() ?? charm.stackCount ?? 1) / 2 : 1;
+  return boost * (mode.daily || n > 800 ? 2.5 : n > 600 ? 2 : n > 400 ? 1.5 : n > 200 ? 1 : n > 100 ? 0.5 : 0);
+};
 
-  const critFactorOf = (s, live) => {
-    const mode = s.gameMode ?? {};
-    if (call(live, () => mode.isFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === Challenges.FRESH_START && c.value > 0))) return 0;
-    let n = 0;
-    for (const d of Object.values(s.gameData?.dexData ?? {})) if (d && big(d.caughtAttr)) n++;
-    const charm = (s.modifiers ?? []).find(x => x.constructor?.name === "CriticalCatchChanceBoosterModifier");
-    const boost = charm ? 1.5 + (charm.getStackCount?.() ?? charm.stackCount ?? 1) / 2 : 1;
-    return boost * (mode.isDaily || n > 800 ? 2.5 : n > 600 ? 2 : n > 400 ? 1.5 : n > 200 ? 1 : n > 100 ? 0.5 : 0);
-  };
+// Why no ball can be thrown at all this battle, or null.
+const battleBlocked = (turn, account, active) => {
+  const { trainer, battleType, mysteryEncounter, biomeId, mode } = turn.facts;
+  if (trainer || battleType === BattleType.TRAINER) return "trainer";
+  if (battleType === BattleType.MYSTERY_ENCOUNTER && !mysteryEncounter?.catchAllowed) return "mystery encounter";
+  if (biomeId === BiomeId.END && (battleType ?? BattleType.WILD) === BattleType.WILD) {
+    const dex = account.dex;
+    const uncaught = active.some(f => !big(dex[f.species?.speciesId]?.caughtAttr));
+    // starterData holds an entry for every starter (initStarterData), so its keys are getAllStarters().
+    const missing = Object.keys(account.starter).filter(id => !big(dex[id]?.caughtAttr)).length;
+    if ((mode.classic && !mode.finalBoss && uncaught) || (mode.freshStart && !mode.finalBoss) || (mode.endless && !mode.endlessMinorBoss)) return "End biome";
+    if ((mode.classic && mode.finalBoss && missing > 1) || (mode.freshStart && mode.finalBoss) || (mode.endless && mode.endlessMinorBoss)
+      || (mode.daily && mode.waveFinal && !mode.dailyBossCatchable)) return "final boss";
+  }
+  return null;
+};
 
-  // Why no ball can be thrown at all this battle, or null.
-  const battleBlocked = (s, b, active, live) => {
-    if (!b || b.trainer || b.battleType === BattleType.TRAINER) return "trainer";
-    if (b.battleType === BattleType.MYSTERY_ENCOUNTER && !b.mysteryEncounter?.catchAllowed) return "mystery encounter";
-    if (s.arena?.biomeId === BiomeId.END && (b.battleType ?? BattleType.WILD) === BattleType.WILD) {
-      const mode = s.gameMode ?? {}, w = b.waveIndex, dex = s.gameData?.dexData ?? {};
-      // The run's last wave is the same rule in all three modes (classic 200, Daily 50, an Endless minor boss every
-      // 250), so where the game's own check can't be called the run calendar answers instead of a rule written here.
-      const lastWave = () => waveKind(s, w) === "final";
-      const final = call(live, () => mode.isBattleClassicFinalBoss(w), !!mode.isClassic && lastWave());
-      const freshStart = call(live, () => mode.isFullFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === Challenges.FRESH_START && c.value === 1));
-      const endlessBoss = call(live, () => mode.isEndlessMinorBoss(w), !!mode.isEndless && lastWave());
-      const dailyFinal = !!mode.isDaily && call(live, () => mode.isWaveFinal(w), lastWave());
-      const uncaught = active.some(f => !big(dex[f.species?.speciesId]?.caughtAttr));
-      // starterData holds an entry for every starter (initStarterData), so its keys are getAllStarters().
-      const missing = Object.keys(s.gameData?.starterData ?? {}).filter(id => !big(dex[id]?.caughtAttr)).length;
-      if ((mode.isClassic && !final && uncaught) || (freshStart && !final) || (mode.isEndless && !endlessBoss)) return "End biome";
-      if ((mode.isClassic && final && missing > 1) || (freshStart && final) || (mode.isEndless && endlessBoss)
-        || (dailyFinal && !mode.dailyConfig?.boss?.catchable)) return "final boss";
+// A boss with bars left refuses every ball but a Master Ball — except where `CommandPhase.handleBallCommand`
+// refuses that one too: the classic final boss of a **challenge** run (`hasAnyChallenges()`, which is every
+// challenge run — the mode copies the whole challenge list, values and all), and a Daily final boss its event seed
+// marks catchable (`isCatchableDailyBoss`), the one boss the End-biome rule above lets a ball through to at all.
+const masterBlocked = turn => {
+  const { mode } = turn.facts;
+  if (mode.finalBoss) return mode.anyChallenges;
+  return mode.daily && mode.waveFinal && !!mode.dailyBossCatchable;
+};
+
+// ---- Team value
+// What the foe is worth to *this* party is the party profile's call (`08-party.js`), so the biome card judging the
+// same species reaches the same verdict. What each reason is worth in a ball is this card's own: `w` below.
+const teamReasons = (account, foe, limited) => {
+  const all = account.party.filter(Boolean);
+  const out = [];
+  if (limited) return { out: [{ kind: "team", text: "Limited Catch: won't join the party", w: 0 }], replace: null };
+  if (!all.length) return { out, replace: null };
+
+  const profile = partyProfile(all);
+  // A wild foe is a candidate with a known moveset: its own damaging types are what it would bring to the team.
+  const reasons = partyReasons(profile, { species: foe.species, fusion: foe.fusionSpecies ?? null, level: foe.level,
+    types: typesOf(foe), abilities: abilitiesOf(foe), moveTypes: damagingTypes(foe) });
+  // Its line is already on the team: a second one adds nothing, whatever else it brings.
+  if (reasons.some(r => r.kind === "dupe")) return { out, replace: null };
+
+  const show = x => (x.estimated ? `~${x.final}` : `${x.final}`);
+  for (const r of reasons) {
+    if (r.kind === "covers") out.push({ kind: "team", text: `covers ${r.types.slice(0, 2).join("/")} weakness`, w: r.types.length > 1 ? 1.5 : 1 });
+    if (r.kind === "hole") out.push({ kind: "team", text: `hits ${r.types.slice(0, 3).join("/")} (no one else does)`, w: 0.5 });
+    if (r.kind === "upgrade") {
+      out.push({ kind: "team", w: 2,
+        text: `stronger than ${r.against.name} (${r.estimated || r.against.estimated ? "final " : ""}BST ${show(r)} vs ${show(r.against)})` });
     }
-    return null;
-  };
+  }
+  // A full party makes room by releasing someone: name who, if the catch is a team upgrade at all.
+  const weakest = profile.weakest?.mon ?? null;
+  const replace = all.length >= 6 && out.length && weakest ? { icon: iconOf(weakest), name: weakest.name } : null;
+  if (replace) out.push({ kind: "team", text: `party full: replaces ${weakest.name}`, w: 0 });
+  return { out, replace };
+};
 
-  // A boss with bars left refuses every ball but a Master Ball — except where `CommandPhase.handleBallCommand`
-  // refuses that one too: the classic final boss of a **challenge** run (`hasAnyChallenges()`, which is every
-  // challenge run — the mode copies the whole challenge list, values and all), and a Daily final boss its event seed
-  // marks catchable (`isCatchableDailyBoss`), the one boss the End-biome rule above lets a ball through to at all.
-  const masterBlocked = (s, b, live) => {
-    const mode = s.gameMode ?? {}, w = b.waveIndex;
-    const lastWave = () => waveKind(s, w) === "final";
-    if (call(live, () => mode.isBattleClassicFinalBoss(w), !!mode.isClassic && lastWave())) {
-      return call(live, () => mode.hasAnyChallenges(), (mode.challenges ?? []).length > 0);
+// The line a species belongs to, for the dex reasons below: a starter unlock and "already using one" are about
+// the root, not the form in front of you. The team side asks the party profile instead.
+const rootOf = p => tryDo(() => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
+
+// ---- Account value (dex, starter unlocks, abilities, IVs, shinies). Pure reads of gameData.
+const IV_TOTAL = 30, IV_STAT = 15;
+const accountReasons = (account, foe) => {
+  const out = [];
+  const sp = foe.species;
+  if (!sp) return out;
+  const dex = account.dex[sp.speciesId];
+  const caught = big(dex?.caughtAttr);
+  const root = rootOf(foe);
+  const rootDex = account.dex[root];
+  const rare = sp.legendary || sp.subLegendary || sp.mythical;
+  if (!caught) {
+    out.push({ kind: "account", text: root !== sp.speciesId && !big(rootDex?.caughtAttr) ? "new species + starter" : "new species", w: 3 });
+    if (rare) out.push({ kind: "account", text: sp.mythical ? "mythical" : "legendary", w: 2 });
+  }
+  // getDexAttr(): gender, shiny, variant, form bits.
+  const variant = foe.variant ?? 0;
+  const attr = (foe.gender === Gender.GENDERLESS || foe.gender == null ? 0n : foe.gender === Gender.FEMALE ? 8n : 4n)
+    | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
+  // Candy follows isShiny() (a shiny fusion half counts) with the base variant; the dex's shiny bit only the base.
+  const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
+  // A Daily run pays candy only for a catch that adds a dex attribute of its own (`!isDaily || hasNewAttr`, and the
+  // candy goes to the root of the line, so the root's entry is the one that decides): a shiny already in the dex
+  // with this gender, variant and form is worth the same shiny it always was, and no candy.
+  const candyText = account.daily && (big(rootDex?.caughtAttr) & attr) === attr ? "" : ` · +${candy} candy`;
+  if (foe.shiny) {
+    if (caught && !(caught & 2n)) out.push({ kind: "account", text: `first shiny${candyText}`, w: 3 });
+    else if (caught && (caught & attr & 112n) !== (attr & 112n)) out.push({ kind: "account", text: `new shiny variant${candyText}`, w: 2.5 });
+    else out.push({ kind: "account", text: `shiny${candyText}`, w: 2 });
+  } else if (isShinyMon(foe)) out.push({ kind: "account", text: `shiny fusion${candyText}`, w: 1.5 });
+  if (caught && (caught & (attr & ~127n)) === 0n) out.push({ kind: "account", text: "new form", w: 2 });
+
+  const ab = foe.abilityIndex ?? 0;
+  const bit = ab !== 1 || sp.ability2 ? 1 << ab : AbilityAttr.ABILITY_HIDDEN;
+  // Unknown root (no game call to find it): don't guess.
+  const known = account.starter[root]?.abilityAttr;
+  if (known != null && !(known & bit)) {
+    if (ab === 2 && sp.abilityHidden) out.push({ kind: "account", text: "new hidden ability", w: 2 });
+    else if (caught) out.push({ kind: "account", text: "new ability", w: 0.5 });
+  }
+
+  const dexIvs = rootDex?.ivs;
+  if (big(rootDex?.caughtAttr) && Array.isArray(dexIvs) && Array.isArray(foe.ivs)) {
+    const gains = foe.ivs.map((v, i) => Math.max(0, v - (dexIvs[i] ?? 0)));
+    const total = gains.reduce((t, x) => t + x, 0);
+    // Early dex IVs are low, so small gains come with nearly every wild mon: only a big one counts, and it's only
+    // worth a card for a line we're using.
+    const using = account.party.some(p => p && rootOf(p) === root);
+    if (total >= IV_TOTAL || Math.max(...gains) >= IV_STAT) {
+      out.push({ kind: "account", text: `IVs +${total} on ${gains.filter(Boolean).length} stats${using ? " (on the team)" : ""}`, w: using ? 2 : 1 });
     }
-    const dailyFinal = !!mode.isDaily && call(live, () => mode.isWaveFinal(w), lastWave());
-    return dailyFinal && !!mode.dailyConfig?.boss?.catchable;
-  };
+  }
+  return out;
+};
 
-  // ---- Team value
-  // What the foe is worth to *this* party is the party profile's call (`08-party.js`), so the biome card judging the
-  // same species reaches the same verdict. What each reason is worth in a ball is this card's own: `w` below.
-  const teamReasons = (s, foe, b) => {
-    const all = (s.getPlayerParty?.() ?? []).filter(Boolean);
-    const out = [];
-    const limited = (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.LIMITED_CATCH && c.value > 0) && b.waveIndex % 10 !== 1;
-    if (limited) return { out: [{ kind: "team", text: "Limited Catch: won't join the party", w: 0 }], replace: null };
-    if (!all.length) return { out, replace: null };
-
-    const profile = partyProfile(all);
-    // A wild foe is a candidate with a known moveset: its own damaging types are what it would bring to the team.
-    const reasons = partyReasons(profile, { species: foe.species, fusion: foe.fusionSpecies ?? null, level: foe.level,
-      types: typesOf(foe), abilities: abilitiesOf(foe), moveTypes: damagingTypes(foe) });
-    // Its line is already on the team: a second one adds nothing, whatever else it brings.
-    if (reasons.some(r => r.kind === "dupe")) return { out, replace: null };
-
-    const show = x => (x.estimated ? `~${x.final}` : `${x.final}`);
-    for (const r of reasons) {
-      if (r.kind === "covers") out.push({ kind: "team", text: `covers ${r.types.slice(0, 2).join("/")} weakness`, w: r.types.length > 1 ? 1.5 : 1 });
-      if (r.kind === "hole") out.push({ kind: "team", text: `hits ${r.types.slice(0, 3).join("/")} (no one else does)`, w: 0.5 });
-      if (r.kind === "upgrade") {
-        out.push({ kind: "team", w: 2,
-          text: `stronger than ${r.against.name} (${r.estimated || r.against.estimated ? "final " : ""}BST ${show(r)} vs ${show(r.against)})` });
-      }
-    }
-    // A full party makes room by releasing someone: name who, if the catch is a team upgrade at all.
-    const weakest = profile.weakest?.mon ?? null;
-    const replace = all.length >= 6 && out.length && weakest ? { icon: iconOf(weakest), name: weakest.name } : null;
-    if (replace) out.push({ kind: "team", text: `party full: replaces ${weakest.name}`, w: 0 });
-    return { out, replace };
-  };
-
-  // The line a species belongs to, for the dex reasons below: a starter unlock and "already using one" are about
-  // the root, not the form in front of you. The team side asks the party profile instead.
-  const rootOf = (p, live) => call(live, () => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
-
-  // ---- Account value (dex, starter unlocks, abilities, IVs, shinies). Pure reads of gameData.
-  const IV_TOTAL = 30, IV_STAT = 15;
-  const accountReasons = (s, foe, live) => {
-    const out = [];
-    const sp = foe.species;
-    const gd = s.gameData;
-    if (!sp || !gd?.dexData) return out;
-    const dex = gd.dexData[sp.speciesId];
-    const caught = big(dex?.caughtAttr);
-    const root = rootOf(foe, live);
-    const rootDex = gd.dexData[root];
-    const rare = sp.legendary || sp.subLegendary || sp.mythical;
-    if (!caught) {
-      out.push({ kind: "account", text: root !== sp.speciesId && !big(rootDex?.caughtAttr) ? "new species + starter" : "new species", w: 3 });
-      if (rare) out.push({ kind: "account", text: sp.mythical ? "mythical" : "legendary", w: 2 });
-    }
-    // getDexAttr(): gender, shiny, variant, form bits.
-    const variant = foe.variant ?? 0;
-    const attr = (foe.gender === Gender.GENDERLESS || foe.gender == null ? 0n : foe.gender === Gender.FEMALE ? 8n : 4n)
-      | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
-    // Candy follows isShiny() (a shiny fusion half counts) with the base variant; the dex's shiny bit only the base.
-    const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
-    // A Daily run pays candy only for a catch that adds a dex attribute of its own (`!isDaily || hasNewAttr`, and the
-    // candy goes to the root of the line, so the root's entry is the one that decides): a shiny already in the dex
-    // with this gender, variant and form is worth the same shiny it always was, and no candy.
-    const candyText = !!s.gameMode?.isDaily && (big(rootDex?.caughtAttr) & attr) === attr ? "" : ` · +${candy} candy`;
-    if (foe.shiny) {
-      if (caught && !(caught & 2n)) out.push({ kind: "account", text: `first shiny${candyText}`, w: 3 });
-      else if (caught && (caught & attr & 112n) !== (attr & 112n)) out.push({ kind: "account", text: `new shiny variant${candyText}`, w: 2.5 });
-      else out.push({ kind: "account", text: `shiny${candyText}`, w: 2 });
-    } else if (isShinyMon(foe, live)) out.push({ kind: "account", text: `shiny fusion${candyText}`, w: 1.5 });
-    if (caught && (caught & (attr & ~127n)) === 0n) out.push({ kind: "account", text: "new form", w: 2 });
-
-    const ab = foe.abilityIndex ?? 0;
-    const bit = ab !== 1 || sp.ability2 ? 1 << ab : AbilityAttr.ABILITY_HIDDEN;
-    // Unknown root (no game call to find it): don't guess.
-    const known = gd.starterData?.[root]?.abilityAttr;
-    if (known != null && !(known & bit)) {
-      if (ab === 2 && sp.abilityHidden) out.push({ kind: "account", text: "new hidden ability", w: 2 });
-      else if (caught) out.push({ kind: "account", text: "new ability", w: 0.5 });
-    }
-
-    const dexIvs = rootDex?.ivs;
-    if (big(rootDex?.caughtAttr) && Array.isArray(dexIvs) && Array.isArray(foe.ivs)) {
-      const gains = foe.ivs.map((v, i) => Math.max(0, v - (dexIvs[i] ?? 0)));
-      const total = gains.reduce((t, x) => t + x, 0);
-      // Early dex IVs are low, so small gains come with nearly every wild mon: only a big one counts, and it's only
-      // worth a card for a line we're using.
-      const using = (s.getPlayerParty?.() ?? []).some(p => p && rootOf(p, live) === root);
-      if (total >= IV_TOTAL || Math.max(...gains) >= IV_STAT) {
-        out.push({ kind: "account", text: `IVs +${total} on ${gains.filter(Boolean).length} stats${using ? " (on the team)" : ""}`, w: using ? 2 : 1 });
-      }
-    }
-    return out;
-  };
-
-  // ---- Ending the encounter
-  // Our fastest KO of `foe` from the field against what it deals meanwhile. `p`: the throw's chance with a cheap ball.
-  // Chip damage over the whole fight that makes it dangerous, as a share of our HP: only a fight that wears us down to a
-  // KO. A slow fight that costs HP a heal fixes isn't worth a ball and a party slot.
-  const CHIP = 1;
-  // Without the planner: the `hits` record that KOs `target` soonest by the KO pacing core, then the hardest hitting.
-  const fastestHit = (a, target, foe = false) => hits(a, target, foe).filter(x => x.dmg > 0)
-    .map(x => ({ x, turns: koTurn(koCurve(target, useOf(x)).by) }))
-    .reduce((b, y) => (!b || y.turns < b.turns || (y.turns === b.turns && y.x.dmg > b.x.dmg) ? y : b), null);
-  const escapeReason = (s, foe, party, p) => {
-    if (!(p > 0)) return null;
-    let best = null;
-    for (const me of party.filter(x => x.isOnField?.())) {
-      let turns = 9, first = stat(me, Stat.SPD) >= stat(foe, Stat.SPD) ? 1 : 0, theyFirst = 0;
-      const fallback = () => fastestHit(me, foe)?.turns ?? 9;
-      try {
-        if (typeof exchange === "function") {
-          for (const pm of (me.moveset ?? []).filter(Boolean)) {
-            const mv = pm.getMove?.();
-            if (!mv || mv.category === MoveCategory.STATUS) continue;
-            const x = exchange(s, me, pm, foe);
-            if (x && (x.turnsWe < turns || (x.turnsWe === turns && x.pTheyKoFirst < theyFirst))) {
-              turns = x.turnsWe; theyFirst = x.pTheyKoFirst ?? 0; first = x.pFirst ?? first;
-            }
-          }
-        } else turns = fallback();
-      } catch { turns = fallback(); }
-      let dmg = 0, pKo = 0;
-      try {
-        const t = typeof threatFrom === "function" ? threatFrom(s, foe, me) : null;
-        if (t) { dmg = t.expected ?? 0; pKo = t.pKo ?? 0; }
-        else { dmg = fastestHit(foe, me, true)?.x.dmg ?? 0; pKo = dmg >= me.hp ? 1 : 0; }
-      } catch {}
-      // Foe turns before our finishing blow, against failed throws (each gives it one).
-      const hitsFight = turns >= 9 ? 9 : Math.max(0, turns - first);
-      const hitsThrow = (1 - p) / p;
-      const danger = theyFirst >= 0.3 || (pKo >= 0.5 && turns >= 2) || dmg * hitsFight >= me.hp * CHIP;
-      if (danger && hitsThrow + 0.25 < hitsFight && (!best || hitsFight - hitsThrow > best.gain)) {
-        best = { gain: hitsFight - hitsThrow, me, turns, pKo };
-      }
-    }
-    if (!best) return null;
-    const how = best.turns >= 9 ? "we can't KO it" : `${best.turns} turns to KO`;
-    return { kind: "escape", text: `ends it: ${how}${best.pKo >= 0.5 ? `, it KOs ${best.me.name}` : ""}`, w: 0 };
-  };
-
-  // A throw's odds rise as HP falls, but a hit that KOs it ends the catch: name what brings it down safely. False Swipe
-  // and Hold Back (SurviveDamageAttr) leave at least 1 HP; otherwise the strongest attack on the field that can't KO it.
-  const RISKY_KO = 0.05;
-  const lowerHpTip = (s, foe, party) => {
-    const field = party.filter(x => x.isOnField?.());
-    const by = me => (field.length > 1 ? `${me.name}'s ` : "");
-    for (const me of field) {
+// ---- Ending the encounter
+// Our fastest KO of `foe` from the field against what it deals meanwhile. `p`: the throw's chance with a cheap ball.
+// Chip damage over the whole fight that makes it dangerous, as a share of our HP: only a fight that wears us down to a
+// KO. A slow fight that costs HP a heal fixes isn't worth a ball and a party slot.
+const CHIP = 1;
+// Without the planner: the `hits` record that KOs `target` soonest by the KO pacing core, then the hardest hitting.
+const fastestHit = (turn, a, target) => turn.outcomes(a, target).filter(x => x.dmg > 0)
+  .map(x => ({ x, turns: koTurn(koCurve(turn.mon(target), useOf(x)).by) }))
+  .reduce((b, y) => (!b || y.turns < b.turns || (y.turns === b.turns && y.x.dmg > b.x.dmg) ? y : b), null);
+const escapeReason = (turn, foe, party, p) => {
+  if (!(p > 0)) return null;
+  let best = null;
+  for (const me of party.filter(x => x.isOnField?.())) {
+    let turns = 9, first = turn.mon(me).speed >= turn.mon(foe).speed ? 1 : 0, theyFirst = 0;
+    try {
       for (const pm of (me.moveset ?? []).filter(Boolean)) {
-        let mv = null;
-        try { mv = pm.getMove(); } catch {}
-        if (mv && hasAttr(mv, "SurviveDamageAttr") && (pm.getMovePp?.() ?? 1) - (pm.ppUsed ?? 0) > 0) return `lower its HP with ${by(me)}${pm.getName()}`;
+        const mv = pm.getMove?.();
+        if (!mv || mv.category === MoveCategory.STATUS) continue;
+        const x = exchange(turn, me, pm, foe);
+        if (x && (x.turnsWe < turns || (x.turnsWe === turns && x.pTheyKoFirst < theyFirst))) {
+          turns = x.turnsWe; theyFirst = x.pTheyKoFirst ?? 0; first = x.pFirst ?? first;
+        }
       }
+    } catch { turns = fastestHit(turn, me, foe)?.turns ?? 9; }
+    let dmg = 0, pKo = 0;
+    try {
+      const t = threatFrom(turn, foe, me);
+      if (t) { dmg = t.expected ?? 0; pKo = t.pKo ?? 0; }
+      else { dmg = fastestHit(turn, foe, me)?.x.dmg ?? 0; pKo = dmg >= me.hp ? 1 : 0; }
+    } catch {}
+    // Foe turns before our finishing blow, against failed throws (each gives it one).
+    const hitsFight = turns >= 9 ? 9 : Math.max(0, turns - first);
+    const hitsThrow = (1 - p) / p;
+    const danger = theyFirst >= 0.3 || (pKo >= 0.5 && turns >= 2) || dmg * hitsFight >= me.hp * CHIP;
+    if (danger && hitsThrow + 0.25 < hitsFight && (!best || hitsFight - hitsThrow > best.gain)) {
+      best = { gain: hitsFight - hitsThrow, me, turns, pKo };
     }
-    let safe = null, risky = false;
-    for (const me of field) {
-      let outs = [];
-      try { outs = moveOutcomes(s, me, foe); } catch {}
-      for (const o of outs) {
-        if (!(o.expected > 0)) continue;
-        if (o.pKo > RISKY_KO) risky = true;
-        else if (!safe || o.expected > safe.o.expected) safe = { me, o };
-      }
+  }
+  if (!best) return null;
+  const how = best.turns >= 9 ? "we can't KO it" : `${best.turns} turns to KO`;
+  return { kind: "escape", text: `ends it: ${how}${best.pKo >= 0.5 ? `, it KOs ${best.me.name}` : ""}`, w: 0 };
+};
+
+// A throw's odds rise as HP falls, but a hit that KOs it ends the catch: name what brings it down safely. False Swipe
+// and Hold Back (SurviveDamageAttr) leave at least 1 HP; otherwise the strongest attack on the field that can't KO it.
+const RISKY_KO = 0.05;
+const lowerHpTip = (turn, foe, party) => {
+  const field = party.filter(x => x.isOnField?.());
+  const by = me => (field.length > 1 ? `${me.name}'s ` : "");
+  for (const me of field) {
+    for (const pm of (me.moveset ?? []).filter(Boolean)) {
+      let mv = null;
+      try { mv = pm.getMove(); } catch {}
+      if (mv && hasAttr(mv, "SurviveDamageAttr") && (pm.getMovePp?.() ?? 1) - (pm.ppUsed ?? 0) > 0) return `lower its HP with ${by(me)}${pm.getName()}`;
     }
-    if (safe) return `lower its HP with ${by(safe.me)}${safe.o.name} (won't KO)`;
-    return risky ? "careful: our attacks can KO it" : "lower its HP first";
-  };
-
-  // ---- Ball choice
-  // The dearest ball a catch of this value deserves: Poké/Great for nothing special (Ultra when there are plenty),
-  // Ultra for a solid catch, Rogue for a valuable one, Master only for something rare.
-  const maxBallFor = (value, counts) => (value >= 5 ? PokeballType.MASTER_BALL : value >= 2.5 ? PokeballType.ROGUE_BALL : value >= 1.5 || counts[PokeballType.ULTRA_BALL] >= 5 ? PokeballType.ULTRA_BALL : PokeballType.GREAT_BALL);
-  const GOOD = 0.6;
-  // The least value that earns a card: one real reason (new species/form, hidden ability, shiny, clear upgrade, a big
-  // IV gain on the team's line) or two lesser ones together.
-  const SHOW = 2;
-  const pickBall = (chance, maxId) => {
-    const allowed = chance.filter(c => c.id <= maxId && c.count > 0 && c.p > 0);
-    return allowed.find(c => c.p >= GOOD) ?? allowed.reduce((b, c) => (!b || c.p > b.p ? c : b), null);
-  };
-
-  const targetAdvice = (s, b, foe, party, crit, counts, multi, live, noMaster) => {
-    const bossLocked = !!foe.isBoss?.() && (foe.bossSegmentIndex ?? 0) >= 1
-      && !call(live, () => foe.hasAbility(AbilityId.WONDER_GUARD, false, true), abilitiesOf(foe).includes("Wonder Guard"));
-    // With bars left this boss refuses every ball there is, Master included.
-    const sealed = bossLocked && noMaster;
-    const chance = BALLS.filter(x => counts[x.id] > 0).map(x => ({
-      id: x.id, ball: x.ball, short: x.short, key: x.key, count: counts[x.id],
-      p: bossLocked && (sealed || x.id < PokeballType.MASTER_BALL) ? 0 : Math.round(captureChance({
-        maxHp: foe.getMaxHp(), hp: foe.hp, catchRate: foe.species?.catchRate ?? 0, ball: x.id,
-        status: foe.status?.effect ?? 0, shiny: isShinyMon(foe, live), shinyMult: shinyMultOf(), critFactor: crit,
-      }) * 1000) / 1000,
-    }));
-
-    const team = teamReasons(s, foe, b);
-    const reasons = [...accountReasons(s, foe, live), ...team.out];
-    let value = reasons.reduce((t, r) => t + r.w, 0);
-    const cheap = pickBall(chance, value >= 1.5 ? maxBallFor(value, counts) : maxBallFor(0, counts));
-    const escape = !multi && cheap ? escapeReason(s, foe, party, cheap.p) : null;
-    if (escape) reasons.push(escape);
-    const best = pickBall(chance, maxBallFor(value, counts));
-    const p = best?.p ?? 0;
-    const hp = foe.hp / foe.getMaxHp();
-
-    // Below SHOW nothing is worth a ball (a covered weakness or a small IV gain alone isn't): skip, and skips aren't drawn.
-    let verdict = "skip";
-    if ((value >= 2.5 && p >= 0.3) || (value >= SHOW && p >= 0.5) || (escape && p >= 0.5)) verdict = "catch";
-    else if (value >= SHOW || (escape && p >= 0.25)) verdict = "maybe";
-
-    // Ending a dangerous fight leads when it's there: it's what makes a throw urgent this turn.
-    const rank = r => (r.kind === "escape" ? 9 : r.w);
-    const main = reasons.filter(r => r.w > 0 || r.kind === "escape").sort((x, y) => rank(y) - rank(x)).map(r => r.text);
-    // What blocks a throw goes first; how to raise a middling chance goes last.
-    const blockers = [], tips = [];
-    if (multi && verdict !== "skip") { verdict = "maybe"; blockers.push("KO the other foe first"); }
-    if (sealed && verdict !== "skip") blockers.push("break its bars first — no ball works on this boss");
-    else if (bossLocked && verdict !== "skip") blockers.push(counts[PokeballType.MASTER_BALL] > 0 && value >= 5 ? "Master Ball, or break its bars first" : "break its bars first — only a Master Ball works now");
-    else if (verdict !== "skip" && p < GOOD) {
-      if (hp > 0.5) tips.push(lowerHpTip(s, foe, party));
-      else if (!foe.status?.effect) {
-        // The wave's status-cure tokens (EnemyStatusEffectHealChanceModifier): 2.5 % a stack at each turn end.
-        const cure = (s.enemyModifiers ?? []).filter(m => m.constructor?.name === "EnemyStatusEffectHealChanceModifier")
-          .reduce((t, m) => t + 2.5 * (m.getStackCount?.() ?? 1), 0);
-        tips.push(`sleep/paralyse it for better odds${cure ? ` (it cures itself ${Math.min(100, cure)}%/turn)` : ""}`);
-      }
+  }
+  let safe = null, risky = false;
+  for (const me of field) {
+    for (const o of turn.outcomes(me, foe)) {
+      if (!(o.expected > 0)) continue;
+      if (o.pKo > RISKY_KO) risky = true;
+      else if (!safe || o.expected > safe.o.expected) safe = { me, o };
     }
-    let why;
-    if (verdict === "skip") why = reasons.some(r => r.w > 0) ? `low chance, ${main.slice(0, 2).join(", ")}` : p < 0.3 ? "low chance, nothing new" : "nothing new";
-    else why = [...blockers, ...main.slice(0, 2), ...tips].join(", ");
+  }
+  if (safe) return `lower its HP with ${by(safe.me)}${safe.o.name} (won't KO)`;
+  return risky ? "careful: our attacks can KO it" : "lower its HP first";
+};
 
-    return {
-      icon: iconOf(foe), name: foe.name, hp: Math.round(hp * 100),
-      chance: chance.map(({ id, ...c }) => c),
-      best: best && p > 0 ? { ball: best.ball, short: best.short, key: best.key, count: best.count, p } : null,
-      reasons: reasons.map(({ kind, text }) => ({ kind, text })),
-      replace: team.replace, boss: bossLocked, verdict, why,
-    };
+// ---- Ball choice
+// The dearest ball a catch of this value deserves: Poké/Great for nothing special (Ultra when there are plenty),
+// Ultra for a solid catch, Rogue for a valuable one, Master only for something rare.
+const maxBallFor = (value, counts) => (value >= 5 ? PokeballType.MASTER_BALL : value >= 2.5 ? PokeballType.ROGUE_BALL : value >= 1.5 || counts[PokeballType.ULTRA_BALL] >= 5 ? PokeballType.ULTRA_BALL : PokeballType.GREAT_BALL);
+const GOOD = 0.6;
+// The least value that earns a card: one real reason (new species/form, hidden ability, shiny, clear upgrade, a big
+// IV gain on the team's line) or two lesser ones together.
+const SHOW = 2;
+const pickBall = (chance, maxId) => {
+  const allowed = chance.filter(c => c.id <= maxId && c.count > 0 && c.p > 0);
+  return allowed.find(c => c.p >= GOOD) ?? allowed.reduce((b, c) => (!b || c.p > b.p ? c : b), null);
+};
+
+const targetAdvice = (turn, account, foe, party, crit, counts, multi, noMaster) => {
+  const bossLocked = !!foe.isBoss?.() && (foe.bossSegmentIndex ?? 0) >= 1
+    && !(turn.live ? turn.mon(foe).hasAbility(AbilityId.WONDER_GUARD) : abilitiesOf(foe).includes("Wonder Guard"));
+  // With bars left this boss refuses every ball there is, Master included.
+  const sealed = bossLocked && noMaster;
+  const chance = BALLS.filter(x => counts[x.id] > 0).map(x => ({
+    id: x.id, ball: x.ball, short: x.short, key: x.key, count: counts[x.id],
+    p: bossLocked && (sealed || x.id < PokeballType.MASTER_BALL) ? 0 : Math.round(captureChance({
+      maxHp: foe.getMaxHp(), hp: foe.hp, catchRate: foe.species?.catchRate ?? 0, ball: x.id,
+      status: foe.status?.effect ?? 0, shiny: isShinyMon(foe), shinyMult: account.shinyCatchMultiplier, critFactor: crit,
+    }) * 1000) / 1000,
+  }));
+
+  const team = teamReasons(account, foe, turn.facts.mode.limitedCatch && turn.facts.wave % 10 !== 1);
+  const reasons = [...accountReasons(account, foe), ...team.out];
+  let value = reasons.reduce((t, r) => t + r.w, 0);
+  const cheap = pickBall(chance, value >= 1.5 ? maxBallFor(value, counts) : maxBallFor(0, counts));
+  const escape = !multi && cheap ? escapeReason(turn, foe, party, cheap.p) : null;
+  if (escape) reasons.push(escape);
+  const best = pickBall(chance, maxBallFor(value, counts));
+  const p = best?.p ?? 0;
+  const hp = foe.hp / foe.getMaxHp();
+
+  // Below SHOW nothing is worth a ball (a covered weakness or a small IV gain alone isn't): skip, and skips aren't drawn.
+  let verdict = "skip";
+  if ((value >= 2.5 && p >= 0.3) || (value >= SHOW && p >= 0.5) || (escape && p >= 0.5)) verdict = "catch";
+  else if (value >= SHOW || (escape && p >= 0.25)) verdict = "maybe";
+
+  // Ending a dangerous fight leads when it's there: it's what makes a throw urgent this turn.
+  const rank = r => (r.kind === "escape" ? 9 : r.w);
+  const main = reasons.filter(r => r.w > 0 || r.kind === "escape").sort((x, y) => rank(y) - rank(x)).map(r => r.text);
+  // What blocks a throw goes first; how to raise a middling chance goes last.
+  const blockers = [], tips = [];
+  if (multi && verdict !== "skip") { verdict = "maybe"; blockers.push("KO the other foe first"); }
+  if (sealed && verdict !== "skip") blockers.push("break its bars first — no ball works on this boss");
+  else if (bossLocked && verdict !== "skip") blockers.push(counts[PokeballType.MASTER_BALL] > 0 && value >= 5 ? "Master Ball, or break its bars first" : "break its bars first — only a Master Ball works now");
+  else if (verdict !== "skip" && p < GOOD) {
+    if (hp > 0.5) tips.push(lowerHpTip(turn, foe, party));
+    else if (!foe.status?.effect) {
+      // The wave's status-cure tokens (EnemyStatusEffectHealChanceModifier): 2.5 % a stack at each turn end.
+      const cure = turn.facts.enemyModifiers.filter(m => m.constructor?.name === "EnemyStatusEffectHealChanceModifier")
+        .reduce((t, m) => t + 2.5 * (m.getStackCount?.() ?? 1), 0);
+      tips.push(`sleep/paralyse it for better odds${cure ? ` (it cures itself ${Math.min(100, cure)}%/turn)` : ""}`);
+    }
+  }
+  let why;
+  if (verdict === "skip") why = reasons.some(r => r.w > 0) ? `low chance, ${main.slice(0, 2).join(", ")}` : p < 0.3 ? "low chance, nothing new" : "nothing new";
+  else why = [...blockers, ...main.slice(0, 2), ...tips].join(", ");
+
+  return {
+    icon: iconOf(foe), name: foe.name, hp: Math.round(hp * 100),
+    chance: chance.map(({ id, ...c }) => c),
+    best: best && p > 0 ? { ball: best.ball, short: best.short, key: best.key, count: best.count, p } : null,
+    reasons: reasons.map(({ kind, text }) => ({ kind, text })),
+    replace: team.replace, boss: bossLocked, verdict, why,
   };
+};
 
-  let cache = { key: null, live: false, value: null };
-  const catchAdvice = (s, b, party, foes) => {
-    if (!b || !foes?.length || !party?.length) return null;
-    const live = awaitingCommand(s);
-    const counts = BALLS.map(x => s.pokeballCounts?.[x.id] ?? 0);
-    // The event multiplier arrives with the async table read, possibly mid-turn.
-    const key = [b.waveIndex, b.turn, counts.join(","), shinyMultOf(), ...party.map(p => `${p.id}:${p.hp}`),
-      ...foes.map(f => `${f.id}:${f.hp}:${f.status?.effect ?? 0}:${f.bossSegmentIndex ?? ""}:${f.isOnField?.() ? 1 : 0}`)].join("|");
-    // Numbers from the game's own code stay until the turn changes; outside the command phase don't replace them.
-    if (cache.key === key && (cache.live || !live)) return cache.value;
-    const build = () => {
-      const onField = foes.filter(f => f.isOnField?.());
-      const active = onField.length ? onField : foes.slice(0, 1);
-      if (battleBlocked(s, b, active, live) || !counts.some(Boolean)) return null;
-      const crit = critFactorOf(s, live);
-      const multi = active.length > 1;
-      const noMaster = masterBlocked(s, b, live);
-      const targets = active.map(f => targetAdvice(s, b, f, party, crit, counts, multi, live, noMaster));
-      // Two foes out: no ball can be thrown yet, so only speak up for one worth keeping alive.
-      if (multi && targets.every(t => t.verdict === "skip")) return null;
-      return { targets };
-    };
-    const value = live ? sandbox(s, build) : build();
-    cache = { key, live, value };
-    return value;
-  };
+export const catchAdvice = (turn, account) => {
+  const party = turn.facts.party.filter(p => p && p.hp > 0);
+  const foes = turn.facts.foes.filter(f => f && f.hp > 0);
+  if (!foes.length || !party.length) return null;
+  const counts = BALLS.map(x => turn.facts.balls(x.id));
+  const onField = foes.filter(f => f.isOnField?.());
+  const active = onField.length ? onField : foes.slice(0, 1);
+  if (battleBlocked(turn, account, active) || !counts.some(Boolean)) return null;
+  const crit = critFactorOf(turn, account);
+  const multi = active.length > 1;
+  const noMaster = masterBlocked(turn);
+  const targets = active.map(f => targetAdvice(turn, account, f, party, crit, counts, multi, noMaster));
+  // Two foes out: no ball can be thrown yet, so only speak up for one worth keeping alive.
+  if (multi && targets.every(t => t.verdict === "skip")) return null;
+  return { targets };
+};
 
-  // What owning `foe` is worth with no ball in the picture: the account and team reasons a throw is weighed on, for a
-  // mon a Mystery Encounter hands over. `live`: game calls allowed (inside `sandbox`).
-  const catchWorth = (s, foe, live) => {
-    const b = s.currentBattle ?? { waveIndex: 0 };
-    const reasons = [...accountReasons(s, foe, live), ...teamReasons(s, foe, b).out];
-    return { value: reasons.reduce((t, r) => t + r.w, 0), reasons: reasons.map(r => r.text), show: SHOW };
-  };
-
-  return { captureChance, catchAdvice, catchWorth };
-})();
+// What owning `foe` is worth with no ball in the picture: the account and team reasons a throw is weighed on, for a
+// mon a Mystery Encounter hands over. No turn: this is the account's question, not the battle's.
+export const catchWorth = (account, foe) => {
+  const reasons = [...accountReasons(account, foe), ...teamReasons(account, foe, false).out];
+  return { value: reasons.reduce((t, r) => t + r.w, 0), reasons: reasons.map(r => r.text), show: SHOW };
+};

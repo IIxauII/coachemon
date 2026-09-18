@@ -86,13 +86,29 @@ globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() 
 globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitOn, koCurve, koTurn, koTurns, useOf, koChanceAt } = globalThis.__hud["10-damage"];
-const { sandbox, gameVersionOf, versionAtLeast } = globalThis.__hud["01-core"];
+const D = globalThis.__hud["10-damage"];
+const { hitOn, koTurn, koTurns, useOf, koChanceAt } = D;
+const { gameVersionOf, versionAtLeast } = globalThis.__hud["01-core"];
+const { readTurn } = globalThis.__hud["25-turn"];
+
+// 10-damage's game-calling side is `25-turn`'s to drive: it opens the one sandbox, settles Tera and keys the
+// answers. So each question here is asked through a turn read over the scene it is about — `at(...)` builds a scene
+// variant per weather or field, and each gets its own turn. What is left of 10-damage is pure and called directly.
+const ask = (s, fn) => readTurn(s, fn);
+const moveOutcome = (s, ...a) => ask(s, t => t.outcome(...a));
+const moveOutcomes = (s, ...a) => ask(s, t => t.outcomes(...a));
+const statusMoves = (s, ...a) => ask(s, t => t.statusMoves(...a));
+const endOfTurnHp = (p, { s = scene, ...opts } = {}) => ask(s, t => t.turnEndHp(p, opts));
+const hits = (a, d) => ask(scene, t => t.outcomes(a, d));
+// The per-mon record the KO pacing math takes: read once from a turn, then plain data and pure closures.
+const recOf = (p, s = scene) => ask(s, t => t.mon(p));
+const stateOf = (p, hp, bar) => D.stateOf(recOf(p).facts, hp, bar);
+const koCurve = (target, use, opts) => D.koCurve(recOf(target), use, opts);
 
 // Expected damage of one hit whose max roll is `max`: the mean of the 16 rolls 85..100 %.
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, `${msg}: ${a} vs ${b}`);
-// Fresh field for each case; the turn number keys the damage cache.
+// Fresh field for each case; the turn number is part of the turn's key.
 let turn = 1;
 const setup = (atk, def) => { party.length = 0; enemies.length = 0; party.push(atk); enemies.push(def); scene.currentBattle.turn = turn++; };
 
@@ -235,14 +251,68 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.equal(scene.currentBattle.battleSeedState, "seed");
   assert.deepEqual([JSON.stringify(atk.turnData), JSON.stringify(def.turnData)], turnData);
   assert.equal(Object.prototype.hasOwnProperty.call(scene.phaseManager, "pushPhase"), false);
-  const again = damageCalls;
-  moveOutcome(scene, atk, def, pmOf(tripleAxel));
-  assert.equal(damageCalls, again, "cached per turn");
-  // Inside a caller's sandbox (a whole HUD refresh) the restore waits for that sandbox to close, but game code run
-  // in between — the enemy AI scoring its moves — must already see the user's turnData untouched.
+  // Memoised on the turn, not in the module: the same turn asked twice makes one set of game calls.
+  const twice = ask(scene, t => {
+    const a = t.outcome(atk, def, pmOf(tripleAxel));
+    const before = damageCalls;
+    return [a === t.outcome(atk, def, pmOf(tripleAxel)), damageCalls - before];
+  });
+  assert.deepEqual(twice, [true, 0], "one answer per turn, asked once");
+  // The refresh opens one sandbox, so its restore waits for the whole turn — but a read that writes the user's
+  // multi-hit turnData puts it back itself, so the next question in the same turn (the enemy AI scoring its moves)
+  // already sees it untouched.
   setup(atk, def);
-  const during = sandbox(scene, () => { moveOutcome(scene, atk, def, pmOf(tripleAxel)); return JSON.stringify(atk.turnData); });
+  const during = ask(scene, t => { t.outcome(atk, def, pmOf(tripleAxel)); return JSON.stringify(atk.turnData); });
   assert.equal(during, turnData[0], "multi-hit turnData restored before the next game call");
+}
+
+// The turn is the seam: a hypothesis is written on for the question and taken back off, and a turn that has been
+// handed back is dead rather than reading a scene that has moved on.
+{
+  const atk = mon("a", { player: false }), def = mon("target");
+  setup(atk, def);
+  const stages = () => def.summonData.statStages.join();
+  const before = stages();
+  const seen = ask(scene, t => {
+    const t2 = t.assuming([{ mon: def, stages: { 2: 2 } }]);
+    // The question is answered on the state being assumed…
+    const asked = [];
+    const orig = def.getAttackDamage;
+    def.getAttackDamage = o => { asked.push(stages()); return orig.call(def, o); };
+    t2.outcome(atk, def, pmOf(tripleAxel));
+    def.getAttackDamage = orig;
+    // …and the real turn is untouched by it, before and after.
+    return { asked, after: stages() };
+  });
+  assert.ok(seen.asked.length && seen.asked.every(s => s !== before), `the assumption is on while the game is asked (${seen.asked})`);
+  assert.equal(seen.after, before, "and off again as soon as it has answered");
+  assert.equal(stages(), before, "the mon is left as it was found");
+
+  let dead;
+  ask(scene, t => { dead = t; return null; });
+  assert.throws(() => dead.outcomes(atk, def), /after its callback/, "a turn used after its callback throws");
+}
+
+// The speed tie the turn's own shuffle has already drawn (#178.5): the queue is [ours, theirs], a Fisher-Yates draw
+// of 0 swaps it, and Trick Room reverses the sorted pair, swapping it back. Reading it moves no RNG, because
+// `executeWithSeedOffset` restores the stream itself — which is why it is a turn read and not a caller's.
+{
+  const ours = mon("ours", { player: true }), theirs = mon("theirs", { player: false });
+  setup(ours, theirs);
+  const tieScene = (over = {}) => ({ ...scene, waveSeed: "w", executeWithSeedOffset: fn => fn(),
+    currentBattle: { ...scene.currentBattle, double: false, turn: 3 }, ...over });
+  const tie = (draw, over) => {
+    const rnd = Phaser.Math.RND;
+    const had = Object.prototype.hasOwnProperty.call(rnd, "integerInRange"), orig = rnd.integerInRange;
+    rnd.integerInRange = () => draw;
+    try { return ask(tieScene(over), t => t.speedTie(ours, theirs)); }
+    finally { if (had) rnd.integerInRange = orig; else delete rnd.integerInRange; }
+  };
+  assert.equal(tie(1), 1, "the queue's order stands: ours first");
+  assert.equal(tie(0), 0, "the shuffle swaps them: theirs first");
+  assert.equal(tie(0, { arena: { tags: [], getTag: t => t === "TRICK_ROOM" } }), 1, "Trick Room reverses the tie too");
+  assert.equal(tie(0, { currentBattle: { ...scene.currentBattle, double: true, turn: 3 } }), null, "doubles: nothing settles it");
+  assert.equal(ask(tieScene({ executeWithSeedOffset: undefined }), t => t.speedTie(ours, theirs)), null, "nor a scene that can't be asked");
 }
 
 // hits keeps the old record shape, backed by the game path: expected for ours, max for a foe's.

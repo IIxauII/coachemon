@@ -85,11 +85,24 @@ globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() 
 globalThis.setInterval = () => 0;
 eval(bundle("hud", { expose: true }));
 const hud = globalThis.__hud;
-const E = { moveOutcome: hud["10-damage"].moveOutcome, moveOutcomes: hud["10-damage"].moveOutcomes, enemyMoveDistribution: hud["20-enemy-ai"].enemyMoveDistribution, threatFrom: hud["30-planner"].threatFrom,
-  exchange: hud["30-planner"].exchange, duel: hud["30-planner"].duel, fieldPlan: hud["30-planner"].fieldPlan, actChance: hud["30-planner"].actChance,
-  planOutcomes: hud["30-planner"].planOutcomes, drawback: hud["30-planner"].drawback, moveTraits: hud["07-move-traits"].moveTraits, costNotes: hud["07-move-traits"].costNotes,
-  tpFight: hud["35-team-plan"].tpFight, TRAPS: hud["01-core"].TRAPS };
-// Fresh field for each case: the turn number keys every per-turn cache.
+// Every question about the live battle is asked through one turn read (`hud/25-turn.js`), the way the card asks it:
+// the turn opens the sandbox, settles Tera and keys the answers. A scenario asks one question, so it opens one turn.
+const ask = fn => hud["25-turn"].readTurn(scene, fn);
+const P = hud["30-planner"];
+const E = {
+  moveOutcome: (...a) => ask(t => t.outcome(...a)),
+  moveOutcomes: (...a) => ask(t => t.outcomes(...a)),
+  enemyMoveDistribution: e => ask(t => t.enemyAction(e).moves),
+  threatFrom: (...a) => ask(t => P.threatFrom(t, ...a)),
+  exchange: (...a) => ask(t => P.exchange(t, ...a)),
+  duel: (...a) => ask(t => P.duel(t, ...a)),
+  fieldPlan: (...a) => ask(t => P.fieldPlan(t, ...a)),
+  planOutcomes: (...a) => ask(t => P.planOutcomes(t, ...a)),
+  actChance: P.actChance, drawback: P.drawback,
+  moveTraits: hud["07-move-traits"].moveTraits, costNotes: hud["07-move-traits"].costNotes,
+  tpFight: hud["35-team-plan"].tpFight, TRAPS: hud["01-core"].TRAPS,
+};
+// Fresh field for each case: the turn number is part of the key every turn read is answered under.
 const setup = (ours, foes) => {
   party = ours; enemies = foes;
   for (const p of [...ours, ...foes]) p.getOpponents = () => (p.isPlayer() ? foes : ours).filter(x => x.isOnField());
@@ -108,16 +121,16 @@ const log = (...a) => console.log(...a);
   const me = mon("Weavile", { moves: [fakeOut, disabled, sucker, dreamEater, move(3, "Tackle", 40)] });
   const foe = mon("Snorlax", { player: false });
   setup([me], [foe]);
-  const names = E.moveOutcomes(scene, me, foe).map(o => o.name);
+  const names = E.moveOutcomes(me, foe).map(o => o.name);
   log(`D usable (awake foe): ${names.join(", ")}`);
   assert.deepEqual(names, ["Sucker Punch", "Tackle"]);
   foe.status = { effect: 4, sleepTurnsRemaining: 3 };
   setup([me], [foe]);
-  assert.ok(E.moveOutcomes(scene, me, foe).some(o => o.name === "Dream Eater"), "Dream Eater works on a sleeping target");
+  assert.ok(E.moveOutcomes(me, foe).some(o => o.name === "Dream Eater"), "Dream Eater works on a sleeping target");
   phase = { phaseName: "MovePhase" };
-  assert.equal(E.moveOutcomes(scene, me, foe).length, 5, "outside the command phase nothing is filtered by game calls");
+  assert.equal(E.moveOutcomes(me, foe).length, 5, "outside the command phase nothing is filtered by game calls");
   phase = { phaseName: "CommandPhase" };
-  assert.equal(E.moveOutcome(scene, me, foe, pmOf(fakeOut)).traits.once, true, "Fake Out is first-turn only");
+  assert.equal(E.moveOutcome(me, foe, pmOf(fakeOut)).traits.once, true, "Fake Out is first-turn only");
 }
 
 // ---- E. What a move costs its user, with a note per cost.
@@ -127,16 +140,16 @@ const log = (...a) => console.log(...a);
   const me = mon("Meowth", { hp: 200 });
   const ferro = mon("Ferrothorn", { player: false, hp: 1000, ability: barbs, abilities: ["PostDefendContactDamageAbAttr"] });
   setup([me], [ferro]);
-  const o = E.moveOutcome(scene, me, ferro, pmOf(furySwipes), { crit: false });
+  const o = E.moveOutcome(me, ferro, pmOf(furySwipes), { crit: false });
   near(o.self, 25 * 3.1 * 0.8, "Iron Barbs: 1/8 max HP per landed contact hit");
   log(`E ${[...o.costs, ...o.notes].join(" · ")}`);
   assert.ok(o.costs.includes("Iron Barbs: ≈−31%"));
   const guard = mon("Clefable", { hp: 200, abilities: ["BlockNonDirectDamageAbAttr"] });
   setup([guard], [ferro]);
-  assert.equal(E.moveOutcome(scene, guard, ferro, pmOf(furySwipes), { crit: false }).self, 0, "Magic Guard takes no chip");
+  assert.equal(E.moveOutcome(guard, ferro, pmOf(furySwipes), { crit: false }).self, 0, "Magic Guard takes no chip");
   const noContact = move(155, "Bullet Seed", 25, { attrs: [new MultiHitAttr(1)] });
   setup([me], [ferro]);
-  assert.equal(E.moveOutcome(scene, me, ferro, pmOf(noContact), { crit: false }).self, 0, "no contact, no chip");
+  assert.equal(E.moveOutcome(me, ferro, pmOf(noContact), { crit: false }).self, 0, "no contact, no chip");
 
   const target = mon("Blissey", { player: false, hp: 2000 });
   const cases = [
@@ -150,7 +163,7 @@ const log = (...a) => console.log(...a);
   ];
   for (const [mv, check] of cases) {
     setup([me], [target]);
-    const out = E.moveOutcome(scene, me, target, pmOf(mv), { crit: false });
+    const out = E.moveOutcome(me, target, pmOf(mv), { crit: false });
     check(out);
     log(`E ${[...out.costs, ...out.notes].join(" · ")}`);
   }
@@ -166,11 +179,11 @@ const log = (...a) => console.log(...a);
   const watchog = mon("Watchog", { hp: 300, spe: 80, moves: [hyperBeam, bodySlam] });
   TABLE = { "Watchog>Hyper Beam>Golem": 110, "Watchog>Body Slam>Golem": 80 };
   setup([watchog], [golem]);
-  const hb = E.exchange(scene, watchog, watchog.moveset[0], golem);
-  const bs = E.exchange(scene, watchog, watchog.moveset[1], golem);
+  const hb = E.exchange(watchog, watchog.moveset[0], golem);
+  const bs = E.exchange(watchog, watchog.moveset[1], golem);
   log(`A Hyper Beam: ${hb.hitsWe} hits in ${hb.turnsWe} turns · Body Slam: ${bs.hitsWe} hits in ${bs.turnsWe} turns`);
   assert.deepEqual([hb.hitsWe, hb.turnsWe, bs.hitsWe, bs.turnsWe], [3, 5, 5, 5]);
-  assert.equal(E.duel(scene, watchog, golem).mine.name, "Body Slam");
+  assert.equal(E.duel(watchog, golem).mine.name, "Body Slam");
 
   // Solar Beam charges a turn per hit, unless its instant-charge condition (sun) holds.
   let sunny = false;
@@ -178,10 +191,10 @@ const log = (...a) => console.log(...a);
   const bulba = mon("Venusaur", { hp: 300, spe: 80, moves: [solarBeam] });
   TABLE = { "Venusaur>Solar Beam>Golem": 110 };
   setup([bulba], [golem]);
-  const dark = E.exchange(scene, bulba, bulba.moveset[0], golem);
+  const dark = E.exchange(bulba, bulba.moveset[0], golem);
   sunny = true;
   setup([bulba], [golem]);
-  const sun = E.exchange(scene, bulba, bulba.moveset[0], golem);
+  const sun = E.exchange(bulba, bulba.moveset[0], golem);
   log(`A Solar Beam: ${dark.turnsWe} turns, in sun ${sun.turnsWe}`);
   assert.deepEqual([dark.turnsWe, sun.turnsWe], [6, 3]);
 
@@ -191,10 +204,10 @@ const log = (...a) => console.log(...a);
   const puncher = mon("Breloom", { hp: 300, spe: 70, moves: [focusPunch, sucker] });
   const attacker = mon("Golem", { player: false, hp: 300, spe: 40, moves: [move(89, "Rock Throw", 10)] });
   setup([puncher], [attacker]);
-  const [fp, sp] = puncher.moveset.map(pm => E.exchange(scene, puncher, pm, attacker));
+  const [fp, sp] = puncher.moveset.map(pm => E.exchange(puncher, pm, attacker));
   const setter = mon("Golem", { player: false, hp: 300, spe: 40, moves: [move(14, "Swords Dance", 0, { cat: 2 })] });
   setup([puncher], [setter]);
-  const [fpFree, spFree] = puncher.moveset.map(pm => E.exchange(scene, puncher, pm, setter));
+  const [fpFree, spFree] = puncher.moveset.map(pm => E.exchange(puncher, pm, setter));
   log(`A into an attacker: Focus Punch KO first ${r2(fp.pWeKoFirst)} in ${fp.turnsWe}, Sucker Punch ${r2(sp.pWeKoFirst)} in ${sp.turnsWe}; into a setup move: ${r2(fpFree.pWeKoFirst)} in ${fpFree.turnsWe}, ${r2(spFree.pWeKoFirst)} in ${spFree.turnsWe}`);
   assert.deepEqual([fp.turnsWe, sp.turnsWe, fpFree.turnsWe, spFree.turnsWe], [9, 1, 1, 9]);
 
@@ -219,7 +232,7 @@ const log = (...a) => console.log(...a);
     const foe = base();
     edit(foe);
     setup([me], [foe]);
-    return E.threatFrom(scene, foe, me, null, { next }).expected;
+    return E.threatFrom(foe, me, null, { next }).expected;
   };
   const plain = expectedWith(() => {});
   const rows = [
@@ -244,10 +257,10 @@ const log = (...a) => console.log(...a);
   const slam = move(34, "Body Slam", 160);
   const sleeper = mon("Snorlax", { hp: 500, spe: 30, moves: [slam], status: { effect: 4, sleepTurnsRemaining: 3 } });
   setup([sleeper], [golem]);
-  const asleep = E.exchange(scene, sleeper, sleeper.moveset[0], golem);
+  const asleep = E.exchange(sleeper, sleeper.moveset[0], golem);
   sleeper.status = null;
   setup([sleeper], [golem]);
-  const awake = E.exchange(scene, sleeper, sleeper.moveset[0], golem);
+  const awake = E.exchange(sleeper, sleeper.moveset[0], golem);
   log(`F our Snorlax: ${awake.turnsWe} turns awake, ${asleep.turnsWe} asleep`);
   // Body Slam's 136–160 rolls (1 in 24 a crit) take the 300 HP Golem in two uses only about 46 % of the time: its mean
   // (151) says 2, the odds say 3.
@@ -261,12 +274,12 @@ const log = (...a) => console.log(...a);
   const fast = mon("Jolteon", { hp: 300, spe: 130, moves: [tackle, eq] });
   let d = digger();
   setup([fast], [d]);
-  const miss = E.exchange(scene, fast, fast.moveset[0], d);
-  const reach = E.exchange(scene, fast, fast.moveset[1], d);
+  const miss = E.exchange(fast, fast.moveset[0], d);
+  const reach = E.exchange(fast, fast.moveset[1], d);
   const slow = mon("Slowbro", { hp: 300, spe: 10, moves: [tackle] });
   d = digger();
   setup([slow], [d]);
-  const after = E.exchange(scene, slow, slow.moveset[0], d);
+  const after = E.exchange(slow, slow.moveset[0], d);
   log(`F foe underground: faster Strike ${miss.turnsWe} turns (KO first ${r2(miss.pWeKoFirst)}), Earthquake ${reach.turnsWe}, slower Strike ${after.turnsWe}`);
   assert.deepEqual([miss.turnsWe, reach.turnsWe, after.turnsWe], [2, 1, 1]);
 }
@@ -281,10 +294,10 @@ const log = (...a) => console.log(...a);
   const fainted = mon("Pikachu", { hp: 0, field: false });
   const bench = mon("Raichu", { hp: 300, field: false });
   setup([fainted, bench], [foe]);
-  const raw = E.enemyMoveDistribution(scene, foe);
+  const raw = E.enemyMoveDistribution(foe);
   log(`8 raw AI with no opponents: ${raw.map(r => `${r.name} ${Math.round(r.p * 100)}%`).join(", ")}`);
   assert.equal(raw[0].name, "Tackle", "reproduces the degenerate distribution");
-  const t = E.threatFrom(scene, foe, bench);
+  const t = E.threatFrom(foe, bench);
   log(`8 threat on the replacement: ${t.move.name} ${Math.round(t.move.p * 100)}%, pKo ${r2(t.pKo)}`);
   assert.equal(t.move.name, "Earthquake");
   assert.ok(t.pKo > 0.9);
@@ -300,8 +313,8 @@ const log = (...a) => console.log(...a);
     const foe = mon("Glaceon", { player: false, hp: foeHp, spe: 50, moves: [move(58, "Ice Beam", 30)] });
     const me = mon("Magnezone", { hp: 500, spe: 60, moves: [steelBeam, flashCannon] });
     setup([me], [foe]);
-    const x = E.exchange(scene, me, me.moveset[0], foe), y = E.exchange(scene, me, me.moveset[1], foe);
-    const best = E.fieldPlan(scene, [me], [foe], false).view.slots[0].move;
+    const x = E.exchange(me, me.moveset[0], foe), y = E.exchange(me, me.moveset[1], foe);
+    const best = E.fieldPlan([me], [foe], false).view.slots[0].move;
     log(`$ foe ${foeHp} HP: Steel Beam ${x.turnsWe} turns cost ${r2(x.cost)} · Flash Cannon ${y.turnsWe} turns · pick ${best}`);
     return [x.turnsWe, y.turnsWe, best];
   };
@@ -313,10 +326,10 @@ const log = (...a) => console.log(...a);
     const foe = mon("Glaceon", { player: false, hp: 220, spe: 50, moves: [move(58, "Ice Beam", 30)] });
     const me = mon("Magnezone", { hp: 500, spe: 60, moves: [costly, flashCannon] });
     setup([me], [foe]);
-    const [a, b] = E.planOutcomes(scene, me, foe);
+    const [a, b] = E.planOutcomes(me, foe);
     log(`$ benefit: ${a.name} ${a.benefit} drawback=${E.drawback(a)} · ${b.name} ${b.benefit} drawback=${E.drawback(b)}`);
     assert.deepEqual([E.drawback(a), E.drawback(b)], [true, false], "the AI's score names the drawback");
-    assert.equal(E.fieldPlan(scene, [me], [foe], false).view.slots[0].move, "Flash Cannon");
+    assert.equal(E.fieldPlan([me], [foe], false).view.slots[0].move, "Flash Cannon");
   }
 
   // Outrage's confusion after the lock and Overheat's falling SpA stretch a long exchange.
@@ -327,7 +340,7 @@ const log = (...a) => console.log(...a);
   const user = mon("Dragonite", { hp: 400, spe: 80, moves: [outrage, overheat, flat] });
   const w = wall();
   setup([user], [w]);
-  const [lock, drop, plain] = user.moveset.map(pm => E.exchange(scene, user, pm, w));
+  const [lock, drop, plain] = user.moveset.map(pm => E.exchange(user, pm, w));
   log(`$ 4 hits needed: Pound ${plain.turnsWe} turns · Outrage ${lock.turnsWe} (cost ${r2(lock.cost)}) · Overheat ${drop.turnsWe}`);
   assert.equal(plain.turnsWe, 4);
   assert.equal(lock.turnsWe, 5);

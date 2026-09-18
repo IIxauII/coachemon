@@ -1,7 +1,9 @@
 // Battle planning: who should be on the field, what each slot does, and the per-foe rows.
-// While the game waits for a command, the numbers come from its own code (`moveOutcomes`/`moveOutcome` in
-// 10-damage, `enemyMoveDistribution` in 20-enemy-ai); otherwise — and in mocks without those — from the `hits`
-// approximation, so the panel always renders.
+//
+// Everything it knows about the live battle it asks the **turn** (`25-turn.js`) — damage, the enemy AI, the
+// per-mon reads, the plain facts of the wave. It never sees the scene, opens no sandbox, and keeps no cache of its
+// own: `turn.memo` is one turn's memory, and `turn.live` is the only thing it has to know about where the numbers
+// came from. Against an approximate turn every answer still comes back, labelled, so the panel always renders.
 
 // ---- When a switch is free (read from the game's phases; see game-code.md §9)
 // - CheckSwitchPhase ("Will you switch Pokémon?" → CONFIRM): queued only when an encounter starts — EncounterPhase.end,
@@ -14,27 +16,18 @@
 //   enemy's already-chosen moves still land on the switch-in if it moves later. Not free.
 // - A regular switch command resolves before moves: the switch-in takes the hit, its move waits a turn.
 // Both prompts wait on UI input with no phase mid-execution, so the sandboxed game calls are as safe as in the
-// CommandPhase — though turnData isn't reset until TurnInitPhase.
-const plannerReady = s => awaitingDecision(s) !== null;
+// CommandPhase — though turnData isn't reset until TurnInitPhase. Which of them we are in is `turn.facts.decision`.
 
-// The same damage and threat numbers are asked for many times in one refresh (every candidate field, the rows, the
-// team plan). They only change with the turn, someone's HP or who is on the field.
-let plannerMemo = { key: null, map: new Map() };
-const planMemo = (s, k, fn) => {
-  const b = s.currentBattle;
-  const mons = [...(s.getPlayerParty?.() ?? []), ...(s.getEnemyParty?.() ?? [])];
-  const key = [b?.waveIndex, b?.turn, b?.enemySwitchCounter, awaitingDecision(s),
-    ...mons.map(p => p && `${p.id}:${p.hp}:${p.bossSegmentIndex ?? ""}:${p.isOnField?.() ? 1 : 0}:${p.isTerastallized ? 1 : 0}`)].join("|");
-  if (plannerMemo.key !== key) plannerMemo = { key, map: new Map() };
-  const kk = activeHypothesisKey() ? `${k}#${activeHypothesisKey()}` : k;
-  if (!plannerMemo.map.has(kk)) plannerMemo.map.set(kk, fn());
-  return plannerMemo.map.get(kk);
-};
+import { ABILITY_IMMUNE, ABILITY_IMMUNE_FLAG, SPREAD_TARGETS, STATUS_FRAMES, TRAPS, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, squeezeDist, stage, stat, typesOf, vs } from "./01-core.js";
+import { moveTraits } from "./07-move-traits.js";
+import { koChanceAt, koCurve, koTurn, koTurns, rawMax, useOf } from "./10-damage.js";
 
 const pmName = pm => pm?.getName?.() ?? pm?.name ?? "";
 const bossBarsLeft = p => (p.isBoss?.() && p.bossSegments > 1 ? Math.max(1, (p.bossSegmentIndex ?? p.bossSegments - 1) + 1) : 1);
 // Turn-end HP change, signed: heals +, weather / status chip −. `dealt`: damage `p` deals a turn (Shell Bell).
-const healAtEnd = (s, p, dealt = 0) => (plannerReady(s) && typeof endOfTurnHp === "function" ? endOfTurnHp(p, { s, dealt }) || 0 : 0);
+// Only against a live turn: pacing an approximation's single damage number against real chip and heals reads as
+// precision the rest of that plan doesn't have.
+const healAtEnd = (turn, p, dealt = 0) => (turn.live ? turn.turnEndHp(p, { dealt }) : 0) || 0;
 const heldStack = (p, name) => (p.getHeldItems?.() ?? []).filter(m => m.constructor?.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? 1), 0);
 // "Triple Axel ×3", "Bullet Seed ×2–5": multi-hit moves change KO math more than their power suggests.
 const hitCounts = o => {
@@ -43,10 +36,10 @@ const hitCounts = o => {
   return Math.min(...ns) === Math.max(...ns) ? `${ns[0]}` : `${Math.min(...ns)}–${Math.max(...ns)}`;
 };
 
-// P(foe uses a Protect-type move this turn), from the enemy AI's distribution (game code only).
-const protectChance = (s, foe) => planMemo(s, `protect:${foe.id}`, () => {
-  if (!plannerReady(s) || !foe.isOnField?.() || typeof enemyMoveDistribution !== "function") return 0;
-  return (enemyMoveDistribution(s, foe) ?? []).reduce((sum, d) => {
+// P(foe uses a Protect-type move this turn), from the enemy AI's distribution.
+const protectChance = (turn, foe) => turn.memo(`protect:${foe.id}`, () => {
+  if (!turn.live || !foe.isOnField?.()) return 0;
+  return (turn.enemyAction(foe).moves ?? []).reduce((sum, d) => {
     const pm = foe.moveset[d.slot] ?? foe.moveset.find(m => m?.getName() === d.name);
     const mv = pm?.getMove?.();
     return sum + (mv && moveTraits(mv).protect ? d.p : 0);
@@ -54,11 +47,11 @@ const protectChance = (s, foe) => planMemo(s, `protect:${foe.id}`, () => {
 });
 
 // Fallback only: the game applies ¾ spread damage itself when a spread move has two or more targets.
-const spreadMult = (s, atk) => {
-  if (!s.currentBattle?.double) return 1;
-  const enemies = s.getEnemyParty?.() ?? [];
-  const mine = enemies.includes(atk);
-  return (s.getField?.() ?? []).filter(p => p && p.hp > 0 && enemies.includes(p) !== mine).length >= 2 ? 0.75 : 1;
+const spreadMult = (turn, atk) => {
+  const { double, foes, field } = turn.facts;
+  if (!double) return 1;
+  const mine = foes.includes(atk);
+  return field.filter(p => p && p.hp > 0 && foes.includes(p) !== mine).length >= 2 ? 0.75 : 1;
 };
 
 // What a move costs its user, the way the game itself measures it. The game's only such notion is the enemy AI's
@@ -68,36 +61,29 @@ const spreadMult = (s, atk) => {
 // the 0 → −20 rule. Both signs count, so Stone Edge's HighCrit +3 is a bonus and Brave Bird's recoil a penalty.
 // Without game functions (the approximation, the mocks) it is 0 and nothing is nudged.
 const AI_POINT = 0.25 / 6;
-const benefitOf = (s, atk, def, mv) => {
-  if (!mv || !plannerReady(s) || typeof aiTargetScore !== "function") return 0;
-  return planMemo(s, `ai:${atk.id}>${mv.id ?? mv.name}>${def.id}`, () => {
-    try {
-      const bi = def.getBattlerIndex?.();
-      const n = sandbox(s, () => (aiTargetScore(s, atk, mv, bi ?? BattlerIndex.ENEMY, def) ?? []).reduce((t, b) => t + b.score * b.p, 0));
-      return Number.isFinite(n) ? n : 0;
-    } catch { return 0; }
-  });
-};
 
 // Every usable damaging move of `atk` into `def`, in the damage module's record shape plus `pm` (the moveset entry,
 // for turn order), `dmg` (expected damage, what the rows show) and `benefit` (the AI's own score for it, above).
-const planOutcomes = (s, atk, def) => planMemo(s, `o:${atk.id}>${def.id}`, () => {
+export const planOutcomes = (turn, atk, def) => turn.memo(`o:${atk.id}>${def.id}`, () => {
   const pmOf = name => atk.moveset.find(m => m?.getName() === name) ?? null;
-  if (plannerReady(s) && typeof moveOutcomes === "function") {
-    const live = moveOutcomes(s, atk, def);
-    if (live?.length) {
-      return live.map(o => {
-        const pm = pmOf(o.name);
-        return { ...o, pm, dmg: o.expected, benefit: benefitOf(s, atk, def, pm?.getMove?.()), live: true };
-      });
-    }
+  const outs = turn.outcomes(atk, def);
+  // What the records say, not what the turn is: a live turn can still fall back to the approximation for a move the
+  // game refuses to price, and the rows must not claim it as a live number (#130 — `planOutcomes` used to).
+  if (outs.some(o => o.live)) {
+    return outs.map(o => {
+      const pm = pmOf(o.name);
+      return { ...o, pm, dmg: o.expected, benefit: turn.benefit(atk, def, pm?.getMove?.()) };
+    });
   }
-  const foe = (s.getEnemyParty?.() ?? []).includes(atk);
-  const mult = spreadMult(s, atk);
+  // The approximation is one number a move, so the record is only what a number can say: no rolls, no hit counts,
+  // no traits — the planner reads `live` and stops asking for what isn't there.
+  const mult = spreadMult(turn, atk);
   const bars = bossBarsLeft(def);
-  return hits(atk, def, foe).map(x => {
+  return outs.map(x => {
     const dmg = x.dmg * (x.spread ? mult : 1);
-    return { ...x, dmg, pm: pmOf(x.name) ?? x, expected: dmg, max: dmg, acc: 1, dist: [{ n: 1, p: 1 }], benefit: 0, costs: [], notes: [], pKo: bars <= 1 && dmg >= def.hp ? 1 : 0, targetHp: def.hp, live: false };
+    return { name: x.name, type: x.type, cat: x.cat, e: x.e, priority: x.priority ?? 0, spread: x.spread,
+      pm: pmOf(x.name) ?? x, dmg, expected: dmg, max: dmg, acc: 1, dist: [{ n: 1, p: 1 }], benefit: 0, costs: [], notes: [],
+      pKo: bars <= 1 && dmg >= def.hp ? 1 : 0, targetHp: def.hp, live: false };
   });
 });
 
@@ -110,49 +96,27 @@ const NO_MOVE_INFO = { priority: 0 };
 // bracket whatever Stall or Mycelium Might would otherwise have said. Mycelium Might blocks the tag itself on a status
 // move (`BypassSpeedTag.canAdd` → PreventBypassSpeedChanceAbAttr), so neither can fire on one.
 // Not modelled: both rolls draw from the battle stream, and Quick Draw draws before it checks the move is damaging.
-const quickChance = (p, mv) => {
-  const status = mv?.category === MoveCategory.STATUS;
+const quickChance = (p, category) => {
+  const status = category === MoveCategory.STATUS;
   if (status && abilitiesOf(p).includes("Mycelium Might")) return 0;
   let stack = 0;
   for (const m of p.getHeldItems?.() ?? []) if (m.constructor?.name === "BypassSpeedChanceModifier") stack += m.getStackCount?.() ?? 1;
   const draw = abilitiesOf(p).includes("Quick Draw") && !status ? 0.3 : 0;
   return 1 - (1 - Math.min(1, 0.1 * stack)) * (1 - draw);
 };
-// A speed tie is not a coin flip. The game shuffles the turn's move phases with `randSeedShuffle` under
-// `executeWithSeedOffset(turn × 1000 + <queue length>, waveSeed)` and only then sorts them by Speed — a stable sort,
-// so the shuffle decides every tie, and the priority pass after it is stable too (spec §5, `sortInSpeedOrder`). That
-// draw depends on nothing either side does this turn, so it is knowable before committing to a move.
-// In a single battle with both sides using a move the queue is [ours, theirs] and length 2, so one Fisher-Yates draw
-// settles it: drawing 0 swaps them. Trick Room reverses the sorted groups afterwards, which swaps a tie back.
-// Everything else keeps the coin flip — doubles, where the queue's length and order turn on who is switching; a later
-// turn, whose offset is a different turn number; a mon not on the field, which has no phase in the queue.
-// `executeWithSeedOffset` restores the RNG state, offset and override itself, so this reads the stream without moving it.
-const speedTie = (s, a, b, trickRoom) => {
-  try {
-    if (s.currentBattle?.double || !a.isOnField?.() || !b.isOnField?.() || a.isPlayer?.() === b.isPlayer?.()) return null;
-    const turn = s.currentBattle?.turn;
-    if (!(turn > 0) || typeof s.executeWithSeedOffset !== "function") return null;
-    let draw = null;
-    s.executeWithSeedOffset(() => { draw = Phaser.Math.RND.integerInRange(0, 1); }, turn * 1000 + 2, s.waveSeed);
-    if (draw !== 0 && draw !== 1) return null;
-    const playerFirst = (draw !== 0) !== !!trickRoom;
-    return a.isPlayer?.() === playerFirst ? 1 : 0;
-  } catch { return null; }
-};
-const actionOrder = (s, a, aPm, b, bPm, { thisTurn = false } = {}) => {
+// `thisTurn`: the order is for the turn the game is waiting on, so the tie the shuffle has already drawn is knowable
+// (`turn.speedTie`); a later turn's, or a mon that has no phase in the queue, stays a coin flip.
+export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => {
   if (!aPm || !bPm) return !aPm && !bPm ? 0.5 : aPm ? 0 : 1;
   const info = (p, pm) => {
-    const mv = pm.getMove?.() ?? pm;
-    const priority = mv.getPriority ? mv.getPriority(p, true) : mv.priority ?? 0;
-    const bracket = mv.getPriorityModifier ? mv.getPriorityModifier(p, true) : MovePriorityInBracket.NORMAL;
-    return { priority, bracket, quick: quickChance(p, mv) };
+    const { priority, bracket, category } = turn.mon(p).order(pm);
+    return { priority, bracket, quick: quickChance(p, category) };
   };
   const x = info(a, aPm), y = info(b, bPm);
   if (x.priority !== y.priority) return x.priority > y.priority ? 1 : 0;
-  const speed = p => (p.getEffectiveStat ? p.getEffectiveStat(Stat.SPD) : stat(p, Stat.SPD));
-  const sa = speed(a), sb = speed(b);
-  const trickRoom = !!s.arena?.getTag?.("TRICK_ROOM");
-  const bySpeed = sa !== sb ? ((sa > sb) !== trickRoom ? 1 : 0) : (thisTurn ? speedTie(s, a, b, trickRoom) : null) ?? 0.5;
+  const sa = turn.mon(a).speed, sb = turn.mon(b).speed;
+  const trickRoom = turn.facts.trickRoom;
+  const bySpeed = sa !== sb ? ((sa > sb) !== trickRoom ? 1 : 0) : (thisTurn ? turn.speedTie(a, b) : null) ?? 0.5;
   const cmp = (ba, bb) => (ba === bb ? bySpeed : ba > bb ? 1 : 0);
   const qa = x.quick, qb = y.quick;
   return qa * qb * cmp(MovePriorityInBracket.FIRST, MovePriorityInBracket.FIRST) + qa * (1 - qb) * cmp(MovePriorityInBracket.FIRST, y.bracket) + (1 - qa) * qb * cmp(x.bracket, MovePriorityInBracket.FIRST) + (1 - qa) * (1 - qb) * cmp(x.bracket, y.bracket);
@@ -166,10 +130,10 @@ const actionOrder = (s, a, aPm, b, bPm, { thisTurn = false } = {}) => {
 // for the move score. Without game code: the hardest-hitting move, always.
 // A foe with nobody to aim at (our slot is empty while we pick a fainted mon's replacement) has no real distribution:
 // the AI scores every move −∞ and the chain stops on the first, so the replay path answers instead.
-const likelyMoves = (s, foe, me, outs, next) => {
-  const live = plannerReady(s);
-  if (live && !next && foe.isOnField?.() && (foe.getOpponents?.() ?? [me]).length && typeof enemyMoveDistribution === "function") {
-    const dist = enemyMoveDistribution(s, foe);
+export const likelyMoves = (turn, foe, me, outs, next) => {
+  const live = turn.live;
+  if (live && !next && foe.isOnField?.() && (foe.getOpponents?.() ?? [me]).length) {
+    const dist = turn.enemyAction(foe).moves;
     if (dist?.length) {
       const idx = me.isOnField?.() ? me.getBattlerIndex?.() : null;
       return dist.map(d => {
@@ -177,7 +141,7 @@ const likelyMoves = (s, foe, me, outs, next) => {
         // Share of this move that lands on `me` (doubles). A bench mon coming in takes an average slot's share.
         const ts = d.targetDist?.length ? d.targetDist : d.targets ?? [];
         let tp = 1;
-        if (s.currentBattle?.double && ts.length) {
+        if (turn.facts.double && ts.length) {
           if (typeof ts[0] === "object") tp = o?.spread ? 1 : idx == null ? ts.reduce((t, x) => t + (x.p ?? 0), 0) / 2 : ts.find(x => x.battlerIndex === idx)?.p ?? 0;
           else tp = o?.spread ? (idx == null || ts.includes(idx) ? 1 : 0) : idx == null ? 1 / 2 : ts.includes(idx) ? 1 / ts.length : 0;
         }
@@ -187,8 +151,8 @@ const likelyMoves = (s, foe, me, outs, next) => {
       });
     }
   }
-  if (live && outs.some(o => o.live) && typeof aiReplay === "function") {
-    const rows = planMemo(s, `replay:${foe.id}>${me.id}`, () => { try { return aiReplay(s, foe, me); } catch { return null; } });
+  if (live && outs.some(o => o.live)) {
+    const rows = turn.replayAI(foe, me);
     if (rows?.length) {
       return rows.map(d => {
         const o = outs.find(x => x.name === d.name) ?? null;
@@ -219,7 +183,7 @@ const likelyMoves = (s, foe, me, outs, next) => {
 // after Hyper Beam → 0 (this turn only); asleep → 0 until its sleep counter runs out (one faster with Early Bird)
 // unless the move works asleep (Sleep Talk, Snore); frozen → 1/4 thaw, sure once its freeze counter runs out, or a
 // move that thaws the user; paralysis → 7/8; confused with turns left → 2/3.
-const actChance = (p, mv = null, next = false) => {
+export const actChance = (p, mv = null, next = false) => {
   const later = next ? 1 : 0;
   if (!next && p.getTag?.("RECHARGING")) return 0;
   const moveHas = (name, test = () => true) => (mv?.attrs ?? []).some(a => a.constructor?.name === name && test(a));
@@ -251,21 +215,21 @@ const actDelay = p => {
 // Each move is weighted by the chance the foe gets to use it (`actChance`: sleep, freeze, paralysis, confusion).
 // `boost`: the stat stages its setup moves are expected to add a turn ({ [stat 1–5]: stages }), which later turns of
 // a fight scale its hits and our hits into it by (`setupRamp`).
-const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(s, `t:${foe.id}>${me.id}:${pmName(myPm)}:${next}`, () => {
-  const outs = planOutcomes(s, foe, me);
-  const moves = likelyMoves(s, foe, me, outs, next);
+export const threatFrom = (turn, foe, me, myPm = null, { next = false } = {}) => turn.memo(`t:${foe.id}>${me.id}:${pmName(myPm)}:${next}`, () => {
+  const outs = planOutcomes(turn, foe, me);
+  const moves = likelyMoves(turn, foe, me, outs, next);
   if (!moves.length) return null;
-  const live = plannerReady(s) && typeof moveOutcome === "function" && outs.some(o => o.live);
+  const live = turn.live && outs.some(o => o.live);
   let expected = 0, pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
   const kos = [], use = [], boost = {};
   for (const m of moves) {
     if (!likely || m.p > likely.p) likely = m;
     if (!(m.p > 0)) continue;
     const pm = m.o?.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
-    const order = actionOrder(s, foe, pm, me, myPm ?? NO_MOVE_INFO, { thisTurn: !next });
+    const order = actionOrder(turn, foe, pm, me, myPm ?? NO_MOVE_INFO, { thisTurn: !next });
     first += m.p * order;
     if (!m.o) {
-      const up = selfStages(foe, pm.getMove?.());
+      const up = turn.mon(foe).setup(pm.getMove?.());
       if (up) for (const [st, n] of Object.entries(up)) boost[st] = (boost[st] ?? 0) + m.p * actChance(foe, pm.getMove?.() ?? null, next) * n;
       continue;
     }
@@ -294,37 +258,12 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
   };
 });
 
-// Stat stages a status move of `p`'s changes on `p` itself (Swords Dance, Dragon Dance, Shell Smash, Belly Drum):
-// { [stat 1–5]: change } after Simple / Contrary and the ±6 cap, or null. Accuracy and evasion aren't counted.
-// Which stages a move moves is the traits' (a move aimed at the user's own side counts even when its attribute
-// doesn't say so — Howl carries no `selfTarget`); a move aimed at a partner's slot moves the partner's stats, not
-// ours. The ability multiplier and the cap are live, so they stay here.
-const selfStages = (p, mv) => {
-  if (!mv || mv.category !== MoveCategory.STATUS) return null;
-  let mult = 1;
-  try {
-    for (const a of [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null]) {
-      for (const x of a?.getAttrs?.("StatStageChangeMultiplierAbAttr") ?? []) mult *= x.multiplier ?? 1;
-    }
-  } catch {}
-  const out = {};
-  for (const x of moveTraits(mv, p).stages) {
-    if (!(x.self || (x.side && !x.ally))) continue;
-    for (const st of x.stats) if (st >= Stat.ATK && st <= Stat.SPD) out[st] = (out[st] ?? 0) + x.stages * mult;
-  }
-  for (const st of Object.keys(out)) {
-    const cur = p.summonData?.statStages?.[st - 1] ?? 0;
-    out[st] = Math.max(-6, Math.min(6, cur + out[st])) - cur;
-    if (!out[st]) delete out[st];
-  }
-  return Object.keys(out).length ? out : null;
-};
 // Stat stages `p` gains for each KO, as FaintPhase.doFaint hands them out: PostVictoryStatStageChangeAbAttr when its own
 // hit faints a foe (Moxie, Beast Boost on its highest stat, Chilling / Grim Neigh, As One, Battle Bond's non-Greninja
 // form), PostKnockOutStatStageChangeAbAttr when anyone faints (Soul-Heart). { up: { [stat 1–5]: stages a KO },
 // ability, any } (`any`: every faint counts, not only its own KOs), or null. Speed counts only for the name (the
 // damage multipliers below leave it out). A suppressed ability (Neutralizing Gas) gives nothing.
-const koBoost = p => {
+export const koBoost = p => {
   if (!p) return null;
   const up = {};
   let name = null, any = false;
@@ -346,14 +285,14 @@ const koBoost = p => {
   return Object.keys(up).length ? { up, ability: name, any } : null;
 };
 // Damage factor after `n` KOs' worth of `boost` on stat `st`, from the stages `p` has now (capped at +6).
-const koStageFactor = (p, boost, n, st) => {
+export const koStageFactor = (p, boost, n, st) => {
   const k = boost?.up?.[st] ?? 0;
   if (!k || !(n > 0)) return 1;
   const s0 = p?.isOnField?.() ? p.summonData?.statStages?.[st - 1] ?? 0 : 0;
   return stage(Math.max(-6, Math.min(6, s0 + k * n))) / stage(s0);
 };
 const STAT_ABBR = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
-const koBoostText = b => Object.entries(b.up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${STAT_ABBR[st]}`).join(" ");
+export const koBoostText = b => Object.entries(b.up).map(([st, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${STAT_ABBR[st]}`).join(" ");
 // What feeding `foe` one KO costs the fight still to come, in turns of ours: FEED_COST a stage it gains on an attacking
 // stat or Speed, half that on a defence. Nothing once nobody else is left to face it.
 const feedCost = (foe, others) => {
@@ -364,7 +303,7 @@ const feedCost = (foe, others) => {
 // A foe that sets up hits harder each turn it does: its damage on turn j (1 = this turn) against this turn's, from the
 // Atk / SpA stages it's expected to have added by then (`t.boost`), weighed by how much of its damage is physical.
 // Null when it isn't raising an attacking stat.
-const setupRamp = (foe, t) => {
+export const setupRamp = (foe, t) => {
   const g = t?.boost;
   if (!foe || !g || !(g[Stat.ATK] || g[Stat.SPATK]) || !t.moves.length) return null;
   const phys = t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / (t.moves.reduce((sum, m) => sum + m.p, 0) || 1);
@@ -384,22 +323,13 @@ const setupDanger = (foe, t, me) => {
 
 // P(KO) of a threat against `me` at a different HP (after an incoming hit): each likely move's `koChanceAt`, by its share.
 const threatKoAt = (t, hp) => (!t ? 0 : hp <= 0 ? 1 : Math.min(1, t.moves.reduce((sum, m) => sum + m.p * koChanceAt(m, hp), 0)));
-// Can `me` be given status `effect` by `foe`? The game's own check (quiet, so no messages) when it can be called;
-// otherwise the type immunities.
-const TYPE_STATUS_IMMUNE = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"], [StatusEffect.PARALYSIS]: ["Electric"], [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
-const canTakeStatus = (s, me, effect, foe) => {
-  if (plannerReady(s) && typeof me.canSetStatus === "function") {
-    try { return !!me.canSetStatus(effect, true, false, foe); } catch {}
-  }
-  return !typesOf(me).some(ty => TYPE_STATUS_IMMUNE[effect]?.includes(ty));
-};
 // Wave status tokens (EnemyAttackStatusEffectChanceModifier): each landed hit of an enemy attack rolls every token,
 // `chance`·stack each (5 % burn/poison, 2.5 % the rest), and the first status to land blocks the others.
-const statusTokens = (s, foe, me) => {
+const statusTokens = (turn, foe, me) => {
   if (!foe || foe.isPlayer?.() || me.status?.effect) return [];
-  return (s.enemyModifiers ?? []).filter(m => m.constructor?.name === "EnemyAttackStatusEffectChanceModifier")
+  return turn.facts.enemyModifiers.filter(m => m.constructor?.name === "EnemyAttackStatusEffectChanceModifier")
     .map(m => ({ effect: m.effect, q: Math.min(1, (m.chance ?? 0.025) * (m.getStackCount?.() ?? 1)) }))
-    .filter(x => x.q > 0 && canTakeStatus(s, me, x.effect, foe));
+    .filter(x => x.q > 0 && turn.mon(me).canTake(x.effect, foe));
 };
 // Share of attempts a status cancels, by attempt since it landed (MovePhase): sleep lasts 2 (⅓) or 3 (⅔) turns and
 // ticks down before the check, so it cancels 1 or 2 attempts (Early Bird ticks twice: 1 at most, ⅔); freeze starts
@@ -411,8 +341,8 @@ const STATUS_SKIP = {
 };
 // The wave tokens `foe`'s hits can hand `me`: `by(x)`, P(`me` has a token's status after x landed hits), and each
 // token's `share` of that. Null when none can land.
-const tokenOdds = (s, foe, me) => {
-  const tokens = statusTokens(s, foe, me);
+export const tokenOdds = (turn, foe, me) => {
+  const tokens = statusTokens(turn, foe, me);
   if (!tokens.length) return null;
   const perHit = 1 - tokens.reduce((keep, x) => keep * (1 - x.q), 1);
   const qSum = tokens.reduce((sum, x) => sum + x.q, 0);
@@ -424,14 +354,14 @@ const tokenOdds = (s, foe, me) => {
 };
 // Turn-end HP change a token's status adds to `me` (poison and burn chip, Poison Heal), weighted by the shares.
 // `heal(p)`: the turn-end HP change of `p`.
-const tokenShift = (odds, me, heal) => {
+export const tokenShift = (odds, me, heal) => {
   const base = heal(me);
   return odds.tokens.reduce((sum, x) => sum + x.share * (heal(Object.create(me, { status: { value: { effect: x.effect, toxicTurnCount: 0 } } })) - base), 0);
 };
 // Expected share of `me`'s attempt on turn k that token statuses cancel, from `by(t)` — P(statused by the end of turn
 // t), t = 0 before this fight — and P(the foe moves first). A status from a hit before our move cancels that turn's.
 // Sleep and freeze from before the fight are taken as worn off; paralysis stays.
-const attemptsLost = (odds, by, k, pFoeFirst) => {
+export const attemptsLost = (odds, by, k, pFoeFirst) => {
   let lost = 0;
   for (const x of odds.tokens) {
     if (x.effect === StatusEffect.PARALYSIS) { lost += x.share / 8 * (pFoeFirst * by(k) + (1 - pFoeFirst) * by(k - 1)); continue; }
@@ -444,8 +374,8 @@ const attemptsLost = (odds, by, k, pFoeFirst) => {
 // What wave status tokens do to `me`'s own turns in a fight with `foe`, which lands `hitsPerTurn` hits a turn and moves
 // first with `pFoeFirst`: `act(k)`, the share of turn k's attempt not cancelled, and `para(k)`, P(paralysed by then).
 // Null when no token can cancel anything.
-const tokenActs = (s, foe, me, hitsPerTurn, pFoeFirst) => {
-  const odds = hitsPerTurn > 0 ? tokenOdds(s, foe, me) : null;
+export const tokenActs = (turn, foe, me, hitsPerTurn, pFoeFirst) => {
+  const odds = hitsPerTurn > 0 ? tokenOdds(turn, foe, me) : null;
   if (!odds?.tokens.some(x => x.effect === StatusEffect.PARALYSIS || STATUS_SKIP[x.effect])) return null;
   const by = t => odds.by(hitsPerTurn * t);
   return {
@@ -462,7 +392,7 @@ const transferable = p => (p.getHeldItems?.() ?? []).filter(m => m.isTransferabl
 const thieves = (foe, me) => (me.hasAbilityWithAttr?.("BlockItemTheftAbAttr") || !transferable(me).length ? []
   : (foe.getHeldItems?.() ?? []).filter(m => THIEVES[m.constructor?.name]));
 // { perHit, perTurn }: expected Grip Claw steals per landed hit, Mini Black Hole steals per turn.
-const stealRates = (foe, me) => {
+export const stealRates = (foe, me) => {
   let perHit = 0, perTurn = 0;
   for (const m of thieves(foe, me)) {
     const n = m.getStackCount?.() ?? 1;
@@ -472,7 +402,7 @@ const stealRates = (foe, me) => {
   return perHit || perTurn ? { perHit, perTurn } : null;
 };
 // P(k steals) for k = 0..9 (9 takes the tail): `fixed` sure steals plus Grip Claw's, Poisson with mean `mean`.
-const stealCounts = (fixed, mean) => {
+export const stealCounts = (fixed, mean) => {
   const out = Array(10).fill(0);
   let pk = Math.exp(-mean), rest = 1;
   for (let k = 0; fixed + k < 9; k++) { out[fixed + k] = pk; rest -= pk; pk *= mean / (k + 1); }
@@ -482,7 +412,7 @@ const stealCounts = (fixed, mean) => {
 // `me`'s turn-end HP change after 0..9 steals ([k]: after k), by `heal(p)`. A steal picks one of the transferable
 // items still held, at random, and takes one of its stacks (HeldItemTransferModifier.apply); an item at no stacks
 // is gone.
-const afterSteals = (me, heal) => {
+export const afterSteals = (me, heal) => {
   const items = me.getHeldItems?.() ?? [];
   const full = items.map(m => m.getStackCount?.() ?? m.stackCount ?? 1);
   const values = new Map();
@@ -519,24 +449,24 @@ const afterSteals = (me, heal) => {
 // - the foe steals `me`'s items: what they add (Leftovers, Shell Bell, berries; an orb's chip) is weighed over how
 //   many steals there may have been by then.
 // Toxic's chip grows by a 16th each turn it stays on.
-const turnEndCourse = (s, me, foe, hitsPerTurn, dealt = 0) => {
-  const base = healAtEnd(s, me, dealt);
+export const turnEndCourse = (turn, me, foe, hitsPerTurn, dealt = 0) => {
+  const base = healAtEnd(turn, me, dealt);
   const toxic = me.status?.effect === StatusEffect.TOXIC
-    ? j => healAtEnd(s, Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
+    ? j => healAtEnd(turn, Object.create(me, { status: { value: { ...me.status, effect: StatusEffect.TOXIC, toxicTurnCount: (me.status.toxicTurnCount ?? 0) + j - 1 } } }), dealt)
     : null;
   const flat = toxic ? { base, flat: false, at: toxic } : { base, flat: true, at: () => base };
   if (!foe || !(hitsPerTurn >= 0)) return flat;
-  const odds = hitsPerTurn > 0 ? tokenOdds(s, foe, me) : null;
-  const statusChange = odds ? tokenShift(odds, me, p => healAtEnd(s, p, dealt)) : 0;
+  const odds = hitsPerTurn > 0 ? tokenOdds(turn, foe, me) : null;
+  const statusChange = odds ? tokenShift(odds, me, p => healAtEnd(turn, p, dealt)) : 0;
   const rates = stealRates(foe, me);
-  const byCount = rates ? afterSteals(me, p => healAtEnd(s, p, dealt)) : null;
+  const byCount = rates ? afterSteals(me, p => healAtEnd(turn, p, dealt)) : null;
   const items = byCount && byCount.some(v => v !== base)
     ? j => stealCounts(rates.perTurn * (j - 1), rates.perHit * hitsPerTurn * j).reduce((sum, p, k) => sum + p * (byCount[k] - base), 0)
     : null;
   if (!statusChange && !items) return flat;
   return { base, flat: false, at: j => (toxic ? toxic(j) : base) + (statusChange ? statusChange * odds.by(hitsPerTurn * j) : 0) + (items ? items(j) : 0) };
 };
-const hitsOn = t => (t?.moves ?? []).reduce((sum, m) => sum + m.p * (m.acc ?? 1) * (m.hits ?? 1), 0);
+export const hitsOn = t => (t?.moves ?? []).reduce((sum, m) => sum + m.p * (m.acc ?? 1) * (m.hits ?? 1), 0);
 // A turn-end HP change (a number, or one by turn) plus the HP a side's drain moves win back each turn.
 const withDrain = (heal, drain) => (!drain ? heal : typeof heal === "function" ? j => heal(j) + drain : heal + drain);
 
@@ -546,18 +476,18 @@ const withDrain = (heal, drain) => (!drain ? heal : typeof heal === "function" ?
 // lowered defences). `act(i)`: the chance it gets its i-th attack off (our flinches). Its setup moves ramp its later
 // hits (`setupRamp`). Chip can finish the job on the hit turn (or alone, against a foe that doesn't attack). `drain`: HP
 // our own drain moves win back a turn (negative into Liquid Ooze).
-const foeCurve = (s, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0 } = {}) => {
-  const course = turnEndCourse(s, me, foe, t ? hitsOn(t) : -1, dealt);
+export const foeCurve = (turn, t, me, hp, { dealt = 0, foe = null, mult = null, act = () => 1, start = null, drain = 0 } = {}) => {
+  const course = turnEndCourse(turn, me, foe, t ? hitsOn(t) : -1, dealt);
   const attacks = !!t && t.expected > 0;
   const ramp = setupRamp(foe, t);
-  return koCurve(me, attacks ? t.use ?? [{ d: t.expected, p: 1 }] : [{ d: 0, p: 1 }], {
+  return koCurve(turn.mon(me), attacks ? t.use ?? [{ d: t.expected, p: 1 }] : [{ d: 0, p: 1 }], {
     hp, start, act, turnEnd: withDrain(course.flat ? course.base : course.at, drain),
     scale: mult || ramp ? i => (mult ? mult(i + 1) : 1) * (ramp ? ramp(i + 1) : 1) : undefined,
     firstKo: attacks && !start ? threatKoAt(t, hp) * act(0) : null,
   });
 };
 // Turns a threat needs to KO `me` from `hp`: its curve's `koTurns`.
-const foeTurns = (s, t, me, hp, opts = {}) => koTurns(foeCurve(s, t, me, hp, opts).by);
+const foeTurns = (turn, t, me, hp, opts = {}) => koTurns(foeCurve(turn, t, me, hp, opts).by);
 
 // One-on-one from now: `me` repeats `pm` into `foe` while `foe` answers with its likely moves. Turn 1 is played
 // with the real odds — order, accuracy, rolls, crits, Sturdy/Focus Band (inside pKo); later turns KO or don't from
@@ -575,15 +505,15 @@ const foeTurns = (s, t, me, hp, opts = {}) => koTurns(foeCurve(s, t, me, hp, opt
 // defences, self-KO) and `cost` — our max HP it spends plus a little for a lock-in — for scoring ties.
 // `turn1`: this turn alone — P(we KO first), P(they do), and the HP branches each side stands on if neither does
 // (`foe`, `me`, each summing to 1; `hp` our average), which depth 2 plays on from.
-const exchange = (s, me, pm, foe, opts = {}) => {
+export const exchange = (turn, me, pm, foe, opts = {}) => {
   const hp = opts.hp ?? me.hp;
   const after = opts.after ?? null;
   const exact = !after;
-  const mine = opts.outcome ?? planOutcomes(s, me, foe).find(o => o.name === pmName(pm)) ?? null;
+  const mine = opts.outcome ?? planOutcomes(turn, me, foe).find(o => o.name === pmName(pm)) ?? null;
   // What the move itself costs over turns (07-move-traits, through the outcome record); what those turns are worth
   // is this module's.
   const mt = mine?.traits ?? {};
-  const t = threatFrom(s, foe, me, pm, { next: !!opts.next });
+  const t = threatFrom(turn, foe, me, pm, { next: !!opts.next });
   const pFirst = t ? 1 - (t.pKo > 0 ? t.koFirst : t.first) : 1;
   const pF = opts.free ? 1 : pFirst;
   // Chance our move does its job when chosen: we get to act, Focus Punch isn't hit first, Sucker Punch meets an
@@ -591,18 +521,18 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   const foeAttacks = opts.free || !t ? 0 : Math.min(1, t.moves.reduce((sum, m) => sum + m.p, 0));
   const needs = (mt.interrupt ? 1 - foeAttacks * (1 - pF) : 1) * (mt.needsAttack ? foeAttacks * pF : 1);
   // Protect this turn only: a second one in a row mostly fails, and the replay of later turns can't see the first.
-  const guard = opts.free || opts.next || after || mine?.bypassProtect ? 0 : protectChance(s, foe);
+  const guard = opts.free || opts.next || after || mine?.bypassProtect ? 0 : protectChance(turn, foe);
   // King's Rock: 10 % a stack to flinch us with each attack that lands before we move.
   const flinch = Math.min(1, 0.1 * heldStack(foe, "FlinchChanceModifier")) * foeAttacks;
   const steady = (me.status?.effect === StatusEffect.PARALYSIS ? 7 / 8 : 1) * needs * (1 - flinch * (1 - pF));
   // Wave status tokens: sleep, freeze and paralysis the foe's hits may hand us cancel some of our later attempts.
-  const acts = opts.free || !t ? null : tokenActs(s, foe, me, hitsOn(t), 1 - pF);
+  const acts = opts.free || !t ? null : tokenActs(turn, foe, me, hitsOn(t), 1 - pF);
   const now = actChance(me, pm?.getMove?.() ?? null, !!opts.next) * needs * (mine?.semi ? 1 - pF : 1) * (acts ? acts.act(1) : 1) * (1 - guard);
   // Our move's flinch (Fake Out, Iron Head): a landed hit before the foe moves cancels its move that turn.
   const ourFlinch = opts.free ? 0 : Math.min(1, (mine?.flinch ?? 0) * (mine?.acc ?? 1));
   const maxHp = me.getMaxHp?.() ?? hp;
   const bars = bossBarsLeft(foe);
-  const trainerBoss = foe.hasTrainer?.() ?? !!s.currentBattle?.trainer;
+  const trainerBoss = foe.hasTrainer?.() ?? !!turn.facts.trainer;
   let turnsWe = 9, hitsWe = 9, delay = 0, selfSpent = 0, defUp = 1, foeMult = null, foeAfter1 = after?.foe ?? null;
   let weBy = () => 0, qWe = 0, confusion = 0;
   if (mine?.expected > 0) {
@@ -611,7 +541,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const drop = mt.drops?.[atkStat] ?? 0;
     const s0 = me.summonData?.statStages?.[atkStat - 1] ?? 0;
     // Its turn-end HP change, with our item thieves on it (`steady` of our hits land a turn).
-    const course = turnEndCourse(s, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0);
+    const course = turnEndCourse(turn, foe, me, steady * (mine.acc ?? 1) * ((mine.dist ?? []).reduce((sum, d) => sum + d.n * d.p, 0) || 1), t?.expected ?? 0);
     // Its drain moves (Leech Life) win back part of what they deal us every turn it stands.
     const heal = withDrain(course.flat ? course.base : course.at, t?.drain ?? 0);
     // Its own setup raising (or Shell Smash lowering) the defence this move meets, by our i-th use.
@@ -628,7 +558,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     const nowUse = !mt.charge && delay === 0;
     qWe = nowUse ? (mine.pKo ?? 0) * now : 0;
     // Through what's left of its bars (a wild boss's Def / SpD rising as each breaks) and a Reviver Seed's second life.
-    const curve = koCurve(foe, useOf(mine), {
+    const curve = koCurve(turn.mon(foe), useOf(mine), {
       scale, turnEnd: heal, cat: mine.cat,
       act: i => (i === 0 && nowUse ? now : steady * (acts ? acts.act(i + 1) : 1)),
       firstKo: exact && nowUse ? qWe : null, start: after?.foe,
@@ -654,7 +584,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
     // each bar: that turn's hit from it is boosted only if we moved first.
     if (bars > 1 && t?.moves.length && !trainerBoss) {
       const phys = t.moves.reduce((sum, m) => sum + m.p * (m.cat === "special" ? 0 : 1), 0) / (t.moves.reduce((sum, m) => sum + m.p, 0) || 1);
-      const [fa, fs] = [Stat.ATK, Stat.SPATK].map(st => barBreakFactors(s, foe, st, bars, true));
+      const [fa, fs] = [Stat.ATK, Stat.SPATK].map(st => turn.mon(foe).bars(st, bars, true));
       const pace = cycle / Math.max(1, hitsWe);
       let hitsSoFar = 0;
       const breaks = perChunk.slice(0, bars - 1).map(n => Math.ceil(delay + (hitsSoFar += n) * pace - 1e-9));
@@ -682,7 +612,7 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   const myStart = after?.me.map(x => ({ ...x, hp: x.revived ? x.hp : x.hp - selfSpent })).filter(x => x.hp > 0);
   // Our drain move wins back its share of what it deals on each turn it lands.
   const ourDrain = (mine?.drain ?? 0) * (mine?.expected ?? 0) * steady;
-  const theirs = budget > 0 ? foeCurve(s, foeT, me, budget, {
+  const theirs = budget > 0 ? foeCurve(turn, foeT, me, budget, {
     dealt: mine?.uncapped ?? mine?.expected ?? 0, foe, mult, act: foeAct, start: myStart?.length ? myStart : null, drain: ourDrain,
   }) : null;
   const turnsFoe = theirs ? koTurn(theirs.by) : Math.max(1, Math.min(turnsWe, 9));
@@ -704,15 +634,14 @@ const exchange = (s, me, pm, foe, opts = {}) => {
   if (pPara > 0) {
     const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
     if (typeof me.getEffectiveStat !== "function") slowed.getEffectiveStat = { value: i => stat(me, i) / (i === Stat.SPD ? 2 : 1) };
-    const tp = threatFrom(s, foe, Object.create(me, slowed), pm, { next: !!opts.next });
+    const tp = threatFrom(turn, foe, Object.create(me, slowed), pm, { next: !!opts.next });
     pLast = (1 - pPara) * pFirst + pPara * (tp ? 1 - (tp.pKo > 0 ? tp.koFirst : tp.first) : pFirst);
   }
   // A foe boosting its Speed (Dragon Dance) passes us once it has the stages it needs, unless our move has priority:
   // our share of moving first on the deciding turn falls with the stages it's expected to have gained by then.
   const speedUp = t?.boost?.[Stat.SPD] ?? 0;
   if (speedUp > 0 && turnsWe > 1 && turnsWe < 9 && !((mine?.priority ?? 0) > 0) && pLast > 0) {
-    const spe = p => (p.getEffectiveStat ? p.getEffectiveStat(Stat.SPD) : stat(p, Stat.SPD));
-    const mySpe = spe(me), foeSpe = spe(foe), s5 = foe.summonData?.statStages?.[Stat.SPD - 1] ?? 0;
+    const mySpe = turn.mon(me).speed, foeSpe = turn.mon(foe).speed, s5 = foe.summonData?.statStages?.[Stat.SPD - 1] ?? 0;
     let need = 0;
     while (s5 + need < 6 && foeSpe * stage(s5 + need) / stage(s5) <= mySpe) need++;
     if (need > 0 && foeSpe * stage(s5 + need) / stage(s5) > mySpe) pLast *= Math.max(0, 1 - speedUp * (turnsWe - 1) / need);
@@ -779,7 +708,7 @@ const trapsOn = (p, active) => {
   return [...new Set(foes.filter(Boolean).flatMap(foe => abilitiesOf(foe).filter(a => TRAPS.has(a) && bites(a, foe))))];
 };
 
-const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = false, locked = null, team = null } = {}) => {
+export const fieldPlan = (turn, party, active, double, attackers = active, { freeSwitch = false, locked = null, team = null } = {}) => {
   // Our side has two slots whenever two of us can stand, even if only one foe is left; `pair`: two foes to aim at.
   const slots = double && party.length >= 2 ? 2 : 1;
   const pair = double && active.length === 2;
@@ -790,7 +719,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   const inMemo = new Map();
   const incoming = me => {
     if (!inMemo.has(me)) {
-      const ts = attackers.map(f => threatFrom(s, f, me)).filter(Boolean).sort((a, b) => b.expected - a.expected);
+      const ts = attackers.map(f => threatFrom(turn, f, me)).filter(Boolean).sort((a, b) => b.expected - a.expected);
       // Game-code threats already split single-target moves between our slots; the approximation assumes the
       // worst foe hits it plus half of the other.
       const dmg = ts.some(t => t.live) ? ts.reduce((sum, t) => sum + t.expected, 0) : (ts[0]?.worst ?? 0) + (ts[1]?.worst ?? 0) * 0.5;
@@ -810,7 +739,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     // A switch-in must get to act once: count it lost if it's KO'd coming in, or survives only to be KO'd next
     // turn before it moves (the foe re-picks against it, on the HP the entry hit left).
     const beforeActing = hp <= 0 ? 1 : 1 - active.reduce((keep, f) => {
-      const t = threatFrom(s, f, me, null, { next: true });
+      const t = threatFrom(turn, f, me, null, { next: true });
       return keep * (1 - threatKoAt(t, hp) * (t?.koFirst ?? 0));
     }, 1);
     const lostChance = entering ? inc.ko + (1 - inc.ko) * beforeActing : 0;
@@ -819,8 +748,8 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     const free = f => !entering && !attackers.includes(f);
     // A mon not yet on the field faces what the foe picks for it, not the move it chose against the current field.
     const next = entering || !me.isOnField?.();
-    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(s, threatFrom(s, f, me, null, { next }), me, hp, { foe: f }) + (free(f) ? 1 : 0))));
-    const trade = (o, f) => exchange(s, me, o.pm, f, { hp, outcome: o, free: free(f), next });
+    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(turn, threatFrom(turn, f, me, null, { next }), me, hp, { foe: f }) + (free(f) ? 1 : 0))));
+    const trade = (o, f) => exchange(turn, me, o.pm, f, { hp, outcome: o, free: free(f), next });
     const last = entering ? null : lastMoveOf(me);
     const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     // Falling to a foe with an on-KO boost (Beast Boost, Moxie) arms it against whoever comes next.
@@ -840,11 +769,11 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       const standing = 1 - t1.we - t1.they;
       if (standing < 0.05) return x;
       // A follow-up that also hits our partner isn't weighed here: the joint scoring only sees this turn's hits.
-      const pool = planOutcomes(s, me, f).filter(y => y.expected > 0 && !(pair && y.spread) && !(slots === 2 && hitsAlly(y)) && !(y === o && o.traits?.once));
+      const pool = planOutcomes(turn, me, f).filter(y => y.expected > 0 && !(pair && y.spread) && !(slots === 2 && hitsAlly(y)) && !(y === o && o.traits?.once));
       const cands = [...new Set([...[...pool].sort((a, b) => b.expected - a.expected).slice(0, 2), ...pool.filter(y => (y.priority ?? 0) > 0).slice(0, 1),
         ...(pool.includes(o) ? [o] : [])])];
       const value = y => {
-        const x2 = exchange(s, me, y.pm, f, { hp: t1.hp, after: t1, outcome: y, next: true });
+        const x2 = exchange(turn, me, y.pm, f, { hp: t1.hp, after: t1, outcome: y, next: true });
         return { y, x2, v: x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0) };
       };
       const tried = cands.map(value);
@@ -864,7 +793,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     };
     // `each`: turns to KO each foe; `hits` is when both are down.
     const both = o => {
-      const other = planOutcomes(s, me, active[1]).find(x => x.name === o.name);
+      const other = planOutcomes(turn, me, active[1]).find(x => x.name === o.name);
       const xs = [trade(o, active[0]), other ? trade(other, active[1]) : null];
       const each = xs.map(x => x?.turnsWe ?? 9);
       const hits = Math.max(...each);
@@ -876,7 +805,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     };
     // Status moves (single battles): this turn spent on a setup move, a status, a heal or a hazard, then the best
     // attack from what it leaves. Turn 1 is an `exchange` in which we deal nothing; its effect is written onto the mons
-    // for the turns after (`withHypothesis`), so the game's own damage, turn-end and AI code price them — the boosted
+    // for the turns after (`turn.assuming`), so the game's own damage, turn-end and AI code price them — the boosted
     // hits, the paralysed foe's lost Speed, its moves re-picked against our boosts — and the attack is chosen there.
     // The move has to work: we act (not asleep, flinched or KO'd first) and it isn't Protected, dodged, bounced or met
     // by an immunity; when it doesn't, the fight plays on from the unchanged state. A heal changes our HP branches
@@ -885,12 +814,12 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     const playOption = (info, play, fi) => {
       const f = active[fi];
       const pm = info.pm, mv = pm.getMove();
-      const x1 = exchange(s, me, pm, f, { hp, free: free(f), next });
+      const x1 = exchange(turn, me, pm, f, { hp, free: free(f), next });
       const t1 = x1.turn1;
       const pF = free(f) ? 1 : x1.pFirst;
-      const t = threatFrom(s, f, me, pm, { next });
+      const t = threatFrom(turn, f, me, pm, { next });
       const aimed = !play.self;
-      const guard = aimed && !info.bypassProtect && !free(f) && !next ? protectChance(s, f) : 0;
+      const guard = aimed && !info.bypassProtect && !free(f) && !next ? protectChance(turn, f) : 0;
       const kingsRock = free(f) || !t ? 0 : Math.min(1, 0.1 * heldStack(f, "FlinchChanceModifier")) * Math.min(1, t.moves.reduce((q, m) => q + m.p, 0));
       const works = actChance(me, mv, next) * (1 - kingsRock * (1 - pF)) * (aimed ? (1 - guard) * info.acc * (info.e > 0 && !info.bounce ? 1 : 0) : 1);
       if (!(works >= 0.05)) return null;
@@ -913,19 +842,19 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       if (standing < 0.05) return null;
       const mass = mine1.reduce((sum, b) => sum + b.p, 0) || 1;
       const t1p = { ...t1, we: 0, they, me: mine1, hp: mine1.reduce((sum, b) => sum + b.p * b.hp, 0) / mass };
+      // The state the move would make is a turn of its own: the game's damage, turn-end and AI code answer on it,
+      // in its own memo slots, and the real turn is untouched.
       const follow = patches => {
-        const run = () => {
-          const pool = planOutcomes(s, me, f).filter(y => y.expected > 0 && !y.traits?.once);
-          const cands = [...new Set([...[...pool].sort((a, b) => b.expected - a.expected).slice(0, 2), ...pool.filter(y => (y.priority ?? 0) > 0).slice(0, 1)])];
-          let best = null;
-          for (const y of cands) {
-            const x2 = exchange(s, me, y.pm, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null });
-            const v = x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0);
-            if (!best || v > best.v) best = { y, x2, v };
-          }
-          return best;
-        };
-        return patches ? withHypothesis(patches, run) : run();
+        const t2 = patches ? turn.assuming(patches) : turn;
+        const pool = planOutcomes(t2, me, f).filter(y => y.expected > 0 && !y.traits?.once);
+        const cands = [...new Set([...[...pool].sort((a, b) => b.expected - a.expected).slice(0, 2), ...pool.filter(y => (y.priority ?? 0) > 0).slice(0, 1)])];
+        let best = null;
+        for (const y of cands) {
+          const x2 = exchange(t2, me, y.pm, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null });
+          const v = x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0);
+          if (!best || v > best.v) best = { y, x2, v };
+        }
+        return best;
       };
       const landed = follow(play.patches ?? null);
       const w = play.patches ? works : 1;
@@ -938,7 +867,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       const bonus = play.kind === "hazard" ? play.value * works : 0;
       const keep = last != null && pm.moveId === last ? KEEP_BONUS : 0;
       // The same nudge every attacking option gets: what the game's own scoring makes of this move here.
-      const nudge = benefitOf(s, me, f, mv) * AI_POINT;
+      const nudge = turn.benefit(me, f, mv) * AI_POINT;
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
@@ -947,12 +876,12 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       };
     };
     const plays = fi => {
-      if (slots !== 1 || entering || !plannerReady(s) || typeof statusMoves !== "function") return [];
+      if (slots !== 1 || entering || !turn.live) return [];
       const f = active[fi];
       // A game read that fails on a written-on state drops that option, not the panel.
-      return statusMoves(s, me, f).map(info => {
+      return turn.statusMoves(me, f).map(info => {
         try {
-          const play = statusPlay(s, me, f, info);
+          const play = statusPlay(turn, me, f, info);
           return play && playOption(info, play, fi);
         } catch { return null; }
       }).filter(Boolean);
@@ -961,7 +890,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       // Scored like any option so the partner's search and the joint see it; a move the planner can't score
       // (status, Struggle) is shown as chosen and aims nowhere.
       const name = pmName(mine.pm) || "Struggle";
-      const o = mine.target == null ? null : planOutcomes(s, me, active[mine.target === "both" ? 0 : mine.target]).find(x => x.name === name);
+      const o = mine.target == null ? null : planOutcomes(turn, me, active[mine.target === "both" ? 0 : mine.target]).find(x => x.name === name);
       const p = o && (mine.target === "both" ? (pair ? both(o) : one(o, 0)) : one(o, mine.target));
       const mv = mine.pm?.getMove?.();
       const bare = { me, move: { name, type: TYPES[mv?.type] ?? null, cat: mv?.category === MoveCategory.STATUS ? "status" : null, pm: mine.pm, expected: 0 }, target: null, turns: 9, hits: 9, score: 0, hp };
@@ -973,7 +902,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       // best move, keep the best one without a drawback or a hit on our partner: the pair's score may prefer it.
       let best = null, clean = null;
       const better = (a, b) => !a || b.score > a.score || (b.score === a.score && b.move.expected > a.move.expected);
-      const scored = planOutcomes(s, me, f).filter(o => o.expected > 0 && !(pair && o.spread)).map(o => one(o, fi));
+      const scored = planOutcomes(turn, me, f).filter(o => o.expected > 0 && !(pair && o.spread)).map(o => one(o, fi));
       // Depth 2 for every move of a single slot; in doubles the three best and any move that lives on turn 1
       // (priority, a flinch, first turn only).
       const deep = slots === 1 ? scored : [...[...scored].sort((a, b) => b.score - a.score).slice(0, 3),
@@ -991,7 +920,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       if (clean && clean !== best) out.push(clean);
     });
     if (pair) {
-      for (const o of planOutcomes(s, me, active[0]).filter(x => x.spread && x.expected > 0)) {
+      for (const o of planOutcomes(turn, me, active[0]).filter(x => x.spread && x.expected > 0)) {
         const p = both(o);
         if (p) out.push(p);
       }
@@ -1041,13 +970,13 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       }
       return { ally, spare, score };
     });
-    const flips = current.filter(p => !picks.some(q => q.me === p) && cameInLastTurn(s, p)).length;
+    const flips = current.filter(p => !picks.some(q => q.me === p) && cameInLastTurn(turn, p)).length;
     plans.push({ picks, payers, info, extra: payers.length, swaps, joint: j, planVal: planValueOf(picks),
       score: info.reduce((t, x) => t + x.score, 0) + (j?.value ?? 0) - flips * FLIP_COST });
   };
   const allyHit = (p, partner) => {
     if (!hitsAlly(p.move)) return null;
-    const o = planOutcomes(s, p.me, partner).find(x => x.name === p.move.name);
+    const o = planOutcomes(turn, p.me, partner).find(x => x.name === p.move.name);
     return o?.expected > 0 ? { mon: partner, share: Math.min(1, o.expected / partner.getMaxHp()), pKo: o.pKo ?? 0 } : null;
   };
   // Nothing lost without `p`'s hit: its foes still go down, and the pair's value (KOs, KOs before they move,
@@ -1069,7 +998,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     const k = `${X.id}|${mons.map(m => m.id).join()}`;
     if (!dangerMemo.has(k)) {
       dangerMemo.set(k, !attackers.includes(X) ? 0 : Math.min(2, Math.max(0, ...mons.map(m => {
-        const t = threatFrom(s, X, m);
+        const t = threatFrom(turn, X, m);
         if (!t) return 0;
         const setup = t.live ? setupDanger(X, t, m) : 0;
         return t.expected / m.getMaxHp() + threatKoAt(t, m.hp) * t.koFirst * 0.5 + setup;
@@ -1079,19 +1008,19 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   };
   // P(`p`'s hit reaches X): it isn't KO'd before it moves and X doesn't Protect.
   const landOf = (p, X) => attackers.reduce((keep, f) => {
-    const t = threatFrom(s, f, p.me, p.move.pm);
+    const t = threatFrom(turn, f, p.me, p.move.pm);
     return keep * (1 - threatKoAt(t, p.me.hp) * (t?.koFirst ?? 0));
-  }, 1) * (1 - protectChance(s, X));
+  }, 1) * (1 - protectChance(turn, X));
   // `mons`: whose danger counts (defaults to the picks'; kept whole when a pick is left out to weigh its hit).
   const joint = (picks, payers, mons = picks.map(p => p.me)) => {
     const acting = picks.filter(p => p.move && !payers.includes(p.me));
     const foes = active.map(() => ({ pKo: 0, pBefore: 0, redirect: 0, hitters: 0 }));
     active.forEach((X, xi) => {
       const hitters = acting.map(p => {
-        const o = p.target === "both" ? planOutcomes(s, p.me, X).find(x => x.name === p.move.name) : p.target === xi ? p.move : null;
+        const o = p.target === "both" ? planOutcomes(turn, p.me, X).find(x => x.name === p.move.name) : p.target === xi ? p.move : null;
         if (!o) return null;
         const land = landOf(p, X);
-        const before = attackers.includes(X) ? 1 - (threatFrom(s, X, p.me, p.move.pm)?.first ?? 0) : 1;
+        const before = attackers.includes(X) ? 1 - (threatFrom(turn, X, p.me, p.move.pm)?.first ?? 0) : 1;
         const acc = Math.max(o.acc ?? 1, 0.01);
         return { p, o, land, before, acc, alone: land * (o.pKo ?? 0), roll: Math.min(1, (o.pKo ?? 0) / acc) };
       }).filter(Boolean);
@@ -1102,13 +1031,13 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
         f.pBefore = hitters[0].before * f.pKo;
       } else if (hitters.length === 2) {
         const [a, b] = hitters;
-        const q = actionOrder(s, a.p.me, a.p.move.pm, b.p.me, b.p.move.pm);
+        const q = actionOrder(turn, a.p.me, a.p.move.pm, b.p.me, b.p.move.pm);
         const la = a.land * a.acc, lb = b.land * b.acc;
         f.pKo = la * lb * comboKo(X, a, b, q) + la * (1 - lb) * a.roll + (1 - la) * lb * b.roll;
         f.pBefore = a.before * b.before * f.pKo + a.before * (1 - b.before) * a.alone + (1 - a.before) * b.before * b.alone;
         const Y = active[1 - xi];
         if (Y && a.p.target !== "both" && b.p.target !== "both") {
-          const redirect = (first, second) => first.alone * second.land * (planOutcomes(s, second.p.me, Y).find(x => x.name === second.o.name)?.pKo ?? 0);
+          const redirect = (first, second) => first.alone * second.land * (planOutcomes(turn, second.p.me, Y).find(x => x.name === second.o.name)?.pKo ?? 0);
           foes[1 - xi].redirect += q * redirect(a, b) + (1 - q) * redirect(b, a);
         }
       }
@@ -1180,8 +1109,8 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   const doomedMemo = new Map();
   const doomedNowOf = me => {
     if (!doomedMemo.has(me)) {
-      const ko = 1 - attackers.reduce((keep, f) => keep * (1 - threatKoAt(threatFrom(s, f, me), me.hp)), 1);
-      doomedMemo.set(me, me.hp + healAtEnd(s, me) <= 0 || ko >= DOOMED);
+      const ko = 1 - attackers.reduce((keep, f) => keep * (1 - threatKoAt(threatFrom(turn, f, me), me.hp)), 1);
+      doomedMemo.set(me, me.hp + healAtEnd(turn, me) <= 0 || ko >= DOOMED);
     }
     return doomedMemo.get(me);
   };
@@ -1217,12 +1146,12 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     };
   };
   const worse = (a, b) => (!a ? b : b && RANK[b.level] > RANK[a.level] ? b : a);
-  const nowThreat = me => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(s, f, me), me.hp, false)), null);
+  const nowThreat = me => attackers.reduce((w, f) => worse(w, tagOf(threatFrom(turn, f, me), me.hp, false)), null);
   const slotThreat = (p, entering) => {
     const faced = typeof p.target === "number" ? [active[p.target]] : active;
     let tag = entering ? null : nowThreat(p.me);
     for (const f of faced) {
-      if (entering || !attackers.includes(f)) tag = worse(tag, tagOf(threatFrom(s, f, p.me, p.move?.pm ?? null, { next: true }), entering ? p.hp : p.me.hp, true));
+      if (entering || !attackers.includes(f)) tag = worse(tag, tagOf(threatFrom(turn, f, p.me, p.move?.pm ?? null, { next: true }), entering ? p.hp : p.me.hp, true));
     }
     return tag;
   };
@@ -1274,7 +1203,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   // Why a paid switch-in is cheap: the share of its HP the hits aimed at the mon leaving take off it, and how it takes
   // the likeliest of them (the foe that hits hardest) — immune, resisted, or weak.
   const entryHit = me => {
-    const ts = attackers.map(f => threatFrom(s, f, me)).filter(t => t?.move);
+    const ts = attackers.map(f => threatFrom(turn, f, me)).filter(t => t?.move);
     if (!ts.length) return null;
     const t = ts.reduce((a, b) => (b.expected > a.expected ? b : a));
     return { pct: Math.min(999, Math.round(incoming(me).dmg / me.getMaxHp() * 100)), move: t.move.name, type: t.move.type, e: t.move.e };
@@ -1300,7 +1229,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   };
   const boostedKo = (b, X) => {
     if (bossBarsLeft(X) > 1) return 0;
-    const o = b.target === "both" ? planOutcomes(s, b.me, X).find(x => x.name === b.move.name) : b.move;
+    const o = b.target === "both" ? planOutcomes(turn, b.me, X).find(x => x.name === b.move.name) : b.move;
     if (!o) return 0;
     const M = rawMax(o) * 1.5;
     const roll = M < X.hp ? 0 : !o.live ? 1 : Math.min(1, (M - X.hp) / (0.15 * M) + 1 / 16);
@@ -1318,7 +1247,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       if (protect && !protectedLast(a.me) && plan.joint.value - alone.value < 0.5) {
         const X = attackers.find(f => {
           const xi = active.indexOf(f);
-          const t = threatFrom(s, f, a.me, a.move.pm);
+          const t = threatFrom(turn, f, a.me, a.move.pm);
           return xi >= 0 && threatKoAt(t, a.me.hp) * (t?.koFirst ?? 0) >= 0.5 && alone.foes[xi].pBefore >= 0.5;
         });
         if (X) { out.set(a, { kind: "protect", pm: protect, note: `${b.me.name} KOs ${X.name} first` }); return; }
@@ -1410,7 +1339,7 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
 const hitsAlly = o => [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS].includes(o?.pm?.getMove?.()?.moveTarget);
 // A move the game's own scoring marks down: recoil, fainting, a self stat drop, a condition it can't meet. With no
 // game functions every move is 0, so nothing counts as a drawback and the clean alternative is simply the best move.
-const drawback = o => (o?.benefit ?? 0) < 0;
+export const drawback = o => (o?.benefit ?? 0) < 0;
 const ALLY_KO_COST = 4;
 // Consistency (after PokéLLMon): between near-equal options the advice shouldn't flip from turn to turn. A mon out
 // since before last turn keeps a small edge for the move it used last; switching a mon straight back out the turn
@@ -1440,20 +1369,6 @@ const HAZARD_TURNS = 2;
 const FEED_COST = 0.5;
 
 // ---- Status moves as this turn's action
-// The weather a move of `user`'s is judged in (`getEffectiveWeatherForMove`, `src/data/weather.ts:233`): an ability
-// that overrides it (`PreAttackWeatherOverrideAbAttr`, Mega Sol) answers first and **supersedes suppression**, so a
-// Cloud Nine on the field doesn't take the overridden weather away; only the live weather is suppressible. An
-// override the live bundle carries under another field name is simply not found, and the live weather stands.
-const effectiveWeather = (s, user) => {
-  try {
-    if (user?.hasAbilityWithAttr?.("PreAttackWeatherOverrideAbAttr")) {
-      for (const a of [user.getAbility?.(), user.hasPassive?.() ? user.getPassiveAbility?.() : null]) {
-        for (const x of a?.getAttrs?.("PreAttackWeatherOverrideAbAttr") ?? []) if (x?.weatherType) return x.weatherType;
-      }
-    }
-  } catch {}
-  try { return s.arena?.weather && !s.arena.weather.isEffectSuppressed?.() ? s.arena.weather.weatherType : WeatherType.NONE; } catch { return WeatherType.NONE; }
-};
 // What a status move of `me`'s does to a fight with `f`, if it's one the planner can price, or null:
 // - setup: its own stat stages (`selfStages`), and Belly Drum's HP (`hpCost`);
 // - status: poison, toxic, paralysis, sleep or burn on a foe that can take it (`canSetStatus`). Written on as a status
@@ -1467,12 +1382,12 @@ const effectiveWeather = (s, user) => {
 //   top), written onto the foe so every later number is the game's own on the new typing.
 // This turn's incoming hit is priced on the state as it stands, the way every play here is: a foe we retype, burn or
 // paralyse after it has moved is unchanged for that one hit, and only a sleep or paralysis that lands first cancels it.
-const statusPlay = (s, me, f, info) => {
+const statusPlay = (turn, me, f, info) => {
   const mv = info.pm.getMove?.();
   if (!mv || info.blocked) return null;
   const t = moveTraits(mv, me, { target: f });
   if (t.inflicts.some(x => x.self)) return null;
-  const up = selfStages(me, mv);
+  const up = turn.mon(me).setup(mv);
   if (up) {
     const names = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
     return {
@@ -1482,7 +1397,7 @@ const statusPlay = (s, me, f, info) => {
   }
   const inflict = t.inflicts.find(x => [StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.PARALYSIS, StatusEffect.SLEEP, StatusEffect.BURN].includes(x.effect));
   if (inflict) {
-    if (f.status?.effect || !canTakeStatus(s, f, inflict.effect, me)) return null;
+    if (f.status?.effect || !turn.mon(f).canTake(inflict.effect, me)) return null;
     const early = !!f.hasAbilityWithAttr?.("ReduceStatusEffectDurationAbAttr");
     const skip = a => STATUS_SKIP[StatusEffect.SLEEP](a, early);
     return {
@@ -1514,11 +1429,11 @@ const statusPlay = (s, me, f, info) => {
     const max = me.getMaxHp?.() ?? me.hp;
     if (me.hp >= max) return null;
     // The weather the heal is judged in is live; how much it heals there is the attribute's own answer.
-    const ratio = t.heal.ratioIn(effectiveWeather(s, me), me, f);
+    const ratio = t.heal.ratioIn(turn.mon(me).weather, me, f);
     return { kind: "heal", self: true, amount: Math.max(1, Math.floor(max * ratio)), note: `heal ${Math.round(ratio * 100)}%` };
   }
   if (t.hazard) {
-    const v = hazardValue(s, me, t.hazard.tag);
+    const v = hazardValue(turn, me, t.hazard.tag);
     return v && { kind: "hazard", self: true, value: v.turns, note: `${v.n} to come` };
   }
   return null;
@@ -1527,25 +1442,21 @@ const statusPlay = (s, me, f, info) => {
 // trainer's mons still to come (EntryHazardTag): the share of its HP each loses, as turns (HAZARD_TURNS a bar), and
 // how many it touches. Magic Guard blocks the chip; Spikes need the mon grounded; a grounded Poison type soaks up
 // Toxic Spikes, so none is counted then. Null in a wild battle or with nobody left to come.
-const hazardValue = (s, me, tagType) => {
-  if (!s.currentBattle?.trainer) return null;
-  const coming = (s.getEnemyParty?.() ?? []).filter(p => p && p.hp > 0 && !p.isOnField?.());
+const hazardValue = (turn, me, tagType) => {
+  if (!turn.facts.trainer) return null;
+  const coming = turn.facts.foes.filter(p => p && p.hp > 0 && !p.isOnField?.());
   if (!coming.length) return null;
-  let layers = 0;
-  try { layers = s.arena?.getTagOnSide?.(tagType, ArenaTagSide.ENEMY)?.layers ?? 0; } catch {}
+  const layers = turn.facts.hazards(tagType, ArenaTagSide.ENEMY);
   const grounded = p => { try { return p.isGrounded?.() ?? !typesOf(p).includes("Flying"); } catch { return true; } };
   const guarded = p => !!p.hasAbilityWithAttr?.("BlockNonDirectDamageAbAttr");
   if (tagType === "TOXIC_SPIKES" && coming.some(p => grounded(p) && typesOf(p).includes("Poison"))) return null;
   const spikes = n => (n > 0 ? 1 / (10 - 2 * n) : 0);
   const share = p => {
-    if (tagType === "STEALTH_ROCK") {
-      if (guarded(p)) return 0;
-      try { return 0.125 * p.getAttackTypeEffectiveness(PokemonType.ROCK, { ignoreStrongWinds: true }); } catch { return 0.125 * effectiveness("Rock", p); }
-    }
+    if (tagType === "STEALTH_ROCK") return turn.mon(p).rockChip;
     if (!grounded(p)) return 0;
     if (tagType === "SPIKES") return guarded(p) ? 0 : spikes(layers + 1) - spikes(layers);
     // Poison's chip over a few turns out, then a smaller step to toxic.
-    if (tagType === "TOXIC_SPIKES") return guarded(p) || !canTakeStatus(s, p, StatusEffect.POISON, me) ? 0 : layers ? 0.1 : 0.25;
+    if (tagType === "TOXIC_SPIKES") return guarded(p) || !turn.mon(p).canTake(StatusEffect.POISON, me) ? 0 : layers ? 0.1 : 0.25;
     return 0;
   };
   const shares = coming.map(p => Math.min(p.hp / p.getMaxHp(), share(p)));
@@ -1553,26 +1464,24 @@ const hazardValue = (s, me, tagType) => {
   return total > 0 ? { turns: total * HAZARD_TURNS, n: shares.filter(x => x > 0).length } : null;
 };
 const lastMoveOf = me => ((me.tempSummonData?.turnCount ?? 0) >= 2 ? me.getLastXMoves?.(1)?.[0]?.move ?? null : null);
-const cameInLastTurn = (s, p) => (p.tempSummonData?.turnCount ?? 2) <= 1 && (s.currentBattle?.turn ?? 1) > 1;
+const cameInLastTurn = (turn, p) => (p.tempSummonData?.turnCount ?? 2) <= 1 && (turn.facts.turn ?? 1) > 1;
 
 // Slot 1's command phase in a double battle: slot 0's command is already in `turnCommands[0]` (CommandPhase
 // handleFightCommand / tryLeaveField; SelectTargetPhase puts a chosen target on the command itself). A move →
 // `{ me, pm, target }` with the target as an index into `active` ("both" for a spread move, null for our side);
 // a switch → `{ me, switchIn }` (cursor is the party index). Balls and runs skip slot 1's phase entirely.
-const lockedCommand = (s, b, party, active, pair) => {
-  const ph = s.phaseManager?.getCurrentPhase?.();
-  if (!b.double || ph?.phaseName !== "CommandPhase" || ph.fieldIndex !== 1) return null;
-  const cmd = b.turnCommands?.[0];
+const lockedCommand = (turn, party, active, pair) => {
+  const cmd = turn.facts.command;
   const me = party.find(p => p.isOnField?.() && p.getBattlerIndex?.() === BattlerIndex.PLAYER);
-  if (!cmd || cmd.skip || !me) return null;
-  if (cmd.command === Command.POKEMON) {
-    const switchIn = s.getPlayerParty?.()?.[cmd.cursor];
+  if (!cmd || !me) return null;
+  if (cmd.kind === Command.POKEMON) {
+    const switchIn = turn.facts.party[cmd.cursor];
     return switchIn && party.includes(switchIn) ? { me, switchIn } : null;
   }
-  if (cmd.command !== Command.FIGHT) return null;
+  if (cmd.kind !== Command.FIGHT) return null;
   const pm = me.moveset[cmd.cursor] ?? me.moveset.find(m => m && m.moveId === cmd.move?.move) ?? null;
   const mv = pm?.getMove?.();
-  const bi = (cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [])[0];
+  const bi = cmd.targets[0];
   let target = null;
   if (mv && SPREAD_TARGETS.includes(mv.moveTarget)) target = pair ? "both" : 0;
   else if (bi != null && bi >= BattlerIndex.ENEMY) {
@@ -1584,11 +1493,11 @@ const lockedCommand = (s, b, party, active, pair) => {
 
 // Best 1-v-1 move of `me` into `foe`, by who wins the exchange. For foes no field slot is planned against.
 // `partnered`: `me` stands next to a partner, so moves that also hit it are out.
-const duel = (s, me, foe, partnered = false) => {
+export const duel = (turn, me, foe, partnered = false) => {
   let best = null;
-  for (const o of planOutcomes(s, me, foe)) {
+  for (const o of planOutcomes(turn, me, foe)) {
     if (!(o.expected > 0) || (partnered && hitsAlly(o))) continue;
-    const x = exchange(s, me, o.pm, foe, { outcome: o, next: !me.isOnField?.() || !foe.isOnField?.() });
+    const x = exchange(turn, me, o.pm, foe, { outcome: o, next: !me.isOnField?.() || !foe.isOnField?.() });
     const score = x.eTurnsThey - x.eTurnsWe + (x.pWeKoFirst - x.pTheyKoFirst);
     if (!best || score > best.score || (score === best.score && o.expected > best.mine.expected)) best = { me, mine: o, myTurns: x.turnsWe, score };
   }
@@ -1600,28 +1509,33 @@ const duel = (s, me, foe, partnered = false) => {
 // plan and the catch advice, and opens the sandbox all three run in.
 // `team`: the whole-fight plan's model (35-team-plan's `teamPlanner`), built by 60-card before this one and handed in
 // so the ⚔ line can price what a turn costs the rest of the fight. Null on a wild wave, where there is no plan.
-const battleModel = (s, b, party, foes, { team = null } = {}) => {
-  const onField = foes.filter(f => f.isOnField?.());
-  const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
+export const battleModel = (turn, { team = null } = {}) => {
+  const { double, trainer, wave } = turn.facts;
+  const party = turn.facts.party.filter(p => p && p.hp > 0);
+  const foes = turn.facts.foes.filter(f => f && f.hp > 0);
+  const active = turn.activeFoes();
   // During a free switch the enemy hasn't decided anything: it picks its first command after our switch, against
   // the field we choose. Its switch rule isn't replayable against a hypothetical field, so predict none now; the
   // CommandPhase refresh predicts against the real field. (CheckSwitchPhase isn't offered in trainer battles.)
-  const freeSwitch = awaitingDecision(s) === "check-switch";
-  const predicted = freeSwitch ? new Map() : predictSwitches(s, b, active);
+  const freeSwitch = turn.facts.decision === "check-switch";
+  const predicted = new Map(freeSwitch ? [] : active.flatMap(f => {
+    const to = turn.enemyAction(f).switchTo;
+    return to ? [[f, { to, ratio: 1 }]] : [];
+  }));
   const switching = f => (predicted.get(f)?.ratio ?? 0) >= 1;
   // Plan against the field our moves will actually hit; if a switch is predicted, also keep the plan for
   // the case it stays, shown dim.
   const facing = active.map(f => (switching(f) ? predicted.get(f).to : f));
   // Targets are field positions, so a lock resolved against the field holds for the switch-in taking that position.
-  const locked = lockedCommand(s, b, party, active, active.length === 2);
-  // The panel refreshes every second; a plan only changes with what `planMemo` keys on (and slot 0's command).
+  const locked = lockedCommand(turn, party, active, active.length === 2);
+  // The panel refreshes every second; a plan only changes with what the turn's key covers (and slot 0's command).
   const ids = mons => mons.map(p => p.id).join();
   const lockKey = locked ? `${locked.me.id}:${locked.switchIn?.id ?? ""}:${pmName(locked.pm)}:${locked.target}` : "";
   const attackers = active.filter(f => !switching(f));
-  const plan = planMemo(s, `field:${ids(party)}|${ids(facing)}|${ids(attackers)}|${!!b.double}|${freeSwitch}|${lockKey}`,
-    () => fieldPlan(s, party, facing, !!b.double, attackers, { freeSwitch, locked, team }));
+  const plan = turn.memo(`field:${ids(party)}|${ids(facing)}|${ids(attackers)}|${double}|${freeSwitch}|${lockKey}`,
+    () => fieldPlan(turn, party, facing, double, attackers, { freeSwitch, locked, team }));
   const ifStay = active.some(switching)
-    ? planMemo(s, `stay:${ids(party)}|${ids(active)}|${!!b.double}|${lockKey}`, () => fieldPlan(s, party, active, !!b.double, active, { locked }))
+    ? turn.memo(`stay:${ids(party)}|${ids(active)}|${double}|${lockKey}`, () => fieldPlan(turn, party, active, double, active, { locked }))
     : null;
 
   // Foes on the field take their pokémon and move from the field plan, so the rows never contradict it.
@@ -1637,12 +1551,12 @@ const battleModel = (s, b, party, foes, { team = null } = {}) => {
       const both = slot.target === "both";
       // A status move's row shows the damage of the attack it sets up.
       const then = slot.move.cat === "status" ? slot.then ?? null : null;
-      const dmg = both ? planOutcomes(s, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected;
+      const dmg = both ? planOutcomes(turn, slot.me, target).find(x => x.name === slot.move.name)?.expected ?? 0 : (then ?? slot.move).expected;
       // The slot's own per-foe KO turns, so the row and the ⚔ line agree.
-      return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(target, [{ d: dmg, p: 1 }]).by) : slot.hits, score: slot.score, later: false, vs: target };
+      return { me: slot.me, mine: { ...slot.move, dmg, then }, myTurns: both ? slot.each?.[ai] ?? koTurn(koCurve(turn.mon(target), [{ d: dmg, p: 1 }]).by) : slot.hits, score: slot.score, later: false, vs: target };
     }
     const paired = (plan?.picks.length ?? 0) === 2;
-    const ranked = party.map(me => duel(s, me, foe, paired && ai >= 0 && plan.picks.some(p => p.me === me)))
+    const ranked = party.map(me => duel(turn, me, foe, paired && ai >= 0 && plan.picks.some(p => p.me === me)))
       .map(m => ({ ...m, rank: m.score - (used.has(m.me) ? 1 : 0) }))
       .sort((x, y) => y.rank - x.rank);
     const pick = ranked[0];
@@ -1665,11 +1579,11 @@ const battleModel = (s, b, party, foes, { team = null } = {}) => {
     const p = picks.get(foe);
     const vs = p?.vs ?? foe;
     // What this foe likely does to the pokémon we put in front of it (a foe switching out does nothing).
-    const t = p?.mine && !switching(foe) ? threatFrom(s, foe, p.me, p.mine.pm ?? null, { next: !p.me.isOnField?.() || !foe.isOnField?.() }) : null;
+    const t = p?.mine && !switching(foe) ? threatFrom(turn, foe, p.me, p.mine.pm ?? null, { next: !p.me.isOnField?.() || !foe.isOnField?.() }) : null;
     const bars = bossBarsLeft(vs);
     const n = p?.mine ? hitCounts(p.mine) : null;
     return {
-      icon: iconOf(foe), name: foe.name, lv: foe.level, types: typesOf(foe), tera: teraTypeOf(foe),
+      icon: iconOf(foe), name: foe.name, lv: foe.level, types: typesOf(foe), tera: turn.mon(foe).tera,
       abilities: abilitiesOf(foe), boss: !!foe.isBoss?.(), status: foe.status?.effect ?? 0,
       hp: Math.round(foe.hp / foe.getMaxHp() * 100),
       weak, avoid,
@@ -1699,7 +1613,7 @@ const battleModel = (s, b, party, foes, { team = null } = {}) => {
       from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
     })),
     ifStay: ifStay ? ifStay.view.slots : null,
-    title: `W${b.waveIndex}${b.trainer ? ` · ${b.trainer.getName()}` : ""}`,
+    title: `W${wave}${trainer ? ` · ${trainer.getName()}` : ""}`,
     order: [...new Set(sendIns)].map(me => ({ icon: iconOf(me), name: me.name })),
     team: Object.entries(teamWeak).sort((x, y) => y[1] - x[1]).slice(0, 4),
     rows,
