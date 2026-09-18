@@ -21,7 +21,7 @@
 //
 // Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
 // which replays inside a seed fork. Nothing is called that the preview doesn't already call.
-const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
+const { aheadModel, doubleOdds, learnRoster } = (() => {
   // How far ahead the roster is still worth reading. The calendar holds at any distance, but the replay feeds on the
   // party, the luck value and the biome, and a catch, an evolution or a shop pick re-rolls it — so a roster read more
   // than a few waves out is a number that will have moved by the time the fight arrives.
@@ -34,20 +34,16 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
-  // ---- Luck. `getPartyLuckValue` (modifier-type.ts) sums the party's luck over everyone allowed in battle and
-  // clamps to 14; the event boost it adds on top isn't readable from the scene, so this is a floor, not the value.
-  const partyLuck = party => {
-    const allowed = party.filter(p => tryDo(() => p.isAllowedInBattle(), true));
-    return Math.max(0, Math.min(14, allowed.reduce((t, p) => t + (tryDo(() => p.getLuck(), 0) ?? 0), 0)));
-  };
+  // ---- Luck. The value itself is the party profile's (`08-party.js`, `partyLuck`): it is a fact about the party, and
+  // the biome card reads the same one. What it buys is this file's — the per-reward upgrade chance below.
   const LUCK_GRADES = ["D", "C", "C+", "B-", "B", "B+", "A-", "A", "A+", "A++", "S", "S+", "SS", "SS+", "SSS"];
   // One reward's chance of being upgraded a tier at least once: the loop rolls `randSeedInt(odds) < 4` and repeats
   // while it hits, so the first roll is the one worth quoting.
   const upgradeChance = luck => 4 / Math.floor(128 / ((luck + 4) / 4));
 
   // The tiers this wave's rewards are pinned to, and whether luck can still move them. A fixed battle's config
-  // carries them; every other wave rolls freely. `TIER_NAMES` lives in 50-shop.js, which loads after this file —
-  // safe because nothing here runs at load time (see the header of 95-render-preview.js for the same rule).
+  // carries them; every other wave rolls freely. `TIER_NAMES` is 01-core's, because the look-ahead names a pinned
+  // tier waves before there is a shop to name it on.
   const rewardRules = (s, wave) => {
     const cfg = tryDo(() => (s.gameMode?.isFixedBattle?.(wave) ? s.gameMode.getFixedBattle(wave) : null));
     const custom = cfg?.customModifierRewardSettings;
@@ -89,25 +85,22 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
   };
 
   // ---- Readiness: the party against the roster the preview hands over.
-  // A foe's types and ability come from the replay, so the multiplier is the real one; its damaging move types come
-  // from the moveset the replay generated, and when those are missing its own types stand in as a STAB proxy.
-  const foeMult = (type, foe) => (ABILITY_IMMUNE[foe.ability] === type || ABILITY_IMMUNE[foe.passive] === type
-    ? 0 : (foe.types ?? []).reduce((x, d) => x * vs(type, d), 1));
-  const readiness = (model, party) => {
+  // The party comes as a profile (`08-party.js`): `hitters` answers who can hit a foe and `weakTo` who it hits back,
+  // the same two queries the biome and encounter cards ask. A foe's types, ability and passive come from the replay,
+  // so `hitters` prices the real matchup, immunities included; its damaging move types come from the moveset the
+  // replay generated, and when those are missing its own types stand in as a STAB proxy.
+  const readiness = (model, profile) => {
     const foes = model?.foes ?? [];
+    const party = profile.members;
     if (!foes.length || !party.length) return null;
     const ourLevel = Math.max(...party.map(p => p.level ?? 1));
     const theirLevel = Math.max(...foes.map(f => f.level ?? 0));
-    const moves = party.map(p => {
-      const own = typesOf(p);
-      return [...new Set(damagingTypes(p))].map(t => ({ t, stab: own.includes(t) ? 1.5 : 1 }));
-    });
-    const answers = (i, f) => moves[i].some(m => foeMult(m.t, f) >= 2);
-    const unanswered = foes.filter(f => !party.some((_, i) => answers(i, f)));
-    const hitters = party.filter((_, i) => foes.some(f => answers(i, f))).map(p => p.name);
+    const answering = foes.map(f => new Set(profile.hitters(f)));
+    const unanswered = foes.filter((_, i) => !answering[i].size);
+    const hitters = party.filter(p => answering.some(set => set.has(p))).map(p => p.name);
     // What they swing back with: their damaging moves when the replay generated a moveset, else their own types.
     const theirTypes = [...new Set(foes.flatMap(f => (f.moveTypes?.length ? f.moveTypes : f.types) ?? []))];
-    const threats = theirTypes.map(t => ({ type: t, n: party.filter(p => effectiveness(t, p) >= 2).length }))
+    const threats = theirTypes.map(t => ({ type: t, n: profile.weakTo(t).length }))
       .filter(x => x.n >= Math.max(2, Math.ceil(party.length / 2))).sort((a, b) => b.n - a.n);
     const bars = foes.reduce((t, f) => t + Math.max(0, (f.segments ?? 0) - 1), 0);
 
@@ -218,7 +211,7 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
       // The stretch the rewards card spends against: how many big fights stand between here and the next full heal.
       fightsBeforeHeal: heal == null ? schedule.length : schedule.filter(f => f.wave < heal).length,
       schedule: schedule.slice(0, 4).map(f => ({ ...f, in: f.wave - wave })),
-      readiness: named ? readiness(named, party.filter(p => p.hp > 0)) : null,
+      readiness: named ? readiness(named, partyProfile(party.filter(p => p.hp > 0))) : null,
       luck: { value: luck, grade: LUCK_GRADES[luck] ?? String(luck), upgradePct: Math.round(upgradeChance(luck) * 1000) / 10 },
       // What the rewards for the wave just cleared are pinned to — the fixed battle you have already won, not the
       // one ahead. This is what decides whether luck can upgrade the screen as first rolled (a reroll drops the pin).
@@ -237,7 +230,7 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
     return { wave: next.wave, exact: !!next.exact, foes: next.foes };
   };
 
-  return { aheadModel, partyLuck, doubleOdds, learnRoster };
+  return { aheadModel, doubleOdds, learnRoster };
 })();
 
 // ---- How the card and its one-line summary name the fight ahead.

@@ -1,0 +1,29 @@
+== attacks
+Garchomp          Ground*  Dragon*
+Snorlax           Normal*  Dark
+Lapras            Water*  Ice*
+Magikarp          Normal
+team              Ground  Dragon  Normal  Dark  Water  Ice
+Sudowoodo         Steel
+== weaknesses and holes
+weak to           Fighting  Grass  Electric
+holes             Normal  Fighting  Bug  Water  Ice  Dark  Fairy
+== weakest
+Magikarp          final 400~  L35
+== matchups
+hit Magnezone     Garchomp
+weak to Electric  Lapras  Magikarp
+== reasons
+Lucario L45       covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Magikarp 400~
+vs Snorlax        covers Grass  hole Normal/Ice/Dark/Fairy
+Lucario L20       covers Grass  hole Normal/Ice/Dark/Fairy
+Sudowoodo         hole Bug/Ice
+Gyarados          dupe  covers Fighting  hole Fighting/Bug  upgrade 540 over Magikarp 400~
+== one species, both cards
+biome             covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Magikarp 400~
+catch             covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Magikarp 400~
+== luck and fusions
+luck              6
+Snorlax←Lapras    final 538  exact
+Magikarp←Snorlax  final 470~
+== empty party ok

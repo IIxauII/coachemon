@@ -44,7 +44,7 @@
 // Every game method call here (hasAbility, getRootSpeciesId, gameMode checks, the planner's damage code) runs inside
 // `sandbox` while the game waits for a command; otherwise field reads and the approximations stand in.
 
-const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamWeakTypes } = (() => {
+const { captureChance, catchAdvice, catchWorth } = (() => {
   const BALLS = [
     { id: PokeballType.POKEBALL, ball: "Poké Ball", short: "PB", key: "pb", mult: 1 },
     { id: PokeballType.GREAT_BALL, ball: "Great Ball", short: "GB", key: "gb", mult: 1.5 },
@@ -113,86 +113,41 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
   };
 
   // ---- Team value
-  const damagingTypes = p => (p.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } })
-    .filter(mv => mv && mv.category !== MoveCategory.STATUS && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean);
-  // A fusion's base stats are its two species' averaged stat by stat, rounded up (Pokemon.calculateBaseStats): a fused
-  // mon is judged by the pair, not by the species it shows.
-  const bstOf = p => {
-    const sp = p.species, fu = p.fusionSpecies;
-    if (!fu) return sp?.baseTotal ?? 0;
-    if (Array.isArray(sp?.baseStats) && Array.isArray(fu.baseStats)) return sp.baseStats.reduce((t, x, i) => t + Math.ceil((x + (fu.baseStats[i] ?? 0)) / 2), 0);
-    return Math.ceil(((sp?.baseTotal ?? 0) + (fu.baseTotal ?? 0)) / 2);
-  };
-  const rootOf = (p, live) => call(live, () => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
-  // A line's strength is its final evolution's BST, not the current stage's: an unevolved Spinarak (190) isn't weaker
-  // than a wild 400. The game only exposes evolutions as species ids (PokemonSpecies.getEvolutionLevels() →
-  // [[speciesId, level], …], every descendant flattened, a pure data read), so the final BST is estimated from how many
-  // stages are left: two when the first two entries are consecutive ids at different levels (Charmander 5@16, 6@36;
-  // Oddish 44@21, 45@item), else one (Eevee's and Tyrogue's branches share a level).
-  const stagesLeft = sp => {
-    let evos;
-    try { evos = sp?.getEvolutionLevels?.(); } catch { evos = null; }
-    if (!Array.isArray(evos) || !evos.length) return 0;
-    const [a, b] = evos;
-    return b && b[0] === a[0] + 1 && b[1] !== a[1] ? 2 : 1;
-  };
-  // Typical growth per stage: ×1.3, +110, and a floor near 400 for a line's final form (Spinarak 190 → Ariados 400,
-  // Charmander 309 → Charizard 534, Pidgey 251 → Pidgeot 479).
-  const speciesFinal = sp => {
-    const bst = sp?.baseTotal ?? 0, n = stagesLeft(sp);
-    if (!n || !bst) return { bst, final: bst, estimated: false };
-    return { bst, final: Math.round(Math.max(bst * 1.3 ** n, bst + 110 * n, 400 + 90 * (n - 1))), estimated: true };
-  };
-  // A fusion grows along both lines: the average of each half's final BST.
-  const finalBstOf = p => {
-    if (!p.fusionSpecies) return speciesFinal(p.species);
-    const a = speciesFinal(p.species), b = speciesFinal(p.fusionSpecies), bst = bstOf(p);
-    return a.estimated || b.estimated ? { bst, final: Math.ceil((a.final + b.final) / 2), estimated: true } : { bst, final: bst, estimated: false };
-  };
-  // A clear upgrade over our weakest member: this much more final BST, a real mon, not a route-1 one beating another,
-  // and not so far below our weakest member's level that it would have to catch up first.
-  const UPGRADE_BST = 100, UPGRADE_FLOOR = 400, UPGRADE_LEVEL_GAP = 10;
-
-  // Attacking types that hit two or more of us super-effectively and that more of us are weak to than resist.
-  const teamWeakTypes = all => TYPES.filter(t => {
-    const n = all.filter(p => effectiveness(t, p) >= 2).length;
-    return n >= 2 && n > all.filter(p => effectiveness(t, p) <= 0.5).length;
-  });
-
-  const teamReasons = (s, foe, b, live) => {
+  // What the foe is worth to *this* party is the party profile's call (`08-party.js`), so the biome card judging the
+  // same species reaches the same verdict. What each reason is worth in a ball is this card's own: `w` below.
+  const teamReasons = (s, foe, b) => {
     const all = (s.getPlayerParty?.() ?? []).filter(Boolean);
     const out = [];
     const limited = (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.LIMITED_CATCH && c.value > 0) && b.waveIndex % 10 !== 1;
     if (limited) return { out: [{ kind: "team", text: "Limited Catch: won't join the party", w: 0 }], replace: null };
-    // Its line is already on the team: a second one adds nothing.
-    if (!all.length || all.some(p => rootOf(p, live) === rootOf(foe, live))) return { out, replace: null };
+    if (!all.length) return { out, replace: null };
 
-    const weak = teamWeakTypes(all);
-    const covers = weak.filter(t => effectiveness(t, foe) <= 0.5);
-    if (covers.length) out.push({ kind: "team", text: `covers ${covers.slice(0, 2).join("/")} weakness`, w: covers.length > 1 ? 1.5 : 1 });
+    const profile = partyProfile(all);
+    // A wild foe is a candidate with a known moveset: its own damaging types are what it would bring to the team.
+    const reasons = partyReasons(profile, { species: foe.species, fusion: foe.fusionSpecies ?? null, level: foe.level,
+      types: typesOf(foe), abilities: abilitiesOf(foe), moveTypes: damagingTypes(foe) });
+    // Its line is already on the team: a second one adds nothing, whatever else it brings.
+    if (reasons.some(r => r.kind === "dupe")) return { out, replace: null };
 
-    // Defending types none of our damaging moves hit super-effectively, that the foe's moves do.
-    if (all.length >= 3) {
-      const ours = new Set(all.flatMap(damagingTypes));
-      const hole = TYPES.filter(d => ![...ours].some(t => vs(t, d) >= 2));
-      const adds = hole.filter(d => damagingTypes(foe).some(t => vs(t, d) >= 2));
-      if (adds.length >= 2) out.push({ kind: "team", text: `hits ${adds.slice(0, 3).join("/")} (no one else does)`, w: 0.5 });
-    }
-
-    const fin = new Map([...all, foe].map(p => [p, finalBstOf(p)]));
-    const weakest = all.reduce((w, p) => (!w || fin.get(p).final < fin.get(w).final || (fin.get(p).final === fin.get(w).final && p.level < w.level) ? p : w), null);
-    const full = all.length >= 6;
-    const mine = fin.get(weakest), theirs = fin.get(foe);
-    if (mine.final && theirs.final >= UPGRADE_FLOOR && theirs.final >= mine.final + UPGRADE_BST
-      && (foe.level ?? 0) >= (weakest.level ?? 0) - UPGRADE_LEVEL_GAP) {
-      const show = x => (x.estimated ? `~${x.final}` : `${x.final}`);
-      out.push({ kind: "team", text: `stronger than ${weakest.name} (${theirs.estimated || mine.estimated ? "final " : ""}BST ${show(theirs)} vs ${show(mine)})`, w: 2 });
+    const show = x => (x.estimated ? `~${x.final}` : `${x.final}`);
+    for (const r of reasons) {
+      if (r.kind === "covers") out.push({ kind: "team", text: `covers ${r.types.slice(0, 2).join("/")} weakness`, w: r.types.length > 1 ? 1.5 : 1 });
+      if (r.kind === "hole") out.push({ kind: "team", text: `hits ${r.types.slice(0, 3).join("/")} (no one else does)`, w: 0.5 });
+      if (r.kind === "upgrade") {
+        out.push({ kind: "team", w: 2,
+          text: `stronger than ${r.against.name} (${r.estimated || r.against.estimated ? "final " : ""}BST ${show(r)} vs ${show(r.against)})` });
+      }
     }
     // A full party makes room by releasing someone: name who, if the catch is a team upgrade at all.
-    const replace = full && out.length ? { icon: iconOf(weakest), name: weakest.name } : null;
+    const weakest = profile.weakest?.mon ?? null;
+    const replace = all.length >= 6 && out.length && weakest ? { icon: iconOf(weakest), name: weakest.name } : null;
     if (replace) out.push({ kind: "team", text: `party full: replaces ${weakest.name}`, w: 0 });
     return { out, replace };
   };
+
+  // The line a species belongs to, for the dex reasons below: a starter unlock and "already using one" are about
+  // the root, not the form in front of you. The team side asks the party profile instead.
+  const rootOf = (p, live) => call(live, () => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
 
   // ---- Account value (dex, starter unlocks, abilities, IVs, shinies). Pure reads of gameData.
   const IV_TOTAL = 30, IV_STAT = 15;
@@ -343,7 +298,7 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
       }) * 1000) / 1000,
     }));
 
-    const team = teamReasons(s, foe, b, live);
+    const team = teamReasons(s, foe, b);
     const reasons = [...accountReasons(s, foe, live), ...team.out];
     let value = reasons.reduce((t, r) => t + r.w, 0);
     const cheap = pickBall(chance, value >= 1.5 ? maxBallFor(value, counts) : maxBallFor(0, counts));
@@ -417,9 +372,9 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
   // mon a Mystery Encounter hands over. `live`: game calls allowed (inside `sandbox`).
   const catchWorth = (s, foe, live) => {
     const b = s.currentBattle ?? { waveIndex: 0 };
-    const reasons = [...accountReasons(s, foe, live), ...teamReasons(s, foe, b, live).out];
+    const reasons = [...accountReasons(s, foe, live), ...teamReasons(s, foe, b).out];
     return { value: reasons.reduce((t, r) => t + r.w, 0), reasons: reasons.map(r => r.text), show: SHOW };
   };
 
-  return { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamWeakTypes };
+  return { captureChance, catchAdvice, catchWorth };
 })();

@@ -151,7 +151,6 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
   };
 
   const speciesById = id => tryDo(() => tables.species.getSpecies(id));
-  const typesOfSpecies = sp => [sp.type1, sp.type2].filter(t => t != null).map(t => TYPES[t]).filter(Boolean);
   // P(tier i) for a roll uniform on [0, max), tier i taking the values from cuts[i] up to the tier above's cut.
   const tierOdds = (cuts, max) => cuts.map((c, i) => Math.max(0, (i ? Math.min(cuts[i - 1], max) : max) - Math.min(c, max)) / max);
   const odds = (pools, tiers, cuts, max, forced = null) => {
@@ -332,10 +331,10 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
   };
 
   const big = x => { try { return BigInt(x ?? 0); } catch { return 0n; } };
-  const rootIdOf = sp => tryDo(() => sp.getRootSpeciesId(true), sp?.speciesId);
   const joinNames = names => (names.length > 2 ? `${names.length} mons` : names.join(" & "));
 
-  const judge = (s, id, party, level, wave, luck) => {
+  const judge = (s, id, profile, level, wave, luck) => {
+    const party = profile.members;
     const biome = tryDo(() => tables.biomes.get(id));
     if (!biome) return null;
     const enc = encounters(s, biome, wave, luck);
@@ -345,13 +344,11 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
     })).filter(e => e?.types.length);
     if (!spawnList.length) return null;
 
-    const moves = party.map(p => {
-      const own = typesOf(p);
-      return [...new Set(damagingTypes(p))].map(t => ({ t, stab: own.includes(t) ? 1.5 : 1 }));
-    });
-    const mult = (t, types) => types.reduce((x, d) => x * vs(t, d), 1);
-    const hitsSE = (i, types) => moves[i].some(m => mult(m.t, types) >= 2);
-    const weakTo = (p, types) => Math.max(...types.map(t => effectiveness(t, p))) >= 2;
+    // The party read once, by the one profile every card shares (`08-party.js`): `attacks` is the table this file used
+    // to build for itself, and `hitters` / `weakTo` are its two matchup queries. The weights below stay this card's.
+    const moves = profile.attacks;
+    const hitsSE = (i, types) => moves[i].some(m => effectiveness(m.t, { types }) >= 2);
+    const weakTo = (p, types) => types.some(t => profile.weakTo(t).includes(p));
     let offense = 0, defense = 0;
     const se = party.map(() => 0), weak = party.map(() => 0), resist = party.map(() => 0);
     const typeShare = {};
@@ -359,7 +356,7 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
       for (const t of e.types) typeShare[t] = (typeShare[t] ?? 0) + e.w;
       let best = 0;
       party.forEach((p, i) => {
-        for (const m of moves[i]) best = Math.max(best, mult(m.t, e.types) * m.stab);
+        for (const m of moves[i]) best = Math.max(best, effectiveness(m.t, { types: e.types }) * m.stab);
         if (hitsSE(i, e.types)) se[i] += e.w;
         const worst = Math.max(...e.types.map(t => effectiveness(t, p)));
         if (worst >= 2) { weak[i] += e.w; defense -= e.w / party.length; }
@@ -401,22 +398,25 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
       }
     }
 
-    // Catches: wild non-boss spawns that cover a team weakness, clearly outclass the weakest member, or are new to the dex.
-    const weakTypes = teamWeakTypes(party);
-    const roots = new Set(party.map(p => rootIdOf(p.species)));
-    const fin = party.map(p => finalBstOf(p).final).filter(Boolean);
-    const weakest = fin.length ? Math.min(...fin) : 0;
+    // Catches: wild non-boss spawns worth a ball for this party. What makes one worth it is the party profile's call,
+    // the same question the catch card asks of the mon in front of you — so the same species at the same level gets
+    // the same reasons on both cards. A biome candidate is a **species**, with the level this card picks forms at and
+    // no moveset, so its own types stand in for what it would hit. The weights and the wording stay here.
     const dex = s.gameData?.dexData ?? {};
     const catches = new Map();
     for (const e of spawnList) {
-      if (e.tier > BiomePoolTier.ULTRA_RARE || !(e.wild > 0) || roots.has(rootIdOf(e.sp))) continue;
-      const covers = weakTypes.filter(t => mult(t, e.types) <= 0.5);
-      const bst = finalBstOf({ species: e.sp }).final;
-      const upgrade = weakest && bst >= 400 && bst >= weakest + 100;
+      if (e.tier > BiomePoolTier.ULTRA_RARE || !(e.wild > 0)) continue;
+      const reasons = partyReasons(profile, { species: e.sp, level, types: e.types });
+      if (reasons.some(r => r.kind === "dupe")) continue; // its line is already on the team
+      const covers = reasons.find(r => r.kind === "covers")?.types ?? [];
+      const hole = reasons.find(r => r.kind === "hole")?.types ?? [];
+      const upgrade = reasons.find(r => r.kind === "upgrade") ?? null;
       const fresh = !big(dex[e.sp.speciesId]?.caughtAttr); // the species met, after evolving
-      const value = ((covers.length ? 1 : 0) + (upgrade ? 1 : 0) + (fresh ? 0.5 : 0)) * CATCH_TIER[e.tier];
+      const value = ((covers.length ? 1 : 0) + (upgrade ? 1 : 0) + (hole.length ? 0.5 : 0) + (fresh ? 0.5 : 0)) * CATCH_TIER[e.tier];
       if (value < CATCH_TIER[e.tier] || (catches.get(e.sp.speciesId)?.value ?? -1) >= value) continue;
-      const tags = [covers.length ? `covers ${covers.slice(0, 2).join("/")}` : null, upgrade ? `BST ~${bst}` : null, fresh ? "new" : null].filter(Boolean);
+      const tags = [covers.length ? `covers ${covers.slice(0, 2).join("/")}` : null,
+        hole.length ? `hits ${hole.slice(0, 2).join("/")}` : null,
+        upgrade ? `BST ~${upgrade.final}` : null, fresh ? "new" : null].filter(Boolean);
       catches.set(e.sp.speciesId, { name: tryDo(() => e.sp.name, `#${e.id}`), icon: tryDo(() => [e.sp.getIconAtlasKey(0), String(e.sp.getIconId(false, 0))]),
         tier: e.tier, value, tags });
     }
@@ -484,8 +484,11 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
     if (cache.key === key) return cache.value;
     const level = Math.max(1, ...everyone.map(p => p.level ?? 1));
     const luck = partyLuck(everyone);
+    // The party judged as a whole, once for every option: the coverage table, the two matchup queries and what a catch
+    // is worth all come off it (`08-party.js`).
+    const profile = partyProfile(party);
     const ids = tables ? resolveOptions(s, labels) : labels.map(() => null);
-    const options = labels.map((label, i) => ({ label, id: ids[i], ...(ids[i] != null && party.length ? judge(s, ids[i], party, level, wave, luck) ?? {} : {}) }));
+    const options = labels.map((label, i) => ({ label, id: ids[i], ...(ids[i] != null && party.length ? judge(s, ids[i], profile, level, wave, luck) ?? {} : {}) }));
     const scored = options.filter(o => o.score != null);
     const ranked = [...scored].sort((a, b) => b.raw - a.raw || b.bossFit - a.bossFit || b.defense - a.defense);
     const best = ranked[0] ?? null;

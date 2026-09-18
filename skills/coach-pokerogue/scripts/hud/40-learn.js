@@ -505,8 +505,11 @@ const { moveScore, learnPlan, learnAdvice, slotScores, setupOf, isDamaging, isFi
   const scoringContext = (pk, double, party, roster = null) => {
     const current = movesOf(pk);
     const mates = party.filter(p => p && p !== pk);
-    const teamTypes = new Set(mates.flatMap(movesOf).filter(isDamaging).map(m => TYPES[m.type]));
-    const ctx = { party, teamSe: seTypes(mates.flatMap(movesOf)), prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName), roster };
+    // What the teammates already bring is the party profile's coverage table (`08-party.js`), so "only Fire move on
+    // team" here and "nothing hits X" on the catch, biome and look-ahead cards are one reading of one moveset.
+    const profile = partyProfile(mates);
+    const teamTypes = new Set(profile.ourTypes);
+    const ctx = { party, teamSe: new Set(profile.ourTypes.flatMap(t => CHART[t]?.[0] ?? [])), prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName), roster };
     return { current, mates, teamTypes, ctx };
   };
   const info = (pk, x, score) => ({ name: x.name, type: effectiveType(pk, x).type ?? "Normal", cat: ["physical", "special", "status"][x.category], ...score });

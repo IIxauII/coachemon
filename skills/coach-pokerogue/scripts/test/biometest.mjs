@@ -150,9 +150,11 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(site.reasons.some(r => !r.good && /Snorlax.* weak/.test(r.text)), `Snorlax weak to Construction Site: ${JSON.stringify(site.reasons)}`);
   assert.ok(swamp.reasons.some(r => r.good && /hit SE/.test(r.text)), "several mons hit Swamp SE");
   assert.ok(site.onward.some(x => x.name === "Laboratory" && x.rare && x.chance === 3), "onward links name a rare biome and its chance");
-  // Ekans is new and, as Arbok at the party's level, resists the Fighting the team is weak to.
-  assert.equal(swamp.catch?.name, "Arbok", "the catch is taken at the party's level");
-  assert.deepEqual(swamp.catch.tags, ["covers Fighting", "new"]);
+  // Croagunk is new and, as Toxicroak at the party's level, resists the Fighting the team is weak to *and* brings the
+  // Fighting nothing on the team hits with — a team hole the biome card reads off the party profile, the way the catch
+  // card always has. Arbok (`covers Fighting`, `new`) only does the first, so it no longer leads.
+  assert.equal(swamp.catch?.name, "Toxicroak", "the catch is taken at the party's level");
+  assert.deepEqual(swamp.catch.tags, ["covers Fighting", "hits Normal/Ice", "new"]);
   assert.deepEqual(swamp.trainers, { pct: 8, names: ["Parasol Lady", "Black Belt"] }, "the trainers met, by share");
   assert.deepEqual(swamp.fight, { wave: 40, gym: false, foes: [["Toxapex", 100]] }, "wave 40 is the Swamp's wild boss");
   assert.deepEqual(site.fight.foes, [["Gurdurr", 100]], "a level-40 boss Conkeldurr is still a Gurdurr: its trade evolution waits for 45");
@@ -200,8 +202,10 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
 
 // ---- 5. A caught species isn't "new", and a team member's line isn't a catch at all.
 {
-  const caught = mount({ dex: { 4: { caughtAttr: 1n } } }).model().options[0];
-  // Arbok caught: it only covers the weakness now, so a new Poison mon that also resists Fighting (Gulpin) outranks it.
+  // The Croagunk line and Arbok all caught: none of them is "new" any more, so the lead falls to a mon that still is
+  // — Gulpin, which covers the Fighting weakness. The Croagunk line keeps its two team reasons and drops behind it on
+  // the half point "new" is worth. Both its forms are marked, because the card reads the species met after evolving.
+  const caught = mount({ dex: { 4: { caughtAttr: 1n }, 5: { caughtAttr: 1n }, 6: { caughtAttr: 1n } } }).model().options[0];
   assert.equal(caught.catch?.name, "Gulpin");
   assert.deepEqual(caught.catch.tags, ["covers Fighting", "new"]);
   const withArbok = mount({ party: [...team(), pk(4, 36, [["Poison Jab","Poison",80,"P"]])] }).model().options[0];

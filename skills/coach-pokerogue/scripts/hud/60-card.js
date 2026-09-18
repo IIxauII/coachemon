@@ -8,8 +8,9 @@
 // `cardSummary` is the plain-text read of a card (`window.__coachHud.summary()`, which probe.js passes through whole
 // to the watcher and to Claude's battle read). Pure and lazy: a draw never calls it. Each card's own wording lives
 // beside its model builder, so a summary change lands in the file that owns the model it reads.
-import { TYPES, sandbox } from "./01-core.js";
+import { sandbox } from "./01-core.js";
 import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-screens.js";
+import { partyProfile } from "./08-party.js";
 import { predictedTeras, withPredictedTera } from "./20-enemy-ai.js";
 import { battleModel, plannerReady } from "./30-planner.js";
 import { teamPlan } from "./35-team-plan.js";
@@ -28,10 +29,9 @@ export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
 export const slowestKo = sl => (sl.koEach?.length ? Math.max(...sl.koEach) : sl.ko);
 
-// Damaging move types across the living party: the foe rows only list weaknesses we can hit.
-const moveTypesOf = party => [...new Set(party.flatMap(p => p.moveset.filter(Boolean).map(pm => {
-  try { const mv = pm.getMove(); return mv.category !== MoveCategory.STATUS && mv.power > 0 ? TYPES[mv.type] : null; } catch { return null; }
-})).filter(Boolean))];
+// Damaging move types across the living party: the foe rows only list weaknesses we can hit. The party profile's
+// coverage table (`08-party.js`), so the rows and the cards that score matchups read one moveset the same way.
+const moveTypesOf = party => partyProfile(party).ourTypes;
 
 // The battle card: the planner's field model, the whole-fight plan (trainer battles) and the catch advice (wild), put
 // together here rather than inside the planner. All three run inside the one sandbox the refresh opens, with the foes
