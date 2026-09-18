@@ -7,7 +7,7 @@ Paths below are relative to `skills/coach-pokerogue/scripts/hud/` unless given i
 
 **What is measured here.** Counts come from **42 mocked battle states**: the golden tests' own states plus states built
 to hit one bucket each. They are **scenario counts, not how often this happens on real waves**. The mocks use the HUD's own
-damage approximation, not the game's `getAttackDamage`. Real-wave frequencies are in "Live measurement: pending" below.
+damage approximation, not the game's `getAttackDamage`. Real-wave frequencies are in "Live measurement" below, from a run on 2026-09-18.
 
 Harness: `research/hud-authority/` (`agreement.js`, `dump.mjs`, `live.mjs`; last offline run in `dump.out.txt`).
 
@@ -27,6 +27,11 @@ Harness: `research/hud-authority/` (`agreement.js`, `dump.mjs`, `live.mjs`; last
   out, and doubles steps nobody can take.
 - **Cost is small.** A pinned re-search on the tables the unpinned search already built took ≤ 4 ms on a 6 v 6 mock,
   against ~250 ms for the cold ♟ search itself.
+- **Confirmed live** (19 trainer decisions, 2026-09-18): they disagree on **37 %** of decisions, and every `move`,
+  `target` and `action` verdict again went to ⚔. The live split is **23 % in singles against 67 % in doubles**, so
+  **the doubles fix comes first** — offline counts had put the predicted-switch fix ahead of it. ♟ also turns out to
+  run **only in trainer battles**, which bounds the whole problem.
+- ♟ **never runs on a wild wave**, boss or not (`teamPlan` is absent), so no wild wave can show a disagreement.
 
 ---
 
@@ -126,11 +131,13 @@ an override.
 - In return the screen never shows an impossible or mistargeted step, and every ♟ step 1 is the ⚔ action by
   construction.
 
-**Prerequisites** (♟ input fixes, independent of the authority change):
-1. ♟ starts facing the predicted switch-in (`fcur` from `predictSwitches`), not the foe on the field. This removes
-   bucket 6.
-2. Doubles: ♟ counts every field mon as out (a set of current mons, not one index). If that is too big, it stops
-   rendering per-step actions in doubles and shows only the foe order and answers. This removes the `action` verdicts.
+**Prerequisites** (♟ input fixes, independent of the authority change). **Ordered by the live frequencies**, which
+put doubles first — the offline counts had these the other way round:
+1. Doubles: ♟ counts every field mon as out (a set of current mons, not one index). If that is too big, it stops
+   rendering per-step actions in doubles and shows only the foe order and answers. This removes the `action` verdicts
+   and the doubles `target` ones — **4 of the 7 live disagreements, and all 4 in the one trainer double**.
+2. ♟ starts facing the predicted switch-in (`fcur` from `predictSwitches`), not the foe on the field. This removes
+   bucket 6 — 6 of 18 offline, 1 of 7 live, and ⚔ was right every time in both.
 3. ♟'s step for the ⚔ matchup uses ⚔'s move; later steps charge a move's self-cost to the user's HP. This removes
    bucket 2.
 
@@ -164,50 +171,99 @@ an override.
 
 ---
 
-## Live measurement: pending
+## Live measurement (run of 2026-09-18)
 
-Nothing here was run against a live game (another session held the Chrome tab). Plan: a subagent plays its own run
-through the pokerogue MCP tools once the tab is free, and samples at every command phase.
+Run against the current HUD build (`origin/master` `1c7e95e`, 0.35.0) in Chrome, on a fresh classic run: Bulbasaur /
+Charmander / Squirtle, plus a Skwovet caught on W2. `live.mjs sample` was called at every command phase **before**
+choosing, and **the ⚔ line was followed at every disagreement**, so the run doubles as a ⚔-authority playthrough. Raw
+log: `research/hud-authority/live-log.jsonl` (21 rows; `live.mjs report` reproduces the tally).
 
-**Setup, once per page load:**
-```sh
-skills/coach-pokerogue/scripts/read.sh chrome hud     # the coach HUD must be running in the tab
-```
+### Frequencies on real waves
 
-**At every command phase** (the Fight / Ball / Pokémon / Run menu), before choosing:
-```sh
-node research/hud-authority/live.mjs sample            # appends one line to research/hud-authority/live-log.jsonl
-```
-- It is read-only: one CDP `Runtime.evaluate` on port `POKEROGUE_MCP_PORT` (9222), like `read.sh chrome`.
-- It waits one HUD tick (~1.15 s) so `__coachHud.last()` belongs to this command phase.
-- It logs wave, turn, the slot deciding, the verdict and buckets, the drawn ⚔ and ♟ views, `summary()` and `stats()`.
-- It skips a phase already logged, anything that isn't a command phase, and wild waves (they have no ♟; `--all` logs
-  those too).
-- Calling it twice is harmless, so the agent can call it on every menu read.
+| | slot-0 decisions | agree | disagree | rate |
+|---|---|---|---|---|
+| Singles (Youngster Neal W5, Rival Ivy W8) | 13 | 10 | 3 | **23 %** |
+| Doubles (Crush Kin Kiyo & Aisha W12) | 6 | 2 | 4 | **67 %** |
+| All trainer decisions | 19 | 12 | 7 | **37 %** |
 
-**Unattended, next to someone else's play:** `node research/hud-authority/live.mjs watch` (polls every 1.5 s).
+Verdicts: `agree` 12, `mon` 2, `move` 2, `target` 2, `action` 1.
+Primary bucket: **7** ×4, **2** ×1, **6** ×1, **9** ×1 (bucket 2 also rides along as a secondary bucket on W12 t4).
 
-**Tally:** `node research/hud-authority/live.mjs report` gives verdicts and buckets per slot-0 decision, HUD tick
-cost, and each disagreement with ♟'s reason.
+**Doubles disagree roughly three times as often as singles.** That is the single biggest change from the offline
+picture, where the mocks made bucket 6 look dominant.
 
-**Other page tools:** `node research/hud-authority/live.mjs expr` prints the in-page expression for a tool that
-evaluates JS in the tab directly (DevTools `evaluate_script`).
+### ♟ exists only in trainer battles
 
-**Target:** ≥ 2 real trainer fights, one with a boss win condition, as #113 asks. Then re-read the bucket table with
-real frequencies.
+Checked directly in the page, not inferred: on W9 (wild double) and W10 (**wild boss** double, Fletchling with 2 boss
+segments) `window.__coachHud.last().teamPlan` is absent and `hudAgreement` returns no verdict at all. So the
+⚔-vs-♟ disagreement is **bounded to trainer battles**; wild waves, boss or not, can never show it, and ♟ costs nothing
+there. Both wild waves are in the log (verdict `n/a`) and are excluded from the table above.
+
+### Bucket 7 (doubles fidelity) dominates, in three shapes
+
+Every disagreement in the one trainer double was bucket 7:
+
+- **`target` ×2** (W12 t1, t2). ⚔ coordinates both slots onto Timburr (`Bulbasaur Vine Whip→Timburr ; Squirtle Water
+  Pulse→Timburr`); ♟ names **one** mon and aims it at the other foe (`Bulbasaur Vine Whip→Sawk`). ⚔ is right: the
+  focused pair KO'd Timburr on t2 without either of ours being touched.
+- **`move` ×1** (W12 t4, buckets `[7,2]`). Sawk at 4 HP: ⚔ Vine Whip, ♟ Tackle. Both KO, so this is the bucket-2
+  tie-break again, stacked on the doubles gap.
+- **`action` ×1** (W12 t5). **♟ says "⇄ switch in Squirtle" while Squirtle is already on the field.** This is live
+  case #1 (b) — `tpView` counting one party member as `cur` and treating the second field mon as a paid switch —
+  reproduced on a real wave rather than in a reconstruction. Confirmed.
+
+### Bucket 6 confirmed, and ⚔'s prediction was correct
+
+W8 t2, Rival Ivy: ⚔ `⇄Charmander Ember→Pidove` (planning against the predicted switch-in) against ♟
+`Bulbasaur Vine Whip→Squirtle` (aiming at the foe on the field). Following ⚔, **the rival did switch**: Pidove came
+in and Charmander faced exactly the foe ⚔ had planned for, while ♟'s move would have hit the mon that was leaving.
+One occurrence, but it went ⚔'s way, as all six did offline.
+
+### Buckets 9 and 2 in singles
+
+- **9** (W5 t3): ⚔ keeps Bulbasaur in on Wurmple; ♟ prefers switching to Charmander for the 2× Ember. ⚔'s stay margin
+  holding, as offline. Unresolved on the merits either way — the fight was won comfortably.
+- **2** (W8 t5): Pidove at 1 HP, ⚔ Ember vs ♟ Scratch. Both KO; different tie-break, no consequence.
+
+### Refresh-budget cost, live
+
+`__coachHud.stats()` at each of the 19 samples: **median 1 ms, max 452 ms**. The 452 ms is the first sample of the
+session (cold tables and first game-code calls); every later sample sat at 0–3 ms. Against the HUD's 1 s tick that is
+comfortable, but note the rosters here were small — at most 3 foes — so the 253 ms cold ♟ search measured on the
+6 v 6 Guzma mock was never approached live. The live table cost on a full roster is still unmeasured.
+
+### What this changes in the recommendation
+
+**The direction stands: ⚔ is the authority, ♟ re-searched pinned to it.** Every `move`, `target` and `action`
+verdict went to ⚔ again, and the one case where ♟ had a point (bucket 9) is a `mon` verdict, exactly as offline.
+
+What changes is **priority among the prerequisites**: the doubles fix (prerequisite 2) should land **before** the
+predicted-switch fix (prerequisite 1). Offline ranking put bucket 6 first on a count of 6 vs 2; on real waves it is
+4 doubles vs 1 predicted switch, and the doubles failures are the ones that put a literally impossible instruction on
+screen ("switch in" a mon that is already out), which is worse for trust than a mistargeted but coherent step.
+
+### Still not measured
+
+- **A boss win condition.** No *trainer* boss appeared in waves 1–13; W10's boss was wild, and ♟ does not run on wild
+  waves, so bucket 4 (reserve holdback) stayed unexercised — as it did offline, where it caused 0 disagreements.
+  Reaching one needs a gym leader or a deeper run.
+- **Full rosters.** Largest live enemy roster was 3 (Kiyo & Aisha). The 6 v 6 costs and the `sweep` / win-condition
+  paths need a late-game run.
+- **The Δ threshold** for the priced alternative line, which no amount of verdict counting settles.
 
 ---
 
-## Not settled offline
+## Still open after the live run
 
-- **Real-wave frequencies**, and whether bucket 6 still dominates on real trainers (their switch rule fires far less
-  often than these built states suggest).
+(Real-wave frequencies and the live tick cost were the two big ones; both are answered in "Live measurement" above.
+Bucket 6 does **not** dominate on real trainers — bucket 7 does.)
+
 - **Game damage.** The mocks use the approximation. Guzma turn 1 and turn 3 don't reproduce #90's HUD lines, so those
   goldens need the game's numbers.
 - **Who is right in `doomed-lead` and `cyrus-4v6 Blastoise vs Houndoom`.** It depends on numbers the mocks can't give.
 - **The Δ threshold** for the priced alternative (~20 is a first cut), and whether ♟'s value function (100 / KO,
   25 × HP %) is good enough to feed ⚔'s score.
-- **Live table cost** of ♟ (game calls) against the 1 s tick.
+- **Live table cost** of ♟ on a **full 6 v 6 roster**. Measured live only up to 3 foes, where it is 0–3 ms.
 - **W12:** the live party order, and whether Static on contact should count against Tackle and Scratch into Toxel.
   No model has it.
 
@@ -216,4 +272,5 @@ real frequencies.
 ```sh
 node research/hud-authority/dump.mjs                  # the table above; --json for the raw rows; --only <regex>
 node skills/coach-pokerogue/scripts/test/run.mjs      # goldens unchanged: the harness only rewrites the bundle in memory
+node research/hud-authority/live.mjs report           # the live tally, from live-log.jsonl
 ```
