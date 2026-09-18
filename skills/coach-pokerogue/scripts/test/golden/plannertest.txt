@@ -107,7 +107,7 @@ foes weak to: Fighting ×3 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → Garchomp 100% likely · moves after
-♟ winnable · ~3 steps + {Show the fight plan}
+♟ winnable · ~4 steps + {Show the fight plan}
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == free switch — same field in the command phase (live)
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}

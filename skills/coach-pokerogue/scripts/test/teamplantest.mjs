@@ -181,6 +181,10 @@ assert.equal(plan.approxDoubles, false);
   const ours = { ...T(0), ours: [[{ dmg: 100, drain: 0.5 }]] };
   assert.equal(tpFight(ours, { ...st(), oh: [200] }, 0, 0, "free").mh, 230, "our drain heals on every hit");
   assert.equal(tpFight(ours, { ...st(), oh: [390] }, 0, 0, "free").mh, 380, "never past max");
+  // …and what a use costs its user goes the other way (#235). We move first, so three hits take the 300 HP foe and it
+  // answers twice: 400 − 2×60 = 280 for a cost-free move, and 60 less for one that spends 20 on each of its 3 uses.
+  const recoil = self => tpFight({ ...T(0), ours: [[{ dmg: 100, self }]] }, st(), 0, 0, "free").mh;
+  assert.deepEqual([recoil(0), recoil(20)], [280, 220], "recoil is spent on every landed use");
 }
 // On-KO boosts (#90): each KO Buzzwole's Beast Boost scores raises its Atk a stage, so the mon after a fallen one takes
 // its hits at ×1.5, then ×2.

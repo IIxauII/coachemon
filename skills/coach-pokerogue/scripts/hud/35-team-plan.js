@@ -35,6 +35,8 @@ const tpFastest = (list, target, turns = o => tpTurns(o, target), dmg = o => o.d
 const tpMoveOf = (o, extra) => {
   const use = useOf(o);
   return { name: o.name, type: o.type, cat: o.cat, e: o.e, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
+    // What a landed use costs its own user (recoil, Life Orb, a half-sacrifice), so the plan's HP shows it too.
+    self: o.self ?? 0,
     charge: !!o.traits?.charge, recharge: !!o.traits?.recharge || !!o.traits?.noRepeat, semiCharge: !!o.traits?.charge && !!o.traits?.semiCharge, ...extra };
 };
 
@@ -245,6 +247,8 @@ const tpFight = (T, st, mi, fi, entry, over = null) => {
       b.fg += robFoe?.perHit ?? 0;
     }
     if (us.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + (b.fh - st.hp) * us.drain);
+    // …and what the use costs us: recoil is spent whether or not the hit finished the foe.
+    if (us.self) b.mh -= us.self;
     b.fh = st.hp;
     b.fs = st.bar;
   };
@@ -558,9 +562,10 @@ const tpModel = (T, b, party, foes, facing) => {
       // Only for a mon that is already out: a switch-in falling at the end of its own exchange is several turns off,
       // and the caller checks that this turn is the one it falls on.
       freeEntry: now.entry === "stay" && now.hp < 1 && next.entry === "free" ? { out: ref(party[now.mi]), in: ref(party[next.mi]) } : null,
-      // Worth saying only when the plan wants a different mon in front of the foe the trainer is about to send: when
-      // it is the same mon that is fighting now, the foe rows already show the order.
-      nextIn: now.foeHp < 1 && next.fi !== now.fi && next.mi !== now.mi ? { foe: ref(foes[next.fi]), answer: ref(party[next.mi]) } : null,
+      // A foe the trainer has yet to send, and a different mon of ours to meet it: a foe already standing is not a
+      // send-in (a double's other slot), and when the same mon keeps fighting the foe rows already show the order.
+      nextIn: now.foeHp < 1 && next.fi !== now.fi && next.mi !== now.mi && !foes[next.fi].isOnField?.()
+        ? { foe: ref(foes[next.fi]), answer: ref(party[next.mi]) } : null,
     };
   };
 

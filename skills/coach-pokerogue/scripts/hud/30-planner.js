@@ -1316,7 +1316,10 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   // This turn's action, for the fight plan to be re-searched around (#113 "⚔ seeds ♟"), and what that plan says
   // comes next: the mon a doomed field mon's faint brings in free (#170 §E), and the foe the trainer sends after our
   // KO with the answer the plan puts in front of it (#170 §G).
-  const chosen = slots === 1 ? best.picks[0] : null;
+  // In a double the plan still runs one exchange at a time, against the foe in slot 0: pin the ⚔ slot aimed there,
+  // so its step 1 is an action the player is actually being told to take. (The score term stays out of doubles —
+  // `planValueOf` — but a plan that contradicts the line on screen is the thing #113 set out to end.)
+  const chosen = slots === 1 ? best.picks[0] : best.picks.find(p => p.target === 0 || p.target === "both") ?? best.picks[0];
   const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, free: freeSwitch } : null;
   const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
   // The plan's step 1 ends with our mon down, but a step is a whole exchange: the free entry is only this turn's

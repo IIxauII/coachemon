@@ -88,7 +88,6 @@ queued during prediction: 0; queueMessage restored: true
 ⇆ Arcanine → Ludicolo switches — moves aimed at it
 now: ⇄ Blastoise out › Venusaur in
 next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
-↪ next in likely: Arcanine › answer Blastoise
 ↺ if it stays: Blastoise Water Wave Crash → Arcanine
 foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water
@@ -101,7 +100,6 @@ summary trainer | Venusaur Power Whip → Ludicolo · 2 hits | plan: winnable ·
 ⇆ Arcanine → Ludicolo switches — moves aimed at it
 now: ⇄ Blastoise out › Venusaur in
 next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
-↪ next in likely: Arcanine › answer Blastoise
 ♟ winnable · 2 steps + {Show the fight plan}
 == risk (full)
 🎯 W89 − {Minimal overview} × {Close}
