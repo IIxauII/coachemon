@@ -58,7 +58,9 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  const { catchAdvice, captureChance, finalBstOf } = globalThis.__hud["45-catch"];
+  const { catchAdvice, captureChance } = globalThis.__hud["45-catch"];
+  // A line's final BST is the party profile's, not the catch card's (`08-party.js`).
+  const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
     setGameTables: globalThis.__hud["47-biome"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
   if (events) globalThis.__ca.setGameTables({ events });

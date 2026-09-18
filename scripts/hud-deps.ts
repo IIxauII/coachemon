@@ -348,17 +348,32 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §20. Catch odds and whether a ball is allowed at all, both re-implemented; a fusion's
-   * averaged base stats, the fusion-aware shiny check and its candy, the event's shiny
-   * multiplier, and the move that leaves a foe at 1 HP. What a catch does (Limited
-   * Catch, a full party, the dex bits and candy) is re-implemented too; the game-mode
-   * checks are called, with fallbacks.
+   * The party judged as a whole. Four pure reads, each guarded: the luck the party
+   * carries (`getPartyLuckValue`'s own rule, re-implemented around `getLuck` /
+   * `isAllowedInBattle`), the line a mon belongs to, the evolutions still ahead of it
+   * (read as `[[speciesId, level], …]`, which is what makes a final BST an estimate)
+   * and a fusion's averaged base stats. The type chart and the ability immunities are
+   * `01-core.js`'s.
+   */
+  "08-party.js": [
+    `src/modifier/modifier-type.ts#getPartyLuckValue`,
+    `${P}#Pokemon.getLuck`,
+    `${P}#Pokemon.isAllowedInBattle`,
+    `${P}#Pokemon.calculateBaseStats`,
+    `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
+  ],
+
+  /**
+   * §20. Catch odds and whether a ball is allowed at all, both re-implemented; the
+   * fusion-aware shiny check and its candy, the event's shiny multiplier, and the move
+   * that leaves a foe at 1 HP. What a catch does (Limited Catch, a full party, the dex
+   * bits and candy) is re-implemented too; the game-mode checks are called, with
+   * fallbacks. What the catch is worth to the party is `08-party.js`'s.
    */
   "45-catch.js": [
     `src/phases/attempt-capture-phase.ts#AttemptCapturePhase.start`,
     `src/data/pokeball.ts#getCriticalCaptureChance`,
     `src/phases/command-phase.ts#CommandPhase.checkCanUseBall`,
-    `${P}#Pokemon.calculateBaseStats`,
     `${P}#Pokemon.isShiny`,
     `src/system/game-data.ts#GameData.setPokemonSpeciesCaught`,
     `src/timed-event-manager.ts#TimedEventManager.getShinyCatchMultiplier`,
@@ -555,18 +570,16 @@ export const HUD_DEPS = {
   /**
    * §12. Reward luck and the classic final boss, plus what the run calendar's
    * answers mean for the party. The schedule and the heal themselves are
-   * `03-calendar.js`'s; what is left here is re-implemented: the HUD quotes the
-   * luck upgrade odds and the Eternamax checklist without calling anything.
+   * `03-calendar.js`'s and the party's luck value is `08-party.js`'s; what is left
+   * here is re-implemented: the HUD quotes the luck upgrade odds and the Eternamax
+   * checklist without calling anything.
    */
   "49-ahead.js": [
     `src/game-mode.ts#GameMode.isFixedBattle`,
     `src/game-mode.ts#GameMode.getFixedBattle`,
     `src/modifier/modifier-type.ts#getNewModifierTypeOption`,
-    `src/modifier/modifier-type.ts#getPartyLuckValue`,
     `src/phases/select-modifier-phase.ts#SelectModifierPhase.getRerollCost`,
     `src/modifier/modifier-type.ts#getPlayerModifierTypeOptions`,
-    `${P}#Pokemon.getLuck`,
-    `${P}#Pokemon.isAllowedInBattle`,
     `${SCENE}#BattleScene.initFinalBossPhaseTwo`,
     `${SCENE}#BattleScene.generateEnemyModifiers`,
     `${P}#Pokemon.hasPassive`,

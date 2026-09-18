@@ -78,6 +78,7 @@ const { encounterModel } = (() => {
     const party = s.getPlayerParty().filter(Boolean);
     const alive = party.filter(p => p.hp > 0 && tryDo(() => p.isAllowedInBattle(), true));
     const top = alive.reduce((t, p) => (!t || p.level > t.level ? p : t), null);
+    const profile = partyProfile(alive);
     const waveMoney = mult => tryDo(() => s.getWaveMoneyAmount(mult), 0);
     const coins = (s.modifiers ?? []).filter(m => m?.constructor?.name === "MoneyMultiplierModifier")
       .reduce((t, m) => t + (tryDo(() => m.getStackCount()) ?? m.stackCount ?? 1), 0);
@@ -102,8 +103,10 @@ const { encounterModel } = (() => {
     };
     const fight = (f, { double = false } = {}) => {
       if (!f || !alive.length) return { hard: false, text: "" };
-      const hitters = alive.filter(p => damagingTypes(p).some(t => f.types.reduce((x, d) => x * vs(t, d), 1) >= 2));
-      const weak = alive.filter(p => f.types.some(t => effectiveness(t, p) >= 2));
+      // Who can hit it and who it hits back are the party profile's two matchup queries, so this card reads a foe the
+      // same way the look-ahead reads the roster ahead, rather than multiplying the chart out by hand.
+      const hitters = profile.hitters(f);
+      const weak = [...new Set(f.types.flatMap(t => profile.weakTo(t)))];
       const gap = f.level - top.level;
       const hard = gap >= HARD_LEVEL_GAP || (!hitters.length && gap >= (f.boss ? -BOSS_LEVEL_EDGE : 0));
       const who = `${double ? "2× " : ""}${f.estimated ? "~" : ""}L${f.level}${f.boss ? " boss" : ""}${f.bars > 1 ? ` (${f.bars} bars)` : ""} vs your L${top.level}`;
@@ -112,7 +115,7 @@ const { encounterModel } = (() => {
       return { hard, text };
     };
     const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
-    return { s, me, b, wave, party, alive, top, waveMoney, coins, opt, foe, fight, spare,
+    return { s, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare,
       pre: seeded(1), during: seeded(500), post: seeded(2000) };
   };
 
@@ -324,16 +327,20 @@ const { encounterModel } = (() => {
       const offers = c.me.misc?.tradeOptionsMap;
       let best = null;
       if (offers?.get) {
-        const fin = sp => finalBstOf({ species: sp }).final;
+        // An offer is judged against the member it would replace (`replacing`), at that member's own level — a trade
+        // hands the new mon over at the same level. The rule is the party profile's, which is the catch card's: this
+        // much more final BST, and a real mon rather than a route-1 one beating another (the 400 floor it gains here).
         for (const p of c.alive) {
           if (p === c.top) continue; // trading the carry away is never the upgrade it looks like
           for (const e of offers.get(p.id) ?? []) {
-            const gain = fin(e.species) - fin(p.species);
-            if (!best || gain > best.gain) best = { p, e, gain };
+            const cand = { species: e.species, level: p.level, types: typesOfSpecies(e.species) };
+            const up = partyReasons(c.profile, cand, { replacing: p }).some(r => r.kind === "upgrade");
+            const gain = finalBstOf(cand).final - finalBstOf(p).final;
+            if (!best || (up && !best.up) || (up === best.up && gain > best.gain)) best = { p, e, gain, up };
           }
         }
       }
-      const upgrade = best && best.gain >= 100;
+      const upgrade = !!best?.up;
       return [
         { outcome: best ? `trade: best offer ${best.p.name} → ${tryDo(() => best.e.species.getName(), best.e.name)} (final BST ${best.gain >= 0 ? "+" : ""}${best.gain})` : "trade a mon for one of 3 offers",
           verdict: upgrade ? "take" : "ok", why: upgrade ? "same level, stronger line" : "no clear upgrade" },

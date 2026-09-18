@@ -165,8 +165,8 @@ const { teamAudit, relearnBest } = (() => {
   };
 
   // ---- Roster checks, against the next big fight's foes (plain data from 48-preview's `foeOf`)
-  const foeMult = (type, foe) => (ABILITY_IMMUNE[foe.ability] === type || ABILITY_IMMUNE[foe.passive] === type
-    ? 0 : (foe.types ?? []).reduce((x, d) => x * vs(type, d), 1));
+  // A replayed foe is a plain defender, so `effectiveness` reads it the way it reads a mon on the field: one type
+  // chart, one ability-immunity table (01-core's `defenderOf`).
   // A member's answers to a foe: its attacks that hit it super-effectively off the stat it actually attacks with (a
   // Play Rough on Atk 223 beside SpA 312 is not an answer), with their accuracy. Atk counts Huge / Pure Power, as the
   // learn card's does.
@@ -176,7 +176,9 @@ const { teamAudit, relearnBest } = (() => {
     const spa = tryDo(() => p.getStat(Stat.SPATK), 0);
     return mv.category === MoveCategory.PHYSICAL ? atk >= spa * OFF_STAT : spa >= atk * OFF_STAT;
   };
-  const answersTo = (p, foe) => typedAttacks(p).filter(mv => foeMult(TYPES[mv.type], foe) >= 2 && onStat(p, mv))
+  // The move is in hand here, so the foe's flag immunities count too — a Soundproof foe has no answer to take from
+  // a sound move, whatever the chart says about its types.
+  const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[mv.type], foe, mv) >= 2 && onStat(p, mv))
     .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
 
   // Speed: the fight is decided by who moves first more than by levels. Flag when at most one of us outspeeds the

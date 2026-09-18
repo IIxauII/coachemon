@@ -38,11 +38,23 @@ export const vs = (atk, def) => {
   const [se, nve, none] = CHART[atk] ?? [[], [], []];
   return none.includes(def) ? 0 : se.includes(def) ? 2 : nve.includes(def) ? 0.5 : 1;
 };
-// `mv` (optional): the move, so flag immunities (Soundproof and co.) apply too.
-export const effectiveness = (type, p, mv) => {
-  const ab = abilitiesOf(p);
+// ---- One effectiveness
+// Everything that asks "how hard does this type hit that" goes through `effectiveness`, and it answers about a plain
+// **defender**: `{ types: [name], abilities: [name] }`. That is all the chart and the ability immunities need, so a
+// species the biome card only knows by name is asked the same way as a mon on the field — the cards can't drift apart
+// on the type chart, and a defender with no abilities simply has no ability immunities.
+// `defenderOf` adapts what the HUD holds instead: a live mon (through the game's own `getTypes` / `getAbility`), a
+// preview foe from the replay (`{ types, ability, passive }`), or a plain defender, which it hands back unchanged. It
+// is idempotent, and `effectiveness` runs it on whatever it is given, so no caller can pass the wrong shape.
+export const defenderOf = x => (typeof x?.getTypes === "function"
+  ? { types: typesOf(x), abilities: abilitiesOf(x) }
+  : { types: x?.types ?? [], abilities: (x?.abilities ?? [x?.ability, x?.passive]).filter(Boolean) });
+// `mv` (optional): the move, so flag immunities (Soundproof and co.) apply too. They are read wherever a move is
+// known; a caller that has only a type gets the chart and the type immunities.
+export const effectiveness = (type, defender, mv) => {
+  const { types, abilities: ab } = defenderOf(defender);
   if (ab.some(a => ABILITY_IMMUNE[a] === type || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;
-  let m = typesOf(p).reduce((x, d) => x * vs(type, d), 1);
+  let m = types.reduce((x, d) => x * vs(type, d), 1);
   if (ab.includes("Wonder Guard") && m < 2) return 0;
   if (ab.includes("Thick Fat") && (type === "Fire" || type === "Ice")) m /= 2;
   if (ab.includes("Heatproof") && type === "Fire") m /= 2;
@@ -80,6 +92,10 @@ export const squeezeDist = (points, k) => {
   }
   return out;
 };
+
+// Reward rarities, indexed by `ModifierTier`. Named here rather than on the shop card, because the look-ahead quotes a
+// fixed battle's pinned tiers waves before a shop exists (49-ahead's `rewardRules`) and a file never reads a later one.
+export const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxury"];
 
 export const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
 export const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);

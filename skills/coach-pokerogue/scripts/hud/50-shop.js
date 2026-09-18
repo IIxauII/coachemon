@@ -4,7 +4,6 @@
 // (PokemonModifierType.selectFilter: null = usable — TM compatibility, evolution/form-change items, held-item stack
 // limits), and only then by rarity tier. Held items, mints, EXP items, candy, vitamins and evolution items are judged
 // on the member they'd go to by 50-items.js; nothing here depends on remembering what an item does.
-const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxury"]; // indexed by ModifierTier
 const isA = (t, name) => {
   for (let p = t && Object.getPrototypeOf(t); p && p !== Object.prototype; p = Object.getPrototypeOf(p)) {
     if (p.constructor?.name === name) return true;

@@ -30,7 +30,7 @@
 // built to attack (by the moveset prior's roles, else base stats) with a final form of 480+.
 import { TYPES, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
-import { finalBstOf } from "./45-catch.js";
+import { finalBstOf } from "./08-party.js";
 import { gameTables } from "./47-biome.js";
 
 const MAX_PARTY = 6;
