@@ -52,7 +52,7 @@
 //   for one, minus the share weak to it. It already counts as one wave of ten above; this is on top, because it's the
 //   fight that ends a run.
 // score = 50·offense + 25·(defense + 1) + up to 8 for catches ± 10 for the big fight. Ties go to the unrounded score.
-const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor } = (() => {
+const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor, spawnTimeOfDay } = (() => {
   const TIER_CUTS = [156, 32, 6, 1, 0];
   const BOSS_CUTS = [20, 6, 1, 0];
   // Pool tiers in the order TIER_CUTS / BOSS_CUTS cut them: a biome's pools by BiomePoolTier, a trainer config's by TrainerPoolTier.
@@ -246,10 +246,35 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
     return value;
   };
 
+  // ---- Which pool a wave spawns from, and when that pool was last built
+  // `Arena.updatePoolsForTimeOfDay` rebuilds `pokemonPool` from `getTimeOfDay()`, which reads whatever wave is current
+  // when it runs — and it runs exactly twice per block: when the arena is built (`newArena`, during the X0 the biome
+  // is chosen on) and, from `doPostBattleCleanup`, as a wave X5 starts. So **X1–X4 spawn from the pool the X0 built,
+  // and X5–X9 and the closing X0 from the pool X5 built**. Reading the time of day at the wave itself — which both
+  // this card and 48-preview did — moves a pool up to four waves early. ABYSS is night whatever the wave.
+  const poolAnchor = w => { const base = Math.floor((w - 1) / 10) * 10; return w - base >= 5 ? base + 5 : base; };
+  const timeOfDayAt = (s, w, biomeId) => {
+    if (biomeId === BiomeId.ABYSS) return TimeOfDay.NIGHT;
+    const c = (w + (s?.waveCycleOffset ?? 0)) % 40;
+    return c < 15 ? TimeOfDay.DAY : c < 20 ? TimeOfDay.DUSK : c < 35 ? TimeOfDay.NIGHT : TimeOfDay.DAWN;
+  };
+  /** The time of day whose pool wave `w` spawns from in `biomeId`: the arena's, at its last rebuild. */
+  const spawnTimeOfDay = (s, w, biomeId) => (w == null ? null : timeOfDayAt(s, poolAnchor(w), biomeId));
+
+  // A wild boss on a wave that isn't a tenth one: `getEncounterBossSegments` rolls `randSeedInt(100)` against
+  // `min(max(ceil((w − 250) / 50), 0) × 2, 30)` when the mode `hasRandomBosses` — Endless and Spliced Endless — so
+  // from wave 250 on, 2 % more of every wave is a boss per 50 waves, capped at 30 %. Nothing before 250, and nothing
+  // in classic. (A legendary, sub-legendary or mythical species is forced to a boss too, but that is decided *after*
+  // the species roll, not before it, so it moves no pool and isn't weighed here.)
+  const randomBossChance = (s, w) => (s?.gameMode?.hasRandomBosses
+    ? Math.min(Math.max(Math.ceil((w - 250) / 50), 0) * 2, 30) / 100
+    : 0);
+
   // ---- What each of the ten waves holds in this biome: [{ w, tod, wild, trainer, boss, gym }], the fixed waves left
   // out. Which wave is which, and how likely a trainer is on it, is the run calendar's (03-calendar.js); what is left
-  // here is the biome's own part — the time of day, and whether the tenth wave's trainer is a gym leader this biome
-  // can field (`isTrainerBoss`).
+  // here is the biome's own part — the pool's time of day, and whether the tenth wave's trainer is a gym leader this
+  // biome can field (`isTrainerBoss`). `boss` is a share, not a flag: a tenth wave always, and past wave 250 in
+  // Endless a slice of every other wave.
   const wavesIn = (s, biome, wave) => {
     const gm = s.gameMode;
     const bossTrainers = (biome.trainerPool?.[BiomePoolTier.BOSS] ?? []).length > 0;
@@ -257,14 +282,14 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
     for (let w = wave + 1; w <= wave + WINDOW; w++) {
       const kind = waveKind(s, w);
       if (kind === "final" || kind === "fixed") continue; // not the biome's: the run's own table holds them
-      const c = (w + (s.waveCycleOffset ?? 0)) % 40;
-      const tod = biome.biomeId === BiomeId.ABYSS ? TimeOfDay.NIGHT : c < 15 ? TimeOfDay.DAY : c < 20 ? TimeOfDay.DUSK : c < 35 ? TimeOfDay.NIGHT : TimeOfDay.DAWN;
+      const tod = spawnTimeOfDay(s, w, biome.biomeId);
       const trainer = trainerOdds(s, w, biome);
       // `isTrainerBoss`: the gym wave outside END unless the run is classic, and in Daily an X0 from 20 to 40.
       const gym = !!trainer && bossTrainers && (gm?.isDaily
         ? w > 10 && w < 50 && w % 10 === 0
         : kind === "gym" && (biome.biomeId !== BiomeId.END || !!gm?.isClassic));
-      out.push({ w, tod, wild: 1 - trainer, trainer, boss: trainer < 1 && kind === "boss", gym });
+      const boss = trainer < 1 ? (kind === "boss" ? 1 : randomBossChance(s, w)) : 0;
+      out.push({ w, tod, wild: 1 - trainer, trainer, boss, gym });
     }
     return out;
   };
@@ -294,18 +319,29 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
           if (!(sp.legendary || sp.subLegendary || sp.mythical)) return true;
           return difficulty >= (sp.baseTotal >= 660 ? 80 : 55);
         };
-        // `isBossSpecies` asks only the BOSS tier (5) for this time of day, and never an Endless or Daily End boss
-        // short of the final wave.
-        const bossWave = wv.boss && (biome.pokemonPool?.[BiomePoolTier.BOSS]?.[TimeOfDay.ALL] ?? []).length + (biome.pokemonPool?.[BiomePoolTier.BOSS]?.[wv.tod] ?? []).length > 0
+        // `isBossSpecies` asks only the BOSS tier (5) for this pool's time of day, and never an END boss outside
+        // classic. (The source's third term, `isWaveFinal`, can't be reached from here: the run's last wave is the
+        // run's own, not the biome's, and `wavesIn` drops it before this.)
+        const bossPool = (biome.pokemonPool?.[BiomePoolTier.BOSS]?.[TimeOfDay.ALL] ?? []).length + (biome.pokemonPool?.[BiomePoolTier.BOSS]?.[wv.tod] ?? []).length > 0
           && (biome.biomeId !== BiomeId.END || !!gm?.isClassic);
-        const tiers = bossWave ? BOSS_POOL_TIERS : POOL_TIERS;
-        const pools = tiers.map(t => [...(biome.pokemonPool?.[t]?.[TimeOfDay.ALL] ?? []), ...(biome.pokemonPool?.[t]?.[wv.tod] ?? [])].filter(legalAt));
         const forced = gm?.isDaily ? tryDo(() => gm.dailyConfig.forcedWaves.find(f => f.waveIndex === wv.w).tier) : null;
-        const max = bossWave ? 64 - luck * 0.5 : 512 - luck * 2;
-        for (const { tier, list, p } of odds(pools, tiers, bossWave ? BOSS_CUTS : TIER_CUTS, max, forced)) {
-          for (const id of list) add(id, tier, wv.wild * p / list.length, bossWave ? "boss" : "wild");
-        }
-        if (bossWave) bigFight = { wave: wv.w, gym: false };
+        // The wave's wild share splits between the two pools: a tenth wave is all boss, an Endless wave past 250 a
+        // slice of one, everything else none.
+        const spawn = (share, asBoss) => {
+          if (share <= 0) return;
+          const tiers = asBoss ? BOSS_POOL_TIERS : POOL_TIERS;
+          const pools = tiers.map(t => [...(biome.pokemonPool?.[t]?.[TimeOfDay.ALL] ?? []), ...(biome.pokemonPool?.[t]?.[wv.tod] ?? [])].filter(legalAt));
+          const max = asBoss ? 64 - luck * 0.5 : 512 - luck * 2;
+          for (const { tier, list, p } of odds(pools, tiers, asBoss ? BOSS_CUTS : TIER_CUTS, max, forced)) {
+            for (const id of list) add(id, tier, share * p / list.length, asBoss ? "boss" : "wild");
+          }
+        };
+        const bossShare = bossPool ? wv.boss : 0;
+        spawn(wv.wild * bossShare, true);
+        spawn(wv.wild * (1 - bossShare), false);
+        // The fight that ends a biome, worth ±10 on the score: the tenth wave's own boss, not a wave that merely
+        // might roll one.
+        if (bossShare >= 1) bigFight = { wave: wv.w, gym: false };
       }
       if (wv.trainer > 0 && tables?.trainers) {
         const tiers = wv.gym ? BOSS_POOL_TIERS : POOL_TIERS;
@@ -483,7 +519,7 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
       (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
     if (cache.key === key) return cache.value;
     const level = Math.max(1, ...everyone.map(p => p.level ?? 1));
-    const luck = partyLuck(everyone);
+    const luck = partyLuck(everyone, s, gameEvents());
     // The party judged as a whole, once for every option: the coverage table, the two matchup queries and what a catch
     // is worth all come off it (`08-party.js`).
     const profile = partyProfile(party);
@@ -513,7 +549,7 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
   const spawnsFor = (s, id, wave, luck = 0) => (tables?.biomes?.get(id) ? encounters(s, tables.biomes.get(id), wave, luck) : null);
   const formsFor = (id, level, kind = EvoLevelThresholdKind.WILD) => Object.fromEntries(formsAt(id, level, kind));
 
-  return { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor };
+  return { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRewardFns, spawnsFor, formsFor, spawnTimeOfDay };
 })();
 
 // `Swamp 72 pick — Garchomp resists, 3 mons hit SE · Construction Site 55`, for the watcher and the battle read.

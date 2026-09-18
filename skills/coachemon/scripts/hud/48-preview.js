@@ -4,8 +4,10 @@
 // ---- How the game decides (read from the pinned source, v1.12.0.11; every method it calls is on the #69 drift list)
 // `BattleScene.newBattle()` sows a fresh stream at its top — `resetSeed(w)` does `RND.sow([shiftCharCodes(seed, w)])`
 // — and then draws in a fixed order:
-//   1. `gameMode.isWaveTrainer(w)`     the trainer-chance roll (its look-back loop is a fork per wave, so it doesn't
-//                                      move the stream; a gym wave draws nothing — the rule is 03-calendar.js's)
+//   1. `gameMode.isWaveTrainer(w)`     the trainer-chance roll, and only when `gameMode.hasTrainers` (Endless never
+//                                      asks: every non-fixed wave there is wild). Its look-back loop is a fork per
+//                                      wave, so it doesn't move the stream; a gym wave, an X0, an X1, a Daily wave
+//                                      and a blocked one draw nothing — the rules are 03-calendar.js's
 //   2. `isWaveMysteryEncounter(...)`   the ME roll, in a fork at `w * 3000`
 //   3. `generateNewBattleTrainer(w)`   the trainer's pool tier and type, then its double and variant rolls
 //   4. `checkIsDouble(...)`            the wild double roll
@@ -31,8 +33,9 @@
 //              its party members, the enemy levels, the ME roll and which ME, the boss-bar count.
 // - `replay`   right only as long as the game draws nothing between `resetSeed(w)` and that point that this replay
 //              doesn't: a generic wave's kind, a generic trainer's identity, the wild double roll, the wild species.
-// - `estimate` the arena's species pool is the one loaded for *this* wave's time of day; when the next wave falls in
-//              another one, the pool it draws from isn't the pool we hold.
+// - `estimate` the arena's species pool is the one it last built, and it rebuilds on entering a biome and again at
+//              X5; when the wave ahead falls the other side of a rebuild, the pool it draws from isn't the pool we
+//              hold. Also an evil-team grunt's double, which comes off `Math.random` and is nobody's to replay.
 // **A field is never surer than what it derives from.** A fork is exact about its own roll, not about its inputs: a
 // generic trainer's party members are each their own fork, but the fork is keyed on the trainer the stream picked, so
 // a party is only as sure as the trainer, and a trainer only as sure as the wave's kind. `weakest` enforces that, and
@@ -60,8 +63,15 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
   // card unavailable on every wild wave — so the fallback is by feature, not by assumption.
   const wildSpecies = (s, w, level, party) => (typeof s.randomSpecies === "function"
     ? s.randomSpecies(w, level, true)
-    : s.arena.randomSpecies(w, level, 0, partyLuck(party)));
+    : s.arena.randomSpecies(w, level, 0, partyLuck(party, s, gameEvents())));
   const hasSpeciesRoll = s => typeof s.randomSpecies === "function" || typeof s.arena?.randomSpecies === "function";
+
+  // The evil-team grunt waves (35, 62, 64, 112). `getRandomTrainerFunc` gives a grunt a double variant on
+  // `randInt(3) === 0`, and `randInt` is `Math.random`: **unseeded**, so nothing in the run seed decides it and no
+  // replay can reach it. The trainer itself is still the seeded `randSeedItem` of the ten teams; only the double (and
+  // the gender) fall out of the stream.
+  const GRUNT_WAVES = [ClassicFixedBossWaves.EVIL_GRUNT_1, ClassicFixedBossWaves.EVIL_GRUNT_2,
+    ClassicFixedBossWaves.EVIL_GRUNT_3, ClassicFixedBossWaves.EVIL_GRUNT_4];
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
   // `randSeedInt` (utils/common): the same three lines, so a replayed draw lands on the same stream position.
@@ -133,6 +143,9 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
       return fork(s, w, s.seed, () => {
         const fixedCfg = tryDo(() => (gm.isFixedBattle(w) ? gm.getFixedBattle(w) : null));
         let type, trainer = null, forcedDouble, me = null;
+        // A fixed battle whose config pins `double` says so; a grunt wave that doesn't takes it from an unseeded roll.
+        const gruntDouble = !!fixedCfg && fixedCfg.double == null && GRUNT_WAVES.includes(w);
+        if (gruntDouble) notes.push("this grunt's double is an unseeded roll: it can't be read ahead");
 
         if (fixedCfg) {
           type = fixedCfg.battleType ?? TRAINER;
@@ -142,7 +155,11 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
             : null;
           if (type === TRAINER && !trainer) notes.push("this fixed battle names no trainer");
         } else {
-          type = gm.isWaveTrainer(w) ? TRAINER : WILD;
+          // `handleNonFixedBattle` asks `isWaveTrainer` **only when the mode has trainers**: in Endless and Spliced
+          // Endless every non-fixed wave is wild, and the trainer-chance roll is never made. Asking anyway built a
+          // trainer on a gym-calendar wave and, on every other wave, spent a draw the game doesn't — which shifts the
+          // wild double roll and the species after it.
+          type = hasTrainers(s) && gm.isWaveTrainer(w) ? TRAINER : WILD;
           if (s.isWaveMysteryEncounter(type, w)) {
             type = MYSTERY;
           } else if (type === TRAINER) {
@@ -184,9 +201,13 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
           });
         });
 
-        // `arena.pokemonPool` holds the species lists for *this* wave's time of day; the game rebuilds it when the
-        // clock turns over, and a wild spawn read off the pool we hold is then a guess.
-        const podShift = type === WILD && timeOfDayFor(s, w) !== timeOfDayFor(s, s.currentBattle?.waveIndex ?? w);
+        // `arena.pokemonPool` is rebuilt only when the arena is built and as a wave X5 starts (47-biome's
+        // `spawnTimeOfDay`), so what matters is not whether the *clock* turns over between here and the wave ahead but
+        // whether the **pool** is rebuilt before it: X1–X4 draw from the X0's pool and X5–X9 from X5's. Read per wave,
+        // this called a shift four waves early and missed the one at X5.
+        const biomeId = s.arena?.biomeId;
+        const podShift = type === WILD
+          && spawnTimeOfDay(s, w, biomeId) !== spawnTimeOfDay(s, s.currentBattle?.waveIndex ?? w, biomeId);
         if (podShift) notes.push("time of day turns over: the spawn pool shifts");
         return {
           wave: w, type: type === MYSTERY ? "me" : type === TRAINER ? "trainer" : "wild", fixed: !!fixedCfg,
@@ -194,16 +215,22 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
           me: me ? { name: meName(me), tier: me.encounterTier ?? null } : null,
           double, levels, foes, boss: foes.some(f => f.segments > 1),
           confidence: (() => {
-            // A fixed wave's kind is a table lookup and a gym wave's is the calendar (`isWaveTrainer` returns on the
-            // gym rule before the chance roll, so it costs no draw); any other wave's is the trainer-chance roll off
-            // the stream, and every field below inherits that `replay` through `weakest`.
-            const kind = fixedCfg || waveKind(s, w) === "gym" ? CONFIDENCE.exact : CONFIDENCE.replay;
+            // Whether the wave's kind costs a draw at all is the run calendar's one rule (`kindIsRolled`): a fixed
+            // battle, a gym wave, an X0 or X1, a Daily calendar wave, a mode without trainers and a wave the look-back
+            // blocks are all settled without touching the stream. Only a wave that really rolls `1/trainerChance` is
+            // `replay`, and every field below inherits that through `weakest`.
+            const kind = kindIsRolled(s, w) ? CONFIDENCE.replay : CONFIDENCE.exact;
             // A fixed trainer comes with the table entry; every other trainer's identity is drawn on the stream.
             const who = !trainer ? null : weakest(kind, fixedCfg ? CONFIDENCE.exact : CONFIDENCE.replay);
-            // A trainer's double is its variant, settled when the trainer was; a wild one is its own roll on the stream.
-            const dbl = type === WILD ? weakest(kind, CONFIDENCE.replay) : weakest(kind, who);
+            // A trainer's double is its variant, settled when the trainer was; a wild one is its own roll on the
+            // stream. An evil-team grunt is the exception: `getRandomTrainerFunc` gives it a double on `randInt(3)`,
+            // which is `Math.random` — unseeded, so no replay reaches it and the next run of this same wave answers
+            // differently. That is a guess, not a replay.
+            const dbl = gruntDouble ? CONFIDENCE.estimate
+              : type === WILD ? weakest(kind, CONFIDENCE.replay) : weakest(kind, who);
             // Each trainer member is a fork of its own — but one keyed on the trainer, so never surer than the trainer.
-            // A wild species rides the stream, off a pool that is this wave's when the clock turns over.
+            // A wild species rides the stream, off a pool that is only the wave ahead's while the arena doesn't
+            // rebuild it in between.
             const foesOwn = type === WILD ? (podShift ? CONFIDENCE.estimate : CONFIDENCE.replay) : CONFIDENCE.exact;
             return {
               type: kind,
@@ -225,13 +252,6 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
 
   // The player's Golden Bug Net, by the modifier's own class name (the game checks `BoostBugSpawnModifier`).
   const hasBugNet = s => (s.modifiers ?? []).some(m => m?.constructor?.name === "BoostBugSpawnModifier");
-  // Arena.getTimeOfDay: ABYSS is always night; otherwise (wave + waveCycleOffset) % 40.
-  const timeOfDayFor = (s, w) => {
-    if (w == null) return null;
-    if (s.arena?.biomeId === BiomeId.ABYSS) return TimeOfDay.NIGHT;
-    const c = (w + (s.waveCycleOffset ?? 0)) % 40;
-    return c < 15 ? TimeOfDay.DAY : c < 20 ? TimeOfDay.DUSK : c < 35 ? TimeOfDay.NIGHT : TimeOfDay.DAWN;
-  };
 
   // ---- Accuracy, measured rather than claimed
   const FIELDS = ["type", "trainer", "foes", "double", "levels"];

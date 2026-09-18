@@ -24,6 +24,8 @@ biome             covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Mag
 catch             covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Magikarp 400~
 == luck and fusions
 luck              6
+daily luck        11
+event luck        9
 Snorlax←Lapras    final 538  exact
 Magikarp←Snorlax  final 470~
 Deoxys form 1     final 700

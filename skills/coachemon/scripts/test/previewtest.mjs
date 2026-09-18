@@ -75,17 +75,24 @@ class FakeBattle {
   isBattleMysteryEncounter() { return this.battleType === 3; }
 }
 
-const FIXED = { 8: { seedOffsetWaveIndex: 0, name: "Rival", type: 20 }, 25: { seedOffsetWaveIndex: 8, name: "Rival", type: 20 } };
+// The fixed-battle table. No config in the game's own table calls `setDouble`, so `double` is `undefined` throughout
+// and `checkIsDouble` falls through to the trainer's variant — which on a grunt wave came off `Math.random`.
+const FIXED = {
+  8: { seedOffsetWaveIndex: 0, name: "Rival", type: 20 },
+  25: { seedOffsetWaveIndex: 8, name: "Rival", type: 20 },
+  35: { seedOffsetWaveIndex: 0, name: "Rocket Grunt", type: 30 }, // ClassicFixedBossWaves.EVIL_GRUNT_1
+};
 
 // getPartyLuckValue (modifier-type.ts): the party's luck summed over everyone allowed in battle, clamped to 14.
 const partyLuckOf = party => Math.max(0, Math.min(14, party.reduce((t, p) => t + (p.getLuck?.() ?? 0), 0)));
 let arenaArgs = []; // what the arena's `randomSpecies` was last handed, so the wrapper's argument list is checkable
 
 // `offsets` records every fork the code under test opens, so the test can assert the offsets themselves.
-const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meRate = 0 } = {}) => {
+const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meRate = 0, hasTrainers = true,
+  waveCycleOffset = 0 } = {}) => {
   const offsets = [];
   const scene = {
-    seed, waveSeed: shiftCharCodes(seed, wave), rngOffset: 0, rngSeedOverride: "", offsetGym: false, waveCycleOffset: 0,
+    seed, waveSeed: shiftCharCodes(seed, wave), rngOffset: 0, rngSeedOverride: "", offsetGym: false, waveCycleOffset,
     // The game's own two-step: `EncounterPhase` calls `globalScene.randomSpecies(w, level, true)`, whose
     // `fromArenaPool` branch is `arena.randomSpecies(w, level, 0, getPartyLuckValue(party))`. The arena method
     // records what it was handed, so a preview that skips the wrapper shows up as a mismatch.
@@ -95,9 +102,11 @@ const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meR
       queueAbilityDisplay() {}, hideAbilityBar() {}, queueFaintPhase() {} },
     getPlayerParty: () => party, getEnemyParty: () => scene.currentBattle?.enemyParty ?? [],
     gameMode: {
-      isEndless: false, hasChallenge: () => false, isWaveFinal: () => false, isBoss: w => w % 10 === 0,
+      // Endless and Spliced Endless are the modes without trainers: `handleNonFixedBattle` makes every non-fixed wave
+      // wild there and never calls `isWaveTrainer`, so the trainer-chance roll is never spent.
+      hasTrainers, isEndless: !hasTrainers, hasChallenge: () => false, isWaveFinal: () => false, isBoss: w => w % 10 === 0,
       isFixedBattle: w => !!FIXED[w],
-      getFixedBattle: w => FIXED[w] && { battleType: 1, double: false, seedOffsetWaveIndex: FIXED[w].seedOffsetWaveIndex,
+      getFixedBattle: w => FIXED[w] && { battleType: 1, seedOffsetWaveIndex: FIXED[w].seedOffsetWaveIndex,
         getTrainer: () => makeTrainer(scene, { name: FIXED[w].name, type: FIXED[w].type, size: 3 }) },
       // Gym waves draw nothing; every other legal wave rolls the biome's trainer chance.
       isWaveTrainer(w) {
@@ -167,7 +176,9 @@ const playWave = (scene, w) => {
     forcedDouble = cfg.double;
     scene.executeWithSeedOffset(() => { trainer = cfg.getTrainer(); }, (cfg.seedOffsetWaveIndex || w) << 8);
   } else {
-    type = gm.isWaveTrainer(w) ? 1 : 0;
+    // `handleNonFixedBattle`: `!hasTrainers` short-circuits to a wild battle, and `isWaveTrainer` — with its roll —
+    // is never reached.
+    type = gm.hasTrainers && gm.isWaveTrainer(w) ? 1 : 0;
     if (scene.isWaveMysteryEncounter(type, w)) type = 3;
     else if (type === 1) trainer = scene.generateNewBattleTrainer(w);
   }
@@ -361,6 +372,56 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   assert.equal(stats.miss.type + stats.miss.foes + stats.miss.levels + stats.miss.double, 0,
     `the look-ahead didn't displace the prediction: ${JSON.stringify(stats.last)}`);
   console.log(`== tally with a look-ahead in flight ${JSON.stringify({ checked: stats.checked, miss: stats.miss })}`);
+}
+
+// ---- 8b. Endless: `handleNonFixedBattle` makes every non-fixed wave wild without asking `isWaveTrainer`, so there
+// is no trainer on a gym-modulo wave and — the part that moves everything after it — no trainer-chance draw either.
+{
+  for (const wave of [13, 20]) { // 20 is a gym wave by the modulo, which Endless never reaches
+    const { scene, pv } = mount({ wave: wave - 1, hasTrainers: false });
+    const predicted = pv.previewNext(scene);
+    assert.equal(predicted.type, "wild", `Endless wave ${wave} is wild`);
+    assert.equal(predicted.trainer, null);
+    assert.equal(predicted.confidence.type, "exact", "no roll decides the kind, so it can't drift");
+    // The draw count is the real claim: play the wave for real on the same seed and the replay has to land on it.
+    const actual = playWave(scene, wave);
+    const mine = { double: predicted.double, levels: predicted.levels, foes: predicted.foes.map(f => `${f.name} L${f.level}`) };
+    const theirs = { double: actual.double, levels: actual.enemyLevels, foes: actual.enemyParty.map(p => `${p.name} L${p.level}`) };
+    console.log(`== endless wave ${wave} predicted ${JSON.stringify(mine)}`);
+    assert.deepEqual(mine, theirs, `Endless wave ${wave}: the replay spends the same draws the game does`);
+  }
+}
+
+// ---- 8c. The spawn pool is the one the arena holds, not the time of day at the wave ahead. `updatePoolsForTimeOfDay`
+// runs when the arena is built (the X0) and as an X5 starts, so X1–X4 all draw from the X0's pool.
+{
+  // `waveCycleOffset` 3: the clock turns DAY → DUSK entering wave 12, and DUSK → NIGHT entering 17.
+  const inner = mount({ wave: 11, waveCycleOffset: 3 });
+  const m = inner.pv.previewNext(inner.scene); // wave 12, still on the pool wave 10 built
+  assert.equal(m.type, "wild");
+  assert.equal(m.confidence.foes, "replay", "the clock turned, but the pool didn't: the spawn is a replay, not a guess");
+  assert.ok(!m.notes.some(n => n.includes("pool")), `no pool note: ${JSON.stringify(m.notes)}`);
+  // Crossing X5 is the case that does move it, and the one reading per wave used to miss.
+  const at5 = mount({ wave: 14, waveCycleOffset: 3 });
+  const m5 = at5.pv.previewNext(at5.scene); // wave 15: the X5 rebuild lands on DUSK
+  assert.equal(m5.type, "wild");
+  assert.equal(m5.confidence.foes, "estimate", "the X5 rebuild changes the pool the wave ahead draws from");
+  assert.ok(m5.notes.some(n => n.includes("time of day")), `the pool note is said: ${JSON.stringify(m5.notes)}`);
+  console.log(`== pool shift  w12 ${m.confidence.foes}  w15 ${m5.confidence.foes} ${JSON.stringify(m5.notes)}`);
+}
+
+// ---- 8d. An evil-team grunt's double is `randInt(3)` — `Math.random`, unseeded — so it is a guess even though every
+// other field of the same fixed battle is a table lookup.
+{
+  const { scene, pv } = mount({ wave: 34 });
+  const m = pv.previewNext(scene); // wave 35, EVIL_GRUNT_1
+  assert.equal(m.fixed, true);
+  assert.equal(m.confidence.type, "exact");
+  assert.equal(m.confidence.trainer, "exact", "which grunt it is comes off the run seed");
+  assert.equal(m.confidence.double, "estimate", "but whether it is a double doesn't");
+  assert.equal(m.confidence.levels, "estimate", "and the levels are fed the double, so they are no surer");
+  assert.ok(m.notes.some(n => n.includes("unseeded")), `and it says so: ${JSON.stringify(m.notes)}`);
+  console.log(`== grunt wave 35 ${JSON.stringify({ confidence: m.confidence, notes: m.notes })}`);
 }
 
 // ---- 8. The card, in both views, plus the one-line summary.

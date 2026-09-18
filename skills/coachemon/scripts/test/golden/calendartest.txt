@@ -5,7 +5,9 @@ late                      170:gym  182:fixed  188:fixed  190:fixed  195:fixed  1
 gym waves                 20:boss  30:gym  50:boss  60:gym  90:gym
 == waveKind, daily / endless
 daily                     20:gym  30:boss  45:—  50:final
-endless                   20:gym  200:gym  210:boss  250:final  500:final
+endless                   20:boss  200:boss  210:boss  250:final  500:final
+== kind rolled, classic
+waves 41–50               41:rule  42:roll  43:roll  44:roll  47:roll  48:rule  49:rule  50:rule
 == schedule from 1  [[5,"fixed"],[8,"fixed"],[10,"boss"],[20,"gym"],[25,"fixed"],[30,"boss"]]
 == schedule from 181 [[182,"fixed"],[184,"fixed"],[186,"fixed"],[188,"fixed"],[190,"fixed"],[195,"fixed"],[200,"final"]]
 == heals, classic

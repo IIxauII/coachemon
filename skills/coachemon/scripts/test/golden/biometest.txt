@@ -74,4 +74,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🗺 Next biome from Tall Grass + {Expand} × {Close}
 ≈ Swamp 85 {offense 87 · defense -5 · catches 100 · big fight 100} — 2 mons hit SE
 ★ Marsh 86 {offense 88 · defense -6 · catches 100 · big fight 100} — edges Swamp on offense, 2 mons hit SE
+== spawn pool time of day, waveCycleOffset 3
+11:day  12:day  14:day  15:dusk  17:dusk  19:dusk  20:dusk
+== boss share  endless w301–310 0.1360  endless w101–110 0.1000  classic 0.1000
 ok

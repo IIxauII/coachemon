@@ -154,6 +154,29 @@ const flatten = rs => rs.map(flat);
   assert.equal(partyLuck(benched), 6, "a member not allowed in battle adds none");
   assert.equal(partyLuck([mon(SPECIES.lapras, 40, [], { luck: 14 }), mon(SPECIES.snorlax, 40, [], { luck: 9 })]), 14, "clamped at 14");
 
+  // The three terms of `getPartyLuckValue` that are not the party's at all (§12).
+  const rnd = globalThis.Phaser.Math.RND;
+  let forked = null, drew = null;
+  rnd.integerInRange = (min, max) => { drew = [min, max]; return 11; };
+  const daily = { seed: "kAbC12", gameMode: { isDaily: true },
+    executeWithSeedOffset(fn, offset, seedOverride) { forked = [offset, seedOverride]; fn(); } };
+  row("daily luck", String(partyLuck(team, daily)));
+  assert.equal(partyLuck(team, daily), 11, "in Daily the luck is a roll of the run seed's, not the party's 6");
+  assert.deepEqual(forked, [0, "kAbC12"], "in a fork at offset 0 on the run seed, so it costs the stream nothing");
+  assert.deepEqual(drew, [0, 14], "randSeedInt(15)");
+  // An event seed's config can pin it, and only a value in 0–14 counts.
+  assert.equal(partyLuck(team, { ...daily, gameMode: { isDaily: true, dailyConfig: { luck: 3 } } }), 3, "the event seed's own luck");
+  assert.equal(partyLuck(team, { ...daily, gameMode: { isDaily: true, dailyConfig: { luck: 99 } } }), 11, "out of range is no pin");
+  assert.equal(partyLuck(team, { gameMode: { isDaily: true } }), 6, "with no scene to fork on, the party's sum is all there is");
+  // Outside Daily, the timed event adds two terms nothing on the party shows: +1 for each boosted species, then a
+  // flat boost on top of the clamp.
+  const event = { getEventLuckBoostedSpecies: () => [team[0].species.speciesId], getEventLuckBoost: () => 2 };
+  row("event luck", String(partyLuck(team, null, event)));
+  assert.equal(partyLuck(team, null, event), 6 + 1 + 2, "a boosted species is +1, and the event's boost is on top");
+  assert.equal(partyLuck(team, null, { getEventLuckBoostedSpecies: () => [], getEventLuckBoost: () => 9 }), 14, "capped at 14 again");
+  assert.equal(partyLuck(team), 6, "without the event manager it is the floor it always was");
+  delete rnd.integerInRange;
+
   // A fusion is judged by the pair: per-stat averages aren't readable from a BST alone, so two final forms average.
   const fused = finalBstOf({ species: SPECIES.snorlax, fusion: SPECIES.lapras });
   row("Snorlax←Lapras", [`final ${fused.final}`, fused.estimated ? "estimated" : "exact"]);

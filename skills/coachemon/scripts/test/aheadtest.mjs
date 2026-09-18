@@ -98,8 +98,10 @@ const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildS
       isWaveFinal: w => w === 200,
       isBoss: w => w % 10 === 0,
       isFixedBattle: w => FIXED_NAMES[w] != null,
+      // No config in the game's own table calls `setDouble`, so `double` is `undefined` on every fixed battle and
+      // `checkIsDouble` falls through to the trainer's variant.
       getFixedBattle: w => (FIXED_NAMES[w] == null ? undefined : {
-        battleType: 1, double: false, seedOffsetWaveIndex: 0, customModifierRewardSettings: REWARDS[w],
+        battleType: 1, seedOffsetWaveIndex: 0, customModifierRewardSettings: REWARDS[w],
         getTrainer: () => makeTrainer(scene, FIXED_NAMES[w], 2, roster),
       }),
       // `GameMode.isWaveTrainer`: the gym rule, which returns before the chance roll — and never on the final wave.
@@ -141,9 +143,9 @@ const mount = opts => {
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  const { aheadModel, partyLuck, learnRoster } = globalThis.__hud["49-ahead"];
+  const { aheadModel, partyLuck, learnRoster, doubleOdds } = globalThis.__hud["49-ahead"];
   const { drawAhead } = globalThis.__hud["95-render-ahead"], { aheadSummary } = globalThis.__hud["49-ahead"];
-  return { scene, ah: { aheadModel, partyLuck, drawAhead, aheadSummary, learnRoster } };
+  return { scene, ah: { aheadModel, partyLuck, drawAhead, aheadSummary, learnRoster, doubleOdds } };
 };
 
 // Ice Beam answers the rival's Garchomp (Dragon/Ground), Earthquake its Lucario (Fighting/Steel).
@@ -295,6 +297,36 @@ const card = (ah, m, v = "full") => { globalThis.localStorage = { getItem: () =>
   assert.deepEqual(far.next.foes, []);
   assert.equal(ah2.learnRoster(far), null, "no roster to judge a learned move against either");
   console.log(`== far fight ${JSON.stringify({ wave: far.next.wave, kind: far.next.kind, foes: far.next.foes, readiness: far.readiness })}`);
+}
+
+// ---- 9. The double battles a TM is judged against (§16): what shortens the odds, and the one wave whose double no
+// seed decides.
+{
+  const { scene, ah } = mount({ wave: 40, party: team() });
+  // Waves 41–44: ordinary waves at the flat 1/8, no fixed battle and no X0 among them.
+  assert.equal(ah.doubleOdds(scene, 41, 4), 1 / 8, "the flat chance on an ordinary wave");
+  // An X0 is 32, not 8 — a boss wave is four times less likely to be a double.
+  assert.equal(ah.doubleOdds(scene, 47, 4), (1 / 8 + 1 / 8 + 1 / 8 + 1 / 32) / 4);
+  // `DoubleBattleChanceAbAttr` is four abilities, not two: No Guard and Commander carry it as well as Illuminate
+  // and Arena Trap, and each divides the chance by 4.
+  const durant = pk("Durant", 18, ["Bug", "Steel"], ["Tackle"]);
+  durant.getAbility = () => ({ name: "No Guard" });
+  const { scene: sng, ah: ahng } = mount({ wave: 40, party: [durant, ...team()] });
+  assert.equal(ahng.doubleOdds(sng, 41, 4), 1 / 2, "No Guard on the field: 8 → 2");
+  const dondozo = pk("Dondozo", 18, ["Water"], ["Tackle"]);
+  dondozo.getAbility = () => ({ name: "Commander" });
+  const { scene: sc, ah: ahc } = mount({ wave: 40, party: [dondozo, ...team()] });
+  assert.equal(ahc.doubleOdds(sc, 41, 4), 1 / 2, "and so does Commander");
+  // A fixed battle pins nothing, so it counts as single — except the four evil-team **grunt** waves, where
+  // `getRandomTrainerFunc` rolls `randInt(3) === 0` on `Math.random`. Unseeded: no preview can read it, and the flat
+  // 1/3 is the honest number.
+  console.log(`== doubles ahead  41–44 ${ah.doubleOdds(scene, 41, 4)}  grunt 35 ${ah.doubleOdds(scene, 35, 1)}`
+    + `  admin 66 ${ah.doubleOdds(scene, 66, 1)}  rival 25 ${ah.doubleOdds(scene, 25, 1)}`);
+  assert.equal(ah.doubleOdds(scene, 35, 1), 1 / 3, "an evil-team grunt is a double one time in three");
+  for (const w of [62, 64, 112]) assert.equal(ah.doubleOdds(scene, w, 1), 1 / 3, `grunt wave ${w}`);
+  assert.equal(ah.doubleOdds(scene, 66, 1), 0, "an admin takes no such roll");
+  assert.equal(ah.doubleOdds(scene, 25, 1), 0, "nor does a rival");
+  assert.equal(ah.doubleOdds(scene, 200, 1), 0, "and the final wave is never double");
 }
 
 console.log("ok");

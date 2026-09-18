@@ -120,10 +120,10 @@ const mount = ({ view = "full", labels = ["Swamp", "Construction Site"], party =
   globalThis.localStorage = { getItem: () => view, setItem() {} };
   eval(bundle("hud", { expose: true }));
   // The chunk scan finds nothing under node: hand over what it would have found, and draw the card again.
-  const { setGameTables, spawnsFor, formsFor } = globalThis.__hud["47-biome"];
+  const { setGameTables, spawnsFor, formsFor, spawnTimeOfDay } = globalThis.__hud["47-biome"];
   setGameTables(t);
   globalThis.__hud["98-tick"].tick();
-  globalThis.__bm = { spawnsFor, formsFor };
+  globalThis.__bm = { spawnsFor, formsFor, spawnTimeOfDay };
   return { el, scene, handler, model: () => globalThis.__coachHud.last() };
 };
 
@@ -298,4 +298,42 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.equal(other.verdict, "close");
   assert.ok(best.reasons[0].edge && best.reasons[0].text.startsWith(`edges ${other.label} on `), JSON.stringify(best.reasons));
 }
+// ---- 12. Which pool a wave spawns from: the arena rebuilds it when it is built (the X0 the biome is chosen on) and
+// as an X5 starts, and nowhere else — so the time of day at the wave itself is the wrong question.
+{
+  const { scene } = mount({ offset: 3 });
+  const tod = ["dawn", "day", "dusk", "night"]; // TimeOfDay: DAWN 0, DAY 1, DUSK 2, NIGHT 3
+  const at = w => tod[globalThis.__bm.spawnTimeOfDay(scene, w, 7)];
+  console.log("== spawn pool time of day, waveCycleOffset 3");
+  console.log([11, 12, 14, 15, 17, 19, 20].map(w => `${w}:${at(w)}`).join("  "));
+  // The clock turns DAY → DUSK entering wave 12 and DUSK → NIGHT entering 17, but the pool doesn't move with it.
+  assert.equal(at(11), "day");
+  assert.equal(at(12), "day", "X1–X4 all spawn from the pool the X0 built");
+  assert.equal(at(14), "day");
+  assert.equal(at(15), "dusk", "the X5 rebuild is the one that moves it");
+  assert.equal(at(17), "dusk", "and it holds to the end of the block, clock or no clock");
+  assert.equal(at(20), "dusk");
+  assert.equal(tod[globalThis.__bm.spawnTimeOfDay(scene, 12, 24)], "night", "ABYSS (24) is night whatever the wave");
+}
+
+// ---- 13. Endless past wave 250: `getEncounterBossSegments` rolls a boss on any wave, so a share of every wave
+// spawns from the boss pool rather than only the tenth.
+{
+  const endless = { isEndless: true, hasRandomBosses: true, isWaveFinal: w => w % 250 === 0, isBoss: w => w % 10 === 0,
+    isFixedBattle: () => false, getWaveForDifficulty: w => w, challenges: [] };
+  const classic = { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0, isFixedBattle: () => false,
+    getWaveForDifficulty: w => w, challenges: [] };
+  const share = (gameMode, wave) => {
+    const { scene } = mount({ wave, gameMode });
+    return globalThis.__bm.spawnsFor(scene, 7, wave).list.reduce((t, e) => t + e.boss, 0);
+  };
+  const late = share(endless, 300), early = share(endless, 100), plain = share(classic, 300);
+  console.log(`== boss share  endless w301–310 ${late.toFixed(4)}  endless w101–110 ${early.toFixed(4)}  classic ${plain.toFixed(4)}`);
+  near(plain, 0.1, "classic: one wave in ten is the boss, and no other");
+  near(early, 0.1, "nothing rolls before wave 250");
+  // Waves 301–309 each roll `ceil(51/50) × 2 = 4 %`, on top of the tenth wave's certainty.
+  near(late, (1 + 9 * 0.04) / 10, "past 250, 4 % of each other wave is a boss too");
+  assert.ok(late > plain);
+}
+
 console.log("ok");

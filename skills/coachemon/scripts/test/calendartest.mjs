@@ -32,7 +32,7 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, trainerOdds } = globalThis.__hud["03-calendar"];
+const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, trainerOdds, hasTrainers, kindIsRolled } = globalThis.__hud["03-calendar"];
 
 const row = (label, cells) => console.log(`${label.padEnd(26)}${cells.join("  ")}`);
 const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
@@ -74,7 +74,34 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(waveKind(d, 50), "final", "the Daily run ends at 50, which the gym rule would otherwise claim");
   assert.equal(waveKind(d, 20), "gym");
   assert.equal(waveKind(e, 250), "final", "Endless ends every 250th wave");
-  assert.equal(waveKind(e, 210), "boss", "200 is a gym wave by the modulo; 210 is only a tenth wave");
+  assert.equal(waveKind(e, 210), "boss", "210 is only a tenth wave");
+  // The gym rule lives inside `isWaveTrainer`, and `handleNonFixedBattle` never asks it without trainers: Endless
+  // has no gym leader on 20 or 200, however the modulo falls.
+  assert.equal(waveKind(e, 20), "boss", "Endless has no trainers, so no gym wave — only a tenth wave");
+  assert.equal(waveKind(e, 200), "boss");
+  assert.equal(hasTrainers(e), false, "Endless and Spliced Endless have no trainer battles at all");
+  assert.equal(hasTrainers(d), true);
+  assert.equal(hasTrainers(scene("classic")), true);
+  assert.equal(trainerOdds(e, 22, { trainerChance: 8 }), 0, "and no trainer share on any wave");
+  assert.equal(trainerOdds(e, 20, { trainerChance: 8 }), 0);
+}
+
+// ---- 3b. Whether a wave's kind costs a draw (`kindIsRolled`): what the preview's `type` confidence turns on. Every
+// path `isWaveTrainer` returns on before its `1/trainerChance` roll is a rule, and holds from any point in the run.
+{
+  const s = scene("classic"), rolled = w => kindIsRolled({ ...s, arena: { trainerChance: 8 } }, w);
+  console.log("== kind rolled, classic");
+  row("waves 41–50", [41, 42, 43, 44, 47, 48, 49, 50].map(w => `${w}:${rolled(w) ? "roll" : "rule"}`));
+  assert.equal(rolled(42), true, "an ordinary wave rolls the trainer chance on the stream");
+  assert.equal(rolled(41), false, "X1 returns before the roll (the trainer sprite bug)");
+  assert.equal(rolled(40), false, "so does X0");
+  assert.equal(rolled(50), false, "the gym rule returns first");
+  assert.equal(rolled(48), false, "and a wave the look-back blocks never reaches the roll");
+  assert.equal(rolled(5), false, "a fixed battle is a table lookup, not a roll");
+  assert.equal(kindIsRolled({ ...s, arena: { trainerChance: 0 } }, 42), false, "a biome with no trainer chance draws nothing");
+  assert.equal(kindIsRolled(s, 42), true, "with no arena to read, assume the roll: `replay` is the careful answer");
+  assert.equal(kindIsRolled({ ...scene("daily"), arena: { trainerChance: 8 } }, 42), false, "Daily answers from its own calendar");
+  assert.equal(kindIsRolled({ ...scene("endless"), arena: { trainerChance: 8 } }, 42), false, "Endless never asks");
 }
 
 // ---- 4. The schedule: every big fight ahead, in wave order, stopping at the run's last wave.

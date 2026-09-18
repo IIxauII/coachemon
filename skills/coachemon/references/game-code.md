@@ -1041,7 +1041,11 @@ specialty type doesn't fit, or the species is already in the party (line 517).
 **A wild spawn.** `Arena.randomSpecies` (`src/field/arena.ts:577`) — draws global RND. A Daily override species wins
 (`getOverrideSpecies`, `src/game-mode.ts:268`). It is a boss spawn when `getEncounterBossSegments(w, level) > 0`, the
 BOSS tier is non-empty and the biome isn't END (unless classic or final) (lines 584–589): `randSeedInt(64 − luck/2)`
-over the boss cuts, else `randSeedInt(512 − 2·luck)`. A Daily event seed's `forcedWaves[].tier` replaces the roll for
+over the boss cuts, else `randSeedInt(512 − 2·luck)`. `getEncounterBossSegments` (`src/battle-scene.ts:1964`) answers
+in a fork at `w << 2`: every X0, **plus, when the mode `hasRandomBosses` (Endless and Spliced Endless),
+`randSeedInt(100) < min(max(ceil((w − 250) / 50), 0) × 2, 30)`** — nothing before wave 250, then 2 % more of every
+wave per 50 waves, capped at 30 %. A sub-legendary, legendary or mythical species is forced to a boss, but that is
+read from the species the roll already picked, so it moves no pool. A Daily event seed's `forcedWaves[].tier` replaces the roll for
 a wave's first spawn (`getDailyForcedWaveBiomePoolTier`, `src/data/daily-seed/daily-run.ts:231`). Empty tiers drop; an
 all-empty pool falls back to any catchable species. A legend-like pick is rerolled (up to 10 attempts) while
 `getWaveForDifficulty(w, true)` (`src/game-mode.ts:192`; Daily adds 30) is below 80 for BST ≥ 660, else 55

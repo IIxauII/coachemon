@@ -11,6 +11,9 @@
 //   boss   `gameMode.isBoss(w)`                          every tenth wave
 // A wave can match several (190 is both the champion and a boss wave); the list above is the precedence `waveKind`
 // applies, and the one every card reads. There is no second copy of the gym rule anywhere in the HUD.
+// The gym rule and the trainer share are both **inside** `isWaveTrainer`, which `handleNonFixedBattle` calls only when
+// `gameMode.hasTrainers`: Endless and Spliced Endless have no gym wave and no trainer wave at all, and `hasTrainers`
+// is the one place that says so.
 //
 // ---- Heals
 // `VictoryPhase` pushes `SelectBiomePhase` whenever `isNewBiome()` — in classic, every tenth wave — and
@@ -27,10 +30,21 @@
 // hides `gameMode` gets one reading of the run rather than four.
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
+/**
+ * Whether the run has trainer battles at all. `handleNonFixedBattle` makes every non-fixed wave wild when
+ * `!gameMode.hasTrainers` and never asks `isWaveTrainer`, so in Endless and Spliced Endless there is no gym wave, no
+ * trainer share and no trainer-chance roll — a wave's kind is settled without a draw. **Game-less-backed**: with no
+ * `hasTrainers` on the mode, every mode but Endless has them, and a build that hides the mode altogether reads as a
+ * classic run, as the rest of this file's fallbacks do.
+ */
+export const hasTrainers = s => s?.gameMode?.hasTrainers ?? !s?.gameMode?.isEndless;
+
 // The one gym rule. `GameMode.isWaveTrainer` returns on it before the chance roll, so a gym wave is a trainer wave
 // that costs no draw — and as certain as a fixed battle. The run's last wave is the only exception, which `waveKind`
-// takes first; the look-back in `trainerOdds` asks the rule itself, the way the game's own loop does.
-const gymRule = (s, w) => w % 30 === (s?.offsetGym ? 0 : 20);
+// takes first; the look-back in `trainerOdds` asks the rule itself, the way the game's own loop does. The rule lives
+// *inside* `isWaveTrainer`, so a mode that never asks it has no gym wave: the modulo alone would hand Endless a gym
+// leader on 200 that the game never generates.
+const gymRule = (s, w) => hasTrainers(s) && w % 30 === (s?.offsetGym ? 0 : 20);
 
 /**
  * The run's last wave. **Game-less-backed**: with no `gameMode.isWaveFinal`, it is 200 in classic and challenge runs,
@@ -106,6 +120,7 @@ export const trainerOdds = (s, w, biome) => {
   const gm = s?.gameMode;
   const kind = waveKind(s, w);
   if (kind === "final" || kind === "fixed") return 0; // not the biome's: the rival, the evil team, the Elite Four
+  if (!hasTrainers(s)) return 0; // Endless: `handleNonFixedBattle` never asks
   if (gm?.isDaily) return w % 10 === 5 || (w % 10 === 0 && w > 10) ? 1 : 0;
   if (kind === "gym") return 1;
   if (w % 10 <= 1) return 0; // X1 is skipped for a sprite bug, X0 is a wild boss
@@ -119,4 +134,33 @@ export const trainerOdds = (s, w, biome) => {
     if (v < w) before++;
   }
   return (1 - 1 / chance) ** before / chance;
+};
+
+/**
+ * Whether wave `w`'s **kind** — trainer or wild — is settled by a draw on the live stream rather than by a rule. This
+ * is what a preview's `type` confidence turns on: a rule holds from any point in the run (`exact`), a stream draw only
+ * holds while the replay draws what the game draws (`replay`).
+ *
+ * `isWaveTrainer` returns before its `1/trainerChance` roll on every path but one, and `handleNonFixedBattle` doesn't
+ * even call it without trainers: a mode with no trainers (Endless), Daily's own calendar (a forced wave, then X5 and
+ * X0 past 10), the gym rule, X0 and X1 (a trainer sprite bug), and a biome with no `trainerChance`. The look-back
+ * blocks the roll within two waves of a gym or fixed battle — the blocking rule draws nothing itself, so a blocked
+ * wave is as certain as a gym wave, even though the look-back's *other* term (an earlier wave taking the slot) is a
+ * fork this doesn't read. A fixed battle replaces all of it with a table lookup.
+ *
+ * **Game-less-backed** in its inputs only: with no `arena.trainerChance` it assumes the roll happens, which is the
+ * careful answer — a kind marked `replay` that was really exact costs nothing but a `~`.
+ */
+export const kindIsRolled = (s, w) => {
+  const gm = s?.gameMode;
+  if (!gm || !hasTrainers(s) || gm.isDaily) return false;
+  const kind = waveKind(s, w);
+  if (kind === "final" || kind === "fixed" || kind === "gym") return false;
+  if (w % 10 === 0 || w % 10 === 1) return false;
+  if ((s?.arena?.trainerChance ?? 1) <= 0) return false;
+  const base = Math.floor(w / 10) * 10;
+  for (let v = Math.max(w - 2, base + 2); v <= Math.min(w + 2, base + 10); v++) {
+    if (v !== w && (gymRule(s, v) || tryDo(() => gm.isFixedBattle(v), false))) return false;
+  }
+  return true;
 };

@@ -226,7 +226,7 @@ buy first — taking the free reward closes the shop
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
 ☠ phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax
 ☠ Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double
-☠ Eternamax knows Recover at −4 priority: out-damage it, don't chip it
+✓ Eternamax's Recover has 1 PP (ppUp −4): it can heal half its bar exactly once
 ☠ phase 1's Cosmic Power raises its defences every use — stalling makes it worse
 ✓ it carries no held items in phase 1 and has no passive ability
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
