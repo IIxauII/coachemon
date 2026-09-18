@@ -85,12 +85,35 @@ export const finalBstOf = x => {
 };
 
 /**
- * The party's luck. `getPartyLuckValue` (modifier-type.ts) sums the luck of everyone allowed in battle and clamps to
- * 14; the timed-event boost it adds on top isn't readable from the scene, so this is a floor, not the value.
+ * The party's luck — `getPartyLuckValue` (modifier-type.ts, §12), re-implemented. It is what shifts a wild spawn's
+ * tier thresholds and buys a reward a tier upgrade, so the number matters wherever it is read.
+ *
+ * **In Daily it is not the party's at all**: a `randSeedInt(15)` in a fork at offset 0 on the run seed, or the event
+ * seed's own `luck` when the config names one. A fork is a read — `executeWithSeedOffset` puts the stream back — so it
+ * costs nothing to ask, and without it a Daily run's luck was quietly the party's sum, which it never is.
+ *
+ * Elsewhere it sums `getLuck()` over the members `isAllowedInBattle()`, **+1 for each whose species the timed event
+ * boosts**, clamps to 0–14, and then adds the event's own `luckBoost`, capped at 14 again. Both event terms need the
+ * timed event manager, which is 47-biome's chunk scan's (`gameEvents()`); pass it as `event` where the caller has it.
+ * Without it the two terms fall away and the value is a floor, which is what it always was.
+ *
+ * `s` is the scene, needed only for the Daily fork; called without it, a Daily run falls back to that same floor.
  */
-export const partyLuck = party => {
+export const partyLuck = (party, s = null, event = null) => {
+  const gm = s?.gameMode;
+  if (gm?.isDaily && typeof s.executeWithSeedOffset === "function" && s.seed) {
+    // `getDailyEventSeedLuck`: an event seed's config may pin the value outright, and only 0–14 is taken.
+    const pinned = gm.dailyConfig?.luck;
+    if (typeof pinned === "number" && pinned >= 0 && pinned <= 14) return pinned;
+    let rolled = null;
+    tryDo(() => s.executeWithSeedOffset(() => { rolled = Phaser.Math.RND.integerInRange(0, 14); }, 0, s.seed));
+    if (rolled != null) return rolled;
+  }
+  const boosted = tryDo(() => event.getEventLuckBoostedSpecies(), []) ?? [];
   const allowed = (party ?? []).filter(p => tryDo(() => p.isAllowedInBattle(), true));
-  return Math.max(0, Math.min(14, allowed.reduce((t, p) => t + (tryDo(() => p.getLuck(), 0) ?? 0), 0)));
+  const luck = Math.max(0, Math.min(14, allowed.reduce((t, p) =>
+    t + (tryDo(() => p.getLuck(), 0) ?? 0) + (boosted.includes(p?.species?.speciesId) ? 1 : 0), 0)));
+  return Math.min(14, luck + (tryDo(() => event.getEventLuckBoost(), 0) ?? 0));
 };
 
 const rootOf = x => tryDo(() => x.species.getRootSpeciesId(true), x?.species?.speciesId) ?? x?.species?.speciesId;
@@ -111,7 +134,8 @@ const HOLE_MIN_PARTY = 3, HOLE_MIN_TYPES = 2;
  * - `holes` — defending types nothing on the team hits super-effectively.
  * - `weakest` — `{ mon, final, estimated, level }`: the lowest final BST, the lower level breaking a tie.
  * - `roots` — the party's root species ids, which is what makes a catch a duplicate.
- * - `luck` — `partyLuck`.
+ * - `luck` — `partyLuck` of the members alone: a profile has no scene and no event manager, so this is the floor, not
+ *   the Daily roll or the event's terms. A card that spends against luck calls `partyLuck` itself, with both.
  * - `hitters(defender)` — the members that hit it super-effectively (a live mon, a preview foe or a plain defender).
  * - `weakTo(type)` — the members that type hits super-effectively.
  */

@@ -16,8 +16,9 @@
 // party luck is a per-item chance of a tier upgrade: 3.1 % at luck 0, 14.3 % at luck 14. A fixed battle's
 // `customModifierRewardSettings` can pin the tiers outright and set `allowLuckUpgrades: false` — the rival at 25 and
 // every boss after it — and then luck buys nothing on the screen as rolled. A reroll drops those settings (it queues a
-// plain `SelectModifierPhase`), so it rolls rarities and takes luck upgrades like any other wave. Luck is the party's
-// `getLuck()` summed and clamped to 14; timed-event boosts add to it unseen, so the HUD's number is a floor.
+// plain `SelectModifierPhase`), so it rolls rarities and takes luck upgrades like any other wave. The luck value
+// itself is `08-party.js`'s `partyLuck` — the party's `getLuck()` summed with the timed event's own terms, and **in
+// Daily a roll of its own** that has nothing to do with the party.
 //
 // Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
 // which replays inside a seed fork. Nothing is called that the preview doesn't already call.
@@ -34,8 +35,9 @@ const { aheadModel, doubleOdds, learnRoster } = (() => {
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
-  // ---- Luck. The value itself is the party profile's (`08-party.js`, `partyLuck`): it is a fact about the party, and
-  // the biome card reads the same one. What it buys is this file's — the per-reward upgrade chance below.
+  // ---- Luck. The value itself is the party profile's (`08-party.js`, `partyLuck`), and the biome card reads the same
+  // one — a fact about the party outside Daily, and a roll of the run seed's inside it. What it buys is this file's:
+  // the per-reward upgrade chance below.
   const LUCK_GRADES = ["D", "C", "C+", "B-", "B", "B+", "A-", "A", "A+", "A++", "S", "S+", "SS", "SS+", "SSS"];
   // One reward's chance of being upgraded a tier at least once: the loop rolls `randSeedInt(odds) < 4` and repeats
   // while it hits, so the first roll is the one worth quoting.
@@ -56,15 +58,17 @@ const { aheadModel, doubleOdds, learnRoster } = (() => {
   // ---- Double battles. `checkIsDouble` rolls every wave, `randSeedInt(getDoubleBattleChance(w)) === 0`, and
   // `generateNewBattleTrainer` rolls the same chance for a generic trainer's double variant. The chance is 8, or 32 on
   // an X0 wave, divided by 4 for each lure held (`DoubleBattleChanceBoosterModifier`, one per lure kind) and for each
-  // mon on the field with Illuminate or Arena Trap (`DoubleBattleChanceAbAttr`), floored at 1. `BattleEndPhase` lapses
-  // a lure before the rewards screen, so its `battleCount` there is the number of battles ahead it still covers. The
-  // final wave and an Endless boss are never double; a fixed battle's config pins it when it says, and one that doesn't
-  // (an evil-team grunt rolls 1/3 on the trainer, unreadable without the draw) counts as single. A Mystery Encounter
-  // is never double either, but whether a wave is one is itself a roll, so every other wave counts as a battle.
-  // `doubleOdds` is the share of double battles over the next `n` waves at those odds: what a permanent choice (a TM)
-  // is judged against, rather than whichever way one roll falls.
+  // mon on the field carrying `DoubleBattleChanceAbAttr` — Illuminate, Arena Trap, **No Guard and Commander** —
+  // floored at 1. `BattleEndPhase` lapses a lure before the rewards screen, so its `battleCount` there is the number
+  // of battles ahead it still covers. The final wave and an Endless boss are never double. A fixed battle's config
+  // pins it when it says; the four **evil-team grunt waves** don't, and `getRandomTrainerFunc` gives a grunt a double
+  // on `randInt(3) === 0` — `Math.random`, unseeded, so no preview and no replay can read it and it is counted here as
+  // the flat 1/3 it is. A Mystery Encounter is never double either, but whether a wave is one is itself a roll, so
+  // every other wave counts as a battle. `doubleOdds` is the share of double battles over the next `n` waves at those
+  // odds: what a permanent choice (a TM) is judged against, rather than whichever way one roll falls.
   const DOUBLE_HORIZON = 10;
-  const DOUBLE_ABILITIES = ["Illuminate", "Arena Trap"];
+  const DOUBLE_ABILITIES = ["Illuminate", "Arena Trap", "No Guard", "Commander"];
+  const GRUNT_DOUBLE = 1 / 3; // which waves those are is the run calendar's `isGruntWave`
   const doubleOdds = (s, from, n = DOUBLE_HORIZON) => {
     const gm = s?.gameMode;
     const lures = (s?.modifiers ?? []).filter(m => m?.constructor?.name === "DoubleBattleChanceBoosterModifier")
@@ -77,7 +81,7 @@ const { aheadModel, doubleOdds, learnRoster } = (() => {
       const w = from + i;
       if (tryDo(() => gm.isWaveFinal(w), false) || tryDo(() => gm.isEndlessBoss(w), false)) continue;
       const fixed = tryDo(() => (gm.isFixedBattle(w) ? gm.getFixedBattle(w) : null));
-      if (fixed) { doubles += fixed.double === true ? 1 : 0; continue; }
+      if (fixed) { doubles += fixed.double === true ? 1 : fixed.double == null && isGruntWave(w) ? GRUNT_DOUBLE : 0; continue; }
       const lured = lures.filter(left => left > i).length;
       doubles += 1 / Math.max(1, (isBossWave(s, w) ? 32 : 8) / 4 ** (lured + abilities));
     }
@@ -126,6 +130,7 @@ const { aheadModel, doubleOdds, learnRoster } = (() => {
   };
 
   // ---- The final boss, from the source rather than from memory. None of this is a roll, so it holds for every run.
+  // Phase two's Recover is `new PokemonMove(MoveId.RECOVER, 0, -4)` — `ppUp` −4, so 1 PP, not −4 priority.
   // Phase one can't be knocked out: `Pokemon.damage` caps damage at `hp - 1` while the classic final boss is in form
   // 0 on its last shield, and `getMinimumSegmentIndex` keeps that shield up. `DamageAnimPhase.end` then calls
   // `initFinalBossPhaseTwo`, which hands Eternamax a **non-transferrable Mini Black Hole** — a
@@ -135,7 +140,10 @@ const { aheadModel, doubleOdds, learnRoster } = (() => {
   const ETERNATUS_FACTS = [
     { good: false, text: "phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax" },
     { good: false, text: "Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double" },
-    { good: false, text: "Eternamax knows Recover at −4 priority: out-damage it, don't chip it" },
+    // `new PokemonMove(RECOVER, 0, -4)`: the third argument is `ppUp`, not priority, and `getMovePp` is
+    // `pp + ppUp × toDmgValue(pp / 5)` — 5 + (−4 × 1) = **1 PP**, at Recover's own normal priority. It heals half its
+    // HP once and then the move is spent, which is a reason to keep the pressure on rather than to fear a heal loop.
+    { good: true, text: "Eternamax's Recover has 1 PP (ppUp −4): it can heal half its bar exactly once" },
     { good: false, text: "phase 1's Cosmic Power raises its defences every use — stalling makes it worse" },
     { good: true, text: "it carries no held items in phase 1 and has no passive ability" },
   ];
@@ -187,7 +195,7 @@ const { aheadModel, doubleOdds, learnRoster } = (() => {
     const next = schedule[0] ?? null;
     const heal = nextHeal(s, wave + 1);
     const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];
-    const luck = partyLuck(party);
+    const luck = partyLuck(party, s, gameEvents());
 
     // A preview only for the fight itself, and only once it is near: a replay for a wave 20 away is a cost with no
     // advice attached, and the inputs it reads will have moved long before then.

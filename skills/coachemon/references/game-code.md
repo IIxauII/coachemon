@@ -822,12 +822,12 @@ The **party** judged as a whole, and one query for whether a newcomer is worth i
 - `partyProfile(party)` → `{ attacks, ourTypes, weakTypes, holes, weakest, roots, luck, members, hitters(defender), weakTo(type) }`.
   - `attacks` — per member, `[{ t, stab }]`: the types it hits for damage, `stab` 1.5 on its own types. `ourTypes` flattens it.
   - `weakTypes` — attacking types two or more members are weak to and more are weak to than resist. `holes` — defending types nothing on the team hits super-effectively.
-  - `weakest` — `{ mon, final, estimated, level }`, the lowest final BST with the lower level breaking a tie. `roots` — the party's root species ids (`Pokemon.getRootSpeciesId`), which is what makes a catch a duplicate. `luck` — `partyLuck`. All three are worked out on first read, so a caller that wants only coverage pays for nothing else.
+  - `weakest` — `{ mon, final, estimated, level }`, the lowest final BST with the lower level breaking a tie. `roots` — the party's root species ids (`Pokemon.getRootSpeciesId`), which is what makes a catch a duplicate. `luck` — `partyLuck` of the members alone (no scene, so no Daily roll and no event terms: the floor). All three are worked out on first read, so a caller that wants only coverage pays for nothing else.
   - `hitters(defender)` / `weakTo(type)` — the members that hit it super-effectively, and the members that type hits super-effectively. The two matchup queries every card asks.
 - `partyReasons(profile, cand, { replacing })` → `[{ kind: "covers" | "hole" | "upgrade" | "dupe", … }]`, against `replacing` (default: the weakest member). `cand` is `{ species, fusion?, level, types, moveTypes? }` — a species with no moveset lets its own types stand in, so the same species at the same level gets the same reasons on the catch card and the biome card. Thresholds: a `hole` wants a party of 3 and 2 types, an `upgrade` a final BST over 400, 100 above the member replaced and no more than 10 levels behind it.
 - `damagingTypes(p)` → the types a mon can hit for damage. **Variable power counts** (`power === -1`: Grass Knot, Gyro Ball) and **fixed damage does not** (§4.3 — it ignores the chart), which is how the learn card always read it and how the catch, biome and look-ahead cards now do.
 - `finalBstOf(x)` → `{ bst, final, estimated }` for a live mon, a `{ species, fusion }` pair or a bare species: a line's final evolution's BST, estimated from `PokemonSpecies.getEvolutionLevels()`, a fusion averaging both halves (`Pokemon.calculateBaseStats`).
-- `partyLuck(party)` → `getPartyLuckValue`'s rule re-implemented over `Pokemon.getLuck` / `isAllowedInBattle`, clamped to 14. A floor, not the value: the timed-event boost isn't readable from the scene.
+- `partyLuck(party, s?, event?)` → `getPartyLuckValue`'s rule re-implemented (§12). With the scene, **a Daily run answers with its own roll** — `randSeedInt(15)` in a fork at offset 0 on the run seed, or the event seed's pinned `dailyConfig.luck` — and never with the party's. Otherwise `Pokemon.getLuck` over the members `isAllowedInBattle`, **+1 for each species `event.getEventLuckBoostedSpecies()` names**, clamped to 0–14, then `event.getEventLuckBoost()` on top, capped at 14. `event` is the timed event manager (47-biome's `gameEvents()`). Called without either it is the old floor, which is all `partyProfile`'s `luck` can be.
 - `typesOfSpecies(sp)` → a species' own types by name, for a candidate that is a species and not a mon.
 
 ### Damage (10-damage.js)
@@ -1041,7 +1041,11 @@ specialty type doesn't fit, or the species is already in the party (line 517).
 **A wild spawn.** `Arena.randomSpecies` (`src/field/arena.ts:577`) — draws global RND. A Daily override species wins
 (`getOverrideSpecies`, `src/game-mode.ts:268`). It is a boss spawn when `getEncounterBossSegments(w, level) > 0`, the
 BOSS tier is non-empty and the biome isn't END (unless classic or final) (lines 584–589): `randSeedInt(64 − luck/2)`
-over the boss cuts, else `randSeedInt(512 − 2·luck)`. A Daily event seed's `forcedWaves[].tier` replaces the roll for
+over the boss cuts, else `randSeedInt(512 − 2·luck)`. `getEncounterBossSegments` (`src/battle-scene.ts:1964`) answers
+in a fork at `w << 2`: every X0, **plus, when the mode `hasRandomBosses` (Endless and Spliced Endless),
+`randSeedInt(100) < min(max(ceil((w − 250) / 50), 0) × 2, 30)`** — nothing before wave 250, then 2 % more of every
+wave per 50 waves, capped at 30 %. A sub-legendary, legendary or mythical species is forced to a boss, but that is
+read from the species the roll already picked, so it moves no pool. A Daily event seed's `forcedWaves[].tier` replaces the roll for
 a wave's first spawn (`getDailyForcedWaveBiomePoolTier`, `src/data/daily-seed/daily-run.ts:231`). Empty tiers drop; an
 all-empty pool falls back to any catchable species. A legend-like pick is rerolled (up to 10 attempts) while
 `getWaveForDifficulty(w, true)` (`src/game-mode.ts:192`; Daily adds 30) is below 80 for BST ≥ 660, else 55

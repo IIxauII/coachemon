@@ -137,6 +137,10 @@
 == unavailable {"kind":"preview","wave":13,"unavailable":"the live build has no generateNewBattleTrainer"}
 == wild spawn args [[0,3]]
 == tally with a look-ahead in flight {"checked":1,"miss":{"type":0,"trainer":0,"foes":0,"double":0,"levels":0}}
+== endless wave 13 predicted {"double":false,"levels":[10],"foes":["Geodude L10"]}
+== endless wave 20 predicted {"double":false,"levels":[11],"foes":["Zubat L11"]}
+== pool shift  w12 replay  w15 estimate ["time of day turns over: the spawn pool shifts"]  w21 estimate ["the next biome brings its own spawn pool"]
+== grunt wave 35 {"confidence":{"type":"exact","trainer":"exact","foes":"exact","double":"estimate","levels":"estimate"},"notes":["this grunt's double is an unseeded roll: it can't be read ahead"]}
 == card wave 13 (full)
 🔮 Next W13~ wild
 · Zubat L10~ Poison Flying Sturdy

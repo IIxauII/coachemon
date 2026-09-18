@@ -32,7 +32,8 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, trainerOdds } = globalThis.__hud["03-calendar"];
+const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, trainerOdds, hasTrainers, kindIsRolled,
+  isGruntWave, poolAnchorWave, arenaRebuiltBetween } = globalThis.__hud["03-calendar"];
 
 const row = (label, cells) => console.log(`${label.padEnd(26)}${cells.join("  ")}`);
 const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
@@ -74,7 +75,54 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(waveKind(d, 50), "final", "the Daily run ends at 50, which the gym rule would otherwise claim");
   assert.equal(waveKind(d, 20), "gym");
   assert.equal(waveKind(e, 250), "final", "Endless ends every 250th wave");
-  assert.equal(waveKind(e, 210), "boss", "200 is a gym wave by the modulo; 210 is only a tenth wave");
+  assert.equal(waveKind(e, 210), "boss", "210 is only a tenth wave");
+  // The gym rule lives inside `isWaveTrainer`, and `handleNonFixedBattle` never asks it without trainers: Endless
+  // has no gym leader on 20 or 200, however the modulo falls.
+  assert.equal(waveKind(e, 20), "boss", "Endless has no trainers, so no gym wave — only a tenth wave");
+  assert.equal(waveKind(e, 200), "boss");
+  assert.equal(hasTrainers(e), false, "Endless and Spliced Endless have no trainer battles at all");
+  assert.equal(hasTrainers(d), true);
+  assert.equal(hasTrainers(scene("classic")), true);
+  assert.equal(trainerOdds(e, 22, { trainerChance: 8 }), 0, "and no trainer share on any wave");
+  assert.equal(trainerOdds(e, 20, { trainerChance: 8 }), 0);
+}
+
+// ---- 3b. Whether a wave's kind costs a draw (`kindIsRolled`): what the preview's `type` confidence turns on. Every
+// path `isWaveTrainer` returns on before its `1/trainerChance` roll is a rule, and holds from any point in the run.
+{
+  const s = scene("classic"), rolled = w => kindIsRolled({ ...s, arena: { trainerChance: 8 } }, w);
+  console.log("== kind rolled, classic");
+  row("waves 41–50", [41, 42, 43, 44, 47, 48, 49, 50].map(w => `${w}:${rolled(w) ? "roll" : "rule"}`));
+  assert.equal(rolled(42), true, "an ordinary wave rolls the trainer chance on the stream");
+  assert.equal(rolled(41), false, "X1 returns before the roll (the trainer sprite bug)");
+  assert.equal(rolled(40), false, "so does X0");
+  assert.equal(rolled(50), false, "the gym rule returns first");
+  assert.equal(rolled(48), false, "and a wave the look-back blocks never reaches the roll");
+  assert.equal(rolled(5), false, "a fixed battle is a table lookup, not a roll");
+  assert.equal(kindIsRolled({ ...s, arena: { trainerChance: 0 } }, 42), false, "a biome with no trainer chance draws nothing");
+  assert.equal(kindIsRolled(s, 42), true, "with no arena to read, assume the roll: `replay` is the careful answer");
+  assert.equal(kindIsRolled({ ...s, arena: { trainerChance: 1 } }, 42), false,
+    "`randSeedInt(1)` returns without drawing, so a chance of 1 is a rule: every eligible wave is a trainer");
+  assert.equal(kindIsRolled({ ...scene("daily"), arena: { trainerChance: 8 } }, 42), false, "Daily answers from its own calendar");
+  assert.equal(kindIsRolled({ ...scene("endless"), arena: { trainerChance: 8 } }, 42), false, "Endless never asks");
+}
+
+// ---- 3c. The other two things a wave number alone decides, which the cards used to work out for themselves.
+{
+  // The four fixed waves whose double comes off `randInt(3)` on `Math.random`: the grunts, and not the admins or
+  // bosses of the same group.
+  console.log(`== grunt waves ${[35, 62, 64, 112].filter(isGruntWave).join(", ")}`);
+  assert.deepEqual([35, 62, 64, 112].filter(isGruntWave), [35, 62, 64, 112]);
+  assert.deepEqual([5, 8, 25, 66, 114, 115, 164, 165, 190].filter(isGruntWave), [], "no admin, boss, rival or youngster");
+  // The wave whose time of day the arena's pool was built at: the X0 that opens the block, then the X5 inside it.
+  row("pool anchor 9–21", [9, 10, 11, 14, 15, 19, 20, 21].map(w => `${w}:${poolAnchorWave(w)}`));
+  assert.deepEqual([11, 12, 13, 14].map(poolAnchorWave), [10, 10, 10, 10], "X1–X4 spawn from the pool the X0 built");
+  assert.deepEqual([15, 16, 19, 20].map(poolAnchorWave), [15, 15, 15, 15], "X5–X9 and the closing X0 from X5's");
+  assert.equal(poolAnchorWave(1), 0, "wave 1 reads the arena the title screen built, at waveIndex 0");
+  // A new biome is a new arena, so the pool the preview holds isn't the one the wave ahead draws from.
+  assert.equal(arenaRebuiltBetween(20, 21), true, "the X0 → X1 step is a biome switch");
+  assert.equal(arenaRebuiltBetween(14, 15), false, "the X5 rebuild is the same arena, same biome");
+  assert.equal(arenaRebuiltBetween(12, 13), false);
 }
 
 // ---- 4. The schedule: every big fight ahead, in wave order, stopping at the run's last wave.

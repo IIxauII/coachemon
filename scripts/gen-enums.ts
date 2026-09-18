@@ -41,6 +41,7 @@ const ENUMS: Record<string, string> = {
   BerryType: "src/enums/berry-type.ts",
   BiomePoolTier: "src/enums/biome-pool-tier.ts",
   Challenges: "src/enums/challenges.ts",
+  ClassicFixedBossWaves: "src/enums/fixed-boss-waves.ts",
   Command: "src/enums/command.ts",
   EvoLevelThresholdKind: "src/enums/evo-level-threshold-kind.ts",
   Gender: "src/data/gender.ts",
