@@ -76,11 +76,17 @@ export function reach(s: Reachability): Reach | null {
 
   const ready = s.tabs.filter(t => t.state === "ready");
   if (ready.length === 0) return unreachable(7, "Coachemon is connected, but no pokerogue.net tab is ready. Open or reload pokerogue.net.");
-  if (ready.length > 1) {
-    const which = ready.map(t => `${NAME[t.target]}: ${t.title}`).join("; ");
-    return { code: "tabs", rung: 8, line: `${ready.length} pokerogue.net tabs are open (${which}). Close all but one.`, tabs: [...ready] };
-  }
+  if (ready.length > 1) return { code: "tabs", rung: 8, line: tabsLine(ready), tabs: [...ready] };
   return null;
+}
+
+/**
+ * Rung 8's line: how many tabs are open and which windows they are in, so the player knows what to close. Exported
+ * because the watch CLI prints it from a `tabs` notice, which carries the tabs and not the line (§11.2).
+ */
+export function tabsLine(tabs: readonly TabInfo[]): string {
+  const which = tabs.map(t => `${NAME[t.target]}: ${t.title}`).join("; ");
+  return `${tabs.length} pokerogue.net tabs are open (${which}). Close all but one.`;
 }
 
 const tooOld = (e: ExtensionInfo) => `Coachemon ${e.version} in ${NAME[e.target]} is too old for this plugin. Update the extension.`;
