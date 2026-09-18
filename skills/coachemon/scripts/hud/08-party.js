@@ -35,12 +35,19 @@ export const damagingTypes = p => [...new Set(movesOf(p).filter(isCoverage).map(
 export const typesOfSpecies = sp => [sp?.type1, sp?.type2].filter(t => t != null).map(t => TYPES[t]).filter(Boolean);
 
 // ---- How strong a line is
-// A fusion's base stats are its two species' averaged stat by stat, rounded up (`Pokemon.calculateBaseStats`): a fused
-// mon is judged by the pair, not by the species it shows.
-const bstOf = (sp, fu) => {
-  if (!fu) return sp?.baseTotal ?? 0;
-  if (Array.isArray(sp?.baseStats) && Array.isArray(fu.baseStats)) return sp.baseStats.reduce((t, x, i) => t + Math.ceil((x + (fu.baseStats[i] ?? 0)) / 2), 0);
-  return Math.ceil(((sp?.baseTotal ?? 0) + (fu.baseTotal ?? 0)) / 2);
+// `Pokemon.calculateBaseStats` starts from the **form**'s stats (`getSpeciesForm(true)` → `species.forms[formIndex]`),
+// flips them under the Flip Stat challenge (no change to the total), adds Shuckle Juice and Old Gateau, averages a
+// fusion's two halves stat by stat rounding up, halves them in Spliced Endless, then adds vitamins. A live mon answers
+// for itself — nothing there draws or writes, so it needs no sandbox; the form-aware species stats stand in for a
+// candidate that is only a species (a biome spawn, a GTS offer) and for a build that hides the method.
+const formOf = (sp, i) => (Array.isArray(sp?.forms) && sp.forms.length ? sp.forms[i ?? 0] ?? sp : sp);
+const bstOf = (sp, fu, mon) => {
+  const own = mon && tryDo(() => mon.calculateBaseStats());
+  if (Array.isArray(own) && own.length) return own.reduce((t, x) => t + x, 0);
+  const a = formOf(sp, mon?.formIndex), b = fu && formOf(fu, mon?.fusionFormIndex);
+  if (!b) return a?.baseTotal ?? 0;
+  if (Array.isArray(a?.baseStats) && Array.isArray(b.baseStats)) return a.baseStats.reduce((t, x, i) => t + Math.ceil((x + (b.baseStats[i] ?? 0)) / 2), 0);
+  return Math.ceil(((a?.baseTotal ?? 0) + (b.baseTotal ?? 0)) / 2);
 };
 // A line's strength is its final evolution's BST, not the current stage's: an unevolved Spinarak (190) isn't weaker
 // than a wild 400. The game only exposes evolutions as species ids (`PokemonSpecies.getEvolutionLevels()` →
@@ -55,8 +62,8 @@ const stagesLeft = sp => {
 };
 // Typical growth per stage: ×1.3, +110, and a floor near 400 for a line's final form (Spinarak 190 → Ariados 400,
 // Charmander 309 → Charizard 534, Pidgey 251 → Pidgeot 479).
-const speciesFinal = sp => {
-  const bst = sp?.baseTotal ?? 0, n = stagesLeft(sp);
+const speciesFinal = (sp, mon) => {
+  const bst = bstOf(sp, null, mon), n = stagesLeft(sp);
   if (!n || !bst) return { bst, final: bst, estimated: false };
   return { bst, final: Math.round(Math.max(bst * 1.3 ** n, bst + 110 * n, 400 + 90 * (n - 1))), estimated: true };
 };
@@ -67,8 +74,13 @@ const speciesFinal = sp => {
  */
 export const finalBstOf = x => {
   const sp = x?.species, fu = x?.fusion ?? x?.fusionSpecies ?? null;
-  if (!fu) return speciesFinal(sp);
-  const a = speciesFinal(sp), b = speciesFinal(fu), bst = bstOf(sp, fu);
+  // A mon carries its own form indices and, in a live build, its own finished stats; a candidate the cards build by
+  // hand carries neither, and falls back to the species row.
+  const mon = x ?? null;
+  if (!fu) return speciesFinal(sp, mon);
+  // Each half's own line, so only its form carries over: the mon's stats are the fused pair's, not this half's.
+  const a = speciesFinal(sp, mon && { formIndex: mon.formIndex }), b = speciesFinal(fu, mon && { formIndex: mon.fusionFormIndex });
+  const bst = bstOf(sp, fu, mon);
   return a.estimated || b.estimated ? { bst, final: Math.ceil((a.final + b.final) / 2), estimated: true } : { bst, final: bst, estimated: false };
 };
 

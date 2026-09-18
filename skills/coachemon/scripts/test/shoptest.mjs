@@ -101,6 +101,9 @@ const pk = (name, hp, max, status, moves, f = {}) => ({
   getNature: () => f.nature ?? 0, getLuck: () => f.luck ?? 0,
   species: { speciesId: f.speciesId ?? 0, forms: (f.forms ?? []).map(formKey => ({ formKey })), getEvolutionLevels: () => f.evolutions ?? [] },
   moveset: moves.map(([id, used, maxPp]) => new PokemonMove(id, used, maxPp)),
+  // `tmPool`: what `getCompatibleTms(true, true, true)` answers — the TMs this member would actually be drawn for,
+  // its level-up and relearn moves and used TMs already removed. Left off, the member doesn't expose the method.
+  ...(f.tmPool ? { getCompatibleTms: () => f.tmPool } : {}),
 });
 // A TM the listed members can learn (the game's selectFilter: null = compatible and not known).
 const tm = (id, learners, tier = 1) => mk(TmModifierType, { name: `TM ${MOVES[id].name}`, iconImage: "tm", tier, moveId: id,
@@ -478,6 +481,47 @@ const scenarios = {
       assert.equal(roll.verdict, "instead of buys");
       assert.equal(roll.offers[roll.best].name, "Master Ball");
     } },
+  // Grip Claw rolls after any attacking move, contact or not (`MoveEffectPhase.applyOnTargetEffects` asks only
+  // `move.is("AttackMove")`): a special attacker earns it as much as a physical one, and only a mon with no attack
+  // at all is left out.
+  "grip claw off contact": { wave: 42, money: 100, party: [jolteon(), pk("Wobbuffet", 190, 190, 0, [[M.calmMind, 0, 20]], { level: 40 })],
+    free: [held("GRIP_CLAW", "Grip Claw", 2)],
+    expect: m => {
+      const gc = m.free[0];
+      assert.equal(gc.holder.name, "Jolteon", "its special attacks roll it all the same");
+      assert.match(gc.why, /^Jolteon · 10% to steal an item when it attacks$/);
+      assert.deepEqual(gc.users, ["Jolteon", "Wobbuffet"]);
+      assert.ok(gc.v >= 9, `worth a full roll, not a contact share: ${gc.v}`);
+    } },
+  // The level cap runs the rounded wave through `getWaveForDifficulty` first, which a Daily run pushes 30 waves and a
+  // fifth of itself ahead: wave 30 caps at Lv 52 there, at Lv 24 in a classic run. Only the fallback is exercised
+  // here — the mocked scene has no `getMaxExpLevel`.
+  "daily level cap": { wave: 30, money: 100, daily: true, party: [snorlax({ level: 40 }), jolteon({ level: 38 })],
+    free: [mk(ExpBoosterModifierType, { name: "EXP. Charm", iconImage: "exp_charm", tier: 2, id: "EXP_CHARM", boostPercent: 25 })],
+    expect: m => { assert.match(m.free[0].why, /^more EXP · 2 under the Lv 52 cap$/); assert.ok(m.free[0].v > 1); } },
+  "classic level cap": { wave: 30, money: 100, party: [snorlax({ level: 40 }), jolteon({ level: 38 })],
+    free: [mk(ExpBoosterModifierType, { name: "EXP. Charm", iconImage: "exp_charm", tier: 2, id: "EXP_CHARM", boostPercent: 25 })],
+    expect: m => { assert.equal(m.free[0].why, "whole party at the Lv 24 cap"); } },
+  // The offer is drawn from `getCompatibleTms(true, true, true)`, which drops each member's own level-up and relearn
+  // moves: a member the TM was never drawn for learns the move without spending it.
+  "tm learned without it": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, tmPool: [] })],
+    free: [tm(M.magicalLeaf, ["Comfey"], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
+    expect: m => {
+      assert.equal(m.free[0].tm, "skip");
+      assert.match(m.free[0].why, /skip · Comfey learns it without the TM$/);
+      assert.deepEqual(m.free[0].users, ["Comfey"]);
+      assert.ok(m.free[0].v < 0, `nothing to spend a slot on: ${m.free[0].v}`);
+    } },
+  // With someone the TM *was* drawn for, the free learner steps aside and the reward goes to the payer.
+  "tm skips the free learner": { wave: 27, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, tmPool: [] }),
+      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, tmPool: [M.crunch] })],
+    free: [tm(M.crunch, ["Comfey", "Snorlax"], 1)],
+    expect: m => {
+      assert.equal(m.free[0].tm, "take");
+      assert.equal(m.free[0].best.name, "Snorlax");
+      assert.deepEqual(m.free[0].users, ["Snorlax"], "Comfey gets Crunch by levelling anyway");
+    } },
   // Rerolls switched off on this screen (a negative reroll multiplier): nothing to preview, and no hint.
   "reroll disabled": { wave: 14, money: 3000, reroll: -1, noReroll: true, party: [snorlax()],
     free: [mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 })],
@@ -503,7 +547,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   // Most scenarios leave `gameMode` off: the card has to fall back to the tenth-wave rule when the live build hides
   // it. The ones that set `mode` get the classic calendar, which is what the look-ahead reads.
   const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave ?? 0, double: !!sc.double }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [],
-    ...(sc.mode ? { gameMode: classicMode() } : sc.challenges ? { gameMode: { challenges: sc.challenges } } : {}) };
+    ...(sc.mode ? { gameMode: classicMode() } : sc.daily ? { gameMode: { isDaily: true } } : sc.challenges ? { gameMode: { challenges: sc.challenges } } : {}) };
   // The reroll scenarios put the reward phase on the phase queue; the others leave it off, as a read from an older HUD did.
   if (sc.rewardPool || sc.phase) {
     scene.phase = Object.assign(new SelectModifierPhase(0), { typeOptions: sc.free.map(t => ({ type: t })), noReroll: !!sc.noReroll });

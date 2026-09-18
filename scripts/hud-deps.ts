@@ -262,6 +262,8 @@ export const HUD_DEPS = {
     `src/data/battler-tags.ts#CursedTag.lapse`,
     `src/data/battler-tags.ts#IngrainTag.lapse`,
     `src/data/battler-tags.ts#AquaRingTag.lapse`,
+    // Read as bare bits: contact (an ability's counter-attack), and the flags a hit ignores.
+    `src/enums/move-flags.ts#MoveFlags`,
   ],
 
   /**
@@ -419,7 +421,9 @@ export const HUD_DEPS = {
     `src/game-mode.ts#GameMode.isEndlessMinorBoss`,
     `src/game-mode.ts#GameMode.isFullFreshStartChallenge`,
     `src/game-mode.ts#GameMode.isFreshStartChallenge`,
+    `src/game-mode.ts#GameMode.hasAnyChallenges`,
     `src/data/daily-seed/daily-run.ts#getDailyEventSeedBoss`,
+    `src/data/daily-seed/daily-seed-utils.ts#isDailyFinalBoss`,
     `src/system/game-data.ts#GameData.getStarterCount`,
     // What a catch does.
     `src/phases/attempt-capture-phase.ts#AttemptCapturePhase.catch`,
@@ -681,9 +685,10 @@ export const HUD_DEPS = {
    * modifier (per-stack effects, stack limits), who benefits from the game's
    * own pool weights (status orbs, Mystical Rock), and the level-cap rules from
    * the EXP split — a member at the cap gets nothing and a Rare Candy ignores
-   * it. Four enums come through as bare numbers: the Nature grid a mint is
-   * read with, the Stat a vitamin names, the BerryType and MoveFlags' contact
-   * bit. The species-booster and Leek species ids are the generators' tables.
+   * it, `getWaveForDifficulty` included — a Daily run's cap sits far above its
+   * wave number. Three enums come through as bare numbers: the Nature grid a
+   * mint is read with, the Stat a vitamin names, and the BerryType. The
+   * species-booster and Leek species ids are the generators' tables.
    */
   "50-items.js": [
     `src/modifier/modifier-type.ts#PokemonHeldItemModifierType.constructor`,
@@ -710,12 +715,12 @@ export const HUD_DEPS = {
     `src/modifier/modifier.ts#ExpShareModifier.apply`,
     `src/modifier/modifier.ts#PokemonLevelIncrementModifier.apply`,
     `${SCENE}#BattleScene.getMaxExpLevel`,
+    `src/game-mode.ts#GameMode.getWaveForDifficulty`,
     `${SCENE}#BattleScene.applyPartyExp`,
     `${P}#PlayerPokemon.addExp`,
     `src/enums/nature.ts#Nature`,
     `src/enums/stat.ts#Stat`,
     `src/enums/berry-type.ts#BerryType`,
-    `src/enums/move-flags.ts#MoveFlags`,
   ],
 
   /**

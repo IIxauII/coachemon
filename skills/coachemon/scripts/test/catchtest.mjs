@@ -34,7 +34,7 @@ const dexData = () => {
 // `owned`: extra caught species ids (dex IVs 20, abilityAttr 1). `mode`: gameMode fields over classic. `events`: the
 // game's timed event manager, as 47-biome's chunk scan would hand it over.
 const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [],
-  wave = 23, biome = 3, mode = {}, starters = null, events = null }) => {
+  wave = 23, biome = 3, mode = {}, starters = null, events = null, dex = null }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : null) };
@@ -48,6 +48,8 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
     gameData: { dexData: dexData(), starterData: { 3: { abilityAttr: 1 }, 9: { abilityAttr: 1 }, 16: { abilityAttr: 1 }, 58: { abilityAttr: 1 } } },
   };
   if (starters) scene.gameData.starterData = Object.fromEntries(starters.map(id => [id, { abilityAttr: 1 }]));
+  // `dex`: dex entries by species id, for a catch whose attributes are already known.
+  for (const [id, entry] of Object.entries(dex ?? {})) scene.gameData.dexData[id] = { ivs: [20,20,20,20,20,20], ...entry };
   for (const id of owned) {
     scene.gameData.dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [20,20,20,20,20,20] };
     scene.gameData.starterData[id] = { abilityAttr: 1 };
@@ -335,5 +337,55 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.ok(!blocked({ foes: [foe(25)], wave: 45, mode: { isClassic: false, isDaily: true } }), "daily before its final boss: allowed");
   assert.ok(blocked({ foes: [foe(25)], wave: 50, mode: { isClassic: false, isDaily: true } }), "daily final boss: refused");
   assert.ok(!blocked({ foes: [foe(25)], wave: 50, mode: { isClassic: false, isDaily: true, dailyConfig: { boss: { catchable: true } } } }), "unless the event boss is catchable");
+}
+// ---- 16. The two bosses that refuse a Master Ball as well (`handleBallCommand`): the classic final boss of a
+// challenge run, and a Daily final boss its event seed marks catchable. Every other boss with bars left still takes one.
+{
+  const counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 1 };
+  const finalBoss = () => mon("Eternatus", 70, ["Poison","Dragon"], "Pressure", [400,150,120,150,120,130], [["Dynamax Cannon","Dragon",100,"S"]], true, 300,
+    { id: 890, catchRate: 45, bst: 690 }, { bossSegments: 5, bossSegmentIndex: 3 });
+  // Wave 200 in the End biome with one starter left uncaught: the ball itself is allowed through.
+  const at = (opts = {}) => run({ party: [venusaur()], foes: [finalBoss()], counts, biome: 50, wave: 200, starters: [3, 9, 16, 58, 25], ...opts }).advice.targets[0];
+  const master = t => t.chance.find(x => x.ball === "Master Ball").p;
+
+  const plain = at();
+  assert.equal(master(plain), 1, "no challenges: the final boss still takes a Master Ball");
+  assert.match(plain.why, /Master Ball, or break its bars first/);
+
+  // `hasAnyChallenges()` is the whole copied challenge list, values and all — one at 0 is still a challenge run.
+  const challenge = at({ mode: { challenges: [{ id: 1, value: 0 }] } });
+  assert.equal(master(challenge), 0, "a challenge run: no ball works on the classic final boss");
+  assert.ok(challenge.chance.every(x => x.p === 0), "and none of the others either");
+  assert.match(challenge.why, /break its bars first — no ball works on this boss/);
+  show("challenge final boss", { targets: [challenge] });
+
+  // A catchable Daily event boss: balls get through the biome rule, the boss rule refuses them all the same.
+  const daily = { isClassic: false, isDaily: true, dailyConfig: { boss: { catchable: true } } };
+  const dailyBoss = at({ wave: 50, mode: daily });
+  assert.equal(master(dailyBoss), 0, "a catchable Daily boss refuses the Master Ball too");
+  assert.match(dailyBoss.why, /no ball works on this boss/);
+  // Its last bar: the rule is off, and the Master Ball is back.
+  const lastBar = finalBoss(); lastBar.bossSegmentIndex = 0; lastBar.hp = 80;
+  const open = run({ party: [venusaur()], foes: [lastBar], counts, biome: 50, wave: 50, mode: daily }).advice.targets[0];
+  assert.ok(!open.boss && open.chance.find(x => x.ball === "Poké Ball").p > 0, "last bar: any ball again");
+  // An ordinary Daily boss on the way (not the final wave) keeps the Master Ball.
+  const midRun = run({ party: [venusaur()], foes: [finalBoss()], counts, wave: 30, mode: { isClassic: false, isDaily: true } }).advice.targets[0];
+  assert.equal(master(midRun), 1, "a Daily boss short of the final wave takes a Master Ball");
+}
+
+// ---- 17. Candy on a catch: a Daily run pays it only for a dex attribute the catch adds (`!isDaily || hasNewAttr`).
+{
+  const counts = { 0: 0, 1: 0, 2: 5, 3: 0, 4: 0 };
+  const shinyPika = () => mon("Pikachu", 20, ["Electric"], "Static", [60,50,40,50,50,90], [["Thunderbolt","Electric",90,"S"]], true, undefined,
+    { id: 25, catchRate: 45, bst: 320 }, { shiny: true });
+  // Male, non-variant, form 0 shiny Pikachu already in the dex: gender 4n | shiny 2n | variant 16n | form 128n.
+  const known = { 25: { caughtAttr: 1n | 2n | 4n | 16n | 128n } };
+  const reasons = opts => run({ party: [venusaur()], foes: [shinyPika()], counts, ...opts }).advice.targets[0].reasons.map(r => r.text);
+  assert.ok(reasons({ dex: known }).includes("shiny · +5 candy"), "classic pays candy for a shiny it already has");
+  assert.ok(reasons({ dex: known, mode: { isClassic: false, isDaily: true } }).includes("shiny"), "Daily pays none for the same catch");
+  // A shiny variant the dex is missing *is* a new attribute: the candy is back, Daily or not.
+  const variant = () => Object.assign(shinyPika(), { variant: 2 });
+  const daily = run({ party: [venusaur()], foes: [variant()], counts, dex: known, mode: { isClassic: false, isDaily: true } }).advice.targets[0];
+  assert.ok(daily.reasons.some(r => r.text === "new shiny variant · +20 candy"), JSON.stringify(daily.reasons));
 }
 console.log("ok");
