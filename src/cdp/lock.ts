@@ -1,15 +1,29 @@
 /**
- * One driver per tab. #6 had three sessions interleaving presses on one live
+ * CDP's driver grant. #6 had three sessions interleaving presses on one live
  * save; this lock makes the second one say so instead of pressing.
+ *
+ * A process becomes the driver the first time it acts, not when it starts
+ * (CONTEXT: Driver), so the lock is taken by `take()` from the first acting
+ * call. A session that only reads never calls it and never locks anyone out;
+ * `contention()` answers who holds the tab without taking it.
  *
  * The lock is a JSON file carrying the holder's pid. A live pid other than our
  * own means contended; a dead pid is taken over. It is advisory: it protects
  * the dev from their own parallel sessions, not from a hostile process.
  */
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-export type Lock = { path: string; contended: boolean; holder: number | null };
+export type Contention = { contended: boolean; holder: number | null };
+
+const FREE: Contention = { contended: false, holder: null };
+
+export type DriverLock = {
+  /** Who holds the tab, without taking it: a reading call never becomes the driver. */
+  contention(): Contention;
+  /** Become the driver unless a live one already is. After the first take this only re-checks. */
+  take(): Contention;
+};
 
 function alive(pid: number): boolean {
   try {
@@ -20,18 +34,19 @@ function alive(pid: number): boolean {
   }
 }
 
-export function acquireLock(home: string): Lock {
-  mkdirSync(home, { recursive: true });
-  const file = path.join(home, "driver.lock");
-  if (existsSync(file)) {
-    try {
-      const { pid } = JSON.parse(readFileSync(file, "utf8")) as { pid: number };
-      if (pid !== process.pid && alive(pid)) return { path: file, contended: true, holder: pid };
-    } catch {
-      // unreadable lock: take it over
-    }
+/** Whoever the file names, if they are alive and are not us. Absent, unreadable or ours: nobody. */
+function holder(file: string): Contention {
+  try {
+    const { pid } = JSON.parse(readFileSync(file, "utf8")) as { pid: number };
+    if (pid === process.pid || !alive(pid)) return FREE;
+    return { contended: true, holder: pid };
+  } catch {
+    return FREE;
   }
-  writeFileSync(file, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+}
+
+/** Drop the file on the way out, but only while it is still ours: a driver that took over after us keeps it. */
+function armRelease(file: string): void {
   const release = () => {
     try {
       const { pid } = JSON.parse(readFileSync(file, "utf8")) as { pid: number };
@@ -47,16 +62,22 @@ export function acquireLock(home: string): Lock {
       process.exit(0);
     });
   }
-  return { path: file, contended: false, holder: null };
 }
 
-/** Re-check on every acting call: the holder may have exited since startup, or a second driver may have appeared. */
-export function lockContended(lock: Lock): { contended: boolean; holder: number | null } {
-  try {
-    const { pid } = JSON.parse(readFileSync(lock.path, "utf8")) as { pid: number };
-    if (pid === process.pid) return { contended: false, holder: null };
-    return alive(pid) ? { contended: true, holder: pid } : { contended: false, holder: null };
-  } catch {
-    return { contended: false, holder: null };
-  }
+export function driverLock(home: string): DriverLock {
+  const file = path.join(home, "driver.lock");
+  let held = false;
+  return {
+    /** Re-read every time: the holder may have exited, or a second driver may have appeared, since the last look. */
+    contention: () => holder(file),
+    take() {
+      const c = holder(file);
+      if (held || c.contended) return c;
+      mkdirSync(home, { recursive: true });
+      writeFileSync(file, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
+      held = true;
+      armRelease(file);
+      return FREE;
+    },
+  };
 }

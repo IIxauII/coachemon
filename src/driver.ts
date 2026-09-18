@@ -11,7 +11,7 @@
  * and no call ever retries a press on its own (#13, #14).
  */
 import { CallOutcomes, type CallEnd, type Outcome } from "./call-outcome.ts";
-import { acquireLock } from "./cdp/lock.ts";
+import { driverLock } from "./cdp/lock.ts";
 import { CdpLink } from "./cdp/link.ts";
 import { CdpSession, DEFAULTS } from "./cdp/session.ts";
 import { Button, NAMES, UiMode } from "./enums/generated.ts";
@@ -124,14 +124,15 @@ export class Driver {
 
   /**
    * The transport is CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub, which only the dev sets until the flip
-   * deletes both the variable and the CDP link (§12.1). The pidfile lock rides with CDP and goes with it.
+   * deletes both the variable and the CDP link (§12.1). The pidfile lock rides with CDP and goes with it. Creating it
+   * takes nothing: the lock is only taken when the link first claims the tab, so a server that only reads never holds it.
    */
   static create(home: string = DEFAULTS.home): Driver {
     if (process.env.COACHEMON_TRANSPORT === "hub") {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
       return new Driver(new LinkGame(hub, hub));
     }
-    const link = new CdpLink(new CdpSession({ home }), acquireLock(home));
+    const link = new CdpLink(new CdpSession({ home }), driverLock(home));
     return new Driver(new LinkGame(link, link));
   }
 
