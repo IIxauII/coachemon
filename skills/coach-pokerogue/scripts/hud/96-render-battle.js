@@ -97,6 +97,16 @@ export const drawBattle = m => {
         ...f.slots.filter(sl => !sl.enter).map(sl => slotLine(sl, "now:")),
         ...f.slots.filter(sl => sl.enter).map(sl => slotLine(sl, "next:"))]
       : [...f.slots.map(sl => slotLine(sl)), ...f.switches.map(sw => swapLine(sw, "#fa4", "in"))]),
+    // The mon on the field is going down this turn, so the next one comes in without paying for a switch (#170 §E):
+    // the fight plan's own step 2, named here so the turn line reads as "stay, and this is what follows".
+    f.freeEntry ? line("⤵", "#6d6", mon(f.freeEntry.out.icon, f.freeEntry.out.name, 20),
+      h("span", { ...dim, margin: "0 3px" }, "falls this turn ›"), mon(f.freeEntry.in.icon, f.freeEntry.in.name, 20),
+      h("span", { color: "#6d6", marginLeft: "3px" }, "in free")) : null,
+    // After our KO the trainer sends the best matchup against what we leave out, so the next foe is predictable and
+    // the plan already has an answer in front of it (#170 §G).
+    f.nextIn ? line("↪", "#c9f", h("span", { ...dim, marginRight: "3px" }, "next in likely:"),
+      mon(f.nextIn.foe.icon, f.nextIn.foe.name, 20), h("span", { color: "#c9f", margin: "0 3px" }, "› answer"),
+      mon(f.nextIn.answer.icon, f.nextIn.answer.name, 20)) : null,
     // Doubles: both slots on one foe says why. A split needs no line: the ⚔ targets already show it.
     f.targeting?.kind === "focus" ? line("◎", "#8cf", h("span", { color: "#8cf", marginRight: "3px" }, "focus"), mon(f.targeting.target.icon, f.targeting.target.name, 18),
       h("span", dim, `: ${f.targeting.note}${f.targeting.pko > 0 && f.targeting.pko < 100 ? ` (${f.targeting.pko}%)` : ""}`)) : null,

@@ -13,7 +13,7 @@ import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-sc
 import { partyProfile } from "./08-party.js";
 import { predictedTeras, withPredictedTera } from "./20-enemy-ai.js";
 import { battleModel, plannerReady } from "./30-planner.js";
-import { teamPlan } from "./35-team-plan.js";
+import { teamPlanner } from "./35-team-plan.js";
 import { learnModel, learnSummary } from "./40-learn.js";
 import { catchAdvice } from "./45-catch.js";
 import { encounterModel, encounterSummary } from "./46-encounter.js";
@@ -36,15 +36,25 @@ const moveTypesOf = party => partyProfile(party).ourTypes;
 // The battle card: the planner's field model, the whole-fight plan (trainer battles) and the catch advice (wild), put
 // together here rather than inside the planner. All three run inside the one sandbox the refresh opens, with the foes
 // that Terastallize this turn flagged, so every damage number is the post-Tera one (spec §7).
+//
+// The order is the authority decided in #113: the fight plan's tables and searches are built first, the ⚔ line reads
+// them to price what a turn costs the rest of the fight, and the plan is then rendered **pinned to the turn the ⚔
+// line chose** — so its step 1 is that action by construction and the panel never shows two answers to one turn.
 const battleCard = (s, b, party, foes) => {
-  const build = () => ({
-    ...battleModel(s, b, party, foes),
-    teamPlan: b.trainer ? teamPlan(s, b, party, foes) : null,
-    catch: b.trainer ? null : catchAdvice(s, b, party, foes),
-    trainer: !!b.trainer,
-    double: !!b.double,
-    moveTypes: moveTypesOf(party),
-  });
+  const build = () => {
+    const team = b.trainer ? teamPlanner(s, b, party, foes) : null;
+    // `pin` carries the live outcome the ⚔ line picked, so it stays off the card: the card's JSON is the panel's
+    // change signature (98-tick).
+    const { pin, ...model } = battleModel(s, b, party, foes, { team });
+    return {
+      ...model,
+      teamPlan: team ? team.view(pin) : null,
+      catch: b.trainer ? null : catchAdvice(s, b, party, foes),
+      trainer: !!b.trainer,
+      double: !!b.double,
+      moveTypes: moveTypesOf(party),
+    };
+  };
   return plannerReady(s) ? sandbox(s, () => withPredictedTera(predictedTeras(s, b), build)) : build();
 };
 
@@ -189,7 +199,13 @@ export const cardSummary = card => {
   if (card.kind === "encounter") return { ...base, encounter: encounterSummary(card) };
   if (card.kind === "learn") return { ...base, learn: learnSummary(card) };
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
-  const saveFor = name => card.teamPlan?.reserve?.find(r => r.name === name)?.for.name ?? null;
+  // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170 §A).
+  const saveFor = name => {
+    const r = (card.teamPlan?.reserve ?? []).find(x => x.name === name);
+    if (r) return r.for.name;
+    const o = (card.teamPlan?.only ?? []).find(x => x.name === name);
+    return o ? o.for.map(f => f.name).join(", ") : null;
+  };
   return { ...base,
     verdict: card.verdict ?? verdictOf(card),
     field: card.field ? card.field.slots.map(slotText).join(" ; ") : null,

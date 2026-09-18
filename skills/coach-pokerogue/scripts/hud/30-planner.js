@@ -751,7 +751,7 @@ const trapsOn = (p, active) => {
   return [...new Set(foes.filter(Boolean).flatMap(foe => abilitiesOf(foe).filter(a => TRAPS.has(a) && bites(a, foe))))];
 };
 
-const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = false, locked = null } = {}) => {
+const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = false, locked = null, team = null } = {}) => {
   // Our side has two slots whenever two of us can stand, even if only one foe is left; `pair`: two foes to aim at.
   const slots = double && party.length >= 2 ? 2 : 1;
   const pair = double && active.length === 2;
@@ -985,6 +985,15 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   const empty = Math.max(0, slots - current.length);
   const free = freeSwitch ? slots : empty;
   const plans = [];
+  // What the whole-fight plan makes of the rest of the fight once this mon has taken the turn (#113: ⚔ decides the
+  // turn, ♟ prices it). Single battles only — the plan reads a double as one-on-one exchanges, and #113 measured
+  // every one of its doubles disagreements as the plan misreading the field. Pinned on the mon, not its move: one
+  // search per candidate member, memoised by the plan itself.
+  const planValueOf = picks => {
+    if (!team || slots !== 1 || !picks[0]) return null;
+    const mi = party.indexOf(picks[0].me);
+    return mi < 0 ? null : team.at({ mi, free: freeSwitch })?.val ?? null;
+  };
   // Per pick, besides its own score: `ally`, what a move that hits every other pokémon (Earthquake, Surf) does to
   // our partner — its damage share, and a heavy cost for a likely KO; `spare`, the pair's other hit already does
   // everything this one does, so a move with a drawback (recoil, recharge, a self stat drop) gives way to one without.
@@ -1005,7 +1014,8 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
       return { ally, spare, score };
     });
     const flips = current.filter(p => !picks.some(q => q.me === p) && cameInLastTurn(s, p)).length;
-    plans.push({ picks, payers, info, extra: payers.length, swaps, joint: j, score: info.reduce((t, x) => t + x.score, 0) + (j?.value ?? 0) - flips * FLIP_COST });
+    plans.push({ picks, payers, info, extra: payers.length, swaps, joint: j, planVal: planValueOf(picks),
+      score: info.reduce((t, x) => t + x.score, 0) + (j?.value ?? 0) - flips * FLIP_COST });
   };
   const allyHit = (p, partner) => {
     if (!hitsAlly(p.move)) return null;
@@ -1117,6 +1127,18 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   }
   if (!plans.length) return null;
 
+  // The fight plan's verdict as a cost on this turn's options: the best candidate pays nothing, and every other one
+  // pays what the rest of the fight loses by taking the turn that way — spending the only answer to a later foe,
+  // paying for a switch a doomed mon's faint would have given free. It is a term in ⚔'s score, never an override.
+  const bestPlanVal = Math.max(-Infinity, ...plans.flatMap(p => (p.planVal == null ? [] : [p.planVal])));
+  if (Number.isFinite(bestPlanVal)) {
+    for (const p of plans) {
+      if (p.planVal == null) continue;
+      p.planCost = Math.min(PLAN_CAP, (bestPlanVal - p.planVal) * PLAN_POINT);
+      p.score -= p.planCost;
+    }
+  }
+
   // Stay with the current field unless it is actually failing: a member with nothing that damages, a member
   // that loses its trade, or a switch that is clearly better. Switching costs a turn and a free hit, so a
   // merely better field is shown as an optional hint instead — and when everything fails, staying wins ties.
@@ -1124,9 +1146,27 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   const top = list => list.reduce((b, p) => (!b || p.score > b.score ? p : b), null);
   const bestAny = top(plans);
   const bestStay = top(plans.filter(p => p.swaps === 0));
-  const failing = plan => plan.picks.some(p => !p.locked && (!p.move || p.score < 0));
+  // A mon on the field that is going down this turn whatever we do — the foe's hit takes it, or turn-end residual
+  // does — has nothing left to lose (#170 §E). Switching it out trades its last action for an entry hit, while
+  // letting it fall brings the next mon in free.
+  const doomedMemo = new Map();
+  const doomedNowOf = me => {
+    if (!doomedMemo.has(me)) {
+      const ko = 1 - attackers.reduce((keep, f) => keep * (1 - threatKoAt(threatFrom(s, f, me), me.hp)), 1);
+      doomedMemo.set(me, me.hp + healAtEnd(s, me) <= 0 || ko >= DOOMED);
+    }
+    return doomedMemo.get(me);
+  };
+  // …or a field the fight plan needs elsewhere: the stay margin is there to stop the advice flipping between
+  // near-equal turns, and spending the only answer to a foe still to come is not a near-equal turn (#170 §A).
+  const failing = plan => plan.picks.some(p => !p.locked && (!p.move || p.score < 0)) || (plan.planCost ?? 0) >= PLAN_FAIL;
   const margin = freeSwitch ? 0.5 : 3;
-  const stay = !!bestStay && (failing(bestStay) ? bestAny.score <= bestStay.score : bestAny.score - bestStay.score < margin);
+  // Staying can be "failing" only because the mon on the field is spending its last turn. That is not a reason to
+  // pay for a switch, so the ordinary margin applies and the free entry its faint buys is kept (#170 §E).
+  const dying = plan => plan.picks.filter(p => !p.locked && (!p.move || p.score < 0));
+  const lastStand = !!bestStay && (bestStay.planCost ?? 0) < PLAN_FAIL
+    && dying(bestStay).length > 0 && dying(bestStay).every(p => current.includes(p.me) && doomedNowOf(p.me));
+  const stay = !!bestStay && (failing(bestStay) && !lastStand ? bestAny.score <= bestStay.score : bestAny.score - bestStay.score < margin);
   const best = stay ? bestStay : bestAny;
   const alt = stay && bestAny !== bestStay && bestAny.swaps > 0 ? bestAny : null;
 
@@ -1168,6 +1208,11 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
     if (p.then) out.push(`then ${p.then.name}`);
     const fed = foe && (p.trade?.pTheyKoFirst ?? 0) >= 0.5 && party.length > 1 ? koBoost(foe) : null;
     if (fed) out.push(`KO feeds ${foe.name}'s ${fed.ability} (${koBoostText(fed)})`);
+    // The fight plan is keeping this mon for a foe still to come (#170 §A) and taking the turn with it costs the
+    // rest of the fight enough for the plan to mind: name the foe it was being kept for. When the plan doesn't mind
+    // — it wanted this mon out anyway — there is nothing being spent and nothing to say.
+    const saved = (best.planCost ?? 0) >= PLAN_NOTE ? team?.holdFor(party.indexOf(p.me)) : null;
+    if (saved) out.push(`saved for ${saved.name}`);
     const n = hitCounts(p.move);
     if (n) out.push(`${p.move.name} ×${n}`);
     // What the move costs its user (07-move-traits' wording, with 10-damage's amounts): HP, lock-in, stat drops,
@@ -1268,12 +1313,31 @@ const fieldPlan = (s, party, active, double, attackers = active, { freeSwitch = 
   const helps = new Set([...support.values()].map(x => x.helps));
   const picks = best.picks.map(p => (support.has(p) ? { ...p, move: null, target: null } : helps.has(p) && typeof p.target === "number" ? { ...p, hits: 1 } : p));
 
+  // This turn's action, for the fight plan to be re-searched around (#113 "⚔ seeds ♟"), and what that plan says
+  // comes next: the mon a doomed field mon's faint brings in free (#170 §E), and the foe the trainer sends after our
+  // KO with the answer the plan puts in front of it (#170 §G).
+  // In a double the plan still runs one exchange at a time, against the foe in slot 0: pin the ⚔ slot aimed there,
+  // so its step 1 is an action the player is actually being told to take. (The score term stays out of doubles —
+  // `planValueOf` — but a plan that contradicts the line on screen is the thing #113 set out to end.)
+  const chosen = slots === 1 ? best.picks[0] : best.picks.find(p => p.target === 0 || p.target === "both") ?? best.picks[0];
+  const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, free: freeSwitch } : null;
+  const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
+  // The plan's step 1 ends with our mon down, but a step is a whole exchange: the free entry is only this turn's
+  // news when the turn model says the mon is going down on this one. The exchange the pick is in counts too — a foe
+  // switching in is not an `attackers` threat yet, but it is the one this turn trades with.
+  const doomedNow = !!chosen && (doomedNowOf(chosen.me) || (chosen.trade?.pTheyKoFirst ?? 0) >= 0.5);
+
   return {
     picks, // live objects for the per-foe rows; not part of the JSON-safe view
+    pin: pin && pin.mi >= 0 ? pin : null,
     view: {
       optional: alt ? swaps(alt) : [],
-      // Staying is failing but every switch-in would be KO'd coming in: say so rather than stay silent.
-      noSafeSwitch: !freeSwitch && best.swaps === 0 && failing(best) && party.length > current.length,
+      // The fight plan's read of what follows this turn.
+      freeEntry: doomedNow ? ahead?.freeEntry ?? null : null,
+      nextIn: ahead?.nextIn ?? null,
+      // Staying is failing but every switch-in would be KO'd coming in: say so rather than stay silent. Not when one
+      // is offered as optional — a mon on its last turn keeps the field (#170 §E), and the switch is there to take.
+      noSafeSwitch: !freeSwitch && best.swaps === 0 && failing(best) && !alt && party.length > current.length,
       freeSwitch,
       slots: best.picks.map((p, i) => {
         const enter = best.payers.includes(p.me);
@@ -1327,6 +1391,18 @@ const ALLY_KO_COST = 4;
 const KEEP_BONUS = 0.15;
 const DEPTH_GAIN = 0.1;
 const FLIP_COST = 0.5;
+// The whole-fight plan's value, in turn-score units (#113). Its scale is 100 a foe KO'd, so #113's "clearly better"
+// threshold of 20 — a fifth of a KO — comes to 0.4 of a turn. Capped: the plan's value function is coarse (it skips
+// status, stat changes and mid-exchange switches), so it nudges the turn call and never overrides this turn's
+// mechanics, which #113 measured as ⚔'s to decide. Both are first cuts.
+const PLAN_POINT = 0.02;
+const PLAN_CAP = 3;
+// How much the plan has to mind before the ⚔ line names the foe it was keeping a mon for.
+const PLAN_NOTE = 0.25;
+// …and before the field counts as failing, so the stay margin stops protecting it.
+const PLAN_FAIL = 1;
+// How sure a mon's fall this turn has to be before the turn counts as its last (#170 §E).
+const DOOMED = 0.8;
 // A status move gives up a sure hit for a modelled effect: it has to win by this much (first cut).
 const STATUS_COST = 0.2;
 // A whole HP bar of a trainer's mon still to come, in turns of ours: what a hazard's chip is worth (first cut).
@@ -1482,7 +1558,9 @@ const duel = (s, me, foe, partnered = false) => {
 // Plain data for one refresh: the field, the switches and a row per foe. Its JSON is part of the change signature, so
 // the DOM is only rebuilt when something the panel shows has actually changed. 60-card composes it with the fight
 // plan and the catch advice, and opens the sandbox all three run in.
-const battleModel = (s, b, party, foes) => {
+// `team`: the whole-fight plan's model (35-team-plan's `teamPlanner`), built by 60-card before this one and handed in
+// so the ⚔ line can price what a turn costs the rest of the fight. Null on a wild wave, where there is no plan.
+const battleModel = (s, b, party, foes, { team = null } = {}) => {
   const onField = foes.filter(f => f.isOnField?.());
   const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
   // During a free switch the enemy hasn't decided anything: it picks its first command after our switch, against
@@ -1501,7 +1579,7 @@ const battleModel = (s, b, party, foes) => {
   const lockKey = locked ? `${locked.me.id}:${locked.switchIn?.id ?? ""}:${pmName(locked.pm)}:${locked.target}` : "";
   const attackers = active.filter(f => !switching(f));
   const plan = planMemo(s, `field:${ids(party)}|${ids(facing)}|${ids(attackers)}|${!!b.double}|${freeSwitch}|${lockKey}`,
-    () => fieldPlan(s, party, facing, !!b.double, attackers, { freeSwitch, locked }));
+    () => fieldPlan(s, party, facing, !!b.double, attackers, { freeSwitch, locked, team }));
   const ifStay = active.some(switching)
     ? planMemo(s, `stay:${ids(party)}|${ids(active)}|${!!b.double}|${lockKey}`, () => fieldPlan(s, party, active, !!b.double, active, { locked }))
     : null;
@@ -1575,6 +1653,8 @@ const battleModel = (s, b, party, foes) => {
   return {
     kind: "battle",
     field: plan?.view ?? null,
+    // This turn's action, so 60-card can render the fight plan around it rather than against it.
+    pin: plan?.pin ?? null,
     enemySwitches: active.filter(f => predicted.has(f)).map(f => ({
       from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
     })),

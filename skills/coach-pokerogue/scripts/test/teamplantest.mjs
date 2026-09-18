@@ -112,6 +112,12 @@ assert.equal(plan.approxDoubles, false);
   const double = run(null, { party: ours, foes: youngster, double: true }).plan;
   assert.ok(double.approxDoubles, "doubles are flagged as approximated");
   assert.ok(double.compact);
+  // Both of ours stand on the field, so neither pays to act: the plan used to count one of them as `cur` and read
+  // the other as a switch, which put "⇄ switch in X" on screen for a mon already out (#113 bucket 7, the biggest
+  // cause of ⚔/♟ disagreement on real waves).
+  // (Charizard sweeps both foes here, so only it takes an exchange — the point is that neither of ours is charged
+  // for standing where it already stands.)
+  assert.deepEqual(double.steps.map(x => x.entry), double.steps.map(() => "stay"), `no step pays to switch in a mon already out: ${JSON.stringify(double.steps)}`);
 }
 // Turn-end chip carries into the fight as a negative per-turn change: a sandstorm takes 1/16 a turn.
 {
@@ -175,6 +181,10 @@ assert.equal(plan.approxDoubles, false);
   const ours = { ...T(0), ours: [[{ dmg: 100, drain: 0.5 }]] };
   assert.equal(tpFight(ours, { ...st(), oh: [200] }, 0, 0, "free").mh, 230, "our drain heals on every hit");
   assert.equal(tpFight(ours, { ...st(), oh: [390] }, 0, 0, "free").mh, 380, "never past max");
+  // …and what a use costs its user goes the other way (#235). We move first, so three hits take the 300 HP foe and it
+  // answers twice: 400 − 2×60 = 280 for a cost-free move, and 60 less for one that spends 20 on each of its 3 uses.
+  const recoil = self => tpFight({ ...T(0), ours: [[{ dmg: 100, self }]] }, st(), 0, 0, "free").mh;
+  assert.deepEqual([recoil(0), recoil(20)], [280, 220], "recoil is spent on every landed use");
 }
 // On-KO boosts (#90): each KO Buzzwole's Beast Boost scores raises its Atk a stage, so the mon after a fallen one takes
 // its hits at ×1.5, then ×2.

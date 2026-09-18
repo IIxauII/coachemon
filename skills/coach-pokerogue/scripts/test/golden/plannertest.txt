@@ -11,16 +11,17 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Dark Knock Off
 ☠ Weavile Weavile 👑 KOs 3/3 · win condition
 🛡 Scrafty save for Weavile ~100%/turn
 🛡 Metagross save for Weavile ~69%/turn
-1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
-2 Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
-3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
-4 Metagross free Steel Meteor Mash → Weavile falls (77%) · foe at 53%
+1 Metagross ⇄ Steel Meteor Mash → Weavile switch in, takes a hit · falls · foe at 89%
+2 Morpeko free Electric Aura Wheel → Weavile falls · foe at 69%
+3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 68%
+♟ prefers: let Scrafty fall → Metagross in free (+28)
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Metagross
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == cyrus, no Metagross (live)
 🎯 W200 · Cyrus Morpeko − {Minimal overview} × {Close}
 ⇆ Gyarados → Weavile switches — moves aimed at it
 ⚔ Morpeko 💀 Ice 100% 3-hit {next turn: Weavile's Triple Axel: ~100% of current HP, 67% KO, before it can act} Electric Aura Wheel → Weavile
+⤵ Morpeko falls this turn › Scrafty in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 ↺ if it stays: Morpeko Electric Aura Wheel → Gyarados
 foes weak to: Electric ×1 Fighting ×1
@@ -30,23 +31,27 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 ↯ Ice Triple Axel → 
 ☠ Weavile Weavile 👑 KOs 2/2 · win condition
 🛡 Scrafty save for Weavile ~100%/turn
 🛡 Morpeko save for Weavile ~28%/turn
-1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
-2 Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
-3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
+1 Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
+2 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Morpeko
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == building blocks ok
 == cyrus (fallback)
 🎯 W200 · Cyrus Morpeko › Scrafty − {Minimal overview} × {Close}
 ⚔ Morpeko ⚠ Water 103% {Gyarados's Waterfall: ~103% of current HP} Electric Aura Wheel → Gyarados 1 hit
+↪ next in likely: Weavile › answer Scrafty
 foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4 ↯ Water Waterfall → Morpeko moves after
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Ice Triple Axel → Scrafty moves first ➜ Scrafty Fighting High Jump Kick ~100% · 2 hits later boss: 2 bars — no 1HKO
-♟ winnable · 2 steps + {Show the fight plan}
+♟ Fight plan winnable
+🔒 Scrafty only answer to Weavile ~100%/turn
+1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
+2 Scrafty ⇄ Fighting High Jump Kick → Weavile switch in, takes a hit · KO · 22% left
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == switch-in never acts (live)
 🎯 W200 · Cyrus Charizard − {Minimal overview} × {Close}
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Lycanroc
+⤵ Charizard falls this turn › Blastoise in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100% likely · moves first
 ♟ Fight plan winnable
@@ -102,11 +107,12 @@ foes weak to: Fighting ×3 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → Garchomp 100% likely · moves after
-♟ winnable · ~3 steps + {Show the fight plan}
+♟ winnable · ~4 steps + {Show the fight plan}
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == free switch — same field in the command phase (live)
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
+⤵ Ninetales falls this turn › Swampert in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 foes weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Ninetales 100% likely · moves first
@@ -130,10 +136,9 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 ♟ Fight plan likely lost
 ☠ Tyranitar Tyranitar KOs 2/2 · win condition
 🛡 Swampert save for Tyranitar ~50%/turn
-1 Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
-2 Swampert free Water Surf → Rhyperior KO (75%) · 29% left
-3 Swampert Water Surf → Tyranitar falls · foe at 100%
-✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
+1 Swampert free Water Surf → Rhyperior KO (60%) · 28% left
+2 Swampert Water Surf → Tyranitar falls · foe at 100%
+3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 84%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == free switch — stay (live)
@@ -234,3 +239,51 @@ next: ⚔ Crobat Flying Wing Attack → Buzzwole
 ⇄ Mamoswine out › Crobat in · optional · takes ~6% · resists Lunge
 == summary
 {"danger":[{"mon":"Mamoswine","from":"Mega Golisopod","move":"Iron Head","level":"after","saveFor":"Xurkitree"}],"plan":"likely lost · ☠ Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in"}
+== guzma w165 turn 1 (live)
+🎯 W200 · Cyrus Metagross › Mamoswine − {Minimal overview} × {Close}
+now: ⇄ Mamoswine ⚠ Steel ×2 100% {Mega Golisopod's Iron Head: ~100% of current HP, 63% KO} out › Metagross in · takes ~23% · resists Iron Head
+next: ⚔ Metagross Steel Meteor Mash → Mega Golisopod
+foes weak to: Ground ×1
+Mega Golisopod Mega Golisopod L153 Bug Steel 👑 100% ▲ — ↯ Steel Iron Head → Metagross 100% likely · moves after
+Xurkitree Xurkitree L153 Electric 100% ▲ Ground ➜ Mamoswine Ground Precipice Blades ~95% · 2 hits later
+Buzzwole Buzzwole L159 Bug Fighting 👑 100% ▲ — ↯ Bug Lunge → Mamoswine 100% likely · moves first ➜ Mamoswine Ground Precipice Blades ~32% ⚠ loses trade later
+♟ Fight plan winnable
+🔒 Mamoswine only answer to Xurkitree ~96%/turn
+1 Metagross ⇄ Steel Meteor Mash → Mega Golisopod switch in, takes a hit · falls · foe at 27%
+2 Golduck free Water Surf → Mega Golisopod KO · 100% left
+3 Mamoswine ⇄ Ground Precipice Blades → Xurkitree switch in, takes a hit · KO · 100% left
+4 Golduck ⇄ Water Surf → Buzzwole switch in, takes a hit · sacrifice → Mamoswine in free
+5 Mamoswine free Ground Precipice Blades → Buzzwole KO · 14% left
+✝ Golduck 100% · sacrifice to Buzzwole so Mamoswine comes in free
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== guzma w165 turn 1, no later foes (live)
+⚔ Mamoswine ⚠ Steel ×2 100% {Mega Golisopod's Iron Head: ~100% of current HP, 63% KO} Ground Precipice Blades → Mega Golisopod
+⤵ Mamoswine falls this turn › Metagross in free
+⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
+Mega Golisopod Mega Golisopod L153 Bug Steel 👑 100% ▲ — ↯ Steel Iron Head → Mamoswine 100% likely · moves after
+♟ Fight plan winnable
+1 Mamoswine Ground Precipice Blades → Mega Golisopod sacrifice → Metagross in free
+2 Metagross free Steel Meteor Mash → Mega Golisopod KO · 30% left
+✝ Mamoswine 100% · sacrifice to Mega Golisopod so Metagross comes in free
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== guzma w165 turn 3 (live)
+🎯 W200 · Cyrus Golduck › Mamoswine − {Minimal overview} × {Close}
+⚔ Golduck ⚠ Steel 100% {Mega Golisopod's Iron Head: ~100% of current HP} Water Surf → Mega Golisopod
+⤵ Golduck falls this turn › Metagross in free
+⇄ Golduck ⚠ Steel 100% {Mega Golisopod's Iron Head: ~100% of current HP} out › Metagross in · optional · takes ~23% · resists Iron Head
+foes weak to: Ground ×1
+Mega Golisopod Mega Golisopod L153 Bug Steel 👑 100% ▲ — ↯ Steel Iron Head → Golduck 100% likely · moves after
+Xurkitree Xurkitree L153 Electric 100% ▲ Ground ➜ Mamoswine Ground Precipice Blades ~95% · 2 hits later
+Buzzwole Buzzwole L159 Bug Fighting 👑 100% ▲ — ↯ Bug Lunge → Mamoswine 100% likely · moves first ➜ Mamoswine Ground Precipice Blades ~32% ⚠ loses trade later
+♟ Fight plan likely lost
+🔒 Mamoswine only answer to Xurkitree ~96%/turn
+1 Golduck Water Surf → Mega Golisopod sacrifice → Metagross in free
+2 Metagross free Steel Meteor Mash → Mega Golisopod KO · 30% left
+3 Mamoswine ⇄ Ground Precipice Blades → Xurkitree switch in, takes a hit · KO · 100% left
+4 Metagross ⇄ Steel Meteor Mash → Buzzwole switch in, takes a hit · sacrifice → Mamoswine in free
+5 Mamoswine free Ground Precipice Blades → Buzzwole falls · foe at 18%
+✝ Golduck 5% · sacrifice to Mega Golisopod so Metagross comes in free
+✝ Metagross 100% · sacrifice to Buzzwole so Mamoswine comes in free
+⚠ likely lost: the plan runs out with 1 foe standing — maximise damage
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+ok
