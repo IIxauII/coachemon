@@ -803,6 +803,20 @@ export const HUD_DEPS = {
   ],
 
   /**
+   * The Mystery Encounter journal records the option the player picked by
+   * reading the game's own record of it rather than watching the input: the
+   * phase pushes a `SeenEncounterData` as the encounter opens and writes the
+   * chosen index into that same record on select, and only for the encounter's
+   * own option list. Everything else the journal reads is a property or one of
+   * the two party accessors, which have no body worth watching.
+   */
+  "55-journal.js": [
+    `src/phases/mystery-encounter-phases.ts#MysteryEncounterPhase.start`,
+    `src/phases/mystery-encounter-phases.ts#MysteryEncounterPhase.handleOptionSelect`,
+    `src/data/mystery-encounters/mystery-encounter-save-data.ts#SeenEncounterData.constructor`,
+  ],
+
+  /**
    * §16. Who a TM can be taught to: the select filter (called), the pool drawn
    * from the whole party's compatible TMs, the party screen's TM
    * mode (a fainted member is offered TEACH) and Hardcore's exception, which

@@ -12,6 +12,7 @@
 import { sandboxBreachCount } from "./01-core.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
+import { journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { cardEvent, cardSummary } from "./60-card.js";
 import { cardText, el } from "./90-render.js";
 import { lastFailure, shownCard, tick } from "./98-tick.js";
@@ -84,5 +85,11 @@ window.__coachHud = {
   preview: () => previewStats(),
   // How the reroll preview has scored: every reroll made against the offers previewed for it.
   reroll: () => rerollStats(),
+  // Every Mystery Encounter met on this browser, with the card shown, the option the game recorded and what the run
+  // looked like at each step of it. It outlives the run: `journalStats()` is the tally, `journalClear()` empties it
+  // once it has been harvested.
+  journal: () => journalEntries(),
+  journalStats: () => journalStats(),
+  journalClear: () => journalClear(),
 };
 document.documentElement.dataset.mcpOut = JSON.stringify({ hud: "on" });

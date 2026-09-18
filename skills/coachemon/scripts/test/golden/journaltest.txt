@@ -1,0 +1,232 @@
+---- one encounter, played through
+[
+ {
+  "at": "<timestamp>",
+  "seed": "SEED123",
+  "game": "1.12.0.11",
+  "wave": 11,
+  "type": 1,
+  "tier": 0,
+  "name": "Mysterious Chest",
+  "card": {
+   "kind": "encounter",
+   "wave": 11,
+   "key": "me:11",
+   "verdict": "take",
+   "type": 1,
+   "name": "Mysterious Chest",
+   "tier": "common",
+   "known": true,
+   "options": [
+    {
+     "label": "Open it",
+     "index": 0,
+     "verdict": "take",
+     "outcome": "pick of 3 Ultra items"
+    },
+    {
+     "label": "Leave",
+     "index": 1,
+     "verdict": "avoid",
+     "outcome": "nothing"
+    }
+   ],
+   "pick": 0,
+   "notes": []
+  },
+  "picked": 0,
+  "pickedLabel": "Open it",
+  "steps": [
+   {
+    "wave": 11,
+    "turn": 0,
+    "battle": 3,
+    "double": false,
+    "biome": 4,
+    "money": 2000,
+    "ui": "MYSTERY_ENCOUNTER",
+    "party": [
+     [
+      1,
+      25,
+      "Pikachu",
+      20,
+      60,
+      60,
+      0
+     ],
+     [
+      2,
+      4,
+      "Charmander",
+      18,
+      50,
+      50,
+      0
+     ]
+    ],
+    "enemy": [],
+    "items": [
+     "Lure×1"
+    ]
+   },
+   {
+    "wave": 11,
+    "turn": 0,
+    "battle": 3,
+    "double": false,
+    "biome": 4,
+    "money": 2000,
+    "ui": "MYSTERY_ENCOUNTER",
+    "party": [
+     [
+      1,
+      25,
+      "Pikachu",
+      20,
+      12,
+      60,
+      0
+     ],
+     [
+      2,
+      4,
+      "Charmander",
+      18,
+      50,
+      50,
+      0
+     ]
+    ],
+    "enemy": [],
+    "items": [
+     "Lure×1"
+    ]
+   },
+   {
+    "wave": 11,
+    "turn": 1,
+    "battle": 3,
+    "double": false,
+    "biome": 4,
+    "money": 2000,
+    "ui": "MYSTERY_ENCOUNTER",
+    "party": [
+     [
+      1,
+      25,
+      "Pikachu",
+      20,
+      12,
+      60,
+      0
+     ],
+     [
+      2,
+      4,
+      "Charmander",
+      18,
+      50,
+      50,
+      0
+     ]
+    ],
+    "enemy": [
+     [
+      9,
+      143,
+      "Snorlax",
+      22,
+      140,
+      140,
+      0
+     ]
+    ],
+    "items": [
+     "Lure×1"
+    ]
+   },
+   {
+    "wave": 11,
+    "turn": 2,
+    "battle": 3,
+    "double": false,
+    "biome": 4,
+    "money": 2000,
+    "ui": "MYSTERY_ENCOUNTER",
+    "party": [
+     [
+      1,
+      25,
+      "Pikachu",
+      20,
+      0,
+      60,
+      0
+     ],
+     [
+      2,
+      4,
+      "Charmander",
+      18,
+      50,
+      50,
+      0
+     ]
+    ],
+    "enemy": [
+     [
+      9,
+      143,
+      "Snorlax",
+      22,
+      140,
+      140,
+      0
+     ]
+    ],
+    "items": [
+     "Lure×1"
+    ]
+   }
+  ]
+ }
+]
+---- tally
+{
+ "entries": 1,
+ "stored": true,
+ "encounters": {
+  "Mysterious Chest": {
+   "tier": "common",
+   "met": 1,
+   "judged": 1,
+   "picked": 1
+  }
+ }
+}
+---- stored after the encounter
+entries 1, steps 4, picked 0
+---- tally after a second chest
+{
+ "entries": 2,
+ "stored": true,
+ "encounters": {
+  "Mysterious Chest": {
+   "tier": "common",
+   "met": 2,
+   "judged": 2,
+   "picked": 2
+  }
+ }
+}
+---- reload mid-encounter
+entries 1, picked 1, steps 2
+---- step cap
+steps 60, truncated true
+---- entry cap
+entries 40, first wave 6, last wave 45
+---- refusing store
+entries 1, stored false
+---- a broken scene
+journalCheck did not throw

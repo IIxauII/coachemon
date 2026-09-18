@@ -189,6 +189,7 @@
     "src/data/mystery-encounters/mystery-encounter-option.ts#MysteryEncounterOption.meetsPrimaryRequirementAndPrimaryPokemonSelected": "7780a23a27c2a8a0",
     "src/data/mystery-encounters/mystery-encounter-option.ts#MysteryEncounterOption.meetsRequirements": "62703924c990d522",
     "src/data/mystery-encounters/mystery-encounter-requirements.ts#MoneyRequirement.meetsRequirement": "b4e4618f5541e24d",
+    "src/data/mystery-encounters/mystery-encounter-save-data.ts#SeenEncounterData.constructor": "31d087c8c7bfcc5c",
     "src/data/mystery-encounters/mystery-encounter.ts#MysteryEncounter.updateSeedOffset": "7e175cfa41195461",
     "src/data/mystery-encounters/requirements/requirement-groups.ts#CHARMING_MOVES": "6afa464465486079",
     "src/data/mystery-encounters/requirements/requirement-groups.ts#FIRE_RESISTANT_ABILITIES": "5cfb62537ff6666c",

@@ -12,6 +12,18 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
   const STATS = ["hp","atk","def","spa","spd","spe"];
   let out;
   try {
+    // The Mystery Encounter journal is harvested without a run, a scene or even a running panel: it is written to
+    // `localStorage` as the encounters happen, so this reads the store and asks the panel only when it is up (its
+    // copy carries the encounter still being recorded, which is not in the store yet).
+    if (MODE === "journal") {
+      let stored = null;
+      try { stored = JSON.parse(localStorage.getItem("coach-me-journal")); } catch {}
+      let live = null, stats = null;
+      try { live = window.__coachHud?.journal?.() ?? null; stats = window.__coachHud?.journalStats?.() ?? null; } catch {}
+      const entries = live ?? (Array.isArray(stored) ? stored : []);
+      document.documentElement.dataset.mcpOut = JSON.stringify({ hudActive: !!window.__coachHud, stats, entries });
+      return;
+    }
     const game = Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
     const s = game.scene.getScene("battle");
     // Mid-reload or on the title screen the battle scene exists without its UI yet.
