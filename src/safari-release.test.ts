@@ -19,7 +19,7 @@ const PLAN = {
   work: "/w",
   identity: "Developer ID Application: Jane Dev (AB12CD34EF)",
   profile: "coachemon",
-  repo: "IIxauII/pokerogue-mcp",
+  repo: "IIxauII/coachemon",
 };
 
 test("the notarized app's zip is named for the release, not for what the packager fed on", () => {
@@ -61,9 +61,9 @@ test("the team id comes off the identity, so it is never configured twice", () =
 });
 
 test("the repo is read off a remote in either spelling", () => {
-  assert.equal(repoFromRemote("https://" + "github.com/IIxauII/pokerogue-mcp.git"), "IIxauII/pokerogue-mcp");
-  assert.equal(repoFromRemote("git@" + "github.com:IIxauII/pokerogue-mcp.git\n"), "IIxauII/pokerogue-mcp");
-  assert.equal(repoFromRemote("https://" + "github.com/IIxauII/pokerogue-mcp"), "IIxauII/pokerogue-mcp");
+  assert.equal(repoFromRemote("https://" + "github.com/IIxauII/coachemon.git"), "IIxauII/coachemon");
+  assert.equal(repoFromRemote("git@" + "github.com:IIxauII/coachemon.git\n"), "IIxauII/coachemon");
+  assert.equal(repoFromRemote("https://" + "github.com/IIxauII/coachemon"), "IIxauII/coachemon");
   assert.throws(() => repoFromRemote("not-a-remote"), /no owner\/name/);
 });
 
@@ -178,7 +178,7 @@ test("both gh steps name the repo, because neither runs inside a checkout", () =
   for (const step of gh) {
     const at = step.args.indexOf("--repo");
     assert.ok(at !== -1, `${step.title} names no repo`);
-    assert.equal(step.args[at + 1], "IIxauII/pokerogue-mcp");
+    assert.equal(step.args[at + 1], "IIxauII/coachemon");
   }
 });
 

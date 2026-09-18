@@ -36,7 +36,7 @@ EOF
     ;;
   chrome)
     WRAPPER="$wrapper" node --input-type=module -e '
-      const port = process.env.POKEROGUE_MCP_PORT ?? 9222;
+      const port = process.env.COACHEMON_PORT ?? 9222;
       const tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
       const t = tabs.find(x => x.url.includes("pokerogue.net"));
       if (!t) { console.log(JSON.stringify({ error: "no pokerogue.net tab on debug port" })); process.exit(0); }

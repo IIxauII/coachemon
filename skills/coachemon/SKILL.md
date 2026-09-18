@@ -1,5 +1,5 @@
 ---
-name: coach-pokerogue
+name: coachemon
 description: Coach the user through their own PokéRogue game without touching the controls — read the live tab (Chrome or Orion) and recommend starters, moves, switches, or a plan against a trainer. Use when the user is playing themselves and asks what to pick, what to do against their opponent, or how to beat a trainer/boss.
 ---
 

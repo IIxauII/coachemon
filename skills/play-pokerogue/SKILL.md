@@ -1,17 +1,17 @@
 ---
 name: play-pokerogue
-description: Play PokéRogue (pokerogue.net) through the pokerogue MCP tools — start a run, fight waves, shop, handle faints and stuck screens. Use when the user wants to play PokéRogue, start or continue a run, or asks Claude to take the driver's seat in the game.
+description: Play PokéRogue (pokerogue.net) through the Coachemon MCP tools — start a run, fight waves, shop, handle faints and stuck screens. Use when the user wants to play PokéRogue, start or continue a run, or asks Claude to take the driver's seat in the game.
 ---
 
 # Playing PokéRogue
 
-The `pokerogue` MCP server drives a live PokéRogue tab in Chrome over CDP. State comes back as text; you act by choosing options. The game is the source of truth; the server holds no game logic.
+The `coachemon` MCP server drives a live PokéRogue tab in Chrome over CDP. State comes back as text; you act by choosing options. The game is the source of truth; the server holds no game logic.
 
 ## Before the first call
 
-- The server launches Chrome with its own profile (`~/.pokerogue-mcp/chrome-profile`) if no tab is attached on debug port 9222. If `status` or `read_menu` shows a login/register screen, **stop and ask the user to log in by hand in that Chrome window.** Never type credentials.
+- The server launches Chrome with its own profile (`~/.coachemon/chrome-profile`) if no tab is attached on debug port 9222. If `status` or `read_menu` shows a login/register screen, **stop and ask the user to log in by hand in that Chrome window.** Never type credentials.
 - It plays on the user's **real save**. `start_run` refuses an occupied slot unless `overwrite: true`. Never pass `overwrite: true` without the user's say-so for that slot.
-- One driver per tab. `tab_contended` means another session holds `~/.pokerogue-mcp/driver.lock` — tell the user; don't retry in a loop.
+- One driver per tab. `tab_contended` means another session holds `~/.coachemon/driver.lock` — tell the user; don't retry in a loop.
 
 ## The loop
 

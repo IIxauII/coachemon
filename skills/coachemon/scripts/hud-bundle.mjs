@@ -347,7 +347,7 @@ export const bundle = (mode, { expose = false, files } = {}) => {
     const parsed = mode === "hud-off" ? hudFiles.slice(0, 1) : hudFiles;
     return withMode(`// Runs in the PokéRogue page world. Draws the always-on coach panel over the game: battle plan, learn-move
 // card, rewards card. Read-only: presses nothing and never changes game state. Idempotent — injecting again
-// replaces the running panel. Source: skills/coach-pokerogue/scripts/hud/.
+// replaces the running panel. Source: skills/coachemon/scripts/hud/.
 (() => {
 ${link(parsed, { expose })}
 })();

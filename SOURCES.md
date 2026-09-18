@@ -11,7 +11,7 @@ Output: extension/.output/firefox-mv3-store/
 ```
 
 The build is offline: nothing is fetched and no data table is generated, so the output reproduces. `hud.js` is
-produced by `skills/coach-pokerogue/scripts/hud-bundle.mjs` from `skills/coach-pokerogue/scripts/hud/`, concatenated
+produced by `skills/coachemon/scripts/hud-bundle.mjs` from `skills/coachemon/scripts/hud/`, concatenated
 in file-name order and comment-stripped; `src/enums/generated.ts` is committed and is read by that bundler.
 
 Licence: AGPL-3.0-only (`LICENSE`). Third-party material is listed in `THIRD_PARTY_NOTICES.md`.

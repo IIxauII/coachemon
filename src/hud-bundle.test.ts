@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 // @ts-expect-error: plain .mjs without type declarations
-import { bundle, stripComments, topNames } from "../skills/coach-pokerogue/scripts/hud-bundle.mjs";
+import { bundle, stripComments, topNames } from "../skills/coachemon/scripts/hud-bundle.mjs";
 
 type Files = [string, string][];
 const hud = (files: Files, expose = false): string => bundle("hud", { files, expose });

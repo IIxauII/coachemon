@@ -8,7 +8,7 @@ Mac, and this is it.
 `npm run release:safari -- <version>` is that pass. This page is the setup it assumes, and the failures it can hit.
 
 Spec: [§14.6 of the extension distribution spec](../spec/extension-distribution.md). Ticket:
-[#209](https://github.com/IIxauII/pokerogue-mcp/issues/209).
+[#209](https://github.com/IIxauII/coachemon/issues/209).
 
 ## Every release
 
@@ -37,7 +37,7 @@ script deletes only a directory it made itself), `--keep` to leave the scratch b
 ### 1. Apple Developer Program
 
 An **individual** membership, enrolled at <https://developer.apple.com/programs/>, about €99 a year. Enrolment is
-[off-map](https://github.com/IIxauII/pokerogue-mcp/issues/1) and nothing in this repo can do it. Without it there is
+[off-map](https://github.com/IIxauII/coachemon/issues/1) and nothing in this repo can do it. Without it there is
 no Developer ID identity to sign with, and an unsigned `.app` is refused by Gatekeeper on every Mac but the one that
 built it.
 
@@ -90,7 +90,7 @@ The profile name is what `--keychain-profile` takes. Nothing after this passes a
 gh auth status
 ```
 
-The release lives on the private `IIxauII/pokerogue-mcp`, so the download and the upload both need a token that can
+The release lives on the private `IIxauII/coachemon`, so the download and the upload both need a token that can
 read and write its releases.
 
 ## What each step is for

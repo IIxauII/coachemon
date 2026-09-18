@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { stripComments } from "../../../skills/coach-pokerogue/scripts/hud-bundle.mjs";
+import { stripComments } from "../../../skills/coachemon/scripts/hud-bundle.mjs";
 import { EVENT } from "../relay/channel.ts";
 
 /**

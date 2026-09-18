@@ -2,7 +2,7 @@ Quotes below are from `pagefaultgames/pokerogue` (https://github.com/pagefaultga
 
 # PokéRogue game-code spec for the coach HUD
 
-The game code the coach HUD (`skills/coach-pokerogue/scripts/hud/`) calls, replays or re-implements, read from the
+The game code the coach HUD (`skills/coachemon/scripts/hud/`) calls, replays or re-implements, read from the
 **pinned source**: `pagefaultgames/pokerogue` tag `v1.12.0.11`, commit `e4e9b5383be7c9e171d32a9daaea2658d475c521`
 (the pin in `src/escape-ladder/reviewed.json`). `npm run drift:check` clones it to `.cache/pokerogue/v1.12.0.11`.
 

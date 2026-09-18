@@ -1,5 +1,5 @@
 /**
- * pokerogue-mcp: the MCP server. Nine tools (#7, §12.2), stdio transport. Attachment
+ * coachemon: the MCP server. Nine tools (#7, §12.2), stdio transport. Attachment
  * is lazy, on first use; there is no connect/disconnect tool.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -21,7 +21,7 @@ const driver = Driver.create();
 
 const inherited = Number(process.env.MCP_TOOL_TIMEOUT);
 if (Number.isFinite(inherited) && inherited > 0 && inherited * 1000 <= CALL_BUDGET_MS) {
-  process.stderr.write(`[pokerogue-mcp] warning: MCP_TOOL_TIMEOUT=${inherited}s is at or below the settle budget (${CALL_BUDGET_MS / 1000}s); the client may cut calls short\n`);
+  process.stderr.write(`[coachemon] warning: MCP_TOOL_TIMEOUT=${inherited}s is at or below the settle budget (${CALL_BUDGET_MS / 1000}s); the client may cut calls short\n`);
 }
 
 function context(extra: Extra): CallContext {
@@ -40,8 +40,8 @@ function json(value: unknown, isError = false) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value) }], isError };
 }
 
-/** Optional per-call JSONL log (`POKEROGUE_MCP_LOG=path`): the soak's calls-per-wave count comes from here (#25). */
-const LOG = process.env.POKEROGUE_MCP_LOG;
+/** Optional per-call JSONL log (`COACHEMON_LOG=path`): the soak's calls-per-wave count comes from here (#25). */
+const LOG = process.env.COACHEMON_LOG;
 const t0 = Date.now();
 function logCall(tool: string, args: unknown, ms: number, result: Record<string, unknown>): void {
   if (!LOG) return;
@@ -67,7 +67,7 @@ async function run(tool: string, args: unknown, fn: () => Promise<Record<string,
   }
 }
 
-const server = new McpServer({ name: "pokerogue-mcp", version: "0.1.0" });
+const server = new McpServer({ name: "coachemon", version: "0.1.0" });
 
 server.registerTool(
   "status",
@@ -176,4 +176,4 @@ server.registerTool(
 );
 
 await server.connect(new StdioServerTransport());
-process.stderr.write("[pokerogue-mcp] ready on stdio\n");
+process.stderr.write("[coachemon] ready on stdio\n");

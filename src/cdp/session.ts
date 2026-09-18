@@ -23,11 +23,11 @@ export type SessionOptions = {
 };
 
 export const DEFAULTS: SessionOptions = {
-  port: Number(process.env.POKEROGUE_MCP_PORT ?? 9222),
-  home: process.env.POKEROGUE_MCP_HOME ?? path.join(homedir(), ".pokerogue-mcp"),
-  chromePath: process.env.POKEROGUE_MCP_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  port: Number(process.env.COACHEMON_PORT ?? 9222),
+  home: process.env.COACHEMON_HOME ?? path.join(homedir(), ".coachemon"),
+  chromePath: process.env.COACHEMON_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   url: "https://pokerogue.net",
-  log: line => process.stderr.write(`[pokerogue-mcp] ${line}\n`),
+  log: line => process.stderr.write(`[coachemon] ${line}\n`),
 };
 
 type Target = { id: string; type: string; url: string; webSocketDebuggerUrl: string };

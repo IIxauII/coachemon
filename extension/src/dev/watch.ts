@@ -6,7 +6,7 @@
  */
 
 /** The four roots of §5.4, relative to the repo root. `extension/` covers the glue, the manifests and the build. */
-export const WATCHED = ["skills/coach-pokerogue/scripts/hud", "src/page", "src/protocol", "extension"] as const;
+export const WATCHED = ["skills/coachemon/scripts/hud", "src/page", "src/protocol", "extension"] as const;
 
 /** A burst of file events — an editor writing, a formatter following it — is one build. */
 export const SETTLE_MS = 200;

@@ -1,4 +1,4 @@
-# pokerogue-mcp
+# Coachemon
 
 MCP server that lets Claude play [PokéRogue](https://pokerogue.net) — a browser roguelite where you fight wave after wave of Pokémon battles, shop between waves, and restart from wave 1 on a party wipe.
 
@@ -8,24 +8,24 @@ Give an agent a **text-first** control loop over a live PokéRogue run. No pixel
 
 ## Running it
 
-Requirements: Node ≥ 23.6 (runs `.ts` directly), Google Chrome, and a PokéRogue account already logged in inside the server's own Chrome profile (`~/.pokerogue-mcp/chrome-profile`; log in by hand once — the server never touches credentials, see [#5](https://github.com/IIxauII/pokerogue-mcp/issues/5)).
+Requirements: Node ≥ 23.6 (runs `.ts` directly), Google Chrome, and a PokéRogue account already logged in inside the server's own Chrome profile (`~/.coachemon/chrome-profile`; log in by hand once — the server never touches credentials, see [#5](https://github.com/IIxauII/coachemon/issues/5)).
 
 ### As a Claude Code plugin
 
 The repo is its own plugin marketplace. The plugin bundles the MCP server and the `play-pokerogue` skill (the play loop, screen table, stuck/timeout handling):
 
 ```bash
-claude plugin marketplace add IIxauII/pokerogue-mcp   # private repo: uses your git/gh credentials
-claude plugin install pokerogue@pokerogue-mcp
+claude plugin marketplace add IIxauII/coachemon   # private repo: uses your git/gh credentials
+claude plugin install coachemon@coachemon
 ```
 
-Claude Code runs `npm ci --ignore-scripts` in its plugin cache on install, so there is no build step. Then, in any directory, ask Claude to play PokéRogue. The first time, log in by hand in the Chrome window the server opens. Update with `claude plugin marketplace update pokerogue-mcp && claude plugin update pokerogue@pokerogue-mcp`.
+Claude Code runs `npm ci --ignore-scripts` in its plugin cache on install, so there is no build step. Then, in any directory, ask Claude to play PokéRogue. The first time, log in by hand in the Chrome window the server opens. Update with `claude plugin marketplace update coachemon && claude plugin update coachemon@coachemon`.
 
 Releases are automatic: every push to `master` runs [semantic-release](.github/workflows/release.yml), which reads the [Conventional Commits](https://www.conventionalcommits.org/) since the last `v*` tag (`fix:` → patch, `feat:` → minor, `BREAKING CHANGE` → major), stamps the version into `package.json` and `.claude-plugin/plugin.json`, tags, and publishes GitHub release notes. `claude plugin update` only sees a change when that version moves, so commits on `master` must follow the convention — with squash merges, the PR title is the commit.
 
 The browser extension releases on its own `extension-v*` tags, and its Chrome and Firefox builds submit themselves. Safari has no store: after every extension release, `npm run release:safari -- <version>` signs, notarizes and uploads the macOS build by hand, on a Mac ([runbook](docs/runbooks/safari-release.md)).
 
-The server is declared in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json). Its `"timeout": 60000` is a documented requirement, not a tuning knob ([#20](https://github.com/IIxauII/pokerogue-mcp/issues/20)): the settle budget is 30 s and progress notifications do not extend the client's per-call limit.
+The server is declared in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json). Its `"timeout": 60000` is a documented requirement, not a tuning knob ([#20](https://github.com/IIxauII/coachemon/issues/20)): the settle budget is 30 s and progress notifications do not extend the client's per-call limit.
 
 ### From a checkout
 
@@ -38,9 +38,9 @@ claude --plugin-dir .            # a session with this checkout's server and ski
 
 There is no project `.mcp.json`: a plugin at the repo root merges the root `.mcp.json` into its own servers, and a cwd-relative path there breaks once the plugin is copied into the cache. `--plugin-dir .` loads exactly what an installed plugin gets. Don't run it alongside an installed copy — two servers contend for one tab.
 
-The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (#5's command). It never closes the tab or Chrome. One driver per tab: a lock at `~/.pokerogue-mcp/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/pokerogue-mcp/issues/6) had three sessions interleaving presses on one live save. The lock is taken the first time a server acts, not when it starts, so any number of servers can read the same tab while one plays it.
+The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if there is one, otherwise launches Chrome** with the persistent profile (#5's command). It never closes the tab or Chrome. One driver per tab: a lock at `~/.coachemon/driver.lock` makes a second server report `tab_contended` and refuse to press, because [#6](https://github.com/IIxauII/coachemon/issues/6) had three sessions interleaving presses on one live save. The lock is taken the first time a server acts, not when it starts, so any number of servers can read the same tab while one plays it.
 
-Dev scripts: `npm run smoke -- <tool> '<json args>'` calls tools over real stdio; `node scripts/autoplay.ts --waves N` drives waves with a dumb policy and logs every call to `.cache/autoplay.jsonl` (the soak driver for [#25](https://github.com/IIxauII/pokerogue-mcp/issues/25)); `node scripts/eval.ts '<js body>'` evaluates against the live scene; `npm run enums:gen` regenerates the enum tables from the pinned game tag; `npm run randbats:gen` refreshes the coach's bundled moveset-prior snapshot (`--check` fails if it is stale, and the release refreshes it); `npm run drift:check` checks the escape ladder and the coach HUD's game-code deps against a candidate build (`ladder:drift` is kept as an alias).
+Dev scripts: `npm run smoke -- <tool> '<json args>'` calls tools over real stdio; `node scripts/autoplay.ts --waves N` drives waves with a dumb policy and logs every call to `.cache/autoplay.jsonl` (the soak driver for [#25](https://github.com/IIxauII/coachemon/issues/25)); `node scripts/eval.ts '<js body>'` evaluates against the live scene; `npm run enums:gen` regenerates the enum tables from the pinned game tag; `npm run randbats:gen` refreshes the coach's bundled moveset-prior snapshot (`--check` fails if it is stale, and the release refreshes it); `npm run drift:check` checks the escape ladder and the coach HUD's game-code deps against a candidate build (`ladder:drift` is kept as an alias).
 
 ## Tool surface
 
@@ -66,7 +66,7 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 
 ### Reading state
 
-- `window.gameInfo` → `{ gameInfoVersion, playTime, gameMode, biome, wave, luck, party }`. JSON-serialisable, and the only thing the game deliberately puts on `window`. (`gameInfoVersion` is this payload's schema version, hardcoded in `battle-scene.ts` — it is not a build id. The build is `game.config.gameVersion`.) **Not** a state source, though: it is written on wave transitions and turn init only, so it is *stale* at settled decision points — at a reward screen it has been observed a full turn's damage plus a level-up behind. And it is no cheaper than reading the whole scene (0.18 ms vs 0.21 ms, measured). `get_state` is built on the scene; `gameInfo` keeps only a liveness check. See [#9](https://github.com/IIxauII/pokerogue-mcp/issues/9) and [#10](https://github.com/IIxauII/pokerogue-mcp/issues/10).
+- `window.gameInfo` → `{ gameInfoVersion, playTime, gameMode, biome, wave, luck, party }`. JSON-serialisable, and the only thing the game deliberately puts on `window`. (`gameInfoVersion` is this payload's schema version, hardcoded in `battle-scene.ts` — it is not a build id. The build is `game.config.gameVersion`.) **Not** a state source, though: it is written on wave transitions and turn init only, so it is *stale* at settled decision points — at a reward screen it has been observed a full turn's damage plus a level-up behind. And it is no cheaper than reading the whole scene (0.18 ms vs 0.21 ms, measured). `get_state` is built on the scene; `gameInfo` keeps only a liveness check. See [#9](https://github.com/IIxauII/coachemon/issues/9) and [#10](https://github.com/IIxauII/coachemon/issues/10).
 - The Phaser `Game` instance is not on `window`, but is reachable — via Phaser's
   module-level `CanvasPool`, the only module-level object in Phaser 3.90.0 that retains a
   live `Game`. **Scan the pool; never index it:**
@@ -80,7 +80,7 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 
   A lean settled read through this costs **0.21 ms / 338 bytes**, measured. The production
   form is `src/page/locate.ts`; see
-  [#9](https://github.com/IIxauII/pokerogue-mcp/issues/9) for the measurements and
+  [#9](https://github.com/IIxauII/coachemon/issues/9) for the measurements and
   the ruled-out alternatives.
 
   Two things not to do, both of which look fine until they aren't: don't write
@@ -106,10 +106,10 @@ Recon against the live site, Phaser 3.90.0. Everything below was confirmed worki
 ## Architecture
 
 ```
-Claude  ──MCP──>  pokerogue-mcp  ──CDP──>  Chrome  ──>  pokerogue.net
+Claude  ──MCP──>  Coachemon  ──CDP──>  Chrome  ──>  pokerogue.net
 ```
 
-Thin wrapper. The server holds no game logic — the game is the source of truth. It holds one CDP page session against the tab and does `Runtime.evaluate` against the page, rediscovering the scene on every call. Focus emulation is re-applied on every attach so a hidden or minimised window keeps the Phaser loop running ([#23](https://github.com/IIxauII/pokerogue-mcp/issues/23)).
+Thin wrapper. The server holds no game logic — the game is the source of truth. It holds one CDP page session against the tab and does `Runtime.evaluate` against the page, rediscovering the scene on every call. Focus emulation is re-applied on every attach so a hidden or minimised window keeps the Phaser loop running ([#23](https://github.com/IIxauII/coachemon/issues/23)).
 
 ```
 src/server.ts        MCP entry: seven tools over stdio
@@ -129,10 +129,10 @@ src/stuck/           the stuck detector and hang watch (#16)
 
 ## Map
 
-The effort is mapped as [#1 Map: pokerogue-mcp v1](https://github.com/IIxauII/pokerogue-mcp/issues/1) — the destination, every decision locked so far with its evidence, and what is still fog. `CONTEXT.md` is the vocabulary; ADRs are in `docs/adr/`.
+The effort is mapped as [#1 Map: Coachemon v1](https://github.com/IIxauII/coachemon/issues/1) — the destination, every decision locked so far with its evidence, and what is still fog. `CONTEXT.md` is the vocabulary; ADRs are in `docs/adr/`.
 
 ## Non-goals
 
 - Reimplementing game rules.
-- Any kind of multiplayer, ranking, or account farming. One account, one agent, playing the game as a player would. (v1 uses the dev's own existing account, decided in [#5](https://github.com/IIxauII/pokerogue-mcp/issues/5) — so agent mistakes land on a real save. The server never handles credentials; the session rides on a persisted cookie.)
+- Any kind of multiplayer, ranking, or account farming. One account, one agent, playing the game as a player would. (v1 uses the dev's own existing account, decided in [#5](https://github.com/IIxauII/coachemon/issues/5) — so agent mistakes land on a real save. The server never handles credentials; the session rides on a persisted cookie.)
 - Playing *well*. The finish line is surviving a run unattended, not score or wave depth.

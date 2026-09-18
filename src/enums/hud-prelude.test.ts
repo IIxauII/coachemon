@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 // @ts-expect-error: plain .mjs without type declarations
-import { bundle, enumPrelude } from "../../skills/coach-pokerogue/scripts/hud-bundle.mjs";
+import { bundle, enumPrelude } from "../../skills/coachemon/scripts/hud-bundle.mjs";
 
 test("injects only the members the source names, at the generated values", () => {
   const out = enumPrelude("if (mv.category === MoveCategory.STATUS && t !== MoveTarget.USER) x = MoveCategory.PHYSICAL;");
