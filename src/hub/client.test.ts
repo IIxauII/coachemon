@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { createServer as createSocketServer } from "node:net";
 import { after, test } from "node:test";
 import { WebSocketServer } from "ws";
 import { compare, HubClient, spawnHub, type HubProcess } from "./client.ts";
-import { fakeClient, readyTab } from "./fake-ext.ts";
+import { deadSpawn, fakeClient, freePort, readyTab } from "./fake-ext.ts";
 import { Hub, startHub } from "./hub.ts";
 import type { ClientReply, ToClient } from "../protocol/wire.ts";
 
@@ -15,26 +14,10 @@ after(() => {
   for (const s of shut) s();
 });
 
-/** A port nothing is listening on right now: the hub's ports are fixed, so the tests pick their own. */
-function freePort(): Promise<number> {
-  return new Promise(resolve => {
-    const s = createSocketServer();
-    s.listen(0, "127.0.0.1", () => {
-      const port = (s.address() as { port: number }).port;
-      s.close(() => resolve(port));
-    });
-  });
-}
-
 async function hub(o: { version?: string; port?: number } = {}): Promise<Hub> {
   const h = await startHub({ port: o.port ?? 0, version: o.version ?? "1.0.0", timeoutMs: 300 });
   shut.push(() => h.close());
   return h;
-}
-
-/** A hub start that never comes up, saying why: the default for tests that must not spawn a real process. */
-function deadSpawn(stderr = "no hub here"): HubProcess {
-  return { pid: null, stderr: () => stderr, exited: Promise.resolve(1), release: () => {} };
 }
 
 /** A hub start that really does come up, in this process. */

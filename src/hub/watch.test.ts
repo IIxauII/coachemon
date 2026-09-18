@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
-import { createServer as createSocketServer } from "node:net";
 import { after, test } from "node:test";
 import { cardLine, feedLine, runWatch } from "./watch.ts";
-import { fakeClient, readyTab, type Peer } from "./fake-ext.ts";
+import { deadSpawn, fakeClient, freePort, readyTab, type Peer } from "./fake-ext.ts";
 import { startHub, type Hub } from "./hub.ts";
-import type { HubProcess } from "./client.ts";
 import type { FromExtension, HubState, ToExtension } from "../protocol/wire.ts";
 
 const shut: (() => void)[] = [];
@@ -13,25 +11,11 @@ after(() => {
   for (const s of shut) s();
 });
 
-/** A port nothing is listening on right now: the hub's ports are fixed, so the tests pick their own. */
-function freePort(): Promise<number> {
-  return new Promise(resolve => {
-    const s = createSocketServer();
-    s.listen(0, "127.0.0.1", () => {
-      const port = (s.address() as { port: number }).port;
-      s.close(() => resolve(port));
-    });
-  });
-}
-
 async function hub(port = 0): Promise<Hub> {
   const h = await startHub({ port, version: "1.0.0", timeoutMs: 400 });
   shut.push(() => h.close());
   return h;
 }
-
-/** A hub start that never comes up: nothing here may spawn a real detached process. */
-const deadSpawn = (): HubProcess => ({ pid: null, stderr: () => "no hub here", exited: Promise.resolve(1), release: () => {} });
 
 /** The CLI against a hub, with a fast retry, collecting its lines; `stop` ends the loop. */
 function watching(port: number, retryMs = 20): { lines: string[]; stop: () => void; done: Promise<void> } {
@@ -43,7 +27,7 @@ function watching(port: number, retryMs = 20): { lines: string[]; stop: () => vo
     retryMs,
     print: l => lines.push(l),
     signal: ac.signal,
-    spawnHub: deadSpawn,
+    spawnHub: () => deadSpawn(),
     portHolder: () => ({ process: null, pid: null }),
   });
   shut.push(() => ac.abort());
@@ -64,6 +48,14 @@ async function until(have: () => boolean, ms = 3_000): Promise<void> {
 async function answerCard(ext: Peer<ToExtension, FromExtension>, result: Record<string, unknown>): Promise<void> {
   const cmd = await ext.take<{ t: "cmd"; id: number }>(f => f.t === "cmd" && f.name === "card");
   ext.send({ t: "reply", id: cmd.id, ok: true, result });
+}
+
+/** Answers every `card` read, so a read the CLI should not have made shows up as a line rather than as silence. */
+function autoCard(ext: Peer<ToExtension, FromExtension>, result: Record<string, unknown>): void {
+  ext.ws.on("message", raw => {
+    const f = JSON.parse(String(raw)) as ToExtension;
+    if (f.t === "cmd" && f.name === "card") ext.send({ t: "reply", id: f.id, ok: true, result });
+  });
 }
 
 const CARD = { ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", text: "Gyarados L34 will KO Pikachu\nswitch to Blissey", summary: null };
@@ -191,6 +183,46 @@ test("a second tab prints TABS, and closing it prints RESUMED then a fresh card 
   await answerCard(ext, CARD);
   await until(() => w.lines.includes(BATTLE_LINE));
   assert.deepEqual(w.lines.slice(w.lines.indexOf("RESUMED")), ["RESUMED", BATTLE_LINE]);
+  w.stop();
+  await w.done;
+});
+
+test("a CLI that joins an already-split tab count reads the card once, not twice (§11.2)", async () => {
+  const h = await hub();
+  const ext = await readyTab(h.port, 1);
+  ext.send({ t: "tab", tab: 2, state: "ready", title: "PokéRogue" });
+  autoCard(ext, CARD);
+  const w = watching(h.port);
+  // The hub tells a subscriber about a split it joined into, so the split is reported without the loop's help (§7.5).
+  await until(() => w.lines.some(l => l.startsWith("TABS ")));
+
+  ext.send({ t: "tab", tab: 2, state: "gone", title: "PokéRogue" });
+  await until(() => w.lines.includes("RESUMED"));
+  await until(() => w.lines.includes(BATTLE_LINE));
+  // A few retries later the loop has not spent a second read on the same return.
+  await new Promise(r => setTimeout(r, 150));
+  assert.deepEqual(w.lines.filter(l => l === BATTLE_LINE), [BATTLE_LINE]);
+  w.stop();
+  await w.done;
+});
+
+test("a rung the TABS line replaced is printed again when it comes back (§11.2)", async () => {
+  const h = await hub();
+  const ext = await readyTab(h.port, 1);
+  const w = watching(h.port);
+  await answerCard(ext, NO_CARD);
+
+  // No ready tab: rung 7, once.
+  ext.send({ t: "tab", tab: 1, state: "gone", title: "PokéRogue" });
+  await until(() => w.lines.some(l => l.startsWith("Coachemon is connected")));
+
+  // Two tabs, then none: the player is left on a TABS line that no longer applies, so rung 7 has to say itself again.
+  ext.send({ t: "tab", tab: 1, state: "ready", title: "PokéRogue" });
+  ext.send({ t: "tab", tab: 2, state: "ready", title: "PokéRogue" });
+  await until(() => w.lines.some(l => l.startsWith("TABS ")));
+  ext.send({ t: "tab", tab: 1, state: "gone", title: "PokéRogue" });
+  ext.send({ t: "tab", tab: 2, state: "gone", title: "PokéRogue" });
+  await until(() => w.lines.filter(l => l.startsWith("Coachemon is connected")).length === 2);
   w.stop();
   await w.done;
 });

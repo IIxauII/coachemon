@@ -1,12 +1,30 @@
 /**
- * The fake extension and fake client the hub's tests drive it with. Both are real `ws` sockets on the loopback port
- * the hub bound, so the tests exercise the upgrade check too: a browser sends an extension-scheme `Origin` and a local
- * client sends none, exactly as the real ones do (§7.4).
+ * The fakes the hub's tests drive it with: an extension, a client, a port to bind and a hub start that never comes up.
+ * The two sockets are real `ws` sockets on the loopback port the hub bound, so the tests exercise the upgrade check
+ * too: a browser sends an extension-scheme `Origin` and a local client sends none, exactly as the real ones do (§7.4).
  */
+import { createServer } from "node:net";
 import { WebSocket } from "ws";
+import type { HubProcess } from "./client.ts";
 import { COMMAND_NAMES } from "../protocol/commands.ts";
 import { PROTOCOL } from "../protocol/version.ts";
 import type { ExtensionHello, Flavour, FromClient, FromExtension, Target, ToClient, ToExtension } from "../protocol/wire.ts";
+
+/** A port nothing is listening on right now: the hub's ports are fixed, so the tests pick their own. */
+export function freePort(): Promise<number> {
+  return new Promise(resolve => {
+    const s = createServer();
+    s.listen(0, "127.0.0.1", () => {
+      const port = (s.address() as { port: number }).port;
+      s.close(() => resolve(port));
+    });
+  });
+}
+
+/** A hub start that never comes up, saying why: the default for tests that must not spawn a real process. */
+export function deadSpawn(stderr = "no hub here"): HubProcess {
+  return { pid: null, stderr: () => stderr, exited: Promise.resolve(1), release: () => {} };
+}
 
 /** A socket with a frame queue: `take` waits for the next frame a predicate accepts, and fails the test on silence. */
 export class Peer<In, Out> {
