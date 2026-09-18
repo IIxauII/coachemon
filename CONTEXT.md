@@ -135,17 +135,23 @@ A run that ended without the party wiping — the game tore itself down and drop
 
 What a tool call reports about the game and the run, apart from its own payload: it did what it says, it is still waiting on the game, the agent is **stuck**, the run is over, or the run was **interrupted**. It is decided over the whole call: every wait, every press, and how the call ended (settled, out of time, or refused). A call that runs out of time can still report that the run was interrupted while it waited. When more than one applies, what happened to the run beats what the screen is doing, and both beat the clock.
 
+## Confidence
+
+How sure the **coach** is of something it claims, carried by the claim itself rather than left to the reader to guess:
+
+- **exact** — settled independently of how much of the **run** has been played, so it cannot drift.
+- **replay** — right only while the game's own draws are exactly the draws the coach made.
+- **estimate** — read off state that may have moved on by the time the thing it describes arrives.
+
+A claim is never surer than what it derives from. Confidence is claimed, then **scored**: it is checked against what actually happens, and a claim that has ever been wrong is marked as such for the rest of the run.
+
+Every **preview** field carries one, and so does the enemy's move in a **turn read**.
+
 ## Preview
 
 What the **run seed** already decides about something the run has not reached yet, read out ahead of time: a **wave** ahead, or the rewards a reroll the player hasn't paid for would bring. A preview is a read: it never advances the game or the run's own sequence of rolls.
 
-Each field of a preview carries its **confidence**, and a field is never surer than what it derives from:
-
-- **exact** — settled independently of how much of the run has been played, so it cannot drift.
-- **replay** — right only while the game's own draws for that wave are exactly the draws the preview made.
-- **estimate** — read off state that belongs to the current wave and may have moved on by the time the previewed wave arrives.
-
-Every confidence is also conditional on the run not changing first: a catch, an evolution, a shop pick or a biome change re-rolls what a preview was read from. Confidence is claimed, then **scored** — each field is checked against the wave when it actually arrives, and a field that has ever been wrong is marked as such for the rest of the run.
+Each field of a preview carries its own **confidence**, and all of them are conditional on the run not changing first: a catch, an evolution, a shop pick or a biome change re-rolls what a preview was read from.
 
 Not to be confused with a **tier**, which throughout is the game's own word for a rarity band (an encounter's, a species').
 
@@ -199,7 +205,7 @@ A move's **costs** are the traits that hurt its user, and are always named the s
 
 ## Turn read
 
-The **coach**'s look at a battle while the game waits on the player's decision (a command, a free switch or a faint replacement). Every damage number, enemy move, enemy switch and Terastallization the coach shows then comes from the game's own code, as the battle stands. Outside a decision the game can't be asked, so the coach falls back to numbers worked out from the type chart alone. A **card** built from a turn read stays up through the turn's animations, until the turn ends, the wave changes or a foe is sent in.
+The **coach**'s look at a battle while the game waits on the player's decision (a command, a free switch or a faint replacement). Every damage number, enemy move, enemy switch and Terastallization the coach shows then comes from the game's own code, as the battle stands. The enemy's move is the game's own decision rather than a guess at it, and carries a **confidence**: **exact**, except where a command of ours draws first and so decides which move the enemy picks, where it is a **replay** of that command. Outside a decision the game can't be asked, so the coach falls back to numbers worked out from the type chart alone. When the game's own code can't be asked *at* a decision, the coach says why and withholds the turn read rather than advising from an **estimate** — the fight, the team's plan and what lies ahead go quiet together. A **card** built from a turn read stays up through the turn's animations, until the turn ends, the wave changes or a foe is sent in.
 
 ## Hypothesis
 
