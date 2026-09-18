@@ -3,21 +3,12 @@
 // `claude plugin update` only picks up a new version when plugin.json changes.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
+import { stampVersion, versionArg } from "./release/version.ts";
 
-const version = process.argv[2];
-if (!version || !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version)) {
-  console.error("usage: node scripts/set-version.ts <semver>");
-  process.exit(1);
-}
+const version = versionArg("scripts/set-version.ts");
 
 execFileSync("npm", ["version", version, "--no-git-tag-version", "--allow-same-version"], { stdio: "inherit" });
 
-// Replace in place rather than re-serialise, to keep the manifest's hand formatting.
+// Replaced in place rather than re-serialised, to keep the manifest's hand formatting.
 const manifest = ".claude-plugin/plugin.json";
-const before = readFileSync(manifest, "utf8");
-const after = before.replace(/"version":\s*"[^"]*"/, `"version": "${version}"`);
-if (after === before && !before.includes(`"version": "${version}"`)) {
-  console.error(`no "version" field found in ${manifest}`);
-  process.exit(1);
-}
-writeFileSync(manifest, after);
+writeFileSync(manifest, stampVersion(readFileSync(manifest, "utf8"), version));

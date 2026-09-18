@@ -50,9 +50,9 @@ export default defineConfig({
     },
   }),
   zip: {
-    // The release artifacts (§14.2), named by `scripts/release/artifacts.ts`. `{{version}}` is the manifest's, so it
-    // is the stamped `package.json`'s three numbers. Only store builds are ever zipped, so no mode suffix is needed;
-    // Safari's name is not a template, so `zip:extension:done` renames that one.
+    // `{{version}}` is the manifest's, so the stamped `package.json`'s three numbers. Only store builds are ever
+    // zipped, so no mode suffix is needed. `zip:extension:done` below renames whatever this writes to what `zipName`
+    // says, which is the one name an artifact has (§14.2); the template only has to tell the browsers apart.
     artifactTemplate: "coachemon-{{browser}}-{{version}}.zip",
     sourcesTemplate: sourcesZipName("{{version}}"),
     // The AMO sources zip (§5.7): the repo root, limited to what `npx wxt build -b firefox` actually needs.
@@ -62,6 +62,8 @@ export default defineConfig({
       "src/protocol/**",
       "src/page/**",
       "src/enums/generated.ts",
+      // This config imports it for the artifact names, so `wxt build` inside the zip needs it to load at all (§5.7).
+      "scripts/release/artifacts.ts",
       "skills/coach-pokerogue/scripts/hud-bundle.mjs",
       "skills/coach-pokerogue/scripts/hud/**",
       "LICENSE",

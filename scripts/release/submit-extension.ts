@@ -14,26 +14,21 @@
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { isSemver, sourcesZipName, submits, zipName } from "./artifacts.ts";
+import { join } from "node:path";
+import { EXTENSION_DIR, releaseVersion, sourcesZipName, submitsToStores, zipName } from "./artifacts.ts";
+import { versionArg } from "./version.ts";
 
-const version = process.argv[2];
-if (!version || !isSemver(version)) {
-  console.error("usage: node scripts/release/submit-extension.ts <semver>");
-  process.exit(1);
-}
+const version = releaseVersion(versionArg("scripts/release/submit-extension.ts"));
 
-if (!submits(version)) {
+if (!submitsToStores(version)) {
   console.log(`extension-v${version} is a 0.x release: unlisted, so nothing is submitted to a store (§14.1)`);
   process.exit(0);
 }
 
-const extension = fileURLToPath(new URL("../../extension/", import.meta.url));
-const output = (name: string) => `.output/${name}`;
-
 // AMO's extension id is the gecko id (§5.3), read off the build that is about to be uploaded so it cannot drift from
 // what `manifestFor` wrote.
-const firefox = JSON.parse(readFileSync(`${extension}.output/firefox-mv3-store/manifest.json`, "utf8")) as {
+const built = join(EXTENSION_DIR, ".output", "firefox-mv3-store", "manifest.json");
+const firefox = JSON.parse(readFileSync(built, "utf8")) as {
   browser_specific_settings?: { gecko?: { id?: string } };
 };
 const gecko = firefox.browser_specific_settings?.gecko?.id;
@@ -41,6 +36,8 @@ if (!gecko) {
   console.error("the Firefox build carries no gecko id, so AMO has nothing to submit against");
   process.exit(1);
 }
+
+const output = (name: string) => join(".output", name);
 
 // Safari is not a store: §14.6 packages and notarizes it by hand from the release's own zip.
 execFileSync(
@@ -55,5 +52,5 @@ execFileSync(
     "--firefox-zip", output(zipName("firefox", version)),
     "--firefox-sources-zip", output(sourcesZipName(version)),
   ],
-  { cwd: extension, stdio: "inherit" },
+  { cwd: EXTENSION_DIR, stdio: "inherit" },
 );

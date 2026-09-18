@@ -279,7 +279,7 @@ A `extension` job in a new `.github/workflows/extension.yml` (picked here) on ev
 
 `wxt zip -b firefox` also produces the sources zip. `sourcesRoot` is the repo root, limited to:
 
-`extension/` (without `.output/` and `node_modules/`), `src/protocol/`, `src/page/`, `src/enums/generated.ts`, `skills/coach-pokerogue/scripts/hud-bundle.mjs`, `skills/coach-pokerogue/scripts/hud/`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, and a `SOURCES.md` for the reviewer:
+`extension/` (without `.output/` and `node_modules/`), `src/protocol/`, `src/page/`, `src/enums/generated.ts`, `scripts/release/artifacts.ts`, `skills/coach-pokerogue/scripts/hud-bundle.mjs`, `skills/coach-pokerogue/scripts/hud/`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, and a `SOURCES.md` for the reviewer:
 
 ```
 Requires Node >= 23.6 (TypeScript type stripping) and npm.
@@ -287,7 +287,7 @@ cd extension && npm ci && npx wxt build -b firefox --mode store
 Output: extension/.output/firefox-mv3-store/
 ```
 
-`hud-bundle.mjs` imports `src/enums/generated.ts`, which is why that file is included. CI stamps `extension/package.json` before zipping (§14.2), so the sources zip already carries the real version.
+`hud-bundle.mjs` imports `src/enums/generated.ts`, and `wxt.config.ts` imports `scripts/release/artifacts.ts` for the artifact names, which is why those two are included: without either, the reviewer's own build cannot even load the config. CI stamps `extension/package.json` before zipping (§14.2), so the sources zip already carries the real version.
 
 ---
 
@@ -829,7 +829,7 @@ Each was accepted knowingly by a closed ticket. None blocks building; a build ti
 | Orion after sleep/wake (orionfeedback #14474), long idle, hidden tab | [Agent transport on Orion](https://github.com/IIxauII/pokerogue-mcp/issues/150) | reconnect-on-wake |
 | AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/pokerogue-mcp/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110) | named fallbacks (§5.3, §8.1) |
 | A CWS reviewer accepts the declared remote code (`47-biome.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110) | declared Yes (§6) |
-| ~~Chrome Web Store API v2 can cancel a pending review~~ **confirmed** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
+| Chrome Web Store API v2 can cancel a pending review — **confirmed, no longer a premise** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
 | Firefox 128–139's toolbar-click consent satisfies AMO | this spec (§8.4) | if AMO objects, `required: ["websiteContent"]` |
 | Nintendo does not act on the -ÉMON name | [Name and listing identity](https://github.com/IIxauII/pokerogue-mcp/issues/105) | no trademark filed; answer the listing email |
 | Chrome's Local Network Access leaves extension workers alone as enforcement rolls out | [Loopback transport on Chrome and Firefox](https://github.com/IIxauII/pokerogue-mcp/issues/161) | none |

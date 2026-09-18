@@ -7,23 +7,19 @@
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import type { Target } from "../../src/protocol/wire.ts";
-import { isSemver, stampVersion } from "./artifacts.ts";
+import { EXTENSION_DIR, releaseVersion } from "./artifacts.ts";
+import { stampVersion, versionArg } from "./version.ts";
 
-const version = process.argv[2];
-if (!version || !isSemver(version)) {
-  console.error("usage: node scripts/release/stamp-extension.ts <semver>");
-  process.exit(1);
-}
+const version = releaseVersion(versionArg("scripts/release/stamp-extension.ts"));
 
-const extension = fileURLToPath(new URL("../../extension/", import.meta.url));
-const pkg = `${extension}package.json`;
+const pkg = join(EXTENSION_DIR, "package.json");
 writeFileSync(pkg, stampVersion(readFileSync(pkg, "utf8"), version));
 
 // `wxt zip` builds before it zips, so this is the build too. The Firefox run is the only one that also writes the AMO
 // sources zip, because that is where WXT turns `zipSources` on by itself.
 const targets: Target[] = ["chrome", "firefox", "safari"];
 for (const target of targets) {
-  execFileSync("npx", ["wxt", "zip", "-b", target, "--mode", "store"], { cwd: extension, stdio: "inherit" });
+  execFileSync("npx", ["wxt", "zip", "-b", target, "--mode", "store"], { cwd: EXTENSION_DIR, stdio: "inherit" });
 }

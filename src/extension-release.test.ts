@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 // @ts-expect-error: plain .mjs without type declarations, because semantic-release loads it as a plugin
 import { EXTENSION_PATHS, keep, touches } from "../scripts/release/extension-commits.mjs";
-import { isSemver, sourcesZipName, stampVersion, submits, zipName } from "../scripts/release/artifacts.ts";
+import { releaseVersion, sourcesZipName, submitsToStores, zipName } from "../scripts/release/artifacts.ts";
+import { isSemver, stampVersion } from "../scripts/release/version.ts";
 
 test("a commit counts for the extension when it touched anything the extension ships", () => {
   assert.equal(touches(["extension/src/background/index.ts"]), true);
@@ -40,10 +41,10 @@ test("keep drops the commits whose diff missed the extension", () => {
 });
 
 test("0.x never submits to a store, 1.0.0 on always does", () => {
-  assert.equal(submits("0.1.0"), false);
-  assert.equal(submits("0.37.2"), false);
-  assert.equal(submits("1.0.0"), true);
-  assert.equal(submits("2.3.4"), true);
+  assert.equal(submitsToStores("0.1.0"), false);
+  assert.equal(submitsToStores("0.37.2"), false);
+  assert.equal(submitsToStores("1.0.0"), true);
+  assert.equal(submitsToStores("2.3.4"), true);
 });
 
 test("a version is three numbers, with an optional prerelease", () => {
@@ -62,6 +63,13 @@ test("stamping the version leaves the rest of package.json as it was", () => {
   // Re-stamping the version it already carries is not a failure.
   assert.equal(stampVersion(stamped, "0.1.0"), stamped);
   assert.throws(() => stampVersion(`{ "name": "coachemon-extension" }`, "0.1.0"), /no "version" field/);
+});
+
+test("a prerelease is refused, because the artifacts could not be named for it", () => {
+  // WXT names a zip after the manifest, whose version is three numbers, so `submit` would look for a zip that the
+  // build wrote under a different name. `isSemver` admits a prerelease; the release stream does not.
+  assert.equal(releaseVersion("0.1.0"), "0.1.0");
+  assert.throws(() => releaseVersion("1.0.0-beta.1"), /cannot release a prerelease \(1\.0\.0-beta\.1\)/);
 });
 
 test("the release artifacts are named as the spec lists them", () => {

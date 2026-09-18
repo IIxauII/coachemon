@@ -5,7 +5,7 @@
  *
  * The wrapped plugins are not installed anywhere in this repo: they are semantic-release's own dependencies, and the
  * release toolchain is deliberately not a devDependency (see `.github/workflows/release.yml`). So resolution starts
- * from the running `semantic-release` bin rather than from this file, and happens on first use — the unit tests import
+ * from the running `semantic-release` bin rather than from this file, and happens on first use — the tests import
  * `touches` and `keep` without a semantic-release install in sight.
  *
  * Plain `.mjs`, because semantic-release loads a local plugin by path and Node would have to strip types for it.
@@ -45,24 +45,22 @@ async function plugin(name) {
 }
 
 async function load(name) {
-  // `process.argv[1]` is semantic-release's own bin; `commit-analyzer` and `release-notes-generator` are its
-  // dependencies, so they resolve from there whether npx installed it or a package did.
-  for (const from of [process.argv[1], import.meta.url]) {
-    try {
-      const resolved = createRequire(from).resolve(name);
-      const module = await import(pathToFileURL(resolved).href);
-      return module.default ?? module;
-    } catch {
-      // Try the next base; the throw below reports both having failed.
-    }
+  // `process.argv[1]` is semantic-release's own bin, and `commit-analyzer` and `release-notes-generator` are its
+  // dependencies, so they resolve from there whether npx installed semantic-release or a package did.
+  try {
+    const module = await import(pathToFileURL(createRequire(process.argv[1]).resolve(name)).href);
+    return module.default ?? module;
+  } catch (cause) {
+    throw new Error(`cannot resolve ${name}; it ships with semantic-release, so run this under semantic-release`, {
+      cause,
+    });
   }
-  throw new Error(`cannot resolve ${name}; it ships with semantic-release, so run this plugin under semantic-release`);
 }
 
-const ours = context => ({ ...context, commits: keep(context.commits, gitPaths(context.cwd)) });
+const extensionOnly = context => ({ ...context, commits: keep(context.commits, gitPaths(context.cwd)) });
 
 export const analyzeCommits = async (config, context) =>
-  (await plugin("@semantic-release/commit-analyzer")).analyzeCommits(config, ours(context));
+  (await plugin("@semantic-release/commit-analyzer")).analyzeCommits(config, extensionOnly(context));
 
 export const generateNotes = async (config, context) =>
-  (await plugin("@semantic-release/release-notes-generator")).generateNotes(config, ours(context));
+  (await plugin("@semantic-release/release-notes-generator")).generateNotes(config, extensionOnly(context));
