@@ -9,6 +9,13 @@
 // The names and the kinds are the relay's (`extension/src/relay/channel.ts`), kept here by hand because the panel is one
 // source the extension bundles rather than imports; test/cardeventtest.mjs runs what ships past the relay's own
 // validators, so a detail the extension would drop fails the tests instead of a live tab.
+import { sandboxBreachCount } from "./01-core.js";
+import { previewStats } from "./48-preview.js";
+import { rerollStats } from "./50-reroll.js";
+import { cardEvent, cardSummary } from "./60-card.js";
+import { cardText, el } from "./90-render.js";
+import { lastFailure, shownCard, tick } from "./98-tick.js";
+
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
 const CARD_KINDS = ["battle", "learn", "reward", "biome", "encounter"];
 const hudBuild = typeof COACHEMON_BUILD === "string" ? COACHEMON_BUILD : null;

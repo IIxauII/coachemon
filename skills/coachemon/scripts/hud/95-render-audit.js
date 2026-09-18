@@ -1,4 +1,4 @@
-// Team audit section of the rewards card (the 49-audit model) and its plain-text summary. Loads after 90-render: only
+// Team audit section of the rewards card (the 50-audit model) and its plain-text summary. Loads after 90-render: only
 // call these from a draw or a summary, never at load time.
 // Collapsed, in either view: one line — `🩺 team: 4 issues · Flygon (W165) has one answer: Dudunsparce Blizzard (70%) [+]`.
 // Full view opens it by itself when the next big fight is named and the roster finds a single answer or a speed gap:

@@ -2,9 +2,10 @@
 // replaced. Any other mode prints probe.js with only the HUD modules it imports. Used by read.sh and by the tests.
 // Usage: node hud-bundle.mjs <hud|hud-off|battle|starters>
 //
-// Modules. The page can't load real ES modules (read.sh injects a classic inline <script>, and tests `eval` it), so a
-// file that uses `import` or `export` is turned into a function with its own scope. The rules, each failing the
-// bundle with a named error (`err.code`):
+// Modules. The page can't load real ES modules (read.sh injects a classic inline <script>, and tests `eval` it), so
+// every file is turned into a function with its own scope. There is no shared scope: a file reaches another file's
+// name only by importing it, and a reference to a name it never imported is a ReferenceError when the bundle runs —
+// which `npm test` does. The rules, each failing the bundle with a named error (`err.code`):
 //   - Named imports only, at the top of the file, before any code: `import { a, b } from "./NN-name.js";`
 //     (`"./hud/NN-name.js"` from probe.js). Default, star, side-effect imports, `as` renames and an import below code
 //     are `unsupported-form`.
@@ -12,20 +13,13 @@
 //     needs is read and written through functions, since an imported binding never sees a reassignment. Default,
 //     star, list and re-exports are `unsupported-form`.
 //   - The number prefix is the layer order: a file imports only from lower-numbered files (`forward-import`).
-//   - An imported name must be one the target declares: an export of a module, a top-level name of a flat file
-//     (`undeclared-import`); the target must exist (`missing-file`).
+//   - An imported name must be one the target exports (`undeclared-import`); the target must exist (`missing-file`).
 //   - `// @only <importers>: <names>` restricts who may import those exports, by file name without `.js`. `tests`
 //     means expose mode only. Any other importer fails with `only-violation`.
-// A module sees only its imports, the injected enums and page globals (`window`, `document`, `Phaser`): it is defined
-// outside the shared scope the flat files live in.
-//
-// Transition (until every file is a module): a module's exports are also declared in the shared scope, so flat files
-// keep using them by name, and a module's import from a flat file resolves to that file's top-level name. Flat files'
-// references to later files are tolerated; import lines are held to the rules from the start.
+// A module sees only its imports, the injected enums and page globals (`window`, `document`, `Phaser`).
 //
 // Expose mode (`bundle("hud", { expose: true })`, tests only): `globalThis.__hud["NN-name"]` holds each module's
-// exports, `@only tests` names included, and, for a flat file, its top-level names (read live, through getters).
-// Private module names are never exposed.
+// exports, `@only tests` names included. Private names are never exposed.
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import * as generated from "../../../src/enums/generated.ts";
@@ -135,72 +129,10 @@ export const stripComments = src => {
   return out.replace(/[ \t]+$/gm, "").replace(/\n{2,}/g, "\n");
 };
 
-// The names a destructuring pattern's braces or brackets declare (`{ a, b: c, d = 1, ...e }` → a, c, d, e).
-const patternNames = inner => {
-  const out = [];
-  let depth = 0, part = "";
-  for (const ch of `${inner},`) {
-    if ("([{".includes(ch)) depth++;
-    if (")]}".includes(ch)) depth--;
-    if (ch === "," && depth === 0) {
-      const p = part.trim().replace(/^\.\.\./, "").replace(/=[\s\S]*$/, "").trim();
-      const name = (p.includes(":") ? p.slice(p.indexOf(":") + 1) : p).trim();
-      if (IDENT.test(name)) out.push(name);
-      part = "";
-    } else part += ch;
-  }
-  return out;
-};
-
-// Top-level names a flat file declares: `function`, `class`, and every declarator of a `const` / `let` / `var`
-// statement that starts at column 0. `lets` holds the ones that can be reassigned.
-export const topNames = src => {
-  const names = new Set(), lets = new Set();
-  for (const m of src.matchAll(/^(?:async\s+)?(?:function\s*\*?|class)\s+([A-Za-z_$][\w$]*)/gm)) names.add(m[1]);
-  for (const m of src.matchAll(/^(const|let|var)\s+/gm)) {
-    const mutable = m[1] !== "const";
-    let i = m.index + m[0].length, depth = 0, prev = "", expectName = true;
-    while (i < src.length) {
-      if (expectName && depth === 0) {
-        const rest = src.slice(i);
-        const id = /^\s*([A-Za-z_$][\w$]*)/.exec(rest);
-        const open = /^\s*([{[])/.exec(rest);
-        if (open) {
-          const start = i + open[0].length;
-          let j = start, dd = 1;
-          while (j < src.length && dd) {
-            const k = skipLiteral(src, j, "{");
-            if (k !== j) { j = k; continue; }
-            if ("([{".includes(src[j])) dd++;
-            else if (")]}".includes(src[j])) dd--;
-            j++;
-          }
-          for (const n of patternNames(src.slice(start, j - 1))) { names.add(n); if (mutable) lets.add(n); }
-          i = j; prev = "}"; expectName = false; continue;
-        }
-        if (id) { names.add(id[1]); if (mutable) lets.add(id[1]); i += id[0].length; prev = "a"; expectName = false; continue; }
-        break;
-      }
-      const k = skipLiteral(src, i, prev);
-      if (k !== i) { i = k; prev = "a"; continue; }
-      const ch = src[i];
-      if ("([{".includes(ch)) depth++;
-      else if (")]}".includes(ch)) depth--;
-      if (depth < 0 || (depth === 0 && ch === ";")) break;
-      if (depth === 0 && ch === ",") expectName = true;
-      // A statement without a semicolon ends where the next one starts at column 0.
-      if (depth === 0 && ch === "\n" && /^[^\s)\]}.,?:+\-*/|&]/.test(src[i + 1] ?? "")) break;
-      if (!/\s/.test(ch)) prev = ch;
-      i++;
-    }
-  }
-  return { names, lets };
-};
-
 const STATIC_IMPORT = /^\s*import\s*(?:[{*"'`]|[A-Za-z_$][\w$]*\s*(?:,|from\b))/;
 
-// Parses one file: its imports, exports, `@only` rules and, for a flat file, its top-level names. `pathRe` matches an
-// import path and captures the target's file name.
+// Parses one file: its imports, exports and `@only` rules. `pathRe` matches an import path and captures the target's
+// file name.
 export const parseFile = (file, src, pathRe) => {
   const id = file.replace(/\.js$/, "");
   const lines = src.split("\n");
@@ -264,15 +196,13 @@ export const parseFile = (file, src, pathRe) => {
     }
   });
 
-  const module = imports.length > 0 || exports.size > 0;
-  return { file, id, src, module, imports, exports, only, body: body.join("\n"), ...(module ? {} : topNames(src)) };
+  return { file, id, src, imports, exports, only, body: body.join("\n") };
 };
 
 const numberOf = id => (/^(\d+)-/.exec(id)?.[1] ?? null);
 const q = JSON.stringify;
 
-// Checks every import against the rules. `files` in load order; `entry` (the probe) may import from any numbered
-// file, but only from modules, since a flat file has no scope of its own to take a name from.
+// Checks every import against the rules. `files` in load order; `entry` (the probe) may import from any numbered file.
 const check = (files, entry) => {
   const byId = new Map(files.map(f => [f.id, f]));
   for (const f of entry ? [...files, entry] : files) {
@@ -283,10 +213,9 @@ const check = (files, entry) => {
       if (f !== entry && (mine == null || theirs == null || +theirs >= +mine)) {
         throw new BundleError("forward-import", f.file, line, `imports from ${t.file}; a file imports only from lower-numbered files`);
       }
-      if (f === entry && !t.module) throw new BundleError("unsupported-form", f.file, line, `imports from ${t.file}, which is not a module`);
       for (const n of names) {
-        if (!(t.module ? t.exports.has(n) : t.names.has(n))) {
-          throw new BundleError("undeclared-import", f.file, line, `imports ${n}, which ${t.file} doesn't ${t.module ? "export" : "declare"}`);
+        if (!t.exports.has(n)) {
+          throw new BundleError("undeclared-import", f.file, line, `imports ${n}, which ${t.file} doesn't export`);
         }
         const allowed = t.only.get(n);
         if (allowed && !allowed.has(f.id)) {
@@ -300,38 +229,29 @@ const check = (files, entry) => {
 
 const braces = list => (list.length ? `{ ${list.join(", ")} }` : "{}");
 const factory = f => `// ---- ${f.file}\n${q(f.id)}: (${braces(f.imports.flatMap(i => i.names))}) => {\n${f.body}\nreturn ${braces([...f.exports.keys()])};\n},`;
-// The call that runs a module, handing it its imports: from a module's instance, or a flat file's top-level name.
-const instantiate = (f, byId) => `__hud[${q(f.id)}] = __hudModules[${q(f.id)}](${braces(f.imports.flatMap(({ from, names }) =>
-  names.map(n => (byId.get(from).module ? `${n}: __hud[${q(from)}].${n}` : n))))});`;
+// The call that runs a module, handing it its imports from the modules it named.
+const instantiate = f => `__hud[${q(f.id)}] = __hudModules[${q(f.id)}](${braces(f.imports.flatMap(({ from, names }) =>
+  names.map(n => `${n}: __hud[${q(from)}].${n}`)))});`;
 
-// Links parsed files into one script body. `hoist`: declare every module's exports in the shared scope (the HUD's
-// transition); otherwise only `entry`'s imports are declared, for the entry's code after them.
+// Links parsed files into one script body: the module factories, then a call per file in load order, so each one's
+// imports are built before it runs. With an `entry` (the probe) its imports are destructured for the code after them;
+// otherwise `expose` decides whether the instances are reachable from outside.
 const link = (files, { expose = false, entry = null } = {}) => {
-  const byId = check(files, entry);
-  const modules = files.filter(f => f.module);
-  const enums = enumPrelude([...files.map(f => (f.module ? f.body : f.src)), entry?.body ?? ""].join("\n"));
+  check(files, entry);
+  const enums = enumPrelude([...files.map(f => f.body), entry?.body ?? ""].join("\n"));
   const out = [
     `// ---- enums (src/enums/generated.ts, v${generated.GENERATED_GAME_VERSION})`,
     ...(enums ? [enums] : []),
-    `const __hudModules = {\n${modules.map(factory).join("\n")}\n};`,
+    `const __hudModules = {\n${files.map(factory).join("\n")}\n};`,
   ];
   if (entry) {
-    out.push("const __hud = {};", ...modules.map(f => instantiate(f, byId)));
+    out.push("const __hud = {};", ...files.map(instantiate));
     for (const { from, names } of entry.imports) out.push(`const { ${names.join(", ")} } = __hud[${q(from)}];`);
     out.push(`// ---- ${entry.file}\n${entry.body}`);
     return out.join("\n");
   }
-  const shared = [expose ? "const __hud = globalThis.__hud = {};" : "const __hud = {};"];
-  for (const f of files) {
-    if (f.module) {
-      shared.push(instantiate(f, byId));
-      if (f.exports.size) shared.push(`const { ${[...f.exports.keys()].join(", ")} } = __hud[${q(f.id)}];`);
-      continue;
-    }
-    shared.push(`// ---- ${f.file}\n${f.src}`);
-    if (expose) shared.push(`__hud[${q(f.id)}] = { ${[...f.names].map(n => `get ${n}() { return ${n}; }`).join(", ")} };`);
-  }
-  out.push(`(() => {\n${shared.join("\n")}\n})();`);
+  const run = [expose ? "const __hud = globalThis.__hud = {};" : "const __hud = {};", ...files.map(instantiate)];
+  out.push(`(() => {\n${run.join("\n")}\n})();`);
   return out.join("\n");
 };
 

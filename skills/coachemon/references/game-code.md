@@ -1446,7 +1446,7 @@ one would throw. That drops only that option (each runs under its own `try`), no
 
 ## 15. Rewards judged by who they go to: held items, mints, EXP and the level cap
 
-`50-items.js` judges these rewards on the member they'd go to; `50-shop.js` keeps needs, TMs, balls and the tier
+`51-items.js` judges these rewards on the member they'd go to; `52-shop.js` keeps needs, TMs, balls and the tier
 fallback. The HUD calls only select filters and `getMaxExpLevel`; everything else here is restated from the source.
 
 **Ids.** `WeightedModifierType` stamps each pool entry with its key in `modifierTypeInitObj`
@@ -1525,7 +1525,7 @@ scale) are untested against how a strong player would rank them.
 
 ## 16. TMs: who can be taught, and how often battles are doubles
 
-Read at the pinned tag (`v1.12.0.11`). `50-shop.js` judges a TM with the learn card's own decision (`learnAdvice`,
+Read at the pinned tag (`v1.12.0.11`). `52-shop.js` judges a TM with the learn card's own decision (`learnAdvice`,
 `40-learn.js`); this section is what it reads besides the move.
 
 **Fainted members.** `TmModifierType`'s select filter (`src/modifier/modifier-type.ts:1128`) is
@@ -1613,7 +1613,7 @@ each decided from what the preview hands over per foe (types, ability, passive, 
 
 ## 17. The team audit: relearning, held items, EXP, status immunity and speed
 
-`49-audit.js` checks how the party is built, between waves, on the rewards card. It calls one game function
+`50-audit.js` checks how the party is built, between waves, on the rewards card. It calls one game function
 (`getLearnableLevelMoves`) and scores moves with the learn card's scorer (`40-learn.js`); the rest is below.
 
 **Memory Mushroom.** `RememberMoveModifierType`'s select filter (`src/modifier/modifier-type.ts:730`) greys out a
@@ -1802,7 +1802,7 @@ PLAYER, n)` and `getPlayerModifierTypeOptions(count, party, lock ? tiers : undef
 `src/phases/select-modifier-phase.ts:46`) — never the
 live phase's, which counts its custom settings. Once with the lock as it stands and, with a Lock Capsule, once
 toggled, each from the same state; then `regenerate` for the live reroll count restores the tables (nothing reads them
-before the next non-copy roll regenerates) and the sandbox restores the stream. Offers are judged on `50-shop.js`'s
+before the next non-copy roll regenerates) and the sandbox restores the stream. Offers are judged on `52-shop.js`'s
 scale (≈10 a tier); `REROLL_GAIN` 5 is a first cut.
 
 **Unmeasured.** Whether a real reroll matches its preview: the HUD scores every reroll against the last preview for it

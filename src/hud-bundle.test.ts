@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 // @ts-expect-error: plain .mjs without type declarations
-import { bundle, stripComments, topNames } from "../skills/coachemon/scripts/hud-bundle.mjs";
+import { bundle, stripComments } from "../skills/coachemon/scripts/hud-bundle.mjs";
 
 type Files = [string, string][];
 const hud = (files: Files, expose = false): string => bundle("hud", { files, expose });
@@ -49,11 +49,12 @@ test("unsupported import and export forms fail by name", () => {
   fails([["01-a.js", "export const { a, b } = { a: 1, b: 2 };\n"]], "unsupported-form", /unrecognised export/);
 });
 
-test("imports must name what the target declares", () => {
+test("imports must name what the target exports", () => {
   fails([["01-core.js", core], ["02-x.js", `import { secret } from "./01-core.js";\nexport const x = secret;\n`]],
     "undeclared-import", /imports secret, which 01-core\.js doesn't export/);
-  fails([["01-flat.js", "const here = 1;\n"], ["02-x.js", `import { gone } from "./01-flat.js";\nexport const x = gone;\n`]],
-    "undeclared-import", /which 01-flat\.js doesn't declare/);
+  // A file that exports nothing is still a module with its own scope: none of its names can be imported.
+  fails([["01-quiet.js", "const here = 1;\n"], ["02-x.js", `import { here } from "./01-quiet.js";\nexport const x = here;\n`]],
+    "undeclared-import", /imports here, which 01-quiet\.js doesn't export/);
   fails([["02-x.js", `import { a } from "./01-none.js";\nexport const x = a;\n`]], "missing-file", /01-none\.js, which doesn't exist/);
 });
 
@@ -61,41 +62,23 @@ test("export let fails", () => {
   fails([["01-a.js", "export let n = 0;\n"]], "export-let", /01-a\.js:1: `export let`/);
 });
 
-test("expose mode: module exports, flat names live, private names hidden", () => {
+test("expose mode: every module's exports, private names hidden", () => {
   const got = load([
     ["01-core.js", `// @only tests: probeOnly\n${core}export const probeOnly = () => secret;\n`],
-    ["02-flat.js", "let count = 0;\nconst bump = () => ++count, sum = add(2, 3);\nfunction later() { return twice(sum); }\n"],
-    ["03-mod.js", `import { twice } from "./01-core.js";\nimport { bump, later } from "./02-flat.js";\nexport const run = () => [bump(), later(), twice(1)];\n`],
+    ["02-count.js", `import { add } from "./01-core.js";\nlet count = 0;\nexport const bump = () => ++count;\nexport const sum = add(2, 3);\n`],
+    ["03-mod.js", `import { twice } from "./01-core.js";\nimport { bump, sum } from "./02-count.js";\nexport const run = () => [bump(), twice(sum), twice(1)];\n`],
   ]);
   assert.deepEqual(Object.keys(got["01-core"]).sort(), ["add", "probeOnly", "twice"]);
   assert.equal((got["01-core"].probeOnly as () => number)(), 1);
+  assert.deepEqual(Object.keys(got["02-count"]).sort(), ["bump", "sum"], "`count` is private to its module");
   assert.deepEqual((got["03-mod"].run as () => number[])(), [1, 10, 2]);
-  assert.equal(got["02-flat"].count, 1, "a flat let is read live");
-  assert.equal(got["02-flat"].sum, 5, "a flat file uses a module export by name");
 });
 
-test("a module sees only its imports, not the shared scope", () => {
+test("a file sees only its imports: there is no shared scope", () => {
   assert.throws(() => load([
-    ["01-flat.js", "const shared = 1;\n"],
+    ["01-other.js", "const shared = 1;\n"],
     ["02-mod.js", "export const x = shared;\n"],
   ]), /shared is not defined/);
-});
-
-test("top-level names of a flat file", () => {
-  const { names, lets } = topNames([
-    "const a = 1, b = f(x, y), c = /,[)]/.test(s) ? `${d, e}` : 2;",
-    "let { p, q: r, s = 1, ...t } = obj, [u] = arr;",
-    "function g() { const inner = 1; }",
-    "async function h() {}",
-    "const k = (() => {",
-    "  const hidden = 1;",
-    "  return 1;",
-    "})()",
-    "class K {}",
-    "const last = 1",
-  ].join("\n"));
-  assert.deepEqual([...names].sort(), ["K", "a", "b", "c", "g", "h", "k", "last", "p", "r", "s", "t", "u"]);
-  assert.deepEqual([...lets].sort(), ["p", "r", "s", "t", "u"]);
 });
 
 test("hud-off is the prelude alone, and the probe carries only its imports", () => {

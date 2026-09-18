@@ -1,4 +1,4 @@
-// Reroll preview on the rewards card (the `rerollAhead` model from 50-shop's `rerollAdvice`) and its plain-text line.
+// Reroll preview on the rewards card (the `rerollAhead` model from 52-shop's `rerollAdvice`) and its plain-text line.
 // Loads after 90-render: only call these from a draw or a summary, never at load time.
 // Mini: nothing unless a reroll is worth it — `🎲 reroll $500 → Leftovers ✓`. Full: a line per roll (the lock as it
 // stands, then toggled when a Lock Capsule is held) with its cost and verdict, and the offers of the first under it.

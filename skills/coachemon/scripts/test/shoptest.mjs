@@ -563,7 +563,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   const hud = globalThis.__hud;
-  const { rewardsModel } = hud["50-shop"], { rerollCheck, rerollStats } = hud["50-reroll"];
+  const { rewardsModel } = hud["52-shop"], { rerollCheck, rerollStats } = hud["50-reroll"];
   const { cardSummary } = hud["60-card"], { tick } = hud["98-tick"];
   globalThis.__sm = rewardsModel;
   globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollCheck, rerollStats, cardSummary,

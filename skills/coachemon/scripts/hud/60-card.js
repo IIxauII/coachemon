@@ -19,9 +19,9 @@ import { encounterModel, encounterSummary } from "./46-encounter.js";
 import { biomeModel, biomeSummary } from "./47-biome.js";
 import { previewNext, previewSummary } from "./48-preview.js";
 import { aheadModel, learnRoster, aheadSummary } from "./49-ahead.js";
-import { auditSummary } from "./49-audit.js";
+import { auditSummary } from "./50-audit.js";
 import { spliceScreen, fusionModel, fusionSummary } from "./49-fusion.js";
-import { rewardsModel, rewardsSummary } from "./50-shop.js";
+import { rewardsModel, rewardsSummary } from "./52-shop.js";
 import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
 
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;

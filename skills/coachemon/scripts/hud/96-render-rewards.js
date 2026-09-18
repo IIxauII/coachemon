@@ -1,4 +1,4 @@
-// Rewards card (the 50-shop model): what to buy, what free reward to take and who it goes to, then the sections the
+// Rewards card (the 52-shop model): what to buy, what free reward to take and who it goes to, then the sections the
 // screen is judged against — the reroll ahead, the team audit, the next wave and the next big fight.
 import { FS, bar, dim, h, itemImg, line, mon, sep, tab, view } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";

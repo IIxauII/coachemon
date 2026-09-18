@@ -3,13 +3,15 @@
 // (restorePoints / restorePercent, moveId, pokeballType), by who in the party the game itself would let use them
 // (PokemonModifierType.selectFilter: null = usable — TM compatibility, evolution/form-change items, held-item stack
 // limits), and only then by rarity tier. Held items, mints, EXP items, candy, vitamins and evolution items are judged
-// on the member they'd go to by 50-items.js; nothing here depends on remembering what an item does.
-const isA = (t, name) => {
-  for (let p = t && Object.getPrototypeOf(t); p && p !== Object.prototype; p = Object.getPrototypeOf(p)) {
-    if (p.constructor?.name === name) return true;
-  }
-  return false;
-};
+// on the member they'd go to by 51-items.js; nothing here depends on remembering what an item does.
+import { TIER_NAMES, TYPES, iconOf } from "./01-core.js";
+import { waveKind } from "./03-calendar.js";
+import { learnAdvice, learnMoveById } from "./40-learn.js";
+import { aheadModel, doubleOdds, learnRoster } from "./49-ahead.js";
+import { teamAudit } from "./50-audit.js";
+import { rerollPreview, rerollSummary } from "./50-reroll.js";
+import { isA, rewardContext, rewardValue } from "./51-items.js";
+
 const isRevive = t => isA(t, "PokemonReviveModifierType");
 const isHeal = t => isA(t, "PokemonHpRestoreModifierType") && !isRevive(t);
 const isPp = t => isA(t, "PokemonPpRestoreModifierType");
@@ -64,7 +66,8 @@ const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === Challe
 // Status moves are scored on the same scale as attacks now (#70), so most of them land in the first branch — the
 // `setup` field rides along on the recipient either way, because "setup TM for Comfey (+1 SpA/SpD)" says more than
 // "over Tackle".
-const tmAdvice = (mv, users, ctx) => {
+// @only tests: tmAdvice
+export const tmAdvice = (mv, users, ctx) => {
   const all = users.map(p => ({ p, a: learnAdvice(p, mv, ctx) }));
   const recipient = x => ({ icon: iconOf(x.p), name: x.p.name, forget: x.a.forget, against: x.a.against, slot: x.a.slot, gain: x.a.gain, reason: x.a.reason,
     ...(x.a.setup ? { setup: x.a.setup.text } : {}), ...(x.p.hp <= 0 ? { fainted: true } : {}) });
@@ -87,7 +90,7 @@ const shopTier = t => {
 // Forms that need the key item: mega forms for the Mega Bracelet, gigantamax for the Dynamax Band.
 const hasFormKey = (p, re) => [p.species, p.fusionSpecies].some(sp => (sp?.forms ?? []).some(f => re.test(f?.formKey ?? "")));
 
-const rewardsModel = (s, h) => {
+export const rewardsModel = (s, h) => {
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
   // The reward before a big fight is the last chance to patch the team up. What counts as one is the run calendar's
@@ -253,7 +256,7 @@ const rewardsModel = (s, h) => {
         }
       }
     } else if (isA(t, "EvolutionItemModifierType") || isA(t, "FormChangeItemModifierType")) {
-      // 50-items.js takes evolution items whose users can be told; what's left is unknown, or a form change.
+      // 51-items.js takes evolution items whose users can be told; what's left is unknown, or a form change.
       const evo = isA(t, "EvolutionItemModifierType");
       if (users) extra.users = users.map(p => p.name);
       if (users?.length) { v = evo ? 25 : 15; why = `${evo ? "evolves" : "changes form of"} ${users[0].name}`; }
@@ -269,7 +272,7 @@ const rewardsModel = (s, h) => {
     } else if (isA(t, "PokemonHeldItemModifierType")) {
       if (users) extra.users = users.map(p => p.name);
       if (users && !users.length) { v -= 8; why = "everyone's at max stack"; }
-      else { v += 3; why = "held item"; } // one 50-items.js has no rule for
+      else { v += 3; why = "held item"; } // one 51-items.js has no rule for
     }
     return {
       name: t.name, icon: t.iconImage, v, why, covers,
@@ -323,7 +326,7 @@ const rerollAdvice = (preview, judge, now, money, afterBuys) => {
 };
 
 // `take Leftovers → Garchomp · buy Super Potion · reroll $500 → …`, for the watcher and the battle read.
-const rewardsSummary = m => {
+export const rewardsSummary = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   const take = p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null;
   const buys = m.buys.length ? `buy ${m.buys.map(x => x.name).join(", ")}` : null;
