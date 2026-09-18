@@ -12,10 +12,14 @@
 // beam, each exchange's likelier ending carried on and the others weighed in its value; the enemy's choices are not
 // branched. Mid-exchange enemy switches, status, stat changes and doubles are not modelled — doubles are planned as
 // one slot against one foe at a time.
+import { TYPES, effectiveness, iconOf, squeezeDist, typesOf } from "./01-core.js";
+import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
+import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
+
+// @only tests: tpHealProfile, tpSendScore, tpFight, tpTables
 const TP_BEAM = 24;
 const TP_TURNS = 15;
 const TP_BRANCHES = 4;
-let teamPlanCache = { key: null, live: false, value: null };
 
 // A use's damage distribution (`use`, [{ d, p, n }]) as up to four levels relative to its mean ([{ r, p, n }]): the
 // miss, the low and high rolls, the crit, each with the hits it lands in. Null when there's nothing to spread.
@@ -23,10 +27,10 @@ const tpSpread = use => {
   const mean = (use ?? []).reduce((t, x) => t + x.d * x.p, 0);
   return mean > 0 ? squeezeDist(use.map(x => ({ d: x.d / mean, p: x.p, n: x.n ?? 1 })), 4).map(x => ({ r: x.d, p: x.p, n: x.n })) : null;
 };
-// Turns `o` (an outcome or `hits` record) needs to KO `target` on its own: the KO pacing core's expected use.
-const tpTurns = (o, target) => koTurns(koCurve(target, useOf(o)).by);
+// Turns `o` (an outcome record) needs to KO `target` on its own: the KO pacing core's expected use.
+const tpTurns = (turn, o, target) => koTurns(koCurve(turn.mon(target), useOf(o)).by);
 // The record in `list` that KOs `target` soonest (`turns`), then the hardest hitting (`dmg`).
-const tpFastest = (list, target, turns = o => tpTurns(o, target), dmg = o => o.dmg) => list
+const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dmg = o => o.dmg) => list
   .map(o => ({ o, n: turns(o) }))
   .reduce((b, x) => (!b || x.n < b.n || (x.n === b.n && dmg(x.o) > dmg(b.o)) ? x : b), null)?.o ?? null;
 
@@ -41,32 +45,30 @@ const tpMoveOf = (o, extra) => {
 };
 
 // Our best move into `f`, by turns to KO it then damage, whose hits land one by one on the game's bar rule (`hitOn`).
-const tpOurMove = (s, me, f, live) => {
-  const view = (o, extra) => tpMoveOf(o, extra);
-  if (live && typeof moveOutcomes === "function") {
-    try {
-      // Best by turns to KO it (a charge or recharge turn per hit counts), then by damage.
-      const turns = o => (o.expected > 0 ? (o.traits?.charge || o.traits?.recharge ? 2 : 1) * tpTurns(o, f) - (o.traits?.recharge ? 1 : 0) : 99);
-      const best = tpFastest(moveOutcomes(s, me, f) ?? [], f, turns, o => o.expected);
-      if (best?.expected > 0) {
-        return view(best, { charge: !!best.traits?.charge, recharge: !!best.traits?.recharge || !!best.traits?.noRepeat, semiCharge: !!best.traits?.charge && !!best.traits?.semiCharge });
-      }
-    } catch {}
+const tpOurMove = (turn, me, f) => {
+  const outs = turn.outcomes(me, f);
+  if (turn.live) {
+    // Best by turns to KO it (a charge or recharge turn per hit counts), then by damage.
+    const turns = o => (o.expected > 0 ? (o.traits?.charge || o.traits?.recharge ? 2 : 1) * tpTurns(turn, o, f) - (o.traits?.recharge ? 1 : 0) : 99);
+    const best = tpFastest(turn, outs, f, turns, o => o.expected);
+    if (best?.expected > 0) {
+      return tpMoveOf(best, { charge: !!best.traits?.charge, recharge: !!best.traits?.recharge || !!best.traits?.noRepeat, semiCharge: !!best.traits?.charge && !!best.traits?.semiCharge });
+    }
   }
-  const m = tpFastest(hits(me, f).filter(x => x.dmg > 0), f);
-  return m ? view(m) : null;
+  const m = tpFastest(turn, outs.filter(x => x.dmg > 0), f);
+  return m ? tpMoveOf(m) : null;
 };
 
 // What `f` does to `me` per turn (its mean, uncut by `me`'s HP, and its damage levels), and P(f acts first) when the
 // threat model knows it. The AI's distribution this turn was scored against the mon on the field, so a mon not on the
 // field, or a foe not on it, gets the foe's re-picked moves (`next`); `entry` is the hit a switch-in takes coming in.
-const tpTheirMove = (s, f, me, live) => {
-  if (live && typeof threatFrom === "function") {
+const tpTheirMove = (turn, f, me) => {
+  if (turn.live) {
     try {
       const next = !me.isOnField?.() || !f.isOnField?.();
-      const t = threatFrom(s, f, me, null, { next });
+      const t = threatFrom(turn, f, me, null, { next });
       if (Number.isFinite(t?.expected)) {
-        const now = next && f.isOnField?.() ? threatFrom(s, f, me) : t;
+        const now = next && f.isOnField?.() ? threatFrom(turn, f, me) : t;
         const mean = (t.use ?? []).reduce((sum, x) => sum + x.d * x.p, 0);
         const moved = t.moves.reduce((sum, m) => sum + m.p, 0);
         return {
@@ -79,23 +81,23 @@ const tpTheirMove = (s, f, me, live) => {
       }
     } catch {}
   }
-  const m = tpFastest(hits(f, me, true).filter(x => x.dmg > 0), me);
+  const m = tpFastest(turn, turn.outcomes(f, me).filter(x => x.dmg > 0), me);
   return { dmg: m?.dmg ?? 0, name: m?.name ?? null, e: m?.e ?? 1, first: null, priority: m?.priority ?? 0, hits: m?.dmg > 0 ? 1 : 0,
     drain: m?.drain ?? 0, phys: m?.cat === "special" ? 0 : 1 };
 };
 
-const tpFoeFirst = (s, me, f, ours, theirs, live) => {
+const tpFoeFirst = (turn, me, f, ours, theirs) => {
   if (Number.isFinite(theirs.first)) return theirs.first;
-  if (live && typeof actionOrder === "function" && ours && theirs.name) {
+  if (turn.live && ours && theirs.name) {
     try {
       const a = me.moveset.find(pm => pm?.getName?.() === ours.name), b = f.moveset.find(pm => pm?.getName?.() === theirs.name);
-      const p = a && b ? actionOrder(s, me, a, f, b) : null;
+      const p = a && b ? actionOrder(turn, me, a, f, b) : null;
       if (Number.isFinite(p)) return 1 - p;
     } catch {}
   }
   const mine = ours?.priority ?? 0;
   if (theirs.priority !== mine) return theirs.priority > mine ? 1 : 0;
-  const a = stat(me, Stat.SPD), b = stat(f, Stat.SPD);
+  const a = turn.mon(me).speed, b = turn.mon(f).speed;
   return b > a ? 1 : b < a ? 0 : 0.5;
 };
 
@@ -103,15 +105,10 @@ const tpFoeFirst = (s, me, f, ours, theirs, live) => {
 // attack and defence type scores, times min(1, its HP ratio + 1 − ours), ×1.25 when it outspeeds us, else ×0.5 at
 // 20–40 % HP. Our HP moves over the plan, so the game is asked once with ours at 0 — the HP factor then caps at 1 and
 // the call returns the type scores alone — and `tpSendScore` puts the HP back. Without game code, a type-chart stand-in.
-const tpSendBase = (s, f, me, live) => {
-  const speed = p => (typeof p.getEffectiveStat === "function" ? p.getEffectiveStat(Stat.SPD) : stat(p, Stat.SPD));
-  const outspeed = (f.isActive?.(true) ? speed(f) : f.getStat(Stat.SPD, false)) >= speed(me);
-  if (live && typeof f.getMatchupScore === "function") {
-    try {
-      const v = f.getMatchupScore(Object.create(me, { hp: { value: 0 } }));
-      if (Number.isFinite(v)) return { base: v, outspeed };
-    } catch {}
-  }
+const tpSendBase = (turn, f, me) => {
+  const outspeed = (f.isActive?.(true) ? turn.mon(f).speed : f.getStat(Stat.SPD, false)) >= turn.mon(me).speed;
+  const v = turn.sendInScore(f, me);
+  if (v != null) return { base: v, outspeed };
   // The game's own shape: attack, its damaging moves' effectiveness into us (×1.5 for its own type) averaged; defence,
   // how little our types hurt it.
   const moves = (f.moveset ?? []).map(pm => pm?.getMove?.()).filter(mv => mv && mv.category !== MoveCategory.STATUS);
@@ -119,7 +116,7 @@ const tpSendBase = (s, f, me, live) => {
   const def = typesOf(me).reduce((x, t) => x / Math.max(effectiveness(t, f), 0.25), 1);
   return { base: atk + def, outspeed };
 };
-const tpSendScore = (T, st, fi, mi) => {
+export const tpSendScore = (T, st, fi, mi) => {
   const x = T.send[fi][mi];
   if (typeof x === "number") return x;
   const ratio = (hp, max) => Math.round(hp / max * 100) / 100;
@@ -133,32 +130,30 @@ const tpSendScore = (T, st, fi, mi) => {
 // Turn-end HP change split into what recurs (Leftovers and other heals, weather and status chip: negative when chip
 // wins) and the one-shot berries (Sitrus below half, Enigma after a super-effective hit), read by asking endOfTurnHp
 // about the mon at a made-up HP.
-const tpHealAt = (s, p, hp = Math.ceil(p.getMaxHp() * 0.75), se = false) => {
-  if (typeof endOfTurnHp !== "function") return 0;
-  try { return endOfTurnHp(Object.create(p, { hp: { value: hp } }), { s, hp, tookSuperEffective: se }) || 0; } catch { return 0; }
+const tpHealAt = (turn, p, hp = Math.ceil(p.getMaxHp() * 0.75), se = false) => {
+  try { return turn.turnEndHp(Object.create(p, { hp: { value: hp } }), { hp, tookSuperEffective: se }) || 0; } catch { return 0; }
 };
-const tpHealProfile = (s, p) => {
-  if (typeof endOfTurnHp !== "function") return null;
+export const tpHealProfile = (turn, p) => {
   const max = p.getMaxHp();
-  const at = (hp, se) => tpHealAt(s, p, hp, se);
+  const at = (hp, se) => tpHealAt(turn, p, hp, se);
   const base = at(Math.ceil(max * 0.75), false);
   return { base, sitrus: Math.max(0, at(Math.floor(max * 0.4), false) - base), enigma: Math.max(0, at(Math.ceil(max * 0.75), true) - base) };
 };
 
-const tpTables = (s, party, foes, live, double = false) => {
-  const ours = party.map(me => foes.map(f => tpOurMove(s, me, f, live)));
-  const theirs = foes.map(f => party.map(me => tpTheirMove(s, f, me, live)));
+export const tpTables = (turn, party, foes, double = false) => {
+  const ours = party.map(me => foes.map(f => tpOurMove(turn, me, f)));
+  const theirs = foes.map(f => party.map(me => tpTheirMove(turn, f, me)));
   return {
     ours, theirs,
     // How many of ours stand at once. In a double both field mons are out, so neither pays to act (#113 bucket 7).
     slots: double && party.length >= 2 ? 2 : 1,
-    first: party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(s, me, f, ours[mi][fi], theirs[fi][mi], live))),
-    send: foes.map(f => party.map(me => tpSendBase(s, f, me, live))),
+    first: party.map((me, mi) => foes.map((f, fi) => tpFoeFirst(turn, me, f, ours[mi][fi], theirs[fi][mi]))),
+    send: foes.map(f => party.map(me => tpSendBase(turn, f, me))),
     memo: new Map(),
     // Each foe's standing as the KO pacing core reads it (boss bars, the final boss's floor); its HP and bar are carried.
-    foeState: foes.map(f => stateOf(f)),
+    foeState: foes.map(f => turn.mon(f).state),
     ourMax: party.map(p => p.getMaxHp()), foeMax: foes.map(f => f.getMaxHp()),
-    ourHeal: party.map(p => tpHealProfile(s, p)), foeHeal: foes.map(p => tpHealProfile(s, p)),
+    ourHeal: party.map(p => tpHealProfile(turn, p)), foeHeal: foes.map(p => tpHealProfile(turn, p)),
     foeStart: foes.map(f => f.hp),
     // On-KO boosts (Beast Boost, Moxie, Soul-Heart) on each side, and the damage factor `n` KOs' worth gives a hit
     // (`atk`: the attacker's boosts for a physical share `phys`; `def`: the defender's).
@@ -170,24 +165,24 @@ const tpTables = (s, party, foes, live, double = false) => {
       return up / guard;
     },
     party, foes,
-    ...tpWear(s, party, foes, live, ours, theirs),
+    ...tpWear(turn, party, foes, ours),
   };
 };
 
 // Wave status tokens on our mons and item thieves on both sides (30-planner): the token odds and what their status
 // adds at turn end, who moves first once paralysed, each side's steal rates, and each mon's turn-end HP change after
 // k steals.
-const tpWear = (s, party, foes, live, ours, theirs) => {
-  const heal = p => tpHealAt(s, p);
+const tpWear = (turn, party, foes, ours) => {
+  const heal = p => tpHealAt(turn, p);
   const tok = party.map(me => {
-    const odds = foes[0] ? tokenOdds(s, foes[0], me) : null;
+    const odds = foes[0] ? tokenOdds(turn, foes[0], me) : null;
     return odds && { odds, shift: tokenShift(odds, me, heal), para: odds.tokens.filter(x => x.effect === StatusEffect.PARALYSIS).reduce((t, x) => t + x.share, 0) };
   });
   const firstPara = party.map((me, mi) => (tok[mi]?.para ? foes.map((f, fi) => {
     const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
     if (typeof me.getEffectiveStat !== "function") slowed.getStat = { value: i => me.getStat(i) / (i === Stat.SPD ? 2 : 1) };
     const clone = Object.create(me, slowed);
-    return tpFoeFirst(s, clone, f, ours[mi][fi], tpTheirMove(s, f, clone, live), live);
+    return tpFoeFirst(turn, clone, f, ours[mi][fi], tpTheirMove(turn, f, clone));
   }) : null));
   const fromUs = foes.map(f => party.map(me => stealRates(f, me)));
   const fromFoe = party.map(me => foes.map(f => stealRates(me, f)));
@@ -218,7 +213,7 @@ const tpHeal = (hp, max, prof, used, se, extra = 0) => {
 // foe falls first), `pLoss`, `pStall` and `ends` ({ win, loss, stall }, each such a state or null).
 // `over`: our move for this exchange only — the ⚔ line's own pick, pinned into the plan's first step (#113
 // prerequisite 3). It is never memoised, since the key names the pair, not the move.
-const tpFight = (T, st, mi, fi, entry, over = null) => {
+export const tpFight = (T, st, mi, fi, entry, over = null) => {
   // KOs each side's on-KO boost has had so far (Soul-Heart counts every faint).
   const faints = st.oh.filter(hp => hp < 1).length + st.fh.filter(hp => hp < 1).length;
   const nUs = T.ourKo?.[mi] ? (T.ourKo[mi].any ? faints : st.ok?.[mi] ?? 0) : 0;
@@ -446,15 +441,11 @@ const tpSearch = (T, start, reserve, pin = null) => {
 // The foe the plan should aim at: the one the ⚔ line plans against, which is the predicted switch-in when a foe is
 // leaving (#113 bucket 6 — ♟ used to aim at the mon that was walking away, and ⚔ was right every time). Outside a
 // command phase, and during a free switch where the enemy has decided nothing, it is simply the foe on the field.
-const tpFacing = (s, b, foes) => {
-  const onField = foes.filter(f => f.isOnField?.());
-  const active = (onField.length ? onField : foes).slice(0, b.double ? 2 : 1);
-  const here = active[0] ?? null;
-  if (!here || !awaitingCommand(s) || awaitingDecision(s) === "check-switch" || typeof predictSwitches !== "function") return here;
-  try {
-    const p = predictSwitches(s, b, active).get(here);
-    return (p?.ratio ?? 0) >= 1 && foes.includes(p.to) ? p.to : here;
-  } catch { return here; }
+const tpFacing = (turn, foes) => {
+  const here = turn.activeFoes()[0] ?? null;
+  if (!here || !turn.live || turn.facts.decision === "check-switch") return here;
+  const to = turn.enemyAction(here).switchTo;
+  return to && foes.includes(to) ? to : here;
 };
 
 // How far ahead of the pinned plan the free one has to be before the panel says so (#113: ~a fifth of a KO).
@@ -466,10 +457,9 @@ const TP_HOLD = 10;
 // condition, who answers which foe, and the searches. `at(pin)` re-searches with the ⚔ line's action pinned as step 1,
 // `after(pin)` reads what that plan says comes next, and `view(pin)` renders it. #113 made ⚔ the authority for the
 // turn and this the model that explains the rest of the fight around it.
-const tpModel = (T, b, party, foes, facing) => {
+const tpModel = (T, double, party, foes, facing) => {
   const ref = p => ({ icon: iconOf(p), name: p.name });
   const pctOf = (hp, max) => Math.round(hp / max * 100);
-  const double = !!b.double;
   const fcur = foes.indexOf(facing);
   const start = {
     oh: party.map(p => p.hp), ob: party.map(() => 0),
@@ -584,24 +574,17 @@ const tpModel = (T, b, party, foes, facing) => {
   return { value: base?.val ?? 0, at, after, view, holdFor, reserve, matrix, win };
 };
 
-const teamPlanner = (s, b, party, foes) => {
-  if (!b?.trainer || !party.length || !foes.length) return null;
-  const live = awaitingCommand(s);
-  const key = [b.waveIndex, b.turn, b.enemySwitchCounter, !!b.double, ...party.map(p => `${p.id}:${p.hp}`), ...foes.map(f => `${f.id}:${f.hp}`)].join("|");
-  // A plan built from the game's own numbers stays until the turn changes; outside the command phase only the
-  // approximation is available, so don't let it replace one.
-  if (teamPlanCache.key === key && (teamPlanCache.live || !live)) return teamPlanCache.value;
-  // Both game reads go through the one sandbox: the tables, and the enemy switch `tpFacing` asks about (§0).
-  const read = () => ({ T: tpTables(s, party, foes, live, !!b.double), facing: tpFacing(s, b, foes) });
-  const { T, facing } = live ? sandbox(s, read) : read();
-  // The searches read only those tables, so they need no sandbox of their own.
-  const value = tpModel(T, b, party, foes, facing);
-  teamPlanCache = { key, live, value };
-  return value;
+export const teamPlanner = turn => {
+  const { trainer, double } = turn.facts;
+  const party = turn.facts.party.filter(p => p && p.hp > 0);
+  const foes = turn.facts.foes.filter(f => f && f.hp > 0);
+  if (!trainer || !party.length || !foes.length) return null;
+  // Every game read is the turn's, so the tables are built straight out and the searches that follow read only them.
+  return tpModel(tpTables(turn, party, foes, double), double, party, foes, tpFacing(turn, foes));
 };
 
 // The plan with nothing pinned — the shape 95-render-team and the summary read.
-const teamPlan = (s, b, party, foes) => teamPlanner(s, b, party, foes)?.view(null) ?? null;
+export const teamPlan = turn => teamPlanner(turn)?.view(null) ?? null;
 
 // One plan rendered. `plan` is the search result being shown (pinned to the ⚔ line when `pinned`); everything the
 // fight is judged by comes from the model around it.

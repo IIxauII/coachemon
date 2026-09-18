@@ -61,12 +61,15 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   const { catchAdvice, captureChance } = globalThis.__hud["45-catch"];
+  const { readTurn } = globalThis.__hud["25-turn"];
+  // What the card reads is a turn (hud/25-turn.js) and the run's own account read (98-tick), never the scene.
+  const { accountRead } = globalThis.__hud["98-tick"];
   // A line's final BST is the party profile's, not the catch card's (`08-party.js`).
   const { finalBstOf } = globalThis.__hud["08-party"];
-  globalThis.__ca = { catchAdvice, captureChance, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
+  globalThis.__ca = { catchAdvice, captureChance, readTurn, accountRead, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
     setGameTables: globalThis.__hud["47-biome"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
   if (events) globalThis.__ca.setGameTables({ events });
-  const advice = globalThis.__ca.catchAdvice(scene, scene.currentBattle, party.filter(p => p.hp > 0), foes.filter(f => f.hp > 0));
+  const advice = readTurn(scene, turn => catchAdvice(turn, accountRead(scene)));
   return { advice, scene };
 };
 
@@ -179,7 +182,9 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   assert.equal(live.advice.targets[0].verdict, "catch");
   assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", "sandbox restored the RNG");
   // Cached per turn.
-  assert.equal(globalThis.__ca.catchAdvice(live.scene, live.scene.currentBattle, [weak], [arcanine]), live.advice, "second call hits the cache");
+  // No cache of its own any more: the card's hold (60-card) is what keeps a live read between refreshes, so asking
+  // the same turn twice simply gives the same answer.
+  assert.deepEqual(globalThis.__ca.readTurn(live.scene, turn => globalThis.__ca.catchAdvice(turn, globalThis.__ca.accountRead(live.scene))), live.advice, "the same turn gives the same advice");
 }
 
 // ---- 7. Team value: a full party weak to Ground meets a caught Pidgeot that is immune to it and outclasses Pikachu.

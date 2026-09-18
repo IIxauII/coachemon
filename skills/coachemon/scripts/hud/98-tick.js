@@ -2,6 +2,7 @@
 // draw goes with which kind. It decides nothing about the card itself — 60-card does that — and formats nothing.
 import { readCard } from "./60-card.js";
 import { previewCheck } from "./48-preview.js";
+import { gameEvents } from "./47-biome.js";
 import { rerollCheck } from "./50-reroll.js";
 import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw, setShownCardWave, view } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
@@ -26,6 +27,25 @@ export const lastFailure = () => failure;
 // — that stays here (§11.1). The disclaimer is not in it: that is the panel's footer, not a card's.
 setDraw(card => (DRAW[card.kind] ? DRAW[card.kind](card) : null));
 
+// The **account read**: what the run has caught and unlocked, plus the party it would join and the event's shiny
+// multiplier. It is not turn state — the catch card weighs a throw by it, and the Mystery Encounter card weighs a
+// mon it is handed by the same numbers — so it is read once here and passed down, rather than each card reaching
+// into `gameData` for itself. Plain reads only: no game call, no sandbox.
+// @only tests: accountRead
+export const accountRead = s => {
+  const gd = s.gameData ?? {};
+  let shinyCatchMultiplier = 2;
+  try { shinyCatchMultiplier = gameEvents()?.getShinyCatchMultiplier() ?? 2; } catch {}
+  return {
+    dex: gd.dexData ?? {},
+    starter: gd.starterData ?? {},
+    party: (s.getPlayerParty?.() ?? []).filter(Boolean),
+    // A Daily run pays candy only for a catch that adds a dex attribute, so what the dex is worth depends on it.
+    daily: !!s.gameMode?.isDaily,
+    shinyCatchMultiplier,
+  };
+};
+
 export const tick = () => {
   try {
     failure = null;
@@ -36,7 +56,7 @@ export const tick = () => {
     // the card reads the next ones. Both are reads of the scene, and both are the tick's business, not a card's.
     rerollCheck(s);
     previewCheck(s);
-    const card = readCard(s);
+    const card = readCard(s, accountRead(s));
     if (!card) { el.style.display = "none"; shown = null; return; }
     shown = card;
     // A view picked by a button holds until the card or wave changes.

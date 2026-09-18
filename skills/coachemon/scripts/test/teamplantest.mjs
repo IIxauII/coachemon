@@ -50,8 +50,10 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   const { teamPlan, tpHealProfile, tpSendScore, tpFight, tpTables } = globalThis.__hud["35-team-plan"];
-  globalThis.__tp = { teamPlan, drawTeamPlan: globalThis.__hud["95-render-team"].drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables };
-  const plan = globalThis.__tp.teamPlan(scene, scene.currentBattle, party, foes);
+  const { readTurn } = globalThis.__hud["25-turn"];
+  // Every read of the live battle goes through one turn (hud/25-turn.js), so the test opens one the way the card does.
+  globalThis.__tp = { readTurn, teamPlan, drawTeamPlan: globalThis.__hud["95-render-team"].drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables };
+  const plan = readTurn(scene, turn => teamPlan(turn));
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };
 
@@ -81,8 +83,9 @@ assert.ok(reserved.includes(plan.steps[sac + 1].send.name), "and the free switch
 assert.notEqual(plan.result, "win");
 assert.ok(plan.warnings.some(w => /^likely lost/.test(w) && w.includes("Weavile")), "warns the fight is likely lost to Weavile");
 
-// Cached per turn: the same call again is free and returns the same view.
-assert.equal(globalThis.__tp.teamPlan(scene, scene.currentBattle, party, foes), plan, "second call hits the cache");
+// Built fresh from one turn read, and cheap enough to be: the card's own hold (60-card) is what keeps it between
+// refreshes now, so the same turn read twice gives the same plan.
+assert.deepEqual(globalThis.__tp.readTurn(scene, turn => globalThis.__tp.teamPlan(turn)), plan, "the same turn gives the same plan");
 assert.ok(ms < 500, `cheap enough to run every turn (${ms.toFixed(0)} ms incl. bundling)`);
 
 // During the command phase it goes through the sandbox and the game-code paths; with those missing on the mocks it
@@ -124,11 +127,11 @@ assert.equal(plan.approxDoubles, false);
   const { scene: s } = run(null);
   const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
   s.arena = { weather: { weatherType: 3 } };
-  assert.deepEqual(globalThis.__tp.tpHealProfile(s, zard), { base: -6, sitrus: 0, enigma: 0 }, "sandstorm chip in the profile");
+  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)), { base: -6, sitrus: 0, enigma: 0 }, "sandstorm chip in the profile");
   // With a Sitrus on it the berry still reaches the profile, and it is read at the HP *after* the chip (§21): the
   // probe stands at 38/96, the chip takes it to 32, and a quarter of max comes back.
   const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
-  assert.deepEqual(globalThis.__tp.tpHealProfile(s, Object.assign(zard, { getHeldItems: () => [held] })), { base: -6, sitrus: 24, enigma: 0 }, "Sitrus after the chip");
+  assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, sitrus: 24, enigma: 0 }, "Sitrus after the chip");
 }
 // Item thieves and wave status tokens carry through the exchange: a long Blastoise–Snorlax fight.
 {
@@ -204,7 +207,7 @@ assert.equal(plan.approxDoubles, false);
   // Lunges, however many KOs Buzzwole has had.
   const blastoise = mon("Blastoise", 100, ["Water"], "Torrent", [400,150,300,150,300,250], [["Hydro Pump","Water",110,"S"]], false);
   const hitsOn = (foe, fk) => {
-    const T = tpTables(s, [blastoise], [foe], false);
+    const T = globalThis.__tp.readTurn(s, turn => tpTables(turn, [blastoise], [foe], false));
     return 400 - tpFight(T, { oh: [400], ob: [0], fh: [400], fs: [0], fb: [0], ok: [0], fk: [fk] }, 0, 0, "free").mh;
   };
   const boosted = [0, 1, 2].map(k => hitsOn(buzzwole(beastBoost), k));
