@@ -103,6 +103,16 @@ export class HubClient {
     this.#send({ t: "subscribe" });
   }
 
+  /**
+   * The dev loop's reload (§5.4): every connected dev build restarts itself. Nothing answers it — the extensions it
+   * reaches are about to go — so this resolves once the frame is away, or says why there was no hub to send it to.
+   */
+  async devReload(): Promise<HubTrouble | null> {
+    const trouble = await this.ready();
+    if (trouble === null) this.#send({ t: "dev-reload" });
+    return trouble;
+  }
+
   /** One command, answered by the hub itself or by the tab it routed to. A hub we cannot reach refuses `no-tab`. */
   async send(name: string, args: Record<string, unknown>): Promise<CommandAnswer> {
     const id = ++this.#ids;

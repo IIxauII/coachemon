@@ -6,11 +6,15 @@
  * route around, or the wave target.
  *
  *   node scripts/autoplay.ts --waves 2 [--max-calls 200] [--log .cache/autoplay.jsonl]
+ *
+ * `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server, which is how this runs against a paired
+ * dev build of the extension on the dev hub (§7.2).
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { normalizeLabel } from "../src/labels.ts";
+import { serverEnv } from "../src/server-env.ts";
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
 const WAVES = Number(arg("--waves", "1"));
@@ -23,7 +27,7 @@ type Result = Record<string, unknown> & { status?: string; screen?: string; wave
 type Opt = { i: number | string; label: string | null; [k: string]: unknown };
 
 const client = new Client({ name: "autoplay", version: "0" });
-await client.connect(new StdioClientTransport({ command: "node", args: ["src/server.ts"], stderr: "inherit" }));
+await client.connect(new StdioClientTransport({ command: "node", args: ["src/server.ts"], stderr: "inherit", env: serverEnv() }));
 
 let calls = 0;
 const t0 = Date.now();

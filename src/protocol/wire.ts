@@ -40,8 +40,15 @@ export type ExtensionEvent = { t: "event"; tab: number; kind: EventKind; body: R
 
 export type EventKind = "card" | "coach-error";
 
+/**
+ * The dev loop's reload (§5.4). Not a command: it needs no tab, takes no arguments and is never answered, because the
+ * extension it reaches is about to restart. The hub fans it out to every `flavour: "dev"` browser and to nothing else,
+ * so it can never touch a store build — which is also why the guard bans the string from a store artifact (§5.5).
+ */
+export type DevReload = { t: "dev-reload" };
+
 export type FromExtension = ExtensionHello | TabFrame | ConsentFrame | Ping | ExtensionReply | ExtensionEvent;
-export type ToExtension = Welcome | ExtensionCmd;
+export type ToExtension = Welcome | ExtensionCmd | DevReload;
 
 // -------------------------------------------------------------- client ↔ hub
 
@@ -72,5 +79,5 @@ export type Subscribe = { t: "subscribe" };
 export type ClientEvent = { t: "event"; kind: EventKind; body: Record<string, unknown> };
 export type Notice = { t: "notice"; kind: "tabs" | "resume"; tabs: TabInfo[] };
 
-export type FromClient = ClientHello | Retire | Claim | StateRequest | ClientCmd | Subscribe;
+export type FromClient = ClientHello | Retire | Claim | StateRequest | ClientCmd | Subscribe | DevReload;
 export type ToClient = Welcome | Claimed | HubState | ClientReply | ClientEvent | Notice;

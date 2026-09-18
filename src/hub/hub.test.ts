@@ -134,6 +134,18 @@ test("a dev build takes the dev table (§10.6)", async () => {
   assert.equal(cmd.name, "eval");
 });
 
+test("`dev-reload` reaches every dev build, needing no tab, and never a store build (§5.4)", async () => {
+  const h = await hub();
+  // No tab anywhere: the dev loop's reload has to work on the build whose relay the last change broke.
+  const dev = await fakeExtension(h.port, { flavour: "dev" });
+  const store = await fakeExtension(h.port, { flavour: "store" });
+  const client = await fakeClient(h.port);
+  client.send({ t: "dev-reload" });
+  await dev.take(f => f.t === "dev-reload");
+  await store.quiet();
+  assert.deepEqual(store.seen.filter(f => f.t === "dev-reload"), []);
+});
+
 test("a command the connected extension did not list refuses missing-command (§8.5)", async () => {
   const h = await hub();
   await readyTab(h.port, 1, { commands: ["probe", "menu"] });

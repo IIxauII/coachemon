@@ -37,6 +37,12 @@ const KEY_NAMES: Partial<Record<Button, (typeof KEY_BUTTONS)[number]>> = {
 /** 47147, or the dev hub's 47148 from a checkout with `COACHEMON_DEV=1`, so a dev build never double-counts a tab (§7.2). */
 export const hubPort = (env: NodeJS.ProcessEnv = process.env): number => (env.COACHEMON_DEV === "1" ? DEV_PORT : STORE_PORT);
 
+/**
+ * Whether this process talks to the hub at all. The transport is CDP until the flip deletes the choice, and only the
+ * dev opts in (§12.1, §13.1). One answer, so the server and the scripts around it can never disagree about it.
+ */
+export const usesHub = (env: NodeJS.ProcessEnv = process.env): boolean => env.COACHEMON_TRANSPORT === "hub";
+
 export class HubLink implements GameLink, Tab {
   /** The hub's settles pump, so nothing here refuses a frozen loop (§10.3). */
   readonly pumps = true;
@@ -90,13 +96,28 @@ export class HubLink implements GameLink, Tab {
   cursorLearn(args: Args<"cursor.learn">) { return this.#run("cursor.learn", args); }
   modal(args: Args<"modal">) { return this.#run("modal", args); }
 
-  /** The dev table's `screenshot`; a store build never registered it, and says so rather than failing obscurely (§12.2). */
+  /**
+   * The dev table's `screenshot`; a store build never registered it, and says so rather than failing obscurely (§12.2).
+   *
+   * A capture is larger than the 1 MB frame cap, so the extension holds it and answers one part per call (§10.6). The
+   * first call takes the capture and says how many parts it has; the rest name that capture, so a second `screenshot`
+   * in flight can never splice two images together.
+   */
   async screenshot(): Promise<string> {
-    const r = await this.#client.send("screenshot", {});
-    if (!r.ok) throw new Refusal("unavailable", NO_SCREENSHOT, { code: r.code });
-    const png = (r.result as { png?: unknown }).png;
-    if (typeof png !== "string") throw new Refusal("unavailable", NO_SCREENSHOT, {});
+    const first = await this.#capture(0, null);
+    let png = first.png;
+    for (let part = 1; part < first.parts; part++) png += (await this.#capture(part, first.id)).png;
     return png;
+  }
+
+  async #capture(part: number, id: number | null): Promise<{ id: number; parts: number; png: string }> {
+    const r = await this.#client.send("screenshot", id === null ? {} : { id, part });
+    if (!r.ok) throw new Refusal("unavailable", NO_SCREENSHOT, { code: r.code });
+    const v = (r.result ?? {}) as { ok?: unknown; id?: unknown; parts?: unknown; png?: unknown; why?: unknown };
+    if (v.ok !== true || typeof v.png !== "string" || typeof v.id !== "number" || typeof v.parts !== "number") {
+      throw new Refusal("unavailable", NO_SCREENSHOT, typeof v.why === "string" ? { why: v.why } : {});
+    }
+    return { id: v.id, parts: v.parts, png: v.png };
   }
 
   // ------------------------------------------------------------------ tab
