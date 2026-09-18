@@ -23,6 +23,8 @@ Claude Code runs `npm ci --ignore-scripts` in its plugin cache on install, so th
 
 Releases are automatic: every push to `master` runs [semantic-release](.github/workflows/release.yml), which reads the [Conventional Commits](https://www.conventionalcommits.org/) since the last `v*` tag (`fix:` → patch, `feat:` → minor, `BREAKING CHANGE` → major), stamps the version into `package.json` and `.claude-plugin/plugin.json`, tags, and publishes GitHub release notes. `claude plugin update` only sees a change when that version moves, so commits on `master` must follow the convention — with squash merges, the PR title is the commit.
 
+The browser extension releases on its own `extension-v*` tags, and its Chrome and Firefox builds submit themselves. Safari has no store: after every extension release, `npm run release:safari -- <version>` signs, notarizes and uploads the macOS build by hand, on a Mac ([runbook](docs/runbooks/safari-release.md)).
+
 The server is declared in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json). Its `"timeout": 60000` is a documented requirement, not a tuning knob ([#20](https://github.com/IIxauII/pokerogue-mcp/issues/20)): the settle budget is 30 s and progress notifications do not extend the client's per-call limit.
 
 ### From a checkout

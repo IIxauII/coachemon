@@ -111,7 +111,7 @@ export default defineConfig({
     },
     /**
      * `artifactTemplate` cannot branch on the browser, and Safari's artifact is named for what it holds rather than
-     * for the browser: §14.6 unzips it and hands the folder to `xcrun safari-web-extension-packager`. So the one name
+     * for the browser: §14.6 unzips it and hands the folder to `xcrun safari-web-extension-converter`. So the one name
      * the template cannot write is written here (§14.2).
      */
     "zip:extension:done": (wxt, zipPath) => {

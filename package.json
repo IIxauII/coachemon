@@ -14,6 +14,7 @@
     "typecheck": "tsc",
     "enums:gen": "node scripts/gen-enums.ts",
     "randbats:gen": "node scripts/gen-randbats.ts",
+    "release:safari": "node scripts/release/safari-release.ts",
     "drift:check": "node scripts/drift.ts",
     "ladder:drift": "node scripts/drift.ts"
   },

@@ -103,7 +103,7 @@ test("a release ships four artifacts, and the submit credentials are named once"
 test("the release artifacts are named as the spec lists them", () => {
   assert.equal(zipName("chrome", "0.1.0"), "coachemon-chrome-0.1.0.zip");
   assert.equal(zipName("firefox", "0.1.0"), "coachemon-firefox-0.1.0.zip");
-  // Safari's says what it holds, because §14.6 unzips it and hands the folder to `safari-web-extension-packager`.
+  // Safari's says what it holds, because §14.6 unzips it and hands the folder to `safari-web-extension-converter`.
   assert.equal(zipName("safari", "0.1.0"), "coachemon-safari-web-extension-0.1.0.zip");
   assert.equal(sourcesZipName("0.1.0"), "coachemon-0.1.0-sources.zip");
 });

@@ -26,13 +26,21 @@ export function releaseVersion(version: string): string {
 
 /**
  * A store artifact, one per target. Safari's says `safari-web-extension` because it holds the unpackaged folder that
- * §14.6 feeds to `xcrun safari-web-extension-packager`, not something Safari installs.
+ * §14.6 feeds to `xcrun safari-web-extension-converter`, not something Safari installs.
  */
 export const zipName = (target: Target, version: string): string =>
   `coachemon-${target === "safari" ? "safari-web-extension" : target}-${version}.zip`;
 
 /** The AMO sources zip (§5.7), written by the Firefox zip run alone. */
 export const sourcesZipName = (version: string): string => `coachemon-${version}-sources.zip`;
+
+/**
+ * The notarized macOS app the dev adds to the release by hand (§14.6), named apart from `zipName("safari", …)` so the
+ * two Safari assets can sit on one release: that one holds the unpackaged extension the packager eats, this one the
+ * signed app a player downloads. It is not in `releaseArtifacts` because it lands after the release is cut, from a
+ * Mac with an Apple Developer Program membership, which CI does not have.
+ */
+export const safariAppZipName = (version: string): string => `Coachemon-safari-${version}.zip`;
 
 /** Every file a release carries (§14.2). `stamp-extension.ts` checks all four exist before the tag is cut. */
 export const releaseArtifacts = (version: string): string[] => [
