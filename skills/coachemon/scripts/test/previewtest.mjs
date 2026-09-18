@@ -407,7 +407,15 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   assert.equal(m5.type, "wild");
   assert.equal(m5.confidence.foes, "estimate", "the X5 rebuild changes the pool the wave ahead draws from");
   assert.ok(m5.notes.some(n => n.includes("time of day")), `the pool note is said: ${JSON.stringify(m5.notes)}`);
-  console.log(`== pool shift  w12 ${m.confidence.foes}  w15 ${m5.confidence.foes} ${JSON.stringify(m5.notes)}`);
+  // The biggest move of all is the biome itself: the X0 → X1 step builds a **new arena** with that biome's own pools,
+  // and the player hasn't even picked it yet while this replay runs.
+  const across = mount({ wave: 20 });
+  const m21 = across.pv.previewNext(across.scene); // wave 21, the first of the next biome
+  assert.equal(m21.type, "wild");
+  assert.equal(m21.confidence.foes, "estimate", "a spawn read off the biome being left is a guess");
+  assert.ok(m21.notes.some(n => n.includes("next biome")), `and says which: ${JSON.stringify(m21.notes)}`);
+  console.log(`== pool shift  w12 ${m.confidence.foes}  w15 ${m5.confidence.foes} ${JSON.stringify(m5.notes)}`
+    + `  w21 ${m21.confidence.foes} ${JSON.stringify(m21.notes)}`);
 }
 
 // ---- 8d. An evil-team grunt's double is `randInt(3)` — `Math.random`, unseeded — so it is a guess even though every

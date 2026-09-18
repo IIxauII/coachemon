@@ -66,9 +66,19 @@ export const HUD_DEPS = {
     `src/game-mode.ts#GameMode.isFixedBattle`,
     `src/game-mode.ts#GameMode.isBoss`,
     `src/game-mode.ts#GameMode.isWaveTrainer`,
-    // `hasTrainers` and `kindIsRolled`: who asks `isWaveTrainer` at all, and which of its paths returns before the roll.
+    // `hasTrainers` and `kindIsRolled`: who asks `isWaveTrainer` at all, which of its paths returns before the roll,
+    // and the `range <= 1` short-circuit that makes a trainer chance of 1 a rule rather than a draw.
     `${SCENE}#BattleScene.handleNonFixedBattle`,
     `src/data/daily-seed/daily-run.ts#getDailyTrainerManipulation`,
+    `src/utils/common.ts#randSeedInt`,
+    // `isGruntWave`: the four fixed waves whose double comes off an unseeded `Math.random`.
+    `src/battle.ts#getRandomTrainerFunc`,
+    `src/utils/common.ts#randInt`,
+    // `poolAnchorWave` and `arenaRebuiltBetween`: when the arena — and with it the spawn pool — is built again.
+    `src/field/arena.ts#Arena.updatePoolsForTimeOfDay`,
+    `${SCENE}#BattleScene.newArena`,
+    `${SCENE}#BattleScene.doPostBattleCleanup`,
+    `src/phases/switch-biome-phase.ts#SwitchBiomePhase.start`,
     `src/data/trainers/fixed-battle-configs.ts#classicFixedBattles`,
     // The heal: which waves it lands on, and who gets up from it.
     `src/phases/victory-phase.ts#VictoryPhase.start`,
@@ -595,11 +605,9 @@ export const HUD_DEPS = {
     `src/ai/ai-species-gen.ts#determineEnemySpecies`,
     `src/ai/ai-species-gen.ts#calcEvoChance`,
     `src/ai/ai-species-gen.ts#getRequiredPrevo`,
-    // `wavesIn`: the pools refreshed for the time of day — when they are rebuilt decides which wave spawns from
-    // which pool — and the boss-spawn rule, the random Endless boss past 250 included.
+    // `wavesIn`: the pools merged per tier for a time of day (*when* they are rebuilt is `03-calendar.js`'s
+    // `poolAnchorWave`), and the boss-spawn rule, the random Endless boss past 250 included.
     `src/field/arena.ts#Arena.updatePoolsForTimeOfDay`,
-    `${SCENE}#BattleScene.newArena`,
-    `${SCENE}#BattleScene.doPostBattleCleanup`,
     `${SCENE}#BattleScene.getEncounterBossSegments`,
     // `formsAt`'s WILD vs NORMAL evolution kind, and each trainer config's default `speciesFilter`.
     `src/data/pokemon-species.ts#PokemonSpecies.getWildSpeciesForLevel`,
@@ -635,9 +643,6 @@ export const HUD_DEPS = {
     `src/game-mode.ts#GameMode.isBoss`,
     `src/field/arena.ts#Arena.getTimeOfDay`,
     `src/field/arena.ts#Arena.updatePoolsForTimeOfDay`,
-    // The unseeded half of a fixed battle: an evil-team grunt's 1/3 double, which no replay reaches.
-    `src/battle.ts#getRandomTrainerFunc`,
-    `src/utils/common.ts#randInt`,
     `src/field/trainer.ts#Trainer.constructor`,
     `src/field/trainer.ts#Trainer.genPartyMember`,
     `src/field/trainer.ts#Trainer.getPartyLevels`,
@@ -672,8 +677,7 @@ export const HUD_DEPS = {
     `src/data/moves/pokemon-move.ts#PokemonMove.getMovePp`,
     `src/phases/damage-anim-phase.ts#DamageAnimPhase.end`,
     // §16: `doubleOdds`, the share of double battles ahead a TM is judged by — the abilities that shorten the odds,
-    // and the evil-team grunt's unseeded 1/3.
-    `src/battle.ts#getRandomTrainerFunc`,
+    // and the evil-team grunt's unseeded 1/3 (which waves those are is `03-calendar.js`'s).
     `src/utils/common.ts#randInt`,
     `${SCENE}#BattleScene.checkIsDouble`,
     `${SCENE}#BattleScene.getDoubleBattleChance`,

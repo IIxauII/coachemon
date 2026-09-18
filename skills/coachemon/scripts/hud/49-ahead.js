@@ -68,9 +68,7 @@ const { aheadModel, doubleOdds, learnRoster } = (() => {
   // odds: what a permanent choice (a TM) is judged against, rather than whichever way one roll falls.
   const DOUBLE_HORIZON = 10;
   const DOUBLE_ABILITIES = ["Illuminate", "Arena Trap", "No Guard", "Commander"];
-  const GRUNT_DOUBLE = 1 / 3;
-  const GRUNT_WAVES = [ClassicFixedBossWaves.EVIL_GRUNT_1, ClassicFixedBossWaves.EVIL_GRUNT_2,
-    ClassicFixedBossWaves.EVIL_GRUNT_3, ClassicFixedBossWaves.EVIL_GRUNT_4];
+  const GRUNT_DOUBLE = 1 / 3; // which waves those are is the run calendar's `isGruntWave`
   const doubleOdds = (s, from, n = DOUBLE_HORIZON) => {
     const gm = s?.gameMode;
     const lures = (s?.modifiers ?? []).filter(m => m?.constructor?.name === "DoubleBattleChanceBoosterModifier")
@@ -83,7 +81,7 @@ const { aheadModel, doubleOdds, learnRoster } = (() => {
       const w = from + i;
       if (tryDo(() => gm.isWaveFinal(w), false) || tryDo(() => gm.isEndlessBoss(w), false)) continue;
       const fixed = tryDo(() => (gm.isFixedBattle(w) ? gm.getFixedBattle(w) : null));
-      if (fixed) { doubles += fixed.double === true ? 1 : fixed.double == null && GRUNT_WAVES.includes(w) ? GRUNT_DOUBLE : 0; continue; }
+      if (fixed) { doubles += fixed.double === true ? 1 : fixed.double == null && isGruntWave(w) ? GRUNT_DOUBLE : 0; continue; }
       const lured = lures.filter(left => left > i).length;
       doubles += 1 / Math.max(1, (isBossWave(s, w) ? 32 : 8) / 4 ** (lured + abilities));
     }

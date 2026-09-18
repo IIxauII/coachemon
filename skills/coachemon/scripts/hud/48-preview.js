@@ -66,13 +66,6 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
     : s.arena.randomSpecies(w, level, 0, partyLuck(party, s, gameEvents())));
   const hasSpeciesRoll = s => typeof s.randomSpecies === "function" || typeof s.arena?.randomSpecies === "function";
 
-  // The evil-team grunt waves (35, 62, 64, 112). `getRandomTrainerFunc` gives a grunt a double variant on
-  // `randInt(3) === 0`, and `randInt` is `Math.random`: **unseeded**, so nothing in the run seed decides it and no
-  // replay can reach it. The trainer itself is still the seeded `randSeedItem` of the ten teams; only the double (and
-  // the gender) fall out of the stream.
-  const GRUNT_WAVES = [ClassicFixedBossWaves.EVIL_GRUNT_1, ClassicFixedBossWaves.EVIL_GRUNT_2,
-    ClassicFixedBossWaves.EVIL_GRUNT_3, ClassicFixedBossWaves.EVIL_GRUNT_4];
-
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
   // `randSeedInt` (utils/common): the same three lines, so a replayed draw lands on the same stream position.
   const rnd = range => (range <= 1 ? 0 : Phaser.Math.RND.integerInRange(0, range - 1));
@@ -143,8 +136,9 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
       return fork(s, w, s.seed, () => {
         const fixedCfg = tryDo(() => (gm.isFixedBattle(w) ? gm.getFixedBattle(w) : null));
         let type, trainer = null, forcedDouble, me = null;
-        // A fixed battle whose config pins `double` says so; a grunt wave that doesn't takes it from an unseeded roll.
-        const gruntDouble = !!fixedCfg && fixedCfg.double == null && GRUNT_WAVES.includes(w);
+        // A fixed battle whose config pins `double` says so; a grunt wave that doesn't takes it from an unseeded roll
+        // on `Math.random` (`isGruntWave`, 03-calendar.js), which nothing here or in the run seed can reach.
+        const gruntDouble = !!fixedCfg && fixedCfg.double == null && isGruntWave(w);
         if (gruntDouble) notes.push("this grunt's double is an unseeded roll: it can't be read ahead");
 
         if (fixedCfg) {
@@ -202,13 +196,18 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
         });
 
         // `arena.pokemonPool` is rebuilt only when the arena is built and as a wave X5 starts (47-biome's
-        // `spawnTimeOfDay`), so what matters is not whether the *clock* turns over between here and the wave ahead but
-        // whether the **pool** is rebuilt before it: X1–X4 draw from the X0's pool and X5–X9 from X5's. Read per wave,
-        // this called a shift four waves early and missed the one at X5.
+        // `spawnTimeOfDay` on the calendar's `poolAnchorWave`), so what matters is not whether the *clock* turns over
+        // between here and the wave ahead but whether the **pool** is rebuilt before it: X1–X4 draw from the X0's pool
+        // and X5–X9 from X5's. Read per wave, this called a shift four waves early and missed the one at X5.
+        // Two ways the pool we hold isn't the pool the wave ahead draws from, and both are a guess:
         const biomeId = s.arena?.biomeId;
-        const podShift = type === WILD
-          && spawnTimeOfDay(s, w, biomeId) !== spawnTimeOfDay(s, s.currentBattle?.waveIndex ?? w, biomeId);
-        if (podShift) notes.push("time of day turns over: the spawn pool shifts");
+        const here = s.currentBattle?.waveIndex ?? w;
+        const todShift = spawnTimeOfDay(s, w, biomeId) !== spawnTimeOfDay(s, here, biomeId);
+        // …and the bigger one: a new biome is a **new arena**, built with that biome's own pools. The player picks it
+        // at the X0 this replay is standing on, so a preview of the X1 after it is reading the biome being left.
+        const biomeShift = arenaRebuiltBetween(here, w);
+        const podShift = type === WILD && (todShift || biomeShift);
+        if (podShift) notes.push(biomeShift ? "the next biome brings its own spawn pool" : "time of day turns over: the spawn pool shifts");
         return {
           wave: w, type: type === MYSTERY ? "me" : type === TRAINER ? "trainer" : "wild", fixed: !!fixedCfg,
           trainer: trainer ? { name: trainerName(trainer), double: tryDo(() => trainer.isDouble(), false) } : null,

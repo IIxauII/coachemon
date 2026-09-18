@@ -8,6 +8,8 @@ daily                     20:gym  30:boss  45:—  50:final
 endless                   20:boss  200:boss  210:boss  250:final  500:final
 == kind rolled, classic
 waves 41–50               41:rule  42:roll  43:roll  44:roll  47:roll  48:rule  49:rule  50:rule
+== grunt waves 35, 62, 64, 112
+pool anchor 9–21          9:5  10:5  11:10  14:10  15:15  19:15  20:15  21:20
 == schedule from 1  [[5,"fixed"],[8,"fixed"],[10,"boss"],[20,"gym"],[25,"fixed"],[30,"boss"]]
 == schedule from 181 [[182,"fixed"],[184,"fixed"],[186,"fixed"],[188,"fixed"],[190,"fixed"],[195,"fixed"],[200,"final"]]
 == heals, classic

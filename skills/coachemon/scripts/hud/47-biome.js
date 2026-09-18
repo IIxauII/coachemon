@@ -248,18 +248,17 @@ const { biomeModel, gameEvents, gameRewardFns, gameTables, setGameTables, setRew
 
   // ---- Which pool a wave spawns from, and when that pool was last built
   // `Arena.updatePoolsForTimeOfDay` rebuilds `pokemonPool` from `getTimeOfDay()`, which reads whatever wave is current
-  // when it runs — and it runs exactly twice per block: when the arena is built (`newArena`, during the X0 the biome
-  // is chosen on) and, from `doPostBattleCleanup`, as a wave X5 starts. So **X1–X4 spawn from the pool the X0 built,
-  // and X5–X9 and the closing X0 from the pool X5 built**. Reading the time of day at the wave itself — which both
-  // this card and 48-preview did — moves a pool up to four waves early. ABYSS is night whatever the wave.
-  const poolAnchor = w => { const base = Math.floor((w - 1) / 10) * 10; return w - base >= 5 ? base + 5 : base; };
+  // when it runs, and it runs twice per block: when the arena is built and as a wave X5 starts. **Which wave that is**
+  // is a rule about wave numbers, so it is the run calendar's `poolAnchorWave`; what the time of day *at* that wave
+  // comes to is this card's, because it needs the biome (ABYSS is night whatever the wave). Reading the time of day at
+  // the wave itself — which both this card and 48-preview did — moves a pool up to four waves early.
   const timeOfDayAt = (s, w, biomeId) => {
     if (biomeId === BiomeId.ABYSS) return TimeOfDay.NIGHT;
     const c = (w + (s?.waveCycleOffset ?? 0)) % 40;
     return c < 15 ? TimeOfDay.DAY : c < 20 ? TimeOfDay.DUSK : c < 35 ? TimeOfDay.NIGHT : TimeOfDay.DAWN;
   };
   /** The time of day whose pool wave `w` spawns from in `biomeId`: the arena's, at its last rebuild. */
-  const spawnTimeOfDay = (s, w, biomeId) => (w == null ? null : timeOfDayAt(s, poolAnchor(w), biomeId));
+  const spawnTimeOfDay = (s, w, biomeId) => (w == null ? null : timeOfDayAt(s, poolAnchorWave(w), biomeId));
 
   // A wild boss on a wave that isn't a tenth one: `getEncounterBossSegments` rolls `randSeedInt(100)` against
   // `min(max(ceil((w − 250) / 50), 0) × 2, 30)` when the mode `hasRandomBosses` — Endless and Spliced Endless — so

@@ -13,7 +13,14 @@
 // applies, and the one every card reads. There is no second copy of the gym rule anywhere in the HUD.
 // The gym rule and the trainer share are both **inside** `isWaveTrainer`, which `handleNonFixedBattle` calls only when
 // `gameMode.hasTrainers`: Endless and Spliced Endless have no gym wave and no trainer wave at all, and `hasTrainers`
-// is the one place that says so.
+// is the one place that says so. **Daily keeps the gym rule** even though `isWaveTrainer` returns from its own
+// calendar before reaching it: its X0 from 20 to 40 is a trainer drawn from the biome's BOSS pool (`isTrainerBoss`),
+// which is a gym leader in all but name, and the cards that care read Daily's own rule anyway. What the Daily
+// calendar does change is that **no draw decides any of it**, which is `kindIsRolled`'s business, not `waveKind`'s.
+//
+// Wave numbers alone decide two more things, so they live here too rather than in the cards that read them:
+// `isGruntWave` (the four fixed waves whose double comes off an unseeded roll) and `poolAnchorWave` (the wave whose
+// time of day the arena's spawn pool was last built at).
 //
 // ---- Heals
 // `VictoryPhase` pushes `SelectBiomePhase` whenever `isNewBiome()` — in classic, every tenth wave — and
@@ -111,10 +118,30 @@ export const nextHeal = (s, from) => {
 export const healRevives = s => healsAtAll(s) && challengeValue(s, Challenges.HARDCORE) <= 0;
 
 /**
+ * `isWaveTrainer`'s look-back loop, as the one reading both callers share (`src/game-mode.ts:227-244`): it walks
+ * `[max(w − 2, base + 2), min(w + 2, base + 10)]` and gives up on the first gym or fixed battle it meets — which is
+ * the *rule* half, costing no draw — counting the earlier waves that rolled before this one, which is the *odds* half.
+ * `{ blocked, before }`: blocked means the wave never reaches its own roll at all.
+ */
+const lookback = (s, w) => {
+  const gm = s?.gameMode;
+  const base = Math.floor(w / 10) * 10;
+  let before = 0;
+  for (let v = Math.max(w - 2, base + 2); v <= Math.min(w + 2, base + 10); v++) {
+    if (v === w) continue;
+    if (gymRule(s, v) || tryDo(() => gm?.isFixedBattle(v), false)) return { blocked: true, before };
+    if (v < w) before++;
+  }
+  return { blocked: false, before };
+};
+
+/**
  * How likely wave `w` in `biome` is a trainer battle: `GameMode.isWaveTrainer` (§10) as odds rather than as the roll
  * `48-preview.js` replays. The certainties first — a gym wave always, Daily's X5 and its X0 past 10, and a wave the
  * run's own table has already claimed never — then the 1/`trainerChance` roll each of X2…X9 makes, blocked within two
- * waves of a gym or fixed battle and reduced by the chance a wave in its look-back took the slot first.
+ * waves of a gym or fixed battle and reduced by the chance a wave in its look-back took the slot first. The chance is
+ * the **candidate biome's**, because this answers about a biome the run hasn't entered yet; `kindIsRolled` asks the
+ * live arena for the same number, which is the one the wave ahead will really roll against.
  */
 export const trainerOdds = (s, w, biome) => {
   const gm = s?.gameMode;
@@ -126,14 +153,8 @@ export const trainerOdds = (s, w, biome) => {
   if (w % 10 <= 1) return 0; // X1 is skipped for a sprite bug, X0 is a wild boss
   const chance = biome?.trainerChance ?? 0;
   if (!chance) return 0;
-  const base = Math.floor(w / 10) * 10;
-  let before = 0;
-  for (let v = Math.max(w - 2, base + 2); v <= Math.min(w + 2, base + 10); v++) {
-    if (v === w) continue;
-    if (gymRule(s, v) || tryDo(() => gm.isFixedBattle(v), false)) return 0;
-    if (v < w) before++;
-  }
-  return (1 - 1 / chance) ** before / chance;
+  const { blocked, before } = lookback(s, w);
+  return blocked ? 0 : (1 - 1 / chance) ** before / chance;
 };
 
 /**
@@ -157,10 +178,37 @@ export const kindIsRolled = (s, w) => {
   const kind = waveKind(s, w);
   if (kind === "final" || kind === "fixed" || kind === "gym") return false;
   if (w % 10 === 0 || w % 10 === 1) return false;
-  if ((s?.arena?.trainerChance ?? 1) <= 0) return false;
-  const base = Math.floor(w / 10) * 10;
-  for (let v = Math.max(w - 2, base + 2); v <= Math.min(w + 2, base + 10); v++) {
-    if (v !== w && (gymRule(s, v) || tryDo(() => gm.isFixedBattle(v), false))) return false;
-  }
-  return true;
+  // `randSeedInt(range)` returns `min` **without drawing** when `range <= 1` (`src/utils/common.ts:101`), so a biome
+  // with a trainer chance of 1 is a rule too — every eligible wave is a trainer, and no draw says so.
+  if ((s?.arena?.trainerChance ?? 2) <= 1) return false;
+  return !lookback(s, w).blocked;
 };
+
+/**
+ * Whether wave `w` is one of the four **evil-team grunt** waves (35, 62, 64, 112). Their config is the only one whose
+ * trainer can arrive as a double without the run seed saying so: `getRandomTrainerFunc` (`src/battle.ts:582`) rolls
+ * `randInt(3) === 0` for a grunt, and `randInt` is `Math.random` (`src/utils/common.ts:88`) — unseeded, so no preview
+ * and no replay reaches it. The admins and bosses of the same group take no such roll.
+ */
+const GRUNT_WAVES = [ClassicFixedBossWaves.EVIL_GRUNT_1, ClassicFixedBossWaves.EVIL_GRUNT_2,
+  ClassicFixedBossWaves.EVIL_GRUNT_3, ClassicFixedBossWaves.EVIL_GRUNT_4];
+export const isGruntWave = w => GRUNT_WAVES.includes(w);
+
+/**
+ * The wave whose time of day the arena's spawn pool was last built at. `Arena.updatePoolsForTimeOfDay` runs when the
+ * arena is built — `newArena`, during the X0 the next biome is chosen on — and again from `doPostBattleCleanup` as a
+ * wave X5 starts (`src/battle-scene.ts:1576`), and nowhere else. So **X1–X4 spawn from the pool the X0 built, and
+ * X5–X9 and the closing X0 from the pool X5 built**; wave 1 answers 0, which is the `currentBattle?.waveIndex ?? 0`
+ * the title screen's arena read. What that wave's time of day *is* stays with the biome card, which needs the biome.
+ */
+export const poolAnchorWave = w => {
+  const base = Math.floor((w - 1) / 10) * 10;
+  return w - base >= 5 ? base + 5 : base;
+};
+
+/**
+ * Whether the arena itself is rebuilt between waves `from` and `to` — a **new biome**, with its own pools, not just a
+ * rebuild of the one we hold. The ten waves an arena covers run X1…X0, and `SelectBiomePhase` asks for the next one on
+ * the X0 that ends them, so a preview taken on an X0 of the X1 after it is reading the biome the run is leaving.
+ */
+export const arenaRebuiltBetween = (from, to) => Math.floor((from - 1) / 10) !== Math.floor((to - 1) / 10);
