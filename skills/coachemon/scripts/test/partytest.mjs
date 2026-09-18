@@ -164,6 +164,30 @@ const flatten = rs => rs.map(flat);
   assert.equal(growing.final, Math.ceil((400 + 540) / 2));
   // A bare species, which is all a biome spawn or a trade offer is.
   assert.deepEqual(finalBstOf({ species: SPECIES.lapras }), { bst: 535, final: 535, estimated: false });
+
+  // `calculateBaseStats` starts from the *form*'s stats, so a mon standing in an alternate form is worth that form's
+  // total, not the species entry's. Deoxys-like: the species row is the Normal form, form 1 is the Attack form.
+  const deoxys = { speciesId: 386, baseTotal: 600, baseStats: [50, 150, 50, 150, 50, 150], getEvolutionLevels: () => [],
+    forms: [{ baseTotal: 600, baseStats: [50, 150, 50, 150, 50, 150] }, { baseTotal: 700, baseStats: [50, 180, 20, 180, 20, 250] }] };
+  assert.equal(finalBstOf({ species: deoxys }).bst, 600, "no mon, no form index: the species' own row");
+  assert.equal(finalBstOf({ species: deoxys, formIndex: 1 }).bst, 700, "the form the mon is standing in");
+  row("Deoxys form 1", [`final ${finalBstOf({ species: deoxys, formIndex: 1 }).final}`]);
+
+  // A live mon answers for itself: Flip Stat, Shuckle Juice, Old Gateau, Spliced Endless halving and vitamins are all
+  // already in `calculateBaseStats`, so its sum wins over any species row.
+  const vitamined = { species: deoxys, formIndex: 1, calculateBaseStats: () => [60, 190, 30, 190, 30, 260] };
+  assert.equal(finalBstOf(vitamined).bst, 760, "vitamins and the rest come through the game's own call");
+  const spliced = { species: deoxys, formIndex: 1, calculateBaseStats: () => [25, 90, 10, 90, 10, 125] };
+  assert.equal(finalBstOf(spliced).bst, 350, "Spliced Endless halves the pair, and the profile follows");
+  const broken = { species: deoxys, formIndex: 1, calculateBaseStats: () => { throw new Error("hidden in this build"); } };
+  assert.equal(finalBstOf(broken).bst, 700, "a build that hides the method falls back to the form");
+
+  // A fusion: the pair's stats are the mon's, while each half's *line* is projected from its own form.
+  const fusedForm = { species: SPECIES.magikarp, fusionSpecies: deoxys, fusionFormIndex: 1,
+    calculateBaseStats: () => [55, 180, 30, 130, 30, 210] };
+  const pair = finalBstOf(fusedForm);
+  assert.equal(pair.bst, 635, "the mon's own fused stats");
+  assert.equal(pair.final, Math.ceil((400 + 700) / 2), "Magikarp's line grows; the Attack form is already final");
 }
 
 // ---- 8. Nothing to judge: an empty party has no reasons to give, and no card should crash asking.

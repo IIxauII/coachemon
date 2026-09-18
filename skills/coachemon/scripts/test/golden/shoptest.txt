@@ -264,6 +264,32 @@ buy first — taking the free reward closes the shop
 · Master Ball Master Ball — catches anything · you have 0
 🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== grip claw off contact
+🛒 $100 nothing affordable − ×
+🎁 Grip Claw Jolteon 10% to steal an item when it attacks
+🩺 team: 2 issues · Wobbuffet: no attacking move +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== daily level cap
+🛒 $100 nothing affordable − ×
+🎁 EXP. Charm more EXP · 2 under the Lv 52 cap
+🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== classic level cap
+🛒 $100 nothing affordable − ×
+🎁 EXP. Charm whole party at the Lv 24 cap
+🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== tm learned without it
+🛒 $200 nothing affordable − ×
+🎁 TM Magical Leaf least bad · skip · Comfey learns it without the TM
+· 5× Poké Ball you have 34
+🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== tm skips the free learner
+🛒 $200 nothing affordable − ×
+🎁 TM Crunch Snorlax free slot · +116 power
+🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == reroll disabled
 🛒 $3000 − ×
 🎁 X Defense least bad · only lasts a few battles

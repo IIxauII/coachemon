@@ -49,4 +49,11 @@ Poké ×10 31% Great ×5 40%
 ⇥ ends it: 3 turns to KO
 == unevolved upgrade (mini)
 🎯 catch: Great 40% — ends it: 3 turns to KO, new species, sleep/paralyse it for better odds
+== challenge final boss (full)
+🎯 Eternatus maybe: break its bars first — no ball works on this boss, new species, stronger than Venusaur (BST 690 vs 525)
+Poké ×5 0% Master ×1 0%
+★ new species
+⚑ stronger than Venusaur (BST 690 vs 525)
+== challenge final boss (mini)
+🎯 maybe: break its bars first — no ball works on this boss, new species, stronger than Venusaur (BST 690 vs 525)
 ok

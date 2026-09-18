@@ -38,7 +38,6 @@ const { rewardContext, rewardValue } = (() => {
   const bulk = p => tryDo(() => p.getMaxHp(), 0) * (statOf(p, Stat.DEF) + statOf(p, Stat.SPDEF)) / 2;
   const has = (p, names) => abilitiesOf(p).some(a => names.includes(a));
   const typesSafe = p => tryDo(() => typesOf(p), []);
-  const flagged = (mv, bit) => tryDo(() => moveHasFlag(mv, bit), false);
 
   // How much each stat matters to a member, for natures and vitamins: the stat it attacks with most, Speed next, its
   // bulk after that, the attack stat it doesn't use least of all.
@@ -59,9 +58,13 @@ const { rewardContext, rewardValue } = (() => {
   // and a member at it gets no share at all, while a Rare Candy ignores it.
   const rewardContext = (s, alive, { bossNext = false, gauntlet = false, double = 0 } = {}) => {
     const wave = s.currentBattle?.waveIndex ?? 0;
+    // `getMaxExpLevel` runs the rounded wave through `GameMode.getWaveForDifficulty` first, which a Daily run pushes
+    // 30 waves and another fifth of itself ahead (`waveIndex + 30 + floor(waveIndex / 5)`): the cap is far higher
+    // there than the wave number suggests. Only reached when the live build hides `getMaxExpLevel`.
     const capOf = () => {
       const w = Math.ceil((wave || 1) / 10) * 10;
-      return Math.ceil((1 + w / 2 + (w / 25) ** 2) * 1.2 / 2) * 2 + 2;
+      const d = s.gameMode?.isDaily ? w + 30 + Math.floor(w / 5) : w;
+      return Math.ceil((1 + d / 2 + (d / 25) ** 2) * 1.2 / 2) * 2 + 2;
     };
     const cap = tryDo(() => s.getMaxExpLevel(), null) ?? capOf();
     const carry = [...alive].sort((a, b) => b.level - a.level || statOf(b, mainStat(b)) - statOf(a, mainStat(a)))[0] ?? null;
@@ -118,10 +121,9 @@ const { rewardContext, rewardValue } = (() => {
       const fit = n == null ? 0 : natureValue(p, n);
       return fit > 0 && [4 + 80 * fit, `${p.name} · ${natureOf(n).name} nature 10% stronger${stackText(c, p, "SOUL_DEW", 10)}`];
     },
-    GRIP_CLAW: (p, c) => {
-      const share = attacks(p).filter(mv => flagged(mv, MoveFlags.MAKES_CONTACT)).length / Math.max(1, attacks(p).length);
-      return share > 0 && [3 + 6 * share, `${p.name} · 10% to steal an item on contact${stackText(c, p, "GRIP_CLAW", 5)}`];
-    },
+    // Its name says contact, its trigger doesn't: `MoveEffectPhase.applyOnTargetEffects` rolls it after **any**
+    // attacking move (`this.move.is("AttackMove")`), status moves aside, so every attack in the moveset counts.
+    GRIP_CLAW: (p, c) => attacks(p).length && [9, `${p.name} · 10% to steal an item when it attacks${stackText(c, p, "GRIP_CLAW", 5)}`],
     MINI_BLACK_HOLE: p => [22, `${p.name} · steals an item every turn`],
     WIDE_LENS: (p, c) => {
       const miss = Math.max(0, ...attacks(p).map(mv => (mv.accuracy > 0 ? (100 - mv.accuracy) / 100 : 0)));

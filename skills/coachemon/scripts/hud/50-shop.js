@@ -34,9 +34,28 @@ const tmLearners = (t, party) => {
   }
   return users && users.filter(p => !knowsMove(p, t.moveId));
 };
+// Who would be spending the TM on something they get anyway. The offer itself is drawn from
+// `getCompatibleTms(true, true, true)` (`TmModifierTypeGenerator`), which per member drops the moves it knows, the
+// ones on its own level-up and relearn list, and the TMs it has already used — so a member missing from that list is
+// one the game never drew this TM for: it learns the move by levelling, or can relearn it from a Memory Mushroom.
+// Teaching is still allowed (the party screen only asks `isTmCompatible(moveId, true)`), so they are set aside rather
+// than dropped: `free` carries them when nobody else can take the TM.
+const tmPoolSplit = (t, users) => {
+  const free = [];
+  const paying = users.filter(p => {
+    if (typeof p.getCompatibleTms !== "function") return true;
+    let pool = null;
+    try { pool = p.getCompatibleTms(true, true, true); } catch { return true; }
+    if (!Array.isArray(pool) || pool.includes(t.moveId)) return true;
+    free.push(p);
+    return false;
+  });
+  return { paying, free };
+};
 // A fainted member can still be taught a TM: the party screen's TM mode offers TEACH whoever the cursor is on, and
-// the TM pool itself is drawn from the whole party. Only the Hardcore challenge takes it away,
-// by giving a fainted member nothing but Release (`PartyUiHandler.updateOptionsHardcore`).
+// the TM pool itself is drawn from the whole party. Only the Hardcore challenge takes it away: a fainted member there
+// goes through `PartyUiHandler.updateOptionsHardcore`, whose switch has no TM case at all, so it is offered nothing
+// but Cancel and the scroll options — not even the Release its other modes push.
 const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.HARDCORE && c.value > 0);
 
 // TM advice: the learn decision (learnAdvice, the learn card's own) for every member who can learn the move, and the
@@ -198,10 +217,16 @@ const rewardsModel = (s, h) => {
       const mv = learnMoveById(party, t.moveId);
       extra.moveId = t.moveId ?? null;
       extra.move = mv ? { name: mv.name, type: TYPES[mv.type] ?? "Normal", cat: ["physical", "special", "status"][mv.category] } : null;
-      const users = tmLearners(t, isHardcore(s) ? alive : party);
-      if (!users || !mv) { v = 5; why = "TM — can't check who learns it"; extra.tm = null; }
-      else if (!users.length) { v = -6; why = "skip · nobody can learn it"; extra.users = []; extra.tm = "skip"; }
-      else {
+      const all = tmLearners(t, isHardcore(s) ? alive : party);
+      const split = all && tmPoolSplit(t, all);
+      // Everyone who can learn it gets it without the TM: nothing to spend a reward slot on.
+      const users = split && (split.paying.length ? split.paying : []);
+      if (!all || !mv) { v = 5; why = "TM — can't check who learns it"; extra.tm = null; }
+      else if (!all.length) { v = -6; why = "skip · nobody can learn it"; extra.users = []; extra.tm = "skip"; }
+      else if (!users.length) {
+        v = -4; extra.users = split.free.map(p => p.name); extra.tm = "skip";
+        why = `skip · ${split.free.map(p => p.name).slice(0, 2).join("/")} learn${split.free.length > 1 ? "" : "s"} it without the TM`;
+      } else {
         // The learn card's own decision on every member that can learn it: best recipient wins. A TM is kept for the
         // run, so a spread or ally move is judged by the share of double battles ahead, not by the wave just won.
         // Disruption and inflicted status are weighed against the next big fight's roster, as on the learn card.
