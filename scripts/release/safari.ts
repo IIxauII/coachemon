@@ -23,8 +23,26 @@ export const BUNDLE_ID = "io.github.iixauii.coachemon";
 /** The tag the extension stream cuts (§14.1); both the download and the upload address the same release. */
 export const extensionTag = (version: string): string => `extension-v${version}`;
 
-/** One command in the plan, with the line the runner prints before it. */
-export type SafariStep = { title: string; command: string; args: string[] };
+/**
+ * One command in the plan: `id` is what code branches on, `title` the line the runner prints. Two fields and not one
+ * because the runner has a check to run after the unpack, and hanging that off display text means rewording a
+ * sentence silently stops it running.
+ */
+export type SafariStep = { id: StepId; title: string; command: string; args: string[] };
+
+export type StepId =
+  | "download"
+  | "unpack"
+  | "package"
+  | "archive"
+  | "export"
+  | "zip-for-notarization"
+  | "notarize"
+  | "staple"
+  | "validate"
+  | "gatekeeper"
+  | "zip-asset"
+  | "upload";
 
 export type SafariPlan = {
   /** The version being released, three numbers, as the release's artifacts are named for it. */
@@ -35,10 +53,15 @@ export type SafariPlan = {
   identity: string;
   /** The `notarytool store-credentials` profile holding the app-specific password (see the runbook). */
   profile: string;
+  /** `owner/name` of the repo carrying the release. `gh` runs outside the checkout, so it is told rather than asked. */
+  repo: string;
 };
 
-/** Every path the plan writes or reads, derived from the scratch directory alone so a dry run names real files. */
-export function safariPaths(work: string, version: string) {
+/**
+ * Every path the plan writes or reads, derived from the scratch directory alone so a dry run names real files. It
+ * takes the plan rather than the two fields, so the runner and `safariSteps` cannot derive a path from different ones.
+ */
+export function safariPaths({ work, version }: Pick<SafariPlan, "work" | "version">) {
   const exported = join(work, "export");
   return {
     /** The release's own Safari asset: the unpackaged web extension, not something Safari installs. */
@@ -86,6 +109,18 @@ export function pickIdentity(candidates: string[], asked: string | undefined): s
   return candidates[0];
 }
 
+const REMOTE = /[:/]([^/:]+\/[^/]+?)(?:\.git)?\/?$/;
+
+/**
+ * `owner/name` out of a remote URL, in either spelling `git remote get-url` can hand back. Read off the checkout
+ * rather than written down, so a fork or a rename does not leave this script uploading to somebody else's release.
+ */
+export function repoFromRemote(url: string): string {
+  const match = REMOTE.exec(url.trim());
+  if (!match) throw new Error(`no owner/name in the remote ${url}`);
+  return match[1];
+}
+
 /** The team id, read off the identity rather than configured a second time where it could drift from it. */
 export function teamIdFrom(identity: string): string {
   const match = TEAM_ID.exec(identity.trim());
@@ -110,6 +145,8 @@ export function exportOptions(teamId: string): string {
   <string>${teamId}</string>
   <key>signingStyle</key>
   <string>manual</string>
+  <key>signingCertificate</key>
+  <string>Developer ID Application</string>
 </dict>
 </plist>
 `;
@@ -128,26 +165,40 @@ export function packagedVersion(manifest: string): string {
 
 /** §14.6 as commands, in order. Pure: the runner executes these, and a dry run prints them. */
 export function safariSteps(plan: SafariPlan): SafariStep[] {
-  const p = safariPaths(plan.work, plan.version);
+  const p = safariPaths(plan);
   const tag = extensionTag(plan.version);
   const teamId = teamIdFrom(plan.identity);
   return [
     {
+      id: "download",
       title: `Download ${zipName("safari", plan.version)} from ${tag}`,
       command: "gh",
-      args: ["release", "download", tag, "--pattern", zipName("safari", plan.version), "--dir", plan.work, "--clobber"],
+      args: [
+        "release", "download", tag,
+        // Named, never inferred: every step runs in the scratch directory, which is no checkout, and the repo is
+        // private, so `gh` has neither a remote to read there nor a public fallback to guess from.
+        "--repo", plan.repo,
+        "--pattern", zipName("safari", plan.version),
+        "--dir", plan.work,
+        "--clobber",
+      ],
     },
     {
       // `ditto -x -k` and not `unzip`: the same tool that writes the asset, and it keeps macOS metadata intact.
+      id: "unpack",
       title: "Unpack the web extension",
       command: "ditto",
       args: ["-x", "-k", p.download, p.unpacked],
     },
     {
+      id: "package",
       title: `Package the extension into the ${APP_NAME} near-shell`,
       command: "xcrun",
       args: [
-        "safari-web-extension-packager",
+        // `safari-web-extension-converter`, and not the `safari-web-extension-packager` §14.6 named: Apple's page is
+        // titled "Packaging a web extension for Safari", but the tool it documents is the converter, and `xcrun`
+        // finds no packager on any Mac. The spec is corrected where it says this.
+        "safari-web-extension-converter",
         p.unpacked,
         "--project-location", p.project,
         "--app-name", APP_NAME,
@@ -155,9 +206,12 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
         "--macos-only",
         "--copy-resources",
         "--no-open",
+        // Without it the converter stops on its warning summary and waits for a human a scripted run has not got.
+        "--no-prompt",
       ],
     },
     {
+      id: "archive",
       title: "Archive with the Developer ID Application identity, hardened runtime on",
       command: "xcodebuild",
       args: [
@@ -176,6 +230,7 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       ],
     },
     {
+      id: "export",
       title: `Export ${APP_NAME}.app from the archive`,
       command: "xcodebuild",
       args: [
@@ -186,41 +241,50 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       ],
     },
     {
+      id: "zip-for-notarization",
       title: "Zip the app for notarization (scratch, not the release's asset)",
       command: "ditto",
       args: ["-c", "-k", "--keepParent", p.app, p.submitted],
     },
     {
+      id: "notarize",
       title: "Submit for notarization and wait for Apple's verdict",
       command: "xcrun",
       args: ["notarytool", "submit", p.submitted, "--wait", "--keychain-profile", plan.profile],
     },
     {
       // Without the ticket in the bundle, a player who is offline on first launch is refused by Gatekeeper.
+      id: "staple",
       title: "Staple the notarization ticket into the app",
       command: "xcrun",
       args: ["stapler", "staple", p.app],
     },
     {
+      id: "validate",
       title: "Validate the stapled ticket",
       command: "xcrun",
       args: ["stapler", "validate", p.app],
     },
     {
       // What the player's Mac will ask on first launch, asked here instead, where an answer is still cheap.
+      id: "gatekeeper",
       title: "Check what Gatekeeper makes of it",
       command: "spctl",
-      args: ["-a", "-vvv", "-t", "install", p.app],
+      // No `-t`: `spctl`'s default assessment is `execute`, which is what happens to a downloaded `.app`. `install` is
+      // the installer-package assessment, and answers a question nobody will ask of this artifact.
+      args: ["-a", "-vvv", p.app],
     },
     {
+      id: "zip-asset",
       title: `Zip the stapled app as ${safariAppZipName(plan.version)}`,
       command: "ditto",
       args: ["-c", "-k", "--keepParent", p.app, p.asset],
     },
     {
+      id: "upload",
       title: `Upload it to ${tag}`,
       command: "gh",
-      args: ["release", "upload", tag, p.asset, "--clobber"],
+      args: ["release", "upload", tag, p.asset, "--repo", plan.repo, "--clobber"],
     },
   ];
 }

@@ -755,7 +755,7 @@ From [Release channel, versioning, and how fixes reach users](https://github.com
 - **Path filter:** a local plugin, `scripts/release/extension-commits.mjs` (picked here), wraps `@semantic-release/commit-analyzer` and `@semantic-release/release-notes-generator`. It keeps only commits whose `git diff-tree --no-commit-id --name-only -r <sha>` touches `extension/`, `src/protocol/`, `src/page/` or `skills/coach-pokerogue/scripts/hud/`. A HUD fix bumps both streams, which is correct. A server-only commit never bumps the extension. **(picked here, amending the release ticket's two paths)** `src/protocol/` and `src/page/` are added because they ship in the extension and did not exist when the release ticket fixed the filter; leaving them out would let a change to shipped page code skip the extension stream.
 - **The plugin's `chore(release)` commit** rewrites `hud/05-randbats.js` but is a `chore`, so it bumps nothing.
 - **Stamping:** `@semantic-release/exec` `prepareCmd` runs `node ../scripts/release/stamp-extension.ts ${nextRelease.version}`, which writes the version into `extension/package.json` **in the workspace only**, then builds and zips. **Nothing is committed**; there is no `@semantic-release/git` in this run. The tag is the source of truth.
-- **Artifacts** on the GitHub Release: `coachemon-chrome-<v>.zip`, `coachemon-firefox-<v>.zip`, `coachemon-<v>-sources.zip`, `coachemon-safari-web-extension-<v>.zip` (the unpackaged folder), via `@semantic-release/github`.
+- **Artifacts** on the GitHub Release: `coachemon-chrome-<v>.zip`, `coachemon-firefox-<v>.zip`, `coachemon-<v>-sources.zip`, `coachemon-safari-web-extension-<v>.zip` (the unpackaged folder), via `@semantic-release/github`. A fifth, `Coachemon-safari-<v>.zip`, is added to the same release by hand afterwards (§14.6); CI neither writes nor checks for it.
 
 ### 14.3 Job order in `release.yml`
 
@@ -784,14 +784,20 @@ Both jobs sit in the existing `release` concurrency group, so two pushes never i
 On the dev's Mac, with an individual Apple Developer Program membership (enrolled off-map) and Xcode:
 
 1. Download `coachemon-safari-web-extension-<v>.zip` from the release and unzip it.
-2. `xcrun safari-web-extension-packager <folder> --project-location <tmp> --app-name Coachemon --bundle-identifier io.github.iixauii.coachemon --macos-only --copy-resources --no-open` (bundle identifier picked here). The containing app is the packager's generated near-shell and stays that way: Apple's Developer ID route has no review, and Attachment 7 bars bundling the extension with an app that has a different purpose.
+2. `xcrun safari-web-extension-converter <folder> --project-location <tmp> --app-name Coachemon --bundle-identifier io.github.iixauii.coachemon --macos-only --copy-resources --no-open --no-prompt` (bundle identifier picked here). **Corrected in ticket 10**: this said `safari-web-extension-packager`, after the title of Apple's page ("Packaging a web extension for Safari"). The tool Xcode ships is the **converter**; `xcrun` finds no packager on any Mac, so the name as written aborted every run at this step. `--no-prompt` is also added, or the converter stops on its warning summary waiting for a human. The containing app is the converter's generated near-shell and stays that way: Apple's Developer ID route has no review, and Attachment 7 bars bundling the extension with an app that has a different purpose.
 3. Archive with the Developer ID Application identity (hardened runtime on).
 4. `xcrun notarytool submit Coachemon.zip --wait`, then `xcrun stapler staple Coachemon.app`.
 5. `gh release upload extension-v<v> Coachemon-safari-<v>.zip`, with the `.app` zipped by `ditto -c -k --keepParent`.
 
 No auto-update, no Homebrew, no Sparkle: players re-download. Nothing in any build scripts or automates turning the extension on, per Attachment 7 §1.1.
 
-Carried out by `npm run release:safari -- <version>` (`scripts/release/safari-release.ts`), whose plan is the pure `scripts/release/safari.ts` and whose setup is [the runbook](../runbooks/safari-release.md). Two corrections the script makes to the steps above, both found while writing it: the zip handed to `notarytool` is a scratch file and the release's asset is cut from the app **after** stapling, because notarization writes nothing back into the submitted zip; and the asset is named `Coachemon-safari-<v>.zip` so it sits on the same release as `coachemon-safari-web-extension-<v>.zip` without colliding.
+Carried out by `npm run release:safari -- <version>` (`scripts/release/safari-release.ts`), whose plan is the pure `scripts/release/safari.ts` and whose setup is [the runbook](../runbooks/safari-release.md). Corrections the script makes to the steps above, all found while writing it:
+
+- **The tool is `safari-web-extension-converter`**, not the packager step 2 named. See step 2.
+- **The zip handed to `notarytool` is a scratch file.** Notarization writes nothing back into it, so the release's asset is cut from the app **after** stapling; uploading the submitted zip would ship an app that Gatekeeper passes only while the player is online.
+- **The asset is `Coachemon-safari-<v>.zip`**, apart from the release's `coachemon-safari-web-extension-<v>.zip`, so the two Safari assets sit on one release without colliding.
+- **Both `gh` calls name `--repo`.** The build runs in a scratch directory, which is no checkout, and the repo is private, so `gh` has nothing to infer from.
+- **Gatekeeper is asked with plain `spctl -a -vvv`.** `-t install` is the installer-package assessment; the default, `execute`, is what a downloaded `.app` meets.
 
 ---
 

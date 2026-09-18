@@ -26,8 +26,9 @@ Everything happens in a scratch directory under `/tmp`, removed when the run suc
 Nothing is uploaded until the last step, so a failure anywhere leaves the release as it was.
 
 Flags: `--identity "<full identity>"` when the keychain holds more than one Developer ID Application identity,
-`--keychain-profile <name>` (default `coachemon`, or `$COACHEMON_NOTARY_PROFILE`), `--work <dir>` to pick the scratch
-directory, `--keep` to leave it behind, `--dry-run` to print the plan.
+`--keychain-profile <name>` (default `coachemon`, or `$COACHEMON_NOTARY_PROFILE`), `--repo owner/name` when the
+release is not on this checkout's `origin`, `--work <dir>` to pick the scratch directory (it must be empty; the
+script deletes only a directory it made itself), `--keep` to leave the scratch behind, `--dry-run` to print the plan.
 
 `--dry-run` works before any of the setup below exists: it warns about what is missing and prints the plan anyway.
 
@@ -46,11 +47,15 @@ Xcode from the App Store, then:
 
 ```sh
 sudo xcode-select -s /Applications/Xcode.app
-xcrun --find safari-web-extension-packager   # must print a path
+xcrun --find safari-web-extension-converter   # must print a path
 ```
 
-The Command Line Tools alone are not enough: `safari-web-extension-packager` ships with Xcode, and `xcrun` resolves
-against whatever `xcode-select` points at.
+The Command Line Tools alone are not enough: `safari-web-extension-converter` ships with Xcode, and `xcrun` resolves
+against whatever `xcode-select` points at. `xcode-select -p` is not the check — it prints the Command Line Tools path
+just as happily — which is why the script asks `xcrun` for the converter itself.
+
+The tool is the **converter**. §14.6 called it `safari-web-extension-packager`, after the title of Apple's page
+("Packaging a web extension for Safari"); no such tool exists, and the spec is corrected.
 
 ### 3. The Developer ID Application certificate
 
@@ -93,7 +98,7 @@ read and write its releases.
 | Step | Why it is there |
 |---|---|
 | Download, unpack | The release's own artifact is the input, so what is signed is exactly what CI built and the guard (§5.5) checked. The manifest's version is compared with the version asked for: `gh release download` matching nothing leaves a stale unzip in place. |
-| Package | `safari-web-extension-packager` wraps the extension in a containing app, because macOS has no other way to install a Safari extension. The app is the packager's near-shell and stays that way: Attachment 7 bars bundling the extension with an app of a different purpose. |
+| Package | `safari-web-extension-converter` wraps the extension in a containing app, because macOS has no other way to install a Safari extension. The app is the converter's generated near-shell and stays that way: Attachment 7 bars bundling the extension with an app of a different purpose. `--no-prompt` so it does not stop on its warning summary waiting for a human. |
 | Archive, export | `developer-id` is the distribution route with no App Store review. The hardened runtime is on because notarization refuses a build without it, and `--timestamp` because the hardened runtime requires a secure timestamp. |
 | Notarize, staple | `notarytool submit --wait` blocks until Apple returns a verdict; the ticket it issues lives on Apple's servers. `stapler` writes it into the app so a player who is offline on first launch is not refused. |
 | Validate, `spctl` | The two questions a player's Mac asks on first launch, asked here, where an answer is still cheap. |

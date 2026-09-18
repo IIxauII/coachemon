@@ -26,7 +26,7 @@ export function releaseVersion(version: string): string {
 
 /**
  * A store artifact, one per target. Safari's says `safari-web-extension` because it holds the unpackaged folder that
- * §14.6 feeds to `xcrun safari-web-extension-packager`, not something Safari installs.
+ * §14.6 feeds to `xcrun safari-web-extension-converter`, not something Safari installs.
  */
 export const zipName = (target: Target, version: string): string =>
   `coachemon-${target === "safari" ? "safari-web-extension" : target}-${version}.zip`;
