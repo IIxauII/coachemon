@@ -5,10 +5,11 @@
  * `wxt dev` is deliberately not used: it force-adds `tabs` and `scripting`, runs a throwaway profile, does not watch
  * `hud/`, and covers neither Safari nor Orion (§5.2). Builds are `wxt build -b chrome|firefox|safari --mode store|dev`.
  */
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "wxt";
+import { sourcesZipName, zipName } from "../scripts/release/artifacts.ts";
 import { bundle } from "../skills/coach-pokerogue/scripts/hud-bundle.mjs";
 import { DEV_PORT, STORE_PORT } from "../src/protocol/version.ts";
 import type { Flavour, Target } from "../src/protocol/wire.ts";
@@ -49,6 +50,11 @@ export default defineConfig({
     },
   }),
   zip: {
+    // The release artifacts (§14.2), named by `scripts/release/artifacts.ts`. `{{version}}` is the manifest's, so it
+    // is the stamped `package.json`'s three numbers. Only store builds are ever zipped, so no mode suffix is needed;
+    // Safari's name is not a template, so `zip:extension:done` renames that one.
+    artifactTemplate: "coachemon-{{browser}}-{{version}}.zip",
+    sourcesTemplate: sourcesZipName("{{version}}"),
     // The AMO sources zip (§5.7): the repo root, limited to what `npx wxt build -b firefox` actually needs.
     sourcesRoot: "..",
     includeSources: [
@@ -100,6 +106,16 @@ export default defineConfig({
         if (after !== before) writeFileSync(path, after);
       }
       wxt.logger.info(`Coachemon build ${build}`);
+    },
+    /**
+     * `artifactTemplate` cannot branch on the browser, and Safari's artifact is named for what it holds rather than
+     * for the browser: §14.6 unzips it and hands the folder to `xcrun safari-web-extension-packager`. So the one name
+     * the template cannot write is written here (§14.2).
+     */
+    "zip:extension:done": (wxt, zipPath) => {
+      const named = join(dirname(zipPath), zipName(targetOf(wxt.config.browser), version));
+      if (named !== zipPath) renameSync(zipPath, named);
+      wxt.logger.info(`Coachemon artifact ${basename(named)}`);
     },
   },
 });

@@ -739,7 +739,7 @@ Install Coachemon in their browser, install the plugin, open (or reload) pokerog
 
 ## 14. Release
 
-From [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109).
+From [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109). §14.1–§14.4 applied in [Extension: release pipeline and store submission](https://github.com/IIxauII/pokerogue-mcp/issues/207); §14.6 is ticket 10's.
 
 ### 14.1 Scheme
 
@@ -768,8 +768,8 @@ Both jobs sit in the existing `release` concurrency group, so two pushes never i
 
 - **Every `extension-v*` release after 1.0.0 auto-submits to both CWS and AMO**, in `publishCmd`. 1.0.0 is the listings' first package, uploaded by hand. 0.x never submits.
 - **Tool:** `wxt submit` (publish-browser-extension 5 or later), which speaks **Chrome Web Store API v2**; v1 stops being supported on 2026-10-15 **[doc]**.
-- **Chrome review pending:** cancel the pending submission through the API, then upload and submit the newest. A burst of HUD releases restarts Chrome's review each time; accepted. The API v2 cancel call is **[unverified]**; the release ticket confirms it before relying on it.
-- **Secrets** (picked here), mapped by the job onto the tool's environment names: `CWS_EXTENSION_ID`, `CWS_PUBLISHER_ID`, `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`, `AMO_JWT_ISSUER`, `AMO_JWT_SECRET`. AMO's extension id is the gecko id (§5.3).
+- **Chrome review pending:** cancel the pending submission through the API, then upload and submit the newest. A burst of HUD releases restarts Chrome's review each time; accepted. **Confirmed** by the release ticket: `POST /v2/{name}:cancelSubmission` "can be used to cancel the review of a pending submission" **[doc]**, and `publish-browser-extension` calls it behind `--chrome-cancel-pending` when `fetchStatus` reports `PENDING_REVIEW`.
+- **Secrets** (picked here, corrected by the release ticket), mapped by the job onto the tool's environment names: `CWS_EXTENSION_ID`, `CWS_PUBLISHER_ID`, `CWS_SERVICE_ACCOUNT_EMAIL`, `CWS_SERVICE_ACCOUNT_PRIVATE_KEY`, `AMO_JWT_ISSUER`, `AMO_JWT_SECRET`. **API v2 authenticates as a GCP service account**, so the client id, client secret and refresh token this section first listed are v1.1's and are not used. AMO's extension id is the gecko id (§5.3), read off the built Firefox manifest rather than configured twice.
 - **A failed submission fails the job** after the tag and GitHub Release exist. The dev resubmits by hand; nothing retries.
 
 ### 14.5 How fixes reach players
@@ -829,7 +829,7 @@ Each was accepted knowingly by a closed ticket. None blocks building; a build ti
 | Orion after sleep/wake (orionfeedback #14474), long idle, hidden tab | [Agent transport on Orion](https://github.com/IIxauII/pokerogue-mcp/issues/150) | reconnect-on-wake |
 | AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/pokerogue-mcp/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110) | named fallbacks (§5.3, §8.1) |
 | A CWS reviewer accepts the declared remote code (`47-biome.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/pokerogue-mcp/issues/110) | declared Yes (§6) |
-| Chrome Web Store API v2 can cancel a pending review | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109) | confirm in the release ticket |
+| ~~Chrome Web Store API v2 can cancel a pending review~~ **confirmed** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/pokerogue-mcp/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
 | Firefox 128–139's toolbar-click consent satisfies AMO | this spec (§8.4) | if AMO objects, `required: ["websiteContent"]` |
 | Nintendo does not act on the -ÉMON name | [Name and listing identity](https://github.com/IIxauII/pokerogue-mcp/issues/105) | no trademark filed; answer the listing email |
 | Chrome's Local Network Access leaves extension workers alone as enforcement rolls out | [Loopback transport on Chrome and Firefox](https://github.com/IIxauII/pokerogue-mcp/issues/161) | none |

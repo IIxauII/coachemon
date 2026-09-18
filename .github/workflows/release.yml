@@ -42,3 +42,55 @@ jobs:
           -p @semantic-release/exec@7
           -p @semantic-release/git@11
           semantic-release
+
+  # The extension's own semantic-release run, on `extension-v*` tags (§14.2, §14.3). It comes second and checks out
+  # `master` fresh, so it builds on top of the job above's `chore(release)` commit when there was one and ships that
+  # commit's `05-randbats.js`. Both jobs sit in the one `release` concurrency group, so two pushes never interleave.
+  #
+  # Only the server stream comments on the PRs a release contains; this one would say the same thing twice, so its
+  # `@semantic-release/github` has the comments and the failure issue turned off. A failed extension release is a
+  # failed job here.
+  release-extension:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            extension/package-lock.json
+
+      # The root install is what `src/page/` and `src/protocol/` build against; `extension/` has its own lockfile so
+      # WXT never lands in a player's plugin cache (§5.1).
+      - run: npm ci --ignore-scripts
+      - run: npm ci
+        working-directory: extension
+
+      # `stamp-extension.ts` builds and zips in `prepare`; `submit-extension.ts` submits in `publish`, and does nothing
+      # at all while the version is 0.x (§14.1). Neither runs unless the commit filter found a release to make.
+      - name: Release extension
+        working-directory: extension
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Chrome Web Store API v2 authenticates as a GCP service account; the v1.1 client id, secret and refresh
+          # token are not used, because v1.1 loses support on 2026-10-15 and cannot cancel a pending review (§14.4).
+          CHROME_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CWS_SERVICE_ACCOUNT_EMAIL }}
+          CHROME_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_PRIVATE_KEY }}
+          # AMO's extension id is the gecko id, which `submit-extension.ts` reads off the built manifest (§5.3).
+          FIREFOX_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: >
+          npx --yes
+          -p semantic-release@25
+          -p @semantic-release/exec@7
+          semantic-release
