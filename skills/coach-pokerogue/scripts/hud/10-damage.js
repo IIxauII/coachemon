@@ -470,7 +470,9 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
       else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 8 : 16));
     }
     // The other side of a Leech Seed: the seeder takes what the seed took, turned into damage by Liquid Ooze on the
-    // seeded mon. The seed names its source by battler index.
+    // seeded mon. The seed names its source by battler index. The seeded mon's HP is read as it stands, not as this
+    // same turn's earlier chip would leave it, so a seed the game's own weather or status chip fells the mon before
+    // still pays out here — a mon's own turn end is one number, and the two mons' are not played against each other.
     const mine = (() => { try { return p.getBattlerIndex?.(); } catch { return undefined; } })();
     if (mine != null) for (const q of opponentsOf(s, p)) {
       if (ability(q, "BlockNonDirectDamageAbAttr") || !(q.hp > 0)) continue;
@@ -487,10 +489,15 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
         queued(Math.max(Math.floor(max / (100 / (m.healPercent ?? 2))) * (m.getStackCount?.() ?? 1), 1), max - 1);
       }
     }
-    // The turn-end abilities: Poison Heal's 1/8, and an opposing Bad Dreams on a sleeping mon.
+    // The turn-end abilities: Poison Heal's 1/8, and an opposing Bad Dreams on a sleeping mon. Which Magic Guard
+    // stops it is split in the game's own code — `canApply` asks the sleeper's, `apply` asks the *holder's*
+    // (`ab-attrs.ts:4394`, `:4413`) — so a Magic Guard holder deals none of it, to anyone. In singles the two
+    // readings agree; in doubles they part, and a sleeper with Magic Guard standing beside one without it still
+    // takes the chip in game. That half is left out: this asks the sleeper's, like `canApply`.
     if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) queued(frac(max, 8));
     const asleep = p.status?.effect === StatusEffect.SLEEP || (() => { try { return !!p.hasAbility?.(AbilityId.COMATOSE); } catch { return false; } })();
-    if (asleep && !guard && opponentsOf(s, p).some(q => ability(q, "PostTurnHurtIfSleepingAbAttr"))) chip(frac(max, 8));
+    const badDreams = q => ability(q, "PostTurnHurtIfSleepingAbAttr") && !ability(q, "BlockNonDirectDamageAbAttr");
+    if (asleep && !guard && opponentsOf(s, p).some(badDreams)) chip(frac(max, 8));
     return steps;
   };
   // The steps folded onto one HP, with no boss bars in the way: what the mon stands at when the next command comes.

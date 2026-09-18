@@ -417,10 +417,13 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(seeder, { s: seedField }), 20, "and hands it over");
   const oozed = mon("oozed", { hp: 160, maxHp: 160, player: false, abilities: ["ReverseDrainAbAttr"], battlerTags: [seed], bi: 2 });
   assert.equal(endOfTurnHp(seeder, { s: at(0, 0, { getField: () => [seeder, oozed] }) }), -20, "Liquid Ooze sends it back");
-  // Bad Dreams: an opposing ability takes a 1/8 off a sleeping mon.
+  // Bad Dreams: an opposing ability takes a 1/8 off a sleeping mon. `apply` checks Magic Guard on the *holder*, so a
+  // Magic Guard holder deals none of it.
   const sleeper = m({ status: { effect: 4 } });
   const dreamer = mon("dreamer", { player: false, abilities: ["PostTurnHurtIfSleepingAbAttr"] });
   assert.equal(endOfTurnHp(sleeper, { s: at(0, 0, { getField: () => [sleeper, dreamer] }) }), -20, "Bad Dreams");
+  const guarded = mon("guarded dreamer", { player: false, abilities: ["PostTurnHurtIfSleepingAbAttr", "BlockNonDirectDamageAbAttr"] });
+  assert.equal(endOfTurnHp(sleeper, { s: at(0, 0, { getField: () => [sleeper, guarded] }) }), 0, "a Magic Guard holder deals none");
 }
 
 // Reviver Seed: a lethal hit isn't a KO — it's back at half HP.
