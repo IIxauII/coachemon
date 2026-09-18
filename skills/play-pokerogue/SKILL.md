@@ -5,7 +5,7 @@ description: Play PokéRogue (pokerogue.net) through the Coachemon MCP tools —
 
 # Playing PokéRogue
 
-The `pokerogue` MCP server drives a live PokéRogue tab in Chrome over CDP. State comes back as text; you act by choosing options. The game is the source of truth; the server holds no game logic.
+The `coachemon` MCP server drives a live PokéRogue tab in Chrome over CDP. State comes back as text; you act by choosing options. The game is the source of truth; the server holds no game logic.
 
 ## Before the first call
 

@@ -12,7 +12,7 @@ Facts are tagged the way [The v1 tool surface](v1-tool-surface.md) tags them:
 
 Vocabulary is `CONTEXT.md`. *Hub*, *command*, *driver*, *card*, *verdict*, *settled*, *snapshot*, *menu*, *screen* and *progress fingerprint* are defined there. This document also says **target browser** (Chrome, Firefox, Safari, Orion) and **store** (Chrome Web Store, AMO, the Safari download), because Orion installs the Chrome and Firefox builds and so engine no longer lines up with store. Never call the local process a *host*: Apple's *host app* is the browser. Apple's own words are used as-is: **containing app**, **native app extension**, **packager**, **notarization**.
 
-The repo, plugin and skill rename to `coachemon` happens outside this spec, in [Rename repo, plugin and skill to coachemon](https://github.com/IIxauII/coachemon/issues/138). Paths below are today's; names that only exist after the rename (`IIxauII/coachemon`, the Pages URL) say so.
+The repo, plugin and skill were renamed to `coachemon` outside this spec, in [Rename repo, plugin and skill to coachemon](https://github.com/IIxauII/coachemon/issues/138). Paths and names below are post-rename.
 
 ---
 
@@ -76,8 +76,8 @@ From [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105
 | Publisher | `IIxauII` on CWS and AMO. The Safari download is signed with the dev's individual Developer ID; it has no product page. |
 | Language | English only. |
 | Support | Email only, the listing's contact address. The repo is public but not a support surface. |
-| Homepage | Manifest `homepage_url` is the repo (`https://github.com/IIxauII/coachemon` after the rename). |
-| Privacy policy | `PRIVACY.md` at the repo root, published by GitHub Pages from `master` / root. Its URL (after the rename: `https://iixauii.github.io/coachemon/PRIVACY`) goes into the CWS and AMO listings. |
+| Homepage | Manifest `homepage_url` is the repo (`https://github.com/IIxauII/coachemon`). |
+| Privacy policy | `PRIVACY.md` at the repo root, published by GitHub Pages from `master` / root. Its URL (`https://iixauii.github.io/coachemon/PRIVACY`) goes into the CWS and AMO listings. |
 
 ### 3.1 Description skeleton (picked here)
 
@@ -856,7 +856,7 @@ In dependency order. Each inherits §1 and the **[unverified]** premises it touc
 6. **Watch CLI**: `watch.ts` behind the opt-in (§11.2).
 7. **Dev tooling**: dev table, dev loop, `eval`/`smoke`/`autoplay` on port 47148, and the per-engine relay and keepalive smoke checks (§5.4, §10.6, §16).
 8. **Release pipeline**: seed tag, second semantic-release, path filter, stamping, zips, `release-extension` job, submission and secrets (§14.1–§14.4).
-9. **Listing assets**: icon, fixture screenshots, description, `PRIVACY.md`, GitHub Pages (§3, §6). Needs the rename.
+9. **Listing assets**: icon, fixture screenshots, description, `PRIVACY.md`, GitHub Pages (§3, §6).
 10. **Safari release checklist**: §14.6 as a script or a checklist in the repo. Needs the membership.
 11. **The flip**: §13.2 in one release. **Blocked until the CWS and AMO 1.0.0 listings are both public.**
 

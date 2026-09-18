@@ -2,6 +2,10 @@
 
 Vocabulary for Coachemon. Glossary only — no implementation detail.
 
+## Coachemon
+
+The name the whole effort carries: the repo, the Claude Code plugin and the MCP server inside it, the coach skill, and the browser extension that draws the **card**. Spelled `Coachemon` wherever it is shown to a person and `coachemon` wherever it is an identifier — a slug, a plugin id, a directory, an event name. Which part is meant follows from what is being installed: a player installs the extension, an agent installs the plugin. PokéRogue is the game it reads, never part of the name.
+
 ## Run
 
 One playthrough of PokéRogue, from wave 1 until the party wipes. A **wipe** ends the run; the next run starts again at wave 1 with nothing carried over except account-level unlocks. A run is the unit the agent plays.
