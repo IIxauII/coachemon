@@ -47,10 +47,16 @@ const plannerApi = () => {
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
 // [name, fields] for one that carries its constructor arguments.
 const attr = a => (Array.isArray(a) ? Object.assign(new ({ [a[0]]: class {} })[a[0]](), a[1]) : new ({ [a]: class {} })[a]());
-const mon = (name, lv, types, [hp, atk, def, spa, spd, spe], moves, field, curHp, extra = {}) => ({
+// `getTypes` follows `summonData` the way the game's does (Pokemon.getTypes / getBaseTypes): written-on types replace
+// the species' own, and an added type (Forest's Curse) goes on top — so a hypothesis the planner writes is visible here.
+const monTypes = (sd, types) => () => {
+  const base = sd.types?.length ? [...sd.types] : types.map(t => TY.indexOf(t));
+  return sd.addedType != null && !base.includes(sd.addedType) ? [...base, sd.addedType] : base;
+};
+const mon = (name, lv, types, [hp, atk, def, spa, spd, spe], moves, field, curHp, extra = {}, summonData = { statStages: [0,0,0,0,0,0,0], types: [] }) => ({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },
-  name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), hasPassive: () => false,
-  getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field, isBoss: () => !!extra.bossSegments,
+  name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: monTypes(summonData, types), getAbility: () => ({ name: "x" }), hasPassive: () => false,
+  getStat: i => [hp, atk, def, spa, spd, spe][i], summonData, isOnField: () => field, isBoss: () => !!extra.bossSegments,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null, getBattlerIndex: () => (field ? 0 : -1), getHeldItems: () => [],
   moveset: moves.map(([n, t, p, c, priority = 0, { target = 3, attrs = [], id } = {}]) => ({ getName: () => n, moveId: id, getMove: () => ({ id, name: n, type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, priority, accuracy: 100, attrs: attrs.map(attr) }), getMovePp: () => 10, ppUsed: 0 })),
   ...extra,
@@ -523,6 +529,38 @@ Object.assign(TABLE, { "Garchomp>Earthquake>Snorlax": [[800], 1, 1] });
   assert.deepEqual(dancing.t.boost, { 1: 1 }, "half the time +2 Atk");
   assert.equal(splashing.t.boost, null);
   assert.ok(dancing.x.eTurnsThey < splashing.x.eTurnsThey - 0.5, "setup speeds up its KO");
+}
+
+// 5l. A typing written onto the foe (#171, the Guzma w165 Golisopod): Soak makes Bug/Steel Golisopod pure Water.
+// Energy Ball goes from 0.25× (25 a hit into 400 HP: sixteen turns) to 2× (200: two), and Golisopod's Iron Head
+// loses its STAB (150 → 100 into Primarina's 400). Damage here follows the *live* typing, so the written-on types are
+// what move the numbers — the same path the game's own damage call takes.
+{
+  const EFF = { Grass: { Bug: 0.5, Steel: 0.5, Water: 2, Fairy: 1 }, Steel: { Water: 0.5, Fairy: 2, Bug: 1, Steel: 0.5 } };
+  const typed = (atk, def, pm, opts) => {
+    const row = outcome(atk, def, pm, opts);
+    if (!row) return null;
+    const ty = TY[pm.getMove().type];
+    const e = def.getTypes().reduce((m, t) => m * (EFF[ty]?.[TY[t]] ?? 1), 1);
+    const scale = e * (atk.getTypes().includes(TY.indexOf(ty)) ? 1.5 : 1);
+    return { ...row, e, expected: row.expected * scale, uncapped: row.uncapped * scale, max: Math.min(def.hp, row.max * scale),
+      perHit: row.perHit.map(h => ({ max: h.max * scale, min: h.min * scale })), pKo: row.max * scale >= def.hp ? 1 : 0 };
+  };
+  Object.assign(TABLE, { "Primarina>Energy Ball>Golisopod": [[100], 1, 1], "Golisopod>Iron Head>Primarina": [[100], 1, 1] });
+  const SOAK = ["Soak", "Water", 0, "X", 0, { id: 487, attrs: [["ChangeTypeAttr", { type: TY.indexOf("Water") }]] }];
+  const primarina = () => [mon("Primarina", 80, ["Water", "Fairy"], [400, 90, 110, 180, 150, 120], [["Energy Ball", "Grass", 90, "S"], SOAK], true)];
+  const golisopod = extra => [mon("Golisopod", 80, ["Bug", "Steel"], [400, 180, 160, 70, 100, 70], [["Iron Head", "Steel", 80, "P"]], true, undefined, extra)];
+  const ironHead = () => [{ name: "Iron Head", type: "Steel", p: 1, score: 10, targets: [0] }];
+  const line = lineOf(oneOnOne({ party: primarina(), foes: golisopod(), dist: ironHead, stub: typed }).field, "Primarina");
+  console.log(`== types: Soak first (live)\n${line}`);
+  assert.match(line, /Soak → Golisopod .*pure Water .*then Energy Ball/, `Soak, then attack:\n${line}`);
+  // Nothing to rewrite: a Terastallized foe keeps its Tera type, so the game's own condition rules the move out.
+  const tera = lineOf(oneOnOne({ party: primarina(), foes: golisopod({ isTerastallized: true }), dist: ironHead, stub: typed }).field, "Primarina");
+  console.log(`== types: no Soak into a Terastallized foe\n${tera}`);
+  assert.match(tera, /Energy Ball → Golisopod/, `no Soak into a Tera foe:\n${tera}`);
+  // Already pure Water: the move would change nothing.
+  const water = lineOf(oneOnOne({ party: primarina(), foes: [mon("Golisopod", 80, ["Water"], [400, 180, 160, 70, 100, 70], [["Iron Head", "Steel", 80, "P"]], true)], dist: ironHead, stub: typed }).field, "Primarina");
+  assert.match(water, /Energy Ball → Golisopod/, `no Soak into a pure-Water foe:\n${water}`);
 }
 
 // ---- 6–8. Doubles: where both slots aim is one decision.

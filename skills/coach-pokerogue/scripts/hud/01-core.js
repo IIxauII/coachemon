@@ -185,8 +185,10 @@ export const awaitingCommand = s => awaitingDecision(s) !== null;
 // after Swords Dance, a foe paralysed by Thunder Wave — by writing that state onto the live mons for one synchronous
 // call and putting it back, the way a predicted Tera is (20-enemy-ai). `activeHypothesisKey()` names the state, so every
 // cache keyed on a turn's numbers (10-damage's, the planner's memo) keeps hypothetical numbers apart from the real ones.
-// Patches: `{ mon, stages: { [stat 1–5]: change } }` (clamped to ±6), `{ mon, status: { effect, … } }`. Only inside
-// `sandbox`.
+// Patches: `{ mon, stages: { [stat 1–5]: change } }` (clamped to ±6), `{ mon, status: { effect, … } }`,
+// `{ mon, types: [PokemonType] }` (Soak, Magic Powder) and `{ mon, addedType: PokemonType }` (Forest's Curse,
+// Trick-or-Treat) — the two fields `getTypes` reads (`summonData.types`, `summonData.addedType`), so the game's own
+// damage, STAB and AI code price a retyped mon. Only inside `sandbox`.
 let hypothesisKey = "";
 export const activeHypothesisKey = () => hypothesisKey;
 export const withHypothesis = (patches, fn) => {
@@ -194,7 +196,7 @@ export const withHypothesis = (patches, fn) => {
   const prevKey = hypothesisKey;
   try {
     const parts = [];
-    for (const { mon, stages, status } of patches) {
+    for (const { mon, stages, status, types, addedType } of patches) {
       if (stages && Array.isArray(mon.summonData?.statStages)) {
         const prev = mon.summonData.statStages;
         const next = [...prev];
@@ -208,6 +210,20 @@ export const withHypothesis = (patches, fn) => {
         mon.status = status;
         undo.push(() => { if (own) mon.status = prev; else delete mon.status; });
         parts.push(`${mon.id}x${status.effect}`);
+      }
+      // A written-on typing is the game's own two fields: `summonData.types` replaces the base types (an empty array
+      // means the species' own), `summonData.addedType` is the third type on top of them.
+      if (types && mon.summonData) {
+        const prev = mon.summonData.types;
+        mon.summonData.types = [...types];
+        undo.push(() => { mon.summonData.types = prev; });
+        parts.push(`${mon.id}t${types.join(",")}`);
+      }
+      if (addedType != null && mon.summonData) {
+        const prev = mon.summonData.addedType;
+        mon.summonData.addedType = addedType;
+        undo.push(() => { mon.summonData.addedType = prev; });
+        parts.push(`${mon.id}+${addedType}`);
       }
     }
     hypothesisKey = parts.length ? `${prevKey}|${parts.join(";")}` : prevKey;

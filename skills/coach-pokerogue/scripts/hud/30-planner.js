@@ -1344,7 +1344,11 @@ const FEED_COST = 0.5;
 //   `skip0` is the share of this turn's attempt it cancels when ours lands first;
 // - heal: its own HP (`amount`: Recover, Roost, the weather heals by the weather). Rest is left out;
 // - hazard: Stealth Rock, Spikes or Toxic Spikes in a trainer battle, worth the HP they take off the mons still to
-//   come (`value`, in turns).
+//   come (`value`, in turns);
+// - types: Soak or Magic Powder (the foe's types become one) and Forest's Curse or Trick-or-Treat (a third type on
+//   top), written onto the foe so every later number is the game's own on the new typing.
+// This turn's incoming hit is priced on the state as it stands, the way every play here is: a foe we retype, burn or
+// paralyse after it has moved is unchanged for that one hit, and only a sleep or paralysis that lands first cancels it.
 const statusPlay = (s, me, f, info) => {
   const mv = info.pm.getMove?.();
   if (!mv || info.blocked) return null;
@@ -1370,6 +1374,23 @@ const statusPlay = (s, me, f, info) => {
       foeAct: inflict.effect === StatusEffect.SLEEP ? pF => i => 1 - (pF * skip(i + 1) + (1 - pF) * skip(i)) : null,
       note: STATUS_FRAMES[inflict.effect],
     };
+  }
+  // - types: a typing written onto the foe (Soak and Magic Powder replace its types with one; Forest's Curse and
+  //   Trick-or-Treat add a third). The follow-up attack and the foe's own hits are then scored on the new typing by
+  //   the game's own code, which reads the two fields the hypothesis writes — so Soak on a Steel foe takes away its
+  //   Steel STAB and its Steel resistances in one move. The game's own conditions say when it does nothing: a
+  //   Terastallized target keeps its Tera type, Multitype and RKS System refuse a rewrite, and neither move may hand
+  //   the target a typing it already has.
+  if (t.typeChange) {
+    const { kind, type } = t.typeChange;
+    const name = TYPES[type];
+    if (!name || f.isTerastallized) return null;
+    const has = ty => { try { return f.isOfType?.(ty) ?? typesOf(f).includes(TYPES[ty]); } catch { return typesOf(f).includes(TYPES[ty]); } };
+    if (kind === "add") return has(type) ? null : { kind: "types", self: false, patches: [{ mon: f, addedType: type }], note: `+${name}` };
+    const fixed = [AbilityId.MULTITYPE, AbilityId.RKS_SYSTEM].some(a => { try { return !!f.hasAbility?.(a); } catch { return false; } });
+    const now = (() => { try { return f.getTypes?.() ?? []; } catch { return []; } })();
+    if (fixed || (now.length === 1 && now[0] === type)) return null;
+    return { kind: "types", self: false, patches: [{ mon: f, types: [type] }], note: `pure ${name}` };
   }
   if (t.heal?.self) {
     const max = me.getMaxHp?.() ?? me.hp;

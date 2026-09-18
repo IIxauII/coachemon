@@ -185,4 +185,4 @@ The **coach**'s look at a battle while the game waits on the player's decision (
 
 ## Hypothesis
 
-The battle as it would stand one move from now: our stat stages after a Swords Dance, or a foe paralysed by Thunder Wave. The coach asks the game's own code about it as if it were so, and a hypothesis is never played out: the battle is left exactly as it was. A foe predicted to Terastallize this turn is read the same way, but only for how hard hits land, never for what the foe decides, since it picks its move before it Terastallizes.
+The battle as it would stand one move from now: our stat stages after a Swords Dance, a foe paralysed by Thunder Wave, or a foe turned pure Water by Soak. The coach asks the game's own code about it as if it were so, and a hypothesis is never played out: the battle is left exactly as it was. A foe predicted to Terastallize this turn is read the same way, but only for how hard hits land, never for what the foe decides, since it picks its move before it Terastallizes.
