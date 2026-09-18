@@ -133,9 +133,19 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
   // [[state, probability], ...]. `tok`: the enemy endure token is up, so every later lethal hit this turn leaves 1 HP.
   const landHit = (f, st, d, ohko) => {
     let idx;
+    // MoveEffectPhase rolls the enemy's endure token on the damage as it stands (`initialDmg >= target.hp`) and only
+    // then hands it to `damageAndUpdate`, where the bar rule clamps it. So a boss can spend the token on a hit its
+    // own segment boundary was going to stop, and hold it for the rest of the turn (spec §3, §8).
+    const raw = d;
     [d, idx] = barStep(f, st.hp, st.idx, d, ohko);
-    if (st.hp - d > 0) return [[{ hp: st.hp - d, idx, tok: st.tok }, 1]];
-    if (st.tok || (f.sturdy && st.hp >= f.maxHp)) return [[{ hp: 1, idx, tok: st.tok }, 1]];
+    const left = st.hp - d;
+    if (raw < st.hp) return [[{ hp: left, idx, tok: st.tok }, 1]];
+    // Sturdy sits inside `getAttackDamage`, before that roll, so a full-HP Sturdy hit never reaches the token either.
+    if (st.tok || (f.sturdy && st.hp >= f.maxHp)) return [[{ hp: Math.max(1, left), idx, tok: st.tok }, 1]];
+    if (left > 0) return [
+      [{ hp: left, idx, tok: true }, f.pEndure],
+      [{ hp: left, idx, tok: false }, 1 - f.pEndure],
+    ].filter(([, p]) => p > 0);
     return [
       [{ hp: 1, idx, tok: true }, f.pEndure],
       [{ hp: 1, idx, tok: false }, (1 - f.pEndure) * f.pFocus],
@@ -531,7 +541,19 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     R.integerInRange = min => min + seed;
     try { return fn(); } finally { if (own) R.integerInRange = orig; else delete R.integerInRange; }
   };
-  const PRESENT = [[0, 0.4], [150, 0.3], [190, 0.1]]; // 40 / 80 / 120 power; the other 20 % heals the target
+  // Present draws `randSeedInt(firstHit ? 100 : 80)` and branches ≤ 40 / 41–70 / 71–80 / else heal (PresentPowerAttr).
+  // Only the first strike's draw reaches 81, so only it can heal — a quarter of the target's max HP, which also
+  // disables the move's remaining strikes. Not modelled: the heal is carried as a zero-damage outcome rather than a
+  // gain, and the strikes it would cancel are still played out, which only a Present under Multi-Lens ever notices. `withSeed` pins the draw, so a row is [seed, chance]: 41 / 30 / 10 % over
+  // 40 / 80 / 120 power with a 19 % heal on the first strike, 41 / 30 / 9 of 80 on each later one.
+  const PRESENT = k => (k === 0
+    ? [[0, 41 / 100], [50, 30 / 100], [75, 10 / 100]]
+    : [[0, 41 / 80], [50, 30 / 80], [75, 9 / 80]]);
+  const PRESENT_HEAL = 19 / 100;
+  // Multi-Lens' share of strike `k` of `hits` (PokemonMultiHitModifier.applyDamageModifier): the first strike keeps
+  // 1 − 0.25 per lens, every later one a quarter, except the strike Parental Bond added, which is whole. `n` is the
+  // lens count 07-move-traits already checked against `canBeMultiStrikeEnhanced`.
+  const lensShare = (n, k) => (!n ? 1 : k === 0 ? 1 - 0.25 * n : k === n + 1 ? 1 : 0.25);
 
   // The game's own damage at roll `r` (spec §4.6–7). A simulated call pins the roll at 1 and hands back the finished
   // number, so `addRolls` spreads what the post-roll steps have already been applied to. Multipliers barely notice
@@ -547,10 +569,20 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     try { return fn(); } finally { if (own) def.calculateStabMultiplier = orig; else delete def.calculateStabMultiplier; }
   };
 
+  // Lock-On / Mind Reader's IGNORE_ACCURACY tag covers only the mon they were aimed at: `checkBypassAccAndInvuln`
+  // reads the user's last one of those moves and asks whether *this* target was among its targets (§5). In a single
+  // battle that is always the mon in front; in a double the other foe still rolls. Without a move history to read
+  // (mocks) the tag stands on its own, as it did before.
+  const lockedOn = (atk, def) => {
+    if (!atk.getTag?.("IGNORE_ACCURACY")) return false;
+    if (typeof atk.getLastXMoves !== "function") return true;
+    const aimed = (atk.getLastXMoves(-1) ?? []).find(m => m.move === MoveId.LOCK_ON || m.move === MoveId.MIND_READER);
+    return !!aimed?.targets?.includes(def.getBattlerIndex?.());
+  };
   // Accuracy (§5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
   const accuracy = (atk, def, move, ohko = false) => {
     if (move.moveTarget === MoveTarget.USER) return 1;
-    if (ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr") || atk.getTag?.("IGNORE_ACCURACY")
+    if (ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr") || lockedOn(atk, def)
       || def.getTag?.("ALWAYS_GET_HIT") || (def.getTag?.("TELEKINESIS") && !ohko)) return 1;
     const w = typeof move.calculateBattleAccuracy === "function" ? move.calculateBattleAccuracy(atk, def, true) : move.accuracy;
     if (w === -1 || w == null) return 1;
@@ -636,14 +668,18 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
         maxes.push(blocked ? 0 : def.hp);
         m.set(maxes[k], 1);
       } else if (psywave) {
-        for (let r = 50; r <= 150; r++) { const d = Math.max(1, Math.floor(atk.level * r / 100)); m.set(d, (m.get(d) ?? 0) + 1 / 101); }
-        maxes.push(Math.floor(atk.level * 1.5));
+        // `toDmgValue(level × 0.50–1.50)` off the battle stream (RandomLevelDamageAttr), then — as for every
+        // fixed-damage move — floored again after Multi-Lens' share of this strike (`getAttackDamage`).
+        const lens = lensShare(t.hits.lenses, k);
+        const fix = r => Math.max(1, Math.floor(Math.max(1, Math.floor(atk.level * (r * 0.01))) * lens));
+        for (let r = 50; r <= 150; r++) { const d = fix(r); m.set(d, (m.get(d) ?? 0) + 1 / 101); }
+        maxes.push(fix(150));
       } else if (fixed) {
         maxes.push(k ? call(k, false).damage : first.damage);
         m.set(maxes[k], 1);
       } else {
         let top = 0;
-        for (const [seed, pv] of present ? PRESENT : [[null, 1]]) {
+        for (const [seed, pv] of present ? PRESENT(k) : [[null, 1]]) {
           const run = (isCritical, r = 1) => {
             const one = () => atRoll(def, r, () => (seed === null && !k && !isCritical && r === 1 ? first : call(k, isCritical))).damage;
             return seed === null ? one() : withSeed(seed, one);
@@ -663,7 +699,7 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
           if (crit < 1) top = Math.max(top, spread(false, pv * (1 - crit)));
           if (crit > 0) { const d = spread(true, pv * crit); if (crit === 1) top = Math.max(top, d); }
         }
-        if (present) m.set(0, (m.get(0) ?? 0) + 0.2);
+        if (present && k === 0) m.set(0, (m.get(0) ?? 0) + PRESENT_HEAL);
         maxes.push(top);
       }
       perHit.push(m);
@@ -691,7 +727,7 @@ const { moveOutcome, moveOutcomes, statusMoves, endOfTurnHp, hits, stateOf, hitO
     // move reaches it there (Earthquake into Dig) or accuracy is bypassed. The planner knows the order.
     const semiTag = (def.summonData?.tags ?? []).find(t => isA(t, "SemiInvulnerableTag"));
     const semi = !!semiTag && move.moveTarget !== MoveTarget.USER && !(ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr")
-      || atk.getTag?.("IGNORE_ACCURACY") || attrs(move, "HitsTagAttr").some(h => h.tagType === semiTag.tagType));
+      || lockedOn(atk, def) || attrs(move, "HitsTagAttr").some(h => h.tagType === semiTag.tagType));
     const notes = [];
 
     // What the move costs its user per use, in HP (`self`): the target's contact-chip ability (Rough Skin / Iron

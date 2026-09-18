@@ -178,6 +178,11 @@ export const HUD_DEPS = {
     `src/utils/common.ts#toDmgValue`,
     `src/phases/move-effect-phase.ts#MoveEffectPhase.hitCheck`,
     `src/phases/move-effect-phase.ts#MoveEffectPhase.checkBypassAccAndInvuln`,
+    // Lock-On / Mind Reader's IGNORE_ACCURACY covers only the target that move named, which `checkBypassAccAndInvuln`
+    // reads back out of the user's move history.
+    `${P}#Pokemon.getLastXMoves`,
+    // Present's power branch and its heal share, pinned draw by draw.
+    `${M}#PresentPowerAttr.apply`,
     `${M}#MultiHitAttr.getHitCount`,
     `${M}#Move.calculateBattleAccuracy`,
     `${SCENE}#BattleScene.getEncounterBossSegments`,
@@ -357,6 +362,14 @@ export const HUD_DEPS = {
     `src/phases/turn-start-phase.ts#TurnStartPhase.getCommandOrder`,
     `src/queues/move-phase-priority-queue.ts#MovePhasePriorityQueue.sortPostSpeed`,
     `src/data/abilities/ab-attrs.ts#BypassSpeedChanceAbAttr.canApply`,
+    // Either bypass only lands if the tag can go on at all, which is where Mycelium Might stops it.
+    `src/data/battler-tags.ts#BypassSpeedTag.canAdd`,
+    `src/data/abilities/ab-attrs.ts#PreventBypassSpeedChanceAbAttr.canApply`,
+    // A speed tie is the turn shuffle's, re-implemented: the seed offset, the queue it shuffles and the Fisher-Yates
+    // draw itself. `sortInSpeedOrder` above is the function this replays.
+    `src/utils/common.ts#randSeedShuffle`,
+    `${SCENE}#BattleScene.executeWithSeedOffset`,
+    `src/queues/priority-queue.ts#PriorityQueue.pop`,
     // Sleep: the 2-or-3 turn roll, the countdown `actChance` / `actDelay` / `STATUS_SKIP` restate, Early Bird.
     `${P}#Pokemon.doSetStatus`,
     `src/phases/move-phase.ts#MovePhase.checkSleep`,

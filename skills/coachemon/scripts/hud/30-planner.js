@@ -105,26 +105,54 @@ const planOutcomes = (s, atk, def) => planMemo(s, `o:${atk.id}>${def.id}`, () =>
 // priority, then bracket (Quick Claw 10 %/stack, Quick Draw 30 % for attacks → first in bracket), then effective
 // Speed, reversed under Trick Room; ties are a coin flip.
 const NO_MOVE_INFO = { priority: 0 };
+// Quick Claw (`randBattleSeedInt(10) < stacks`, up to 3) and Quick Draw (30 %, damaging moves only) both add the
+// BYPASS_SPEED tag, and `getPriorityModifier` reads that tag *before* any ability bracket: the tag goes first in the
+// bracket whatever Stall or Mycelium Might would otherwise have said. Mycelium Might blocks the tag itself on a status
+// move (`BypassSpeedTag.canAdd` → PreventBypassSpeedChanceAbAttr), so neither can fire on one.
+// Not modelled: both rolls draw from the battle stream, and Quick Draw draws before it checks the move is damaging.
 const quickChance = (p, mv) => {
+  const status = mv?.category === MoveCategory.STATUS;
+  if (status && abilitiesOf(p).includes("Mycelium Might")) return 0;
   let stack = 0;
   for (const m of p.getHeldItems?.() ?? []) if (m.constructor?.name === "BypassSpeedChanceModifier") stack += m.getStackCount?.() ?? 1;
-  const draw = abilitiesOf(p).includes("Quick Draw") && mv?.category !== MoveCategory.STATUS ? 0.3 : 0;
+  const draw = abilitiesOf(p).includes("Quick Draw") && !status ? 0.3 : 0;
   return 1 - (1 - Math.min(1, 0.1 * stack)) * (1 - draw);
 };
-const actionOrder = (s, a, aPm, b, bPm) => {
+// A speed tie is not a coin flip. The game shuffles the turn's move phases with `randSeedShuffle` under
+// `executeWithSeedOffset(turn × 1000 + <queue length>, waveSeed)` and only then sorts them by Speed — a stable sort,
+// so the shuffle decides every tie, and the priority pass after it is stable too (spec §5, `sortInSpeedOrder`). That
+// draw depends on nothing either side does this turn, so it is knowable before committing to a move.
+// In a single battle with both sides using a move the queue is [ours, theirs] and length 2, so one Fisher-Yates draw
+// settles it: drawing 0 swaps them. Trick Room reverses the sorted groups afterwards, which swaps a tie back.
+// Everything else keeps the coin flip — doubles, where the queue's length and order turn on who is switching; a later
+// turn, whose offset is a different turn number; a mon not on the field, which has no phase in the queue.
+// `executeWithSeedOffset` restores the RNG state, offset and override itself, so this reads the stream without moving it.
+const speedTie = (s, a, b, trickRoom) => {
+  try {
+    if (s.currentBattle?.double || !a.isOnField?.() || !b.isOnField?.() || a.isPlayer?.() === b.isPlayer?.()) return null;
+    const turn = s.currentBattle?.turn;
+    if (!(turn > 0) || typeof s.executeWithSeedOffset !== "function") return null;
+    let draw = null;
+    s.executeWithSeedOffset(() => { draw = Phaser.Math.RND.integerInRange(0, 1); }, turn * 1000 + 2, s.waveSeed);
+    if (draw !== 0 && draw !== 1) return null;
+    const playerFirst = (draw !== 0) !== !!trickRoom;
+    return a.isPlayer?.() === playerFirst ? 1 : 0;
+  } catch { return null; }
+};
+const actionOrder = (s, a, aPm, b, bPm, { thisTurn = false } = {}) => {
   if (!aPm || !bPm) return !aPm && !bPm ? 0.5 : aPm ? 0 : 1;
   const info = (p, pm) => {
     const mv = pm.getMove?.() ?? pm;
     const priority = mv.getPriority ? mv.getPriority(p, true) : mv.priority ?? 0;
     const bracket = mv.getPriorityModifier ? mv.getPriorityModifier(p, true) : MovePriorityInBracket.NORMAL;
-    return { priority, bracket, quick: bracket === MovePriorityInBracket.NORMAL ? quickChance(p, mv) : 0 };
+    return { priority, bracket, quick: quickChance(p, mv) };
   };
   const x = info(a, aPm), y = info(b, bPm);
   if (x.priority !== y.priority) return x.priority > y.priority ? 1 : 0;
   const speed = p => (p.getEffectiveStat ? p.getEffectiveStat(Stat.SPD) : stat(p, Stat.SPD));
   const sa = speed(a), sb = speed(b);
   const trickRoom = !!s.arena?.getTag?.("TRICK_ROOM");
-  const bySpeed = sa === sb ? 0.5 : (sa > sb) !== trickRoom ? 1 : 0;
+  const bySpeed = sa !== sb ? ((sa > sb) !== trickRoom ? 1 : 0) : (thisTurn ? speedTie(s, a, b, trickRoom) : null) ?? 0.5;
   const cmp = (ba, bb) => (ba === bb ? bySpeed : ba > bb ? 1 : 0);
   const qa = x.quick, qb = y.quick;
   return qa * qb * cmp(MovePriorityInBracket.FIRST, MovePriorityInBracket.FIRST) + qa * (1 - qb) * cmp(MovePriorityInBracket.FIRST, y.bracket) + (1 - qa) * qb * cmp(x.bracket, MovePriorityInBracket.FIRST) + (1 - qa) * (1 - qb) * cmp(x.bracket, y.bracket);
@@ -234,7 +262,7 @@ const threatFrom = (s, foe, me, myPm = null, { next = false } = {}) => planMemo(
     if (!likely || m.p > likely.p) likely = m;
     if (!(m.p > 0)) continue;
     const pm = m.o?.pm ?? foe.moveset.find(x => x?.getName() === m.name) ?? NO_MOVE_INFO;
-    const order = actionOrder(s, foe, pm, me, myPm ?? NO_MOVE_INFO);
+    const order = actionOrder(s, foe, pm, me, myPm ?? NO_MOVE_INFO, { thisTurn: !next });
     first += m.p * order;
     if (!m.o) {
       const up = selfStages(foe, pm.getMove?.());

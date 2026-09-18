@@ -218,6 +218,38 @@ const assertNoImmediateScrafty = field => {
   assert.ok(Math.abs(actionOrder(s, claw, plain, weavile, plain) - 0.1) < 1e-9, "Quick Claw: 10 % to go first");
   assert.equal(actionOrder({ ...s, arena: { getTag: t => t === "TRICK_ROOM" } }, weavile, plain, scrafty, plain), 0, "Trick Room reverses speed");
 
+  // The BYPASS_SPEED tag is read before any ability bracket, so Quick Claw puts its holder first whatever the bracket
+  // would have said; Mycelium Might stops the tag going on at all, but only for a status move (#178.6).
+  // MovePriorityInBracket: LAST 0, NORMAL 1, FIRST 2. MoveCategory.STATUS is 2.
+  const clawItem = () => new (class BypassSpeedChanceModifier { getStackCount() { return 1; } })();
+  const stall = { priority: 0, getPriorityModifier: () => 0 };
+  const clawLast = { ...scrafty, getHeldItems: () => [clawItem()] };
+  assert.ok(Math.abs(actionOrder(s, clawLast, stall, weavile, plain) - 0.1) < 1e-9, "Quick Claw beats its own LAST bracket");
+  const mycelium = { ...scrafty, getAbility: () => ({ name: "Mycelium Might" }), getHeldItems: () => [clawItem()] };
+  assert.equal(actionOrder(s, mycelium, { priority: 0, category: 2 }, weavile, plain), 0, "Mycelium Might blocks the bypass on a status move");
+  assert.ok(Math.abs(actionOrder(s, mycelium, plain, weavile, plain) - 0.1) < 1e-9, "\u2026but not on an attack");
+
+  // A speed tie in a single battle is settled by the turn's own shuffle, not a coin flip (#178.5). The queue is
+  // [ours, theirs]; a Fisher-Yates draw of 0 swaps it, and Trick Room reverses the sorted pair, swapping it back.
+  {
+    const ours = { ...morpeko, isPlayer: () => true };
+    const theirs = { ...morpeko, id: "twin", isPlayer: () => false };
+    const tieScene = (over = {}) => ({ ...s, waveSeed: "w", executeWithSeedOffset: fn => fn(),
+      currentBattle: { ...s.currentBattle, double: false, turn: 3 }, ...over });
+    const tied = (draw, over) => {
+      const rnd = Phaser.Math.RND;
+      const had = Object.prototype.hasOwnProperty.call(rnd, "integerInRange"), orig = rnd.integerInRange;
+      rnd.integerInRange = () => draw;
+      try { return actionOrder(tieScene(over), ours, plain, theirs, plain, { thisTurn: true }); }
+      finally { if (had) rnd.integerInRange = orig; else delete rnd.integerInRange; }
+    };
+    assert.equal(tied(1), 1, "the queue's order stands: ours first");
+    assert.equal(tied(0), 0, "the shuffle swaps them: theirs first");
+    assert.equal(tied(0, { arena: { getTag: t => t === "TRICK_ROOM" } }), 1, "Trick Room reverses the tie too");
+    assert.equal(tied(0, { currentBattle: { ...s.currentBattle, double: true, turn: 3 } }), 0.5, "doubles keep the coin flip");
+    assert.equal(actionOrder(tieScene(), ours, plain, theirs, plain), 0.5, "a later turn keeps the coin flip");
+  }
+
   const t = threatFrom(s, weavile, scrafty, null, { next: true });
   assert.equal(t.move.name, "Triple Axel", "Weavile's likely move into Scrafty");
   assert.ok(t.pKo > 0.6 && t.first === 1, `Triple Axel likely KOs Scrafty first (pKo ${t.pKo})`);
