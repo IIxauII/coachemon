@@ -3,7 +3,7 @@
 import { readCard } from "./60-card.js";
 import { previewCheck } from "./48-preview.js";
 import { rerollCheck } from "./50-reroll.js";
-import { battleScene, clearMissed, collapsedCard, dropGame, el, missedSprite, setRedraw, setShownCardWave, view } from "./90-render.js";
+import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw, setShownCardWave, view } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
 import { drawEncounter } from "./96-render-encounter.js";
 import { drawFusion } from "./96-render-fusion.js";
@@ -18,8 +18,17 @@ let last = ""; // the change signature of what is on screen: the DOM is only reb
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
 export const shownCard = () => shown;
 
+// What the last refresh died on, or null: the panel shows it, and 99-start pushes it once per distinct message (§11.1).
+let failure = null;
+export const lastFailure = () => failure;
+
+// The render layer draws a card as text through this, so `cardText` never has to know which draw goes with which kind
+// — that stays here (§11.1). The disclaimer is not in it: that is the panel's footer, not a card's.
+setDraw(card => (DRAW[card.kind] ? DRAW[card.kind](card) : null));
+
 export const tick = () => {
   try {
+    failure = null;
     const s = battleScene();
     // Mid-reload or on the title screen: nothing to coach, and the scene isn't wired up yet.
     if (!s?.ui) { el.style.display = "none"; shown = null; return; }
@@ -38,12 +47,14 @@ export const tick = () => {
     el.style.width = view() === "full" && !collapsed ? "300px" : "auto";
     if (sig !== last) {
       clearMissed();
-      el.replaceChildren(...DRAW[card.kind](card));
+      // The full view carries the disclaimer as its footer line (§3); it is the panel's, so no card draws it.
+      el.replaceChildren(...DRAW[card.kind](card), ...(view() === "full" && !collapsed ? [disclaimer()] : []));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missedSprite() ? "" : sig;
     }
   } catch (e) {
     dropGame();
+    failure = e.message;
     el.style.display = "block";
     el.textContent = `coach: ${e.message}`;
     last = "";

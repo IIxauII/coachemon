@@ -51,7 +51,7 @@ test("a page throw on a read degrades to that read's not-readable value", async 
   assert.equal(menu.readable, false);
   assert.equal(menu.why, THREW.message);
   assert.deepEqual(menu.options, []);
-  assert.deepEqual(await game.starterGrid(), { ok: false, why: THREW.message });
+  assert.deepEqual(await game.starters(), { ok: false, why: THREW.message });
   assert.deepEqual(await game.snapshot("lean"), { ok: false, why: THREW.message });
 });
 
@@ -131,7 +131,7 @@ test("an act the page refuses is not a throw: a press on a missing scene stays d
   const { game } = stubLink({ press: refuse, modal: refuse, starters: refuse });
   assert.deepEqual(await game.press(Button.ACTION, "f"), { ok: false, why: "no-battle-scene", threw: false });
   assert.deepEqual(await game.modalButton(1, "f"), { ok: false, why: "no-battle-scene", threw: false });
-  assert.deepEqual(await game.starterGrid(), { ok: false, why: "no-battle-scene" });
+  assert.deepEqual(await game.starters(), { ok: false, why: "no-battle-scene" });
 });
 
 test("a press carries the fingerprint it was decided on, and is ok once it reached processInput", async () => {

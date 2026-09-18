@@ -16,6 +16,7 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Dark Knock Off
 3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
 4 Metagross free Steel Meteor Mash → Weavile falls (77%) · foe at 53%
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Metagross
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == cyrus, no Metagross (live)
 🎯 W200 · Cyrus Morpeko − {Minimal overview} × {Close}
 ⇆ Gyarados → Weavile switches — moves aimed at it
@@ -33,6 +34,7 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 ↯ Ice Triple Axel → 
 2 Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
 3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Morpeko
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == building blocks ok
 == cyrus (fallback)
 🎯 W200 · Cyrus Morpeko › Scrafty − {Minimal overview} × {Close}
@@ -41,6 +43,7 @@ foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4 ↯ Water Waterfall → Morpeko moves after
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Ice Triple Axel → Scrafty moves first ➜ Scrafty Fighting High Jump Kick ~100% · 2 hits later boss: 2 bars — no 1HKO
 ♟ winnable · 2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == switch-in never acts (live)
 🎯 W200 · Cyrus Charizard − {Minimal overview} × {Close}
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Lycanroc
@@ -50,6 +53,7 @@ Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100%
 1 Charizard Fire Flamethrower → Lycanroc sacrifice → Blastoise in free
 2 Blastoise free Water Wave Crash → Lycanroc KO · 41% left
 ✝ Charizard 63% · sacrifice to Lycanroc so Blastoise comes in free
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == item thief note ok
 == depth 2: Fake Out then Return (live)
 ⚔ Ambipom Normal Fake Out → Slowbro 3 hits then Return
@@ -74,6 +78,7 @@ foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles split (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Weezing 1 hit
@@ -81,6 +86,7 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 Weezing Weezing L80 Poison 100% ▲ — ↯ Poison Sludge Bomb → Garchomp 50% likely · moves after
 Toxapex Toxapex L80 Poison Water 100% ▲ — ↯ Water Scald → Lucario 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles focus on a leaving foe (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⇆ Hydreigon → Ferrothorn switches — moves aimed at it
@@ -93,6 +99,7 @@ Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → Garchomp 100% likely · moves after
 ♟ winnable · ~3 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == free switch — same field in the command phase (live)
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
@@ -108,6 +115,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 3 Swampert Water Surf → Tyranitar falls · foe at 100%
 ✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == free switch — switch (live)
 🎯 W200 · Cyrus Swampert − {Minimal overview} × {Close}
 ⇄ free switch? Ninetales → Swampert (no hit taken)
@@ -123,6 +131,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 3 Swampert Water Surf → Tyranitar falls · foe at 100%
 ✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == free switch — stay (live)
 🎯 W200 · Cyrus Swampert − {Minimal overview} × {Close}
 ⇄ free switch? stay — Swampert is best here
@@ -137,6 +146,7 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 2 Swampert Water Surf → Tyranitar falls · foe at 100%
 3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 68%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles spread move KOs our partner (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
@@ -146,6 +156,7 @@ foes weak to: Fighting ×2 Ground ×2
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
 Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Lucario 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles spread move scratches our partner (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Ground Earthquake → both 1 hit hits Lucario 23%
@@ -154,6 +165,7 @@ foes weak to: Fighting ×2 Ground ×2
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Lucario 50% likely · moves after
 Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles spread move, one foe left (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
@@ -161,6 +173,7 @@ Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Fl
 ◎ focus Heatran : most damage
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
 ♟ winnable · ~1 step + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles overkill (live)
 🎯 W200 · Cyrus Charizard › Venusaur − {Minimal overview} × {Close}
 ⚔ Charizard Fire Heat Wave → both 1 hit
@@ -168,6 +181,7 @@ Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cann
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Hyper Fang → Venusaur 50% likely · moves after
 Pidgey Pidgey L30 Normal Flying 100% ▲ — ↯ Flying Wing Attack → Charizard 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles slot 0 locked (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Snorlax locked in
@@ -176,6 +190,7 @@ foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles slot 0 switching (live)
 🎯 W200 · Cyrus Lucario › Metagross − {Minimal overview} × {Close}
 now: ⇄ Garchomp out › Metagross in · takes ~16%
@@ -185,6 +200,7 @@ foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Metagross 100% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles protect (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
@@ -193,6 +209,7 @@ foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 0% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == doubles helping hand (live)
 🎯 W200 · Cyrus Garchomp › Clefable − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit with Helping Hand
@@ -201,6 +218,7 @@ foes weak to: Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Dragon Fairy ×4 ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == drain
 Meteor Mash into a draining Golisopod: 5 hits
 == on-KO boost

@@ -85,6 +85,11 @@ const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 /** The starter grid with its filter bar active, where the server never acts (§6.5). */
 const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
+/** What `read_card` shows when the tab has no coach panel on it: a card of nothing, with `card_error` saying why (§11.4). */
+const NO_CARD = { kind: null, key: null, wave: null, verdict: null, text: null, summary: null } as const;
+
+const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
+
 /**
  * What each tool sends into the tab, so a tool whose commands the installed extension never registered refuses alone
  * and every other one keeps working (§8.5). The cursor commands are not here: a family without its setter is walked
@@ -93,6 +98,8 @@ const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 const TOOL_COMMANDS = {
   get_state: ["probe", "menu", "snapshot"],
   read_menu: ["probe", "menu"],
+  read_card: ["probe", "menu", "card"],
+  read_starters: ["probe", "menu", "starters"],
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
@@ -158,33 +165,78 @@ export class Driver {
     };
   }
 
-  async getState(detail: SnapshotDetail, ctx: CallContext): Promise<Record<string, unknown>> {
-    await this.#reachable("get_state");
-    return this.#call(ctx, async call => {
-      const s = await this.#settleRead(call);
-      if (!s.settled) return this.#openingTimedOut(call, s, "get_state");
-      const ready = s.last as Ready;
+  getState(detail: SnapshotDetail, ctx: CallContext): Promise<Record<string, unknown>> {
+    return this.#read("get_state", ctx, async ready => {
       const snap = await this.#game.snapshot(detail);
-      const menu = await this.#game.menu();
-      const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
-      // A read-only call never refuses on a Screen that moved since the settle: it reports the newer one.
-      return await this.#settledResult(ready, screenOf(ready, menu), outcome, {
-        ...(snap.ok ? this.#cleanSnapshot(snap.snapshot) : { snapshot_error: snap.why }),
-        run: { state: this.#outcomes.runState(ready) },
-      });
+      return {
+        menu: await this.#game.menu(),
+        fields: {
+          ...(snap.ok ? this.#cleanSnapshot(snap.snapshot) : { snapshot_error: snap.why }),
+          run: { state: this.#outcomes.runState(ready) },
+        },
+      };
     });
   }
 
-  async readMenu(ctx: CallContext): Promise<Record<string, unknown>> {
-    await this.#reachable("read_menu");
-    return this.#call(ctx, async call => {
-      const s = await this.#settleRead(call);
-      if (!s.settled) return this.#openingTimedOut(call, s, "read_menu");
-      const ready = s.last as Ready;
-      const menu = await this.#game.menu();
-      const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
-      return await this.#settledResult(ready, screenOf(ready, menu), outcome, this.#menuPayload(ready, menu));
+  /**
+   * The card the coach panel is showing (§11.4): read-only, no grant, settled like every other read. It is the same
+   * payload the HUD's `card` events carry, so a subscriber that has just joined reads the event it missed (§11.1).
+   * The envelope's `wave` is the settled game's and `card_wave` the one the card is about: they differ only while the
+   * panel is a refresh behind the game.
+   */
+  readCard(ctx: CallContext): Promise<Record<string, unknown>> {
+    return this.#read("read_card", ctx, async () => {
+      const card = await this.#game.card();
+      const shown = card.ok ? card : NO_CARD;
+      return {
+        menu: await this.#game.menu(),
+        fields: {
+          kind: shown.kind, key: shown.key, card_wave: shown.wave, verdict: shown.verdict, text: shown.text, summary: shown.summary,
+          ...(card.ok ? {} : { card_error: card.why }),
+        },
+        // A failed page read is reported, never explained; `no-hud` is the one the player can act on themselves.
+        next: card.ok ? undefined : NO_CARD_NEXT,
+      };
     });
+  }
+
+  /** Every starter this account has unlocked, and the grid `start_run` picks from when it is open (§11.4). Read-only. */
+  readStarters(ctx: CallContext): Promise<Record<string, unknown>> {
+    return this.#read("read_starters", ctx, async () => {
+      const read = await this.#game.starters();
+      const { ok: _ok, ...starters } = read;
+      return { menu: await this.#game.menu(), fields: read.ok ? starters : { starters_error: read.why } };
+    });
+  }
+
+  readMenu(ctx: CallContext): Promise<Record<string, unknown>> {
+    return this.#read("read_menu", ctx, async ready => {
+      const menu = await this.#game.menu();
+      return { menu, fields: this.#menuPayload(ready, menu) };
+    });
+  }
+
+  /**
+   * Every reading tool, which is every tool that presses nothing: reachable, settle, read, and answer in the settled
+   * envelope. `body` does the reads in its own order and hands back the menu read it ended on, because the Screen a
+   * read-only call reports is that one — newer than the settle's, and never a refusal (#133).
+   */
+  #read(
+    tool: keyof typeof TOOL_COMMANDS,
+    ctx: CallContext,
+    body: (ready: Ready) => Promise<{ menu: MenuRead; fields: Record<string, unknown>; next?: string }>,
+  ): Promise<Record<string, unknown>> {
+    return (async () => {
+      await this.#reachable(tool);
+      return this.#call(ctx, async call => {
+        const s = await this.#settleRead(call);
+        if (!s.settled) return this.#openingTimedOut(call, s, tool);
+        const ready = s.last as Ready;
+        const { menu, fields, next } = await body(ready);
+        const outcome = this.#end(call, { kind: "read", settle: s, options: optionLabels(menu) });
+        return await this.#settledResult(ready, screenOf(ready, menu), outcome, fields, next);
+      });
+    })();
   }
 
   async press(buttonName: string, ctx: CallContext): Promise<Record<string, unknown>> {
@@ -375,7 +427,7 @@ export class Driver {
     cur = await expect(s, "STARTER_SELECT", "game mode");
 
     // 3. Starters, by name, resolved against the live filtered grid.
-    const info = await this.#game.starterGrid();
+    const info = await this.#game.starters();
     if (!info.ok) throw new Refusal("starter_unreadable", info.why);
     const picks: typeof info.grid = [];
     for (const name of species) {
@@ -412,7 +464,7 @@ export class Driver {
       presses++;
       cur = await expect(s, "STARTER_SELECT", `add ${pick.name}`);
     }
-    const after = await this.#game.starterGrid();
+    const after = await this.#game.starters();
     if (!after.ok) throw new Refusal("starter_unreadable", "could not re-read the starter screen", { log });
     if (after.party.length !== picks.length) {
       throw new Refusal("party_mismatch", `Expected ${picks.length} starters in the party, the screen shows ${after.party.length}: ${after.party.join(", ")}`, { log });
@@ -781,14 +833,15 @@ export class Driver {
   }
 
   #cleanSnapshot(snap: Record<string, unknown>): Record<string, unknown> {
-    const { ready: _ready, mode: _mode, biome, party, ...rest } = snap;
-    const clean = JSON.parse(JSON.stringify({ ...rest, party })) as Record<string, unknown>;
+    const { ready: _ready, mode: _mode, biome, party, enemy, ...rest } = snap;
+    const clean = JSON.parse(JSON.stringify({ ...rest, party, enemy })) as Record<string, unknown>;
     return {
       ...clean,
       biome: typeof biome === "number" ? { int: biome, name: NAMES.BiomeId[biome] ?? null } : null,
-      party: Array.isArray(party)
-        ? party.map(p => (p && typeof p === "object" && "status" in p && typeof p.status === "number" ? { ...p, status: NAMES.StatusEffect[p.status] ?? p.status } : p))
-        : party,
+      // The page reads the game's enums as the integers they are; naming them is the server's job, and the coach's
+      // fields are named on both sides of the field, as `probe.js` named them for the coach skill (§11.4).
+      party: named(party),
+      enemy: named(enemy),
     };
   }
 
@@ -830,6 +883,32 @@ export class Driver {
       extra: menu.messagePending ? { ...menu.extra, messagePending: true } : menu.extra,
     };
   }
+}
+
+/**
+ * A side of the field with its enums named: the status, the types and each move's type and category, as `probe.js`
+ * named them (§11.4). A number with no name in the pinned tables stays the number, and a field the detail did not ask
+ * for stays away.
+ */
+function named(side: unknown): unknown {
+  if (!Array.isArray(side)) return side;
+  const name = (table: Record<number, string>, v: unknown) => (typeof v === "number" ? table[v] ?? v : v);
+  return side.map(p => {
+    if (!p || typeof p !== "object") return p;
+    const mon = p as Record<string, unknown>;
+    return {
+      ...mon,
+      ...("status" in mon ? { status: name(NAMES.StatusEffect, mon.status) } : {}),
+      ...(Array.isArray(mon.types) ? { types: mon.types.map(t => name(NAMES.PokemonType, t)) } : {}),
+      ...(Array.isArray(mon.moves)
+        ? {
+            moves: mon.moves.map(m => (m && typeof m === "object"
+              ? { ...m, type: name(NAMES.PokemonType, (m as Record<string, unknown>).type), category: name(NAMES.MoveCategory, (m as Record<string, unknown>).category) }
+              : m)),
+          }
+        : {}),
+    };
+  });
 }
 
 /**

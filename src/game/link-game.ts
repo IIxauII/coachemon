@@ -10,7 +10,7 @@ import type { MenuResult } from "../page/menu.ts";
 import { screenId, type Discriminators } from "../screen.ts";
 import type { CommandName } from "../protocol/commands.ts";
 import { isFault, type Claim, type Fault, type GameLink, type Presence, type Tab, type Unready } from "./link.ts";
-import type { Act, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, CardRead, ConsoleLine, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** A menu read that located no handler has no discriminators: they read as off. */
 const NO_DISC: Discriminators = disc(null);
@@ -79,10 +79,13 @@ export class LinkGame implements GamePort {
     return done(await this.#link.modal({ index, fine }));
   }
 
-  async starterGrid(): Promise<StarterGrid | Failed> {
-    const r = await this.#link.starters();
-    if (isFault(r)) return { ok: false, why: r.message };
-    return r.ok ? r : { ok: false, why: String(r.why) };
+  async starters(): Promise<StarterGrid | Failed> {
+    return answered(await this.#link.starters());
+  }
+
+  async card(): Promise<CardRead | Failed> {
+    // `no-hud` is the page's own refusal (§10.1), so it degrades like any other unreadable read.
+    return answered<CardRead>(await this.#link.card());
   }
 
   async snapshot(detail: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed> {
@@ -125,6 +128,12 @@ export class LinkGame implements GamePort {
   onRejection(cb: (t: number) => void): void {
     this.#tab.onRejection(cb);
   }
+}
+
+/** A read the Driver takes whole: a command that never got an answer and one the page refused both degrade to `Failed`. */
+function answered<T extends { ok: true }>(r: T | Unready | Fault): T | Failed {
+  if (isFault(r)) return { ok: false, why: r.message };
+  return r.ok ? r : { ok: false, why: String(r.why) };
 }
 
 function unreadable(why: string, mode: number): MenuRead {

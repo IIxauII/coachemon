@@ -7,9 +7,11 @@
  * caller attaches by hand.
  */
 import type { Button } from "../enums/generated.ts";
+import type { CardResult } from "../page/card.ts";
 import type { ConsoleLine } from "../page/errors.ts";
 import type { MenuOption } from "../page/menu.ts";
 import type { SnapshotDetail } from "../page/snapshot.ts";
+import type { StartersResult } from "../page/starters.ts";
 import type { Tab } from "./link.ts";
 
 /**
@@ -46,7 +48,7 @@ export type Ready = Extract<PredicateRead, { ready: true }>;
 
 export type FightMove = { name: string; pp: number; maxPp: number; power: number | null; category: number | null; type: number | null };
 
-export type ShopRow = { row: number; kind: "buttons" | "reward" | "shop"; items: { col: number; label: string | null; cost?: number | null; visible?: boolean }[] };
+export type ShopRow = { row: number; kind: "buttons" | "reward" | "shop"; items: { col: number; label: string | null; cost?: number | null; desc?: string | null; visible?: boolean }[] };
 
 /**
  * Each menu family's `extra`: what its branch of the in-page reader reads beside the options, plus the fields the
@@ -122,14 +124,11 @@ export type CursorTarget =
   | { family: "starter_select"; index: number }
   | { family: "learn_move"; row: number };
 
-/** The starter-select facts `start_run` needs before it presses anything. */
-export type StarterGrid = {
-  ok: true;
-  grid: { i: number; name: string | null; cost: number | null }[];
-  valueLimit: number | null;
-  party: string[];
-  partyValid: boolean | null;
-};
+/** The starter-select facts `start_run` needs before it presses anything, and the unlocks `read_starters` reports (§11.4). */
+export type StarterGrid = StartersResult;
+
+/** The card the panel is showing (§11.1). A page with no panel on it is a failed read like any other: `why: "no-hud"`. */
+export type CardRead = Extract<CardResult, { ok: true }>;
 
 export type { MenuOption, SnapshotDetail, ConsoleLine };
 
@@ -147,7 +146,9 @@ export interface GamePort extends Tab {
   setCursor(t: CursorTarget, fine: string): Promise<Act & { species?: string }>;
   /** The modal family's own button action, if the game is still on `fine`. */
   modalButton(i: number, fine: string): Promise<Act>;
-  starterGrid(): Promise<StarterGrid | Failed>;
+  starters(): Promise<StarterGrid | Failed>;
+  /** What the coach panel is showing right now, for `read_card` and a subscriber's late join (§11.1). */
+  card(): Promise<CardRead | Failed>;
   snapshot(d: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed>;
   /** A base64 PNG. */
   screenshot(): Promise<string>;

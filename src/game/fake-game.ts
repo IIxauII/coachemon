@@ -2,7 +2,7 @@
  * The in-memory game adapter (#127), for tests only. A test scripts one screen model: its closures hold the state and
  * answer the game operations. The fake brings the rest a Driver needs: a fake clock, a lock and a frame counter.
  *
- * What a screen reacts to is strict: `read`, `menu`, `starterGrid` and every act (`press`, `setCursor`, `modalButton`,
+ * What a screen reacts to is strict: `read`, `menu`, `starters`, `card` and every act (`press`, `setCursor`, `modalButton`,
  * `rawKey`) throw `unexpected <op>` when the screen does not script them, failing the test instead of passing it through
  * a fallback. The rest have benign defaults: an advancing frame, an empty snapshot, an attached tab.
  *
@@ -12,7 +12,7 @@
 import type { Clock } from "../driver.ts";
 import type { Button } from "../enums/generated.ts";
 import type { Reach } from "../hub/ladder.ts";
-import type { Act, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
+import type { Act, CardRead, CursorTarget, Failed, GamePort, MenuRead, PredicateRead, Ready, SnapshotDetail, StarterGrid } from "./port.ts";
 
 /** A predicate read as a screen gives it: the fake stamps the frame. */
 export type ScreenRead = Omit<Ready, "frame"> | Extract<PredicateRead, { ready: false }>;
@@ -20,7 +20,8 @@ export type ScreenRead = Omit<Ready, "frame"> | Extract<PredicateRead, { ready: 
 export type FakeScreen = {
   read?: () => ScreenRead;
   menu?: () => MenuRead;
-  starterGrid?: () => StarterGrid | Failed;
+  starters?: () => StarterGrid | Failed;
+  card?: () => CardRead | Failed;
   /** A press the screen reacts to, given the fingerprint it was sent on; returning nothing means it reached `processInput`. */
   onPress?: (b: Button, fine: string) => Act | void;
   onSetCursor?: (t: CursorTarget, fine: string) => Act & { species?: string };
@@ -72,7 +73,8 @@ export function fakeGame(screen: FakeScreen) {
       return screen.guardFine ? { ...r, fine: current() ?? "" } : r;
     },
     modalButton: async (i, fine) => moved(fine) ?? (screen.onModalButton ?? unexpected("modalButton"))(i, fine),
-    starterGrid: async () => (screen.starterGrid ?? unexpected("starterGrid"))(),
+    starters: async () => (screen.starters ?? unexpected("starters"))(),
+    card: async () => (screen.card ?? unexpected("card"))(),
     snapshot: async d => ({ ok: true, snapshot: screen.snapshot?.(d) ?? {} }),
     rawKey: async b => (screen.onRawKey ?? unexpected("rawKey"))(b),
     keepAlive: async () => {},

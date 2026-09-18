@@ -1,5 +1,5 @@
 /**
- * pokerogue-mcp: the MCP server. Seven tools (#7), stdio transport. Attachment
+ * pokerogue-mcp: the MCP server. Nine tools (#7, §12.2), stdio transport. Attachment
  * is lazy, on first use; there is no connect/disconnect tool.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -97,6 +97,26 @@ server.registerTool(
     inputSchema: {},
   },
   async (_args, extra) => run("read_menu", {}, () => driver.readMenu(context(extra as Extra))),
+);
+
+server.registerTool(
+  "read_card",
+  {
+    description:
+      "What the coach panel on the tab is showing right now: the card's kind (battle, learn, reward, biome, encounter), its verdict, its plain text and the summary behind it. Read-only, and the same payload the panel's card events carry — read it once after subscribing to catch the card already up. Returns card_error: no-hud when the panel is not running.",
+    inputSchema: {},
+  },
+  async (_args, extra) => run("read_card", {}, () => driver.readCard(context(extra as Extra))),
+);
+
+server.registerTool(
+  "read_starters",
+  {
+    description:
+      "Every starter this account has unlocked — dex id, IV total, passive, hidden ability, egg moves, cost reduction, candy — plus the grid start_run picks from (names, costs, the picked party, the point budget) when the starter screen is open. Read-only; off the grid the costs read null.",
+    inputSchema: {},
+  },
+  async (_args, extra) => run("read_starters", {}, () => driver.readStarters(context(extra as Extra))),
 );
 
 server.registerTool(

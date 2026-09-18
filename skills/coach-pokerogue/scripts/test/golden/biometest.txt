@@ -15,6 +15,7 @@
 ✓ 2 mons hit SE
 👑 W40 boss: Gurdurr 100%
 → ★Laboratory (1/3) · Factory
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Swamp 85 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · Construction Site 69
 == swamp vs construction site (mini)
 🗺 Next biome from Tall Grass + {Expand} × {Close}
@@ -25,6 +26,7 @@ summary Swamp 85 pick — 2 mons hit SE, catch Arbok (covers Fighting, new) · C
 · Swamp
 · Construction Site
 reading the game's biome tables…
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == gym at wave 50 (full)
 🗺 Next biome from Tall Grass − {Minimal overview} × {Close}
 ★ Swamp Poison 71% Water 31% Ground 27% 86 {offense 86 · defense -1 · catches 100 · big fight 100}
@@ -43,6 +45,7 @@ reading the game's biome tables…
 ✓ 2 mons hit SE
 ✓ W50 gym Rock (Brock): 2 hit SE, Lapras weak
 → ★Laboratory (1/3) · Factory
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == hardcore, Snorlax fainted (full)
 🗺 Next biome from Tall Grass − {Minimal overview} × {Close}
 ✚ judged without 1 fainted — no revive at the next heal
@@ -60,6 +63,7 @@ reading the game's biome tables…
 ✓ 2 mons hit SE
 👑 W40 boss: Gurdurr 100%
 → ★Laboratory (1/3) · Factory
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == swamp vs marsh (mini)
 🗺 Next biome from Tall Grass + {Expand} × {Close}
 ≈ Swamp 85 {offense 87 · defense -5 · catches 100 · big fight 100} — 2 mons hit SE

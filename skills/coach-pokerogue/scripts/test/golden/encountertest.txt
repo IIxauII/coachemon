@@ -3,6 +3,7 @@
 ★ Open it 🔮 {fixed by the run seed: this is what happens} — pick of 3 Ultra items
 no trap this time
 · Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == chest, prize (mini)
 🎭 Mysterious Chest common + {Expand} × {Close}
 ★ Open it 🔮 {fixed by the run seed: this is what happens} — pick of 3 Ultra items
@@ -13,6 +14,7 @@ summary Mysterious Chest: take Open it — pick of 3 Ultra items
 ✗ Open it 🔮 {fixed by the run seed: this is what happens} — trap: Garchomp faints, then a Gimmighoul boss fight
 ⚔ boss · costs Garchomp a revive
 ★ Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Mysterious Chest: take Leave — shop only, no reward · avoid Open it
 == store (full)
 🎭 Department Store Sale common − {Minimal overview} × {Close}
@@ -22,6 +24,7 @@ a vitamin is permanent
 · X Items 🔮 {fixed by the run seed: this is what happens} — pick of 5: 4 X items, 1 Dire Hit
 one-battle boosts
 · Poké Balls 🔮 {fixed by the run seed: this is what happens} — pick of 4 ball packs: 1 Poké, 1 Great, 1 Ultra, 1 Rogue
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Department Store Sale: take Vitamins — pick of 3: 2 vitamins, 1 PP Up
 == fight or flight, thief (full)
 🎭 Fight or Flight common − {Minimal overview} × {Close}
@@ -30,6 +33,7 @@ summary Department Store Sale: take Vitamins — pick of 3: 2 vitamins, 1 PP Up
 ★ Steal — Leftovers (Great tier), no fight, EXP
 by Sneasel · free
 · Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Fight or Flight: take Steal — Leftovers (Great tier), no fight, EXP
 == fiery fallout (full)
 🎭 Fiery Fallout common − {Minimal overview} × {Close}
@@ -39,6 +43,7 @@ summary Fight or Flight: take Steal — Leftovers (Great tier), no fight, EXP
 Jolteon loses Volt Absorb
 ★ Fire help — no fight: your lead gets a type booster + rewards, EXP
 by Arcanine
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Fiery Fallout: take Fire help — no fight: your lead gets a type booster + rewards, EXP · avoid Search
 == berries, faster (full)
 🎭 Berries Abound common − {Minimal overview} × {Close}
@@ -46,6 +51,7 @@ summary Fiery Fallout: take Fire help — no fight: your lead gets a type booste
 ⚔ boss · L34 boss vs your L40, nothing hits it SE
 ★ Race — Jolteon outruns it: 2 berries + pick of 5 berries, no fight, EXP
 · Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Berries Abound: take Race — Jolteon outruns it: 2 berries + pick of 5 berries, no fight, EXP
 == part-timer (full)
 🎭 Part-Timer common − {Minimal overview} × {Close}
@@ -54,6 +60,7 @@ pick a mon you won't need PP on
 · Warehouse — Garchomp earns $2,244 (HP/Atk/Def); its moves drop to 2 PP
 – Sell — a charmer earns $1,512; its moves drop to 2 PP
 needs a mon with Charm / Attract / Captivate …
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Part-Timer: take Deliver — Jolteon earns $2,424 (Speed); its moves drop to 2 PP
 == vitamin dealer, rich (full)
 🎭 Shady Vitamin Dealer common − {Minimal overview} × {Close}
@@ -62,6 +69,7 @@ on Garchomp
 ★ Pricey — $2,520: 2 random vitamins on one mon, no side effects
 leaves $17,480
 · Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Shady Vitamin Dealer: take Pricey — $2,520: 2 random vitamins on one mon, no side effects · avoid Cheap
 == teleport to a rare biome (full)
 🎭 Teleporting Hijinks common − {Minimal overview} × {Close}
@@ -71,6 +79,7 @@ summary Shady Vitamin Dealer: take Pricey — $2,520: 2 random vitamins on one m
 ⚔ boss · by Jolteon · Fairy Cave is a rare biome
 · Inspect — stay: fight a boss here → Magnet / Metal Coat in the rewards
 ⚔ boss
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Teleporting Hijinks: take Machine — free: teleport to Fairy Cave, fight an enraged boss there, EXP
 == uncommon breed, new species (full)
 🎭 Uncommon Breed common − {Minimal overview} × {Close}
@@ -80,6 +89,7 @@ summary Teleporting Hijinks: take Machine — free: teleport to Fairy Cave, figh
 new species
 ★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
 by Milotic · new species
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
 == gts (full)
 🎭 Global Trade System common − {Minimal overview} × {Close}
@@ -89,6 +99,7 @@ no clear upgrade
 a gamble
 ? Item Trade — trade a held item for a random item one tier up
 · Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Global Trade System: your call
 == lost at sea (full)
 🎭 Lost at Sea common − {Minimal overview} × {Close}
@@ -98,6 +109,7 @@ by Lapras
 needs a mon that can learn Fly
 ✗ Wander — every mon loses ¼ max HP (never faints); Jolteon ends low
 a guide costs nothing
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Lost at Sea: take Surf — sail through free, EXP · avoid Wander
 == strong stuff (full)
 🎭 The Strong Stuff common − {Minimal overview} × {Close}
@@ -105,6 +117,7 @@ summary Lost at Sea: take Surf — sail through free, EXP · avoid Wander
 weakens your two strongest
 ★ Battle — fight Shuckle (5 bars, +1 Def/SpD, berries; Gastro Acid + Stealth Rock on you) → Soul Dew + rewards
 ⚔ boss · ~L35 boss (5 bars) vs your L40, 1 mon hits it SE, 1 weak to it
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary The Strong Stuff: take Battle — fight Shuckle (5 bars, +1 Def/SpD, berries; Gastro Acid + Stealth Rock on you) → Soul Dew + rewards · avoid Drink
 == dark deal (not judged) (full)
 🎭 Dark Deal rogue − {Minimal overview} × {Close}
@@ -112,6 +125,7 @@ summary The Strong Stuff: take Battle — fight Shuckle (5 bars, +1 Def/SpD, ber
 $1,010 · Garchomp, Lapras qualify
 ? Refuse
 not judged yet: options and requirements only
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == dark deal (not judged) (mini)
 🎭 Dark Deal rogue + {Expand} × {Close}
 ? Deal
