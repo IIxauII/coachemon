@@ -9,7 +9,7 @@
  */
 import { Button } from "../enums/generated.ts";
 import type { Claim, Fault, GameLink, Presence, Tab } from "../game/link.ts";
-import { lockContended, type Lock } from "./lock.ts";
+import type { Contention, DriverLock } from "./lock.ts";
 import { disc } from "../page/disc.ts";
 import { dispatch } from "../page/dispatch.ts";
 import type { ConsoleLine } from "../page/errors.ts";
@@ -40,14 +40,17 @@ const PREFIX = Object.fromEntries(
   COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${COMMAND_HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, ${JSON.stringify(PAGE_MODES)}, `]),
 ) as Record<CommandName, string>;
 
+/** With no lock at all — a test, or a second link — nothing is ever contended. */
+const UNCONTENDED: Contention = { contended: false, holder: null };
+
 export class CdpLink implements GameLink, Tab {
   readonly commands: ReadonlySet<CommandName> = new Set(COMMAND_NAMES);
   /** CDP reads never advance a frozen loop: the guard still checks the frame and refuses `loop_frozen` (#23, §10.3). */
   readonly pumps = false;
   readonly #session: LinkSession;
-  readonly #lock: Lock | null;
+  readonly #lock: DriverLock | null;
 
-  constructor(session: LinkSession, lock: Lock | null = null) {
+  constructor(session: LinkSession, lock: DriverLock | null = null) {
     this.#session = session;
     this.#lock = lock;
   }
@@ -90,7 +93,7 @@ export class CdpLink implements GameLink, Tab {
     } catch (e) {
       error = (e as Error).message;
     }
-    const contended = this.#contention();
+    const contended = this.#lock?.contention() ?? UNCONTENDED;
     const attached = error === null && this.#session.attached;
     return {
       reach: attached ? null : { code: "unreachable", rung: null, line: error ?? "The server is not attached to a PokéRogue tab." },
@@ -98,16 +101,14 @@ export class CdpLink implements GameLink, Tab {
     };
   }
 
-  /** The pidfile lock is CDP's driver grant, and stays until the flip deletes this link (§7.5, §13.2). */
+  /**
+   * The pidfile lock is CDP's driver grant, and stays until the flip deletes this link (§7.5, §13.2). Taking it here
+   * and not at startup is what makes the role begin at the first act: a session that only reads never calls this.
+   */
   async claim(): Promise<Claim> {
-    const c = this.#contention();
+    const c = this.#lock?.take() ?? UNCONTENDED;
     if (!c.contended) return { ok: true };
     return { ok: false, code: "tab_contended", message: `Another driver (pid ${c.holder}) holds the tab. Nothing was pressed.`, detail: { holder: c.holder } };
-  }
-
-  /** Whether another live driver holds the lock; with no lock (a test, a second link) nothing is contended. */
-  #contention(): { contended: boolean; holder: number | null } {
-    return this.#lock ? lockContended(this.#lock) : { contended: false, holder: null };
   }
 
   async keepAlive(): Promise<void> {
