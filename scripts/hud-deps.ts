@@ -27,8 +27,8 @@
  *
  * Keys are HUD modules under `skills/coach-pokerogue/scripts/hud/`; a moved hash
  * names the modules to re-read. `50-shop.js` owns only its TM claims (§16):
- * its spending rules rest on `49-ahead.js`'s calendar and its item judgements
- * on `50-items.js`, which are listed under those modules.
+ * its spending rules rest on `03-calendar.js`'s run calendar and its item
+ * judgements on `50-items.js`, which are listed under those modules.
  */
 import type { SourceRef } from "../src/escape-ladder/types.ts";
 
@@ -50,6 +50,30 @@ export const HUD_DEPS = {
     `${M}#ShellSideArmCategoryAttr.apply`,
     `${M}#PresentPowerAttr.apply`,
     `src/data/abilities/ab-attrs.ts#FullHpResistTypeAbAttr.apply`,
+  ],
+
+  /**
+   * §12 and §10. The **run calendar**: the four rules that say what kind of fight a
+   * wave is, the heal schedule and who it revives, and `isWaveTrainer` as odds. All
+   * *re-implemented* — they are pure arithmetic on the wave index, so the HUD reads
+   * them rather than calling the game every tick, and this file holds the only
+   * game-less fallbacks in the HUD. A changed rule silently moves every "next big
+   * fight" the look-ahead names, every trainer share the biome card scores, and
+   * whether the rewards card thinks a boss is next.
+   */
+  "03-calendar.js": [
+    `src/game-mode.ts#GameMode.isWaveFinal`,
+    `src/game-mode.ts#GameMode.isFixedBattle`,
+    `src/game-mode.ts#GameMode.isBoss`,
+    `src/game-mode.ts#GameMode.isWaveTrainer`,
+    `src/data/trainers/fixed-battle-configs.ts#classicFixedBattles`,
+    // The heal: which waves it lands on, and who gets up from it.
+    `src/phases/victory-phase.ts#VictoryPhase.start`,
+    `${SCENE}#BattleScene.isNewBiome`,
+    `src/phases/select-biome-phase.ts#SelectBiomePhase.setNextBiomeAndEnd`,
+    `src/phases/party-heal-phase.ts#PartyHealPhase.start`,
+    `src/data/challenge.ts#LimitedSupportChallenge.applyPartyHeal`,
+    `src/data/challenge.ts#HardcoreChallenge.applyPreventRevive`,
   ],
 
   /**
@@ -457,23 +481,19 @@ export const HUD_DEPS = {
 
   /**
    * §10: the biome choice the phase offers, and what each of the ten waves it
-   * covers holds: the spawn and trainer rules behind the pools it scans, the
-   * trainer odds, the gym leader on the gym wave, wild evolutions by level, and
-   * who comes back from fainting at the X1 heal. All re-implemented as odds.
+   * covers holds: the spawn and trainer rules behind the pools it scans, the gym
+   * leader on the gym wave, and wild evolutions by level. All re-implemented as
+   * odds. Which wave is which, how likely a trainer is on it and who comes back
+   * from fainting at the X1 heal are the run calendar's (`03-calendar.js`).
    */
   "47-biome.js": [
     `src/phases/select-biome-phase.ts#SelectBiomePhase.start`,
-    `src/phases/select-biome-phase.ts#SelectBiomePhase.setNextBiomeAndEnd`,
-    `src/phases/party-heal-phase.ts#PartyHealPhase.start`,
-    `src/data/challenge.ts#HardcoreChallenge.applyPreventRevive`,
-    `src/data/challenge.ts#LimitedSupportChallenge.applyPartyHeal`,
     `src/field/arena.ts#Arena.randomSpecies`,
     `src/field/arena.ts#Arena.randomTrainerType`,
     `src/field/arena.ts#Arena.generateNonBossBiomeTier`,
     `src/field/arena.ts#Arena.generateBossBiomeTier`,
     `src/field/arena.ts#Arena.checkLegendBST`,
     `src/field/arena.ts#Arena.getTimeOfDay`,
-    `src/game-mode.ts#GameMode.isWaveTrainer`,
     `src/game-mode.ts#GameMode.isTrainerBoss`,
     `src/game-mode.ts#GameMode.getWaveForDifficulty`,
     `src/data/daily-seed/daily-run.ts#getDailyForcedWaveBiomePoolTier`,
@@ -483,11 +503,8 @@ export const HUD_DEPS = {
     `src/ai/ai-species-gen.ts#determineEnemySpecies`,
     `src/ai/ai-species-gen.ts#calcEvoChance`,
     `src/ai/ai-species-gen.ts#getRequiredPrevo`,
-    // `wavesIn`: the pools refreshed for the time of day, fixed, final and boss waves, and the boss-spawn rule.
+    // `wavesIn`: the pools refreshed for the time of day, and the boss-spawn rule.
     `src/field/arena.ts#Arena.updatePoolsForTimeOfDay`,
-    `src/game-mode.ts#GameMode.isFixedBattle`,
-    `src/game-mode.ts#GameMode.isWaveFinal`,
-    `src/game-mode.ts#GameMode.isBoss`,
     `${SCENE}#BattleScene.getEncounterBossSegments`,
     // `formsAt`'s WILD vs NORMAL evolution kind, and each trainer config's default `speciesFilter`.
     `src/data/pokemon-species.ts#PokemonSpecies.getWildSpeciesForLevel`,
@@ -521,7 +538,6 @@ export const HUD_DEPS = {
     `src/game-mode.ts#GameMode.getFixedBattle`,
     `src/game-mode.ts#GameMode.isWaveTrainer`,
     `src/game-mode.ts#GameMode.isBoss`,
-    `src/game-mode.ts#GameMode.isWaveFinal`,
     `src/field/arena.ts#Arena.getTimeOfDay`,
     `src/field/trainer.ts#Trainer.constructor`,
     `src/field/trainer.ts#Trainer.genPartyMember`,
@@ -537,24 +553,14 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §12. The big-fight calendar, the full-heal schedule, reward luck and the
-   * classic final boss. The four calendar rules and the heal condition are
-   * *read* — pure arithmetic on the wave index — but a changed rule silently
-   * moves every "next big fight" the card names. The reward and final-boss refs
-   * are re-implemented: the HUD quotes the luck upgrade odds and the Eternamax
-   * checklist without calling anything.
+   * §12. Reward luck and the classic final boss, plus what the run calendar's
+   * answers mean for the party. The schedule and the heal themselves are
+   * `03-calendar.js`'s; what is left here is re-implemented: the HUD quotes the
+   * luck upgrade odds and the Eternamax checklist without calling anything.
    */
   "49-ahead.js": [
-    `src/game-mode.ts#GameMode.isWaveFinal`,
     `src/game-mode.ts#GameMode.isFixedBattle`,
     `src/game-mode.ts#GameMode.getFixedBattle`,
-    `src/game-mode.ts#GameMode.isBoss`,
-    `src/game-mode.ts#GameMode.isWaveTrainer`,
-    `src/data/trainers/fixed-battle-configs.ts#classicFixedBattles`,
-    `src/phases/victory-phase.ts#VictoryPhase.start`,
-    `src/phases/select-biome-phase.ts#SelectBiomePhase.setNextBiomeAndEnd`,
-    `src/phases/party-heal-phase.ts#PartyHealPhase.start`,
-    `${SCENE}#BattleScene.isNewBiome`,
     `src/modifier/modifier-type.ts#getNewModifierTypeOption`,
     `src/modifier/modifier-type.ts#getPartyLuckValue`,
     `src/phases/select-modifier-phase.ts#SelectModifierPhase.getRerollCost`,
@@ -572,6 +578,7 @@ export const HUD_DEPS = {
     `${SCENE}#BattleScene.checkIsDouble`,
     `${SCENE}#BattleScene.getDoubleBattleChance`,
     `${SCENE}#BattleScene.generateNewBattleTrainer`,
+    `src/game-mode.ts#GameMode.isWaveFinal`,
     `src/game-mode.ts#GameMode.isEndlessBoss`,
     `src/modifier/modifier.ts#DoubleBattleChanceBoosterModifier.apply`,
     `src/modifier/modifier.ts#DoubleBattleChanceBoosterModifier.match`,

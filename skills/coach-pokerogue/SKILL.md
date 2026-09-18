@@ -98,8 +98,8 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      (rival, evil team, Elite Four, champion), a gym leader or the run's final wave, how many waves out it is, and —
      once it is close — the exact roster from the same replay the 🔮 card uses, with a **ready / watch / risky**
      verdict: what nothing on the team hits super-effectively, the level gap, a type half the party is weak to, extra
-     health bars. `49-ahead.js`, `references/game-code.md` §12; the schedule itself is arithmetic on the wave index,
-     so it needs no roll and holds at any distance. It also carries what the calendar decides about **preparing**:
+     health bars. `49-ahead.js` on `03-calendar.js`'s run calendar, `references/game-code.md` §12; the schedule
+     itself is arithmetic on the wave index, so it needs no roll and holds at any distance. It also carries what the calendar decides about **preparing**:
      the next full heal (entering every X1 — HP, status, PP, revives and Tera), how many big fights stand before it,
      the tiers a fixed battle's rewards are pinned to, and party **luck** with the tier-upgrade chance it buys
      (`4 / floor(512 / (luck + 4))` per reward — and nothing at all on a wave whose rewards are pinned, until a reroll, which drops the pin).

@@ -2,21 +2,14 @@
 // the run gives you to prepare with. Built on 48-preview's replay, so a fixed fight is named exactly rather than
 // guessed from a hand-kept roster table.
 //
-// ---- The calendar (read from the pinned source, v1.12.0.11; references/game-code.md §12)
-// Four rules say a wave is a big fight, and not one of them costs a draw — the schedule is a calendar, not a roll:
-//   final  `gameMode.isWaveFinal(w)`                     Eternatus at 200 in classic
-//   fixed  `gameMode.isFixedBattle(w)`                   the rival, the evil team, the Elite Four, the champion
-//   gym    `w % 30 === (offsetGym ? 0 : 20)`             the same rule `isWaveTrainer` returns early on
-//   boss   `gameMode.isBoss(w)`                          every tenth wave
-// A wave can match several (190 is both the champion and a boss wave); the list above is the precedence.
-//
-// ---- Heals
-// `VictoryPhase` pushes `SelectBiomePhase` whenever `isNewBiome()` — in classic, every tenth wave — and
-// `SelectBiomePhase.setNextBiomeAndEnd` unshifts `PartyHealPhase` when the *next* wave is an X1. `PartyHealPhase`
-// restores HP, cures status, refills every move's PP, revives the fallen and resets `arena.playerTerasUsed`. So a
-// classic run heals entering 11, 21 … 191 and nowhere else, and **waves 181–190 hold the four Elite Four fights and
-// the champion with no heal between them**. `fightsBeforeHeal` counts that stretch, and the rewards card spends on
-// it: it is the difference between topping one mon up and stocking the whole party.
+// ---- The schedule
+// Which wave is a big fight and where the run heals are the **run calendar**'s (`03-calendar.js`) — pure arithmetic
+// on the wave index, no roll anywhere in it. This file asks it three things and says what they mean for the party:
+// `bigFightsAhead` for the schedule, `nextHeal` for the next full heal, and `isBossWave` for the double-battle odds.
+// The one reading worth repeating here is why `fightsBeforeHeal` exists: a classic run heals entering 11, 21 … 191
+// and nowhere else, so **waves 181–190 hold the four Elite Four fights and the champion with no heal between them**,
+// and the rewards card spends against that stretch — the difference between topping one mon up and stocking the
+// whole party.
 //
 // ---- Rewards and luck
 // `getNewModifierTypeOption` rolls a tier and then upgrades it while `randSeedInt(floor(512 / (luck + 4))) < 4`, so
@@ -29,7 +22,6 @@
 // Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
 // which replays inside a seed fork. Nothing is called that the preview doesn't already call.
 const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
-  const SPAN = 30;        // how far ahead the schedule looks
   // How far ahead the roster is still worth reading. The calendar holds at any distance, but the replay feeds on the
   // party, the luck value and the biome, and a catch, an evolution or a shop pick re-rolls it — so a roster read more
   // than a few waves out is a number that will have moved by the time the fight arrives.
@@ -65,38 +57,6 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
     return { tiers, luckUpgrades: custom.allowLuckUpgrades !== false };
   };
 
-  // ---- The calendar
-  const isGym = (s, w) => w % 30 === (s.offsetGym ? 0 : 20) && !tryDo(() => s.gameMode.isWaveFinal(w), false);
-  const kindOf = (s, w) => {
-    const gm = s.gameMode;
-    if (tryDo(() => gm.isWaveFinal(w), false)) return "final";
-    if (tryDo(() => gm.isFixedBattle(w), false)) return "fixed";
-    if (isGym(s, w)) return "gym";
-    if (tryDo(() => gm.isBoss(w), w % 10 === 0)) return "boss";
-    return null;
-  };
-  // Every big fight in `[from, from + n)`, in wave order. No RNG: four arithmetic rules on the wave index.
-  const bigFightsAhead = (s, from, n = SPAN) => {
-    if (typeof s?.gameMode?.isFixedBattle !== "function") return [];
-    const out = [];
-    for (let w = from; w < from + n; w++) {
-      const kind = kindOf(s, w);
-      if (kind) out.push({ wave: w, kind, label: KIND_LABEL[kind] });
-      if (kind === "final") break; // nothing is scheduled past the run's last wave
-    }
-    return out;
-  };
-  // The next wave the run heals on. `SelectBiomePhase` heals entering an X1, and only after a wave that changed
-  // biome — in classic every tenth wave, so every X1 up to the final wave. A PARTY_HEAL challenge can switch it off;
-  // the HUD can't see that and says nothing about it.
-  const nextHeal = (s, from) => {
-    for (let w = from; w < from + 60; w++) {
-      if (tryDo(() => s.gameMode.isWaveFinal(w), false)) return null;
-      if (w % 10 === 1) return w;
-    }
-    return null;
-  };
-
   // ---- Double battles. `checkIsDouble` rolls every wave, `randSeedInt(getDoubleBattleChance(w)) === 0`, and
   // `generateNewBattleTrainer` rolls the same chance for a generic trainer's double variant. The chance is 8, or 32 on
   // an X0 wave, divided by 4 for each lure held (`DoubleBattleChanceBoosterModifier`, one per lure kind) and for each
@@ -123,7 +83,7 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
       const fixed = tryDo(() => (gm.isFixedBattle(w) ? gm.getFixedBattle(w) : null));
       if (fixed) { doubles += fixed.double === true ? 1 : 0; continue; }
       const lured = lures.filter(left => left > i).length;
-      doubles += 1 / Math.max(1, (w % 10 === 0 ? 32 : 8) / 4 ** (lured + abilities));
+      doubles += 1 / Math.max(1, (isBossWave(s, w) ? 32 : 8) / 4 ** (lured + abilities));
     }
     return doubles / n;
   };
@@ -229,7 +189,8 @@ const { aheadModel, partyLuck, doubleOdds, learnRoster } = (() => {
   };
 
   const build = (s, wave) => {
-    const schedule = bigFightsAhead(s, wave + 1);
+    // The calendar answers what each wave is; naming it for a reader is this card's own job.
+    const schedule = bigFightsAhead(s, wave + 1).map(f => ({ ...f, label: KIND_LABEL[f.kind] }));
     const next = schedule[0] ?? null;
     const heal = nextHeal(s, wave + 1);
     const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];

@@ -95,10 +95,13 @@ const { captureChance, catchAdvice, catchWorth, damagingTypes, finalBstOf, teamW
     if (b.battleType === BattleType.MYSTERY_ENCOUNTER && !b.mysteryEncounter?.catchAllowed) return "mystery encounter";
     if (s.arena?.biomeId === BiomeId.END && (b.battleType ?? BattleType.WILD) === BattleType.WILD) {
       const mode = s.gameMode ?? {}, w = b.waveIndex, dex = s.gameData?.dexData ?? {};
-      const final = call(live, () => mode.isBattleClassicFinalBoss(w), !!mode.isClassic && w === 200);
+      // The run's last wave is the same rule in all three modes (classic 200, Daily 50, an Endless minor boss every
+      // 250), so where the game's own check can't be called the run calendar answers instead of a rule written here.
+      const lastWave = () => waveKind(s, w) === "final";
+      const final = call(live, () => mode.isBattleClassicFinalBoss(w), !!mode.isClassic && lastWave());
       const freshStart = call(live, () => mode.isFullFreshStartChallenge(), (mode.challenges ?? []).some(c => c.id === Challenges.FRESH_START && c.value === 1));
-      const endlessBoss = call(live, () => mode.isEndlessMinorBoss(w), !!mode.isEndless && w % 250 === 0);
-      const dailyFinal = !!mode.isDaily && call(live, () => mode.isWaveFinal(w), w === 50);
+      const endlessBoss = call(live, () => mode.isEndlessMinorBoss(w), !!mode.isEndless && lastWave());
+      const dailyFinal = !!mode.isDaily && call(live, () => mode.isWaveFinal(w), lastWave());
       const uncaught = active.some(f => !big(dex[f.species?.speciesId]?.caughtAttr));
       // starterData holds an entry for every starter (initStarterData), so its keys are getAllStarters().
       const missing = Object.keys(s.gameData?.starterData ?? {}).filter(id => !big(dex[id]?.caughtAttr)).length;

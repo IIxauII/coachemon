@@ -800,6 +800,15 @@ Game calls are cited where they're named; unmarked names are HUD functions.
 - `heldItems(p)` → `Map<constructorName, {stack, list}>` via `Pokemon.getHeldItems()` (`src/field/pokemon.ts:1194`); `berries(p)` → `[{ type: m.berryType, stack }]` (`BerryModifier`, `src/modifier/modifier.ts:1795`).
 - `SKIP_RNG_MOVE = m => m.hasAttr("PresentPowerAttr") || m.hasAttr("RandomLevelDamageAttr")`: Present draws global RNG (§4), and Psywave draws battle RNG inside `getAttackDamage` (`src/data/moves/move.ts:2143-2150`). Use modelled values for both.
 
+### Run calendar (03-calendar.js)
+- `waveKind(s, w)` → `"final" | "fixed" | "gym" | "boss" | null`, by the precedence in §12. Precedence, not membership: wave 20 is `"gym"` though it is also a tenth wave.
+- `isBossWave(s, w)` → whether `w` is a tenth wave at all, which is what `getDoubleBattleChance`'s 32 asks (§16).
+- `bigFightsAhead(s, from, n)` → `[{ wave, kind }]` in wave order, stopping at the run's last wave. Empty without a `gameMode`. What a fight is *called* stays with the card.
+- `nextHeal(s, from)` → the next X1 the run heals on, or `null` past the last wave or under a Limited Support with no heal (§10).
+- `healRevives(s)` → whether that heal brings the fainted back (false under Hardcore, or with no heal at all).
+- `trainerOdds(s, w, biome)` → 0..1, `isWaveTrainer` (§10) as odds rather than as the roll `48-preview.js` replays.
+- **The only game-less fallbacks in the HUD live here**, each marked where it sits: the last wave per mode (classic 200, Daily 50, Endless every 250) and the tenth-wave boss rule. No caller writes `% 10` or `% 30` for itself.
+
 ### Move traits (07-move-traits.js)
 - `moveTraits(mv, user, { party, target })` → the move read once, by attribute: `charge` (`false`, or `{ skip, now(user) }` — the instant-charge condition as data and judged live), `semiCharge`, `recharge`, `interrupt`, `needsAttack` (Sucker Punch / Thunderclap), `once` (`FirstMoveCondition` across `conditions` / `conditionsSeq2` / `conditionsSeq3`), `lock` (`FrenzyAttr`), `noRepeat` (`consecutiveUseRestriction`'s exact `battle:moveDisabledConsecutive` key), `recoil` (`{ ratio, useHp, blocked }`, default ratio 0.25, blocked by Magic Guard / Rock Head *by ability attribute* unless `unblockable`), `halfSac`, `crash`, `selfKo` (`"always"` / `"onHit"`), `drops` (guaranteed self stat changes, signed), `removesType`, `guarded`, `hits` (`{ dist, mean, checkAll, grows }`, §2), `flinches`, `stages` / `inflicts` / `tags` (each with `self` / `side` / `ally` and the concrete `cls`), `heal` (`{ ratio, ratioIn(weather), self, cls }`), `hazard`, `protect`, `cutHp`, `drain`, `attrNames`. **No game calls and no battle state**, so the learn card uses it outside a battle. Attributes match through the prototype chain; `attrNames` holds concrete class names for callers whose tables are keyed that way.
 - `costNotes(traits, amounts)` → the wording for each cost, shared by the ⚔ line's `costs` and the learn card's drawbacks. `amounts` carries this matchup's numbers when the caller has them: `recoil` (share of max HP), `sun`, `type`.
@@ -1026,9 +1035,10 @@ it carries a threshold. Classic wave 20's trainer never evolves (line 127).
 when the next wave is an X1 and `PARTY_HEAL` allows it (`LimitedSupportChallenge.applyPartyHeal`,
 `src/data/challenge.ts:1088`: only value 2 keeps the heal), else a `SelectModifierPhase` in its place.
 `PartyHealPhase.start` (`src/phases/party-heal-phase.ts:18`) skips the fainted under `PREVENT_REVIVE` (Hardcore,
-`src/data/challenge.ts:1176`). So the fainted fight in the next biome, except under those two.
+`src/data/challenge.ts:1176`). So the fainted fight in the next biome, except under those two — `healRevives` (§12).
 
-`47-biome.js` turns this into odds per wave.
+`47-biome.js` turns this into odds per wave, taking which wave is which and how likely a trainer is on it from the run
+calendar (`trainerOdds`, §12).
 
 ---
 
@@ -1123,7 +1133,9 @@ the replay doesn't (`doPostBattleCleanup`'s Pokérus spread is forked). The arri
 
 ## 12. The fixed-battle calendar, full heals, and reward luck
 
-The look-ahead (`49-ahead.js`) rests on four rules of the **run calendar**, all pure reads of the wave index:
+The **run calendar** (`03-calendar.js`) is four rules, all pure reads of the wave index. Every card asks it rather
+than writing a rule of its own — the look-ahead for the schedule, the biome card for its ten waves, the rewards card
+for whether a boss is next, the catch card for the run's last wave:
 
 | Rule | Source | Waves |
 |---|---|---|

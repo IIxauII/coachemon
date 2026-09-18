@@ -5,7 +5,7 @@
 // `BattleScene.newBattle()` sows a fresh stream at its top — `resetSeed(w)` does `RND.sow([shiftCharCodes(seed, w)])`
 // — and then draws in a fixed order:
 //   1. `gameMode.isWaveTrainer(w)`     the trainer-chance roll (its look-back loop is a fork per wave, so it doesn't
-//                                      move the stream; a gym wave, `w % 30 === (offsetGym ? 0 : 20)`, draws nothing)
+//                                      move the stream; a gym wave draws nothing — the rule is 03-calendar.js's)
 //   2. `isWaveMysteryEncounter(...)`   the ME roll, in a fork at `w * 3000`
 //   3. `generateNewBattleTrainer(w)`   the trainer's pool tier and type, then its double and variant rolls
 //   4. `checkIsDouble(...)`            the wild double roll
@@ -64,9 +64,6 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
   const hasSpeciesRoll = s => typeof s.randomSpecies === "function" || typeof s.arena?.randomSpecies === "function";
 
   const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
-  // `GameMode.isWaveTrainer`: a gym wave is a trainer wave by the calendar, returning before the chance roll — so its
-  // kind costs no draw and is as certain as a fixed battle's.
-  const isGymWave = (s, gm, w) => w % 30 === (s.offsetGym ? 0 : 20) && !tryDo(() => gm.isWaveFinal(w), false);
   // `randSeedInt` (utils/common): the same three lines, so a replayed draw lands on the same stream position.
   const rnd = range => (range <= 1 ? 0 : Phaser.Math.RND.integerInRange(0, range - 1));
   // `shiftCharCodes` (utils/common): the wave seed is the run seed with every char code shifted by the wave. The
@@ -197,9 +194,10 @@ const { previewFor, previewNext, previewCheck, previewStats } = (() => {
           me: me ? { name: meName(me), tier: me.encounterTier ?? null } : null,
           double, levels, foes, boss: foes.some(f => f.segments > 1),
           confidence: (() => {
-            // A fixed wave's kind is a table lookup and a gym wave's is the calendar; any other wave's is the
-            // trainer-chance roll off the stream, and every field below inherits that `replay` through `weakest`.
-            const kind = fixedCfg || isGymWave(s, gm, w) ? CONFIDENCE.exact : CONFIDENCE.replay;
+            // A fixed wave's kind is a table lookup and a gym wave's is the calendar (`isWaveTrainer` returns on the
+            // gym rule before the chance roll, so it costs no draw); any other wave's is the trainer-chance roll off
+            // the stream, and every field below inherits that `replay` through `weakest`.
+            const kind = fixedCfg || waveKind(s, w) === "gym" ? CONFIDENCE.exact : CONFIDENCE.replay;
             // A fixed trainer comes with the table entry; every other trainer's identity is drawn on the stream.
             const who = !trainer ? null : weakest(kind, fixedCfg ? CONFIDENCE.exact : CONFIDENCE.replay);
             // A trainer's double is its variant, settled when the trainer was; a wild one is its own roll on the stream.

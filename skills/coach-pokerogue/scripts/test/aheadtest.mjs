@@ -85,7 +85,7 @@ const makeTrainer = (scene, name, size, roster) => ({
   destroy() { destroyed++; },
 });
 
-const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildSpecies = 5, modifiers = [] } = {}) => {
+const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildSpecies = 5, modifiers = [], challenges = [] } = {}) => {
   const seed = "kAbC12";
   const scene = {
     seed, waveSeed: shiftCharCodes(seed, wave), rngOffset: 0, rngSeedOverride: "", offsetGym, waveCycleOffset: 0,
@@ -94,7 +94,7 @@ const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildS
       queueAbilityDisplay() {}, hideAbilityBar() {}, queueFaintPhase() {} },
     getPlayerParty: () => party, getEnemyParty: () => scene.currentBattle?.enemyParty ?? [],
     gameMode: {
-      isEndless: false, hasChallenge: () => false,
+      isEndless: false, isClassic: true, hasChallenge: () => false, challenges,
       isWaveFinal: w => w === 200,
       isBoss: w => w % 10 === 0,
       isFixedBattle: w => FIXED_NAMES[w] != null,
@@ -186,6 +186,13 @@ const card = (ah, m, v = "full") => { globalThis.localStorage = { getItem: () =>
   assert.equal(m.fightsBeforeHeal, 5, "four Elite Four fights and the champion");
   const { scene: s2, ah: ah2 } = mount({ wave: 17, party: team() });
   assert.equal(ah2.aheadModel(s2).fightsBeforeHeal, 1, "an ordinary boss wave is one fight, then a heal");
+  // Limited Support 1 has no X1 heal at all, so there is no heal ahead to name and every fight is on one tank of HP.
+  const { scene: s3, ah: ah3 } = mount({ wave: 17, party: team(), challenges: [{ id: 8, value: 1 }] });
+  const m3 = ah3.aheadModel(s3);
+  console.log(`== limited support 1: heal ${JSON.stringify(m3.heal)} · ${m3.fightsBeforeHeal} fights before it`);
+  assert.equal(m3.heal, null, "no full heal in the run at all");
+  assert.equal(m3.fightsBeforeHeal, 5, "with no heal ahead, every big fight the schedule holds counts");
+  assert.match(ah3.aheadSummary(m3), /no full heal left before the final wave/);
 }
 
 // ---- 3. Readiness against the roster the preview names, and the card.

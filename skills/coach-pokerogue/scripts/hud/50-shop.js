@@ -72,13 +72,13 @@ const hasFormKey = (p, re) => [p.species, p.fusionSpecies].some(sp => (sp?.forms
 const rewardsModel = (s, h) => {
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
-  // The reward before a big fight is the last chance to patch the team up. What counts as one comes from 49-ahead's
-  // calendar — the fixed battles and the gym waves as well as every tenth wave — and falls back to the tenth-wave
-  // rule when the live build hides the game mode. `gauntlet` is the Elite Four case: more than one big fight before
-  // the next full heal, so the whole party has to last, not just the lead.
+  // The reward before a big fight is the last chance to patch the team up. What counts as one is the run calendar's
+  // answer for the next wave — the fixed battles and the gym waves as well as every tenth wave, and its own game-less
+  // fallback when the live build hides the game mode. `gauntlet` is the Elite Four case: more than one big fight
+  // before the next full heal, so the whole party has to last, not just the lead.
   const wave = s.currentBattle?.waveIndex ?? 0;
   const ahead = aheadModel(s);
-  const bossNext = ahead?.next ? ahead.next.in === 1 : wave > 0 && wave % 10 === 9;
+  const bossNext = waveKind(s, wave + 1) != null;
   const gauntlet = (ahead?.fightsBeforeHeal ?? 0) >= 2;
   const hurtBelow = gauntlet ? 90 : bossNext ? 80 : 60;
   // Low PP: a damaging move nearly out (≤ a quarter of its PP and ≤ 5 left). Unused status moves and a few PP spent
