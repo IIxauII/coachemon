@@ -122,6 +122,23 @@ export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => 
   return qa * qb * cmp(MovePriorityInBracket.FIRST, MovePriorityInBracket.FIRST) + qa * (1 - qb) * cmp(MovePriorityInBracket.FIRST, y.bracket) + (1 - qa) * qb * cmp(x.bracket, MovePriorityInBracket.FIRST) + (1 - qa) * (1 - qb) * cmp(x.bracket, y.bracket);
 };
 
+// ---- Our own command's draw, which lands before the enemy decides (spec §6, #158)
+// `CommandPhase.handleFightCommand` resolves a `RANDOM_NEAR_ENEMY` move's target with
+// `getMoveTargets` → `randBattleSeedInt(<near enemies>)` as the command is made, and `EnemyCommandPhase` runs after
+// it — so with two or more opponents the foe's pick is a function of **our** command, and one such draw flipped it
+// live (#158). The prediction is therefore made per candidate command: these are the ranges to draw first.
+// A command already committed (slot 0's, read at slot 1's prompt) has made its draw against the live stream
+// already, so the stream we predict from is past it and there is nothing to simulate.
+// Not covered, and why such a row is `~` rather than exact: at slot 0's prompt in a double, slot 1's command is
+// still to come and may draw too; and a `VariableTargetAttr` that turns another target into a random one.
+const commandDraws = (turn, me, myPm) => {
+  if (!turn.facts.double || !me?.isOnField?.()) return [];
+  const mv = myPm?.getMove?.();
+  if (!mv || mv.moveTarget !== MoveTarget.RANDOM_NEAR_ENEMY) return [];
+  const n = (me.getOpponents?.(false) ?? []).filter(Boolean).length;
+  return n > 1 ? [n] : [];
+};
+
 // What `foe` is likely to use on `me`, as [{ o (outcome or null for status moves), name, type, p }]. The enemy AI's
 // own distribution when the foe is on the field and the game waits for a command — it was scored against our mon
 // on the field, which is also what a switch-in eats this turn. For next turn (`next`), or a foe not yet on the
@@ -130,10 +147,10 @@ export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => 
 // for the move score. Without game code: the hardest-hitting move, always.
 // A foe with nobody to aim at (our slot is empty while we pick a fainted mon's replacement) has no real distribution:
 // the AI scores every move −∞ and the chain stops on the first, so the replay path answers instead.
-export const likelyMoves = (turn, foe, me, outs, next) => {
+export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   const live = turn.live;
   if (live && !next && foe.isOnField?.() && (foe.getOpponents?.() ?? [me]).length) {
-    const dist = turn.enemyAction(foe).moves;
+    const dist = turn.enemyAction(foe, { ranges }).moves;
     if (dist?.length) {
       const idx = me.isOnField?.() ? me.getBattlerIndex?.() : null;
       return dist.map(d => {
@@ -217,8 +234,14 @@ const actDelay = p => {
 // a fight scale its hits and our hits into it by (`setupRamp`).
 export const threatFrom = (turn, foe, me, myPm = null, { next = false } = {}) => turn.memo(`t:${foe.id}>${me.id}:${pmName(myPm)}:${next}`, () => {
   const outs = planOutcomes(turn, foe, me);
-  const moves = likelyMoves(turn, foe, me, outs, next);
+  const ranges = next ? [] : commandDraws(turn, me, myPm);
+  const moves = likelyMoves(turn, foe, me, outs, next, ranges);
   if (!moves.length) return null;
+  // The enemy's own turn, so the threat says how sure it is of the move it is built on: `exact` where the game's own
+  // call answered for this command, `replay` where that answer rode on a draw our command made, `estimate`
+  // otherwise (a later turn, a foe not out yet, no game code).
+  const action = turn.live && !next && foe.isOnField?.() ? turn.enemyAction(foe, { ranges }) : null;
+  const exactRow = action?.exact ? action.moves[0] : null;
   const live = turn.live && outs.some(o => o.live);
   let expected = 0, pKo = 0, first = 0, koFirst = 0, worst = null, likely = null, drained = 0;
   const kos = [], use = [], boost = {};
@@ -251,6 +274,9 @@ export const threatFrom = (turn, foe, me, myPm = null, { next = false } = {}) =>
   return {
     expected, worst: worst?.o.max ?? 0, pKo, first, koFirst: pKo > 0 ? koFirst / pKo : first,
     move: brief(likely), worstMove: brief(worst), moves: kos, hp: me.hp, from: foe.name, live, use: squeezeDist(use, 12),
+    exact: !!exactRow, confidence: exactRow ? action.confidence : "estimate",
+    // The slots the exact move is aimed at, as battler indices — the game's own answer, not a share.
+    targets: exactRow ? [...(exactRow.targets ?? [])] : null,
     revive: Math.max(0, ...kos.map(k => k.revive)),
     boost: Object.keys(boost).length ? boost : null,
     // HP its drain moves give it back a turn (Liquid Ooze on `me`: taken off it), from the damage they deal.
@@ -1721,6 +1747,16 @@ export const duel = (turn, me, foe, partnered = false) => {
   return best ?? { me, mine: null, myTurns: 9, score: -9 };
 };
 
+// The mons an exact move is aimed at, for the `↯` row: the game's own target list, as mons on the field. A spread
+// move names both; a move aimed at the foe's own side (setup, a heal) names nothing, because the row is about what
+// the move does to us. Null where the move isn't exact — the row then says how likely it is instead.
+const aimedAt = (turn, t, foe) => {
+  if (!t?.exact || !t.targets?.length) return null;
+  const ours = t.targets.map(bi => turn.facts.field.find(p => p?.getBattlerIndex?.() === bi))
+    .filter(p => p && p !== foe && !turn.facts.foes.includes(p));
+  return ours.length ? ours.map(p => ({ icon: iconOf(p), name: p.name })) : null;
+};
+
 // Plain data for one refresh: the field, the switches and a row per foe. Its JSON is part of the change signature, so
 // the DOM is only rebuilt when something the panel shows has actually changed. 60-card composes it with the fight
 // plan and the catch advice, and opens the sandbox all three run in.
@@ -1728,6 +1764,15 @@ export const duel = (turn, me, foe, partnered = false) => {
 // so the ⚔ line can price what a turn costs the rest of the fight. Null on a wild wave, where there is no plan.
 export const battleModel = (turn, { team = null } = {}) => {
   const { double, trainer, wave } = turn.facts;
+  // ---- The one gate (#183)
+  // This turn's plan is played on the enemy's **exact** move, so the exact call is load-bearing: if the game's own
+  // code can't be asked at a decision, the coach says so rather than quietly advising from an estimate. Everything
+  // that reads the enemy model reads it through this file — the battle card's rows and field plan, the fight plan,
+  // the catch advice — so the gate lives here, once, and they stop together. A breach retries on the next refresh;
+  // the flicker is accepted. There is no fallback to the distribution, for display or for advice.
+  const gate = turn.exact?.() ?? { ok: true };
+  if (!gate.ok) return { kind: "battle", unavailable: gate.reason, title: `W${wave}${trainer ? ` · ${trainer.getName()}` : ""}`,
+    field: null, pin: null, enemySwitches: [], ifStay: null, order: [], team: [], rows: [] };
   const party = turn.facts.party.filter(p => p && p.hp > 0);
   const foes = turn.facts.foes.filter(f => f && f.hp > 0);
   const active = turn.activeFoes();
@@ -1813,8 +1858,12 @@ export const battleModel = (turn, { team = null } = {}) => {
       hp: Math.round(foe.hp / foe.getMaxHp() * 100),
       weak, avoid,
       switchTo: predicted.has(foe) ? { icon: iconOf(predicted.get(foe).to), name: predicted.get(foe).to.name, sure: switching(foe) } : null,
+      // The exact move is named as fact: the absence of a `% likely` is what marks it, and `confidence` says
+      // whether it rode on a draw our own command made (`replay`, shown `~`).
       likely: t?.move ? {
-        move: t.move.name, type: t.move.type, p: t.live ? Math.round(t.move.p * 100) : null,
+        move: t.move.name, type: t.move.type, p: t.exact || !t.live ? null : Math.round(t.move.p * 100),
+        confidence: t.confidence ?? "estimate",
+        at: aimedAt(turn, t, foe),
         first: Math.round(t.first * 100), hits: t.move.hits,
       } : null,
       pick: p?.mine ? {

@@ -647,7 +647,12 @@ call sees slot 0's draws. The exceptions:
 - **Payback into a ball command** (above).
 - **Trainer mons:** they may switch instead (§7).
 
-`20-enemy-ai.js` still re-implements the procedure to get every outcome with its chance.
+**The HUD makes this call** (`sceneExactMoves`, #183): this turn's plan is played on its one outcome at depth 1, and
+`20-enemy-ai.js` still re-implements the procedure for everything that has no fixed draw to reproduce — later turns,
+`aiReplay`, and the oracle the exact call is checked against at a pin bump. Two orderings the call has to keep, both
+from §7's `EnemyCommandPhase`: the **switch check comes first**, so a foe the trainer switches out is never asked and
+never spends a draw; and a **skipped** command (a Commander Tatsugiri) *is* still written, so that foe is asked and
+does spend its draws — it simply never acts.
 
 **Side effects of the scoring calls (sandbox them):**
 - `applyConditions`: consecutive Protect draws `user.randBattleSeedInt(3^n)` (`src/data/moves/move.ts:6949`), and some
@@ -871,7 +876,8 @@ The **party** judged as a whole, and one query for whether a newcomer is worth i
   - attack moves × `target.getMoveEffectiveness(e, move, !target.waveData.abilityRevealed, undefined, undefined, true)` (the trailing `true` is `useIllusion`, `pokemon.ts:6712-6719`);
   - STAB ×1.5 via `e.isOfType(move.type)`, which checks the base move type, not `getMoveType`;
   - divided instead for an ally target.
-- `enemyMoveDistribution(s, e)` → `[{ pm, move, targets: [{battlerIndex, p}], p, score }]` (§6 algorithm: move queue, Struggle, Encore, `aiType` RANDOM / SMART_RANDOM / SMART = 0/1/2 from `src/enums/ai-type.ts`, Protect branch). Cache it per turn key. `EnemyPokemon.getNextMove()` (`pokemon.ts:6560`) draws battle RNG and rewrites `summonData.moveQueue` (`:6563-6576`). At the command prompt, a sandboxed call returns the move the enemy actually picks, not a sample: the battle seed is re-sown each turn and, unless one of our commands draws a random target, nothing draws before `EnemyCommandPhase` (#158, checked live in singles and doubles). The distribution is for later turns and for turns where our command draws.
+- `exactMoves(s, foes, ranges)` → `{ ok: true, moves: Map(foe → row) }` or `{ ok: false, reason }`: the game's own `EnemyPokemon.getNextMove()` (`pokemon.ts:6560`), taken off the **prototype**, for every foe `EnemyCommandPhase` will ask — active, in field order, minus any the trainer switches out (§7) — inside **one** `sandbox`, with each `summonData.moveQueue` saved and restored by contents *and* identity (the call splices it and can clear it outright, `:6563-6576`). `ranges` are our own command's draws, made first with `battle.randSeedInt`. The row is one outcome at p 1, carrying the game's own targets and no score. Only at the command prompt, where the stream sits where `incrementTurn` re-sowed it. Three failures, and the coach then says so rather than advising from the distribution (#183): no `getNextMove` on the prototype, a call that throws, a sandbox breach.
+- `enemyMoveDistribution(s, e)` → `[{ pm, move, targets: [{battlerIndex, p}], p, score }]` (§6 algorithm: move queue, Struggle, Encore, `aiType` RANDOM / SMART_RANDOM / SMART = 0/1/2 from `src/enums/ai-type.ts`, Protect branch). Cache it per turn key. It is **not** what this turn is planned on any more — the exact call above is — but it stays for later turns, for `aiReplay`, and as that call's oracle at a pin bump, where asking both at one prompt is how a drift between the game's own choice and this re-implementation shows up.
 - `aiReplay(s, e, target, { hp })` → rows like `enemyMoveDistribution`'s, without targets: `getNextMove` replayed against one of our mons, which needn't be on the field (§6), status moves included. Sandbox per call.
 - `predictSwitches(s, b, active)` mirrors `EnemyCommandPhase.start` (`src/phases/enemy-command-phase.ts:36-106`). A trainer mon that isn't trapped (`isTrapped`) and has an empty move queue switches when `best bench score × (1 − 0.1^(1/enemySwitchCounter)) ≥ avg own score × (isBoss ? 2 : 3)`, sending `getNextSummonIndex`. The counter goes +1 on a switch and −1 (floor 0) on a move. Keep it, run it in `sandbox`, and sequence the counter across doubles slots. A Commander Tatsugiri's command carries `skip` (`skipTurn`, `:40-46`), and `TurnStartPhase` drops that command (`src/phases/turn-start-phase.ts:84`).
 - `enemyAction(s, e)` → `{ kind: 'switch', to } | { kind: 'move', dist, tera: b.trainer?.shouldTera(e) ?? false }`. `Trainer.shouldTera` (`src/field/trainer.ts:784-795`, pure) is true in INSTANT_TERA mode for a listed `initialTeamIndex` that isn't yet Terastallized and hasn't fainted.

@@ -16,14 +16,14 @@ const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost",
 const cat = { P: 0, S: 1, X: 2 };
 // The tables a scenario sets, as the turn asks for them. `__stub` is rebound per scenario, so every op reads it at
 // call time rather than closing over it.
-const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands }) => {
+const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact }) => {
   const active = () => {
     const out = foes.filter(f => f.isOnField?.());
     return (out.length ? out : foes).slice(0, double ? 2 : 1);
   };
   const cmd = double && fieldIndex === 1 ? turnCommands[0] : null;
   return fakeTurn({
-    live, wave: 200, turn: 3, double, trainer, party, foes,
+    live, exact, wave: 200, turn: 3, double, trainer, party, foes,
     decision: phase === "CheckSwitchPhase" ? "check-switch" : "command",
     trickRoom: !!arena?.getTag?.("TRICK_ROOM"),
     command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] } : null,
@@ -142,7 +142,7 @@ const cyrus = withMetagross => {
 // Builds this scenario's turn, composes the battle card from it and draws it, returning the rendered lines
 // (`field`: everything above the foe rows). `fieldIndex`: whose command phase it is; `turnCommands`: commands
 // already chosen this turn.
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, exact = { ok: true } }) => {
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const onField = () => party.filter(p => p.isOnField());
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
@@ -161,7 +161,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands });
+  const turn = stubTurn({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact });
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
@@ -1147,4 +1147,59 @@ Object.assign(TABLE, {
     assert.match(field.find(l => /^⤵/.test(l)) ?? "", /Golduck falls this turn › Metagross in free/, `names the free entry:\n${field.join("\n")}`);
   }
 }
+
+// ---- The enemy's exact move on the ↯ row, and the one case that rides on our own draw (#183)
+// Depth 1 is played on the game's own answer, so the row names the move as fact: no `% likely` on it. In a double a
+// `RANDOM_NEAR_ENEMY` command of ours draws its target before `EnemyCommandPhase`, so the prediction is the one for
+// **that** command, and the row says so with `~` — `replay` confidence, the preview's existing mark.
+{
+  const build = ourTarget => {
+    const party = [
+      mon("Morpeko", 80, ["Electric", "Dark"], [220, 150, 90, 120, 100, 170], [["Aura Wheel", "Electric", 110, "P", 0, { target: ourTarget }]], true, 180),
+      mon("Scrafty", 80, ["Dark", "Fighting"], [254, 152, 172, 63, 165, 80], [["High Jump Kick", "Fighting", 130, "P"]], true, 133),
+    ];
+    const foes = [
+      mon("Gyarados", 82, ["Water", "Flying"], [250, 170, 110, 80, 130, 150], [["Waterfall", "Water", 80, "P"]], true),
+      mon("Weavile", 84, ["Dark", "Ice"], [300, 250, 100, 60, 110, 299], [["Triple Axel", "Ice", 20, "P"]], true),
+    ];
+    // Both sides see the other side's field, the way the game's own `getOpponents` does — which is what tells the
+    // planner there are two near enemies for a random target to be drawn between.
+    for (const p of party) p.getOpponents = () => foes;
+    const exactRow = (name, type) => [{ name, type, p: 1, score: null, exact: true, targets: [0], targetDist: [{ battlerIndex: 0, p: 1 }] }];
+    return render({ party, foes, live: true, double: true, switches: () => new Map(),
+      dist: e => (e.name === "Gyarados" ? exactRow("Waterfall", "Water") : exactRow("Triple Axel", "Ice")) });
+  };
+
+  // A plain command of ours draws nothing, so the foe's move is exact.
+  const plain = build(3);
+  const gyaradosRow = plain.card.rows.find(r => r.name === "Gyarados");
+  assert.equal(gyaradosRow.likely.confidence, "exact", "a command that draws nothing leaves the answer exact");
+  assert.equal(gyaradosRow.likely.p, null, "an exact move is named as fact — no `% likely` to show");
+  const plainLine = plain.lines.find(l => l.startsWith("↯")) ?? plain.lines.find(l => l.includes("Waterfall")) ?? "";
+  assert.ok(!plainLine.includes("~"), `nothing to mark on an exact row:\n${plain.lines.join("\n")}`);
+
+  // The same turn with Aura Wheel aimed at a random near enemy: our own draw comes first, so the row is `~`.
+  const drawn = build(7);
+  const drawnRow = drawn.card.rows.find(r => r.name === "Gyarados");
+  assert.equal(drawnRow.likely.confidence, "replay", "our random-target command draws before the enemy decides");
+  assert.equal(drawnRow.likely.p, null, "still not a `% likely`: it is the answer for this command");
+  assert.ok(drawn.lines.some(l => l.includes("Waterfall") && l.includes("~")), `the row carries the mark:\n${drawn.lines.join("\n")}`);
+}
+
+// ---- The one gate (#183)
+// The exact call is load-bearing: with no answer to be had, the battle card, the fight plan and the catch advice
+// stop together and the card says why, rather than one of them quietly advising from the distribution.
+{
+  const party = [mon("Morpeko", 80, ["Electric", "Dark"], [220, 150, 90, 120, 100, 170], [["Aura Wheel", "Electric", 110, "P"]], true, 180)];
+  const foes = [mon("Gyarados", 82, ["Water", "Flying"], [250, 170, 110, 80, 130, 150], [["Waterfall", "Water", 80, "P"]], true)];
+  const out = render({ party, foes, live: true, switches: () => new Map(), exact: { ok: false, reason: "the enemy AI call threw" } });
+  assert.equal(out.card.verdict, "unavailable");
+  assert.equal(out.card.field, null, "no ⚔ line");
+  assert.deepEqual(out.card.rows, [], "and no foe rows");
+  assert.equal(out.card.teamPlan, null);
+  assert.equal(out.card.catch, null);
+  assert.deepEqual(out.lines.filter(l => l.startsWith("⚠")), ["⚠ no advice — the enemy AI call threw"], out.lines.join("\n"));
+  assert.equal(globalThis.__planner.cardSummary(out.card).field, "no advice — the enemy AI call threw");
+}
+
 console.log("ok");

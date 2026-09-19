@@ -22,7 +22,7 @@ import { TYPES, awaitingDecision, effectiveness, sandbox, stat, typesOf } from "
 import { waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
 import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneStatusMoves, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
-import { aiTargetScore, approxDistribution, sceneDistribution, sceneReplayAI, sceneSendInScore, sceneSwitches, skipsTurn } from "./20-enemy-ai.js";
+import { aiTargetScore, approxDistribution, sceneDistribution, sceneExactMoves, sceneReplayAI, sceneSendInScore, sceneSwitches, skipsTurn } from "./20-enemy-ai.js";
 
 // ---- Predicted Terastallization (spec §7)
 // TeraPhase runs at TurnStart, before any move, so a trainer mon that Terastallizes this turn already defends with
@@ -298,7 +298,7 @@ const monRecord = (env, live, p) => {
 
 // ---- The turn
 let open = false;
-const makeTurn = (env, { live, facts, baseKey, patches = [] }) => {
+const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
   const key = patches.length ? `${baseKey}#${patchKey(patches)}` : baseKey;
   const caches = new Map();
   let closed = false;
@@ -331,16 +331,44 @@ const makeTurn = (env, { live, facts, baseKey, patches = [] }) => {
     // arena, and calls nothing that decides anything. Not memoised — callers ask about made-up HP, made-up statuses
     // and made-up item stacks (`Object.create` clones), which is the question, not a repeat of one.
     turnEndHp: (p, opts = {}) => { guard(); return asDamage(() => sceneTurnEndHp(env, p, opts)); },
-    // `{ moves, switchTo, tera, skip }` — the enemy's whole turn. A switching mon doesn't Terastallize.
-    enemyAction: foe => memo("enemyAction", foe, () => {
+    // The exact move, for whatever our candidate command draws first (`ranges`). It is a fact about **this** moment,
+    // so a derived turn asks the base turn's: `EnemyCommandPhase` runs before any move, so a hypothesis one move
+    // away changes nothing about what the enemy already picked.
+    exactMoves: ranges => shared.exactMoves(ranges ?? []),
+    // The gate (#183): `{ ok: true }` while the exact call can be made, `{ ok: false, reason }` once it can't.
+    // `ok` with nothing to say — no command prompt, no foe to ask about — is not a claim that a move is exact; it
+    // only means nothing has failed. Whether a *particular* foe's move is exact is `enemyAction(foe).exact`.
+    exact: () => shared.exactMoves([]),
+    // `{ moves, switchTo, tera, skip, exact, confidence }` — the enemy's whole turn. A switching mon doesn't
+    // Terastallize. `moves` is one row at p 1 where the exact call answered, the distribution where it is not the
+    // question (a later turn's prompt, an approximate turn), and **empty** where the call was there to make and
+    // failed: the distribution is never substituted for it (#183).
+    enemyAction: (foe, { ranges = [] } = {}) => memo(`enemyAction:${ranges.join(",")}`, foe, () => {
       const sw = turn.switches().get(foe);
-      if (sw) return { moves: [], switchTo: sw.to, tera: false, skip: false };
-      if (skipsTurn(env, foe)) return { moves: [], switchTo: null, tera: false, skip: true };
-      const moves = live
-        ? tryDo(() => asAi(() => sceneDistribution(env, foe)), null) ?? approxDistribution(foe, (e, o) => turn.outcomes(e, o))
-        : approxDistribution(foe, (e, o) => turn.outcomes(e, o));
-      return { moves, switchTo: null, tera: !!tryDo(() => env.trainer?.shouldTera?.(foe), false), skip: false };
+      if (sw) return { moves: [], switchTo: sw.to, tera: false, skip: false, exact: false, confidence: null };
+      const skip = skipsTurn(env, foe);
+
+      const ex = live ? turn.exactMoves(ranges) : null;
+      if (ex && !ex.ok) return { moves: [], switchTo: null, tera: false, skip, unavailable: ex.reason, exact: false, confidence: null };
+      // A Commander Tatsugiri's command is written and then dropped by `TurnStartPhase`, so `EnemyCommandPhase` does
+      // call `getNextMove` for it (§7) and it does spend the draws — which is why the call above includes it. It
+      // never acts, so it has no move to report.
+      if (skip) return { moves: [], switchTo: null, tera: false, skip: true, exact: false, confidence: null };
+      const row = ex?.moves?.get(foe) ?? null;
+      if (row) return { moves: [row], switchTo: null, tera: turn.teraNow(foe), skip, exact: true, confidence: ranges.length ? "replay" : "exact" };
+      return { moves: turn.enemyDistribution(foe), switchTo: null, tera: turn.teraNow(foe), skip, exact: false, confidence: "estimate" };
     }),
+    // Whether `foe` Terastallizes before it moves this turn (`Trainer.shouldTera`, pure; a foe that switches doesn't).
+    // Asked on its own rather than through `enemyAction`, because the Tera flags have to be settled **before** any
+    // damage answer is memoised: working it out through the whole enemy model meant that on a turn where the AI
+    // couldn't be asked, the fallback priced our damage pre-Tera and every later reader got that memo.
+    teraNow: foe => memo("tera", foe, () => !turn.switches().get(foe) && !!tryDo(() => env.trainer?.shouldTera?.(foe), false)),
+    // The §6 distribution on its own, whatever the exact call said: every outcome with its chance. Later turns are
+    // played from it, and at a pin bump it is the exact call's **oracle** (#183) — asking both at one prompt is how
+    // a drift between the game's own choice and this file's re-implementation of it shows up.
+    enemyDistribution: foe => memo("dist", foe, () => (live
+      ? tryDo(() => asAi(() => sceneDistribution(env, foe)), null) ?? approxDistribution(foe, (e, o) => turn.outcomes(e, o))
+      : approxDistribution(foe, (e, o) => turn.outcomes(e, o)))),
     // The trainer's switch decisions for this turn, all slots at once: each one moves the counter the next reads.
     switches: () => memo("switches", "", () => (live ? asAi(() => sceneSwitches(env, turn.activeFoes())) : new Map())),
     activeFoes: () => memo("activeFoes", "", () => {
@@ -366,9 +394,24 @@ const makeTurn = (env, { live, facts, baseKey, patches = [] }) => {
     // builds is a fact about this turn like any other. One key, one lifetime, and a derived turn keeps its own.
     memo: (k, fn) => memo("caller", k, fn),
     // A derived turn: the same questions, answered on a state one move away, in its own memo slots.
-    assuming: more => makeTurn(env, { live, facts, baseKey, patches: [...patches, ...more] }),
+    assuming: more => makeTurn(env, { live, facts, baseKey, patches: [...patches, ...more], shared }),
     __close: () => { closed = true; },
   };
+  // The exact call is the base turn's, made once per draw signature. Only at a command prompt: at the free
+  // "will you switch?" prompt and at a faint's replacement the enemy has not decided and will decide against a field
+  // we are still choosing, so there is no exact answer to have — not a fallback, a different moment — and the
+  // distribution stands there, marked `estimate`.
+  // The foes asked are the ones `EnemyCommandPhase` will ask: active, in field order, minus any the trainer switches
+  // out, whose `getNextMove` never runs (§7) and whose draws must not be spent before the next slot's call.
+  if (!patches.length) {
+    shared.exactMoves = ranges => memo("exact", ranges.join(","), () => {
+      if (!live || facts.decision !== "command") return { ok: true, moves: new Map() };
+      const sw = turn.switches();
+      const asking = turn.activeFoes().filter(f => !sw.has(f));
+      if (!asking.length) return { ok: true, moves: new Map() };
+      return beforeTera(() => sceneExactMoves(env, asking, ranges));
+    });
+  }
   return turn;
 };
 
@@ -379,7 +422,7 @@ const turnKeyOf = (env, facts) => [facts.wave, facts.turn, facts.enemySwitchCoun
 // The foes that Terastallize before they move this turn: on the field, acting, and the trainer says so.
 const predictedTeras = (env, turn) => {
   if (!env.trainer?.shouldTera) return [];
-  return turn.activeFoes().filter(e => tryDo(() => turn.enemyAction(e).tera, false));
+  return turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false));
 };
 
 // Reads this turn and hands it to `fn`. The only sandbox the battle engine opens, and the only place that decides
@@ -395,7 +438,7 @@ export const readTurn = (s, fn) => {
   // that answer alone, and the record says so, so nothing is ever labelled live that isn't.
   const live = !!s && awaitingDecision(s) !== null;
   const facts = sceneFacts(s, env, live);
-  const turn = makeTurn(env, { live, facts, baseKey: turnKeyOf(env, facts) });
+  const turn = makeTurn(env, { live, facts, baseKey: turnKeyOf(env, facts), shared: {} });
   const finish = () => { try { return fn(turn); } finally { turn.__close(); } };
   open = true;
   try {

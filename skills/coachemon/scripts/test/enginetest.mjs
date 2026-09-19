@@ -5,6 +5,7 @@
 // Usage: node test/enginetest.mjs
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { GAME_PROTO } from "./game-proto.mjs";
 
 // Attr / condition stand-ins: the HUD identifies them by class name.
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
@@ -41,7 +42,7 @@ const move = (id, name, power, { type = 0, cat = 0, acc = 100, attrs = [], flags
 const pmOf = (mv, usable = true) => ({ moveId: mv.id, getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0, isUsable: () => [usable, ""] });
 
 const mon = (name, { hp = 300, maxHp = hp, player = true, field = true, moves = [], ability = null, abilities = [], status = null, tags = {}, semi = null, spe = 100, level = 50 } = {}) => {
-  const p = {
+  const p = Object.assign(Object.create(GAME_PROTO), {
     id: name, name, level, hp, status, aiType: 2, trainerSlot: 0, species: { legendary: false },
     getMaxHp: () => maxHp, isPlayer: () => player, isOnField: () => field, isActive: () => field, isBoss: () => false,
     getBattlerIndex: () => (field ? (player ? 0 : 2) : -1), getFieldIndex: () => 0,
@@ -56,7 +57,7 @@ const mon = (name, { hp = 300, maxHp = hp, player = true, field = true, moves = 
       const d = TABLE[`${source.name}>${mv.name}>${this.name}`] ?? mv.power;
       return { cancelled: false, result: 1, damage: Math.max(1, Math.floor(d * (isCritical ? 1.5 : 1))) };
     },
-  };
+  });
   p.moveset = moves.map(m => (m.getMove ? m : pmOf(m)));
   p.getMoveset = () => p.moveset;
   return p;

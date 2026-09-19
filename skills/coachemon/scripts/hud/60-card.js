@@ -45,6 +45,14 @@ const moveTypesOf = party => partyProfile(party).ourTypes;
 // @only tests: composeBattleCard
 export const composeBattleCard = (turn, account) => {
   const { trainer, double, party } = turn.facts;
+  // The exact enemy move is load-bearing (#183): where the game's own call can't be made, the battle card, the fight
+  // plan and the catch advice stop **together** and print the reason, rather than one of them quietly falling back
+  // to an estimate. The planner owns the gate; this is only the order — the plan isn't built to be thrown away.
+  const gate = turn.exact?.() ?? { ok: true };
+  if (!gate.ok) {
+    const { pin: _pin, ...shell } = battleModel(turn);
+    return { ...shell, teamPlan: null, catch: null, trainer: !!trainer, double, moveTypes: [], verdict: "unavailable" };
+  }
   const team = trainer ? teamPlanner(turn) : null;
   // `pin` carries the live outcome the ⚔ line picked, so it stays off the card: the card's JSON is the panel's
   // change signature (98-tick).
@@ -221,6 +229,8 @@ export const cardSummary = card => {
   if (card.kind === "encounter") return { ...base, encounter: encounterSummary(card) };
   if (card.kind === "learn") return { ...base, learn: learnSummary(card) };
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
+  // Nothing the enemy model feeds is being claimed, so the read says that and why, and claims nothing else.
+  if (card.unavailable) return { ...base, verdict: "unavailable", field: `no advice — ${card.unavailable}` };
   // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170 §A).
   const saveFor = name => {
     const r = (card.teamPlan?.reserve ?? []).find(x => x.name === name);

@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
+import { GAME_PROTO } from "./game-proto.mjs";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
 // Applied after the roll and the post-roll multipliers, before the Sturdy step: False Swipe's min(damage, hp − 1).
@@ -26,11 +27,11 @@ const move = (id, name, type, power, { acc = 100, attrs = [], flags = 0, cat = 0
     return acc + 5 * atk.getHeldItems().filter(m => m instanceof PokemonMoveAccuracyBoosterModifier).length;
   },
 });
-const pmOf = mv => ({ getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0 });
+const pmOf = (mv, i = 0) => ({ moveId: mv.id ?? i + 1, getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0 });
 // `battlerTags`: the instances `summonData.tags` holds, which the turn-end model reads by class; `bi`: the battler
 // index a Leech Seed names its seeder by.
 const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [], battlerTags = [], bi = 0 } = {}) => {
-  const p = {
+  const p = Object.assign(Object.create(GAME_PROTO), {
     id, name: id, level: 50, hp, formIndex, getMaxHp: () => maxHp, isPlayer: () => player, isOnField: () => true,
     getTypes: () => types, getAbility: () => ({ name: "x", getAttrs: n => attrs.filter(a => a.constructor.name === n) }), hasPassive: () => false, status,
     getBattlerIndex: () => bi,
@@ -61,7 +62,7 @@ const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = []
       if (mv.attrs.some(a => a instanceof SurviveDamageAttr)) damage = Math.min(damage, this.hp - 1);
       return { cancelled: false, result: 1, damage };
     },
-  };
+  });
   p.moveset = moves.map(pmOf);
   return p;
 };

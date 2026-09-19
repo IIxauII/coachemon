@@ -7,6 +7,7 @@
 // also the test of that adapter: one sandbox per read, restored afterwards, AI answers asked pre-Tera.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { GAME_PROTO } from "./game-proto.mjs";
 
 const src = bundle("hud", { expose: true });
 
@@ -30,7 +31,7 @@ const mkMove = m => {
 
 let scene;
 const mkMon = ({ id, player, fieldIndex, hp = 100, types = [], moves = [], aiType = 2, queue = [], tags = {}, revealed = false, eff = {}, dmg = {} }) => {
-  const p = {
+  const p = Object.assign(Object.create(GAME_PROTO), {
     id, name: id, hp, level: 50, aiType, trainerSlot: 1, species: { legendary: false }, status: null,
     isPlayer: () => player, getBattlerIndex: () => (player ? fieldIndex : fieldIndex + 2), getFieldIndex: () => fieldIndex,
     isActive: () => true, isOnField: () => fieldIndex != null, isBoss: () => false,
@@ -43,7 +44,7 @@ const mkMon = ({ id, player, fieldIndex, hp = 100, types = [], moves = [], aiTyp
     getMoveEffectiveness: spy("getMoveEffectiveness", (src, mv) => eff[mv.id] ?? 1),
     getAttackDamage: spy("getAttackDamage", o => { p.lastDamageCall = o; return { damage: (dmg[o.source.id] ?? {})[o.move.id] ?? 0, cancelled: false, result: 1 }; }),
     getMatchupScore: spy("getMatchupScore", () => p.matchup ?? 1),
-  };
+  });
   p.moveset = moves.map(mkMove);
   p.getMoveset = () => p.moveset;
   return p;
@@ -78,7 +79,7 @@ const setup = ({ player, enemy, double = false, phase = "CommandPhase", trainer 
   const ask = fn => readTurn(scene, fn);
   return {
     ask,
-    dist: e => ask(t => t.enemyAction(e).moves),
+    dist: e => ask(t => t.enemyDistribution(e)),
     action: e => ask(t => t.enemyAction(e)),
     switches: () => ask(t => t.switches()),
     replay: (e, target, opts) => ask(t => t.replayAI(e, target, opts)),
@@ -340,6 +341,135 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   assert.equal(e.isTerastallized, undefined, "flag restored");
   assert.equal(e.summonData.addedType, 11, "added type restored");
   assert.equal(ai.teraOf(bench), null, "a foe the trainer isn't Terastallizing carries no Tera type");
+}
+
+// ---- The enemy's exact move (#158 measured it, #183 plans on it)
+// The game's own `getNextMove` is called off the prototype, once per foe, in field order, inside one sandbox; the
+// move queue goes back; the battle stream goes back; and a failure is a reason, never the distribution.
+const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
+
+// One foe: the call answers, and the row is one outcome at p 1 with the game's own target — no `% likely` left to
+// show. The distribution is still there beside it, for later turns and as the call's oracle.
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }, { id: 2, name: "B", target: -30 }] });
+  const me = foe();
+  const ai = setup({ player: [me], enemy: [e] });
+  nextMoveOf(e, function () { return { move: 2, targets: [me.getBattlerIndex()], useMode: 0 }; });
+  const act = ai.action(e);
+  assert.equal(act.exact, true);
+  assert.equal(act.confidence, "exact");
+  assert.deepEqual(act.moves.map(r => [r.name, r.p, r.score, r.targets]), [["B", 1, null, [0]]]);
+  assert.ok(ai.dist(e).length > 1, "the distribution is untouched and still has every outcome");
+}
+
+// A queued move comes back as the game returns it, and the queue is put back exactly as it was — `getNextMove`
+// splices the entries before its pick and can clear the array outright.
+{
+  const queue = [{ move: 9, targets: [0], useMode: 3 }, { move: 1, targets: [0], useMode: 0 }];
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, queue, moves: [{ id: 1, name: "A" }] });
+  const ai = setup({ player: [foe()], enemy: [e] });
+  const held = e.summonData.moveQueue;
+  const entries = held.map(q => ({ ...q }));
+  nextMoveOf(e, function () {
+    const q = this.getMoveQueue();
+    const picked = q[1];
+    q.splice(0, 2);
+    this.summonData.moveQueue = [];
+    return picked;
+  });
+  const act = ai.action(e);
+  assert.deepEqual(act.moves.map(r => r.name), ["A"]);
+  assert.equal(e.summonData.moveQueue, held, "the same array is back");
+  assert.deepEqual(e.summonData.moveQueue, entries, "with the same entries");
+}
+
+// Doubles: both foes are asked in field order inside **one** sandbox, so slot 1's call sees slot 0's draws — and the
+// battle stream is where it was when the caller is done, so the game's own call starts where the prediction did.
+{
+  const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
+  const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
+  const ai = setup({ player: [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })], enemy: [e0, e1], double: true });
+  const seen = [];
+  for (const [e, id] of [[e0, 1], [e1, 2]]) nextMoveOf(e, function () {
+    seen.push([this.id, scene.currentBattle.battleSeedState]);
+    scene.currentBattle.randSeedInt(4);
+    return { move: id, targets: [0], useMode: 0 };
+  });
+  const before = scene.currentBattle.battleSeedState;
+  ai.ask(t => { t.enemyAction(e0); t.enemyAction(e1); });
+  assert.deepEqual(seen.map(x => x[0]), ["e0", "e1"], "field order");
+  assert.notEqual(seen[1][1], seen[0][1], "slot 1 sees slot 0's draws");
+  assert.equal(scene.currentBattle.battleSeedState, before, "and the stream is back where it started");
+}
+
+// A foe the trainer switches out never reaches `getNextMove` (§7), so it isn't asked — its draws are not spent
+// before the slot that does move.
+{
+  const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
+  const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
+  const bench = mkMon({ id: "b", player: false, fieldIndex: null, moves: [{ id: 1, name: "A" }] });
+  const trainer = { config: { isBoss: false }, getPartyMemberMatchupScores: () => [[2, 99]],
+    getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 2, shouldTera: () => false };
+  const ai = setup({ player: [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })], enemy: [e0, e1, bench], double: true, trainer });
+  const asked = [];
+  for (const e of [e0, e1]) nextMoveOf(e, function () { asked.push(this.id); return { move: 1, targets: [0], useMode: 0 }; });
+  const acts = ai.ask(t => [t.enemyAction(e0), t.enemyAction(e1)]);
+  assert.equal(!!acts[0].switchTo, true, "slot 0 switches");
+  assert.deepEqual(asked, ["e1"], "only the slot that isn't switching is asked");
+}
+
+// Our own random-target command draws first (#158's one exception), so the prediction is made for **that** command
+// and says so: `replay`, not `exact`.
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
+  const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 1, name: "A" }] });
+  const ai = setup({ player: [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })], enemy: [e, e1], double: true });
+  const at = {};
+  for (const x of [e, e1]) nextMoveOf(x, function () { at[this.id] = scene.currentBattle.battleSeedState; return { move: 1, targets: [0], useMode: 0 }; });
+  const plain = ai.ask(t => t.enemyAction(e));
+  const plainAt = at.e;
+  const afterDraw = ai.ask(t => t.enemyAction(e, { ranges: [2] }));
+  assert.equal(plain.confidence, "exact");
+  assert.equal(afterDraw.confidence, "replay");
+  assert.ok(at.e.length > plainAt.length, "our command's draw was made before the call");
+}
+
+// The hard fail (#183), one reason each. Nothing falls back to the distribution: the action carries no moves at all,
+// and the gate says why.
+{
+  const build = () => {
+    const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
+    return [e, setup({ player: [foe()], enemy: [e] })];
+  };
+  const [pastPin, aiPin] = build();
+  Object.setPrototypeOf(pastPin, {});
+  assert.equal(aiPin.ask(t => t.exact()).ok, false);
+  assert.equal(aiPin.ask(t => t.exact()).reason, "the live build's enemy AI moved past the pin");
+  assert.deepEqual(aiPin.action(pastPin).moves, [], "and no distribution is put in its place");
+
+  const [threw, aiThrew] = build();
+  nextMoveOf(threw, () => { throw new Error("nope"); });
+  assert.equal(aiThrew.ask(t => t.exact()).reason, "the enemy AI call threw");
+
+  const [breach, aiBreach] = build();
+  // A call that moves the battle stream in a way the sandbox can't put back is a breach, not a number to use.
+  nextMoveOf(breach, function () {
+    Object.defineProperty(scene.currentBattle, "battleSeedState", { get: () => "moved", set() {}, configurable: true });
+    return { move: 1, targets: [0], useMode: 0 };
+  });
+  assert.equal(aiBreach.ask(t => t.exact()).reason, "the enemy AI call breached its sandbox");
+}
+
+// Not every prompt has an exact answer to have: at the free "will you switch?" prompt the enemy has not decided and
+// will decide against a field we are still choosing. The gate is happy and the row is the distribution, `estimate`.
+{
+  const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }, { id: 2, name: "B", target: -30 }] });
+  const ai = setup({ player: [foe()], enemy: [e], phase: "CheckSwitchPhase" });
+  const act = ai.action(e);
+  assert.equal(ai.ask(t => t.exact()).ok, true);
+  assert.equal(act.exact, false);
+  assert.equal(act.confidence, "estimate");
+  assert.ok(act.moves.length > 1, "the distribution answers where there is no fixed draw to reproduce");
 }
 
 console.log("enemy AI: all assertions passed");
