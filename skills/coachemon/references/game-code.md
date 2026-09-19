@@ -1545,7 +1545,7 @@ Read at the pinned tag (`v1.12.0.11`). `52-shop.js` judges a TM with the learn c
 (`src/ui/handlers/party-ui-handler.ts:1382`) offers `TEACH` in `PartyUiMode.TM_MODIFIER` (line 1452) whoever the cursor
 is on, fainted or not. The one exception is Hardcore (`Challenges.HARDCORE`, 9): a fainted member there goes through
 `updateOptionsHardcore` (line 1512), which has no TM case, so it is offered nothing to teach. A challenge is on when
-`GameMode.hasChallenge` finds an entry with that id and `value !== 0` (`src/game-mode.ts:98-100`) — any value but
+`GameMode.hasChallenge` finds an entry with that id and `value !== 0` (`src/game-mode.ts:97-99`) — any value but
 zero, not a positive one. The TM pool
 (`TmModifierTypeGenerator`, `src/modifier/modifier-type.ts:1500` — draws global RND) takes
 `getCompatibleTms(true, true, true)` over the **whole** party (known, level-up and already-used TMs removed), keeps the
@@ -1843,7 +1843,7 @@ order:
      not the raw config: it needs `isDailyEventSeed()` (`isDaily && dailyConfig != null`,
      `src/data/daily-seed/daily-seed-utils.ts:33`) and passes `dailyConfig.boss` through `validateDailyBossConfig`
      (`:147`), which returns `null` — no custom boss at all, so nothing catchable — for a `speciesId` the `SpeciesId`
-     enum lacks. The seed schema only requires a positive integer there (`src/data/daily-seed/schema.json:34,119`), so
+     enum lacks. The seed schema only requires a positive integer there (`src/data/daily-seed/schema.json:73,119`), so
      a hand-written seed can pass it and still be rejected. END is only
      reached by the forced biome rule (§10): classic 191–200, the Daily wave 50, each Endless X50 wave.
    - **Otherwise** a trainer battle is refused, and a Mystery Encounter unless its `catchAllowed`.
@@ -1899,12 +1899,18 @@ dex attribute (`Pokemon.getDexAttr`, `src/field/pokemon.ts:605`, pure) reads the
 Two details of that walk. `setPokemonSpeciesCaught` recurses down the chain a species at a time, and at each one asks
 `hasNewAttr` of the **masked** attributes: `dexAttr = pokemon.getDexAttr() & species.getFullUnlocksData()`
 (`:1766`; the mask is built at `src/data/pokemon-species.ts:1203-1230` from the species' own gender ratio, variants
-and non-`isUnobtainable` forms), so a bit that species can never own never counts as new. And the recursion **stops
-early** at a species that is itself a starter and was uncaught before this catch (`!newCatch || !isStarter(species)`
-returns before recursing, `:1863`): the prevolution-free species is then never reached and no candy is paid at all.
-Today that is Pikachu's line only — `getRootSpeciesId(true)` stops at Pikachu while the candy is Pichu's, which the
-game's own TODO at `:1866-1868` names as the single evolved starter. The IVs are not on that walk:
-`updateSpeciesDexIvs` is called with `getRootSpeciesId(true)` and walks prevolutions itself (`:2010-2023`).
+and non-`isUnobtainable` forms), so a bit that species can never own never counts as new. **Nothing cuts the walk
+short**: the branch at `:1866` (`!newCatch || !isStarter(species)`) is the one that recurses at once, and a species
+that *is* a starter and is new to the dex only defers the recursion — it plays the fanfare, shows "added as a
+starter", and recurses from that message's callback (`checkPrevolution(true)`, `:1885`). The single return that
+skips the recursion is `!showMessage` (`:1871`), and no thrown ball reaches it: `AttemptCapturePhase` calls
+`setPokemonCaught(pokemon)` with its defaults (`src/phases/attempt-capture-phase.ts:311`, `showMessage = true` at
+`:1733`), as does a Mystery Encounter's catch (`encounter-pokemon-utils.ts:701`); `showMessage: false` appears only
+where no ball is thrown (`encounter-pokemon-utils.ts:1001`, `weird-dream-encounter.ts:567`). So a first Pikachu still
+pays Pichu. Where the two roots differ at all is Pikachu's line only — `getRootSpeciesId(true)` stops at Pikachu
+while the candy is Pichu's, which the game's own TODO at `:1869-1871` names as the single evolved starter. The IVs
+are not on this walk: `updateSpeciesDexIvs` is called with `getRootSpeciesId(true)` and walks prevolutions itself
+(`:2010-2023`).
 
 **Shiny and fusion reads.** `Pokemon.isShiny(useIllusion = false)` (`src/field/pokemon.ts:1734`, pure) is the base
 `shiny`, or `fusionShiny` when fused; `getVariant` (line 1775) is the higher of the two when fused.

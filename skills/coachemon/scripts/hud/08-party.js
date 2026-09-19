@@ -44,10 +44,11 @@ export const typesOfSpecies = sp => [sp?.type1, sp?.type2].filter(t => t != null
 // not form 0's. The two are equal for effectively every species, but the species is what the caller handed over.
 const formOf = (sp, i) => (i != null && Array.isArray(sp?.forms) && sp.forms.length ? sp.forms[i] ?? sp : sp);
 // The call is pure, but the three `applyModifiers` inside it reach `BattleScene.applyModifiersInternal`, which
-// `console.log`s "Applied …" once per applied modifier (`src/battle-scene.ts:2949,2974`) — so a party carrying
-// vitamins, Shuckle Juice or Old Gateau would print to the page's console on every HUD tick. The answer only moves
-// when one of those modifiers is added or removed, and that rewrites the mon's own `stats` as well, so it is cached
-// against them: same mon, same level, same stats, same base stats — no call, and no log.
+// `console.log`s "Applied …" once per applied modifier (`applyModifiersInternal`, `src/battle-scene.ts:2949`) — so a party carrying
+// vitamins, Shuckle Juice or Old Gateau would print to the page's console on every HUD tick. Everything that moves
+// the answer — one of those modifiers, a form change, a fusion or its undoing — goes on to call `calculateStats`,
+// which rewrites the mon's own `stats`: that is the invariant, so the answer is cached against them. Same mon, same
+// level, same stats, same base stats — no call, and no log.
 const baseStatsCache = new WeakMap();
 const baseStatsOf = mon => {
   if (!mon || typeof mon !== "object") return undefined;

@@ -41,9 +41,8 @@
 //   **prevolution-free** species the walk ends at, not to the first starter it passes: `isShiny()?5*2**variant:1`,
 //   ×2 for a boss — but in a Daily run only when the catch adds a dex attribute of its own
 //   (`!isDaily||hasNewAttr||fromEgg`, `hasNewAttr = (caughtAttr & dexAttr) !== dexAttr`, `dexAttr` itself masked by
-//   that species' `getFullUnlocksData()`), and not at all when the walk stops early at an uncaught starter
-//   mid-line; `updateSpeciesDexIvs(getRootSpeciesId(true), ivs)` keeps the max IV per stat, from the starter root
-//   down;
+//   that species' `getFullUnlocksData()`); `updateSpeciesDexIvs(getRootSpeciesId(true), ivs)` keeps the max IV per
+//   stat, from the starter root down;
 // - LimitedCatchChallenge (challenge 7) keeps it out of the party unless met on a wave ending in 1; otherwise a full
 //   party (6) asks to release someone or let it go.
 // A failed throw uses the turn: the ball command resolves before any move, then the foe acts.
@@ -163,7 +162,7 @@ const rootOf = p => tryDo(() => p.species.getRootSpeciesId(true), p.species?.spe
 // Candy is a different root. `setPokemonSpeciesCaught` walks the line down and pays at the species that has no
 // prevolution at all (`!hasPrevolution`, `src/system/game-data.ts:1845`) — `getRootSpeciesId(false)`, not the first
 // starter `getRootSpeciesId(true)` stops at. The two differ only on Pikachu's line, the game's own TODO at
-// `game-data.ts:1866-1868` saying Pikachu is the only evolved starter: for a caught Raichu the candy, and the
+// `game-data.ts:1869-1871` saying Pikachu is the only evolved starter: for a caught Raichu the candy, and the
 // `hasNewAttr` that gates it in a Daily run, are Pichu's entry and not Pikachu's.
 const candyRootOf = p => tryDo(() => p.species.getRootSpeciesId(false), p.species?.speciesId) ?? p.species?.speciesId;
 
@@ -177,13 +176,14 @@ const accountReasons = (account, foe) => {
   const caught = big(dex?.caughtAttr);
   const root = rootOf(foe);
   const rootDex = account.dex[root];
-  // That same walk stops early at a species that is itself a starter and was uncaught before this throw
-  // (`!newCatch || !isStarter(species)` returns before recursing, `game-data.ts:1863`), so the prevolution-free
-  // species is never reached and **no candy is paid at all** — a first Pikachu, or a Raichu caught while Pikachu is
-  // still uncaught. `starterData` holds an entry for every starter, so its keys stand in for the game's `isStarter`.
+  // Nothing cuts that walk short on the way down. A species that is itself a starter and is new to the dex shows the
+  // "added as a starter" message first and recurses from the message's own callback
+  // (`checkPrevolution(true)`, `game-data.ts:1866-1885`), so a first Pikachu still reaches Pichu and still pays. The
+  // one return that skips the recursion is `!showMessage` (`:1871`), and no thrown ball takes it: `AttemptCapturePhase`
+  // calls `setPokemonCaught(pokemon)` with its defaults (`attempt-capture-phase.ts:311`), as does a Mystery
+  // Encounter's catch.
   const candyRoot = candyRootOf(foe);
   const candyDex = account.dex[candyRoot];
-  const candyStops = root !== candyRoot && account.starter[root] != null && !big(rootDex?.caughtAttr);
   const rare = sp.legendary || sp.subLegendary || sp.mythical;
   if (!caught) {
     out.push({ kind: "account", text: root !== sp.speciesId && !big(rootDex?.caughtAttr) ? "new species + starter" : "new species", w: 3 });
@@ -205,8 +205,7 @@ const accountReasons = (account, foe) => {
   // species the candy goes to, which is why the account carries the registry; without it, the raw bits stand.
   const unlocks = tryDo(() => account.species?.getSpecies?.(candyRoot)?.getFullUnlocksData?.());
   const candyAttr = typeof unlocks === "bigint" ? attr & unlocks : attr;
-  const candyText = candyStops || (account.daily && (big(candyDex?.caughtAttr) & candyAttr) === candyAttr)
-    ? "" : ` · +${candy} candy`;
+  const candyText = account.daily && (big(candyDex?.caughtAttr) & candyAttr) === candyAttr ? "" : ` · +${candy} candy`;
   if (foe.shiny) {
     if (caught && !(caught & 2n)) out.push({ kind: "account", text: `first shiny${candyText}`, w: 3 });
     else if (caught && (caught & attr & 112n) !== (attr & 112n)) out.push({ kind: "account", text: `new shiny variant${candyText}`, w: 2.5 });

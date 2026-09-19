@@ -72,7 +72,7 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
     setGameTables: globalThis.__hud["47-biome"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
   if (events) globalThis.__ca.setGameTables({ events });
   // `species`: the game's species registry, as 47-biome's chunk scan would hand it to the account read.
-  if (registry) globalThis.__ca.setGameTables({ events, species: registry });
+  if (registry) globalThis.__ca.setGameTables({ ...(events ? { events } : {}), species: registry });
   const advice = readTurn(scene, turn => catchAdvice(turn, accountRead(scene)));
   return { advice, scene };
 };
@@ -416,20 +416,26 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
     "the candy entry is the prevolution-free root, not the first starter up the line");
   assert.ok(reasons({ dex: pichuKnows }).includes("shiny · +5 candy"), "a classic run pays it either way");
 
-  // The walk stops at a starter it has never caught before this throw, so no species is ever paid — in any mode.
+  // A starter partway down the line that is new to the dex does not end the walk: it shows "added as a starter" and
+  // recurses from that message's callback, so Pichu is still reached and still paid. The dex state of Pikachu, the
+  // species in the middle, changes nothing.
   const pikachuNew = { 26: { caughtAttr: ALL }, 25: { caughtAttr: 0n }, 172: { caughtAttr: 0n } };
-  assert.ok(reasons({ dex: pikachuNew, starters: [3, 25] }).includes("shiny"),
-    "an uncaught Pikachu ends the walk before Pichu: no candy, Daily or not");
-  // Pikachu already caught, so the walk reaches Pichu and the candy is back.
+  assert.ok(reasons({ dex: pikachuNew, starters: [3, 25] }).includes("shiny · +5 candy"),
+    "an uncaught Pikachu in the middle of the line does not stop the walk");
   assert.ok(reasons({ dex: { ...pikachuNew, 25: { caughtAttr: 1n } }, starters: [3, 25] }).includes("shiny · +5 candy"),
-    "a caught Pikachu is walked through");
+    "nor does a caught one");
 
-  // An Alolan-like form 1: the bit is `1n << 8`, which Pichu's mask cannot own. Masked away, the catch adds nothing
-  // Pichu's entry lacks, so a Daily run pays nothing — unmasked it reads as a new attribute and promises candy.
-  const registry = { getSpecies: id => (id === 172 ? { getFullUnlocksData: () => ALL } : null), getAllSpecies: () => [] };
-  const alolan = { dex: { 26: { caughtAttr: ALL }, 25: { caughtAttr: 1n }, 172: { caughtAttr: ALL } },
-    foe: { formIndex: 1 }, mode: { isClassic: false, isDaily: true } };
-  assert.ok(reasons({ ...alolan, registry }).includes("shiny"), "the mask is the root species', and it drops the form bit");
-  assert.ok(reasons(alolan).includes("shiny · +5 candy"), "with no registry the raw bits stand, as they always did");
+  // A form the root species cannot own. Charizard has four forms (Normal, Mega X, Mega Y, G-Max) while Charmander,
+  // the species the candy is paid at, has none — so its mask carries the default form bit alone, and a Mega
+  // Charizard's `1n << 8` is masked away. The catch then adds nothing Charmander's entry lacks and a Daily run pays
+  // nothing; unmasked, the same bit reads as a new attribute and promises candy.
+  const charizard = extra => mon("Charizard", 40, ["Fire","Flying"], "Blaze", [160,110,80,150,100,120], [["Heat Wave","Fire",95,"S"]], true, undefined,
+    { id: 6, catchRate: 45, bst: 534, roots: [4, 4] }, { shiny: true, ...extra });
+  const registry = { getSpecies: id => (id === 4 ? { getFullUnlocksData: () => ALL } : null), getAllSpecies: () => [] };
+  const megaRun = opts => run({ party: [venusaur()], foes: [charizard({ formIndex: 1 })], counts,
+    dex: { 6: { caughtAttr: ALL }, 4: { caughtAttr: ALL } }, mode: { isClassic: false, isDaily: true }, ...opts })
+    .advice.targets[0].reasons.map(r => r.text);
+  assert.ok(megaRun({ registry }).includes("shiny"), "the mask is the root species', and it drops a form bit Charmander cannot own");
+  assert.ok(megaRun({}).includes("shiny · +5 candy"), "with no registry the raw bits stand, as they always did");
 }
 console.log("ok");

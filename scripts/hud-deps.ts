@@ -488,6 +488,7 @@ export const HUD_DEPS = {
     // prevolution-free root the candy is paid at, whose own mask decides whether a Daily run pays it.
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getRootSpeciesId`,
     `src/data/pokemon-species.ts#PokemonSpecies.getFullUnlocksData`,
+    `src/data/species-data-registry.ts#SpeciesDataRegistry.getSpecies`,
   ],
 
   /**
@@ -754,6 +755,8 @@ export const HUD_DEPS = {
    * species-booster and Leek species ids are the generators' tables.
    */
   "51-items.js": [
+    // Eviolite and the evolution items ask whether the holder still has a stage to go.
+    `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
     `src/modifier/modifier-type.ts#PokemonHeldItemModifierType.constructor`,
     `src/modifier/modifier-type.ts#PokemonNatureChangeModifierType.constructor`,
     `src/modifier/modifier-type.ts#EvolutionItemModifierType.constructor`,
@@ -830,6 +833,8 @@ export const HUD_DEPS = {
    * bare number.
    */
   "52-shop.js": [
+    // Whether a challenge is on at all: `isHardcore` re-implements this test, value and all.
+    `src/game-mode.ts#GameMode.hasChallenge`,
     `src/modifier/modifier-type.ts#TmModifierType.constructor`,
     `src/modifier/modifier-type.ts#TmModifierTypeGenerator.constructor`,
     `${P}#PlayerPokemon.isTmCompatible`,
