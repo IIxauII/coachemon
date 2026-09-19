@@ -1,6 +1,6 @@
 // Learn-move card model. The screen itself is detected in 02-screens (`learnState`), which the probe shares.
 // No game functions run here (the game isn't waiting on a battle command): only move/attr fields are read.
-import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
+import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 import { partyProfile } from "./08-party.js";
@@ -290,6 +290,82 @@ const disruptFit = (pk, mv, tag, roster) => {
   return { mult: unsure(roster, DISRUPT_HIT + DISRUPT_SPREAD * share), note: `vs ${top.name}'s ${top[need][0]} at W${roster.wave}` };
 };
 
+// ---- A typing written onto the foe (#233)
+// Soak and Magic Powder replace the target's types with one; Forest's Curse and Trick-or-Treat hang a third on top
+// (07-move-traits' `typeChange`). The battle plan prices one **against the foe in front of us**, by writing the typing
+// on and asking the game (30-planner). A learned move is kept for the run, so the learn card's question is the roster
+// one (#122): what does turning the next big fight's foes pure Water — or giving them Grass — buy *this* party?
+// It is its own class, not disruption: disruption is worth what it takes off a foe that has something to take
+// (DISRUPT_NEEDS), while a rewrite is worth whatever the type chart then says, and it pays just as well against a foe
+// with nothing to lose. Two parts, and they are not the same value:
+//   - **it opens a weakness**: the party's best answer to the foe, before the rewrite and after. A `set` is measured
+//     against the foe's whole typing, an `add` against the typing plus the new row.
+//   - **it takes STAB away** (`set` only): a Steel foe turned pure Water loses the STAB on every Steel move it has.
+//     An `add` takes nothing away — it can even hand the foe a resistance (Trick-or-Treat turns a Normal foe's
+//     Fighting weakness off), which is why an `add` that leaves the party worse off is worth 0 here rather than a
+//     negative: nobody has to use the move.
+// What it does **not** count: the STAB a rewrite *hands* the foe. `Pokemon.getTypes` reads `summonData.addedType` too,
+// so Trick-or-Treat gives a foe's Shadow Ball a STAB it didn't have, and a `set` does the same for a Water move. The
+// defensive half of that is already in `open` (the foe's new typing is what the party is scored against); the
+// offensive half is left standing, a first cut like the numbers below.
+// Nothing here runs game code: the type chart, the roster the preview hands over and the party's own moves, as every
+// other class on this card. Blind of a roster both keep their flat value, which is what the team audit's dead-slot
+// check reads.
+// The magnitudes sit against the flat table above: a rewrite is worth about a Leech Seed (35) — it decides a matchup
+// rather than a turn, and unlike a status it can't be shrugged off by an immunity. An `add` is the lesser of the two
+// at 30, because it only ever multiplies: it takes no STAB away, and it can hand the foe a resistance.
+const TYPE_SET = 35, TYPE_ADD = 30;
+// A rewrite that opens nothing for the roster keeps TYPE_FLOOR of that; one that opens every foe all the way is worth
+// TYPE_FULL, straight-line in between. The share is weighted by health bars like every other roster read, so a
+// rewrite that pays against the boss alone still counts for most of the fight.
+const TYPE_FLOOR = 0.35, TYPE_FULL = 2;
+// Two doublings of the party's best answer is as far as this counts, and a foe nothing touches is read as ×TYPE_MIN
+// so an immunity doesn't make every rewrite look infinite. Taking a foe's whole STAB away is worth one of those
+// doublings, half its STAB half of one.
+const TYPE_STEPS = 2, TYPE_MIN = 0.25, TYPE_STAB = 0.5;
+// Abilities that refuse a rewritten typing outright (`ChangeTypeAttr.getCondition`). Read by name off the preview's
+// foe, the way every other ability rule on this card is; Mold Breaker doesn't get past them — the game asks the
+// target's own ability here, not a suppressable one.
+const TYPE_FIXED = ["Multitype", "RKS System"];
+// The best the party's attacking types do against a defender, as a multiplier. Not an *answer* in the glossary's
+// sense — that is a member that can deal with a foe, stat and all; this is the type chart alone.
+const bestHit = (types, foe, ours) => {
+  const def = { types, abilities: [foe.ability, foe.passive].filter(Boolean) };
+  return Math.max(0, ...ours.map(t => effectiveness(t, def)));
+};
+// What a rewrite is worth against one foe, 0–1.
+const typeGain = (pk, mv, change, name, foe, ours) => {
+  if (!ours.length || statusMoveBlocked(pk, mv, foe)) return 0;
+  const types = foe.types ?? [];
+  const set = change.kind === "set";
+  // The game's own conditions (references/game-code.md §"Typing"): neither move may hand a target a typing it already
+  // has, and a `set` is refused by Multitype and RKS System — the same three the battle plan refuses, so the two cards
+  // agree about which foes a rewrite is simply wasted on. Terastallization is the one condition left out: it is a live
+  // read the preview doesn't carry, and a Tera'd foe in the roster is scored as if it weren't.
+  if (set ? types.length === 1 && types[0] === name : types.includes(name)) return 0;
+  if (set && [foe.ability, foe.passive].some(a => a && TYPE_FIXED.includes(a))) return 0;
+  const before = Math.max(TYPE_MIN, bestHit(types, foe, ours));
+  const after = bestHit(set ? [name] : [...types, name], foe, ours);
+  const open = after > before ? Math.min(1, Math.log2(after / before) / TYPE_STEPS) : 0;
+  if (!set) return open;
+  // The STAB it loses, off the preview's `moveTypes`. A foe with nothing there has no damaging move to lose STAB on,
+  // so it loses none — `foeData` always fills the field in, and an empty one is an answer rather than a silence.
+  const attacks = foe.moveTypes ?? [];
+  const stab = attacks.length ? attacks.filter(t => types.includes(t) && t !== name).length / attacks.length : 0;
+  return Math.min(1, open + TYPE_STAB * stab);
+};
+const typeFit = (pk, mv, change, name, roster, ours) => {
+  const foes = roster.foes;
+  const gains = foes.map(f => typeGain(pk, mv, change, name, f, ours));
+  const share = foes.reduce((t, f, i) => t + gains[i] * weightOf(f), 0) / foes.reduce((t, f) => t + weightOf(f), 0);
+  const mult = unsure(roster, TYPE_FLOOR + (TYPE_FULL - TYPE_FLOOR) * share);
+  if (!share) return { mult, note: `no opening at W${roster.wave}` };
+  // Named by the foe it pays most against: the biggest gain, health bars breaking a tie.
+  let at = 0;
+  gains.forEach((g, i) => { if (g > gains[at] || (g === gains[at] && weightOf(foes[i]) > weightOf(foes[at]))) at = i; });
+  return { mult, note: `vs ${foes[at].name} at W${roster.wave}` };
+};
+
 // What a status move is worth, and why. null value when nothing here recognises it: the card says "your call"
 // rather than inventing a number, and the slot stays off the forget list.
 const statusScore = (pk, mv, others, double, ctx) => {
@@ -325,6 +401,28 @@ const statusScore = (pk, mv, others, double, ctx) => {
     add(n, String(x.tag).toLowerCase().replace(/_/g, " "));
     if (roster && DISRUPT_TAGS.has(x.tag) && aimedAtFoe(x)) fits.push([n, disruptFit(pk, mv, x.tag, roster)]);
   }
+  // A typing written onto the foe. The wording is the ⚔ line's (`pure Water`, `+Grass`), so the two cards can't call
+  // one rewrite two things. All four moves aim at the far side; a self-targeting one would be a different question.
+  if (tr.typeChange && !SELF_TARGETS.has(mv.moveTarget)) {
+    const name = TYPES[tr.typeChange.type];
+    const set = tr.typeChange.kind === "set";
+    if (name) {
+      const n = set ? TYPE_SET : TYPE_ADD;
+      add(n, set ? `pure ${name}` : `+${name}`);
+      // The coverage that would face the rewritten foe: the rest of the party, plus the slots this move sits beside —
+      // `others`, which is the three surviving slots when a slot is scored and the survivors of the forget when the
+      // incoming move is. Taking the mon's whole current moveset here would sell a rewrite on the very move it
+      // replaces: pure Water opens nothing for a Ludicolo that gave up Energy Ball for the Soak.
+      // Read the way `seTypes` and 08-party's `damagingTypes` read a moveset — variable power counts, fixed damage
+      // doesn't, since it ignores the type chart — so the party's coverage is one table however it is asked for:
+      // 08-party's `FIXED_DAMAGE_ATTRS` is exactly the `STAND_INS` entries marked fixed here, and the two can't drift
+      // without one of those lists changing. The move being scored adds nothing of its own: every move that writes a
+      // typing is a status move.
+      const ours = [...new Set([...(ctx.mateTypes ?? []),
+        ...others.filter(o => isDamaging(o) && !isFixed(o)).map(o => TYPES[o.type]).filter(Boolean)])];
+      if (roster) fits.push([n, typeFit(pk, mv, tr.typeChange, name, roster, ours)]);
+    }
+  }
   const setup = setupOf(pk, mv, others);
   if (setup) add(setup.value, setup.text);
   // A foe's stat drop is worth a fraction of the same boost on us: it lasts only while that foe is out, and the
@@ -343,15 +441,23 @@ const statusScore = (pk, mv, others, double, ctx) => {
   // The same trick twice is worth less the second time, and a moveset that is mostly status has no room left.
   if (isRecovery(mv) && others.some(isRecovery)) { value *= 0.5; notes.push("already has recovery"); }
   if (inflictsStatus(mv) && others.some(inflictsStatus)) { value *= 0.5; notes.push("already has a status move"); }
+  // A moveset that is mostly status has no room left. This one is about the *moveset*, not the move, so it is named
+  // here but applied last, and kept off `alone` below.
   const status = others.filter(o => o.category === MoveCategory.STATUS).length;
-  if (status >= 2) { value *= status >= 3 ? 0.35 : 0.6; notes.push(`${status + 1} status moves`); }
+  const crowd = status >= 2 ? (status >= 3 ? 0.35 : 0.6) : 1;
+  if (crowd < 1) notes.push(`${status + 1} status moves`);
   const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
   if (!SELF_TARGETS.has(mv.moveTarget) && acc < 1) { value *= acc; notes.push(`${Math.round(acc * 100)}% acc`); }
   // Over the battles ahead (a TM), an ally move is worth what it is in the doubles among them.
   if (ALLY_TARGETS.has(mv.moveTarget) && double < 1) { value *= double; notes.push(doublesNote(double)); }
   const prior = priorOf(pk, mv, ctx);
   if (prior) { value *= prior.mult; notes.push(prior.note); }
-  return { value: Math.round(value), notes: [...why, ...notes], status: true, why: why.join(" · "), se: [], neutral: [], teamSe: [], drawbacks: [] };
+  // What the move is worth on its own merits: everything above is about this move, `crowd` alone is about the company
+  // it keeps. The team audit's dead-slot check reads this rather than `value`, since "this moveset is mostly status"
+  // is a finding it already makes once, and charging every slot for it again would name the good moves as the dead
+  // ones — a Gourgeist's Trick-or-Treat beside Will-O-Wisp and Leech Seed is not the dead slot (#233).
+  const alone = Math.round(value);
+  return { value: Math.round(value * crowd), alone, notes: [...why, ...notes], status: true, why: why.join(" · "), se: [], neutral: [], teamSe: [], drawbacks: [] };
 };
 
 // ---- The type a move actually lands as
@@ -512,7 +618,14 @@ const scoringContext = (pk, double, party, roster = null) => {
   // team" here and "nothing hits X" on the catch, biome and look-ahead cards are one reading of one moveset.
   const profile = partyProfile(mates);
   const teamTypes = new Set(profile.ourTypes);
-  const ctx = { party, teamSe: new Set(profile.ourTypes.flatMap(t => CHART[t]?.[0] ?? [])), prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName), roster };
+  // `mateTypes`: what the rest of the party can hit for damage. This mon's own share of that is *not* fixed here,
+  // because it depends on which slot the decision is about: a rewritten typing is judged against the coverage the
+  // party would have with this move in a slot, which is `mateTypes` plus the moves the scorer is handed (#233).
+  // `ownMoves` below stays per-mon on purpose, and the difference is the question each asks: the prior asks which role
+  // this mon is already built as, which wants the build it has, not a projection of the one the decision would give it.
+  const ctx = { party, teamSe: new Set(profile.ourTypes.flatMap(t => CHART[t]?.[0] ?? [])),
+    mateTypes: profile.ourTypes,
+    prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName), roster };
   return { current, mates, teamTypes, ctx };
 };
 const info = (pk, x, score) => ({ name: x.name, type: effectiveType(pk, x).type ?? "Normal", cat: ["physical", "special", "status"][x.category], ...score });

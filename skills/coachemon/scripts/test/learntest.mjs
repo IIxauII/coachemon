@@ -380,4 +380,88 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.equal(tm.best?.gain, globalThis.__lm.learnAdvice(sableye(), mv(TAUNT), { roster: whitney }).gain, "the TM card and the learn card agree");
   assert.ok(run(sableye(), TAUNT, { roster: whitney }).model.move.notes.includes("vs Miltank's Milk Drink at W30"), "the learn card model carries the roster");
 }
+// ---- A typing written onto the foe (#233)
+// Soak and Magic Powder make the target one type; Forest's Curse and Trick-or-Treat add a third. The battle plan
+// prices one against the foe in front of us; here it is judged against the roster ahead and the party's own coverage:
+// what it opens, and (a `set` only) the STAB it takes away. Blind of a roster both keep a flat value, which is what
+// keeps the team audit's dead-slot check off them.
+{
+  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null,
+    segments: extra.segments ?? 0, moveTypes: extra.moveTypes ?? types, statusMoves: [], healMoves: [] });
+  const at40 = (...foes) => ({ wave: 40, exact: true, foes });
+  const SOAK = ["Soak","Water",-1,"X",100,[["ChangeTypeAttr",{ type: TY.indexOf("Water") }]],false,3,{ flags: 262144 }];
+  const TREAT = ["Trick-or-Treat","Ghost",-1,"X",100,[["AddTypeAttr",{ type: TY.indexOf("Ghost") }]],false,3,{ flags: 262144 }];
+  const ludicolo = mon("Ludicolo", ["Water","Grass"], 70, 90, [["Scald","Water",80,"S"],["Energy Ball","Grass",90,"S"],["Zen Headbutt","Psychic",80,"P",90],["Ice Beam","Ice",90,"S"]]);
+  const judge = (pk, move, roster) => globalThis.__lm.learnAdvice(pk, mv(move), { roster }).plan.incoming;
+
+  // Skarmory answers to nothing Ludicolo has better than neutral; pure Water hands Energy Ball a ×2 and takes the
+  // STAB off both its attacks.
+  const skarm = at40(foe("Skarmory", ["Steel","Flying"]));
+  const blind = judge(ludicolo, SOAK, null);
+  const helps = judge(ludicolo, SOAK, skarm);
+  assert.ok(blind.notes.includes("pure Water"), `named the way the ⚔ line names it: ${blind.notes}`);
+  assert.ok(helps.value > blind.value * 1.5, `Soak into a roster it opens (${helps.value} vs ${blind.value})`);
+  assert.ok(helps.notes.includes("vs Skarmory at W40"), `named by the foe it pays against: ${helps.notes}`);
+  // A foe already that one type: `ChangeTypeAttr.getCondition` refuses, so the move does nothing there.
+  const pool = at40(foe("Vaporeon", ["Water"], { moveTypes: ["Water","Ice"] }));
+  const dead = judge(ludicolo, SOAK, pool);
+  assert.ok(dead.value < blind.value * 0.5 && dead.notes.includes("no opening at W40"), `${dead.value}: ${dead.notes}`);
+  // Aggron: Scald already hits it ×2, so the rewrite opens nothing — but it still takes both its STABs away.
+  const strip = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"])));
+  assert.ok(strip.value > blind.value && strip.value < helps.value, `STAB alone (${strip.value} vs ${blind.value}/${helps.value})`);
+  const unsure = judge(ludicolo, SOAK, { ...skarm, exact: false });
+  assert.ok(unsure.value > blind.value && unsure.value < helps.value, "a roster the preview isn't sure of moves the score half as far");
+  // Good as Gold takes a status move outright, so only half this roster is rewritable.
+  const half = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"]), foe("Gholdengo", ["Steel","Ghost"], { ability: "Good as Gold" })));
+  assert.ok(half.value < helps.value && half.notes.includes("vs Skarmory at W40"), `${half.value}: ${half.notes}`);
+  // `ChangeTypeAttr.getCondition` is refused by Multitype and RKS System, the same two the battle plan refuses.
+  for (const ab of ["Multitype", "RKS System"]) {
+    assert.ok(judge(ludicolo, SOAK, at40(foe("Arceus", ["Normal"], { ability: ab }))).notes.includes("no opening at W40"), ab);
+  }
+  // The opening is judged against the coverage that would face the foe — the party, plus the slots the move sits
+  // beside — not the moveset as it stands. Ludicolo's ×2 into pure Water is Energy Ball's, so Soak is worth much less
+  // in Energy Ball's own slot than in Scald's: a rewrite must not be sold on the coverage it replaces.
+  const plan = globalThis.__lm.learnAdvice(ludicolo, mv(SOAK), { roster: skarm }).plan;
+  const slot = n => plan.moves.find(m => m.name === n).replacement;
+  assert.ok(slot("Energy Ball") < slot("Scald") * 0.7, `Soak over Energy Ball ${slot("Energy Ball")} vs over Scald ${slot("Scald")}`);
+
+  // Health bars: the same rewrite pays more when what it opens is the boss and not the grunt beside it.
+  const boss = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"], { segments: 5 }), foe("Vaporeon", ["Water"])));
+  const grunt = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"]), foe("Vaporeon", ["Water"], { segments: 5 })));
+  assert.ok(boss.value > grunt.value * 1.5, `a boss-weighted opening (${boss.value} vs ${grunt.value})`);
+
+  // An added type only multiplies: Trick-or-Treat turns Machamp into a Knock Off / Shadow Sneak target …
+  const sable = mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"],["Night Shade","Ghost",-1,"S",100,["LevelDamageAttr"]]]);
+  const addBlind = judge(sable, TREAT, null);
+  const added = judge(sable, TREAT, at40(foe("Machamp", ["Fighting"])));
+  assert.ok(addBlind.notes.includes("+Ghost") && added.value > addBlind.value, `${added.value} vs ${addBlind.value}`);
+  // Multitype and RKS System refuse a `set`, not an `add`: `AddTypeAttr.getCondition` asks only about Terastallization
+  // and a typing the target already has.
+  assert.ok(!judge(sable, TREAT, at40(foe("Arceus", ["Normal"], { ability: "Multitype" }))).notes.includes("no opening at W40"));
+  // … and it can take one away: a Hitmonlee whose one answer is Fighting is worse off for it, which is worth 0 here
+  // rather than a negative — nobody has to use the move.
+  const kicker = mon("Hitmonlee", ["Fighting"], 120, 35, [["Close Combat","Fighting",120,"P"],["Mega Kick","Normal",120,"P",75],["Rock Slide","Rock",75,"P",90],["Feint","Normal",30,"P"]]);
+  const worse = judge(kicker, TREAT, at40(foe("Snorlax", ["Normal"])));
+  assert.ok(worse.value < addBlind.value * 0.5 && worse.notes.includes("no opening at W40"), `${worse.value}: ${worse.notes}`);
+
+  // The crowded-moveset penalty is about the company a move keeps, not the move, so it is kept off `alone` — which is
+  // what the audit's dead-slot bar reads. A Gourgeist's Trick-or-Treat beside Will-O-Wisp and Leech Seed is cut to 11
+  // as a score, and is still not a dead slot.
+  const WISP = ["Will-O-Wisp","Fire",-1,"X",85,[["StatusEffectAttr",{ effect: 6 }]],false,3,{ flags: 262144 }];
+  const SEED = ["Leech Seed","Grass",-1,"X",90,[["LeechSeedAttr",{ tagType: "SEEDED" }]],false,3,{ flags: 262144 }];
+  const gourgeist = mon("Gourgeist", ["Ghost","Grass"], 100, 60, [["Shadow Ball","Ghost",80,"S"], WISP, SEED, TREAT]);
+  const crowded = globalThis.__lm.learnAdvice(gourgeist, mv(TREAT), {}).plan.moves.find(m => m.name === "Trick-or-Treat");
+  assert.ok(crowded.value < 20 && crowded.alone >= 20, `crowded ${crowded.value}, on its own ${crowded.alone}`);
+  assert.ok(crowded.notes.includes("3 status moves"), `the crowding is still named: ${crowded.notes}`);
+
+  // The verdict is a real one now, not "your call" — and blind of a roster the score clears the audit's dead-slot bar
+  // (50-audit's WEAK_STATUS, 20), so a slot the run wants kept is no longer offered up as dead weight.
+  const advice = globalThis.__lm.learnAdvice(ludicolo, mv(SOAK), { roster: skarm });
+  assert.notEqual(advice.kind, "status");
+  assert.ok(advice.learn !== null, `a type-changing move gets a verdict: ${advice.reason}`);
+  assert.ok(blind.value >= 20 && addBlind.value >= 20, `${blind.value} / ${addBlind.value} clear the dead-slot bar`);
+  assert.ok(run(ludicolo, SOAK, { roster: skarm }).model.move.notes.includes("vs Skarmory at W40"), "the learn card model carries the roster");
+  // The card below is the HUD's own tick, which has no look-ahead in this fake scene: the blind value, and a verdict.
+  show("Ludicolo ← Soak (Skarmory ahead)", run(ludicolo, SOAK, { roster: skarm }));
+}
 console.log("ok");

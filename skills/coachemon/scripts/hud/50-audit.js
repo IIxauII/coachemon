@@ -102,7 +102,10 @@ const slotFindings = (p, party, double) => {
   }
   const status = scored.moves.filter((_, i) => moves[i]?.category === MoveCategory.STATUS);
   for (const x of status) {
-    if (x.value !== null && x.value < WEAK_STATUS && !out.some(f => f.slot === x.name)) add(`${x.name} does little${x.why ? ` (${x.why})` : ""}`, x.name);
+    // `alone` is the move's own worth, before the learn scorer's crowded-moveset penalty: a mostly-status moveset is
+    // the finding below, made once, and a slot must earn its "does little" on what the move itself does (#233).
+    const own = x.alone ?? x.value;
+    if (x.value !== null && own < WEAK_STATUS && !out.some(f => f.slot === x.name)) add(`${x.name} does little${x.why ? ` (${x.why})` : ""}`, x.name);
   }
   if (status.length >= 3 && attacks.length <= 1) add(`${attacks.length} attack, ${status.length} status moves`, null, "high");
   return out;

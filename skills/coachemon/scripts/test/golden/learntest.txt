@@ -155,4 +155,13 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 · Grass Sleep Powder sleep · 75% acc · set move (Bulky Support) power 63
 Learns it — free slot
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== Ludicolo ← Soak (Skarmory ahead)
+✚ Water Soak pure Water power 35
+· Water Scald SE on Fire power 144
+· Grass Energy Ball SE on Water power 159
+↔ Psychic Zen Headbutt SE on Fighting/Poison · weak Atk power 71
+· Ice Ice Beam SE on Flying/Grass/Dragon · set move (Setup Sweeper) power 140
+team: −SE Fighting/Poison
+Skip — not an upgrade over Zen Headbutt −36 power
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 ok
