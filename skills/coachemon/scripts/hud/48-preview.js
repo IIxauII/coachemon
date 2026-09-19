@@ -47,7 +47,7 @@
 // prints the tally.
 import { TYPES, iconOf, sandbox, typesOf } from "./01-core.js";
 import { arenaRebuiltBetween, hasTrainers, isGruntWave, kindIsRolled } from "./03-calendar.js";
-import { partyLuck } from "./08-party.js";
+import { isCoverage, partyLuck } from "./08-party.js";
 import { blockedByHealBlock } from "./40-learn.js";
 import { gameEvents, spawnTimeOfDay } from "./47-biome.js";
 
@@ -100,26 +100,35 @@ const withBattle = (s, battle, fn) => {
 const drop = o => { try { o?.destroy?.(); } catch {} };
 
 const foeOf = p => foeData(p, (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getMove())).filter(Boolean));
-const foeData = (p, moves) => ({
-  name: p.name ?? tryDo(() => p.species.name, "?"),
-  icon: iconOf(p),
-  level: p.level ?? null,
-  types: tryDo(() => typesOf(p), []),
-  ability: tryDo(() => p.getAbility()?.name),
-  passive: p.hasPassive?.() ? tryDo(() => p.getPassiveAbility()?.name) : null,
-  hp: tryDo(() => p.getMaxHp()),
-  // Atk, Def, SpA, SpD, Spe — the same slots as `stat()` in 01-core.
-  stats: tryDo(() => [Stat.ATK, Stat.DEF, Stat.SPATK, Stat.SPDEF, Stat.SPD].map(i => p.getStat(i))),
-  segments: p.bossSegments ?? 0,
-  shiny: !!p.shiny,
-  moves: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getName())).filter(Boolean),
-  // The types it can actually attack with: 49-ahead reads these to judge what the party is walking into.
-  moveTypes: [...new Set(moves.filter(mv => mv.category !== MoveCategory.STATUS && mv.power > 0).map(mv => TYPES[mv.type]).filter(Boolean))],
-  // What a disrupting move would take away from it (40-learn's roster fit): the status moves Taunt stops and
-  // Encore locks it into, and the heals Heal Block stops.
-  statusMoves: moves.filter(mv => mv.category === MoveCategory.STATUS).map(moveLabel),
-  healMoves: moves.filter(blockedByHealBlock).map(moveLabel),
-});
+const foeData = (p, moves) => {
+  // What it can attack with, by 08-party's one coverage rule: a move the game prices from the situation (Gyro Ball,
+  // Grass Knot) counts, fixed damage doesn't — it ignores the type chart, so it is no one's answer and no one's STAB
+  // worth stripping. One entry per move, which is what lets a card tell three Steel moves from one (#266).
+  const attacks = moves.filter(isCoverage).map(mv => TYPES[mv.type]).filter(Boolean);
+  return {
+    name: p.name ?? tryDo(() => p.species.name, "?"),
+    icon: iconOf(p),
+    level: p.level ?? null,
+    types: tryDo(() => typesOf(p), []),
+    ability: tryDo(() => p.getAbility()?.name),
+    passive: p.hasPassive?.() ? tryDo(() => p.getPassiveAbility()?.name) : null,
+    hp: tryDo(() => p.getMaxHp()),
+    // Atk, Def, SpA, SpD, Spe — the same slots as `stat()` in 01-core.
+    stats: tryDo(() => [Stat.ATK, Stat.DEF, Stat.SPATK, Stat.SPDEF, Stat.SPD].map(i => p.getStat(i))),
+    segments: p.bossSegments ?? 0,
+    shiny: !!p.shiny,
+    moves: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getName())).filter(Boolean),
+    // The types it can actually attack with, once each: 49-ahead reads these to judge what the party is walking into.
+    moveTypes: [...new Set(attacks)],
+    // The same attacks, one entry per move rather than per type, so a share of them is a share of its moveset and not
+    // of its coverage: 40-learn prices the STAB a rewritten typing takes off a foe against this.
+    attackTypes: attacks,
+    // What a disrupting move would take away from it (40-learn's roster fit): the status moves Taunt stops and
+    // Encore locks it into, and the heals Heal Block stops.
+    statusMoves: moves.filter(mv => mv.category === MoveCategory.STATUS).map(moveLabel),
+    healMoves: moves.filter(blockedByHealBlock).map(moveLabel),
+  };
+};
 const moveLabel = mv => String(mv.name ?? "?").replace(/ \(N\)$/, "");
 
 const trainerName = t => tryDo(() => t.getName(TrainerSlot.NONE, true)) ?? tryDo(() => t.name) ?? "trainer";

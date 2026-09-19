@@ -348,9 +348,12 @@ const typeGain = (pk, mv, change, name, foe, ours) => {
   const after = bestHit(set ? [name] : [...types, name], foe, ours);
   const open = after > before ? Math.min(1, Math.log2(after / before) / TYPE_STEPS) : 0;
   if (!set) return open;
-  // The STAB it loses, off the preview's `moveTypes`. A foe with nothing there has no damaging move to lose STAB on,
-  // so it loses none — `foeData` always fills the field in, and an empty one is an answer rather than a silence.
-  const attacks = foe.moveTypes ?? [];
+  // The STAB it loses, off the preview's `attackTypes` — one entry per damaging move, so three Steel moves beside one
+  // Ground read as three quarters of its attacks losing STAB and not as half (#266). A foe with nothing there has no
+  // damaging move to lose STAB on, so it loses none — `foeData` always fills the field in, and an empty one is an
+  // answer rather than a silence. A caller that carries only the distinct types (a mocked foe) falls back to those,
+  // which is the same number whenever the foe has one move per type.
+  const attacks = foe.attackTypes ?? foe.moveTypes ?? [];
   const stab = attacks.length ? attacks.filter(t => types.includes(t) && t !== name).length / attacks.length : 0;
   return Math.min(1, open + TYPE_STAB * stab);
 };

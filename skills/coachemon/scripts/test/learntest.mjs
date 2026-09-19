@@ -387,7 +387,8 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 // keeps the team audit's dead-slot check off them.
 {
   const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null,
-    segments: extra.segments ?? 0, moveTypes: extra.moveTypes ?? types, statusMoves: [], healMoves: [] });
+    segments: extra.segments ?? 0, moveTypes: extra.moveTypes ?? types,
+    attackTypes: extra.attackTypes ?? extra.moveTypes ?? types, statusMoves: [], healMoves: [] });
   const at40 = (...foes) => ({ wave: 40, exact: true, foes });
   const SOAK = ["Soak","Water",-1,"X",100,[["ChangeTypeAttr",{ type: TY.indexOf("Water") }]],false,3,{ flags: 262144 }];
   const TREAT = ["Trick-or-Treat","Ghost",-1,"X",100,[["AddTypeAttr",{ type: TY.indexOf("Ghost") }]],false,3,{ flags: 262144 }];
@@ -409,6 +410,15 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   // Aggron: Scald already hits it ×2, so the rewrite opens nothing — but it still takes both its STABs away.
   const strip = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"])));
   assert.ok(strip.value > blind.value && strip.value < helps.value, `STAB alone (${strip.value} vs ${blind.value}/${helps.value})`);
+  // The STAB is a share of its *attacks*, not of its coverage (#266): an Aggron with three Steel moves beside one
+  // Ground loses three quarters of them to pure Water, where counting types alone read that as half. A foe the
+  // preview handed over without `attackTypes` (an older read, a mocked roster) still falls back to the types.
+  const many = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"],
+    { moveTypes: ["Steel","Ground"], attackTypes: ["Steel","Steel","Steel","Ground"] })));
+  const byType = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { moveTypes: ["Steel","Ground"] })));
+  assert.ok(many.value > byType.value, `three Steel moves are more STAB than one (${many.value} vs ${byType.value})`);
+  assert.ok(many.value < strip.value, `and still less than a foe whose every attack is STAB (${many.value} vs ${strip.value})`);
+
   const unsure = judge(ludicolo, SOAK, { ...skarm, exact: false });
   assert.ok(unsure.value > blind.value && unsure.value < helps.value, "a roster the preview isn't sure of moves the score half as far");
   // Good as Gold takes a status move outright, so only half this roster is rewritable.

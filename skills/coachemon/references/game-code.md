@@ -1618,6 +1618,14 @@ each decided from what the preview hands over per foe (types, ability, passive, 
   (`:1126-1133`). A disrupting move with something to take away is worth ×1.4 plus 0.4 × the share of the roster it
   bites on, ×0.3 with nothing; Disable and Torment only by the share they land on. The preview lists a foe's
   `statusMoves` and `healMoves` (recovery attrs and `HitHealAttr`) for this.
+- **A typing written onto the foe** (Soak, Magic Powder, Forest's Curse, Trick-or-Treat): worth what it opens for the
+  party's own coverage — two doublings of the party's best answer is a full opening — plus, for a `set`, the STAB it
+  takes away, a whole STAB being worth one of those doublings. That share is a share of the foe's **attacking moves**,
+  not of its types: the preview's `attackTypes` carries one entry per attacking move, so three Steel moves beside one
+  Ground read as three quarters and not as half (#266). What counts as an attack is `08-party.js`'s `isCoverage`, the
+  one rule for both sides of the field: a move the game prices from the situation (`power === -1`: Gyro Ball, Grass
+  Knot, Heavy Slam) is one, fixed damage is not — it ignores the type chart, so it is no one's answer and no one's
+  STAB worth stripping.
 - A roster whose foes aren't `exact` (a generic trainer's replay) moves a score half as far.
 
 **Unmeasured.** The size of the spread bonus itself (a first cut), and every roster multiplier above.

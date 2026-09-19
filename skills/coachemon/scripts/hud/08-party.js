@@ -18,6 +18,8 @@
 //     so read a Grass Knot mon as having no Grass at all; the learn card already counted it.
 //   - **Fixed damage does not.** Seismic Toss, Night Shade, Super Fang and co. ignore type effectiveness entirely
 //     (§4.3), so they are no one's answer to anything. The learn card already excluded them.
+// The rule itself is `isCoverage`, exported: the wave preview reads a foe's attacks with it too (#266), so what the
+// coach counts as an attack is one rule whichever side of the field the mon is on.
 import { TYPES, vs, effectiveness, defenderOf, typesOf, hasAttr } from "./01-core.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -27,7 +29,12 @@ const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch 
 const FIXED_DAMAGE_ATTRS = ["LevelDamageAttr", "RandomLevelDamageAttr", "TargetHalfHpDamageAttr", "FixedDamageAttr",
   "MatchHpAttr", "UserHpDamageAttr", "CounterDamageAttr"];
 const movesOf = p => (p?.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } }).filter(Boolean);
-const isCoverage = mv => mv.category !== MoveCategory.STATUS && (mv.power > 0 || mv.power === -1)
+/**
+ * Whether a move hits for damage off the type chart, by the two rules above. Exported because the wave preview reads
+ * a *foe*'s moveset the same way (48-preview's `moveTypes`), and read it narrower until #266: it required
+ * `power > 0`, so a Steel foe whose STAB is Gyro Ball read as having no Steel attack at all.
+ */
+export const isCoverage = mv => mv.category !== MoveCategory.STATUS && (mv.power > 0 || mv.power === -1)
   && !FIXED_DAMAGE_ATTRS.some(a => hasAttr(mv, a));
 /** The types a mon can hit for damage, once each. The one table the cards used to keep four copies of. */
 export const damagingTypes = p => [...new Set(movesOf(p).filter(isCoverage).map(mv => TYPES[mv.type]).filter(Boolean))];
