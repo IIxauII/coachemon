@@ -689,23 +689,27 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
 // no turn, so every candidate field starts the coming turn fresh.
 // `locked`: slot 1's command phase, with slot 0's command already in (`lockedCommand`): that slot is kept as chosen
 // and only its partner is searched.
-// Trap abilities on the foes a slot's move actually hits: an immunity (by type, or by move flag - Soundproof and
-// co.), a damage cut, or an ability that punishes the hit. Read off the engine mons the plan still holds, so it
-// sees the move's flags and the foe's real abilities. Intimidate only on a foe coming in (on the field its drop is
-// already in our stat stages); never Sturdy, which the KO model already counts.
-const trapsOn = (p, active) => {
-  const mv = p.move?.pm?.getMove?.();
-  if (!mv || p.self || p.target === null || p.target === undefined) return [];
-  const type = p.move.type;
-  const phys = p.move.cat === "physical";
-  const foes = p.target === "both" ? active : [active[p.target]];
-  const bites = (a, foe) => ABILITY_IMMUNE[a] === type
+// Does `a`, an ability of `foe`, bite `move`: an immunity (by type, or by move flag - Soundproof and co.), a damage
+// cut, or an ability that punishes the hit? Read off the engine mons the plan still holds, so it sees the move's
+// flags and the foe's real abilities. Intimidate only on a foe coming in (on the field its drop is already in our
+// stat stages); never Sturdy, which the KO model already counts. The one place that asks, so the slot line and the
+// foe rows agree — the slot line asks it of the move it picked, the rows of a whole pool.
+const bites = (a, foe, move) => {
+  const mv = move?.pm?.getMove?.();
+  if (!mv) return false;
+  const type = move.type, phys = move.cat === "physical";
+  return ABILITY_IMMUNE[a] === type
     || (ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a]))
     || (a === "Thick Fat" && (type === "Fire" || type === "Ice")) || (a === "Heatproof" && type === "Fire")
     || (a === "Fluffy" && (phys || type === "Fire")) || (a === "Intimidate" && phys && !foe.isOnField?.())
     || a === "Wonder Guard"
     || (["Filter", "Solid Rock", "Prism Armor"].includes(a) && typesOf(foe).reduce((x, d) => x * vs(type, d), 1) >= 2);
-  return [...new Set(foes.filter(Boolean).flatMap(foe => abilitiesOf(foe).filter(a => TRAPS.has(a) && bites(a, foe))))];
+};
+// Trap abilities on the foes a slot's move actually hits.
+const trapsOn = (p, active) => {
+  if (!p.move?.pm?.getMove?.() || p.self || p.target === null || p.target === undefined) return [];
+  const foes = p.target === "both" ? active : [active[p.target]];
+  return [...new Set(foes.filter(Boolean).flatMap(foe => abilitiesOf(foe).filter(a => TRAPS.has(a) && bites(a, foe, p.move))))];
 };
 
 export const fieldPlan = (turn, party, active, double, attackers = active, { freeSwitch = false, locked = null, team = null } = {}) => {
@@ -791,17 +795,26 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = t1.we >= 0.5 ? 1 : Math.min(9, 1 + x2.turnsWe);
       return { ...x, turns: hits + lost, hits, score, then: y };
     };
-    // `each`: turns to KO each foe; `hits` is when both are down.
+    // A spread move is scored on **every foe it actually hits**: one it can't touch — a flag or type immunity, Wonder
+    // Guard — contributes nothing rather than sinking the option, because the move still does its work on the other
+    // side. `each`: turns to KO each foe (9 for one it never touches); `hits` is when the foes it does hit are down;
+    // the move carries the record of the first of them, and the bonus for covering two foes is earned only by hitting
+    // two.
     const both = o => {
-      const other = planOutcomes(turn, me, active[1]).find(x => x.name === o.name);
-      const xs = [trade(o, active[0]), other ? trade(other, active[1]) : null];
+      const os = active.map(f => planOutcomes(turn, me, f).find(x => x.name === o.name));
+      const xs = os.map((y, i) => (y?.expected > 0 ? trade(y, active[i]) : null));
+      const landed = xs.filter(Boolean);
+      if (!landed.length) return null;
       const each = xs.map(x => x?.turnsWe ?? 9);
-      const hits = Math.max(...each);
+      const hits = Math.max(...landed.map(x => x.turnsWe));
       if (hits + lost >= 9) return null;
       const edge = Math.min(...xs.flatMap((x, i) => (x ? [x.pWeKoFirst - x.pTheyKoFirst - (x.cost ?? 0) - feed(active[i]) * x.pTheyKoFirst] : [])));
-      const slow = Math.max(...xs.map(x => x?.eTurnsWe ?? 9));
-      const both0 = other ? { ...o, benefit: Math.max(o.benefit ?? 0, other.benefit ?? 0) } : o;
-      return { me, move: o, target: "both", turns: hits + lost, hits, each, score: danger - slow - lost + 1 + edge - cost(both0), hp };
+      const slow = Math.max(...landed.map(x => x.eTurnsWe));
+      const rep = os[xs.findIndex(Boolean)] ?? o;
+      const seen = os.filter(Boolean);
+      const both0 = seen.length > 1 ? { ...rep, benefit: Math.max(...seen.map(y => y.benefit ?? 0)) } : rep;
+      return { me, move: rep, target: "both", turns: hits + lost, hits, each,
+        score: danger - slow - lost + (landed.length > 1 ? 1 : 0) + edge - cost(both0), hp };
     };
     // Status moves (single battles): this turn spent on a setup move, a status, a heal or a hazard, then the best
     // attack from what it leaves. Turn 1 is an `exchange` in which we deal nothing; its effect is written onto the mons
@@ -920,9 +933,16 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       if (clean && clean !== best) out.push(clean);
     });
     if (pair) {
-      for (const o of planOutcomes(turn, me, active[0]).filter(x => x.spread && x.expected > 0)) {
-        const p = both(o);
-        if (p) out.push(p);
+      // Every spread move that hits *either* foe: enumerating against `active[0]` alone loses one that slot is
+      // immune to, even though it still hits the other untouched.
+      const named = new Set();
+      for (const f of active) {
+        for (const o of planOutcomes(turn, me, f)) {
+          if (!o.spread || !(o.expected > 0) || named.has(o.name)) continue;
+          named.add(o.name);
+          const p = both(o);
+          if (p) out.push(p);
+        }
       }
     }
     if (!out.length) out.push({ me, move: null, target: null, turns: 9, hits: 9, score: danger - 9, hp });
@@ -1578,13 +1598,20 @@ export const battleModel = (turn, { team = null } = {}) => {
     }
     const p = picks.get(foe);
     const vs = p?.vs ?? foe;
+    // `✦` marks an ability that changes one of **our** options, not merely one the foe has. Measured against the
+    // whole damaging pool of the mons we put on the field, never the move the ⚔ line picked: an immunity shows even
+    // though — because — it took the only move worth using, while an ability nothing of ours runs into (Intimidate on
+    // a foe already out, Sturdy, a cut on a type we don't carry) stays off the row.
+    const ourside = [...new Set([...(plan?.picks.map(q => q.me) ?? []), ...(p?.me ? [p.me] : [])])];
+    const pool = ourside.flatMap(me => planOutcomes(turn, me, foe));
+    const traps = abilitiesOf(foe).filter(a => TRAPS.has(a) && pool.some(o => bites(a, foe, o)));
     // What this foe likely does to the pokémon we put in front of it (a foe switching out does nothing).
     const t = p?.mine && !switching(foe) ? threatFrom(turn, foe, p.me, p.mine.pm ?? null, { next: !p.me.isOnField?.() || !foe.isOnField?.() }) : null;
     const bars = bossBarsLeft(vs);
     const n = p?.mine ? hitCounts(p.mine) : null;
     return {
       icon: iconOf(foe), name: foe.name, lv: foe.level, types: typesOf(foe), tera: turn.mon(foe).tera,
-      abilities: abilitiesOf(foe), boss: !!foe.isBoss?.(), status: foe.status?.effect ?? 0,
+      traps, boss: !!foe.isBoss?.(), status: foe.status?.effect ?? 0,
       hp: Math.round(foe.hp / foe.getMaxHp() * 100),
       weak, avoid,
       switchTo: predicted.has(foe) ? { icon: iconOf(predicted.get(foe).to), name: predicted.get(foe).to.name, sure: switching(foe) } : null,

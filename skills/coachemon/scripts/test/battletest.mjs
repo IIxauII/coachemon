@@ -60,11 +60,13 @@ const scenarios = {
   tera: { double: false, trainer: { isBoss: false }, teras: ["Lycanroc"], party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,120], [["Flamethrower","Fire",90,"S"],["Air Slash","Flying",75,"S"]], true, 120)],
     foes: [teraMon("Lycanroc", 70, ["Rock"], "Keen Eye", [200,190,100,80,90,140], [["Stone Edge","Rock",100,"P"]], true, "Steel")] },
-  // A trap the planned move runs into goes on the slot line (collapsed and mini): Fire into Thick Fat.
+  // A trap the planned move runs into goes on the slot line (collapsed and mini) and on the foe row's ✦: Fire into
+  // Thick Fat.
   trap: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
     foes: [mon("Swinub", 20, ["Ice","Ground"], "Thick Fat", [60,50,80,30,30,20], [["Tackle","Normal",40,"P"]], true)] },
-  // Not a trap on the slot line: Sturdy is already in the damage (the KO count).
+  // Not a trap on the slot line, and no ✦ on the row either: Sturdy is already in the damage (the KO count), so it
+  // changes none of our options.
   modelled: { double: false, party: [
     mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
     foes: [mon("Pineco", 20, ["Bug"], "Sturdy", [60,50,80,30,30,20], [["Tackle","Normal",40,"P"]], true)] },
@@ -74,17 +76,18 @@ const scenarios = {
     foes: [
       mon("Ludicolo", 80, ["Water","Grass"], "Swift Swim", [250,110,120,150,170,110], [["Giga Drain","Grass",75,"S"]], true),
       mon("Arcanine", 80, ["Fire"], "Intimidate", [260,170,130,150,130,140], [["Flare Blitz","Fire",120,"P"]], false)] },
-  // An immunity by move flag, not by type: Soundproof answers Hyper Voice, so the spread move is worth nothing even
-  // though it would hit the other foe, and Exploud is left with no damaging move. The slot's trap tags come off the
-  // planner's own engine mons now, so the flag rules (Soundproof, Bulletproof, Overcoat, Wind Rider) apply to them
-  // the way they already do to the damage.
+  // An immunity by move flag, not by type: Soundproof stops Hyper Voice on Whismur, but the spread move still hits
+  // Rattata untouched, so Exploud uses it and the panel says what the game will do. The slot's trap tags come off the
+  // planner's own engine mons, so the flag rules (Soundproof, Bulletproof, Overcoat, Wind Rider) apply to them the
+  // way they already do to the damage. Whismur's row keeps its ✦ although the move aimed at Whismur (Venusaur's Power
+  // Whip) never meets Soundproof: the ✦ is measured against our whole pool, not the move the ⚔ line picked.
   soundproof: { double: true, party: [
     mon("Exploud", 66, ["Normal"], "Scrappy", [200,110,80,140,80,120], [["Hyper Voice","Normal",90,"S",6,MoveFlags.SOUND_BASED]], true),
     mon("Venusaur", 65, ["Grass","Poison"], "Overgrow", [200,135,122,144,144,118], [["Power Whip","Grass",120,"P"]], true)],
     foes: [
       mon("Whismur", 30, ["Normal"], "Soundproof", [90,60,50,60,50,40], [["Pound","Normal",40,"P"]], true),
       mon("Rattata", 30, ["Normal"], "Run Away", [80,60,50,40,50,90], [["Tackle","Normal",40,"P"]], true)] },
-  // Nor an Intimidate foe already on the field: its drop is in our stat stages.
+  // Nor an Intimidate foe already on the field, on the slot line or the row: its drop is in our stat stages.
   intimidate: { double: false, party: [
     mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
     foes: [mon("Granbull", 30, ["Fairy"], "Intimidate", [120,90,75,40,60,45], [["Tackle","Normal",40,"P"]], true)] },

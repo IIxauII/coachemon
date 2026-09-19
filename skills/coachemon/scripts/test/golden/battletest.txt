@@ -86,7 +86,7 @@ now: ⇄ Blastoise out › Venusaur in
 next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
 ↺ if it stays: Blastoise Steel Flash Cannon → Arcanine
 foes weak to: Water ×1
-Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water
+Arcanine Arcanine L80 Fire 100% ▲ Water
 Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼ ↯ Water Surf → Venusaur moves after
 ♟ winnable · 2 steps + {Show the fight plan}
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -150,7 +150,7 @@ summary easy | Scrafty Brick Break → Pineco · 1 hit
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Scrafty Fighting Brick Break → Pineco 1 hit
-Pineco Pineco L20 Bug 100% ✦ ⚠ Sturdy ▲ — ↯ Normal Tackle → Scrafty moves after
+Pineco Pineco L20 Bug 100% ▲ — ↯ Normal Tackle → Scrafty moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == modelled (mini)
 🎯 W89 ⚔ Scrafty Brick Break → Pineco · 1 hit + {Show details} × {Close}
@@ -178,16 +178,20 @@ summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely los
 ⚔ Blastoise Water Wave Crash → Arcanine ⚠ Intimidate 2 hits
 ♟ likely lost · ☠ Ludicolo · 2 steps + {Show the fight plan}
 == soundproof (full)
+🎯 W89 ⚔ Exploud Hyper Voice → both · 1 hit ⚠ Soundproof ⚔ Venusaur Power Whip → Whismur · 1 hit + {Show details} × {Close}
+summary easy | Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit
+-- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
-⚔ Exploud no damaging move
+⚔ Exploud Normal Hyper Voice → both Rattata 1 hit
 ⚔ Venusaur Grass Power Whip → Whismur 1 hit
 Whismur Whismur L30 Normal 100% ✦ ⚠ Soundproof ▲ — ↯ Normal Pound → Venusaur moves after
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Tackle → Exploud moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-summary fight | Exploud — ; Venusaur Power Whip → Whismur · 1 hit
 == soundproof (mini)
+🎯 W89 ⚔ Exploud Hyper Voice → both · 1 hit ⚠ Soundproof ⚔ Venusaur Power Whip → Whismur · 1 hit + {Show details} × {Close}
+-- after + (mini)
 🎯 W89 + {Expand} × {Close}
-⚔ Exploud no damaging move
+⚔ Exploud Normal Hyper Voice → both ⚠ Soundproof Rattata 1 hit
 ⚔ Venusaur Grass Power Whip → Whismur 1 hit
 == intimidate (full)
 🎯 W89 ⚔ Scrafty Brick Break → Granbull · 2 hits + {Show details} × {Close}
@@ -195,7 +199,7 @@ summary easy | Scrafty Brick Break → Granbull · 2 hits
 -- after + (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Scrafty Fighting Brick Break → Granbull 2 hits
-Granbull Granbull L30 Fairy 100% ✦ ⚠ Intimidate ▲ — ↯ Normal Tackle → Scrafty moves after
+Granbull Granbull L30 Fairy 100% ▲ — ↯ Normal Tackle → Scrafty moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == intimidate (mini)
 🎯 W89 ⚔ Scrafty Brick Break → Granbull · 2 hits + {Show details} × {Close}
