@@ -7,6 +7,7 @@
 // the card in both views. Prints the models and the card, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { ATTRS } from "./fixtures/party.mjs";
 
 // ---- A seeded RNG with Phaser's surface: sow from a string, save and restore state as a string.
 const hash = str => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h >>> 0; };
@@ -35,11 +36,22 @@ let destroyed = 0;
 const species = id => ({ speciesId: id, name: SPECIES[id][0], baseTotal: SPECIES[id][2],
   types: SPECIES[id][1].map(t => TY.indexOf(t)) });
 
+// A move as the preview reads one: a name alone is a move it can't read past the name (the mock's default), a spec
+// `[name, type, power, category, attrs]` is one it can, written the way `fixtures/party.mjs` writes a moveset —
+// `power` −1 a move the game prices from the situation, the category a letter, the attrs real classes from there
+// (`hasAttr` matches on `constructor.name`).
+const CAT = { P: 0, S: 1, X: 2 };
+const fakeMove = m => (typeof m === "string" ? { getName: () => m } : {
+  getName: () => m[0],
+  getMove: () => ({ name: m[0], type: TY.indexOf(m[1]), power: m[2], category: CAT[m[3] ?? "P"],
+    attrs: (m[4] ?? []).map(a => new ATTRS[a]()) }),
+});
+
 const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => ({
   species: sp, name: sp.name, level, bossSegments: boss, shiny: false,
   getTypes: () => sp.types, getAbility: () => ({ name: "Sturdy" }), hasPassive: () => false,
   getMaxHp: () => 50 + level * 2, getStat: i => 20 + level + i, getIconAtlasKey: () => "k", getIconId: () => String(sp.speciesId),
-  moveset: moves.map(n => ({ getName: () => n })),
+  moveset: moves.map(fakeMove),
   destroy() { destroyed++; },
 });
 
@@ -89,7 +101,7 @@ let arenaArgs = []; // what the arena's `randomSpecies` was last handed, so the 
 
 // `offsets` records every fork the code under test opens, so the test can assert the offsets themselves.
 const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meRate = 0, hasTrainers = true,
-  waveCycleOffset = 0 } = {}) => {
+  waveCycleOffset = 0, foeMoves = ["Tackle"] } = {}) => {
   const offsets = [];
   const scene = {
     seed, waveSeed: shiftCharCodes(seed, wave), rngOffset: 0, rngSeedOverride: "", offsetGym: false, waveCycleOffset,
@@ -151,7 +163,7 @@ const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meR
       scene.executeWithSeedOffset(() => { boss = w % 10 === 0 || randSeedInt(100) < 0; }, w << 2);
       return boss ? 2 : 0;
     },
-    addEnemyPokemon: (sp, level, _slot, boss) => mon(sp, level, { boss: boss ? 2 : 0 }),
+    addEnemyPokemon: (sp, level, _slot, boss) => mon(sp, level, { boss: boss ? 2 : 0, moves: foeMoves }),
     getMysteryEncounter: () => ({ localizationKey: "departmentStoreSale", encounterTier: 0 }),
     // BattleScene.randomSpecies, `fromArenaPool` branch.
     randomSpecies: (w, level, fromArenaPool) => (fromArenaPool
@@ -430,6 +442,25 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   assert.equal(m.confidence.levels, "estimate", "and the levels are fed the double, so they are no surer");
   assert.ok(m.notes.some(n => n.includes("unseeded")), `and it says so: ${JSON.stringify(m.notes)}`);
   console.log(`== grunt wave 35 ${JSON.stringify({ confidence: m.confidence, notes: m.notes })}`);
+}
+
+// ---- 8e. What a foe attacks with, by 08-party's one coverage rule (#266). The preview used to require `power > 0`,
+// so a Steel foe whose STAB is Gyro Ball read as having no Steel attack at all — and the look-ahead, which reads
+// these types to judge what the party is walking into, believed it.
+{
+  const { scene, pv } = mount({ wave: 12, foeMoves: [
+    ["Gyro Ball", "Steel", -1],            // priced from the situation: an attack like any other
+    ["Iron Head", "Steel", 80],
+    ["Heavy Slam", "Steel", -1],
+    ["Earthquake", "Ground", 100],
+    ["Seismic Toss", "Fighting", -1, "P", ["FixedDamageAttr"]], // ignores the type chart: no one's answer
+    ["Iron Defense", "Steel", -1, "X"],    // a status move is not an attack
+  ] });
+  const foe = pv.previewNext(scene).foes[0];
+  assert.deepEqual(foe.attackTypes, ["Steel", "Steel", "Steel", "Ground"],
+    `variable power counts, fixed damage doesn't, one entry per move: ${JSON.stringify(foe.attackTypes)}`);
+  assert.deepEqual(foe.statusMoves, ["Iron Defense"], `and the status move is still only a status move: ${JSON.stringify(foe.statusMoves)}`);
+  console.log(`== foe attacks ${JSON.stringify(foe.attackTypes)}`);
 }
 
 // ---- 8. The card, in both views, plus the one-line summary.

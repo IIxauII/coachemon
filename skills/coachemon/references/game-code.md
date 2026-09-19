@@ -825,6 +825,7 @@ The **party** judged as a whole, and one query for whether a newcomer is worth i
   - `weakest` — `{ mon, final, estimated, level }`, the lowest final BST with the lower level breaking a tie. `roots` — the party's root species ids (`Pokemon.getRootSpeciesId`), which is what makes a catch a duplicate. `luck` — `partyLuck` of the members alone (no scene, so no Daily roll and no event terms: the floor). All three are worked out on first read, so a caller that wants only coverage pays for nothing else.
   - `hitters(defender)` / `weakTo(type)` — the members that hit it super-effectively, and the members that type hits super-effectively. The two matchup queries every card asks.
 - `partyReasons(profile, cand, { replacing })` → `[{ kind: "covers" | "hole" | "upgrade" | "dupe", … }]`, against `replacing` (default: the weakest member). `cand` is `{ species, fusion?, level, types, moveTypes? }` — a species with no moveset lets its own types stand in, so the same species at the same level gets the same reasons on the catch card and the biome card. Thresholds: a `hole` wants a party of 3 and 2 types, an `upgrade` a final BST over 400, 100 above the member replaced and no more than 10 levels behind it.
+- `isCoverage(mv)` → whether one move hits for damage off the type chart, the rule the two below are built on and the one rule for both sides of the field: the wave preview filters a **foe**'s moveset with it (48-preview's `attackTypes`), where it read `power > 0` until #266 and so lost a Steel foe whose STAB is Gyro Ball.
 - `damagingTypes(p)` → the types a mon can hit for damage. **Variable power counts** (`power === -1`: Grass Knot, Gyro Ball) and **fixed damage does not** (§4.3 — it ignores the chart), which is how the learn card always read it and how the catch, biome and look-ahead cards now do.
 - `finalBstOf(x)` → `{ bst, final, estimated }` for a live mon, a `{ species, fusion }` pair or a bare species: a line's final evolution's BST, estimated from `PokemonSpecies.getEvolutionLevels()`, a fusion averaging both halves (`Pokemon.calculateBaseStats`).
 - `partyLuck(party, s?, event?)` → `getPartyLuckValue`'s rule re-implemented (§12). With the scene, **a Daily run answers with its own roll** — `randSeedInt(15)` in a fork at offset 0 on the run seed, or the event seed's pinned `dailyConfig.luck` — and never with the party's. Otherwise `Pokemon.getLuck` over the members `isAllowedInBattle`, **+1 for each species `event.getEventLuckBoostedSpecies()` names**, clamped to 0–14, then `event.getEventLuckBoost()` on top, capped at 14. `event` is the timed event manager (47-biome's `gameEvents()`). Called without either it is the old floor, which is all `partyProfile`'s `luck` can be.
@@ -1618,6 +1619,14 @@ each decided from what the preview hands over per foe (types, ability, passive, 
   (`:1126-1133`). A disrupting move with something to take away is worth ×1.4 plus 0.4 × the share of the roster it
   bites on, ×0.3 with nothing; Disable and Torment only by the share they land on. The preview lists a foe's
   `statusMoves` and `healMoves` (recovery attrs and `HitHealAttr`) for this.
+- **A typing written onto the foe** (Soak, Magic Powder, Forest's Curse, Trick-or-Treat): worth what it opens for the
+  party's own coverage — two doublings of the party's best answer is a full opening — plus, for a `set`, the STAB it
+  takes away, a whole STAB being worth one of those doublings. That share is a share of the foe's **attacking moves**,
+  not of its types: the preview's `attackTypes` carries one entry per attacking move, so three Steel moves beside one
+  Ground read as three quarters and not as half (#266). What counts as an attack is `08-party.js`'s `isCoverage`, the
+  one rule for both sides of the field: a move the game prices from the situation (`power === -1`: Gyro Ball, Grass
+  Knot, Heavy Slam) is one, fixed damage is not — it ignores the type chart, so it is no one's answer and no one's
+  STAB worth stripping. The look-ahead reads the same field for what the party is walking into, through a `Set`.
 - A roster whose foes aren't `exact` (a generic trainer's replay) moves a score half as far.
 
 **Unmeasured.** The size of the spread bonus itself (a first cut), and every roster multiplier above.
