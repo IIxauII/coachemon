@@ -1558,9 +1558,23 @@ zero, not a positive one. The TM pool
 (`TmModifierTypeGenerator`, `src/modifier/modifier-type.ts:1500` — draws global RND) takes
 `getCompatibleTms(true, true, true)` over the **whole** party (known, level-up and already-used TMs removed), keeps the
 tier's, and picks with `randSeedInt`. The card considers every member outside Hardcore, the living ones in it, and marks
-a fainted recipient. It also reads that pool rule per member: one the TM could never have been drawn from learns the
-move by levelling or can relearn it, so it stands aside while anyone else can take the TM, and when nobody else can the
-card says so rather than pricing a slot for it.
+a fainted recipient.
+
+**What `getCompatibleTms`' exclusions really drop.** `excludeLevelUp` (`src/field/pokemon.ts:5866-5868`) asks
+`getLevelMoves(undefined, true, false, true)`, so `startingLevel` is the member's own level (`:2813-2815`) and
+`filterAndSortLevelMoves` (`src/field/learnsets.ts:193-198`) opens with `!(level > pokemon.level)` — **every move
+above the member's current level is filtered out before the exclusion sees it**. It therefore never removes a move the
+member is going to learn by levelling; it removes relearner moves (`isRelearner = level < startingLevel`) and level-0
+evolution moves. A level-0 move there belongs to the species the member *already is* (`EvolutionPhase.postEvolve`,
+`src/phases/evolution-phase.ts:399-411`, learns those at the moment of evolving, from the evolved form's own list), not
+to an evolution still ahead. `excludeUsedTMs` (`:5869-5871`) reads `usedTMs`, pushed in
+`src/phases/learn-move-phase.ts:204-210` when a TM is taught and never removed, so it outlives the move being
+overwritten. So **no** member the TM could not have been drawn for gets the move for free: all three cases are fed
+back into the move relearner (`getLearnableLevelMoves`, `src/field/pokemon.ts:1922-1941`, which carries relearner and
+evolution moves, past level-up moves and `usedTMs` alike), and the relearner is reachable only through the Memory
+Mushroom (`RememberMoveModifierType`, `src/modifier/modifier-type.ts:723`, `:1987`, `PartyUiMode.REMEMBER_MOVE_MODIFIER`)
+— a paid reward slot of its own. The card reads the pool rule per member for exactly that: it names the Memory
+Mushroom as the other route to the move, and never drops a member from the scoring or skips the TM over it.
 
 **Double battles.** `newBattle` asks `checkIsDouble` (`src/battle-scene.ts:1512`, draws global RND) every wave:
 

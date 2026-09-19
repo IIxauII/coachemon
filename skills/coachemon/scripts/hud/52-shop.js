@@ -36,24 +36,27 @@ const tmLearners = (t, party) => {
   }
   return users && users.filter(p => !knowsMove(p, t.moveId));
 };
-// Who would be spending the TM on something they get anyway. The offer itself is drawn from
-// `getCompatibleTms(true, true, true)` (`TmModifierTypeGenerator`), which per member drops the moves it knows, the
-// ones on its own level-up and relearn list, and the TMs it has already used — so a member missing from that list is
-// one the game never drew this TM for: it learns the move by levelling, or can relearn it from a Memory Mushroom.
-// Teaching is still allowed (the party screen only asks `isTmCompatible(moveId, true)`), so they are set aside rather
-// than dropped: `free` carries them when nobody else can take the TM.
-const tmPoolSplit = (t, users) => {
-  const free = [];
-  const paying = users.filter(p => {
-    if (typeof p.getCompatibleTms !== "function") return true;
-    let pool = null;
-    try { pool = p.getCompatibleTms(true, true, true); } catch { return true; }
-    if (!Array.isArray(pool) || pool.includes(t.moveId)) return true;
-    free.push(p);
-    return false;
-  });
-  return { paying, free };
-};
+// Who could get the move without this TM — which is never for free. The offer is drawn per member from
+// `getCompatibleTms(true, true, true)` (`TmModifierTypeGenerator`), which drops the moves the member knows, the ones
+// its own level-up list holds *at or below its current level*, and the TMs it has already used. None of those three
+// is a move it still picks up by playing on:
+//   - `excludeLevelUp` asks `getLevelMoves(undefined, true, false, true)`, and `filterAndSortLevelMoves` opens with
+//     `!(level > pokemon.level)` — a move the member has yet to reach is never dropped, so this only ever removes
+//     moves at a level already behind it, which level-up never offers again;
+//   - a level-0 move among them is an evolution move of the species it *already is* (`EvolutionPhase.postEvolve`
+//     learns those the moment it evolves), not one waiting on an evolution ahead;
+//   - `excludeUsedTMs` reads `usedTMs`, appended when a TM is taught and never removed, so it outlives the move
+//     being overwritten.
+// What the three share is the move relearner: `getLearnableLevelMoves` feeds it from exactly these sources, and it
+// is gated entirely behind the Memory Mushroom (`RememberMoveModifierType`) — a paid reward slot of its own. So they
+// are a cheaper *route*, not a reason to skip the TM: they stay in the scoring, and the card names the route.
+const tmRelearners = (t, users) => users.filter(p => {
+  if (typeof p.getCompatibleTms !== "function") return false;
+  try {
+    const pool = p.getCompatibleTms(true, true, true);
+    return Array.isArray(pool) && !pool.includes(t.moveId);
+  } catch { return false; }
+});
 // A fainted member can still be taught a TM: the party screen's TM mode offers TEACH whoever the cursor is on, and
 // the TM pool itself is drawn from the whole party. Only the Hardcore challenge takes it away: a fainted member there
 // goes through `PartyUiHandler.updateOptionsHardcore`, whose switch has no TM case at all, so it is offered nothing
@@ -222,22 +225,22 @@ export const rewardsModel = (s, h) => {
       const mv = learnMoveById(party, t.moveId);
       extra.moveId = t.moveId ?? null;
       extra.move = mv ? { name: mv.name, type: TYPES[mv.type] ?? "Normal", cat: ["physical", "special", "status"][mv.category] } : null;
-      const all = tmLearners(t, isHardcore(s) ? alive : party);
-      const split = all && tmPoolSplit(t, all);
-      // Everyone who can learn it gets it without the TM: nothing to spend a reward slot on.
-      const users = split && (split.paying.length ? split.paying : []);
-      if (!all || !mv) { v = 5; why = "TM — can't check who learns it"; extra.tm = null; }
-      else if (!all.length) { v = -6; why = "skip · nobody can learn it"; extra.users = []; extra.tm = "skip"; }
-      else if (!users.length) {
-        v = -4; extra.users = split.free.map(p => p.name); extra.tm = "skip";
-        why = `skip · ${split.free.map(p => p.name).slice(0, 2).join("/")} learn${split.free.length > 1 ? "" : "s"} it without the TM`;
-      } else {
+      const users = tmLearners(t, isHardcore(s) ? alive : party);
+      // The members the TM could never have been drawn for: they can relearn the move from a Memory Mushroom
+      // instead. A note on the reward, never a reason to skip it — the Mushroom is a reward slot of its own.
+      const relearn = users ? tmRelearners(t, users) : [];
+      const relearnNote = users?.length && relearn.length === users.length
+        ? ` · ${relearn.length > 1 ? "all" : relearn[0].name} can relearn it (Memory Mushroom)` : "";
+      if (!users || !mv) { v = 5; why = "TM — can't check who learns it"; extra.tm = null; }
+      else if (!users.length) { v = -6; why = "skip · nobody can learn it"; extra.users = []; extra.tm = "skip"; }
+      else {
         // The learn card's own decision on every member that can learn it: best recipient wins. A TM is kept for the
         // run, so a spread or ally move is judged by the share of double battles ahead, not by the wave just won.
         // Disruption and inflicted status are weighed against the next big fight's roster, as on the learn card.
         const advice = tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party, roster: learnRoster(ahead) });
         const b = advice.best;
         extra.users = users.map(p => p.name);
+        if (relearn.length) extra.relearn = relearn.map(p => p.name);
         extra.tm = advice.take ? "take" : advice.take === false ? "skip" : "maybe";
         if (b) extra.best = { icon: b.icon, name: b.name, forget: b.forget, gain: b.gain, ...(b.setup ? { setup: b.setup } : {}), ...(b.fainted ? { fainted: true } : {}) };
         const to = b && `${b.name}${b.fainted ? " (fainted)" : ""}`;
@@ -251,7 +254,7 @@ export const rewardsModel = (s, h) => {
         } else if (b) {
           v = 3; why = `TM for ${to} — ${b.reason}, your call`;
         } else if (advice.take === null) {
-          v = 3; why = `status TM — ${users[0].name}${users.length > 1 ? ` +${users.length - 1}` : ""} can learn it`;
+          v = 3; why = `status TM — ${users[0].name}${users.length > 1 ? ` +${users.length - 1}` : ""} can learn it${relearnNote}`;
         } else {
           const c = advice.closest;
           v = -3; why = `skip · no upgrade for ${users.map(p => p.name).slice(0, 2).join("/")}${c?.against ? ` · ${c.name} keeps ${c.against}` : ""}`;

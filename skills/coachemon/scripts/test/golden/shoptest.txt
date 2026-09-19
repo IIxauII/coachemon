@@ -284,13 +284,23 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 EXP. Charm whole party at the Lv 24 cap
 🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== tm learned without it
+== tm the evolution move already passed
 🛒 $200 nothing affordable − ×
-🎁 TM Magical Leaf least bad · skip · Comfey learns it without the TM
+🎁 TM Magical Leaf Comfey free slot · +78 power · or a Memory Mushroom
 · 5× Poké Ball you have 34
 🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== tm skips the free learner
+== tm the relearner move
+🛒 $200 nothing affordable − ×
+🎁 TM Magical Leaf Comfey free slot · +78 power · or a Memory Mushroom
+🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== tm already used once
+🛒 $200 nothing affordable − ×
+🎁 TM Crunch Snorlax free slot · +116 power · or a Memory Mushroom
+🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +13 super-effectively +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== tm weighs the relearner with the payer
 🛒 $200 nothing affordable − ×
 🎁 TM Crunch Snorlax free slot · +116 power
 🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
