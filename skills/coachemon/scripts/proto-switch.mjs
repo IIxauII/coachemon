@@ -176,6 +176,57 @@ const probe = String.raw`
       e.hp = Math.max(1, Math.floor(e.getMaxHp() * ratio));
       return { foe: e.name, hp: e.hp, max: e.getMaxHp(), margin: sandbox(s, () => replay(s, b)) };
     },
+    // INJECTION: scale the active foe's OWN matchup score, the left side of the switch bar. Patched on the instance,
+    // so the game's own EnemyCommandPhase call goes through the same patch — the decision path is untouched, only the
+    // number it weighs, which is what lets the tally sit near the bar instead of 13 points under it.
+    bias: (i = 0, factor = 0.1) => {
+      const { s, b } = current();
+      const e = activeFoes(s)[i];
+      if (!Object.prototype.hasOwnProperty.call(e, "getMatchupScore")) {
+        const orig = Object.getPrototypeOf(e).getMatchupScore;
+        e.__biasOrig = orig;
+        e.getMatchupScore = function (o) { return orig.call(this, o) * (e.__bias ?? 1); };
+      }
+      e.__bias = factor;
+      return { foe: e.name, factor, margin: sandbox(s, () => replay(s, b)) };
+    },
+    // INJECTION: every legal bench mon of the slot's trainer scores the same, so getNextSummonIndex goes through its
+    // tie-break — executeWithSeedOffset(turn << 2) — which is the one draw the switch decision makes.
+    tieBench: (value = 9) => {
+      const { s, b } = current();
+      const party = s.getEnemyParty();
+      const bench = party.slice(b.getBattlerCount());
+      for (const p of bench) {
+        if (!Object.prototype.hasOwnProperty.call(p, "getMatchupScore")) p.getMatchupScore = () => value;
+      }
+      return { bench: bench.map(p => p.name), value, margin: sandbox(s, () => replay(s, b)) };
+    },
+    // INJECTION: lock the active foe into a queued move (charging, Outrage, Bide…). EnemyCommandPhase skips the whole
+    // switch check when the queue isn't empty, so a foe far over the bar must still attack.
+    queue: (i = 0) => {
+      const { s, b } = current();
+      const e = activeFoes(s)[i];
+      const pm = e.getMoveset().find(m => m && m.ppUsed < (m.getMovePp?.() ?? 99)) ?? e.getMoveset()[0];
+      const target = e.getOpponents()[0].getBattlerIndex();
+      e.summonData.moveQueue = [{ move: pm.moveId, targets: [target], useMode: 1 }];
+      return { foe: e.name, queued: pm.getName(), margin: sandbox(s, () => replay(s, b)) };
+    },
+    // INJECTION: the foe reads as trapped, the other branch that skips the switch check outright.
+    trap: (i = 0) => {
+      const { s, b } = current();
+      const e = activeFoes(s)[i];
+      e.isTrapped = () => true;
+      return { foe: e.name, margin: sandbox(s, () => replay(s, b)) };
+    },
+    // Undo every injection on this run's mons, so later rows are the game's own numbers again.
+    clear: () => {
+      const { s, b } = current();
+      for (const p of [...s.getEnemyParty(), ...s.getPlayerParty()]) {
+        delete p.getMatchupScore; delete p.__bias; delete p.__biasOrig; delete p.isTrapped;
+        if (p.summonData) p.summonData.moveQueue = [];
+      }
+      return { cleared: true, margin: sandbox(s, () => replay(s, b)) };
+    },
     // INJECTION: the switch-spam brake. 0 = no brake (mult 1); n > 0 scales the best bench score by 1 − 0.1^(1/n).
     counter: n => { const { b, s } = current(); b.enemySwitchCounter = n; return { counter: b.enemySwitchCounter, margin: sandbox(s, () => replay(s, b)) }; },
     tally: () => {
@@ -198,10 +249,11 @@ const probe = String.raw`
         streamTouched: P.rows.filter(r => !r.streamUntouched).length,
         breaches: P.rows.reduce((t, r) => t + (r.breaches ?? 0), 0), hudBreachesTotal: sandboxBreachCount(),
         // A prompt-time score that differs from the score the game computed at its own decision time.
-        scoreDrift: P.rows.filter(r => r.gameCalls?.length).map(r => ({ key: r.key,
-          prompt: r.foes.map(f => f.scores?.map(x => x[1])), game: r.gameCalls.map(g => g.scores.map(x => x[1])),
-          counters: [r.counterAtPrompt, ...r.gameCalls.map(g => g.counter)] }))
-          .filter(d => JSON.stringify(d.prompt.filter(Boolean)) !== JSON.stringify(d.game)),
+        // Only the game's OWN decision-time calls count: this probe and the HUD reach the same wrapper.
+        scoreDrift: P.rows.map(r => ({ key: r.key, prompt: r.foes.map(f => f.scores?.map(x => x[1])).filter(Boolean),
+          game: (r.gameCalls ?? []).filter(g => g.phase === "EnemyCommandPhase").map(g => g.scores.map(x => x[1])),
+          counters: [r.counterAtPrompt, ...(r.gameCalls ?? []).filter(g => g.phase === "EnemyCommandPhase").map(g => g.counter)] }))
+          .filter(d => d.game.length && JSON.stringify(d.prompt) !== JSON.stringify(d.game)),
         hudDisagrees: P.rows.filter(r => r.commandRead && Array.isArray(r.hud)).flatMap(r => r.hud.map((h, i) => ({ key: r.key, foe: h.name, hud: h.to, replay: r.foes[i]?.to?.name ?? null, actual: r.actual[i]?.to?.name ?? null }))).filter(x => x.hud !== x.replay || x.hud !== x.actual),
         misses: trainerTurns.filter(x => !hit(x)).map(x => ({ key: x.r.key, foe: x.f.name, double: x.r.double,
           pred: x.f.willSwitch ? "switch → " + x.f.to?.name : "move (" + x.f.reason + " " + x.f.margin + ")",
@@ -236,7 +288,7 @@ if (cmd === "inject") {
   console.log(await evaluate("JSON.stringify(window.__protoSwitch?.tally())"));
 } else if (cmd === "rows") {
   console.log(await evaluate("JSON.stringify(window.__protoSwitch?.rows)"));
-} else if (["margin", "repredict", "weaken", "counter"].includes(cmd)) {
+} else if (["margin", "repredict", "weaken", "counter", "bias", "tieBench", "queue", "trap", "clear"].includes(cmd)) {
   const args = process.argv.slice(3).join(",");
   console.log(await evaluate("JSON.stringify(window.__protoSwitch." + cmd + "(" + args + "))"));
 } else if (cmd === "press" || cmd === "look") {
