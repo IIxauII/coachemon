@@ -89,6 +89,9 @@ const M = {
   bite: move("Bite", "Dark", 60, 0), bodySlam: move("Body Slam", "Normal", 85, 0), crunch: move("Crunch", "Dark", 80, 0),
   confusion: move("Confusion", "Psychic", 50, 1), psybeam: move("Psybeam", "Psychic", 65, 1), thunderShock: move("Thunder Shock", "Electric", 40, 1),
   nuzzle: move("Nuzzle", "Electric", 20, 0), quickAttack: move("Quick Attack", "Normal", 40, 0), hyperVoice: move("Hyper Voice", "Normal", 90, 1),
+  // A status move with no attr the learn card recognises: its advice is `your call`, which is the one branch that
+  // reaches the model's own relearn note rather than the recipient row's.
+  screech: move("Screech", "Normal", -1, 2),
 };
 MOVES[M.hyperVoice].moveTarget = 6; // ALL_NEAR_ENEMIES: a spread move
 
@@ -548,6 +551,34 @@ const scenarios = {
       assert.equal(f.tm, "take", "Crunch over Tackle is still the upgrade it was");
       assert.equal(f.best.name, "Snorlax");
       assert.deepEqual(f.relearn, ["Snorlax"]);
+    } },
+  // A status TM nobody's card can score is `your call`, and there is no recipient row to carry the note — so the
+  // model's reason names the route itself. One relearner names them; more than one says `all`.
+  "tm status your call, one relearner": { wave: 27, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[14, M.screech, 0]] })],
+    free: [tm(M.screech, ["Comfey"], 1)],
+    expect: m => {
+      const f = m.free[0];
+      assert.equal(f.tm, "maybe");
+      assert.match(f.why, /^status TM — Comfey can learn it · Comfey can relearn it \(Memory Mushroom\)$/);
+    } },
+  "tm status your call, all relearners": { wave: 27, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[14, M.screech, 0]] }),
+      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [[null, M.screech, 3]] })],
+    free: [tm(M.screech, ["Comfey", "Snorlax"], 1)],
+    expect: m => {
+      const f = m.free[0];
+      assert.match(f.why, /· all can relearn it \(Memory Mushroom\)$/);
+      assert.deepEqual(f.relearn, ["Comfey", "Snorlax"]);
+    } },
+  // One member still paying keeps the note off: the route is only worth naming when it covers everyone.
+  "tm status your call, one still paying": { wave: 27, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[14, M.screech, 0]] }),
+      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [] })],
+    free: [tm(M.screech, ["Comfey", "Snorlax"], 1)],
+    expect: m => {
+      assert.doesNotMatch(m.free[0].why, /relearn/);
+      assert.deepEqual(m.free[0].relearn, ["Comfey"]);
     } },
   // With a payer alongside, the relearner is weighed like anyone else rather than stepping aside.
   "tm weighs the relearner with the payer": { wave: 27, money: 200, party: [

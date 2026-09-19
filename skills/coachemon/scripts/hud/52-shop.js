@@ -48,8 +48,9 @@ const tmLearners = (t, party) => {
 //   - `excludeLevelUp` asks `getLevelMoves(undefined, true, false, true)`, and `filterAndSortLevelMoves` opens with
 //     `!(level > pokemon.level)` — a move the member has yet to reach is never dropped, so this only ever removes
 //     moves at a level already behind it, which level-up never offers again;
-//   - a level-0 move among them is an evolution move of the species it *already is* (`EvolutionPhase.postEvolve`
-//     learns those from the evolved form's own list, as it evolves), not one waiting on an evolution ahead;
+//   - a level-0 move among them is an evolution move of the species it *already is* — the pool reads the current
+//     form's list, so an evolution still ahead was never in it — and `EvolutionPhase.postEvolve` grants those from
+//     the **evolved** form's list as it evolves, so the member was either offered it back then or never at all;
 //   - `excludeUsedTMs` reads `usedTMs`, appended when a TM is taught and never removed, so it outlives the move
 //     being overwritten.
 // Hence a cheaper *route*, not a reason to skip the TM: they stay in the scoring as ordinary payers, and the card
@@ -246,6 +247,8 @@ export const rewardsModel = (s, h) => {
         const advice = tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party, roster: learnRoster(ahead) });
         const b = advice.best;
         extra.users = users.map(p => p.name);
+        // Carried whatever the verdict, like `users` beside it: the model is read by the watcher and the journal as
+        // well as by the card, and "who could relearn this" is true of the offer, not of the advice given on it.
         if (relearn.length) extra.relearn = relearn.map(p => p.name);
         extra.tm = advice.take ? "take" : advice.take === false ? "skip" : "maybe";
         if (b) extra.best = { icon: b.icon, name: b.name, forget: b.forget, gain: b.gain, ...(b.setup ? { setup: b.setup } : {}), ...(b.fainted ? { fainted: true } : {}) };

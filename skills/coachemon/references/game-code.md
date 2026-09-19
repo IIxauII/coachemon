@@ -1565,16 +1565,27 @@ a fainted recipient.
 `filterAndSortLevelMoves` (`src/field/learnsets.ts:193-198`) opens with `!(level > pokemon.level)` — **every move
 above the member's current level is filtered out before the exclusion sees it**. It therefore never removes a move the
 member is going to learn by levelling; it removes relearner moves (`isRelearner = level < startingLevel`) and level-0
-evolution moves. A level-0 move there belongs to the species the member *already is* (`EvolutionPhase.postEvolve`,
-`src/phases/evolution-phase.ts:399-411`, learns those at the moment of evolving, from the evolved form's own list), not
-to an evolution still ahead. `excludeUsedTMs` (`:5869-5871`) reads `usedTMs`, pushed in
+evolution moves. A level-0 move there belongs to the species the member *already is* — the pool is built from the current form's own
+list (`this.species.getTms(this.getFormKey())` plus the fusion's), so a move waiting on an evolution still ahead was
+never in the pool to be excluded. Nothing ahead hands the member that move either: level-0 moves are granted only by
+`EvolutionPhase.postEvolve` (`src/phases/evolution-phase.ts:399-411`), which reads the **evolved** form's list at the
+moment of evolving, so either the member evolved into this form and was offered the move then, or it never evolved
+into this form (a starter, or caught as this species) and was never offered it at all. `excludeUsedTMs` (`:5869-5871`) reads `usedTMs`, pushed in
 `src/phases/learn-move-phase.ts:204-210` when a TM is taught and never removed, so it outlives the move being
 overwritten. So **no** member the TM could not have been drawn for gets the move for free: all three cases are fed
-back into the move relearner (`getLearnableLevelMoves`, `src/field/pokemon.ts:1922-1941`, which carries relearner and
-evolution moves, past level-up moves and `usedTMs` alike), and the relearner is reachable only through the Memory
-Mushroom (`RememberMoveModifierType`, `src/modifier/modifier-type.ts:723`, `:1987`, `PartyUiMode.REMEMBER_MOVE_MODIFIER`)
-— a paid reward slot of its own. The card reads the pool rule per member for exactly that: it names the Memory
-Mushroom as the other route to the move, and never drops a member from the scoring or skips the TM over it.
+back into the move relearner, and the relearner is reachable only through the Memory Mushroom
+(`RememberMoveModifierType`, `src/modifier/modifier-type.ts:723`, `:1987`, `PartyUiMode.REMEMBER_MOVE_MODIFIER`) — a
+paid reward slot of its own.
+
+**So the card reads the relearn list, not the pool.** `getLearnableLevelMoves` (`src/field/pokemon.ts:1922-1941`) is
+the list the Mushroom indexes, and `52-shop.js` asks it per member for the one move on offer — the same read
+`50-audit.js`'s relearn finding makes. It is a **superset** of what the TM pool excludes: `getLevelMoves(1, true,
+true, true)` here passes `includePrevolutionMoves` as `true` where `excludeLevelUp` passes `false`, and the list also
+carries the member's **unlocked egg moves** (`:1925-1932`, only when it started the run — `metBiome === -1` — outside
+Fresh Start and Daily) on top of relearner and evolution moves, past level-up moves and `usedTMs`. So a member can be
+named as a relearner although the TM *could* have been drawn for it: an egg move or a prevolution move that is also
+on the species TM list. That is still true — a Mushroom would put it back — and the card says only that, never
+dropping a member from the scoring or skipping the TM over it.
 
 **Double battles.** `newBattle` asks `checkIsDouble` (`src/battle-scene.ts:1512`, draws global RND) every wave:
 
