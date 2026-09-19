@@ -2,15 +2,20 @@
 // Drives the coach HUD's Mystery Encounter card against the real game running headless on upstream's own test
 // harness, so the card's claims are checked against what the game actually does rather than against a mock.
 import { readFileSync } from "node:fs";
+import { AbilityId } from "#enums/ability-id";
 import { BiomeId } from "#enums/biome-id";
 import { Button } from "#enums/buttons";
+import { ModifierTier } from "#enums/modifier-tier";
 import { MoveId } from "#enums/move-id";
 import { MysteryEncounterType } from "#enums/mystery-encounter-type";
+import { Nature } from "#enums/nature";
 import { SpeciesId } from "#enums/species-id";
+import { StatusEffect } from "#enums/status-effect";
 import { UiMode } from "#enums/ui-mode";
 import * as MysteryEncounters from "#mystery-encounters/mystery-encounter-biomes";
 import { GameManager } from "#test/framework/game-manager";
 import type { MessageUiHandler } from "#ui/message-ui-handler";
+import { ModifierSelectUiHandler } from "#ui/modifier-select-ui-handler";
 import type { MysteryEncounterUiHandler } from "#ui/mystery-encounter-ui-handler";
 import type { PartyUiHandler } from "#ui/party-ui-handler";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -168,13 +173,11 @@ describe("Coachemon oracle - Mystery Encounter card, common tier", () => {
   });
 });
 
-/** Picks an option on the encounter screen and runs it out, the tail of upstream's own helper (we are already on the
- *  option screen, so its leading `to("MysteryEncounterPhase")` would wait for a phase that has already started). */
-async function pickOption(
-  game: GameManager,
-  optionNo: number,
-  { isBattle = false, pokemonNo }: { isBattle?: boolean; pokemonNo?: number } = {},
-) {
+/** Picks an option on the encounter screen and stops with `MysteryEncounterOptionSelectedPhase` up but not yet run:
+ *  the pre-option fork has drawn, so what the game rolled can be read before its branch is taken. The head of
+ *  upstream's own helper (we are already on the option screen, so its leading `to("MysteryEncounterPhase")` would
+ *  wait for a phase that has already started). */
+async function chooseOption(game: GameManager, optionNo: number, { pokemonNo }: { pokemonNo?: number } = {}) {
   const ui = game.scene.ui.getHandler<MysteryEncounterUiHandler>();
   ui.unblockInput();
   switch (optionNo) {
@@ -206,6 +209,11 @@ async function pickOption(
     partyUi.processInput(Button.ACTION);
   }
 
+  await game.phaseInterceptor.to("MysteryEncounterOptionSelectedPhase", false);
+}
+
+/** Runs a chosen option out: to the first turn of the fight it starts, or to the rewards it leaves behind. */
+async function runOptionOut(game: GameManager, { isBattle = false }: { isBattle?: boolean } = {}) {
   game.onNextPrompt(
     "MysteryEncounterOptionSelectedPhase",
     UiMode.MESSAGE,
@@ -219,6 +227,23 @@ async function pickOption(
     return await game.phaseInterceptor.to("MysteryEncounterRewardsPhase");
   }
   await game.toNextTurn();
+}
+
+/** Picks an option on the encounter screen and runs it out. */
+async function pickOption(
+  game: GameManager,
+  optionNo: number,
+  { isBattle = false, pokemonNo }: { isBattle?: boolean; pokemonNo?: number } = {},
+) {
+  await chooseOption(game, optionNo, { pokemonNo });
+  return await runOptionOut(game, { isBattle });
+}
+
+/** The reward options the game is offering right now, once it has reached its `SelectModifierPhase`. */
+function rewardOptions(game: GameManager) {
+  expect(game.scene.ui.getMode()).toBe(UiMode.MODIFIER_SELECT);
+  const handler = game.scene.ui.handlers.find(h => h instanceof ModifierSelectUiHandler) as ModifierSelectUiHandler;
+  return handler.options.map(o => o.modifierTypeOption.type);
 }
 
 describe("Coachemon oracle - what the card claims against what the game does", () => {
@@ -275,4 +300,150 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     console.log(`ORACLE-DIFF part-timer claimed=${claimedPay} actual=${game.scene.money - before}`);
     expect(game.scene.money - before).toBe(claimedPay);
   });
+
+  // The chest's roll is the pre-option fork's only draw (×1), and which branch it picks is the very thing under test,
+  // so this reads the roll the game stored and follows the game's branch rather than the card's guess at it.
+  // `TRAP_PERCENT` in `mysterious-chest-encounter.ts`; the prize phrasings are `46-encounter.js`'s.
+  const TRAP_PERCENT = 30;
+  const CHEST_PRIZES: Record<string, ModifierTier[]> = {
+    "pick of 2 Common + 2 Great items": [
+      ModifierTier.COMMON,
+      ModifierTier.COMMON,
+      ModifierTier.GREAT,
+      ModifierTier.GREAT,
+    ],
+    "pick of 3 Ultra items": [ModifierTier.ULTRA, ModifierTier.ULTRA, ModifierTier.ULTRA],
+    "pick of 2 Rogue items": [ModifierTier.ROGUE, ModifierTier.ROGUE],
+    "a Master item": [ModifierTier.MASTER],
+  };
+
+  // The harness's run seed is fixed, so a wave picks the roll: 45 opens a chest, 65 springs the trap. Both branches
+  // of the card's claim are walked rather than whichever one this seed happens to land on.
+  it.each([45, 65])("Mysterious Chest at wave %i: the chest the card names is the chest the game opens", async wave => {
+    await arrive(game, { ...caseFor(MysteryEncounterType.MYSTERIOUS_CHEST), wave });
+
+    const card = readCard(game);
+    const claimed: string = card.options[0].outcome;
+    expect(card.options[0].exact, "the card claims an exact chest").toBe(true);
+
+    await chooseOption(game, 1);
+    const roll: number = game.scene.currentBattle.mysteryEncounter!.misc.roll;
+    const trapped = roll < TRAP_PERCENT;
+    // Whoever the trap would take, named while they are still standing.
+    const victim = game.scene
+      .getPlayerParty()
+      .filter(p => p.isAllowedInBattle())
+      .reduce((t, p) => (p.level > t.level ? p : t));
+
+    await runOptionOut(game, { isBattle: trapped });
+
+    if (trapped) {
+      console.log(`ORACLE-DIFF chest roll=${roll} claimed="${claimed}" actual=trap on ${victim.name}`);
+      expect(claimed).toBe(`trap: ${victim.name} faints, then a Gimmighoul boss fight`);
+      expect(victim.isFainted(), `${victim.name} survived the trap`).toBe(true);
+      expect(game.scene.getEnemyParty()[0].species.speciesId).toBe(SpeciesId.GIMMIGHOUL);
+      return;
+    }
+
+    await game.phaseInterceptor.to("SelectModifierPhase");
+    const tiers = rewardOptions(game).map(t => t.tier);
+    const asNames = (ts: ModifierTier[]) => [...ts].sort().map(t => ModifierTier[t]);
+    console.log(`ORACLE-DIFF chest roll=${roll} claimed="${claimed}" actual=[${asNames(tiers)}]`);
+    expect(CHEST_PRIZES[claimed], `the card reads "${claimed}", which is no prize the chest gives`).toBeTruthy();
+    expect(asNames(tiers)).toEqual(asNames(CHEST_PRIZES[claimed]));
+  });
+
+  /** The card's own phrasing for a tally of roll outcomes (`46-encounter.js`'s `count`). */
+  const tally = (counts: number[], names: [string, string?][]) =>
+    names
+      .map(([one, many], k) => [counts[k], one, many ?? one] as const)
+      .filter(([n]) => n > 0)
+      .map(([n, one, many]) => `${n} ${n === 1 ? one : many}`)
+      .join(", ");
+
+  /** Per store option: the card's phrasing, and the substring the game's modifier id carries for each roll value. */
+  const STORE_OPTIONS: { no: number; prefix: string; names: [string, string?][]; keys: string[] }[] = [
+    { no: 1, prefix: "pick of 5 TMs", names: [["Common"], ["Great"], ["Ultra"]], keys: ["TM_COMMON", "TM_GREAT", "TM_ULTRA"] },
+    { no: 2, prefix: "pick of 3", names: [["vitamin", "vitamins"], ["PP Up", "PP Ups"]], keys: ["BASE_STAT_BOOSTER", "PP_UP"] },
+    { no: 3, prefix: "pick of 5", names: [["X item", "X items"], ["Dire Hit", "Dire Hits"]], keys: ["TEMP_STAT_STAGE_BOOSTER", "DIRE_HIT"] },
+    { no: 4, prefix: "pick of 4 ball packs", names: [["Poké"], ["Great"], ["Ultra"], ["Rogue"]], keys: ["POKEBALL", "GREAT_BALL", "ULTRA_BALL", "ROGUE_BALL"] },
+  ];
+
+  // Every store option's closure runs in the same option fork (×500), so the card reads all four from one offset and
+  // the game runs whichever one is picked from that same offset: one run per option, each checked against its shop.
+  it.each(STORE_OPTIONS)(
+    "Department Store Sale option $no: the items the card names are the items the game offers",
+    async store => {
+      await arrive(game, caseFor(MysteryEncounterType.DEPARTMENT_STORE_SALE));
+
+      const card = readCard(game);
+      const claimed: string = card.options[store.no - 1].outcome;
+      expect(card.options[store.no - 1].exact, "the card claims exact store rolls").toBe(true);
+
+      await pickOption(game, store.no);
+      await game.phaseInterceptor.to("SelectModifierPhase");
+
+      const ids: string[] = rewardOptions(game).map(t => t.id);
+      const counts = store.keys.map(key => ids.filter(id => id.includes(key)).length);
+      const actual = `${store.prefix}: ${tally(counts, store.names)}`;
+      console.log(`ORACLE-DIFF store-${store.no} claimed="${claimed}" actual="${actual}" ids=[${ids}]`);
+      expect(counts.reduce((a, b) => a + b, 0), `every offer is one of ${store.keys}, got [${ids}]`).toBe(ids.length);
+      expect(actual).toBe(claimed);
+    },
+  );
+
+  // Who the heat burns is the option fork's first draw (×500), over the non-Fire mons that can still take a status.
+  it("Fiery Fallout: the mon the card says the heat burns is the mon the game burns", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.FIERY_FALLOUT));
+
+    const card = readCard(game);
+    const claimed: string = card.options[1].outcome;
+    expect(card.options[1].exact, "the card claims an exact victim").toBe(true);
+    const named = /; (.+?) (is burned and its ability becomes Heatproof for good|shrugs off the burn)$/.exec(claimed);
+    expect(named, `option 2 reads "${claimed}"`).toBeTruthy();
+    const [, who, what] = named!;
+
+    await pickOption(game, 2);
+
+    const burned = game.scene.getPlayerParty().filter(p => p.status?.effect === StatusEffect.BURN);
+    console.log(`ORACLE-DIFF fallout claimed="${who} ${what}" actual=[${burned.map(p => p.name)}]`);
+    if (what === "shrugs off the burn") {
+      expect(burned.map(p => p.name)).toEqual([]);
+      return;
+    }
+    expect(burned.map(p => p.name)).toEqual([who]);
+    expect(burned[0].getAbility().id).toBe(AbilityId.HEATPROOF);
+  });
+
+  // The new nature is the post-option fork's draw (×2000), on the mon the card says the cheap deal would take.
+  it("Shady Vitamin Dealer: the nature the card names is the nature the game rolls", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.SHADY_VITAMIN_DEALER));
+
+    const card = readCard(game);
+    const claimed: string = card.options[0].outcome;
+    expect(card.options[0].exact, "the card claims an exact nature").toBe(true);
+    const named = /— (.+?) becomes ([A-Za-z]+) [(]/.exec(claimed);
+    expect(named, `option 1 reads "${claimed}"`).toBeTruthy();
+    const [, who, nature] = named!;
+
+    const party = game.scene.getPlayerParty();
+    const workerNo = party.findIndex(p => p.name === who) + 1;
+    expect(workerNo, `the card's ${who} is in the party`).toBeGreaterThan(0);
+    const mon = party[workerNo - 1];
+    const before = mon.nature;
+
+    await pickOption(game, 1, { pokemonNo: workerNo });
+    // The post-option phase sits past the shop the encounter leaves behind, so that has to be dismissed first, the
+    // way upstream's own post-phase tests do it.
+    await game.phaseInterceptor.to("SelectModifierPhase");
+    game.endPhase();
+    await game.phaseInterceptor.to("PostMysteryEncounterPhase");
+
+    // `setCustomNature` writes `customPokemonData`, so the new nature is the one `getNature` reads, not the raw field.
+    const after = mon.getNature();
+    console.log(`ORACLE-DIFF vitamins ${who} claimed=${nature} actual=${Nature[after]} was=${Nature[before]}`);
+    expect(Nature[after]).toBe(nature.toUpperCase());
+    expect(after, "the dealer never rolls the nature it already had").not.toBe(before);
+  });
 });
+
