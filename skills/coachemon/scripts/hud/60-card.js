@@ -27,6 +27,10 @@ import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
 export const slowestKo = sl => (sl.koEach?.length ? Math.max(...sl.koEach) : sl.ko);
+// A slot with no move to recommend. By here the search has looked for a status play and a switch and found neither,
+// so what is lost is the turn, not the member — and where a restriction took its moves away, that is the news. One
+// sentence for both surfaces that say it: the panel's ⚔ line and the card the coach reads.
+export const deadEndText = sl => (sl.stopped?.length ? `nothing it can use — ${sl.stopped.join(" · ")}` : "nothing it can do");
 
 // Damaging move types across the living party: the foe rows only list weaknesses we can hit. The party profile's
 // coverage table (`08-party.js`), so the rows and the cards that score matchups read one moveset the same way.
@@ -150,7 +154,7 @@ export const readCard = (s, account) => {
 };
 
 // ---- The summary
-const slotText = sl => `${sl.name} ${sl.move ?? "—"}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
+const slotText = sl => `${sl.name} ${sl.move ?? deadEndText(sl)}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
 // The fight plan in one line: its verdict, the win condition, then what it warns about (a likely loss says why).
 const planSummary = tp => {

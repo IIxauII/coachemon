@@ -228,6 +228,15 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎯 W89 + {Expand} × {Close}
 ⚔ Exploud Normal Hyper Voice → both ⚠ Soundproof Rattata 1 hit
 ⚔ Venusaur Grass Power Whip → Whismur 1 hit
+== deadEnd (full)
+🎯 W89 − {Minimal overview} × {Close}
+⚔ Exploud nothing it can do
+Whismur Whismur L30 Normal 100% ✦ ⚠ Soundproof ▲ —
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary fight | Exploud nothing it can do
+== deadEnd (mini)
+🎯 W89 + {Expand} × {Close}
+⚔ Exploud nothing it can do
 == intimidate (full)
 🎯 W89 ⚔ Scrafty Brick Break → Granbull · 2 hits + {Show details} × {Close}
 summary easy | Scrafty Brick Break → Granbull · 2 hits
