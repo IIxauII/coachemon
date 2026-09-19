@@ -38,6 +38,11 @@ const CHEST = MysteryEncounterType.MYSTERIOUS_CHEST, FIGHT_OR_FLIGHT = MysteryEn
   STRONG_STUFF = MysteryEncounterType.THE_STRONG_STUFF, BERRIES = MysteryEncounterType.BERRIES_ABOUND,
   PART_TIMER = MysteryEncounterType.PART_TIMER, TELEPORT = MysteryEncounterType.TELEPORTING_HIJINKS,
   BREED = MysteryEncounterType.UNCOMMON_BREED, GTS = MysteryEncounterType.GLOBAL_TRADE_SYSTEM;
+// Great tier (weight 40).
+const CHALLENGERS = MysteryEncounterType.MYSTERIOUS_CHALLENGERS, SNORLAX = MysteryEncounterType.SLUMBERING_SNORLAX,
+  SAFARI = MysteryEncounterType.SAFARI_ZONE, DELIBIRDY = MysteryEncounterType.DELIBIRDY,
+  AVARICE = MysteryEncounterType.ABSOLUTE_AVARICE, DANCING = MysteryEncounterType.DANCING_LESSONS,
+  SUPERFAN = MysteryEncounterType.BUG_TYPE_SUPERFAN, FUN_AND_GAMES = MysteryEncounterType.FUN_AND_GAMES;
 const TIERS = { [MysteryEncounterTier.COMMON]: "common", [MysteryEncounterTier.GREAT]: "great", [MysteryEncounterTier.ULTRA]: "ultra", [MysteryEncounterTier.ROGUE]: "rogue" };
 const DISABLED_MODES = new Set([MysteryEncounterOptionMode.DISABLED_OR_DEFAULT, MysteryEncounterOptionMode.DISABLED_OR_SPECIAL]);
 // Teleporting Hijinks' BIOME_CANDIDATES, and the ones worth the trip (the biome card's rare destinations).
@@ -46,6 +51,19 @@ const TELEPORT_BIOMES = [[BiomeId.SPACE, "Space"], [BiomeId.FAIRY_CAVE, "Fairy C
 const RARE_BIOMES = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 const RESERVE_WAVES = 3;
 const HARD_LEVEL_GAP = 5, BOSS_LEVEL_EDGE = 3;
+// A trainer team this many bigger than the mons you have standing is a hard fight whatever the levels say.
+const OUTNUMBERED_BY = 2;
+// Mysterious Challengers' two built teams: the hard one is 1 STRONGER + min(ceil(wave / 20), 5) AVERAGE, the brutal
+// one is the ELITE_FOUR template (1 + 3 + 1 + 1). The normal one keeps its trainer's own templates, so it has no size.
+const hardTeamSize = wave => 1 + Math.min(Math.ceil(wave / 20), 5);
+const ELITE_FOUR_SIZE = 6;
+// Bug-Type Superfan's move tutor: one draw per pool, in this order. Only the pick is forked, so the names ride along.
+const BUG_TUTORS = [
+  [[MoveId.MEGAHORN, "Megahorn"], [MoveId.ATTACK_ORDER, "Attack Order"], [MoveId.BUG_BITE, "Bug Bite"], [MoveId.FIRST_IMPRESSION, "First Impression"], [MoveId.LUNGE, "Lunge"]],
+  [[MoveId.SILVER_WIND, "Silver Wind"], [MoveId.SIGNAL_BEAM, "Signal Beam"], [MoveId.BUG_BUZZ, "Bug Buzz"], [MoveId.POLLEN_PUFF, "Pollen Puff"], [MoveId.STRUGGLE_BUG, "Struggle Bug"]],
+  [[MoveId.STRING_SHOT, "String Shot"], [MoveId.DEFEND_ORDER, "Defend Order"], [MoveId.RAGE_POWDER, "Rage Powder"], [MoveId.STICKY_WEB, "Sticky Web"], [MoveId.SILK_TRAP, "Silk Trap"]],
+  [[MoveId.LEECH_LIFE, "Leech Life"], [MoveId.U_TURN, "U-turn"], [MoveId.HEAL_ORDER, "Heal Order"], [MoveId.QUIVER_DANCE, "Quiver Dance"], [MoveId.INFESTATION, "Infestation"]],
+];
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const strip = t => String(t ?? "").replace(/\[\/?[^\]]*\]/g, "").replace(/\s+/g, " ").trim();
@@ -118,8 +136,30 @@ const context = (s, me, options, account) => {
     return { hard, text };
   };
   const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
-  return { s, account, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare,
-    pre: seeded(1), during: seeded(500), post: seeded(2000) };
+  // A trainer battle's config carries a `trainerConfig` instead of `pokemonConfigs`, so there is no species to read:
+  // what is knowable is who it is and the level bump `initBattleWithEnemyConfig` adds on top of the wave's own levels.
+  // `size` is the team the encounter hands them, where it sets one.
+  const trainer = (k, size = null) => {
+    const cfg = me.enemyPartyConfigs?.[k];
+    const tc = cfg?.trainerConfig;
+    if (!tc) return null;
+    const bump = Math.max(Math.round(wave / 10 * (cfg.levelAdditiveModifier ?? 0)), 0);
+    const outnumbered = size != null && size >= alive.length + OUTNUMBERED_BY;
+    return { name: tryDo(() => tc.name, null), bump, size, outnumbered, hard: bump >= HARD_LEVEL_GAP || outnumbered,
+      text: [`+${bump} levels`, size ? `${plural(size, "mon")} vs your ${alive.length}` : null].filter(Boolean).join(", ") };
+  };
+  // How beaten up the party is, for the encounters that offer a heal against a reward.
+  const maxHp = party.reduce((t, p) => t + tryDo(() => p.getMaxHp(), 0), 0);
+  const wounded = maxHp ? party.reduce((t, p) => t + Math.max(tryDo(() => p.getMaxHp(), 0) - p.hp, 0), 0) / maxHp : 0;
+  const fainted = party.filter(p => p.hp <= 0).length;
+  // A held modifier of the player's by class name, and whether it is at the stack count that makes a reward degrade.
+  const held = name => (s.modifiers ?? []).find(m => m?.constructor?.name === name) ?? null;
+  const maxed = name => {
+    const m = held(name);
+    return !!m && (tryDo(() => m.getStackCount()) ?? m.stackCount ?? 0) >= (tryDo(() => m.getMaxStackCount()) ?? Infinity);
+  };
+  return { s, account, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare, trainer,
+    wounded, fainted, held, maxed, pre: seeded(1), during: seeded(500), post: seeded(2000) };
 };
 
 const LEAVE = { outcome: "shop only, no reward", verdict: "ok" };
@@ -350,6 +390,151 @@ const RULES = {
       { outcome: "wonder trade: a random mon at the same level (better shiny / hidden ability odds)", verdict: null, why: "a gamble" },
       { outcome: "trade a held item for a random item one tier up", verdict: null },
       LEAVE,
+    ];
+  },
+
+  // ---- Great tier (weight 40)
+
+  [CHALLENGERS]: c => {
+    // Three trainer battles off one wave, richer the harder they are. Nothing about their teams is readable — the
+    // configs hold a `trainerConfig`, not species — so the call is on the level bump and how far they outnumber you.
+    const rows = [
+      { t: c.trainer(0), reward: "a Common TM, a Great TM, a Memory Mushroom + the usual rolls" },
+      { t: c.trainer(1, hardTeamSize(c.wave)), reward: "2 Ultra + 2 Great + the usual rolls" },
+      { t: c.trainer(2, ELITE_FOUR_SIZE), reward: "2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP" },
+    ];
+    // The richest fight that isn't hard; if all three are, the mildest one.
+    let best = 0;
+    for (let k = 1; k < rows.length; k++) if (!rows[k].t?.hard) best = k;
+    return rows.map(({ t, reward }, k) => ({
+      outcome: `fight ${t?.name ?? ["a trainer", "a tougher trainer", "a gym leader"][k]}${k === 2 ? " with an Elite Four team" : ""} → ${reward}`,
+      battle: "trainer", verdict: k === best ? "take" : t?.hard ? "avoid" : "ok", why: t?.text ?? null,
+    }));
+  },
+
+  [SNORLAX]: c => {
+    const f = c.foe(0);
+    const fight = c.fight(f);
+    const steal = c.opt(2).enabled;
+    // The nap is a PartyHealPhase and then nothing: it leaves with addHealPhase false, so no reward screen at all.
+    const hurt = c.wounded >= 0.35 || c.fainted > 0;
+    return [
+      { outcome: `fight ${f?.name ?? "Snorlax"} (asleep 6 turns, but it opens with Snore and holds Sitrus + Enigma) → Leftovers + rewards; catchable`,
+        battle: "boss", verdict: steal || hurt ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
+      { outcome: "nap beside it: the whole party is healed and revived, then nothing — no reward, no shop",
+        verdict: hurt && !steal ? "take" : "ok",
+        why: hurt ? `${c.fainted ? `${plural(c.fainted, "mon")} down, ` : ""}${Math.round(c.wounded * 100)}% of your HP is gone` : "your party is fine" },
+      { outcome: "steal its Leftovers: no fight, Leftovers, and its EXP to the thief", verdict: "take",
+        needs: "a Thief / Covet / Knock Off / Pluck / Trick / Switcheroo user" },
+    ];
+  },
+
+  [SAFARI]: c => {
+    const price = c.opt(0).cost ?? c.waveMoney(2);
+    const afford = c.spare(price) >= 0;
+    return [
+      { outcome: `${money(price)}: three wild mons in turn — ball, bait, mud or run each time. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level. Bait: +2 catch but usually +1 flee; mud: −2 flee but usually −1 catch`,
+        verdict: afford ? "take" : "ok", why: afford ? `leaves ${money(c.s.money - price)}` : `leaves only ${money(c.s.money - price)}`,
+        needs: "the money" },
+      { ...LEAVE, verdict: afford ? "ok" : "take" },
+    ];
+  },
+
+  [DELIBIRDY]: c => {
+    const price = c.opt(0).cost ?? c.waveMoney(2);
+    const afford = c.spare(price) >= 0;
+    // Each option gives a charm, or a Shell Bell on your lead when that charm is already at max stacks.
+    const shell = " — but yours is maxed, so it's a Shell Bell on your lead instead";
+    const coin = c.maxed("MoneyMultiplierModifier"), jar = c.maxed("LevelIncrementBoosterModifier"),
+      pouch = c.maxed("PreserveBerryModifier"), charm = c.maxed("HealingBoosterModifier");
+    // Rank by what you would actually get: the Amulet Coin compounds, a spare berry is the cheapest thing to give up.
+    const best = !coin && afford ? 0 : !jar || !pouch ? 1 : !charm ? 2 : 0;
+    return [
+      { outcome: `${money(price)}: an Amulet Coin${coin ? shell : ""}`, verdict: best === 0 ? "take" : "ok",
+        why: afford ? `leaves ${money(c.s.money - price)}` : `leaves only ${money(c.s.money - price)}`, needs: "the money" },
+      { outcome: `hand over a berry for a Candy Jar${jar ? shell : ""}, or a Reviver Seed for a Berry Pouch${pouch ? shell : ""}`,
+        verdict: best === 1 ? "take" : "ok", why: "the item is gone for good", needs: "a mon holding a berry or a Reviver Seed" },
+      { outcome: `hand over any other held item for a Healing Charm${charm ? shell : ""}`, verdict: best === 2 ? "take" : "ok",
+        why: "the item is gone for good — pick something you don't use", needs: "a mon holding something that isn't a berry, Reviver Seed, vitamin or Tera shard" },
+    ];
+  },
+
+  [AVARICE]: c => {
+    // onVisualsStart has already taken every berry; `misc.berryItemsMap` is the record of what it took, by holder.
+    const map = c.me.misc?.berryItemsMap;
+    const per = map ? [...map.values()].map(mods => mods.reduce((t, m) => t + (m.stackCount ?? 1), 0)) : [];
+    const stolen = per.reduce((t, n) => t + n, 0);
+    // Each holder gets 2/5 of their own back, rounded down. The count is arithmetic; which berries they are is a
+    // shuffle on the option fork, and not replayed here — the loop that draws it builds modifiers in between.
+    const back = per.reduce((t, n) => t + Math.floor(n * 2 / 5), 0);
+    const f = c.foe(0);
+    const fight = c.fight(f);
+    const seedless = c.party.filter(p => p.hp > 0).length;
+    const enraged = c.wave < 50 ? "+1 SpD" : "+1 SpD/Spe";
+    return [
+      { outcome: `fight Greedent (${f?.bars || 3} bars, ${enraged}, Stuff Cheeks on turn 1, eating the ${plural(stolen, "berry", "berries")} it took) → rewards, and a Reviver Seed for every mon without one`,
+        battle: "boss", exact: !!stolen, verdict: fight.hard ? "ok" : "take",
+        why: [fight.text, seedless ? `${plural(seedless, "seed")} at stake` : null].filter(Boolean).join(" · ") },
+      { outcome: `beg: ${plural(back, "berry", "berries")} of your ${stolen} come back, random types, the rest are gone`,
+        exact: !!stolen, verdict: back && fight.hard ? "take" : "ok", why: back ? null : "you get nothing back" },
+      { outcome: `let it eat: Greedent joins at L${Math.max((c.top?.level ?? 3) - 2, 1)} with its passive and Thrash / Body Press / Stuff Cheeks / Slack Off; every berry is gone`,
+        verdict: "ok", why: "a free mon, for every berry you own" },
+    ];
+  },
+
+  [DANCING]: c => {
+    // onInit put the real Oricorio on the field, so its level, form and shininess are a read, not a guess.
+    const live = tryDo(() => c.s.getEnemyParty()[0]);
+    const shown = live
+      ? { name: tryDo(() => live.name, "Oricorio"), types: typesOf(live), level: live.level, boss: true, bars: 0, estimated: false }
+      : c.foe(0);
+    const fight = c.fight(shown);
+    const worth = live ? tryDo(() => catchWorth(c.account, live)) : null;
+    const wanted = worth && worth.value >= worth.show;
+    const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
+    const name = `${shown?.name ?? "Oricorio"}${live?.shiny ? " ★shiny" : ""}`;
+    const recruit = c.opt(2).enabled;
+    return [
+      { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable`,
+        battle: "boss", verdict: recruit || !wanted ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
+      { outcome: "learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)",
+        verdict: recruit || wanted ? "ok" : "take", why: "free, and it keeps the move for the run" },
+      { outcome: `show it a dance: ${name} joins, keeping the dance move you used`, verdict: recruit ? "take" : "ok",
+        why: wanted ? why : `a free mon (${why})`, needs: "a mon with a dancing move" },
+    ];
+  },
+
+  [SUPERFAN]: c => {
+    const t = c.trainer(0);
+    // The four tutor picks are the option fork's first four draws, one per pool, before anything is awaited.
+    const tutors = c.during(() => BUG_TUTORS.map(pool => pool[int(pool.length)][1]));
+    // The reward tier counts every Bug type in the party, fainted ones too.
+    const bugs = c.party.filter(p => tryDo(() => p.isOfType(PokemonType.BUG), typesOf(p).includes("Bug"))).length;
+    const extras = [c.held("MegaEvolutionAccessModifier") ? null : "a Mega Bracelet",
+      c.held("GigantamaxAccessModifier") ? null : "a Dynamax Band", "an evolution or form-change item"].filter(Boolean);
+    const prize = bugs < 2 ? "a Super Lure + a Great Ball" : bugs < 4 ? "a Quick Claw + a Max Lure + an Ultra Ball"
+      : bugs < 6 ? "a Grip Claw + a Max Lure + a Rogue Ball" : `a Master Ball, ${joinNames(extras)}`;
+    const net = c.opt(2).enabled;
+    const best = bugs >= 6 ? 1 : net ? 2 : 0;
+    return [
+      { outcome: `fight ${t?.name ?? "the Bug-Type Superfan"} → rewards, then a free tutor move${tutors ? `: ${joinNames(tutors)}` : " from four bug pools"}`,
+        battle: "trainer", exact: !!tutors, verdict: best === 0 ? "take" : "ok", why: t?.text ?? null },
+      { outcome: `show off your bug types (${plural(bugs, "bug")}) → ${prize}`, verdict: best === 1 ? "take" : "ok",
+        why: bugs < 6 ? `${6 - bugs} more bugs would make it a Master Ball` : "every slot is a bug", needs: "a Bug type" },
+      { outcome: "hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight",
+        verdict: best === 2 ? "take" : "ok", why: "the item is gone for good", needs: "a mon holding a Quick Claw, Grip Claw or Bug-type booster" },
+    ];
+  },
+
+  [FUN_AND_GAMES]: c => {
+    const price = c.opt(0).cost ?? c.waveMoney(1.5);
+    const afford = c.spare(price) >= 0;
+    return [
+      { outcome: `${money(price)}: pick a mon, then three turns on a Wobbuffet at that mon's level (0 IVs, Mild, it never attacks). Under 3% HP a Multi Lens, under 15% a Scope Lens, under 33% a Wide Lens, over that nothing. KO it and you lose and pay ${money(price)} again`,
+        verdict: afford ? "ok" : "avoid",
+        why: afford ? "pick a mon whose damage you can hold back, not your hardest hitter" : `leaves only ${money(c.s.money - price)}`,
+        needs: "the money" },
+      { ...LEAVE, verdict: afford ? "ok" : "take" },
     ];
   },
 };

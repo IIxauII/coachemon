@@ -1260,7 +1260,7 @@ modifier applies last.
 
 ---
 
-## 13. Mystery Encounters: the option screen, its forks, and what the common encounters do
+## 13. Mystery Encounters: the option screen, its forks, and what the common and great encounters do
 
 Read from the pinned source; nothing here has been checked against a live encounter yet.
 
@@ -1303,10 +1303,14 @@ re-sows the wave seed (§19). `handleOptionSelect` (`src/phases/mystery-encounte
 stream: it re-runs the encounter's and every option's `meetsRequirements()`, so it can draw there and re-assign
 primaries, but it can't move the forks.
 
-**Leaving.** `leaveEncounterWithoutBattle(true)` (`src/data/mystery-encounters/utils/encounter-phase-utils.ts:811`)
-queues `MysteryEncounterRewardsPhase(addHealPhase)`. With no `doEncounterRewards` set, that unshifts a
-`SelectModifierPhase` with `{ fillRemaining: false, rerollMultiplier: -1 }` (`src/phases/mystery-encounter-phases.ts:549`):
-the shop with **no free reward and no reroll**, not a heal. `setEncounterRewards(settings)` (`encounter-phase-utils.ts:729`)
+**Leaving.** `leaveEncounterWithoutBattle(addHealPhase)` (`src/data/mystery-encounters/utils/encounter-phase-utils.ts:811`)
+queues `MysteryEncounterRewardsPhase(addHealPhase)`. With no `doEncounterRewards` set and `addHealPhase` **true**, that
+unshifts a `SelectModifierPhase` with `{ fillRemaining: false, rerollMultiplier: -1 }`
+(`src/phases/mystery-encounter-phases.ts:549`): the shop with **no free reward and no reroll**, not a heal. With
+`addHealPhase` **false** and no `doEncounterRewards`, `doEncounterRewardsAndContinue` takes *neither* branch and the
+wave ends with **no screen at all** — which is what Slumbering Snorlax's nap does, having already unshifted its own
+`PartyHealPhase(true)` (a full heal *and* revive, `src/phases/party-heal-phase.ts:18`, bar a PREVENT_REVIVE challenge).
+`setEncounterRewards(settings)` (`encounter-phase-utils.ts:729`)
 unshifts `SelectModifierPhase(0, undefined, settings)`: `fillRemaining: false` is a screen of exactly the guaranteed
 items, **pick one**; `fillRemaining: true` tops it up to the normal count with ordinary rolls
 (`src/phases/select-modifier-phase.ts:383`).
@@ -1332,6 +1336,37 @@ bare line numbers in a row are in that file.
 | Uncommon Breed | — | `misc.pokemon` (level = top party level − 2, egg move `randSeedInt(4)`; `:66`–`82`), not a boss (`:104`) — fight it, it opens with its egg move, catchable · spend 4 random berries: it joins, +2nd egg move · a `CHARMING_MOVES` user: it joins with each IV `max(iv, randSeedInt(31))` (never 31, `:261`), +2nd egg move, EXP; both with rewards | option ×500: the berries, and the charm's IVs (not replayed) |
 | Global Trade System | party ≥ 2 allowed for trades (`:153`, `:260`) | trade a mon for one of 3 offers built in `onInit` (`getPokemonTradeOptions`: non-legendary, non-paradox species within ±100 BST, widened until > 20, same level; a legendary gets a fixed pool; `:481`–`538`) · wonder trade: random species, boosted shiny / hidden-ability odds (all in the picker callback, `:270`) · a held item for a random item one tier up (`:433`) · leave | `onInit` fork at `w`: the offers, readable in `misc.tradeOptionsMap` |
 
+**The eight great encounters** (tier weight 40, less 8 per great already seen). An Offer You Can't Refuse is great tier
+too but commented out of the biome table (`mystery-encounter-biomes.ts:153`), so a run can never serve it, and it is
+left unjudged for the same reason Field Trip is. Gates are waves 10–180 unless a row says otherwise.
+
+| Encounter | Gate | Options, as the source does them | Forked before an `await` |
+|---|---|---|---|
+| Mysterious Challengers | — | three **trainer** battles built in `onInit`: the biome's own trainer (`:47`) → TM_COMMON + TM_GREAT + MEMORY_MUSHROOM, filled · a second trainer on `1 STRONGER + min(ceil(wave / 20), 5) AVERAGE` with `levelAdditiveModifier 1` (`:66`) → 2 Ultra + 2 Great, filled · a **gym leader** on the ELITE_FOUR template (6, `trainer-party-template.ts:196`) with `levelAdditiveModifier 1.5` and `expMultiplier 0.9` (`:88`, `:206`) → 2 Rogue + Ultra + Great, filled | none readable: each option's `initBattleWithEnemyConfig` is nested in its own `executeWithSeedOffset` at wave ×10 / ×100 / ×1000 (`:154`), and a trainer's party is built from `trainerConfig`, not from species on the config |
+| Slumbering Snorlax | waves 15–150 (`:48`), no flee | fight Snorlax (`levelAdditiveModifier 0.5`, asleep 6 turns, Docile, Body Slam / Crunch / Sleep Talk / Rest, Sitrus + Enigma + an HP booster, Soothe Bell and Lucky Egg at `randSeedInt(2, 0)` stacks) opening with Snore → LEFTOVERS, filled; catchable · nap: `PartyHealPhase(true)` then `leaveEncounterWithoutBattle()` — **no shop** · a `STEALING_MOVES` user: LEFTOVERS, `fillRemaining: false`, Snorlax's base EXP to the thief, no fight | `onInit` fork at `w`: the two stack counts |
+| Safari Zone | money ≥ ×2 (`:57`) | pay ×2 → a **continuous encounter**: three wild mons in turn, each with ball / bait / mud / run as `overrideOptions`. Catch rate is `speciesCatchRate × 1.5 × (2 + max(catchStage, 0)) / (2 − min(catchStage, 0))`; flee is `((255² − rate²) / 255 / 2) × the same on fleeStage` against `randSeedInt(256)` each turn (`:508`–`:517`). Bait: catch +2 always, flee +1 at 80 % (`randSeedInt(10) >= 8` refuses); mud: flee −2 always, catch −1 at 80 % (`:189`–`:246`) · leave | the mons are **not** on `getSeedOffset()`: `summonSafariPokemon` sows its own fork at `waveIndex × 1000 × safariPokemonRemaining` (`:322`), starter cost ≤ 5, non-legendary, with doubled shiny and hidden-ability rolls |
+| Delibird-y | money ≥ ×2, and a mon holding either a berry / Reviver Seed or anything that is not one (`:85`–`:92`); at most 4 a run | pay ×2 → AMULET_COIN · give a berry → CANDY_JAR, or a Reviver Seed → BERRY_POUCH · give any other transferable held item that is not a berry, Reviver Seed, Tera shard or vitamin → HEALING_CHARM. **Each degrades**: at `getStackCount() >= getMaxStackCount()` for the charm it would give, it is a SHELL_BELL on party slot 0 instead (`:163`, `:253`, `:349`). All three leave with `addHealPhase` true | no draws (the event-only `doEventReward` aside) |
+| Absolute Avarice | waves 20–180, ≥ 6 berries (`:58`), no flee | `onVisualsStart` **takes every berry** and `misc.berryItemsMap` records them by holder (`:264`) · fight Greedent (3 bars, `levelAdditiveModifier 1`, +1 SpD below wave 50 else SpD/Spe, Stuff Cheeks turn 1, holding copies of everything it took) → filled rewards **and a REVIVER_SEED for every party member without one** (`:294`–`:306`) · beg: each holder gets `floor(own × 2 / 5)` back, types drawn by `Phaser.Math.RND.shuffle` + pop (`:341`) · let it eat: Greedent joins at `getHighestLevelPlayerPokemon(false, true).level − 2` with its passive and Thrash / Body Press / Stuff Cheeks / Slack Off; the berries are gone | option ×500: the returned types — but the loop calls `applyModifierTypeToPlayerPokemon` between shuffles, so the **count** is the safe claim and the types are not replayed |
+| Dancing Lessons | waves 30–180 (`:70`), no flee | `onInit` puts a **real Oricorio on the field** (`currentBattle.enemyParty[0]`, `misc.oricorioData`), form by biome, level `getEncounterPokemonLevelForWave(STANDARD_ENCOUNTER_BOOSTED_LEVEL_MODIFIER)`, moveset forced to hold Revelation Dance (`:99`–`:130`) · fight it (boss, +1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → BATON, filled; catchable · teach Revelation Dance (100 BP special, `MatchUserTypeAttr`) to a chosen mon · a `DANCING_MOVES` user: it **joins**, its moveset gaining the dance shown | no draws; the Oricorio was built in the `onInit` fork at `w` |
+| Bug-Type Superfan | waves 30–180, party ≥ 3, a Bug type or a Quick Claw / Grip Claw / Bug booster on the team (`:166`–`:176`); once a run | fight Quinn, whose team `getTrainerConfigForWave` shuffles out of four pools by `WAVE_LEVEL_BREAKPOINTS` (`:480`) → filled rewards, then `onRewards` is a **four-move tutor**, one `randSeedInt(5)` per pool in the order physical, special, status, misc (`:253`–`:257`) · show off: the reward is by how many Bug types are in the **whole** party — < 2 SUPER_LURE + GREAT_BALL, < 4 QUICK_CLAW + MAX_LURE + ULTRA_BALL, < 6 GRIP_CLAW + MAX_LURE + ROGUE_BALL, else MASTER_BALL + MEGA_BRACELET and DYNAMAX_BAND if not already owned + one of the evolution / form-change items at `randSeedInt(n)` (`:283`–`:360`) · give the bug item → a Rogue-tier MYSTERY_ENCOUNTER_GOLDEN_BUG_NET + REVIVER_SEED, no fight | option ×500: the four tutor picks, drawn before `transitionMysteryEncounterIntroVisuals` is awaited |
+| Fun and Games | money ≥ ×1.5 (`:47`) | pay ×1.5, pick a mon → a Wobbuffet at **that mon's level** with 0 IVs and a Mild nature that never attacks (`skipEnemyBattleTurns`, `skipToFightInput`), and three turns on it. The prize is its HP ratio at the end: < 3 % MULTI_LENS, < 15 % SCOPE_LENS, < 33 % WIDE_LENS, else nothing and a heal (`:276`–`:303`). **KO it and the player loses**: `handleLoseMinigame` ends the encounter and charges `getWaveMoneyAmount(1.5)` again (`:393`) · leave | no draws |
+
+**Two readings the great tier adds.** A config carrying `trainerConfig` instead of `pokemonConfigs` has **no species to
+read**: `initBattleWithEnemyConfig` takes its levels from `trainer.getPartyLevels(waveIndex)` (`src/field/trainer.ts:262`,
+a base of `1 + w/2 + (w/25)²` times a per-slot strength multiplier) and only then adds the shared
+`max(round(wave / 10 × levelAdditiveModifier), 0)`. What is knowable before the fight is the trainer's name, that
+additive, and the team size where the encounter sets the templates itself — which is what the card reports. And
+Delibird-y's degradation is a **live modifier read**, not a draw: `getStackCount()` against `getMaxStackCount()` on the
+charm each option would give.
+
+**Only Safari Zone re-opens the option screen.** `initSubsequentOptionSelect` (`encounter-phase-utils.ts:801`) pushes a
+fresh `MysteryEncounterPhase` with `overrideOptions`, and it is used by that encounter alone — Mysterious Challengers
+does not. Two consequences. `MysteryEncounterPhase.start` calls `updateSeedOffset()` **outside** the
+`optionSelectSettings` guard (`mystery-encounter-phases.ts:55`), so **every re-entry adds another 512** and all three
+forks move with it; and the `encounteredEvents` push and the `selectedOption` write are both inside that guard, so the
+journal records the encounter and its first pick only, never a minigame turn. The card reads an override menu but does
+not judge it: `me.options.indexOf(opt)` is −1 for an option that is not the encounter's own.
+
 `onInit` leaves what it rolled on the encounter: `misc` (Fight or Flight's item, Berries Abound's `numBerries` /
 `fastestPokemon` / `enemySpeed`, Uncommon Breed's `pokemon`, the GTS offers, Teleporting Hijinks' `price`) and
 `enemyPartyConfigs[0].pokemonConfigs` (species, `level` when fixed, `isBoss`). `initBattleWithEnemyConfig` adds
@@ -1352,7 +1387,15 @@ unset, so a follow-up option menu never overwrites it, and only when the record'
 in play (`:83`). It is part of the save, so it survives a reload. `55-journal.js` reads the pick there rather than
 watching the input.
 
-**Unmeasured**: every 🔮 outcome is a replay of the source's draw order, never checked against an encounter as it
+**Measured, in part**: `npm run oracle:encounter` runs the card against the real game headless on upstream's own vitest
+harness in the pinned clone, so the 🔮 claims it covers are checked against what the game then did rather than against a
+mock — the teleport destination, the part-timer's pay, both chest branches, all four store shops, the fallout's burn
+target, the dealer's nature, Bug-Type Superfan's four tutor moves and Absolute Avarice's returned berry count. Beware
+the exit code: the clone's own vitest setup raises one unhandled `localStorage` rejection during i18n init, so the run
+exits non-zero even when every test passes — upstream's own encounter tests do the same in that clone. Read the summary
+line, not `$?`.
+
+**Unmeasured**: every other 🔮 outcome is a replay of the source's draw order, never checked against an encounter as it
 resolved. A closure that gains an early `await`, or a draw before the one the HUD replays, makes it confidently wrong.
 The **Mystery Encounter journal** (`55-journal.js`) is what that check will be read off: it writes each encounter met
 in a live run — the card as it was shown, the pick, and the run state at every tick it moved — to `localStorage`, so
