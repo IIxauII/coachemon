@@ -3,6 +3,11 @@ name: CI
 # The root package's gate. Until #259 this ran only on a push to master, inside `release.yml` — so a pull request was
 # checked by `extension.yml` alone, which typechecks, builds and tests the *extension* package. `npm test` and
 # `npm run typecheck` at the root never saw a PR.
+#
+# If a commit gets no run here at all, check its message before anything else: GitHub matches `[skip ci]` anywhere in a
+# commit message, including a sentence merely talking about it, and then runs no workflow on that push. Two commits hit
+# this while #259 and #258 were being written. A workflow file, a PR body or an issue comment can spell it freely — the
+# message is the only text that counts — so describe the marker rather than writing it when a commit is about this area.
 on: [push, pull_request]
 
 concurrency:
