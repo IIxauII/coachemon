@@ -1,0 +1,278 @@
+// Coachemon oracle (dev-only; scripts/encounter-oracle/run.ts copies this into the pinned clone and removes it again).
+// Drives the coach HUD's Mystery Encounter card against the real game running headless on upstream's own test
+// harness, so the card's claims are checked against what the game actually does rather than against a mock.
+import { readFileSync } from "node:fs";
+import { BiomeId } from "#enums/biome-id";
+import { Button } from "#enums/buttons";
+import { MoveId } from "#enums/move-id";
+import { MysteryEncounterType } from "#enums/mystery-encounter-type";
+import { SpeciesId } from "#enums/species-id";
+import { UiMode } from "#enums/ui-mode";
+import * as MysteryEncounters from "#mystery-encounters/mystery-encounter-biomes";
+import { GameManager } from "#test/framework/game-manager";
+import type { MessageUiHandler } from "#ui/message-ui-handler";
+import type { MysteryEncounterUiHandler } from "#ui/mystery-encounter-ui-handler";
+import type { PartyUiHandler } from "#ui/party-ui-handler";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+const BUNDLE = process.env.COACH_BUNDLE as string;
+
+// biome-ignore lint/suspicious/noExplicitAny: the HUD is plain page-world JS with no types here.
+const g = globalThis as any;
+
+function loadHud() {
+  if (g.__hud) {
+    return g.__hud;
+  }
+  g.window = globalThis;
+  // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
+  (0, eval)(readFileSync(BUNDLE, "utf8"));
+  return g.__hud;
+}
+
+/** Runs to the encounter and stops on its option screen, the moment the coach panel reads. */
+async function toOptionScreen(game: GameManager) {
+  // Any message the wave queued first (Fiery Fallout's weather, for one), the way upstream's own helper clears it.
+  game.onNextPrompt(
+    "MessagePhase",
+    UiMode.MESSAGE,
+    () => {
+      const h = game.scene.ui.getHandler<MessageUiHandler>();
+      h.processInput(Button.ACTION);
+    },
+    () => game.isCurrentPhase("MysteryEncounterOptionSelectedPhase", "CommandPhase", "TurnInitPhase"),
+  );
+  if (game.isCurrentPhase("MessagePhase")) {
+    await game.phaseInterceptor.to("MessagePhase");
+  }
+  game.onNextPrompt(
+    "MysteryEncounterPhase",
+    UiMode.MESSAGE,
+    () => {
+      const h = game.scene.ui.getHandler<MessageUiHandler>();
+      h.processInput(Button.ACTION);
+    },
+    () => game.isCurrentPhase("MysteryEncounterOptionSelectedPhase", "CommandPhase", "TurnInitPhase"),
+  );
+  await game.phaseInterceptor.to("MysteryEncounterPhase");
+}
+
+/** Everything between a fresh `GameManager` and the encounter's option screen: the overrides that let this
+ *  encounter spawn at all, the run up to it, and its intro cleared. */
+async function arrive(game: GameManager, a: Arrival) {
+  game.scene.money = 20000;
+  game.override.mysteryEncounterChance(100).startingWave(a.wave).startingBiome(a.biome).disableTrainerWaves();
+  if (a.level != null) {
+    game.override.startingLevel(a.level);
+  }
+  if (a.moveset != null) {
+    game.override.moveset(a.moveset);
+  }
+  vi.spyOn(MysteryEncounters, "mysteryEncountersByBiome", "get").mockReturnValue(
+    new Map<BiomeId, MysteryEncounterType[]>([[a.biome, [a.type]]]),
+  );
+  await game.runToMysteryEncounter(a.type, a.party);
+  await toOptionScreen(game);
+}
+
+/** The card the panel would draw right now. */
+function readCard(game: GameManager) {
+  const hud = loadHud();
+  const scene = game.scene;
+  const handler = scene.ui.getHandler();
+  const account = hud["98-tick"].accountRead(scene);
+  return hud["46-encounter"].encounterModel(scene, handler, account);
+}
+
+/** What it takes to reach one encounter's option screen. */
+interface Arrival {
+  type: MysteryEncounterType;
+  biome: BiomeId;
+  wave: number;
+  party: SpeciesId[];
+  /** Overrides some encounters need to initialise at all, taken from upstream's own test for that encounter. */
+  level?: number;
+  moveset?: MoveId[];
+}
+
+interface Case extends Arrival {
+  name: string;
+  /** Field Trip is commented out of the biome table, so a live run can never serve it; the card still reads it. */
+  known?: boolean;
+}
+
+const DEFAULT_PARTY = [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.ABRA];
+
+/** The case for one encounter, so an outcome check arrives exactly where the structural pass did. */
+const caseFor = (type: MysteryEncounterType): Case => {
+  const found = CASES.find(c => c.type === type);
+  if (!found) {
+    throw new Error(`no case for encounter type ${type}`);
+  }
+  return found;
+};
+
+const CASES: Case[] = [
+  { name: "Mysterious Chest", type: MysteryEncounterType.MYSTERIOUS_CHEST, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Fight or Flight", type: MysteryEncounterType.FIGHT_OR_FLIGHT, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Department Store Sale", type: MysteryEncounterType.DEPARTMENT_STORE_SALE, biome: BiomeId.PLAINS, wave: 37, party: DEFAULT_PARTY },
+  { name: "Shady Vitamin Dealer", type: MysteryEncounterType.SHADY_VITAMIN_DEALER, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Lost at Sea", type: MysteryEncounterType.LOST_AT_SEA, biome: BiomeId.SEA, wave: 33, party: [SpeciesId.BLASTOISE, SpeciesId.PIDGEOT, SpeciesId.ABRA] },
+  { name: "Fiery Fallout", type: MysteryEncounterType.FIERY_FALLOUT, biome: BiomeId.VOLCANO, wave: 56, party: [SpeciesId.ARCANINE, SpeciesId.NINETALES, SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.ABRA], level: 100, moveset: [MoveId.PAYBACK, MoveId.THUNDERBOLT] },
+  { name: "The Strong Stuff", type: MysteryEncounterType.THE_STRONG_STUFF, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Berries Abound", type: MysteryEncounterType.BERRIES_ABOUND, biome: BiomeId.CAVE, wave: 45, party: [SpeciesId.PYUKUMUKU, SpeciesId.MAGIKARP, SpeciesId.PIKACHU] },
+  { name: "Part-Timer", type: MysteryEncounterType.PART_TIMER, biome: BiomeId.PLAINS, wave: 37, party: [SpeciesId.PYUKUMUKU, SpeciesId.REGIELEKI, SpeciesId.FEEBAS, SpeciesId.MELMETAL] },
+  { name: "Teleporting Hijinks", type: MysteryEncounterType.TELEPORTING_HIJINKS, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Uncommon Breed", type: MysteryEncounterType.UNCOMMON_BREED, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Global Trade System", type: MysteryEncounterType.GLOBAL_TRADE_SYSTEM, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Field Trip", type: MysteryEncounterType.FIELD_TRIP, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY, known: false },
+];
+
+describe("Coachemon oracle - Mystery Encounter card, common tier", () => {
+  let phaserGame: Phaser.Game;
+  let game: GameManager;
+
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+
+  beforeEach(() => {
+    game = new GameManager(phaserGame);
+  });
+
+  it.each(CASES)("$name", async testCase => {
+    const { type, known = true } = testCase;
+    await arrive(game, testCase);
+
+    const card = readCard(game);
+    const me = game.scene.currentBattle.mysteryEncounter!;
+    console.log(`ORACLE ${JSON.stringify({ type, card })}`);
+
+    expect(card.kind).toBe("encounter");
+    // Every note the card carries about its own failure is a port that threw against the real game.
+    expect(card.notes.filter((n: string) => n.startsWith("couldn't judge"))).toEqual([]);
+    expect(card.known).toBe(known);
+    // One card row per option the game offers, in the game's own order.
+    expect(card.options).toHaveLength(me.options.length);
+    expect(card.options.map((o: { index: number }) => o.index)).toEqual(me.options.map((_, i: number) => i));
+    for (const o of card.options) {
+      expect(o.label).toBeTruthy();
+      expect(o.label).not.toMatch(/^Option \d$/);
+    }
+    if (known) {
+      // A judged encounter prices every option it offers.
+      for (const o of card.options) {
+        expect(o.outcome, `option ${o.index} (${o.label}) has no outcome`).toBeTruthy();
+      }
+    }
+  });
+});
+
+/** Picks an option on the encounter screen and runs it out, the tail of upstream's own helper (we are already on the
+ *  option screen, so its leading `to("MysteryEncounterPhase")` would wait for a phase that has already started). */
+async function pickOption(
+  game: GameManager,
+  optionNo: number,
+  { isBattle = false, pokemonNo }: { isBattle?: boolean; pokemonNo?: number } = {},
+) {
+  const ui = game.scene.ui.getHandler<MysteryEncounterUiHandler>();
+  ui.unblockInput();
+  switch (optionNo) {
+    case 2:
+      ui.processInput(Button.RIGHT);
+      break;
+    case 3:
+      ui.processInput(Button.DOWN);
+      break;
+    case 4:
+      ui.processInput(Button.RIGHT);
+      ui.processInput(Button.DOWN);
+      break;
+    default:
+      break;
+  }
+
+  if (pokemonNo == null) {
+    ui.processInput(Button.ACTION);
+  } else {
+    const partyUi = game.scene.ui.handlers[UiMode.PARTY] as PartyUiHandler;
+    vi.spyOn(partyUi, "show");
+    ui.processInput(Button.ACTION);
+    await vi.waitFor(() => expect(partyUi.show).toHaveBeenCalled());
+    for (let i = 1; i < pokemonNo; i++) {
+      partyUi.processInput(Button.DOWN);
+    }
+    partyUi.processInput(Button.ACTION);
+    partyUi.processInput(Button.ACTION);
+  }
+
+  game.onNextPrompt(
+    "MysteryEncounterOptionSelectedPhase",
+    UiMode.MESSAGE,
+    () => {
+      game.scene.ui.getHandler<MysteryEncounterUiHandler>().processInput(Button.ACTION);
+    },
+    () => game.isCurrentPhase("MysteryEncounterBattlePhase", "MysteryEncounterRewardsPhase"),
+  );
+
+  if (!isBattle) {
+    return await game.phaseInterceptor.to("MysteryEncounterRewardsPhase");
+  }
+  await game.toNextTurn();
+}
+
+describe("Coachemon oracle - what the card claims against what the game does", () => {
+  let phaserGame: Phaser.Game;
+  let game: GameManager;
+
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+
+  beforeEach(() => {
+    game = new GameManager(phaserGame);
+  });
+
+  // The destination is the option fork's first draw (×500). The card names it before the player commits.
+  it("Teleporting Hijinks: the biome the card names is the biome the game teleports to", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.TELEPORTING_HIJINKS));
+
+    const card = readCard(game);
+    const claimed = /teleport to ([A-Za-z ]+?)(?:,|$)/.exec(card.options[0].outcome)?.[1];
+    expect(card.options[0].exact, "the card claims an exact destination").toBe(true);
+    expect(claimed).toBeTruthy();
+
+    await pickOption(game, 1, { isBattle: true });
+
+    const names: Partial<Record<BiomeId, string>> = {
+      [BiomeId.SPACE]: "Space",
+      [BiomeId.FAIRY_CAVE]: "Fairy Cave",
+      [BiomeId.LABORATORY]: "Laboratory",
+      [BiomeId.ISLAND]: "Island",
+      [BiomeId.WASTELAND]: "Wasteland",
+      [BiomeId.DOJO]: "Dojo",
+    };
+    console.log(`ORACLE-DIFF teleport claimed=${claimed} actual=${names[game.scene.arena.biomeId]}`);
+    expect(names[game.scene.arena.biomeId]).toBe(claimed);
+  });
+
+  // The pay is a formula over the worker's stats, not a draw: the card names both the worker and the amount.
+  it("Part-Timer: the pay the card names is the money the game pays", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.PART_TIMER));
+
+    const card = readCard(game);
+    const outcome: string = card.options[0].outcome;
+    const worker = /^(\S+) earns \$([\d,]+)/.exec(outcome);
+    expect(worker, `option 1 reads "${outcome}"`).toBeTruthy();
+    const claimedPay = Number(worker![2].replaceAll(",", ""));
+    const party = game.scene.getPlayerParty();
+    const workerNo = party.findIndex(p => p.name === worker![1]) + 1;
+    expect(workerNo, `the card's worker ${worker![1]} is in the party`).toBeGreaterThan(0);
+
+    const before = game.scene.money;
+    await pickOption(game, 1, { pokemonNo: workerNo });
+
+    console.log(`ORACLE-DIFF part-timer claimed=${claimedPay} actual=${game.scene.money - before}`);
+    expect(game.scene.money - before).toBe(claimedPay);
+  });
+});
