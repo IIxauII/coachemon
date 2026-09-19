@@ -47,25 +47,43 @@ jobs:
       # one imports. The golden run used to be spelled out here as well; that second run is gone (#278).
       - run: npm test
 
-      # The `chore(release)` commit is the one thing that pushes straight to master, and master now requires `core` and
-      # `extension` to have run before any ref update lands (#275). A required check that never ran counts as pending
+      # The `chore(release)` commit is the one thing that pushes straight to master, and master is gated on `core` and
+      # `extension` having run before any ref update lands (#275). A required check that never ran counts as pending
       # rather than passed, which is the point — a commit whose message suppressed every workflow can no longer look
       # like a green one — but it means this push needs a bypass of its own. A user-owned repo may only name a deploy
       # key or a repository role as a bypass actor: the GitHub Actions app is org-only, so `GITHUB_TOKEN` cannot be
       # excused, and every role wide enough to cover it also covers the owner, handing back the silent force-merge the
       # rule exists to remove. So the ruleset excuses one write deploy key, and this job pushes as that key.
       #
-      # `IdentitiesOnly` stops ssh offering a runner-provided identity ahead of it. No agent: a single config entry is
-      # inherited by the `npx` child that does the actual push, which an agent socket would also have been.
+      # A file rather than an agent, because `SSH_AUTH_SOCK` is environment and no environment survives between steps —
+      # each `run:` is a fresh shell, so an agent started here would be gone by the time the release pushes. A config
+      # file is re-read by every `ssh` the job starts, the one inside the `npx` child included, because `$HOME` is the
+      # same. `IdentitiesOnly` stops ssh offering a runner-provided identity ahead of the key. The modes are set rather
+      # than left to the runner's umask: ssh ignores a group-writable config *and carries on without it*. Written whole
+      # with `>`, not appended — ssh honours the first matching directive, so a pre-existing entry would win.
       - name: Load the release deploy key
         env:
           DEPLOY_KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/release_ed25519
-          chmod 600 ~/.ssh/release_ed25519
+          chmod 700 ~/.ssh
+          (umask 077; printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/release_ed25519)
           ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
-          printf 'Host github.com\n  IdentityFile ~/.ssh/release_ed25519\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+          printf 'Host github.com\n  IdentityFile ~/.ssh/release_ed25519\n  IdentitiesOnly yes\n' > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+      # Every failure of the ssh path below is silent, so it is proved here instead. semantic-release resolves the push
+      # url *once*, up front: it tries a dry-run push over the url it is handed and, when that throws, rewrites it into
+      # an https url carrying `GITHUB_TOKEN` — without verifying that one, and reporting it only through `debug`. So a
+      # malformed secret, an ignored config or a key that lost its write grant does not fail the release; it quietly
+      # pushes over https instead, which is the one thing the ruleset rejects. Before the ruleset was on that went
+      # green while proving nothing; with it on, the release dies mid-run, after the tests and after the version stamp
+      # is already committed locally, with no tag and no GitHub release.
+      #
+      # This is the same command semantic-release runs, so it fails here or not at all, and `bash -e` stops the job on
+      # it. `--dry-run` is not evaluated against the ruleset: it proves the transport and the write grant, nothing else.
+      - name: Prove the deploy key can push
+        run: git push --dry-run --no-verify -- git@github.com:${{ github.repository }}.git HEAD:master
 
       # semantic-release is not a devDependency on purpose: installing the plugin
       # runs `npm ci` in Claude Code's cache, and it should not pull the release toolchain.
