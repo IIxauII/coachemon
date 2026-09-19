@@ -41,14 +41,14 @@ const move = (id, name, power, { type = 0, cat = 0, acc = 100, attrs = [], flags
 };
 const pmOf = (mv, usable = true) => ({ moveId: mv.id, getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0, isUsable: () => [usable, ""] });
 
-const mon = (name, { hp = 300, maxHp = hp, player = true, field = true, moves = [], ability = null, abilities = [], status = null, tags = {}, semi = null, spe = 100, level = 50 } = {}) => {
+const mon = (name, { hp = 300, maxHp = hp, player = true, field = true, moves = [], ability = null, abilities = [], status = null, tags = {}, semi = null, restrictions = [], spe = 100, level = 50 } = {}) => {
   const p = Object.assign(Object.create(GAME_PROTO), {
     id: name, name, level, hp, status, aiType: 2, trainerSlot: 0, species: { legendary: false },
     getMaxHp: () => maxHp, isPlayer: () => player, isOnField: () => field, isActive: () => field, isBoss: () => false,
     getBattlerIndex: () => (field ? (player ? 0 : 2) : -1), getFieldIndex: () => 0,
     getTypes: () => [0], isOfType: () => false, getAbility: () => ability ?? { name: "x", getAttrs: () => [] }, hasPassive: () => false,
     getStat: i => (i === 5 ? spe : 100), getEffectiveStat: i => (i === 5 ? spe : 100),
-    summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], abilitiesApplied: new Set(), tags: semi ? [semi] : [] },
+    summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], abilitiesApplied: new Set(), tags: [...(semi ? [semi] : []), ...restrictions] },
     waveData: { abilitiesApplied: new Set(), abilityRevealed: true }, turnData: { hitCount: 0, hitsLeft: -1, moveEffectiveness: null },
     getHeldItems: () => [], hasAbilityWithAttr: a => abilities.includes(a), getTag: t => tags[t] ?? (semi && semi.tagType === t ? semi : null),
     getMoveType: mv => mv.type, getMoveCategory: (_, mv) => mv.category, getAccuracyMultiplier: () => 1, getCritStage: () => 0,
@@ -93,6 +93,7 @@ const P = hud["30-planner"];
 const E = {
   moveOutcome: (...a) => ask(t => t.outcome(...a)),
   moveOutcomes: (...a) => ask(t => t.outcomes(...a)),
+  stopped: (...a) => ask(t => t.stopped(...a)),
   enemyMoveDistribution: e => ask(t => t.enemyAction(e).moves),
   threatFrom: (...a) => ask(t => P.threatFrom(t, ...a)),
   exchange: (...a) => ask(t => P.exchange(t, ...a)),
@@ -132,6 +133,25 @@ const log = (...a) => console.log(...a);
   assert.equal(E.moveOutcomes(me, foe).length, 5, "outside the command phase nothing is filtered by game calls");
   phase = { phaseName: "CommandPhase" };
   assert.equal(E.moveOutcome(me, foe, pmOf(fakeOut)).traits.once, true, "Fake Out is first-turn only");
+}
+
+// ---- D2. Which restriction did it (#263). The gate that drops the move and the reader that names it are the same
+// one, so the pool and the reason can't disagree: the tag is read by class, like every other tag. A move dropped by
+// its own condition has no tag behind it and stays unnamed — that says something about the turn, not about us.
+{
+  const encore = new (class EncoreTag { isMoveRestricted(id) { return id !== 3; } })();
+  const slash = pmOf(move(2, "Slash", 70), false);
+  const me = mon("Weavile", { moves: [slash, move(3, "Tackle", 40)], restrictions: [encore] });
+  const foe = mon("Snorlax", { player: false });
+  setup([me], [foe]);
+  log(`D2 stopped: ${E.stopped(me, foe).join(", ")}`);
+  assert.deepEqual(E.stopped(me, foe), ["Encore"]);
+  assert.deepEqual(E.moveOutcomes(me, foe).map(o => o.name), ["Tackle"], "the pool it names the reason for");
+
+  const fakeOut = move(252, "Fake Out", 40, { cond: () => false, conditions: [new FirstMoveCondition()] });
+  const plain = mon("Ambipom", { moves: [fakeOut, move(3, "Tackle", 40)] });
+  setup([plain], [foe]);
+  assert.deepEqual(E.stopped(plain, foe), [], "a move its own condition dropped names nothing");
 }
 
 // ---- E. What a move costs its user, with a note per cost.

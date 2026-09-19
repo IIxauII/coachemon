@@ -1,4 +1,5 @@
 D usable (awake foe): Sucker Punch, Tackle
+D2 stopped: Encore
 E Iron Barbs: ≈−31% · 2–5 hits
 E recoil ≈−18%
 E −50% HP each use
