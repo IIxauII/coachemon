@@ -326,6 +326,11 @@ const scenarios = {
   "tm fainted hardcore": { wave: 22, money: 400, challenges: [{ id: 9, value: 1 }], party: [charizard(), pk("Morpeko", 0, 120, 0, [[M.spark, 0, 20], [M.tackle, 0, 35]], { types: ["Electric", "Dark"], atk: 95, spa: 70 })],
     free: [tm(M.fireFang, ["Morpeko"], 1)],
     expect: m => { assert.equal(m.free[0].tm, "skip"); assert.match(m.free[0].why, /nobody can learn it/); } },
+  // A challenge is on when its value is anything but 0, which is `GameMode.hasChallenge`'s own test: a negative
+  // value is still Hardcore, and the fainted member is still offered nothing.
+  "tm fainted hardcore negative value": { wave: 22, money: 400, challenges: [{ id: 9, value: -1 }], party: [charizard(), pk("Morpeko", 0, 120, 0, [[M.spark, 0, 20], [M.tackle, 0, 35]], { types: ["Electric", "Dark"], atk: 95, spa: 70 })],
+    free: [tm(M.fireFang, ["Morpeko"], 1)],
+    expect: m => { assert.equal(m.free[0].tm, "skip"); assert.match(m.free[0].why, /nobody can learn it/); } },
   // A spread TM is kept for the run, so its bonus follows the game's double-battle odds over the next ten waves, not
   // the wave just won: 1/8 a wave (1/32 on wave 30) with no lure, 1/2 (1/8) while a Lure's ten battles last.
   "tm spread by doubles ahead": { wave: 22, money: 400, double: true, party: [pk("Charizard", 186, 186, 0, [[M.airSlash, 0, 15], [M.tackle, 0, 35]], { types: ["Fire", "Flying"], atk: 110, spa: 150 })],
@@ -492,6 +497,17 @@ const scenarios = {
       assert.match(gc.why, /^Jolteon · 10% to steal an item when it attacks$/);
       assert.deepEqual(gc.users, ["Jolteon", "Wobbuffet"]);
       assert.ok(gc.v >= 9, `worth a full roll, not a contact share: ${gc.v}`);
+    },
+    after: (api, sc, scene) => {
+      // Every entry in the table answers with a `[value, reason]` tuple or a plain falsy value — never with whatever
+      // its own guard returned. Wobbuffet has no attacking move, which is the guard the seven `attacks(p).length`
+      // entries share, and `length` is a number: 0 read like a value where none was meant.
+      const ctx = api.rewardContext(scene, sc.party);
+      const wobbuffet = sc.party[1];
+      for (const [id, fn] of Object.entries(api.HELD)) {
+        const r = fn(wobbuffet, ctx, null);
+        assert.ok(r === false || r == null || Array.isArray(r), `${id} answered ${JSON.stringify(r)} (${typeof r})`);
+      }
     } },
   // The level cap runs the rounded wave through `getWaveForDifficulty` first, which a Daily run pushes 30 waves and a
   // fifth of itself ahead: wave 30 caps at Lv 52 there, at Lv 24 in a classic run. Only the fallback is exercised
@@ -567,7 +583,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const { cardSummary } = hud["60-card"], { tick } = hud["98-tick"];
   globalThis.__sm = rewardsModel;
   globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollCheck, rerollStats, cardSummary,
-    setRewardFns: hud["47-biome"].setRewardFns, tick };
+    setRewardFns: hud["47-biome"].setRewardFns, tick, HELD: hud["51-items"].HELD, rewardContext: hud["51-items"].rewardContext };
   // The chunk scan finds nothing under node: hand the reroll preview its functions, and draw the card again.
   if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
@@ -575,5 +591,6 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const m = globalThis.__sm(scene, handler);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   sc.expect?.(m, globalThis.__api, sc, scene);
+  sc.after?.(globalThis.__api, sc, scene);
 }
 console.log("ok");

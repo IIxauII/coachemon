@@ -9,7 +9,9 @@ const cat = { P: 0, S: 1, X: 2 };
 // moves: [name, type, power, cat, target=3, attrs=[]]; sp: species fields
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, sp = {}, extra = {}) => ({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0,
-  species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [] },
+  species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [],
+    // `roots`: [starter root, prevolution-free root], the two answers `getRootSpeciesId` gives.
+    ...(sp.roots ? { getRootSpeciesId: forStarter => (forStarter ? sp.roots[0] : sp.roots[1]) } : {}), ...(sp.more ?? {}) },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field,
   isBoss: () => (extra.bossSegments ?? 0) > 0, bossSegments: 0, bossSegmentIndex: 0,
@@ -34,7 +36,7 @@ const dexData = () => {
 // `owned`: extra caught species ids (dex IVs 20, abilityAttr 1). `mode`: gameMode fields over classic. `events`: the
 // game's timed event manager, as 47-biome's chunk scan would hand it over.
 const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [],
-  wave = 23, biome = 3, mode = {}, starters = null, events = null, dex = null }) => {
+  wave = 23, biome = 3, mode = {}, starters = null, events = null, dex = null, registry = null }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : null) };
@@ -69,6 +71,8 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   globalThis.__ca = { catchAdvice, captureChance, readTurn, accountRead, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
     setGameTables: globalThis.__hud["47-biome"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
   if (events) globalThis.__ca.setGameTables({ events });
+  // `species`: the game's species registry, as 47-biome's chunk scan would hand it to the account read.
+  if (registry) globalThis.__ca.setGameTables({ events, species: registry });
   const advice = readTurn(scene, turn => catchAdvice(turn, accountRead(scene)));
   return { advice, scene };
 };
@@ -392,5 +396,40 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   const variant = () => Object.assign(shinyPika(), { variant: 2 });
   const daily = run({ party: [venusaur()], foes: [variant()], counts, dex: known, mode: { isClassic: false, isDaily: true } }).advice.targets[0];
   assert.ok(daily.reasons.some(r => r.text === "new shiny variant · +20 candy"), JSON.stringify(daily.reasons));
+}
+
+// ---- 18. Which entry the candy is read from. `setPokemonSpeciesCaught` walks the line down and pays at the species
+// with no prevolution — `getRootSpeciesId(false)`, Pichu for a Raichu — masking the attributes with *that* species'
+// `getFullUnlocksData()`, and paying nothing at all when the walk stops early at an uncaught starter mid-line.
+{
+  const counts = { 0: 0, 1: 0, 2: 5, 3: 0, 4: 0 };
+  // Raichu: starter root Pikachu (25), prevolution-free root Pichu (172).
+  const raichu = (extra = {}) => mon("Raichu", 30, ["Electric"], "Static", [120,90,55,90,80,110], [["Thunderbolt","Electric",90,"S"]], true, undefined,
+    { id: 26, catchRate: 75, bst: 485, roots: [25, 172] }, { shiny: true, ...extra });
+  const ALL = 1n | 2n | 4n | 16n | 128n; // non-shiny, shiny, male, default variant, form 0
+  const reasons = opts => run({ party: [venusaur()], foes: [raichu(opts.foe)], counts, ...opts }).advice.targets[0].reasons.map(r => r.text);
+
+  // Pichu has this shiny already; Pikachu, which `getRootSpeciesId(true)` stops at, does not. The Daily run pays
+  // nothing, because Pichu's entry is the one `hasNewAttr` is asked of.
+  const pichuKnows = { 26: { caughtAttr: ALL }, 25: { caughtAttr: 1n }, 172: { caughtAttr: ALL } };
+  assert.ok(reasons({ dex: pichuKnows, mode: { isClassic: false, isDaily: true } }).includes("shiny"),
+    "the candy entry is the prevolution-free root, not the first starter up the line");
+  assert.ok(reasons({ dex: pichuKnows }).includes("shiny · +5 candy"), "a classic run pays it either way");
+
+  // The walk stops at a starter it has never caught before this throw, so no species is ever paid — in any mode.
+  const pikachuNew = { 26: { caughtAttr: ALL }, 25: { caughtAttr: 0n }, 172: { caughtAttr: 0n } };
+  assert.ok(reasons({ dex: pikachuNew, starters: [3, 25] }).includes("shiny"),
+    "an uncaught Pikachu ends the walk before Pichu: no candy, Daily or not");
+  // Pikachu already caught, so the walk reaches Pichu and the candy is back.
+  assert.ok(reasons({ dex: { ...pikachuNew, 25: { caughtAttr: 1n } }, starters: [3, 25] }).includes("shiny · +5 candy"),
+    "a caught Pikachu is walked through");
+
+  // An Alolan-like form 1: the bit is `1n << 8`, which Pichu's mask cannot own. Masked away, the catch adds nothing
+  // Pichu's entry lacks, so a Daily run pays nothing — unmasked it reads as a new attribute and promises candy.
+  const registry = { getSpecies: id => (id === 172 ? { getFullUnlocksData: () => ALL } : null), getAllSpecies: () => [] };
+  const alolan = { dex: { 26: { caughtAttr: ALL }, 25: { caughtAttr: 1n }, 172: { caughtAttr: ALL } },
+    foe: { formIndex: 1 }, mode: { isClassic: false, isDaily: true } };
+  assert.ok(reasons({ ...alolan, registry }).includes("shiny"), "the mask is the root species', and it drops the form bit");
+  assert.ok(reasons(alolan).includes("shiny · +5 candy"), "with no registry the raw bits stand, as they always did");
 }
 console.log("ok");

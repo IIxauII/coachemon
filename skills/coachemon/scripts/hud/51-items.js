@@ -112,17 +112,20 @@ const stackText = (ctx, p, id, max) => {
   return n ? ` (${n + 1}/${max})` : "";
 };
 
-// ---- Held items by id. Each: (p, ctx, t) → [value, reason] or null when it does nothing for that member.
-const HELD = {
+// ---- Held items by id. Each: (p, ctx, t) → [value, reason], or a falsy value when it does nothing for that
+// member — the caller turns that into `null`. "Falsy" is written as `false`, not as whatever the guard happened to
+// return: `attacks(p).length &&` handed back the number 0, which reads like a value where none was meant.
+// @only tests: HELD
+export const HELD = {
   LEFTOVERS: (p, c) => [8 + 10 * c.bulkShare(p), `${p.name} · 1/16 HP a turn${stackText(c, p, "LEFTOVERS", 4)}`],
-  SHELL_BELL: (p, c) => attacks(p).length && [6 + 8 * (p === c.carry ? 1 : 0.6), `${p.name} · heals 1/8 of damage dealt${stackText(c, p, "SHELL_BELL", 4)}`],
+  SHELL_BELL: (p, c) => attacks(p).length > 0 && [6 + 8 * (p === c.carry ? 1 : 0.6), `${p.name} · heals 1/8 of damage dealt${stackText(c, p, "SHELL_BELL", 4)}`],
   FOCUS_BAND: (p, c) => [6 + 4 * (1 - c.bulkShare(p)), `${p.name} · +10% to survive a KO hit${stackText(c, p, "FOCUS_BAND", 5)}`],
   // Moving first matters to the slow; flinching needs moving first, and rolls once a hit.
-  QUICK_CLAW: (p, c) => attacks(p).length && [4 + 8 * (1 - c.speedShare(p)), `${p.name} · 10% to move first${stackText(c, p, "QUICK_CLAW", 3)}`],
-  KINGS_ROCK: (p, c) => attacks(p).length && [3 + 6 * c.speedShare(p) + (attacks(p).some(mv => hasAttr(mv, "MultiHitAttr")) ? 3 : 0),
+  QUICK_CLAW: (p, c) => attacks(p).length > 0 && [4 + 8 * (1 - c.speedShare(p)), `${p.name} · 10% to move first${stackText(c, p, "QUICK_CLAW", 3)}`],
+  KINGS_ROCK: (p, c) => attacks(p).length > 0 && [3 + 6 * c.speedShare(p) + (attacks(p).some(mv => hasAttr(mv, "MultiHitAttr")) ? 3 : 0),
     `${p.name} · 10% flinch a hit${stackText(c, p, "KINGS_ROCK", 3)}`],
   REVIVER_SEED: (p, c) => [14 + (c.gauntlet ? 8 : c.bossNext ? 4 : 0), `${p.name} · a second life at ½ HP`],
-  SCOPE_LENS: p => attacks(p).length && [6 + ((has(p, ["Super Luck", "Sniper"]) || attacks(p).some(mv => hasAttr(mv, "HighCritAttr"))) ? 6 : 0),
+  SCOPE_LENS: p => attacks(p).length > 0 && [6 + ((has(p, ["Super Luck", "Sniper"]) || attacks(p).some(mv => hasAttr(mv, "HighCritAttr"))) ? 6 : 0),
     `${p.name} · crit 1/24 → 1/8`],
   LEEK: p => (LEEK_SPECIES.has(p.species?.speciesId) || LEEK_SPECIES.has(p.fusionSpecies?.speciesId)) && [18, `${p.name} · +2 crit stages`],
   EVIOLITE: (p, c) => tryDo(() => p.species.getEvolutionLevels().length, 0) > 0 && [8 + 6 * c.bulkShare(p), `${p.name} · ×1.5 Def/SpD until it evolves`],
@@ -136,7 +139,7 @@ const HELD = {
   },
   // Its name says contact, its trigger doesn't: `MoveEffectPhase.applyOnTargetEffects` rolls it after **any**
   // attacking move (`this.move.is("AttackMove")`), status moves aside, so every attack in the moveset counts.
-  GRIP_CLAW: (p, c) => attacks(p).length && [9, `${p.name} · 10% to steal an item when it attacks${stackText(c, p, "GRIP_CLAW", 5)}`],
+  GRIP_CLAW: (p, c) => attacks(p).length > 0 && [9, `${p.name} · 10% to steal an item when it attacks${stackText(c, p, "GRIP_CLAW", 5)}`],
   MINI_BLACK_HOLE: p => [22, `${p.name} · steals an item every turn`],
   WIDE_LENS: (p, c) => {
     const miss = Math.max(0, ...attacks(p).map(mv => (mv.accuracy > 0 ? (100 - mv.accuracy) / 100 : 0)));
@@ -144,10 +147,10 @@ const HELD = {
   },
   // Multi Lens splits the same damage over more hits (the first ×(1 − ¼·stacks), each extra ×¼): no more damage,
   // only more rolls for flinch, steals, contact abilities and Shell Bell.
-  MULTI_LENS: (p, c) => attacks(p).length && [6 + (["KINGS_ROCK", "GRIP_CLAW", "SHELL_BELL"].some(id => c.stacks(p, id)) ? 4 : 0),
+  MULTI_LENS: (p, c) => attacks(p).length > 0 && [6 + (["KINGS_ROCK", "GRIP_CLAW", "SHELL_BELL"].some(id => c.stacks(p, id)) ? 4 : 0),
     `${p.name} · an extra hit (same total damage)`],
   SOOTHE_BELL: p => [1, `${p.name} · friendship grows faster`],
-  GOLDEN_PUNCH: p => attacks(p).length && [5, `${p.name} · money from damage dealt`],
+  GOLDEN_PUNCH: p => attacks(p).length > 0 && [5, `${p.name} · money from damage dealt`],
   // Lucky and Golden Eggs only come from Mystery Encounters: EXP for the holder, nothing at the level cap.
   LUCKY_EGG: (p, c) => p.level < c.cap && [4 + 4 * Math.min(1, (c.cap - p.level) / 10), `${p.name} · +40% EXP, ${c.cap - p.level} levels under the cap`],
   GOLDEN_EGG: (p, c) => p.level < c.cap && [6 + 6 * Math.min(1, (c.cap - p.level) / 10), `${p.name} · +100% EXP, ${c.cap - p.level} levels under the cap`],

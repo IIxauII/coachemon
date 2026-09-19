@@ -190,9 +190,11 @@ const flatten = rs => rs.map(flat);
 
   // `calculateBaseStats` starts from the *form*'s stats, so a mon standing in an alternate form is worth that form's
   // total, not the species entry's. Deoxys-like: the species row is the Normal form, form 1 is the Attack form.
+  // Form 0 is given a row of its own here, so "the species' own row" is a different number from "form 0's row".
   const deoxys = { speciesId: 386, baseTotal: 600, baseStats: [50, 150, 50, 150, 50, 150], getEvolutionLevels: () => [],
-    forms: [{ baseTotal: 600, baseStats: [50, 150, 50, 150, 50, 150] }, { baseTotal: 700, baseStats: [50, 180, 20, 180, 20, 250] }] };
-  assert.equal(finalBstOf({ species: deoxys }).bst, 600, "no mon, no form index: the species' own row");
+    forms: [{ baseTotal: 590, baseStats: [50, 145, 50, 145, 50, 150] }, { baseTotal: 700, baseStats: [50, 180, 20, 180, 20, 250] }] };
+  assert.equal(finalBstOf({ species: deoxys }).bst, 600, "no mon, no form index: the species' own row, not form 0's");
+  assert.equal(finalBstOf({ species: deoxys, formIndex: 0 }).bst, 590, "a mon standing in form 0 is worth form 0");
   assert.equal(finalBstOf({ species: deoxys, formIndex: 1 }).bst, 700, "the form the mon is standing in");
   row("Deoxys form 1", [`final ${finalBstOf({ species: deoxys, formIndex: 1 }).final}`]);
 
@@ -204,6 +206,22 @@ const flatten = rs => rs.map(flat);
   assert.equal(finalBstOf(spliced).bst, 350, "Spliced Endless halves the pair, and the profile follows");
   const broken = { species: deoxys, formIndex: 1, calculateBaseStats: () => { throw new Error("hidden in this build"); } };
   assert.equal(finalBstOf(broken).bst, 700, "a build that hides the method falls back to the form");
+
+  // The game's own call is cached against the mon and the stats it produced: `applyModifiers` inside it logs
+  // "Applied …" per modifier, and a party carrying vitamins would print on every HUD tick. Nothing else changes.
+  let calls = 0;
+  const vitaminCache = { species: deoxys, formIndex: 1, level: 50, stats: [1, 1, 1, 1, 1, 1],
+    calculateBaseStats: () => { calls++; return [60, 190, 30, 190, 30, 260]; } };
+  assert.equal(finalBstOf(vitaminCache).bst, 760);
+  assert.equal(finalBstOf(vitaminCache).bst, 760);
+  assert.equal(calls, 1, "the second read comes from the cache, so the game logs once");
+  vitaminCache.stats = [2, 1, 1, 1, 1, 1];
+  assert.equal(finalBstOf(vitaminCache).bst, 760);
+  assert.equal(calls, 2, "a modifier that moves the mon's stats moves its base stats too: ask again");
+  // Keyed on the mon itself, so a second mon of the same species and level is its own entry.
+  const twin = { species: deoxys, formIndex: 1, level: 50, stats: [1, 1, 1, 1, 1, 1],
+    calculateBaseStats: () => [10, 10, 10, 10, 10, 10] };
+  assert.equal(finalBstOf(twin).bst, 60, "the cache is keyed on the mon, not on its species");
 
   // A fusion: the pair's stats are the mon's, while each half's *line* is projected from its own form.
   const fusedForm = { species: SPECIES.magikarp, fusionSpecies: deoxys, fusionFormIndex: 1,

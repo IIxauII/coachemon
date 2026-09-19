@@ -38,9 +38,12 @@
 // - `gameData.setPokemonCaught(e)` → dexData[species].caughtAttr |= getDexAttr() (gender 4n/8n, shiny 2n/non 1n,
 //   variant 16n/32n/64n, form 1n<<(7+formIndex)), the same up the prevolution chain (so the root starter unlocks),
 //   starterData[starter].abilityAttr |= 1<<abilityIndex (ABILITY_1 1, ABILITY_2 2, ABILITY_HIDDEN 4), candy to the
-//   root: `isShiny()?5*2**variant:1`, ×2 for a boss — but in a Daily run only when the catch adds a dex attribute
-//   (`!isDaily||hasNewAttr||fromEgg`, `hasNewAttr = (caughtAttr & dexAttr) !== dexAttr`); `updateSpeciesDexIvs(root,
-//   ivs)` keeps the max IV per stat;
+//   **prevolution-free** species the walk ends at, not to the first starter it passes: `isShiny()?5*2**variant:1`,
+//   ×2 for a boss — but in a Daily run only when the catch adds a dex attribute of its own
+//   (`!isDaily||hasNewAttr||fromEgg`, `hasNewAttr = (caughtAttr & dexAttr) !== dexAttr`, `dexAttr` itself masked by
+//   that species' `getFullUnlocksData()`), and not at all when the walk stops early at an uncaught starter
+//   mid-line; `updateSpeciesDexIvs(getRootSpeciesId(true), ivs)` keeps the max IV per stat, from the starter root
+//   down;
 // - LimitedCatchChallenge (challenge 7) keeps it out of the party unless met on a wave ending in 1; otherwise a full
 //   party (6) asks to release someone or let it go.
 // A failed throw uses the turn: the ball command resolves before any move, then the foe acts.
@@ -157,6 +160,12 @@ const teamReasons = (account, foe, limited) => {
 // The line a species belongs to, for the dex reasons below: a starter unlock and "already using one" are about
 // the root, not the form in front of you. The team side asks the party profile instead.
 const rootOf = p => tryDo(() => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
+// Candy is a different root. `setPokemonSpeciesCaught` walks the line down and pays at the species that has no
+// prevolution at all (`!hasPrevolution`, `src/system/game-data.ts:1845`) — `getRootSpeciesId(false)`, not the first
+// starter `getRootSpeciesId(true)` stops at. The two differ only on Pikachu's line, the game's own TODO at
+// `game-data.ts:1866-1868` saying Pikachu is the only evolved starter: for a caught Raichu the candy, and the
+// `hasNewAttr` that gates it in a Daily run, are Pichu's entry and not Pikachu's.
+const candyRootOf = p => tryDo(() => p.species.getRootSpeciesId(false), p.species?.speciesId) ?? p.species?.speciesId;
 
 // ---- Account value (dex, starter unlocks, abilities, IVs, shinies). Pure reads of gameData.
 const IV_TOTAL = 30, IV_STAT = 15;
@@ -168,6 +177,13 @@ const accountReasons = (account, foe) => {
   const caught = big(dex?.caughtAttr);
   const root = rootOf(foe);
   const rootDex = account.dex[root];
+  // That same walk stops early at a species that is itself a starter and was uncaught before this throw
+  // (`!newCatch || !isStarter(species)` returns before recursing, `game-data.ts:1863`), so the prevolution-free
+  // species is never reached and **no candy is paid at all** — a first Pikachu, or a Raichu caught while Pikachu is
+  // still uncaught. `starterData` holds an entry for every starter, so its keys stand in for the game's `isStarter`.
+  const candyRoot = candyRootOf(foe);
+  const candyDex = account.dex[candyRoot];
+  const candyStops = root !== candyRoot && account.starter[root] != null && !big(rootDex?.caughtAttr);
   const rare = sp.legendary || sp.subLegendary || sp.mythical;
   if (!caught) {
     out.push({ kind: "account", text: root !== sp.speciesId && !big(rootDex?.caughtAttr) ? "new species + starter" : "new species", w: 3 });
@@ -179,10 +195,18 @@ const accountReasons = (account, foe) => {
     | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
   // Candy follows isShiny() (a shiny fusion half counts) with the base variant; the dex's shiny bit only the base.
   const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
-  // A Daily run pays candy only for a catch that adds a dex attribute of its own (`!isDaily || hasNewAttr`, and the
-  // candy goes to the root of the line, so the root's entry is the one that decides): a shiny already in the dex
-  // with this gender, variant and form is worth the same shiny it always was, and no candy.
-  const candyText = account.daily && (big(rootDex?.caughtAttr) & attr) === attr ? "" : ` · +${candy} candy`;
+  // A Daily run pays candy only for a catch that adds a dex attribute of its own (`!isDaily || hasNewAttr`), asked of
+  // the entry the candy would go to: a shiny already in the dex with this gender, variant and form is worth the same
+  // shiny it always was, and no candy.
+  // The game asks `hasNewAttr` of the **masked** attributes: `pokemon.getDexAttr() & species.getFullUnlocksData()`
+  // (`game-data.ts:1766`, mask at `pokemon-species.ts:1203-1230`), which drops the bits that species can never own —
+  // an `isUnobtainable` form, a gender its ratio rules out. The mask only ever narrows, so reading `attr` raw makes
+  // "something new here" too easy to believe and promises candy a Daily run won't pay. The mask belongs to the
+  // species the candy goes to, which is why the account carries the registry; without it, the raw bits stand.
+  const unlocks = tryDo(() => account.species?.getSpecies?.(candyRoot)?.getFullUnlocksData?.());
+  const candyAttr = typeof unlocks === "bigint" ? attr & unlocks : attr;
+  const candyText = candyStops || (account.daily && (big(candyDex?.caughtAttr) & candyAttr) === candyAttr)
+    ? "" : ` · +${candy} candy`;
   if (foe.shiny) {
     if (caught && !(caught & 2n)) out.push({ kind: "account", text: `first shiny${candyText}`, w: 3 });
     else if (caught && (caught & attr & 112n) !== (attr & 112n)) out.push({ kind: "account", text: `new shiny variant${candyText}`, w: 2.5 });

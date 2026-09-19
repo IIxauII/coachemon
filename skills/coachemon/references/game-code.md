@@ -1544,7 +1544,9 @@ Read at the pinned tag (`v1.12.0.11`). `52-shop.js` judges a TM with the learn c
 `getCompatibleTms` at line 5858 — the species' and fusion's TMs minus known moves). `PartyUiHandler.updateOptions`
 (`src/ui/handlers/party-ui-handler.ts:1382`) offers `TEACH` in `PartyUiMode.TM_MODIFIER` (line 1452) whoever the cursor
 is on, fainted or not. The one exception is Hardcore (`Challenges.HARDCORE`, 9): a fainted member there goes through
-`updateOptionsHardcore` (line 1512), which has no TM case, so it is offered nothing to teach. The TM pool
+`updateOptionsHardcore` (line 1512), which has no TM case, so it is offered nothing to teach. A challenge is on when
+`GameMode.hasChallenge` finds an entry with that id and `value !== 0` (`src/game-mode.ts:98-100`) — any value but
+zero, not a positive one. The TM pool
 (`TmModifierTypeGenerator`, `src/modifier/modifier-type.ts:1500` — draws global RND) takes
 `getCompatibleTms(true, true, true)` over the **whole** party (known, level-up and already-used TMs removed), keeps the
 tier's, and picks with `randSeedInt`. The card considers every member outside Hardcore, the living ones in it, and marks
@@ -1837,7 +1839,12 @@ order:
      (`isBattleClassicFinalBoss`, `src/game-mode.ts:320`) while `getStarterCount(caught) < getAllStarters().length - 1`
      (`src/system/game-data.ts:2036`: two or more starters uncaught); at the final boss under a full Fresh Start; at an
      Endless minor boss; in Daily unless `isDailyFinalBoss()` (`src/data/daily-seed/daily-seed-utils.ts:89`) and the
-     event seed's boss is `catchable` (`getDailyEventSeedBoss`, `src/data/daily-seed/daily-run.ts:189`). END is only
+     event seed's boss is `catchable` (`getDailyEventSeedBoss`, `src/data/daily-seed/daily-run.ts:189`). That getter is
+     not the raw config: it needs `isDailyEventSeed()` (`isDaily && dailyConfig != null`,
+     `src/data/daily-seed/daily-seed-utils.ts:33`) and passes `dailyConfig.boss` through `validateDailyBossConfig`
+     (`:147`), which returns `null` — no custom boss at all, so nothing catchable — for a `speciesId` the `SpeciesId`
+     enum lacks. The seed schema only requires a positive integer there (`src/data/daily-seed/schema.json:34,119`), so
+     a hand-written seed can pass it and still be rejected. END is only
      reached by the forced biome rule (§10): classic 191–200, the Daily wave 50, each Endless X50 wave.
    - **Otherwise** a trainer battle is refused, and a Mystery Encounter unless its `catchAllowed`.
 2. More than one foe `isActive(true)` on the field: refused (`noPokeballMulti`).
@@ -1888,6 +1895,16 @@ A Master Ball's rate is negative, so it is never critical and every check is ski
 `unshiftNew("VictoryPhase")`. Candy goes to the prevolution-free species of the chain: `isShiny() ? 5·2^variant : 1`,
 ×2 for a boss, and not at all in Daily unless the catch adds a dex attribute (`src/system/game-data.ts:1845-1850`). The
 dex attribute (`Pokemon.getDexAttr`, `src/field/pokemon.ts:605`, pure) reads the base `shiny` and `variant` only.
+
+Two details of that walk. `setPokemonSpeciesCaught` recurses down the chain a species at a time, and at each one asks
+`hasNewAttr` of the **masked** attributes: `dexAttr = pokemon.getDexAttr() & species.getFullUnlocksData()`
+(`:1766`; the mask is built at `src/data/pokemon-species.ts:1203-1230` from the species' own gender ratio, variants
+and non-`isUnobtainable` forms), so a bit that species can never own never counts as new. And the recursion **stops
+early** at a species that is itself a starter and was uncaught before this catch (`!newCatch || !isStarter(species)`
+returns before recursing, `:1863`): the prevolution-free species is then never reached and no candy is paid at all.
+Today that is Pikachu's line only — `getRootSpeciesId(true)` stops at Pikachu while the candy is Pichu's, which the
+game's own TODO at `:1866-1868` names as the single evolved starter. The IVs are not on that walk:
+`updateSpeciesDexIvs` is called with `getRootSpeciesId(true)` and walks prevolutions itself (`:2010-2023`).
 
 **Shiny and fusion reads.** `Pokemon.isShiny(useIllusion = false)` (`src/field/pokemon.ts:1734`, pure) is the base
 `shiny`, or `fusionShiny` when fused; `getVariant` (line 1775) is the higher of the two when fused.

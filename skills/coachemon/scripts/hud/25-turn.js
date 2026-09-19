@@ -143,6 +143,13 @@ const modeFlags = (s, live, wave) => {
     finalBoss: call(() => mode.isBattleClassicFinalBoss(wave), !!mode.isClassic && lastWave()),
     endlessMinorBoss: call(() => mode.isEndlessMinorBoss(wave), !!mode.isEndless && lastWave()),
     waveFinal: call(() => mode.isWaveFinal(wave), lastWave()),
+    // Read straight off the config rather than through `getDailyEventSeedBoss()` (`daily-run.ts:189-201`). Two of
+    // that function's three steps are already here: `isDailyEventSeed()` is `isDaily && dailyConfig != null`, which
+    // the optional chain and every caller's own `daily` check cover. The third, `validateDailyBossConfig`, returns
+    // null for a boss whose `speciesId` the `SpeciesId` enum lacks — the schema requires a positive integer but
+    // never checks membership — and then there is no custom boss and no catchable one. The HUD cannot test that:
+    // the bundler injects only the enum members the HUD names, so it has no list to check against. Left as is: it
+    // takes a hand-written daily seed naming a species that does not exist, and the miss is one line on one wave.
     dailyBossCatchable: !!mode.dailyConfig?.boss?.catchable,
   };
 };
