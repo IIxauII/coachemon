@@ -1,6 +1,6 @@
 // Battle card (the 60-card battle model): the ⚔ line per field slot, the switches, the catch section, the foe rows
 // and the fight plan. An easy wild wave collapses to one line.
-import { STATUS_FRAMES, TRAPS } from "./01-core.js";
+import { STATUS_FRAMES } from "./01-core.js";
 import { hitsText, slowestKo } from "./60-card.js";
 import { FS, badge, bar, button, collapsedCard, dim, h, hpColor, img, line, mon, tab, view } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
@@ -124,7 +124,7 @@ export const drawBattle = m => {
     ? line("", "#e77", h("span", { color: "#e77", marginRight: "4px" }, "foes weak to:"), ...teamWeak.map(([t, n]) => badge(t, `×${n}`)))
     : null;
   const rows = m.rows.map(r => {
-    const traps = r.abilities.filter(a => TRAPS.has(a));
+    // `r.traps`: only the abilities the planner found biting one of our own options, not every ability the foe has.
     const weak = r.weak.filter(usable), avoid = r.avoid.filter(usable);
     return h("div", { marginTop: "5px", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,.12)" },
       h("div", { display: "flex", alignItems: "center", gap: "3px" },
@@ -139,7 +139,7 @@ export const drawBattle = m => {
         STATUS_FRAMES[r.status] ? img("statuses", STATUS_FRAMES[r.status], STATUS_FRAMES[r.status], 10, null) : null,
         h("span", { flex: "1" }),
         h("span", { color: hpColor(r.hp) }, `${r.hp}%`)),
-      traps.length ? line("✦", "#fa4", ...traps.map(a => h("span", { color: "#fa4", marginRight: "6px" }, `⚠ ${a}`))) : null,
+      r.traps.length ? line("✦", "#fa4", ...r.traps.map(a => h("span", { color: "#fa4", marginRight: "6px" }, `⚠ ${a}`))) : null,
       line("▲", "#6d6", ...(weak.length ? weak.map(([t, x]) => badge(t, x)) : [h("span", dim, "—")])),
       avoid.length ? line("✕", "#e55", ...avoid.map(([t, x]) => badge(t, x))) : null,
       // The enemy's likely move into the pokémon we put in front of it: its damage (% of that mon's HP) once the
