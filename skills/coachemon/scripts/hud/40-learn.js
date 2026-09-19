@@ -304,9 +304,16 @@ const disruptFit = (pk, mv, tag, roster) => {
 //     An `add` takes nothing away — it can even hand the foe a resistance (Trick-or-Treat turns a Normal foe's
 //     Fighting weakness off), which is why an `add` that leaves the party worse off is worth 0 here rather than a
 //     negative: nobody has to use the move.
+// What it does **not** count: the STAB a rewrite *hands* the foe. `Pokemon.getTypes` reads `summonData.addedType` too,
+// so Trick-or-Treat gives a foe's Shadow Ball a STAB it didn't have, and a `set` does the same for a Water move. The
+// defensive half of that is already in `open` (the foe's new typing is what the party is scored against); the
+// offensive half is left standing, a first cut like the numbers below.
 // Nothing here runs game code: the type chart, the roster the preview hands over and the party's own moves, as every
 // other class on this card. Blind of a roster both keep their flat value, which is what the team audit's dead-slot
 // check reads.
+// The magnitudes sit against the flat table above: a rewrite is worth about a Leech Seed (35) — it decides a matchup
+// rather than a turn, and unlike a status it can't be shrugged off by an immunity. An `add` is the lesser of the two
+// at 30, because it only ever multiplies: it takes no STAB away, and it can hand the foe a resistance.
 const TYPE_SET = 35, TYPE_ADD = 30;
 // A rewrite that opens nothing for the roster keeps TYPE_FLOOR of that; one that opens every foe all the way is worth
 // TYPE_FULL, straight-line in between. The share is weighted by health bars like every other roster read, so a
@@ -407,7 +414,10 @@ const statusScore = (pk, mv, others, double, ctx) => {
       // incoming move is. Taking the mon's whole current moveset here would sell a rewrite on the very move it
       // replaces: pure Water opens nothing for a Ludicolo that gave up Energy Ball for the Soak.
       // Read the way `seTypes` and 08-party's `damagingTypes` read a moveset — variable power counts, fixed damage
-      // doesn't, since it ignores the type chart — so the party's coverage is one table however it is asked for.
+      // doesn't, since it ignores the type chart — so the party's coverage is one table however it is asked for:
+      // 08-party's `FIXED_DAMAGE_ATTRS` is exactly the `STAND_INS` entries marked fixed here, and the two can't drift
+      // without one of those lists changing. The move being scored adds nothing of its own: every move that writes a
+      // typing is a status move.
       const ours = [...new Set([...(ctx.mateTypes ?? []),
         ...others.filter(o => isDamaging(o) && !isFixed(o)).map(o => TYPES[o.type]).filter(Boolean)])];
       if (roster) fits.push([n, typeFit(pk, mv, tr.typeChange, name, roster, ours)]);
