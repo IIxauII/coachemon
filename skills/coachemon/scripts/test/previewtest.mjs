@@ -457,10 +457,10 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
     ["Iron Defense", "Steel", -1, "X"],    // a status move is not an attack
   ] });
   const foe = pv.previewNext(scene).foes[0];
-  assert.deepEqual(foe.attacks, ["Steel", "Steel", "Steel", "Ground"],
-    `variable power counts, fixed damage doesn't, one entry per move: ${JSON.stringify(foe.attacks)}`);
+  assert.deepEqual(foe.attackTypes, ["Steel", "Steel", "Steel", "Ground"],
+    `variable power counts, fixed damage doesn't, one entry per move: ${JSON.stringify(foe.attackTypes)}`);
   assert.deepEqual(foe.statusMoves, ["Iron Defense"], `and the status move is still only a status move: ${JSON.stringify(foe.statusMoves)}`);
-  console.log(`== foe attacks ${JSON.stringify(foe.attacks)}`);
+  console.log(`== foe attacks ${JSON.stringify(foe.attackTypes)}`);
 }
 
 // ---- 8. The card, in both views, plus the one-line summary.

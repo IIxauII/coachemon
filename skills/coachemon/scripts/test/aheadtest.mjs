@@ -223,7 +223,7 @@ const card = (ah, m, v = "full") => { globalThis.localStorage = { getItem: () =>
   console.log(`== mini\n${card(ah2, m2, "mini")}`);
   console.log(`summary ${JSON.stringify(ah2.aheadSummary(m2))}`);
 
-  // What they swing back with is the preview's `attacks`, and those are read by 08-party's coverage rule (#266):
+  // What they swing back with is the preview's `attackTypes`, and those are read by 08-party's coverage rule (#266):
   // a rival whose only attack is Gyro Ball is a Steel attacker, however the game works its power out. Before the
   // widening the preview dropped it, the foes' own types (Dragon/Ground, Fighting/Steel) stood in, and an Ice party
   // was told it was walking into Dragon rather than into the Steel that is actually aimed at it.

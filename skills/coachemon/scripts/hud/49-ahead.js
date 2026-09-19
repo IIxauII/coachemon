@@ -108,7 +108,7 @@ const readiness = (model, profile) => {
   const unanswered = foes.filter((_, i) => !answering[i].size);
   const hitters = party.filter(p => answering.some(set => set.has(p))).map(p => p.name);
   // What they swing back with: their damaging moves when the replay generated a moveset, else their own types.
-  const theirTypes = [...new Set(foes.flatMap(f => (f.attacks?.length ? f.attacks : f.types) ?? []))];
+  const theirTypes = [...new Set(foes.flatMap(f => (f.attackTypes?.length ? f.attackTypes : f.types) ?? []))];
   const threats = theirTypes.map(t => ({ type: t, n: profile.weakTo(t).length }))
     .filter(x => x.n >= Math.max(2, Math.ceil(party.length / 2))).sort((a, b) => b.n - a.n);
   const bars = foes.reduce((t, f) => t + Math.max(0, (f.segments ?? 0) - 1), 0);

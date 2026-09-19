@@ -31,7 +31,7 @@ const FIXED_DAMAGE_ATTRS = ["LevelDamageAttr", "RandomLevelDamageAttr", "TargetH
 const movesOf = p => (p?.moveset ?? []).filter(Boolean).map(pm => { try { return pm.getMove(); } catch { return null; } }).filter(Boolean);
 /**
  * Whether a move hits for damage off the type chart, by the two rules above. Exported because the wave preview reads
- * a *foe*'s moveset the same way (48-preview's `attacks`), and read it narrower until #266: it required
+ * a *foe*'s moveset the same way (48-preview's `attackTypes`), and read it narrower until #266: it required
  * `power > 0`, so a Steel foe whose STAB is Gyro Ball read as having no Steel attack at all.
  */
 export const isCoverage = mv => mv.category !== MoveCategory.STATUS && (mv.power > 0 || mv.power === -1)

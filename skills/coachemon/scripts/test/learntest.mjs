@@ -387,7 +387,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 // keeps the team audit's dead-slot check off them.
 {
   const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null,
-    segments: extra.segments ?? 0, attacks: extra.attacks ?? types, statusMoves: [], healMoves: [] });
+    segments: extra.segments ?? 0, attackTypes: extra.attackTypes ?? types, statusMoves: [], healMoves: [] });
   const at40 = (...foes) => ({ wave: 40, exact: true, foes });
   const SOAK = ["Soak","Water",-1,"X",100,[["ChangeTypeAttr",{ type: TY.indexOf("Water") }]],false,3,{ flags: 262144 }];
   const TREAT = ["Trick-or-Treat","Ghost",-1,"X",100,[["AddTypeAttr",{ type: TY.indexOf("Ghost") }]],false,3,{ flags: 262144 }];
@@ -403,7 +403,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(helps.value > blind.value * 1.5, `Soak into a roster it opens (${helps.value} vs ${blind.value})`);
   assert.ok(helps.notes.includes("vs Skarmory at W40"), `named by the foe it pays against: ${helps.notes}`);
   // A foe already that one type: `ChangeTypeAttr.getCondition` refuses, so the move does nothing there.
-  const pool = at40(foe("Vaporeon", ["Water"], { attacks: ["Water","Ice"] }));
+  const pool = at40(foe("Vaporeon", ["Water"], { attackTypes: ["Water","Ice"] }));
   const dead = judge(ludicolo, SOAK, pool);
   assert.ok(dead.value < blind.value * 0.5 && dead.notes.includes("no opening at W40"), `${dead.value}: ${dead.notes}`);
   // Aggron: Scald already hits it ×2, so the rewrite opens nothing — but it still takes both its STABs away.
@@ -412,15 +412,15 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   // The STAB is a share of its *attacks*, one entry per move, and not of its coverage (#266): an Aggron with three
   // Steel moves beside one Ground loses three quarters of them to pure Water, where the distinct types alone read
   // that as half.
-  const many = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attacks: ["Steel","Steel","Steel","Ground"] })));
-  const byType = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attacks: ["Steel","Ground"] })));
+  const many = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attackTypes: ["Steel","Steel","Steel","Ground"] })));
+  const byType = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attackTypes: ["Steel","Ground"] })));
   assert.ok(many.value > byType.value, `three Steel moves are more STAB than one (${many.value} vs ${byType.value})`);
   assert.ok(many.value < strip.value, `and still less than a foe whose every attack is STAB (${many.value} vs ${strip.value})`);
   // And it is arithmetic, not an ordering: Aggron's opening is nil (Scald already hits it ×2), so what is left is the
   // share alone. A quarter more of its attacks losing STAB is worth the same step each time, and the same *ratio* of
   // Steel to Ground scores the same however many moves it is spread over — which is what makes it a share of its
   // moveset rather than a count of its moves.
-  const stab = (...attacks) => judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attacks }))).value;
+  const stab = (...attackTypes) => judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attackTypes }))).value;
   const G = "Ground", S = "Steel";
   const q = [stab(G, G, G, G), stab(S, G, G, G), stab(S, S, G, G), stab(S, S, S, G), stab(S, S, S, S)];
   // The card rounds, so the ladder is even to within that: each rung sits a quarter of the way up, ±1.

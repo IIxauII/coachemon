@@ -115,12 +115,14 @@ const foeData = (p, moves) => {
     segments: p.bossSegments ?? 0,
     shiny: !!p.shiny,
     moves: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getName())).filter(Boolean),
-    // What it can actually attack with, by 08-party's one coverage rule (`isCoverage`): a move the game prices from
-    // the situation (Gyro Ball, Grass Knot) counts, fixed damage doesn't — it ignores the type chart, so it is no
-    // one's answer and no one's STAB worth stripping. **One entry per move, not per type**, so a share of it is a
-    // share of the foe's moveset: 40-learn prices the STAB a rewritten typing takes away against this, and 49-ahead,
-    // which wants the distinct types to judge what the party is walking into, reads it through a `Set` (#266).
-    attacks,
+    // The type of each move it can actually attack with, by 08-party's one coverage rule (`isCoverage`): a move the
+    // game prices from the situation (Gyro Ball, Grass Knot) counts, fixed damage doesn't — it ignores the type
+    // chart, so it is no one's answer and no one's STAB worth stripping. **One entry per move, repeats kept**, so a
+    // share of it is a share of the foe's moveset: 40-learn prices the STAB a rewritten typing takes away against
+    // this, and 49-ahead, which wants the types once each to judge what the party is walking into, reads it through
+    // a `Set` (#266). Not `partyProfile`'s `attacks`, which is our own side's, one entry per type and flagged
+    // for STAB.
+    attackTypes: attacks,
     // What a disrupting move would take away from it (40-learn's roster fit): the status moves Taunt stops and
     // Encore locks it into, and the heals Heal Block stops.
     statusMoves: moves.filter(mv => mv.category === MoveCategory.STATUS).map(moveLabel),
