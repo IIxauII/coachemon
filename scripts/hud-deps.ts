@@ -531,7 +531,7 @@ export const HUD_DEPS = {
   /**
    * §13. The Mystery Encounter card calls nothing that decides an outcome: it
    * reads the handler's requirement answers, and re-implements what each of the
-   * twelve common encounters does from its source file — so every encounter
+   * common, ultra and rogue encounters it knows does from its source file — so every encounter
    * const, the helpers and tuning constants its outcome is spelled from, and the
    * phases that fork the RNG are the dependency. A moved fork offset
    * (`handleOptionSelect` ×1, `MysteryEncounterOptionSelectedPhase` ×500,
