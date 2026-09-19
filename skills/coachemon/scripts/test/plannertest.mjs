@@ -687,7 +687,9 @@ const sporeFoes = (sleeping = false) => [
   assert.match(lineOf(field, "Breloom"), /Spore → Machamp .*sleep/, `Spore is the double's turn line:\n${field.join("\n")}`);
   // Bounded to this turn: a double's status play names no follow-up, because there is no depth 2 to name one.
   assert.ok(!/then /.test(lineOf(field, "Breloom")), `no depth 2 in a double:\n${field.join("\n")}`);
-  assert.match(lineOf(field, "Salamence"), /→ Munchlax/, `the partner takes the foe it can finish:\n${field.join("\n")}`);
+  // Only that the partner still aims where it can finish something — that it is *scored* on the state Spore makes
+  // is 8d's claim, which this field cannot show (Munchlax is Salamence's target either way here).
+  assert.match(lineOf(field, "Salamence"), /→ Munchlax/, `the partner keeps the foe it can finish:\n${field.join("\n")}`);
 }
 
 // 8c. The same field with Machamp already asleep: there is nothing for Spore to add, so Breloom attacks.
@@ -695,6 +697,35 @@ const sporeFoes = (sleeping = false) => [
   const { field } = render({ party: sporeParty(), foes: sporeFoes(true), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles: nothing for a status play to add (live)\n${field.join("\n")}`);
   assert.match(lineOf(field, "Breloom"), /Seed Bomb →/, `no Spore into a sleeping foe:\n${field.join("\n")}`);
+}
+
+// 8d. The partner slot is scored on the state the play makes, not the live one — #262's headline, and the one thing
+// 8b cannot show. Machamp outspeeds Salamence and 1HKOs it; Munchlax cannot hurt anyone. Dragon Claw is the better
+// move into Machamp (200, two hits) than into Munchlax (110, three), so Machamp is where Salamence wants to be — and
+// with no Spore on the field it goes to Munchlax anyway, because Machamp kills it before it acts. Give Breloom Spore
+// — it moves before Machamp, so the sleep cancels that attempt — and Salamence takes Machamp. Nothing about
+// Salamence, its moves or its damage changed between the two arms; only the state its slot was scored on.
+Object.assign(TABLE, {
+  "Breloom>Seed Bomb>Machamp": [[60], 1, 1], "Breloom>Seed Bomb>Munchlax": [[60], 1, 1],
+  "Salamence>Dragon Claw>Machamp": [[200], 1, 1], "Salamence>Dragon Claw>Munchlax": [[110], 1, 1],
+  "Machamp>Close Combat>Breloom": [[400], 1, 1], "Machamp>Close Combat>Salamence": [[400], 1, 1],
+  "Munchlax>Body Slam>Breloom": [[30], 1, 1], "Munchlax>Body Slam>Salamence": [[30], 1, 1],
+});
+{
+  const party = spore => [
+    mon("Breloom", 80, ["Grass", "Fighting"], [250, 200, 110, 60, 90, 150],
+      spore ? [["Seed Bomb", "Grass", 80, "P"], SPORE] : [["Seed Bomb", "Grass", 80, "P"]], true, undefined, { getBattlerIndex: () => 0 }),
+    mon("Salamence", 80, ["Dragon", "Flying"], [270, 200, 150, 120, 130, 130], [["Dragon Claw", "Dragon", 80, "P"]], true, undefined, { getBattlerIndex: () => 1 }),
+  ];
+  const foes = () => [
+    foeAt(2, "Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 140], [["Close Combat", "Fighting", 120, "P"]]),
+    foeAt(3, "Munchlax", 80, ["Normal"], [300, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
+  ];
+  const aim = spore => lineOf(render({ party: party(spore), foes: foes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() }).field, "Salamence");
+  const without = aim(false), with_ = aim(true);
+  console.log(`== doubles: the partner is scored on the hypothesis (live)\nno Spore on the field: ${without}\nSpore on the field: ${with_}`);
+  assert.match(without, /→ Munchlax/, `with nothing to change it, the partner takes the harmless foe:\n${without}`);
+  assert.match(with_, /→ Machamp/, `the partner is scored on the state Spore makes, so it takes the silenced foe:\n${with_}`);
 }
 
 // ---- 9–11. Free switch: the game asks "Will you switch Pokémon?" before the first turn (CheckSwitchPhase).

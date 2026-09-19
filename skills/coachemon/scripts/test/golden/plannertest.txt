@@ -117,6 +117,9 @@ Munchlax Munchlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Salamence 50%
 ⚔ Breloom Grass Seed Bomb → Munchlax spare hit — KO without it
 ⚔ Salamence Dragon Dragon Claw → Munchlax 1 hit
 ◎ focus Munchlax : KO before it moves
+== doubles: the partner is scored on the hypothesis (live)
+no Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Munchlax 3 hits
+Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
 == free switch — same field in the command phase (live)
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
