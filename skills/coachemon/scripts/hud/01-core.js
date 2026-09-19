@@ -117,6 +117,24 @@ export const FIELD_TRAPS = new Set(["Guts", "Simple", "Weak Armor", "Stamina",
   "Justified", "Defiant", "Competitive", "Moxie", "Beast Boost", "Speed Boost", "Shed Skin", "Natural Cure", "Regenerator", "Unaware", "Magic Guard", "Marvel Scale", "Fur Coat"]);
 // Every trap, the two kinds plus Sturdy, which is neither: the KO model already counts it, so nothing warns about it.
 export const TRAPS = new Set([...MOVE_TRAPS, ...FIELD_TRAPS, "Sturdy"]);
+// How good an ability is, as a percent swing on a mon's power: a short list of standouts, good ones and liabilities,
+// everything else 0. Named here rather than on the fusion advisor that first needed it (#148), because the encounter
+// card asks the same question of an ability an encounter hands out — Training Session's pick, Clowning Around's
+// override — and a file never reads a later one.
+export const GREAT_ABILITY = 12, GOOD_ABILITY = 6, BAD_ABILITY = -20;
+const GREAT_ABILITIES = new Set(["Speed Boost", "Parental Bond", "Adaptability", "Magic Guard", "Multiscale", "Shadow Shield", "Protean",
+  "Libero", "Beast Boost", "Moxie", "Regenerator", "Intimidate", "Good as Gold", "Unaware", "Prankster", "Sheer Force",
+  "Tough Claws", "Technician", "Levitate", "Drought", "Drizzle", "Magic Bounce", "Contrary", "Simple", "Tinted Lens",
+  "Serene Grace", "Supreme Overlord", "Sword of Ruin", "Beads of Ruin", "Tablets of Ruin", "Vessel of Ruin"]);
+const GOOD_ABILITIES = new Set(["Sand Stream", "Snow Warning", "Thick Fat", "Filter", "Solid Rock", "Prism Armor", "Fur Coat", "Ice Scales",
+  "Guts", "Download", "Mold Breaker", "Skill Link", "Strong Jaw", "Iron Fist", "Sharpness", "Aerilate", "Pixilate",
+  "Refrigerate", "Galvanize", "Swift Swim", "Chlorophyll", "Sand Rush", "Slush Rush", "Poison Heal", "Water Absorb",
+  "Volt Absorb", "Flash Fire", "Storm Drain", "Lightning Rod", "Sap Sipper", "Motor Drive", "Earth Eater",
+  "Well-Baked Body", "Dragon's Maw", "Transistor", "Steelworker", "Rocky Payload", "Gorilla Tactics", "Sturdy",
+  "Natural Cure", "Unburden", "Hustle", "Punk Rock", "Quark Drive", "Protosynthesis", "Stamina", "Justified"]);
+const BAD_ABILITIES = new Set(["Truant", "Slow Start", "Defeatist", "Klutz", "Stall", "Normalize"]);
+export const abilityValue = name =>
+  (GREAT_ABILITIES.has(name) ? GREAT_ABILITY : GOOD_ABILITIES.has(name) ? GOOD_ABILITY : BAD_ABILITIES.has(name) ? BAD_ABILITY : 0);
 export const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
 export const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 

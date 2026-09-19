@@ -17,7 +17,7 @@ const cat = { P: 0, S: 1, X: 2 };
 const species = (id, name, types, bst, extra = {}) => ({ speciesId: id, name, type1: TY.indexOf(types[0]), type2: types[1] ? TY.indexOf(types[1]) : null,
   baseTotal: bst, getEvolutionLevels: () => [], getRootSpeciesId: () => id, getName: () => name, getIconAtlasKey: () => "k", getIconId: () => String(id), ...extra });
 let nextId = 1;
-const pk = (name, types, level, { stats = [100, 80, 80, 80, 80, 80], hp, bst = 500, moves = [], nature = 0, status = 0, ability = "x", id } = {}) => {
+const pk = (name, types, level, { stats = [100, 80, 80, 80, 80, 80], hp, bst = 500, moves = [], nature = 0, status = 0, ability = "x", id, ivs, held = [] } = {}) => {
   const sp = species(id ?? 100 + nextId, name, types, bst);
   const p = {
     id: id ?? nextId++, name, level, species: sp, nature, status: status ? { effect: status } : null,
@@ -25,7 +25,7 @@ const pk = (name, types, level, { stats = [100, 80, 80, 80, 80, 80], hp, bst = 5
     getTypes: () => [sp.type1, sp.type2].filter(t => t != null), getAbility: () => ({ name: ability }), hasPassive: () => false,
     isAllowedInBattle: () => p.hp > 0, isAllowedInChallenge: () => true, isOfType: t => p.getTypes().includes(t),
     canSetStatus: () => true, getSpeciesForm: () => ({ getBaseStatTotal: () => bst }),
-    getIconAtlasKey: () => "k", getIconId: () => name,
+    getIconAtlasKey: () => "k", getIconId: () => name, getNameToRender: () => name, ivs, getHeldItems: () => held,
     moveset: moves.map(([n, t, pw, c, moveId]) => ({ moveId: moveId ?? n, getName: () => n, getMove: () => ({ name: n, type: TY.indexOf(t), power: pw, category: cat[c] }) })),
   };
   return p;
@@ -35,6 +35,9 @@ const team = () => [
   pk("Lapras", ["Water", "Ice"], 38, { stats: [170, 85, 80, 85, 95, 60], bst: 535, moves: [["Surf", "Water", 90, "S"], ["Ice Beam", "Ice", 90, "S"]] }),
   pk("Jolteon", ["Electric"], 36, { stats: [100, 65, 60, 110, 95, 130], bst: 525, ability: "Volt Absorb", moves: [["Thunderbolt", "Electric", 90, "S"]] }),
 ];
+
+// The same three at a level the wave would actually have them at, for the encounters that price a fight.
+const teamAt = level => team().map(p => Object.assign(p, { level }));
 
 // ---- Requirement mocks: the game's classes by name, `queryParty` a filter.
 const named = name => { const C = function () {}; Object.defineProperty(C, "name", { value: name }); return C; };
@@ -53,11 +56,11 @@ const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").tri
 // Scripted fork draws: `draws[offset]` is the sequence a fork sown at that offset yields (taken modulo the range);
 // a fork at an unscripted offset yields 0s. `forks` records every offset sown.
 const mount = ({ view = "full", type, labels, options, party = team(), wave = 30, money = 5000, draws = {}, misc = null, configs = [],
-  tier = 66, catchAllowed = false, seedOffset = 30512, biome = 3, balls = [10, 10, 10, 0, 0], modifiers = [], dex = {}, menu = options } = {}) => {
+  tier = 66, catchAllowed = false, seedOffset = 30512, biome = 3, balls = [10, 10, 10, 0, 0], modifiers = [], dex = {}, menu = options, tokens = {} } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const forks = [];
-  const me = { encounterType: type, encounterTier: tier, options, misc, catchAllowed, enemyPartyConfigs: configs,
+  const me = { encounterType: type, encounterTier: tier, options, misc, catchAllowed, enemyPartyConfigs: configs, dialogueTokens: tokens,
     ...(seedOffset == null ? {} : { getSeedOffset: () => seedOffset }) };
   // What displayEncounterOptions leaves behind: the requirement answers and the first qualifier as primaryPokemon.
   const meets = menu.map(o => {
@@ -289,16 +292,167 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
 
 // ---- 13. An encounter the card doesn't know: options, requirements and costs only, no calls.
 {
-  const m = show("dark deal (not judged)", { type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option({ mode: 1, requirements: [money$(2)], primary: [typeReq(["Dragon", "Water"])] }), option()] }, ["full", "mini"]).model();
+  const m = show("field trip (not judged)", { type: 8, tier: 66, labels: ["Deal", "Refuse"], options: [option({ mode: 1, requirements: [money$(2)], primary: [typeReq(["Dragon", "Water"])] }), option()] }, ["full", "mini"]).model();
   assert.equal(m.known, false);
-  assert.equal(m.tier, "rogue");
+  assert.equal(m.tier, "common");
   assert.equal(m.options[0].cost, waveMoney(30, 2));
   assert.deepEqual(m.options[0].qualifies, ["Garchomp", "Lapras"]);
   assert.deepEqual(verdicts(m), [null, null]);
-  assert.equal(globalThis.__coachHud.summary().encounter, "Dark Deal: not judged");
+  assert.equal(globalThis.__coachHud.summary().encounter, "Field Trip: not judged");
   // A secondary menu (override options that aren't the encounter's own) is read, not judged.
   const sub = mount(chest({ draws: { 30512: [50] }, menu: [option(), option(), option()], labels: ["A", "B", "C"] })).model();
   assert.equal(sub.known, false);
   assert.deepEqual(sub.options.map(o => o.label), ["A", "B", "C"]);
 }
+// ---- 14. Training Session: the prize with someone to spend it on wins, and the mirror's bars grow with the wave.
+{
+  const training = (party, wave = 60) => ({ type: 5, tier: 19, wave, labels: ["Light", "Medium", "Heavy", "Leave"],
+    options: [option(), option(), option(), option()], party });
+  const stuck = [pk("Slaking", ["Normal"], 40, { ability: "Truant", ivs: [31, 31, 31, 31, 31, 31] }), ...team()];
+  const m = show("training session, a liability ability", training(stuck)).model();
+  assert.deepEqual(verdicts(m), ["ok", "ok", "take", "ok"]);
+  assert.match(m.options[2].outcome, /4-bar boss of itself, \+1 to every stat/, "wave 60 → 2 + 60/30 bars, capped at 6");
+  assert.match(m.options[2].why, /Slaking is stuck with Truant/);
+  assert.match(m.options[0].outcome, /3-bar boss/, "the light mirror grows every 50 waves");
+  // No liability ability, but Garchomp is Bold: its nature drops the stat it attacks with.
+  const bold = [pk("Garchomp", ["Dragon", "Ground"], 40, { stats: [150, 130, 95, 80, 85, 102], bst: 600, nature: 5 }), ...team().slice(1)];
+  const n = mount(training(bold)).model();
+  assert.deepEqual(verdicts(n), ["ok", "take", "ok", "ok"]);
+  assert.match(n.options[1].why, /Garchomp's nature works against it/);
+  // Nothing to fix: the IV prize is the cheapest fight, and leaving is as good.
+  const fine = mount(training(team())).model();
+  assert.deepEqual(verdicts(fine), ["ok", "ok", "ok", "take"]);
+}
+
+// ---- 15. The Pokémon Salesman: a level-5 mon is an unlock buy, judged on the catch card's account reasons.
+{
+  const sale = (dex, money = 50000) => ({ type: 13, tier: 19, money, labels: ["Buy", "Leave"],
+    options: [option({ mode: 1, requirements: [money$(4)] }), option()],
+    misc: { price: waveMoney(30, 4), pokemon: { ...pk("Larvesta", ["Bug", "Fire"], 5, { id: 636 }), species: species(636, "Larvesta", ["Bug", "Fire"], 360), shiny: false, abilityIndex: 2, variant: 0, formIndex: 0 } },
+    dex });
+  const m = show("salesman, a new species", sale({})).model();
+  assert.deepEqual(verdicts(m), ["take", "ok"]);
+  assert.match(m.options[0].outcome, /Larvesta \(hidden ability\) joins at L5/);
+  assert.equal(m.options[0].exact, false, 'what onInit left on the encounter is read, not replayed');
+  // Already owned, so the price buys a level-5 mon and nothing else.
+  const owned = mount(sale({ 636: { caughtAttr: 255n } })).model();
+  assert.deepEqual(verdicts(owned), ["avoid", "take"]);
+  // Wanted, but not at the price of the next three waves' money.
+  const broke = mount(sale({}, waveMoney(30, 4) + 100)).model();
+  assert.deepEqual(verdicts(broke), ["ok", "take"]);
+}
+
+// ---- 16. Trash to Treasure: the dig's two items land on the first member not already capped.
+{
+  const full = m => ({ constructor: { name: m }, getStackCount: () => 4, getMaxStackCount: () => 4 });
+  const party = [pk("Garchomp", ["Dragon", "Ground"], 125, { stats: [150, 130, 95, 80, 85, 102], bst: 600, held: [full("TurnHealModifier")], moves: [["Earthquake", "Ground", 100, "P"]] }),
+    pk("Lapras", ["Water", "Ice"], 124, { stats: [170, 85, 80, 85, 95, 60], bst: 535, moves: [["Surf", "Water", 90, "S"]] })];
+  const m = show("trash to treasure", { type: 18, tier: 19, wave: 120, labels: ["Investigate", "Dig"], options: [option(), option()], party,
+    configs: [{ levelAdditiveModifier: 0.5, pokemonConfigs: [{ species: species(569, "Garbodor", ["Poison"], 474), isBoss: true, bossSegments: 6 }] }] }).model();
+  assert.deepEqual(verdicts(m), ["take", "ok"]);
+  assert.match(m.options[0].outcome, /6 bars.*no switching/);
+  assert.match(m.options[1].outcome, /^Leftovers to Lapras, Shell Bell to Garchomp/, "Garchomp's Leftovers are capped; nobody holds a Shell Bell");
+  assert.match(m.options[1].why, /60 waves of shopping left/);
+}
+
+// ---- 17. Clowning Around: the ability and Blacephalon's types are read, the type shuffle is replayed.
+{
+  const party = [pk("Garchomp", ["Dragon", "Ground"], 90, { stats: [150, 130, 95, 80, 85, 102], bst: 600, moves: [["Earthquake", "Ground", 100, "P"]] }),
+    pk("Lapras", ["Water", "Ice"], 88, { stats: [170, 85, 80, 85, 95, 60], bst: 535, moves: [["Body Slam", "Normal", 85, "P"], ["Surf", "Water", 90, "S"]] })];
+  const { model } = show("clowning around", { type: 20, tier: 19, wave: 90, labels: ["Battle", "Item shuffle", "Type shuffle"],
+    options: [option(), option(), option()], party, tokens: { ability: "[color=#fff]Prankster[/color]" },
+    draws: { 30512: [6] },
+    configs: [{ trainerConfig: { name: "Harlequin", partyTemplates: [{ size: 2 }] }, doubleBattle: true,
+      pokemonConfigs: [{ species: species(122, "Mr. Mime", ["Psychic", "Fairy"], 460), isBoss: true },
+        { species: species(806, "Blacephalon", ["Fire", "Ghost"], 570), isBoss: true, customPokemonData: { types: [9, 12] } }] }] });
+  const m = model();
+  assert.deepEqual(verdicts(m), ["take", null, null]);
+  assert.match(m.options[0].outcome, /Fire \/ Electric, Prankster/);
+  assert.match(m.options[0].why, /Prankster is worth keeping/);
+  // Garchomp attacks only on its own types, so its new one is the fork's `randSeedInt(18)`; Lapras has an off-type
+  // Normal move, which the game prefers and which hands it STAB it didn't have.
+  assert.equal(m.options[2].outcome, "every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal");
+  assert.equal(m.options[2].exact, true);
+  assert.match(m.options[2].why, /1 member gains STAB/);
+}
+
+// ---- 18. The Expert Pokémon Breeder: the most eggs wins, and losing costs only friendship.
+{
+  const bench = pk("Magikarp", ["Water"], 78, { bst: 200 });
+  const m = show("expert breeder", { type: 30, tier: 19, wave: 80, labels: ["Magikarp", "Lapras", "Jolteon"],
+    options: [option(), option(), option()], party: teamAt(80),
+    misc: { pokemon1: bench, pokemon1CommonEggs: 5, pokemon1RareEggs: 4,
+      pokemon2: teamAt(80)[1], pokemon2CommonEggs: 5, pokemon2RareEggs: 2,
+      pokemon3: teamAt(80)[2], pokemon3CommonEggs: 3, pokemon3RareEggs: 0 },
+    configs: [{ trainerType: 1, pokemonConfigs: [{ species: species(35, "Clefable", ["Fairy"], 483) }, { species: species(113, "Chansey", ["Normal"], 450) }, { species: species(132, "Ditto", ["Normal"], 288) }] }] }).model();
+  assert.deepEqual(verdicts(m), ["take", "ok", "ok"]);
+  assert.match(m.options[0].outcome, /Magikarp fights the breeder's 3 alone → 4 Great eggs \+ 5 Common eggs/);
+  assert.match(m.options[0].why, /1 of yours fit to fight/);
+  assert.match(m.options[0].why, /lose and the party comes back/);
+}
+
+// ---- 19. Dark Deal: which member it takes is the pre-option fork's draw, the legendary's tier the option fork's.
+{
+  const deal = draws => ({ type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option(), option()], draws });
+  const { forks, model } = show("dark deal, it takes the weakest", deal({ 30512: [2], [30512 * 500]: [70] }));
+  assert.ok(forks.includes(30512) && forks.includes(30512 * 500), `both forks: ${forks}`);
+  const m = model();
+  assert.deepEqual(verdicts(m), ["take", "ok"]);
+  assert.match(m.options[0].outcome, /Jolteon is taken for good → .*starter tier 6/);
+  assert.equal(m.options[0].exact, true);
+  // It rolled the carry instead: the same deal, the opposite call.
+  const carry = mount(deal({ 30512: [0], [30512 * 500]: [2] })).model();
+  assert.deepEqual(verdicts(carry), ["avoid", "take"]);
+  assert.match(carry.options[0].outcome, /Garchomp is taken for good → .*starter tier 9–10/);
+}
+
+// ---- 20. A Trainer's Test: an Elite Four party for an Epic egg, or a full heal for declining.
+{
+  const test = (party, level = 1) => ({ type: 17, tier: 3, wave: 60, labels: ["Accept", "Decline"], options: [option(), option()], party,
+    configs: [{ levelAdditiveModifier: level, trainerConfig: { name: "Cheryl", partyTemplates: [{ size: 6 }] } }] });
+  const m = show("a trainer's test", test(teamAt(65))).model();
+  assert.deepEqual(verdicts(m), ["take", "ok"]);
+  assert.match(m.options[0].outcome, /fight Cheryl: 6 mons, Elite Four strength → an Epic egg/);
+  assert.match(m.options[0].why, /6 mons at ~L68 vs your L65, 3 of yours fit to fight/);
+  // A party that is mostly down: six mons against one that can stand is a fight to decline.
+  const hurt = [pk("Garchomp", ["Dragon", "Ground"], 65, { stats: [150, 130, 95, 80, 85, 102], bst: 600 }),
+    pk("Lapras", ["Water", "Ice"], 64, { stats: [170, 85, 80, 85, 95, 60], bst: 535, hp: 10 })];
+  const beaten = mount(test(hurt)).model();
+  assert.deepEqual(verdicts(beaten), ["avoid", "take"]);
+  assert.match(beaten.options[1].why, /the heal is worth more/);
+}
+
+// ---- 21. Weird Dream: `onInit` has already rolled the team, so the swap is named, and refusing costs levels.
+{
+  const party = teamAt(90);
+  const to = (id, name, types, bst) => species(id, name, types, bst, { getBaseStatTotal: () => bst });
+  const m = show("weird dream", { type: 23, tier: 3, wave: 90, labels: ["Accept", "Battle", "Refuse"],
+    options: [option(), option(), option()], party,
+    misc: { teamTransformations: [
+      { previousPokemon: party[0], newSpecies: to(149, "Dragonite", ["Dragon", "Flying"], 700) },
+      { previousPokemon: party[1], newSpecies: to(131, "Gyarados", ["Water", "Flying"], 640) },
+      { previousPokemon: party[2], newSpecies: to(145, "Zapdos", ["Electric", "Flying"], 580) }] },
+    configs: [{ trainerConfig: { name: "Your alternate self", partyTemplates: [{ size: 3 }] } }] }).model();
+  assert.deepEqual(verdicts(m), ["take", "ok", "avoid"]);
+  assert.match(m.options[0].outcome, /Garchomp → Dragonite \(\+100\), Lapras → Gyarados \(\+105\), Jolteon → Zapdos \(\+55\)/);
+  assert.match(m.options[0].why, /\+260 base stats across the party/);
+  assert.match(m.options[2].outcome, /^every member loses 10% of its level \(your L90 drops 9\)/);
+}
+
+// ---- 22. The Winstrate Challenge: five battles with no healing between, or a heal and a Rarer Candy.
+{
+  const mons = n => ({ trainerType: 1, pokemonConfigs: Array.from({ length: n }, (_, i) => ({ species: species(300 + i, `W${i}`, ["Normal"], 400) })) });
+  // Pushed back to front: Vito's five are config 0, Victor's two are popped first.
+  const configs = [mons(5), mons(1), mons(3), mons(2), mons(2)];
+  const m = show("winstrate, three left standing", { type: 24, tier: 3, wave: 120, labels: ["Accept", "Refuse"],
+    options: [option(), option()], configs, party: teamAt(120) }).model();
+  assert.deepEqual(verdicts(m), ["avoid", "take"]);
+  assert.match(m.options[0].outcome, /5 trainer battles back to back, 13 mons in all, no healing between/);
+  assert.match(m.options[0].why, /13 mons at ~L122 vs your L120, 3 of yours fit to fight/);
+  // A full, healthy party can get through thirteen.
+  const six = [...teamAt(120), pk("Tyranitar", ["Rock", "Dark"], 120, { bst: 600 }), pk("Metagross", ["Steel", "Psychic"], 120, { bst: 600 }), pk("Dragonite", ["Dragon", "Flying"], 120, { bst: 600 })];
+  const deep = mount({ type: 24, tier: 3, wave: 120, labels: ["Accept", "Refuse"], options: [option(), option()], configs, party: six }).model();
+  assert.deepEqual(verdicts(deep), ["take", "ok"]);
+}
+
 console.log("ok");

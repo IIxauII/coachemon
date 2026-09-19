@@ -593,6 +593,29 @@ export const HUD_DEPS = {
     `src/data/mystery-encounters/encounters/uncommon-breed-encounter.ts#UncommonBreedEncounter`,
     `src/data/mystery-encounters/encounters/global-trade-system-encounter.ts#GlobalTradeSystemEncounter`,
     `src/data/mystery-encounters/encounters/global-trade-system-encounter.ts#getPokemonTradeOptions`,
+    // The ultra tier (#145): the mirror-match prizes and bar counts, the salesman's
+    // mon and price, the dig's Black Sludge, the clown's ability pool and type
+    // shuffle, the breeder's egg maths and its soft loss.
+    `src/data/mystery-encounters/encounters/training-session-encounter.ts#TrainingSessionEncounter`,
+    `src/data/mystery-encounters/encounters/the-pokemon-salesman-encounter.ts#ThePokemonSalesmanEncounter`,
+    `src/data/mystery-encounters/encounters/the-pokemon-salesman-encounter.ts#getSalesmanSpeciesOffer`,
+    `src/data/mystery-encounters/encounters/trash-to-treasure-encounter.ts#TrashToTreasureEncounter`,
+    `src/data/mystery-encounters/encounters/clowning-around-encounter.ts#ClowningAroundEncounter`,
+    `src/data/mystery-encounters/encounters/the-expert-pokemon-breeder-encounter.ts#TheExpertPokemonBreederEncounter`,
+    // The rogue tier (#145): which member Dark Deal takes and what it pays with,
+    // the stat trainer's rewards, the whole Weird Dream transformation, the
+    // Winstrate run of five.
+    `src/data/mystery-encounters/encounters/dark-deal-encounter.ts#DarkDealEncounter`,
+    `src/data/mystery-encounters/encounters/a-trainers-test-encounter.ts#ATrainersTestEncounter`,
+    `src/data/mystery-encounters/encounters/weird-dream-encounter.ts#WeirdDreamEncounter`,
+    `src/data/mystery-encounters/encounters/the-winstrate-challenge-encounter.ts#TheWinstrateChallengeEncounter`,
+    // The draws those rules replay, and the party template a trainer fight's size
+    // is read off.
+    `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#getRandomPlayerPokemon`,
+    `src/utils/common.ts#randSeedShuffle`,
+    `src/utils/pokemon-utils.ts#getRandomRegularPokemonType`,
+    `src/data/trainers/trainer-config.ts#TrainerConfig.initForStatTrainer`,
+    `src/data/trainers/trainer-party-template.ts#trainerPartyTemplates`,
   ],
 
   /**

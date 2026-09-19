@@ -16,12 +16,18 @@
 // `getSeedOffset()` is wave·1000 + 512 per MysteryEncounterPhase start. `executeWithSeedOffset` restores the stream when
 // the callback returns, and these callbacks are async, so only the draws before their first `await` are forked: those
 // are **exact** (the chest's trap roll, the store's item rolls, the teleport destination, who the fallout burns, the
-// dealer's new nature), everything after is on the live stream and the card gives odds.
+// dealer's new nature, which member Dark Deal takes and the tier of the legendary it pays with, the second type
+// Clowning Around gives every member), everything after is on the live stream and the card gives odds. An encounter
+// whose `onInit` already rolled its outcome needs no replay at all: the salesman's mon and price, the clown's random
+// ability and Blacephalon's types, Weird Dream's whole transformed team and the breeder's three candidates and their
+// egg counts are all sitting on `misc`, on `enemyPartyConfigs` or among the dialogue tokens by the time the screen opens.
 //
 // ---- Judging (first cuts, all of them)
 // A fight is "hard" when the foe is 5+ levels over our best, or nothing hits it super-effectively and it's at our level
-// (a boss: within 3 levels under it). Money is spent freely only while it leaves RESERVE_WAVES waves' worth of reward money.
-import { TYPES, natureOf, sandbox, typesOf } from "./01-core.js";
+// (a boss: within 3 levels under it). A **trainer** fight has no party to match up against — the mons are built when the
+// battle starts — so it is hard on the level gap alone, or when it brings more than MONS_EACH mons for each member of
+// ours still fit to fight. Money is spent freely only while it leaves RESERVE_WAVES waves' worth of reward money.
+import { TYPES, abilityValue, natureOf, sandbox, typesOf } from "./01-core.js";
 import { finalBstOf, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
 import { catchWorth } from "./45-catch.js";
 
@@ -38,6 +44,11 @@ const CHEST = MysteryEncounterType.MYSTERIOUS_CHEST, FIGHT_OR_FLIGHT = MysteryEn
   STRONG_STUFF = MysteryEncounterType.THE_STRONG_STUFF, BERRIES = MysteryEncounterType.BERRIES_ABOUND,
   PART_TIMER = MysteryEncounterType.PART_TIMER, TELEPORT = MysteryEncounterType.TELEPORTING_HIJINKS,
   BREED = MysteryEncounterType.UNCOMMON_BREED, GTS = MysteryEncounterType.GLOBAL_TRADE_SYSTEM;
+const TRAINING = MysteryEncounterType.TRAINING_SESSION, SALESMAN = MysteryEncounterType.THE_POKEMON_SALESMAN,
+  TRASH = MysteryEncounterType.TRASH_TO_TREASURE, CLOWN = MysteryEncounterType.CLOWNING_AROUND,
+  BREEDER = MysteryEncounterType.THE_EXPERT_POKEMON_BREEDER, DARK_DEAL = MysteryEncounterType.DARK_DEAL,
+  TRAINERS_TEST = MysteryEncounterType.A_TRAINERS_TEST, WEIRD_DREAM = MysteryEncounterType.WEIRD_DREAM,
+  WINSTRATE = MysteryEncounterType.THE_WINSTRATE_CHALLENGE;
 const TIERS = { [MysteryEncounterTier.COMMON]: "common", [MysteryEncounterTier.GREAT]: "great", [MysteryEncounterTier.ULTRA]: "ultra", [MysteryEncounterTier.ROGUE]: "rogue" };
 const DISABLED_MODES = new Set([MysteryEncounterOptionMode.DISABLED_OR_DEFAULT, MysteryEncounterOptionMode.DISABLED_OR_SPECIAL]);
 // Teleporting Hijinks' BIOME_CANDIDATES, and the ones worth the trip (the biome card's rare destinations).
@@ -46,6 +57,9 @@ const TELEPORT_BIOMES = [[BiomeId.SPACE, "Space"], [BiomeId.FAIRY_CAVE, "Fairy C
 const RARE_BIOMES = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 const RESERVE_WAVES = 3;
 const HARD_LEVEL_GAP = 5, BOSS_LEVEL_EDGE = 3;
+// How many of a trainer's mons one fit member of ours is reckoned to get through, for the fights whose party the card
+// can't see and so can't match up by type.
+const MONS_EACH = 3;
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const strip = t => String(t ?? "").replace(/\[\/?[^\]]*\]/g, "").replace(/\s+/g, " ").trim();
@@ -117,8 +131,32 @@ const context = (s, me, options, account) => {
       weak.length ? `${weak.length} weak to it` : null].filter(Boolean).join(", ");
     return { hard, text };
   };
+  // A trainer the encounter set up: how many mons it brings (its own configs, else the party template it was given)
+  // and the level the battle will give them.
+  const trainer = (k = 0) => {
+    const cfg = me.enemyPartyConfigs?.[k];
+    if (!cfg || (!cfg.trainerConfig && cfg.trainerType == null)) return null;
+    const size = cfg.pokemonConfigs?.length || tryDo(() => cfg.trainerConfig.partyTemplates?.[0]?.size) || 0;
+    const scale = Math.max(Math.round(wave / 10 * (cfg.levelAdditiveModifier ?? 0)), 0);
+    return { name: tryDo(() => cfg.trainerConfig?.name), size, level: (b.enemyLevels?.[0] ?? top?.level ?? 1) + scale };
+  };
+  // A trainer fight, whose party the card can't see: no types to match up, so it is judged on the level gap and on how
+  // many mons we would have to get through against how many of ours are still fit to.
+  const gauntlet = (t, { mons = t?.size ?? 0, ours = null } = {}) => {
+    if (!t || !alive.length) return { hard: false, text: "" };
+    const fit = ours ?? alive.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.5).length;
+    const gap = t.level - top.level;
+    return { hard: gap >= HARD_LEVEL_GAP || mons > fit * MONS_EACH, fit,
+      text: `${plural(mons, "mon")} at ~L${t.level} vs your L${top.level}, ${fit} of yours fit to fight` };
+  };
+  // The first party member not already holding a full stack of a held item, which is who the game hands a fresh one to.
+  const roomFor = cls => party.find(p => {
+    const cur = (tryDo(() => p.getHeldItems(), []) ?? []).find(m => m?.constructor?.name === cls);
+    return !cur || (tryDo(() => cur.getStackCount()) ?? 0) < (tryDo(() => cur.getMaxStackCount()) ?? Infinity);
+  }) ?? null;
   const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
   return { s, account, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare,
+    trainer, gauntlet, roomFor, token: k => strip(me.dialogueTokens?.[k]) || null,
     pre: seeded(1), during: seeded(500), post: seeded(2000) };
 };
 
@@ -126,6 +164,215 @@ const LEAVE = { outcome: "shop only, no reward", verdict: "ok" };
 
 // ---- Per encounter: one entry per `me.options` index. { outcome, battle, verdict: take|ok|avoid|null, why, exact, needs }
 const RULES = {
+  // ---- Ultra tier (weight 19)
+  [TRAINING]: c => {
+    // The mon you pick is pulled out of the party and fights you as a boss of itself — same level, form, IVs, moves and
+    // held items — for a prize on the mon that fought. Bars grow with the wave, one option at a time.
+    const bars = (every, cap) => Math.min(2 + Math.floor(c.wave / every), cap);
+    const room = p => (p.ivs ?? []).reduce((t, iv) => t + Math.max(31 - iv, 0), 0);
+    const fit = c.alive.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
+    const pickBy = score => fit.map(p => ({ p, v: score(p) })).filter(x => x.v > 0).reduce((t, x) => (!t || x.v > t.v ? x : t), null);
+    // Which prize has someone to spend it on: IV room, a nature working against the mon's own attacking stat (the
+    // vitamin dealer's test), an ability the tier list calls a liability.
+    const ivs = pickBy(p => (p.ivs ? room(p) : 0));
+    const nature = pickBy(p => {
+      const fx = tryDo(() => natureOf(p.nature));
+      if (!fx?.down) return 0;
+      const main = tryDo(() => (p.getStat(Stat.ATK) >= p.getStat(Stat.SPATK) ? "Atk" : "SpA"), "Atk");
+      return fx.down === main || fx.down === "Spe" ? 2 : 0;
+    });
+    const ability = pickBy(p => {
+      const name = tryDo(() => p.getAbility().name);
+      return name && abilityValue(name) < 0 ? 2 : 0;
+    });
+    const who = x => (x ? x.p.name : "the mon you pick");
+    const out = [
+      { outcome: `it fights you as a ${bars(50, 5)}-bar boss of itself → 2 of its weakest IVs go up (+10 under 11, +5 under 21, else +3)`,
+        why: ivs ? `${who(ivs)} has the most IV room` : fit.some(p => p.ivs) ? "every member is near-maxed" : null, worth: ivs ? 1 : 0 },
+      { outcome: `it fights you as a ${bars(40, 6)}-bar boss of itself → pick any nature for it`,
+        why: nature ? `${who(nature)}'s nature works against it` : "no member's nature is hurting it", worth: nature ? 2 : 0.5 },
+      { outcome: `it fights you as a ${bars(30, 6)}-bar boss of itself, +1 to every stat on entry → pick any of its abilities, hidden included`,
+        why: ability ? `${who(ability)} is stuck with ${tryDo(() => ability.p.getAbility().name)}` : "no member's ability is a liability",
+        worth: ability ? 3 : 0.5 },
+      { ...LEAVE },
+    ];
+    // The prize with someone to spend it on wins, and a harder mirror is only worth it for a bigger prize.
+    const best = out.slice(0, 3).reduce((b, o, k) => (o.worth > out[b].worth ? k : b), 0);
+    return out.map((o, k) => (k === 3 ? { ...o, verdict: out[best].worth > 0.5 ? "ok" : "take" }
+      : { ...o, verdict: k === best && o.worth > 0.5 ? "take" : "ok" }));
+  },
+
+  [SALESMAN]: c => {
+    const mon = c.me.misc?.pokemon;
+    const price = c.me.misc?.price ?? c.opt(0).cost ?? c.waveMoney(4);
+    const worth = mon ? tryDo(() => catchWorth(c.account, mon)) : null;
+    const wanted = worth && worth.value >= worth.show;
+    const hidden = tryDo(() => mon.abilityIndex === 2);
+    const name = mon ? `${tryDo(() => mon.getNameToRender(), mon.name) ?? mon.name}${mon.shiny ? " ★shiny" : ""}${hidden ? " (hidden ability)" : ""}`
+      : c.token("purchasePokemon") ?? "a mon";
+    const afford = c.spare(price) >= 0;
+    const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
+    return [
+      // It is caught, not recruited: it arrives at level 5, so what it is worth is an unlock, which is the catch
+      // card's account question and not this card's.
+      { outcome: `${money(price)}: ${name} joins at L5`,
+        verdict: wanted && afford ? "take" : wanted ? "ok" : "avoid",
+        why: wanted ? (afford ? why : `${why}, but it leaves only ${money(c.s.money - price)}`) : `L5 and ${why}`, needs: "the money" },
+      { ...LEAVE, verdict: wanted && afford ? "ok" : "take" },
+    ];
+  },
+
+  [TRASH]: c => {
+    const f = c.foe(0);
+    const fight = c.fight(f);
+    const lands = (item, p) => `${item} to ${p?.name ?? "a party member"}`;
+    return [
+      { outcome: `fight a Gmax Garbodor boss (${f?.bars || "6+"} bars, opens Toxic on your lead and Stockpile on itself; no switching) → Leftovers + Rogue / Ultra / Great rewards`,
+        battle: "boss", verdict: fight.hard ? "ok" : "take", why: fight.text },
+      // Black Sludge is the whole cost: the encounter only spawns from wave 100, so it taxes every shop left in the run.
+      { outcome: `${lands("Leftovers", c.roomFor("TurnHealModifier"))}, ${lands("Shell Bell", c.roomFor("HitHealModifier"))} — and shop items cost 2.5× for the rest of the run`,
+        verdict: fight.hard ? "take" : "ok", why: `${plural(Math.max(180 - c.wave, 0), "wave")} of shopping left to pay it` },
+    ];
+  },
+
+  [CLOWN]: c => {
+    const ability = c.token("ability");
+    const worth = ability ? abilityValue(ability) : 0;
+    const types = tryDo(() => c.me.enemyPartyConfigs[0].pokemonConfigs[1].customPokemonData.types
+      .map(t => TYPES[t]).filter(Boolean).join(" / "));
+    const fight = c.gauntlet(c.trainer(0), { mons: 2 });
+    // Whose items the shuffle would reroll: the most transferable non-berry items, berries not counted.
+    const carried = p => (tryDo(() => p.getHeldItems(), []) ?? [])
+      .filter(m => m?.isTransferable && m?.constructor?.name !== "BerryModifier")
+      .reduce((n, m) => n + (m.stackCount ?? 1), 0);
+    const richest = c.party.reduce((best, p) => (!best || carried(p) > carried(best) ? p : best), null);
+    // Every member's second type is redrawn in the pre-option fork, preferring a type it already attacks with — all of
+    // it before the closure's first `await`, so the card replays the draws rather than describing them.
+    const shuffled = c.pre(() => c.party.map(p => {
+      const own = tryDo(() => p.getTypes({ includeTeraType: false, bypassSummonData: true, ignoreThirdType: true }));
+      if (!own) return null;
+      let pri = (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getMove()))
+        .filter(mv => mv && mv.category !== MoveCategory.STATUS && !own.includes(mv.type)).map(mv => mv.type);
+      pri = [...new Set(pri)].sort(); // the game's own sort, which orders these numbers as strings
+      for (let i = pri.length - 1; i > 0; i--) { const j = int(i + 1); [pri[i], pri[j]] = [pri[j], pri[i]]; }
+      const stab = pri.length > 0;
+      let type, guard = 0;
+      do { type = pri.length ? pri.pop() : int(18); } while (own.includes(type) && ++guard < 40);
+      return { name: p.name, type: TYPES[type], stab };
+    }));
+    const named = shuffled?.filter(Boolean) ?? [];
+    const gains = named.filter(x => x.stab).length;
+    return [
+      { outcome: `double vs boss Mr. Mime and boss Blacephalon (${types ?? "two random types"}, ${ability ?? "a random ability"}; Mr. Mime copies that ability, both Taunt your slots) → rewards, then ${ability ?? "that ability"} onto one of your mons for good`,
+        battle: "double", verdict: fight.hard ? "ok" : worth > 0 ? "take" : "ok",
+        why: worth > 0 ? `${ability} is worth keeping — ${fight.text}` : fight.text },
+      { outcome: `${richest?.name ?? "your best holder"}'s berries and Ultra / Rogue items are rerolled inside their own tiers`,
+        verdict: null, why: "same count, different items" },
+      { outcome: named.length
+        ? `every member's 2nd type is redrawn: ${named.map(x => `${x.name} → ${x.type}`).join(", ")}`
+        : "every member's 2nd type is redrawn, preferring a type it already attacks with",
+        exact: !!named.length, verdict: null,
+        why: gains ? `${plural(gains, "member")} gain${gains === 1 ? "s" : ""} STAB on a move it already has` : "a reshuffle of every weakness" },
+    ];
+  },
+
+  [BREEDER]: c => {
+    const m = c.me.misc ?? {};
+    const t = c.trainer(0);
+    // The three on offer are the party's three least-friendly members, and only the one picked fights: the rest are
+    // taken out of the party for it. Losing is not the run — the party comes back and the mon is fainted at 0
+    // friendship with none of the rewards — so the fight is a free roll on a bench mon.
+    const rows = [0, 1, 2].map(k => {
+      const mon = m[`pokemon${k + 1}`];
+      const common = m[`pokemon${k + 1}CommonEggs`] ?? 0, rare = m[`pokemon${k + 1}RareEggs`] ?? 0;
+      const eggs = [rare ? plural(rare, "Great egg") : null, common ? plural(common, "Common egg") : null].filter(Boolean).join(" + ");
+      return { mon, value: rare * 3 + common, eggs };
+    });
+    const solo = c.gauntlet(t, { mons: t?.size ?? 3, ours: 1 });
+    const best = rows.reduce((b, r, k) => (r.value > rows[b].value ? k : b), 0);
+    return rows.map((r, k) => ({
+      outcome: `${r.mon?.name ?? `option ${k + 1}`} fights the breeder's ${t?.size ?? 3} alone → ${r.eggs || "eggs"} + a Soothe Bell + rewards`,
+      verdict: k === best && r.value > 0 ? "take" : "ok",
+      why: `${solo.text || "the rest of your party sits it out"} — lose and the party comes back, ${r.mon?.name ?? "it"} fainted at 0 friendship with no rewards`,
+    }));
+  },
+
+  // ---- Rogue tier (weight 3, at most one a run)
+  [DARK_DEAL]: c => {
+    // `getRandomPlayerPokemon(true, false, true)`: a random legal member still standing — or, when only one of those is
+    // left, a random fainted legal one. The draw is the pre-option fork's first, so which mon it takes is settled.
+    const legal = c.party.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
+    const standing = legal.filter(p => p.hp > 0);
+    const pool = standing.length === 1 ? legal.filter(p => p.hp <= 0) : standing;
+    const k = pool.length ? c.pre(() => int(pool.length)) : null;
+    const taken = k != null ? pool[k] : null;
+    // The boss's starter tier is the option fork's first draw; which species of that tier is drawn after it, off
+    // tables this card doesn't read.
+    const roll = c.during(() => int(100));
+    const tier = roll == null ? null : roll >= 65 ? "6" : roll >= 15 ? "7" : roll >= 5 ? "8" : "9–10";
+    const carry = taken && taken === c.top;
+    const spare = taken && taken === c.profile.weakest?.mon;
+    const prize = `5 Rogue Balls + a catchable legendary boss${tier ? ` (starter tier ${tier})` : ""} of its types, holding its items`;
+    return [
+      { outcome: taken ? `${taken.name} is taken for good → ${prize}` : `a random member is taken for good → ${prize}`,
+        battle: "boss", exact: !!taken && !!tier, verdict: carry ? "avoid" : spare ? "take" : taken ? "ok" : null,
+        why: carry ? `${taken.name} is your strongest` : spare ? `${taken.name} is your weakest link`
+          : taken ? `L${taken.level} ${taken.name} for a legendary` : "you don't choose who goes" },
+      { ...LEAVE, verdict: carry ? "take" : "ok" },
+    ];
+  },
+
+  [TRAINERS_TEST]: c => {
+    const t = c.trainer(0);
+    const fight = c.gauntlet(t);
+    const name = t?.name ?? c.token("statTrainerName") ?? "a stat trainer";
+    return [
+      { outcome: `fight ${name}: ${t?.size ?? 6} mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards`,
+        battle: "trainer", verdict: fight.hard ? "avoid" : "take", why: fight.text },
+      { outcome: "a full party heal + a Rare egg, then the shop with no free reward",
+        verdict: fight.hard ? "take" : "ok", why: fight.hard ? "the heal is worth more than a fight you lose" : null },
+    ];
+  },
+
+  [WEIRD_DREAM]: c => {
+    const bstOf = p => tryDo(() => p.getSpeciesForm().getBaseStatTotal(), p?.species?.baseTotal ?? 0) ?? 0;
+    // `onInit` has already rolled the whole team, so the species each member becomes is settled before the screen
+    // opens. Its ability, IVs, nature and second type are redrawn later, on the live stream.
+    const rows = (c.me.misc?.teamTransformations ?? []).map(t => {
+      const to = tryDo(() => t.newSpecies.getName(), t?.newSpecies?.name);
+      return to ? { from: t.previousPokemon?.name, to, gain: (tryDo(() => t.newSpecies.getBaseStatTotal()) ?? 0) - bstOf(t.previousPokemon) } : null;
+    }).filter(Boolean);
+    const total = rows.reduce((n, r) => n + r.gain, 0);
+    const list = rows.map(r => `${r.from} → ${r.to} (${r.gain >= 0 ? "+" : "−"}${Math.abs(r.gain)})`).join(", ");
+    const tr = c.trainer(0) ?? (rows.length ? { size: rows.length, level: c.top?.level ?? 1 } : null);
+    const fight = c.gauntlet(tr, { mons: rows.length || 3 });
+    const drop = c.top ? c.top.level - Math.max(Math.ceil(0.9 * c.top.level), 1) : null;
+    return [
+      { outcome: rows.length
+        ? `your whole party is swapped: ${list} — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints`
+        : "your whole party is swapped for stronger species, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints",
+        verdict: total > 0 ? "take" : "ok",
+        why: rows.length ? `+${total} base stats across the party; natures come out neutral, which is what the Mints are for` : null },
+      { outcome: "fight that same team at your own levels, holding your items → pick one of 2 Rogue / 2 Ultra / 2 Great, and one member without a passive gets one for the run",
+        battle: "trainer", verdict: fight.hard ? "avoid" : "ok", why: fight.text },
+      { outcome: `every member loses 10% of its level${drop ? ` (your L${c.top.level} drops ${drop})` : ""}`,
+        verdict: "avoid", why: "the only option that costs you something and gives nothing back" },
+    ];
+  },
+
+  [WINSTRATE]: c => {
+    // One battle per config, popped back to front, with no heal between them — only per-battle state is reset.
+    const cfgs = c.me.enemyPartyConfigs ?? [];
+    const mons = cfgs.reduce((n, cf) => n + (cf.pokemonConfigs?.length ?? 0), 0);
+    const fight = c.gauntlet(c.trainer(0), { mons: mons || cfgs.length });
+    return [
+      { outcome: `${plural(cfgs.length || 5, "trainer battle")} back to back, ${plural(mons || 13, "mon")} in all, no healing between → a Premium Voucher + a Macho Brace`,
+        battle: "trainer", verdict: fight.hard ? "avoid" : "take", why: fight.text },
+      { outcome: "a full party heal + a Rarer Candy",
+        verdict: fight.hard ? "take" : "ok", why: fight.hard ? "you would not finish the run of five" : null },
+    ];
+  },
+
   [CHEST]: c => {
     // getHighestLevelPlayerPokemon(true, false): the first of the highest level among the living.
     const victim = c.top?.name ?? "your top mon";
