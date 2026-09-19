@@ -30,7 +30,9 @@ jobs:
       - run: npm ci --ignore-scripts
 
       # The snapshot refresh runs *here*, not in semantic-release's `prepareCmd`, so the suite below sees the exact
-      # tree the release commits (#258). `chore(release)` is `[skip ci]`, so no workflow ever runs on that commit:
+      # `05-randbats.js` the release commits (#258). `prepareCmd` still writes the three version files after the
+      # suite, which is what a release must do; no *code* is written after it. `chore(release)` is `[skip ci]`, so
+      # no workflow ever runs on that commit:
       # before this, the bot regenerated `05-randbats.js` after the tests and pushed it unseen, and a generator that
       # had drifted from the file it writes (the pre-#191 non-module form) took master red for a whole release.
       # A failed refresh is not a failed release — `gen-randbats.ts` keeps the existing snapshot and exits 0.
