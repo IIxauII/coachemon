@@ -36,18 +36,15 @@ jobs:
       # before this, the bot regenerated `05-randbats.js` after the tests and pushed it unseen, and a generator that
       # had drifted from the file it writes (the pre-#191 non-module form) took master red for a whole release.
       # A failed refresh is not a failed release — `gen-randbats.ts` keeps the existing snapshot and exits 0.
-      #
-      # The marker is matched against the *commit message*, not the workflow, and it needs no special placement: a
-      # push whose head commit mentions it anywhere — a prose line about this very problem included — runs nothing at
-      # all. So describe the release commit's marker, never spell it, in a message that has to be tested.
+      # The marker is matched against the *commit message*, not the workflow; `CLAUDE.md` carries the rule for
+      # writing one (#275, #278).
       - run: npm run randbats:gen
 
       - run: npm run typecheck
+      # `npm test` is both suites since #259: the unit tests and then the 24 HUD goldens, which bundle the real
+      # `skills/coachemon/scripts/hud/*.js` and so catch a generated module that stopped exporting a name another
+      # one imports. The golden run used to be spelled out here as well; that second run is gone (#278).
       - run: npm test
-      # The golden suite bundles the real `skills/coachemon/scripts/hud/*.js`, so it is what catches a generated
-      # module that stopped exporting a name another one imports. Spelled out rather than run through `npm test`
-      # because nothing ran it at all when this landed; #259 folds it into `npm test`, and then this line goes.
-      - run: node skills/coachemon/scripts/test/run.mjs
 
       # semantic-release is not a devDependency on purpose: installing the plugin
       # runs `npm ci` in Claude Code's cache, and it should not pull the release toolchain.

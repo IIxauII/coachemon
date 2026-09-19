@@ -8,10 +8,10 @@
  *   npm run enums:gen -- --source ../pokerogue
  *   npm run enums:gen -- --check           # fail if generated.ts has drifted from this generator
  *
- * `--check` is there for CI to run (#258): the output is a function of the pinned tag
- * and this file, so a hand-edit to `src/enums/generated.ts` — or a generator
- * change that was never re-run — is a red build rather than a silent revert at
- * the next generate.
+ * `--check` is what CI runs on every PR (#258, #278): the output is a function of
+ * the pinned tag, this file and `src/enums/parse.ts` (imported below) alone, so a
+ * hand-edit to `src/enums/generated.ts` — or a generator change that was never
+ * re-run — is a red build rather than a silent revert at the next generate.
  *
  * The pin is shared with the escape ladder: both resolve `v<gameVersion>` and
  * never fetch a default branch, because the repo's default is `beta` and its
@@ -127,16 +127,16 @@ lines.push(
   "",
 );
 const text = lines.join("\n");
-const rel = path.relative(process.cwd(), new URL(OUT).pathname);
+const relOut = path.relative(process.cwd(), new URL(OUT).pathname);
 const counts = Object.entries(parsed).map(([n, m]) => `${n}=${m.length}`).join(", ");
 if (args.check) {
   if (!existsSync(OUT) || readFileSync(OUT, "utf8") !== text) {
-    console.error(`${rel} is stale — run \`npm run enums:gen\``);
+    console.error(`${relOut} is stale — run \`npm run enums:gen\``);
     process.exit(1);
   }
-  console.log(`${rel} up to date at ${tag}: ${counts}`);
+  console.log(`${relOut} up to date at ${tag}: ${counts}`);
 } else {
   mkdirSync(path.dirname(new URL(OUT).pathname), { recursive: true });
   writeFileSync(OUT, text);
-  console.log(`wrote ${rel} from ${tag}: ${counts}`);
+  console.log(`wrote ${relOut} from ${tag}: ${counts}`);
 }
