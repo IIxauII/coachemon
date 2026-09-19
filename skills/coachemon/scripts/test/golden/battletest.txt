@@ -144,6 +144,42 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 -- after + (mini)
 🎯 W89 + {Expand} × {Close}
 ⚔ Charizard Fire Flamethrower → Swinub ⚠ Thick Fat 1 hit
+== fieldTrap (full)
+🎯 W89 ⚔ Charizard Flamethrower → Krookodile · 1 hit ⚔ Blastoise Hydro Pump → Krookodile · 1 hit + {Show details} × {Close}
+summary easy | Charizard Flamethrower → Krookodile · 1 hit ; Blastoise Hydro Pump → Krookodile · 1 hit
+-- after + (full)
+🎯 W89 − {Minimal overview} × {Close}
+⚔ Charizard Fire Flamethrower → Krookodile 1 hit spare hit — KO without it
+⚔ Blastoise Water Hydro Pump → Krookodile 1 hit spare hit — KO without it
+◎ focus Krookodile : KO before it moves
+Druddigon Druddigon L40 Dragon 100% ▲ — ↯ Normal Tackle → Charizard moves after
+Krookodile Krookodile L40 Ground Dark 100% ✦ ⚠ Moxie ▲ Water ↯ Dark Crunch → Charizard moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== fieldTrap (mini)
+🎯 W89 ⚔ Charizard Flamethrower → Krookodile · 1 hit ⚔ Blastoise Hydro Pump → Krookodile · 1 hit + {Show details} × {Close}
+-- after + (mini)
+🎯 W89 + {Expand} × {Close}
+⚔ Charizard Fire Flamethrower → Krookodile 1 hit spare hit — KO without it
+⚔ Blastoise Water Hydro Pump → Krookodile 1 hit spare hit — KO without it
+◎ focus Krookodile : KO before it moves
+== contactTrap (full)
+🎯 W89 ⚔ Charizard Flare Blitz → Krookodile · 2 hits ⚔ Blastoise Hydro Pump → Krookodile · 1 hit + {Show details} × {Close}
+summary easy | Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
+-- after + (full)
+🎯 W89 − {Minimal overview} × {Close}
+⚔ Charizard Fire Flare Blitz → Krookodile 2 hits spare hit — KO without it
+⚔ Blastoise Water Hydro Pump → Krookodile 1 hit
+◎ focus Krookodile : KO before it moves
+Druddigon Druddigon L40 Dragon 100% ✦ ⚠ Rough Skin ▲ — ↯ Normal Tackle → Blastoise moves after
+Krookodile Krookodile L40 Ground Dark 100% ✦ ⚠ Moxie ▲ Water ↯ Dark Crunch → Charizard moves after
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== contactTrap (mini)
+🎯 W89 ⚔ Charizard Flare Blitz → Krookodile · 2 hits ⚔ Blastoise Hydro Pump → Krookodile · 1 hit + {Show details} × {Close}
+-- after + (mini)
+🎯 W89 + {Expand} × {Close}
+⚔ Charizard Fire Flare Blitz → Krookodile 2 hits spare hit — KO without it
+⚔ Blastoise Water Hydro Pump → Krookodile 1 hit
+◎ focus Krookodile : KO before it moves
 == modelled (full)
 🎯 W89 ⚔ Scrafty Brick Break → Pineco · 1 hit + {Show details} × {Close}
 summary easy | Scrafty Brick Break → Pineco · 1 hit

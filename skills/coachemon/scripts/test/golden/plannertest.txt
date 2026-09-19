@@ -185,6 +185,14 @@ foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+== doubles slot 0 locked into a spread move one foe answers (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Normal Boomburst → both locked in · Snorlax 2 hits
+⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
+foes weak to: Fighting ×2 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
+Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
 == doubles slot 0 switching (live)
 🎯 W200 · Cyrus Lucario › Metagross − {Minimal overview} × {Close}
 now: ⇄ Garchomp out › Metagross in · takes ~16%

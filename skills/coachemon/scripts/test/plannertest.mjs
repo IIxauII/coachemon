@@ -804,6 +804,25 @@ const hydreigonSnorlax = () => [
   assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Aura Sphere → Hydreigon/, "slot 1 is planned around it");
 }
 
+// 16b. Slot 0 is locked into a spread move the foe standing in front of it can't be touched by (no Boomburst row for
+// Hydreigon). The locked path resolves a spread move per foe like any other, so the line still says what the game
+// will do to Snorlax instead of falling to the bare "locked in" that aims nowhere (#261).
+{
+  // No `Garchomp>Boomburst>Hydreigon` row, so Boomburst is filtered out of that pool; Dragon Claw keeps the pool
+  // non-empty, which is what stops `fake-turn` falling back to approximated outcomes and handing Boomburst back.
+  Object.assign(TABLE, { "Garchomp>Boomburst>Snorlax": [[400], 1, 1] });
+  const party = [
+    mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Boomburst", "Normal", 140, "S", 0, { target: 6 }], ["Dragon Claw", "Dragon", 80, "P"]], true, undefined, { getBattlerIndex: () => 0 }),
+    mon("Lucario", 80, ["Fighting", "Steel"], [240, 150, 110, 180, 110, 120], [["Aura Sphere", "Fighting", 80, "S"]], true, undefined, { getBattlerIndex: () => 1 }),
+  ];
+  const turnCommands = [{ command: 0, cursor: 0, move: { move: 1, targets: [] }, targets: [] }];
+  const { lines, field } = render({ party, foes: hydreigonSnorlax(), live: true, double: true, dist: aimAtBoth, switches: () => new Map(), fieldIndex: 1, turnCommands });
+  console.log(`== doubles slot 0 locked into a spread move one foe answers (live)\n${lines.join("\n")}`);
+  const g = slotLines(field).find(l => /^⚔ Garchomp/.test(l)) ?? "";
+  assert.match(g, /Boomburst/, `the locked spread move is named:\n${field.join("\n")}`);
+  assert.match(g, /both/, `it still aims at both, not nowhere:\n${field.join("\n")}`);
+}
+
 // 17. Garchomp is switching out to Metagross: the plan takes that as given.
 {
   Object.assign(TABLE, { "Metagross>Meteor Mash>Hydreigon": [[200], 1, 2], "Metagross>Meteor Mash>Snorlax": [[90], 1, 1],

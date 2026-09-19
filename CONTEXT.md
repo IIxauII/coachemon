@@ -206,6 +206,23 @@ A turn line always says something. Where the obvious move is gone it names what 
 the member held back as an **answer** to a foe still to come — and only where the turn is genuinely lost does it say
 so plainly. It never reports a member as empty when the reason is that something **stopped** it.
 
+## Trap
+
+A foe ability that changes what our side should do — the other direction from an **answer**, and narrower than
+**stops**: a trap need only make one of our options worse, where stopping leaves the member with nothing worth doing.
+An ability the coach can already see in the numbers is not a trap: Sturdy is in the KO count, and a foe's Intimidate
+is in our stat stages the moment it is on the field, so neither is ever flagged.
+
+Traps come in two kinds, because the question each asks is different. A **move trap** turns on which move we pick —
+an immunity by type or by move flag, a damage cut, a punish on contact, Intimidate on a foe still coming in — so it is
+asked of a move, and it bites or it doesn't. A **field trap** holds whatever we pick: it turns our hits, stat drops or
+KOs into boosts, undoes chip or status, ignores our boosts, or changes what a status play is worth.
+
+The two surfaces ask differently. A **turn line** names the move traps the move it picked runs into, because that is
+the move being recommended. A foe row marks every field trap the foe has, and every move trap that bites some move in
+the pool of the members we put in front of it — the whole pool, not the picked move, so an immunity that took the only
+move worth using is still shown rather than hidden by the switch away from it.
+
 ## Fight plan
 
 The **coach**'s read of a whole trainer battle: which of our **party** takes which foe, in the order the trainer sends

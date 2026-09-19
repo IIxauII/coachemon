@@ -65,6 +65,23 @@ const scenarios = {
   trap: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
     foes: [mon("Swinub", 20, ["Ice","Ground"], "Thick Fat", [60,50,80,30,30,20], [["Tackle","Normal",40,"P"]], true)] },
+  // The two kinds of trap, told apart on the foe rows. Our pool is special-only here, so Rough Skin — a contact
+  // punisher, and so a move trap — stays off Druddigon's row, while Moxie, a field trap, is on Krookodile's whatever
+  // we pick.
+  fieldTrap: { double: true, party: [
+    mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true),
+    mon("Blastoise", 64, ["Water"], "Torrent", [187,122,144,125,151,116], [["Hydro Pump","Water",110,"S"]], true)],
+    foes: [
+      mon("Druddigon", 40, ["Dragon"], "Rough Skin", [140,100,90,60,80,50], [["Tackle","Normal",40,"P"]], true),
+      mon("Krookodile", 40, ["Ground","Dark"], "Moxie", [150,110,90,60,80,90], [["Crunch","Dark",80,"P"]], true)] },
+  // The same field with a contact move in the pool: that alone turns Rough Skin's ✦ on, although both slots aim at
+  // Krookodile and neither ⚔ line runs into it — the row asks the pool, the ⚔ line asks the move it picked.
+  contactTrap: { double: true, party: [
+    mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flare Blitz","Fire",120,"P",3,MoveFlags.MAKES_CONTACT]], true),
+    mon("Blastoise", 64, ["Water"], "Torrent", [187,122,144,125,151,116], [["Hydro Pump","Water",110,"S"]], true)],
+    foes: [
+      mon("Druddigon", 40, ["Dragon"], "Rough Skin", [140,100,90,60,80,50], [["Tackle","Normal",40,"P"]], true),
+      mon("Krookodile", 40, ["Ground","Dark"], "Moxie", [150,110,90,60,80,90], [["Crunch","Dark",80,"P"]], true)] },
   // Not a trap on the slot line, and no ✦ on the row either: Sturdy is already in the damage (the KO count), so it
   // changes none of our options.
   modelled: { double: false, party: [
