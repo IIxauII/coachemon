@@ -89,6 +89,9 @@ const M = {
   bite: move("Bite", "Dark", 60, 0), bodySlam: move("Body Slam", "Normal", 85, 0), crunch: move("Crunch", "Dark", 80, 0),
   confusion: move("Confusion", "Psychic", 50, 1), psybeam: move("Psybeam", "Psychic", 65, 1), thunderShock: move("Thunder Shock", "Electric", 40, 1),
   nuzzle: move("Nuzzle", "Electric", 20, 0), quickAttack: move("Quick Attack", "Normal", 40, 0), hyperVoice: move("Hyper Voice", "Normal", 90, 1),
+  // A status move with no attr the learn card recognises: its advice is `your call`, which is the one branch that
+  // reaches the model's own relearn note rather than the recipient row's.
+  screech: move("Screech", "Normal", -1, 2),
 };
 MOVES[M.hyperVoice].moveTarget = 6; // ALL_NEAR_ENEMIES: a spread move
 
@@ -101,9 +104,10 @@ const pk = (name, hp, max, status, moves, f = {}) => ({
   getNature: () => f.nature ?? 0, getLuck: () => f.luck ?? 0,
   species: { speciesId: f.speciesId ?? 0, forms: (f.forms ?? []).map(formKey => ({ formKey })), getEvolutionLevels: () => f.evolutions ?? [] },
   moveset: moves.map(([id, used, maxPp]) => new PokemonMove(id, used, maxPp)),
-  // `tmPool`: what `getCompatibleTms(true, true, true)` answers — the TMs this member would actually be drawn for,
-  // its level-up and relearn moves and used TMs already removed. Left off, the member doesn't expose the method.
-  ...(f.tmPool ? { getCompatibleTms: () => f.tmPool } : {}),
+  // `relearn`: what `getLearnableLevelMoves()` answers — `[level, MoveId, source]` per move a Memory Mushroom could
+  // put back, `level` being 0 for an evolution move, the level it was learnable at for a relearner, and null for an
+  // egg move or a used TM. Left off, the member doesn't expose the method.
+  ...(f.relearn ? { getLearnableLevelMoves: () => f.relearn } : {}),
 });
 // A TM the listed members can learn (the game's selectFilter: null = compatible and not known).
 const tm = (id, learners, tier = 1) => mk(TmModifierType, { name: `TM ${MOVES[id].name}`, iconImage: "tm", tier, moveId: id,
@@ -516,25 +520,76 @@ const scenarios = {
   "classic level cap": { wave: 30, money: 100, party: [snorlax({ level: 40 }), jolteon({ level: 38 })],
     free: [mk(ExpBoosterModifierType, { name: "EXP. Charm", iconImage: "exp_charm", tier: 2, id: "EXP_CHARM", boostPercent: 25 })],
     expect: m => { assert.equal(m.free[0].why, "whole party at the Lv 24 cap"); } },
-  // The offer is drawn from `getCompatibleTms(true, true, true)`, which drops each member's own level-up and relearn
-  // moves: a member the TM was never drawn for learns the move without spending it.
-  "tm learned without it": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, tmPool: [] })],
+  // The offer is drawn from `getCompatibleTms(true, true, true)`, which drops each member's known moves, its level-up
+  // and relearn moves *at or below its current level*, and the TMs it has already used (#249). A member the TM could
+  // not have been drawn for gets the move for free from none of those: all three cases leave it reachable only
+  // through the move relearner, behind a Memory Mushroom. So the member stays in the scoring, and the card names the
+  // Mushroom as the other route instead of calling the reward free.
+  // Case 1: a level-0 evolution move of the species Comfey already is — learned when it evolved, never again.
+  "tm the evolution move already passed": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[0, M.magicalLeaf, 2]] })],
     free: [tm(M.magicalLeaf, ["Comfey"], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
     expect: m => {
-      assert.equal(m.free[0].tm, "skip");
-      assert.match(m.free[0].why, /skip · Comfey learns it without the TM$/);
-      assert.deepEqual(m.free[0].users, ["Comfey"]);
-      assert.ok(m.free[0].v < 0, `nothing to spend a slot on: ${m.free[0].v}`);
+      const f = m.free[0];
+      assert.deepEqual(f.users, ["Comfey"], "still a payer: nothing hands it the move");
+      assert.deepEqual(f.relearn, ["Comfey"], "the Memory Mushroom is the other route");
+      assert.doesNotMatch(f.why, /without the TM/);
     } },
-  // With someone the TM *was* drawn for, the free learner steps aside and the reward goes to the payer.
-  "tm skips the free learner": { wave: 27, money: 200, party: [
-      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, tmPool: [] }),
-      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, tmPool: [M.crunch] })],
+  // Case 2: a relearner move, learnable at Lv 12 and so behind the Lv 40 Comfey — level-up never offers it again.
+  "tm the relearner move": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, level: 40, relearn: [[12, M.magicalLeaf, 0]] })],
+    free: [tm(M.magicalLeaf, ["Comfey"], 1)],
+    expect: m => {
+      const f = m.free[0];
+      assert.deepEqual(f.relearn, ["Comfey"]);
+      assert.ok(f.v > -4, `not priced as a free learn: ${f.v}`);
+    } },
+  // Case 3: the TM was taught once already. `usedTMs` keeps it off the draw pool for good, even though the move was
+  // overwritten since — getting it back needs this TM again, or a Memory Mushroom.
+  "tm already used once": { wave: 27, money: 200, party: [pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [[null, M.crunch, 3]] })],
+    free: [tm(M.crunch, ["Snorlax"], 1)],
+    expect: m => {
+      const f = m.free[0];
+      assert.equal(f.tm, "take", "Crunch over Tackle is still the upgrade it was");
+      assert.equal(f.best.name, "Snorlax");
+      assert.deepEqual(f.relearn, ["Snorlax"]);
+    } },
+  // A status TM nobody's card can score is `your call`, and there is no recipient row to carry the note — so the
+  // model's reason names the route itself. One relearner names them; more than one says `all`.
+  "tm status your call, one relearner": { wave: 27, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[14, M.screech, 0]] })],
+    free: [tm(M.screech, ["Comfey"], 1)],
+    expect: m => {
+      const f = m.free[0];
+      assert.equal(f.tm, "maybe");
+      assert.match(f.why, /^status TM — Comfey can learn it · Comfey can relearn it \(Memory Mushroom\)$/);
+    } },
+  "tm status your call, all relearners": { wave: 27, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[14, M.screech, 0]] }),
+      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [[null, M.screech, 3]] })],
+    free: [tm(M.screech, ["Comfey", "Snorlax"], 1)],
+    expect: m => {
+      const f = m.free[0];
+      assert.match(f.why, /· all can relearn it \(Memory Mushroom\)$/);
+      assert.deepEqual(f.relearn, ["Comfey", "Snorlax"]);
+    } },
+  // One member still paying keeps the note off: the route is only worth naming when it covers everyone.
+  "tm status your call, one still paying": { wave: 27, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[14, M.screech, 0]] }),
+      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [] })],
+    free: [tm(M.screech, ["Comfey", "Snorlax"], 1)],
+    expect: m => {
+      assert.doesNotMatch(m.free[0].why, /relearn/);
+      assert.deepEqual(m.free[0].relearn, ["Comfey"]);
+    } },
+  // With a payer alongside, the relearner is weighed like anyone else rather than stepping aside.
+  "tm weighs the relearner with the payer": { wave: 27, money: 200, party: [
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[18, M.crunch, 0]] }),
+      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [] })],
     free: [tm(M.crunch, ["Comfey", "Snorlax"], 1)],
     expect: m => {
       assert.equal(m.free[0].tm, "take");
-      assert.equal(m.free[0].best.name, "Snorlax");
-      assert.deepEqual(m.free[0].users, ["Snorlax"], "Comfey gets Crunch by levelling anyway");
+      assert.equal(m.free[0].best.name, "Snorlax", "the physical attacker gains most from Crunch");
+      assert.deepEqual(m.free[0].users, ["Comfey", "Snorlax"]);
+      assert.deepEqual(m.free[0].relearn, ["Comfey"]);
     } },
   // Rerolls switched off on this screen (a negative reroll multiplier): nothing to preview, and no hint.
   "reroll disabled": { wave: 14, money: 3000, reroll: -1, noReroll: true, party: [snorlax()],
