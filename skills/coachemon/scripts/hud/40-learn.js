@@ -621,6 +621,8 @@ const scoringContext = (pk, double, party, roster = null) => {
   // `mateTypes`: what the rest of the party can hit for damage. This mon's own share of that is *not* fixed here,
   // because it depends on which slot the decision is about: a rewritten typing is judged against the coverage the
   // party would have with this move in a slot, which is `mateTypes` plus the moves the scorer is handed (#233).
+  // `ownMoves` below stays per-mon on purpose, and the difference is the question each asks: the prior asks which role
+  // this mon is already built as, which wants the build it has, not a projection of the one the decision would give it.
   const ctx = { party, teamSe: new Set(profile.ourTypes.flatMap(t => CHART[t]?.[0] ?? [])),
     mateTypes: profile.ourTypes,
     prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName), roster };
