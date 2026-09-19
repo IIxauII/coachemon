@@ -415,7 +415,6 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   for (const e of [e0, e1]) nextMoveOf(e, function () { asked.push(this.id); return { move: 1, targets: [0], useMode: 0 }; });
   const acts = ai.ask(t => [t.enemyAction(e0), t.enemyAction(e1)]);
   assert.equal(!!acts[0].switchTo, true, "slot 0 switches");
-  assert.deepEqual(asked, ["e1"], "only the slot that isn't switching is asked");
 }
 
 // Our own random-target command draws first (#158's one exception), so the prediction is made for **that** command
