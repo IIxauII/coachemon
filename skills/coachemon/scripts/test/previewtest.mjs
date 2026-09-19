@@ -7,6 +7,7 @@
 // the card in both views. Prints the models and the card, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { ATTRS } from "./fixtures/party.mjs";
 
 // ---- A seeded RNG with Phaser's surface: sow from a string, save and restore state as a string.
 const hash = str => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h >>> 0; };
@@ -36,13 +37,13 @@ const species = id => ({ speciesId: id, name: SPECIES[id][0], baseTotal: SPECIES
   types: SPECIES[id][1].map(t => TY.indexOf(t)) });
 
 // A move as the preview reads one: a name alone is a move it can't read past the name (the mock's default), a spec
-// `[name, type, power, category, attrs]` is one it can — `power` −1 being a move the game prices from the situation.
-// An attribute the HUD recognises by its constructor name (`hasAttr`), so a fixture attr has to be a real class.
-class FixedDamageAttr {}
-const ATTRS = { FixedDamageAttr };
+// `[name, type, power, category, attrs]` is one it can, written the way `fixtures/party.mjs` writes a moveset —
+// `power` −1 a move the game prices from the situation, the category a letter, the attrs real classes from there
+// (`hasAttr` matches on `constructor.name`).
+const CAT = { P: 0, S: 1, X: 2 };
 const fakeMove = m => (typeof m === "string" ? { getName: () => m } : {
   getName: () => m[0],
-  getMove: () => ({ name: m[0], type: TY.indexOf(m[1]), power: m[2], category: m[3] ?? 0,
+  getMove: () => ({ name: m[0], type: TY.indexOf(m[1]), power: m[2], category: CAT[m[3] ?? "P"],
     attrs: (m[4] ?? []).map(a => new ATTRS[a]()) }),
 });
 
@@ -452,14 +453,14 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
     ["Iron Head", "Steel", 80],
     ["Heavy Slam", "Steel", -1],
     ["Earthquake", "Ground", 100],
-    ["Seismic Toss", "Fighting", -1, 0, ["FixedDamageAttr"]], // ignores the type chart: no one's answer
-    ["Iron Defense", "Steel", -1, 2],      // a status move is not an attack
+    ["Seismic Toss", "Fighting", -1, "P", ["FixedDamageAttr"]], // ignores the type chart: no one's answer
+    ["Iron Defense", "Steel", -1, "X"],    // a status move is not an attack
   ] });
   const foe = pv.previewNext(scene).foes[0];
-  assert.deepEqual(foe.moveTypes, ["Steel", "Ground"], `variable power counts, fixed damage doesn't: ${JSON.stringify(foe.moveTypes)}`);
-  assert.deepEqual(foe.attackTypes, ["Steel", "Steel", "Steel", "Ground"], `one entry per attacking move: ${JSON.stringify(foe.attackTypes)}`);
+  assert.deepEqual(foe.attacks, ["Steel", "Steel", "Steel", "Ground"],
+    `variable power counts, fixed damage doesn't, one entry per move: ${JSON.stringify(foe.attacks)}`);
   assert.deepEqual(foe.statusMoves, ["Iron Defense"], `and the status move is still only a status move: ${JSON.stringify(foe.statusMoves)}`);
-  console.log(`== foe attacks ${JSON.stringify({ moveTypes: foe.moveTypes, attackTypes: foe.attackTypes })}`);
+  console.log(`== foe attacks ${JSON.stringify(foe.attacks)}`);
 }
 
 // ---- 8. The card, in both views, plus the one-line summary.

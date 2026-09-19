@@ -30,6 +30,8 @@ const MOVES = {
   Earthquake: ["Ground", 0, 100], "Dragon Claw": ["Dragon", 0, 80], Surf: ["Water", 1, 90],
   Eternabeam: ["Dragon", 1, 160], "Cosmic Power": ["Psychic", 2, -1], Tackle: ["Normal", 0, 40],
   "Ice Beam": ["Ice", 1, 90],
+  // A move the game prices from the situation: an attack like any other, and the case #266 was about.
+  "Gyro Ball": ["Steel", 0, -1],
 };
 const gameMove = name => ({ name, type: TY.indexOf(MOVES[name][0]), category: MOVES[name][1], power: MOVES[name][2] });
 const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => ({
@@ -71,21 +73,21 @@ class FakeBattle {
   isBattleMysteryEncounter() { return this.battleType === 3; }
 }
 
-const makeTrainer = (scene, name, size, roster) => ({
+const makeTrainer = (scene, name, size, roster, foeMoves) => ({
   name, config: { trainerType: 20, hasStaticParty: true }, isDouble: () => false, getName: () => name,
   getPartyLevels: w => Array.from({ length: size }, () => Math.round(w / 2)),
   genPartyMember(index) {
     let ret;
     scene.executeWithSeedOffset(() => {
-      ret = mon(species(roster[index % roster.length]), scene.currentBattle.enemyLevels[index],
-        { moves: ["Earthquake", "Dragon Claw"] });
+      ret = mon(species(roster[index % roster.length]), scene.currentBattle.enemyLevels[index], { moves: foeMoves });
     }, 20 + ((index + 1) << 8));
     return ret;
   },
   destroy() { destroyed++; },
 });
 
-const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildSpecies = 5, modifiers = [], challenges = [] } = {}) => {
+const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildSpecies = 5, modifiers = [], challenges = [],
+  foeMoves = ["Earthquake", "Dragon Claw"] } = {}) => {
   const seed = "kAbC12";
   const scene = {
     seed, waveSeed: shiftCharCodes(seed, wave), rngOffset: 0, rngSeedOverride: "", offsetGym, waveCycleOffset: 0,
@@ -102,7 +104,7 @@ const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildS
       // `checkIsDouble` falls through to the trainer's variant.
       getFixedBattle: w => (FIXED_NAMES[w] == null ? undefined : {
         battleType: 1, seedOffsetWaveIndex: 0, customModifierRewardSettings: REWARDS[w],
-        getTrainer: () => makeTrainer(scene, FIXED_NAMES[w], 2, roster),
+        getTrainer: () => makeTrainer(scene, FIXED_NAMES[w], 2, roster, foeMoves),
       }),
       // `GameMode.isWaveTrainer`: the gym rule, which returns before the chance roll — and never on the final wave.
       isWaveTrainer: w => w % 30 === (offsetGym ? 0 : 20) && w !== 200,
@@ -119,7 +121,7 @@ const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildS
       scene.rngSeedOverride = so;
     },
     isWaveMysteryEncounter: () => false,
-    generateNewBattleTrainer: w => makeTrainer(scene, "Youngster", 2, roster),
+    generateNewBattleTrainer: w => makeTrainer(scene, "Youngster", 2, roster, foeMoves),
     checkIsDouble: ({ double, trainer }) => (double != null ? double : !!trainer?.isDouble()),
     getEncounterBossSegments: w => (w % 10 === 0 ? 4 : 0),
     addEnemyPokemon: (sp, level, _slot, boss) => mon(sp, level, { boss: boss ? 4 : 0, moves: ["Eternabeam", "Cosmic Power"] }),
@@ -220,6 +222,19 @@ const card = (ah, m, v = "full") => { globalThis.localStorage = { getItem: () =>
   console.log(`== card\n${card(ah2, m2)}`);
   console.log(`== mini\n${card(ah2, m2, "mini")}`);
   console.log(`summary ${JSON.stringify(ah2.aheadSummary(m2))}`);
+
+  // What they swing back with is the preview's `attacks`, and those are read by 08-party's coverage rule (#266):
+  // a rival whose only attack is Gyro Ball is a Steel attacker, however the game works its power out. Before the
+  // widening the preview dropped it, the foes' own types (Dragon/Ground, Fighting/Steel) stood in, and an Ice party
+  // was told it was walking into Dragon rather than into the Steel that is actually aimed at it.
+  const icy = [pk("Glaceon", 60, ["Ice"], ["Ice Beam"]), pk("Vanilluxe", 60, ["Ice"], ["Ice Beam"])];
+  // Garchomp and Milotic: nothing Steel in the roster's own typing, so the threat can only come from the moveset.
+  const { scene: s4, ah: ah4 } = mount({ wave: 24, party: icy, roster: [1, 3], foeMoves: ["Gyro Ball"] });
+  const m4 = ah4.aheadModel(s4);
+  assert.ok(!m4.next.foes.some(f => f.types.includes("Steel")), `the typing offers no Steel: ${JSON.stringify(m4.next.foes.map(f => f.types))}`);
+  assert.deepEqual(m4.readiness.threats.map(x => x.type), ["Steel"], `a variable-power STAB is a threat: ${JSON.stringify(m4.readiness.threats)}`);
+  assert.ok(m4.readiness.notes.some(n => n.text === "2 of us weak to Steel"), JSON.stringify(m4.readiness.notes.map(n => n.text)));
+  console.log(`== variable power ${JSON.stringify({ threats: m4.readiness.threats, verdict: m4.readiness.verdict })}`);
 }
 
 // ---- 4. Luck: the sum of the party's, and the tier-upgrade chance it buys. A wave whose rewards are pinned says

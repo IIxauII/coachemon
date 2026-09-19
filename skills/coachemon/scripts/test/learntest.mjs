@@ -387,8 +387,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 // keeps the team audit's dead-slot check off them.
 {
   const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null,
-    segments: extra.segments ?? 0, moveTypes: extra.moveTypes ?? types,
-    attackTypes: extra.attackTypes ?? extra.moveTypes ?? types, statusMoves: [], healMoves: [] });
+    segments: extra.segments ?? 0, attacks: extra.attacks ?? types, statusMoves: [], healMoves: [] });
   const at40 = (...foes) => ({ wave: 40, exact: true, foes });
   const SOAK = ["Soak","Water",-1,"X",100,[["ChangeTypeAttr",{ type: TY.indexOf("Water") }]],false,3,{ flags: 262144 }];
   const TREAT = ["Trick-or-Treat","Ghost",-1,"X",100,[["AddTypeAttr",{ type: TY.indexOf("Ghost") }]],false,3,{ flags: 262144 }];
@@ -404,18 +403,17 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(helps.value > blind.value * 1.5, `Soak into a roster it opens (${helps.value} vs ${blind.value})`);
   assert.ok(helps.notes.includes("vs Skarmory at W40"), `named by the foe it pays against: ${helps.notes}`);
   // A foe already that one type: `ChangeTypeAttr.getCondition` refuses, so the move does nothing there.
-  const pool = at40(foe("Vaporeon", ["Water"], { moveTypes: ["Water","Ice"] }));
+  const pool = at40(foe("Vaporeon", ["Water"], { attacks: ["Water","Ice"] }));
   const dead = judge(ludicolo, SOAK, pool);
   assert.ok(dead.value < blind.value * 0.5 && dead.notes.includes("no opening at W40"), `${dead.value}: ${dead.notes}`);
   // Aggron: Scald already hits it ×2, so the rewrite opens nothing — but it still takes both its STABs away.
   const strip = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"])));
   assert.ok(strip.value > blind.value && strip.value < helps.value, `STAB alone (${strip.value} vs ${blind.value}/${helps.value})`);
-  // The STAB is a share of its *attacks*, not of its coverage (#266): an Aggron with three Steel moves beside one
-  // Ground loses three quarters of them to pure Water, where counting types alone read that as half. A foe the
-  // preview handed over without `attackTypes` (an older read, a mocked roster) still falls back to the types.
-  const many = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"],
-    { moveTypes: ["Steel","Ground"], attackTypes: ["Steel","Steel","Steel","Ground"] })));
-  const byType = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { moveTypes: ["Steel","Ground"] })));
+  // The STAB is a share of its *attacks*, one entry per move, and not of its coverage (#266): an Aggron with three
+  // Steel moves beside one Ground loses three quarters of them to pure Water, where the distinct types alone read
+  // that as half.
+  const many = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attacks: ["Steel","Steel","Steel","Ground"] })));
+  const byType = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attacks: ["Steel","Ground"] })));
   assert.ok(many.value > byType.value, `three Steel moves are more STAB than one (${many.value} vs ${byType.value})`);
   assert.ok(many.value < strip.value, `and still less than a foe whose every attack is STAB (${many.value} vs ${strip.value})`);
 

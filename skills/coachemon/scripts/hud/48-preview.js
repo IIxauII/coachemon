@@ -101,9 +101,6 @@ const drop = o => { try { o?.destroy?.(); } catch {} };
 
 const foeOf = p => foeData(p, (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getMove())).filter(Boolean));
 const foeData = (p, moves) => {
-  // What it can attack with, by 08-party's one coverage rule: a move the game prices from the situation (Gyro Ball,
-  // Grass Knot) counts, fixed damage doesn't — it ignores the type chart, so it is no one's answer and no one's STAB
-  // worth stripping. One entry per move, which is what lets a card tell three Steel moves from one (#266).
   const attacks = moves.filter(isCoverage).map(mv => TYPES[mv.type]).filter(Boolean);
   return {
     name: p.name ?? tryDo(() => p.species.name, "?"),
@@ -118,11 +115,12 @@ const foeData = (p, moves) => {
     segments: p.bossSegments ?? 0,
     shiny: !!p.shiny,
     moves: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getName())).filter(Boolean),
-    // The types it can actually attack with, once each: 49-ahead reads these to judge what the party is walking into.
-    moveTypes: [...new Set(attacks)],
-    // The same attacks, one entry per move rather than per type, so a share of them is a share of its moveset and not
-    // of its coverage: 40-learn prices the STAB a rewritten typing takes off a foe against this.
-    attackTypes: attacks,
+    // What it can actually attack with, by 08-party's one coverage rule (`isCoverage`): a move the game prices from
+    // the situation (Gyro Ball, Grass Knot) counts, fixed damage doesn't — it ignores the type chart, so it is no
+    // one's answer and no one's STAB worth stripping. **One entry per move, not per type**, so a share of it is a
+    // share of the foe's moveset: 40-learn prices the STAB a rewritten typing takes away against this, and 49-ahead,
+    // which wants the distinct types to judge what the party is walking into, reads it through a `Set` (#266).
+    attacks,
     // What a disrupting move would take away from it (40-learn's roster fit): the status moves Taunt stops and
     // Encore locks it into, and the heals Heal Block stops.
     statusMoves: moves.filter(mv => mv.category === MoveCategory.STATUS).map(moveLabel),
