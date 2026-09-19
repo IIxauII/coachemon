@@ -414,17 +414,38 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   // Good as Gold takes a status move outright, so only half this roster is rewritable.
   const half = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"]), foe("Gholdengo", ["Steel","Ghost"], { ability: "Good as Gold" })));
   assert.ok(half.value < helps.value && half.notes.includes("vs Skarmory at W40"), `${half.value}: ${half.notes}`);
+  // `ChangeTypeAttr.getCondition` is refused by Multitype and RKS System, the same two the battle plan refuses.
+  for (const ab of ["Multitype", "RKS System"]) {
+    assert.ok(judge(ludicolo, SOAK, at40(foe("Arceus", ["Normal"], { ability: ab }))).notes.includes("no opening at W40"), ab);
+  }
+  // Health bars: the same rewrite pays more when what it opens is the boss and not the grunt beside it.
+  const boss = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"], { segments: 5 }), foe("Vaporeon", ["Water"])));
+  const grunt = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"]), foe("Vaporeon", ["Water"], { segments: 5 })));
+  assert.ok(boss.value > grunt.value * 1.5, `a boss-weighted opening (${boss.value} vs ${grunt.value})`);
 
   // An added type only multiplies: Trick-or-Treat turns Machamp into a Knock Off / Shadow Sneak target …
   const sable = mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"],["Night Shade","Ghost",-1,"S",100,["LevelDamageAttr"]]]);
   const addBlind = judge(sable, TREAT, null);
   const added = judge(sable, TREAT, at40(foe("Machamp", ["Fighting"])));
   assert.ok(addBlind.notes.includes("+Ghost") && added.value > addBlind.value, `${added.value} vs ${addBlind.value}`);
+  // Multitype and RKS System refuse a `set`, not an `add`: `AddTypeAttr.getCondition` asks only about Terastallization
+  // and a typing the target already has.
+  assert.ok(!judge(sable, TREAT, at40(foe("Arceus", ["Normal"], { ability: "Multitype" }))).notes.includes("no opening at W40"));
   // … and it can take one away: a Hitmonlee whose one answer is Fighting is worse off for it, which is worth 0 here
   // rather than a negative — nobody has to use the move.
   const kicker = mon("Hitmonlee", ["Fighting"], 120, 35, [["Close Combat","Fighting",120,"P"],["Mega Kick","Normal",120,"P",75],["Rock Slide","Rock",75,"P",90],["Feint","Normal",30,"P"]]);
   const worse = judge(kicker, TREAT, at40(foe("Snorlax", ["Normal"])));
   assert.ok(worse.value < addBlind.value * 0.5 && worse.notes.includes("no opening at W40"), `${worse.value}: ${worse.notes}`);
+
+  // The crowded-moveset penalty is about the company a move keeps, not the move, so it is kept off `alone` — which is
+  // what the audit's dead-slot bar reads. A Gourgeist's Trick-or-Treat beside Will-O-Wisp and Leech Seed is cut to 11
+  // as a score, and is still not a dead slot.
+  const WISP = ["Will-O-Wisp","Fire",-1,"X",85,[["StatusEffectAttr",{ effect: 6 }]],false,3,{ flags: 262144 }];
+  const SEED = ["Leech Seed","Grass",-1,"X",90,[["LeechSeedAttr",{ tagType: "SEEDED" }]],false,3,{ flags: 262144 }];
+  const gourgeist = mon("Gourgeist", ["Ghost","Grass"], 100, 60, [["Shadow Ball","Ghost",80,"S"], WISP, SEED, TREAT]);
+  const crowded = globalThis.__lm.learnAdvice(gourgeist, mv(TREAT), {}).plan.moves.find(m => m.name === "Trick-or-Treat");
+  assert.ok(crowded.value < 20 && crowded.alone >= 20, `crowded ${crowded.value}, on its own ${crowded.alone}`);
+  assert.ok(crowded.notes.includes("3 status moves"), `the crowding is still named: ${crowded.notes}`);
 
   // The verdict is a real one now, not "your call" — and blind of a roster the score clears the audit's dead-slot bar
   // (50-audit's WEAK_STATUS, 20), so a slot the run wants kept is no longer offered up as dead weight.

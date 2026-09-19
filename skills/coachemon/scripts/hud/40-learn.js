@@ -313,8 +313,13 @@ const TYPE_SET = 35, TYPE_ADD = 30;
 // rewrite that pays against the boss alone still counts for most of the fight.
 const TYPE_FLOOR = 0.35, TYPE_FULL = 2;
 // Two doublings of the party's best answer is as far as this counts, and a foe nothing touches is read as ×TYPE_MIN
-// so an immunity doesn't make every rewrite look infinite. Half the foe's STAB is worth a doubling.
+// so an immunity doesn't make every rewrite look infinite. Taking a foe's whole STAB away is worth one of those
+// doublings, half its STAB half of one.
 const TYPE_STEPS = 2, TYPE_MIN = 0.25, TYPE_STAB = 0.5;
+// Abilities that refuse a rewritten typing outright (`ChangeTypeAttr.getCondition`). Read by name off the preview's
+// foe, the way every other ability rule on this card is; Mold Breaker doesn't get past them — the game asks the
+// target's own ability here, not a suppressable one.
+const TYPE_FIXED = ["Multitype", "RKS System"];
 const bestAnswer = (types, foe, ours) => {
   const def = { types, abilities: [foe.ability, foe.passive].filter(Boolean) };
   return Math.max(0, ...ours.map(t => effectiveness(t, def)));
@@ -325,16 +330,19 @@ const typeGain = (pk, mv, change, name, foe, ours) => {
   const types = foe.types ?? [];
   const set = change.kind === "set";
   // The game's own conditions (references/game-code.md §"Typing"): neither move may hand a target a typing it already
-  // has. A Terastallized target, Multitype and RKS System are live reads the preview doesn't carry.
+  // has, and a `set` is refused by Multitype and RKS System — the same three the battle plan refuses, so the two cards
+  // agree about which foes a rewrite is simply wasted on. Terastallization is the one condition left out: it is a live
+  // read the preview doesn't carry, and a Tera'd foe in the roster is scored as if it weren't.
   if (set ? types.length === 1 && types[0] === name : types.includes(name)) return 0;
+  if (set && [foe.ability, foe.passive].some(a => a && TYPE_FIXED.includes(a))) return 0;
   const before = Math.max(TYPE_MIN, bestAnswer(types, foe, ours));
   const after = bestAnswer(set ? [name] : [...types, name], foe, ours);
   const open = after > before ? Math.min(1, Math.log2(after / before) / TYPE_STEPS) : 0;
   if (!set) return open;
+  // The STAB it loses, off the preview's `moveTypes`. A foe with nothing there has no damaging move to lose STAB on,
+  // so it loses none — `foeData` always fills the field in, and an empty one is an answer rather than a silence.
   const attacks = foe.moveTypes ?? [];
-  // Without a moveset to read, a foe whose typing changes at all is taken to lose half its STAB.
-  const stab = attacks.length ? attacks.filter(t => types.includes(t) && t !== name).length / attacks.length
-    : types.some(t => t !== name) ? 0.5 : 0;
+  const stab = attacks.length ? attacks.filter(t => types.includes(t) && t !== name).length / attacks.length : 0;
   return Math.min(1, open + TYPE_STAB * stab);
 };
 const typeFit = (pk, mv, change, name, roster, ours) => {
@@ -413,15 +421,23 @@ const statusScore = (pk, mv, others, double, ctx) => {
   // The same trick twice is worth less the second time, and a moveset that is mostly status has no room left.
   if (isRecovery(mv) && others.some(isRecovery)) { value *= 0.5; notes.push("already has recovery"); }
   if (inflictsStatus(mv) && others.some(inflictsStatus)) { value *= 0.5; notes.push("already has a status move"); }
+  // A moveset that is mostly status has no room left. This one is about the *moveset*, not the move, so it is named
+  // here but applied last, and kept off `alone` below.
   const status = others.filter(o => o.category === MoveCategory.STATUS).length;
-  if (status >= 2) { value *= status >= 3 ? 0.35 : 0.6; notes.push(`${status + 1} status moves`); }
+  const crowd = status >= 2 ? (status >= 3 ? 0.35 : 0.6) : 1;
+  if (crowd < 1) notes.push(`${status + 1} status moves`);
   const acc = mv.accuracy > 0 ? mv.accuracy / 100 : 1;
   if (!SELF_TARGETS.has(mv.moveTarget) && acc < 1) { value *= acc; notes.push(`${Math.round(acc * 100)}% acc`); }
   // Over the battles ahead (a TM), an ally move is worth what it is in the doubles among them.
   if (ALLY_TARGETS.has(mv.moveTarget) && double < 1) { value *= double; notes.push(doublesNote(double)); }
   const prior = priorOf(pk, mv, ctx);
   if (prior) { value *= prior.mult; notes.push(prior.note); }
-  return { value: Math.round(value), notes: [...why, ...notes], status: true, why: why.join(" · "), se: [], neutral: [], teamSe: [], drawbacks: [] };
+  // What the move is worth on its own merits: everything above is about this move, `crowd` alone is about the company
+  // it keeps. The team audit's dead-slot check reads this rather than `value`, since "this moveset is mostly status"
+  // is a finding it already makes once, and charging every slot for it again would name the good moves as the dead
+  // ones — a Gourgeist's Trick-or-Treat beside Will-O-Wisp and Leech Seed is not the dead slot (#233).
+  const alone = Math.round(value);
+  return { value: Math.round(value * crowd), alone, notes: [...why, ...notes], status: true, why: why.join(" · "), se: [], neutral: [], teamSe: [], drawbacks: [] };
 };
 
 // ---- The type a move actually lands as
