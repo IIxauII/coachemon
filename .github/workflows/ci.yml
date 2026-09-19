@@ -1,0 +1,45 @@
+name: CI
+
+# The root package's gate. Until #259 this ran only on a push to master, inside `release.yml` — so a pull request was
+# checked by `extension.yml` alone, which typechecks, builds and tests the *extension* package. `npm test` and
+# `npm run typecheck` at the root never saw a PR.
+#
+# If a commit gets no run here at all, check its message before anything else: GitHub matches `[skip ci]` anywhere in a
+# commit message, including a sentence merely talking about it, and then runs no workflow on that push. Two commits hit
+# this while #259 and #258 were being written. A workflow file, a PR body or an issue comment can spell it freely — the
+# message is the only text that counts — so describe the marker rather than writing it when a commit is about this area.
+on: [push, pull_request]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # `--ignore-scripts` is the root install at all three CI call sites: Claude Code installs the plugin the same way,
+      # and the plugin is not a workspace, so WXT never lands in a player's cache (§5.1). (The release toolchain stays
+      # out for a different reason — semantic-release is not a devDependency, `release.yml`.)
+      - run: npm ci --ignore-scripts
+
+      - run: npm run typecheck
+
+      # `npm test` is both suites: `node --test "src/**/*.test.ts"` and then the 24 HUD goldens
+      # (`skills/coachemon/scripts/test/run.mjs`, ~16s). They are one command on purpose — as separate commands,
+      # nothing in CI ran the goldens at all. A *link* break was already caught on a PR, because `extension.yml`'s
+      # `build:all` calls `bundle("hud")` (`extension/wxt.config.ts`); what went ungated everywhere was a golden
+      # diff — a behaviour change with a bundle that links fine — and the root suites on a PR (#259).
+      - run: npm test
+
+      # `drift:check` is deliberately not here: it is a pin-bump check, not a per-push one. At a fixed pinned ref the
+      # hashes cannot move, and it clones pagefaultgames/pokerogue to compare.
