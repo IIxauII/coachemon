@@ -3,7 +3,7 @@
 import { ABILITY_IMMUNE, CHART, SPREAD_TARGETS, STATUS_FRAMES, TYPES, abilitiesOf, effectiveness, iconOf, moveHasFlag, typesOf, vs } from "./01-core.js";
 import { RANDBATS } from "./05-randbats.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
-import { damagingTypes, partyProfile } from "./08-party.js";
+import { partyProfile } from "./08-party.js";
 
 // A Move object for a move id, built the way LearnMovePhase's prompt is: from any PokemonMove's constructor.
 export const learnMoveById = (party, id) => {
@@ -320,7 +320,9 @@ const TYPE_STEPS = 2, TYPE_MIN = 0.25, TYPE_STAB = 0.5;
 // foe, the way every other ability rule on this card is; Mold Breaker doesn't get past them — the game asks the
 // target's own ability here, not a suppressable one.
 const TYPE_FIXED = ["Multitype", "RKS System"];
-const bestAnswer = (types, foe, ours) => {
+// The best the party's attacking types do against a defender, as a multiplier. Not an *answer* in the glossary's
+// sense — that is a member that can deal with a foe, stat and all; this is the type chart alone.
+const bestHit = (types, foe, ours) => {
   const def = { types, abilities: [foe.ability, foe.passive].filter(Boolean) };
   return Math.max(0, ...ours.map(t => effectiveness(t, def)));
 };
@@ -335,8 +337,8 @@ const typeGain = (pk, mv, change, name, foe, ours) => {
   // read the preview doesn't carry, and a Tera'd foe in the roster is scored as if it weren't.
   if (set ? types.length === 1 && types[0] === name : types.includes(name)) return 0;
   if (set && [foe.ability, foe.passive].some(a => a && TYPE_FIXED.includes(a))) return 0;
-  const before = Math.max(TYPE_MIN, bestAnswer(types, foe, ours));
-  const after = bestAnswer(set ? [name] : [...types, name], foe, ours);
+  const before = Math.max(TYPE_MIN, bestHit(types, foe, ours));
+  const after = bestHit(set ? [name] : [...types, name], foe, ours);
   const open = after > before ? Math.min(1, Math.log2(after / before) / TYPE_STEPS) : 0;
   if (!set) return open;
   // The STAB it loses, off the preview's `moveTypes`. A foe with nothing there has no damaging move to lose STAB on,
@@ -400,7 +402,15 @@ const statusScore = (pk, mv, others, double, ctx) => {
     if (name) {
       const n = set ? TYPE_SET : TYPE_ADD;
       add(n, set ? `pure ${name}` : `+${name}`);
-      if (roster) fits.push([n, typeFit(pk, mv, tr.typeChange, name, roster, ctx.attackTypes ?? [])]);
+      // The coverage that would face the rewritten foe: the rest of the party, plus the slots this move sits beside —
+      // `others`, which is the three surviving slots when a slot is scored and the survivors of the forget when the
+      // incoming move is. Taking the mon's whole current moveset here would sell a rewrite on the very move it
+      // replaces: pure Water opens nothing for a Ludicolo that gave up Energy Ball for the Soak.
+      // Read the way `seTypes` and 08-party's `damagingTypes` read a moveset — variable power counts, fixed damage
+      // doesn't, since it ignores the type chart — so the party's coverage is one table however it is asked for.
+      const ours = [...new Set([...(ctx.mateTypes ?? []),
+        ...others.filter(o => isDamaging(o) && !isFixed(o)).map(o => TYPES[o.type]).filter(Boolean)])];
+      if (roster) fits.push([n, typeFit(pk, mv, tr.typeChange, name, roster, ours)]);
     }
   }
   const setup = setupOf(pk, mv, others);
@@ -598,10 +608,11 @@ const scoringContext = (pk, double, party, roster = null) => {
   // team" here and "nothing hits X" on the catch, biome and look-ahead cards are one reading of one moveset.
   const profile = partyProfile(mates);
   const teamTypes = new Set(profile.ourTypes);
-  // `attackTypes`: what the *whole* party can hit for damage, this mon included, which is what a rewritten typing is
-  // judged against (#233). The mon's own moveset is the one it has now, not the one it would have after this decision.
+  // `mateTypes`: what the rest of the party can hit for damage. This mon's own share of that is *not* fixed here,
+  // because it depends on which slot the decision is about: a rewritten typing is judged against the coverage the
+  // party would have with this move in a slot, which is `mateTypes` plus the moves the scorer is handed (#233).
   const ctx = { party, teamSe: new Set(profile.ourTypes.flatMap(t => CHART[t]?.[0] ?? [])),
-    attackTypes: [...new Set([...profile.ourTypes, ...damagingTypes(pk)])],
+    mateTypes: profile.ourTypes,
     prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName), roster };
   return { current, mates, teamTypes, ctx };
 };

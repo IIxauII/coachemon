@@ -418,6 +418,13 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   for (const ab of ["Multitype", "RKS System"]) {
     assert.ok(judge(ludicolo, SOAK, at40(foe("Arceus", ["Normal"], { ability: ab }))).notes.includes("no opening at W40"), ab);
   }
+  // The opening is judged against the coverage that would face the foe — the party, plus the slots the move sits
+  // beside — not the moveset as it stands. Ludicolo's ×2 into pure Water is Energy Ball's, so Soak is worth much less
+  // in Energy Ball's own slot than in Scald's: a rewrite must not be sold on the coverage it replaces.
+  const plan = globalThis.__lm.learnAdvice(ludicolo, mv(SOAK), { roster: skarm }).plan;
+  const slot = n => plan.moves.find(m => m.name === n).replacement;
+  assert.ok(slot("Energy Ball") < slot("Scald") * 0.7, `Soak over Energy Ball ${slot("Energy Ball")} vs over Scald ${slot("Scald")}`);
+
   // Health bars: the same rewrite pays more when what it opens is the boss and not the grunt beside it.
   const boss = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"], { segments: 5 }), foe("Vaporeon", ["Water"])));
   const grunt = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"]), foe("Vaporeon", ["Water"], { segments: 5 })));

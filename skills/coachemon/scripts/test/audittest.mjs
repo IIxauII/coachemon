@@ -124,7 +124,7 @@ const scenarios = {
       { name: "Buzzwole", level: 159, types: ["Bug", "Fighting"], ability: "Beast Boost", stats: [478, 478, 201, 245, 334] },
     ] } },
     free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
-    expect: (a, m, summary) => {
+    expect: (a, m, summary, party) => {
       const t = a.findings.map(f => f.text);
       assert.deepEqual(a.vs, { wave: 165, who: "Guzma" });
       assert.ok(t.includes("Flygon (W165) has one answer: Dudunsparce Blizzard (70%)"), t.join("\n"));
@@ -136,8 +136,11 @@ const scenarios = {
       const fix = a.findings.find(f => f.relearn && f.mon === "Mamoswine");
       assert.equal(fix?.relearn.move, "Icicle Crash");
       assert.equal(fix.slot, fix.relearn.forget, "named under the slot it replaces");
-      // Soak is scored now (#233), not left unscorable — and what it scores clears the dead-slot bar, so the audit
-      // stops offering a slot the run may well want to keep.
+      // Soak is scored now (#233), where before nothing recognised it and the dead-slot check skipped it for being
+      // unscorable. What it scores has to clear the bar on its own merits, or scoring it would have made things worse.
+      const soak = globalThis.__slotScores(party.find(p => p.name === "Golduck"), { double: false, party }).moves.find(x => x.name === "Soak");
+      assert.equal(soak.why, "pure Water");
+      assert.ok(soak.alone >= 20, `Soak scores ${soak.alone} on its own, under 50-audit's WEAK_STATUS`);
       assert.ok(!t.some(x => /^Golduck: Soak does little/.test(x)), t.join("\n"));
       assert.ok(t.includes("Comfey answers nothing at W165 — first to replace"));
       assert.ok(t.includes("Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)"));
@@ -179,6 +182,8 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const { rewardsModel } = globalThis.__hud["52-shop"], { teamAudit } = globalThis.__hud["50-audit"];
   const { drawRewards } = globalThis.__hud["96-render-rewards"], { cardSummary } = globalThis.__hud["60-card"];
   const { previewNext } = globalThis.__hud["48-preview"];
+  // The learn scorer the audit's dead-slot check reads, so a scenario can assert what a slot is actually worth.
+  globalThis.__slotScores = globalThis.__hud["40-learn"].slotScores;
   assert.ok(!el.textContent, `${label}: panel error ${el.textContent}`);
   // The look-ahead is the audit's input, not what this test is about: hand over the roster the scenario names, and
   // draw the card the panel would draw from that audit.
@@ -192,6 +197,6 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const summary = cardSummary(m);
   console.log(`summary ${summary.audit}`);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
-  sc.expect?.(a, m, summary);
+  sc.expect?.(a, m, summary, party);
 }
 console.log("ok");
