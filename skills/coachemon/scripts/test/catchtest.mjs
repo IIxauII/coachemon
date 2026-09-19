@@ -70,9 +70,9 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, readTurn, accountRead, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
     setGameTables: globalThis.__hud["47-biome"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
-  if (events) globalThis.__ca.setGameTables({ events });
-  // `species`: the game's species registry, as 47-biome's chunk scan would hand it to the account read.
-  if (registry) globalThis.__ca.setGameTables({ ...(events ? { events } : {}), species: registry });
+  // `species`: the game's species registry, as 47-biome's chunk scan would hand it to the account read. One call:
+  // `setGameTables` replaces the tables wholesale, so a second would drop whatever the first put there.
+  if (events || registry) globalThis.__ca.setGameTables({ events, species: registry });
   const advice = readTurn(scene, turn => catchAdvice(turn, accountRead(scene)));
   return { advice, scene };
 };

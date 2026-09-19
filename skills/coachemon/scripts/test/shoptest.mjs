@@ -491,14 +491,12 @@ const scenarios = {
   // at all is left out.
   "grip claw off contact": { wave: 42, money: 100, party: [jolteon(), pk("Wobbuffet", 190, 190, 0, [[M.calmMind, 0, 20]], { level: 40 })],
     free: [held("GRIP_CLAW", "Grip Claw", 2)],
-    expect: m => {
+    expect: (m, api, sc, scene) => {
       const gc = m.free[0];
       assert.equal(gc.holder.name, "Jolteon", "its special attacks roll it all the same");
       assert.match(gc.why, /^Jolteon · 10% to steal an item when it attacks$/);
       assert.deepEqual(gc.users, ["Jolteon", "Wobbuffet"]);
       assert.ok(gc.v >= 9, `worth a full roll, not a contact share: ${gc.v}`);
-    },
-    after: (api, sc, scene) => {
       // Every entry in the table answers with a `[value, reason]` tuple or a plain falsy value — never with whatever
       // its own guard returned. Wobbuffet has no attacking move, which is the guard the seven `attacks(p).length`
       // entries share, and `length` is a number: 0 read like a value where none was meant.
@@ -591,6 +589,5 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const m = globalThis.__sm(scene, handler);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   sc.expect?.(m, globalThis.__api, sc, scene);
-  sc.after?.(globalThis.__api, sc, scene);
 }
 console.log("ok");

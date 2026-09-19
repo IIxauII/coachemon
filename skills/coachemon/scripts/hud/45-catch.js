@@ -201,8 +201,12 @@ const accountReasons = (account, foe) => {
   // The game asks `hasNewAttr` of the **masked** attributes: `pokemon.getDexAttr() & species.getFullUnlocksData()`
   // (`game-data.ts:1766`, mask at `pokemon-species.ts:1203-1230`), which drops the bits that species can never own —
   // an `isUnobtainable` form, a gender its ratio rules out. The mask only ever narrows, so reading `attr` raw makes
-  // "something new here" too easy to believe and promises candy a Daily run won't pay. The mask belongs to the
-  // species the candy goes to, which is why the account carries the registry; without it, the raw bits stand.
+  // "something new here" too easy to believe and promises candy a Daily run won't pay. The mask is the one belonging
+  // to the species the candy goes to, which is why the account carries the registry; without it, the raw bits stand.
+  // Only this line is masked. The reasons below read the foe's *own* entry, and every bit they test is one the foe in
+  // front of us demonstrably has — it is standing there with that gender, variant and form — so the mask would drop
+  // nothing, bar an `isUnobtainable` form, which is left standing on purpose: masking it away would turn "new form"
+  // into a claim about no form at all.
   const unlocks = tryDo(() => account.species?.getSpecies?.(candyRoot)?.getFullUnlocksData?.());
   const candyAttr = typeof unlocks === "bigint" ? attr & unlocks : attr;
   const candyText = account.daily && (big(candyDex?.caughtAttr) & candyAttr) === candyAttr ? "" : ` · +${candy} candy`;

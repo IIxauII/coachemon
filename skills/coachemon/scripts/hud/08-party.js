@@ -48,16 +48,18 @@ const formOf = (sp, i) => (i != null && Array.isArray(sp?.forms) && sp.forms.len
 // vitamins, Shuckle Juice or Old Gateau would print to the page's console on every HUD tick. Everything that moves
 // the answer — one of those modifiers, a form change, a fusion or its undoing — goes on to call `calculateStats`,
 // which rewrites the mon's own `stats`: that is the invariant, so the answer is cached against them. Same mon, same
-// level, same stats, same base stats — no call, and no log.
+// level, same stats, same base stats — no call, and no log. `stats` can in principle stay put while base stats move,
+// since `calculateStats` floors them, so a +1 base stat on a low-level mon can go unseen until something else moves:
+// worth knowing, not worth guarding. The game hands back a fresh `slice(0)` every call, so a copy goes out each time
+// rather than the cached array itself — a caller that mutated it would otherwise poison every later read.
 const baseStatsCache = new WeakMap();
 const baseStatsOf = mon => {
   if (!mon || typeof mon !== "object") return undefined;
   const key = `${mon.level}|${(mon.stats ?? []).join(",")}`;
   const hit = baseStatsCache.get(mon);
-  if (hit && hit.key === key) return hit.stats;
-  const stats = tryDo(() => mon.calculateBaseStats());
-  baseStatsCache.set(mon, { key, stats });
-  return stats;
+  const stats = hit && hit.key === key ? hit.stats : tryDo(() => mon.calculateBaseStats());
+  if (!hit || hit.key !== key) baseStatsCache.set(mon, { key, stats });
+  return Array.isArray(stats) ? stats.slice() : stats;
 };
 const bstOf = (sp, fu, mon) => {
   const own = mon && baseStatsOf(mon);
