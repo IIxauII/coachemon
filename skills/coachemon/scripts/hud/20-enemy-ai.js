@@ -434,7 +434,7 @@ export const sceneSwitches = (env, active) => {
           if (best * w >= avg * (tr.config.isBoss ? 2 : 3)) {
             switched = true;
             const to = enemies[tr.getNextSummonIndex(e.trainerSlot, scores)];
-            if (to && !skipsTurn(env, e) ) out.set(e, { to, ratio: 1 });
+            if (to && !skipsTurn(env, e) && ![...out.values()].some(v => v.to === to)) out.set(e, { to, ratio: 1 });
           }
         }
       }
