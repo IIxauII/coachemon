@@ -5,9 +5,8 @@ name: CI
 # `npm run typecheck` at the root never saw a PR.
 #
 # If a commit gets no run here at all, check its message before anything else: GitHub matches `[skip ci]` anywhere in a
-# commit message, including a sentence merely talking about it, and then runs no workflow on that push. Two commits hit
-# this while #259 and #258 were being written. A workflow file, a PR body or an issue comment can spell it freely — the
-# message is the only text that counts — so describe the marker rather than writing it when a commit is about this area.
+# commit message, a sentence merely talking about it included. The rule for writing messages lives in `CLAUDE.md`,
+# which an agent loads before it writes one — not here, where nobody reads it in time (#275, #278).
 on: [push, pull_request]
 
 concurrency:
@@ -40,6 +39,20 @@ jobs:
       # `build:all` calls `bundle("hud")` (`extension/wxt.config.ts`); what went ungated everywhere was a golden
       # diff — a behaviour change with a bundle that links fine — and the root suites on a PR (#259).
       - run: npm test
+
+      # `gen-enums.ts` reads the pinned game tag, so its output is a function of the pin, the generator and
+      # `src/enums/parse.ts` alone: a hand-edit to `src/enums/generated.ts`, or a generator change nobody re-ran,
+      # is red here instead of being silently undone by the next generate (#258). The tag is immutable, so the
+      # ~46 raw fetches cache on the pin.
+      - name: Cache the pinned game source
+        uses: actions/cache@v4
+        with:
+          path: .cache/pokerogue-src
+          key: pokerogue-src-${{ hashFiles('src/escape-ladder/reviewed.json') }}
+          # `reviewed.json` is the ladder's curated data and moves for reasons unrelated to the pin; the cache
+          # path is tag-scoped, so an older entry is still correct for an unchanged tag.
+          restore-keys: pokerogue-src-
+      - run: npm run enums:gen -- --check
 
       # `drift:check` is deliberately not here: it is a pin-bump check, not a per-push one. At a fixed pinned ref the
       # hashes cannot move, and it clones pagefaultgames/pokerogue to compare.
