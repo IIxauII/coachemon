@@ -102,23 +102,6 @@ Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → Garchomp 100% likely · moves after
 ♟ winnable · ~4 steps + {Show the fight plan}
-== doubles spare hit: spread, the redirect would carry the wrong move (live)
-🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
-⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
-⚔ Lucario Fighting Close Combat → Snorlax 2 hits
-foes weak to: Fighting ×2 Dragon ×1
-Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
-Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50% likely · moves after
-♟ winnable · ~2 steps + {Show the fight plan}
-== doubles spare hit: focus, the redirect carries the same move (live)
-🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
-⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit spare hit — KO without it
-⚔ Lucario Fighting Aura Sphere → Hydreigon 1 hit spare hit — goes to Snorlax if Hydreigon falls first
-◎ focus Hydreigon : KO before it moves
-foes weak to: Fighting ×2 Dragon ×1
-Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
-Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
-♟ winnable · ~2 steps + {Show the fight plan}
 == doubles: a status play (live)
 🎯 W200 · Cyrus Breloom › Salamence − {Minimal overview} × {Close}
 ⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
@@ -137,6 +120,23 @@ Munchlax Munchlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Salamence 50%
 == doubles: the partner is scored on the hypothesis (live)
 no Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Munchlax 3 hits
 Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
+== doubles spare hit: spread, the redirect would carry the wrong move (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
+⚔ Lucario Fighting Close Combat → Snorlax 2 hits
+foes weak to: Fighting ×2 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
+Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
+== doubles spare hit: focus, the redirect carries the same move (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit spare hit — KO without it
+⚔ Lucario Fighting Aura Sphere → Hydreigon 1 hit spare hit — goes to Snorlax if Hydreigon falls first
+◎ focus Hydreigon : KO before it moves
+foes weak to: Fighting ×2 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
+Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
 == free switch — same field in the command phase (live)
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior

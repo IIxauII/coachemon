@@ -662,44 +662,6 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   assert.ok(!field.some(l => /^◎ focus Hydreigon/.test(l)), "no focus on the leaving Hydreigon");
 }
 
-// 8c. The spare hit (#236). Garchomp is faster and alone fells a weakened Hydreigon, so Lucario's hit resolves into
-// a foe that is already gone — the game redirects it onto Snorlax (`FaintPhase` -> `redirectPokemonMoves`) carrying
-// **the move Lucario chose for Hydreigon**. So the pair is priced on where the hit really lands, and the two
-// directions fall out of one rule: spread when the slot has a better move for the other foe than the redirect would
-// carry, focus when it doesn't, because focusing also insures the KO for free.
-Object.assign(TABLE, {
-  "Lucario>Close Combat>Hydreigon": [[60], 1, 1], "Lucario>Close Combat>Snorlax": [[300], 1, 2],
-});
-const CLOSE_COMBAT = ["Close Combat", "Fighting", 120, "P"];
-const dyingHydreigon = () => [
-  mon("Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 90], [["Dark Pulse", "Dark", 80, "S"]], true, 60, { getBattlerIndex: () => 2 }),
-  foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
-];
-// Spread: Aura Sphere is Lucario's answer to Hydreigon but barely dents Snorlax, and Close Combat halves it. The
-// redirect would carry the wrong move, so Lucario is better off aiming at Snorlax itself and picking the right one.
-{
-  const party = [
-    doublesParty()[0],
-    mon("Lucario", 80, ["Fighting", "Steel"], [240, 150, 110, 180, 110, 120], [["Aura Sphere", "Fighting", 80, "S"], CLOSE_COMBAT], true, undefined, { getBattlerIndex: () => 1 }),
-  ];
-  const { lines, field } = render({ party, foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
-  console.log(`== doubles spare hit: spread, the redirect would carry the wrong move (live)\n${lines.join("\n")}`);
-  const slots = slotLines(field);
-  assert.match(slots.find(l => /Garchomp/.test(l)) ?? "", /→ Hydreigon/, `Garchomp fells Hydreigon:\n${field.join("\n")}`);
-  assert.match(slots.find(l => /Lucario/.test(l)) ?? "", /Close Combat → Snorlax/, `Lucario takes Snorlax with the move that suits it:\n${field.join("\n")}`);
-}
-// Focus: with only Aura Sphere to give, Lucario puts the same hit on Snorlax whether it aims there or is redirected
-// there — so it aims at Hydreigon, where the hit is also insurance if Garchomp's KO doesn't land. The row says where
-// the hit will actually go rather than calling it wasted.
-{
-  const { lines, field } = render({ party: doublesParty(), foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
-  console.log(`== doubles spare hit: focus, the redirect carries the same move (live)\n${lines.join("\n")}`);
-  const slots = slotLines(field);
-  assert.equal(slots.length, 2);
-  assert.ok(slots.every(l => /→ Hydreigon/.test(l)), `both slots aim at Hydreigon:\n${field.join("\n")}`);
-  assert.ok(field.some(l => /spare hit — goes to Snorlax if Hydreigon falls first/.test(l)), `the spare hit says where it lands:\n${field.join("\n")}`);
-}
-
 // 8b. A status play in a double (#262). Machamp outspeeds and 1HKOs Breloom, and neither of ours dents it this turn;
 // Munchlax falls to one Dragon Claw. Spore is priced on the whole field at once — the sleep is written before
 // Salamence's slot is scored — so Breloom spends its turn on it and Salamence takes the foe it can actually finish.
@@ -764,6 +726,44 @@ Object.assign(TABLE, {
   console.log(`== doubles: the partner is scored on the hypothesis (live)\nno Spore on the field: ${without}\nSpore on the field: ${with_}`);
   assert.match(without, /→ Munchlax/, `with nothing to change it, the partner takes the harmless foe:\n${without}`);
   assert.match(with_, /→ Machamp/, `the partner is scored on the state Spore makes, so it takes the silenced foe:\n${with_}`);
+}
+
+// 8e. The spare hit (#236). Garchomp is faster and alone fells a weakened Hydreigon, so Lucario's hit resolves into
+// a foe that is already gone — the game redirects it onto Snorlax (`FaintPhase` -> `redirectPokemonMoves`) carrying
+// **the move Lucario chose for Hydreigon**. So the pair is priced on where the hit really lands, and the two
+// directions fall out of one rule: spread when the slot has a better move for the other foe than the redirect would
+// carry, focus when it doesn't, because focusing also insures the KO for free.
+Object.assign(TABLE, {
+  "Lucario>Close Combat>Hydreigon": [[60], 1, 1], "Lucario>Close Combat>Snorlax": [[300], 1, 2],
+});
+const CLOSE_COMBAT = ["Close Combat", "Fighting", 120, "P"];
+const dyingHydreigon = () => [
+  mon("Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 90], [["Dark Pulse", "Dark", 80, "S"]], true, 60, { getBattlerIndex: () => 2 }),
+  foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
+];
+// Spread: Aura Sphere is Lucario's answer to Hydreigon but barely dents Snorlax, and Close Combat halves it. The
+// redirect would carry the wrong move, so Lucario is better off aiming at Snorlax itself and picking the right one.
+{
+  const party = [
+    doublesParty()[0],
+    mon("Lucario", 80, ["Fighting", "Steel"], [240, 150, 110, 180, 110, 120], [["Aura Sphere", "Fighting", 80, "S"], CLOSE_COMBAT], true, undefined, { getBattlerIndex: () => 1 }),
+  ];
+  const { lines, field } = render({ party, foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles spare hit: spread, the redirect would carry the wrong move (live)\n${lines.join("\n")}`);
+  const slots = slotLines(field);
+  assert.match(slots.find(l => /Garchomp/.test(l)) ?? "", /→ Hydreigon/, `Garchomp fells Hydreigon:\n${field.join("\n")}`);
+  assert.match(slots.find(l => /Lucario/.test(l)) ?? "", /Close Combat → Snorlax/, `Lucario takes Snorlax with the move that suits it:\n${field.join("\n")}`);
+}
+// Focus: with only Aura Sphere to give, Lucario puts the same hit on Snorlax whether it aims there or is redirected
+// there — so it aims at Hydreigon, where the hit is also insurance if Garchomp's KO doesn't land. The row says where
+// the hit will actually go rather than calling it wasted.
+{
+  const { lines, field } = render({ party: doublesParty(), foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles spare hit: focus, the redirect carries the same move (live)\n${lines.join("\n")}`);
+  const slots = slotLines(field);
+  assert.equal(slots.length, 2);
+  assert.ok(slots.every(l => /→ Hydreigon/.test(l)), `both slots aim at Hydreigon:\n${field.join("\n")}`);
+  assert.ok(field.some(l => /spare hit — goes to Snorlax if Hydreigon falls first/.test(l)), `the spare hit says where it lands:\n${field.join("\n")}`);
 }
 
 // ---- 9–11. Free switch: the game asks "Will you switch Pokémon?" before the first turn (CheckSwitchPhase).
