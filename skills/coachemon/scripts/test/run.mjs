@@ -16,7 +16,7 @@ for (const f of readdirSync(dir).filter(f => f.endsWith("test.mjs")).sort()) {
   if (update) { writeFileSync(golden, out); console.log(`updated ${f}`); continue; }
   if (!existsSync(golden)) {
     failed++;
-    console.log(`MISSING ${f} — no golden at golden/${f.replace(".mjs", ".txt")}; run \`node test/run.mjs --update\` and commit it`);
+    console.log(`MISSING ${f} — no golden at ${golden.slice(dir.length)}; run \`node test/run.mjs --update\` and commit it`);
     continue;
   }
   if (readFileSync(golden, "utf8") === out) { console.log(`ok      ${f}`); continue; }
