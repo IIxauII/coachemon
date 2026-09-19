@@ -318,7 +318,9 @@ describe("Coachemon oracle - what the card claims against what the game does", (
   };
 
   // The harness's run seed is fixed, so a wave picks the roll: 45 opens a chest, 65 springs the trap. Both branches
-  // of the card's claim are walked rather than whichever one this seed happens to land on.
+  // of the card's claim are walked rather than whichever one this seed happens to land on. That mapping is pinned
+  // below, so a seed that stops walking both goes red here rather than quietly checking one branch twice; at a pin
+  // bump, re-pick the waves rather than dropping the assertion.
   it.each([45, 65])("Mysterious Chest at wave %i: the chest the card names is the chest the game opens", async wave => {
     await arrive(game, { ...caseFor(MysteryEncounterType.MYSTERIOUS_CHEST), wave });
 
@@ -329,6 +331,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     await chooseOption(game, 1);
     const roll: number = game.scene.currentBattle.mysteryEncounter!.misc.roll;
     const trapped = roll < TRAP_PERCENT;
+    expect(trapped, `wave ${wave} rolled ${roll}; the fixed seed no longer walks both branches`).toBe(wave === 65);
     // Whoever the trap would take, named while they are still standing.
     const victim = game.scene
       .getPlayerParty()
@@ -408,6 +411,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const burned = game.scene.getPlayerParty().filter(p => p.status?.effect === StatusEffect.BURN);
     console.log(`ORACLE-DIFF fallout claimed="${who} ${what}" actual=[${burned.map(p => p.name)}]`);
     if (what === "shrugs off the burn") {
+      // A shrugged burn leaves nothing behind on the mon, so this branch can only check that nobody was burned:
+      // the card could name the wrong shrugger and still pass. Inherent, not an omission.
       expect(burned.map(p => p.name)).toEqual([]);
       return;
     }
@@ -427,12 +432,12 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const [, who, nature] = named!;
 
     const party = game.scene.getPlayerParty();
-    const workerNo = party.findIndex(p => p.name === who) + 1;
-    expect(workerNo, `the card's ${who} is in the party`).toBeGreaterThan(0);
-    const mon = party[workerNo - 1];
+    const carryNo = party.findIndex(p => p.name === who) + 1;
+    expect(carryNo, `the card's ${who} is in the party`).toBeGreaterThan(0);
+    const mon = party[carryNo - 1];
     const before = mon.nature;
 
-    await pickOption(game, 1, { pokemonNo: workerNo });
+    await pickOption(game, 1, { pokemonNo: carryNo });
     // The post-option phase sits past the shop the encounter leaves behind, so that has to be dismissed first, the
     // way upstream's own post-phase tests do it.
     await game.phaseInterceptor.to("SelectModifierPhase");
