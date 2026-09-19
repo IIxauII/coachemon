@@ -102,6 +102,24 @@ Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → Garchomp 100% likely · moves after
 ♟ winnable · ~4 steps + {Show the fight plan}
+== doubles: a status play (live)
+🎯 W200 · Cyrus Breloom › Salamence − {Minimal overview} × {Close}
+⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
+⚔ Salamence ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP, 34% KO} Dragon Dragon Claw → Munchlax 1 hit
+Machamp Machamp L80 Fighting 100% ▲ — ↯ Fighting Close Combat → Breloom 50% likely · 50% first
+Munchlax Munchlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Salamence 50% likely · moves after
+♟ Fight plan steps approximate winnable
+☠ Machamp Machamp KOs 2/2 · win condition
+~1 Salamence Dragon Dragon Claw → Machamp KO · 86% left
+~2 Salamence Dragon Dragon Claw → Munchlax KO · 86% left
+⚠ nothing we have hurts Machamp — maximise damage before it comes in
+== doubles: nothing for a status play to add (live)
+⚔ Breloom Grass Seed Bomb → Munchlax spare hit — KO without it
+⚔ Salamence Dragon Dragon Claw → Munchlax 1 hit
+◎ focus Munchlax : KO before it moves
+== doubles: the partner is scored on the hypothesis (live)
+no Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Munchlax 3 hits
+Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
 == free switch — same field in the command phase (live)
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
