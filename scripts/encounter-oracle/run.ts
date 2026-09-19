@@ -7,8 +7,12 @@
  * The encounter card re-implements what each encounter's option closures do, because they can't be read from the
  * page (`46-encounter.js`). Everything else the HUD claims is checked against a mock, which can only say the port
  * matches what we *think* the game does. This runs the card against the game itself: upstream's vitest harness
- * plays the encounter headless in the pinned clone, the card reads that live scene, and the claims it makes — the
- * teleport destination, the part-timer's pay — are compared with what the game then actually did.
+ * plays the encounter headless in the pinned clone, the card reads that live scene, and the claims it makes are
+ * compared with what the game then actually did.
+ *
+ * Every exact claim the card makes is walked: the teleport destination, the part-timer's pay, the chest (both its
+ * prize tiers and its trap), the store's four shops, who the fallout burns, and the vitamin dealer's new nature.
+ * The take / ok / avoid call is judgement and stays unchecked.
  *
  * Dev-only. Nothing here ships: the oracle lives in this repo, the game stays in `.cache`, and the two files this
  * writes into the clone are removed again on the way out. Run it at a pin bump, beside `npm run drift:check`: a
