@@ -6,6 +6,12 @@
  *   npm run enums:gen                       # at the pin in src/escape-ladder/reviewed.json
  *   npm run enums:gen -- --version 1.12.0.12
  *   npm run enums:gen -- --source ../pokerogue
+ *   npm run enums:gen -- --check           # fail if generated.ts has drifted from this generator
+ *
+ * `--check` is there for CI to run (#258): the output is a function of the pinned tag
+ * and this file, so a hand-edit to `src/enums/generated.ts` — or a generator
+ * change that was never re-run — is a red build rather than a silent revert at
+ * the next generate.
  *
  * The pin is shared with the escape ladder: both resolve `v<gameVersion>` and
  * never fetch a default branch, because the repo's default is `beta` and its
@@ -73,7 +79,7 @@ const ENUMS: Record<string, string> = {
 };
 
 const { values: args } = parseArgs({
-  options: { version: { type: "string" }, source: { type: "string" } },
+  options: { version: { type: "string" }, source: { type: "string" }, check: { type: "boolean" } },
 });
 
 const reviewed = JSON.parse(readFileSync(REVIEWED, "utf8")) as { pinned: { gameVersion: string } };
@@ -120,6 +126,17 @@ lines.push(
   "}",
   "",
 );
-mkdirSync(path.dirname(new URL(OUT).pathname), { recursive: true });
-writeFileSync(OUT, lines.join("\n"));
-console.log(`wrote ${path.relative(process.cwd(), new URL(OUT).pathname)} from ${tag}: ${Object.entries(parsed).map(([n, m]) => `${n}=${m.length}`).join(", ")}`);
+const text = lines.join("\n");
+const rel = path.relative(process.cwd(), new URL(OUT).pathname);
+const counts = Object.entries(parsed).map(([n, m]) => `${n}=${m.length}`).join(", ");
+if (args.check) {
+  if (!existsSync(OUT) || readFileSync(OUT, "utf8") !== text) {
+    console.error(`${rel} is stale — run \`npm run enums:gen\``);
+    process.exit(1);
+  }
+  console.log(`${rel} up to date at ${tag}: ${counts}`);
+} else {
+  mkdirSync(path.dirname(new URL(OUT).pathname), { recursive: true });
+  writeFileSync(OUT, text);
+  console.log(`wrote ${rel} from ${tag}: ${counts}`);
+}
