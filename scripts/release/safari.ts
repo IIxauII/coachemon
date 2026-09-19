@@ -163,6 +163,33 @@ export function packagedVersion(manifest: string): string {
   return version;
 }
 
+/**
+ * The submission id from a notarization Apple accepted, or a refusal naming the log command.
+ *
+ * `notarytool submit --wait` exits `0` once Apple returns a *final* verdict, `Invalid` among them: the exit code says
+ * the submission finished, not that it passed. So the status is read rather than inferred. Without this the run walks
+ * on to `stapler staple`, which fails for want of a ticket to staple — nothing is uploaded either way, because the
+ * upload is the last step, but the dev is left reading a staple failure for a notarization problem (#241).
+ */
+export function acceptedSubmissionId(output: string, profile: string): string {
+  let verdict: { id?: string; status?: string; message?: string };
+  try {
+    verdict = JSON.parse(output) as typeof verdict;
+  } catch {
+    throw new Error(`notarytool printed no JSON verdict to read:\n${output.trim()}`);
+  }
+  const { id, status, message } = verdict;
+  // Both, because the refusal below is only actionable when it can name the submission to fetch the log for.
+  if (!id || !status) throw new Error(`notarytool's verdict carries no id and status:\n${output.trim()}`);
+  if (status !== "Accepted") {
+    throw new Error(
+      `Apple did not accept submission ${id}: ${status}${message ? ` — ${message}` : ""}\n` +
+        `  xcrun notarytool log ${id} --keychain-profile ${profile}`,
+    );
+  }
+  return id;
+}
+
 /** §14.6 as commands, in order. Pure: the runner executes these, and a dry run prints them. */
 export function safariSteps(plan: SafariPlan): SafariStep[] {
   const p = safariPaths(plan);
@@ -250,7 +277,16 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       id: "notarize",
       title: "Submit for notarization and wait for Apple's verdict",
       command: "xcrun",
-      args: ["notarytool", "submit", p.submitted, "--wait", "--keychain-profile", plan.profile],
+      // `--output-format json` so the verdict can be read: `--wait` exits 0 on a rejection just as happily as on an
+      // approval, and `acceptedSubmissionId` is what tells the two apart (#241). It costs the progress chatter, which
+      // is why the runner prints the submission id itself. Placed before `--keychain-profile` so the profile stays
+      // last, where the runner's own listing and the runbook both read it.
+      args: [
+        "notarytool", "submit", p.submitted,
+        "--wait",
+        "--output-format", "json",
+        "--keychain-profile", plan.profile,
+      ],
     },
     {
       // Without the ticket in the bundle, a player who is offline on first launch is refused by Gatekeeper.

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { safariAppZipName, zipName } from "../scripts/release/artifacts.ts";
 import {
+  acceptedSubmissionId,
   APP_NAME,
   BUNDLE_ID,
   developerIdIdentities,
@@ -149,6 +150,39 @@ test("notarization waits, so the next step cannot staple an unapproved app", () 
   assert.deepEqual(step.args.slice(-2), ["--keychain-profile", "coachemon"]);
   // The password never reaches the command line: `notarytool store-credentials` put it in the keychain (runbook).
   assert.equal(step.args.some(arg => arg.includes("password")), false);
+  // The verdict has to be machine-readable, because the exit code does not carry it (#241).
+  assert.deepEqual(step.args.slice(-4, -2), ["--output-format", "json"]);
+});
+
+test("a rejected notarization is caught at the notarize step, not at the staple after it", () => {
+  // `notarytool submit --wait` exits 0 on any *final* verdict, `Invalid` included, so the status is what decides.
+  const rejected = JSON.stringify({
+    id: "8f1c2d3e-0000-4444-aaaa-bbbbccccdddd",
+    status: "Invalid",
+    message: "Processing complete",
+  });
+  assert.throws(
+    () => acceptedSubmissionId(rejected, "coachemon"),
+    (error: Error) =>
+      // The submission id, because the log command is useless without it, and the command itself, because the dev
+      // would otherwise have to go and find it in the runbook mid-release.
+      error.message.includes("8f1c2d3e-0000-4444-aaaa-bbbbccccdddd") &&
+      error.message.includes("Invalid") &&
+      error.message.includes("xcrun notarytool log 8f1c2d3e-0000-4444-aaaa-bbbbccccdddd --keychain-profile coachemon"),
+  );
+});
+
+test("an accepted notarization hands back the submission id", () => {
+  const accepted = JSON.stringify({ id: "abc", status: "Accepted", message: "Successfully received submission info" });
+  assert.equal(acceptedSubmissionId(accepted, "coachemon"), "abc");
+});
+
+test("a verdict that cannot be read is a failure, never a pass", () => {
+  // Anything but a parsed `Accepted` has to stop the run: a changed output format or a truncated pipe must not read
+  // as approval, which is the whole failure mode this replaced.
+  assert.throws(() => acceptedSubmissionId("Successfully uploaded file", "coachemon"), /no JSON verdict/);
+  assert.throws(() => acceptedSubmissionId(JSON.stringify({ status: "Accepted" }), "coachemon"), /no id and status/);
+  assert.throws(() => acceptedSubmissionId(JSON.stringify({ id: "abc" }), "coachemon"), /no id and status/);
 });
 
 test("Gatekeeper is asked the question a downloaded app actually faces", () => {
