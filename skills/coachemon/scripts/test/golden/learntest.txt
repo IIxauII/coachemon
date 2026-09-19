@@ -155,6 +155,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 · Grass Sleep Powder sleep · 75% acc · set move (Bulky Support) power 63
 Learns it — free slot
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== STAB by share [12,19,27,34,41]
 == Ludicolo ← Soak (Skarmory ahead)
 ✚ Water Soak pure Water power 35
 · Water Scald SE on Fire power 144

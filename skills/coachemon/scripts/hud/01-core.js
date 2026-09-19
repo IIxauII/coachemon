@@ -100,11 +100,23 @@ export const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxur
 export const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
 export const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
 
-export const TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IMMUNE_FLAG), "Wonder Guard", "Thick Fat", "Heatproof", "Solid Rock", "Filter", "Prism Armor", "Sturdy", "Intimidate", "Guts", "Fluffy", "Simple",
-  // Punish contact or being hit: chip, status, stat drops, a lost ability.
-  "Iron Barbs", "Rough Skin", "Static", "Flame Body", "Poison Point", "Effect Spore", "Cursed Body", "Gooey", "Tangling Hair", "Mummy", "Weak Armor", "Stamina",
-  // Turn our hits, stat drops or KOs into boosts; undo chip or status; ignore our boosts or residual damage.
+// Abilities that answer a contact move and only a contact move, so the move decides whether they bite.
+export const CONTACT_PUNISH = ["Iron Barbs", "Rough Skin", "Static", "Flame Body", "Poison Point", "Effect Spore", "Cursed Body", "Gooey", "Tangling Hair", "Mummy"];
+
+// Trap abilities, split by the question each one asks (CONTEXT.md, `Trap`). A **move trap** turns on *which* move we
+// pick, so it is answered against one: 30-planner's `bites` asks it of the move a slot chose, or of a slot's whole
+// pool. A **field trap** holds whatever we pick — it prices our hits, drops or KOs, undoes chip or status, or ignores
+// our boosts — so its presence on the field is the warning, and there is no move to ask about.
+export const MOVE_TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IMMUNE_FLAG), "Wonder Guard",
+  "Thick Fat", "Heatproof", "Fluffy", "Solid Rock", "Filter", "Prism Armor", "Intimidate",
+  // Punish contact: chip, status, stat drops, a lost ability.
+  ...CONTACT_PUNISH]);
+// Turn our hits, stat drops or KOs into boosts; undo chip or status; ignore our boosts or residual damage; or change
+// what a status play into them is worth.
+export const FIELD_TRAPS = new Set(["Guts", "Simple", "Weak Armor", "Stamina",
   "Justified", "Defiant", "Competitive", "Moxie", "Beast Boost", "Speed Boost", "Shed Skin", "Natural Cure", "Regenerator", "Unaware", "Magic Guard", "Marvel Scale", "Fur Coat"]);
+// Every trap, the two kinds plus Sturdy, which is neither: the KO model already counts it, so nothing warns about it.
+export const TRAPS = new Set([...MOVE_TRAPS, ...FIELD_TRAPS, "Sturdy"]);
 export const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
 export const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
