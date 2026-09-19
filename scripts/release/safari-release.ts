@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  acceptedSubmissionId,
   developerIdIdentities,
   exportOptions,
   extensionTag,
@@ -153,21 +154,47 @@ function checkDownload(): void {
   console.log(`  manifest  ${found} ✓`);
 }
 
+/**
+ * Apple's verdict, which the notarize step's exit code does not carry: `--wait` exits 0 on `Invalid` too (#241).
+ * Read here rather than left to the staple that follows, which fails for want of a ticket and names the wrong step.
+ */
+function checkNotarization(output: string): void {
+  try {
+    console.log(`  submission  ${acceptedSubmissionId(output, profile)} accepted ✓`);
+  } catch (error) {
+    console.error(`\n${(error as Error).message}`);
+    die(`the scratch directory is kept at ${work}`);
+  }
+}
+
 const quote = (arg: string) => (/^[\w./:=+-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", `'\\''`)}'`);
 
 for (const [index, step] of steps.entries()) {
   console.log(`\n[${index + 1}/${steps.length}] ${step.title}`);
   console.log(`  ${[step.command, ...step.args].map(quote).join(" ")}`);
   if (dryRun) continue;
+  // Only the notarize step's stdout is read, and it is the one step whose output is machine-readable rather than a
+  // log to watch; every other step streams straight through, because that is where a slow build shows progress.
+  const reads = step.id === "notarize";
+  let output = "";
   try {
-    execFileSync(step.command, step.args, { cwd: work, stdio: "inherit" });
+    if (reads) {
+      output = execFileSync(step.command, step.args, { cwd: work, encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
+    } else {
+      execFileSync(step.command, step.args, { cwd: work, stdio: "inherit" });
+    }
   } catch (error) {
     // Notarization and the archive are slow and their logs are where a failure is diagnosed, so a failed run leaves
     // the scratch directory behind and says where it is. Nothing is uploaded, because the upload is the last step.
     console.error(`\n${step.title.toLowerCase()} failed: ${(error as Error).message}`);
+    // A step that was read rather than streamed said whatever it had to say down the pipe, so it is printed here or
+    // nowhere — and for a notarization that is the one place the submission id appears.
+    const piped = (error as { stdout?: string }).stdout;
+    if (piped) console.error(piped.trim());
     die(`the scratch directory is kept at ${work}`);
   }
   if (step.id === "unpack") checkDownload();
+  if (reads) checkNotarization(output);
 }
 
 if (removable) rmSync(work, { recursive: true, force: true });
