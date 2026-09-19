@@ -180,6 +180,20 @@ that member and the fight is gone. The word has one meaning and two readings, by
 audit answers between waves off the type chart and the stat a member attacks with, while the **fight plan**, which has
 the battle in front of it, plays the one-on-one out and asks who wins it. A card says which reading it used.
 
+The word points at our own members only. What a foe does to us is the other direction: a foe's typing or ability
+**stops** a slot when it leaves that member with nothing worth doing — an immunity, a wall, a lock on the only move
+it can still reach. A slot that is stopped is not an answer to anything, and the coach never calls it one.
+
+## Turn line
+
+The **coach**'s call for the decision in front of the player right now: which of our **party** acts, with what, at
+whom. It is the one thing the coach says that reads the battle at full fidelity, and it is the authority for the
+turn — the **fight plan** contributes a price to it and never overrides it.
+
+A turn line always says something. Where the obvious move is gone it names what is left — a status play, a switch,
+the member held back as an **answer** to a foe still to come — and only where the turn is genuinely lost does it say
+so plainly. It never reports a member as empty when the reason is that something **stopped** it.
+
 ## Fight plan
 
 The **coach**'s read of a whole trainer battle: which of our **party** takes which foe, in the order the trainer sends
