@@ -44,7 +44,7 @@ const M = {
   wingAttack: move("Wing Attack", "Flying", 60, 0), crunch: move("Crunch", "Dark", 80, 0),
   zenHeadbutt: move("Zen Headbutt", "Psychic", 80, 0, 90), psyshieldBash: move("Psyshield Bash", "Psychic", 90, 0, 90),
   meteorMash: move("Meteor Mash", "Steel", 90, 0, 90), hammerArm: move("Hammer Arm", "Fighting", 100, 0, 90),
-  surf: move("Surf", "Water", 90, 1), soak: move("Soak", "Water", -1, 2), aquaTail: move("Aqua Tail", "Water", 90, 0, 90),
+  surf: move("Surf", "Water", 90, 1), soak: move("Soak", "Water", -1, 2, 100, { attrs: [["ChangeTypeAttr", { type: TY.indexOf("Water") }]] }), aquaTail: move("Aqua Tail", "Water", 90, 0, 90),
   playRough: move("Play Rough", "Fairy", 90, 0, 90), synthesis: move("Synthesis", "Grass", -1, 2, -1, { attrs: [["PlantHealAttr", {}]], moveTarget: 0 }),
   gigaDrain: move("Giga Drain", "Grass", 75, 1), petalDance: move("Petal Dance", "Grass", 120, 1, 100, { attrs: [["FrenzyAttr", {}]] }),
   boomburst: move("Boomburst", "Normal", 140, 1, 100, { moveTarget: 4 }), hyperDrill: move("Hyper Drill", "Normal", 120, 0),
@@ -136,6 +136,9 @@ const scenarios = {
       const fix = a.findings.find(f => f.relearn && f.mon === "Mamoswine");
       assert.equal(fix?.relearn.move, "Icicle Crash");
       assert.equal(fix.slot, fix.relearn.forget, "named under the slot it replaces");
+      // Soak is scored now (#233), not left unscorable — and what it scores clears the dead-slot bar, so the audit
+      // stops offering a slot the run may well want to keep.
+      assert.ok(!t.some(x => /^Golduck: Soak does little/.test(x)), t.join("\n"));
       assert.ok(t.includes("Comfey answers nothing at W165 — first to replace"));
       assert.ok(t.includes("Metagross: Zen Headbutt is a second Psychic attack (Psyshield Bash)"));
       assert.ok(t.includes("Comfey: Play Rough is physical on Atk 223 (SpA 312)"));

@@ -380,4 +380,60 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.equal(tm.best?.gain, globalThis.__lm.learnAdvice(sableye(), mv(TAUNT), { roster: whitney }).gain, "the TM card and the learn card agree");
   assert.ok(run(sableye(), TAUNT, { roster: whitney }).model.move.notes.includes("vs Miltank's Milk Drink at W30"), "the learn card model carries the roster");
 }
+// ---- A typing written onto the foe (#233)
+// Soak and Magic Powder make the target one type; Forest's Curse and Trick-or-Treat add a third. The battle plan
+// prices one against the foe in front of us; here it is judged against the roster ahead and the party's own coverage:
+// what it opens, and (a `set` only) the STAB it takes away. Blind of a roster both keep a flat value, which is what
+// keeps the team audit's dead-slot check off them.
+{
+  const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null,
+    segments: extra.segments ?? 0, moveTypes: extra.moveTypes ?? types, statusMoves: [], healMoves: [] });
+  const at40 = (...foes) => ({ wave: 40, exact: true, foes });
+  const SOAK = ["Soak","Water",-1,"X",100,[["ChangeTypeAttr",{ type: TY.indexOf("Water") }]],false,3,{ flags: 262144 }];
+  const TREAT = ["Trick-or-Treat","Ghost",-1,"X",100,[["AddTypeAttr",{ type: TY.indexOf("Ghost") }]],false,3,{ flags: 262144 }];
+  const ludicolo = mon("Ludicolo", ["Water","Grass"], 70, 90, [["Scald","Water",80,"S"],["Energy Ball","Grass",90,"S"],["Zen Headbutt","Psychic",80,"P",90],["Ice Beam","Ice",90,"S"]]);
+  const judge = (pk, move, roster) => globalThis.__lm.learnAdvice(pk, mv(move), { roster }).plan.incoming;
+
+  // Skarmory answers to nothing Ludicolo has better than neutral; pure Water hands Energy Ball a ×2 and takes the
+  // STAB off both its attacks.
+  const skarm = at40(foe("Skarmory", ["Steel","Flying"]));
+  const blind = judge(ludicolo, SOAK, null);
+  const helps = judge(ludicolo, SOAK, skarm);
+  assert.ok(blind.notes.includes("pure Water"), `named the way the ⚔ line names it: ${blind.notes}`);
+  assert.ok(helps.value > blind.value * 1.5, `Soak into a roster it opens (${helps.value} vs ${blind.value})`);
+  assert.ok(helps.notes.includes("vs Skarmory at W40"), `named by the foe it pays against: ${helps.notes}`);
+  // A foe already that one type: `ChangeTypeAttr.getCondition` refuses, so the move does nothing there.
+  const pool = at40(foe("Vaporeon", ["Water"], { moveTypes: ["Water","Ice"] }));
+  const dead = judge(ludicolo, SOAK, pool);
+  assert.ok(dead.value < blind.value * 0.5 && dead.notes.includes("no opening at W40"), `${dead.value}: ${dead.notes}`);
+  // Aggron: Scald already hits it ×2, so the rewrite opens nothing — but it still takes both its STABs away.
+  const strip = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"])));
+  assert.ok(strip.value > blind.value && strip.value < helps.value, `STAB alone (${strip.value} vs ${blind.value}/${helps.value})`);
+  const unsure = judge(ludicolo, SOAK, { ...skarm, exact: false });
+  assert.ok(unsure.value > blind.value && unsure.value < helps.value, "a roster the preview isn't sure of moves the score half as far");
+  // Good as Gold takes a status move outright, so only half this roster is rewritable.
+  const half = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"]), foe("Gholdengo", ["Steel","Ghost"], { ability: "Good as Gold" })));
+  assert.ok(half.value < helps.value && half.notes.includes("vs Skarmory at W40"), `${half.value}: ${half.notes}`);
+
+  // An added type only multiplies: Trick-or-Treat turns Machamp into a Knock Off / Shadow Sneak target …
+  const sable = mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"],["Night Shade","Ghost",-1,"S",100,["LevelDamageAttr"]]]);
+  const addBlind = judge(sable, TREAT, null);
+  const added = judge(sable, TREAT, at40(foe("Machamp", ["Fighting"])));
+  assert.ok(addBlind.notes.includes("+Ghost") && added.value > addBlind.value, `${added.value} vs ${addBlind.value}`);
+  // … and it can take one away: a Hitmonlee whose one answer is Fighting is worse off for it, which is worth 0 here
+  // rather than a negative — nobody has to use the move.
+  const kicker = mon("Hitmonlee", ["Fighting"], 120, 35, [["Close Combat","Fighting",120,"P"],["Mega Kick","Normal",120,"P",75],["Rock Slide","Rock",75,"P",90],["Feint","Normal",30,"P"]]);
+  const worse = judge(kicker, TREAT, at40(foe("Snorlax", ["Normal"])));
+  assert.ok(worse.value < addBlind.value * 0.5 && worse.notes.includes("no opening at W40"), `${worse.value}: ${worse.notes}`);
+
+  // The verdict is a real one now, not "your call" — and blind of a roster the score clears the audit's dead-slot bar
+  // (50-audit's WEAK_STATUS, 20), so a slot the run wants kept is no longer offered up as dead weight.
+  const advice = globalThis.__lm.learnAdvice(ludicolo, mv(SOAK), { roster: skarm });
+  assert.notEqual(advice.kind, "status");
+  assert.ok(advice.learn !== null, `a type-changing move gets a verdict: ${advice.reason}`);
+  assert.ok(blind.value >= 20 && addBlind.value >= 20, `${blind.value} / ${addBlind.value} clear the dead-slot bar`);
+  assert.ok(run(ludicolo, SOAK, { roster: skarm }).model.move.notes.includes("vs Skarmory at W40"), "the learn card model carries the roster");
+  // The card below is the HUD's own tick, which has no look-ahead in this fake scene: the blind value, and a verdict.
+  show("Ludicolo ← Soak (Skarmory ahead)", run(ludicolo, SOAK, { roster: skarm }));
+}
 console.log("ok");
