@@ -662,6 +662,41 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   assert.ok(!field.some(l => /^◎ focus Hydreigon/.test(l)), "no focus on the leaving Hydreigon");
 }
 
+// 8b. A status play in a double (#262). Machamp outspeeds and 1HKOs Breloom, and neither of ours dents it this turn;
+// Munchlax falls to one Dragon Claw. Spore is priced on the whole field at once — the sleep is written before
+// Salamence's slot is scored — so Breloom spends its turn on it and Salamence takes the foe it can actually finish.
+Object.assign(TABLE, {
+  "Breloom>Seed Bomb>Machamp": [[60], 1, 1], "Breloom>Seed Bomb>Munchlax": [[60], 1, 1],
+  "Salamence>Dragon Claw>Machamp": [[60], 1, 1], "Salamence>Dragon Claw>Munchlax": [[400], 1, 1],
+  "Machamp>Close Combat>Breloom": [[400], 1, 1], "Machamp>Close Combat>Salamence": [[300], 1, 1],
+  "Munchlax>Body Slam>Breloom": [[30], 1, 1], "Munchlax>Body Slam>Salamence": [[30], 1, 1],
+});
+const SPORE = ["Spore", "Grass", 0, "X", 0, { id: 147, attrs: [["StatusEffectAttr", { effect: 4 }]] }];
+const sporeParty = () => [
+  mon("Breloom", 80, ["Grass", "Fighting"], [250, 200, 110, 60, 90, 100], [["Seed Bomb", "Grass", 80, "P"], SPORE], true, undefined, { getBattlerIndex: () => 0 }),
+  mon("Salamence", 80, ["Dragon", "Flying"], [270, 200, 150, 120, 130, 130], [["Dragon Claw", "Dragon", 80, "P"]], true, undefined, { getBattlerIndex: () => 1 }),
+];
+const sporeFoes = (sleeping = false) => [
+  foeAt(2, "Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 140], [["Close Combat", "Fighting", 120, "P"]],
+    ...(sleeping ? [undefined, { status: { effect: 4, sleepTurnsRemaining: 2 } }] : [])),
+  foeAt(3, "Munchlax", 80, ["Normal"], [300, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
+];
+{
+  const { lines, field } = render({ party: sporeParty(), foes: sporeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles: a status play (live)\n${lines.join("\n")}`);
+  assert.match(lineOf(field, "Breloom"), /Spore → Machamp .*sleep/, `Spore is the double's turn line:\n${field.join("\n")}`);
+  // Bounded to this turn: a double's status play names no follow-up, because there is no depth 2 to name one.
+  assert.ok(!/then /.test(lineOf(field, "Breloom")), `no depth 2 in a double:\n${field.join("\n")}`);
+  assert.match(lineOf(field, "Salamence"), /→ Munchlax/, `the partner takes the foe it can finish:\n${field.join("\n")}`);
+}
+
+// 8c. The same field with Machamp already asleep: there is nothing for Spore to add, so Breloom attacks.
+{
+  const { field } = render({ party: sporeParty(), foes: sporeFoes(true), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  console.log(`== doubles: nothing for a status play to add (live)\n${field.join("\n")}`);
+  assert.match(lineOf(field, "Breloom"), /Seed Bomb →/, `no Spore into a sleeping foe:\n${field.join("\n")}`);
+}
+
 // ---- 9–11. Free switch: the game asks "Will you switch Pokémon?" before the first turn (CheckSwitchPhase).
 // Ninetales is on the field and loses to the faster Rhyperior. Swampert beats it — but as a normal switch it would
 // eat a Stone Edge coming in (≥ 25 % KO), so in the command phase it's rejected. Offered free, it's the answer.

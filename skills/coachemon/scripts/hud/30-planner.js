@@ -714,6 +714,9 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const pair = double && active.length === 2;
   const current = party.filter(p => p.isOnField?.());
   const lock = slots === 2 && locked && party.includes(locked.switchIn ?? locked.me) ? locked : null;
+  // The real turn, under a name nothing shadows: the scorers below take an `at` turn (`turn.assuming`) and shadow
+  // `turn` with it, so the same code answers about the state a status play would make (#262).
+  const now = turn;
 
   // A voluntary switch-in is hit before it acts, by moves the AI picked against the mon leaving.
   const inMemo = new Map();
@@ -733,9 +736,17 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // happens next turn, against what the foe then picks for it), and a switch-in likely to be KO'd coming in is
   // never an option. A foe that is itself switching in doesn't attack this turn: a mon that stays gets a free hit.
   // `mine`: slot 0's locked command, when `me` is that slot.
-  const options = (me, entering, mine = null) => {
+  const options = (me, entering, mine = null, hyp = null) => {
+    // `hyp`: the turn a status play would make (#262) — the state written on (`at`), the HP a heal puts back
+    // (`bump`), and the attempts the status costs each foe it hit (`lost`, the `foeAct` share #74 already models,
+    // shifted so index 0 is this turn's attempt). Shadowing `turn` means nothing in the body has to know. Under a
+    // hypothesis the search is bounded to this turn — no depth 2, no status plays of its own — and `incoming` stays
+    // on the real turn: a switch-in takes its entry hit before any of this lands.
+    const turn = hyp?.at ?? now;
+    const assumed = !!hyp;
+    const silenced = f => hyp?.lost?.find(x => x.mon === f)?.act ?? null;
     const inc = entering ? incoming(me) : { dmg: 0, ko: 0 };
-    const hp = me.hp - inc.dmg;
+    const hp = Math.min(me.getMaxHp?.() ?? Infinity, me.hp - inc.dmg + (hyp?.bump ?? 0));
     // A switch-in must get to act once: count it lost if it's KO'd coming in, or survives only to be KO'd next
     // turn before it moves (the foe re-picks against it, on the HP the entry hit left).
     const beforeActing = hp <= 0 ? 1 : 1 - active.reduce((keep, f) => {
@@ -748,8 +759,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const free = f => !entering && !attackers.includes(f);
     // A mon not yet on the field faces what the foe picks for it, not the move it chose against the current field.
     const next = entering || !me.isOnField?.();
-    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(turn, threatFrom(turn, f, me, null, { next }), me, hp, { foe: f }) + (free(f) ? 1 : 0))));
-    const trade = (o, f) => exchange(turn, me, o.pm, f, { hp, outcome: o, free: free(f), next });
+    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(turn, threatFrom(turn, f, me, null, { next }), me, hp, { foe: f, act: silenced(f) ?? undefined }) + (free(f) ? 1 : 0))));
+    const trade = (o, f) => exchange(turn, me, o.pm, f, { hp, outcome: o, free: free(f), next, foeAct: silenced(f) });
     const last = entering ? null : lastMoveOf(me);
     const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     // Falling to a foe with an on-KO boost (Beast Boost, Moxie) arms it against whoever comes next.
@@ -875,14 +886,49 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         effect: `${play.note}${aimed && works < 0.995 ? ` ${Math.round(works * 100)}%` : ""}`,
       };
     };
+    // A status play in a double has no 1-v-1 follow-up to be scored from: `follow()` would price the effect against
+    // the whole of one foe's damage where the field splits it, which is what #74 excluded doubles over. The candidate
+    // carries the effect and how often it works, and `add` prices it against the partner's pick on the state it makes
+    // (#262). What is settled here is only the part no partner changes: the turn it spends, what it costs, the
+    // nudges every option gets. `hits` is filled in by the caller, which knows how soon this slot was going to KO.
+    const playCandidate = (info, play, fi) => {
+      const f = active[fi];
+      const pm = info.pm, mv = pm.getMove();
+      const pF = free(f) ? 1 : exchange(turn, me, pm, f, { hp, free: free(f), next }).pFirst;
+      const aimed = !play.self;
+      const guard = aimed && !info.bypassProtect && !free(f) && !next ? protectChance(turn, f) : 0;
+      const t = threatFrom(turn, f, me, pm, { next });
+      const kingsRock = free(f) || !t ? 0 : Math.min(1, 0.1 * heldStack(f, "FlinchChanceModifier")) * Math.min(1, t.moves.reduce((q, m) => q + m.p, 0));
+      const works = actChance(me, mv, next) * (1 - kingsRock * (1 - pF)) * (aimed ? (1 - guard) * info.acc * (info.e > 0 && !info.bounce ? 1 : 0) : 1);
+      if (!(works >= 0.05)) return null;
+      const maxHp = me.getMaxHp?.() ?? hp;
+      const keep = last != null && pm.moveId === last ? KEEP_BONUS : 0;
+      // The same nudge every attacking option gets, and the rank the per-slot cap cuts on: what the game's own
+      // scoring makes of this move against this foe.
+      const benefit = turn.benefit(me, f, mv);
+      // Attempts the status costs the foe, indexed from this turn's: sleep and freeze cancel this one too when we
+      // move first (`skip0`), and #74's `foeAct` answers for every one after it. Nothing here writes on the state —
+      // `getNextMove` picks a move whether or not the mon is asleep — so this is the only place the effect is felt.
+      const skipNow = pF * (play.skip0 ?? 0);
+      const later = play.foeAct ? play.foeAct(pF) : null;
+      const act = skipNow > 0 || later ? i => (i === 0 ? 1 - skipNow : later ? later(i - 1) : 1) : null;
+      return {
+        me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
+        play, works, rank: benefit, hp, turns: 9, hits: 9, foe: f, act,
+        heal: play.kind === "heal" ? Math.min(play.amount, Math.max(0, maxHp - hp)) : 0,
+        score: -1 - (play.hpCost ?? 0) / maxHp + keep + (play.kind === "hazard" ? play.value * works : 0) + benefit * AI_POINT - STATUS_COST,
+        effect: `${play.note}${aimed && works < 0.995 ? ` ${Math.round(works * 100)}%` : ""}`,
+      };
+    };
     const plays = fi => {
-      if (slots !== 1 || entering || !turn.live) return [];
+      if (assumed || entering || !turn.live) return [];
       const f = active[fi];
       // A game read that fails on a written-on state drops that option, not the panel.
       return turn.statusMoves(me, f).map(info => {
         try {
           const play = statusPlay(turn, me, f, info);
-          return play && playOption(info, play, fi);
+          if (!play) return null;
+          return slots === 1 ? playOption(info, play, fi) : playCandidate(info, play, fi);
         } catch { return null; }
       }).filter(Boolean);
     };
@@ -905,14 +951,14 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const scored = planOutcomes(turn, me, f).filter(o => o.expected > 0 && !(pair && o.spread)).map(o => one(o, fi));
       // Depth 2 for every move of a single slot; in doubles the three best and any move that lives on turn 1
       // (priority, a flinch, first turn only).
-      const deep = slots === 1 ? scored : [...[...scored].sort((a, b) => b.score - a.score).slice(0, 3),
+      const deep = assumed ? [] : slots === 1 ? scored : [...[...scored].sort((a, b) => b.score - a.score).slice(0, 3),
         ...scored.filter(x => x.move.traits?.once || x.move.flinch > 0 || (x.move.priority ?? 0) > 0)];
       for (const x of scored.map(x => (entering || !deep.includes(x) ? x : deeper(x)))) {
         const o = x.move;
         if (better(best, x)) best = x;
         if (!drawback(o) && !(slots === 2 && hitsAlly(o)) && better(clean, x)) clean = x;
       }
-      for (const x of plays(fi)) {
+      if (slots === 1) for (const x of plays(fi)) {
         if (better(best, x)) best = x;
         if (better(clean, x)) clean = x;
       }
@@ -925,14 +971,33 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         if (p) out.push(p);
       }
     }
+    // In a double a status play doesn't compete with this slot's attacks here — it has no standalone worth until the
+    // partner's pick is known — so it rides alongside them and the field search prices it (#262). Capped per slot:
+    // every candidate costs the search a hypothesis both slots are re-scored on, so only the few the game's own
+    // scoring rates highest are carried, and a self-targeted play is kept once rather than once per foe.
+    if (slots === 2 && !assumed && !entering) {
+      const cands = [], seen = new Set();
+      active.forEach((f, fi) => {
+        for (const x of plays(fi)) {
+          const k = x.self ? `self|${x.move.name}` : `${fi}|${x.move.name}`;
+          if (seen.has(k)) continue;
+          seen.add(k);
+          cands.push(x);
+        }
+      });
+      const soonest = Math.min(9, ...out.filter(x => x.move).map(x => x.hits));
+      for (const x of cands.sort((a, b) => b.rank - a.rank).slice(0, STATUS_CANDS)) {
+        out.push({ ...x, turns: Math.min(9, soonest + 1), hits: Math.min(9, soonest + 1) });
+      }
+    }
     if (!out.length) out.push({ me, move: null, target: null, turns: 9, hits: 9, score: danger - 9, hp });
     return out;
   };
   const cache = new Map();
-  const opt = (me, entering) => {
+  const opt = (me, entering, hyp = null) => {
     const mine = lock && !lock.switchIn && me === lock.me ? lock : null;
-    const k = `${party.indexOf(me)}|${entering}|${!!mine}`;
-    if (!cache.has(k)) cache.set(k, options(me, entering, mine));
+    const k = `${party.indexOf(me)}|${entering}|${!!mine}|${hyp?.key ?? ""}`;
+    if (!cache.has(k)) cache.set(k, options(me, entering, mine, hyp));
     return cache.get(k);
   };
 
@@ -955,6 +1020,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // our partner — its damage share, and a heavy cost for a likely KO; `spare`, the pair's other hit already does
   // everything this one does, so a move with a drawback (recoil, recharge, a self stat drop) gives way to one without.
   const add = (picks, payers) => {
+    const sps = slots === 2 ? picks.filter(p => p.play) : [];
+    if (sps.length) return addStatus(picks, payers, sps);
     const j = slots === 2 || pair ? joint(picks, payers) : null;
     const swaps = Math.max(0, picks.filter(p => !current.includes(p.me)).length - empty);
     const acting = picks.filter(p => p.move?.pm && !payers.includes(p.me));
@@ -965,7 +1032,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       // A KO'd partner is lost along with whatever it was going to do.
       let score = p.score - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, partner.score)) : 0);
       if (spare && drawback(p.move)) {
-        const clean = opt(p.me, payers.includes(p.me)).filter(x => x.move && !drawback(x.move)).reduce((b, x) => (!b || x.score > b.score ? x : b), null);
+        const clean = opt(p.me, payers.includes(p.me)).filter(x => x.move && !x.play && !drawback(x.move)).reduce((b, x) => (!b || x.score > b.score ? x : b), null);
         if (clean) score = Math.min(score, clean.score) + (p.move.benefit ?? 0) * AI_POINT;
       }
       return { ally, spare, score };
@@ -973,6 +1040,65 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const flips = current.filter(p => !picks.some(q => q.me === p) && cameInLastTurn(turn, p)).length;
     plans.push({ picks, payers, info, extra: payers.length, swaps, joint: j, planVal: planValueOf(picks),
       score: info.reduce((t, x) => t + x.score, 0) + (j?.value ?? 0) - flips * FLIP_COST });
+  };
+  // A double's status play, priced as one exchange of the field rather than two 1-v-1s (#262). Each play lands or it
+  // doesn't, so the field is the weighted mix over which of them did; in each branch the effect is written with
+  // `turn.assuming` **before the partner slot is scored**, so Spore in slot 0 changes what slot 1's option is worth.
+  // A slot that spent its turn is worth what its own best move is worth on that state (one turn later, hence the −1
+  // already in the candidate's score), and the joint hits are whatever still attacks. Nothing here looks past the
+  // turn: `options` under a hypothesis searches no second one.
+  const statusField = (picks, payers, sps) => {
+    const mons = picks.map(p => p.me);
+    const parts = picks.map(() => 0);
+    let jv = 0;
+    for (let m = 0; m < 1 << sps.length; m++) {
+      const landed = sps.filter((_, i) => (m >> i) & 1);
+      const w = sps.reduce((q, x, i) => q * (((m >> i) & 1) ? x.works : 1 - x.works), 1);
+      if (!(w > 0)) continue;
+      const patches = landed.flatMap(x => x.play.patches ?? []);
+      const at = patches.length ? now.assuming(patches) : null;
+      const lost = landed.filter(x => x.act).map(x => ({ mon: x.foe, act: x.act }));
+      const tag = `${at ? at.key : ""}|${landed.map(x => `${x.me.id}:${x.move.name}`).join()}`;
+      // A heal writes no state: it is the HP the slot that played it is scored on that changes.
+      const hyp = bump => ({ at, lost, bump, key: `${tag}|${bump}` });
+      const hits = [];
+      picks.forEach((p, i) => {
+        const entering = payers.includes(p.me);
+        if (p.play) {
+          const best = opt(p.me, entering, hyp(landed.includes(p) ? p.heal : 0))
+            .reduce((b, x) => (x.play || (b && b.score >= x.score) ? b : x), null);
+          parts[i] += w * (best?.score ?? -9);
+        } else {
+          // The partner's own pick, re-scored on the state — or, where the hypothesis has taken that option away,
+          // the score it had on the real turn.
+          const y = opt(p.me, entering, hyp(0)).find(x => !x.play && x.move?.name === p.move?.name && x.target === p.target) || p;
+          parts[i] += w * y.score;
+          if (y.move?.pm && !entering) hits.push(y);
+        }
+      });
+      if (hits.length) jv += w * joint(hits, payers, mons, hyp(0)).value;
+    }
+    return { parts, jv };
+  };
+  // Unlike the ordinary path, these picks carry the priced score rather than their own: a status candidate's own
+  // score is only the turn it spends, and everything downstream (the stay margin, the slot rows) reads a real one.
+  const addStatus = (picks, payers, sps) => {
+    const { parts, jv } = statusField(picks, payers, sps);
+    const raw = picks.map((p, i) => (p.play ? p.score : 0) + parts[i]);
+    const swaps = Math.max(0, picks.filter(p => !current.includes(p.me)).length - empty);
+    const flips = current.filter(p => !picks.some(q => q.me === p) && cameInLastTurn(turn, p)).length;
+    // A partner's spread move still costs us the ally it hits. `spare` needs two hits, so a field with a status play
+    // in it has none.
+    const info = picks.map((p, i) => {
+      const oi = picks.findIndex(q => q !== p);
+      const ally = !p.play && oi >= 0 && !payers.includes(p.me) ? allyHit(p, picks[oi].me) : null;
+      return { ally, spare: false, score: raw[i] - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, raw[oi])) : 0) };
+    });
+    plans.push({
+      picks: picks.map((p, i) => ({ ...p, score: info[i].score })), payers, info, extra: payers.length, swaps,
+      joint: null, planVal: planValueOf(picks),
+      score: info.reduce((t, x) => t + x.score, 0) + jv - flips * FLIP_COST,
+    });
   };
   const allyHit = (p, partner) => {
     if (!hitsAlly(p.move)) return null;
@@ -994,10 +1120,13 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // ally (FaintPhase → redirectPokemonMoves), so a later slot's hit lands on the other foe. A slot switching in
   // doesn't hit this turn; one likely KO'd before it moves doesn't either; a foe likely to Protect takes nothing.
   const dangerMemo = new Map();
-  const danger = (X, mons) => {
-    const k = `${X.id}|${mons.map(m => m.id).join()}`;
+  const danger = (X, mons, hyp = null) => {
+    const turn = hyp?.at ?? now;
+    // A foe a status play silences this turn does that much less to us.
+    const act = hyp?.lost?.find(x => x.mon === X)?.act;
+    const k = `${hyp?.key ?? ""}|${X.id}|${mons.map(m => m.id).join()}`;
     if (!dangerMemo.has(k)) {
-      dangerMemo.set(k, !attackers.includes(X) ? 0 : Math.min(2, Math.max(0, ...mons.map(m => {
+      dangerMemo.set(k, !attackers.includes(X) ? 0 : (act ? act(0) : 1) * Math.min(2, Math.max(0, ...mons.map(m => {
         const t = threatFrom(turn, X, m);
         if (!t) return 0;
         const setup = t.live ? setupDanger(X, t, m) : 0;
@@ -1007,20 +1136,27 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     return dangerMemo.get(k);
   };
   // P(`p`'s hit reaches X): it isn't KO'd before it moves and X doesn't Protect.
-  const landOf = (p, X) => attackers.reduce((keep, f) => {
-    const t = threatFrom(turn, f, p.me, p.move.pm);
-    return keep * (1 - threatKoAt(t, p.me.hp) * (t?.koFirst ?? 0));
-  }, 1) * (1 - protectChance(turn, X));
+  const landOf = (p, X, hyp = null) => {
+    const turn = hyp?.at ?? now;
+    return attackers.reduce((keep, f) => {
+      const t = threatFrom(turn, f, p.me, p.move.pm);
+      const act = hyp?.lost?.find(x => x.mon === f)?.act;
+      return keep * (1 - threatKoAt(t, p.me.hp) * (t?.koFirst ?? 0) * (act ? act(0) : 1));
+    }, 1) * (1 - protectChance(turn, X));
+  };
   // `mons`: whose danger counts (defaults to the picks'; kept whole when a pick is left out to weigh its hit).
-  const joint = (picks, payers, mons = picks.map(p => p.me)) => {
-    const acting = picks.filter(p => p.move && !payers.includes(p.me));
+  const joint = (picks, payers, mons = picks.map(p => p.me), hyp = null) => {
+    const turn = hyp?.at ?? now;
+    // A status play lands no hit: what it does to the field is priced in `statusField`, not counted here (#262).
+    const acting = picks.filter(p => p.move && !p.play && !payers.includes(p.me));
     const foes = active.map(() => ({ pKo: 0, pBefore: 0, redirect: 0, hitters: 0 }));
     active.forEach((X, xi) => {
       const hitters = acting.map(p => {
         const o = p.target === "both" ? planOutcomes(turn, p.me, X).find(x => x.name === p.move.name) : p.target === xi ? p.move : null;
         if (!o) return null;
-        const land = landOf(p, X);
-        const before = attackers.includes(X) ? 1 - (threatFrom(turn, X, p.me, p.move.pm)?.first ?? 0) : 1;
+        const land = landOf(p, X, hyp);
+        const silenced = hyp?.lost?.find(x => x.mon === X)?.act;
+        const before = attackers.includes(X) ? 1 - (threatFrom(turn, X, p.me, p.move.pm)?.first ?? 0) * (silenced ? silenced(0) : 1) : 1;
         const acc = Math.max(o.acc ?? 1, 0.01);
         return { p, o, land, before, acc, alone: land * (o.pKo ?? 0), roll: Math.min(1, (o.pKo ?? 0) / acc) };
       }).filter(Boolean);
@@ -1046,7 +1182,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     active.forEach((X, xi) => {
       const f = foes[xi];
       f.pKo = 1 - (1 - f.pKo) * (1 - Math.min(1, f.redirect));
-      value += f.pKo + f.pBefore * danger(X, mons);
+      value += f.pKo + f.pBefore * danger(X, mons, hyp);
     });
     return { value, foes };
   };
@@ -1116,11 +1252,13 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   };
   // …or a field the fight plan needs elsewhere: the stay margin is there to stop the advice flipping between
   // near-equal turns, and spending the only answer to a foe still to come is not a near-equal turn (#170 §A).
-  const failing = plan => plan.picks.some(p => !p.locked && (!p.move || p.score < 0)) || (plan.planCost ?? 0) >= PLAN_FAIL;
+  // A status play's score carries the turn it spends, so it sits below an attack's by construction; the field search
+  // has already paid that price against every alternative, and it is not the slot losing its trade (#262).
+  const failing = plan => plan.picks.some(p => !p.locked && (!p.move || (!p.play && p.score < 0))) || (plan.planCost ?? 0) >= PLAN_FAIL;
   const margin = freeSwitch ? 0.5 : 3;
   // Staying can be "failing" only because the mon on the field is spending its last turn. That is not a reason to
   // pay for a switch, so the ordinary margin applies and the free entry its faint buys is kept (#170 §E).
-  const dying = plan => plan.picks.filter(p => !p.locked && (!p.move || p.score < 0));
+  const dying = plan => plan.picks.filter(p => !p.locked && (!p.move || (!p.play && p.score < 0)));
   const lastStand = !!bestStay && (bestStay.planCost ?? 0) < PLAN_FAIL
     && dying(bestStay).length > 0 && dying(bestStay).every(p => current.includes(p.me) && doomedNowOf(p.me));
   const stay = !!bestStay && (failing(bestStay) && !lastStand ? bestAny.score <= bestStay.score : bestAny.score - bestStay.score < margin);
@@ -1276,7 +1414,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   // In a double the plan still runs one exchange at a time, against the foe in slot 0: pin the ⚔ slot aimed there,
   // so its step 1 is an action the player is actually being told to take. (The score term stays out of doubles —
   // `planValueOf` — but a plan that contradicts the line on screen is the thing #113 set out to end.)
-  const chosen = slots === 1 ? best.picks[0] : best.picks.find(p => p.target === 0 || p.target === "both") ?? best.picks[0];
+  const chosen = slots === 1 ? best.picks[0]
+    : best.picks.find(p => !p.play && (p.target === 0 || p.target === "both")) ?? best.picks.find(p => !p.play) ?? best.picks[0];
   const pin = team && chosen ? { mi: party.indexOf(chosen.me), outcome: chosen.move, free: freeSwitch } : null;
   const ahead = pin && pin.mi >= 0 ? team.after(pin) : null;
   // The plan's step 1 ends with our mon down, but a step is a whole exchange: the free entry is only this turn's
@@ -1362,6 +1501,10 @@ const PLAN_FAIL = 1;
 const DOOMED = 0.8;
 // A status move gives up a sure hit for a modelled effect: it has to win by this much (first cut).
 const STATUS_COST = 0.2;
+// How many status plays a slot carries into a double's field search (#262), best first by the game's own score for
+// the move. Each one costs the search a hypothesis both slots are re-scored on, so the cap is what keeps the render
+// budget in reach; a first cut, like the weights around it.
+const STATUS_CANDS = 2;
 // A whole HP bar of a trainer's mon still to come, in turns of ours: what a hazard's chip is worth (first cut).
 const HAZARD_TURNS = 2;
 // A stage a foe's on-KO ability (Beast Boost, Moxie) gains from KOing us, in turns of ours, while others are left to
