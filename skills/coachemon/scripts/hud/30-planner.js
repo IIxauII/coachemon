@@ -780,6 +780,17 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const turns = x.turnsWe + lost;
       return { me, move: o, target: fi, turns, hits: x.turnsWe, score: danger - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst, hp, trade: x };
     };
+    // A single-target hit that resolves after its target has fallen is **redirected onto the surviving foe** by the
+    // game — `FaintPhase` → `redirectPokemonMoves` retargets every still-queued single-target move aimed at the
+    // fainted mon, with no accuracy, type or range check — so it carries the move this slot chose for the target,
+    // not one picked for the survivor. `redirScore` is what that redirected hit is worth; `mix` prices the blend (#236).
+    // A move the survivor is immune to buys nothing, and scores the empty turn the same way a mon with no move does.
+    const withRedirScore = x => {
+      if (!pair || x.play || typeof x.target !== "number" || !x.move?.pm) return x;
+      const oi = 1 - x.target;
+      const y = planOutcomes(turn, me, active[oi]).find(z => z.name === x.move.name);
+      return { ...x, redirScore: y?.expected > 0 ? one(y, oi).score : danger - 9 };
+    };
     // Depth 2: this turn's move played out exactly — the order, its KO odds, its flinch — then, from the HP it is
     // expected to leave on both sides, the best move for the rest of the fight against what the foe re-picks. It
     // finds what repeating one move can't: Fake Out then an attack, a big hit then a priority finisher. Kept when it
@@ -967,7 +978,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const p = mine.target === "both" && pair ? both(name) : o && one(o, aimed);
       const mv = mine.pm?.getMove?.();
       const bare = { me, move: { name, type: TYPES[mv?.type] ?? null, cat: mv?.category === MoveCategory.STATUS ? "status" : null, pm: mine.pm, expected: 0 }, target: null, turns: 9, hits: 9, score: 0, hp };
-      return [{ ...(p ?? bare), locked: true }];
+      return [withRedirScore({ ...(p ?? bare), locked: true })];
     }
     const out = [];
     active.forEach((f, fi) => {
@@ -989,8 +1000,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         if (better(best, x)) best = x;
         if (better(clean, x)) clean = x;
       }
-      if (best) out.push(best);
-      if (clean && clean !== best) out.push(clean);
+      if (best) out.push(withRedirScore(best));
+      if (clean && clean !== best) out.push(withRedirScore(clean));
     });
     if (pair) {
       // Every spread move that hits *either* foe: enumerating against `active[0]` alone loses one that slot is
@@ -1067,13 +1078,19 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const partner = picks.find(q => q !== p);
       const ally = acting.includes(p) && partner ? allyHit(p, partner.me) : null;
       const spare = !!j && acting.length === 2 && !p.locked && p.target != null && spareHit(picks, payers, p, j);
+      // Both slots on one foe: whichever hit resolves second finds the target already gone that often, and the game
+      // sends it to the survivor instead, carrying the move it chose here. Worth its `alt` in that branch and its own
+      // score in the rest, so focusing is never charged for a hit it still lands, and spreading wins exactly when the
+      // slot has a better move for the other foe than the one the redirect would carry (#236).
+      const redir = redirectOdds(p, partner, payers);
+      const mix = x => (redir > 0 && x?.redirScore != null ? redir * x.redirScore + (1 - redir) * x.score : x?.score ?? 0);
       // A KO'd partner is lost along with whatever it was going to do.
-      let score = p.score - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, partner.score)) : 0);
+      let score = mix(p) - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, partner.score)) : 0);
       if (spare && drawback(p.move)) {
         const clean = opt(p.me, payers.includes(p.me)).filter(x => x.move && !x.play && !drawback(x.move)).reduce((b, x) => (!b || x.score > b.score ? x : b), null);
-        if (clean) score = Math.min(score, clean.score) + (p.move.benefit ?? 0) * AI_POINT;
+        if (clean) score = Math.min(score, mix(clean)) + (p.move.benefit ?? 0) * AI_POINT;
       }
-      return { ally, spare, score };
+      return { ally, spare, redir, score };
     });
     plans.push({ picks, payers, info, extra: payers.length, swaps, joint: j, planVal: planValueOf(picks),
       score: info.reduce((t, x) => t + x.score, 0) + (j?.value ?? 0) - flipsIn(picks) * FLIP_COST });
@@ -1133,7 +1150,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const info = picks.map((p, i) => {
       const oi = picks.findIndex(q => q !== p);
       const ally = !p.play && oi >= 0 && !payers.includes(p.me) ? allyHit(p, picks[oi].me) : null;
-      return { ally, spare: false, score: raw[i] - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, raw[oi])) : 0) };
+      return { ally, spare: false, redir: 0, score: raw[i] - (ally ? ally.share + ally.pKo * (ALLY_KO_COST + Math.max(0, raw[oi])) : 0) };
     });
     plans.push({
       picks: picks.map((p, i) => ({ ...shown[i], score: info[i].score })), payers, info, extra: payers.length,
@@ -1145,6 +1162,16 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     if (!hitsAlly(p.move)) return null;
     const o = planOutcomes(turn, p.me, partner).find(x => x.name === p.move.name);
     return o?.expected > 0 ? { mon: partner, share: Math.min(1, o.expected / partner.getMaxHp()), pKo: o.pKo ?? 0 } : null;
+  };
+  // P(`p`'s hit finds its target already fainted, and is redirected onto the other foe): the partner aimed at the
+  // same foe, moves first, and fells it. Only single-target hits redirect, and only with two foes to move between;
+  // a slot switching in lands no hit at all, and a status play is priced as a field, not a hit (#262).
+  const redirectOdds = (p, q, payers) => {
+    if (!pair || !q || p.redirScore == null || p.play || q.play) return 0;
+    if (typeof p.target !== "number" || q.target !== p.target) return 0;
+    if (!q.move?.pm || !p.move?.pm || payers.includes(p.me) || payers.includes(q.me)) return 0;
+    const qFirst = 1 - actionOrder(now, p.me, p.move.pm, q.me, q.move.pm);
+    return qFirst * landOf(q, active[p.target]) * (q.move.pKo ?? 0);
   };
   // Nothing lost without `p`'s hit: its foes still go down, and the pair's value (KOs, KOs before they move,
   // redirected hits) doesn't drop.
@@ -1477,7 +1504,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       slots: best.picks.map((p, i) => {
         const enter = best.payers.includes(p.me);
         const sup = support.get(p);
-        const { ally, spare } = best.info[i];
+        const { ally, spare, redir } = best.info[i];
         // A spread move that KOs the two foes on different turns: say each, so the rows agree.
         const each = p.target === "both" && p.each && p.each[0] !== p.each[1] ? p.each : null;
         const mv = sup?.pm.getMove();
@@ -1503,7 +1530,11 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
             ...(each ? active.map((f, fi) => each[fi] <= 3 && `${f.name} ${each[fi]} hit${each[fi] > 1 ? "s" : ""}`).filter(Boolean) : []),
             ...notesFor(p),
             ...(ally ? [`hits ${ally.mon.name} ${Math.round(ally.share * 100)}%${ally.pKo >= 0.05 ? ` · ${Math.round(ally.pKo * 100)}% KO` : ""}`] : []),
-            ...(spare ? ["spare hit — KO without it"] : []),
+            ...(spare
+              ? [redir >= REDIR_NOTE && typeof p.target === "number" && active[1 - p.target]
+                ? `spare hit — goes to ${active[1 - p.target].name} if ${active[p.target].name} falls first`
+                : "spare hit — KO without it"]
+              : []),
           ],
         };
       }),
@@ -1519,6 +1550,10 @@ const hitsAlly = o => [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS].includ
 // game functions every move is 0, so nothing counts as a drawback and the clean alternative is simply the best move.
 export const drawback = o => (o?.benefit ?? 0) < 0;
 const ALLY_KO_COST = 4;
+// How likely the redirect has to be before the spare-hit row names the foe it will land on instead of calling the hit
+// spare. Below it the target usually survives the partner's hit, so "KO without it" is still the likelier outcome and
+// the shorter line is the honest one (#236).
+const REDIR_NOTE = 0.25;
 // Consistency (after PokéLLMon): between near-equal options the advice shouldn't flip from turn to turn. A mon out
 // since before last turn keeps a small edge for the move it used last; switching a mon straight back out the turn
 // after it came in (a switch or a faint's replacement: `tempSummonData.turnCount` restarts at 1 when it's summoned and

@@ -261,6 +261,10 @@ A move's **costs** are the traits that hurt its user, and are always named the s
 
 The **coach**'s look at a battle while the game waits on the player's decision (a command, a free switch or a faint replacement). Every damage number, enemy move, enemy switch and Terastallization the coach shows then comes from the game's own code, as the battle stands. The enemy's move is the game's own decision rather than a guess at it, and carries a **confidence**: **exact**, except where a command of ours draws first and so decides which move the enemy picks, where it is a **replay** of that command. Outside a decision the game can't be asked, so the coach falls back to numbers worked out from the type chart alone. When the game's own code can't be asked *at* a decision, the coach says why and withholds the turn read rather than advising from an **estimate** — the fight, the team's plan and what lies ahead go quiet together. A **card** built from a turn read stays up through the turn's animations, until the turn ends, the wave changes or a foe is sent in.
 
+## Spare hit
+
+In a double, the second of two hits aimed at the same foe when the first alone already fells it. A spare hit is never wasted: the game retargets a still-queued single-target move whose target has fainted onto the surviving foe (a **redirect**), so it lands there carrying the move its slot chose for the dying foe, not one picked for the survivor. The coach prices the slot on both branches at once — the redirect's worth where the target falls first, its own worth where it doesn't — so it spreads only when the slot has a materially better move for the other foe than the redirect would carry.
+
 ## Hypothesis
 
 The battle as it would stand one move from now: our stat stages after a Swords Dance, a foe paralysed by Thunder Wave, or a foe turned pure Water by Soak. The coach asks the game's own code about it as if it were so, and a hypothesis is never played out: the battle is left exactly as it was. A foe predicted to Terastallize this turn is read the same way, but only for how hard hits land, never for what the foe decides, since it picks its move before it Terastallizes.
