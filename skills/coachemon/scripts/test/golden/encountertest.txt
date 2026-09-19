@@ -250,4 +250,79 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ✗ Accept — 5 trainer battles back to back, 13 mons in all, no healing between → a Premium Voucher + a Macho Brace
 ★ Refuse — a full party heal + a Rarer Candy
 summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Candy · avoid Accept
+== mysterious challengers (full)
+🎭 Mysterious Challengers great − {Minimal overview} × {Close}
+· Normal — fight Youngster Joey → a Common TM, a Great TM, a Memory Mushroom + the usual rolls
+⚔ trainer · 3 mons at ~L32 vs your L32, 3 of yours fit to fight
+★ Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls
+⚔ trainer · 3 mons at ~L35 vs your L32, 3 of yours fit to fight
+✗ Brutal — fight Leader Brock with an Elite Four team → 2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP
+⚔ trainer · 6 mons at ~L37 vs your L32, 3 of yours fit to fight
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Mysterious Challengers: take Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls · avoid Brutal
+== slumbering snorlax, thief (full)
+🎭 Slumbering Snorlax great − {Minimal overview} × {Close}
+· Battle — fight Snorlax (asleep 6 turns, but it opens with Snore and holds Sitrus + Enigma) → Leftovers + rewards; catchable
+⚔ boss · ~L34 boss vs your L40, nothing hits it SE
+· Rest — nap beside it: the whole party is healed and revived, then nothing — no reward, no shop
+your party is fine
+★ Steal — steal its Leftovers: no fight, Leftovers, and its EXP to the thief
+by Weavile
+· balls work in its battle
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Slumbering Snorlax: take Steal — steal its Leftovers: no fight, Leftovers, and its EXP to the thief
+== safari zone (full)
+🎭 Safari Zone great − {Minimal overview} × {Close}
+★ Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level. Bait: +2 catch but usually +1 flee; mud: −2 flee but usually −1 catch
+leaves $3,990
+· Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Safari Zone: take Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level. Bait: +2 catch but usually +1 flee; mud: −2 flee but usually −1 catch
+== delibirdy (full)
+🎭 Delibird-y great − {Minimal overview} × {Close}
+★ Money — $1,010: an Amulet Coin
+leaves $3,990
+· Food — hand over a berry for a Candy Jar, or a Reviver Seed for a Berry Pouch
+by Snorlax · the item is gone for good
+· Item — hand over any other held item for a Healing Charm
+by Snorlax · the item is gone for good — pick something you don't use
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Delibird-y: take Money — $1,010: an Amulet Coin
+== absolute avarice (full)
+🎭 Absolute Avarice great − {Minimal overview} × {Close}
+★ Battle 🔮 {fixed by the run seed: this is what happens} — fight Greedent (3 bars, +1 SpD, Stuff Cheeks on turn 1, eating the 7 berries it took) → rewards, and a Reviver Seed for every mon without one
+⚔ boss · ~L35 boss (3 bars) vs your L40, nothing hits it SE · 3 seeds at stake
+· Beg 🔮 {fixed by the run seed: this is what happens} — beg: 2 berries of your 7 come back, random types, the rest are gone
+· Let it eat — let it eat: Greedent joins at L38 with its passive and Thrash / Body Press / Stuff Cheeks / Slack Off; every berry is gone
+a free mon, for every berry you own
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Absolute Avarice: take Battle — fight Greedent (3 bars, +1 SpD, Stuff Cheeks on turn 1, eating the 7 berries it took) → rewards, and a Reviver Seed for every mon without one
+== dancing lessons, dancer (full)
+🎭 Dancing Lessons great − {Minimal overview} × {Close}
+· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
+⚔ boss · L34 boss vs your L40, 2 mons hit it SE
+· Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
+free, and it keeps the move for the run
+★ Dance — show it a dance: Oricorio joins, keeping the dance move you used
+by Lopunny · new species, covers Fighting weakness
+· balls work in its battle
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used
+== bug-type superfan (full)
+🎭 Bug-Type Superfan great − {Minimal overview} × {Close}
+· Battle 🔮 {fixed by the run seed: this is what happens} — fight Bug-Type Superfan → rewards, then a free tutor move: Megahorn, Bug Buzz, Sticky Web & U-turn
+⚔ trainer · 3 mons at ~L32 vs your L40, 4 of yours fit to fight
+· Show — show off your bug types (1 bug) → a Super Lure + a Great Ball
+by Scyther · 5 more bugs would make it a Master Ball
+★ Give — hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight
+by Scyther · the item is gone for good
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Bug-Type Superfan: take Give — hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight
+== fun and games (full)
+🎭 Fun and Games great − {Minimal overview} × {Close}
+· Play — $750: pick a mon, then three turns on a Wobbuffet at that mon's level (0 IVs, Mild, it never attacks). Under 3% HP a Multi Lens, under 15% a Scope Lens, under 33% a Wide Lens, over that nothing. KO it and you lose and pay $750 again
+pick a mon whose damage you can hold back, not your hardest hitter
+· Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Fun and Games: your call
 ok

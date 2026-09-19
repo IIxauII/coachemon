@@ -3,6 +3,7 @@
 // harness, so the card's claims are checked against what the game actually does rather than against a mock.
 import { readFileSync } from "node:fs";
 import { AbilityId } from "#enums/ability-id";
+import { BerryType } from "#enums/berry-type";
 import { BiomeId } from "#enums/biome-id";
 import { Button } from "#enums/buttons";
 import { ModifierTier } from "#enums/modifier-tier";
@@ -12,6 +13,9 @@ import { Nature } from "#enums/nature";
 import { SpeciesId } from "#enums/species-id";
 import { StatusEffect } from "#enums/status-effect";
 import { UiMode } from "#enums/ui-mode";
+import { BerryModifier } from "#modifiers/modifier";
+import type { ModifierOverride } from "#modifiers/modifier-type";
+import type { PokemonMove } from "#moves/pokemon-move";
 import * as MysteryEncounters from "#mystery-encounters/mystery-encounter-biomes";
 import { GameManager } from "#test/framework/game-manager";
 import type { MessageUiHandler } from "#ui/message-ui-handler";
@@ -73,6 +77,9 @@ async function arrive(game: GameManager, a: Arrival) {
   if (a.moveset != null) {
     game.override.moveset(a.moveset);
   }
+  if (a.heldItems != null) {
+    game.override.startingHeldItems(a.heldItems);
+  }
   vi.spyOn(MysteryEncounters, "mysteryEncountersByBiome", "get").mockReturnValue(
     new Map<BiomeId, MysteryEncounterType[]>([[a.biome, [a.type]]]),
   );
@@ -98,6 +105,8 @@ interface Arrival {
   /** Overrides some encounters need to initialise at all, taken from upstream's own test for that encounter. */
   level?: number;
   moveset?: MoveId[];
+  /** What the party must be holding for the encounter, or the options the card judges, to exist at all. */
+  heldItems?: ModifierOverride[];
 }
 
 interface Case extends Arrival {
@@ -107,6 +116,18 @@ interface Case extends Arrival {
 }
 
 const DEFAULT_PARTY = [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.ABRA];
+
+/** A berry for Delibird-y's second option, and something that isn't a berry for its third. */
+const DELIBIRDY_ITEMS: ModifierOverride[] = [
+  { name: "BERRY", count: 1, type: BerryType.SITRUS },
+  { name: "GRIP_CLAW", count: 1 },
+];
+/** Absolute Avarice needs six berries to exist, and the card counts what it took. Upstream's own spread. */
+const AVARICE_BERRIES: ModifierOverride[] = [
+  { name: "BERRY", count: 2, type: BerryType.SITRUS },
+  { name: "BERRY", count: 3, type: BerryType.GANLON },
+  { name: "BERRY", count: 2, type: BerryType.APICOT },
+];
 
 /** The case for one encounter, so an outcome check arrives exactly where the structural pass did. */
 const caseFor = (type: MysteryEncounterType): Case => {
@@ -131,9 +152,18 @@ const CASES: Case[] = [
   { name: "Uncommon Breed", type: MysteryEncounterType.UNCOMMON_BREED, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "Global Trade System", type: MysteryEncounterType.GLOBAL_TRADE_SYSTEM, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "Field Trip", type: MysteryEncounterType.FIELD_TRIP, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY, known: false },
+  // Great tier. Delibird-y and Absolute Avarice read what the party is holding, so they are given something to hold.
+  { name: "Mysterious Challengers", type: MysteryEncounterType.MYSTERIOUS_CHALLENGERS, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Slumbering Snorlax", type: MysteryEncounterType.SLUMBERING_SNORLAX, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Safari Zone", type: MysteryEncounterType.SAFARI_ZONE, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
+  { name: "Delibird-y", type: MysteryEncounterType.DELIBIRDY, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY, heldItems: DELIBIRDY_ITEMS },
+  { name: "Absolute Avarice", type: MysteryEncounterType.ABSOLUTE_AVARICE, biome: BiomeId.TALL_GRASS, wave: 45, party: DEFAULT_PARTY, heldItems: AVARICE_BERRIES },
+  { name: "Dancing Lessons", type: MysteryEncounterType.DANCING_LESSONS, biome: BiomeId.PLAINS, wave: 45, party: DEFAULT_PARTY },
+  { name: "Bug-Type Superfan", type: MysteryEncounterType.BUG_TYPE_SUPERFAN, biome: BiomeId.CAVE, wave: 45, party: [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.WEEDLE], heldItems: [{ name: "GRIP_CLAW", count: 1 }] },
+  { name: "Fun and Games", type: MysteryEncounterType.FUN_AND_GAMES, biome: BiomeId.PLAINS, wave: 37, party: DEFAULT_PARTY },
 ];
 
-describe("Coachemon oracle - Mystery Encounter card, common tier", () => {
+describe("Coachemon oracle - Mystery Encounter card, common and great tiers", () => {
   let phaserGame: Phaser.Game;
   let game: GameManager;
 
@@ -449,6 +479,50 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     console.log(`ORACLE-DIFF vitamins ${who} claimed=${nature} actual=${Nature[after]} was=${Nature[before]}`);
     expect(Nature[after]).toBe(nature.toUpperCase());
     expect(after, "the dealer never rolls the nature it already had").not.toBe(before);
+  });
+
+  // The tutor's four moves are the option fork's first four draws (×500), one from each pool, and they are rolled
+  // before the fight starts — so the card can name them while the player is still choosing whether to fight at all.
+  it("Bug-Type Superfan: the tutor moves the card names are the moves the game rolled", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.BUG_TYPE_SUPERFAN));
+
+    const card = readCard(game);
+    const claimed: string = card.options[0].outcome;
+    expect(card.options[0].exact, "the card claims exact tutor moves").toBe(true);
+    const named = /a free tutor move: (.+)$/.exec(claimed);
+    expect(named, `option 1 reads "${claimed}"`).toBeTruthy();
+    const claimedMoves = named![1].split(/, | & /);
+    expect(claimedMoves).toHaveLength(4);
+
+    await pickOption(game, 1, { isBattle: true });
+
+    const rolled: string[] = game.scene.currentBattle.mysteryEncounter!.misc.moveTutorOptions.map((m: PokemonMove) =>
+      m.getName(),
+    );
+    console.log(`ORACLE-DIFF superfan claimed=[${claimedMoves}] actual=[${rolled}]`);
+    expect(claimedMoves).toEqual(rolled);
+  });
+
+  // How many berries begging gets back is arithmetic over what the Greedent took, two fifths of each holder's own.
+  it("Absolute Avarice: the berries the card says come back are the berries the game returns", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.ABSOLUTE_AVARICE));
+
+    const card = readCard(game);
+    const claimed: string = card.options[1].outcome;
+    expect(card.options[1].exact, "the card claims an exact count").toBe(true);
+    const named = /^beg: (\d+) berr(?:y|ies) of your (\d+) come back/.exec(claimed);
+    expect(named, `option 2 reads "${claimed}"`).toBeTruthy();
+    const [, back, stolen] = named!.map(Number);
+
+    // The encounter takes the berries as its visuals start, so by the option screen the player holds none.
+    const count = () =>
+      game.scene.findModifiers(m => m instanceof BerryModifier).reduce((t, m) => t + m.getStackCount(), 0);
+    expect(count(), "the Greedent has already taken them").toBe(0);
+
+    await pickOption(game, 2);
+
+    console.log(`ORACLE-DIFF avarice stolen=${stolen} claimed=${back} actual=${count()}`);
+    expect(count()).toBe(back);
   });
 });
 

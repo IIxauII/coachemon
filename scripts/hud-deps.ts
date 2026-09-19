@@ -546,14 +546,18 @@ export const HUD_DEPS = {
   /**
    * §13. The Mystery Encounter card calls nothing that decides an outcome: it
    * reads the handler's requirement answers, and re-implements what each of the
-   * common, ultra and rogue encounters it knows does from its source file — so every encounter
-   * const, the helpers and tuning constants its outcome is spelled from, and the
-   * phases that fork the RNG are the dependency. A moved fork offset
+   * common, great, ultra and rogue encounters it knows does from its source file — so
+   * every encounter const, the helpers and tuning constants its outcome is spelled
+   * from, and the phases that fork the RNG are the dependency. A moved fork offset
    * (`handleOptionSelect` ×1, `MysteryEncounterOptionSelectedPhase` ×500,
    * `PostMysteryEncounterPhase` ×2000) or a reordered draw inside an option makes
    * every 🔮 outcome confidently wrong. Two enums come through as bare numbers:
    * the encounter type the rules are keyed by and the Nature the dealer rolls.
    * Every fork is run through `executeWithSeedOffset`; `randSeedInt` is restated.
+   * The great tier adds two readings that are not draws and drift just as quietly:
+   * a trainer-battle config, whose team size the card spells from the party
+   * templates the encounter sets, and the modifier classes it looks up by class
+   * name to tell a charm that is about to degrade into a Shell Bell.
    */
   "46-encounter.js": [
     `src/ui/handlers/mystery-encounter-ui-handler.ts#MysteryEncounterUiHandler.displayEncounterOptions`,
@@ -581,6 +585,7 @@ export const HUD_DEPS = {
     `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#modifyPlayerPokemonBST`,
     `src/modifier/modifier.ts#PokemonBaseStatTotalModifier.apply`,
     `src/modifier/modifier.ts#MoneyMultiplierModifier.apply`,
+    `src/modifier/modifier.ts#MoneyMultiplierModifier.getMaxStackCount`,
     `${SCENE}#BattleScene.getWaveMoneyAmount`,
     `src/enums/mystery-encounter-type.ts#MysteryEncounterType`,
     `src/enums/mystery-encounter-tier.ts#MysteryEncounterTier`,
@@ -608,6 +613,41 @@ export const HUD_DEPS = {
     `src/data/mystery-encounters/encounters/uncommon-breed-encounter.ts#UncommonBreedEncounter`,
     `src/data/mystery-encounters/encounters/global-trade-system-encounter.ts#GlobalTradeSystemEncounter`,
     `src/data/mystery-encounters/encounters/global-trade-system-encounter.ts#getPokemonTradeOptions`,
+    // The great tier (#144): the three challengers and their party templates, the
+    // Snorlax nap's full heal, the Safari fee and its odds, which charm Delibird-y
+    // hands back and when it degrades, Avarice's berry return, the Oricorio on the
+    // field, the Superfan's tutor moves and bug ladder, the Fun and Games prizes.
+    `src/data/mystery-encounters/encounters/mysterious-challengers-encounter.ts#MysteriousChallengersEncounter`,
+    `src/data/mystery-encounters/encounters/slumbering-snorlax-encounter.ts#SlumberingSnorlaxEncounter`,
+    `src/phases/party-heal-phase.ts#PartyHealPhase.start`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SafariZoneEncounter`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#SAFARI_MONEY_MULTIPLIER`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#NUM_SAFARI_ENCOUNTERS`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#safariZoneGameOptions`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#throwPokeball`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#getSafariSpeciesSpawn`,
+    `src/data/mystery-encounters/encounters/delibirdy-encounter.ts#DelibirdyEncounter`,
+    `src/data/mystery-encounters/encounters/delibirdy-encounter.ts#DELIBIRDY_MONEY_PRICE_MULTIPLIER`,
+    `src/data/mystery-encounters/encounters/delibirdy-encounter.ts#OPTION_2_ALLOWED_MODIFIERS`,
+    `src/data/mystery-encounters/encounters/delibirdy-encounter.ts#OPTION_3_DISALLOWED_MODIFIERS`,
+    `src/modifier/modifier.ts#LevelIncrementBoosterModifier.getMaxStackCount`,
+    `src/modifier/modifier.ts#PreserveBerryModifier.getMaxStackCount`,
+    `src/modifier/modifier.ts#HealingBoosterModifier.getMaxStackCount`,
+    `src/modifier/modifier.ts#MegaEvolutionAccessModifier.getMaxStackCount`,
+    `src/modifier/modifier.ts#GigantamaxAccessModifier.getMaxStackCount`,
+    `src/data/mystery-encounters/encounters/absolute-avarice-encounter.ts#AbsoluteAvariceEncounter`,
+    `src/data/mystery-encounters/encounters/dancing-lessons-encounter.ts#DancingLessonsEncounter`,
+    `src/data/mystery-encounters/requirements/requirement-groups.ts#DANCING_MOVES`,
+    `src/data/mystery-encounters/encounters/bug-type-superfan-encounter.ts#BugTypeSuperfanEncounter`,
+    `src/data/mystery-encounters/encounters/bug-type-superfan-encounter.ts#PHYSICAL_TUTOR_MOVES`,
+    `src/data/mystery-encounters/encounters/bug-type-superfan-encounter.ts#SPECIAL_TUTOR_MOVES`,
+    `src/data/mystery-encounters/encounters/bug-type-superfan-encounter.ts#STATUS_TUTOR_MOVES`,
+    `src/data/mystery-encounters/encounters/bug-type-superfan-encounter.ts#MISC_TUTOR_MOVES`,
+    `src/data/mystery-encounters/encounters/bug-type-superfan-encounter.ts#getTrainerConfigForWave`,
+    `src/data/mystery-encounters/encounters/fun-and-games-encounter.ts#FunAndGamesEncounter`,
+    `src/data/mystery-encounters/encounters/fun-and-games-encounter.ts#handleNextTurn`,
+    `src/data/mystery-encounters/encounters/fun-and-games-encounter.ts#handleLoseMinigame`,
+    `src/data/mystery-encounters/encounters/fun-and-games-encounter.ts#summonPlayerPokemon`,
     // The ultra tier (#145): the mirror-match prizes and bar counts, the salesman's
     // mon and price, the dig's Black Sludge, the clown's ability pool and type
     // shuffle, the breeder's egg maths and its soft loss.
@@ -631,6 +671,7 @@ export const HUD_DEPS = {
     `src/utils/pokemon-utils.ts#getRandomRegularPokemonType`,
     `src/data/trainers/trainer-config.ts#TrainerConfig.initForStatTrainer`,
     `src/data/trainers/trainer-party-template.ts#trainerPartyTemplates`,
+    `src/data/trainers/trainer-party-template.ts#TrainerPartyCompoundTemplate.constructor`,
   ],
 
   /**

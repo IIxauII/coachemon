@@ -1,12 +1,20 @@
 // Mystery Encounter card: on the encounter's option screen (UiMode 45) the HUD reads each option — label, whether it can
-// be picked, who qualifies, what it costs — and, for the common encounters it knows, what the option really does and a
+// be picked, who qualifies, what it costs — and, for the encounters it knows, what the option really does and a
 // take / ok / avoid call. Seed forks are mocked with scripted draws per offset, so the tests pin which fork each roll
 // is read from (pre-option ×1, option ×500, post-option ×2000) and that every fork's sow is put back.
-// Covers: the chest's trap and prize rolls and its odds without a seed offset, the store's exact item rolls and the
-// low-on-balls switch, Fight or Flight with and without a thief, Fiery Fallout's burn target, Berries Abound faster and
-// slower, Part-Timer pay, the vitamin dealer's new nature and money reserve, Teleporting Hijinks' destination, Uncommon
-// Breed's catch value, a GTS upgrade, Lost at Sea's guide, The Strong Stuff's losers, an encounter it doesn't know, and
-// the summary line. Prints the rendered card, so run.mjs keeps a golden.
+// Covers, common tier: the chest's trap and prize rolls and its odds without a seed offset, the store's exact item rolls
+// and the low-on-balls switch, Fight or Flight with and without a thief, Fiery Fallout's burn target, Berries Abound
+// faster and slower, Part-Timer pay, the vitamin dealer's new nature and money reserve, Teleporting Hijinks'
+// destination, Uncommon Breed's catch value, a GTS upgrade, Lost at Sea's guide, The Strong Stuff's losers.
+// Great tier: Mysterious Challengers' three trainer fights by level and team size, Slumbering Snorlax's thief
+// against a beaten party's nap, Safari Zone's fee, Delibird-y's charms and the Shell Bell a maxed one degrades to,
+// Absolute Avarice's berry count, Dancing Lessons read off the live Oricorio, Bug-Type Superfan's four tutor draws and
+// its bug-count prize, and Fun and Games' prize ladder.
+// Ultra and rogue tiers: Training Session's mirror bars, the salesman's offer, Trash to Treasure, Clowning Around's
+// ability and type shuffle, the breeder's egg maths, Dark Deal's taken member, A Trainer's Test, Weird Dream's
+// transformed team and the Winstrate run of five.
+// Also: an encounter it doesn't know, a secondary menu, and the summary line.
+// Prints the rendered card, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
@@ -56,7 +64,8 @@ const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").tri
 // Scripted fork draws: `draws[offset]` is the sequence a fork sown at that offset yields (taken modulo the range);
 // a fork at an unscripted offset yields 0s. `forks` records every offset sown.
 const mount = ({ view = "full", type, labels, options, party = team(), wave = 30, money = 5000, draws = {}, misc = null, configs = [],
-  tier = 66, catchAllowed = false, seedOffset = 30512, biome = 3, balls = [10, 10, 10, 0, 0], modifiers = [], dex = {}, menu = options, tokens = {} } = {}) => {
+  tier = 66, catchAllowed = false, seedOffset = 30512, biome = 3, balls = [10, 10, 10, 0, 0], modifiers = [], dex = {}, menu = options,
+  tokens = {}, enemy = [] } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const forks = [];
@@ -77,7 +86,7 @@ const mount = ({ view = "full", type, labels, options, party = team(), wave = 30
   const scene = {
     phaseManager: { getCurrentPhase: () => ({ phaseName: "MysteryEncounterPhase" }), pushPhase() {}, unshiftNew() {}, queueMessage() {} },
     currentBattle: { waveIndex: wave, mysteryEncounter: me, enemyLevels: [wave + 2] }, arena: { biomeId: biome },
-    ui: { getMode: () => 45, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [],
+    ui: { getMode: () => 45, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => enemy,
     money, modifiers, pokeballCounts: balls, gameData: { dexData: dex, starterData: {} },
     getWaveMoneyAmount: mult => waveMoney(wave, mult),
     executeWithSeedOffset(fn, offset) {
@@ -455,4 +464,182 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(deep), ["take", "ok"]);
 }
 
+// ---- Great tier
+
+// MysteryEncounterTier.GREAT, the weight these eight are drawn at.
+const GREAT = 40;
+
+// A trainer-battle config: no species to read, only who it is, the party template it was handed and the level bump
+// `initBattleWithEnemyConfig` adds on top of the wave's own levels.
+const trainerCfg = (name, levelAdditiveModifier, size = null) =>
+  ({ trainerConfig: { name, ...(size == null ? {} : { partyTemplates: [{ size }] }) }, levelAdditiveModifier });
+// A player modifier by class name, for the rewards that degrade at max stacks.
+const stacked = (name, stackCount, max) => make(name, { getStackCount: () => stackCount, getMaxStackCount: () => max });
+
+// ---- 14. Mysterious Challengers: the richest of three trainer fights that isn't hard.
+{
+  // The encounter hands the last two their templates — 1 STRONGER + min(ceil(wave / 20), 5) AVERAGE, then ELITE_FOUR
+  // (6) — and the card reads both sizes off the config, so the fixture carries the sizes the game would have built.
+  const challengers = ({ wave = 30, ...extra } = {}) => ({ type: 0, tier: GREAT, wave, party: teamAt(wave + 2),
+    labels: ["Normal", "Hard", "Brutal"], options: [option(), option(), option()],
+    configs: [trainerCfg("Youngster Joey", 0, 3), trainerCfg("Ace Trainer May", 1, 1 + Math.min(Math.ceil(wave / 20), 5)),
+      trainerCfg("Leader Brock", 1.5, 6)], ...extra });
+  // Wave 30, a party at the wave's own level: the fights land at L32, L35 and L37 with teams of 3, 3 and 6.
+  const m = show("mysterious challengers", challengers(), ["full"]).model();
+  assert.match(m.options[0].outcome, /^fight Youngster Joey → a Common TM/);
+  assert.match(m.options[1].outcome, /^fight Ace Trainer May → 2 Ultra/);
+  assert.match(m.options[2].outcome, /^fight Leader Brock with an Elite Four team → 2 Rogue/);
+  assert.equal(m.tier, "great");
+  assert.equal(m.options[1].why, "3 mons at ~L35 vs your L32, 3 of yours fit to fight");
+  assert.deepEqual(verdicts(m), ["ok", "take", "avoid"], "the gym leader's +5 levels is hard, the tougher trainer isn't");
+  // Late enough and the built teams outgrow you, so the mildest fight is the call.
+  const late = mount(challengers({ wave: 100, seedOffset: 100512 })).model();
+  assert.deepEqual(verdicts(late), ["take", "avoid", "avoid"]);
+  // A config with no trainerConfig at all still reads, just without a name.
+  const bare = mount(challengers({ configs: [] })).model();
+  assert.match(bare.options[0].outcome, /^fight a trainer →/);
+  assert.equal(bare.options[0].why, null);
+}
+
+// ---- 15. Slumbering Snorlax: the thief takes the Leftovers for free; a beaten party naps instead.
+{
+  const snorlax = extra => ({ type: 4, tier: GREAT, labels: ["Battle", "Rest", "Steal"], catchAllowed: true,
+    options: [option(), option(), option({ mode: 3, primary: [moveReq(["THIEF"])] })],
+    configs: [{ levelAdditiveModifier: 0.5, pokemonConfigs: [{ species: species(143, "Snorlax", ["Normal"], 540), isBoss: true }] }], ...extra });
+  const thief = [...team(), pk("Weavile", ["Dark", "Ice"], 39, { moves: [["Thief", "Dark", 60, "P", "THIEF"]] })];
+  const m = show("slumbering snorlax, thief", snorlax({ party: thief }), ["full"]).model();
+  assert.deepEqual(verdicts(m), ["ok", "ok", "take"]);
+  assert.equal(m.options[2].by, "Weavile");
+  assert.ok(m.notes.includes("balls work in its battle"));
+  // No thief and a healthy party: the fight is worth the Leftovers.
+  const healthy = mount(snorlax()).model();
+  assert.deepEqual(verdicts(healthy), ["take", "ok", "off"]);
+  assert.equal(healthy.options[1].why, "your party is fine");
+  // No thief and the party in pieces: the nap is a full heal, and it costs a reward screen.
+  const hurtParty = team();
+  hurtParty[0].hp = 0;
+  hurtParty[1].hp = 20;
+  const beaten = mount(snorlax({ party: hurtParty })).model();
+  assert.deepEqual(verdicts(beaten), ["ok", "take", "off"]);
+  assert.match(beaten.options[1].why, /^1 mon down, \d+% of your HP is gone$/);
+  assert.match(beaten.options[1].outcome, /no reward, no shop$/);
+}
+
+// ---- 16. Safari Zone: three catch attempts, if the money can spare it.
+{
+  const safari = extra => ({ type: 9, tier: GREAT, labels: ["Pay", "Leave"], options: [option({ mode: 1, requirements: [money$(2)] }), option()], ...extra });
+  const m = show("safari zone", safari(), ["full"]).model();
+  assert.equal(m.options[0].cost, waveMoney(30, 2));
+  assert.match(m.options[0].outcome, /three wild mons in turn/);
+  assert.match(m.options[0].outcome, /Bait: \+2 catch but usually \+1 flee/);
+  assert.deepEqual(verdicts(m), ["take", "ok"]);
+  // Affordable but it would eat the reserve: leaving is the call, and the option stays on.
+  const tight = mount(safari({ money: waveMoney(30, 2) + 100 })).model();
+  assert.deepEqual(verdicts(tight), ["ok", "take"]);
+}
+
+// ---- 17. Delibird-y: the Amulet Coin unless it's maxed, and a maxed charm degrades to a Shell Bell.
+{
+  const delibirdy = extra => ({ type: 15, tier: GREAT, labels: ["Money", "Food", "Item"],
+    options: [option({ mode: 1, requirements: [money$(2)] }), option({ mode: 1, primary: [moveReq(["BERRY"])] }), option({ mode: 1, primary: [moveReq(["ITEM"])] })], ...extra });
+  const holders = [...team(), pk("Snorlax", ["Normal"], 30, { moves: [["berry", "Normal", 0, "X", "BERRY"], ["item", "Normal", 0, "X", "ITEM"]] })];
+  const m = show("delibirdy", delibirdy({ party: holders }), ["full"]).model();
+  assert.equal(m.options[0].outcome, `${"$"}${waveMoney(30, 2).toLocaleString("en-US")}: an Amulet Coin`);
+  assert.deepEqual(verdicts(m), ["take", "ok", "ok"]);
+  // Amulet Coin at max stacks: the pay option turns into a Shell Bell, and the ranking drops to the Candy Jar.
+  const maxedCoin = mount(delibirdy({ party: holders, modifiers: [stacked("MoneyMultiplierModifier", 5, 5)] })).model();
+  assert.match(maxedCoin.options[0].outcome, /yours is maxed, so it's a Shell Bell on your lead instead$/);
+  assert.deepEqual(verdicts(maxedCoin), ["ok", "take", "ok"]);
+  // Nothing to hand over: both gift options are off, and the pay option is the only one left.
+  const empty = mount(delibirdy()).model();
+  assert.deepEqual(verdicts(empty), ["take", "off", "off"]);
+  assert.match(empty.options[1].why, /^needs a mon holding a berry or a Reviver Seed$/);
+}
+
+// ---- 18. Absolute Avarice: 2/5 of each holder's own berries come back, rounded down.
+{
+  const berryMap = new Map([[1, [{ stackCount: 4 }]], [2, [{ stackCount: 2 }, { stackCount: 1 }]]]);
+  const avarice = extra => ({ type: 16, tier: GREAT, labels: ["Battle", "Beg", "Let it eat"], options: [option(), option(), option()],
+    misc: { berryItemsMap: berryMap },
+    configs: [{ levelAdditiveModifier: 1, pokemonConfigs: [{ species: species(775, "Greedent", ["Normal"], 460), isBoss: true, bossSegments: 3 }] }], ...extra });
+  const m = show("absolute avarice", avarice(), ["full"]).model();
+  assert.match(m.options[0].outcome, /^fight Greedent \(3 bars, \+1 SpD, Stuff Cheeks on turn 1, eating the 7 berries it took\)/);
+  assert.match(m.options[0].why, /3 seeds at stake$/);
+  assert.equal(m.options[1].outcome, "beg: 2 berries of your 7 come back, random types, the rest are gone");
+  assert.ok(m.options[1].exact);
+  assert.match(m.options[2].outcome, /^let it eat: Greedent joins at L38 /);
+  assert.deepEqual(verdicts(m), ["take", "ok", "ok"]);
+  // Past wave 50 the boss takes Speed too.
+  assert.match(mount(avarice({ wave: 60, seedOffset: 60512 })).model().options[0].outcome, /\+1 SpD\/Spe/);
+  // No record of the theft: the counts go quiet rather than claiming zero berries were taken.
+  const blind = mount(avarice({ misc: null })).model();
+  assert.equal(blind.options[1].exact, false);
+  assert.equal(blind.options[1].why, "you get nothing back");
+}
+
+// ---- 19. Dancing Lessons: a dancer recruits the Oricorio; without one, the dance is still free.
+{
+  const oricorio = pk("Oricorio", ["Fire", "Flying"], 34, { id: 741, bst: 476 });
+  oricorio.shiny = false;
+  const dancing = extra => ({ type: 22, tier: GREAT, labels: ["Battle", "Learn", "Dance"], catchAllowed: true,
+    options: [option(), option(), option({ mode: 3, primary: [moveReq(["SWORDS_DANCE"])] })],
+    configs: [{ pokemonConfigs: [{ species: species(741, "Oricorio", ["Fire", "Flying"], 476), isBoss: true }] }],
+    enemy: [oricorio], ...extra });
+  const dancer = [...team(), pk("Lopunny", ["Normal"], 37, { moves: [["Swords Dance", "Normal", 0, "X", "SWORDS_DANCE"]] })];
+  const m = show("dancing lessons, dancer", dancing({ party: dancer }), ["full"]).model();
+  assert.match(m.options[0].outcome, /^fight Oricorio \(\+1 Atk\/Def\/SpA\/SpD on entry/);
+  assert.match(m.options[0].why, /^L34 boss vs your L40/, "the live Oricorio's own level, not the config's guess");
+  assert.match(m.options[1].outcome, /Revelation Dance \(100 power, special/);
+  assert.deepEqual(verdicts(m), ["ok", "ok", "take"]);
+  // No dancer, but a species the dex hasn't seen: the fight is the way to get it.
+  const plain = mount(dancing()).model();
+  assert.deepEqual(verdicts(plain), ["take", "ok", "off"]);
+  // Already caught, no dancer: the free move beats a fight for a mon you don't want.
+  const known = mount(dancing({ dex: { 741: { caughtAttr: 255n } } })).model();
+  assert.deepEqual(verdicts(known), ["ok", "take", "off"]);
+}
+
+// ---- 20. Bug-Type Superfan: the four tutor moves are the option fork's first four draws, one per pool.
+{
+  const superfan = (party, extra = {}) => ({ type: 26, tier: GREAT, labels: ["Battle", "Show", "Give"],
+    options: [option(), option({ mode: 1, primary: [typeReq(["Bug"])] }), option({ mode: 1, primary: [moveReq(["CLAW"])] })],
+    configs: [trainerCfg("Bug-Type Superfan", 0, 3)], party, ...extra });
+  const bug = (name, level = 35) => pk(name, ["Bug", "Flying"], level, { moves: [["claw", "Normal", 0, "X", "CLAW"]] });
+  const { forks, model } = show("bug-type superfan", superfan([...team(), bug("Scyther")], { draws: { [30512 * 500]: [0, 2, 3, 1] } }), ["full"]);
+  assert.ok(forks.includes(30512 * 500), `option fork at ×500: ${forks}`);
+  const m = model();
+  assert.match(m.options[0].outcome, /a free tutor move: Megahorn, Bug Buzz, Sticky Web & U-turn$/);
+  assert.ok(m.options[0].exact);
+  assert.equal(m.options[1].outcome, "show off your bug types (1 bug) → a Super Lure + a Great Ball");
+  assert.equal(m.options[1].why, "5 more bugs would make it a Master Ball");
+  assert.deepEqual(verdicts(m), ["ok", "ok", "take"], "the Golden Bug Net beats a Great Ball and the fight");
+  // A full bug team: the show is a Master Ball plus the access items you don't already own.
+  const allBugs = ["Scyther", "Pinsir", "Heracross", "Volcarona", "Golisopod", "Durant"].map(n => bug(n));
+  const six = mount(superfan(allBugs)).model();
+  assert.equal(six.options[1].outcome, "show off your bug types (6 bugs) → a Master Ball, a Mega Bracelet, a Dynamax Band & an evolution or form-change item");
+  assert.deepEqual(verdicts(six), ["ok", "take", "ok"]);
+  // Already holding the access items: they drop out of the prize.
+  const owned = mount(superfan(allBugs, { modifiers: [make("MegaEvolutionAccessModifier", {}), make("GigantamaxAccessModifier", {})] })).model();
+  assert.match(owned.options[1].outcome, /→ a Master Ball, an evolution or form-change item$/);
+  // No seed offset: the tutor moves go unnamed rather than guessed.
+  const blind = mount(superfan([...team(), bug("Scyther")], { seedOffset: null })).model();
+  assert.match(blind.options[0].outcome, /a free tutor move from four bug pools$/);
+  assert.equal(blind.options[0].exact, false);
+}
+
+// ---- 21. Fun and Games: the prize ladder, and that a KO loses and charges the fee twice.
+{
+  const funAndGames = extra => ({ type: 27, tier: GREAT, labels: ["Play", "Leave"], options: [option({ mode: 1, requirements: [money$(1.5)] }), option()], ...extra });
+  const m = show("fun and games", funAndGames(), ["full"]).model();
+  const fee = `${"$"}${waveMoney(30, 1.5).toLocaleString("en-US")}`;
+  assert.match(m.options[0].outcome, /Under 3% HP a Multi Lens, under 15% a Scope Lens, under 33% a Wide Lens, over that nothing/);
+  assert.ok(m.options[0].outcome.endsWith(`KO it and you lose and pay ${fee} again`));
+  assert.equal(m.options[0].why, "pick a mon whose damage you can hold back, not your hardest hitter");
+  assert.deepEqual(verdicts(m), ["ok", "ok"], "a minigame the card won't call for you");
+  assert.equal(m.pick, -1);
+  assert.equal(globalThis.__coachHud.summary().encounter, "Fun and Games: your call");
+  // Not enough spare money: the fee is the whole call.
+  const broke = mount(funAndGames({ money: waveMoney(30, 1.5) + 100 })).model();
+  assert.deepEqual(verdicts(broke), ["avoid", "take"]);
+}
 console.log("ok");
