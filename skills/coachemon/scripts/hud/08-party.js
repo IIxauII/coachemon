@@ -38,11 +38,31 @@ export const typesOfSpecies = sp => [sp?.type1, sp?.type2].filter(t => t != null
 // `Pokemon.calculateBaseStats` starts from the **form**'s stats (`getSpeciesForm(true)` → `species.forms[formIndex]`),
 // flips them under the Flip Stat challenge (no change to the total), adds Shuckle Juice and Old Gateau, averages a
 // fusion's two halves stat by stat rounding up, halves them in Spliced Endless, then adds vitamins. A live mon answers
-// for itself — nothing there draws or writes, so it needs no sandbox; the form-aware species stats stand in for a
-// candidate that is only a species (a biome spawn, a GTS offer) and for a build that hides the method.
-const formOf = (sp, i) => (Array.isArray(sp?.forms) && sp.forms.length ? sp.forms[i ?? 0] ?? sp : sp);
+// for itself — nothing there draws or writes, so it needs no sandbox; the species stats stand in for a candidate that
+// is only a species (a biome spawn, a GTS offer) and for a build that hides the method.
+// With no mon there is no form either: `getSpeciesForm(true)` needs one, so a bare species is worth its own row and
+// not form 0's. The two are equal for effectively every species, but the species is what the caller handed over.
+const formOf = (sp, i) => (i != null && Array.isArray(sp?.forms) && sp.forms.length ? sp.forms[i] ?? sp : sp);
+// The call is pure, but the three `applyModifiers` inside it reach `BattleScene.applyModifiersInternal`, which
+// `console.log`s "Applied …" once per applied modifier (`applyModifiersInternal`, `src/battle-scene.ts:2949`) — so a party carrying
+// vitamins, Shuckle Juice or Old Gateau would print to the page's console on every HUD tick. Everything that moves
+// the answer — one of those modifiers, a form change, a fusion or its undoing — goes on to call `calculateStats`,
+// which rewrites the mon's own `stats`: that is the invariant, so the answer is cached against them. Same mon, same
+// level, same stats, same base stats — no call, and no log. `stats` can in principle stay put while base stats move,
+// since `calculateStats` floors them, so a +1 base stat on a low-level mon can go unseen until something else moves:
+// worth knowing, not worth guarding. The game hands back a fresh `slice(0)` every call, so a copy goes out each time
+// rather than the cached array itself — a caller that mutated it would otherwise poison every later read.
+const baseStatsCache = new WeakMap();
+const baseStatsOf = mon => {
+  if (!mon || typeof mon !== "object") return undefined;
+  const key = `${mon.level}|${(mon.stats ?? []).join(",")}`;
+  const hit = baseStatsCache.get(mon);
+  const stats = hit && hit.key === key ? hit.stats : tryDo(() => mon.calculateBaseStats());
+  if (!hit || hit.key !== key) baseStatsCache.set(mon, { key, stats });
+  return Array.isArray(stats) ? stats.slice() : stats;
+};
 const bstOf = (sp, fu, mon) => {
-  const own = mon && tryDo(() => mon.calculateBaseStats());
+  const own = mon && baseStatsOf(mon);
   if (Array.isArray(own) && own.length) return own.reduce((t, x) => t + x, 0);
   const a = formOf(sp, mon?.formIndex), b = fu && formOf(fu, mon?.fusionFormIndex);
   if (!b) return a?.baseTotal ?? 0;

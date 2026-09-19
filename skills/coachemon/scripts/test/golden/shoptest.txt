@@ -161,6 +161,11 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 TM Fire Fang least bad · skip · nobody can learn it
 🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Ghost +6 super-effectively +
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== tm fainted hardcore negative value
+🛒 $400 − ×
+🎁 TM Fire Fang least bad · skip · nobody can learn it
+🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Ghost +6 super-effectively +
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm spread by doubles ahead
 🛒 $400 − ×
 🎁 TM Hyper Voice Charizard free slot · +69 power

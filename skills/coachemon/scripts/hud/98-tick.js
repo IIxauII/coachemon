@@ -2,7 +2,7 @@
 // draw goes with which kind. It decides nothing about the card itself — 60-card does that — and formats nothing.
 import { readCard } from "./60-card.js";
 import { previewCheck } from "./48-preview.js";
-import { gameEvents } from "./47-biome.js";
+import { gameEvents, gameTables } from "./47-biome.js";
 import { rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
 import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw, setShownCardWave, view } from "./90-render.js";
@@ -37,9 +37,15 @@ export const accountRead = s => {
   const gd = s.gameData ?? {};
   let shinyCatchMultiplier = 2;
   try { shinyCatchMultiplier = gameEvents()?.getShinyCatchMultiplier() ?? 2; } catch {}
+  // The species registry, once the chunk scan has it: the only way to reach a species nothing on the field is. The
+  // catch card needs the root of a caught line — not its dex entry, which is keyed by id, but the species itself,
+  // whose unlock mask decides whether a Daily run pays candy for the throw.
+  let species = null;
+  try { species = gameTables()?.species ?? null; } catch {}
   return {
     dex: gd.dexData ?? {},
     starter: gd.starterData ?? {},
+    species,
     party: (s.getPlayerParty?.() ?? []).filter(Boolean),
     // A Daily run pays candy only for a catch that adds a dex attribute, so what the dex is worth depends on it.
     daily: !!s.gameMode?.isDaily,
