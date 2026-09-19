@@ -101,9 +101,10 @@ const pk = (name, hp, max, status, moves, f = {}) => ({
   getNature: () => f.nature ?? 0, getLuck: () => f.luck ?? 0,
   species: { speciesId: f.speciesId ?? 0, forms: (f.forms ?? []).map(formKey => ({ formKey })), getEvolutionLevels: () => f.evolutions ?? [] },
   moveset: moves.map(([id, used, maxPp]) => new PokemonMove(id, used, maxPp)),
-  // `tmPool`: what `getCompatibleTms(true, true, true)` answers — the TMs this member would actually be drawn for,
-  // its level-up and relearn moves and used TMs already removed. Left off, the member doesn't expose the method.
-  ...(f.tmPool ? { getCompatibleTms: () => f.tmPool } : {}),
+  // `relearn`: what `getLearnableLevelMoves()` answers — `[level, MoveId, source]` per move a Memory Mushroom could
+  // put back, `level` being 0 for an evolution move, the level it was learnable at for a relearner, and null for an
+  // egg move or a used TM. Left off, the member doesn't expose the method.
+  ...(f.relearn ? { getLearnableLevelMoves: () => f.relearn } : {}),
 });
 // A TM the listed members can learn (the game's selectFilter: null = compatible and not known).
 const tm = (id, learners, tier = 1) => mk(TmModifierType, { name: `TM ${MOVES[id].name}`, iconImage: "tm", tier, moveId: id,
@@ -522,7 +523,7 @@ const scenarios = {
   // through the move relearner, behind a Memory Mushroom. So the member stays in the scoring, and the card names the
   // Mushroom as the other route instead of calling the reward free.
   // Case 1: a level-0 evolution move of the species Comfey already is — learned when it evolved, never again.
-  "tm the evolution move already passed": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, tmPool: [] })],
+  "tm the evolution move already passed": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[0, M.magicalLeaf, 2]] })],
     free: [tm(M.magicalLeaf, ["Comfey"], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
     expect: m => {
       const f = m.free[0];
@@ -530,8 +531,8 @@ const scenarios = {
       assert.deepEqual(f.relearn, ["Comfey"], "the Memory Mushroom is the other route");
       assert.doesNotMatch(f.why, /without the TM/);
     } },
-  // Case 2: a relearner move, at a level Comfey is already past — level-up never offers it again.
-  "tm the relearner move": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, level: 40, tmPool: [] })],
+  // Case 2: a relearner move, learnable at Lv 12 and so behind the Lv 40 Comfey — level-up never offers it again.
+  "tm the relearner move": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, level: 40, relearn: [[12, M.magicalLeaf, 0]] })],
     free: [tm(M.magicalLeaf, ["Comfey"], 1)],
     expect: m => {
       const f = m.free[0];
@@ -540,7 +541,7 @@ const scenarios = {
     } },
   // Case 3: the TM was taught once already. `usedTMs` keeps it off the draw pool for good, even though the move was
   // overwritten since — getting it back needs this TM again, or a Memory Mushroom.
-  "tm already used once": { wave: 27, money: 200, party: [pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, tmPool: [] })],
+  "tm already used once": { wave: 27, money: 200, party: [pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [[null, M.crunch, 3]] })],
     free: [tm(M.crunch, ["Snorlax"], 1)],
     expect: m => {
       const f = m.free[0];
@@ -550,8 +551,8 @@ const scenarios = {
     } },
   // With a payer alongside, the relearner is weighed like anyone else rather than stepping aside.
   "tm weighs the relearner with the payer": { wave: 27, money: 200, party: [
-      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, tmPool: [] }),
-      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, tmPool: [M.crunch] })],
+      pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[18, M.crunch, 0]] }),
+      pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [] })],
     free: [tm(M.crunch, ["Comfey", "Snorlax"], 1)],
     expect: m => {
       assert.equal(m.free[0].tm, "take");
