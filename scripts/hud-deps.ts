@@ -276,6 +276,21 @@ export const HUD_DEPS = {
     `src/data/battler-tags.ts#AquaRingTag.lapse`,
     // Read as bare bits: contact (an ability's counter-attack), and the flags a hit ignores.
     `src/enums/move-flags.ts#MoveFlags`,
+    // Which moves can be picked at all (`selectable`), and — for a slot left with nothing to do — which restriction
+    // took one away (`sceneStopped`, #263). `isMoveSelectable` refuses on the first `MoveRestrictionBattlerTag`
+    // whose `isMoveRestricted` bites, so the HUD asks the same tags, by class, and names them; it is listed here
+    // because it is where that base class is tested for, and a tag moved off it stops being asked. A restriction
+    // added or renamed goes unnamed rather than wrong — the pool still shrinks, the line just loses its reason.
+    `src/data/moves/pokemon-move.ts#PokemonMove.isUsable`,
+    `${P}#Pokemon.isMoveSelectable`,
+    `src/data/battler-tags.ts#DisabledTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#TauntTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#EncoreTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#TormentTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#ImprisonTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#ThroatChoppedTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#HealBlockTag.isMoveRestricted`,
+    `src/data/battler-tags.ts#GorillaTacticsTag.isMoveRestricted`,
   ],
 
   /**

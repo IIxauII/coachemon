@@ -33,6 +33,8 @@ const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex
       pm, name: pm.getName(), type: TY[pm.getMove().type], cat: "status", acc: pm.getMove().accuracy > 0 ? pm.getMove().accuracy / 100 : 1,
       e: 1, priority: pm.getMove().priority ?? 0, bypassProtect: false, bounce: false, blocked: null,
     })),
+    // What a restriction took off this mon's move list, the way the scene adapter reads it off the tags.
+    stopped: (atk, def) => globalThis.__stub.stopped?.(atk, def) ?? [],
     heal: (p, opts) => globalThis.__stub.heal?.(p, opts) ?? 0,
     moves: e => globalThis.__stub.dist(e),
     switchTo: f => globalThis.__stub.switches(active()).get(f)?.to ?? null,
@@ -142,13 +144,13 @@ const cyrus = withMetagross => {
 // Builds this scenario's turn, composes the battle card from it and draws it, returning the rendered lines
 // (`field`: everything above the foe rows). `fieldIndex`: whose command phase it is; `turnCommands`: commands
 // already chosen this turn.
-const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, exact = { ok: true } }) => {
+const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, stopped = null, exact = { ok: true } }) => {
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const onField = () => party.filter(p => p.isOnField());
   for (const f of foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => 1; }
   const [gyarados, weavile] = foes;
   globalThis.__stub = {
-    outcome: stubOutcome, benefit, ...(heal ? { heal } : {}),
+    outcome: stubOutcome, benefit, ...(heal ? { heal } : {}), ...(stopped ? { stopped } : {}),
     dist: dist ?? (e => (e === gyarados ? [{ name: "Waterfall", type: "Water", p: 1, score: 10, targets: [0] }] : [])),
     switches: switches ?? (active => new Map(weavile && active.includes(gyarados) ? [[gyarados, { to: weavile, ratio: 1 }]] : [])),
   };
@@ -464,7 +466,7 @@ Object.assign(TABLE, { "Garchomp>Dragon Claw>Snorlax": [[70], 1, 1], "Garchomp>S
 }
 
 // ---- 5e–5k. Status moves as this turn's action (#74), each against its own one-on-one.
-const oneOnOne = ({ party, foes, dist, stub = outcome, switches = () => new Map() }) => render({ party, foes, live: true, dist, switches, stubOutcome: stub });
+const oneOnOne = ({ party, foes, dist, stub = outcome, stopped = null, switches = () => new Map() }) => render({ party, foes, live: true, dist, switches, stubOutcome: stub, stopped });
 const lineOf = (field, name) => field.find(l => new RegExp(`^⚔ ${name}`).test(l)) ?? "";
 const only = move => () => [{ name: move, type: "Normal", p: 1, score: 10, targets: [0] }];
 const SWORDS_DANCE = ["Swords Dance", "Normal", 0, "X", 0, { target: 0, id: 14, attrs: [["StatStageChangeAttr", { stats: [1], stages: 2, selfTarget: true }]] }];
@@ -592,6 +594,36 @@ Object.assign(TABLE, { "Garchomp>Earthquake>Snorlax": [[800], 1, 1] });
   // Already pure Water: the move would change nothing.
   const water = lineOf(oneOnOne({ party: primarina(), foes: [mon("Golisopod", 80, ["Water"], [400, 180, 160, 70, 100, 70], [["Iron Head", "Steel", 80, "P"]], true)], dist: ironHead, stub: typed }).field, "Primarina");
   assert.match(water, /Energy Ball → Golisopod/, `no Soak into a pure-Water foe:\n${water}`);
+}
+
+// 5m. A slot with nothing that damages (#263): Cacnea's Needle Arm is priced at nothing into Machamp — the shape an
+// immunity, a Wonder Guard or a type wall leaves — so the pool the turn line usually picks from is empty. That used
+// to end the line, because a status play was scored from the attack it set up and there was no attack to set up.
+// Spore is now scored on the turns it buys instead, and the line recommends it. With no play and no bench either,
+// the turn is genuinely lost and the line says so; where a restriction is what emptied the pool, it names it.
+// A zero row, not a missing one: a move the table doesn't price falls back to the type chart, where an immunity is a
+// priced move worth nothing.
+Object.assign(TABLE, { "Machamp>Close Combat>Cacnea": [[400], 1, 1], "Cacnea>Needle Arm>Machamp": [[0], 1, 0] });
+{
+  const cacnea = moves => [mon("Cacnea", 80, ["Grass"], [250, 180, 100, 90, 100, 60], moves, true)];
+  const NEEDLE_ARM = ["Needle Arm", "Grass", 60, "P"];
+  const spore = ["Spore", "Grass", 0, "X", 0, { id: 147, attrs: [["StatusEffectAttr", { effect: 4 }]] }];
+  const foes = [mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true)];
+  const at = (moves, stopped) => lineOf(oneOnOne({ party: cacnea(moves), foes, dist: only("Close Combat"), stopped }).field, "Cacnea");
+  const play = at([NEEDLE_ARM, spore]);
+  console.log(`== dead end: the status play instead (live)\n${play}`);
+  assert.match(play, /Spore → Machamp .*sleep/, `a slot with no damage falls through to the status play:\n${play}`);
+  assert.ok(!/nothing it can/.test(play), `the fall-through is a recommendation, not a dead end:\n${play}`);
+  // Nothing to attack with and nothing to play: the turn is lost, and the line says that rather than calling the
+  // member empty.
+  const lost = at([NEEDLE_ARM]);
+  console.log(`== dead end: nothing it can do (live)\n${lost}`);
+  assert.match(lost, /nothing it can do/, `the genuine dead end reads plainly:\n${lost}`);
+  assert.ok(!/no damaging move/.test(lost), "the old wording is gone");
+  // The same turn, with Encore the reason there is nothing left to pick.
+  const stopped = at([NEEDLE_ARM], () => ["Encore"]);
+  console.log(`== dead end: nothing it can use — Encore (live)\n${stopped}`);
+  assert.match(stopped, /nothing it can use — Encore/, `a restriction that emptied the pool is named:\n${stopped}`);
 }
 
 // ---- 6–8. Doubles: where both slots aim is one decision.

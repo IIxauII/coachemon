@@ -33,26 +33,52 @@ const isA = (x, name) => {
   const ability = (p, attr) => { try { return !!p.hasAbilityWithAttr?.(attr); } catch { return false; } };
   const items = p => { try { return p.getHeldItems?.() ?? []; } catch { return []; } };
   const stack = (p, name) => items(p).filter(m => m.constructor.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
-// Damaging moves with PP left; with `def`, also only what can be picked and would work this turn: restrictions
-// checked for selection (Disable, Taunt, Encore, Torment, Imprison…) and the move's own conditions (Fake Out /
-// First Impression after the first turn, Dream Eater on an awake target, Belch, Steel Roller…). Conditions can draw
-// from the battle RNG, so they run with it forced, like the enemy AI's. `status`: the status moves instead.
+// Whether a move can be picked and would work this turn: restrictions checked for selection (Disable, Taunt,
+// Encore, Torment, Imprison…) and the move's own conditions (Fake Out / First Impression after the first turn, Dream
+// Eater on an awake target, Belch, Steel Roller…). Conditions can draw from the battle RNG, so they run with it
+// forced, like the enemy AI's. One gate, two readers: `sceneUsable` keeps what passes it, `sceneStopped` names what
+// didn't, so the pool and the reason it shrank can never disagree.
+const selectable = (env, p, def, pm) => {
+  if (typeof pm.isUsable === "function") {
+    const r = pm.isUsable(p, false, true);
+    if (!(Array.isArray(r) ? r[0] : r)) return false;
+  }
+  const mv = pm.getMove();
+  // A move that reads the target's chosen command (Sucker Punch, Thunderclap) has no condition to check yet:
+  // `needsAttack` is left to the planner.
+  if (typeof mv.applyConditions !== "function" || moveTraits(mv).needsAttack) return true;
+  try { return !!forcedRng(env.s, () => mv.applyConditions(p, def, -1)); } catch { return true; }
+};
+// Damaging moves with PP left; with `def`, only the ones `selectable` keeps. `status`: the status moves instead.
 // @only 25-turn, tests: sceneUsable
 export const sceneUsable = (env, p, def = null, status = false) => {
   const base = plainUsable(p, status);
-  if (!def) return base;
-  return base.filter(pm => {
-    if (typeof pm.isUsable === "function") {
-      const r = pm.isUsable(p, false, true);
-      if (!(Array.isArray(r) ? r[0] : r)) return false;
-    }
-    const mv = pm.getMove();
-    // A move that reads the target's chosen command (Sucker Punch, Thunderclap) has no condition to check yet:
-    // `needsAttack` is left to the planner.
-    if (typeof mv.applyConditions !== "function" || moveTraits(mv).needsAttack) return true;
-    try { return !!forcedRng(env.s, () => mv.applyConditions(p, def, -1)); } catch { return true; }
-  });
+  return def ? base.filter(pm => selectable(env, p, def, pm)) : base;
 };
+// What took a move away from this mon, named. `isMoveSelectable` refuses on the first `MoveRestrictionBattlerTag`
+// whose `isMoveRestricted` bites, so the same tags answer here — read by class, like every other tag (`tagsOf`).
+// Gorilla Tactics rides along, because the game models that lock as a restriction tag; a Choice item's lock is a
+// held-item read the HUD doesn't make and stays out. A move dropped with no tag behind it is out too: that is the
+// move's own condition, which says something about this turn rather than about something done to us.
+const RESTRICTIONS = {
+  DisabledTag: "Disable", TauntTag: "Taunt", EncoreTag: "Encore", TormentTag: "Torment", ImprisonTag: "Imprison",
+  ThroatChoppedTag: "Throat Chop", HealBlockTag: "Heal Block", GorillaTacticsTag: "Gorilla Tactics",
+};
+const restrictionOn = (p, pm) => {
+  for (const t of tagsOf(p)) {
+    const name = Object.keys(RESTRICTIONS).find(k => isA(t, k));
+    // A tag that throws on the question isn't the one that answered it.
+    try { if (name && t.isMoveRestricted(pm.moveId, p)) return RESTRICTIONS[name]; } catch { /* next tag */ }
+  }
+  return null;
+};
+// The restrictions that cost `p` at least one move this turn, damaging or status, in tag order and without repeats.
+// Empty where the pool shrank for any other reason, or didn't shrink at all.
+// @only 25-turn, tests: sceneUsable
+export const sceneStopped = (env, p, def) => [...new Set([...plainUsable(p), ...plainUsable(p, true)]
+  .filter(pm => !selectable(env, p, def, pm))
+  .map(pm => restrictionOn(p, pm))
+  .filter(Boolean))];
 // What the approximation reads instead: no game call, so no conditions.
 const plainUsable = (p, status = false) => p.moveset.filter(Boolean)
   .filter(pm => (pm.getMove().category === MoveCategory.STATUS) === status && pm.getMovePp() - pm.ppUsed > 0);

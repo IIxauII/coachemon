@@ -56,6 +56,7 @@ export const fakeTurn = ({
   outcome = () => null,
   outcomes = null,
   statusMoves = () => [],
+  stopped = () => [],
   heal = () => 0,
   moves = () => [],
   switchTo = () => null,
@@ -134,6 +135,7 @@ export const fakeTurn = ({
       return tabled.length ? tabled.map(mark) : approx();
     }),
     statusMoves: (atk, def) => as(() => statusMoves(atk, def)),
+    stopped: (atk, def) => as(() => stopped(atk, def)),
     turnEndHp: (p, opts = {}) => as(() => heal(p, opts) ?? 0),
     // The enemy's whole turn. An approximate turn knows none of the AI's own reasoning: it predicts no switch (the
     // enemy hasn't decided) and ranks the foe's moves by rough damage, exactly as the page does.
@@ -165,7 +167,7 @@ export const fakeTurn = ({
     assuming: more => fakeTurn({
       live, exact, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,
       trickRoom, weather, modifiers, enemyModifiers, hazards, balls, mode, battleType, mysteryEncounter, biomeId,
-      outcome, outcomes, statusMoves, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
+      outcome, outcomes, statusMoves, stopped, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
       patches: [...patches, ...more],
     }),
   };

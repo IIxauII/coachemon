@@ -74,6 +74,12 @@ Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100%
 ⚔ Primarina Water Soak → Golisopod pure Water · then Energy Ball
 == types: no Soak into a Terastallized foe
 ⚔ Primarina Grass Energy Ball → Golisopod
+== dead end: the status play instead (live)
+⚔ Cacnea ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP} Grass Spore → Machamp sleep
+== dead end: nothing it can do (live)
+⚔ Cacnea ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP} nothing it can do
+== dead end: nothing it can use — Encore (live)
+⚔ Cacnea ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP} nothing it can use — Encore
 == doubles focus (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 2 hits

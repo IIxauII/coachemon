@@ -106,6 +106,12 @@ const scenarios = {
     foes: [
       mon("Whismur", 30, ["Normal"], "Soundproof", [90,60,50,60,50,40], [["Pound","Normal",40,"P"]], true),
       mon("Rattata", 30, ["Normal"], "Run Away", [80,60,50,40,50,90], [["Tackle","Normal",40,"P"]], true)] },
+  // The same immunity with nothing behind it (#263): one foe, so Hyper Voice hits nobody, and Exploud has no status
+  // move and no bench. The turn is lost rather than the member empty, and the panel and the card both say so —
+  // `no damaging move` never told the player whether to switch, wait or give up on the turn.
+  deadEnd: { double: false, party: [
+    mon("Exploud", 66, ["Normal"], "Scrappy", [200,110,80,140,80,120], [["Hyper Voice","Normal",90,"S",6,MoveFlags.SOUND_BASED]], true)],
+    foes: [mon("Whismur", 30, ["Normal"], "Soundproof", [90,60,50,60,50,40], [["Pound","Normal",40,"P"]], true)] },
   // Nor an Intimidate foe already on the field, on the slot line or the row: its drop is in our stat stages.
   intimidate: { double: false, party: [
     mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
