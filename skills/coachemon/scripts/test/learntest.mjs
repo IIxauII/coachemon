@@ -416,6 +416,20 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const byType = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attacks: ["Steel","Ground"] })));
   assert.ok(many.value > byType.value, `three Steel moves are more STAB than one (${many.value} vs ${byType.value})`);
   assert.ok(many.value < strip.value, `and still less than a foe whose every attack is STAB (${many.value} vs ${strip.value})`);
+  // And it is arithmetic, not an ordering: Aggron's opening is nil (Scald already hits it ×2), so what is left is the
+  // share alone. A quarter more of its attacks losing STAB is worth the same step each time, and the same *ratio* of
+  // Steel to Ground scores the same however many moves it is spread over — which is what makes it a share of its
+  // moveset rather than a count of its moves.
+  const stab = (...attacks) => judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attacks }))).value;
+  const G = "Ground", S = "Steel";
+  const q = [stab(G, G, G, G), stab(S, G, G, G), stab(S, S, G, G), stab(S, S, S, G), stab(S, S, S, S)];
+  // The card rounds, so the ladder is even to within that: each rung sits a quarter of the way up, ±1.
+  q.forEach((v, i) => assert.ok(Math.abs(v - q[0] - (i / 4) * (q[4] - q[0])) <= 1, `rung ${i} of ${q}`));
+  assert.ok(q[4] > q[0], `and it climbs: ${q}`);
+  assert.equal(q[3], many.value, "three quarters is three quarters");
+  assert.equal(q[4], strip.value, "and every attack losing STAB is the whole of it");
+  assert.equal(stab(S, S, S, S, S, S, G, G), q[3], "six Steel beside two Ground is the same three quarters");
+  console.log(`== STAB by share ${JSON.stringify(q)}`);
 
   const unsure = judge(ludicolo, SOAK, { ...skarm, exact: false });
   assert.ok(unsure.value > blind.value && unsure.value < helps.value, "a roster the preview isn't sure of moves the score half as far");
