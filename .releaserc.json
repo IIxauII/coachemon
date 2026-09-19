@@ -6,7 +6,7 @@
     "@semantic-release/release-notes-generator",
     [
       "@semantic-release/exec",
-      { "prepareCmd": "node scripts/set-version.ts ${nextRelease.version} && node scripts/gen-randbats.ts" }
+      { "prepareCmd": "node scripts/set-version.ts ${nextRelease.version}" }
     ],
     [
       "@semantic-release/git",

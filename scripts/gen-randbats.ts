@@ -13,7 +13,12 @@
  *
  * The prior is a nudge and never a veto, so staleness is cheap: a set that
  * moved on just stops matching. The release re-runs this so the drift stays
- * small (see .releaserc.json).
+ * small — as a step in `.github/workflows/release.yml`, ahead of the suite,
+ * and no longer inside semantic-release's `prepareCmd`, so the tree the
+ * release commits is the tree the suite just tested (#258).
+ *
+ * `--check` is therefore *not* a CI gate: it rebuilds from live upstream,
+ * which moves on its own, and would go red on days nothing here changed.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";

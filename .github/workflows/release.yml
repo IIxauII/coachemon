@@ -28,8 +28,20 @@ jobs:
           cache: npm
 
       - run: npm ci --ignore-scripts
+
+      # The snapshot refresh runs *here*, not in semantic-release's `prepareCmd`, so the suite below sees the exact
+      # tree the release commits (#258). `chore(release)` is `[skip ci]`, so no workflow ever runs on that commit:
+      # before this, the bot regenerated `05-randbats.js` after the tests and pushed it unseen, and a generator that
+      # had drifted from the file it writes (the pre-#191 non-module form) took master red for a whole release.
+      # A failed refresh is not a failed release — `gen-randbats.ts` keeps the existing snapshot and exits 0.
+      - run: npm run randbats:gen
+
       - run: npm run typecheck
       - run: npm test
+      # The golden suite bundles the real `skills/coachemon/scripts/hud/*.js`, so it is what catches a generated
+      # module that stopped exporting a name another one imports. Spelled out rather than run through `npm test`
+      # because nothing ran it at all when this landed; #259 folds it into `npm test`, and then this line goes.
+      - run: node skills/coachemon/scripts/test/run.mjs
 
       # semantic-release is not a devDependency on purpose: installing the plugin
       # runs `npm ci` in Claude Code's cache, and it should not pull the release toolchain.
