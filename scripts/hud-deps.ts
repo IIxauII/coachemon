@@ -279,12 +279,13 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §6, §7. `getNextMove` / `getNextTargets` are not called: the whole choice is
-   * re-implemented to get every outcome with its chance, which doubles and later
-   * turns need. In singles at the command prompt a sandboxed `getNextMove` returns
-   * the move the enemy will use, not a sample (§6, #158) — verified from source,
-   * not on a live tab. `predictSwitches` calls the trainer's matchup scoring, also
-   * listed under `35-team-plan.js`.
+   * §6, §7. Two readings of one decision. `sceneExactMoves` **calls the game's own**
+   * `getNextMove` at the command prompt, which returns the move and target the enemy
+   * will use rather than a sample (§6, #158 live: 69/69); this turn's plan is played
+   * on it (#183). The rest re-implements the whole choice to get every outcome with
+   * its chance, which later turns, `aiReplay` and the pin-bump oracle need.
+   * `predictSwitches` calls the trainer's matchup scoring, also listed under
+   * `35-team-plan.js`.
    */
   "20-enemy-ai.js": [
     `${P}#EnemyPokemon.getNextMove`,
@@ -299,6 +300,12 @@ export const HUD_DEPS = {
     // draws); `aiTargetScore` enumerates consecutive Protect's draw; a queued move is read by its use mode.
     `src/battle.ts#Battle.randSeedInt`,
     `src/data/moves/move-utils.ts#getMoveTargets`,
+    // The exact call: what makes the command prompt a fixed position on the battle
+    // stream (`incrementTurn` nulls `battleSeedState`, which re-sows it), and the one
+    // thing that draws before `EnemyCommandPhase` — our own `RANDOM_NEAR_ENEMY`
+    // command, whose draw `sceneExactMoves` makes first (`ranges`).
+    `src/battle.ts#Battle.incrementTurn`,
+    `src/phases/command-phase.ts#CommandPhase.handleFightCommand`,
     `${M}#ProtectAttr.getCondition`,
     `src/enums/move-use-mode.ts#isVirtual`,
     `src/enums/move-use-mode.ts#isIgnorePP`,

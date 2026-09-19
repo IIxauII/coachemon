@@ -109,6 +109,7 @@ summary danger | Venusaur Power Whip → Aurorus · 1 hit
 == single (full)
 🎯 W89 − {Minimal overview} × {Close}
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
+⇄ Charizard out › Blastoise in · optional · takes ~23% · resists Flamethrower
 Ninetales Ninetales L72 Fire 100% ✦ ⚠ Flash Fire ▲ Water ✕ Fire ×0 ↯ Fire Flamethrower → Charizard moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary fight | Charizard Air Slash → Ninetales · 3 hits
@@ -118,7 +119,7 @@ summary fight | Charizard Air Slash → Ninetales · 3 hits
 queued during prediction: 0; queueMessage restored: true
 == tera (full)
 🎯 W89 · Tester Charizard − {Minimal overview} × {Close}
-⚔ Charizard 💀 Rock ×4 567% {Lycanroc's Stone Edge: ~567% of current HP, before it can act} Fire Flamethrower → Lycanroc 1 hit
+⚔ Charizard 💀 Rock ×4 378% {Lycanroc's Stone Edge: ~378% of current HP, before it can act} Fire Flamethrower → Lycanroc 1 hit
 Lycanroc Lycanroc L70 Steel TERA 100% ▲ Fire ↯ Rock Stone Edge → Charizard moves first
 ♟ Fight plan likely lost
 ☠ Lycanroc Lycanroc KOs 1/1 · win condition
@@ -129,7 +130,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary trainer | Charizard Flamethrower → Lycanroc · 1 hit | 💀 Charizard | plan: likely lost · ☠ Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 == tera (mini)
 🎯 W89 · Tester Charizard + {Expand} × {Close}
-⚔ Charizard 💀 Rock ×4 567% {Lycanroc's Stone Edge: ~567% of current HP, before it can act} Fire Flamethrower → Lycanroc 1 hit
+⚔ Charizard 💀 Rock ×4 378% {Lycanroc's Stone Edge: ~378% of current HP, before it can act} Fire Flamethrower → Lycanroc 1 hit
 ♟ likely lost · ☠ Lycanroc · 1 step + {Show the fight plan}
 == trap (full)
 🎯 W89 ⚔ Charizard Flamethrower → Swinub · 1 hit ⚠ Thick Fat + {Show details} × {Close}

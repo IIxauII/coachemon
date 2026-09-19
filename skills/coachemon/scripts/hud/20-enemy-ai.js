@@ -1,14 +1,16 @@
 // Predictions of what the enemy AI does this turn: switch (EnemyCommandPhase) or move (EnemyPokemon.getNextMove).
-// Both are re-implemented from the pinned source (spec §6, §7) so the HUD gets every outcome with its chance, which
-// doubles and later turns need. getNextMove/getNextTargets themselves aren't called. In singles at the command
-// prompt a sandboxed getNextMove would return the move the enemy actually picks, not a sample (§6, #158; verified
-// from source only, not on a live tab).
+// Two readings of the same decision live here, and they answer different questions:
+// - **The exact move** (`sceneExactMoves`): the game's own `getNextMove()` called at the command prompt, which
+//   returns the move and target the enemy will use (§6, #158 live). This turn's plan is played on it (#183).
+// - **The distribution** (`sceneDistribution`, `sceneReplayAI`): §6 and §7 re-implemented from the pinned source, so
+//   every outcome comes with its chance. There is no fixed draw to reproduce a turn ahead or against a hypothetical
+//   field, so later turns and `aiReplay` stay with it — and it is the exact call's own oracle at a pin bump.
 //
 // **This file calls game code; it never decides when that is allowed.** `25-turn.js` is the only importer of the
 // `scene*` exports (the `@only` lines below): it opens the one sandbox, takes a predicted Tera back off (the AI
 // chose before TeraPhase ran), and keys every answer on the turn. `env` is the scene state these reads need, built
 // once by the turn (25-turn's `sceneEnv`).
-import { SPREAD_TARGETS, TYPES, forcedRng, hasAttr, keepTurnData, withPick } from "./01-core.js";
+import { SPREAD_TARGETS, TYPES, forcedRng, hasAttr, keepTurnData, sandbox, sandboxBreachCount, withPick } from "./01-core.js";
 
 // Game-code helpers (only inside the turn's sandbox)
 const NO_CONDITION_CHECK = [MoveId.SUCKER_PUNCH, MoveId.UPPER_HAND, MoveId.THUNDERCLAP]; // the AI ignores their conditions
@@ -301,6 +303,77 @@ const finish = rows => [...rows.values()].filter(r => r.p > 1e-12).map(({ tp, sc
   const targetDist = [...tp].map(([battlerIndex, p]) => ({ battlerIndex, p: p / r.p })).sort((a, b) => b.p - a.p);
   return { ...r, score: score == null ? null : Number.isFinite(score / (scoreW || 1)) ? score / (scoreW || 1) : null, targets: targetDist.map(t => t.battlerIndex), targetDist };
 }).sort((a, b) => b.p - a.p);
+
+// ---- The enemy's exact move (spec §6; measured in #158, decided in #183)
+// At the command prompt the battle stream sits where `incrementTurn` re-sowed it, and nothing draws from it between
+// our command and `EnemyCommandPhase` — so the game's own `getNextMove()`, called here, returns **the move and
+// target the enemy will use**, not a sample. 69 of 69 live over waves 1–12, singles and doubles, wild, trainer and
+// boss, with a queued move and picks the distribution gave 4–5 % (#158).
+//
+// The rules the live check settled, each of which this call keeps:
+// - **One sandbox, field order.** Every foe is called inside the same sandbox, in field order, so slot 1's call sees
+//   slot 0's draws exactly as `EnemyCommandPhase` would. The sandbox puts the stream back afterwards, so the game's
+//   real call starts from the stream this prediction started from.
+// - **The move queue is saved and restored.** `getNextMove` splices the queue and can replace it outright
+//   (`pokemon.ts:6570`, `:6576`), so both the contents and the array identity go back.
+// - **Our own draws come first.** A `RANDOM_NEAR_ENEMY` command of ours with two or more opponents draws a target in
+//   our `CommandPhase` (`handleFightCommand` → `getMoveTargets`) *before* the enemy decides, and one such draw flipped
+//   the pick live. `ranges` is those draws, made with the game's own `battle.randSeedInt` in the same sandbox, so the
+//   prediction is the one for **that** candidate command. A prediction made after a draw is only as good as the
+//   command it was made for: that is `replay` confidence, not `exact`.
+// - **Hard fail, no fallback** (#183). A build with no `getNextMove` on the prototype, a call that throws, or a
+//   sandbox breach gives a reason and nothing else. The caller never substitutes the distribution.
+export const EXACT_PAST_PIN = "the live build's enemy AI moved past the pin";
+export const EXACT_THREW = "the enemy AI call threw";
+export const EXACT_BREACH = "the enemy AI call breached its sandbox";
+
+// The game's own method, off the prototype rather than the instance: a probe or an extension that wrapped one mon's
+// `getNextMove` would otherwise be asked instead of the game.
+const protoNextMove = e => { try { return Object.getPrototypeOf(e)?.getNextMove; } catch { return null; } };
+
+// One `TurnMove` as a distribution row, in `finish`'s shape so callers read it like any other: one outcome, p 1, no
+// score (the pick is a fact, not a ranking), and its targets exactly as the game gave them.
+const exactRow = (e, tm) => {
+  const moveset = movesetOf(e);
+  const pm = moveset.find(m => m.moveId === tm.move) ?? null;
+  const mv = pm?.getMove?.() ?? null;
+  const targets = [...(tm.targets ?? [])];
+  let type = "Normal";
+  if (mv) { try { type = TYPES[e.getMoveType(mv)] ?? TYPES[mv.type]; } catch { type = TYPES[mv.type]; } }
+  return {
+    name: pm ? pm.getName() : tm.move === STRUGGLE ? "Struggle" : `#${tm.move}`,
+    id: mv?.id ?? tm.move, slot: pm ? moveset.indexOf(pm) : tm.move === STRUGGLE ? -1 : null,
+    type, cat: mv ? ["physical", "special", "status"][mv.category] : "physical",
+    spread: SPREAD_TARGETS.includes(mv?.moveTarget), p: 1, score: null,
+    targets, targetDist: targets.map(battlerIndex => ({ battlerIndex, p: 1 })), exact: true,
+  };
+};
+
+// `{ ok: true, moves: Map(foe → row) }`, or `{ ok: false, reason }`. `foes`: the active foes, already in field order.
+// `ranges`: the ranges our candidate command draws before the enemy decides, in the order it draws them.
+// @only 25-turn, tests: sceneExactMoves
+export const sceneExactMoves = (env, foes, ranges = []) => {
+  const s = env.s;
+  const battle = s?.currentBattle;
+  // `randSeedInt` is only needed to make our own command's draws: a turn with none is not gated on it.
+  if (!battle || (ranges.length && typeof battle.randSeedInt !== "function")) return { ok: false, reason: EXACT_PAST_PIN };
+  const calls = foes.map(e => [e, protoNextMove(e)]);
+  if (calls.some(([, f]) => typeof f !== "function")) return { ok: false, reason: EXACT_PAST_PIN };
+  const saved = foes.map(e => { const arr = e.summonData?.moveQueue; return [e, arr, arr ? [...arr] : null]; });
+  const restore = () => { for (const [e, arr, items] of saved) if (arr) { arr.splice(0, arr.length, ...items); e.summonData.moveQueue = arr; } };
+  const before = sandboxBreachCount();
+  let rows;
+  try {
+    rows = sandbox(s, () => {
+      for (const r of ranges) if (r > 1) battle.randSeedInt(r);
+      return calls.map(([e, f]) => [e, exactRow(e, f.call(e))]);
+    });
+  } catch {
+    return { ok: false, reason: EXACT_THREW };
+  } finally { restore(); }
+  if (sandboxBreachCount() !== before) return { ok: false, reason: EXACT_BREACH };
+  return { ok: true, moves: new Map(rows) };
+};
 
 // Without game calls (the approximate turn, or a mock without the functions): the foe's damaging moves ranked by
 // rough damage into their best target, KO moves first, with the SMART chain on those numbers. `outcomesOf(e, foe)`

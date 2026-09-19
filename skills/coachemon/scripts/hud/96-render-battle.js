@@ -9,6 +9,12 @@ import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
 export const drawBattle = m => {
+  // The exact enemy move couldn't be made (#183): the card says so and shows nothing else. The next refresh tries
+  // again, so a one-off breach flickers rather than sticking.
+  if (m.unavailable) {
+    if (view() === "closed") return [tab("\u26a0", null)];
+    return [bar("\ud83c\udfaf", m.title), line("\u26a0", "#fa4", h("span", { color: "#fa4" }, `no advice — ${m.unavailable}`))];
+  }
   const collapsed = collapsedCard(m);
   if (view() === "closed") return [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)];
   const f = m.field;
@@ -146,10 +152,14 @@ export const drawBattle = m => {
       // model carries it, otherwise how likely the AI is to pick it.
       r.likely ? line("↯", "#e77",
         badge(r.likely.type), h("span", { color: "#e77" }, r.likely.move),
-        ...(r.pick ? [h("span", { ...dim, margin: "0 2px 0 3px" }, "→"), mon(r.pick.icon, r.pick.name, 18)] : []),
+        ...(r.likely.at ? r.likely.at.flatMap(x => [h("span", { ...dim, margin: "0 2px 0 3px" }, "\u2192"), mon(x.icon, x.name, 18)])
+          : r.pick ? [h("span", { ...dim, margin: "0 2px 0 3px" }, "\u2192"), mon(r.pick.icon, r.pick.name, 18)] : []),
         h("span", { ...dim, marginLeft: "4px" }, [
           r.likely.pct != null ? `~${r.likely.pct}% HP` : r.likely.p != null ? `${r.likely.p}% likely` : null,
-          r.likely.hits ? `${r.likely.hits}-hit` : null, firstText(r.likely.first)].filter(Boolean).join(" · "))) : null,
+          r.likely.hits ? `${r.likely.hits}-hit` : null, firstText(r.likely.first),
+          // `~`: right only while the game's own draws for this turn are the draws the coach made (a random-target
+          // command of ours in a double). An exact move carries no mark — no `% likely` is the mark.
+          r.likely.confidence === "replay" ? "~" : null].filter(Boolean).join(" · "))) : null,
       // A foe on the field already has its ⚔ line; the pick is only news for one no slot is on yet.
       r.pick?.later
         ? line("➜", "#8cf",

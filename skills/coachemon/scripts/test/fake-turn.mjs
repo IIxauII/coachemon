@@ -47,6 +47,7 @@ const plainFacts = (p, over = {}, enemyModifiers = []) => {
 
 export const fakeTurn = ({
   live = true,
+  exact = { ok: true },
   wave = 1, turn: turnNo = 1, enemySwitchCounter = 0, double = false, trainer = null, decision = "command",
   party = [], foes = [], field = null, command = null,
   trickRoom = false, weather = 0, modifiers = [], enemyModifiers = [], hazards = () => 0, balls = () => 0,
@@ -136,12 +137,23 @@ export const fakeTurn = ({
     turnEndHp: (p, opts = {}) => as(() => heal(p, opts) ?? 0),
     // The enemy's whole turn. An approximate turn knows none of the AI's own reasoning: it predicts no switch (the
     // enemy hasn't decided) and ranks the foe's moves by rough damage, exactly as the page does.
-    enemyAction: foe => memo("action", foe, () => {
+    // `exact`: the gate (#183). A scenario makes it fail with `exact: { ok: false, reason }`, which is what the panel
+    // sees on a build past the pin. A `moves` row marked `exact` is the game's own answer for this turn, so the
+    // action carries the confidence the real turn would give it — `replay` once our own command drew first.
+    exact: () => exact,
+    exactMoves: () => exact,
+    enemyAction: (foe, { ranges = [] } = {}) => memo(`action:${ranges.join(",")}`, foe, () => {
       const to = live ? switchTo(foe) : null;
-      if (to) return { moves: [], switchTo: to, tera: false, skip: false };
-      const rough = () => hud()["20-enemy-ai"]?.approxDistribution(foe, (e, o) => t.outcomes(e, o)) ?? [];
-      return { moves: (live ? as(() => moves(foe)) : rough()) ?? [], switchTo: null, tera: false, skip: false };
+      if (to) return { moves: [], switchTo: to, tera: false, skip: false, exact: false, confidence: null };
+      if (!exact.ok) return { moves: [], switchTo: null, tera: false, skip: false, unavailable: exact.reason, exact: false, confidence: null };
+      const rows = (live ? as(() => moves(foe)) : t.enemyDistribution(foe)) ?? [];
+      const ex = rows.length === 1 && !!rows[0].exact;
+      return { moves: rows, switchTo: null, tera: false, skip: false,
+        exact: ex, confidence: ex ? (ranges.length ? "replay" : "exact") : "estimate" };
     }),
+    teraNow: () => false,
+    enemyDistribution: foe => (live ? as(() => moves(foe)) : null)
+      ?? hud()["20-enemy-ai"]?.approxDistribution(foe, (e, o) => t.outcomes(e, o)) ?? [],
     switches: () => new Map(live ? active().flatMap(f => { const to = switchTo(f); return to ? [[f, { to, ratio: 1 }]] : []; }) : []),
     activeFoes: active,
     replayAI: (foe, target, opts = {}) => as(() => replay(foe, target, opts)),
@@ -151,7 +163,7 @@ export const fakeTurn = ({
     speedTie: (a, b) => speedTie(a, b),
     memo: (k, fn) => memo("caller", k, fn),
     assuming: more => fakeTurn({
-      live, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,
+      live, exact, wave, turn: turnNo, enemySwitchCounter, double, trainer, decision, party, foes, field, command,
       trickRoom, weather, modifiers, enemyModifiers, hazards, balls, mode, battleType, mysteryEncounter, biomeId,
       outcome, outcomes, statusMoves, heal, moves, switchTo, replay, sendIn, benefit, speedTie, mon,
       patches: [...patches, ...more],

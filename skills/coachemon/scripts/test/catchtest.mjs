@@ -3,11 +3,12 @@
 // fight, no Master Ball on a low-value catch, and no card at all for the common owned mons of an early run. Prints the rendered sections, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { onGame } from "./game-proto.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
 // moves: [name, type, power, cat, target=3, attrs=[]]; sp: species fields
-const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, sp = {}, extra = {}) => ({
+const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, sp = {}, extra = {}) => onGame({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0,
   species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [],
     // `roots`: [starter root, prevolution-free root], the two answers `getRootSpeciesId` gives.
@@ -17,7 +18,7 @@ const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, fie
   isBoss: () => (extra.bossSegments ?? 0) > 0, bossSegments: 0, bossSegmentIndex: 0,
   getIconAtlasKey: () => "k", getIconId: () => 1, status: null, shiny: false, variant: 0, gender: 0, formIndex: 0, abilityIndex: 0,
   ivs: [15, 15, 15, 15, 15, 15],
-  moveset: moves.map(([n, t, p, c, target = 3, attrs = []]) => ({ getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, accuracy: 100, priority: 0, attrs }), getMovePp: () => 10, ppUsed: 0 })),
+  moveset: moves.map(([n, t, p, c, target = 3, attrs = []], i) => ({ moveId: i + 1, getName: () => n, getMove: () => ({ type: TY.indexOf(t), power: p, category: cat[c], moveTarget: target, accuracy: 100, priority: 0, attrs }), getMovePp: () => 10, ppUsed: 0 })),
   ...extra,
 });
 
