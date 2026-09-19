@@ -29,9 +29,10 @@ jobs:
       - run: npm run typecheck
 
       # `npm test` is both suites: `node --test "src/**/*.test.ts"` and then the 24 HUD goldens
-      # (`skills/coachemon/scripts/test/run.mjs`, ~16s). They are one command on purpose — the goldens are the only
-      # check that calls `bundle()`, and when they were a separate command nothing in CI ran them, so master stayed
-      # 406/406 green for an hour with the HUD bundle unable to link (#259).
+      # (`skills/coachemon/scripts/test/run.mjs`, ~16s). They are one command on purpose — as separate commands,
+      # nothing in CI ran the goldens at all. A *link* break was already caught on a PR, because `extension.yml`'s
+      # `build:all` calls `bundle("hud")` (`extension/wxt.config.ts`); what went ungated everywhere was a golden
+      # diff — a behaviour change with a bundle that links fine — and the root suites on a PR (#259).
       - run: npm test
 
       # `drift:check` is deliberately not here: it is a pin-bump check, not a per-push one. At a fixed pinned ref the
