@@ -1330,8 +1330,19 @@ that only draws, a primary requirement's `queryParty`, `getWaveMoneyAmount`, `Po
 true)` (§17: it can write `abilitiesApplied`, which `sandbox` restores). **Not safe**: `meetsRequirements()` on an
 encounter or an option, `populateDialogueTokensFromRequirements`, any `on…Phase` closure.
 
+**The pick is the game's own record.** `MysteryEncounterPhase.start` (`:60`) pushes a `SeenEncounterData { type, tier,
+waveIndex, selectedOption }` (`src/data/mystery-encounters/mystery-encounter-save-data.ts:5`) onto
+`globalScene.mysteryEncounterSaveData.encounteredEvents` as the encounter opens, with `selectedOption` −1, and
+`handleOptionSelect` (`:73`) writes the chosen index into that same record — but only when `optionSelectSettings` is
+unset, so a follow-up option menu never overwrites it, and only when the record's `type` still matches the encounter
+in play (`:83`). It is part of the save, so it survives a reload. `55-journal.js` reads the pick there rather than
+watching the input.
+
 **Unmeasured**: every 🔮 outcome is a replay of the source's draw order, never checked against an encounter as it
 resolved. A closure that gains an early `await`, or a draw before the one the HUD replays, makes it confidently wrong.
+The **Mystery Encounter journal** (`55-journal.js`) is what that check will be read off: it writes each encounter met
+in a live run — the card as it was shown, the pick, and the run state at every tick it moved — to `localStorage`, so
+the comparison is reading a harvested file rather than playing until every encounter has turned up.
 
 ---
 

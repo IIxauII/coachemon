@@ -11,6 +11,8 @@ The user holds the controller. You read the game and advise. **Never press, sele
 
 `scripts/read.sh <chrome|orion> <battle|starters>` prints one JSON snapshot. It injects `scripts/probe.js` into the page and reads the result back off the DOM; the probe is read-only.
 
+`scripts/read.sh <browser> journal` prints the **Mystery Encounter journal** instead: every encounter met on that browser, with the card the coach showed, the option the game recorded the player picking, and the run state at each tick it moved. It is written to the page's `localStorage` as the encounters happen, so it outlives the run, the reload and the panel — harvest it whenever, and empty it with `window.__coachHud.journalClear()` once it has been read. It records, it does not judge.
+
 - **Which browser:** ask if unclear. Chrome = the MCP server's tab on debug port 9222. Orion = the user's own browser.
 - **Orion** needs Develop → *Allow JavaScript from Apple Events*. If the script errors saying so, stop and ask the user to enable it. Security: that toggle lets any local script run JS in every Orion tab — remind them to turn it off when done.
 - **Read fresh before every recommendation.** The user keeps playing between messages; a snapshot from two turns ago is stale.

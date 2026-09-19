@@ -4,6 +4,7 @@ import { readCard } from "./60-card.js";
 import { previewCheck } from "./48-preview.js";
 import { gameEvents } from "./47-biome.js";
 import { rerollCheck } from "./50-reroll.js";
+import { journalCheck } from "./55-journal.js";
 import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw, setShownCardWave, view } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
 import { drawEncounter } from "./96-render-encounter.js";
@@ -57,6 +58,10 @@ export const tick = () => {
     rerollCheck(s);
     previewCheck(s);
     const card = readCard(s, accountRead(s));
+    // Write a Mystery Encounter down as it happens, card and all, for the live check on the encounter judgments. It
+    // runs on every refresh rather than only on the encounter card, because the half worth recording — what the game
+    // did with the pick — lands on the waves after the option screen is gone.
+    journalCheck(s, card);
     if (!card) { el.style.display = "none"; shown = null; return; }
     shown = card;
     // A view picked by a button holds until the card or wave changes.

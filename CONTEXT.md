@@ -147,6 +147,17 @@ A claim is never surer than what it derives from. Confidence is claimed, then **
 
 Every **preview** field carries one, and so does the enemy's move in a **turn read**.
 
+## Journal
+
+What the **coach** wrote down about decisions already taken, kept so that a claim can be checked later against what
+the game actually did. A journal entry pairs the **card** as it was shown with the outcome that followed; it records
+and never judges, so reading one is how a live check is done rather than the check itself.
+
+It outlives the thing it describes — the **run**, the reload, the session — because what it is for is the case that
+takes many runs to gather. It is bounded, and the oldest entries fall off the end rather than growing without limit.
+
+Distinct from a **preview**'s scoring, which grades one claim as the run goes and keeps only the tally.
+
 ## Preview
 
 What the **run seed** already decides about something the run has not reached yet, read out ahead of time: a **wave** ahead, or the rewards a reroll the player hasn't paid for would bring. A preview is a read: it never advances the game or the run's own sequence of rolls.

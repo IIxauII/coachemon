@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Read-only snapshot of a live PokéRogue tab.
-# Usage: read.sh <chrome|orion> <battle|starters|hud|hud-off>
+# Usage: read.sh <chrome|orion> <battle|starters|hud|hud-off|journal>
+# `journal` harvests the Mystery Encounter journal the panel has been writing (it survives runs and reloads).
 set -euo pipefail
 browser=${1:?chrome|orion}
 mode=${2:-battle}

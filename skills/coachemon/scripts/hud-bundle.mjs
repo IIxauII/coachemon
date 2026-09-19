@@ -1,6 +1,6 @@
 // Prints the HUD as one injectable script: every hud/*.js file in name order, inside a single IIFE, with "__MODE__"
 // replaced. Any other mode prints probe.js with only the HUD modules it imports. Used by read.sh and by the tests.
-// Usage: node hud-bundle.mjs <hud|hud-off|battle|starters>
+// Usage: node hud-bundle.mjs <hud|hud-off|battle|starters|journal>
 //
 // Modules. The page can't load real ES modules (read.sh injects a classic inline <script>, and tests `eval` it), so
 // every file is turned into a function with its own scope. There is no shared scope: a file reaches another file's
