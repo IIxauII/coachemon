@@ -75,12 +75,18 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      §13), never from the wiki.
      - **Judged:** the twelve common encounters — Mysterious Chest, Fight or Flight, Department Store Sale, Shady
        Vitamin Dealer, Lost at Sea, Fiery Fallout, The Strong Stuff, Berries Abound, Part-Timer, Teleporting Hijinks,
-       Uncommon Breed, Global Trade System. Every other encounter shows its options, who qualifies and what they cost,
-       marked "not judged".
+       Uncommon Breed, Global Trade System — and the eight great ones: Mysterious Challengers, Slumbering Snorlax,
+       Safari Zone, Delibird-y, Absolute Avarice, Dancing Lessons, Bug-Type Superfan, Fun and Games. Every other
+       encounter shows its options, who qualifies and what they cost, marked "not judged".
      - **🔮 = fixed by the run seed.** An option's first rolls are forked from the seed, so the card can say what
        *will* happen, not just the odds: whether the chest is a trap, the store's item rolls, where the teleport
-       lands, who Fiery Fallout burns (and whose ability it overwrites), the vitamin dealer's new nature. Like the 🔮
-       next-wave card, treat it as the coach's own read: say it where it changes the decision.
+       lands, who Fiery Fallout burns (and whose ability it overwrites), the vitamin dealer's new nature, and the four
+       moves Bug-Type Superfan's tutor will offer. Like the 🔮 next-wave card, treat it as the coach's own read: say
+       it where it changes the decision.
+     - **Safari Zone's minigame is read, not judged.** Once the ball / bait / mud / run menu is up it is an override
+       menu, not the encounter's own options, so the card lists it without a call — the advice for it is on the card
+       you see *before* paying. The same goes for Fun and Games, where the card names the prize ladder and the KO trap
+       but leaves the three turns to you.
      - Money is spent only while it leaves three waves' worth of reward money; a fight is "hard" 5+ levels over your
        best mon, or when nothing hits it super-effectively at your level. Both are first cuts.
    - **🔮 Next wave** (on the rewards and battle cards): what the run seed has already decided about the wave ahead —
