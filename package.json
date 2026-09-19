@@ -16,6 +16,7 @@
     "randbats:gen": "node scripts/gen-randbats.ts",
     "release:safari": "node scripts/release/safari-release.ts",
     "drift:check": "node scripts/drift.ts",
+    "oracle:encounter": "node scripts/encounter-oracle/run.ts",
     "ladder:drift": "node scripts/drift.ts"
   },
   "devDependencies": {

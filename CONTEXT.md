@@ -158,6 +158,18 @@ takes many runs to gather. It is bounded, and the oldest entries fall off the en
 
 Distinct from a **preview**'s scoring, which grades one claim as the run goes and keeps only the tally.
 
+## Oracle
+
+The game itself, played headless, used as the answer a coach claim is checked against. The pinned game is run on
+upstream's own test harness, a **card** reads that live scene exactly as it would read a tab, and what the card
+claims is compared with what the game then did.
+
+An oracle answers only what is falsifiable — a destination, a payout, a roll — never a **verdict**, which is
+judgement and has no answer to be checked against. It is a dev tool and never ships.
+
+Distinct from a **journal**, which waits for a real **run** to serve the case: an oracle asks for the case it
+wants, so it reaches what a run may never show.
+
 ## Preview
 
 What the **run seed** already decides about something the run has not reached yet, read out ahead of time: a **wave** ahead, or the rewards a reroll the player hasn't paid for would bring. A preview is a read: it never advances the game or the run's own sequence of rolls.

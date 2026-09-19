@@ -257,7 +257,10 @@ const link = (files, { expose = false, entry = null } = {}) => {
 
 const withMode = (text, mode) => text.replaceAll('"__MODE__"', q(mode));
 
-// `files`: [[file name, source]] in load order, for tests of the rules; read from hud/ otherwise.
+// `files`: [[file name, source]] in load order, for tests of the rules; read from hud/ otherwise. The encounter
+// oracle also passes the real hud/ files minus `99-start.js`, so the bundle it evals has no refresh loop to tick
+// game code against the harness's own game (`scripts/encounter-oracle/run.ts`) — a partial bundle, so the header's
+// "Source: skills/coachemon/scripts/hud/" is only the whole panel when `files` is left out.
 export const bundle = (mode, { expose = false, files } = {}) => {
   const dir = fileURLToPath(new URL("./hud/", import.meta.url));
   const read = () => files ?? readdirSync(dir).filter(f => f.endsWith(".js")).sort().map(f => [f, readFileSync(dir + f, "utf8")]);
