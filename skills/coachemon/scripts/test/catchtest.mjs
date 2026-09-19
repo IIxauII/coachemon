@@ -9,7 +9,9 @@ const cat = { P: 0, S: 1, X: 2 };
 // moves: [name, type, power, cat, target=3, attrs=[]]; sp: species fields
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, sp = {}, extra = {}) => ({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0,
-  species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [] },
+  species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [],
+    // `roots`: [starter root, prevolution-free root], the two answers `getRootSpeciesId` gives.
+    ...(sp.roots ? { getRootSpeciesId: forStarter => (forStarter ? sp.roots[0] : sp.roots[1]) } : {}), ...(sp.more ?? {}) },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field,
   isBoss: () => (extra.bossSegments ?? 0) > 0, bossSegments: 0, bossSegmentIndex: 0,
@@ -34,7 +36,7 @@ const dexData = () => {
 // `owned`: extra caught species ids (dex IVs 20, abilityAttr 1). `mode`: gameMode fields over classic. `events`: the
 // game's timed event manager, as 47-biome's chunk scan would hand it over.
 const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [],
-  wave = 23, biome = 3, mode = {}, starters = null, events = null, dex = null }) => {
+  wave = 23, biome = 3, mode = {}, starters = null, events = null, dex = null, registry = null }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const pm = { getCurrentPhase: () => (phase ? { phaseName: phase } : null) };
@@ -68,7 +70,9 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, readTurn, accountRead, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
     setGameTables: globalThis.__hud["47-biome"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
-  if (events) globalThis.__ca.setGameTables({ events });
+  // `species`: the game's species registry, as 47-biome's chunk scan would hand it to the account read. One call:
+  // `setGameTables` replaces the tables wholesale, so a second would drop whatever the first put there.
+  if (events || registry) globalThis.__ca.setGameTables({ events, species: registry });
   const advice = readTurn(scene, turn => catchAdvice(turn, accountRead(scene)));
   return { advice, scene };
 };
@@ -392,5 +396,46 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   const variant = () => Object.assign(shinyPika(), { variant: 2 });
   const daily = run({ party: [venusaur()], foes: [variant()], counts, dex: known, mode: { isClassic: false, isDaily: true } }).advice.targets[0];
   assert.ok(daily.reasons.some(r => r.text === "new shiny variant · +20 candy"), JSON.stringify(daily.reasons));
+}
+
+// ---- 18. Which entry the candy is read from. `setPokemonSpeciesCaught` walks the line down and pays at the species
+// with no prevolution — `getRootSpeciesId(false)`, Pichu for a Raichu — masking the attributes with *that* species'
+// `getFullUnlocksData()`, and paying nothing at all when the walk stops early at an uncaught starter mid-line.
+{
+  const counts = { 0: 0, 1: 0, 2: 5, 3: 0, 4: 0 };
+  // Raichu: starter root Pikachu (25), prevolution-free root Pichu (172).
+  const raichu = (extra = {}) => mon("Raichu", 30, ["Electric"], "Static", [120,90,55,90,80,110], [["Thunderbolt","Electric",90,"S"]], true, undefined,
+    { id: 26, catchRate: 75, bst: 485, roots: [25, 172] }, { shiny: true, ...extra });
+  const ALL = 1n | 2n | 4n | 16n | 128n; // non-shiny, shiny, male, default variant, form 0
+  const reasons = opts => run({ party: [venusaur()], foes: [raichu(opts.foe)], counts, ...opts }).advice.targets[0].reasons.map(r => r.text);
+
+  // Pichu has this shiny already; Pikachu, which `getRootSpeciesId(true)` stops at, does not. The Daily run pays
+  // nothing, because Pichu's entry is the one `hasNewAttr` is asked of.
+  const pichuKnows = { 26: { caughtAttr: ALL }, 25: { caughtAttr: 1n }, 172: { caughtAttr: ALL } };
+  assert.ok(reasons({ dex: pichuKnows, mode: { isClassic: false, isDaily: true } }).includes("shiny"),
+    "the candy entry is the prevolution-free root, not the first starter up the line");
+  assert.ok(reasons({ dex: pichuKnows }).includes("shiny · +5 candy"), "a classic run pays it either way");
+
+  // A starter partway down the line that is new to the dex does not end the walk: it shows "added as a starter" and
+  // recurses from that message's callback, so Pichu is still reached and still paid. The dex state of Pikachu, the
+  // species in the middle, changes nothing.
+  const pikachuNew = { 26: { caughtAttr: ALL }, 25: { caughtAttr: 0n }, 172: { caughtAttr: 0n } };
+  assert.ok(reasons({ dex: pikachuNew, starters: [3, 25] }).includes("shiny · +5 candy"),
+    "an uncaught Pikachu in the middle of the line does not stop the walk");
+  assert.ok(reasons({ dex: { ...pikachuNew, 25: { caughtAttr: 1n } }, starters: [3, 25] }).includes("shiny · +5 candy"),
+    "nor does a caught one");
+
+  // A form the root species cannot own. Charizard has four forms (Normal, Mega X, Mega Y, G-Max) while Charmander,
+  // the species the candy is paid at, has none — so its mask carries the default form bit alone, and a Mega
+  // Charizard's `1n << 8` is masked away. The catch then adds nothing Charmander's entry lacks and a Daily run pays
+  // nothing; unmasked, the same bit reads as a new attribute and promises candy.
+  const charizard = extra => mon("Charizard", 40, ["Fire","Flying"], "Blaze", [160,110,80,150,100,120], [["Heat Wave","Fire",95,"S"]], true, undefined,
+    { id: 6, catchRate: 45, bst: 534, roots: [4, 4] }, { shiny: true, ...extra });
+  const registry = { getSpecies: id => (id === 4 ? { getFullUnlocksData: () => ALL } : null), getAllSpecies: () => [] };
+  const megaRun = opts => run({ party: [venusaur()], foes: [charizard({ formIndex: 1 })], counts,
+    dex: { 6: { caughtAttr: ALL }, 4: { caughtAttr: ALL } }, mode: { isClassic: false, isDaily: true }, ...opts })
+    .advice.targets[0].reasons.map(r => r.text);
+  assert.ok(megaRun({ registry }).includes("shiny"), "the mask is the root species', and it drops a form bit Charmander cannot own");
+  assert.ok(megaRun({}).includes("shiny · +5 candy"), "with no registry the raw bits stand, as they always did");
 }
 console.log("ok");

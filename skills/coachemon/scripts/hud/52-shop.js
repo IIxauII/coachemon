@@ -58,7 +58,9 @@ const tmPoolSplit = (t, users) => {
 // the TM pool itself is drawn from the whole party. Only the Hardcore challenge takes it away: a fainted member there
 // goes through `PartyUiHandler.updateOptionsHardcore`, whose switch has no TM case at all, so it is offered nothing
 // but Cancel and the scroll options — not even the Release its other modes push.
-const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.HARDCORE && c.value > 0);
+// The test is `GameMode.hasChallenge`'s own (`src/game-mode.ts:98-100`): a challenge counts when its value is
+// anything but 0, not when it is positive.
+const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.HARDCORE && c.value !== 0);
 
 // TM advice: the learn decision (learnAdvice, the learn card's own) for every member who can learn the move, and the
 // best recipient. `take` true with the member gaining the most effective power (or, for a setup move, the member it
