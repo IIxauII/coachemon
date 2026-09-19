@@ -49,6 +49,9 @@ jobs:
         with:
           path: .cache/pokerogue-src
           key: pokerogue-src-${{ hashFiles('src/escape-ladder/reviewed.json') }}
+          # `reviewed.json` is the ladder's curated data and moves for reasons unrelated to the pin; the cache
+          # path is tag-scoped, so an older entry is still correct for an unchanged tag.
+          restore-keys: pokerogue-src-
       - run: npm run enums:gen -- --check
 
       # `drift:check` is deliberately not here: it is a pin-bump check, not a per-push one. At a fixed pinned ref the

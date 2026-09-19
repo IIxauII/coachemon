@@ -41,6 +41,7 @@ jobs:
       - run: npm run randbats:gen
 
       - run: npm run typecheck
+
       # `npm test` is both suites since #259: the unit tests and then the 24 HUD goldens, which bundle the real
       # `skills/coachemon/scripts/hud/*.js` and so catch a generated module that stopped exporting a name another
       # one imports. The golden run used to be spelled out here as well; that second run is gone (#278).
