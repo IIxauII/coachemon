@@ -44,8 +44,10 @@ provisioning it again re-fetches the 815 MB `assets` submodule for no gain (#296
 
 ## Wayfinding
 
-The live map is [#78 Map: coach quality](https://github.com/IIxauII/coachemon/issues/78) — the destination, the decisions locked so far, and what is still fog. **Continue the effort with `/wayfinder 78`**, and parent new tickets there.
+**No map is live.** All four are closed, kept for the decisions indexed on them, not maps to add to: [#1 Map: Coachemon v1](https://github.com/IIxauII/coachemon/issues/1) (the shipped MCP server), [#98 Map: HUD as a browser extension](https://github.com/IIxauII/coachemon/issues/98), [#124 Map: architecture deepening](https://github.com/IIxauII/coachemon/issues/124) and [#78 Map: coach quality](https://github.com/IIxauII/coachemon/issues/78) (79 tickets, closed with its fog left standing — the coach's gates and weights are verified against mocks and the pinned source, never a live run).
 
-[#1 Map: Coachemon v1](https://github.com/IIxauII/coachemon/issues/1) is **closed**: the shipped v1, kept for the decisions indexed on it, not a map to add to. A ticket parented to it lands off every frontier query, so a session that starts from #1 looks like it has no work to do — check a map is open before parenting to it (#316 was filed against #1 this way).
+So a fresh effort **charts a new map** with `/wayfinder <idea>`; it does not continue an old one. A ticket parented to a closed map lands off every frontier query, so a session that starts from it looks like it has no work to do — check a map is open before parenting to it (#316 was filed against #1 this way).
+
+Issues outside a map are ordinary `gh issue` work, not wayfinder tickets: #210 and #240 (Safari extension) are the standing example.
 
 Tickets are sub-issues of their map, labelled `wayfinder:<type>`, with native GitHub issue dependencies for blocking.
