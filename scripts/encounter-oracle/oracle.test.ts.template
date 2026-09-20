@@ -1022,21 +1022,31 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const me = game.scene.currentBattle.mysteryEncounter!;
 
     const seen: string[] = [];
+    const names: string[] = [];
+    const runLines: string[] = [];
     for (const left of [2, 1, 0]) {
       const card = readCard(game);
       seen.push(`${card.minigame.mon}:${card.minigame.left}`);
+      names.push(card.minigame.mon);
+      runLines.push(card.options[RUN].outcome);
       expect(me.misc.safariPokemonRemaining).toBe(left);
       expect(card.minigame.left).toBe(left);
       expect(card.minigame.catchStage, "every mon starts on fresh stages").toBe(0);
       expect(card.minigame.fleeStage, "every mon starts on fresh stages").toBe(0);
-      expect(card.options[RUN].outcome).toBe(
-        left
-          ? `let it go — ${left} mon${left === 1 ? "" : "s"} left after this one`
-          : "let it go — the last of the three, so this ends the safari",
-      );
       if (left > 0) {
         await safariTurn(game, RUN);
       }
+    }
+
+    // The count, and — since #313 — the mon the run option says is coming. That name is checked against the mon the
+    // game actually summoned on the *next* turn of this same walk, never against the card's own claim about it.
+    expect(runLines[2]).toBe("let it go — the last of the three, so this ends the safari");
+    for (const [i, left] of [2, 1].entries()) {
+      const coming = names[i + 1];
+      const plural = `${left} mon${left === 1 ? "" : "s"} left after this one`;
+      expect(runLines[i], `turn ${i + 1} names the mon the game then summoned`).toMatch(
+        new RegExp(`^let it go — ${coming}( ★shiny)? L\\d+( \\(hidden ability\\))? is next, ${plural}$`),
+      );
     }
 
     // The card said letting the third one go ends the safari, so this walks off the last menu and out of the
