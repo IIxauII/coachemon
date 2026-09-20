@@ -119,16 +119,135 @@ weakens your two strongest
 ⚔ boss · ~L35 boss (5 bars) vs your L40, 1 mon hits it SE, 1 weak to it
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary The Strong Stuff: take Battle — fight Shuckle (5 bars, +1 Def/SpD, berries; Gastro Acid + Stealth Rock on you) → Soul Dew + rewards · avoid Drink
-== dark deal (not judged) (full)
-🎭 Dark Deal rogue − {Minimal overview} × {Close}
+== field trip (not judged) (full)
+🎭 Field Trip common − {Minimal overview} × {Close}
 ? Deal
 $1,010 · Garchomp, Lapras qualify
 ? Refuse
 not judged yet: options and requirements only
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== dark deal (not judged) (mini)
-🎭 Dark Deal rogue + {Expand} × {Close}
+== field trip (not judged) (mini)
+🎭 Field Trip common + {Expand} × {Close}
 ? Deal
 ? Refuse
-summary Dark Deal: not judged
+summary Field Trip: not judged
+== training session, a liability ability (full)
+🎭 Training Session ultra − {Minimal overview} × {Close}
+· Light — it fights you as a 3-bar boss of itself → 2 of its weakest IVs go up (+10 under 11, +5 under 21, else +3)
+every member is near-maxed
+· Medium — it fights you as a 3-bar boss of itself → pick any nature for it
+no member's nature is hurting it
+★ Heavy — it fights you as a 4-bar boss of itself, +1 to every stat on entry → pick any of its abilities, hidden included
+Slaking is stuck with Truant
+· Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== training session, a liability ability (mini)
+🎭 Training Session ultra + {Expand} × {Close}
+· Light — it fights you as a 3-bar boss of itself → 2 of its weakest IVs go up (+10 under 11, +5 under 21, else +3)
+· Medium — it fights you as a 3-bar boss of itself → pick any nature for it
+★ Heavy — it fights you as a 4-bar boss of itself, +1 to every stat on entry → pick any of its abilities, hidden included
+· Leave — shop only, no reward
+summary Training Session: take Heavy — it fights you as a 4-bar boss of itself, +1 to every stat on entry → pick any of its abilities, hidden included
+== salesman, a new species (full)
+🎭 The Pokémon Salesman ultra − {Minimal overview} × {Close}
+★ Buy — $2,020: Larvesta (hidden ability) joins at L5
+new species, hits Bug/Psychic/Ice (no one else does)
+· Leave — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== salesman, a new species (mini)
+🎭 The Pokémon Salesman ultra + {Expand} × {Close}
+★ Buy — $2,020: Larvesta (hidden ability) joins at L5
+· Leave — shop only, no reward
+summary The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5
+== trash to treasure (full)
+🎭 Trash to Treasure ultra − {Minimal overview} × {Close}
+★ Investigate — fight a Gmax Garbodor boss (6 bars, opens Toxic on your lead and Stockpile on itself; no switching) → Leftovers + Rogue / Ultra / Great rewards
+⚔ boss · ~L128 boss (6 bars) vs your L125, 1 mon hits it SE
+· Dig — Leftovers to Lapras, Shell Bell to Garchomp — and shop items cost 2.5× for the rest of the run
+60 waves of shopping left to pay it
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== trash to treasure (mini)
+🎭 Trash to Treasure ultra + {Expand} × {Close}
+★ Investigate — fight a Gmax Garbodor boss (6 bars, opens Toxic on your lead and Stockpile on itself; no switching) → Leftovers + Rogue / Ultra / Great rewards
+· Dig — Leftovers to Lapras, Shell Bell to Garchomp — and shop items cost 2.5× for the rest of the run
+summary Trash to Treasure: take Investigate — fight a Gmax Garbodor boss (6 bars, opens Toxic on your lead and Stockpile on itself; no switching) → Leftovers + Rogue / Ultra / Great rewards
+== clowning around (full)
+🎭 Clowning Around ultra − {Minimal overview} × {Close}
+★ Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
+⚔ double · Prankster is worth keeping — 2 mons at ~L92 vs your L90, 2 of yours fit to fight
+? Item shuffle — Garchomp's berries and Ultra / Rogue items are rerolled inside their own tiers
+same count, different items
+? Type shuffle 🔮 {fixed by the run seed: this is what happens} — every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal
+1 member gains STAB on a move it already has
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== clowning around (mini)
+🎭 Clowning Around ultra + {Expand} × {Close}
+★ Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
+? Item shuffle — Garchomp's berries and Ultra / Rogue items are rerolled inside their own tiers
+? Type shuffle 🔮 {fixed by the run seed: this is what happens} — every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal
+summary Clowning Around: take Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
+== expert breeder (full)
+🎭 The Expert Pokémon Breeder ultra − {Minimal overview} × {Close}
+★ Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
+3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Magikarp fainted at 0 friendship with no rewards
+· Lapras — Lapras fights the breeder's 3 alone → 2 Great eggs + 5 Common eggs + a Soothe Bell + rewards
+3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Lapras fainted at 0 friendship with no rewards
+· Jolteon — Jolteon fights the breeder's 3 alone → 3 Common eggs + a Soothe Bell + rewards
+3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Jolteon fainted at 0 friendship with no rewards
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== expert breeder (mini)
+🎭 The Expert Pokémon Breeder ultra + {Expand} × {Close}
+★ Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
+· Lapras — Lapras fights the breeder's 3 alone → 2 Great eggs + 5 Common eggs + a Soothe Bell + rewards
+· Jolteon — Jolteon fights the breeder's 3 alone → 3 Common eggs + a Soothe Bell + rewards
+summary The Expert Pokémon Breeder: take Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
+== dark deal, it takes the weakest (full)
+🎭 Dark Deal rogue − {Minimal overview} × {Close}
+★ Deal 🔮 {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · Jolteon is your weakest link
+· Refuse — shop only, no reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== dark deal, it takes the weakest (mini)
+🎭 Dark Deal rogue + {Expand} × {Close}
+★ Deal 🔮 {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+· Refuse — shop only, no reward
+summary Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+== a trainer's test (full)
+🎭 A Trainer's Test rogue − {Minimal overview} × {Close}
+★ Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
+⚔ trainer · 6 mons at ~L68 vs your L65, 3 of yours fit to fight
+· Decline — a full party heal + a Rare egg, then the shop with no free reward
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== a trainer's test (mini)
+🎭 A Trainer's Test rogue + {Expand} × {Close}
+★ Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
+· Decline — a full party heal + a Rare egg, then the shop with no free reward
+summary A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
+== weird dream (full)
+🎭 Weird Dream rogue − {Minimal overview} × {Close}
+★ Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints
++260 base stats across the party; natures come out neutral, which is what the Mints are for
+· Battle — fight that same team at your own levels, holding your items → pick one of 2 Rogue / 2 Ultra / 2 Great, and one member without a passive gets one for the run
+⚔ trainer · 3 mons at ~L92 vs your L90, 3 of yours fit to fight
+✗ Refuse — every member loses 10% of its level (your L90 drops 9)
+the only option that costs you something and gives nothing back
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== weird dream (mini)
+🎭 Weird Dream rogue + {Expand} × {Close}
+★ Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints
+· Battle — fight that same team at your own levels, holding your items → pick one of 2 Rogue / 2 Ultra / 2 Great, and one member without a passive gets one for the run
+✗ Refuse — every member loses 10% of its level (your L90 drops 9)
+summary Weird Dream: take Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints · avoid Refuse
+== winstrate, three left standing (full)
+🎭 The Winstrate Challenge rogue − {Minimal overview} × {Close}
+✗ Accept — 5 trainer battles back to back, 13 mons in all, no healing between → a Premium Voucher + a Macho Brace
+⚔ trainer · 13 mons at ~L122 vs your L120, 3 of yours fit to fight
+★ Refuse — a full party heal + a Rarer Candy
+you would not finish the run of five
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== winstrate, three left standing (mini)
+🎭 The Winstrate Challenge rogue + {Expand} × {Close}
+✗ Accept — 5 trainer battles back to back, 13 mons in all, no healing between → a Premium Voucher + a Macho Brace
+★ Refuse — a full party heal + a Rarer Candy
+summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Candy · avoid Accept
 ok

@@ -73,13 +73,17 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      line per option: ⚔ the battle it starts (with the foe's level against yours and who hits it super-effectively),
      the mon the game will use, and why. Built from the pinned source (`46-encounter.js`, `references/game-code.md`
      §13), never from the wiki.
-     - **Judged:** the twelve common encounters — Mysterious Chest, Fight or Flight, Department Store Sale, Shady
-       Vitamin Dealer, Lost at Sea, Fiery Fallout, The Strong Stuff, Berries Abound, Part-Timer, Teleporting Hijinks,
-       Uncommon Breed, Global Trade System. Every other encounter shows its options, who qualifies and what they cost,
+     - **Judged:** the common, ultra and rogue encounters — Mysterious Chest, Fight or Flight, Department Store
+       Sale, Shady Vitamin Dealer, Lost at Sea, Fiery Fallout, The Strong Stuff, Berries Abound, Part-Timer,
+       Teleporting Hijinks, Uncommon Breed, Global Trade System, Training Session, The Pokémon Salesman, Trash to
+       Treasure, Clowning Around, The Expert Pokémon Breeder, Dark Deal, A Trainer's Test, Weird Dream, The
+       Winstrate Challenge. Only the rare and master tiers show their options, who qualifies and what they cost,
        marked "not judged".
      - **🔮 = fixed by the run seed.** An option's first rolls are forked from the seed, so the card can say what
        *will* happen, not just the odds: whether the chest is a trap, the store's item rolls, where the teleport
-       lands, who Fiery Fallout burns (and whose ability it overwrites), the vitamin dealer's new nature. Like the 🔮
+       lands, who Fiery Fallout burns (and whose ability it overwrites), the vitamin dealer's new nature, which
+       member Dark Deal takes and the tier of the legendary it pays with, every member's second type after
+       Clowning Around's shuffle. Like the 🔮
        next-wave card, treat it as the coach's own read: say it where it changes the decision.
      - Money is spent only while it leaves three waves' worth of reward money; a fight is "hard" 5+ levels over your
        best mon, or when nothing hits it super-effectively at your level. Both are first cuts.

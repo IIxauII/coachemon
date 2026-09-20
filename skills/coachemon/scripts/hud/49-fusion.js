@@ -28,24 +28,12 @@
 //   liabilities (−20 %).
 // The fused mon has the base's level whatever the other half's, so a fusion onto a member far behind or one that spends
 // a strong member rarely pays, and one that folds a strong species caught at a low level into the lead does.
-import { TYPES, iconOf, natureOf, vs } from "./01-core.js";
+import { TYPES, abilityValue, iconOf, natureOf, vs } from "./01-core.js";
 
 export const FUSE_MIN = 5;
 const W_OFF = 0.45, W_BULK = 0.35, W_SPE = 0.2;
 const RANK = [1, 0.8, 0.55, 0.35, 0.2, 0.1], FAINTED_SHARE = 0.7, REFILL = 0.8;
 const TYPE_POINT = 1.5, STAB_SWING = 12;
-const GREAT_ABILITY = 12, GOOD_ABILITY = 6, BAD_ABILITY = -20;
-const GREAT = new Set(["Speed Boost", "Parental Bond", "Adaptability", "Magic Guard", "Multiscale", "Shadow Shield", "Protean",
-  "Libero", "Beast Boost", "Moxie", "Regenerator", "Intimidate", "Good as Gold", "Unaware", "Prankster", "Sheer Force",
-  "Tough Claws", "Technician", "Levitate", "Drought", "Drizzle", "Magic Bounce", "Contrary", "Simple", "Tinted Lens",
-  "Serene Grace", "Supreme Overlord", "Sword of Ruin", "Beads of Ruin", "Tablets of Ruin", "Vessel of Ruin"]);
-const GOOD = new Set(["Sand Stream", "Snow Warning", "Thick Fat", "Filter", "Solid Rock", "Prism Armor", "Fur Coat", "Ice Scales",
-  "Guts", "Download", "Mold Breaker", "Skill Link", "Strong Jaw", "Iron Fist", "Sharpness", "Aerilate", "Pixilate",
-  "Refrigerate", "Galvanize", "Swift Swim", "Chlorophyll", "Sand Rush", "Slush Rush", "Poison Heal", "Water Absorb",
-  "Volt Absorb", "Flash Fire", "Storm Drain", "Lightning Rod", "Sap Sipper", "Motor Drive", "Earth Eater",
-  "Well-Baked Body", "Dragon's Maw", "Transistor", "Steelworker", "Rocky Payload", "Gorilla Tactics", "Sturdy",
-  "Natural Cure", "Unburden", "Hustle", "Punk Rock", "Quark Drive", "Protosynthesis", "Stamina", "Justified"]);
-const BAD = new Set(["Truant", "Slow Start", "Defeatist", "Klutz", "Stall", "Normalize"]);
 const ATK_DOUBLED = new Set(["Huge Power", "Pure Power"]);
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -55,7 +43,6 @@ const nameOf = x => String(x?.name ?? "").replace(/ \((N|P)\)$/, "");
 // ability whose attrs say it doesn't work fused.
 const abilityOf = p => tryDo(() => p.getAbility(true));
 const worksFused = ab => !(ab?.attrs ?? []).some(a => a?.constructor?.name === "NoFusionAbilityAbAttr");
-const abilityValue = name => (GREAT.has(name) ? GREAT_ABILITY : GOOD.has(name) ? GOOD_ABILITY : BAD.has(name) ? BAD_ABILITY : 0);
 
 // A member's own half: base stats, types (custom types from an encounter first), as `Pokemon.getBaseTypes` reads them.
 const halfOf = p => {
