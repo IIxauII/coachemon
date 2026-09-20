@@ -35,7 +35,7 @@ const dexData = () => {
 };
 
 // `owned`: extra caught species ids (dex IVs 20, abilityAttr 1). `mode`: gameMode fields over classic. `events`: the
-// game's timed event manager, as 47-biome's chunk scan would hand it over.
+// game's timed event manager, as 04-game-tables' chunk scan would hand it over.
 const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [],
   wave = 23, biome = 3, mode = {}, starters = null, events = null, dex = null, registry = null }) => {
   let el;
@@ -70,8 +70,8 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   // A line's final BST is the party profile's, not the catch card's (`08-party.js`).
   const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, readTurn, accountRead, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
-    setGameTables: globalThis.__hud["47-biome"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
-  // `species`: the game's species registry, as 47-biome's chunk scan would hand it to the account read. One call:
+    setGameTables: globalThis.__hud["04-game-tables"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
+  // `species`: the game's species registry, as 04-game-tables' chunk scan would hand it to the account read. One call:
   // `setGameTables` replaces the tables wholesale, so a second would drop whatever the first put there.
   if (events || registry) globalThis.__ca.setGameTables({ events, species: registry });
   const advice = readTurn(scene, turn => catchAdvice(turn, accountRead(scene)));

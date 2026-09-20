@@ -47,9 +47,10 @@
 // prints the tally.
 import { TYPES, iconOf, sandbox, typesOf } from "./01-core.js";
 import { arenaRebuiltBetween, hasTrainers, isGruntWave, kindIsRolled } from "./03-calendar.js";
+import { gameEvents } from "./04-game-tables.js";
 import { isCoverage, partyLuck } from "./08-party.js";
 import { blockedByHealBlock } from "./40-learn.js";
-import { gameEvents, spawnTimeOfDay } from "./47-biome.js";
+import { spawnTimeOfDay } from "./47-biome.js";
 
 const WILD = BattleType.WILD, TRAINER = BattleType.TRAINER, MYSTERY = BattleType.MYSTERY_ENCOUNTER;
 const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };

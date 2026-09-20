@@ -121,7 +121,8 @@ export const finalBstOf = x => {
  *
  * Elsewhere it sums `getLuck()` over the members `isAllowedInBattle()`, **+1 for each whose species the timed event
  * boosts**, clamps to 0–14, and then adds the event's own `luckBoost`, capped at 14 again. Both event terms need the
- * timed event manager, which is 47-biome's chunk scan's (`gameEvents()`); pass it as `event` where the caller has it.
+ * timed event manager, which is the chunk scan's (`04-game-tables.js`'s `gameEvents()`); pass it as `event` where
+ * the caller has it.
  * Without it the two terms fall away and the value is a floor, which is what it always was.
  *
  * `s` is the scene, needed only for the Daily fork; called without it, a Daily run falls back to that same floor.
