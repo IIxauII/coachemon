@@ -1769,32 +1769,43 @@ const aimedAt = (turn, t, foe) => {
 // plan and the catch advice, and opens the sandbox all three run in.
 // `team`: the whole-fight plan's model (35-team-plan's `teamPlanner`), built by 60-card before this one and handed in
 // so the ⚔ line can price what a turn costs the rest of the fight. Null on a wild wave, where there is no plan.
-export const battleModel = (turn, { team = null } = {}) => {
-  const { double, trainer, wave } = turn.facts;
+export const battleModel = (baseTurn, { team = null } = {}) => {
+  const { double, trainer, wave } = baseTurn.facts;
   // ---- The one gate (#183)
   // This turn's plan is played on the enemy's **exact** move, so the exact call is load-bearing: if the game's own
   // code can't be asked at a decision, the coach says so rather than quietly advising from an estimate. Everything
   // that reads the enemy model reads it through this file — the battle card's rows and field plan, the fight plan,
   // the catch advice — so the gate lives here, once, and they stop together. A breach retries on the next refresh;
   // the flicker is accepted. There is no fallback to the distribution, for display or for advice.
-  const gate = turn.exact?.() ?? { ok: true };
+  const gate = baseTurn.exact?.() ?? { ok: true };
   if (!gate.ok) return { kind: "battle", unavailable: gate.reason, title: `W${wave}${trainer ? ` · ${trainer.getName()}` : ""}`,
     field: null, pin: null, enemySwitches: [], ifStay: null, order: [], team: [], rows: [] };
-  const party = turn.facts.party.filter(p => p && p.hp > 0);
-  const foes = turn.facts.foes.filter(f => f && f.hp > 0);
-  const active = turn.activeFoes();
+  const party = baseTurn.facts.party.filter(p => p && p.hp > 0);
+  const foes = baseTurn.facts.foes.filter(f => f && f.hp > 0);
+  const active = baseTurn.activeFoes();
   // During a free switch the enemy hasn't decided anything: it picks its first command after our switch, against
   // the field we choose. Its switch rule isn't replayable against a hypothetical field, so predict none now; the
   // CommandPhase refresh predicts against the real field. (CheckSwitchPhase isn't offered in trainer battles.)
-  const freeSwitch = turn.facts.decision === "check-switch";
+  const freeSwitch = baseTurn.facts.decision === "check-switch";
   const predicted = new Map(freeSwitch ? [] : active.flatMap(f => {
-    const to = turn.enemyAction(f).switchTo;
-    return to ? [[f, { to, ratio: 1 }]] : [];
+    const a = baseTurn.enemyAction(f);
+    return a.switchTo ? [[f, { to: a.switchTo, ratio: 1, back: !!a.switchBack }]] : [];
   }));
   const switching = f => (predicted.get(f)?.ratio ?? 0) >= 1;
   // Plan against the field our moves will actually hit; if a switch is predicted, also keep the plan for
   // the case it stays, shown dim.
   const facing = active.map(f => (switching(f) ? predicted.get(f).to : f));
+  // A **returning** switch-in — the mon the other slot is withdrawing this same turn (#285) — arrives with
+  // `resetSummonData()`, so the stat stages it built up on the field are gone when it lands. It is the one switch-in
+  // the question arises for: an ordinary bench mon's stages were reset when *it* left, but this one is still on the
+  // field, and `to` is the live object. Plan on it at base stages; `ifStay` keeps `baseTurn`, where it never left.
+  const arriving = [...predicted.values()].filter(v => v.back).flatMap(v => {
+    const st = v.to.summonData?.statStages ?? [];
+    const stages = {};
+    for (let i = 1; i <= 5; i++) if (st[i - 1]) stages[i] = -st[i - 1];
+    return Object.keys(stages).length ? [{ mon: v.to, stages }] : [];
+  });
+  const turn = arriving.length ? baseTurn.assuming(arriving) : baseTurn;
   // Targets are field positions, so a lock resolved against the field holds for the switch-in taking that position.
   const locked = lockedCommand(turn, party, active, active.length === 2);
   // The panel refreshes every second; a plan only changes with what the turn's key covers (and slot 0's command).
@@ -1804,7 +1815,7 @@ export const battleModel = (turn, { team = null } = {}) => {
   const plan = turn.memo(`field:${ids(party)}|${ids(facing)}|${ids(attackers)}|${double}|${freeSwitch}|${lockKey}`,
     () => fieldPlan(turn, party, facing, double, attackers, { freeSwitch, locked, team }));
   const ifStay = active.some(switching)
-    ? turn.memo(`stay:${ids(party)}|${ids(active)}|${double}|${lockKey}`, () => fieldPlan(turn, party, active, double, active, { locked }))
+    ? baseTurn.memo(`stay:${ids(party)}|${ids(active)}|${double}|${lockKey}`, () => fieldPlan(baseTurn, party, active, double, active, { locked }))
     : null;
 
   // Foes on the field take their pokémon and move from the field plan, so the rows never contradict it.
@@ -1892,6 +1903,9 @@ export const battleModel = (turn, { team = null } = {}) => {
     pin: plan?.pin ?? null,
     enemySwitches: active.filter(f => predicted.has(f)).map(f => ({
       from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
+      // The switch-in is the mon the other slot is withdrawing this turn: it needs its own wording, because
+      // `⇆ B → D` with the usual tail, rendered while the player watches D leave the other slot, reads as a broken HUD.
+      back: !!predicted.get(f).back,
     })),
     ifStay: ifStay ? ifStay.view.slots : null,
     title: `W${wave}${trainer ? ` · ${trainer.getName()}` : ""}`,

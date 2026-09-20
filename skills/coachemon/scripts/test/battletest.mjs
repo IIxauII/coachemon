@@ -21,6 +21,8 @@ const teraMon = (...args) => {
   p.getTypes = () => (p.isTerastallized ? [teraType] : base);
   return p;
 };
+// A mon already carrying stat stages when the panel reads it (Stat i lives at `statStages[i - 1]`).
+const withStages = (p, statStages) => { p.summonData.statStages = statStages; return p; };
 const party = [
   mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Heat Wave","Fire",95,"S",6],["Flare Blitz","Fire",120,"P"],["Air Slash","Flying",75,"S"],["Flamethrower","Fire",90,"S"]], true),
   mon("Venusaur", 65, ["Grass","Poison"], "Overgrow", [200,135,122,144,144,118], [["Double-Edge","Normal",120,"P"],["Power Whip","Grass",120,"P"]], true),
@@ -116,6 +118,17 @@ const scenarios = {
   intimidate: { double: false, party: [
     mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
     foes: [mon("Granbull", 30, ["Fairy"], "Intimidate", [120,90,75,40,60,45], [["Tackle","Normal",40,"P"]], true)] },
+  // Both slots of a doubles trainer name the same bench index (#285): a force-switch has broken the party's tag
+  // parity, so they score one bench and `getNextSummonIndex` hands them the same answer. The game resolves them in
+  // field order, so slot 1's send-in is the mon slot 0 has already withdrawn — a **return**, with its own wording.
+  // Arcanine goes out at +2 Atk and comes back at base, because a switch-in arrives with `resetSummonData()`.
+  doubleReturn: { double: true, trainer: { isBoss: false }, bench: [2], summonIndex: 2, party: [
+    mon("Blastoise", 80, ["Water"], "Torrent", [250,130,170,140,180,130], [["Wave Crash","Water",120,"P"],["Flash Cannon","Steel",80,"S"]], true),
+    mon("Venusaur", 80, ["Grass","Poison"], "Overgrow", [260,140,140,160,160,120], [["Power Whip","Grass",120,"P"],["Sludge Bomb","Poison",90,"S"]], true)],
+    foes: [
+      withStages(mon("Arcanine", 80, ["Fire"], "Intimidate", [260,170,130,150,130,140], [["Flare Blitz","Fire",120,"P"]], true), [6,0,0,0,0,0,0]),
+      mon("Ludicolo", 80, ["Water","Grass"], "Swift Swim", [250,110,120,150,170,110], [["Surf","Water",90,"S"]], true),
+      mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [270,155,130,110,160,135], [["Waterfall","Water",80,"P"]], false)] },
 };
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
 const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
@@ -132,9 +145,11 @@ for (const [label, sc] of Object.entries(scenarios)) {
     for (const f of sc.foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => { pm.queueMessage("side effect"); return 1; }; f.id = f.name; }
     for (const p of sc.party) p.id = p.name;
     const trainer = sc.trainer ? { getName: () => "Tester", config: sc.trainer, isDouble: () => false,
-      getPartyMemberMatchupScores: () => { pm.queueMessage("side effect"); return sc.foes.slice(1).map((f, i) => [i + 1, 5]); },
+      // `bench` / `summonIndex` let a scenario name the party indices the trainer scores and the one it sends in;
+      // the defaults are every foe but the first, and the first of them.
+      getPartyMemberMatchupScores: () => { pm.queueMessage("side effect"); return (sc.bench ?? sc.foes.map((_f, i) => i).slice(1)).map(i => [i, 5]); },
       getSortedPartyMemberMatchupScores: sc2 => sc2.slice().sort((a, b) => b[1] - a[1]),
-      getNextSummonIndex: () => 1, shouldTera: e => !!sc.teras?.includes(e.name) } : null;
+      getNextSummonIndex: () => sc.summonIndex ?? 1, shouldTera: e => !!sc.teras?.includes(e.name) } : null;
     const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
     globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
     const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };

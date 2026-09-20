@@ -75,9 +75,12 @@ export const drawBattle = m => {
     ...(sl.move ? [badge(sl.type), h("span", { marginRight: "2px" }, sl.move)] : [h("span", dim, "—")]),
     ...(sl.target === "both" ? [h("span", dim, "→ both")] : sl.target ? [h("span", dim, "→"), mon(sl.target.icon, sl.target.name, 18)] : []),
   ];
+  // `back`: the switch-in is the mon the other slot is withdrawing this same turn, walking straight back in on this
+  // one (#285). Named as a return, because the usual tail rendered while the player watches it leave reads as a bug.
   const enemySwitches = m.enemySwitches.map(es => line("⇆", "#c9f",
     mon(es.from.icon, es.from.name, 20), h("span", { color: "#c9f", margin: "0 3px" }, "→"),
-    mon(es.to.icon, es.to.name, 20), h("span", { color: "#c9f", marginLeft: "3px" }, "switches — moves aimed at it")));
+    mon(es.to.icon, es.to.name, 20), h("span", { color: "#c9f", marginLeft: "3px" },
+      es.back ? "returns from the other slot — moves aimed at it" : "switches — moves aimed at it")));
   const ifStay = m.ifStay && view() === "full"
     ? line("↺", "#9aa", h("span", { ...dim, marginRight: "4px" }, "if it stays:"), ...m.ifStay.flatMap((sl, i) => [i ? h("span", dim, " · ") : null, ...slotMove(sl)]))
     : null;
