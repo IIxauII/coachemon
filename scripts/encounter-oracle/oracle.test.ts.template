@@ -116,9 +116,8 @@ interface Case extends Arrival {
   known?: boolean;
 }
 
-/** The card's own type names (`01-core.js`'s `TYPES`), indexed the way the game indexes `PokemonType`. */
-const TYPE_NAMES = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire",
-  "Water", "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy"];
+/** The card's own type name for a `PokemonType`, read off the bundle rather than copied, so a pin bump can't drift it. */
+const typeName = (t: number): string => loadHud()["01-core"].TYPES[t];
 
 const DEFAULT_PARTY = [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.ABRA];
 // The breeder puts up the party's three least-friendly members and gates on four, so the default three would put the
@@ -172,9 +171,9 @@ const CASES: Case[] = [
   { name: "Fun and Games", type: MysteryEncounterType.FUN_AND_GAMES, biome: BiomeId.PLAINS, wave: 37, party: DEFAULT_PARTY },
 
   // Ultra tier. `runToMysteryEncounter` forces the type outright, so no wave-range or party-size gate actually refuses
-  // one here — but the card reads both (Training Session's bar count, Trash to Treasure's remaining shops, the
-  // breeder's three on offer), so each case arrives at a wave and party the encounter could really spawn on rather
-  // than at upstream's blanket wave 45.
+  // one here — but the card reads wave and party alike (Trash to Treasure's remaining shops, the breeder's three on
+  // offer), so a gated encounter arrives at a wave and party it could really spawn on rather than at upstream's
+  // blanket wave 45. The ungated ones stay at 45.
   //
   // Two rules pick those waves, and neither is the encounter's own gate: `isMysteryEncounterValidForWave` refuses a
   // boss wave (`% 10 === 0`) and the wave after one (`% 10 === 1`), so an encounter gated "from wave 100" is first
@@ -557,14 +556,20 @@ describe("Coachemon oracle - what the card claims against what the game does", (
 
   // ---- Ultra and rogue tier
   //
-  // Two of these encounters fight the party and one transforms it, so what the oracle asserts needs saying once. The
-  // claim under test is the card as the option screen shows it, and a claim is walked past that screen only when
-  // doing so costs nothing and settles the claim outright: Dark Deal's victim and Clowning Around's type shuffle are
-  // both written by a *pre*-option phase, so one `chooseOption` reads them with the option itself never taken, and
-  // Weird Dream's swap is checked by running its non-battle option out, because the party afterwards *is* the claim.
-  // The fights — A Trainer's Test, The Winstrate Challenge, the breeder's, Trash to Treasure's — are never run: they
-  // would settle nothing the screen does not already carry, since what the card claims about them it reads off
-  // `enemyPartyConfigs` and `misc` before a button is pressed. Those are checked against that state directly.
+  // Several of these encounters fight the party and one transforms it, so what the oracle asserts needs saying once.
+  // The claim under test is the card as the option screen shows it, and a claim is walked past that screen only when
+  // doing so is what settles it:
+  //
+  // - Dark Deal's victim and Clowning Around's type shuffle are both written by a *pre*-option phase, so a single
+  //   `chooseOption` reads them with the option itself never run out. Dark Deal's starter tier is the exception on
+  //   its own card: the fork rolls it and only the boss it produced can be read back, so that one option is run out.
+  // - Weird Dream's swap is checked by running its non-battle option out, because the party afterwards *is* the claim.
+  // - A Trainer's Test is run out too, and for the opposite reason to the rest: its config carries no
+  //   `pokemonConfigs`, so the card's count comes off a party template the game need not use, and only the party it
+  //   fields settles whether that count was right.
+  // - The remaining fights — The Winstrate Challenge, the breeder's, Trash to Treasure's — are never run: what the
+  //   card claims about them it reads off `enemyPartyConfigs` and `misc` before a button is pressed, and that state
+  //   is what the battle is built from. Those are checked against it directly.
 
   // The victim is `getRandomPlayerPokemon(true, false, true)`, drawn in the pre-option phase, which also writes the
   // name it took into the `pokeName` dialogue token — so the game names its own victim and the card's guess at it is
@@ -596,7 +601,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     await runOptionOut(game, { isBattle: true });
     const boss = game.scene.getEnemyParty()[0];
     const cost = speciesDataRegistry.getStarterCost(boss.species.speciesId);
-    const [min, max] = tier === "9–10" ? [9, 10] : [Number(tier), Number(tier)];
+    const [min, max = min] = tier.split("–").map(Number);
+    expect(Number.isFinite(min) && Number.isFinite(max), `the card's tier "${tier}" reads as a band`).toBe(true);
     const types: number[] = me.misc.removedTypes;
     const servable = speciesDataRegistry
       .getAllStarters(true)
@@ -606,10 +612,13 @@ describe("Coachemon oracle - what the card claims against what the game does", (
         return c >= min && c <= max;
       });
     console.log(`ORACLE-DIFF dark-deal-tier claimed=${tier} boss=${boss.species.name} cost=${cost} servable=${servable}`);
-    if (servable) {
-      expect(cost, `the card claimed tier ${tier}; ${boss.species.name} costs ${cost}`).toBeGreaterThanOrEqual(min);
-      expect(cost).toBeLessThanOrEqual(max);
-    }
+    // The pinned seed lands on a band the registry can serve, so that is pinned too rather than left as a guard: a
+    // pin bump that makes the game widen instead goes red here — "re-read this" — instead of quietly asserting
+    // nothing. `servable` reads types only, where the game also drops its excluded bosses, so it is the wider test of
+    // the two: if it ever goes false the band really was unservable, and the cost below is not the claim to check.
+    expect(servable, `starter tier ${tier} has a starter of types ${types} to draw from`).toBe(true);
+    expect(cost, `the card claimed tier ${tier}; ${boss.species.name} costs ${cost}`).toBeGreaterThanOrEqual(min);
+    expect(cost).toBeLessThanOrEqual(max);
   });
 
   // Every member's second type is redrawn in the pre-option phase, onto `customPokemonData.types`. The card replays
@@ -630,11 +639,11 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const me = game.scene.currentBattle.mysteryEncounter!;
     expect(card.options[0].outcome).toContain(me.dialogueTokens.ability);
     const blace: number[] = me.enemyPartyConfigs[0].pokemonConfigs[1].customPokemonData.types;
-    expect(card.options[0].outcome).toContain(blace.map(t => TYPE_NAMES[t]).join(" / "));
+    expect(card.options[0].outcome).toContain(blace.map(t => typeName(t)).join(" / "));
 
     await chooseOption(game, 3);
 
-    const actual = game.scene.getPlayerParty().map(p => [p.name, TYPE_NAMES[p.customPokemonData.types![1]]]);
+    const actual = game.scene.getPlayerParty().map(p => [p.name, typeName(p.customPokemonData.types![1])]);
     console.log(`ORACLE-DIFF clown claimed=${JSON.stringify(pairs)} actual=${JSON.stringify(actual)}`);
     expect(actual).toEqual(pairs);
   });
@@ -655,7 +664,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const partyBefore = game.scene.getPlayerParty().length;
     await pickOption(game, 1);
 
-    const bought = game.scene.getPlayerParty()[game.scene.getPlayerParty().length - 1];
+    const bought = game.scene.getPlayerParty().at(-1)!;
     console.log(`ORACLE-DIFF salesman claimed=${claimedPrice}/${claimedName} actual=${before - game.scene.money}/${bought.name} L${bought.level}`);
     expect(before - game.scene.money).toBe(claimedPrice);
     expect(game.scene.getPlayerParty()).toHaveLength(partyBefore + 1);
@@ -716,33 +725,47 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(after).toEqual(pairs.map(([, to]) => to));
   });
 
-  // Both of these are trainer fights the card can't see the party of, so all it has is the size the encounter set —
-  // `pokemonConfigs` where there are any, else `trainerConfig.partyTemplates[0].size`. Checked at the screen; running
-  // either out would only start a fight that settles nothing about the count.
-  it.each([
-    { name: "A Trainer's Test", type: MysteryEncounterType.A_TRAINERS_TEST, pattern: /^fight (.+?): (\d+) mons/ },
-    { name: "The Winstrate Challenge", type: MysteryEncounterType.THE_WINSTRATE_CHALLENGE, pattern: /^(\d+) trainer battles back to back, (\d+) mons in all/ },
-  ])("$name: the party size the card names is the one the encounter set up", async ({ type, pattern }) => {
-    await arrive(game, caseFor(type));
+  // A Trainer's Test is the one trainer fight whose config carries no `pokemonConfigs` at all, so the card's count
+  // falls through to `trainerConfig.partyTemplates[0].size` — and `46-encounter.js` warns in its own comment that
+  // `Trainer.getPartyTemplate` need not pick template 0. Reading that same field back would assert the card's rule
+  // against itself, so the fight is run and the count checked against the party the game actually fields.
+  it("A Trainer's Test: the party size the card names is the party the game fields", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.A_TRAINERS_TEST));
 
     const card = readCard(game);
     const outcome: string = card.options[0].outcome;
-    const named = pattern.exec(outcome);
+    const named = /^fight (.+?): (\d+) mons/.exec(outcome);
+    expect(named, `option 1 reads "${outcome}"`).toBeTruthy();
+    const [, who, claimed] = named!;
+
+    const cfgs = game.scene.currentBattle.mysteryEncounter!.enemyPartyConfigs;
+    expect(cfgs, "the encounter sets up one trainer").toHaveLength(1);
+    expect(who).toBe(cfgs[0].trainerConfig.name);
+
+    await pickOption(game, 1, { isBattle: true });
+
+    const fielded = game.scene.getEnemyParty().length;
+    console.log(`ORACLE-DIFF A_TRAINERS_TEST outcome="${outcome}" claimed=${claimed} fielded=${fielded}`);
+    expect(Number(claimed)).toBe(fielded);
+  });
+
+  // The Winstrate Challenge sets `pokemonConfigs` on every one of its five configs, so the size the card reads is the
+  // party each battle is built from rather than a template it might not use. Running five fights out would settle
+  // nothing that state does not already carry, so this is checked at the screen.
+  it("The Winstrate Challenge: the battles and total the card names are the ones the encounter set up", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.THE_WINSTRATE_CHALLENGE));
+
+    const card = readCard(game);
+    const outcome: string = card.options[0].outcome;
+    const named = /^(\d+) trainer battles back to back, (\d+) mons in all/.exec(outcome);
     expect(named, `option 1 reads "${outcome}"`).toBeTruthy();
 
     const cfgs = game.scene.currentBattle.mysteryEncounter!.enemyPartyConfigs;
-    const sizeOf = (cfg: { pokemonConfigs?: unknown[]; trainerConfig?: { partyTemplates?: { size: number }[] } }) =>
-      cfg.pokemonConfigs?.length || cfg.trainerConfig?.partyTemplates?.[0]?.size || 0;
-    const mons = cfgs.reduce((n: number, cfg) => n + sizeOf(cfg), 0);
-    console.log(`ORACLE-DIFF ${MysteryEncounterType[type]} outcome="${outcome}" configs=${cfgs.length} mons=${mons}`);
+    const mons = cfgs.reduce((n: number, cfg) => n + (cfg.pokemonConfigs?.length ?? 0), 0);
+    console.log(`ORACLE-DIFF THE_WINSTRATE_CHALLENGE outcome="${outcome}" configs=${cfgs.length} mons=${mons}`);
 
-    if (cfgs.length > 1) {
-      // The Winstrate Challenge names both the run of battles and the total across them.
-      expect(Number(named![1])).toBe(cfgs.length);
-      expect(Number(named![2])).toBe(mons);
-      return;
-    }
-    expect(named![1]).toBe(cfgs[0].trainerConfig.name);
+    expect(cfgs.every(cfg => cfg.pokemonConfigs?.length), "every Winstrate battle brings its own party").toBeTruthy();
+    expect(Number(named![1])).toBe(cfgs.length);
     expect(Number(named![2])).toBe(mons);
   });
 });
