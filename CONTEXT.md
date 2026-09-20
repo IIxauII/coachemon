@@ -263,7 +263,9 @@ The **coach**'s look at a battle while the game waits on the player's decision (
 
 ## Spare hit
 
-In a double, the second of two hits aimed at the same foe when the first alone already fells it. A spare hit is never wasted: the game retargets a still-queued single-target move whose target has fainted onto the surviving foe (a **redirect**), so it lands there carrying the move its slot chose for the dying foe, not one picked for the survivor. The coach prices the slot on both branches at once — the redirect's worth where the target falls first, its own worth where it doesn't — so it spreads only when the slot has a materially better move for the other foe than the redirect would carry.
+In a double, the second of two hits aimed at the same foe when the first alone already fells it. A spare hit is never wasted: the game retargets a still-queued single-target move whose target has fainted onto the surviving foe (a **redirect**), so it lands there carrying the move its slot chose for the dying foe, not one picked for the survivor. The coach prices the slot on both branches at once — the redirect's worth where the target falls first, its own worth where it doesn't — so it spreads when the slot has a materially better move for the other foe than the redirect would carry, and focuses when it hasn't. A redirect settles only the turn it lands in, and the slot chooses freely again from the next one, so carrying the wrong move costs a turn rather than the fight.
+
+Priced that way the pick turns on a second axis too: how sure the first hit is. The less certain the partner's KO, the more of the slot's worth is its own branch, where the hit is the **insurance** that fells the target if the partner's misses. A doubtful enough KO focuses a pair that would spread on the same field with the same movepool were it certain.
 
 ## Return
 
