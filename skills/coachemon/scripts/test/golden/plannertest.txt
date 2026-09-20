@@ -124,7 +124,7 @@ Munchlax Munchlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Salamence 50%
 ⚔ Salamence Dragon Dragon Claw → Munchlax 1 hit
 ◎ focus Munchlax : KO before it moves
 == doubles: the partner is scored on the hypothesis (live)
-no Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Munchlax 3 hits
+no Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
 Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
 == doubles spare hit: spread, the redirect would carry the wrong move (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
@@ -154,9 +154,9 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50
 ♟ winnable · ~2 steps + {Show the fight plan}
 == doubles: two killable foes, one far more dangerous (live)
 🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
-⚔ Garchomp Dragon Dragon Claw → Dunsparce 2 hits
-⚔ Lucario Fighting Aura Sphere → Dunsparce 2 hits
-◎ focus Dunsparce : KO this turn
+⚔ Garchomp Dragon Dragon Claw → Porygon-Z 2 hits
+⚔ Lucario Fighting Aura Sphere → Porygon-Z 2 hits
+◎ focus Porygon-Z : KO this turn
 foes weak to: Fighting ×2
 Porygon-Z Porygon-Z L80 Normal 100% ▲ Fighting ↯ Normal Tri Attack → Garchomp 50% likely · 50% first
 Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · 50% first

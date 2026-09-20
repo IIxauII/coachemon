@@ -250,16 +250,38 @@ saves; a mon of ours lost is worth the turns its absence costs; chip damage laid
 worth the turns of ours it spares later. One currency is what lets a turn's mechanics, a **fight plan**'s price and the
 cost of losing a mon be added up at all.
 
-Removing a foe is the one the coach prices **flat**. A foe gone counts the same whether it was about to take a third of
-our health or a tenth; only the branch where it had not yet acted is scaled by what it was about to do. Pricing a
-removal in proportion to the danger it carried changes no advice on any field measured so far — so the flat price is not
-what decides whether a pair focuses or spreads, and on a field where the choice is between a foe about to fell us and a
-harmless one, it is not enough to overrule what does.
+What removing a foe is worth has its own entry: the **removal price**.
 
 A quantity in some other unit — a bare probability, a fraction of a health bar — cannot be compared with one in turns,
 however reasonable each looks alone; summing them silently picks an exchange rate nobody chose. So a weight the coach
 carries is stated in turns before it is given a number, and one whose unit is unclear is a bug waiting rather than a
 value to tune.
+
+## Field threat
+
+In a double, the chance one of ours falls before it lands its kill, taken against the whole field rather than against
+the foe it is aiming at: the worst duel on the field. It is the same number wherever that mon aims, which is the point
+— the other foe hits us whichever foe we choose, so a target may not be charged for danger that arrives either way.
+Charging it is what made the **coach** avoid the foe about to kill one of ours, since aiming there read as the losing
+trade.
+
+What a target *is* answerable for stays with it: how surely we can fell that foe, whether we take it off the field
+before it acts, and what our move costs to use. In a single battle the field is the one foe, so the field threat and
+the duel are the same number and nothing changes.
+
+## Removal price
+
+What taking a foe off the field is worth, in **turn score**: the bare fact of it, plus the danger it was carrying. The
+second part is every turn that foe would have acted and now will not, so a foe about to take most of our health is
+worth more to remove than a harmless one — which is what makes a pair focus the dangerous foe rather than the one it
+can kill most cleanly.
+
+The price is multiplied by the odds the KO actually happens, so a dangerous foe the pair cannot remove this turn earns
+nothing from it and the killable foe is taken instead. The limit needs no rule of its own: a removal that will not
+happen is worth nothing to price.
+
+Separate from it, and kept: removing a foe *before it acts* is worth the hits that cancels, on top of the removal
+itself. That is the one thing a target choice genuinely changes about the damage coming at us this turn.
 
 ## Moveset prior
 
