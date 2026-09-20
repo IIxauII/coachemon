@@ -2,6 +2,7 @@
 // Drives the coach HUD's Mystery Encounter card against the real game running headless on upstream's own test
 // harness, so the card's claims are checked against what the game actually does rather than against a mock.
 import { readFileSync } from "node:fs";
+import { timedEventManager } from "#app/global-event-manager";
 import { speciesDataRegistry } from "#app/global-species-data-registry";
 import { AbilityId } from "#enums/ability-id";
 import { BerryType } from "#enums/berry-type";
@@ -37,6 +38,11 @@ function loadHud() {
   g.window = globalThis;
   // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
   (0, eval)(readFileSync(BUNDLE, "utf8"));
+  // In a page the HUD finds the game's tables by importing its already-loaded `/assets/*.js` chunks and picking the
+  // exports by shape. Under vitest there are no such chunks, so every card that reads a table would degrade — and a
+  // degraded card is not the card this oracle is here to question. The clone holds the real modules, so hand over
+  // the same two objects the scan would have found. They are the game's own singletons, not copies.
+  g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager });
   return g.__hud;
 }
 
@@ -854,6 +860,51 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(Number(named![2])).toBe(mons);
   });
 
+  // Safari Zone's fee. Every claim below this one is about a turn the game has already set up; this is the only one
+  // the card makes *before* a coin is spent, and the only one no phase writes down anywhere to be read back — the
+  // three mons are drawn in forks of their own (`waveIndex x 1000 x remaining`) that stay sealed until each is
+  // summoned. So it is settled the only way it can be: pay, and walk all three out.
+  it("Safari Zone: the three mons the card names before the fee are the three the game summons", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.SAFARI_ZONE));
+
+    const card = readCard(game);
+    const outcome: string = card.options[0].outcome;
+    expect(card.options[0].exact, "the fee option claims an exact three").toBe(true);
+    // `$1,010: Rattata L32, Pidgey ★shiny L32, Caterpie L32 (hidden ability) in turn — …`
+    const named = /^\$[\d,]+: (.+?) in turn — /.exec(outcome);
+    expect(named, `option 1 reads "${outcome}"`).toBeTruthy();
+    const claimed = named![1].split(", ").map(one => {
+      const m = /^(.+?)( ★shiny)? L(\d+)( \(hidden ability\))?$/.exec(one);
+      expect(m, `"${one}" is a named mon`).toBeTruthy();
+      return { shiny: !!m![2], name: m![1], level: Number(m![3]), hiddenAbility: !!m![4] };
+    });
+    expect(claimed, "the fee names all three").toHaveLength(3);
+
+    await enterSafari(game);
+
+    const me = () => game.scene.currentBattle.mysteryEncounter!;
+    const actual: { shiny: boolean; name: string; level: number; hiddenAbility: boolean }[] = [];
+    for (let i = 0; i < 3; i++) {
+      const mon = me().misc.pokemon;
+      expect(mon, `mon ${i + 1} is on the field`).toBeTruthy();
+      actual.push({
+        shiny: mon.isShiny(),
+        name: mon.species.name,
+        level: mon.level,
+        hiddenAbility: mon.abilityIndex === 2,
+      });
+      // Running is the one turn that always ends on the next mon: a ball might catch this one, and bait and mud
+      // leave it standing. The third is left alone, since running there ends the safari.
+      if (i < 2) {
+        await safariTurn(game, RUN);
+      }
+    }
+
+    console.log(`ORACLE-DIFF safari-zone claimed=${JSON.stringify(claimed)} actual=${JSON.stringify(actual)}`);
+    expect(actual).toEqual(claimed);
+  });
+
+
   // ---- Safari Zone's minigame turn. Every other case here stops on the encounter's own option screen; this one pays
   // the fee and walks into the screen the encounter re-opens with, which no case had driven before.
   //
@@ -971,21 +1022,31 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const me = game.scene.currentBattle.mysteryEncounter!;
 
     const seen: string[] = [];
+    const names: string[] = [];
+    const runLines: string[] = [];
     for (const left of [2, 1, 0]) {
       const card = readCard(game);
       seen.push(`${card.minigame.mon}:${card.minigame.left}`);
+      names.push(card.minigame.mon);
+      runLines.push(card.options[RUN].outcome);
       expect(me.misc.safariPokemonRemaining).toBe(left);
       expect(card.minigame.left).toBe(left);
       expect(card.minigame.catchStage, "every mon starts on fresh stages").toBe(0);
       expect(card.minigame.fleeStage, "every mon starts on fresh stages").toBe(0);
-      expect(card.options[RUN].outcome).toBe(
-        left
-          ? `let it go — ${left} mon${left === 1 ? "" : "s"} left after this one`
-          : "let it go — the last of the three, so this ends the safari",
-      );
       if (left > 0) {
         await safariTurn(game, RUN);
       }
+    }
+
+    // The count, and — since #313 — the mon the run option says is coming. That name is checked against the mon the
+    // game actually summoned on the *next* turn of this same walk, never against the card's own claim about it.
+    expect(runLines[2]).toBe("let it go — the last of the three, so this ends the safari");
+    for (const [i, left] of [2, 1].entries()) {
+      const coming = names[i + 1];
+      const plural = `${left} mon${left === 1 ? "" : "s"} left after this one`;
+      expect(runLines[i], `turn ${i + 1} names the mon the game then summoned`).toMatch(
+        new RegExp(`^let it go — ${coming}( ★shiny)? L\\d+( \\(hidden ability\\))? is next, ${plural}$`),
+      );
     }
 
     // The card said letting the third one go ends the safari, so this walks off the last menu and out of the

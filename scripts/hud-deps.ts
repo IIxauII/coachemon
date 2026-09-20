@@ -475,6 +475,36 @@ export const HUD_DEPS = {
   ],
 
   /**
+   * §13. Safari Zone's three mons, replayed before the fee is paid (#313). The whole
+   * module is a replay of one draw sequence, so every function in it *and their order*
+   * are the dependency: `summonSafariPokemon`'s fork offset, the parameters it hands
+   * `getRandomEncounterPokemon`, that function's own branch order (the event arm before
+   * the species function, both shiny rerolls before the hidden-ability one), and the
+   * two `randSeedInt` calls `getRandomSpeciesByStarterCost` makes in the order it makes
+   * them — the index is drawn against the *unshuffled* band. The two base rates are
+   * spelled out as numbers, so a rebalance moves the odds silently. The reroll methods
+   * and the constructor are *called*, not re-implemented, which is why the shiny
+   * threshold picks up the player's Shiny Charm stacks without this module knowing.
+   */
+  "44-safari.js": [
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#summonSafariPokemon`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#getSafariSpeciesSpawn`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#NUM_SAFARI_ENCOUNTERS`,
+    `src/data/mystery-encounters/utils/encounter-phase-utils.ts#getRandomEncounterPokemon`,
+    `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#getRandomSpeciesByStarterCost`,
+    `src/data/balance/special-species-groups.ts#NON_LEGEND_PARADOX_POKEMON`,
+    `src/data/balance/rates.ts#BASE_SHINY_CHANCE`,
+    `src/data/balance/rates.ts#BASE_HIDDEN_ABILITY_RATE`,
+    `${P}#Pokemon.trySetShinySeed`,
+    `${P}#Pokemon.tryRerollHiddenAbilitySeed`,
+    `${SCENE}#BattleScene.addEnemyPokemon`,
+    `${SCENE}#BattleScene.executeWithSeedOffset`,
+    `src/battle.ts#Battle.getLevelForWave`,
+    `src/timed-event-manager.ts#TimedEventManager.getAllValidEventEncounters`,
+    `src/utils/common.ts#randSeedItem`,
+  ],
+
+  /**
    * §20. Catch odds and whether a ball is allowed at all, both re-implemented; the
    * fusion-aware shiny check and its candy, the event's shiny multiplier, and the move
    * that leaves a foe at 1 HP. What a catch does (Limited Catch, a full party, the dex

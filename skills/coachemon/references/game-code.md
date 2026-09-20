@@ -1384,6 +1384,24 @@ chances rather than a lookup. An override option is not on `me.options`, so `me.
 them: the card tells the two menus apart by that and judges a Safari turn positionally, leaving every other secondary
 menu to the generic reading.
 
+**The three mons are readable before the fee is paid** (#313). `summonSafariPokemon` (`:322`) sows its own fork at
+`waveIndex × 1000 × safariPokemonRemaining` — 3, 2 and 1 — which is *not* the `getSeedOffset()` the re-entries move by
+512, so all three are settled up front and stay put for the whole minigame. Inside each fork,
+`getRandomEncounterPokemon` (`encounter-phase-utils.ts:989`) draws in this order: the event arm (`randSeedInt(100) <
+eventChance` **only** when `getAllValidEventEncounters` is non-empty, so with no timed event live the branch costs the
+stream nothing), else `getSafariSpeciesSpawn` → `getRandomSpeciesByStarterCost([0, 5], NON_LEGEND_PARADOX_POKEMON,
+undefined, false, false, false)`, whose `randSeedInt(band.length)` is drawn against the **unshuffled** band and read out
+of the shuffled one; then `new EnemyPokemon(…)`, whose constructor rolls shiny; then one extra `trySetShinySeed(64,
+true, 0)` and one `tryRerollHiddenAbilitySeed(256)` — the doubled rolls, the hidden-ability one skipped when the
+constructor already landed `abilityIndex === 2`. `getLevelForWave()` is called **inside** the fork, and it draws: the
+three mons can sit at different levels on one wave. `eventChance` is module state (`50`, `+25` per non-event spawn, and
+no further rise once any event spawn has happened, reset by `withOnInit`) and so unreadable from the scene — but it is
+derivable, since `withOnInit` puts mon 1 at 50 and each replayed mon says whether the next starts over. The shiny
+threshold is **not** a constant: `trySetShinySeed(…, true, …)` multiplies in `getShinyEncounterMultiplier()` and applies
+`ShinyRateBoosterModifier`, the player's Shiny Charm stacks. The pool is `getAllStarters(true)`, a static table, not the
+arena pool — so unlike a wild spawn nothing rebuilds it. Checked against the real game end to end by the encounter
+oracle, which pays the fee and compares all three.
+
 **The five ultra encounters** (tier weight 19) **and the four rogue ones** (weight 3, and `withMaxAllowedEncounters(1)`
 on three of them, so at most one a run). Same file convention as the table above; bare line numbers are in that file.
 
