@@ -74,7 +74,7 @@ const restrictionOn = (p, pm) => {
 };
 // The restrictions that cost `p` at least one move this turn, damaging or status, in tag order and without repeats.
 // Empty where the pool shrank for any other reason, or didn't shrink at all.
-// @only 25-turn, tests: sceneUsable
+// @only 25-turn, tests: sceneStopped
 export const sceneStopped = (env, p, def) => [...new Set([...plainUsable(p), ...plainUsable(p, true)]
   .filter(pm => !selectable(env, p, def, pm))
   .map(pm => restrictionOn(p, pm))
