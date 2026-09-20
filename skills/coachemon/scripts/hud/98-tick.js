@@ -2,7 +2,7 @@
 // draw goes with which kind. It decides nothing about the card itself — 60-card does that — and formats nothing.
 import { readCard } from "./60-card.js";
 import { previewCheck } from "./48-preview.js";
-import { gameEvents, gameTables } from "./47-biome.js";
+import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
 import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw, setShownCardWave, view } from "./90-render.js";

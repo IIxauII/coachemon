@@ -120,7 +120,8 @@ const mount = ({ view = "full", labels = ["Swamp", "Construction Site"], party =
   globalThis.localStorage = { getItem: () => view, setItem() {} };
   eval(bundle("hud", { expose: true }));
   // The chunk scan finds nothing under node: hand over what it would have found, and draw the card again.
-  const { setGameTables, spawnsFor, formsFor, spawnTimeOfDay } = globalThis.__hud["47-biome"];
+  const { setGameTables } = globalThis.__hud["04-game-tables"];
+  const { spawnsFor, formsFor, spawnTimeOfDay } = globalThis.__hud["47-biome"];
   setGameTables(t);
   globalThis.__hud["98-tick"].tick();
   globalThis.__bm = { spawnsFor, formsFor, spawnTimeOfDay };

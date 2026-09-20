@@ -12,7 +12,7 @@
 //   `items` atlas): pb gb ub rb mb.
 // - Status (getStatusEffectCatchRateMultiplier): `case 1:case 2:case 3:case 6:return 1.5;case 4:case 5:return 2.5`
 //   → poison/toxic/paralysis/burn ×1.5, sleep/freeze ×2.5. Shiny: `timedEventManager.getShinyCatchMultiplier()`,
-//   `activeEvent()?.shinyCatchMultiplier ?? 2` (×3 during some events). The manager is module-private: 47-biome's
+//   `activeEvent()?.shinyCatchMultiplier ?? 2` (×3 during some events). The manager is module-private: 04-game-tables'
 //   chunk scan picks it up by shape, and ×2 stands in until it has. `isShiny()` is the base *or* the fusion shiny.
 // - Shakes (the tween's onRepeat): `if(t++<(k?1:3)) x===-1||k||w>=255||e.randBattleSeedInt(65536)<E ? shake : failCatch
 //   else if(k&&e.randBattleSeedInt(65536)>=E) failCatch else lock` → a normal throw needs 3 checks of E/65536, a

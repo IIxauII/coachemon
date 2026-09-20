@@ -836,7 +836,7 @@ Each was accepted knowingly by a closed ticket. None blocks building; a build ti
 | Orion's opt-in auto-update of store installs clears site permissions (orionfeedback #7361) | [Orion after the AppleScript route retires](https://github.com/IIxauII/coachemon/issues/118) | none; rung 7 covers the missing tab |
 | Orion after sleep/wake (orionfeedback #14474), long idle, hidden tab | [Agent transport on Orion](https://github.com/IIxauII/coachemon/issues/150) | reconnect-on-wake |
 | AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/coachemon/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | named fallbacks (§5.3, §8.1) |
-| A CWS reviewer accepts the declared remote code (`47-biome.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | declared Yes (§6) |
+| A CWS reviewer accepts the declared remote code (`04-game-tables.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | declared Yes (§6) |
 | Chrome Web Store API v2 can cancel a pending review — **confirmed, no longer a premise** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/coachemon/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
 | Firefox 128–139's toolbar-click consent satisfies AMO | this spec (§8.4) | if AMO objects, `required: ["websiteContent"]` |
 | Nintendo does not act on the -ÉMON name | [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105) | no trademark filed; answer the listing email |

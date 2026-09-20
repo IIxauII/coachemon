@@ -29,9 +29,9 @@
 // nobody resists (not under a single-type challenge, where everyone shares them); minus a team with no carry: nobody
 // built to attack (by the moveset prior's roles, else base stats) with a final form of 480+.
 import { TYPES, vs } from "./01-core.js";
+import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
 import { finalBstOf } from "./08-party.js";
-import { gameTables } from "./47-biome.js";
 
 const MAX_PARTY = 6;
 const WEIGHTS = [1, 0.8, 0.55, 0.35, 0.2, 0.1];

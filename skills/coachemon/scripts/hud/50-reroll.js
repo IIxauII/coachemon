@@ -24,7 +24,7 @@
 // from the same stream position. The threshold tables are module-private, so they can't be saved; they are put back by
 // regenerating them for the live reroll count and party, which is what the live tables are for every roll that reads
 // them (every non-copy `SelectModifierPhase` regenerates before it draws). The two functions are module exports found
-// by name by 47-biome's chunk scan; until it has them the card falls back to its old one-line hint.
+// by name by the chunk scan (`04-game-tables.js`); until it has them the card falls back to its old one-line hint.
 //
 // ---- What it promises
 // `replay` (the Preview glossary entry): right only while nothing else draws from the stream between this read and the
@@ -33,7 +33,7 @@
 // player actually makes is scored against the last preview for it, and a miss marks the line `!` for the rest of the run
 // (`window.__coachHud.reroll()`).
 import { sandbox } from "./01-core.js";
-import { gameRewardFns } from "./47-biome.js";
+import { gameRewardFns } from "./04-game-tables.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 // `getNewModifierTypeOption` logs every item it draws.

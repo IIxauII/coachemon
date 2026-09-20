@@ -30,16 +30,8 @@
 // Mystery Encounters take some wild and trainer waves at random; not modelled.
 //
 // ---- Where the tables come from at runtime
-// The live build keeps function and class names and exports these across chunks (loading-scene exports allBiomes,
-// FadeOut exports the species data registry and getBiomeName). `loadGameTables` imports the already-loaded /assets/*.js
-// modules again — the browser hands back the same module instances, nothing re-runs — and picks the exports by shape:
-// a Map whose values carry biomeLinks + pokemonPool, an object with getSpecies/getAllSpecies, a function named
-// getBiomeName, the trainer configs (an object whose values carry trainerType + partyTemplates), and the timed event
-// manager (getShinyCatchMultiplier; the catch card's shiny odds), and for the starter card the ability and move lists
-// (arrays indexed by id: an ability has a name and no power, a move has power and pp) and the egg moves (species id →
-// four move ids). It's async, so the first refresh or two draw the card
-// without spawn data. Without the trainer configs the trainer waves are left out, as fixed waves are. Nothing is copied
-// from the game.
+// `04-game-tables.js`, which reads the game's own chunks. The read is async, so the first refresh or two draw the card
+// without spawn data; without the trainer configs the trainer waves are left out, as fixed waves are.
 //
 // ---- Scoring (per offered biome, explainable on purpose)
 // Encounters: every wave's wild and trainer species at those odds, each wave counting once, evolved at the party's top
@@ -54,6 +46,7 @@
 // score = 50·offense + 25·(defense + 1) + up to 8 for catches ± 10 for the big fight. Ties go to the unrounded score.
 import { TYPES, effectiveness } from "./01-core.js";
 import { healRevives, poolAnchorWave, trainerOdds, waveKind } from "./03-calendar.js";
+import { gameEvents, gameTables } from "./04-game-tables.js";
 import { partyLuck, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
 
 const TIER_CUTS = [156, 32, 6, 1, 0];
@@ -72,81 +65,25 @@ const EVO_SPREAD = [1, 1.1, 1.2];
 // Rare destinations worth naming when an option can lead there.
 const RARE_ONWARD = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 
-let tables = null, triedAt = -Infinity;
-// @only tests: setGameTables, setRewardFns, spawnsFor, formsFor
-export const setGameTables = t => { tables = t; formsCache.clear(); trainerCache.clear(); };
-// The reward roll's two module functions, for 50-reroll's preview. Kept apart from `tables`: a build that renamed
-// them still has biome data, and a build without biome data can still roll rewards.
-const REWARD_FNS = ["regenerateModifierPoolThresholds", "getPlayerModifierTypeOptions"];
-let rewardFns = null;
-export const setRewardFns = f => { rewardFns = f; };
-const scan = (ns, found) => {
-  for (const k of Object.keys(ns)) {
-    let v;
-    try { v = ns[k]; } catch { continue; } // an export still in its temporal dead zone
-    if (!v) continue;
-    if (v instanceof Map && !found.biomes) {
-      const first = v.values().next().value;
-      if (first && "biomeLinks" in first && "pokemonPool" in first) found.biomes = v;
-    } else if (typeof v === "object" && typeof v.getSpecies === "function" && typeof v.getAllSpecies === "function") {
-      found.species ??= v;
-    } else if (typeof v === "function" && v.name === "getBiomeName") {
-      found.biomeName ??= v;
-    } else if (typeof v === "function" && REWARD_FNS.includes(v.name)) {
-      found[v.name] ??= v;
-    } else if (typeof v === "object" && typeof v.getShinyCatchMultiplier === "function") {
-      found.events ??= v;
-    } else if (Array.isArray(v)) {
-      let first;
-      try { first = v[1]; } catch { continue; }
-      if (!first || typeof first !== "object" || first.id !== 1 || v.length < 100) continue;
-      if ("power" in first && "pp" in first) found.moves ??= v;
-      else if (!("power" in first) && typeof first.name === "string" && "attrs" in first) found.abilities ??= v;
-    } else if (typeof v === "object" && !Array.isArray(v)) {
-      let first;
-      try { first = v[Object.keys(v)[0]]; } catch { continue; }
-      if (!found.trainers && first && typeof first === "object" && "trainerType" in first && "partyTemplates" in first) found.trainers = v;
-      else if (!found.eggMoves && [1, 4, 7].every(id => { try { return Array.isArray(v[id]) && v[id].length === 4 && v[id].every(Number.isInteger); } catch { return false; } })) found.eggMoves = v;
-    }
-  }
+// The game tables (`04-game-tables.js`), with the one-time cache clear that goes with them: `formsAt` and
+// `trainerParty` answer with nothing while the chunk scan hasn't landed — a missing species registry answers nothing —
+// and cache that nothing, so the first read that finds tables drops both caches. The loader fills them once per page,
+// which is why once is enough and no invalidation crosses the module line.
+let cleared = false;
+const readTables = () => {
+  const t = gameTables();
+  if (t && !cleared) { cleared = true; formsCache.clear(); trainerCache.clear(); }
+  return t;
 };
-// Retried every 30 s while not found: the HUD may be injected before the game has loaded its chunks.
-const loadGameTables = () => {
-  if ((tables && rewardFns) || Date.now() - triedAt < 30000) return;
-  triedAt = Date.now();
-  // Only the game's own Vite chunks (`/assets/<name>-<hash>.js`, loaded as script or modulepreload): importing a URL
-  // that was never a module would run it anew.
-  let urls = [];
-  try {
-    urls = [...new Set(performance.getEntriesByType("resource")
-      .filter(e => ["script", "link", "other"].includes(e.initiatorType) && e.name.startsWith(location.origin)
-        && /\/assets\/[\w.-]+-[\w-]{8}\.js$/.test(e.name))
-      .map(e => e.name))];
-  } catch {}
-  if (!urls.length) return;
-  const found = {};
-  Promise.all(urls.map(u => import(u).then(ns => scan(ns, found), () => {})))
-    .then(() => {
-      if (!tables && found.biomes && found.species) setGameTables(found);
-      if (!rewardFns && REWARD_FNS.every(k => found[k])) setRewardFns({ regenerate: found[REWARD_FNS[0]], options: found[REWARD_FNS[1]] });
-    });
-};
-
-// The game's timed event manager, or null while the tables aren't read (starts the read).
-export const gameEvents = () => { loadGameTables(); return tables?.events ?? null; };
-// `{ regenerate, options }`: the reward roll's module functions, or null while they aren't found (starts the read).
-export const gameRewardFns = () => { loadGameTables(); return rewardFns; };
-// The tables themselves (`species`, `abilities`, `moves`, `eggMoves` among them), or null while they aren't read
-// (starts the read).
-export const gameTables = () => { loadGameTables(); return tables; };
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
-const nameOf = id => tryDo(() => tables.biomeName(id), `#${id}`);
+const nameOf = id => tryDo(() => readTables().biomeName(id), `#${id}`);
 const linkId = l => (Array.isArray(l) ? l[0] : l);
 
 // Option labels → biome ids: by the game's own localized name; failing that, by position among the current biome's
 // links (the options are those links, in order, minus the ones that didn't roll).
 const resolveOptions = (s, labels) => {
+  const tables = readTables();
   const links = tryDo(() => [...tables.biomes.get(s.arena.biomeId).biomeLinks], []);
   const ids = [...new Set([...links.map(linkId), ...(tables?.biomes?.keys() ?? [])])];
   const byName = labels.map(l => ids.find(id => nameOf(id) === l) ?? null);
@@ -154,7 +91,7 @@ const resolveOptions = (s, labels) => {
   return labels.length === links.length ? links.map(linkId) : byName;
 };
 
-const speciesById = id => tryDo(() => tables.species.getSpecies(id));
+const speciesById = id => tryDo(() => readTables().species.getSpecies(id));
 // P(tier i) for a roll uniform on [0, max), tier i taking the values from cuts[i] up to the tier above's cut.
 const tierOdds = (cuts, max) => cuts.map((c, i) => Math.max(0, (i ? Math.min(cuts[i - 1], max) : max) - Math.min(c, max)) / max);
 const odds = (pools, tiers, cuts, max, forced = null) => {
@@ -172,11 +109,13 @@ const odds = (pools, tiers, cuts, max, forced = null) => {
 // ---- A spawn's species at `level`, as the game's chance of each form: Map id → p.
 const formsCache = new Map();
 const formsAt = (id, level, kind) => {
+  // Before the cache lookup, not after: the read is what drops entries answered without tables, so a caller that comes
+  // straight here (`formsFor`) can't be served one.
+  const reg = readTables()?.species;
   const key = `${id}|${level}|${kind}`;
   if (formsCache.has(key)) return formsCache.get(key);
   const out = new Map();
   const add = (sid, p) => out.set(sid, (out.get(sid) ?? 0) + p);
-  const reg = tables?.species;
   const sp0 = speciesById(id);
   if (!sp0) { formsCache.set(key, out); return out; }
   if (typeof reg?.getEvolutions !== "function") {
@@ -217,16 +156,17 @@ const formsAt = (id, level, kind) => {
 
 // ---- A trainer type's party, as base species with their chance: [{ id, p }], plus its specialty type.
 const trainerCache = new Map();
-const rootOfId = id => {
+const rootOfId = (reg, id) => {
   let cur = id;
   for (let i = 0; i < 4; i++) {
-    const prev = tryDo(() => (tables.species.hasPrevolution(cur) ? tables.species.getPrevolution(cur) : null));
+    const prev = tryDo(() => (reg.hasPrevolution(cur) ? reg.getPrevolution(cur) : null));
     if (prev == null) break;
     cur = typeof prev === "object" ? prev.speciesId : prev;
   }
   return cur;
 };
 const trainerParty = type => {
+  const tables = readTables(); // before the lookup, for the reason `formsAt` gives
   if (trainerCache.has(type)) return trainerCache.get(type);
   const cfg = tryDo(() => tables.trainers[type]);
   let value = null;
@@ -240,7 +180,7 @@ const trainerParty = type => {
     } else if (typeof cfg.speciesFilter === "function") {
       const ids = new Set();
       for (const sp of tryDo(() => tables.species.getAllSpecies(), [])) {
-        if (tryDo(() => (sp.isCatchable?.() ?? true) && cfg.speciesFilter(sp), false)) ids.add(rootOfId(sp.speciesId));
+        if (tryDo(() => (sp.isCatchable?.() ?? true) && cfg.speciesFilter(sp), false)) ids.add(rootOfId(tables.species, sp.speciesId));
       }
       species = [...ids].map(id => ({ id, p: 1 / ids.size }));
     }
@@ -301,6 +241,7 @@ const wavesIn = (s, biome, wave) => {
 // `wild` is the non-boss wild part of w, `boss` the tenth wave's (wild boss or gym leader), `trainer` a trainer's.
 // `id` is the species as it's rolled, before it evolves. Also the trainers met and the tenth wave's foes.
 const encounters = (s, biome, wave, luck = 0) => {
+  const tables = readTables();
   const gm = s.gameMode;
   const byId = new Map();
   const add = (id, tier, w, part) => {
@@ -374,7 +315,7 @@ const joinNames = names => (names.length > 2 ? `${names.length} mons` : names.jo
 
 const judge = (s, id, profile, level, wave, luck) => {
   const party = profile.members;
-  const biome = tryDo(() => tables.biomes.get(id));
+  const biome = tryDo(() => readTables().biomes.get(id));
   if (!biome) return null;
   const enc = encounters(s, biome, wave, luck);
   const spawnList = enc.list.flatMap(e => [...formsAt(e.id, level, e.wild > 0 ? EvoLevelThresholdKind.WILD : EvoLevelThresholdKind.NORMAL)].map(([fid, fp]) => {
@@ -511,7 +452,7 @@ const edgeOver = (a, b) => {
 
 let cache = { key: null, value: null };
 export const biomeModel = (s, h) => {
-  loadGameTables();
+  const tables = readTables();
   const labels = h.config.options.map(o => String(o.label ?? ""));
   const wave = s.currentBattle?.waveIndex ?? 0;
   const everyone = s.getPlayerParty().filter(Boolean);
@@ -549,7 +490,11 @@ export const biomeModel = (s, h) => {
 
 // The weighted encounters of one biome as the ten waves after `wave` would see them, and a species' chance of each
 // form at a level. Neither is on any card's path: they are what a test, or a hand check against a live tab, reads.
-export const spawnsFor = (s, id, wave, luck = 0) => (tables?.biomes?.get(id) ? encounters(s, tables.biomes.get(id), wave, luck) : null);
+// @only tests: spawnsFor, formsFor
+export const spawnsFor = (s, id, wave, luck = 0) => {
+  const biome = readTables()?.biomes?.get(id);
+  return biome ? encounters(s, biome, wave, luck) : null;
+};
 export const formsFor = (id, level, kind = EvoLevelThresholdKind.WILD) => Object.fromEntries(formsAt(id, level, kind));
 
 // `Swamp 72 pick — Garchomp resists, 3 mons hit SE · Construction Site 55`, for the watcher and the battle read.

@@ -24,8 +24,8 @@
 // which replays inside a seed fork. Nothing is called that the preview doesn't already call.
 import { TIER_NAMES, abilitiesOf } from "./01-core.js";
 import { bigFightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
+import { gameEvents } from "./04-game-tables.js";
 import { partyLuck, partyProfile } from "./08-party.js";
-import { gameEvents } from "./47-biome.js";
 import { previewFor } from "./48-preview.js";
 
 // How far ahead the roster is still worth reading. The calendar holds at any distance, but the replay feeds on the

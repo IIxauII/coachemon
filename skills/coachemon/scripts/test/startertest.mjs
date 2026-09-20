@@ -128,7 +128,7 @@ const mount = ({ view = "full", limit = 10, chosen = [], valid = STARTERS, chall
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => view, setItem() {} };
   eval(bundle("hud", { expose: true }));
-  if (withTables) globalThis.__hud["47-biome"].setGameTables(tables);
+  if (withTables) globalThis.__hud["04-game-tables"].setGameTables(tables);
   globalThis.__hud["90-render"].setView(view);
   return { el, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
