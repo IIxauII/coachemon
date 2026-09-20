@@ -13,6 +13,7 @@
     "test": "node --test \"src/**/*.test.ts\" && node skills/coachemon/scripts/test/run.mjs",
     "typecheck": "tsc",
     "enums:gen": "node scripts/gen-enums.ts",
+    "listing:render": "node scripts/listing/render.ts",
     "randbats:gen": "node scripts/gen-randbats.ts",
     "release:safari": "node scripts/release/safari-release.ts",
     "drift:check": "node scripts/drift.ts",

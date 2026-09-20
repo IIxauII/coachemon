@@ -25,6 +25,11 @@ export const ACTION_TITLE = "Coachemon: click once to let a local AI agent read 
 /** Not `*.pokerogue.net`: the beta site was never reviewed against (§6). */
 export const MATCHES = ["https://pokerogue.net/*"];
 
+/** What AMO is told the extension collects, declared in the manifest and filed by hand on the form (§5.3, §6).
+ * Exported so `src/listing.test.ts` can pin the filing to it: a change here that the filing did not follow would
+ * otherwise leave a false statement standing on the listing. */
+export const DATA_COLLECTION_PERMISSIONS = { required: ["none"], optional: ["websiteContent"] };
+
 export type Manifest = Record<string, unknown>;
 
 /**
@@ -85,7 +90,7 @@ function perTarget(target: Target): Manifest {
         gecko: {
           id: GECKO_ID,
           strict_min_version: "128.0",
-          data_collection_permissions: { required: ["none"], optional: ["websiteContent"] },
+          data_collection_permissions: DATA_COLLECTION_PERMISSIONS,
         },
       },
     };
