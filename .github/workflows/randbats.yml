@@ -107,6 +107,13 @@ jobs:
           git commit -m "chore(hud): refresh the randbats snapshot and goldens"
           git push --force -- "git@github.com:${{ github.repository }}.git" "HEAD:refs/heads/$BRANCH"
 
+      # Depends on invisible repo state: Settings > Actions > General > "Allow GitHub Actions to create and approve
+      # pull requests" (`can_approve_pull_request_reviews`). It was *off* when this job first fired for real, so the
+      # push above succeeded and this step died on `GitHub Actions is not permitted to create or approve pull
+      # requests` — the branch landed and no pull request ever appeared (#291). Turned on 2026-09-20. Its other half,
+      # approving, grants nothing here: `master: checks must have run` requires status checks and no reviews, so
+      # there is no approval for a workflow to forge. If this step ever fails that way again, the flag is the place
+      # to look, not the token's `permissions` block.
       - name: Open the pull request
         if: steps.drift.outputs.changed == 'true'
         env:
