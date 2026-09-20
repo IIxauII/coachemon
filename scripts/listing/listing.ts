@@ -19,6 +19,11 @@ export const PRIVACY_URL = "https://iixauii.github.io/coachemon/PRIVACY";
 /** Support is email only; the repo is public but not a support surface (§3). */
 export const SUPPORT_EMAIL = "xauyxau+coachemon@gmail.com";
 
+/** One list for both forms. It was two — five in `description.md`, three in `store-disclosure.md`, with nothing
+ * saying why — which left a human filling the CWS and AMO forms with two different answers to one question. No
+ * keyword is a franchise word and the game is not among them (§3). */
+export const KEYWORDS = ["coach", "overlay", "turn advice", "battle helper", "roguelite"];
+
 /** The fixture scenes `scripts/listing/fixtures.js` builds. Named rather than free text: a name that file does not
  * have leaves the panel unmounted, and a blank shot is still a PNG of the right size, so nothing downstream notices. */
 export type Fixture = "battle" | "learn" | "rewards";

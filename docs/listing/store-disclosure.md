@@ -40,7 +40,7 @@ and no remote data table behind it (§1.2).
 | **Privacy policy URL** | as above |
 | **Source code submission** | Required, because the artifact is bundled: upload `coachemon-<version>-sources.zip` from the same GitHub Release. Build instructions are `SOURCES.md` inside that zip, and the form gets the same three lines: Node >= 23.6 and npm; `cd extension && npm ci && npx wxt build -b firefox --mode store`; output `extension/.output/firefox-mv3-store/`. |
 | **Notes to reviewer** | The extension requests no permissions. The overlay imports pokerogue.net's own modules inside that page to read the game's tables; nothing is fetched from any other origin. The toolbar button is the consent click that enables the optional local-agent link on Firefox; without a local program listening on `127.0.0.1:47147` it does nothing. |
-| **Categories / tags** | Games; `coach`, `overlay`, `turn advice`. |
+| **Categories / tags** | Games; `coach`, `overlay`, `turn advice`, `battle helper`, `roguelite`. |
 
 ## Safari
 

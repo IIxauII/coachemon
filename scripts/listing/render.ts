@@ -16,13 +16,17 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 // @ts-expect-error: plain .mjs without type declarations
 import { bundle } from "../../skills/coachemon/scripts/hud-bundle.mjs";
-import { DEFAULTS } from "../../src/cdp/session.ts";
 import { LISTING_ASSETS, listingPath, pngSize, repoPath } from "./listing.ts";
 import type { ListingAsset, Shot } from "./listing.ts";
 
 /** The assets that are photographed; the icons in the table are drawn by `extension/scripts/icons.mjs` instead. */
 type ShotAsset = ListingAsset & { shot: Shot };
 const shots = LISTING_ASSETS.filter((a): a is ShotAsset => a.shot !== undefined);
+
+/** Read and bundled once rather than per shot: `page()` runs for every asset, and the HUD is the same source in all
+ * of them, so re-bundling it six times only makes the run slower. */
+const fixtures = readFileSync(repoPath("scripts/listing/fixtures.js"), "utf8");
+const hud = bundle("hud");
 
 /** The neutral background the store asks nothing about and the spec asks everything about: no art, no game, no text. */
 const page = (asset: ShotAsset): string => `<!doctype html>
@@ -40,12 +44,14 @@ const page = (asset: ShotAsset): string => `<!doctype html>
 </style>
 <body>
 <!-- In the body, not the head: the HUD appends its panel to document.body the moment it runs (§5.2). -->
-<script>${readFileSync(repoPath("scripts/listing/fixtures.js"), "utf8")}</script>
+<script>${fixtures}</script>
 <script>window.__mountFixture(${JSON.stringify(asset.shot.fixture)}, ${JSON.stringify(asset.shot.view)});</script>
-<script>${bundle("hud")}</script>
+<script>${hud}</script>
 `;
 
-const chrome = process.env.COACHEMON_CHROME ?? DEFAULTS.chromePath;
+/** Spelled out rather than taken from `src/cdp/session.ts`: that module's `DEFAULTS.chromePath` already resolves this
+ * same variable, so reading it there bought nothing and tied the renderer to a module §13.2 deletes at the flip. */
+const chrome = process.env.COACHEMON_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(join(tmpdir(), "coachemon-listing-"));
 
 try {
@@ -56,6 +62,9 @@ try {
     mkdirSync(dirname(out), { recursive: true });
     execFileSync(chrome, [
       "--headless", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
+      // Its own profile, inside the temp dir: without this Chrome reaches for the developer's real one, which the
+      // repo's own server may already hold open.
+      `--user-data-dir=${join(work, "profile")}`,
       `--window-size=${asset.width},${asset.height}`, "--virtual-time-budget=4000",
       `--screenshot=${out}`, `file://${html}`,
     ], { stdio: ["ignore", "ignore", "pipe"] });

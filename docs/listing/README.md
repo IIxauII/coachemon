@@ -16,7 +16,10 @@ job rather than an afternoon (§3, §6 of [the spec](../spec/extension-distribut
 | `../../extension/public/icons/128.png` | the store icon both listings show |
 
 `scripts/listing/listing.ts` is the table those files are checked against: `src/listing.test.ts` fails if an asset is
-missing or the wrong size, or if a text drifts from the disclaimer, the privacy URL or a form field.
+missing or the wrong size, or if a text drifts from the disclaimer, the privacy URL or a form field. The answers that
+restate something the extension ships are pinned to it rather than copied — the summary and the AMO data-collection
+filing to the manifest, the reviewer note's port to `STORE_PORT`, the source zip to what the release builds — because
+a filing that no longer matches the artifact is a false statement to a store, not a stale doc.
 
 ## Redrawing
 
@@ -39,6 +42,12 @@ Two artefacts of the fallback path, on purpose rather than by oversight. A name 
 that same name; and a fallback sits flush against the text before it ("CharizardFire"), because two sprites need no
 space between them. Both are what §3 asked for — the shot is the panel as it draws without sprites, not a retouched
 picture of it — and removing them means changing the shipped HUD, which this ticket does not.
+
+Two more that look like framing mistakes and are not. The learn shot wraps its header and truncates a line, because
+that is the panel at the 320 px it actually ships at; `zoom` scales the whole card uniformly, so no zoom unwraps it
+and only overriding the width would — which would photograph the panel at a width no player ever sees. And
+`promo-small.png` is drawn at `zoom: 1` because it must be: the tile is 440 px wide and 320 × 1.4 already overflows
+it, so anything larger crops the card rather than enlarging it. The marquee is the tile that shows the panel big.
 
 ## Before submitting
 

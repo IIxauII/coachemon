@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { DESCRIPTION } from "../extension/src/build/manifest.ts";
+import { DATA_COLLECTION_PERMISSIONS, DESCRIPTION } from "../extension/src/build/manifest.ts";
 import { sourcesZipName } from "../scripts/release/artifacts.ts";
-import { DISCLAIMER, LISTING_ASSETS, PRIVACY_URL, SUPPORT_EMAIL, listingPath, pngSize, repoPath } from "../scripts/listing/listing.ts";
+import { DISCLAIMER, KEYWORDS, LISTING_ASSETS, PRIVACY_URL, SUPPORT_EMAIL, listingPath, pngSize, repoPath } from "../scripts/listing/listing.ts";
+import { STORE_PORT } from "./protocol/version.ts";
 
 const listing = (rel: string) => readFileSync(listingPath(rel), "utf8");
 const privacy = () => readFileSync(repoPath("PRIVACY.md"), "utf8");
@@ -34,6 +35,19 @@ test("the description follows the skeleton order", () => {
   const closing = body.slice(at("Nothing leaves your computer"), at("AGPL-3.0-only"));
   assert.equal(closing.split("Claude").length - 1, 1, "Claude belongs in the closing paragraph, once");
   assert.equal(body.split("Claude").length - 1, 1, "Claude is named nowhere else in the body");
+});
+
+test("the summary is the manifest's description, as the copy claims it is", () => {
+  // description.md says the Summary field is "Identical to the manifest's `description`". The disclaimer test above
+  // only covers the second sentence of it, so the claim itself went unchecked (§3.1).
+  assert.equal(listing("description.md").includes(DESCRIPTION), true, "the Summary is not the manifest's description");
+});
+
+test("both forms get one keyword list", () => {
+  // They got two — five here, three on the AMO row — with nothing saying why, which is two answers to one question.
+  for (const doc of ["description.md", "store-disclosure.md"]) {
+    for (const word of KEYWORDS) assert.equal(listing(doc).includes(`\`${word}\``), true, `${doc} is missing ${word}`);
+  }
 });
 
 test("the copy never puts the game in the title or the keywords", () => {
@@ -72,6 +86,14 @@ test("both store disclosures answer every form field", () => {
   }
   // Remote code is **Yes**: the HUD imports pokerogue.net's own modules (§6). Saying no would be a false filing.
   assert.match(filed, /Remote code[^\n]*\*\*Yes\*\*/);
+  // The AMO data-collection answer quotes the manifest, so it has to be the manifest's: naming the key alone let the
+  // two drift, and a filing that no longer matches what ships is a false statement to the store (§5.3, §6).
+  for (const [key, values] of Object.entries(DATA_COLLECTION_PERMISSIONS)) {
+    assert.equal(filed.includes(`${key}: [${values.map(v => `"${v}"`).join(", ")}]`), true,
+      `the filed data collection does not match the manifest's ${key}`);
+  }
+  // The reviewer note names the port the extension listens on; it cannot read configuration, so it is this constant.
+  assert.equal(filed.includes(`127.0.0.1:${STORE_PORT}`), true, "the filed port is not the store hub's");
 });
 
 test("every asset the forms ask for is in the repo at the size they ask for", () => {
