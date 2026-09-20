@@ -1,7 +1,7 @@
 // Battle card (the 60-card battle model): the ⚔ line per field slot, the switches, the catch section, the foe rows
 // and the fight plan. An easy wild wave collapses to one line.
 import { STATUS_FRAMES } from "./01-core.js";
-import { hitsText, slowestKo } from "./60-card.js";
+import { deadEndText, hitsText, slowestKo } from "./60-card.js";
 import { FS, badge, bar, button, collapsedCard, dim, h, hpColor, img, line, mon, tab, view } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
@@ -62,7 +62,7 @@ export const drawBattle = m => {
   const slotLine = (sl, label) => step(label, "⚔", "#8cf",
     mon(sl.icon, sl.name, 22),
     sl.threat ? threatTag(sl.threat) : null,
-    ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, "no damaging move")]),
+    ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, deadEndText(sl))]),
     ...(sl.target === "both" ? [h("span", { color: "#8cf", marginLeft: "4px" }, "→ both")]
       : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
     ...(view() === "mini" ? trapTag(sl) : []),

@@ -21,7 +21,7 @@
 import { TYPES, awaitingDecision, effectiveness, sandbox, stat, typesOf } from "./01-core.js";
 import { waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
-import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneStatusMoves, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
+import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneStatusMoves, sceneStopped, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
 import { aiTargetScore, approxDistribution, sceneDistribution, sceneExactMoves, sceneReplayAI, sceneSendInScore, sceneSwitches, skipsTurn } from "./20-enemy-ai.js";
 
 // ---- Predicted Terastallization (spec §7)
@@ -327,6 +327,10 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       () => (live ? asDamage(() => sceneOutcomes(env, atk, def)) : approxOutcomes(env, atk, def))),
     statusMoves: (atk, def) => memo("statusMoves", `${atk.id}|${def.id}`,
       () => (live ? asDamage(() => sceneStatusMoves(env, atk, def)) : [])),
+    // The restrictions that cost `atk` a move, for a slot left with nothing to do. The approximation drops no move
+    // for a restriction, so it has none to name.
+    stopped: (atk, def) => memo("stopped", `${atk.id}|${def.id}`,
+      () => (live ? asDamage(() => sceneStopped(env, atk, def)) : [])),
     // Signed turn-end HP change. Answered on either turn: it reads the mon's items, tags and abilities and the
     // arena, and calls nothing that decides anything. Not memoised — callers ask about made-up HP, made-up statuses
     // and made-up item stacks (`Object.create` clones), which is the question, not a repeat of one.

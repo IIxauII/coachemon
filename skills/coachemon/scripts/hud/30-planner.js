@@ -924,13 +924,17 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const t1p = { ...t1, we: 0, they, me: mine1, hp: mine1.reduce((sum, b) => sum + b.p * b.hp, 0) / mass };
       // The state the move would make is a turn of its own: the game's damage, turn-end and AI code answer on it,
       // in its own memo slots, and the real turn is untouched.
+      // With nothing to attack with, the turns after the play are still worth pricing: `exchange` reads a null move
+      // as dealing nothing, so the line is the foe wearing us down against a mon the play has slowed, and what the
+      // play is worth is the damage it keeps off us rather than the KO it brings nearer (#263). Bailing here instead
+      // is what left a slot with no damaging move a dead end — the one case a status play is all there is.
       const follow = patches => {
         const t2 = patches ? turn.assuming(patches) : turn;
         const pool = planOutcomes(t2, me, f).filter(y => y.expected > 0 && !y.traits?.once);
         const cands = [...new Set([...[...pool].sort((a, b) => b.expected - a.expected).slice(0, 2), ...pool.filter(y => (y.priority ?? 0) > 0).slice(0, 1)])];
         let best = null;
-        for (const y of cands) {
-          const x2 = exchange(t2, me, y.pm, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null });
+        for (const y of cands.length ? cands : [null]) {
+          const x2 = exchange(t2, me, y?.pm ?? null, f, { hp: t1p.hp, after: t1p, outcome: y, next: true, foeAct: patches && play.foeAct ? play.foeAct(pF) : null });
           const v = x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0);
           if (!best || v > best.v) best = { y, x2, v };
         }
@@ -1545,6 +1549,9 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
           helped,
           koEach: sup || p.target !== "both" || !p.each ? null : p.each.map(n => (n <= 3 ? n : 0)),
           threat: slotThreat(p, enter),
+          // A slot with nothing left to do says which restriction emptied its pool, where one did. Asked only then:
+          // with a move to recommend the reason is behind us, and the ✦ on the foe row already carries the abilities.
+          stopped: sup || p.move || !active[0] ? [] : turn.stopped(p.me, active[0]),
           traps: sup ? [] : trapsOn(p, active),
           locked: !!p.locked,
           support: sup?.kind ?? null,
