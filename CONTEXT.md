@@ -265,6 +265,10 @@ The **coach**'s look at a battle while the game waits on the player's decision (
 
 In a double, the second of two hits aimed at the same foe when the first alone already fells it. A spare hit is never wasted: the game retargets a still-queued single-target move whose target has fainted onto the surviving foe (a **redirect**), so it lands there carrying the move its slot chose for the dying foe, not one picked for the survivor. The coach prices the slot on both branches at once — the redirect's worth where the target falls first, its own worth where it doesn't — so it spreads only when the slot has a materially better move for the other foe than the redirect would carry.
 
+## Return
+
+In a double, the switch-in that is the mon the **other** slot is withdrawing this same turn: both slots' benches name the same party index, the game resolves the slots in field order, and so the second slot's send-in is the mon the first has already pulled. The card says *returns from the other slot* where an ordinary switch-in *switches*, because the usual wording, read while the player watches that mon leave the other slot, looks like a broken panel. A return is also the one switch-in that the coach sees still carrying stat stages it is about to lose — it is on the field as the coach reads it, and a switch-in's summon data is reset when it lands — so the turn read and the fight plan both price it at base stages.
+
 ## Hypothesis
 
 The battle as it would stand one move from now: our stat stages after a Swords Dance, a foe paralysed by Thunder Wave, or a foe turned pure Water by Soak. The coach asks the game's own code about it as if it were so, and a hypothesis is never played out: the battle is left exactly as it was. A foe predicted to Terastallize this turn is read the same way, but only for how hard hits land, never for what the foe decides, since it picks its move before it Terastallizes.

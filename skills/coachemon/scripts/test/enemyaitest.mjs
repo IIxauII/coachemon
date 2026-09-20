@@ -403,7 +403,28 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
 }
 
 // A foe the trainer switches out never reaches `getNextMove` (§7), so it isn't asked — its draws are not spent
-// before the slot that does move.
+// before the slot that does move. The two benches are disjoint by party-index parity (#285), so the mock answers per
+// `trainerSlot`: slot 0's tag has a bench worth switching to, slot 1's has none.
+{
+  const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
+  const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
+  e0.trainerSlot = 1; e1.trainerSlot = 2;
+  const bench = mkMon({ id: "b", player: false, fieldIndex: null, moves: [{ id: 1, name: "A" }] });
+  const trainer = { config: { isBoss: false }, getPartyMemberMatchupScores: sl => (sl === 1 ? [[2, 99]] : []),
+    getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: (_sl, sc) => sc[0][0], shouldTera: () => false };
+  const ai = setup({ player: [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })], enemy: [e0, e1, bench], double: true, trainer });
+  const asked = [];
+  for (const e of [e0, e1]) nextMoveOf(e, function () { asked.push(this.id); return { move: 1, targets: [0], useMode: 0 }; });
+  const acts = ai.ask(t => [t.enemyAction(e0), t.enemyAction(e1)]);
+  assert.equal(acts[0].switchTo, bench, "slot 0 switches to its own bench");
+  assert.equal(!!acts[0].switchBack, false, "an ordinary bench arrival is not a return");
+  assert.deepEqual(asked, ["e1"], "only the slot that isn't switching is asked");
+}
+
+// A force-switch into a `doubleOnly` trainer's double puts a wrong-tagged mon on the field, so both slots score the
+// **same** bench, and `getNextSummonIndex` — drawn at the turn's own seed offset — hands them the same party index
+// (#285). The game writes both commands and resolves both in field order, so slot 1's send-in is read off the party
+// slot 0 has already swapped: the mon slot 0 just withdrew, walking straight back in on the other slot.
 {
   const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
   const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
@@ -414,8 +435,11 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   const asked = [];
   for (const e of [e0, e1]) nextMoveOf(e, function () { asked.push(this.id); return { move: 1, targets: [0], useMode: 0 }; });
   const acts = ai.ask(t => [t.enemyAction(e0), t.enemyAction(e1)]);
-  assert.equal(!!acts[0].switchTo, true, "slot 0 switches");
-  assert.deepEqual(asked, ["e1"], "only the slot that isn't switching is asked");
+  assert.equal(acts[0].switchTo, bench, "slot 0 sends in the shared bench mon");
+  assert.equal(!!acts[0].switchBack, false, "which is an ordinary arrival");
+  assert.equal(acts[1].switchTo, e0, "slot 1 gets the mon slot 0 just withdrew, not the bench mon again");
+  assert.equal(acts[1].switchBack, true, "and it is marked a return");
+  assert.deepEqual(asked, [], "both slots switch, so neither is asked for a move");
 }
 
 // Our own random-target command draws first (#158's one exception), so the prediction is made for **that** command

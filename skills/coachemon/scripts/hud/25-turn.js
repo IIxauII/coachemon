@@ -343,13 +343,15 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     // `ok` with nothing to say — no command prompt, no foe to ask about — is not a claim that a move is exact; it
     // only means nothing has failed. Whether a *particular* foe's move is exact is `enemyAction(foe).exact`.
     exact: () => shared.exactMoves([]),
-    // `{ moves, switchTo, tera, skip, exact, confidence }` — the enemy's whole turn. A switching mon doesn't
-    // Terastallize. `moves` is one row at p 1 where the exact call answered, the distribution where it is not the
-    // question (a later turn's prompt, an approximate turn), and **empty** where the call was there to make and
+    // `{ moves, switchTo, switchBack, tera, skip, exact, confidence }` — the enemy's whole turn. A switching mon
+    // doesn't Terastallize. `moves` is one row at p 1 where the exact call answered, the distribution where it is not
+    // the question (a later turn's prompt, an approximate turn), and **empty** where the call was there to make and
     // failed: the distribution is never substituted for it (#183).
     enemyAction: (foe, { ranges = [] } = {}) => memo(`enemyAction:${ranges.join(",")}`, foe, () => {
       const sw = turn.switches().get(foe);
-      if (sw) return { moves: [], switchTo: sw.to, tera: false, skip: false, exact: false, confidence: null };
+      // `switchBack`: the switch-in is the mon the other slot is withdrawing this same turn, coming straight back in
+      // (#285). It arrives with `resetSummonData()`, so readers must price it at base stat stages.
+      if (sw) return { moves: [], switchTo: sw.to, switchBack: !!sw.back, tera: false, skip: false, exact: false, confidence: null };
       const skip = skipsTurn(env, foe);
 
       const ex = live ? turn.exactMoves(ranges) : null;

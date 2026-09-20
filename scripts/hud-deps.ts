@@ -331,6 +331,9 @@ export const HUD_DEPS = {
     `src/field/trainer.ts#Trainer.getPartyMemberMatchupScores`,
     `src/field/trainer.ts#Trainer.getSortedPartyMemberMatchupScores`,
     `src/field/trainer.ts#Trainer.getNextSummonIndex`,
+    // Its two-line party swap, replayed locally so a doubles double-switch reads the
+    // arriving mon off the post-swap party the way the game does (#285, #290).
+    `src/phases/switch-summon-phase.ts#SwitchSummonPhase.switchAndSummon`,
   ],
 
   /**

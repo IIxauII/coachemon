@@ -250,3 +250,25 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 -- after + (mini)
 🎯 W89 + {Expand} × {Close}
 ⚔ Scrafty Fighting Brick Break → Granbull 2 hits
+queued during prediction: 0; queueMessage restored: true
+== doubleReturn (full)
+🎯 W89 · Tester Blastoise › Venusaur − {Minimal overview} × {Close}
+⇆ Arcanine → Gyarados switches — moves aimed at it
+⇆ Ludicolo → Arcanine returns from the other slot — moves aimed at it
+⚔ Blastoise Steel Flash Cannon → Arcanine 2 hits then Wave Crash
+⚔ Venusaur Grass Power Whip → Gyarados 3 hits
+↺ if it stays: Blastoise Water Wave Crash → Arcanine · Venusaur Poison Sludge Bomb → Ludicolo
+foes weak to: Water ×1
+Arcanine Arcanine L80 Fire 100% ▲ Water
+Ludicolo Ludicolo L80 Water Grass 100% ▲ Poison ✕ Water ×¼
+Gyarados Gyarados L80 Water Flying 100% ✦ ⚠ Intimidate ▲ — ↯ Water Waterfall → Venusaur moves first
+♟ winnable · ~3 steps + {Show the fight plan}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary trainer | Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits | plan: winnable · Venusaur › Blastoise
+== doubleReturn (mini)
+🎯 W89 · Tester Blastoise › Venusaur + {Expand} × {Close}
+⇆ Arcanine → Gyarados switches — moves aimed at it
+⇆ Ludicolo → Arcanine returns from the other slot — moves aimed at it
+⚔ Blastoise Steel Flash Cannon → Arcanine 2 hits then Wave Crash
+⚔ Venusaur Grass Power Whip → Gyarados ⚠ Intimidate 3 hits
+♟ winnable · ~3 steps + {Show the fight plan}

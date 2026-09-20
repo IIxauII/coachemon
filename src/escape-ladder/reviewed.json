@@ -468,6 +468,7 @@
     "src/phases/switch-biome-phase.ts#SwitchBiomePhase.start": "a9f6891a3f44ce47",
     "src/phases/switch-phase.ts#SwitchPhase.start": "ed41b815d27713a4",
     "src/phases/switch-summon-phase.ts#SwitchSummonPhase.onEnd": "41aad58d9ba95441",
+    "src/phases/switch-summon-phase.ts#SwitchSummonPhase.switchAndSummon": "129ad4960275c466",
     "src/phases/tera-phase.ts#TeraPhase.end": "bcafd9a810e3b1df",
     "src/phases/title-phase.ts#TitlePhase.initDailyRun": "99427a140b95afc3",
     "src/phases/title-phase.ts#TitlePhase.showOptions": "bb959f07cd3dd194",

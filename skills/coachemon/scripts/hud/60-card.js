@@ -11,7 +11,7 @@
 import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-screens.js";
 import { partyProfile } from "./08-party.js";
 import { readTurn } from "./25-turn.js";
-import { battleModel } from "./30-planner.js";
+import { arrivalTurn, battleModel } from "./30-planner.js";
 import { teamPlanner } from "./35-team-plan.js";
 import { learnModel, learnSummary } from "./40-learn.js";
 import { catchAdvice } from "./45-catch.js";
@@ -57,7 +57,8 @@ export const composeBattleCard = (turn, account) => {
     const { pin: _pin, ...shell } = battleModel(turn);
     return { ...shell, teamPlan: null, catch: null, trainer: !!trainer, double, moveTypes: [], verdict: "unavailable" };
   }
-  const team = trainer ? teamPlanner(turn) : null;
+  // Same turn the ⚔ line is answered on, so a returning switch-in is priced at base stat stages in both (#285).
+  const team = trainer ? teamPlanner(arrivalTurn(turn)) : null;
   // `pin` carries the live outcome the ⚔ line picked, so it stays off the card: the card's JSON is the panel's
   // change signature (98-tick).
   const { pin, ...model } = battleModel(turn, { team });

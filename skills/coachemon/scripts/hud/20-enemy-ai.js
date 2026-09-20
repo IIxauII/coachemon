@@ -414,11 +414,20 @@ export const skipsTurn = (env, e) => !!env.mysteryEncounter?.skipEnemyBattleTurn
 // and sends trainer.getNextSummonIndex(). Slots decide in field order and each decision moves the counter
 // (+1 on a switch, −1 floored at 0 otherwise) before the next slot reads it. Switches resolve before moves, so our
 // attack lands on the switch-in.
+//
+// The two slots can name the **same** party index (#285): a Roar into a `doubleOnly` trainer's double puts a
+// wrong-tagged mon on the field, both slots then score one bench, and `getNextSummonIndex` draws at the turn's own
+// seed offset, so they get the same answer. `EnemyCommandPhase` writes both commands regardless; `TurnStartPhase`
+// resolves them in field order, so by the time slot 1's `SwitchSummonPhase` runs, its party slot holds the mon slot 0
+// just withdrew — and that mon walks straight back in on the other slot. So the index is asked of the **live** party,
+// the way the game asks it, while the mon that *arrives* is read off a local replay of the game's own two-line swap
+// (`switch-summon-phase.ts#switchAndSummon`). `back` marks such a return: it arrives with `resetSummonData()`.
 export const sceneSwitches = (env, active) => {
   const tr = env.trainer;
   const out = new Map();
   if (!tr?.getPartyMemberMatchupScores) return out;
-  const enemies = env.foes;
+  // `env.foes` is `getEnemyParty()`; the copy is where the predicted swaps are replayed.
+  const party = [...env.foes];
   const slots = [...active].sort((x, y) => (x.getFieldIndex?.() ?? 0) - (y.getFieldIndex?.() ?? 0));
   let counter = env.enemySwitchCounter ?? 0;
   for (const e of slots) {
@@ -433,8 +442,16 @@ export const sceneSwitches = (env, active) => {
           const w = 1 - (counter ? 0.1 ** (1 / counter) : 0);
           if (best * w >= avg * (tr.config.isBoss ? 2 : 3)) {
             switched = true;
-            const to = enemies[tr.getNextSummonIndex(e.trainerSlot, scores)];
-            if (to && !skipsTurn(env, e) && ![...out.values()].some(v => v.to === to)) out.set(e, { to, ratio: 1 });
+            const i = tr.getNextSummonIndex(e.trainerSlot, scores);
+            const to = party[i];
+            // A skipped command is dropped by `TurnStartPhase`, so no phase runs and no swap happens.
+            if (to && !skipsTurn(env, e)) {
+              out.set(e, { to, ratio: 1, back: !!to.isOnField?.() });
+              // The field slots are the party's first `getBattlerCount()` entries, so an on-field mon's party index
+              // is its field index — the fallback for a scene that doesn't answer `getFieldIndex`.
+              const fi = e.getFieldIndex?.() ?? env.foes.indexOf(e);
+              if (fi >= 0) { party[i] = party[fi]; party[fi] = to; }
+            }
           }
         }
       }
