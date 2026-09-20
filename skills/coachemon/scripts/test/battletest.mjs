@@ -121,7 +121,7 @@ const scenarios = {
   // Both slots of a doubles trainer name the same bench index (#285): a force-switch has broken the party's tag
   // parity, so they score one bench and `getNextSummonIndex` hands them the same answer. The game resolves them in
   // field order, so slot 1's send-in is the mon slot 0 has already withdrawn — a **return**, with its own wording.
-  // Arcanine goes out at +2 Atk and comes back at base, because a switch-in arrives with `resetSummonData()`.
+  // Arcanine goes out at +6 Atk and comes back at base, because a switch-in arrives with `resetSummonData()`.
   doubleReturn: { double: true, trainer: { isBoss: false }, bench: [2], summonIndex: 2, party: [
     mon("Blastoise", 80, ["Water"], "Torrent", [250,130,170,140,180,130], [["Wave Crash","Water",120,"P"],["Flash Cannon","Steel",80,"S"]], true),
     mon("Venusaur", 80, ["Grass","Poison"], "Overgrow", [260,140,140,160,160,120], [["Power Whip","Grass",120,"P"],["Sludge Bomb","Poison",90,"S"]], true)],

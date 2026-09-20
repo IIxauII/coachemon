@@ -262,20 +262,13 @@ foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ▲ Water
 Ludicolo Ludicolo L80 Water Grass 100% ▲ Poison ✕ Water ×¼
 Gyarados Gyarados L80 Water Flying 100% ✦ ⚠ Intimidate ▲ — ↯ Water Waterfall → Venusaur moves first
-♟ Fight plan steps approximate likely lost
-☠ Arcanine Arcanine KOs 2/2 · win condition
-🛡 Blastoise save for Arcanine ~89%/turn · KO'd first
-🛡 Venusaur save for Arcanine ~41%/turn · KO'd first
-~1 Venusaur Grass Power Whip → Gyarados KO · 47% left
-~2 Blastoise Water Wave Crash → Arcanine falls · foe at 100%
-~3 Venusaur Poison Sludge Bomb → Arcanine falls · foe at 100%
-⚠ likely lost: nobody outspeeds Arcanine and it KOs 2 of 2 — maximise damage before it comes in, keep Blastoise, Venusaur healthy
+♟ winnable · ~3 steps + {Show the fight plan}
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-summary trainer | Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits | plan: likely lost · ☠ Arcanine KOs 2/2 · nobody outspeeds Arcanine and it KOs 2 of 2 — maximise damage before it comes in, keep Blastoise, Venusaur healthy
+summary trainer | Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits | plan: winnable · Venusaur › Blastoise
 == doubleReturn (mini)
 🎯 W89 · Tester Blastoise › Venusaur + {Expand} × {Close}
 ⇆ Arcanine → Gyarados switches — moves aimed at it
 ⇆ Ludicolo → Arcanine returns from the other slot — moves aimed at it
 ⚔ Blastoise Steel Flash Cannon → Arcanine 2 hits then Wave Crash
 ⚔ Venusaur Grass Power Whip → Gyarados ⚠ Intimidate 3 hits
-♟ likely lost · ☠ Arcanine · ~3 steps + {Show the fight plan}
+♟ winnable · ~3 steps + {Show the fight plan}

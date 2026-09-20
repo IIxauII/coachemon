@@ -1764,6 +1764,33 @@ const aimedAt = (turn, t, foe) => {
   return ours.length ? ours.map(p => ({ icon: iconOf(p), name: p.name })) : null;
 };
 
+// The switches the enemy is predicted to make this turn, keyed by the foe that leaves. During a free switch the enemy
+// hasn't decided anything: it picks its first command after our switch, against the field we choose. Its switch rule
+// isn't replayable against a hypothetical field, so predict none now; the CommandPhase refresh predicts against the
+// real field. (CheckSwitchPhase isn't offered in trainer battles.)
+const predictedSwitches = baseTurn => new Map(baseTurn.facts.decision === "check-switch" ? [] :
+  baseTurn.activeFoes().flatMap(f => {
+    const a = baseTurn.enemyAction(f);
+    return a.switchTo ? [[f, { to: a.switchTo, ratio: 1, back: !!a.switchBack }]] : [];
+  }));
+
+// The turn this refresh is answered on. A **returning** switch-in — the mon the other slot is withdrawing this same
+// turn (#285) — arrives with `resetSummonData()`, so the stat stages it built up on the field are gone when it lands.
+// It is the one switch-in the question arises for: an ordinary bench mon's stages were reset when *it* left, but this
+// one is still on the field, and `to` is the live object. (Only the stages are modelled; the rest of what the game
+// resets there isn't priced by any reader below.) The turn line and the fight plan must price it the same way, or the
+// card argues with itself (CONTEXT.md, *Fight plan*) — so the derived turn is memoised on the base turn and both take
+// it from here. `ifStay` keeps `baseTurn`, the world where it never left.
+export const arrivalTurn = baseTurn => baseTurn.memo("arrival", () => {
+  const arriving = [...predictedSwitches(baseTurn).values()].filter(v => v.back).flatMap(v => {
+    const st = v.to.summonData?.statStages ?? [];
+    const stages = {};
+    for (let i = 1; i <= 5; i++) if (st[i - 1]) stages[i] = -st[i - 1];
+    return Object.keys(stages).length ? [{ mon: v.to, stages }] : [];
+  });
+  return arriving.length ? baseTurn.assuming(arriving) : baseTurn;
+});
+
 // Plain data for one refresh: the field, the switches and a row per foe. Its JSON is part of the change signature, so
 // the DOM is only rebuilt when something the panel shows has actually changed. 60-card composes it with the fight
 // plan and the catch advice, and opens the sandbox all three run in.
@@ -1783,29 +1810,14 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
   const party = baseTurn.facts.party.filter(p => p && p.hp > 0);
   const foes = baseTurn.facts.foes.filter(f => f && f.hp > 0);
   const active = baseTurn.activeFoes();
-  // During a free switch the enemy hasn't decided anything: it picks its first command after our switch, against
-  // the field we choose. Its switch rule isn't replayable against a hypothetical field, so predict none now; the
-  // CommandPhase refresh predicts against the real field. (CheckSwitchPhase isn't offered in trainer battles.)
   const freeSwitch = baseTurn.facts.decision === "check-switch";
-  const predicted = new Map(freeSwitch ? [] : active.flatMap(f => {
-    const a = baseTurn.enemyAction(f);
-    return a.switchTo ? [[f, { to: a.switchTo, ratio: 1, back: !!a.switchBack }]] : [];
-  }));
+  const predicted = predictedSwitches(baseTurn);
   const switching = f => (predicted.get(f)?.ratio ?? 0) >= 1;
   // Plan against the field our moves will actually hit; if a switch is predicted, also keep the plan for
   // the case it stays, shown dim.
   const facing = active.map(f => (switching(f) ? predicted.get(f).to : f));
-  // A **returning** switch-in — the mon the other slot is withdrawing this same turn (#285) — arrives with
-  // `resetSummonData()`, so the stat stages it built up on the field are gone when it lands. It is the one switch-in
-  // the question arises for: an ordinary bench mon's stages were reset when *it* left, but this one is still on the
-  // field, and `to` is the live object. Plan on it at base stages; `ifStay` keeps `baseTurn`, where it never left.
-  const arriving = [...predicted.values()].filter(v => v.back).flatMap(v => {
-    const st = v.to.summonData?.statStages ?? [];
-    const stages = {};
-    for (let i = 1; i <= 5; i++) if (st[i - 1]) stages[i] = -st[i - 1];
-    return Object.keys(stages).length ? [{ mon: v.to, stages }] : [];
-  });
-  const turn = arriving.length ? baseTurn.assuming(arriving) : baseTurn;
+  // Shadowing `turn` means nothing in the body has to know a returning switch-in was priced back to base stages.
+  const turn = arrivalTurn(baseTurn);
   // Targets are field positions, so a lock resolved against the field holds for the switch-in taking that position.
   const locked = lockedCommand(turn, party, active, active.length === 2);
   // The panel refreshes every second; a plan only changes with what the turn's key covers (and slot 0's command).

@@ -411,7 +411,7 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   e0.trainerSlot = 1; e1.trainerSlot = 2;
   const bench = mkMon({ id: "b", player: false, fieldIndex: null, moves: [{ id: 1, name: "A" }] });
   const trainer = { config: { isBoss: false }, getPartyMemberMatchupScores: sl => (sl === 1 ? [[2, 99]] : []),
-    getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: () => 2, shouldTera: () => false };
+    getSortedPartyMemberMatchupScores: sc => sc, getNextSummonIndex: (_sl, sc) => sc[0][0], shouldTera: () => false };
   const ai = setup({ player: [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })], enemy: [e0, e1, bench], double: true, trainer });
   const asked = [];
   for (const e of [e0, e1]) nextMoveOf(e, function () { asked.push(this.id); return { move: 1, targets: [0], useMode: 0 }; });
