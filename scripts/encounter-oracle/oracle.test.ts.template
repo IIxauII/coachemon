@@ -870,13 +870,13 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const card = readCard(game);
     const outcome: string = card.options[0].outcome;
     expect(card.options[0].exact, "the fee option claims an exact three").toBe(true);
-    // `$1,010: Rattata L32, shiny Pidgey L32, Caterpie L32 (hidden ability) in turn - ...`
+    // `$1,010: Rattata L32, Pidgey ★shiny L32, Caterpie L32 (hidden ability) in turn — …`
     const named = /^\$[\d,]+: (.+?) in turn — /.exec(outcome);
     expect(named, `option 1 reads "${outcome}"`).toBeTruthy();
     const claimed = named![1].split(", ").map(one => {
-      const m = /^(shiny )?(.+?) L(\d+)( \(hidden ability\))?$/.exec(one);
+      const m = /^(.+?)( ★shiny)? L(\d+)( \(hidden ability\))?$/.exec(one);
       expect(m, `"${one}" is a named mon`).toBeTruthy();
-      return { shiny: !!m![1], name: m![2], level: Number(m![3]), hiddenAbility: !!m![4] };
+      return { shiny: !!m![2], name: m![1], level: Number(m![3]), hiddenAbility: !!m![4] };
     });
     expect(claimed, "the fee names all three").toHaveLength(3);
 

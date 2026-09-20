@@ -138,10 +138,14 @@ const BAIT_FLEES = 0.8, MUD_DULLS = 0.8;
 const safariThree = c => {
   const out = safariPreview(c.s, p => ({ ...safariMonData(p), worth: tryDo(() => catchWorth(c.account, p)) }));
   if (!out.mons) return out;
-  return { mons: out.mons.map(m => ({ ...m, wanted: !!m.worth && m.worth.value >= m.worth.show })) };
+  return { mons: out.mons.map(m => ({ ...m, wanted: worthKeeping(m.worth) })) };
 };
-const safariName = m => `${m.shiny ? "shiny " : ""}${m.name} L${m.level ?? "?"}${m.hiddenAbility ? " (hidden ability)" : ""}`;
-const safariWhy = m => (m.worth?.reasons?.length ? m.worth.reasons.slice(0, 2).join(", ") : "nothing new");
+const worthKeeping = worth => !!worth && worth.value >= worth.show;
+const safariName = m => `${m.name}${m.shiny ? " ★shiny" : ""} L${m.level ?? "?"}${m.hiddenAbility ? " (hidden ability)" : ""}`;
+// The two reasons a catch is weighed on, as the card says them everywhere else it prices one.
+const worthWhy = worth => (worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new");
+// The menu the fee buys, spelled once: the fee names it a screen early and every turn re-opens it.
+const SAFARI_MENU = "ball, bait, mud or run each time, each turn judged as it comes";
 
 // What each move is worth, played out to the end: the chance this mon is eventually caught under best play. The two
 // stages are the only state (13 × 13, reset per mon) and there is no turn limit, so the minigame is a small Markov
@@ -752,22 +756,25 @@ const RULES = {
     // With nothing to name, the call falls back to what the fee buys in general — the line this option carried before
     // the three were reachable.
     const buys = mons
-      ? `${mons.map(safariName).join(", ")} in turn — ball, bait, mud or run each time, each turn judged as it comes`
-      : "three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level";
+      ? `${mons.map(safariName).join(", ")} in turn — ${SAFARI_MENU}`
+      : `three wild mons in turn — ${SAFARI_MENU}. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level`;
     // Money alone decides it only while the three are unknown; once they are named, one wanted mon out of three is a
     // take and none is a leave.
     const worthIt = !mons || wanted.length > 0;
     const left = money(c.s.money - price);
+    // What the three are worth is the whole reason they are named while the fee is out of reach — so the
+    // unaffordable line says it too, and the money becomes the clause rather than the answer.
+    const worthLine = !mons ? null
+      : wanted.length ? `${wanted.length === 1 ? "one of the three is" : `${wanted.length} of the three are`} worth a ball: ${worthWhy(wanted[0].worth)}`
+        : `none of the three is worth a ball — ${worthWhy(mons[0].worth)}`;
     return {
       // What bait and mud are worth is a per-turn call on the mon in front of you, so it is left to `OVERRIDES`
       // rather than guessed at here, a screen early.
       rows: [
         { outcome: `${money(price)}: ${buys}`, exact: !!mons,
           verdict: afford && worthIt ? "take" : "ok",
-          why: !afford ? `leaves only ${left}`
-            : !mons ? `leaves ${left}`
-              : wanted.length ? `${wanted.length === 1 ? "one of the three is" : `${wanted.length} of the three are`} worth a ball: ${safariWhy(wanted[0])} — leaves ${left}`
-                : `none of the three is worth a ball — ${safariWhy(mons[0])}`,
+          why: worthLine ? `${worthLine}, ${afford ? `and it leaves ${left}` : `but it leaves only ${left}`}`
+            : afford ? `leaves ${left}` : `leaves only ${left}`,
           needs: "the money" },
         { ...LEAVE, verdict: afford && worthIt ? "ok" : "take" },
       ],
@@ -899,8 +906,8 @@ const OVERRIDES = {
     const now = safariPlay(rate)(cs, fs);
     const p = safariCatch(rate, cs), q = safariFlee(rate, fs);
     const worth = tryDo(() => catchWorth(c.account, mon));
-    const wanted = !!worth && worth.value >= worth.show;
-    const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
+    const wanted = worthKeeping(worth);
+    const why = worthWhy(worth);
     const best = ["bait", "mud"].reduce((b, k) => (now[k] > now[b] + 1e-9 ? k : b), "ball");
     const odds = k => `${pct(now[k])} of the time from here`;
     // Running is priced against what it buys, so the same replay the fee screen used names what comes next. The
@@ -928,7 +935,7 @@ const OVERRIDES = {
           : "let it go — the last of the three, so this ends the safari",
         verdict: wanted ? "avoid" : "take",
         why: wanted ? `you would be giving up a ${pct(now[best])} catch`
-          : next?.wanted ? `nothing here, and ${safariName(next)} is worth a ball: ${safariWhy(next)}` : why },
+          : next?.wanted ? `nothing here, and ${safariName(next)} is worth a ball: ${worthWhy(next.worth)}` : why },
       ],
     };
   },

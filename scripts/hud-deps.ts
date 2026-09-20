@@ -503,6 +503,7 @@ export const HUD_DEPS = {
     `src/timed-event-manager.ts#TimedEventManager.getAllValidEventEncounters`,
     `src/utils/common.ts#randSeedItem`,
   ],
+
   /**
    * §20. Catch odds and whether a ball is allowed at all, both re-implemented; the
    * fusion-aware shiny check and its candy, the event's shiny multiplier, and the move

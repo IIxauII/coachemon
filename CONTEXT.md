@@ -149,6 +149,8 @@ How sure the **coach** is of something it claims, carried by the claim itself ra
 
 A claim is never surer than what it derives from. Confidence is claimed, then **scored**: it is checked against what actually happens, and a claim that has ever been wrong is marked as such for the rest of the run.
 
+**exact** survives a live input only where nothing the player could do sits between the claim and the thing it describes: a read off a draw the run cannot move, and off a table the run cannot rebuild, is exact even when one of its inputs is read live.
+
 Every **preview** field carries one, and so does the enemy's move in a **turn read**.
 
 ## Journal
@@ -180,7 +182,7 @@ What the **run seed** already decides about something the run has not reached ye
 
 The last two are the same shape — what an unpaid purchase would buy — and it is what makes the price a real decision rather than a sum of money.
 
-Each field of a preview carries its own **confidence**, and all of them are conditional on the run not changing first: a catch, an evolution, a shop pick or a biome change re-rolls what a preview was read from. A preview read out of a fork the run cannot move, off a table the run cannot rebuild, is **exact** — and stays exact only while nothing the player could do sits between the read and the thing it describes.
+Each field of a preview carries its own **confidence**, and all of them are conditional on the run not changing first: a catch, an evolution, a shop pick or a biome change re-rolls what a preview was read from.
 
 Not to be confused with a **tier**, which throughout is the game's own word for a rarity band (an encounter's, a species').
 

@@ -52,7 +52,13 @@
 // of the live chunks, and the event branch needs the timed-event manager. Missing either, the replay declines with a
 // reason and the fee option falls back to the money-only line it carried before — the card never guesses at what the
 // fee buys.
-import { iconOf, typesOf } from "./01-core.js";
+//
+// ---- **This file calls game code; it never decides when that is allowed.**
+// `46-encounter.js` is the only importer (the `@only` lines below), and it is the one that opens the sandbox —
+// `encounterModel` wraps its whole build in it. That is not a formality here: `BattleScene.executeWithSeedOffset` has
+// **no `try`/`finally`**, so it restores `Phaser.Math.RND.state()` on the normal path only. A throw inside the fork is
+// caught below and turned into a decline, but the live stream would be left sown at the fork offset; the sandbox is
+// what puts it back.
 import { gameEvents, gameTables } from "./04-game-tables.js";
 
 // `NUM_SAFARI_ENCOUNTERS`. The fork offsets are `waveIndex × 1000 × remaining` for remaining counting down from it.
@@ -133,8 +139,10 @@ const safariSpecies = reg => {
 const drawMon = (s, parts, chance) => {
   const { species: reg, events } = parts;
   const level = s.currentBattle.getLevelForWave();
-  // Safari asks for no legendary, no sub-legendary and no mythical, and passes no species filter.
-  const eventEncounters = tryDo(() => events.getAllValidEventEncounters(false, false, false, () => true), []) ?? [];
+  // Safari asks for no legendary, no sub-legendary and no mythical, and passes no species filter. `partsOf` has
+  // already proved the method is there, so a throw here is a real failure — and an empty list would be a *different*
+  // draw, not a missing one. Let it out: `safariPreview` turns it into a decline rather than a wrong species.
+  const eventEncounters = events.getAllValidEventEncounters(false, false, false, () => true) ?? [];
   let sp = null, fromEvent = false, formIndex = null;
   if (chance && eventEncounters.length > 0 && (chance === 100 || rnd(100) < chance)) {
     const enc = pick(eventEncounters);
@@ -155,19 +163,14 @@ const drawMon = (s, parts, chance) => {
   return { p, fromEvent };
 };
 
-// The default reading of one previewed mon: everything the fee decision is made on except what it is worth to *this*
-// account, which is the card's question and needs the account the card holds.
+// What the fee decision is made on, and nothing else: which mon, how good a one, and how far off. What it is worth to
+// *this* account is the card's question rather than the game's, and needs the account the card holds.
+// @only 46-encounter, tests: safariMonData
 export const safariMonData = p => ({
   name: tryDo(() => p.getNameToRender(), p.name) ?? p.name ?? "?",
-  icon: iconOf(p),
   level: p.level ?? null,
-  types: tryDo(() => typesOf(p), []),
-  ability: tryDo(() => p.getAbility()?.name),
   hiddenAbility: p.abilityIndex === 2,
   shiny: !!tryDo(() => p.isShiny(), p.shiny),
-  variant: p.shiny ? (p.variant ?? 0) : null,
-  catchRate: tryDo(() => p.species.catchRate),
-  speciesId: tryDo(() => p.species.speciesId),
 });
 
 // The three mons the fee buys, in the order they are summoned. `read` maps each built mon to what the caller wants
@@ -175,7 +178,8 @@ export const safariMonData = p => ({
 // `48-preview.js` does with the party it builds.
 //
 // `{ mons }` on success, `{ why }` when the live build can't be replayed. Never throws.
-export const safariPreview = (s, read = safariMonData) => {
+// @only 46-encounter, tests: safariPreview
+export const safariPreview = (s, read) => {
   const parts = partsOf(s);
   if (parts.why) return { why: parts.why };
   const w = tryDo(() => s.currentBattle.waveIndex);
