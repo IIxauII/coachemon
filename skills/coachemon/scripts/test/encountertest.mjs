@@ -480,25 +480,31 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
 {
   // The encounter hands the last two their templates — 1 STRONGER + min(ceil(wave / 20), 5) AVERAGE, then ELITE_FOUR
   // (6) — and the card reads both sizes off the config, so the fixture carries the sizes the game would have built.
+  // The first keeps the biome trainer's own, so the fixture gives it one the card must NOT read as the fight's size.
   const challengers = ({ wave = 30, ...extra } = {}) => ({ type: 0, tier: GREAT, wave, party: teamAt(wave + 2),
     labels: ["Normal", "Hard", "Brutal"], options: [option(), option(), option()],
-    configs: [trainerCfg("Youngster Joey", 0, 3), trainerCfg("Ace Trainer May", 1, 1 + Math.min(Math.ceil(wave / 20), 5)),
+    configs: [trainerCfg("Youngster Joey", 0, 2), trainerCfg("Ace Trainer May", 1, 1 + Math.min(Math.ceil(wave / 20), 5)),
       trainerCfg("Leader Brock", 1.5, 6)], ...extra });
-  // Wave 30, a party at the wave's own level: the fights land at L32, L35 and L37 with teams of 3, 3 and 6.
+  // Wave 30, a party at the wave's own level: the fights land at L32, L35 and L37 with teams of ?, 3 and 6.
   const m = show("mysterious challengers", challengers(), ["full"]).model();
   assert.match(m.options[0].outcome, /^fight Youngster Joey → a Common TM/);
   assert.match(m.options[1].outcome, /^fight Ace Trainer May → 2 Ultra/);
   assert.match(m.options[2].outcome, /^fight Leader Brock with an Elite Four team → 2 Rogue/);
   assert.equal(m.tier, "great");
   assert.equal(m.options[1].why, "3 mons at ~L35 vs your L32, 3 of yours fit to fight");
+  // `Trainer.getPartyTemplate` picks by a func, else a drawn index, so the biome trainer's own size is not claimed.
+  assert.equal(m.options[0].why, "their own team at ~L32 vs your L32, 3 of yours fit to fight");
+  assert.doesNotMatch(m.options[0].why, /\d mons?/, "the config's partyTemplates[0] is not the fight's team size");
   assert.deepEqual(verdicts(m), ["ok", "take", "avoid"], "the gym leader's +5 levels is hard, the tougher trainer isn't");
   // Late enough and the built teams outgrow you, so the mildest fight is the call.
   const late = mount(challengers({ wave: 100, seedOffset: 100512 })).model();
   assert.deepEqual(verdicts(late), ["take", "avoid", "avoid"]);
-  // A config with no trainerConfig at all still reads, just without a name.
+  // A config with no trainerConfig at all still reads, just without a name — and reading nothing is not a reason to
+  // send you at the gym leader.
   const bare = mount(challengers({ configs: [] })).model();
   assert.match(bare.options[0].outcome, /^fight a trainer →/);
   assert.equal(bare.options[0].why, null);
+  assert.deepEqual(verdicts(bare), ["take", "ok", "ok"], "nothing readable → the mildest fight, not the brutal one");
 }
 
 // ---- 15. Slumbering Snorlax: the thief takes the Leftovers for free; a beaten party naps instead.
@@ -571,6 +577,14 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.deepEqual(verdicts(m), ["take", "ok", "ok"]);
   // Past wave 50 the boss takes Speed too.
   assert.match(mount(avarice({ wave: 60, seedOffset: 60512 })).model().options[0].outcome, /\+1 SpD\/Spe/);
+  // The seed goes to every member of the WHOLE party without one — `party.forEach`, fainted included, skipping
+  // whoever already holds a Reviver Seed — and the recruit level is the whole party's best, fainted included too
+  // (`getHighestLevelPlayerPokemon(false, true)`).
+  const downed = pk("Dragonite", ["Dragon", "Flying"], 50, { hp: 0 });
+  const holder = pk("Snorlax", ["Normal"], 30, { held: [make("PokemonInstantReviveModifier", {})] });
+  const mixed = mount(avarice({ party: [...team(), downed, holder] })).model();
+  assert.match(mixed.options[0].why, /4 seeds at stake$/, "five lack a seed; the fainted one counts, the holder doesn't");
+  assert.match(mixed.options[2].outcome, /^let it eat: Greedent joins at L48 /, "the fainted L50 still sets the level");
   // No record of the theft: the counts go quiet rather than claiming zero berries were taken.
   const blind = mount(avarice({ misc: null })).model();
   assert.equal(blind.options[1].exact, false);
@@ -616,11 +630,11 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   // A full bug team: the show is a Master Ball plus the access items you don't already own.
   const allBugs = ["Scyther", "Pinsir", "Heracross", "Volcarona", "Golisopod", "Durant"].map(n => bug(n));
   const six = mount(superfan(allBugs)).model();
-  assert.equal(six.options[1].outcome, "show off your bug types (6 bugs) → a Master Ball, a Mega Bracelet, a Dynamax Band & an evolution or form-change item");
+  assert.equal(six.options[1].outcome, "show off your bug types (6 bugs) → a Master Ball, a Mega Bracelet, a Dynamax Band & likely an evolution or form-change item");
   assert.deepEqual(verdicts(six), ["ok", "take", "ok"]);
   // Already holding the access items: they drop out of the prize.
   const owned = mount(superfan(allBugs, { modifiers: [make("MegaEvolutionAccessModifier", {}), make("GigantamaxAccessModifier", {})] })).model();
-  assert.match(owned.options[1].outcome, /→ a Master Ball, an evolution or form-change item$/);
+  assert.match(owned.options[1].outcome, /→ a Master Ball, likely an evolution or form-change item$/);
   // No seed offset: the tutor moves go unnamed rather than guessed.
   const blind = mount(superfan([...team(), bug("Scyther")], { seedOffset: null })).model();
   assert.match(blind.options[0].outcome, /a free tutor move from four bug pools$/);

@@ -344,6 +344,7 @@
     "src/field/trainer.ts#Trainer.getNextSummonIndex": "1c595568b8f8812a",
     "src/field/trainer.ts#Trainer.getPartyLevels": "0c6a520892d4e3fa",
     "src/field/trainer.ts#Trainer.getPartyMemberMatchupScores": "82a7b36e6b9fa530",
+    "src/field/trainer.ts#Trainer.getPartyTemplate": "d8f838245b7a7ec6",
     "src/field/trainer.ts#Trainer.getSortedPartyMemberMatchupScores": "3d5d64ba2df8fec2",
     "src/field/trainer.ts#Trainer.shouldTera": "774a582789235c2d",
     "src/game-mode.ts#GameMode.getFixedBattle": "6d4d766f9b28bf6e",

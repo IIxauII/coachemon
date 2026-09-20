@@ -1355,8 +1355,12 @@ left unjudged for the same reason Field Trip is. Gates are waves 10–180 unless
 read**: `initBattleWithEnemyConfig` takes its levels from `trainer.getPartyLevels(waveIndex)` (`src/field/trainer.ts:262`,
 a base of `1 + w/2 + (w/25)²` times a per-slot strength multiplier) and only then adds the shared
 `max(round(wave / 10 × levelAdditiveModifier), 0)`. What is knowable before the fight is the trainer's name, that
-additive, and the team size where the encounter sets the templates itself — which is what the card reports, by the
-rule the ultra and rogue table below states in full. And
+additive, and the team size **where the encounter sets the templates itself** — which is what the card reports, by the
+rule the ultra and rogue table below states in full. Where it does not, the size is not knowable here at all:
+`Trainer.getPartyTemplate` prefers the config's `partyTemplateFunc`, and without one indexes `partyTemplates` at
+`partyTemplateIndex`, which is `randSeedItem` over the indices (`field/trainer.ts:61`, `:255`) — so `partyTemplates[0]`
+is not what the battle will use, and Mysterious Challengers' first option claims no count.
+
 Delibird-y's degradation is a **live modifier read**, not a draw: `getStackCount()` against `getMaxStackCount()` on the
 charm each option would give.
 
@@ -1386,7 +1390,9 @@ on three of them, so at most one a run). Same file convention as the table above
 The card judges a fight it can't see the party of — every trainer battle above — on the level gap alone, or on whether
 the trainer brings more mons than its `MONS_EACH` allowance for each member of ours still above half HP. The level is
 `enemyLevels[0]` plus the same `levelAdditiveModifier` scaling as a wild config, and the size is the config's own
-`pokemonConfigs` where it has them, else `trainerConfig.partyTemplates[0].size`.
+`pokemonConfigs` where it has them, else `trainerConfig.partyTemplates[0].size` — which only settles the fight where the
+encounter set that template itself, per the great-tier note above.
+
 `onInit` leaves what it rolled on the encounter: `misc` (Fight or Flight's item, Berries Abound's `numBerries` /
 `fastestPokemon` / `enemySpeed`, Uncommon Breed's `pokemon`, the GTS offers, Teleporting Hijinks' `price`) and
 `enemyPartyConfigs[0].pokemonConfigs` (species, `level` when fixed, `isBoss`). `initBattleWithEnemyConfig` adds
@@ -1417,9 +1423,10 @@ line, not `$?`.
 
 **Unmeasured**: every other 🔮 outcome is a replay of the source's draw order, never checked against an encounter as it
 resolved. A closure that gains an early `await`, or a draw before the one the HUD replays, makes it confidently wrong.
-The oracle (`npm run oracle:encounter`) drives the card against the real game for the **common tier only**, so the ultra
-and rogue rules above rest on the source alone — including the two new replays, Dark Deal's taken member and Clowning
-Around's type shuffle, and the `misc` reads the rest of them lean on.
+The oracle (`npm run oracle:encounter`) arrives at every **common and great** encounter and checks two of the great tier's
+claims outright, but it does not reach the **ultra or rogue** tiers at all — so those rules rest on the source alone,
+including the two replays Dark Deal's taken member and Clowning Around's type shuffle, and the `misc` reads the rest of
+them lean on. Widening it is #298.
 The **Mystery Encounter journal** (`55-journal.js`) is what that check will be read off: it writes each encounter met
 in a live run — the card as it was shown, the pick, and the run state at every tick it moved — to `localStorage`, so
 the comparison is reading a harvested file rather than playing until every encounter has turned up.

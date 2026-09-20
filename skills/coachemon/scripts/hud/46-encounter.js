@@ -65,6 +65,9 @@ const HARD_LEVEL_GAP = 5, BOSS_LEVEL_EDGE = 3;
 // How many of a trainer's mons one fit member of ours is reckoned to get through, for the fights whose party the card
 // can't see and so can't match up by type.
 const MONS_EACH = 3;
+// Mysterious Challengers' three fights, in option order, each richer than the last.
+const CHALLENGER_REWARDS = ["a Common TM, a Great TM, a Memory Mushroom + the usual rolls",
+  "2 Ultra + 2 Great + the usual rolls", "2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP"];
 // Bug-Type Superfan's move tutor: one draw per pool, in this order. Only the pick is forked, so the names ride along.
 const BUG_TUTORS = [
   [[MoveId.MEGAHORN, "Megahorn"], [MoveId.ATTACK_ORDER, "Attack Order"], [MoveId.BUG_BITE, "Bug Bite"], [MoveId.FIRST_IMPRESSION, "First Impression"], [MoveId.LUNGE, "Lunge"]],
@@ -154,12 +157,15 @@ const context = (s, me, options, account) => {
   };
   // A trainer fight, whose party the card can't see: no types to match up, so it is judged on the level gap and on how
   // many mons we would have to get through against how many of ours are still fit to.
+  // `mons: null` is a team whose size nothing here settles — a trainer keeping its own party templates, which
+  // `Trainer.getPartyTemplate` picks from by a template func, else by a random index (`field/trainer.ts:61`, `:255`),
+  // so `partyTemplates[0]` is not what the battle will use. Then the call is the level gap alone, and the card says so.
   const gauntlet = (t, { mons = t?.size ?? 0, ours = null } = {}) => {
     if (!t || !alive.length) return { hard: false, text: "" };
     const fit = ours ?? alive.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.5).length;
     const gap = t.level - top.level;
-    return { hard: gap >= HARD_LEVEL_GAP || mons > fit * MONS_EACH, fit,
-      text: `${plural(mons, "mon")} at ~L${t.level} vs your L${top.level}, ${fit} of yours fit to fight` };
+    return { hard: gap >= HARD_LEVEL_GAP || (mons != null && mons > fit * MONS_EACH), fit,
+      text: `${mons == null ? "their own team" : plural(mons, "mon")} at ~L${t.level} vs your L${top.level}, ${fit} of yours fit to fight` };
   };
   // The first party member not already holding a full stack of a held item, which is who the game hands a fresh one to.
   const roomFor = cls => party.find(p => {
@@ -167,6 +173,8 @@ const context = (s, me, options, account) => {
     return !cur || (tryDo(() => cur.getStackCount()) ?? 0) < (tryDo(() => cur.getMaxStackCount()) ?? Infinity);
   }) ?? null;
   const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
+  // The whole party's best level, fainted included — what `getHighestLevelPlayerPokemon(false, true)` reads.
+  const best = party.reduce((t, p) => Math.max(t, p.level ?? 0), 0) || (top?.level ?? 1);
   // How beaten up the party is, for the encounters that offer a heal against a reward.
   const maxHp = party.reduce((t, p) => t + tryDo(() => p.getMaxHp(), 0), 0);
   const wounded = maxHp ? party.reduce((t, p) => t + Math.max(tryDo(() => p.getMaxHp(), 0) - p.hp, 0), 0) / maxHp : 0;
@@ -178,7 +186,7 @@ const context = (s, me, options, account) => {
     return !!m && (tryDo(() => m.getStackCount()) ?? m.stackCount ?? 0) >= (tryDo(() => m.getMaxStackCount()) ?? Infinity);
   };
   return { s, account, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare,
-    trainer, gauntlet, roomFor, wounded, fainted, held, maxed, token: k => strip(me.dialogueTokens?.[k]) || null,
+    trainer, gauntlet, roomFor, best, wounded, fainted, held, maxed, token: k => strip(me.dialogueTokens?.[k]) || null,
     pre: seeded(1), during: seeded(500), post: seeded(2000) };
 };
 
@@ -627,16 +635,16 @@ const RULES = {
   [CHALLENGERS]: c => {
     // Three trainer battles off one wave, richer the harder they are. Nothing about their teams is readable — the
     // configs hold a `trainerConfig`, not species — so the call is the gauntlet one: the level, and how many mons
-    // they bring against how many of ours are still fit. The encounter sets the last two templates itself (1 STRONGER
-    // + min(ceil(wave / 20), 5) AVERAGE, then ELITE_FOUR), so `trainer` reads both sizes off the config.
-    const rows = [
-      { t: c.trainer(0), reward: "a Common TM, a Great TM, a Memory Mushroom + the usual rolls" },
-      { t: c.trainer(1), reward: "2 Ultra + 2 Great + the usual rolls" },
-      { t: c.trainer(2), reward: "2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP" },
-    ].map(r => ({ ...r, g: c.gauntlet(r.t) }));
-    // The richest fight that isn't hard; if all three are, the mildest one.
+    // they bring against how many of ours are still fit. Only the last two have a size to read: the encounter hands
+    // them their templates itself (1 STRONGER + min(ceil(wave / 20), 5) AVERAGE, then ELITE_FOUR). The first keeps
+    // the biome trainer's own, which the battle picks from later, so its size is left unclaimed.
+    const rows = [c.trainer(0), c.trainer(1), c.trainer(2)].map((t, k) => ({
+      t, g: c.gauntlet(t, k === 0 ? { mons: null } : {}), reward: CHALLENGER_REWARDS[k],
+    }));
+    // The richest fight that isn't hard; if all three are, the mildest one. A row we couldn't read is never promoted —
+    // reading nothing is not evidence the fight is safe.
     let best = 0;
-    for (let k = 1; k < rows.length; k++) if (!rows[k].g.hard) best = k;
+    for (let k = 1; k < rows.length; k++) if (rows[k].t && !rows[k].g.hard) best = k;
     return rows.map(({ t, g, reward }, k) => ({
       outcome: `fight ${t?.name ?? ["a trainer", "a tougher trainer", "a gym leader"][k]}${k === 2 ? " with an Elite Four team" : ""} → ${reward}`,
       battle: "trainer", verdict: k === best ? "take" : g.hard ? "avoid" : "ok", why: g.text || null,
@@ -679,7 +687,8 @@ const RULES = {
     const coin = c.maxed("MoneyMultiplierModifier"), jar = c.maxed("LevelIncrementBoosterModifier"),
       pouch = c.maxed("PreserveBerryModifier"), charm = c.maxed("HealingBoosterModifier");
     // Rank by what you would actually get: the Amulet Coin compounds, a spare berry is the cheapest thing to give up.
-    const best = !coin && afford ? 0 : !jar || !pouch ? 1 : !charm ? 2 : 0;
+    // With every charm maxed all three hand back a Shell Bell, so the money is only worth it if it's spare.
+    const best = !coin && afford ? 0 : !jar || !pouch ? 1 : !charm ? 2 : afford ? 0 : 1;
     return [
       { outcome: `${money(price)}: an Amulet Coin${coin ? shell : ""}`, verdict: best === 0 ? "take" : "ok",
         why: afford ? `leaves ${money(c.s.money - price)}` : `leaves only ${money(c.s.money - price)}`, needs: "the money" },
@@ -700,7 +709,9 @@ const RULES = {
     const back = per.reduce((t, n) => t + Math.floor(n * 2 / 5), 0);
     const f = c.foe(0);
     const fight = c.fight(f);
-    const seedless = c.party.filter(p => p.hp > 0).length;
+    // `givePartyPokemonReviverSeeds` walks the whole party — fainted included — and skips whoever already holds one.
+    const seedless = c.party.filter(p => !(tryDo(() => p.getHeldItems(), []) ?? [])
+      .some(m => m?.constructor?.name === "PokemonInstantReviveModifier")).length;
     const enraged = c.wave < 50 ? "+1 SpD" : "+1 SpD/Spe";
     return [
       { outcome: `fight Greedent (${f?.bars || 3} bars, ${enraged}, Stuff Cheeks on turn 1, eating the ${plural(stolen, "berry", "berries")} it took) → rewards, and a Reviver Seed for every mon without one`,
@@ -708,7 +719,8 @@ const RULES = {
         why: [fight.text, seedless ? `${plural(seedless, "seed")} at stake` : null].filter(Boolean).join(" · ") },
       { outcome: `beg: ${plural(back, "berry", "berries")} of your ${stolen} come back, random types, the rest are gone`,
         exact: !!stolen, verdict: back && fight.hard ? "take" : "ok", why: back ? null : "you get nothing back" },
-      { outcome: `let it eat: Greedent joins at L${Math.max((c.top?.level ?? 3) - 2, 1)} with its passive and Thrash / Body Press / Stuff Cheeks / Slack Off; every berry is gone`,
+      // `getHighestLevelPlayerPokemon(false, true)` takes the whole party's best level, a fainted mon's included.
+      { outcome: `let it eat: Greedent joins at L${Math.max(c.best - 2, 1)} with its passive and Thrash / Body Press / Stuff Cheeks / Slack Off; every berry is gone`,
         verdict: "ok", why: "a free mon, for every berry you own" },
     ];
   },
@@ -743,7 +755,8 @@ const RULES = {
     // The reward tier counts every Bug type in the party, fainted ones too.
     const bugs = c.party.filter(p => tryDo(() => p.isOfType(PokemonType.BUG), typesOf(p).includes("Bug"))).length;
     const extras = [c.held("MegaEvolutionAccessModifier") ? null : "a Mega Bracelet",
-      c.held("GigantamaxAccessModifier") ? null : "a Dynamax Band", "an evolution or form-change item"].filter(Boolean);
+      // The fourth slot is pushed only `if (specialOptions.length > 0)`, so it is an "up to", not a promise.
+      c.held("GigantamaxAccessModifier") ? null : "a Dynamax Band", "likely an evolution or form-change item"].filter(Boolean);
     const prize = bugs < 2 ? "a Super Lure + a Great Ball" : bugs < 4 ? "a Quick Claw + a Max Lure + an Ultra Ball"
       : bugs < 6 ? "a Grip Claw + a Max Lure + a Rogue Ball" : `a Master Ball, ${joinNames(extras)}`;
     const net = c.opt(2).enabled;

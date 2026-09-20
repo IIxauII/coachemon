@@ -253,7 +253,7 @@ summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Can
 == mysterious challengers (full)
 🎭 Mysterious Challengers great − {Minimal overview} × {Close}
 · Normal — fight Youngster Joey → a Common TM, a Great TM, a Memory Mushroom + the usual rolls
-⚔ trainer · 3 mons at ~L32 vs your L32, 3 of yours fit to fight
+⚔ trainer · their own team at ~L32 vs your L32, 3 of yours fit to fight
 ★ Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls
 ⚔ trainer · 3 mons at ~L35 vs your L32, 3 of yours fit to fight
 ✗ Brutal — fight Leader Brock with an Elite Four team → 2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP

@@ -672,6 +672,9 @@ export const HUD_DEPS = {
     `src/data/trainers/trainer-config.ts#TrainerConfig.initForStatTrainer`,
     `src/data/trainers/trainer-party-template.ts#trainerPartyTemplates`,
     `src/data/trainers/trainer-party-template.ts#TrainerPartyCompoundTemplate.constructor`,
+    // Why a trainer's own templates settle nothing: the func wins, and the index is drawn.
+    `src/field/trainer.ts#Trainer.getPartyTemplate`,
+    `src/field/trainer.ts#Trainer.getPartyLevels`,
   ],
 
   /**
