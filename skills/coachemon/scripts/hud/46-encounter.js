@@ -10,6 +10,10 @@
 // with each primary requirement's `queryParty`, which only filters.
 // What an option does lives in closures (`onPreOptionPhase`, `onOptionPhase`, `onPostOptionPhase`) that can't be read,
 // so the outcome of each encounter below is re-implemented from its source file; the rest get the generic reading.
+// A **continuous encounter** re-opens the same screen with `overrideOptions` — options that are not on `me.options`,
+// so nothing keys them by index. Safari Zone is the only one, and its menu is where its real decisions are, so those
+// menus are judged by a second table (`OVERRIDES`) keyed by encounter type and read positionally; every other
+// secondary menu still gets the generic reading, because the card knows nothing about it.
 // The draws inside those closures are forks: `MysteryEncounterPhase.handleOptionSelect` runs onPreOptionPhase in
 // `executeWithSeedOffset(fn, encounter.getSeedOffset())`, MysteryEncounterOptionSelectedPhase the option phase at
 // `getSeedOffset() * 500`, PostMysteryEncounterPhase the post phase at `getSeedOffset() * 2000` — all on the run seed.
@@ -27,7 +31,7 @@
 // (a boss: within 3 levels under it). A **trainer** fight has no party to match up against — the mons are built when the
 // battle starts — so it is hard on the level gap alone, or when it brings more than MONS_EACH mons for each member of
 // ours still fit to fight. Money is spent freely only while it leaves RESERVE_WAVES waves' worth of reward money.
-import { TYPES, abilityValue, natureOf, sandbox, typesOf } from "./01-core.js";
+import { TYPES, abilityValue, natureOf, sandbox, stage, typesOf } from "./01-core.js";
 import { finalBstOf, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
 import { catchWorth } from "./45-catch.js";
 
@@ -79,6 +83,8 @@ const BUG_TUTORS = [
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 const strip = t => String(t ?? "").replace(/\[\/?[^\]]*\]/g, "").replace(/\s+/g, " ").trim();
 const money = n => `$${Math.round(n).toLocaleString("en-US")}`;
+// A chance, as the card says it: never a rounded-away 0% for something that can still happen.
+const pct = x => (x >= 0.995 ? "100%" : x > 0 && x < 0.005 ? "<1%" : `${Math.round(x * 100)}%`);
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const joinNames = names => (names.length > 2 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names.join(" & "));
 // The game's `randSeedInt(range, min)` on whatever stream is sown.
@@ -101,6 +107,60 @@ const readOptions = (s, h, me, party) => {
       by: reqs.length && met ? opt.primaryPokemon?.name ?? null : null, qualifies, cost,
     };
   });
+};
+
+// ---- Safari Zone's minigame (§13)
+// Paying opens a continuous encounter: three wild mons in turn, each offering ball / bait / mud / run until it is
+// caught, it bolts, or you walk away. Both odds are arithmetic on two stages that reset with every mon.
+// `throwPokeball`: `catchRate = round(species.catchRate × 1.5 × stageMod(catchStage))`, then a twitch rate of its own
+// and — through `trainerThrowPokeball` — **three** checks of `randSeedInt(65536) < twitch`, with no HP term, no
+// status or shiny multiplier and no critical capture, which is the whole of what makes it unlike a normal throw.
+// `isPokemonFlee`: the flee rate is read off the **species** catch rate, never the modified one, and rolled against
+// `randSeedInt(256)` at the end of every turn that is not a catch and not a run — a failed ball included.
+// Both rolls are on the live stream, not a fork, so these are odds and the card never marks them 🔮.
+const clampStage = st => Math.min(Math.max(st ?? 0, -6), 6);
+const stageMod = st => stage(clampStage(st));
+const safariCatch = (rate, st) => {
+  const catchRate = Math.round(rate * 1.5 * stageMod(st));
+  if (!(catchRate > 0)) return 0;
+  return Math.min(1, Math.round(1048560 / Math.sqrt(Math.sqrt(16711680 / catchRate))) / 65536) ** 3;
+};
+// `randSeedInt(256)` is 0–255, so a flee rate of 12.3 bolts on 13 of the 256 rolls.
+const safariFlee = (rate, st) => Math.min(1, Math.max(0, Math.ceil(((255 * 255 - rate * rate) / 255 / 2) * stageMod(st))) / 256);
+// `tryChangeCatchStage(2)` / `tryChangeFleeStage(1, 8)` on bait, the mirror on mud: the ×8 arm does nothing when
+// `randSeedInt(10) >= 8`, so the side effect lands 4 times in 5. Both stages clamp to ±6.
+const BAIT_FLEES = 0.8, MUD_DULLS = 0.8;
+
+// What each move is worth, played out to the end: the chance this mon is eventually caught under best play. The two
+// stages are the only state (13 × 13, reset per mon) and there is no turn limit, so the minigame is a small Markov
+// decision problem rather than a lookup — "throw now" against "set up first" is a real comparison, and bait's +1 flee
+// is paid on the same turn it buys the catch stage. Throwing leaves both stages where they were, so committing to the
+// ball is a geometric race between the two rolls and closes in one line; bait and mud move the state, and can cycle,
+// so those settle by value iteration (169 states, a few dozen passes).
+const safariPlay = rate => {
+  const at = (c, f) => (c + 6) * 13 + (f + 6);
+  const p = [], q = [];
+  for (let k = -6; k <= 6; k++) { p[k + 6] = safariCatch(rate, k); q[k + 6] = safariFlee(rate, k); }
+  const V = new Array(169).fill(0);
+  const moves = (c, f) => {
+    const pc = p[c + 6], qf = q[f + 6], race = pc + qf - pc * qf;
+    const bc = clampStage(c + 2), bf = clampStage(f + 1), mf = clampStage(f - 2), mc = clampStage(c - 1);
+    return {
+      ball: race > 0 ? pc / race : 0,
+      bait: BAIT_FLEES * (1 - q[bf + 6]) * V[at(bc, bf)] + (1 - BAIT_FLEES) * (1 - qf) * V[at(bc, f)],
+      mud: (1 - q[mf + 6]) * (MUD_DULLS * V[at(mc, mf)] + (1 - MUD_DULLS) * V[at(c, mf)]),
+    };
+  };
+  for (let pass = 0; pass < 200; pass++) {
+    let delta = 0;
+    for (let c = -6; c <= 6; c++) for (let f = -6; f <= 6; f++) {
+      const m = moves(c, f), best = Math.max(m.ball, m.bait, m.mud);
+      delta = Math.max(delta, Math.abs(best - V[at(c, f)]));
+      V[at(c, f)] = best;
+    }
+    if (delta < 1e-9) break;
+  }
+  return (c, f) => moves(clampStage(c), clampStage(f));
 };
 
 // ---- What the rules share
@@ -672,7 +732,9 @@ const RULES = {
     const price = c.opt(0).cost ?? c.waveMoney(2);
     const afford = c.spare(price) >= 0;
     return [
-      { outcome: `${money(price)}: three wild mons in turn — ball, bait, mud or run each time. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level. Bait: +2 catch but usually +1 flee; mud: −2 flee but usually −1 catch`,
+      // What bait and mud are worth is a per-turn call on the mon in front of you, so it is left to `OVERRIDES`
+      // rather than guessed at here, a screen early.
+      { outcome: `${money(price)}: three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level`,
         verdict: afford ? "take" : "ok", why: afford ? `leaves ${money(c.s.money - price)}` : `leaves only ${money(c.s.money - price)}`,
         needs: "the money" },
       { ...LEAVE, verdict: afford ? "ok" : "take" },
@@ -784,21 +846,76 @@ const RULES = {
   },
 };
 
+// ---- Per encounter: the secondary menu it re-opens the screen with. Keyed by encounter type, read **positionally**
+// (an override option is not on `me.options`, so it has no index), and free to return `null` when the screen holds
+// something it can't read — the card then falls back to the generic reading, the same as an unknown encounter.
+// `{ rows, state, notes }`: one row per override option, the turn the card event keys off, and the lines the card
+// carries under the options.
+const OVERRIDES = {
+  [SAFARI]: c => {
+    const misc = c.me.misc ?? {};
+    // `summonSafariPokemon` puts the mon on `misc.pokemon` and at the head of the enemy party; either is the read.
+    const mon = misc.pokemon ?? tryDo(() => c.s.getEnemyParty()[0]);
+    const rate = tryDo(() => mon.species.catchRate);
+    if (!mon || !(rate > 0)) return null;
+    const name = tryDo(() => mon.getNameToRender(), mon.name) ?? mon.name ?? "it";
+    // The count is decremented as a mon is summoned, so it is how many come *after* this one.
+    const left = misc.safariPokemonRemaining ?? 0;
+    const cs = clampStage(misc.catchStage), fs = clampStage(misc.fleeStage);
+    const now = safariPlay(rate)(cs, fs);
+    const p = safariCatch(rate, cs), q = safariFlee(rate, fs);
+    const worth = tryDo(() => catchWorth(c.account, mon));
+    const wanted = !!worth && worth.value >= worth.show;
+    const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
+    const best = ["bait", "mud"].reduce((b, k) => (now[k] > now[b] + 1e-9 ? k : b), "ball");
+    const odds = k => `${pct(now[k])} of the time from here`;
+    return {
+      state: { mon: name, shiny: !!tryDo(() => mon.isShiny(), mon.shiny), left, catchStage: cs, fleeStage: fs,
+        catchRate: rate, catch: p, flee: q, wanted, best, value: now[best] },
+      notes: [`${name} at L${mon.level ?? "?"}: catch rate ${rate}, stages ${cs >= 0 ? "+" : ""}${cs} catch / ${fs >= 0 ? "+" : ""}${fs} flee, `
+        + `${left ? `${plural(left, "mon")} after this one` : "the last of the three"}`,
+      wanted ? `worth a ball: ${why}` : `not worth the turns: ${why}`],
+      rows: [
+        // A twitch rate at or over 65536 passes all three shakes, so the throw locks: `doEndTurn` never runs and the
+        // flee roll — which reads the unmodified species rate and so is positive either way — never comes.
+        { outcome: `${pct(p)} to catch it now${p >= 1 ? " — it cannot miss, so it never gets its roll to bolt"
+          : q > 0 ? `, and a miss ends the turn — it bolts at ${pct(q)}` : ", and it never bolts"}`,
+          verdict: wanted && best === "ball" ? "take" : "ok", why: `throwing until it is settled lands it ${odds("ball")}` },
+        { outcome: `catch +2 → ${pct(safariCatch(rate, clampStage(cs + 2)))}, and 4 times in 5 flee +1 → ${pct(safariFlee(rate, clampStage(fs + 1)))}; then it rolls to bolt`,
+          verdict: wanted && best === "bait" ? "take" : "ok", why: `baiting first lands it ${odds("bait")}` },
+        { outcome: `flee −2 → ${pct(safariFlee(rate, clampStage(fs - 2)))}, and 4 times in 5 catch −1 → ${pct(safariCatch(rate, clampStage(cs - 1)))}; then it rolls to bolt`,
+          verdict: wanted && best === "mud" ? "take" : "ok", why: `mudding first lands it ${odds("mud")}` },
+        { outcome: left ? `let it go — ${plural(left, "mon")} left after this one` : "let it go — the last of the three, so this ends the safari",
+          verdict: wanted ? "avoid" : "take", why: wanted ? `you would be giving up a ${pct(now[best])} catch` : why },
+      ],
+    };
+  },
+};
+
 // ---- The model
 const build = (s, h, account) => {
   const me = s.currentBattle.mysteryEncounter;
   const party = s.getPlayerParty().filter(Boolean);
   const options = readOptions(s, h, me, party);
   const type = me.encounterType;
-  const rule = RULES[type];
+  // Which menu is on screen: the encounter's own options, or the secondary menu a continuous encounter re-opens it
+  // with. A mixed list is neither, and is read rather than judged.
+  const own = options.length > 0 && options.every(o => o.index >= 0);
+  const override = options.length > 0 && options.every(o => o.index < 0);
+  const rule = own ? RULES[type] : override ? OVERRIDES[type] : null;
   let notes = [];
   let judged = null;
-  // A secondary menu (override options) is not the encounter's own option list: read it, don't judge it.
-  if (rule && options.every(o => o.index >= 0)) {
-    try { judged = rule(context(s, me, options, account)); } catch (e) { notes.push(`couldn't judge this encounter: ${e.message}`); }
+  let minigame = null;
+  if (rule) {
+    try {
+      const out = rule(context(s, me, options, account));
+      // An override rule answers with the turn it read as well as its rows; an encounter's own rule is rows alone.
+      if (Array.isArray(out)) judged = out;
+      else if (out) { judged = out.rows; minigame = out.state ?? null; notes.push(...(out.notes ?? [])); }
+    } catch (e) { notes.push(`couldn't judge this encounter: ${e.message}`); }
   }
-  for (const o of options) {
-    const r = judged?.[o.index];
+  for (const [i, o] of options.entries()) {
+    const r = judged?.[override ? i : o.index];
     if (r) Object.assign(o, { outcome: r.outcome, battle: r.battle ?? null, exact: !!r.exact, verdict: r.verdict ?? null, why: r.why ?? null });
     else Object.assign(o, { outcome: null, battle: null, exact: false, verdict: null, why: null });
     if (!o.enabled) Object.assign(o, { verdict: "off", why: `needs ${r?.needs ?? "something your party lacks"}` });
@@ -807,7 +924,7 @@ const build = (s, h, account) => {
   if (me.catchAllowed) notes.push("balls work in its battle");
   return {
     kind: "encounter", type, name: NAMES[type] ?? `Encounter #${type}`, tier: TIERS[me.encounterTier] ?? null,
-    known: !!judged, options, pick, notes,
+    known: !!judged, options, pick, notes, minigame,
   };
 };
 
@@ -816,6 +933,8 @@ export const encounterModel = (s, h, account) => {
   const me = s.currentBattle.mysteryEncounter;
   const party = s.getPlayerParty().filter(Boolean);
   const key = JSON.stringify([s.currentBattle.waveIndex, me.encounterType, tryDo(() => me.getSeedOffset()), s.money,
+    // A minigame turn is a new decision on the same encounter: the mon in front of you and its two stages are what moved.
+    [me.misc?.safariPokemonRemaining, me.misc?.catchStage, me.misc?.fleeStage, tryDo(() => me.misc?.pokemon?.id)],
     h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []), (s.modifiers ?? []).length,
     party.map(p => [p.id, p.level, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
   if (cache.key === key) return cache.value;
@@ -829,5 +948,7 @@ export const encounterSummary = m => {
   const pick = m.pick >= 0 ? m.options[m.pick] : null;
   const avoid = m.options.filter(o => o.verdict === "avoid").map(o => o.label);
   const head = pick ? `take ${pick.label}${pick.outcome ? ` — ${pick.outcome}` : ""}` : m.known ? "your call" : "not judged";
-  return `${m.name}: ${head}${avoid.length ? ` · avoid ${avoid.join(", ")}` : ""}`;
+  // A minigame turn is about the mon in front of you, not the encounter as a whole, so the read names it.
+  const who = m.minigame ? ` vs ${m.minigame.mon}${m.minigame.shiny ? " ★shiny" : ""}` : "";
+  return `${m.name}${who}: ${head}${avoid.length ? ` · avoid ${avoid.join(", ")}` : ""}`;
 };

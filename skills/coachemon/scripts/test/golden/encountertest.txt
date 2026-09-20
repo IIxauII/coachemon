@@ -273,11 +273,25 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary Slumbering Snorlax: take Steal — steal its Leftovers: no fight, Leftovers, and its EXP to the thief
 == safari zone (full)
 🎭 Safari Zone great − {Minimal overview} × {Close}
-★ Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level. Bait: +2 catch but usually +1 flee; mud: −2 flee but usually −1 catch
+★ Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level
 leaves $3,990
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-summary Safari Zone: take Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level. Bait: +2 catch but usually +1 flee; mud: −2 flee but usually −1 catch
+summary Safari Zone: take Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level
+== safari zone, a minigame turn (full)
+🎭 Safari Zone great − {Minimal overview} × {Close}
+★ Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48%
+throwing until it is settled lands it 55% of the time from here
+· Throw bait — catch +2 → 62%, and 4 times in 5 flee +1 → 73%; then it rolls to bolt
+baiting first lands it 23% of the time from here
+· Throw mud — flee −2 → 24%, and 4 times in 5 catch −1 → 27%; then it rolls to bolt
+mudding first lands it 48% of the time from here
+✗ Flee — let it go — 2 mons left after this one
+you would be giving up a 55% catch
+· Nidorina at L32: catch rate 45, stages +0 catch / +0 flee, 2 mons after this one
+· worth a ball: new species
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+summary Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee
 == delibirdy (full)
 🎭 Delibird-y great − {Minimal overview} × {Close}
 ★ Money — $1,010: an Amulet Coin
