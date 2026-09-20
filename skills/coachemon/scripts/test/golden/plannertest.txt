@@ -152,6 +152,24 @@ foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+== doubles: two killable foes, one far more dangerous (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Dunsparce 2 hits
+⚔ Lucario Fighting Aura Sphere → Dunsparce 2 hits
+◎ focus Dunsparce : KO this turn
+foes weak to: Fighting ×2
+Porygon-Z Porygon-Z L80 Normal 100% ▲ Fighting ↯ Normal Tri Attack → Garchomp 50% likely · 50% first
+Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · 50% first
+♟ winnable · ~2 steps + {Show the fight plan}
+== doubles: the same two foes, now outsped (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Porygon-Z 2 hits
+⚔ Lucario Fighting Aura Sphere → Porygon-Z 2 hits
+◎ focus Porygon-Z : KO before it moves
+foes weak to: Fighting ×2
+Porygon-Z Porygon-Z L80 Normal 100% ▲ Fighting ↯ Normal Tri Attack → Garchomp 50% likely · moves after
+Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
 == free switch — same field in the command phase (live)
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
