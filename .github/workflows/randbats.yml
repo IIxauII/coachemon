@@ -108,10 +108,16 @@ jobs:
             echo "the refresh PR is already open — the force-push above updated it"
             exit 0
           fi
+          # A heredoc rather than an inline `--body`: YAML strips this block's indentation from every line, so the
+          # body lands at column 0, and a multi-line string cannot be written inline here without a line falling
+          # outside the block scalar and truncating the step.
+          cat > "$RUNNER_TEMP/pr-body.md" <<'MD'
+          Weekly [pkmn/randbats](https://github.com/pkmn/randbats) refresh (#279, #291). `npm run randbats:gen`, then `node skills/coachemon/scripts/test/run.mjs --update`.
+
+          The only changed input is `skills/coachemon/scripts/hud/05-randbats.js` — no repo code moves — so **the golden diff is the review**: every line of it is upstream-caused, and regenerating the goldens here cannot hide a code regression, because there is none in this PR to hide. Read which roles and moves moved; merging is the sign-off, the same shape as `drift:check --stamp`.
+
+          CI runs because the branch was pushed with the deploy key rather than `GITHUB_TOKEN`. If this PR ever shows **no checks at all**, that is the failure mode to chase (#275) — not a pass.
+          MD
           gh pr create --base master --head "$BRANCH" \
             --title "chore(data): refresh the randbats snapshot" \
-            --body 'Weekly [pkmn/randbats](https://github.com/pkmn/randbats) refresh (#279, #291). `npm run randbats:gen` then `node skills/coachemon/scripts/test/run.mjs --update`.
-
-The only changed input is `skills/coachemon/scripts/hud/05-randbats.js` — no repo code moves — so **the golden diff is the review**: every line of it is upstream-caused, and regenerating the goldens here cannot hide a code regression, because there is none in this PR to hide. Read which roles and moves moved; merging is the sign-off, the same shape as `drift:check --stamp`.
-
-CI runs because the branch was pushed with the deploy key rather than `GITHUB_TOKEN`. If this PR ever shows **no checks at all**, that is the failure mode to chase (#275) — not a pass.'
+            --body-file "$RUNNER_TEMP/pr-body.md"
