@@ -6,6 +6,9 @@
  * `relay.js` and `page.js` are WXT unlisted scripts, so they land at the output root and WXT adds nothing to the
  * manifest by itself; `hud.js` is written by the build hook (§5.2). Every content script is therefore listed here by
  * hand, which is also what keeps this file the single answer to "what does the reviewer see".
+ *
+ * 1.0.0 is the first version these manifests are listed under: 0.x ships unlisted by design, and from 1.0.0 the
+ * release uploads and submits to both stores itself rather than a human filing the build by hand (§14.1, §14.4).
  */
 import type { Flavour, Target } from "../../../src/protocol/wire.ts";
 
