@@ -7,8 +7,10 @@
  * manifest by itself; `hud.js` is written by the build hook (§5.2). Every content script is therefore listed here by
  * hand, which is also what keeps this file the single answer to "what does the reviewer see".
  *
- * 1.0.0 is the first version these manifests are listed under: 0.x ships unlisted by design, and from 1.0.0 the
- * release uploads and submits to both stores itself rather than a human filing the build by hand (§14.1, §14.4).
+ * 1.x is the listed line: 0.x ships unlisted by design, and from 1.0.0 the release uploads and submits to both
+ * stores itself rather than a human filing the build by hand (§14.1, §14.4). 1.0.0 itself never reached either
+ * store: the Chrome Web Store API was not enabled on the service account's project, and AMO 404s until the add-on
+ * exists, which the first API upload does not create. Both were fixed by hand; the tag stands unpublished.
  */
 import type { Flavour, Target } from "../../../src/protocol/wire.ts";
 
