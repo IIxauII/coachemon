@@ -589,10 +589,18 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.match(hard.options[2].why, /mudding first lands it 13% of the time from here/);
   assert.match(hard.options[0].why, /lands it 10% of the time from here/);
 
-  // Catch rate 255: the flee rate is 0, so it never bolts and the ball is certain.
+  // Catch rate 255: the flee rate is 0, and ×1.5 puts the twitch rate over 65536, so the ball is certain.
   const easy = mount(turn({ catchRate: 255 })).model();
-  assert.equal(easy.options[0].outcome, "100% to catch it now, and it never bolts");
+  assert.equal(easy.options[0].outcome, "100% to catch it now — it cannot miss, so it never gets its roll to bolt");
   assert.deepEqual(verdicts(easy), ["take", "ok", "ok", "avoid"]);
+
+  // The common Safari draw: 190 × 1.5 = 285 is already certain while the flee rate — read off the *species* rate, so
+  // untouched by the multiplier — is a live 22%. The turn never reaches a flee roll, so the row must not narrate one.
+  const sure = mount(turn({ catchRate: 190 })).model();
+  assert.equal(sure.minigame.catch, 1);
+  assert.equal(Math.round(sure.minigame.flee * 100), 22);
+  assert.equal(sure.options[0].outcome, "100% to catch it now — it cannot miss, so it never gets its roll to bolt");
+  assert.doesNotMatch(sure.options[0].outcome, /bolts at/);
 
   // Already in the dex and nothing the team wants: the turns are worth more than the mon, so let it go.
   const known = mount(turn({ dex: { 30: { caughtAttr: 255n } } })).model();

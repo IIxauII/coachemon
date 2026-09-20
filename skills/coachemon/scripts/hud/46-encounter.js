@@ -31,7 +31,7 @@
 // (a boss: within 3 levels under it). A **trainer** fight has no party to match up against — the mons are built when the
 // battle starts — so it is hard on the level gap alone, or when it brings more than MONS_EACH mons for each member of
 // ours still fit to fight. Money is spent freely only while it leaves RESERVE_WAVES waves' worth of reward money.
-import { TYPES, abilityValue, natureOf, sandbox, typesOf } from "./01-core.js";
+import { TYPES, abilityValue, natureOf, sandbox, stage, typesOf } from "./01-core.js";
 import { finalBstOf, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
 import { catchWorth } from "./45-catch.js";
 
@@ -118,15 +118,15 @@ const readOptions = (s, h, me, party) => {
 // `isPokemonFlee`: the flee rate is read off the **species** catch rate, never the modified one, and rolled against
 // `randSeedInt(256)` at the end of every turn that is not a catch and not a run — a failed ball included.
 // Both rolls are on the live stream, not a fork, so these are odds and the card never marks them 🔮.
-const STAGE_MOD = st => (2 + Math.min(Math.max(st, 0), 6)) / (2 - Math.max(Math.min(st, 0), -6));
-const stage = st => Math.min(Math.max(st ?? 0, -6), 6);
+const clampStage = st => Math.min(Math.max(st ?? 0, -6), 6);
+const stageMod = st => stage(clampStage(st));
 const safariCatch = (rate, st) => {
-  const catchRate = Math.round(rate * 1.5 * STAGE_MOD(st));
+  const catchRate = Math.round(rate * 1.5 * stageMod(st));
   if (!(catchRate > 0)) return 0;
   return Math.min(1, Math.round(1048560 / Math.sqrt(Math.sqrt(16711680 / catchRate))) / 65536) ** 3;
 };
 // `randSeedInt(256)` is 0–255, so a flee rate of 12.3 bolts on 13 of the 256 rolls.
-const safariFlee = (rate, st) => Math.min(1, Math.max(0, Math.ceil(((255 * 255 - rate * rate) / 255 / 2) * STAGE_MOD(st))) / 256);
+const safariFlee = (rate, st) => Math.min(1, Math.max(0, Math.ceil(((255 * 255 - rate * rate) / 255 / 2) * stageMod(st))) / 256);
 // `tryChangeCatchStage(2)` / `tryChangeFleeStage(1, 8)` on bait, the mirror on mud: the ×8 arm does nothing when
 // `randSeedInt(10) >= 8`, so the side effect lands 4 times in 5. Both stages clamp to ±6.
 const BAIT_FLEES = 0.8, MUD_DULLS = 0.8;
@@ -144,7 +144,7 @@ const safariPlay = rate => {
   const V = new Array(169).fill(0);
   const moves = (c, f) => {
     const pc = p[c + 6], qf = q[f + 6], race = pc + qf - pc * qf;
-    const bc = stage(c + 2), bf = stage(f + 1), mf = stage(f - 2), mc = stage(c - 1);
+    const bc = clampStage(c + 2), bf = clampStage(f + 1), mf = clampStage(f - 2), mc = clampStage(c - 1);
     return {
       ball: race > 0 ? pc / race : 0,
       bait: BAIT_FLEES * (1 - q[bf + 6]) * V[at(bc, bf)] + (1 - BAIT_FLEES) * (1 - qf) * V[at(bc, f)],
@@ -160,7 +160,7 @@ const safariPlay = rate => {
     }
     if (delta < 1e-9) break;
   }
-  return (c, f) => moves(stage(c), stage(f));
+  return (c, f) => moves(clampStage(c), clampStage(f));
 };
 
 // ---- What the rules share
@@ -861,11 +861,11 @@ const OVERRIDES = {
     const name = tryDo(() => mon.getNameToRender(), mon.name) ?? mon.name ?? "it";
     // The count is decremented as a mon is summoned, so it is how many come *after* this one.
     const left = misc.safariPokemonRemaining ?? 0;
-    const cs = stage(misc.catchStage), fs = stage(misc.fleeStage);
+    const cs = clampStage(misc.catchStage), fs = clampStage(misc.fleeStage);
     const now = safariPlay(rate)(cs, fs);
     const p = safariCatch(rate, cs), q = safariFlee(rate, fs);
     const worth = tryDo(() => catchWorth(c.account, mon));
-    const wanted = worth ? worth.value >= worth.show : true;
+    const wanted = !!worth && worth.value >= worth.show;
     const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
     const best = ["bait", "mud"].reduce((b, k) => (now[k] > now[b] + 1e-9 ? k : b), "ball");
     const odds = k => `${pct(now[k])} of the time from here`;
@@ -876,11 +876,14 @@ const OVERRIDES = {
         + `${left ? `${plural(left, "mon")} after this one` : "the last of the three"}`,
       wanted ? `worth a ball: ${why}` : `not worth the turns: ${why}`],
       rows: [
-        { outcome: `${pct(p)} to catch it now${q > 0 ? `, and a miss ends the turn — it bolts at ${pct(q)}` : ", and it never bolts"}`,
+        // A twitch rate at or over 65536 passes all three shakes, so the throw locks: `doEndTurn` never runs and the
+        // flee roll — which reads the unmodified species rate and so is positive either way — never comes.
+        { outcome: `${pct(p)} to catch it now${p >= 1 ? " — it cannot miss, so it never gets its roll to bolt"
+          : q > 0 ? `, and a miss ends the turn — it bolts at ${pct(q)}` : ", and it never bolts"}`,
           verdict: wanted && best === "ball" ? "take" : "ok", why: `throwing until it is settled lands it ${odds("ball")}` },
-        { outcome: `catch +2 → ${pct(safariCatch(rate, stage(cs + 2)))}, and 4 times in 5 flee +1 → ${pct(safariFlee(rate, stage(fs + 1)))}; then it rolls to bolt`,
+        { outcome: `catch +2 → ${pct(safariCatch(rate, clampStage(cs + 2)))}, and 4 times in 5 flee +1 → ${pct(safariFlee(rate, clampStage(fs + 1)))}; then it rolls to bolt`,
           verdict: wanted && best === "bait" ? "take" : "ok", why: `baiting first lands it ${odds("bait")}` },
-        { outcome: `flee −2 → ${pct(safariFlee(rate, stage(fs - 2)))}, and 4 times in 5 catch −1 → ${pct(safariCatch(rate, stage(cs - 1)))}; then it rolls to bolt`,
+        { outcome: `flee −2 → ${pct(safariFlee(rate, clampStage(fs - 2)))}, and 4 times in 5 catch −1 → ${pct(safariCatch(rate, clampStage(cs - 1)))}; then it rolls to bolt`,
           verdict: wanted && best === "mud" ? "take" : "ok", why: `mudding first lands it ${odds("mud")}` },
         { outcome: left ? `let it go — ${plural(left, "mon")} left after this one` : "let it go — the last of the three, so this ends the safari",
           verdict: wanted ? "avoid" : "take", why: wanted ? `you would be giving up a ${pct(now[best])} catch` : why },
