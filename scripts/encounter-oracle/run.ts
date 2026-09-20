@@ -18,12 +18,12 @@
  *
  *   0  every case run agrees with the game
  *   1  a case disagrees — the card contradicts the game, and nothing else says that
- *   2  no verdict: the clone is not provisioned, vitest produced no results, or the run raised an unhandled error
+ *   2  no answer: the clone is not provisioned, vitest produced no results, or the run raised an unhandled error
  *      the oracle does not recognise, so its results cannot be vouched for
  *
  * The exit code of `vitest` itself is *not* that signal and must not be used as one. The pinned clone raises one
  * unhandled rejection per test file during i18n init, which vitest counts as a run failure however the cases went;
- * upstream's own encounter tests exit 1 in this clone for the same reason. So the verdict is read from vitest's
+ * upstream's own encounter tests exit 1 in this clone for the same reason. So the answer is read from vitest's
  * own results (a JSON report), and unhandled errors are classified: the clone's known one is noted and ignored,
  * any other is a refusal to judge. Fixing the rejection by stubbing `localStorage` early was rejected on purpose —
  * it would let `initFonts` run where upstream's tests have it reject, and the oracle must not alter the game it is
@@ -62,14 +62,16 @@ const TEMPLATE = path.join(HERE, "oracle.test.ts.template");
 const reviewed = JSON.parse(readFileSync(path.resolve(HERE, "../../src/escape-ladder/reviewed.json"), "utf8"));
 const clone = path.resolve(".cache/pokerogue", `v${reviewed.pinned.gameVersion}`);
 
-/** Exit codes. `NO_VERDICT` covers every way the oracle can decline to judge; only `DISAGREES` accuses the card. */
+/** Exit codes. `NO_ANSWER` covers every way the oracle can decline to answer; only `DISAGREES` accuses the card. */
 const AGREES = 0;
 const DISAGREES = 1;
-const NO_VERDICT = 2;
+const NO_ANSWER = 2;
+/** So a stray `return` in `answer` cannot compile into an exit code that means something else. */
+type Exit = typeof AGREES | typeof DISAGREES | typeof NO_ANSWER;
 
 const missing = (what: string, how: string): never => {
   console.error(`${what}\n\n  ${how}\n`);
-  process.exit(NO_VERDICT);
+  process.exit(NO_ANSWER);
 };
 
 if (!existsSync(clone)) {
@@ -101,7 +103,7 @@ const reportPath = path.join(clone, "test/tests/.coach-oracle.report.json");
 // case's phase log from the next's. Re-export it as a default export so it can be named back alongside the JSON one.
 const reporterPath = path.join(clone, "test/reporters/.coach-default-reporter.ts");
 
-/** Run a command, streaming its output to the terminal while keeping a copy to read the verdict out of. */
+/** Run a command, streaming its output to the terminal while keeping a copy to read the answer out of. */
 const tee = (file: string, args: string[]): Promise<string> =>
   new Promise(resolve => {
     const child = spawn(file, args, {
@@ -117,11 +119,19 @@ const tee = (file: string, args: string[]): Promise<string> =>
       });
     forward(child.stdout, process.stdout);
     forward(child.stderr, process.stderr);
-    child.on("error", () => resolve(output));
+    child.on("error", (err: Error) => {
+      // Say so: otherwise the run resolves empty and the caller reports "no results" with nothing above to explain it.
+      const said = `\noracle: could not run vitest — ${err.message}\n`;
+      output += said;
+      process.stderr.write(said);
+      resolve(output);
+    });
     child.on("close", () => resolve(output));
   });
 
-const ANSI = /\[[0-9;]*m/g;
+// Written as an escape, not the raw control byte it used to be: invisible in a diff, it reads as a missing `\u001b`
+// and invites a "fix" that would leave a bare ESC in front of `Errors`, where `\s` does not match it.
+const ANSI = /\u001b\[[0-9;]*m/g;
 /** vitest's own tally of unhandled errors, which it reports separately from, and alongside, the test results. */
 const ERROR_TALLY = /^\s*Errors\s+(\d+)\s+errors?\s*$/m;
 /**
@@ -141,7 +151,7 @@ type Report = {
 };
 
 /** What the run says, read from vitest's results rather than its exit code. */
-const judge = (output: string): number => {
+const answer = (output: string): Exit => {
   const plain = output.replace(ANSI, "");
   const raised = Number(ERROR_TALLY.exec(plain)?.[1] ?? "0");
   const known = (plain.match(CLONE_I18N_REJECTION) ?? []).length;
@@ -154,8 +164,8 @@ const judge = (output: string): number => {
     report = undefined;
   }
   if (!report || report.numTotalTests === 0) {
-    console.error("\noracle: no verdict — vitest produced no results. Its own output is above.");
-    return NO_VERDICT;
+    console.error("\noracle: no answer — vitest produced no results. Its own output is above.");
+    return NO_ANSWER;
   }
 
   const { numPassedTests: agree, numFailedTests: disagree, numPendingTests: skipped } = report;
@@ -163,23 +173,29 @@ const judge = (output: string): number => {
   // A name filter that matches nothing leaves every case pending. Nothing was asked of the game, so there is
   // nothing to vouch for, and green would be a lie.
   if (agree === 0 && disagree === 0) {
-    console.error(`\noracle: no verdict — ${tally}. Nothing was run; check the name filter.`);
-    return NO_VERDICT;
+    console.error(`\noracle: no answer — ${tally}. Nothing was run; check the name filter.`);
+    return NO_ANSWER;
+  }
+  // Read before the cases, not after: an unhandled error the oracle cannot place may be *why* a case failed, and `1`
+  // has to mean the card disagrees and nothing else. A count that does not come out even fails closed too — more
+  // copies of the known rejection than vitest counted errors means the two cannot be matched up, not that all is well.
+  if (unrecognised !== 0) {
+    console.error(
+      unrecognised > 0
+        ? `\noracle: no answer — ${tally}, but ${unrecognised} of ${raised} unhandled errors are ones the oracle does\n` +
+            "        not recognise, so this run cannot be vouched for. See Unhandled Errors above."
+        : `\noracle: no answer — ${tally}, but the clone's i18n rejection was printed ${known} times against ${raised}\n` +
+            "        unhandled errors, so the oracle cannot tell which of them it has accounted for.",
+    );
+    return NO_ANSWER;
   }
   if (disagree > 0) {
     console.error(`\noracle: ${tally} — the card contradicts the game. The failures are above.`);
     return DISAGREES;
   }
   if (!report.success) {
-    console.error(`\noracle: no verdict — ${tally}, but vitest failed outside the cases. Its own output is above.`);
-    return NO_VERDICT;
-  }
-  if (unrecognised > 0) {
-    console.error(
-      `\noracle: no verdict — ${tally}, but ${unrecognised} of ${raised} unhandled errors are ones the oracle does\n` +
-        "        not recognise, so this run cannot be vouched for. See Unhandled Errors above.",
-    );
-    return NO_VERDICT;
+    console.error(`\noracle: no answer — ${tally}, but vitest failed outside the cases. Its own output is above.`);
+    return NO_ANSWER;
   }
   const ignored = known
     ? `\n        ${known} unhandled error${known === 1 ? "" : "s"} ignored: the clone's own i18n rejection, which upstream's tests raise too.`
@@ -188,13 +204,13 @@ const judge = (output: string): number => {
   return AGREES;
 };
 
-let code = NO_VERDICT;
+let code: Exit = NO_ANSWER;
 try {
-  rmSync(reportPath, { force: true }); // never judge a run by the leftovers of the last one
+  rmSync(reportPath, { force: true }); // never answer from the leftovers of the last run
   writeFileSync(bundlePath, bundle("hud", { expose: true, files }));
   writeFileSync(testPath, readFileSync(TEMPLATE, "utf8"));
   writeFileSync(reporterPath, 'export { CustomDefaultReporter as default } from "./custom-default-reporter";\n');
-  code = judge(
+  code = answer(
     await tee("npx", [
       "--yes",
       "pnpm@10.33.2",
@@ -208,6 +224,12 @@ try {
       ...process.argv.slice(2),
     ]),
   );
+} catch (err) {
+  // Writing the bundle or the shim can throw — a missing `test/reporters/`, a bundle that no longer builds. Without
+  // this the throw escapes to node's own exit 1, which in this script's vocabulary accuses the card of disagreeing.
+  console.error(`\noracle: no answer — the oracle failed before it could ask.\n`);
+  console.error(err instanceof Error ? (err.stack ?? err.message) : String(err));
+  code = NO_ANSWER;
 } finally {
   for (const artifact of [bundlePath, testPath, reportPath, reporterPath]) {
     rmSync(artifact, { force: true });

@@ -39,7 +39,7 @@ Link `.cache` the same way. `npm run drift:check` in a fresh worktree leaves a *
 provisioning it again re-fetches the 815 MB `assets` submodule for no gain (#296).
 
 ```sh
-ln -s "$MAIN/.cache" .cache
+[ "$PWD" != "$MAIN" ] && [ -d "$MAIN/.cache" ] && ln -s "$MAIN/.cache" .cache
 ```
 
 ## Wayfinding
