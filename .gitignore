@@ -1,5 +1,5 @@
 .claude/worktrees/
 node_modules
-.cache/
+.cache
 extension/.output/
 extension/.wxt/
