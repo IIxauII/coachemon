@@ -42,10 +42,3 @@ provisioning it again re-fetches the 815 MB `assets` submodule for no gain (#296
 [ "$PWD" != "$MAIN" ] && [ -d "$MAIN/.cache" ] && ln -s "$MAIN/.cache" .cache
 ```
 
-## Wayfinding
-
-The live map is [#78 Map: coach quality](https://github.com/IIxauII/coachemon/issues/78) — the destination, the decisions locked so far, and what is still fog. **Continue the effort with `/wayfinder 78`**, and parent new tickets there.
-
-[#1 Map: Coachemon v1](https://github.com/IIxauII/coachemon/issues/1) is **closed**: the shipped v1, kept for the decisions indexed on it, not a map to add to. A ticket parented to it lands off every frontier query, so a session that starts from #1 looks like it has no work to do — check a map is open before parenting to it (#316 was filed against #1 this way).
-
-Tickets are sub-issues of their map, labelled `wayfinder:<type>`, with native GitHub issue dependencies for blocking.

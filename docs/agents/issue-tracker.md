@@ -2,7 +2,7 @@
 
 Issues and specs for this repo live as GitHub issues on the private repo `IIxauII/coachemon`. Use the `gh` CLI for all operations.
 
-The live wayfinder map is [#1 Map: Coachemon v1](https://github.com/IIxauII/coachemon/issues/1). Research findings are committed on unmerged `research/*` branches and linked from the ticket that commissioned them.
+Research findings are committed on unmerged `research/*` branches and linked from the ticket that commissioned them.
 
 ## Conventions
 
