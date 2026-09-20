@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { cardLine, feedLine, runWatch } from "./watch.ts";
-import { deadSpawn, fakeClient, freePort, readyTab, type Peer } from "./fake-ext.ts";
+import { deadPort, deadSpawn, fakeClient, readyTab, type Peer } from "./fake-ext.ts";
 import { startHub, type Hub } from "./hub.ts";
 import type { ExtensionCmd, FromExtension, HubState, ToExtension } from "../protocol/wire.ts";
 
@@ -110,7 +110,9 @@ test("a HUD failure, a tab split and a return are their own lines (§11.2)", () 
 // ------------------------------------------------------------------ the loop (§11.2)
 
 test("while the game is unreachable the ladder line prints once, and again only when it changes (§11.2)", async () => {
-  const port = await freePort();
+  // A dead port, not merely a free one: the loop dials it every retry for the whole phase, so a hub of another test
+  // file's that took it would answer one of those dials and the ladder would read that hub's rungs instead (#327).
+  const port = await deadPort();
   const w = watching(port);
   await until(() => w.lines.length > 0);
   assert.equal(w.lines[0], "The Coachemon hub would not start: no hub here.");

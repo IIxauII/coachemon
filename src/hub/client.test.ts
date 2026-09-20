@@ -4,7 +4,7 @@ import { createServer } from "node:http";
 import { after, test } from "node:test";
 import { WebSocketServer } from "ws";
 import { compare, HubClient, spawnHub, type HubProcess } from "./client.ts";
-import { deadSpawn, fakeClient, freePort, readyTab } from "./fake-ext.ts";
+import { deadPort, deadSpawn, fakeClient, readyTab } from "./fake-ext.ts";
 import { Hub, startHub } from "./hub.ts";
 import type { ClientReply, ToClient } from "../protocol/wire.ts";
 
@@ -50,7 +50,7 @@ test("a client connects to a running hub, and its commands reach the tab (§7.2)
 });
 
 test("a hub that will not start is rung 2's stderr, and its death ends the wait early (§7.2)", async () => {
-  const port = await freePort();
+  const port = await deadPort();
   const c = client(port, { spawnHub: () => deadSpawn("Error: cannot find module ws\n    at x") });
   const t0 = Date.now();
   assert.deepEqual(await c.ready(), { kind: "no-start", stderr: "Error: cannot find module ws\n    at x" });
@@ -58,7 +58,7 @@ test("a hub that will not start is rung 2's stderr, and its death ends the wait 
 });
 
 test("a hub that never answers and never exits is given the whole spawn budget (§7.2)", async () => {
-  const port = await freePort();
+  const port = await deadPort();
   const c = client(port, { spawnHub: () => ({ pid: null, stderr: () => "", exited: new Promise(() => {}), release: () => {} }) });
   const t0 = Date.now();
   const r = await c.ready();
@@ -67,7 +67,7 @@ test("a hub that never answers and never exits is given the whole spawn budget (
 });
 
 test("a spawn that does come up is connected to, and the child is released then (§7.2)", async () => {
-  const port = await freePort();
+  const port = await deadPort();
   let released = 0;
   const c = client(port, {
     spawnHub: p => {
@@ -105,7 +105,7 @@ test("a hub newer than this plugin copy refuses every call, and says which side 
 });
 
 test("a newer client retires an idle older hub and takes its place (§7.3)", async () => {
-  const port = await freePort();
+  const port = await deadPort();
   const old = await hub({ version: "0.9.0", port });
   let spawned = 0;
   const c = client(port, {
@@ -164,7 +164,7 @@ test("a hub that goes away mid-command answers the command instead of hanging", 
 });
 
 test("a real client spawns the real hub process and is talking to it inside the budget (§7.2)", async () => {
-  const port = await freePort();
+  const port = await deadPort();
   const spawned: HubProcess[] = [];
   const c = new HubClient({
     port,
