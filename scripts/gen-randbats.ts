@@ -19,10 +19,11 @@
  * instead, which let upstream moving on its own redden a push that changed
  * nothing here (#279, #291).
  *
- * `--check` is *not* a CI gate on ordinary pushes: it rebuilds from live
- * upstream, which moves on its own, and would go red on days nothing here
- * changed. Inside the weekly refresh, upstream moving is the whole subject, so
- * both of the hard exits below are actionable there by construction.
+ * `--check` is *not* a CI gate: it rebuilds from live upstream, which moves on
+ * its own, and would go red on days nothing here changed. It stays a local
+ * staleness check — the weekly job refreshes rather than checks, so the only
+ * hard exit that can fire there is the 150 KB budget, and upstream moving is
+ * that job's whole subject.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";

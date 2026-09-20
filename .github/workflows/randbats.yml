@@ -1,11 +1,12 @@
 name: Randbats refresh
 
-# The weekly pkmn/randbats refresh, and the only thing in this repo that fetches it (#279, #291). It used to be a
+# The weekly pkmn/randbats refresh, and the only job in this repo that fetches it (#279, #291). It used to be a
 # step in `release.yml`, ahead of the suite, which made an upstream role rename or a re-cut set able to turn the
 # *release* red on a day nothing here changed: the goldens carry role names verbatim, and `40-learn.js` turns a prior
 # hit into a score multiplier, so a moved set reorders moves and flips verdicts in goldens that carry no role string
-# at all. `MAX_BYTES` could stop a release too. Here that red lands in a pull request built for reading it, and the
-# release tests exactly the tree it commits with nothing fetched in between (#258, now free rather than fought for).
+# at all. `MAX_BYTES` could stop a release too. Here a moved set lands in a pull request built for reading it, the
+# budget exit reds this scheduled job and nothing else, and the release tests exactly the tree it commits with
+# nothing fetched in between (#258, now free rather than fought for).
 #
 # Why a green PR is still a real review: the only changed input is `05-randbats.js`. No repo code moves, so a golden
 # diff can only be upstream-caused, and regenerating the goldens in the same PR cannot paper over a code regression —
@@ -32,13 +33,20 @@ env:
   # One long-lived branch, rebuilt from master and force-pushed each week: last week's unmerged refresh is superseded
   # by this one, not a second PR to triage.
   BRANCH: chore/randbats-refresh
+  # The only two paths this job may change. The drift gate and the commit are both scoped to them, so "the only
+  # changed input is `05-randbats.js`" is enforced here rather than asserted in the pull request body.
+  SNAPSHOT: skills/coachemon/scripts/hud/05-randbats.js
+  GOLDEN_DIR: skills/coachemon/scripts/test/golden
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
+      # Always master, never the dispatched ref: the refresh pull request's whole premise is that no repo code moves
+      # in it, so the tree it is built from has to be the branch it targets.
       - uses: actions/checkout@v4
         with:
+          ref: master
           persist-credentials: false
 
       - uses: actions/setup-node@v4
@@ -49,9 +57,10 @@ jobs:
       # `--ignore-scripts` at every root install site: Claude Code installs the plugin the same way (§5.1).
       - run: npm ci --ignore-scripts
 
-      # Both of the generator's hard exits — the 150 KB budget and `--check` — now only ever fire in this job, where
-      # a red is actionable by construction. An unreachable upstream still keeps the existing snapshot and exits 0,
-      # which lands as "nothing changed" below.
+      # The one hard exit the generator can take here is the 150 KB budget, and this is the only job it fires in,
+      # where a red is actionable by construction. (`--check` is the *else* of the write, so it never runs alongside
+      # a refresh — it stays a local staleness check.) An unreachable upstream keeps the existing snapshot and exits
+      # 0, which lands as "nothing changed" below.
       - run: npm run randbats:gen
 
       # `--update` rewrites the goldens rather than failing on them. That is safe *here and nowhere else*: the only
@@ -61,12 +70,12 @@ jobs:
       - id: drift
         name: Check whether upstream moved
         run: |
-          if [ -z "$(git status --porcelain)" ]; then
+          if [ -z "$(git status --porcelain -- "$SNAPSHOT" "$GOLDEN_DIR")" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "upstream has not moved — no pull request to open"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            git status --porcelain
+            git status --porcelain -- "$SNAPSHOT" "$GOLDEN_DIR"
           fi
 
       # The same key, config shape and `IdentitiesOnly` reasoning as `release.yml`'s "Load the release deploy key"
@@ -94,8 +103,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add -A
-          git commit -m "chore(data): refresh the randbats snapshot and goldens"
+          git add -- "$SNAPSHOT" "$GOLDEN_DIR"
+          git commit -m "chore(hud): refresh the randbats snapshot and goldens"
           git push --force -- "git@github.com:${{ github.repository }}.git" "HEAD:refs/heads/$BRANCH"
 
       - name: Open the pull request
@@ -104,7 +113,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+          # Assigned on its own line: `set -e` does not apply to a command substitution inside an `if` condition, so
+          # a failing `gh pr list` would read as "none open" and fall through into a 422 from `gh pr create`.
+          existing=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')
+          if [ -n "$existing" ]; then
             echo "the refresh PR is already open — the force-push above updated it"
             exit 0
           fi
@@ -119,5 +131,5 @@ jobs:
           CI runs because the branch was pushed with the deploy key rather than `GITHUB_TOKEN`. If this PR ever shows **no checks at all**, that is the failure mode to chase (#275) — not a pass.
           MD
           gh pr create --base master --head "$BRANCH" \
-            --title "chore(data): refresh the randbats snapshot" \
+            --title "chore(hud): refresh the randbats snapshot" \
             --body-file "$RUNNER_TEMP/pr-body.md"

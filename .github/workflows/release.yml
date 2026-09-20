@@ -54,7 +54,9 @@ jobs:
       # like a green one — but it means this push needs a bypass of its own. A user-owned repo may only name a deploy
       # key or a repository role as a bypass actor: the GitHub Actions app is org-only, so `GITHUB_TOKEN` cannot be
       # excused, and every role wide enough to cover it also covers the owner, handing back the silent force-merge the
-      # rule exists to remove. So the ruleset excuses one write deploy key, and this job pushes as that key.
+      # rule exists to remove. So the ruleset excuses deploy keys — the bypass actor carries no id, so it is the class,
+  # not one key — and this job pushes as the single write key the repo has. Anything else given a write deploy key,
+  # or any workflow handed this one, inherits the bypass with it.
       #
       # A file rather than an agent, because `SSH_AUTH_SOCK` is environment and no environment survives between steps —
       # each `run:` is a fresh shell, so an agent started here would be gone by the time the release pushes. A config
@@ -106,8 +108,8 @@ jobs:
           --repository-url git@github.com:${{ github.repository }}.git
 
   # The extension's own semantic-release run, on `extension-v*` tags (§14.2, §14.3). It comes second and checks out
-  # `master` fresh, so it builds on top of the job above's `chore(release)` commit when there was one and ships that
-  # commit's `05-randbats.js`. Both jobs sit in the one `release` concurrency group, so two pushes never interleave.
+  # `master` fresh, so it builds on top of the job above's `chore(release)` commit when there was one. Both jobs sit
+  # in the one `release` concurrency group, so two pushes never interleave.
   #
   # Only the server stream comments on the PRs a release contains; this one would say the same thing twice, so its
   # `@semantic-release/github` has the comments and the failure issue turned off. A failed extension release is a

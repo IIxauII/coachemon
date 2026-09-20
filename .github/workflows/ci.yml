@@ -26,7 +26,7 @@ jobs:
           node-version: 24
           cache: npm
 
-      # `--ignore-scripts` is the root install at all three CI call sites: Claude Code installs the plugin the same way,
+      # `--ignore-scripts` at every root install site: Claude Code installs the plugin the same way,
       # and the plugin is not a workspace, so WXT never lands in a player's cache (§5.1). (The release toolchain stays
       # out for a different reason — semantic-release is not a devDependency, `release.yml`.)
       - run: npm ci --ignore-scripts
