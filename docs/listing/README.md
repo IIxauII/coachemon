@@ -55,3 +55,19 @@ it, so anything larger crops the card rather than enlarging it. The marquee is t
    `curl -sI https://iixauii.github.io/coachemon/PRIVACY | head -1`.
 2. The listing email is reachable — it is the only support channel there is.
 3. The screenshots are the *current* HUD: redraw them if the panel changed since the last release.
+
+## Submitting
+
+```sh
+scripts/release/listing-wizard.sh
+```
+
+Twelve stages, from the two developer accounts to the `extension-v1.0.0` commit that submits itself, capturing the six
+store secrets on the way ([#322](https://github.com/IIxauII/coachemon/issues/322)). It opens each page and says what
+to paste from the files above; stage 1 is the three checks above. Stop with Ctrl-C and re-run: values already captured
+come back as defaults from `~/.coachemon-listing.env`, which is outside the checkout because this repo does not ignore
+`.env`.
+
+The order it walks is not §14.4's prose. `submitsToStores` is `major >= 1` and `verifyRelease` runs
+`submit-extension.ts --verify`, so **1.0.0 submits through the API and will not release while a credential is
+missing** — every website step happens before that commit is pushed.
