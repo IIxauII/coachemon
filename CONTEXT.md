@@ -241,15 +241,21 @@ line is a price: what the rest of the fight loses by taking the turn this way.
 
 ## Turn score
 
-The single currency every number the **coach** weighs is meant to be denominated in: turns of ours. A move is worth the
-turns it saves; a mon of ours lost is worth the turns its absence costs; chip damage laid down for a foe still on the
-bench is worth the turns of ours it spares later; a foe removed is worth the turns it would otherwise have taken from
-us. One currency is what lets a turn's mechanics, a **fight plan**'s price and the cost of losing a mon be added up at
-all.
+The single currency every number the **coach** weighs is denominated in: turns of ours. A move is worth the turns it
+saves; a mon of ours lost is worth the turns its absence costs; chip damage laid down for a foe still on the bench is
+worth the turns of ours it spares later. One currency is what lets a turn's mechanics, a **fight plan**'s price and the
+cost of losing a mon be added up at all.
+
+Removing a foe is the one the coach prices **flat**. A foe gone counts the same whether it was about to take a third of
+our health or a tenth; only the branch where it had not yet acted is scaled by what it was about to do. That is
+deliberate, and measured: pricing a removal in proportion to the danger it carried changes no advice on any field
+measured so far, because what makes a pair focus or spread is how well each slot's own move is priced rather than how
+much a removal is worth.
 
 A quantity in some other unit — a bare probability, a fraction of a health bar — cannot be compared with one in turns,
-however reasonable each looks alone; summing them silently picks an exchange rate nobody chose. So a weight is stated
-in turns before it is given a number, and a weight whose unit is unclear is a bug waiting rather than a value to tune.
+however reasonable each looks alone; summing them silently picks an exchange rate nobody chose. So a weight the coach
+carries is stated in turns before it is given a number, and one whose unit is unclear is a bug waiting rather than a
+value to tune.
 
 ## Moveset prior
 
