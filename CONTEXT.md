@@ -239,6 +239,24 @@ first step, so what it shows always explains the turn rather than arguing with i
 the turn differently, it says so in one priced line and leaves the call where it was. What it contributes to the turn
 line is a price: what the rest of the fight loses by taking the turn this way.
 
+## Turn score
+
+The single currency every number the **coach** weighs is denominated in: turns of ours. A move is worth the turns it
+saves; a mon of ours lost is worth the turns its absence costs; chip damage laid down for a foe still on the bench is
+worth the turns of ours it spares later. One currency is what lets a turn's mechanics, a **fight plan**'s price and the
+cost of losing a mon be added up at all.
+
+Removing a foe is the one the coach prices **flat**. A foe gone counts the same whether it was about to take a third of
+our health or a tenth; only the branch where it had not yet acted is scaled by what it was about to do. Pricing a
+removal in proportion to the danger it carried changes no advice on any field measured so far — so the flat price is not
+what decides whether a pair focuses or spreads, and on a field where the choice is between a foe about to fell us and a
+harmless one, it is not enough to overrule what does.
+
+A quantity in some other unit — a bare probability, a fraction of a health bar — cannot be compared with one in turns,
+however reasonable each looks alone; summing them silently picks an exchange rate nobody chose. So a weight the coach
+carries is stated in turns before it is given a number, and one whose unit is unclear is a bug waiting rather than a
+value to tune.
+
 ## Moveset prior
 
 Outside evidence about which moves a species is usually built around, used to break a tie the **coach**'s own numbers leave open. It is a prior in the plain sense: it shifts a score the coach already computed, and never decides on its own. A prior that overrules the computed score is a bug, not a stronger prior.
