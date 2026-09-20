@@ -29,17 +29,18 @@ jobs:
 
       - run: npm ci --ignore-scripts
 
-      # The snapshot refresh runs *here*, not in semantic-release's `prepareCmd`, so the suite below sees the exact
-      # `05-randbats.js` the release commits (#258). `prepareCmd` still writes the three version files after the
-      # suite, which is what a release must do; no *code* is written after it. `chore(release)` is `[skip ci]`, so
-      # no workflow ever runs on that commit:
-      # before this, the bot regenerated `05-randbats.js` after the tests and pushed it unseen, and a generator that
-      # had drifted from the file it writes (the pre-#191 non-module form) took master red for a whole release.
-      # A failed refresh is not a failed release — `gen-randbats.ts` keeps the existing snapshot and exits 0.
-      # The marker is matched against the *commit message*, not the workflow; `CLAUDE.md` carries the rule for
-      # writing one (#275, #278).
-      - run: npm run randbats:gen
-
+      # Nothing is generated or fetched in this job: the suite below tests the exact tree the release commits (#258),
+      # and `prepareCmd` writes only the three version files, after it. That property matters because the
+      # `chore(release)` commit carries the marker that suppresses every workflow, so no run ever checks it — whatever
+      # the bot pushes is unseen by CI. Once, the bot regenerated `05-randbats.js` after the tests and a generator
+      # that had drifted from the file it writes (the pre-#191 non-module form) took master red for a whole release.
+      # (The marker is matched against the *commit message*, not the workflow; `CLAUDE.md` carries the rule for
+      # writing one — #275, #278.)
+      #
+      # The pkmn/randbats refresh used to run here, ahead of the suite. It moved to `randbats.yml`, a weekly job that
+      # opens a reviewed PR, because upstream moving on its own could turn *this* job red on a day nothing in the repo
+      # changed (#279, #291). Do not put it back: a live fetch here re-entangles the release with an input the repo
+      # does not control.
       - run: npm run typecheck
 
       # `npm test` is both suites since #259: the unit tests and then the 24 HUD goldens, which bundle the real

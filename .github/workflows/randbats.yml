@@ -1,0 +1,117 @@
+name: Randbats refresh
+
+# The weekly pkmn/randbats refresh, and the only thing in this repo that fetches it (#279, #291). It used to be a
+# step in `release.yml`, ahead of the suite, which made an upstream role rename or a re-cut set able to turn the
+# *release* red on a day nothing here changed: the goldens carry role names verbatim, and `40-learn.js` turns a prior
+# hit into a score multiplier, so a moved set reorders moves and flips verdicts in goldens that carry no role string
+# at all. `MAX_BYTES` could stop a release too. Here that red lands in a pull request built for reading it, and the
+# release tests exactly the tree it commits with nothing fetched in between (#258, now free rather than fought for).
+#
+# Why a green PR is still a real review: the only changed input is `05-randbats.js`. No repo code moves, so a golden
+# diff can only be upstream-caused, and regenerating the goldens in the same PR cannot paper over a code regression —
+# there is none in that PR to paper over. The diff *is* the review; merging is the sign-off, the same shape as
+# `drift:check --stamp`.
+
+on:
+  schedule:
+    # Weekly, Monday morning UTC. Drift only has to stay small (#258), not be same-day.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: randbats-refresh
+  cancel-in-progress: false
+
+# The branch is pushed over ssh with the deploy key, not with this token, so `contents` stays read-only; the token
+# only opens the PR.
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  # One long-lived branch, rebuilt from master and force-pushed each week: last week's unmerged refresh is superseded
+  # by this one, not a second PR to triage.
+  BRANCH: chore/randbats-refresh
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # `--ignore-scripts` at every root install site: Claude Code installs the plugin the same way (§5.1).
+      - run: npm ci --ignore-scripts
+
+      # Both of the generator's hard exits — the 150 KB budget and `--check` — now only ever fire in this job, where
+      # a red is actionable by construction. An unreachable upstream still keeps the existing snapshot and exits 0,
+      # which lands as "nothing changed" below.
+      - run: npm run randbats:gen
+
+      # `--update` rewrites the goldens rather than failing on them. That is safe *here and nowhere else*: the only
+      # changed input in this job is the snapshot.
+      - run: node skills/coachemon/scripts/test/run.mjs --update
+
+      - id: drift
+        name: Check whether upstream moved
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "upstream has not moved — no pull request to open"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git status --porcelain
+          fi
+
+      # The same key, config shape and `IdentitiesOnly` reasoning as `release.yml`'s "Load the release deploy key"
+      # (#275, #289): a branch pushed with `GITHUB_TOKEN` triggers no workflows, so `ci.yml` would never run on this
+      # PR and the goldens — the entire point of it — would go unchecked. `ci.yml` is `on: [push, pull_request]`, so
+      # the push below is enough to light it up; the PR is then opened with the token, whose own event is suppressed
+      # and does not need to fire.
+      - name: Load the release deploy key
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          DEPLOY_KEY: ${{ secrets.RELEASE_DEPLOY_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          (umask 077; printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/release_ed25519)
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
+          printf 'Host github.com\n  IdentityFile ~/.ssh/release_ed25519\n  IdentitiesOnly yes\n' > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+      # `chore`, so merging this does not by itself cut a release: the prior is a nudge and rides out with the next
+      # one. Nothing here may spell the marker GitHub matches in a commit message (`CLAUDE.md`, #275).
+      - name: Commit and push the refresh
+        if: steps.drift.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add -A
+          git commit -m "chore(data): refresh the randbats snapshot and goldens"
+          git push --force -- "git@github.com:${{ github.repository }}.git" "HEAD:refs/heads/$BRANCH"
+
+      - name: Open the pull request
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            echo "the refresh PR is already open — the force-push above updated it"
+            exit 0
+          fi
+          gh pr create --base master --head "$BRANCH" \
+            --title "chore(data): refresh the randbats snapshot" \
+            --body 'Weekly [pkmn/randbats](https://github.com/pkmn/randbats) refresh (#279, #291). `npm run randbats:gen` then `node skills/coachemon/scripts/test/run.mjs --update`.
+
+The only changed input is `skills/coachemon/scripts/hud/05-randbats.js` — no repo code moves — so **the golden diff is the review**: every line of it is upstream-caused, and regenerating the goldens here cannot hide a code regression, because there is none in this PR to hide. Read which roles and moves moved; merging is the sign-off, the same shape as `drift:check --stamp`.
+
+CI runs because the branch was pushed with the deploy key rather than `GITHUB_TOKEN`. If this PR ever shows **no checks at all**, that is the failure mode to chase (#275) — not a pass.'

@@ -12,13 +12,17 @@
  * chains are kept — no PokéRogue data is copied (see #77).
  *
  * The prior is a nudge and never a veto, so staleness is cheap: a set that
- * moved on just stops matching. The release re-runs this so the drift stays
- * small — as a step in `.github/workflows/release.yml`, ahead of the suite,
- * and no longer inside semantic-release's `prepareCmd`, so the tree the
- * release commits is the tree the suite just tested (#258).
+ * moved on just stops matching. `.github/workflows/randbats.yml` re-runs this
+ * weekly so the drift stays small (#258), regenerates the goldens alongside it
+ * and opens a pull request; the committed `05-randbats.js` is the pin, and
+ * merging that PR is the deliberate bump. It used to run in the release job
+ * instead, which let upstream moving on its own redden a push that changed
+ * nothing here (#279, #291).
  *
- * `--check` is therefore *not* a CI gate: it rebuilds from live upstream,
- * which moves on its own, and would go red on days nothing here changed.
+ * `--check` is *not* a CI gate on ordinary pushes: it rebuilds from live
+ * upstream, which moves on its own, and would go red on days nothing here
+ * changed. Inside the weekly refresh, upstream moving is the whole subject, so
+ * both of the hard exits below are actionable there by construction.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
@@ -149,8 +153,9 @@ f: ${list(b.forms)},
 };
 `;
 
-// A refresh is a nicety, not a release gate: if the upstream files are unreachable, keep the snapshot we have.
-// The prior only ever nudges a score, so one that is a few weeks stale costs nothing a release should stop for.
+// A refresh is a nicety, not a gate: if the upstream files are unreachable, keep the snapshot we have. The weekly
+// job then sees a clean tree and opens no pull request. The prior only ever nudges a score, so one that is a few
+// weeks stale costs nothing worth a red for.
 let built: Awaited<ReturnType<typeof build>>;
 try {
   built = await build();
