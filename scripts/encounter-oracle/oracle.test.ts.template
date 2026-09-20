@@ -298,6 +298,91 @@ async function pickOption(
   return await runOptionOut(game, { isBattle });
 }
 
+/** Runs to the next option screen a continuous encounter opens, clearing whatever the turn queued on the way.
+ *  `initSubsequentOptionSelect` pushes a second `MysteryEncounterPhase` rather than ending the encounter, so the
+ *  minigame's menu is never the `MysteryEncounterRewardsPhase` that `runOptionOut` waits for. */
+async function toOverrideMenu(game: GameManager) {
+  game.onNextPrompt("MysteryEncounterOptionSelectedPhase", UiMode.MESSAGE, () => {
+    game.scene.ui.getHandler<MysteryEncounterUiHandler>().processInput(Button.ACTION);
+  });
+  game.onNextPrompt("MessagePhase", UiMode.MESSAGE, () => {
+    game.scene.ui.getHandler<MessageUiHandler>().processInput(Button.ACTION);
+  });
+  await game.phaseInterceptor.to("MysteryEncounterPhase");
+  return game.scene.ui.getHandler<MysteryEncounterUiHandler>();
+}
+
+/** Pays the Safari fee and stops on the first mon's minigame menu. */
+async function enterSafari(game: GameManager) {
+  await chooseOption(game, 1);
+  return await toOverrideMenu(game);
+}
+
+/** Presses one of the minigame's override options. They are not on `me.options`, and the game re-opens the menu on
+ *  the option last taken (`startingCursorIndex`), so the cursor is set outright rather than walked from a start
+ *  `chooseOption` could assume. */
+function pressOverride(game: GameManager, option: number) {
+  const ui = game.scene.ui.getHandler<MysteryEncounterUiHandler>();
+  ui.unblockInput();
+  ui.setCursor(option);
+  ui.processInput(Button.ACTION);
+}
+
+/** Takes one minigame turn and stops on the menu the game re-opens. */
+async function safariTurn(game: GameManager, option: number) {
+  pressOverride(game, option);
+  return await toOverrideMenu(game);
+}
+
+/** The minigame's four override options, in the order `safariZoneGameOptions` builds them. */
+const BALL = 0;
+const BAIT = 1;
+const MUD = 2;
+const RUN = 3;
+
+// A flee roll sits between every turn and the next screen, and a mon that bolts takes the stage change with it —
+// the next summon resets both stages — so a turn is only observable on a mon that cannot bolt. Wave 52's first
+// safari mon is a Lotad: `isPokemonFlee` reads the *species* catch rate, and at 255 the rate is
+// `(255² − 255²) / 255 / 2 = 0` at every stage, so the roll can never take it. The walk pins the rate rather than
+// the species, so a pin bump that moves the roll back into play goes red there instead of quietly turning the two
+// stage cases into coin flips.
+const SAFARI_STILL_WAVE = 52;
+const SAFARI_STILL_RATE = 255;
+/** Enough turns for the certain arm to reach the ±6 clamp, and enough draws that the 4-in-5 arm failing to fire at
+ *  all is a 1-in-15,000 seed rather than the coin flip four turns made of it. */
+const SAFARI_TURNS = 6;
+
+/** The certain arm's ladder over `SAFARI_TURNS` turns: `step` a turn, clamped at ±6. Derived rather than written
+ *  out, so raising the turn count cannot silently stop matching. */
+function stageLadder(step: number) {
+  return Array.from({ length: SAFARI_TURNS }, (_, i) => Math.sign(step) * Math.min(Math.abs(step) * (i + 1), 6));
+}
+
+/** Walks one option over and over on a mon that cannot bolt, reporting both stages after each turn. */
+async function walkSafari(game: GameManager, option: number) {
+  const me = game.scene.currentBattle.mysteryEncounter!;
+  const before = me.misc.pokemon;
+  expect(
+    before.species.catchRate,
+    `wave ${SAFARI_STILL_WAVE}'s first safari mon can now bolt, so its turns are coin flips`,
+  ).toBe(SAFARI_STILL_RATE);
+
+  const catchStages: number[] = [];
+  const fleeStages: number[] = [];
+  for (let i = 0; i < SAFARI_TURNS; i++) {
+    await safariTurn(game, option);
+    expect(me.misc.pokemon.id, "the mon being worked on is still the mon in front of you").toBe(before.id);
+    // The card's own stage fields, read back against the game at a *non-zero* stage and again at the ±6 clamp —
+    // the one place the card's `clampStage` and the game's own could plausibly part company.
+    const shown = readCard(game).minigame;
+    expect(shown.catchStage, `turn ${i + 1}: the card's catch stage is not the game's`).toBe(me.misc.catchStage);
+    expect(shown.fleeStage, `turn ${i + 1}: the card's flee stage is not the game's`).toBe(me.misc.fleeStage);
+    catchStages.push(me.misc.catchStage);
+    fleeStages.push(me.misc.fleeStage);
+  }
+  return { catchStages, fleeStages };
+}
+
 /** The reward options the game is offering right now, once it has reached its `SelectModifierPhase`. */
 function rewardOptions(game: GameManager) {
   expect(game.scene.ui.getMode()).toBe(UiMode.MODIFIER_SELECT);
@@ -768,5 +853,147 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(Number(named![1])).toBe(cfgs.length);
     expect(Number(named![2])).toBe(mons);
   });
-});
 
+  // ---- Safari Zone's minigame turn. Every other case here stops on the encounter's own option screen; this one pays
+  // the fee and walks into the screen the encounter re-opens with, which no case had driven before.
+  //
+  // The odds are not among the claims checked. `throwPokeball` and `isPokemonFlee` are module-private, so an oracle
+  // could only re-derive them and compare the card's arithmetic against a copy of its own — no answer at all. What
+  // the game does write down is the mon, the count and the two stages, and those are what these cases read.
+
+  it("Safari Zone: the minigame menu is judged, and the turn the card reads is the turn the game holds", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.SAFARI_ZONE));
+    const ui = await enterSafari(game);
+
+    const me = game.scene.currentBattle.mysteryEncounter!;
+    const card = readCard(game);
+    const held = {
+      mon: me.misc.pokemon.getNameToRender(),
+      catchRate: me.misc.pokemon.species.catchRate,
+      left: me.misc.safariPokemonRemaining,
+      catchStage: me.misc.catchStage,
+      fleeStage: me.misc.fleeStage,
+    };
+    console.log(`ORACLE-DIFF safari-menu claimed=${JSON.stringify(card.minigame)} actual=${JSON.stringify(held)}`);
+
+    // The one thing a mock cannot prove: that the real `MysteryEncounterUiHandler` is showing a *secondary* menu —
+    // four options, none of them on `me.options`, so the card reads them positionally rather than by index.
+    expect(game.scene.ui.getMode()).toBe(UiMode.MYSTERY_ENCOUNTER);
+    expect(ui.encounterOptions).toHaveLength(4);
+    expect(me.options).toHaveLength(2);
+    expect(card.options).toHaveLength(4);
+    expect(card.options.map((o: { index: number }) => o.index)).toEqual([-1, -1, -1, -1]);
+    // The card reads an override menu *positionally*, so the order it assumes has to be the order the game built
+    // `safariZoneGameOptions` in. Checked against the game's own dialogue keys rather than the rendered labels the
+    // card itself read, which would only agree with themselves.
+    const labels = ui.encounterOptions.map(o => o.dialogue?.buttonLabel);
+    const key = (n: number) => `mysteryEncounters/safariZone:safari.${n}.label`;
+    expect(labels[BALL]).toBe(key(1));
+    expect(labels[BAIT]).toBe(key(2));
+    expect(labels[MUD]).toBe(key(3));
+    expect(labels[RUN]).toBe(key(4));
+    expect(card.kind).toBe("encounter");
+    expect(card.known).toBe(true);
+    expect(card.notes.filter((n: string) => n.startsWith("couldn't judge"))).toEqual([]);
+    for (const o of card.options) {
+      expect(o.label).toBeTruthy();
+      expect(o.label).not.toMatch(/^Option \d$/);
+      expect(o.outcome, `option "${o.label}" has no outcome`).toBeTruthy();
+    }
+
+    const mon = me.misc.pokemon;
+    expect(card.minigame).toBeTruthy();
+    expect(card.minigame.mon).toBe(mon.getNameToRender());
+    expect(card.minigame.catchRate).toBe(mon.species.catchRate);
+    expect(card.minigame.catchStage).toBe(me.misc.catchStage);
+    expect(card.minigame.fleeStage).toBe(me.misc.fleeStage);
+    // `summonSafariPokemon` decrements the count as it summons, so the card's `left` is how many come *after* this
+    // one: three in all, one of them already in front of you.
+    expect(card.minigame.left).toBe(me.misc.safariPokemonRemaining);
+    expect(me.misc.safariPokemonRemaining).toBe(2);
+  });
+
+  // Bait's two arms are told apart by walking it: `tryChangeCatchStage(2)` always lands, so the catch stage is an
+  // exact ladder up to the clamp, while `tryChangeFleeStage(1, 8)` lands 4 times in 5 and so is *observed* rather
+  // than derived. That it fired at all is asserted: a seed that stopped firing it would otherwise leave the card's
+  // "4 times in 5" unchecked, and the case would pass a game that had dropped the arm entirely.
+  it("Safari Zone: a bait turn moves the game's stages the way the card said it might", async () => {
+    await arrive(game, { ...caseFor(MysteryEncounterType.SAFARI_ZONE), wave: SAFARI_STILL_WAVE });
+    await enterSafari(game);
+
+    const claimed: string = readCard(game).options[BAIT].outcome;
+    expect(claimed, `bait reads "${claimed}"`).toMatch(/^catch \+2 → .*, and 4 times in 5 flee \+1 → /);
+
+    const { catchStages, fleeStages } = await walkSafari(game, BAIT);
+    console.log(`ORACLE-DIFF safari-bait claimed="${claimed}" catch=${catchStages.join(",")} flee=${fleeStages.join(",")}`);
+
+    // The certain arm: +2 a turn, clamped at +6.
+    expect(catchStages, "bait raises the catch stage by exactly 2 a turn, clamped at +6").toEqual(stageLadder(2));
+    // The 4-in-5 arm: never down, never more than +1 in one turn, and it landed at least once over these turns.
+    for (const [i, fs] of fleeStages.entries()) {
+      const moved = fs - (fleeStages[i - 1] ?? 0);
+      const why = `turn ${i + 1} moved the flee stage by more than bait can (${fleeStages.join(",")})`;
+      expect(moved, why).toBeOneOf([0, 1]);
+    }
+    expect(
+      fleeStages.at(-1),
+      "the fixed seed no longer fires bait's 4-in-5 flee arm, so it is going unchecked",
+    ).toBeGreaterThan(0);
+  });
+
+  it("Safari Zone: a mud turn is the mirror of it", async () => {
+    await arrive(game, { ...caseFor(MysteryEncounterType.SAFARI_ZONE), wave: SAFARI_STILL_WAVE });
+    await enterSafari(game);
+
+    const claimed: string = readCard(game).options[MUD].outcome;
+    expect(claimed, `mud reads "${claimed}"`).toMatch(/^flee −2 → .*, and 4 times in 5 catch −1 → /);
+
+    const { catchStages, fleeStages } = await walkSafari(game, MUD);
+    console.log(`ORACLE-DIFF safari-mud claimed="${claimed}" catch=${catchStages.join(",")} flee=${fleeStages.join(",")}`);
+
+    expect(fleeStages, "mud lowers the flee stage by exactly 2 a turn, clamped at −6").toEqual(stageLadder(-2));
+    for (const [i, cs] of catchStages.entries()) {
+      const moved = cs - (catchStages[i - 1] ?? 0);
+      const why = `turn ${i + 1} moved the catch stage by more than mud can (${catchStages.join(",")})`;
+      expect(moved, why).toBeOneOf([0, -1]);
+    }
+    expect(
+      catchStages.at(-1),
+      "the fixed seed no longer fires mud's 4-in-5 catch arm, so it is going unchecked",
+    ).toBeLessThan(0);
+  });
+
+  // Walking away is the one turn with no roll in it: `doPlayerFlee` summons the next mon outright, so the three mons
+  // can be walked without ever meeting the flee roll.
+  it("Safari Zone: the count the card names is the count the game holds, and the third mon ends the safari", async () => {
+    await arrive(game, caseFor(MysteryEncounterType.SAFARI_ZONE));
+    await enterSafari(game);
+    const me = game.scene.currentBattle.mysteryEncounter!;
+
+    const seen: string[] = [];
+    for (const left of [2, 1, 0]) {
+      const card = readCard(game);
+      seen.push(`${card.minigame.mon}:${card.minigame.left}`);
+      expect(me.misc.safariPokemonRemaining).toBe(left);
+      expect(card.minigame.left).toBe(left);
+      expect(card.minigame.catchStage, "every mon starts on fresh stages").toBe(0);
+      expect(card.minigame.fleeStage, "every mon starts on fresh stages").toBe(0);
+      expect(card.options[RUN].outcome).toBe(
+        left
+          ? `let it go — ${left} mon${left === 1 ? "" : "s"} left after this one`
+          : "let it go — the last of the three, so this ends the safari",
+      );
+      if (left > 0) {
+        await safariTurn(game, RUN);
+      }
+    }
+
+    // The card said letting the third one go ends the safari, so this walks off the last menu and out of the
+    // encounter rather than into a fourth one.
+    pressOverride(game, RUN);
+    await runOptionOut(game);
+
+    console.log(`ORACLE-DIFF safari-count seen=${seen.join(" ")} continuous=${me.continuousEncounter}`);
+    expect(me.continuousEncounter, "letting the last of the three go ends the continuous encounter").toBe(false);
+  });
+});

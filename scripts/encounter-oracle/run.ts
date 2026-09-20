@@ -12,7 +12,9 @@
  *
  * Every exact claim the card makes is walked: the teleport destination, the part-timer's pay, the chest (both its
  * prize tiers and its trap), the store's four shops, who the fallout burns, and the vitamin dealer's new nature.
- * The take / ok / avoid call is judgement and stays unchecked.
+ * Safari Zone is walked past its fee and into the minigame turn it re-opens the option screen with — the one screen
+ * the card judges that is not an encounter's own — where the mon, the count and the two stages the game writes are
+ * checked against the turn the card read. The take / ok / avoid call is judgement and stays unchecked.
  *
  * What it exits with:
  *
