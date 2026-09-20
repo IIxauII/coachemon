@@ -247,10 +247,10 @@ worth the turns of ours it spares later. One currency is what lets a turn's mech
 cost of losing a mon be added up at all.
 
 Removing a foe is the one the coach prices **flat**. A foe gone counts the same whether it was about to take a third of
-our health or a tenth; only the branch where it had not yet acted is scaled by what it was about to do. That is
-deliberate, and measured: pricing a removal in proportion to the danger it carried changes no advice on any field
-measured so far, because what makes a pair focus or spread is how well each slot's own move is priced rather than how
-much a removal is worth.
+our health or a tenth; only the branch where it had not yet acted is scaled by what it was about to do. Pricing a
+removal in proportion to the danger it carried changes no advice on any field measured so far — so the flat price is not
+what decides whether a pair focuses or spreads, and on a field where the choice is between a foe about to fell us and a
+harmless one, it is not enough to overrule what does.
 
 A quantity in some other unit — a bare probability, a fraction of a health bar — cannot be compared with one in turns,
 however reasonable each looks alone; summing them silently picks an exchange rate nobody chose. So a weight the coach
