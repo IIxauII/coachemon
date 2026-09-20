@@ -524,8 +524,11 @@ const foeTurns = (turn, t, me, hp, opts = {}) => koTurns(foeCurve(turn, t, me, h
 // already played: `turn1` of an earlier exchange, whose HP branches both curves start from — this turn's exact odds
 // don't hold there, the distributions do), `free` (the foe is switching in and doesn't act this turn), `next` (the foe
 // re-picks its move against us next turn), `outcome` (our move's record, if already at hand), `foeAct(i)` (the share of
-// its i-th attempt from now that a status we gave it leaves standing: sleep). A foe likely to Protect this turn blocks
-// our move, and a foe setting up raises the defence our later hits meet and may come to outspeed us.
+// its i-th attempt from now that a status we gave it leaves standing: sleep), `field` (in a double, the foe whose hits
+// price the race when that isn't the target — the field's worst duel, #320), `fieldAct(i)` (the same share as `foeAct`
+// but for `field`, since a status we gave the target says nothing about the foe actually racing us). A foe likely to
+// Protect this turn blocks our move, and a foe setting up raises the defence our later hits meet and may come to
+// outspeed us.
 // The move's own costs are priced in: turns (charge, recharge, not twice in a row, Outrage's confusion, falling
 // Atk/SpA on repeats, our sleep or paralysis), the HP it costs us (recoil, Steel Beam, crash, contact chip, lowered
 // defences, self-KO) and `cost` — our max HP it spends plus a little for a lock-in — for scoring ties.
@@ -540,8 +543,25 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // is this module's.
   const mt = mine?.traits ?? {};
   const t = threatFrom(turn, foe, me, pm, { next: !!opts.next });
+  // `field`: in a double the foe we are really racing — the field's worst duel — when that isn't the target. Our kill
+  // still counts against the target; what goes field-wide is the threat racing us, because the other foe hits us
+  // wherever we aim and only removing it changes that (#320). Narrow on purpose: what comes at us is the field's (the
+  // damage curve, and the order it arrives in), while what we do about the target stays the target's own — whether our
+  // move works, its Protect, our flinch cancelling *its* attempt, and the bars our hits break. A two-actor race
+  // standing in for three: the foe that is not racing us and not being aimed at is counted only where it hurts us.
+  const fieldFoe = opts.field && opts.field !== foe ? opts.field : foe;
+  // The target is itself the foe racing us: every field-wide term below collapses to the target's own.
+  const aimedAtField = fieldFoe === foe;
+  const tThey = aimedAtField ? t : threatFrom(turn, fieldFoe, me, pm, { next: !!opts.next });
+  // A target that isn't attacking still leaves us the rest of the field to survive.
+  const freeThey = opts.free && aimedAtField;
   const pFirst = t ? 1 - (t.pKo > 0 ? t.koFirst : t.first) : 1;
   const pF = opts.free ? 1 : pFirst;
+  // Order in the race is the field foe's: outspeeding the target buys nothing when the foe racing us moves first
+  // anyway, and what outspeeding the target *is* worth — its attempt cancelled — is the joint's `pBefore` to price,
+  // not this. Identical to `pF` wherever the target is the foe we are racing, so a single battle is untouched.
+  const pFirstField = aimedAtField ? pFirst : tThey ? 1 - (tThey.pKo > 0 ? tThey.koFirst : tThey.first) : 1;
+  const pFField = freeThey ? 1 : pFirstField;
   // Chance our move does its job when chosen: we get to act, Focus Punch isn't hit first, Sucker Punch meets an
   // attack, a foe mid-Dig / Fly has come out first. `steady`: the part that recurs on later turns.
   const foeAttacks = opts.free || !t ? 0 : Math.min(1, t.moves.reduce((sum, m) => sum + m.p, 0));
@@ -631,18 +651,19 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   // around our last hit.
   const selfKo = mt.selfKo === "always" ? 1 : mt.selfKo === "onHit" ? mine?.acc ?? 1 : 0;
   const budget = hp - selfSpent;
-  const foeT = defUp !== 1 && t ? { ...t, expected: t.expected * defUp } : t;
+  const foeT = defUp !== 1 && tThey ? { ...tThey, expected: tThey.expected * defUp } : tThey;
   // Its attacks our flinch cancels: this turn's if we move first and act, later ones only for a repeatable move.
   const foeAct = i => (1 - ourFlinch * (i === 0 ? pF * now : mt.once ? 0 : pFirst * steady)) * (opts.foeAct ? opts.foeAct(i) : 1);
-  const mult = foeMult || defUp !== 1 ? j => (foeMult ? foeMult(j) : 1) * defUp : null;
+  const theirAct = aimedAtField ? foeAct : i => (opts.fieldAct ? opts.fieldAct(i) : 1);
+  const mult = (aimedAtField && foeMult) || defUp !== 1 ? j => (aimedAtField && foeMult ? foeMult(j) : 1) * defUp : null;
   const myStart = after?.me.map(x => ({ ...x, hp: x.revived ? x.hp : x.hp - selfSpent })).filter(x => x.hp > 0);
   // Our drain move wins back its share of what it deals on each turn it lands.
   const ourDrain = (mine?.drain ?? 0) * (mine?.expected ?? 0) * steady;
   const theirs = budget > 0 ? foeCurve(turn, foeT, me, budget, {
-    dealt: mine?.uncapped ?? mine?.expected ?? 0, foe, mult, act: foeAct, start: myStart?.length ? myStart : null, drain: ourDrain,
+    dealt: mine?.uncapped ?? mine?.expected ?? 0, foe: fieldFoe, mult, act: theirAct, start: myStart?.length ? myStart : null, drain: ourDrain,
   }) : null;
   const turnsFoe = theirs ? koTurn(theirs.by) : Math.max(1, Math.min(turnsWe, 9));
-  const lag = opts.free ? 1 : 0;
+  const lag = freeThey ? 1 : 0;
   let turnsThey = Math.min(9, turnsFoe + lag);
   if (selfKo >= 0.5) turnsThey = Math.min(turnsThey, delay + 1);
   // P(we're down by the end of turn j): its curve a turn late when it's switching in, our self-KO after our move.
@@ -651,23 +672,23 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     const by = theirs ? (k >= 1 ? theirs.by[k - 1] : 0) : j >= turnsFoe + lag ? 1 : 0;
     return 1 - (1 - by) * (1 - (j >= delay + 2 ? selfKo : 0));
   };
-  const qThey = opts.free ? 0 : exact ? threatKoAt(t, hp) * foeAct(0) : theirs?.by[0] ?? 1;
-  const weFirst = pF * qWe + (1 - pF) * (1 - qThey) * qWe * (1 - flinch);
-  const theyFirst = (1 - pF) * qThey + pF * (1 - qWe) * qThey;
+  const qThey = freeThey ? 0 : exact ? threatKoAt(tThey, hp) * theirAct(0) : theirs?.by[0] ?? 1;
+  const weFirst = pFField * qWe + (1 - pFField) * (1 - qThey) * qWe * (1 - flinch);
+  const theyFirst = (1 - pFField) * qThey + pFField * (1 - qWe) * qThey;
   // Who moves first on the deciding turn: a token's paralysis by then halves our Speed.
-  let pLast = pFirst;
+  let pLast = pFirstField;
   const pPara = acts && turnsWe < 9 ? acts.para(turnsWe - 1) : 0;
   if (pPara > 0) {
     const slowed = { id: { value: `${me.id}~paralysed` }, status: { value: { effect: StatusEffect.PARALYSIS } } };
     if (typeof me.getEffectiveStat !== "function") slowed.getEffectiveStat = { value: i => stat(me, i) / (i === Stat.SPD ? 2 : 1) };
-    const tp = threatFrom(turn, foe, Object.create(me, slowed), pm, { next: !!opts.next });
-    pLast = (1 - pPara) * pFirst + pPara * (tp ? 1 - (tp.pKo > 0 ? tp.koFirst : tp.first) : pFirst);
+    const tp = threatFrom(turn, fieldFoe, Object.create(me, slowed), pm, { next: !!opts.next });
+    pLast = (1 - pPara) * pFirstField + pPara * (tp ? 1 - (tp.pKo > 0 ? tp.koFirst : tp.first) : pFirstField);
   }
   // A foe boosting its Speed (Dragon Dance) passes us once it has the stages it needs, unless our move has priority:
   // our share of moving first on the deciding turn falls with the stages it's expected to have gained by then.
-  const speedUp = t?.boost?.[Stat.SPD] ?? 0;
+  const speedUp = tThey?.boost?.[Stat.SPD] ?? 0;
   if (speedUp > 0 && turnsWe > 1 && turnsWe < 9 && !((mine?.priority ?? 0) > 0) && pLast > 0) {
-    const mySpe = turn.mon(me).speed, foeSpe = turn.mon(foe).speed, s5 = foe.summonData?.statStages?.[Stat.SPD - 1] ?? 0;
+    const mySpe = turn.mon(me).speed, foeSpe = turn.mon(fieldFoe).speed, s5 = fieldFoe.summonData?.statStages?.[Stat.SPD - 1] ?? 0;
     let need = 0;
     while (s5 + need < 6 && foeSpe * stage(s5 + need) / stage(s5) <= mySpe) need++;
     if (need > 0 && foeSpe * stage(s5 + need) / stage(s5) > mySpe) pLast *= Math.max(0, 1 - speedUp * (turnsWe - 1) / need);
@@ -686,7 +707,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const expTurns = F => Math.min(9, 1 + Array.from({ length: 8 }, (_, j) => 1 - F(j + 1)).reduce((t, x) => t + x, 0));
   const taken = turnsWe >= 9 ? turnsThey : Math.max(0, turnsWe - pLast - lag);
   const boosted = foeMult && taken > 0 ? Array.from({ length: Math.ceil(taken) }, (_, i) => foeMult(i + 1)).reduce((sum, x) => sum + x, 0) / Math.ceil(taken) : 1;
-  const hpLeft = Math.max(0, Math.min(maxHp, hp - (t?.expected ?? 0) * defUp * boosted * taken - selfSpent + ourDrain * Math.min(taken, turnsWe))) * (1 - selfKo);
+  const hpLeft = Math.max(0, Math.min(maxHp, hp - (tThey?.expected ?? 0) * defUp * boosted * taken - selfSpent + ourDrain * Math.min(taken, turnsWe))) * (1 - selfKo);
   return {
     pWeKoFirst: Math.min(1, Math.round(pWe * 1e9) / 1e9), pTheyKoFirst: Math.min(1, Math.round(pThey * 1e9) / 1e9),
     expectedHpLeft: Math.round(hpLeft),
@@ -695,7 +716,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
     cost: Math.min(1, (selfSpent + selfKo * Math.max(0, hp - selfSpent)) / maxHp) + (mt.lock ? 0.1 : 0),
     turn1: (() => {
       // Our branches in real HP: the curve front-loaded every use's self-cost, turn 1 has only paid one.
-      const me1 = opts.free || !theirs ? [{ hp, p: 1 }]
+      const me1 = freeThey || !theirs ? [{ hp, p: 1 }]
         : theirs.after1.map(x => ({ ...x, hp: x.revived ? x.hp : Math.min(hp, x.hp + selfSpent - (mine?.self ?? 0)) }));
       return {
         we: weFirst, they: theyFirst, me: me1, hp: me1.reduce((t, x) => t + x.p * x.hp, 0),
@@ -795,8 +816,17 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const free = f => !entering && !attackers.includes(f);
     // A mon not yet on the field faces what the foe picks for it, not the move it chose against the current field.
     const next = entering || !me.isOnField?.();
-    const danger = Math.min(...active.map(f => Math.min(9, foeTurns(turn, threatFrom(turn, f, me, null, { next }), me, hp, { foe: f, act: actOn(hyp, f) ?? undefined }) + (free(f) ? 1 : 0))));
-    const trade = (o, f) => exchange(turn, me, o.pm, f, { hp, outcome: o, free: free(f), next, foeAct: actOn(hyp, f) });
+    // How many turns this mon lasts on this field: the soonest any foe can fell it. A per-mon constant — the same for
+    // every candidate this mon has — so it cancels out of the comparison between them and only sets the scale a mon's
+    // options are scored on. Not `danger(X, mons)`, which is one foe's share of our health this turn (#307, #320).
+    const lasts = Math.min(...active.map(f => Math.min(9, foeTurns(turn, threatFrom(turn, f, me, null, { next }), me, hp, { foe: f, act: actOn(hyp, f) ?? undefined }) + (free(f) ? 1 : 0))));
+    // The field's worst duel, this mon's own: the foe whose hits price the race wherever this mon aims (#320). Read on
+    // the same terms as the threats above, so it is the target itself whenever the target is the dangerous one.
+    const worst = !pair ? null : attackers.reduce((b, f) => {
+      const x = threatFrom(turn, f, me, null, { next });
+      return !b || (x?.expected ?? 0) > (threatFrom(turn, b, me, null, { next })?.expected ?? 0) ? f : b;
+    }, null);
+    const trade = (o, f) => exchange(turn, me, o.pm, f, { hp, outcome: o, free: free(f), next, foeAct: actOn(hyp, f), field: worst, fieldAct: actOn(hyp, worst) });
     const last = entering ? null : lastMoveOf(me);
     const cost = o => -(o.benefit ?? 0) * AI_POINT - (last != null && o.pm?.moveId === last ? KEEP_BONUS : 0);
     // Falling to a foe with an on-KO boost (Beast Boost, Moxie) arms it against whoever comes next.
@@ -804,7 +834,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const one = (o, fi) => {
       const x = trade(o, active[fi]);
       const turns = x.turnsWe + lost;
-      return { me, move: o, target: fi, turns, hits: x.turnsWe, score: danger - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst, hp, trade: x };
+      return { me, move: o, target: fi, turns, hits: x.turnsWe, score: lasts - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst, hp, trade: x };
     };
     // A single-target hit that resolves after its target has fallen is **redirected onto the surviving foe** by the
     // game — `FaintPhase` → `redirectPokemonMoves` retargets every still-queued single-target move aimed at the
@@ -824,7 +854,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       // field as it stands, so it still keeps spread moves out of the follow-up pool even though this branch models a
       // world where the partner's target has fallen and a spread hit is single-target there. That can only under-value
       // the branch, never inflate it, so the blend stays conservative about focusing.
-      if (!(y?.expected > 0)) return { ...x, redirScore: danger - 9 };
+      if (!(y?.expected > 0)) return { ...x, redirScore: lasts - 9 };
       const z = one(y, oi);
       return { ...x, redirScore: (entering || assumed ? z : deeper(z)).score };
     };
@@ -842,7 +872,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const cands = [...new Set([...[...pool].sort((a, b) => b.expected - a.expected).slice(0, 2), ...pool.filter(y => (y.priority ?? 0) > 0).slice(0, 1),
         ...(pool.includes(o) ? [o] : [])])];
       const value = y => {
-        const x2 = exchange(turn, me, y.pm, f, { hp: t1.hp, after: t1, outcome: y, next: true });
+        const x2 = exchange(turn, me, y.pm, f, { hp: t1.hp, after: t1, outcome: y, next: true, field: worst });
         return { y, x2, v: x2.eTurnsThey - x2.eTurnsWe + x2.pWeKoFirst - x2.pTheyKoFirst - (x2.cost ?? 0) };
       };
       const tried = cands.map(value);
@@ -852,7 +882,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         const eTurns = 1 + (1 - t1.we) * x2.eTurnsWe;
         const edge = t1.we + standing * x2.pWeKoFirst - (t1.they + standing * x2.pTheyKoFirst);
         const spent = Math.min(1, (o.self ?? 0) / (me.getMaxHp?.() || hp)) + (x2.cost ?? 0);
-        return danger - eTurns - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
+        return lasts - eTurns - lost + edge - spent - cost(o) - feed(f) * (t1.they + standing * x2.pTheyKoFirst);
       };
       const score = scoreOf(best);
       const { y, x2 } = best;
@@ -880,7 +910,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const rep = hit[0].o;
       const both0 = hit.length > 1 ? { ...rep, benefit: Math.max(...hit.map(({ o }) => o.benefit ?? 0)) } : rep;
       return { me, move: rep, target: "both", turns: hits + lost, hits, each,
-        score: danger - slow - lost + (hit.length > 1 ? 1 : 0) + edge - cost(both0), hp };
+        score: lasts - slow - lost + (hit.length > 1 ? 1 : 0) + edge - cost(both0), hp };
     };
     // Status moves (single battles): this turn spent on a setup move, a status, a heal or a hazard, then the best
     // attack from what it leaves. Turn 1 is an `exchange` in which we deal nothing; its effect is written onto the mons
@@ -965,7 +995,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const hits = Math.min(9, 1 + landed.x2.turnsWe);
       return {
         me, move: { name: info.name, type: info.type, cat: "status", pm, expected: 0, notes: [] }, target: fi, self: !!play.self,
-        turns: hits + lost, hits, score: danger - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y,
+        turns: hits + lost, hits, score: lasts - eTurns - lost + edge - spent + start.keep + bonus + nudge - STATUS_COST, hp, then: landed.y,
         effect: start.effect,
       };
     };
@@ -1076,7 +1106,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
         out.push({ ...x, turns: Math.min(9, soonest + 1), hits: Math.min(9, soonest + 1) });
       }
     }
-    if (!out.length) out.push({ me, move: null, target: null, turns: 9, hits: 9, score: danger - 9, hp });
+    if (!out.length) out.push({ me, move: null, target: null, turns: 9, hits: 9, score: lasts - 9, hp });
     return out;
   };
   const cache = new Map();
@@ -1291,7 +1321,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     active.forEach((X, xi) => {
       const f = foes[xi];
       f.pKo = 1 - (1 - f.pKo) * (1 - Math.min(1, f.redirect));
-      value += f.pKo + f.pBefore * danger(X, mons, hyp);
+      const d = danger(X, mons, hyp);
+      value += f.pKo * (1 + REMOVAL_DANGER * d) + f.pBefore * d;
     });
     return { value, foes };
   };
@@ -1594,6 +1625,12 @@ const hitsAlly = o => [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS].includ
 // game functions every move is 0, so nothing counts as a drawback and the clean alternative is simply the best move.
 export const drawback = o => (o?.benefit ?? 0) < 0;
 const ALLY_KO_COST = 4;
+// What a foe's removal is worth beyond the bare fact of it, in turns of ours per unit of danger it carried (#320).
+// A removal is priced flat plus this: the flat part is one foe fewer, and this part is every turn it would have acted
+// and now won't. `danger` runs to 2 (a foe about to take two health bars off us), so the scaled part tops out near
+// 1 turn of ours and cannot swamp a move's own worth. It is multiplied by the KO's odds, so a dangerous foe we cannot
+// remove earns nothing from it — the price limits itself without a guard.
+const REMOVAL_DANGER = 0.5;
 // How likely the redirect has to be before the spare-hit row names the foe it will land on instead of calling the hit
 // spare. Below it the target usually survives the partner's hit, so "KO without it" is still the likelier outcome and
 // the shorter line is the honest one (#236).

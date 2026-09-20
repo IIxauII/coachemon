@@ -731,12 +731,17 @@ const sporeFoes = (sleeping = false) => [
   assert.match(lineOf(field, "Breloom"), /Seed Bomb →/, `no Spore into a sleeping foe:\n${field.join("\n")}`);
 }
 
-// 8d. The partner slot is scored on the state the play makes, not the live one — #262's headline, and the one thing
-// 8b cannot show. Machamp outspeeds Salamence and 1HKOs it; Munchlax cannot hurt anyone. Dragon Claw is the better
-// move into Machamp (200, two hits) than into Munchlax (110, three), so Machamp is where Salamence wants to be — and
-// with no Spore on the field it goes to Munchlax anyway, because Machamp kills it before it acts. Give Breloom Spore
-// — it moves before Machamp, so the sleep cancels that attempt — and Salamence takes Machamp. Nothing about
-// Salamence, its moves or its damage changed between the two arms; only the state its slot was scored on.
+// 8d. Machamp outspeeds Salamence and 1HKOs it; Munchlax cannot hurt anyone. Dragon Claw is the better move into
+// Machamp (200, two hits) than into Munchlax (110, three), and Salamence takes Machamp — with or without Spore on
+// the field.
+//
+// This block used to pin a contrast here: without Spore the partner went to Munchlax instead, and Spore moving
+// before Machamp was what sent it back to Machamp. That contrast was the bug #320 removed. Machamp killed Salamence
+// whether or not Salamence aimed at it, so "it kills me first" was never a reason to aim elsewhere, and the arms now
+// agree. What #262 claims is still pinned either side of it: 8b, that the play is priced across the whole field with
+// the sleep written before the partner's slot is scored, and 8c, that there is nothing for it to add on a field where
+// the foe is already asleep. A field where the hypothesis genuinely moves the partner's *target* is worth building
+// (the removal price does move with it — a silenced foe is worth less to remove) but this field is not one.
 Object.assign(TABLE, {
   "Breloom>Seed Bomb>Machamp": [[60], 1, 1], "Breloom>Seed Bomb>Munchlax": [[60], 1, 1],
   "Salamence>Dragon Claw>Machamp": [[200], 1, 1], "Salamence>Dragon Claw>Munchlax": [[110], 1, 1],
@@ -756,8 +761,8 @@ Object.assign(TABLE, {
   const aim = spore => lineOf(render({ party: party(spore), foes: foes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() }).field, "Salamence");
   const without = aim(false), with_ = aim(true);
   console.log(`== doubles: the partner is scored on the hypothesis (live)\nno Spore on the field: ${without}\nSpore on the field: ${with_}`);
-  assert.match(without, /→ Munchlax/, `with nothing to change it, the partner takes the harmless foe:\n${without}`);
-  assert.match(with_, /→ Machamp/, `the partner is scored on the state Spore makes, so it takes the silenced foe:\n${with_}`);
+  assert.match(without, /→ Machamp/, `the partner takes the foe its move suits:\n${without}`);
+  assert.match(with_, /→ Machamp/, `and keeps it once Spore is on the field, the arms agreeing:\n${with_}`);
 }
 
 // 8e. The spare hit (#236). Garchomp is faster and alone fells a weakened Hydreigon, so Lucario's hit resolves into
@@ -817,11 +822,16 @@ const dyingHydreigon = () => [
     Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": [[180], acc, 2] });
     return render({ party: party(), foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   };
-  // A threshold, not a knife edge: the pick holds its direction either side of the ~0.65 where it turns over.
-  for (const acc of [0.9, 0.8, 0.7]) {
+  // A threshold, not a knife edge: the pick holds its direction either side of the ~0.575 where it turns over.
+  //
+  // That turnover was ~0.65 until #320. Part of the old one was the bug that ticket removed: aiming at the *dying*
+  // Hydreigon meant racing a nearly-dead foe, which read as a cheap exchange and paid for focusing — while Snorlax's
+  // damage arrived whichever foe Lucario aimed at. Both candidates now race the field's worst duel, so that part is
+  // gone and what is left is the insurance itself. #283's case, a 50 % KO, focuses exactly as it did.
+  for (const acc of [0.9, 0.8, 0.7, 0.65, 0.6]) {
     assert.match(slotLines(at(acc).field).find(l => /Lucario/.test(l)) ?? "", /Close Combat → Snorlax/, `a near-sure KO still spreads at ${acc}`);
   }
-  for (const acc of [0.6, 0.35, 0.2]) {
+  for (const acc of [0.55, 0.35, 0.2]) {
     assert.match(slotLines(at(acc).field).find(l => /Lucario/.test(l)) ?? "", /→ Hydreigon/, `a doubtful KO focuses at ${acc}`);
   }
   const { lines, field } = at(0.5);
@@ -839,12 +849,16 @@ const dyingHydreigon = () => [
 // harder — is ~0 for both. Everything else is symmetric: same typing, same HP, same damage from either of our moves,
 // and neither falls to one hit, so the pair must choose a foe to focus.
 //
-// **The turns side does not carry the pick — it inverts it.** Targets are priced by the 1-on-1 exchange with the
-// target alone (`pWeKoFirst - pTheyKoFirst`, and `edge` at depth 2), and the other foe's hits are not in that
-// exchange. So a foe that is about to KO our mon makes *aiming at it* look like a losing trade, and the pair walks
-// away to the foe that cannot hurt it. The threshold below shows where it turns: right up until Porygon-Z is
-// **likely** to KO Garchomp it is correctly focused, and the moment it becomes lethal — exactly when removing it
-// matters most — the pair abandons it for the Dunsparce that takes 11 % a turn.
+// The pick is the **removal price** (#320): a foe is worth removing in proportion to the danger it carried, so the
+// pair focuses Porygon-Z. It did not always — this block was written to pin the misadvice, where a target was priced
+// by the 1-on-1 exchange with that target alone (`pWeKoFirst - pTheyKoFirst`, and `edge` at depth 2) and the other
+// foe's hits were nowhere in it, so the foe about to KO our mon made *aiming at it* read as a losing trade. The race
+// is now run against the field's worst duel wherever the mon aims, so that reason is gone, and what is left to decide
+// with is what removing each foe is worth.
+//
+// The sweep below replaces the lethality threshold this block used to pin (136 a turn focused, 150 abandoned). There
+// is no turnover left to pin: the pick follows the threat continuously, and crosses exactly where Porygon-Z's damage
+// passes Dunsparce's — which is where the more dangerous foe changes.
 Object.assign(TABLE, {
   "Garchomp>Dragon Claw>Porygon-Z": [[180], 1, 1], "Lucario>Aura Sphere>Porygon-Z": [[180], 1, 2],
   "Garchomp>Dragon Claw>Dunsparce": [[180], 1, 1], "Lucario>Aura Sphere>Dunsparce": [[180], 1, 2],
@@ -858,29 +872,49 @@ Object.assign(TABLE, {
   const at = foes => render({ party: doublesParty(), foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   const focusOf = field => slotLines(field).map(l => (/Porygon-Z/.test(l) ? "Porygon-Z" : /Dunsparce/.test(l) ? "Dunsparce" : "?")).join("+");
 
-  // The misadvice, stated plainly: both slots spend the turn on the foe that takes 11 % of Garchomp, and the one
-  // taking 70 % and KO'ing it next turn is left standing. A strong player focuses Porygon-Z here.
+  // Both slots spend the turn on the foe taking 70 % of Garchomp and KO'ing it next turn, rather than the one taking
+  // 11 %. Neither foe can be removed before it acts, so this is the removal price deciding on its own.
   const { lines, field } = at([pz(2), du(3)]);
   console.log(`== doubles: two killable foes, one far more dangerous (live)\n${lines.join("\n")}`);
-  assert.equal(focusOf(field), "Dunsparce+Dunsparce", `known-wrong: the pair focuses the harmless foe:\n${field.join("\n")}`);
-  assert.ok(field.some(l => /^◎ focus Dunsparce/.test(l)), "and says so on the ◎ row");
+  assert.equal(focusOf(field), "Porygon-Z+Porygon-Z", `the pair focuses the dangerous foe:\n${field.join("\n")}`);
+  assert.ok(field.some(l => /^◎ focus Porygon-Z/.test(l)), "and says so on the ◎ row");
 
-  // Not slot order: swapping the two foes' positions keeps the same wrong pick.
-  assert.equal(focusOf(at([du(2), pz(3)]).field), "Dunsparce+Dunsparce", "the pick follows the foe, not the field position");
+  // Not slot order: swapping the two foes' positions keeps the same pick.
+  assert.equal(focusOf(at([du(2), pz(3)]).field), "Porygon-Z+Porygon-Z", "the pick follows the foe, not the field position");
 
-  // The turn-over is lethality, not damage share. Garchomp has 270 HP: at 136 a turn Porygon-Z's two hits barely
-  // reach it (272, so the KO is a roll it mostly loses) and it is still the focus; at 150 the 2HKO is likely and the
-  // pair drops it. Both sides of the line are pinned, so a fix has to move the second without moving the first.
+  // Monotone in threat, with no turnover to pin. Dunsparce takes 30 a turn, so below that it is the foe worth
+  // removing and the pair says so; above it Porygon-Z is, at every damage up to a clean 1HKO on Garchomp (270 HP).
+  // A lethality threshold here would be the bug back: what decides is which foe is the bigger threat, not whether
+  // the bigger one has crossed into killing us.
   const lethal = TABLE["Porygon-Z>Tri Attack>Garchomp"];
   const pzDmg = d => Object.assign(TABLE, { "Porygon-Z>Tri Attack>Garchomp": [[d], 1, 1], "Porygon-Z>Tri Attack>Lucario": [[Math.round(d * 0.9)], 1, 1] });
-  pzDmg(136);
-  assert.equal(focusOf(at([pz(2), du(3)]).field), "Porygon-Z+Porygon-Z", "a dangerous but not-yet-lethal foe is still the focus");
-  pzDmg(150);
-  assert.equal(focusOf(at([pz(2), du(3)]).field), "Dunsparce+Dunsparce", "a lethal foe is abandoned");
+  for (const d of [10, 25, 29]) {
+    pzDmg(d);
+    assert.equal(focusOf(at([pz(2), du(3)]).field), "Dunsparce+Dunsparce", `below Dunsparce's own ${30} a turn, Dunsparce is the foe worth removing (at ${d})`);
+  }
+  for (const d of [30, 100, 136, 150, 190, 270, 400]) {
+    pzDmg(d);
+    assert.equal(focusOf(at([pz(2), du(3)]).field), "Porygon-Z+Porygon-Z", `above it the dangerous foe is focused, lethal or not (at ${d})`);
+  }
   Object.assign(TABLE, { "Porygon-Z>Tri Attack>Garchomp": lethal, "Porygon-Z>Tri Attack>Lucario": [[170], 1, 1] });
 
-  // The same field with the foes slower: `pBefore` is 1, `danger` is live, and the pair gets it right — which is
-  // what makes the reading above a hole in the removal price rather than a quirk of these numbers.
+  // The price limits itself: it is multiplied by the KO's odds, so a dangerous foe the pair cannot remove this turn
+  // earns nothing from it and the killable foe is taken instead. No guard does this — `pKo` being 0 does.
+  Object.assign(TABLE, { "Garchomp>Dragon Claw>Porygon-Z": [[90], 1, 1], "Lucario>Aura Sphere>Porygon-Z": [[90], 1, 2] });
+  const unkillable = foeAt(2, "Porygon-Z", 80, ["Normal"], [600, 100, 110, 180, 110, 150], [["Tri Attack", "Normal", 80, "S"]]);
+  assert.equal(focusOf(at([unkillable, du(3)]).field), "Dunsparce+Dunsparce", "a dangerous foe that cannot be removed is not chased");
+  Object.assign(TABLE, { "Garchomp>Dragon Claw>Porygon-Z": [[180], 1, 1], "Lucario>Aura Sphere>Porygon-Z": [[180], 1, 2] });
+
+  // The same asymmetry with each foe aiming at one of ours rather than either, so no two-slot damage split scales
+  // anything down. The misadvice was larger here than on the field above, and this is where the removal price alone
+  // would have left the two targets level: pinned so a change that re-introduces a tie is caught.
+  const aimAtOne = () => [{ name: "Tri Attack", type: "Normal", p: 1, score: 10, targets: [0] }];
+  const solo = (idx, name, spa) => foeAt(idx, name, 80, ["Normal"], [300, 100, 110, spa, 110, 150], [[name === "Porygon-Z" ? "Tri Attack" : "Body Slam", "Normal", 80, "S"]]);
+  const single = render({ party: doublesParty(), foes: [solo(2, "Porygon-Z", 180), solo(3, "Dunsparce", 60)], live: true, double: true, dist: aimAtOne, switches: () => new Map() });
+  assert.equal(focusOf(single.field), "Porygon-Z+Porygon-Z", `single-target foes: the dangerous one is still focused:\n${single.field.join("\n")}`);
+
+  // The same field with the foes slower, kept from when it was this block's control: `pBefore` is 1, so the pair also
+  // gets there first, and the ◎ row names that rather than the removal itself.
   const slow = at([pz(2, 40), du(3, 40)]);
   console.log(`== doubles: the same two foes, now outsped (live)\n${slow.lines.join("\n")}`);
   assert.equal(focusOf(slow.field), "Porygon-Z+Porygon-Z", `outspeeding them, the dangerous foe is focused:\n${slow.field.join("\n")}`);
