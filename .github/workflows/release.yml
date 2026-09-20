@@ -16,6 +16,15 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # `RELEASE_DEPLOY_KEY` lives in this environment rather than at repository level, and the environment admits
+    # `master` and no other ref (#305). The scoping used to be structural: the key's only consumer was this file,
+    # which is `on: push: branches: [master]`, so the code that handled the secret was always master's own. Then
+    # `randbats.yml` gained `workflow_dispatch`, and a dispatch runs the *selected ref's* copy of a workflow — the
+    # #291 proof run was exactly that, a side branch's file holding the key. #299 pinned that job's `checkout` to
+    # `master`, which settles what it builds but not which file receives the secret. A deployment branch policy
+    # restores the old property by configuration instead of habit: a run whose ref is not `master` is refused entry
+    # to the environment, so its steps never see the key at all.
+    environment: release
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,9 +63,11 @@ jobs:
       # like a green one — but it means this push needs a bypass of its own. A user-owned repo may only name a deploy
       # key or a repository role as a bypass actor: the GitHub Actions app is org-only, so `GITHUB_TOKEN` cannot be
       # excused, and every role wide enough to cover it also covers the owner, handing back the silent force-merge the
-      # rule exists to remove. So the ruleset excuses deploy keys — the bypass actor carries no id, so it is the class,
-  # not one key — and this job pushes as the single write key the repo has. Anything else given a write deploy key,
-  # or any workflow handed this one, inherits the bypass with it.
+      # rule exists to remove. So the ruleset excuses deploy keys — the bypass actor carries no id, so it is the class
+      # rather than one key, and a user-owned repo cannot narrow it to one (#305) — and this job pushes as the single
+      # write key the repo has. Anything else given a write deploy key inherits the bypass with it, and the
+      # `environment` above does not change that. What it changes is the reach of *this* key: only a workflow file on
+      # `master` can be handed it now, where before a file on any ref could.
       #
       # A file rather than an agent, because `SSH_AUTH_SOCK` is environment and no environment survives between steps —
       # each `run:` is a fresh shell, so an agent started here would be gone by the time the release pushes. A config
