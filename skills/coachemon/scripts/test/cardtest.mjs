@@ -129,6 +129,13 @@ const verdictOf = m => cardSummary(m).verdict;
   assert.deepEqual(cardEvent(encounter), { kind: "encounter", key: "31|Mysterious Chest", wave: 31, verdict: "take Open it" });
   assert.equal(cardEvent({ ...encounter, pick: -1, known: false }).verdict, "not judged");
   assert.equal(cardEvent({ ...encounter, pick: -1 }).verdict, "your call");
+  // A continuous encounter asks again on the same wave under the same name, so a minigame turn keys on the mon in
+  // front of you and its two stages — otherwise all three Safari mons would stream as one event.
+  const safari = { kind: "encounter", wave: 31, name: "Safari Zone", known: true, pick: 0,
+    minigame: { mon: "Nidorina", left: 2, catchStage: 0, fleeStage: 0 },
+    options: [{ label: "Throw a ball", verdict: "take", outcome: "37% to catch it now" }, { label: "Flee", verdict: "avoid" }] };
+  assert.equal(cardEvent(safari).key, "31|Safari Zone|Nidorina|2|0,0");
+  assert.notEqual(cardEvent({ ...safari, minigame: { ...safari.minigame, catchStage: 2 } }).key, cardEvent(safari).key);
   assert.equal(cardEvent(null), null);
   console.log("card events ok");
 }

@@ -13,6 +13,8 @@
 // Ultra and rogue tiers: Training Session's mirror bars, the salesman's offer, Trash to Treasure, Clowning Around's
 // ability and type shuffle, the breeder's egg maths, Dark Deal's taken member, A Trainer's Test, Weird Dream's
 // transformed team and the Winstrate run of five.
+// Safari Zone's minigame turn: the override menu the continuous encounter re-opens the screen with, its catch and
+// flee odds, and which of ball / bait / mud the played-out odds pick.
 // Also: an encounter it doesn't know, a secondary menu, and the summary line.
 // Prints the rendered card, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
@@ -537,11 +539,80 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   const m = show("safari zone", safari(), ["full"]).model();
   assert.equal(m.options[0].cost, waveMoney(30, 2));
   assert.match(m.options[0].outcome, /three wild mons in turn/);
-  assert.match(m.options[0].outcome, /Bait: \+2 catch but usually \+1 flee/);
+  assert.match(m.options[0].outcome, /each turn judged as it comes/, "the bait-and-mud call belongs to the minigame turn, not the fee");
   assert.deepEqual(verdicts(m), ["take", "ok"]);
   // Affordable but it would eat the reserve: leaving is the call, and the option stays on.
   const tight = mount(safari({ money: waveMoney(30, 2) + 100 })).model();
   assert.deepEqual(verdicts(tight), ["ok", "take"]);
+}
+
+// ---- 16b. Safari Zone's minigame: the override menu, judged per turn on odds the source spells out.
+// The numbers below are hand-derived from `safari-zone-encounter.ts` at the pin, not from the HUD:
+//   catch = round(catchRate × 1.5 × stageMod)^, three shakes of round(1048560 / ⁴√(16711680 / catch)) / 65536;
+//   flee  = ceil(((255² − catchRate²) / 255 / 2) × stageMod) out of the 256 rolls of `randSeedInt(256)`.
+// At catch rate 45 and both stages at 0 that is 37% to catch and 48% to bolt; +2 catch is 62%, −1 is 27%;
+// +1 flee is 73%, −2 is 24%.
+{
+  const wild = (catchRate, extra = {}) => ({ ...pk("Nidorina", ["Poison"], 32, { id: 30, bst: 365 }),
+    species: species(30, "Nidorina", ["Poison"], 365, { catchRate }), shiny: false, abilityIndex: 0, variant: 0, formIndex: 0, ...extra });
+  // The encounter's own two options are still on `me.options`; the menu on screen is none of them.
+  const turn = ({ catchRate = 45, catchStage = 0, fleeStage = 0, left = 2, mon, ...extra } = {}) => ({
+    type: 9, tier: GREAT, labels: ["Throw a ball", "Throw bait", "Throw mud", "Flee"],
+    options: [option({ mode: 1, requirements: [money$(2)] }), option()],
+    menu: [option(), option(), option(), option()],
+    misc: { pokemon: mon === null ? undefined : mon ?? wild(catchRate), safariPokemonRemaining: left, catchStage, fleeStage },
+    ...extra });
+
+  const m = show("safari zone, a minigame turn", turn(), ["full"]).model();
+  assert.equal(m.known, true, "an override menu with a rule of its own is judged");
+  assert.deepEqual(m.options.map(o => o.index), [-1, -1, -1, -1], "override options are not on `me.options`");
+  assert.equal(m.options[0].outcome, "37% to catch it now, and a miss ends the turn — it bolts at 48%");
+  assert.equal(m.options[1].outcome, "catch +2 → 62%, and 4 times in 5 flee +1 → 73%; then it rolls to bolt");
+  assert.equal(m.options[2].outcome, "flee −2 → 24%, and 4 times in 5 catch −1 → 27%; then it rolls to bolt");
+  assert.equal(m.options[3].outcome, "let it go — 2 mons left after this one");
+  // Bait buys +2 catch but pays +1 flee on the same turn, and at this catch rate the extra bolt chance costs more
+  // than the catch stage buys: throwing until it is settled is the play.
+  assert.deepEqual(verdicts(m), ["take", "ok", "ok", "avoid"]);
+  assert.match(m.options[0].why, /lands it 55% of the time from here/);
+  assert.deepEqual(m.minigame, { mon: "Nidorina", shiny: false, left: 2, catchStage: 0, fleeStage: 0, catchRate: 45,
+    catch: m.minigame.catch, flee: m.minigame.flee, wanted: true, best: "ball", value: m.minigame.value });
+  assert.equal(Math.round(m.minigame.catch * 100), 37);
+  assert.equal(Math.round(m.minigame.flee * 100), 48);
+  assert.match(m.notes[0], /^Nidorina at L32: catch rate 45, stages \+0 catch \/ \+0 flee, 2 mons after this one$/);
+  assert.equal(globalThis.__coachHud.summary().encounter,
+    "Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee");
+
+  // A mon that barely catches at all: mud is worth the turn, because lowering the flee stage buys more throws than
+  // the catch stage buys chance — 13% played out against the ball's 10%.
+  const hard = mount(turn({ catchRate: 3 })).model();
+  assert.deepEqual(verdicts(hard), ["ok", "ok", "take", "avoid"]);
+  assert.match(hard.options[2].why, /mudding first lands it 13% of the time from here/);
+  assert.match(hard.options[0].why, /lands it 10% of the time from here/);
+
+  // Catch rate 255: the flee rate is 0, so it never bolts and the ball is certain.
+  const easy = mount(turn({ catchRate: 255 })).model();
+  assert.equal(easy.options[0].outcome, "100% to catch it now, and it never bolts");
+  assert.deepEqual(verdicts(easy), ["take", "ok", "ok", "avoid"]);
+
+  // Already in the dex and nothing the team wants: the turns are worth more than the mon, so let it go.
+  const known = mount(turn({ dex: { 30: { caughtAttr: 255n } } })).model();
+  assert.deepEqual(verdicts(known), ["ok", "ok", "ok", "take"]);
+  assert.match(known.notes[1], /^not worth the turns: /);
+
+  // The stages are read, not assumed, and the last of the three says what letting it go costs.
+  const setUp = mount(turn({ catchStage: 2, fleeStage: -2, left: 0 })).model();
+  assert.equal(setUp.options[0].outcome, "62% to catch it now, and a miss ends the turn — it bolts at 24%");
+  assert.equal(setUp.options[3].outcome, "let it go — the last of the three, so this ends the safari");
+  assert.match(setUp.notes[0], /stages \+2 catch \/ -2 flee/);
+
+  // `misc.pokemon` is the read, but the mon is on the field too: the card finds it either way.
+  const field = mount(turn({ mon: null, enemy: [wild(45)] })).model();
+  assert.equal(field.options[0].outcome, "37% to catch it now, and a miss ends the turn — it bolts at 48%");
+  // Nothing readable in front of us: the menu falls back to the generic reading rather than claiming odds.
+  const blind = mount(turn({ mon: null })).model();
+  assert.equal(blind.known, false);
+  assert.equal(blind.minigame, null);
+  assert.deepEqual(verdicts(blind), [null, null, null, null]);
 }
 
 // ---- 17. Delibird-y: the Amulet Coin unless it's maxed, and a maxed charm degrades to a Shell Bell.

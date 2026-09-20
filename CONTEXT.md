@@ -79,6 +79,10 @@ What the game is actually asking, as a whole. A screen is *not* the same as a **
 
 The **coach**'s advice for the decision the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it.
 
+## Minigame turn
+
+One turn of a **continuous encounter**: an encounter that re-opens its own screen with a fresh menu until it is done — Safari Zone's ball / bait / mud / run, three wild mons in turn. The options on that menu are the game's **override options**, not the encounter's own, so nothing keys them by index and only an encounter the coach knows by name can judge them. A turn is its own decision on the same **card**, told apart by the mon in front of you and by the two stages its odds are read from.
+
 ## Verdict
 
 A battle card's one-word call on the wave: **easy**, **trainer**, **danger**, **catch** or **fight**. It lets whoever watches alongside the coach stay quiet on an easy wave and speak up on a dangerous one. A verdict sums the card up; it never adds advice the card doesn't show.

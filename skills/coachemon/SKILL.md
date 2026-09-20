@@ -86,10 +86,13 @@ When the user wants the coach running for the whole session ("keep coaching", "w
        moves Bug-Type Superfan's tutor will offer, which member Dark Deal takes and the tier of the legendary it
        pays with, every member's second type after Clowning Around's shuffle. Like the 🔮
        next-wave card, treat it as the coach's own read: say it where it changes the decision.
-     - **Safari Zone's minigame is read, not judged.** Once the ball / bait / mud / run menu is up it is an override
-       menu, not the encounter's own options, so the card lists it without a call — the advice for it is on the card
-       you see *before* paying. The same goes for Fun and Games, where the card names the prize ladder and the KO trap
-       but leaves the three turns to you.
+     - **Safari Zone's minigame is judged turn by turn.** Once the ball / bait / mud / run menu is up, the card
+       names the mon, its catch chance now, the chance it bolts at the end of this turn, where bait and mud would
+       move both, and — playing the turns out to the end — which of the three catches it most often. Bait's +2 catch
+       is paid for with +1 flee on the same turn, so it is rarely the call; mud wins on the mons that barely catch at
+       all, and the ball on everything else. A mon the account has no use for is a run, not a ball. These are odds,
+       never 🔮: both rolls are on the live stream. Fun and Games is still yours to play — the card names the prize
+       ladder and the KO trap but leaves the three turns to you.
      - Money is spent only while it leaves three waves' worth of reward money; a fight is "hard" 5+ levels over your
        best mon, or when nothing hits it super-effectively at your level. Both are first cuts.
    - **🔮 Next wave** (on the rewards and battle cards): what the run seed has already decided about the wave ahead —

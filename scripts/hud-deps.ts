@@ -629,6 +629,15 @@ export const HUD_DEPS = {
     `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#safariZoneGameOptions`,
     `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#throwPokeball`,
     `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#getSafariSpeciesSpawn`,
+    // The minigame turn (#297): the two rolls the card prices — the ball's three shakes and the flee roll every
+    // other turn ends on — the stage changes bait and mud buy, and the re-opened option screen they run on.
+    `src/data/mystery-encounters/utils/encounter-pokemon-utils.ts#trainerThrowPokeball`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#isPokemonFlee`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeCatchStage`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#tryChangeFleeStage`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#doEndTurn`,
+    `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#summonSafariPokemon`,
+    `src/data/mystery-encounters/utils/encounter-phase-utils.ts#initSubsequentOptionSelect`,
     `src/data/mystery-encounters/encounters/delibirdy-encounter.ts#DelibirdyEncounter`,
     `src/data/mystery-encounters/encounters/delibirdy-encounter.ts#DELIBIRDY_MONEY_PRICE_MULTIPLIER`,
     `src/data/mystery-encounters/encounters/delibirdy-encounter.ts#OPTION_2_ALLOWED_MODIFIERS`,

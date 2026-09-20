@@ -209,7 +209,10 @@ const KINDS = {
   // A reroll changes the offers, so the rewards screen is a new decision under the same wave.
   rewards: { event: "reward", key: card => `${wave(card)}|${(card.free ?? []).map(f => f.name).join(",")}`, call: s => leading(s.rewards) },
   biome: { event: "biome", key: wave, call: s => biomePick(s.biome) },
-  encounter: { event: "encounter", key: card => `${wave(card)}|${card.name ?? ""}`, call: s => encounterCall(s.encounter) },
+  // A continuous encounter asks again on the same wave under the same name: the mon in front of you and the two
+  // stages are what make a minigame turn its own decision, so they key it (`46-encounter.js`).
+  encounter: { event: "encounter", call: s => encounterCall(s.encounter),
+    key: card => `${wave(card)}|${card.name ?? ""}${card.minigame ? `|${card.minigame.mon}|${card.minigame.left}|${card.minigame.catchStage},${card.minigame.fleeStage}` : ""}` },
   starters: { event: null, key: wave, call: s => leading(s.starters) },
   fusion: { event: null, key: wave, call: s => leading(s.fusion) },
 };
