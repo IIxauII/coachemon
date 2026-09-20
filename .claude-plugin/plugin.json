@@ -1,7 +1,7 @@
 {
   "name": "coachemon",
   "displayName": "Coachemon",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Let Claude play PokéRogue: an MCP server that drives a live pokerogue.net tab over CDP, plus a skill for the play loop.",
   "author": { "name": "xau" },
   "homepage": "https://github.com/IIxauII/coachemon",
