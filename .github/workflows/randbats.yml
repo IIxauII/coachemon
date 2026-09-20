@@ -41,6 +41,12 @@ env:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    # The same environment, and the same key, as `release.yml` (#305) — a deploy key grants the whole repository, so
+    # there is no narrower one to give this job. This job is the reason the environment exists: it holds the repo's
+    # only `workflow_dispatch`, and a dispatch runs the selected ref's copy of this file. Dispatch is kept, because
+    # it is how #291's last step was verified, but it now works from `master` alone: from any other ref the run stops
+    # here on a branch-policy error rather than loading the key below.
+    environment: release
     steps:
       # Always master, never the dispatched ref: the refresh pull request's whole premise is that no repo code moves
       # in it, so the tree it is built from has to be the branch it targets.
