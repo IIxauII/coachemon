@@ -176,9 +176,11 @@ wants, so it reaches what a run may never show.
 
 ## Preview
 
-What the **run seed** already decides about something the run has not reached yet, read out ahead of time: a **wave** ahead, or the rewards a reroll the player hasn't paid for would bring. A preview is a read: it never advances the game or the run's own sequence of rolls.
+What the **run seed** already decides about something the run has not reached yet, read out ahead of time: a **wave** ahead, the rewards a reroll the player hasn't paid for would bring, or the three mons behind Safari Zone's fee. A preview is a read: it never advances the game or the run's own sequence of rolls.
 
-Each field of a preview carries its own **confidence**, and all of them are conditional on the run not changing first: a catch, an evolution, a shop pick or a biome change re-rolls what a preview was read from.
+The last two are the same shape — what an unpaid purchase would buy — and it is what makes the price a real decision rather than a sum of money.
+
+Each field of a preview carries its own **confidence**, and all of them are conditional on the run not changing first: a catch, an evolution, a shop pick or a biome change re-rolls what a preview was read from. A preview read out of a fork the run cannot move, off a table the run cannot rebuild, is **exact** — and stays exact only while nothing the player could do sits between the read and the thing it describes.
 
 Not to be confused with a **tier**, which throughout is the game's own word for a rarity band (an encounter's, a species').
 

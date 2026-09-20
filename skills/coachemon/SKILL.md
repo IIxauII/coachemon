@@ -86,6 +86,12 @@ When the user wants the coach running for the whole session ("keep coaching", "w
        moves Bug-Type Superfan's tutor will offer, which member Dark Deal takes and the tier of the legendary it
        pays with, every member's second type after Clowning Around's shuffle. Like the 🔮
        next-wave card, treat it as the coach's own read: say it where it changes the decision.
+     - **Safari Zone's fee names the three mons it buys**, before a coin is spent: each is drawn in a seed fork of
+       its own that no amount of play can move, so the card reads all three ahead of time — species, level, shiny and
+       hidden ability, marked 🔮 — and calls the fee on whether any of them is worth a ball rather than on the money
+       alone. It names them even when the fee is out of reach, and on every minigame turn the run option says which
+       mon comes next, so letting one go is priced against what it buys. Where the game's starter table hasn't been
+       read yet, the option falls back to what the fee buys in general and says so.
      - **Safari Zone's minigame is judged turn by turn.** Once the ball / bait / mud / run menu is up, the card
        names the mon, its catch chance now, the chance it bolts at the end of this turn, where bait and mud would
        move both, and — playing the turns out to the end — which of the three catches it most often. Bait's +2 catch

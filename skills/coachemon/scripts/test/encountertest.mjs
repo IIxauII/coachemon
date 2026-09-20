@@ -67,7 +67,7 @@ const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").tri
 // a fork at an unscripted offset yields 0s. `forks` records every offset sown.
 const mount = ({ view = "full", type, labels, options, party = team(), wave = 30, money = 5000, draws = {}, misc = null, configs = [],
   tier = 66, catchAllowed = false, seedOffset = 30512, biome = 3, balls = [10, 10, 10, 0, 0], modifiers = [], dex = {}, menu = options,
-  tokens = {}, enemy = [] } = {}) => {
+  tokens = {}, enemy = [], tables = null } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const forks = [];
@@ -84,10 +84,28 @@ const mount = ({ view = "full", type, labels, options, party = team(), wave = 30
   const handler = { encounterOptions: menu, optionsMeetsReqs: meets, optionsContainer: { list: [...labels, "View Party"].map(t => ({ text: `[color=#fff]${t}[/color]` })) } };
   const rnd = { _s: "!rnd,live", _q: null, _i: 0,
     state(v) { if (v !== undefined) { this._s = v; this._q = null; } return this._s; },
-    integerInRange(min, max) { const q = this._q ?? []; const x = q[this._i++] ?? 0; return min + (x % (max - min + 1)); } };
+    integerInRange(min, max) { const q = this._q ?? []; const x = q[this._i++] ?? 0; return min + (x % (max - min + 1)); },
+    // The real `shuffle` is Fisher-Yates off the same stream; the double leaves the order alone and draws nothing, so
+    // a scripted index reads the band in the order the starter table gave it. What the *real* shuffle does to the
+    // draw is the oracle's question, not a mock's.
+    shuffle(items) { return items; },
+    pick(items) { return items[this.integerInRange(0, items.length - 1)]; } };
   const scene = {
     phaseManager: { getCurrentPhase: () => ({ phaseName: "MysteryEncounterPhase" }), pushPhase() {}, unshiftNew() {}, queueMessage() {} },
-    currentBattle: { waveIndex: wave, mysteryEncounter: me, enemyLevels: [wave + 2] }, arena: { biomeId: biome },
+    currentBattle: { waveIndex: wave, mysteryEncounter: me, enemyLevels: [wave + 2], getLevelForWave: () => wave + 2 },
+    arena: { biomeId: biome },
+    // `addEnemyPokemon`, the constructor `44-safari.js` replays each safari mon with. The real one rolls shiny inside
+    // the constructor; this double doesn't, so a unit test pins the two *rerolls* and leaves the constructor's own
+    // roll to the oracle.
+    addEnemyPokemon: (sp, level) => {
+      const p = pk(sp.name, [TY[sp.type1]], level, { id: sp.speciesId, bst: sp.baseTotal });
+      Object.assign(p, { species: sp, abilityIndex: 0, shiny: false, variant: 0, isShiny: () => p.shiny, destroy() {},
+        trySetShinySeed(threshold) { if (!p.shiny) p.shiny = rnd.integerInRange(0, 65535) < threshold; },
+        tryRerollHiddenAbilitySeed(threshold) {
+          if (sp.abilityHidden && !rnd.integerInRange(0, threshold - 1)) p.abilityIndex = 2;
+        } });
+      return p;
+    },
     ui: { getMode: () => 45, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => enemy,
     money, modifiers, pokeballCounts: balls, gameData: { dexData: dex, starterData: {} },
     getWaveMoneyAmount: mult => waveMoney(wave, mult),
@@ -104,7 +122,13 @@ const mount = ({ view = "full", type, labels, options, party = team(), wave = 30
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => view, setItem() {} };
-  eval(bundle("hud"));
+  eval(bundle("hud", { expose: true }));
+  // The chunk scan finds nothing under node, so a test that needs the game's tables hands over what it would have
+  // found and draws the card again. Without them the cards that read tables degrade, which is its own coverage.
+  if (tables) {
+    globalThis.__hud["04-game-tables"].setGameTables(tables);
+    globalThis.__hud["98-tick"].tick();
+  }
   return { el, scene, forks, model: () => globalThis.__coachHud.last(), rnd };
 };
 // BattleScene.getWaveMoneyAmount.
@@ -544,6 +568,59 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   // Affordable but it would eat the reserve: leaving is the call, and the option stays on.
   const tight = mount(safari({ money: waveMoney(30, 2) + 100 })).model();
   assert.deepEqual(verdicts(tight), ["ok", "take"]);
+  // Nothing was handed over for the chunk scan to have found, so the three mons can't be replayed: the fee falls back
+  // to what it buys in general, says so once, and is not marked as a seed read.
+  assert.equal(m.options[0].exact, false);
+  assert.ok(m.notes.some(n => n === "can't name the three mons: the game's starter table hasn't been read yet"),
+    `the degrade says why: ${JSON.stringify(m.notes)}`);
+}
+
+// ---- 16c. Safari Zone's fee, with the three mons it buys named: `44-safari.js` replays each out of its own fork at
+// `waveIndex × 1000 × remaining` (3, 2, 1), draws the species off the starter table and then the doubled shiny and
+// hidden-ability rolls. The mock shuffle leaves the band in table order, so a scripted index picks a known mon; what
+// the real shuffle and the constructor's own shiny roll do is the encounter oracle's question, not a mock's.
+{
+  // Band `[0, 5]`: Larvitar is cost 6 and out of it, Mewtwo is legendary and never in the pool at all, so the three
+  // draws are over exactly [Rattata, Pidgey, Caterpie].
+  const starter = (id, name, cost, extra = {}) =>
+    ({ ...species(id, name, ["Normal"], 400, { catchRate: 45, abilityHidden: 0, ...extra }), starterCost: cost });
+  const STARTERS = [starter(19, "Rattata", 1), starter(16, "Pidgey", 1), starter(10, "Caterpie", 1),
+    starter(246, "Larvitar", 6), starter(150, "Mewtwo", 3, { legendary: true })];
+  const tables = {
+    species: { getAllStarters: () => STARTERS, getAllSpecies: () => STARTERS,
+      getStarterCost: id => STARTERS.find(s => s.speciesId === id)?.starterCost ?? 0,
+      getSpecies: id => STARTERS.find(s => s.speciesId === id) },
+    // No timed event, so `getAllValidEventEncounters` is empty and the event branch short-circuits before its
+    // `randSeedInt(100)` — the species index is the first draw in every fork.
+    events: { getAllValidEventEncounters: () => [], getShinyCatchMultiplier: () => 2 },
+  };
+  // Per fork: the species index, then the extra shiny roll (a threshold of 64 out of 65536). Pidgey's 10 is under it.
+  const draws = { 90000: [0, 5000], 60000: [1, 10], 30000: [2, 4000] };
+  const paid = mount({ type: 9, tier: GREAT, labels: ["Pay", "Leave"], wave: 30, draws, tables,
+    options: [option({ mode: 1, requirements: [money$(2)] }), option()] });
+  const m = paid.model();
+  for (const offset of [90000, 60000, 30000]) {
+    assert.ok(paid.forks.includes(offset), `a fork per mon at waveIndex × 1000 × remaining: ${paid.forks}`);
+  }
+  assert.match(m.options[0].outcome, /Rattata L32, shiny Pidgey L32, Caterpie L32 in turn/,
+    `the three are named in summon order: ${m.options[0].outcome}`);
+  assert.match(m.options[0].outcome, /each turn judged as it comes/, "the bait-and-mud call still belongs to the turn");
+  assert.equal(m.options[0].exact, true, "the three come out of a seed fork, so the option is a seed read");
+  assert.deepEqual(m.notes.filter(n => n.startsWith("can't name")), [], "nothing to degrade about");
+  // Three mons new to the dex are three worth a ball, so the fee is the call and it says which of them earns it.
+  assert.deepEqual(verdicts(m), ["take", "ok"]);
+  assert.match(m.options[0].why, /of the three are worth a ball/);
+
+  // The same replay on a minigame turn: the run option is priced against what comes after it. `left` is the count
+  // *after* the mon on screen, so at 2 the next fork is the one at `remaining === 2` — the shiny Pidgey.
+  const nidorina = { ...pk("Nidorina", ["Poison"], 32, { id: 30, bst: 365 }),
+    species: species(30, "Nidorina", ["Poison"], 365, { catchRate: 45 }), shiny: false, abilityIndex: 0, variant: 0, formIndex: 0 };
+  const turn = mount({ type: 9, tier: GREAT, labels: ["Throw a ball", "Throw bait", "Throw mud", "Flee"], wave: 30,
+    draws, tables, options: [option({ mode: 1, requirements: [money$(2)] }), option()],
+    menu: [option(), option(), option(), option()],
+    misc: { pokemon: nidorina, safariPokemonRemaining: 2, catchStage: 0, fleeStage: 0 } }).model();
+  assert.equal(turn.options[3].outcome, "let it go — shiny Pidgey L32 is next, 2 mons left after this one");
+  assert.deepEqual(turn.minigame.next, { name: "Pidgey", shiny: true, level: 32, wanted: turn.minigame.next.wanted });
 }
 
 // ---- 16b. Safari Zone's minigame: the override menu, judged per turn on odds the source spells out.
@@ -574,8 +651,10 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   // than the catch stage buys: throwing until it is settled is the play.
   assert.deepEqual(verdicts(m), ["take", "ok", "ok", "avoid"]);
   assert.match(m.options[0].why, /lands it 55% of the time from here/);
+  // `next` is null here because the game's starter table was never handed over, so the three mons can't be replayed:
+  // the turn is judged exactly all the same, and only the run option's extra line is missing. 16c drives the replay.
   assert.deepEqual(m.minigame, { mon: "Nidorina", shiny: false, left: 2, catchStage: 0, fleeStage: 0, catchRate: 45,
-    catch: m.minigame.catch, flee: m.minigame.flee, wanted: true, best: "ball", value: m.minigame.value });
+    catch: m.minigame.catch, flee: m.minigame.flee, wanted: true, best: "ball", value: m.minigame.value, next: null });
   assert.equal(Math.round(m.minigame.catch * 100), 37);
   assert.equal(Math.round(m.minigame.flee * 100), 48);
   assert.match(m.notes[0], /^Nidorina at L32: catch rate 45, stages \+0 catch \/ \+0 flee, 2 mons after this one$/);

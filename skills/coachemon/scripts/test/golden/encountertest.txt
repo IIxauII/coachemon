@@ -276,6 +276,7 @@ summary Slumbering Snorlax: take Steal — steal its Leftovers: no fight, Leftov
 ★ Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level
 leaves $3,990
 · Leave — shop only, no reward
+· can't name the three mons: the game's starter table hasn't been read yet
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Safari Zone: take Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level
 == safari zone, a minigame turn (full)

@@ -33,6 +33,7 @@
 // ours still fit to fight. Money is spent freely only while it leaves RESERVE_WAVES waves' worth of reward money.
 import { TYPES, abilityValue, natureOf, sandbox, stage, typesOf } from "./01-core.js";
 import { finalBstOf, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
+import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
 import { catchWorth } from "./45-catch.js";
 
 // MysteryEncounterType, in enum order.
@@ -130,6 +131,17 @@ const safariFlee = (rate, st) => Math.min(1, Math.max(0, Math.ceil(((255 * 255 -
 // `tryChangeCatchStage(2)` / `tryChangeFleeStage(1, 8)` on bait, the mirror on mud: the ×8 arm does nothing when
 // `randSeedInt(10) >= 8`, so the side effect lands 4 times in 5. Both stages clamp to ±6.
 const BAIT_FLEES = 0.8, MUD_DULLS = 0.8;
+
+// The three mons the fee buys, replayed out of their own seed forks by `44-safari.js` before a coin is spent. What
+// each is *worth* is the account's question rather than the game's, so `catchWorth` is asked here — on the live
+// objects, while the replay still holds them — and the replay drops them afterwards.
+const safariThree = c => {
+  const out = safariPreview(c.s, p => ({ ...safariMonData(p), worth: tryDo(() => catchWorth(c.account, p)) }));
+  if (!out.mons) return out;
+  return { mons: out.mons.map(m => ({ ...m, wanted: !!m.worth && m.worth.value >= m.worth.show })) };
+};
+const safariName = m => `${m.shiny ? "shiny " : ""}${m.name} L${m.level ?? "?"}${m.hiddenAbility ? " (hidden ability)" : ""}`;
+const safariWhy = m => (m.worth?.reasons?.length ? m.worth.reasons.slice(0, 2).join(", ") : "nothing new");
 
 // What each move is worth, played out to the end: the chance this mon is eventually caught under best play. The two
 // stages are the only state (13 × 13, reset per mon) and there is no turn limit, so the minigame is a small Markov
@@ -731,14 +743,36 @@ const RULES = {
   [SAFARI]: c => {
     const price = c.opt(0).cost ?? c.waveMoney(2);
     const afford = c.spare(price) >= 0;
-    return [
+    // The fee is the one Safari decision that hangs on something money can't say, so the three mons are named before
+    // it is paid — and named even when the fee is out of reach, since knowing a shiny sat behind an unaffordable door
+    // is what tells you whether to sell something first.
+    const three = safariThree(c);
+    const mons = three.mons ?? null;
+    const wanted = mons ? mons.filter(m => m.wanted) : [];
+    // With nothing to name, the call falls back to what the fee buys in general — the line this option carried before
+    // the three were reachable.
+    const buys = mons
+      ? `${mons.map(safariName).join(", ")} in turn — ball, bait, mud or run each time, each turn judged as it comes`
+      : "three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level";
+    // Money alone decides it only while the three are unknown; once they are named, one wanted mon out of three is a
+    // take and none is a leave.
+    const worthIt = !mons || wanted.length > 0;
+    const left = money(c.s.money - price);
+    return {
       // What bait and mud are worth is a per-turn call on the mon in front of you, so it is left to `OVERRIDES`
       // rather than guessed at here, a screen early.
-      { outcome: `${money(price)}: three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level`,
-        verdict: afford ? "take" : "ok", why: afford ? `leaves ${money(c.s.money - price)}` : `leaves only ${money(c.s.money - price)}`,
-        needs: "the money" },
-      { ...LEAVE, verdict: afford ? "ok" : "take" },
-    ];
+      rows: [
+        { outcome: `${money(price)}: ${buys}`, exact: !!mons,
+          verdict: afford && worthIt ? "take" : "ok",
+          why: !afford ? `leaves only ${left}`
+            : !mons ? `leaves ${left}`
+              : wanted.length ? `${wanted.length === 1 ? "one of the three is" : `${wanted.length} of the three are`} worth a ball: ${safariWhy(wanted[0])} — leaves ${left}`
+                : `none of the three is worth a ball — ${safariWhy(mons[0])}`,
+          needs: "the money" },
+        { ...LEAVE, verdict: afford && worthIt ? "ok" : "take" },
+      ],
+      notes: mons ? [] : [`can't name the three mons: ${three.why}`],
+    };
   },
 
   [DELIBIRDY]: c => {
@@ -869,9 +903,13 @@ const OVERRIDES = {
     const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
     const best = ["bait", "mud"].reduce((b, k) => (now[k] > now[b] + 1e-9 ? k : b), "ball");
     const odds = k => `${pct(now[k])} of the time from here`;
+    // Running is priced against what it buys, so the same replay the fee screen used names what comes next. The
+    // count is decremented as a mon is summoned, so the mon after this one is the fork at `remaining === left`.
+    const next = left ? safariThree(c).mons?.[SAFARI_MONS - left] ?? null : null;
     return {
       state: { mon: name, shiny: !!tryDo(() => mon.isShiny(), mon.shiny), left, catchStage: cs, fleeStage: fs,
-        catchRate: rate, catch: p, flee: q, wanted, best, value: now[best] },
+        catchRate: rate, catch: p, flee: q, wanted, best, value: now[best],
+        next: next ? { name: next.name, shiny: next.shiny, level: next.level, wanted: next.wanted } : null },
       notes: [`${name} at L${mon.level ?? "?"}: catch rate ${rate}, stages ${cs >= 0 ? "+" : ""}${cs} catch / ${fs >= 0 ? "+" : ""}${fs} flee, `
         + `${left ? `${plural(left, "mon")} after this one` : "the last of the three"}`,
       wanted ? `worth a ball: ${why}` : `not worth the turns: ${why}`],
@@ -885,8 +923,12 @@ const OVERRIDES = {
           verdict: wanted && best === "bait" ? "take" : "ok", why: `baiting first lands it ${odds("bait")}` },
         { outcome: `flee −2 → ${pct(safariFlee(rate, clampStage(fs - 2)))}, and 4 times in 5 catch −1 → ${pct(safariCatch(rate, clampStage(cs - 1)))}; then it rolls to bolt`,
           verdict: wanted && best === "mud" ? "take" : "ok", why: `mudding first lands it ${odds("mud")}` },
-        { outcome: left ? `let it go — ${plural(left, "mon")} left after this one` : "let it go — the last of the three, so this ends the safari",
-          verdict: wanted ? "avoid" : "take", why: wanted ? `you would be giving up a ${pct(now[best])} catch` : why },
+        { outcome: left
+          ? `let it go — ${next ? `${safariName(next)} is next, ` : ""}${plural(left, "mon")} left after this one`
+          : "let it go — the last of the three, so this ends the safari",
+        verdict: wanted ? "avoid" : "take",
+        why: wanted ? `you would be giving up a ${pct(now[best])} catch`
+          : next?.wanted ? `nothing here, and ${safariName(next)} is worth a ball: ${safariWhy(next)}` : why },
       ],
     };
   },
@@ -909,7 +951,9 @@ const build = (s, h, account) => {
   if (rule) {
     try {
       const out = rule(context(s, me, options, account));
-      // An override rule answers with the turn it read as well as its rows; an encounter's own rule is rows alone.
+      // Rows alone, or `{ rows, state, notes }` — an override rule answers with the turn it read as well as its rows,
+      // and an encounter's own rule uses the longer form when it has something to say outside an option (Safari
+      // Zone's, when it can't name the three mons the fee buys).
       if (Array.isArray(out)) judged = out;
       else if (out) { judged = out.rows; minigame = out.state ?? null; notes.push(...(out.notes ?? [])); }
     } catch (e) { notes.push(`couldn't judge this encounter: ${e.message}`); }
@@ -935,6 +979,10 @@ export const encounterModel = (s, h, account) => {
   const key = JSON.stringify([s.currentBattle.waveIndex, me.encounterType, tryDo(() => me.getSeedOffset()), s.money,
     // A minigame turn is a new decision on the same encounter: the mon in front of you and its two stages are what moved.
     [me.misc?.safariPokemonRemaining, me.misc?.catchStage, me.misc?.fleeStage, tryDo(() => me.misc?.pokemon?.id)],
+    // The game's tables are scanned out of the page's chunks asynchronously, so a card built before the scan landed
+    // says it can't name Safari Zone's three mons. That answer stops being true mid-encounter, and nothing else in
+    // this key moves when it does.
+    tryDo(() => safariReady(s), false),
     h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []), (s.modifiers ?? []).length,
     party.map(p => [p.id, p.level, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
   if (cache.key === key) return cache.value;
