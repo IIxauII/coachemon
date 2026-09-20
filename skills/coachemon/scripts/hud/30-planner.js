@@ -820,7 +820,10 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       // than the whole fight. Scored flat it costs a fight's worth, and then no amount of doubt about the partner's
       // KO can outweigh it — focusing would win exactly when the redirect carries the better move, whatever the odds
       // the partner's hit actually lands (#283). Unlike the options above this skips the three-best budget: there is
-      // one redirected move per foe, and it is reached only from `best` and `clean`.
+      // one redirected move per foe, and it is reached only from `best` and `clean`. `deeper` reads `pair` off the
+      // field as it stands, so it still keeps spread moves out of the follow-up pool even though this branch models a
+      // world where the partner's target has fallen and a spread hit is single-target there. That can only under-value
+      // the branch, never inflate it, so the blend stays conservative about focusing.
       if (!(y?.expected > 0)) return { ...x, redirScore: danger - 9 };
       const z = one(y, oi);
       return { ...x, redirScore: (entering || assumed ? z : deeper(z)).score };

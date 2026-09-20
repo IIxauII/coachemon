@@ -804,7 +804,9 @@ const dyingHydreigon = () => [
 // so carrying the wrong move costs a turn rather than the fight. Priced that way, the odds the partner's KO misses
 // can carry the pick: Lucario aims at Hydreigon, where its hit is the insurance that fells it if Dragon Claw misses.
 {
-  // Later blocks share this row and expect the sure version of it, so it goes back at the end.
+  // This is the one block that rewrites a row an earlier one set rather than adding its own, so it puts 8e's value
+  // back at the end. Every later use assigns the row first, so nothing reads the restored value today — it keeps the
+  // seven rewrites below from leaking if a block that doesn't is ever added after this one.
   const sure = TABLE["Garchomp>Dragon Claw>Hydreigon"];
   const party = () => [
     doublesParty()[0],
