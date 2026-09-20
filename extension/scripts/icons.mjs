@@ -2,102 +2,96 @@
 // from into docs/listing/assets/ (§14.6), which is also the folder the store listings upload from. Run:
 // node scripts/icons.mjs
 //
-// The mark is a whistle wearing a bandit mask (§3 of docs/spec/extension-distribution.md): no ball, no red/white split
-// circle, no creature silhouette, nothing from PokéRogue's logo or favicon. Artwork never ships (§1.9), so it is drawn
-// from primitives here rather than pulled from anywhere.
+// The mark is a capped coachemon face (§3 of docs/spec/extension-distribution.md): no ball, no red/white split circle,
+// no creature silhouette, nothing from PokéRogue's logo or favicon. Artwork never ships (§1.9), so the drawing lives
+// here as a pixel grid rather than as a PNG pulled from anywhere — the grid below *is* the source, and the committed
+// PNGs are its output.
 //
-// The silhouette has to survive 16 px, so it is one tapered capsule — lip to chamber — with the mask across it, a
-// lanyard hole punched through, and an ink outline against the tile. Nothing protrudes past the capsule: every version
-// with a ring hung off the chamber read as a head with an ear.
+// It is authored once at 16×16, the size that has to survive the toolbar, and doubled to 32×32 for every size above
+// it, so no size is a downsample of another and the 16 px tile is drawn rather than guessed. Earlier passes authored
+// a 32-grid first and lost detail on the way down to 16; this way round the toolbar icon is the one that is exact.
 //
-// Rendered by supersampling a coverage test per pixel, which is all the antialiasing a 16 px tile needs.
+// Rendered by supersampling a coverage test per pixel, which is all the antialiasing a 16 px tile needs. The store
+// promo tiles are not drawn here — they set this mark in type, so `scripts/listing/render.ts` photographs them.
 import { deflateSync } from "node:zlib";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const INK = [16, 18, 34]; // the mask and the outline
-const BODY = [232, 235, 245]; // the whistle
-const FIELD = [58, 96, 168]; // the tile
-const SLIT = [126, 208, 255]; // the eye slits
+/** The tile behind the mark. Not in `PALETTE`: it is what `.` means, and nothing else may paint it. */
+const FIELD = [0x2a, 0x1b, 0x54];
 
-// Everything below is in a 0..1 square, so one description serves every size.
-const roundRect = (x, y, w, h, r) => (px, py) => {
-  const dx = Math.max(Math.abs(px - (x + w / 2)) - (w / 2 - r), 0);
-  const dy = Math.max(Math.abs(py - (y + h / 2)) - (h / 2 - r), 0);
-  return Math.hypot(dx, dy) <= r;
-};
-const circle = (cx, cy, r) => (px, py) => Math.hypot(px - cx, py - cy) <= r;
-/** A shape turned about a point, so the mask can sit at an angle the axis-aligned primitives cannot reach. */
-const rot = (shape, cx, cy, a) => (px, py) => {
-  const dx = px - cx, dy = py - cy, c = Math.cos(a), s = Math.sin(a);
-  return shape(cx + dx * c + dy * s, cy - dx * s + dy * c);
+const PALETTE = {
+  B: [0xff, 0xc2, 0x4b], // the face
+  H: [0xff, 0xe7, 0xa8], // the lit band under the brim
+  S: [0xd9, 0x82, 0x2b], // the shade along the jaw
+  K: [0x16, 0x12, 0x2b], // ink: the brim, the eyes, the grin
+  C: [0x63, 0xe6, 0xff], // the cap crown, and the glints either side
+  D: [0x33, 0xb6, 0xde], // the cap's lower crown, so it reads as a cap rather than a beanie
+  W: [0xf4, 0xf1, 0xe8], // the white of the eye
 };
 
-const tile = roundRect(0.02, 0.02, 0.96, 0.96, 0.22);
+// The 16×16 authoring grid. The cap is given a crown button and a darker lower band so the silhouette is a cap and
+// not a beanie; the eyes carry a glint and the mouth is open, which is what separates a coach from a mascot.
+const SMALL = [
+  ".......CC.......",
+  "......CCCC......",
+  ".....CCCCCCC....",
+  "....CCCCCCCCCC..",
+  "...DDDDDDDDDDDD.",
+  "KKKKKKKKKKKKKKK.",
+  "..BBHHHHHHHHHBB.",
+  "..BBBBBBBBBBBBB.",
+  "..BBWKBBBBWKBBB.",
+  "..BBKKBBBBKKBBB.",
+  ".CCBBBBBBBBBBCC.",
+  "..BBBKKKKKKBBB..",
+  "..BBBBKKKKBBBB..",
+  "...SBBBBBBBBS...",
+  "....SSSSSSSS....",
+  "................",
+];
 
-// One outline width. A shape is drawn twice: once as itself and once swollen by this much, and what is inside the
-// swollen one but outside the shape is the ink edge.
-const OUT = 0.026;
-/**
- * A capsule whose radius tapers from one end to the other — the whole whistle is one of these. Takes the two ends
- * (centre and radius each), and returns the shape as a function of how far to grow it.
- */
-const cone = (ax, ay, ra, bx, by, rb) => grow => (px, py) => {
-  const bax = bx - ax, bay = by - ay;
-  const t = Math.max(0, Math.min(1, ((px - ax) * bax + (py - ay) * bay) / (bax * bax + bay * bay)));
-  return Math.hypot(px - (ax + bax * t), py - (ay + bay * t)) <= ra + (rb - ra) * t + grow;
-};
+/** Every size above the toolbar draws this: the 16×16 with each cell as a 2×2 block, so it is the same drawing. */
+const BIG = SMALL.flatMap(row => {
+  const doubled = [...row].map(ch => ch + ch).join("");
+  return [doubled, doubled];
+});
 
-// The whistle: a narrow lip on the left flaring into the round chamber on the right, which is the pea-whistle profile
-// and the one silhouette that survives 16 px without a second shape. Nothing sticks out past it — every ring hung off
-// the chamber turned the mark into a head with an ear, which §3 rules out as much as any borrowed art does.
-const whistle = cone(0.14, 0.455, 0.088, 0.67, 0.545, 0.19);
-// The lanyard hole is punched through the chamber, under the mask.
-const cord = circle(0.72, 0.43, 0.032);
-const cordRim = circle(0.72, 0.43, 0.032 + OUT);
+const CORNER = 0.22; // tile corner radius, as a fraction of the tile
 
-const body = whistle(0);
-const outline = whistle(OUT);
-
-// The mask: a band across the eyes, tilted, with two slits cut out of it. Clipped to the whistle, so it reads as worn
-// rather than as a stripe across the tile, and thins to a strap where it crosses the lip.
-const TILT = -0.05;
-const band = rot(roundRect(0.08, 0.485, 0.92, 0.14, 0.05), 0.68, 0.555, TILT);
-const slitL = rot(roundRect(0.55, 0.525, 0.095, 0.052, 0.026), 0.68, 0.555, TILT);
-const slitR = rot(roundRect(0.71, 0.525, 0.095, 0.052, 0.026), 0.68, 0.555, TILT);
-
-/** The colour at one point, or null for transparent. Order is the painting order. */
-const at = (x, y) => {
-  if (!tile(x, y)) return null;
-  if (body(x, y)) {
-    if (cordRim(x, y)) return cord(x, y) ? FIELD : INK;
-    if (band(x, y)) return slitL(x, y) || slitR(x, y) ? SLIT : INK;
-    return BODY;
-  }
-  return outline(x, y) ? INK : FIELD;
+/** Whether a point in the 0..1 square is inside the rounded tile; sampled, so the corner stays smooth at every size. */
+const inTile = (x, y) => {
+  const dx = Math.max(Math.abs(x - 0.5) - (0.5 - CORNER), 0);
+  const dy = Math.max(Math.abs(y - 0.5) - (0.5 - CORNER), 0);
+  return Math.hypot(dx, dy) <= CORNER;
 };
 
 function render(size) {
-  const n = 4; // subsamples per axis
+  const grid = size <= 16 ? SMALL : BIG;
+  const n = grid.length;
   const rgba = Buffer.alloc(size * size * 4);
+  const sub = 4; // subsamples per axis
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
-      let r = 0, g = 0, b = 0, a = 0;
-      for (let sy = 0; sy < n; sy++) {
-        for (let sx = 0; sx < n; sx++) {
-          const c = at((px + (sx + 0.5) / n) / size, (py + (sy + 0.5) / n) / size);
-          if (!c) continue;
-          r += c[0]; g += c[1]; b += c[2]; a += 255;
+      let r = 0, g = 0, b = 0, hits = 0;
+      for (let sy = 0; sy < sub; sy++) {
+        for (let sx = 0; sx < sub; sx++) {
+          const x = (px + (sx + 0.5) / sub) / size;
+          const y = (py + (sy + 0.5) / sub) / size;
+          if (!inTile(x, y)) continue;
+          const ch = grid[Math.min(n - 1, Math.floor(y * n))][Math.min(n - 1, Math.floor(x * n))];
+          const c = ch === "." ? FIELD : PALETTE[ch];
+          r += c[0]; g += c[1]; b += c[2]; hits++;
         }
       }
-      const hits = a / 255;
+      if (!hits) continue;
       const i = (py * size + px) * 4;
-      if (hits === 0) continue;
       rgba[i] = Math.round(r / hits);
       rgba[i + 1] = Math.round(g / hits);
       rgba[i + 2] = Math.round(b / hits);
-      rgba[i + 3] = Math.round(a / (n * n));
+      // Only the rounded corner is ever partly covered, so coverage is the alpha.
+      rgba[i + 3] = Math.round((255 * hits) / (sub * sub));
     }
   }
   return rgba;
@@ -148,6 +142,6 @@ const write = (path, size) => {
 };
 
 for (const size of [16, 32, 48, 128]) write(new URL(`../public/icons/${size}.png`, import.meta.url), size);
-// The master is not shipped in the artifact — only the store listings and the Safari app icon set want it — so it
-// lands with the rest of the listing assets rather than in `public/`.
+// The master is not shipped in the artifact — the store listings, the promo tiles and the Safari app icon set want it
+// — so it lands with the rest of the listing assets rather than in `public/`.
 write(new URL("../../docs/listing/assets/icon-1024.png", import.meta.url), 1024);

@@ -67,8 +67,9 @@ From [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105
 | Element | Decision |
 |---|---|
 | Name | **Coachemon**, slug `coachemon`, identical on CWS, AMO, the Safari app and the extension manifest. There is no reserve title: "Rogue Coach" existed only for App Review, which is out of scope. No trademark is filed. |
-| Icon | An original mark: **a whistle wearing a bandit mask**. No ball, no red/white split circle, no creature silhouette, nothing from PokéRogue's logo or favicon. Sizes 16, 32, 48, 128 (store tile 128; Safari app icon set generated from the 1024 master). |
-| Screenshots and promo tiles | **Clean fixture renders only**: the HUD drawn from a fixture snapshot, sprite fallbacks as text, on a neutral background. No game canvas, no franchise art, no real captures. |
+| Icon | An original mark: **a capped coachemon face** — a grinning face under a coach's cap, authored as a 16×16 pixel grid and doubled for every larger size. It is nobody's creature: no ball, no red/white split circle, no borrowed silhouette, nothing from PokéRogue's logo or favicon. Sizes 16, 32, 48, 128 (store tile 128; Safari app icon set generated from the 1024 master). |
+| Screenshots | **Clean fixture renders only**: the HUD drawn from a fixture snapshot, sprite fallbacks as text, on a neutral background. No game canvas, no franchise art, no real captures. |
+| Promo tiles | **The mark set in type**: the icon beside the wordmark and a tagline, on the mark's own field. The screenshots are what show the panel; a tile is the branding surface next to them. Same rule as the title — the tagline never names the game. |
 | Game in copy | "PokéRogue" named plainly in the description body as the site the extension works on. Never in the title or keywords. "Pokémon" appears only in the disclaimer. |
 | Orion | Named in the CWS and AMO description bodies only. |
 | Positioning | HUD first. One closing paragraph says it can also connect a local AI agent over MCP, naming Claude nominatively with no implied endorsement. |
