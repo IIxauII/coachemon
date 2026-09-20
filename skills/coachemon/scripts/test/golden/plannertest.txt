@@ -143,6 +143,15 @@ foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 ♟ winnable · ~2 steps + {Show the fight plan}
+== doubles spare hit: focus, the partner's KO is not certain (live)
+🎯 W200 · Cyrus Garchomp › Lucario − {Minimal overview} × {Close}
+⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit spare hit — KO without it
+⚔ Lucario Fighting Aura Sphere → Hydreigon 1 hit
+◎ focus Hydreigon : KO before it moves
+foes weak to: Fighting ×2 Dragon ×1
+Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
+Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50% likely · moves after
+♟ winnable · ~2 steps + {Show the fight plan}
 == free switch — same field in the command phase (live)
 🎯 W200 · Cyrus Ninetales › Swampert − {Minimal overview} × {Close}
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior

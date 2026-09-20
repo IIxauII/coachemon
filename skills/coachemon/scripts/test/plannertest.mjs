@@ -798,6 +798,40 @@ const dyingHydreigon = () => [
   assert.ok(field.some(l => /spare hit — goes to Snorlax if Hydreigon falls first/.test(l)), `the spare hit says where it lands:\n${field.join("\n")}`);
 }
 
+// 8g. The certainty axis (#283). The same field and the same movepool as 8e — Lucario still holds Close Combat, the
+// move that suits Snorlax — but Garchomp's Dragon Claw is no longer sure to land, so Hydreigon is no longer sure to
+// fall. The redirect only forces the carried move for the turn it lands in; from the next one the slot picks freely,
+// so carrying the wrong move costs a turn rather than the fight. Priced that way, the odds the partner's KO misses
+// can carry the pick: Lucario aims at Hydreigon, where its hit is the insurance that fells it if Dragon Claw misses.
+{
+  // This is the one block that rewrites a row an earlier one set rather than adding its own, so it puts 8e's value
+  // back at the end. Every later use assigns the row first, so nothing reads the restored value today — it keeps the
+  // seven rewrites below from leaking if a block that doesn't is ever added after this one.
+  const sure = TABLE["Garchomp>Dragon Claw>Hydreigon"];
+  const party = () => [
+    doublesParty()[0],
+    mon("Lucario", 80, ["Fighting", "Steel"], [240, 150, 110, 180, 110, 120], [["Aura Sphere", "Fighting", 80, "S"], CLOSE_COMBAT], true, undefined, { getBattlerIndex: () => 1 }),
+  ];
+  // Only the middle element of the row — the accuracy — moves; the damage and the effectiveness are 8e's.
+  const at = acc => {
+    Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": [[180], acc, 2] });
+    return render({ party: party(), foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  };
+  // A threshold, not a knife edge: the pick holds its direction either side of the ~0.65 where it turns over.
+  for (const acc of [0.9, 0.8, 0.7]) {
+    assert.match(slotLines(at(acc).field).find(l => /Lucario/.test(l)) ?? "", /Close Combat → Snorlax/, `a near-sure KO still spreads at ${acc}`);
+  }
+  for (const acc of [0.6, 0.35, 0.2]) {
+    assert.match(slotLines(at(acc).field).find(l => /Lucario/.test(l)) ?? "", /→ Hydreigon/, `a doubtful KO focuses at ${acc}`);
+  }
+  const { lines, field } = at(0.5);
+  console.log(`== doubles spare hit: focus, the partner's KO is not certain (live)\n${lines.join("\n")}`);
+  const slots = slotLines(field);
+  assert.match(slots.find(l => /Garchomp/.test(l)) ?? "", /→ Hydreigon/, `Garchomp still goes for the KO:\n${field.join("\n")}`);
+  assert.match(slots.find(l => /Lucario/.test(l)) ?? "", /→ Hydreigon/, `Lucario insures the KO rather than spreading:\n${field.join("\n")}`);
+  Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": sure });
+}
+
 // ---- 9–11. Free switch: the game asks "Will you switch Pokémon?" before the first turn (CheckSwitchPhase).
 // Ninetales is on the field and loses to the faster Rhyperior. Swampert beats it — but as a normal switch it would
 // eat a Stone Edge coming in (≥ 25 % KO), so in the command phase it's rejected. Offered free, it's the answer.
