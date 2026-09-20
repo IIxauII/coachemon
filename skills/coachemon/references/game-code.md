@@ -1416,10 +1416,12 @@ watching the input.
 **Measured, in part**: `npm run oracle:encounter` runs the card against the real game headless on upstream's own vitest
 harness in the pinned clone, so the 🔮 claims it covers are checked against what the game then did rather than against a
 mock — the teleport destination, the part-timer's pay, both chest branches, all four store shops, the fallout's burn
-target, the dealer's nature, Bug-Type Superfan's four tutor moves and Absolute Avarice's returned berry count. Beware
-the exit code: the clone's own vitest setup raises one unhandled `localStorage` rejection during i18n init, so the run
-exits non-zero even when every test passes — upstream's own encounter tests do the same in that clone. Read the summary
-line, not `$?`.
+target, the dealer's nature, Bug-Type Superfan's four tutor moves and Absolute Avarice's returned berry count. Read the
+exit code: `0` every case run agrees, `1` a case disagrees and nothing else, `2` no answer — the clone is unprovisioned,
+nothing ran, or the run raised an unhandled error the oracle cannot place. `$?` is the oracle's own, not vitest's: the
+clone raises one unhandled `localStorage` rejection during i18n init, which vitest counts as a run failure however the
+cases went — upstream's own encounter tests exit non-zero in that clone for the same reason — so the oracle reads its
+answer from vitest's results and ignores that one known rejection (#296).
 
 **Unmeasured**: every other 🔮 outcome is a replay of the source's draw order, never checked against an encounter as it
 resolved. A closure that gains an early `await`, or a draw before the one the HUD replays, makes it confidently wrong.

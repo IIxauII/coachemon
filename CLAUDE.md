@@ -24,10 +24,22 @@ The release is the one commit that is supposed to carry it: `npm test` runs in `
 
 Agent worktrees may share the main checkout's dependencies by symlinking `node_modules`, but only when the main `node_modules` is a real directory and the current directory is not the main checkout. Otherwise run `npm ci` in the worktree. A link from the main checkout to itself makes every `npm run` exit 194 with no output (#87).
 
+The main checkout's `node_modules` can also be *stale* — it has been seen missing `ws`, a declared dependency, which
+leaves the linked worktree failing `npm test` with `ERR_MODULE_NOT_FOUND` before any code is touched (#298). So check a
+declared package is actually there before linking, and fall back to `npm ci` when it is not.
+
 ```sh
 MAIN=/Users/xau/Documents/projects/coachemon
-[ "$PWD" != "$MAIN" ] && [ -d "$MAIN/node_modules" ] && [ ! -L "$MAIN/node_modules" ] \
+[ "$PWD" != "$MAIN" ] && [ -d "$MAIN/node_modules" ] && [ ! -L "$MAIN/node_modules" ] && [ -d "$MAIN/node_modules/ws" ] \
   && ln -s "$MAIN/node_modules" node_modules || npm ci
+```
+
+Link `.cache` the same way. `npm run drift:check` in a fresh worktree leaves a **bare** pinned clone — no submodules, no
+`node_modules` — and anything that drives the real game (`npm run oracle:encounter`) refuses until it is provisioned;
+provisioning it again re-fetches the 815 MB `assets` submodule for no gain (#296).
+
+```sh
+[ "$PWD" != "$MAIN" ] && [ -d "$MAIN/.cache" ] && ln -s "$MAIN/.cache" .cache
 ```
 
 ## Wayfinding
