@@ -77,7 +77,19 @@ What the game is actually asking, as a whole. A screen is *not* the same as a **
 
 ## Card
 
-The **coach**'s advice for the decision the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it.
+The **coach**'s advice for the decision the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it. A card is shown as a **strip** over a **drawer** of **group**s.
+
+## Group
+
+One named part of a **card**, drawn from one closed set of eight: `act`, what to do now; `options`, the choices being judged; `foes`; `plan`, the **fight plan**; `catch`; `road`, what lies ahead, a **preview** among it; `audit`, the **team audit**; and `notes`. A card is a list of groups and nothing else, and a group means the same thing on every card it appears on, which is what lets one be remembered as the cards change under it. Every card has an act group, whatever kind of decision it is.
+
+## Strip
+
+The line of a **card** that stays in front of the player whatever else they have open or shut: what the card is about, the first line of its act **group**, and — where the card has one — its **verdict**. The thing to do now is never a click away.
+
+## Drawer
+
+Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them.
 
 ## Minigame turn
 
