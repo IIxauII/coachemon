@@ -307,7 +307,7 @@ export const rewardsModel = (run, h) => {
   // cost doubles every time (`2 ** rerollCount`), so a weak screen is worth one look, not a habit. A reroll is an
   // ordinary roll even after a fixed battle pinned this screen's tiers — the reroll drops the wave's reward settings.
   const pinned = ahead?.thisWave ?? null;
-  const preview = rerollPreview(s);
+  const preview = rerollPreview(run);
   const rerollAhead = preview?.rolls?.length ? rerollAdvice(preview, judge, pick >= 0 ? free[pick] : null, s.money, money) : null;
   const reroll = rerollAhead ? null
     : pick >= 0 && free[pick].v < 10 && h.rerollCost > 0 && money >= h.rerollCost * 3 ? `nothing good — reroll for $${h.rerollCost}?` : null;
@@ -338,7 +338,7 @@ const rerollAdvice = (preview, judge, now, money, afterBuys) => {
     const verdict = r.cost > money ? "short" : gain < REROLL_GAIN ? "keep" : r.cost > afterBuys ? "instead of buys" : "reroll";
     return { lock: r.lock, cost: r.cost, offers, best, gain: Math.round(gain * 10) / 10, verdict };
   });
-  return { n: preview.n, canLock: preview.canLock, locked: preview.locked, missed: preview.missed, rolls };
+  return { n: preview.n, canLock: preview.canLock, locked: preview.locked, missed: preview.missed, rolls, byLock: preview.byLock };
 };
 
 // `take Leftovers → Garchomp · buy Super Potion · reroll $500 → …`, for the watcher and the battle read.

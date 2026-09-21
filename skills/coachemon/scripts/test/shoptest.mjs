@@ -457,9 +457,12 @@ const scenarios = {
       scene.phase = next;
       api.rerollCheck(scene);
       assert.deepEqual([api.rerollStats().hit, api.rerollStats().miss], [1, 0]);
-      // Read again on the new screen, then a reroll that comes out different — a miss, marked `!` from then on.
+      // Read again on the new screen and arm it, as the tick does; then a reroll that comes out different — a miss,
+      // marked `!` from then on.
       Phaser.Math.RND._s = "!rnd,7";
-      assert.equal(api.rewardsModel(scene, scene.ui.getHandler()).rerollAhead.missed, false);
+      const m2 = api.rewardsModel(scene, scene.ui.getHandler());
+      assert.equal(m2.rerollAhead.missed, false);
+      api.rerollArm(scene, m2.rerollAhead);
       const third = new SelectModifierPhase(2, [0, 0, 0]);
       third.typeOptions = [0, 1, 2].map(() => ({ type: { name: "Nope", tier: 0 } }));
       scene.phase = third;
@@ -632,12 +635,12 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   const hud = globalThis.__hud;
-  const { rerollCheck, rerollStats } = hud["50-reroll"];
+  const { rerollArm, rerollCheck, rerollStats } = hud["50-reroll"];
   const { cardSummary } = hud["60-card"], { tick } = hud["98-tick"];
   // The rewards card is read through the run read, as the panel reads it: each call here opens one.
   const rewardsModel = (s, h) => hud["26-run"].readRun(s, run => hud["52-shop"].rewardsModel(run, h));
   globalThis.__sm = rewardsModel;
-  globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollCheck, rerollStats, cardSummary,
+  globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollArm, rerollCheck, rerollStats, cardSummary,
     setRewardFns: hud["04-game-tables"].setRewardFns, tick, HELD: hud["51-items"].HELD, rewardContext: hud["51-items"].rewardContext };
   // The chunk scan finds nothing under node: hand the reroll preview its functions, and draw the card again.
   if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }

@@ -3,7 +3,7 @@
 import { readCard } from "./60-card.js";
 import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
-import { rerollCheck } from "./50-reroll.js";
+import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
 import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw, setShownCardWave, view } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
@@ -67,6 +67,7 @@ export const tick = () => {
     // Arm the preview tally with the wave the player is about to walk into — the card's own preview, and only when
     // it is the next wave's. A read arms nothing; the tick does, so a look-ahead can't take the prediction's place.
     if (card?.preview && card.preview.wave === card.wave + 1) previewArm(card.preview);
+    if (card?.kind === "rewards") rerollArm(s, card.rerollAhead);
     // Write a Mystery Encounter down as it happens, card and all, for the live check on the encounter judgments. It
     // runs on every refresh rather than only on the encounter card, because the half worth recording — what the game
     // did with the pick — lands on the waves after the option screen is gone.
