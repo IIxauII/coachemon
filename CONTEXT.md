@@ -81,7 +81,7 @@ The **coach**'s advice for the decision the player faces right now: a battle, a 
 
 ## Group
 
-One named part of a **card**, drawn from one closed set of eight: *act*, what to do now; *options*, the choices being judged; *foes*; *plan*, the **fight plan**; *catch*; *road*, what lies ahead, a **preview** among it; *audit*, the **team audit**; and *notes*. A card is a list of groups and nothing else, and a group means the same thing on every card it appears on, which is what lets one be remembered as the cards change under it. Every card has an act group, whatever kind of decision it is.
+One named part of a **card**, drawn from one closed set of eight: `act`, what to do now; `options`, the choices being judged; `foes`; `plan`, the **fight plan**; `catch`; `road`, what lies ahead, a **preview** among it; `audit`, the **team audit**; and `notes`. A card is a list of groups and nothing else, and a group means the same thing on every card it appears on, which is what lets one be remembered as the cards change under it. Every card has an act group, whatever kind of decision it is.
 
 ## Strip
 
@@ -89,7 +89,7 @@ The line of a **card** that stays in front of the player whatever else they have
 
 ## Drawer
 
-Where a **card**'s **group**s sit, one shown at a time: always the one the player last picked, never one the coach chose for them.
+Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them.
 
 ## Minigame turn
 
