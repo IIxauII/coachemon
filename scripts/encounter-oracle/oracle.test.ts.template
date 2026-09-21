@@ -100,7 +100,8 @@ function readCard(game: GameManager) {
   const scene = game.scene;
   const handler = scene.ui.getHandler();
   const account = hud["98-tick"].accountRead(scene);
-  return hud["46-encounter"].encounterModel(scene, handler, account);
+  // Through the run read, as the panel reads it (26-run).
+  return hud["26-run"].readRun(scene, (run: unknown) => hud["46-encounter"].encounterModel(run, handler, account));
 }
 
 /** What it takes to reach one encounter's option screen. */

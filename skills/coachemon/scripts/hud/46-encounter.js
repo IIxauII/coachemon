@@ -31,7 +31,7 @@
 // (a boss: within 3 levels under it). A **trainer** fight has no party to match up against — the mons are built when the
 // battle starts — so it is hard on the level gap alone, or when it brings more than MONS_EACH mons for each member of
 // ours still fit to fight. Money is spent freely only while it leaves RESERVE_WAVES waves' worth of reward money.
-import { TYPES, abilityValue, natureOf, sandbox, stage, typesOf } from "./01-core.js";
+import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
 import { finalBstOf, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
 import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
 import { catchWorth } from "./45-catch.js";
@@ -979,23 +979,29 @@ const build = (s, h, account) => {
   };
 };
 
-let cache = { key: null, value: null };
-export const encounterModel = (s, h, account) => {
+// `run` is the run read: the model is built inside its sandbox and kept in its memo. The wave, the modifier count and
+// each member's level and standing are the run key's; what the card reads beyond that — the encounter and its
+// minigame's stage, the money, the options on screen, each member's exact HP, status, nature and moveset — is its
+// key within the run. A build that throws is the run read's `{ unavailable }`, shaped here as an unjudged card that
+// carries the reason, so the panel says why rather than dying on it.
+export const encounterModel = (run, h, account) => {
+  const s = run.scene;
   const me = s.currentBattle.mysteryEncounter;
-  const party = s.getPlayerParty().filter(Boolean);
-  const key = JSON.stringify([s.currentBattle.waveIndex, me.encounterType, tryDo(() => me.getSeedOffset()), s.money,
+  const party = run.facts.party;
+  const key = JSON.stringify([me.encounterType, tryDo(() => me.getSeedOffset()), s.money,
     // A minigame turn is a new decision on the same encounter: the mon in front of you and its two stages are what moved.
     [me.misc?.safariPokemonRemaining, me.misc?.catchStage, me.misc?.fleeStage, tryDo(() => me.misc?.pokemon?.id)],
     // The game's tables are scanned out of the page's chunks asynchronously, so a card built before the scan landed
     // says it can't name Safari Zone's three mons. That answer stops being true mid-encounter, and nothing else in
     // this key moves when it does.
     tryDo(() => safariReady(s), false),
-    h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []), (s.modifiers ?? []).length,
-    party.map(p => [p.id, p.level, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
-  if (cache.key === key) return cache.value;
-  const value = sandbox(s, () => build(s, h, account));
-  cache = { key, value };
-  return value;
+    h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []),
+    party.map(p => [p.id, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
+  const value = run.memo("encounter", key, () => build(s, h, account));
+  if (value.kind) return value;
+  const type = me.encounterType;
+  return { kind: "encounter", type, name: NAMES[type] ?? `Encounter #${type}`, tier: TIERS[me.encounterTier] ?? null,
+    known: false, options: [], pick: -1, notes: [`unread: ${value.unavailable}`], minigame: null };
 };
 
 // `Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave`, for the watcher and the battle read.

@@ -136,7 +136,7 @@ export const readCard = (s, account) => {
   } else if (biomeScreen(s, handler)) {
     card = readRun(s, run => biomeModel(run, handler));
   } else if (encounterScreen(s, handler)) {
-    card = encounterModel(s, handler, account);
+    card = readRun(s, run => encounterModel(run, handler, account));
   } else {
     const b = s.currentBattle;
     const foes = s.getEnemyParty().filter(p => p.hp > 0);
