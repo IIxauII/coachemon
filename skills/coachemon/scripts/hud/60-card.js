@@ -134,7 +134,7 @@ export const readCard = (s, account) => {
   } else if (rewards) {
     card = readRun(s, run => rewardsModel(run, rewards));
   } else if (biomeScreen(s, handler)) {
-    card = biomeModel(s, handler);
+    card = readRun(s, run => biomeModel(run, handler));
   } else if (encounterScreen(s, handler)) {
     card = encounterModel(s, handler, account);
   } else {
