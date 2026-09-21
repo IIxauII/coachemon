@@ -81,15 +81,15 @@ The **coach**'s advice for the decision the player faces right now: a battle, a 
 
 ## Group
 
-One named part of a **card**: the thing to act on now, the foes in front of you, the fight plan, the road ahead, the footnotes. A card is a list of groups and nothing else, and the names come from one closed set, so a group means the same thing on every card it appears on — which is what lets the **drawer** remember which one the player was reading as the cards change under it. Every card has an act group, whatever kind of decision it is: on a card whose call lives inside a list of choices, the coach states that call as the act group's own first line. A group is drawn one way only, so a card never trades what it says for height.
+One named part of a **card**, drawn from one closed set of eight: *act*, what to do now; *options*, the choices being judged; *foes*; *plan*, the **fight plan**; *catch*; *road*, what lies ahead, a **preview** among it; *audit*, the **team audit**; and *notes*. A card is a list of groups and nothing else, and a group means the same thing on every card it appears on, which is what lets one be remembered as the cards change under it. Every card has an act group, whatever kind of decision it is.
 
 ## Strip
 
-The one line of a **card** that is always on screen: its **verdict**, the first line of its act **group**, and what the card is about. It may run to two lines rather than clip that line, and it stays up while the **drawer** is open — the thing to do now is never a click away.
+The line of a **card** that stays in front of the player whatever else they have open or shut: what the card is about, the first line of its act **group**, and — where the card has one — its **verdict**. The thing to do now is never a click away.
 
 ## Drawer
 
-Where a **card**'s **group**s sit: one tab each, one group shown, that group's summary at its head. The player opens it, shuts it and picks the tab; it never opens, shuts or switches tab on its own. Shutting it leaves the **strip**.
+Where a **card**'s **group**s sit, one shown at a time: always the one the player last picked, never one the coach chose for them.
 
 ## Minigame turn
 
