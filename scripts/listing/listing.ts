@@ -4,8 +4,8 @@
  * this file holds the few strings that must agree with the extension and with each other, and the asset table that
  * `render.ts` draws and `src/listing.test.ts` checks.
  *
- * Artwork never ships (§1.9): every asset here is either the drawn mark (`extension/scripts/icons.mjs`) or a fixture
- * render of the HUD on a neutral background. No game canvas, no capture of a real run.
+ * Artwork never ships (§1.9): every asset here is either the mark, drawn in the design project and copied in, or a
+ * fixture render of the HUD on a neutral background. No game canvas, no capture of a real run.
  */
 import { fileURLToPath } from "node:url";
 
@@ -39,8 +39,8 @@ export type ListingAsset = {
   height: number;
   /** Which form field it answers. */
   what: string;
-  /** Absent for the icons, which `extension/scripts/icons.mjs` draws, and for the promo tiles, which come from the
-   * design project. An asset without one is still size-checked; it is only `render.ts` that skips it. */
+  /** Absent for the icons and the promo tiles, which both come from the design project. An asset without one is
+   * still size-checked; it is only `render.ts` that skips it. */
   shot?: Shot;
 };
 

@@ -23,17 +23,21 @@ a filing that no longer matches the artifact is a false statement to a store, no
 
 ## Redrawing
 
-Both generators are deterministic and write over what is committed; commit the diff, it *is* the change.
+Only the screenshots are generated. `render.ts` is deterministic and writes over what is committed; commit the diff,
+it *is* the change.
 
 ```sh
-cd extension && npm run icons   # the icon set and the 1024 master
 npm run listing:render          # the screenshots (needs Chrome installed)
 ```
 
-The two promo tiles are the exception: neither generator writes them. They are the mark set in type, and they are
-drawn in the [Coachemon Icon design project](https://claude.ai/design/p/b6448111-99f6-40b8-a24c-ac83059404e3), which
-is also where the icon grid came from. To change one, change it there and copy the PNG in — and change the mark in
-the *same* pass, because nothing here can tell that a tile is showing last season's face.
+Everything that carries the mark — the four icon sizes, the 1024 master and the two promo tiles — is drawn in the
+[Coachemon Icon design project](https://claude.ai/design/p/b6448111-99f6-40b8-a24c-ac83059404e3) and copied in.
+Nothing here redraws them, so change the mark there and copy *every* size in the same pass: no check in this repo can
+tell that one size, or a tile, is still showing last season's face.
+
+The design project's PNG export carries a C2PA `caBX` manifest and an `eXIf` chunk, together about 5.8 KB per file.
+Strip them before committing — keep `IHDR/PLTE/tRNS/IDAT/IEND/sRGB/gAMA` and drop the rest, which leaves the pixels
+byte-identical. These files are uploaded to the stores, and that metadata has no business going with them.
 
 The shots are the real HUD — the same `bundle("hud")` the extension ships — mounted over the fixture scenes in
 `scripts/listing/fixtures.js` inside a headless Chrome, with no sprite atlas, so every icon falls back to the name it
