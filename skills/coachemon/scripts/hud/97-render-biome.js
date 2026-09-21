@@ -14,7 +14,8 @@ export const drawBiome = m => {
     ? line("✚", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, `judged without ${m.fainted} fainted — no revive at the next heal`)) : null;
   if (!m.options.some(o => o.score != null)) {
     return [header, ...m.options.map(o => line("·", "#9aa", h("span", {}, o.label))),
-      line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, m.data ? "no spawn data for these biomes" : "reading the game's biome tables…"))];
+      line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny },
+        m.unread ? `unread: ${m.unread}` : m.data ? "no spawn data for these biomes" : "reading the game's biome tables…"))];
   }
   const COLOR = { pick: "#6d6", close: "#ec4", worse: "#9aa" };
   const MARK = { pick: "★", close: "≈", worse: "·" };

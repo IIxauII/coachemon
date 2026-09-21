@@ -463,7 +463,12 @@ export const biomeModel = (run, h) => {
   const party = healRevives(s) ? everyone : everyone.filter(p => p.hp > 0);
   const key = JSON.stringify([!!tables, labels, party.map(p => [p.id, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
-  return run.memo("biome", key, () => build(run, tables, labels, everyone, party));
+  const value = run.memo("biome", key, () => build(run, tables, labels, everyone, party));
+  if (value.kind) return value;
+  // A build that threw is the run read's `{ unavailable }`: the options unjudged, and the reason where the
+  // card would say it is still reading — never a kind-less card, which the panel can't draw.
+  return { kind: "biome", from: null, options: labels.map(label => ({ label, id: null })), pick: -1,
+    data: !!tables, trainers: false, fainted: 0, unread: value.unavailable };
 };
 const build = (run, tables, labels, everyone, party) => {
   const s = run.scene;

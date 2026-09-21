@@ -54,8 +54,8 @@
 // fee buys.
 //
 // ---- **This file calls game code; it never decides when that is allowed.**
-// `46-encounter.js` is the only importer (the `@only` lines below), and it is the one that opens the sandbox —
-// `encounterModel` wraps its whole build in it. That is not a formality here: `BattleScene.executeWithSeedOffset` has
+// `46-encounter.js` is the only importer (the `@only` lines below), and `encounterModel` builds only inside the run
+// read's sandbox (`26-run.js`). That is not a formality here: `BattleScene.executeWithSeedOffset` has
 // **no `try`/`finally`**, so it restores `Phaser.Math.RND.state()` on the normal path only. A throw inside the fork is
 // caught below and turned into a decline, but the live stream would be left sown at the fork offset; the sandbox is
 // what puts it back.
