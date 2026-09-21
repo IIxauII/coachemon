@@ -19,7 +19,7 @@ import { bundle } from "../../skills/coachemon/scripts/hud-bundle.mjs";
 import { LISTING_ASSETS, listingPath, pngSize, repoPath } from "./listing.ts";
 import type { ListingAsset, Shot } from "./listing.ts";
 
-/** The assets that are photographed; the icons in the table are drawn by `extension/scripts/icons.mjs` instead. */
+/** The assets that are photographed; the icons and promo tiles in the table come from the design project instead. */
 type ShotAsset = ListingAsset & { shot: Shot };
 const shots = LISTING_ASSETS.filter((a): a is ShotAsset => a.shot !== undefined);
 

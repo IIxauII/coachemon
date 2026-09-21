@@ -4,8 +4,8 @@
  * this file holds the few strings that must agree with the extension and with each other, and the asset table that
  * `render.ts` draws and `src/listing.test.ts` checks.
  *
- * Artwork never ships (§1.9): every asset here is either the drawn mark (`extension/scripts/icons.mjs`) or a fixture
- * render of the HUD on a neutral background. No game canvas, no capture of a real run.
+ * Artwork never ships (§1.9): every asset here is either the mark, drawn in the design project and copied in, or a
+ * fixture render of the HUD on a neutral background. No game canvas, no capture of a real run.
  */
 import { fileURLToPath } from "node:url";
 
@@ -39,7 +39,8 @@ export type ListingAsset = {
   height: number;
   /** Which form field it answers. */
   what: string;
-  /** Absent for the icons, which `extension/scripts/icons.mjs` draws. */
+  /** Absent for the icons and the promo tiles, which both come from the design project. An asset without one is
+   * still size-checked; it is only `render.ts` that skips it. */
   shot?: Shot;
 };
 
@@ -57,10 +58,11 @@ export const LISTING_ASSETS: ListingAsset[] = [
     shot: { view: "full", fixture: "rewards", zoom: 2 } },
   { file: "assets/screenshot-mini.png", width: 1280, height: 800, what: "CWS and AMO screenshot 4",
     shot: { view: "mini", fixture: "battle", zoom: 2.4 } },
-  { file: "assets/promo-small.png", width: 440, height: 280, what: "CWS small promo tile",
-    shot: { view: "mini", fixture: "battle", zoom: 1 } },
-  { file: "assets/promo-marquee.png", width: 1400, height: 560, what: "CWS marquee promo tile",
-    shot: { view: "mini", fixture: "battle", zoom: 2.2 } },
+  // Both tiles are the mark set beside the wordmark, drawn in the design project rather than here — see
+  // `docs/listing/README.md`. They carry no `shot` on purpose: one would make `render.ts` photograph the panel over
+  // the top of them on the next redraw, which is how the panel ended up on a branding tile in the first place.
+  { file: "assets/promo-small.png", width: 440, height: 280, what: "CWS small promo tile" },
+  { file: "assets/promo-marquee.png", width: 1400, height: 560, what: "CWS marquee promo tile" },
   { file: "assets/icon-1024.png", width: 1024, height: 1024, what: "Safari app icon master (§14.6)" },
   { file: "../../extension/public/icons/128.png", width: 128, height: 128, what: "CWS and AMO store icon" },
 ];
