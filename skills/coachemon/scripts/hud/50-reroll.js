@@ -17,7 +17,7 @@
 // which also makes the cost the summed tier values instead of 250); locked tiers still take luck upgrades.
 //
 // ---- How the preview runs
-// Inside `sandbox` (which puts `RND.state()` back): from the live stream position, the game's own
+// Inside the **run read**'s sandbox (26-run, which puts `RND.state()` back): from the live stream position, the game's own
 // `regenerateModifierPoolThresholds(party, PLAYER, n)` and `getPlayerModifierTypeOptions(count, party, tiers?)`, with
 // `count` from a fresh `SelectModifierPhase(n, tiers)`'s own `getModifierCount` (a phase constructor does nothing
 // else). Once with the lock as it stands, and — when the party holds a Lock Capsule — once more with it toggled, each
@@ -32,7 +32,6 @@
 // anything that draws without changing an input this key reads is what the arrival check catches. Every reroll the
 // player actually makes is scored against the last preview for it, and a miss marks the line `!` for the rest of the run
 // (`window.__coachHud.reroll()`).
-import { sandbox } from "./01-core.js";
 import { gameRewardFns } from "./04-game-tables.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -85,8 +84,14 @@ const roll = (fns, ph, party, lock) => {
 
 // ---- Accuracy, measured rather than claimed
 const stats = { checked: 0, hit: 0, miss: 0, last: null };
-// The last preview handed out: the phase it was read on, and the offers per lock state.
+// The preview armed for the next reroll: the phase it was read on, and the offers per lock state.
 let pending = null;
+// Arms the tally with the reroll preview on the rewards card, read on the phase now on show. 98-tick calls it once
+// the card is built; a read arms nothing — that used to be `rerollPreview`'s side effect.
+export const rerollArm = (s, r) => {
+  if (!r?.rolls?.length || !r.byLock) return;
+  pending = { phase: rewardPhase(s), wave: s?.currentBattle?.waveIndex, n: r.n, byLock: r.byLock };
+};
 // Called every tick, before the card is built. When the screen on show is the reroll the last preview was for, score it.
 export const rerollCheck = s => {
   const ph = rewardPhase(s);
@@ -105,10 +110,13 @@ export const rerollCheck = s => {
 };
 export const rerollStats = () => ({ ...stats });
 
-let cache = { key: null, value: null };
-// `{ n, rolls: [{ lock, cost, types, upgrades }], canLock, locked, missed }`, `{ unavailable }`, or null off the
-// rewards screen. The first roll is the lock as it stands; a second, with it toggled, when a Lock Capsule is held.
-export const rerollPreview = s => {
+// `run` is the run read: the roll runs inside its sandbox and its answer is kept in the run's memo under everything
+// the roll reads (`inputKey`, the stream position first). `{ n, rolls: [{ lock, cost, types, upgrades }], byLock,
+// canLock, locked, missed }`, `{ unavailable }`, or null off the rewards screen. The first roll is the lock as it
+// stands; a second, with it toggled, when a Lock Capsule is held. `byLock` is the offers per lock state as the tally
+// keys them, carried so the card can arm it.
+export const rerollPreview = run => {
+  const s = run.scene;
   const ph = rewardPhase(s);
   if (!ph) return null;
   const fns = gameRewardFns();
@@ -116,27 +124,18 @@ export const rerollPreview = s => {
   if (typeof ph.getRerollCost !== "function" || typeof ph.constructor?.prototype?.getModifierCount !== "function") {
     return { unavailable: "the live build's reward phase moved past the pin" };
   }
-  const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];
-  const key = inputKey(s, ph, party);
-  if (cache.key !== key) {
+  const party = run.facts.party;
+  const value = run.memo("reroll", inputKey(s, ph, party), () => quiet(() => {
     const lock = !!s.lockModifierTiers;
-    const value = tryDo(() => quiet(() => sandbox(s, () => {
-      try {
-        const rolls = [roll(fns, ph, party, lock)];
-        if (canLock(s)) rolls.push(roll(fns, ph, party, !lock));
-        return { n: (ph.rerollCount ?? 0) + 1, rolls: rolls.filter(Boolean), canLock: canLock(s), locked: lock };
-      } finally {
-        fns.regenerate(party, ModifierPoolType.PLAYER, ph.rerollCount ?? 0);
-      }
-    })), { unavailable: "the reward roll threw" });
-    cache = { key, value };
-  }
-  const value = cache.value;
-  if (!value.unavailable && value.rolls.length) {
-    pending = { phase: ph, wave: s.currentBattle?.waveIndex, n: value.n,
-      byLock: Object.fromEntries(value.rolls.map(r => [String(r.lock), r.types.map(offerKey)])) };
-  }
-  return { ...value, missed: stats.miss > 0 };
+    try {
+      const rolls = [roll(fns, ph, party, lock)].concat(canLock(s) ? [roll(fns, ph, party, !lock)] : []).filter(Boolean);
+      return { n: (ph.rerollCount ?? 0) + 1, rolls, canLock: canLock(s), locked: lock,
+        byLock: Object.fromEntries(rolls.map(r => [String(r.lock), r.types.map(offerKey)])) };
+    } finally {
+      fns.regenerate(party, ModifierPoolType.PLAYER, ph.rerollCount ?? 0);
+    }
+  }));
+  return value.unavailable ? value : { ...value, missed: stats.miss > 0 };
 };
 
 // ---- How the card and its one-line summary word a roll. Every line is `~`: it holds while nothing else draws from

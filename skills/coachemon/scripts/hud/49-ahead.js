@@ -21,7 +21,9 @@
 // Daily a roll of its own** that has nothing to do with the party.
 //
 // Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
-// which replays inside a seed fork. Nothing is called that the preview doesn't already call.
+// which replays inside a seed fork. Nothing is called that the preview doesn't already call. The model is read
+// through the **run read** (26-run) and kept in its memo: every input below is in the run key, so there is one
+// look-ahead per run state and it is built on the same preview the card draws.
 import { TIER_NAMES, abilitiesOf } from "./01-core.js";
 import { bigFightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
@@ -177,34 +179,25 @@ const eternatusCard = (s, model, party) => {
 // ---- The model the card draws. One replay at most (the next big fight's), and only when it is close enough to
 // prepare for. Cached like the preview: the schedule walks thirty waves through `isFixedBattle`, which builds a
 // `FixedBattleConfig` and runs the challenge hooks each time, and the panel redraws every second.
-let cache = { key: null, value: null };
-export const aheadModel = s => {
-  const wave = s?.currentBattle?.waveIndex ?? 0;
+export const aheadModel = run => {
+  const s = run.scene;
+  const wave = run.facts.wave;
   if (!wave || typeof s.gameMode?.isFixedBattle !== "function") return null;
-  // Everything below is read from the wave, the party and the run's own offsets; the replay's own inputs are
-  // keyed again inside `previewFor`.
-  const cacheKey = JSON.stringify([s.seed, wave, s.offsetGym, s.arena?.biomeId,
-    // Whether a member is standing, not how much HP it has: nothing here reads the number, and keying on it
-    // would miss the cache on every hit taken.
-    (s.getPlayerParty?.() ?? []).filter(Boolean).map(p => [p.species?.speciesId, p.level, p.hp > 0, p.luck]),
-    (s.modifiers ?? []).length]);
-  if (cache.key === cacheKey) return cache.value;
-  const value = build(s, wave);
-  cache = { key: cacheKey, value };
-  return value;
+  return run.memo("ahead", "model", () => build(run, wave));
 };
 
-const build = (s, wave) => {
+const build = (run, wave) => {
+  const s = run.scene;
   // The calendar answers what each wave is; naming it for a reader is this card's own job.
   const schedule = bigFightsAhead(s, wave + 1).map(f => ({ ...f, label: KIND_LABEL[f.kind] }));
   const next = schedule[0] ?? null;
   const heal = nextHeal(s, wave + 1);
-  const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];
+  const party = run.facts.party;
   const luck = partyLuck(party, s, gameEvents());
 
   // A preview only for the fight itself, and only once it is near: a replay for a wave 20 away is a cost with no
   // advice attached, and the inputs it reads will have moved long before then.
-  const model = next && next.wave - wave <= LOOKAHEAD ? previewFor(s, next.wave) : null;
+  const model = next && next.wave - wave <= LOOKAHEAD ? previewFor(run, next.wave) : null;
   const named = model && !model.unavailable ? model : null;
   if (next) {
     next.in = next.wave - wave;
@@ -237,7 +230,10 @@ const build = (s, wave) => {
 // judged against the next big fight rather than whatever the next wave rolls: that is where a Taunt or a burn
 // decides a run, and the roster is only read once the fight is near (LOOKAHEAD), so both the learn card and the
 // rewards card see the same foes or none. Plain data, as the preview hands it over.
+// A look-ahead the run read could not build hands the learn card its reason instead, so the card can say it judged
+// the move blind rather than say nothing.
 export const learnRoster = model => {
+  if (model?.unavailable) return { unavailable: model.unavailable };
   const next = model?.next;
   if (!next?.foes?.length) return null;
   return { wave: next.wave, exact: !!next.exact, foes: next.foes };

@@ -309,6 +309,17 @@ A move's **costs** are the traits that hurt its user, and are always named the s
 
 The **coach**'s look at a battle while the game waits on the player's decision (a command, a free switch or a faint replacement). Every damage number, enemy move, enemy switch and Terastallization the coach shows then comes from the game's own code, as the battle stands. The enemy's move is the game's own decision rather than a guess at it, and carries a **confidence**: **exact**, except where a command of ours draws first and so decides which move the enemy picks, where it is a **replay** of that command. Outside a decision the game can't be asked, so the coach falls back to numbers worked out from the type chart alone. When the game's own code can't be asked *at* a decision, the coach says why and withholds the turn read rather than advising from an **estimate** — the fight, the team's plan and what lies ahead go quiet together. A **card** built from a turn read stays up through the turn's animations, until the turn ends, the wave changes or a foe is sent in.
 
+## Run read
+
+The **coach**'s look at the **run** between decisions of a battle: what the run seed, the wave, the biome, the party
+and what it holds already decide, read once and shared by every card that judges the road ahead — a **preview**, the
+next big fight, a **team audit**, a biome pick, a shop, a reroll, a mystery encounter. It is the twin of the **turn
+read**: the turn read looks at the fight in front of the player at full fidelity, the run read at the run around it,
+and the two never look at once. A run read never advances the game or the run's own sequence of rolls.
+
+Everything a run read hands out is the same answer for the same run state, so two cards built from one read cannot
+disagree. A field it cannot answer says why, in the card that wanted it, rather than going quiet.
+
 ## Spare hit
 
 In a double, the second of two hits aimed at the same foe when the first alone already fells it. A spare hit is never wasted: the game retargets a still-queued single-target move whose target has fainted onto the surviving foe (a **redirect**), so it lands there carrying the move its slot chose for the dying foe, not one picked for the survivor. The coach prices the slot on both branches at once — the redirect's worth where the target falls first, its own worth where it doesn't — so it spreads when the slot has a materially better move for the other foe than the redirect would carry, and focuses when it hasn't. A redirect settles only the turn it lands in, and the slot chooses freely again from the next one, so carrying the wrong move costs a turn rather than the fight.

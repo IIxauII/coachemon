@@ -11,6 +11,7 @@
 import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-screens.js";
 import { partyProfile } from "./08-party.js";
 import { readTurn } from "./25-turn.js";
+import { readRun } from "./26-run.js";
 import { arrivalTurn, battleModel } from "./30-planner.js";
 import { teamPlanner } from "./35-team-plan.js";
 import { learnModel, learnSummary } from "./40-learn.js";
@@ -125,18 +126,17 @@ export const readCard = (s, account) => {
   if (starters) {
     card = starterModel(s, starters);
   } else if (learn) {
-    // The same next-big-fight roster the rewards card judges a TM against, so the two cards weigh a move alike.
-    let roster = null;
-    try { roster = learnRoster(aheadModel(s)); } catch {}
-    card = learnModel({ ...learn, roster });
+    // The same next-big-fight roster the rewards card judges a TM against, so the two cards weigh a move alike. A
+    // look-ahead the run read couldn't build reaches the card as its reason, not as a swallowed throw.
+    card = readRun(s, run => learnModel({ ...learn, roster: learnRoster(aheadModel(run)) }));
   } else if (spliceScreen(s, handler)) {
     card = fusionModel(s, handler);
   } else if (rewards) {
-    card = rewardsModel(s, rewards);
+    card = readRun(s, run => rewardsModel(run, rewards));
   } else if (biomeScreen(s, handler)) {
-    card = biomeModel(s, handler);
+    card = readRun(s, run => biomeModel(run, handler));
   } else if (encounterScreen(s, handler)) {
-    card = encounterModel(s, handler, account);
+    card = readRun(s, run => encounterModel(run, handler, account));
   } else {
     const b = s.currentBattle;
     const foes = s.getEnemyParty().filter(p => p.hp > 0);
@@ -147,9 +147,12 @@ export const readCard = (s, account) => {
   if (!card) return null;
   card.wave = s.currentBattle?.waveIndex ?? null;
   if (card.kind === "battle" || card.kind === "rewards") {
-    card.preview = previewNext(s);
-    // The rewards card builds its own (it spends against it); every other card just draws it.
-    card.ahead ??= aheadModel(s);
+    // After the turn read has closed: the two reads are sequential, never nested (26-run).
+    readRun(s, run => {
+      card.preview = previewNext(run);
+      // The rewards card builds its own (it spends against it); every other card just draws it.
+      card.ahead ??= aheadModel(run);
+    });
   }
   return card;
 };

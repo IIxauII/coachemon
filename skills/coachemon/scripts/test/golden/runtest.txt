@@ -1,0 +1,5 @@
+== key ["seed-1",12,3,0,0,[[1,10,0,true],[2,10,0,true]],0,0,3]
+moved by seed, wave, biome, waveCycleOffset, offsetGym, species, level, luck, standing, modifiers, encountered, spawnChance
+builds 5
+unavailable reroll: no reward phase
+dead after callback; nesting refused both ways

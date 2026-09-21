@@ -100,7 +100,9 @@ const shopTier = t => {
 // Forms that need the key item: mega forms for the Mega Bracelet, gigantamax for the Dynamax Band.
 const hasFormKey = (p, re) => [p.species, p.fusionSpecies].some(sp => (sp?.forms ?? []).some(f => re.test(f?.formKey ?? "")));
 
-export const rewardsModel = (s, h) => {
+// `run` is the run read: the look-ahead, the audit and the reroll preview are all read through it.
+export const rewardsModel = (run, h) => {
+  const s = run.scene;
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
   // The reward before a big fight is the last chance to patch the team up. What counts as one is the run calendar's
@@ -108,7 +110,7 @@ export const rewardsModel = (s, h) => {
   // fallback when the live build hides the game mode. `gauntlet` is the Elite Four case: more than one big fight
   // before the next full heal, so the whole party has to last, not just the lead.
   const wave = s.currentBattle?.waveIndex ?? 0;
-  const ahead = aheadModel(s);
+  const ahead = aheadModel(run);
   const bossNext = waveKind(s, wave + 1) != null;
   const gauntlet = (ahead?.fightsBeforeHeal ?? 0) >= 2;
   const hurtBelow = gauntlet ? 90 : bossNext ? 80 : 60;
@@ -305,7 +307,7 @@ export const rewardsModel = (s, h) => {
   // cost doubles every time (`2 ** rerollCount`), so a weak screen is worth one look, not a habit. A reroll is an
   // ordinary roll even after a fixed battle pinned this screen's tiers — the reroll drops the wave's reward settings.
   const pinned = ahead?.thisWave ?? null;
-  const preview = rerollPreview(s);
+  const preview = rerollPreview(run);
   const rerollAhead = preview?.rolls?.length ? rerollAdvice(preview, judge, pick >= 0 ? free[pick] : null, s.money, money) : null;
   const reroll = rerollAhead ? null
     : pick >= 0 && free[pick].v < 10 && h.rerollCost > 0 && money >= h.rerollCost * 3 ? `nothing good — reroll for $${h.rerollCost}?` : null;
@@ -315,7 +317,7 @@ export const rewardsModel = (s, h) => {
   // How many shop items the money covers at all: often none early on, when the shop is irrelevant.
   const affordable = shop.filter(i => i.cost <= s.money).length;
   return { kind: "rewards", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
-    affordable, ahead, audit: teamAudit(s, ahead) };
+    affordable, ahead, audit: teamAudit(run, ahead) };
 };
 
 // How much better the best offer after a reroll has to be than the best offer now, on the card's scale (about 10 a
@@ -336,7 +338,7 @@ const rerollAdvice = (preview, judge, now, money, afterBuys) => {
     const verdict = r.cost > money ? "short" : gain < REROLL_GAIN ? "keep" : r.cost > afterBuys ? "instead of buys" : "reroll";
     return { lock: r.lock, cost: r.cost, offers, best, gain: Math.round(gain * 10) / 10, verdict };
   });
-  return { n: preview.n, canLock: preview.canLock, locked: preview.locked, missed: preview.missed, rolls };
+  return { n: preview.n, canLock: preview.canLock, locked: preview.locked, missed: preview.missed, rolls, byLock: preview.byLock };
 };
 
 // `take Leftovers → Garchomp · buy Super Potion · reroll $500 → …`, for the watcher and the battle read.

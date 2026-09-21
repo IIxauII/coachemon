@@ -450,18 +450,29 @@ const edgeOver = (a, b) => {
   return gap > 0 ? name : null;
 };
 
-let cache = { key: null, value: null };
-export const biomeModel = (s, h) => {
+// `run` is the run read, whose memo keeps the model. The wave, the party's levels and standing are the run key's;
+// what the card reads beyond that — whether the tables have landed, the options on screen, each member's moveset
+// and the run's challenges — is its key within the run.
+export const biomeModel = (run, h) => {
+  const s = run.scene;
   const tables = readTables();
   const labels = h.config.options.map(o => String(o.label ?? ""));
-  const wave = s.currentBattle?.waveIndex ?? 0;
-  const everyone = s.getPlayerParty().filter(Boolean);
+  const everyone = run.facts.party;
   // Everyone fights in the next biome, because entering an X1 revives the fallen — except where the run calendar
   // says that heal doesn't revive (Hardcore, or a Limited Support with no heal at all).
   const party = healRevives(s) ? everyone : everyone.filter(p => p.hp > 0);
-  const key = JSON.stringify([!!tables, wave, labels, party.map(p => [p.id, p.level, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
+  const key = JSON.stringify([!!tables, labels, party.map(p => [p.id, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
-  if (cache.key === key) return cache.value;
+  const value = run.memo("biome", key, () => build(run, tables, labels, everyone, party));
+  if (value.kind) return value;
+  // A build that threw is the run read's `{ unavailable }`: the options unjudged, and the reason where the
+  // card would say it is still reading — never a kind-less card, which the panel can't draw.
+  return { kind: "biome", from: null, options: labels.map(label => ({ label, id: null })), pick: -1,
+    data: !!tables, trainers: false, fainted: 0, unread: value.unavailable };
+};
+const build = (run, tables, labels, everyone, party) => {
+  const s = run.scene;
+  const wave = run.facts.wave;
   const level = Math.max(1, ...everyone.map(p => p.level ?? 1));
   const luck = partyLuck(everyone, s, gameEvents());
   // The party judged as a whole, once for every option: the coverage table, the two matchup queries and what a catch
@@ -484,7 +495,6 @@ export const biomeModel = (s, h) => {
     fainted: everyone.length - party.length,
   };
   for (const o of options) delete o.raw;
-  cache = { key, value };
   return value;
 };
 

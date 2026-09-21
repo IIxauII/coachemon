@@ -221,9 +221,12 @@ const mount = opts => {
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  const { previewFor, previewNext, previewCheck, previewStats } = globalThis.__hud["48-preview"];
+  const { previewFor, previewNext, previewArm, previewCheck, previewStats } = globalThis.__hud["48-preview"];
   const { drawPreview } = globalThis.__hud["95-render-preview"], { previewSummary } = globalThis.__hud["48-preview"];
-  return { scene, offsets, pv: { previewFor, previewNext, previewCheck, previewStats, drawPreview, previewSummary } };
+  // The preview is read through the run read, as the card reads it: each call here opens one.
+  const { readRun } = globalThis.__hud["26-run"];
+  const onRun = fn => (s, ...a) => readRun(s, run => fn(run, ...a));
+  return { scene, offsets, pv: { previewFor: onRun(previewFor), previewNext: onRun(previewNext), previewArm, previewCheck, previewStats, drawPreview, previewSummary } };
 };
 
 const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.double, levels: m.levels,
@@ -326,6 +329,7 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
 {
   const { scene, pv } = mount({ wave: 12 });
   const m = pv.previewNext(scene);
+  pv.previewArm(m); // what the tick does with the card's next-wave preview
   playWave(scene, 13); // the same seed, so every field should score a hit
   pv.previewCheck(scene);
   let stats = pv.previewStats();
@@ -333,6 +337,7 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   assert.equal(stats.miss.levels + stats.miss.foes + stats.miss.type + stats.miss.double, 0, JSON.stringify(stats.last));
   // Now a wave the preview never saw coming: the battle on the field disagrees with the prediction.
   const next = pv.previewFor(scene, 14);
+  pv.previewArm(next);
   scene.currentBattle = new FakeBattle(scene.gameMode, { waveIndex: 14, battleType: 1, trainer: makeTrainer(scene, { name: "Ghost", type: 9, size: 1 }), double: true });
   scene.currentBattle.enemyParty = [mon(species(6), 99)];
   pv.previewCheck(scene);
@@ -372,11 +377,12 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   assert.deepEqual(arenaArgs, [[0, 3]], `the fallback passes the same: ${JSON.stringify(arenaArgs)}`);
 }
 
-// ---- 7b. A look-ahead to a far wave is never scored against the wave being played: only the next wave is.
+// ---- 7b. A look-ahead to a far wave is never scored against the wave being played: only the next wave is armed,
+// and a read arms nothing — reading the far wave after arming leaves the prediction where it was.
 {
   const { scene, pv } = mount({ wave: 12 });
-  pv.previewNext(scene);       // wave 13 — this is the one the tally should score
-  pv.previewFor(scene, 20);    // a look-ahead, which must not take its place
+  pv.previewArm(pv.previewNext(scene)); // wave 13 — this is the one the tally should score
+  pv.previewFor(scene, 20);             // a look-ahead, which must not take its place
   playWave(scene, 13);
   pv.previewCheck(scene);
   const stats = pv.previewStats();

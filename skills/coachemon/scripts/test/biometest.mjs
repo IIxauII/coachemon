@@ -337,4 +337,20 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(late > plain);
 }
 
+// ---- 5. A build that throws: the run read's `{ unavailable }` is drawn as an unjudged card that says why — the
+// panel keeps going, rather than dying on a card with no kind (a DRAW it can't find).
+{
+  const broken = team();
+  broken[0].getTypes = () => { throw new Error("no types"); };
+  const { el, model } = mount({ party: broken });
+  console.log(`== build throws\n${lines(el)}`);
+  const m = model();
+  jsonSafe(m, "model");
+  assert.equal(m.kind, "biome");
+  assert.equal(m.pick, -1);
+  assert.deepEqual(m.options.map(o => o.label), ["Swamp", "Construction Site"]);
+  assert.equal(m.unread, "biome: no types");
+  assert.equal(globalThis.__coachHud.summary().biome, "Swamp · Construction Site");
+}
+
 console.log("ok");

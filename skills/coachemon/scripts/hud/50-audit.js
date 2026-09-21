@@ -233,17 +233,20 @@ const weakestLink = (party, foes, wave) => {
 };
 
 // ---- The audit
-// `ahead`: 49-ahead's model (for the roster, when it is near enough to be named). Cached on everything it reads.
-let cache = { key: null, value: null };
-export const teamAudit = (s, ahead) => {
-  const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];
+// `run`: the run read, whose memo keeps the audit; `ahead`: 49-ahead's model (for the roster, when it is near enough
+// to be named). What it reads beyond the run key — the roster it was handed and each member's moveset — is the key
+// within it.
+export const teamAudit = (run, ahead) => {
+  const party = run.facts.party;
   if (!party.length) return null;
-  const wave = s.currentBattle?.waveIndex ?? 0;
   const next = ahead?.next;
   const foes = next?.foes?.length ? next.foes : [];
-  const key = JSON.stringify([wave, next?.wave, foes.map(f => [f.name, f.level]), (s.modifiers ?? []).length,
-    party.map(p => [p.id, p.species?.speciesId, p.level, p.hp > 0, (p.moveset ?? []).map(m => m?.moveId)])]);
-  if (cache.key === key) return cache.value;
+  const key = JSON.stringify([next?.wave, foes.map(f => [f.name, f.level]), party.map(p => [p.id, (p.moveset ?? []).map(m => m?.moveId)])]);
+  return run.memo("audit", key, () => build(run, party, next, foes));
+};
+const build = (run, party, next, foes) => {
+  const s = run.scene;
+  const wave = run.facts.wave;
   const double = tryDo(() => doubleOdds(s, wave + 1), 0);
   const findings = [];
   if (foes.length) {
@@ -273,9 +276,7 @@ export const teamAudit = (s, ahead) => {
       ?? sorted.find(f => f.kind === "slot" && f.mon === mon);
     if (at) at.relearn = fix;
   }
-  const value = { wave, vs: foes.length ? { wave: next.wave, who: next.trainer ?? next.label } : null, findings: sorted };
-  cache = { key, value };
-  return value;
+  return { wave, vs: foes.length ? { wave: next.wave, who: next.trainer ?? next.label } : null, findings: sorted };
 };
 
 // `4 issues: Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon …`, what loses

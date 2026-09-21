@@ -166,8 +166,10 @@ export const versionAtLeast = (version, least) => {
 const QUEUE_METHODS = ["pushPhase", "unshiftPhase", "pushNew", "unshiftNew", "queueMessage", "queueAbilityDisplay", "hideAbilityBar", "queueFaintPhase"];
 let sandboxBreaches = 0; // times a restore didn't match — surfaced on the panel, never expected
 export const sandboxBreachCount = () => sandboxBreaches;
+// @only 25-turn, 26-run, 20-enemy-ai, tests: sandbox
 export const sandbox = (s, fn) => {
-  const pm = s.phaseManager;
+  // A scene without a phase manager (a mock, mid-teardown) has no queue to mute; the restores below are no-ops on it.
+  const pm = s.phaseManager ?? {};
   const queue = QUEUE_METHODS.filter(k => typeof pm[k] === "function").map(k => [k, Object.prototype.hasOwnProperty.call(pm, k), pm[k]]);
   const rnd = Phaser.Math.RND.state();
   const battle = s.currentBattle;
@@ -196,6 +198,17 @@ export const sandbox = (s, fn) => {
     if (Phaser.Math.RND.state() !== rnd || (battle && battle.battleSeedState !== seed)) sandboxBreaches++;
   }
 };
+// The two reads that open a sandbox — the turn read (25-turn) and the run read (26-run) — never look at the game at
+// once: each opens while nothing else is reading and throws if the other is. Sequential, never nested, so "the one
+// sandbox this refresh" stays true of each. Only those two files hold the latch.
+// @only 25-turn, 26-run, tests: openRead, closeRead
+let reading = null;
+export const openRead = name => {
+  if (reading) throw new Error(`${name} read while a ${reading} read is open`);
+  reading = name;
+};
+export const closeRead = () => { reading = null; };
+
 // Game-code calls only run while the game is waiting on a player decision: no phase is mid-execution, and the
 // enemy's decisions for the turn haven't been made yet. "check-switch" is the free "Will you switch?" prompt at an
 // encounter's start (and its party screen); "faint-switch" replaces a fainted mon. A U-turn-style mid-turn switch

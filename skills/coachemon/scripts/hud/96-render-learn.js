@@ -47,6 +47,8 @@ export const drawLearn = m => {
   const gain = (m.decision === "learn" || (m.decision === "skip" && m.gain < 0)) && m.gain
     ? h("span", { ...dim, fontWeight: "normal", marginLeft: "6px" }, `${m.gain > 0 ? "+" : "−"}${Math.abs(m.gain)} power`) : null;
   const verdict = h("div", { color: m.verdict[1], fontWeight: "bold", marginTop: "3px" }, m.verdict[0], view() === "full" ? gain : null);
+  // The next big fight went unread, so the roster fits above are missing: said once, dim, only when it happened.
+  const blind = m.blind ? line("", "#9aa", h("span", dim, `next big fight unread: ${m.blind}`)) : null;
   if (view() === "mini") {
     return [header, row(m.move, "✚", "#6d6"), m.forget >= 0 ? row(m.moves[m.forget], "✕", "#e55", warnAt(m.forget)) : null,
       m.forget >= 0 ? teamLine([loses].filter(Boolean)) : null, verdict].filter(Boolean);
@@ -54,5 +56,5 @@ export const drawLearn = m => {
   return [header, row(m.move, "✚", "#6d6"),
     h("div", { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" }),
     ...m.moves.map((x, i) => (i === m.forget ? row(x, "✕", "#e55", warnAt(i)) : i === slot ? row(x, "↔", "#fa4", warnAt(i)) : row(x, "·", "#9aa"))),
-    teamLine(teamParts), verdict].filter(Boolean);
+    teamLine(teamParts), blind, verdict].filter(Boolean);
 };

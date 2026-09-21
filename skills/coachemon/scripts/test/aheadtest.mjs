@@ -147,7 +147,9 @@ const mount = opts => {
   eval(bundle("hud", { expose: true }));
   const { aheadModel, partyLuck, learnRoster, doubleOdds } = globalThis.__hud["49-ahead"];
   const { drawAhead } = globalThis.__hud["95-render-ahead"], { aheadSummary } = globalThis.__hud["49-ahead"];
-  return { scene, ah: { aheadModel, partyLuck, drawAhead, aheadSummary, learnRoster, doubleOdds } };
+  // The look-ahead is read through the run read, as the card reads it: each call here opens one.
+  const { readRun } = globalThis.__hud["26-run"];
+  return { scene, ah: { aheadModel: s => readRun(s, aheadModel), partyLuck, drawAhead, aheadSummary, learnRoster, doubleOdds } };
 };
 
 // Ice Beam answers the rival's Garchomp (Dragon/Ground), Earthquake its Lucario (Fighting/Steel).
