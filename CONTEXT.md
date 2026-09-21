@@ -77,7 +77,19 @@ What the game is actually asking, as a whole. A screen is *not* the same as a **
 
 ## Card
 
-The **coach**'s advice for the decision the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it.
+The **coach**'s advice for the decision the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it. A card is shown as a **strip** over a **drawer** of **group**s.
+
+## Group
+
+One named part of a **card**: the thing to act on now, the foes in front of you, the fight plan, the road ahead, the footnotes. A card is a list of groups and nothing else, and the names come from one closed set, so a group means the same thing on every card it appears on — which is what lets the **drawer** remember which one the player was reading as the cards change under it. Every card has an act group, whatever kind of decision it is: on a card whose call lives inside a list of choices, the coach states that call as the act group's own first line. A group is drawn one way only, so a card never trades what it says for height.
+
+## Strip
+
+The one line of a **card** that is always on screen: its **verdict**, the first line of its act **group**, and what the card is about. It may run to two lines rather than clip that line, and it stays up while the **drawer** is open — the thing to do now is never a click away.
+
+## Drawer
+
+Where a **card**'s **group**s sit: one tab each, one group shown, that group's summary at its head. The player opens it, shuts it and picks the tab; it never opens, shuts or switches tab on its own. Shutting it leaves the **strip**.
 
 ## Minigame turn
 
