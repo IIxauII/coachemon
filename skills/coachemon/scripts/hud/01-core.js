@@ -166,7 +166,7 @@ export const versionAtLeast = (version, least) => {
 const QUEUE_METHODS = ["pushPhase", "unshiftPhase", "pushNew", "unshiftNew", "queueMessage", "queueAbilityDisplay", "hideAbilityBar", "queueFaintPhase"];
 let sandboxBreaches = 0; // times a restore didn't match — surfaced on the panel, never expected
 export const sandboxBreachCount = () => sandboxBreaches;
-// @only 25-turn, 26-run, 20-enemy-ai, 46-encounter, 48-preview, 50-reroll, tests: sandbox
+// @only 25-turn, 26-run, 20-enemy-ai, 46-encounter, 50-reroll, tests: sandbox
 export const sandbox = (s, fn) => {
   // A scene without a phase manager (a mock, mid-teardown) has no queue to mute; the restores below are no-ops on it.
   const pm = s.phaseManager ?? {};

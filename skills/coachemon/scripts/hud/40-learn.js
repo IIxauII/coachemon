@@ -704,7 +704,10 @@ export const learnAdvice = (pk, mv, ctx = {}) => {
 };
 
 export const learnModel = ({ pk, mv, double, party, roster = null }) => {
-  const { plan } = learnAdvice(pk, mv, { double, party: party?.length ? party : [pk], roster });
+  // A roster the run read could not build: the move is judged blind, and the card says so (`blind`) rather than
+  // silently scoring as if no big fight were near.
+  const blind = roster?.unavailable ?? null;
+  const { plan } = learnAdvice(pk, mv, { double, party: party?.length ? party : [pk], roster: blind ? null : roster });
   const { moves, incoming, forget, compare, team } = plan;
   const verdict = {
     free: ["Learns it — free slot", "#6d6"],
@@ -715,7 +718,7 @@ export const learnModel = ({ pk, mv, double, party, roster = null }) => {
   }[plan.kind];
   return {
     kind: "learn", icon: iconOf(pk), name: pk.name, move: incoming, moves, forget, compare, verdict,
-    decision: plan.kind, gain: plan.gain, atk: plan.atk, spa: plan.spa, team,
+    decision: plan.kind, gain: plan.gain, atk: plan.atk, spa: plan.spa, team, blind,
   };
 };
 

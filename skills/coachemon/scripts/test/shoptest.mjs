@@ -632,8 +632,10 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   const hud = globalThis.__hud;
-  const { rewardsModel } = hud["52-shop"], { rerollCheck, rerollStats } = hud["50-reroll"];
+  const { rerollCheck, rerollStats } = hud["50-reroll"];
   const { cardSummary } = hud["60-card"], { tick } = hud["98-tick"];
+  // The rewards card is read through the run read, as the panel reads it: each call here opens one.
+  const rewardsModel = (s, h) => hud["26-run"].readRun(s, run => hud["52-shop"].rewardsModel(run, h));
   globalThis.__sm = rewardsModel;
   globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollCheck, rerollStats, cardSummary,
     setRewardFns: hud["04-game-tables"].setRewardFns, tick, HELD: hud["51-items"].HELD, rewardContext: hud["51-items"].rewardContext };

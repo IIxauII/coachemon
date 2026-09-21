@@ -100,7 +100,9 @@ const shopTier = t => {
 // Forms that need the key item: mega forms for the Mega Bracelet, gigantamax for the Dynamax Band.
 const hasFormKey = (p, re) => [p.species, p.fusionSpecies].some(sp => (sp?.forms ?? []).some(f => re.test(f?.formKey ?? "")));
 
-export const rewardsModel = (s, h) => {
+// `run` is the run read: the look-ahead, the audit and the reroll preview are all read through it.
+export const rewardsModel = (run, h) => {
+  const s = run.scene;
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
   // The reward before a big fight is the last chance to patch the team up. What counts as one is the run calendar's
@@ -108,7 +110,7 @@ export const rewardsModel = (s, h) => {
   // fallback when the live build hides the game mode. `gauntlet` is the Elite Four case: more than one big fight
   // before the next full heal, so the whole party has to last, not just the lead.
   const wave = s.currentBattle?.waveIndex ?? 0;
-  const ahead = aheadModel(s);
+  const ahead = aheadModel(run);
   const bossNext = waveKind(s, wave + 1) != null;
   const gauntlet = (ahead?.fightsBeforeHeal ?? 0) >= 2;
   const hurtBelow = gauntlet ? 90 : bossNext ? 80 : 60;

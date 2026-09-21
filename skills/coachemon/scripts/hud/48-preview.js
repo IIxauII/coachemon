@@ -45,7 +45,11 @@
 // standing "if nothing changes" line says. Nothing here is promised: `previewCheck` scores every field against the
 // wave when it actually arrives, a field that has ever been wrong is shown with `!`, and `window.__coachHud.preview()`
 // prints the tally.
-import { TYPES, iconOf, sandbox, typesOf } from "./01-core.js";
+//
+// The preview is read through the **run read** (26-run): `previewFor(run, w)` replays inside the run's one sandbox
+// and keeps its answer in the run's memo, keyed by the wave — every other input the replay reads is in the run key
+// itself, so a catch, an evolution, a shop pick or a biome change drops it with everything else.
+import { TYPES, iconOf, typesOf } from "./01-core.js";
 import { arenaRebuiltBetween, hasTrainers, isGruntWave, kindIsRolled } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { isCoverage, partyLuck } from "./08-party.js";
@@ -271,7 +275,11 @@ const hasBugNet = s => (s.modifiers ?? []).some(m => m?.constructor?.name === "B
 const FIELDS = ["type", "trainer", "foes", "double", "levels"];
 const stats = { checked: 0, hit: {}, miss: {}, last: null };
 for (const f of FIELDS) { stats.hit[f] = 0; stats.miss[f] = 0; }
-let predicted = null; // the last model handed out, kept until its wave arrives
+let predicted = null; // the model armed for the wave ahead, kept until that wave arrives
+// Arms the tally with the model of the wave the player is about to walk into. 98-tick calls it with the card's
+// preview, and only when it is the next wave's: a look-ahead to a fight ten waves out would be scored against the
+// wrong battle and mark honest fields `!`. A read arms nothing — that used to be `previewFor`'s side effect.
+export const previewArm = value => { if (value && !value.unavailable) predicted = { ...value, scored: false }; };
 
 const speciesKey = foes => foes.map(f => f.name).sort().join(",");
 // Called every tick. When the predicted wave is the one being played and its enemy party is on the field, score
@@ -307,37 +315,27 @@ export const previewStats = () => ({ ...stats, hit: { ...stats.hit }, miss: { ..
 const everMissed = field => stats.miss[field] > 0;
 
 // ---- The model the card draws
-// Keyed by wave *and* by every input the replay reads, and a few waves deep: 49-ahead asks for the next big fight
-// in the same tick that the card asks for the next wave, and a one-slot cache would replay both every second.
-const CACHE_MAX = 6;
-const cache = new Map();
-export const previewFor = (s, w) => {
+// `run` is the run read. The answer is memoised under it by the wave — 49-ahead asks for the next big fight in the
+// same refresh that the card asks for the next wave, and both are kept. A replay that throws is the run read's
+// `{ unavailable }`, shaped here as a preview so the card says why.
+export const previewFor = (run, w) => {
+  const s = run.scene;
   if (!s?.currentBattle || w == null || w < 1) return null;
   const missing = NEEDED.filter(k => typeof s[k] !== "function");
   if (!hasSpeciesRoll(s)) missing.push("randomSpecies");
   if (missing.length || typeof s.gameMode?.isFixedBattle !== "function" || !s.seed) {
     return { kind: "preview", wave: w, unavailable: missing[0] ? `the live build has no ${missing[0]}` : "no run seed" };
   }
-  // Everything the replay reads besides the seed: a catch, an evolution, a shop pick or a biome change re-rolls it.
-  const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];
-  const key = JSON.stringify([s.seed, w, s.arena?.biomeId, s.waveCycleOffset, s.offsetGym,
-    party.map(p => [p.species?.speciesId, p.level, p.luck]), (s.modifiers ?? []).length,
-    (s.mysteryEncounterSaveData?.encounteredEvents ?? []).length, s.mysteryEncounterSaveData?.encounterSpawnChance]);
-  const hit = cache.get(key);
-  if (hit) return hit;
-  const value = tryDo(() => ({ kind: "preview", ...quiet(() => sandbox(s, () => replay(s, w, party))) }),
-    { kind: "preview", wave: w, unavailable: "the replay threw" });
-  // Measured, not claimed: a field this run has ever got wrong is listed here and the card marks it `?`.
-  value.missed = FIELDS.filter(f => everMissed(f) && value.confidence?.[f]);
-  cache.set(key, value);
-  while (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value);
-  // Only the wave actually being walked into is scored on arrival. A look-ahead to a fight ten waves out is never
-  // the next wave, so handing it to the tally would score it against the wrong battle and mark honest fields `!`.
-  if (!value.unavailable && w === (s.currentBattle?.waveIndex ?? 0) + 1) predicted = { ...value, scored: false };
-  return value;
+  const value = run.memo("preview", w, () => {
+    const model = { kind: "preview", ...quiet(() => replay(s, w, run.facts.party)) };
+    // Measured, not claimed: a field this run has ever got wrong is listed here and the card marks it `?`.
+    model.missed = FIELDS.filter(f => everMissed(f) && model.confidence?.[f]);
+    return model;
+  });
+  return value.kind ? value : { kind: "preview", wave: w, unavailable: value.unavailable };
 };
 // The wave the player is about to walk into.
-export const previewNext = s => previewFor(s, (s?.currentBattle?.waveIndex ?? 0) + 1);
+export const previewNext = run => previewFor(run, run.facts.wave + 1);
 
 // ---- How the card and its one-line summary word a field, and how sure the replay is of it.
 // A field the preview can't pin is marked: `~` it holds only while the game draws what this replay draws, `?` it is
