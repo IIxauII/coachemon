@@ -1,0 +1,649 @@
+<!doctype html>
+<!--
+  PROTOTYPE — throwaway. Ticket #334, map #332.
+
+  Question: do the three coach-panel directions survive the cards that actually get drawn?
+
+  Twelve renders on one page: directions 3a "Verdict first", 3b "Urgency blocks", 3c "Strip & drawer"
+  against the four cards that strain a layout, switchable via ?dir=&card= and the bottom bar.
+  Nothing here is meant to be kept. No build step: open the file.
+
+  Skin values are lifted from the design project's 3a/3b/3c mockups, which take them from the game's
+  own src/ui/text.ts. Pixelify Sans / Silkscreen stand in for emerald / pkmnems, as they do there.
+  Mon icons, type pills and status icons are dashed boxes at their real code heights: the live panel
+  pulls them off the game's texture atlas.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Coach panel — three directions, four hard cards</title>
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* the game's ink, from src/ui/text.ts — each colour with its paired shadow */
+    --ink: #f8f8f8;        --ink-sh: #6b5a73;
+    --gold: #f8b050;       --gold-sh: #c07800;
+    --blue: #40c8f8;       --blue-sh: #006090;
+    --green: #78c850;      --green-sh: #306850;
+    --red: #f88880;        --red-sh: #a03830;
+    --gray: #a0a0a0;       --gray-sh: #636363;
+    --pink: #e331c5;       --pink-sh: #5c1450;
+
+    /* window frame */
+    --frame: #8f83a0;
+    --frame-edge: #241d2b;
+    --fill: rgba(43, 36, 56, .95);
+    --fill-solid: #3a3048;
+    --rule: #4a4059;
+    --blue-fill: #1d3a4d;
+    --green-fill: #243c2c;
+    --red-fill: #4a2426;
+    --gold-fill: #4a3a1e;
+
+    --emerald: 'Pixelify Sans', emerald, monospace;
+    --pkmnems: 'Silkscreen', pkmnems, monospace;
+  }
+
+  body {
+    margin: 0; background: #0f0f14; color: #9aa;
+    font: 13px/1.5 ui-monospace, Menlo, monospace;
+    padding: 24px 24px 96px;
+  }
+  h1 { color: #eee; font-size: 15px; margin: 0 0 4px; }
+  .sub { max-width: 900px; margin: 0 0 20px; }
+  .note { color: #778; font-size: 11px; }
+
+  /* ---- the stage: pokerogue.net at 16:9, plus the DOM letterbox bar #333 found off-16:9 ---- */
+  .stage {
+    position: relative; width: 960px; height: 600px; border-radius: 8px; overflow: hidden;
+    background: #05050a;
+  }
+  .canvas {
+    position: absolute; left: 0; right: 0; top: 30px; height: 540px;  /* 960x540 = 16:9 */
+    background: #181826;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 8px, transparent 8px 16px);
+  }
+  .canvas::after {
+    content: 'pokerogue.net canvas · 1920×1080 Scale.FIT';
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #4a4a60; font-size: 11px; letter-spacing: .08em;
+  }
+  .letterbox { position: absolute; left: 0; right: 0; height: 30px; color: #2e2e3c; font-size: 9px;
+    display: flex; align-items: center; justify-content: center; letter-spacing: .1em; }
+  .letterbox.top { top: 0 } .letterbox.bottom { bottom: 0 }
+  /* the game's own furniture, so occlusion is visible: message box + command menu own the bottom 27% */
+  .game-msg { position: absolute; left: 0; right: 0; bottom: 30px; height: 146px;
+    border-top: 2px solid #2a2438; background: rgba(20,16,30,.55);
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 0 12px;
+    color: #3c3650; font-size: 10px; letter-spacing: .08em; }
+  .game-hud-tr { position: absolute; top: 38px; right: 12px; color: #3c3650; font-size: 10px;
+    letter-spacing: .08em; text-align: right; }
+
+  /* ---- the panel's window chrome, shared by all three directions ---- */
+  .win { padding: 2px; border-radius: 6px; background: var(--frame);
+         box-shadow: 0 0 0 1px var(--frame-edge), 0 2px 0 rgba(0,0,0,.35); user-select: none; }
+  .win > .in { border-radius: 5px; background: var(--fill);
+               box-shadow: inset 0 0 0 1px rgba(255,255,255,.1);
+               color: var(--ink); font: 15px/1.35 var(--emerald); text-shadow: 1px 1px 0 var(--ink-sh);
+               padding: 6px 8px 5px; }
+  .label { font: 700 8px/1 var(--pkmnems); letter-spacing: .12em; }
+  .g  { color: var(--gold);  text-shadow: 1px 1px 0 var(--gold-sh) }
+  .b  { color: var(--blue);  text-shadow: 1px 1px 0 var(--blue-sh) }
+  .gr { color: var(--green); text-shadow: 1px 1px 0 var(--green-sh) }
+  .r  { color: var(--red);   text-shadow: 1px 1px 0 var(--red-sh) }
+  .d  { color: var(--gray);  text-shadow: 1px 1px 0 var(--gray-sh) }
+  .p  { color: var(--pink);  text-shadow: 1px 1px 0 var(--pink-sh) }
+  .row { display: flex; align-items: center; gap: 5px }
+  .spacer { flex: 1 }
+  .btn { cursor: pointer; padding: 1px 4px 0; border-radius: 3px; background: var(--rule);
+         box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); color: var(--ink); font-size: 12px;
+         text-shadow: none; flex: none; }
+  .rule { flex: 1; height: 2px; background: var(--rule); box-shadow: 0 1px 0 rgba(255,255,255,.07) }
+
+  /* atlas stand-ins, at their real code heights */
+  .icon { display: inline-block; border: 1px dashed var(--frame); border-radius: 2px; flex: none }
+  .foe-icon { border-color: #6d6478 }
+  .pill { display: inline-flex; align-items: center; justify-content: center; height: 11px; width: 28px;
+          border: 1px dashed; border-radius: 2px; font: 400 6px/1 var(--pkmnems); text-shadow: none; flex: none }
+  .pill.big { height: 13px; width: 34px; font-size: 7px }
+  .hpbar { width: 36px; height: 5px; border-radius: 1px; background: var(--frame-edge);
+           box-shadow: 0 0 0 1px var(--ink-sh); overflow: hidden; flex: none }
+  .hpbar > i { display: block; height: 100% }
+
+  /* ---- the switcher: deliberately not part of the design being judged ---- */
+  #bar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 99;
+         display: flex; align-items: stretch; gap: 0; background: #fff; color: #111;
+         border-radius: 999px; box-shadow: 0 6px 24px rgba(0,0,0,.5); overflow: hidden;
+         font: 12px/1 ui-sans-serif, system-ui, sans-serif; }
+  #bar .grp { display: flex; align-items: center }
+  #bar .grp + .grp { border-left: 1px solid #ddd }
+  #bar button { border: 0; background: none; cursor: pointer; padding: 10px 12px; font: inherit; color: #111 }
+  #bar button:hover { background: #eee }
+  #bar .cur { padding: 10px 6px; min-width: 210px; text-align: center; font-weight: 600; white-space: nowrap }
+  #bar .k { color: #888; font-weight: 400 }
+</style>
+</head>
+<body>
+
+<h1>Coach panel — three directions against the cards that strain them</h1>
+<p class="sub">
+  Prototype for <span class="note">#334</span>. Pick a direction and a card with the bar at the bottom, or
+  <span class="note">←/→</span> for the card and <span class="note">↑/↓</span> for the direction. The URL carries both.
+  The stage shows the game's own furniture — message box, command menu, wave/money — so occlusion is visible.
+</p>
+
+<div class="stage">
+  <div class="letterbox top">DOM LETTERBOX (off-16:9 only)</div>
+  <div class="canvas"></div>
+  <div class="game-hud-tr">W15<br>₽ 1,240</div>
+  <div class="game-msg"><span>MESSAGE BOX + COMMAND MENU — the bottom 27%</span></div>
+  <div class="letterbox bottom">DOM LETTERBOX (off-16:9 only)</div>
+  <div id="mount"></div>
+</div>
+
+<p class="note" id="verdictnote" style="max-width:900px; margin-top:14px"></p>
+
+<div id="bar"></div>
+
+<script>
+// ============================================================================
+// HELPERS — DOM shorthand and the atlas stand-ins. Shared because they are
+// vocabulary, not layout: every direction draws the same mon icon and type pill.
+// ============================================================================
+const h = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'cls') n.className = v;
+    else if (k === 'css') n.style.cssText = v;
+    else n.setAttribute(k, v);
+  }
+  n.append(...kids.flat().filter(k => k != null && k !== false));
+  return n;
+};
+const sp = (cls, text, css) => h('span', { cls, css }, text);
+
+// the game's type colours, ink over a darker dashed edge
+const TYPE = {
+  normal: ['#d0d0c0', '#7a7a68'], fire: ['#e8c08a', '#8a6a4a'], water: ['#a8c8e8', '#4a6a8a'],
+  electric: ['#e8dca0', '#8a7a48'], grass: ['#a8d8b0', '#4a7a52'], ice: ['#b8e0e8', '#4a7a88'],
+  fighting: ['#e0a898', '#8a5a48'], poison: ['#d0b0d8', '#6a4a7a'], ground: ['#e0cca0', '#8a7248'],
+  flying: ['#c8c0e8', '#6a5a8a'], psychic: ['#f0b0c0', '#8a4a5a'], bug: ['#c8d8a0', '#6a7a4a'],
+  rock: ['#d8c8a0', '#7a6a48'], ghost: ['#b8a8d0', '#5a4a7a'], dragon: ['#b0b8e8', '#4a528a'],
+  dark: ['#b0a098', '#5a4a44'], steel: ['#c8c8d8', '#6a6a7a'], fairy: ['#f0c0d8', '#8a5a72'],
+};
+const ABBR = { psychic: 'PSYCH', fighting: 'FIGHT', electric: 'ELECTR', poison: 'POISN', normal: 'NORML' };
+const pill = (t, big) => {
+  const [ink, edge] = TYPE[t] || ['#c0c0c0', '#666'];
+  return sp('pill' + (big ? ' big' : ''), (ABBR[t] || t).toUpperCase(),
+    `color:${ink}; border-color:${edge}`);
+};
+const icon = (name, size = 26, foe) =>
+  h('span', { cls: 'icon' + (foe ? ' foe-icon' : ''), title: name,
+              css: `width:${size}px; height:${size}px` });
+const hp = (pct, w = 36) => {
+  const col = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--gold)' : 'var(--red)';
+  return h('span', { cls: 'hpbar', css: `width:${w}px`, title: pct + '%' },
+    h('i', { css: `width:${pct}%; background:${col}` }));
+};
+// the verdict's own ink: one colour per call, not per urgency
+const VERDICT_INK = { easy: 'gr', trainer: 'g', danger: 'r', catch: 'b', fight: 'g' };
+
+// ============================================================================
+// TOKENS — one inline run each. Rows are lists of these, and every direction
+// draws a row the same way; what the directions disagree about is the shell
+// around the rows, which is the thing being judged.
+// ============================================================================
+const T = {
+  dim: s => ({ t: 'ink', c: 'd', s }),
+  ours: s => ({ t: 'ink', c: 'b', s }),      // arrow law: what WE do
+  theirs: s => ({ t: 'ink', c: 'r', s }),    // arrow law: what THEY do to us
+  later: s => ({ t: 'ink', c: 'p', s }),     // arrow law: what is LATER
+  good: s => ({ t: 'ink', c: 'gr', s }),
+  gold: s => ({ t: 'ink', c: 'g', s }),
+  mon: (name, size = 20) => ({ t: 'mon', name, size }),
+  foemon: (name, size = 26) => ({ t: 'mon', name, size, foe: true }),
+  type: (name, big) => ({ t: 'type', name, big }),
+  hp: (pct, w) => ({ t: 'hp', pct, w }),
+  cap: (c, s) => ({ t: 'cap', c, s }),        // Silkscreen small-caps label
+  tiny: s => ({ t: 'tiny', s }),
+  btn: (s, title) => ({ t: 'btn', s, title }),
+  gap: () => ({ t: 'gap' }),
+};
+
+const drawToken = k => {
+  if (typeof k === 'string') return document.createTextNode(k + ' ');
+  switch (k.t) {
+    case 'ink': return sp(k.c, k.s + ' ');
+    case 'mon': return icon(k.name, k.size, k.foe);
+    case 'type': return pill(k.name, k.big);
+    case 'hp': return hp(k.pct, k.w);
+    case 'cap': return sp('label ' + k.c, k.s);
+    case 'tiny': return sp('d', k.s + ' ', 'font-size:11px');
+    case 'btn': return h('span', { cls: 'btn', title: k.title }, k.s);
+    case 'gap': return h('span', { cls: 'spacer' });
+  }
+};
+// glyph in the panel's real 14px gutter, then the row's runs
+const drawRow = r => h('div', {
+    cls: 'row',
+    css: `flex-wrap:wrap; gap:1px; ${r.indent ? 'margin-left:14px;' : ''}${r.tiny ? 'font-size:11px;' : ''}`,
+  },
+  h('span', { cls: r.gc || 'd', css: 'width:14px; flex:none' }, r.g || ''),
+  (r.parts || []).map(drawToken));
+const drawRows = rows => rows.map(drawRow);
+
+// ============================================================================
+// CARD MODELS — the cards that strain a layout, from the text goldens.
+// Each card is a list of GROUPS with a role; the directions disagree about how
+// to shell those groups, which is exactly what this prototype asks.
+// ============================================================================
+const CARDS = {
+
+  // battletest.txt:254-267 — the widest turn line the model produces.
+  return: {
+    name: 'Double with a return',
+    strains: 'battletest.txt:254 (doubleReturn). Two field slots, two enemy switches, and the second switch-in is the '
+      + 'mon the other slot is withdrawing this same turn — so the panel carries four full mon-to-mon lines before the '
+      + 'foe rows start. Watch the “returns from the other slot” line: it is the longest single run the card has.',
+    header: { emoji: '🎯', title: 'W89 · Tester', right: [T.mon('Blastoise', 18), T.dim('›'), T.mon('Venusaur', 18)] },
+    verdict: 'trainer',
+    groups: [
+      { role: 'act', label: '⚔ THIS TURN', ink: 'b', summary: [T.cap('gr', 'BOTH SLOTS ACT')], rows: [
+        { g: '⇆', gc: 'p', parts: [T.mon('Arcanine'), T.later('→'), T.mon('Gyarados'),
+            T.later('switches — moves aimed at it')] },
+        { g: '⇆', gc: 'p', parts: [T.mon('Ludicolo'), T.later('→'), T.mon('Arcanine'),
+            T.later('returns from the other slot — moves aimed at it')] },
+        { g: '⚔', gc: 'b', parts: [T.mon('Blastoise'), T.type('steel'), 'Flash Cannon', T.ours('→'),
+            T.mon('Arcanine'), T.gap(), T.tiny('2 hits then Wave Crash')] },
+        { g: '⚔', gc: 'b', parts: [T.mon('Venusaur'), T.type('grass'), 'Power Whip', T.ours('→'),
+            T.mon('Gyarados'), T.gap(), T.tiny('3 hits')] },
+        { g: '↺', gc: 'd', parts: [T.tiny('if it stays:'), T.tiny('Blastoise Wave Crash → Arcanine ·'),
+            T.tiny('Venusaur Sludge Bomb → Ludicolo')], tiny: true },
+      ]},
+      { role: 'foes', label: 'FOES 3', ink: 'g', summary: [T.cap('gr', 'WEAK TO WATER ×1')], rows: [
+        { g: '', parts: [T.foemon('Arcanine'), 'Arcanine', T.dim('L80'), T.type('fire'), T.gap(), T.hp(100)] },
+        { g: '', indent: true, tiny: true, parts: [T.good('▲ Water')] },
+        { g: '', parts: [T.foemon('Ludicolo'), 'Ludicolo', T.dim('L80'), T.type('water'), T.type('grass'),
+            T.gap(), T.hp(100)] },
+        { g: '', indent: true, tiny: true, parts: [T.good('▲ Poison'), T.theirs('✕ Water ×¼')] },
+        { g: '', parts: [T.foemon('Gyarados'), 'Gyarados', T.dim('L80'), T.type('water'), T.type('flying'),
+            T.gap(), T.hp(100)] },
+        { g: '✦', gc: 'g', indent: true, tiny: true, parts: [T.gold('⚠ Intimidate'), T.dim('▲ —'),
+            T.theirs('↯ Waterfall → Venusaur, moves first')] },
+      ]},
+      { role: 'plan', label: '♟ PLAN', ink: 'p', summary: [T.good('winnable'), T.dim('~3 steps')], rows: [
+        { g: '♟', gc: 'p', tiny: true, parts: [T.dim('no switches; Blastoise then Venusaur clean up'), T.gap(),
+            T.btn('+', 'Show the fight plan')] },
+      ]},
+    ],
+  },
+
+  // plannertest.txt:300-315 — guzma w165 turn 1 (live).
+  threat: {
+    name: 'Threat turn needing a switch',
+    strains: 'plannertest.txt:300 (guzma w165 turn 1). A threat tag on the mon being withdrawn, a priced switch-in '
+      + '(“takes ~23% · resists Iron Head”), three foe rows two of which carry a later-foe pick, and an opened plan '
+      + 'with a lock, five steps and a sacrifice. The now:/next: step labels eat 30px of an already narrow panel.',
+    header: { emoji: '🎯', title: 'W200 · Cyrus', right: [T.mon('Metagross', 18), T.dim('›'), T.mon('Mamoswine', 18)] },
+    verdict: 'danger',
+    groups: [
+      { role: 'act', label: '⚔ THIS TURN', ink: 'b', summary: [T.cap('r', 'SWITCH — OR LOSE MAMOSWINE')], rows: [
+        { g: '⇄', gc: 'g', parts: [T.dim('now'), T.mon('Mamoswine'), T.theirs('⚠'), T.type('steel'),
+            T.theirs('×2 100%'), T.gold('out ›'), T.mon('Metagross'), T.gold('in')] },
+        { g: '', indent: true, tiny: true, parts: [T.dim('· takes ~23% · resists Iron Head')] },
+        { g: '⚔', gc: 'b', parts: [T.dim('next'), T.mon('Metagross'), T.type('steel'), 'Meteor Mash',
+            T.ours('→'), T.mon('Mega Golisopod')] },
+      ]},
+      { role: 'foes', label: 'FOES 3', ink: 'g', summary: [T.cap('gr', 'WEAK TO GROUND ×1')], rows: [
+        { g: '', parts: [T.foemon('Mega Golisopod'), 'Mega Golisopod', T.dim('L153'), '👑', T.gap(), T.hp(100)] },
+        { g: '', indent: true, tiny: true, parts: [T.type('bug'), T.type('steel'), T.dim('▲ —'),
+            T.theirs('↯ Iron Head → Metagross, 100% likely, after')] },
+        { g: '', parts: [T.foemon('Xurkitree'), 'Xurkitree', T.dim('L153'), T.type('electric'), T.gap(), T.hp(100)] },
+        { g: '', indent: true, tiny: true, parts: [T.good('▲ Ground'),
+            T.later('➜ Mamoswine Precipice Blades ~95% · 2 hits later')] },
+        { g: '', parts: [T.foemon('Buzzwole'), 'Buzzwole', T.dim('L159'), '👑', T.gap(), T.hp(100)] },
+        { g: '', indent: true, tiny: true, parts: [T.type('bug'), T.type('fighting'), T.dim('▲ —'),
+            T.theirs('↯ Lunge → Mamoswine, 100% likely, first')] },
+        { g: '', indent: true, tiny: true, parts: [T.later('➜ Mamoswine Precipice Blades ~32%'),
+            T.gold('⚠ loses trade later')] },
+      ]},
+      { role: 'plan', label: '♟ FIGHT PLAN', ink: 'p', open: true,
+        summary: [T.good('winnable'), T.dim('5 steps')], rows: [
+        { g: '♟', gc: 'p', parts: [T.cap('p', 'FIGHT PLAN'), T.gap(), T.good('winnable')] },
+        { g: '🔒', gc: 'gr', tiny: true, parts: [T.mon('Mamoswine', 16), T.dim('only answer to Xurkitree ~96%/turn')] },
+        { g: '1', gc: 'b', tiny: true, parts: [T.mon('Metagross', 16), T.gold('⇄'), 'Meteor Mash', T.ours('→'),
+            T.mon('Mega Golisopod', 16), T.dim('· falls · foe at 27%')] },
+        { g: '2', gc: 'b', tiny: true, parts: [T.mon('Golduck', 16), T.good('free'), 'Surf', T.ours('→'),
+            T.mon('Mega Golisopod', 16), T.dim('· KO · 100% left')] },
+        { g: '3', gc: 'b', tiny: true, parts: [T.mon('Mamoswine', 16), T.gold('⇄'), 'Precipice Blades', T.ours('→'),
+            T.mon('Xurkitree', 16), T.dim('· KO · 100% left')] },
+        { g: '4', gc: 'b', tiny: true, parts: [T.mon('Golduck', 16), T.gold('⇄'), 'Surf', T.ours('→'),
+            T.mon('Buzzwole', 16), T.dim('· sacrifice → Mamoswine in free')] },
+        { g: '5', gc: 'b', tiny: true, parts: [T.mon('Mamoswine', 16), T.good('free'), 'Precipice Blades',
+            T.ours('→'), T.mon('Buzzwole', 16), T.dim('· KO · 14% left')] },
+        { g: '✝', gc: 'g', tiny: true, parts: [T.mon('Golduck', 16),
+            T.dim('100% · sacrifice to Buzzwole so Mamoswine comes in free')] },
+      ]},
+    ],
+  },
+
+  // CONSTRUCTED. No golden renders a six-foe battle card: the tallest anywhere has three foe rows, and the header's
+  // `›` list is our actives, not the enemy roster. The six-foe roster and its plan are teamplantest.txt:1-13; the
+  // header and foe rows below are what the renderer would draw for it, since nothing in it caps either.
+  sixfoe: {
+    name: 'Six-foe trainer, plan open',
+    strains: 'CONSTRUCTED — teamplantest.txt:1 supplies the six-foe roster and its plan verbatim; the header send-in '
+      + 'and foe rows are extrapolated, because no golden draws a six-foe battle card (max is three foe rows, and '
+      + 'today the header’s › list is our actives, not the enemy roster). The tallest card the model can produce: '
+      + 'six-name header, three foe rows, and an eight-line plan with two saves, a lock and a sacrifice.',
+    header: { emoji: '🎯', title: 'W145 · Cyrus', right: [
+      T.mon('Honchkrow', 16), T.dim('›'), T.mon('Crobat', 16), T.dim('›'), T.mon('Gyarados', 16), T.dim('›'),
+      T.mon('Houndoom', 16), T.dim('›'), T.mon('Magnezone', 16), T.dim('›'), T.mon('Weavile', 16)] },
+    verdict: 'danger',
+    groups: [
+      { role: 'act', label: '⚔ THIS TURN', ink: 'b', summary: [T.cap('r', 'LIKELY LOST — CHIP WEAVILE')], rows: [
+        { g: '⚔', gc: 'b', parts: [T.mon('Morpeko'), T.type('electric'), 'Aura Wheel', T.ours('→'),
+            T.mon('Honchkrow'), T.gap(), T.tiny('1 hit')] },
+      ]},
+      { role: 'foes', label: 'FOES 6', ink: 'g', summary: [T.cap('gr', 'WEAK TO ELECTRIC ×2')], rows: [
+        { g: '', parts: [T.foemon('Honchkrow'), 'Honchkrow', T.dim('L140'), T.type('dark'), T.type('flying'),
+            T.gap(), T.hp(100)] },
+        { g: '', indent: true, tiny: true, parts: [T.good('▲ Electric ×2'),
+            T.theirs('↯ Brave Bird → Morpeko, moves after')] },
+        { g: '', parts: [T.foemon('Magnezone'), 'Magnezone', T.dim('L142'), T.type('electric'), T.type('steel'),
+            T.gap(), T.hp(100)] },
+        { g: '', indent: true, tiny: true, parts: [T.good('▲ Fighting'),
+            T.later('➜ Scrafty High Jump Kick ~100% · 2 hits later')] },
+        { g: '', parts: [T.foemon('Weavile'), 'Weavile', T.dim('L148'), '👑', T.type('dark'), T.type('ice'),
+            T.gap(), T.hp(100)] },
+        { g: '', indent: true, tiny: true, parts: [T.good('▲ Fighting ×4'),
+            T.theirs('↯ Knock Off → Morpeko, moves first')] },
+      ]},
+      { role: 'plan', label: '♟ FIGHT PLAN', ink: 'p', open: true,
+        summary: [T.theirs('likely lost'), T.dim('☠ Weavile')], rows: [
+        { g: '♟', gc: 'p', parts: [T.cap('p', 'FIGHT PLAN'), T.gap(), T.theirs('likely lost')] },
+        { g: '☠', gc: 'r', tiny: true, parts: [T.mon('Weavile', 16), '👑', T.dim('KOs 4/4 · win condition')] },
+        { g: '🛡', gc: 'gr', tiny: true, parts: [T.mon('Scrafty', 16),
+            T.dim('save for Weavile ~100%/turn'), T.gold('· KO’d first')] },
+        { g: '🛡', gc: 'gr', tiny: true, parts: [T.mon('Blastoise', 16), T.dim('save for Weavile ~74%/turn')] },
+        { g: '🔒', gc: 'gr', tiny: true, parts: [T.mon('Morpeko', 16),
+            T.dim('only answer to Crobat, Gyarados ~100%/turn')] },
+        { g: '🔒', gc: 'gr', tiny: true, parts: [T.mon('Scrafty', 16), T.dim('only answer to Magnezone ~100%/turn')] },
+        { g: '1', gc: 'b', tiny: true, parts: [T.mon('Morpeko', 16), 'Aura Wheel', T.ours('→'),
+            T.mon('Honchkrow', 16), T.dim('· KO · 100% left')] },
+        { g: '2', gc: 'b', tiny: true, parts: [T.mon('Venusaur', 16), T.gold('⇄'), 'Sludge Bomb', T.ours('→'),
+            T.mon('Weavile', 16), T.dim('· sacrifice → Blastoise in free')] },
+        { g: '3', gc: 'b', tiny: true, parts: [T.mon('Blastoise', 16), T.good('free'), 'Focus Blast', T.ours('→'),
+            T.mon('Weavile', 16), T.dim('· falls · foe at 50%')] },
+        { g: '4', gc: 'b', tiny: true, parts: [T.mon('Scrafty', 16), T.good('free'), 'High Jump Kick', T.ours('→'),
+            T.mon('Weavile', 16), T.dim('· falls · foe at 50%')] },
+        { g: '5', gc: 'b', tiny: true, parts: [T.mon('Morpeko', 16), T.good('free'), 'Aura Wheel', T.ours('→'),
+            T.mon('Weavile', 16), T.dim('· falls · foe at 50%')] },
+        { g: '✝', gc: 'g', tiny: true, parts: [T.mon('Venusaur', 16),
+            T.dim('29% · sacrifice to Weavile so Blastoise comes in free')] },
+        { g: '⚠', gc: 'r', tiny: true, parts: [T.theirs('likely lost:'),
+            T.dim('nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Blastoise')] },
+      ]},
+    ],
+  },
+
+  // rendertest.txt:48-58 — the only golden with the learn card's full chrome.
+  learn: {
+    name: 'Learn card, five moves + team',
+    strains: 'rendertest.txt:48 (learn team). Not a battle at all: no foes, no plan, no turn. Five move rows each '
+      + 'carrying a type, a name, a run of notes and a right-aligned power, plus a team line and a verdict. If a '
+      + 'direction’s whole structure is “the turn, then the threat, then the foes”, this is where it has nothing to '
+      + 'put in its own boxes.',
+    header: { emoji: '🎓', title: 'Espeon learns', right: [T.mon('Espeon', 18), T.tiny('Atk 65 / SpA 130')] },
+    verdict: 'easy',
+    groups: [
+      { role: 'act', label: '✚ LEARN', ink: 'b', summary: [T.good('forget Bite'), T.dim('+87 power')], rows: [
+        { g: '✚', gc: 'gr', parts: [T.type('ground'), 'Earth Power', T.tiny('SE on Rock/Steel/Fire…'),
+            T.gap(), T.dim('power 117')] },
+        { g: '✕', gc: 'r', parts: [T.type('dark'), 'Bite', T.gold('⚠ weak Atk'), T.gap(), T.dim('power 30')] },
+      ]},
+      { role: 'foes', label: 'KEPT 3', ink: 'g', summary: [T.dim('3 slots untouched')], rows: [
+        { g: '·', parts: [T.type('psychic'), 'Psychic', T.gap(), T.dim('power 191')] },
+        { g: '', indent: true, tiny: true, parts: [T.dim('SE on Poison · set move (Fast Attacker) · only Psychic move on team')] },
+        { g: '·', parts: [T.type('ghost'), 'Shadow Ball', T.gap(), T.dim('power 96')] },
+        { g: '', indent: true, tiny: true, parts: [T.dim('set move (Fast Attacker) · only Ghost move on team')] },
+        { g: '·', parts: [T.type('fairy'), 'Dazzling Gleam', T.gap(), T.dim('power 98')] },
+        { g: '', indent: true, tiny: true, parts: [T.dim('SE on Dragon/Dark · only Fairy move on team')] },
+      ]},
+      { role: 'plan', label: '🩺 TEAM', ink: 'g', summary: [T.gold('loses only Dark move')], rows: [
+        { g: '🩺', gc: 'g', tiny: true, parts: [T.good('+SE Steel/Electric'), T.dim('·'),
+            T.gold('⚠ loses only Dark move')] },
+        { g: '', parts: [T.good('Learn → forget Bite'), T.dim('+87 power')] },
+      ]},
+    ],
+  },
+
+  // encountertest.txt:253-262 — three options, each with a battle sub-line.
+  encounter: {
+    name: 'Mystery Encounter, 3 options',
+    strains: 'encountertest.txt:253 (mysterious challengers). Three options, each a long prose label plus a dim '
+      + 'sub-line — the card is all body and no structure. The verdict marks (★ take / · ok / ✗ avoid) are doing the '
+      + 'work the arrow law does elsewhere, so this is where a direction built on “ours / theirs / later” has no '
+      + 'arrow to colour.',
+    header: { emoji: '🎭', title: 'Mysterious Challengers', right: [T.tiny('great')] },
+    verdict: 'catch',
+    groups: [
+      { role: 'act', label: '★ TAKE', ink: 'b', summary: [T.good('Hard — Ace Trainer May')], rows: [
+        { g: '★', gc: 'gr', parts: [T.good('Hard — fight Ace Trainer May'),
+            T.dim('→ 2 Ultra + 2 Great + the usual rolls')] },
+        { g: '⚔', gc: 'b', indent: true, tiny: true,
+          parts: [T.dim('trainer · 3 mons at ~L35 vs your L32, 3 of yours fit to fight')] },
+      ]},
+      { role: 'foes', label: 'OTHER 2', ink: 'g', summary: [T.dim('1 ok · 1 avoid')], rows: [
+        { g: '·', parts: ['Normal — fight Youngster Joey',
+            T.dim('→ a Common TM, a Great TM, a Memory Mushroom + the usual rolls')] },
+        { g: '⚔', gc: 'b', indent: true, tiny: true,
+          parts: [T.dim('trainer · their own team at ~L32 vs your L32, 3 of yours fit to fight')] },
+        { g: '✗', gc: 'r', parts: [T.theirs('Brutal — fight Leader Brock with an Elite Four team'),
+            T.dim('→ 2 Rogue + 1 Ultra + 1 Great + the usual rolls, but 0.9× EXP')] },
+        { g: '⚔', gc: 'b', indent: true, tiny: true,
+          parts: [T.dim('trainer · 6 mons at ~L37 vs your L32, 3 of yours fit to fight')] },
+      ]},
+    ],
+  },
+};
+
+// ============================================================================
+// DIRECTIONS — each owns its whole layout. Deliberately no shared layout
+// component: a direction must be free to throw the structure out.
+// ============================================================================
+const VERDICT_CAP = { easy: 'CLEAR', trainer: 'WINNABLE', danger: 'DANGER', catch: 'CATCH', fight: 'FIGHT' };
+
+const DIRS = {
+
+  // ---- 3a: one window. The verdict and the turn lead; everything else flows
+  // underneath behind gold rule-labels. Closest to today's panel.
+  '3a': {
+    name: 'Verdict first',
+    render(card) {
+      const vi = VERDICT_INK[card.verdict];
+      const body = [];
+
+      body.push(h('div', { cls: 'row' },
+        sp('', card.header.emoji, 'font-size:11px; text-shadow:none'),
+        sp('g', card.header.title),
+        h('span', { cls: 'spacer' }),
+        card.header.right.map(drawToken),
+        sp('label ' + vi, VERDICT_CAP[card.verdict]),
+        h('span', { cls: 'btn', title: 'Minimal overview' }, '−'),
+        h('span', { cls: 'btn', title: 'Close' }, '×')));
+
+      for (const g of card.groups) {
+        if (g.role === 'act') {
+          // the one boxed thing on the card: the decision in front of the player
+          body.push(h('div', { css: 'margin-top:5px; padding:4px 6px 5px; border-radius:4px;'
+              + ' background:var(--blue-fill); box-shadow:inset 0 0 0 1px var(--blue)' },
+            h('div', { cls: 'row label b', css: 'letter-spacing:.12em' },
+              g.label, h('span', { cls: 'spacer' }), g.summary.map(drawToken)),
+            drawRows(g.rows)));
+        } else {
+          body.push(h('div', { cls: 'row', css: 'margin:6px 0 3px' },
+            sp('label ' + (g.ink || 'g'), g.label),
+            h('span', { cls: 'rule' }),
+            g.summary.map(drawToken)));
+          body.push(...drawRows(g.rows));
+        }
+      }
+      return h('div', { cls: 'win', css: 'position:absolute; top:38px; left:12px; width:300px' },
+        h('div', { cls: 'in' }, body));
+    },
+  },
+
+  // ---- 3b: one game window per group, stacked. The frame colour carries the
+  // arrow law, so the player reads urgency off the stack before any text.
+  '3b': {
+    name: 'Urgency blocks',
+    render(card) {
+      const FRAME = { act: ['var(--blue)', 'var(--blue-fill)'], foes: ['var(--frame)', 'var(--fill)'],
+                      plan: ['var(--frame)', 'var(--fill)'] };
+      const blocks = [];
+
+      blocks.push(h('div', { cls: 'win' }, h('div', { cls: 'in', css: 'padding:3px 8px; background:var(--fill-solid)' },
+        h('div', { cls: 'row' },
+          sp('', card.header.emoji, 'font-size:11px; text-shadow:none'),
+          sp('g', card.header.title),
+          h('span', { cls: 'spacer' }),
+          card.header.right.map(drawToken),
+          h('span', { cls: 'btn', title: 'Minimal overview' }, '−'),
+          h('span', { cls: 'btn', title: 'Close' }, '×')))));
+
+      for (const g of card.groups) {
+        const [frame, fill] = FRAME[g.role] || FRAME.foes;
+        blocks.push(h('div', { cls: 'win', css: `background:${frame}` },
+          h('div', { cls: 'in', css: `background:${fill}; padding:3px 8px 5px` },
+            h('div', { cls: 'row label ' + (g.ink || 'g'), css: 'letter-spacing:.14em' },
+              g.label, h('span', { cls: 'spacer' }), g.summary.map(drawToken)),
+            drawRows(g.rows))));
+      }
+      return h('div', { css: 'position:absolute; top:38px; left:12px; width:300px;'
+        + ' display:flex; flex-direction:column; gap:3px; user-select:none' }, blocks);
+    },
+  },
+
+  // ---- 3c: a one-line strip that reads like the game's own command box, with
+  // everything else behind a tabbed drawer. The only direction that can be
+  // small on a tall card.
+  '3c': {
+    name: 'Strip & drawer',
+    render(card) {
+      const vi = VERDICT_INK[card.verdict];
+      const dot = { gr: 'var(--green)', g: 'var(--gold)', r: 'var(--red)', b: 'var(--blue)' }[vi];
+      const act = card.groups.find(g => g.role === 'act');
+      const rest = card.groups.filter(g => g.role !== 'act');
+
+      // the strip: the act group's first row, and nothing else
+      const strip = h('div', { cls: 'win', css: 'position:absolute; top:38px; left:12px; width:300px' },
+        h('div', { cls: 'in', css: 'padding:4px 7px; display:flex; align-items:center; gap:7px' },
+          h('span', { css: `width:8px; height:8px; flex:none; background:${dot};`
+            + ` box-shadow:0 0 0 1px var(--frame-edge), 0 0 6px ${dot}` }),
+          h('div', { css: 'min-width:0; flex:1' },
+            h('div', { cls: 'row', css: 'flex-wrap:nowrap; overflow:hidden' },
+              (act.rows[0].parts || []).map(drawToken)),
+            h('div', { cls: 'label d', css: 'letter-spacing:.04em; text-shadow:none; margin-top:1px' },
+              `${card.header.title.toUpperCase()} · ${VERDICT_CAP[card.verdict]}`)),
+          h('span', { cls: 'btn', title: 'Open the card' }, '▾')));
+
+      // the drawer: one tab per remaining group, plus whatever the act group
+      // had beyond its first line
+      const overflow = act.rows.slice(1);
+      const tabs = [...(overflow.length ? [{ label: act.label, ink: act.ink, rows: overflow }] : []), ...rest];
+      const pane = h('div', { css: 'padding:6px 8px 7px' }, drawRows(tabs[0].rows));
+      const tabBar = h('div', { css: 'display:flex; gap:3px; padding:4px 6px;'
+        + ' background:var(--fill-solid); box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)' });
+      tabs.forEach((t, i) => {
+        const on = i === 0;
+        const b = h('span', { css: 'padding:2px 7px 1px; border-radius:3px; cursor:pointer;'
+          + ` font:${on ? 700 : 400} 9px/1.2 var(--pkmnems); text-shadow:none;`
+          + (on ? ' background:var(--blue-fill); box-shadow:inset 0 0 0 1px var(--blue); color:var(--blue)'
+                : ' color:var(--gray)') }, t.label);
+        b.onclick = () => {
+          pane.replaceChildren(...drawRows(t.rows));
+          [...tabBar.children].forEach((c, j) => {
+            const active = j === i;
+            c.style.cssText = 'padding:2px 7px 1px; border-radius:3px; cursor:pointer;'
+              + ` font:${active ? 700 : 400} 9px/1.2 var(--pkmnems); text-shadow:none;`
+              + (active ? ' background:var(--blue-fill); box-shadow:inset 0 0 0 1px var(--blue); color:var(--blue)'
+                        : ' color:var(--gray)');
+          });
+        };
+        tabBar.append(b);
+      });
+      tabBar.append(h('span', { cls: 'spacer' }), h('span', { css: 'cursor:pointer; padding:0 4px;'
+        + ' color:var(--gray); font-size:11px; text-shadow:none' }, '▴'));
+
+      const drawer = h('div', { cls: 'win', css: 'position:absolute; top:82px; left:12px; width:300px' },
+        h('div', { cls: 'in', css: 'padding:0; overflow:hidden' }, tabBar, pane));
+
+      return h('div', {}, strip, drawer);
+    },
+  },
+};
+
+// ============================================================================
+// SWITCHER
+// ============================================================================
+const q = new URLSearchParams(location.search);
+let dir = q.get('dir') || '3a';
+let card = q.get('card') || 'return';
+
+function render() {
+  const dirKeys = Object.keys(DIRS), cardKeys = Object.keys(CARDS);
+  if (!DIRS[dir]) dir = dirKeys[0];
+  if (!CARDS[card]) card = cardKeys[0];
+  const m = document.getElementById('mount');
+  m.replaceChildren();
+  m.append(DIRS[dir].render(CARDS[card]));
+  document.getElementById('verdictnote').textContent = CARDS[card].strains;
+  // file: URLs are unique origins, so replaceState throws — the prototype opens either way
+  try {
+    const u = new URL(location); u.searchParams.set('dir', dir); u.searchParams.set('card', card);
+    history.replaceState(null, '', u);
+  } catch {}
+  drawBar();
+}
+
+function cycle(which, step) {
+  const keys = which === 'dir' ? Object.keys(DIRS) : Object.keys(CARDS);
+  const cur = which === 'dir' ? dir : card;
+  const next = keys[(keys.indexOf(cur) + step + keys.length) % keys.length];
+  if (which === 'dir') dir = next; else card = next;
+  render();
+}
+
+function drawBar() {
+  const bar = document.getElementById('bar');
+  bar.replaceChildren();
+  for (const [which, cur, name] of [['dir', dir, DIRS[dir].name], ['card', card, CARDS[card].name]]) {
+    const g = document.createElement('div'); g.className = 'grp';
+    const prev = document.createElement('button'); prev.textContent = '◀';
+    prev.onclick = () => cycle(which, -1);
+    const lab = document.createElement('div'); lab.className = 'cur';
+    lab.innerHTML = `<span class="k">${which === 'dir' ? 'dir' : 'card'} ${cur}</span> &nbsp; ${name}`;
+    const next = document.createElement('button'); next.textContent = '▶';
+    next.onclick = () => cycle(which, +1);
+    g.append(prev, lab, next); bar.append(g);
+  }
+}
+
+addEventListener('keydown', e => {
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  if (e.key === 'ArrowLeft') cycle('card', -1);
+  else if (e.key === 'ArrowRight') cycle('card', +1);
+  else if (e.key === 'ArrowUp') cycle('dir', -1);
+  else if (e.key === 'ArrowDown') cycle('dir', +1);
+  else return;
+  e.preventDefault();
+});
+
+render();
+</script>
+</body>
+</html>
