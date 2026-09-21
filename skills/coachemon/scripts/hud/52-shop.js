@@ -317,7 +317,7 @@ export const rewardsModel = (run, h) => {
   // How many shop items the money covers at all: often none early on, when the shop is irrelevant.
   const affordable = shop.filter(i => i.cost <= s.money).length;
   return { kind: "rewards", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
-    affordable, ahead, audit: teamAudit(s, ahead) };
+    affordable, ahead, audit: teamAudit(run, ahead) };
 };
 
 // How much better the best offer after a reroll has to be than the best offer now, on the card's scale (about 10 a

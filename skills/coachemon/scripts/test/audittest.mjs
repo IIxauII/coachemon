@@ -189,7 +189,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   // The look-ahead is the audit's input, not what this test is about: hand over the roster the scenario names, and
   // draw the card the panel would draw from that audit.
   const m = readRun(scene, run => rewardsModel(run, handler));
-  if (sc.ahead) m.audit = teamAudit(scene, sc.ahead);
+  if (sc.ahead) m.audit = readRun(scene, run => teamAudit(run, sc.ahead));
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
   console.log(`== ${label}\n` + drawRewards({ ...m, wave: sc.wave, preview: readRun(scene, previewNext) }).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
   const a = m.audit;
