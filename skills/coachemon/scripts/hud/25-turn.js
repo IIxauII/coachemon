@@ -18,7 +18,7 @@
 //
 // Game-calling code still lives where it belongs — 10-damage and 20-enemy-ai — and is imported only here (their
 // `@only 25-turn, tests` exports). This file decides *when*; they know *how*.
-import { TYPES, awaitingDecision, effectiveness, sandbox, stat, typesOf } from "./01-core.js";
+import { TYPES, awaitingDecision, closeRead, effectiveness, openRead, sandbox, stat, typesOf } from "./01-core.js";
 import { waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
 import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneStatusMoves, sceneStopped, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
@@ -436,7 +436,12 @@ const predictedTeras = (env, turn) => {
 // switch?" prompt, a faint's replacement) and the damage call is actually there to make. `fn`'s value is returned;
 // the turn is dead afterwards.
 export const readTurn = (s, fn) => {
-  if (open) throw new Error("readTurn: a turn is already open");
+  openRead("turn"); // refuses while a turn or a run read is open: sequential, never nested
+  try {
+    return readOpened(s, fn);
+  } finally { closeRead(); }
+};
+const readOpened = (s, fn) => {
   const env = sceneEnv(s);
   // Live means the game is waiting on a decision — no phase is mid-execution and the enemy hasn't chosen yet — which
   // is the one thing that decides whether its own code may be called (game-code.md §9). Whether a *particular* call
