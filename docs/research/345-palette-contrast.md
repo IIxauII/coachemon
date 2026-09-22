@@ -4,7 +4,18 @@ Research for [#345](https://github.com/IIxauII/coachemon/issues/345), measuring 
 [#337](https://github.com/IIxauII/coachemon/issues/337) settled. **Findings only.** Whether to change
 an ink in response is a decision and belongs to its own ticket.
 
-> **Third pass.** The palette has moved twice while this note was being written. What is current:
+> **Fourth pass.** Two decisions since the third pass changed the ground under the measurement:
+> **the panel fill is now opaque `#362d3e`** (the game's own window interior — the three-backdrop
+> chase is gone, one number per ink), and **the gates in the `theirs` sweep are now ranked by
+> prevalence rather than held equal** (protanopia/deuteranopia ~8% of males against tritanopia ~0.01%
+> of people). Findings 1 and 4 are rewritten against those. Findings 2, 3, 5 and 6 are unaffected: a
+> ΔE00 between two inks does not depend on what they are drawn on.
+>
+> The third pass's claim that a darker shadow might carry the contrast case is **withdrawn**. A 1px
+> offset shadow covers down-and-right of a stroke; it never becomes the background, so it never
+> changes a WCAG ratio. The ink-on-halo column below is reported for perceived legibility only.
+>
+> The palette has moved four times while this note was being written. What is current:
 >
 > - **One shadow for the whole panel, `#181818`**, keeping the 1px offset. The per-style pairs from
 >   the game (`#006090`, `#984038`, `#306850`, …) are gone. This was amended on #337 in response to
@@ -24,19 +35,10 @@ an ink in response is a decision and belongs to its own ticket.
 
 ## Method
 
-Backdrops, unchanged — the panel is translucent, so "the fill" is five colours:
-
-| id | what it is | composited | relative luminance |
-|---|---|---|---|
-| A | prototype fill over a black game frame — `rgba(43,36,56,.95)` over `#000000` | `#292235` | 0.0188 |
-| B | prototype fill over a **white** game frame — same over `#ffffff` | `#362f42` | 0.0320 |
-| C | shipped fill over a black game frame — `rgba(12,12,24,.88)` over `#000000` | `#0b0b15` | 0.0035 |
-| D | shipped fill over a **white** game frame — same over `#ffffff` | `#292934` | 0.0232 |
-| E | opaque approximation of the prototype fill — `#2b2438` | `#2b2438` | 0.0206 |
-
-A/B bracket `--fill` (`PROTOTYPE-directions.html:36`); C/D bracket the shipped
-`background: rgba(12,12,24,.88)` (`90-render.js:166`). **B is the worst case** and every verdict is
-stated against it.
+The panel fill is opaque. **`#362d3e`** is the window interior sampled from `window_1..5`; a second
+interior, **`#414141`** (`window_5`), is measured alongside it because a separate ticket is weighing
+whether the panel should follow the player's chosen window skin. The single 1px offset shadow is
+`#181818`.
 
 Text is 15px (`PROTOTYPE-directions.html:88`), below WCAG's large-text floor of 24px, so **4.5:1 is
 the applicable threshold**. 3:1 is reported as the graphical floor under SC 1.4.11.
@@ -56,54 +58,83 @@ come back unchanged under all three deficiencies — the sanity check.
 
 ---
 
-## Finding 1 — the new shadow is a real improvement, and it changes no WCAG ratio
+## Finding 1 — contrast on the opaque fill, and what the opacity decision costs
 
-`#181818` is **darker** than the fill, which none of the eight it replaced were. Against the five
-backdrops:
+The panel fill is now opaque `#362d3e` — the window interior sampled from `window_1..5`. The game's
+own windows do not show the battle through them, and neither does ours, so the three-backdrop chase of
+earlier passes is gone. **One number per ink.**
 
-| | colour | relative luminance | vs the shadow |
+The decision is not free, and it is worth recording which way it cuts. `#362d3e` has relative luminance
+0.0301 — almost exactly the old worst case (backdrop B, 0.0320) and far lighter than the shipped
+`rgba(12,12,24,.88)` over a dark frame (0.0035). So **the opaque fill locks in what used to be the
+worst case.** Nothing gets better; what was contingent on a bright game frame is now permanent.
+
+What it buys instead: **the halo no longer inverts.** `#181818` is 3.29× darker than `#362d3e` and
+5.79× darker than `#414141`, so on every interior it is a genuine darkening behind the glyph. The
+inversion reported in the third pass — where the shipped fill over a dark frame was darker than the
+shadow — cannot happen on an opaque fill.
+
+| ink | on `#362d3e` | AA 4.5 | 3:1 floor | on halo `#181818` | AA on halo |
+|---|---|---|---|---|---|
+| law ours `#40c8f8` | 6.76 | pass | pass | 9.16 | pass |
+| law theirs `#f89890` | 6.17 | pass | pass | 8.36 | pass |
+| **law later `#e331c5`** | **3.44** | **FAIL** | pass | 4.66 | pass |
+| law neither `#a0a0a0` | 5.01 | pass | pass | 6.79 | pass |
+| gutter good `#78c850` | 6.35 | pass | pass | 8.60 | pass |
+| **gutter bad `#e13d3d`** | **3.08** | **FAIL** | pass | **4.17** | **FAIL** |
+| gutter neutral `#a0a0a0` | 5.01 | pass | pass | 6.79 | pass |
+| **quoted weak-to `#4AA500`** | **4.17** | **FAIL** | pass | 5.64 | pass |
+| quoted resisted `#FE8E00` | 5.67 | pass | pass | 7.68 | pass |
+| **quoted immune `#929292`** | **4.21** | **FAIL** | pass | 5.71 | pass |
+| chrome gold `#f8b050` | 7.07 | pass | pass | 9.57 | pass |
+| body `#f8f8f8` | 12.34 | pass | pass | 16.72 | pass |
+
+**Four inks fail AA on the opaque fill**: `later` 3.44, `gutter bad` 3.08, `weak-to` 4.17, `immune`
+4.21. All four clear the 3:1 graphical floor. The set is unchanged from the translucent worst case,
+because `#362d3e` and backdrop B are within 6% of each other in luminance.
+
+**`gutter bad #e13d3d` is the one to watch, and the answer is plain: it fails.** 3.08 against the
+fill, below AA, and **4.17 against the halo, below AA there too.** It is the only ink in the palette
+that fails against both its background and its own shadow, and it now carries the heaviest mark load
+in the gutter (`↯ ✗ ✦ ⚠`, and `▼` if the quotation reverts). Finding 5 establishes that no red in
+sRGB fixes this while also holding apart from grey and green — so "it has to move" is correct, and
+where it moves to is not a red.
+
+The ink-on-halo column is reported separately and deliberately. **It is not a WCAG number.** A 1px
+offset shadow covers down-and-right of a stroke; it does not surround the glyph and does not become
+the background. The halo column says where perceived legibility is better than the conformance figure
+suggests, nothing more.
+
+### The second interior: `#414141`, and whether following the player's skin is free
+
+| ink | on `#362d3e` | on `#414141` | verdict |
 |---|---|---|---|
-| the shadow | `#181818` | 0.0091 | — |
-| A prototype fill over black game | `#292235` | 0.0188 | shadow is 2.06× darker |
-| B prototype fill over white game | `#362f42` | 0.0320 | shadow is 3.50× darker |
-| C shipped fill over black game | `#0b0b15` | 0.0035 | **shadow is LIGHTER** |
-| D shipped fill over white game | `#292934` | 0.0232 | shadow is 2.54× darker |
-| E opaque approximation | `#2b2438` | 0.0206 | shadow is 2.26× darker |
+| law ours `#40c8f8` | 6.76 AA | 5.27 AA | same |
+| law theirs `#f89890` | 6.17 AA | 4.81 AA | same |
+| **law later `#e331c5`** | 3.44 floor | **2.68** | **floor → below floor** |
+| **law neither `#a0a0a0`** | 5.01 AA | **3.90** | **AA → floor** |
+| gutter good `#78c850` | 6.35 AA | 4.95 AA | same |
+| **gutter bad `#e13d3d`** | 3.08 floor | **2.40** | **floor → below floor** |
+| **gutter neutral `#a0a0a0`** | 5.01 AA | **3.90** | **AA → floor** |
+| quoted weak-to `#4AA500` | 4.17 floor | 3.24 floor | same |
+| **quoted resisted `#FE8E00`** | 5.67 AA | **4.42** | **AA → floor** |
+| quoted immune `#929292` | 4.21 floor | 3.28 floor | same |
+| chrome gold `#f8b050` | 7.07 AA | 5.50 AA | same |
+| body `#f8f8f8` | 12.34 AA | 9.61 AA | same |
 
-So on four of the five it is a genuine halo — the first time in this note's history that the shadow
-darkens the ground rather than sitting between ink and ground. **On backdrop C it inverts**: the
-shipped panel over a dark game frame is darker than `#181818`, so there the shadow is a *light* fringe
-and the old problem returns. C is the shipped panel's normal case, not an edge case.
+**Four distinct inks change verdict between the two interiors**, and none of them improves:
 
-**But the WCAG figures do not move.** Contrast is measured between the text and its background, and a
-1px offset shadow does not become the background: it covers down-and-right of each stroke, not around
-it. So:
+- `later #e331c5` and `gutter bad #e13d3d` fall **below the 3:1 floor** on `#414141` — 2.68 and 2.40.
+  On `#362d3e` they merely fail AA; on `#414141` they fail everything.
+- `neither / gutter neutral #a0a0a0` drops out of AA to 3.90. It is one value serving two columns, so
+  the single change costs both.
+- `quoted resisted #FE8E00` drops out of AA to 4.42.
 
-| ink | on A | on B | on C | on D | on E | AA on fill B | on `#181818` | AA on the shadow |
-|---|---|---|---|---|---|---|---|---|
-| law ours `#40c8f8` | 7.87 | 6.61 | 10.12 | 7.40 | 7.67 | pass | 9.16 | pass |
-| law theirs `#f89890` | 7.18 | 6.03 | 9.23 | 6.75 | 7.00 | pass | 8.36 | pass |
-| **law later `#e331c5`** | 4.00 | **3.36** | 5.15 | 3.77 | 3.90 | **FAIL** | 4.66 | pass |
-| law neither `#a0a0a0` | 5.83 | 4.90 | 7.50 | 5.49 | 5.69 | pass | 6.79 | pass |
-| gutter good `#78c850` | 7.39 | 6.21 | 9.51 | 6.95 | 7.21 | pass | 8.60 | pass |
-| **gutter bad `#e13d3d`** | 3.59 | **3.01** | 4.61 | 3.37 | 3.50 | **FAIL** | **4.17** | **FAIL** |
-| gutter neutral `#a0a0a0` | 5.83 | 4.90 | 7.50 | 5.49 | 5.69 | pass | 6.79 | pass |
-| **quoted weak-to `#4AA500`** | 4.85 | **4.07** | 6.23 | 4.56 | 4.73 | **FAIL** | 5.64 | pass |
-| quoted resisted `#FE8E00` | 6.60 | 5.54 | 8.49 | 6.21 | 6.43 | pass | 7.68 | pass |
-| **quoted immune `#929292`** | 4.90 | **4.12** | 6.30 | 4.61 | 4.78 | **FAIL** | 5.71 | pass |
-| chrome gold `#f8b050` | 8.22 | 6.90 | 10.57 | 7.73 | 8.01 | pass | 9.57 | pass |
-| body `#f8f8f8` | 14.36 | 12.06 | 18.47 | 13.51 | 14.00 | pass | 16.72 | pass |
-
-**Direct answer to the question asked: no, `later` and `gutter red` do not now pass.** Against the
-fill they are unchanged at 3.36 and 3.01, because nothing about the background changed. Against the
-shadow itself `later` reaches 4.66 and clears AA, but `gutter red` is 4.17 and **fails even there** —
-it is the one ink in the palette that fails against both its background and its own halo.
-
-The honest reading is that the shadow change bought real perceived legibility and bought no
-conformance. A 1px offset is not an outline; were it a four-direction 1px outline, the glyph would sit
-in `#181818` on all sides and the case for reading the halo as the effective background would be much
-stronger. It still would not be a WCAG pass — the standard has no provision for crediting a shadow —
-but the perceptual claim would be defensible in a way it currently is not.
+`#414141` is 76% brighter than `#362d3e` (0.0529 against 0.0301), and every ink in the palette is
+lighter than both, so every ratio falls. **For the ticket considering following the player's window
+skin: the palette's verdicts are not stable across interiors, and that decision is therefore not
+free.** A palette tuned on `#362d3e` loses two inks below the graphical floor and two more out of AA
+on `#414141` alone — and `window_5` is one skin of five, not the extreme of the range.
 
 ## Finding 2 — the fix relocated the gutter's failure rather than removing it
 
@@ -187,69 +218,81 @@ converging. The pair #345 was written to catch is still the safest in the law, a
 tritanopia, which is not what the ticket feared. What `#e331c5` costs is contrast: 3.36 on the fill,
 a fail, marginally better than `#e020c0`'s 3.13.
 
-## Finding 4 — candidate values for `theirs`, scored
+## Finding 4 — candidate values for `theirs`, gates ranked by prevalence
 
-A replacement for `theirs` has to hold apart from more than the two things named. It shares the **law
-column** with `ours`, `later` and `neither`; it inks a row's text, so it shares that **text stream**
-with body `#f8f8f8`; the **chrome gold** is on screen beside it; and the gutter's **bad-news red** is
-the confusable axis. Six gates, plus AA on the fill. Scores are the worst ΔE00 across all four vision
-conditions.
+Protanopia and deuteranopia affect roughly 8% of males; tritanopia roughly 0.01% of people. Weighting
+them equally, as the third pass did, let a 0.01% condition veto candidates that an 8% condition
+accepted. This pass ranks them.
 
-**The incumbent:**
+**Hard gates** — disqualifying, evaluated under normal vision, protanopia and deuteranopia: the three
+other inks in the **law column** (`neither`, `ours`, `later`), and **body `#f8f8f8`**, whose text
+stream `theirs` shares. A failure inside one column has no shape to fall back on — the law is text ink
+and a group frame — so these stay hard. Plus AA on `#362d3e`.
 
-| candidate | AA on fill B | vs neither | vs ours | vs later | vs body | vs chrome | vs bad-news | worst gate |
-|---|---|---|---|---|---|---|---|---|
-| `#f89890` (current) | 6.03 | 9.63 | 30.06 | 15.32 | 21.37 | **3.69** | 18.03 | **3.69** |
+**Weighted considerations** — reported, not disqualifying: **chrome gold**, which differs from row text
+by position, font and case as well as colour; **bad-news red**, which is a different column; and
+**tritanopia on any gate**.
 
-Note what that surfaces: **the incumbent's worst problem is not the grey.** It is chrome gold, at
-**ΔE00 3.69 under tritanopia** — both `#f89890` and `#f8b050` go pink (`#fa95a1` / `#ffa5af`). The
-9.63 against `#a0a0a0` is its second-worst.
+**The incumbent, scored the new way:**
 
-**Every colour the game defines that clears AA 4.5 on the fill, best worst-gate first** (30 of 85
-qualify; top 12 shown):
+| candidate | AA | vs neither | vs ours | vs later | vs body | hard min | hard gates | vs chrome | vs bad-news | worst tritan |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `#f89890` | 6.17 | **9.63** | 30.06 | 31.05 | 21.37 | **9.63** | **fail** | 13.12 | 18.03 | 3.69 |
 
-| candidate | AA on fill B | vs neither | vs ours | vs later | vs body | vs chrome | vs bad-news | worst gate |
-|---|---|---|---|---|---|---|---|---|
-| `#ded6b5` | 8.78 | 16.06 | 33.14 | 31.40 | 10.68 | 15.87 | 25.90 | **10.68** |
-| `#d0d0c8` | 8.26 | 12.82 | 22.94 | 28.76 | 9.02 | 22.44 | 29.29 | **9.02** |
-| `#ff7400` | 4.73 | 26.34 | 50.11 | 8.78 | 34.64 | 8.93 | 12.10 | **8.78** |
-| `#00a4ff` | 4.73 | 23.11 | 8.30 | 9.56 | 32.06 | 51.99 | 48.11 | **8.30** |
-| `#e8e8a8` | 10.09 | 18.73 | 39.03 | 34.03 | 8.22 | 12.57 | 26.67 | **8.22** |
-| `#81a6be` | 4.96 | 11.31 | 10.76 | 8.08 | 23.43 | 38.38 | 36.58 | **8.08** |
-| `#f88880` | 5.38 | 10.89 | 32.54 | 12.02 | 24.37 | 7.38 | 14.94 | **7.38** |
-| `#a0a060` | 4.69 | 7.05 | 38.61 | 22.85 | 23.78 | 9.73 | 8.97 | **7.05** |
-| `#fe8e00` | 5.54 | 25.24 | 49.70 | 12.44 | 31.23 | 6.54 | 16.53 | **6.54** |
-| `#ada594` | 5.24 | 6.48 | 28.52 | 24.42 | 20.91 | 18.94 | 19.12 | **6.48** |
-| `#bda55a` | 5.30 | 15.22 | 43.42 | 19.03 | 24.86 | 6.37 | 11.27 | **6.37** |
-| `#4bb400` | 4.78 | 16.12 | 11.49 | 47.60 | 27.64 | 6.34 | 8.13 | **6.34** |
+Re-weighting clarifies what is actually wrong with it. The third pass reported its worst gate as chrome
+gold at 3.69 — but that is a **tritanopia-only** failure, and against chrome it scores 13.12 under the
+conditions that carry prevalence. **Its real disqualifier is `neither #a0a0a0` at 9.63 under
+protanopia** — inside one column, on a frame, at 8%.
 
-**No value in the game's palette clears ΔE00 20 on all six gates.** The best available worst-gate is
-`#ded6b5` at 10.68 and `#d0d0c8` at 9.02 — both near-whites that trade the grey collision for a body
-collision. Twenty candidates beat the incumbent's 3.69, but the ceiling across the whole 85-colour
-palette is about 10.7, which is the middle of the uncanny band. **This is a structural result, not a
-tuning problem:** the law column plus body plus chrome plus the gutter's red already occupy too much
-of the space the game's own palette covers for a seventh ink to be plainly different from all of them.
+**Candidates clearing AA and ΔE00 ≥ 20 on every hard gate under normal, protanopia and deuteranopia —
+13 of 79 unspent game colours**, where equal weighting gave none:
 
-**Which gate is doing the work.** Dropping one gate at a time and re-counting the candidates that
-clear ΔE00 20 on every remaining gate:
+| candidate | what it already is | AA | hard min | vs chrome | vs bad-news | worst tritan | worst vs quoted |
+|---|---|---|---|---|---|---|---|
+| `#ffc631` | `TypeColor.ELECTRIC` | 8.35 | **29.48** | 5.50 | 23.45 | 4.40 | 8.20 |
+| `#ccbe00` | `Color.YELLOW` | 6.83 | 29.07 | 4.50 | 18.49 | 10.28 | **2.72** |
+| `#f8d038` | `Color.ULTRA` | 8.78 | 29.01 | 5.94 | 24.19 | 7.05 | 9.15 |
+| `#b1b100` | effectiveness 0×, defense side | 5.72 | 27.45 | 5.76 | 13.90 | 10.77 | **2.75** |
+| `#adbd21` | `TypeColor.BUG` | 6.29 | 27.21 | 4.73 | 15.38 | 7.11 | **2.84** |
+| `#fe8e00` | **the quoted resisted ½×** | 5.67 | 26.81 | 6.54 | 16.53 | 7.93 | **0.00** |
+| `#ff7400` | **the quoted resisted ¼×** | 4.84 | 26.59 | **8.93** | 13.74 | 8.78 | **3.27** |
+| `#52c200` | **the quoted super 8×** | 5.67 | 26.43 | 5.91 | 11.75 | 8.66 | 4.96 |
+| `#4bb400` | **the quoted super 4×** | 4.89 | 25.93 | 6.34 | 8.13 | 11.49 | **3.83** |
+| `#ebd773` | `ShadowColor.YELLOW` | 9.05 | 24.92 | 5.67 | 23.35 | **11.64** | **11.99** |
+| `#7bce52` | `TypeColor.GRASS` | 6.74 | 24.06 | 3.63 | 15.00 | 9.78 | 7.85 |
+| `#ffbd73` | `ShadowColor.LIGHT_ORANGE` | 7.98 | 24.01 | 4.47 | 21.10 | 3.30 | 10.94 |
+| `#bda55a` | `TypeColor.ROCK` | 5.43 | 21.56 | 6.37 | 11.27 | 11.70 | 7.95 |
 
-| gate set | candidates clearing 20 | which |
+**What opened up, and what did not.** Demoting tritanopia and chrome from hard gates turns 0 candidates
+into 13. But **none of the 13 clears the weighted gates as well** — and the reason is structural rather
+than incidental:
+
+> Every one of the 13 has a hue between **27° and 100°** — orange through yellow-green. The best chrome
+> separation available anywhere in the set is **8.93** (`#ff7400`), squarely in the uncanny middle.
+
+Under protanopia and deuteranopia the colour space collapses onto a single blue–yellow axis. The law
+column already occupies the blue end (`ours #40c8f8`), more blue (`later #e331c5`, which red-green
+deficiency renders blue), the neutral middle (`neither #a0a0a0`) and the white end (body `#f8f8f8`).
+**The only position left on that axis is yellow — and yellow is where chrome gold lives.** So the
+chrome collision is not a gate that some candidate avoids; it is the price of the only free seat.
+
+**Ranked shortlist, with the trade named.** Four of the 13 are excluded outright because they *are*
+inks the panel already spends in the gutter — `#fe8e00` is the quoted resisted ½× at ΔE00 **0.00**,
+and `#ff7400`, `#52c200`, `#4bb400` are the other quoted tiers. Three more (`#ccbe00`, `#b1b100`,
+`#adbd21`) sit under ΔE00 3 from the quoted resisted ink. That leaves:
+
+| rank | candidate | the trade |
 |---|---|---|
-| **all six gates** | 0 | _none_ |
-| all but `vs neither #a0a0a0` | 0 | _none_ |
-| all but `vs ours #40c8f8` | 0 | _none_ |
-| all but `vs later #e331c5` | 0 | _none_ |
-| all but `vs body #f8f8f8` | 1 | `#ffffff` |
-| all but `vs chrome #f8b050` | 3 | `#f8d038` `#ffbd73` `#ffc631` |
-| all but `vs bad-news #e13d3d` | 0 | _none_ |
+| 1 | **`#ebd773`** (`ShadowColor.YELLOW`) | Best balance in the set: hard min 24.92, the best tritan score (11.64) and the best separation from the quoted inks (11.99), at the highest contrast of any candidate (9.05). Pays 5.67 against chrome gold under red-green — the unavoidable price — and is a shadow colour in the game, so it carries no borrowed tier meaning. |
+| 2 | **`#f8d038`** (`Color.ULTRA`) | Second-best hard margin (29.01) and strong against bad-news red (24.19). Costs the same borrowed-tier meaning #337 knowingly accepted for `later`: a player who knows the game reads it as *ultra tier* before *theirs*. Chrome 5.94, tritan 7.05. |
+| 3 | **`#ffc631`** (`TypeColor.ELECTRIC`) | Best hard margin of all (29.48) and best against bad-news red (23.45). Trades that for the worst tritan score of the top three (4.40) and for being a type colour — it would read as an Electric badge's ink on a panel that draws type sprites. |
+| 4 | **`#ffbd73`** (`ShadowColor.LIGHT_ORANGE`) | Good hard margin (24.01) and good separation from the quoted inks (10.94), but **the worst tritan score in the entire set at 3.30** — it trades the 0.01% case hardest of any candidate. |
+| 5 | **`#bda55a`** (`TypeColor.ROCK`) | The best tritan score of any candidate (11.70), but the weakest hard margin (21.56, barely clearing) and the lowest contrast (5.43). Buys the rare condition by spending the common one. |
 
-**Chrome gold is the binding constraint.** Drop it and three golds open up — `#f8d038`, `#ffbd73`,
-`#ffc631`. Drop the body gate and only `#ffffff` opens, which is body's own near-neighbour. Drop any
-of the other four and nothing opens at all. So the question "what else could `theirs` be" is, within
-the game's palette, mostly the question "is chrome gold allowed to move".
-
-These are scores, not a shortlist. Choosing among them — or deciding that the gate set itself is wrong,
-or that the palette must leave the game's 85 colours — is a decision, and this ticket is findings only.
+These are scores and trades, not a pick. **And the honest summary is that the re-weighting changes the
+answer from "impossible" to "possible at a known price" rather than to "solved":** every route out
+of the `theirs`/`neither` collision runs through chrome gold's territory, and the best available
+separation from chrome is 8.93 — a number this note has called the uncanny middle throughout.
 
 ## Finding 5 — the two red problems are one problem, and no red solves it
 
@@ -395,16 +438,28 @@ to fall back on. `ours` vs `later` is marginal at 12.37 (deuteranopia). `theirs`
 #345 was written to catch — **passes at 15.32 and diverges under red-green deficiency**, confirmed
 against the corrected `#e331c5`.
 
-**Contrast:** four inks fail AA against the fill — `later #e331c5` 3.36, `gutter red #e13d3d` 3.01,
-`weak-to #4AA500` 4.07, `immune #929292` 4.12 — and the single shadow does not change any of these,
-because WCAG measures against the background and a 1px offset shadow is not the background. Against
-the shadow itself `later` clears AA at 4.66; **`gutter red` fails even there, at 4.17**, the only ink
-that fails against both its background and its own halo. On the shipped fill over a dark game frame
-(backdrop C) `#181818` is *lighter* than the panel, so the halo inverts.
+**Contrast, on the opaque fill `#362d3e`:** four inks fail AA — `later #e331c5` 3.44, `gutter bad
+#e13d3d` 3.08, `weak-to #4AA500` 4.17, `immune #929292` 4.21 — all of them clearing the 3:1 floor. The
+opaque decision locks in what used to be the worst case: `#362d3e` is within 6% of the old bright-frame
+backdrop in luminance, so nothing improved and nothing is contingent any more. **`gutter bad #e13d3d`
+fails against the halo too, at 4.17**, the only ink failing against both its background and its own
+shadow — and Finding 5 shows no red fixes that. What the opacity buys is that the halo no longer
+inverts: `#181818` is darker than every interior measured.
 
-**For `theirs`, no value in the game's 85 colours clears ΔE00 20 on all six gates.** Ceiling is 10.68
-(`#ded6b5`). Chrome gold is the binding constraint: dropping it opens three golds, dropping any of the
-four other law/gutter gates opens nothing.
+**On the second interior `#414141`, four distinct inks change verdict and none improves:** `later` and
+`gutter bad` fall **below the 3:1 floor** (2.68 and 2.40), and `neither/gutter neutral #a0a0a0` and
+`quoted resisted #FE8E00` drop out of AA (3.90 and 4.42). **The palette's verdicts are not stable
+across window interiors, so following the player's skin is not free.**
+
+**For `theirs`, ranking the gates by prevalence changes the answer from "impossible" to "possible at a
+known price".** Equal weighting gave 0 candidates; ranking protanopia and deuteranopia above
+tritanopia, and treating chrome gold as a weighted consideration rather than a hard gate, gives **13
+of 79 unspent game colours**. But all 13 have hues between 27° and 100°, and the best chrome
+separation in the set is **8.93** — because under red-green deficiency the space collapses to a
+blue–yellow axis whose blue, neutral and white ends the law already occupies, leaving only yellow,
+which is chrome's. Re-weighting also corrects what is wrong with the incumbent: `#f89890`'s 3.69
+against chrome is **tritan-only** (13.12 under red-green), and its real disqualifier is **`neither
+#a0a0a0` at 9.63 under protanopia**, inside one column, on a frame. Shortlist with trades in Finding 4.
 
 **The red, both of it.** `gutter bad #e13d3d` fails AA at 3.01 while carrying the heaviest mark load;
 `law theirs #f89890` sits ΔE00 9.63 from `#a0a0a0` under protanopia on a frame with no shape to fall
@@ -444,7 +499,9 @@ No palette changes proposed — findings only.
 
 ## Appendix A: the main script
 
-Throwaway, no dependencies. `node palette.mjs` reproduces every table above.
+Throwaway, no dependencies. This is the third-pass script. Its CVD tables — Findings 2, 3 and 6 —
+are current, because a ΔE00 between two inks does not depend on what they are drawn on. **Its
+contrast tables are superseded by Appendix C**, which measures the opaque fill.
 
 ```js
 // Throwaway: contrast + CVD for the settled Coachemon palette (#345), third pass.
@@ -892,4 +949,208 @@ for (const c of ['#e13d3d', '#f89890']) {
   P(row([c === '#e13d3d' ? 'gutter bad today' : 'law theirs today', '`'+c+'`', f2(a.aa),
     f2(a.greyP), f2(a.greyD), f2(a.grnP), f2(a.grnD), f2(Math.min(a.greyP, a.greyD, a.grnP, a.grnD))]));
 }
+```
+
+## Appendix C: the opaque-fill and weighted-gate run
+
+Throwaway, no dependencies. `node final.mjs` reproduces Findings 1 and 4.
+
+```js
+// Throwaway: opaque fill + prevalence-weighted gates (#345, final run).
+// No dependencies. Run: node final.mjs
+
+const hex = h => { const n = parseInt(h.replace('#', ''), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const toHex = ([r,g,b]) => '#' + [r,g,b].map(v => Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('');
+const lin = c => { const s = c/255; return s <= 0.04045 ? s/12.92 : ((s+0.055)/1.055)**2.4; };
+const unlin = v => { const s = v <= 0.0031308 ? v*12.92 : 1.055*v**(1/2.4)-0.055; return s*255; };
+const relLum = rgb => { const [r,g,b] = rgb.map(lin); return 0.2126*r + 0.7152*g + 0.0722*b; };
+const contrast = (a,b) => { const [x,y] = [relLum(a), relLum(b)].sort((p,q)=>q-p); return (x+0.05)/(y+0.05); };
+
+const XYZ = rgb => { const [r,g,b] = rgb.map(lin); return [
+  (0.4124564*r+0.3575761*g+0.1804375*b)*100, (0.2126729*r+0.7151522*g+0.0721750*b)*100, (0.0193339*r+0.1191920*g+0.9503041*b)*100]; };
+const WP = [95.047, 100.000, 108.883];
+const lab = rgb => { const f = t => t > 216/24389 ? Math.cbrt(t) : (841/108)*t + 4/29;
+  const [x,y,z] = XYZ(rgb).map((v,i)=>f(v/WP[i])); return [116*y-16, 500*(x-y), 200*(y-z)]; };
+const deg = r => r*180/Math.PI, rad = d => d*Math.PI/180;
+function ciede2000(rgb1, rgb2) {
+  const [L1,a1,b1] = lab(rgb1), [L2,a2,b2] = lab(rgb2);
+  const C1 = Math.hypot(a1,b1), C2 = Math.hypot(a2,b2), Cb = (C1+C2)/2;
+  const G = 0.5*(1-Math.sqrt(Cb**7/(Cb**7+25**7)));
+  const ap1 = (1+G)*a1, ap2 = (1+G)*a2;
+  const Cp1 = Math.hypot(ap1,b1), Cp2 = Math.hypot(ap2,b2);
+  const hpf = (a,b) => { if (a===0&&b===0) return 0; const h = deg(Math.atan2(b,a)); return h<0?h+360:h; };
+  const hp1 = hpf(ap1,b1), hp2 = hpf(ap2,b2);
+  const dL = L2-L1, dC = Cp2-Cp1;
+  let dh = 0;
+  if (Cp1*Cp2 !== 0) { dh = hp2-hp1; if (dh>180) dh -= 360; else if (dh<-180) dh += 360; }
+  const dH = 2*Math.sqrt(Cp1*Cp2)*Math.sin(rad(dh)/2);
+  const Lb = (L1+L2)/2, Cpb = (Cp1+Cp2)/2;
+  let hb;
+  if (Cp1*Cp2 === 0) hb = hp1+hp2;
+  else if (Math.abs(hp1-hp2) <= 180) hb = (hp1+hp2)/2;
+  else hb = hp1+hp2 < 360 ? (hp1+hp2+360)/2 : (hp1+hp2-360)/2;
+  const T = 1 - 0.17*Math.cos(rad(hb-30)) + 0.24*Math.cos(rad(2*hb)) + 0.32*Math.cos(rad(3*hb+6)) - 0.20*Math.cos(rad(4*hb-63));
+  const dTheta = 30*Math.exp(-(((hb-275)/25)**2));
+  const Rc = 2*Math.sqrt(Cpb**7/(Cpb**7+25**7));
+  const SL = 1 + (0.015*(Lb-50)**2)/Math.sqrt(20+(Lb-50)**2);
+  const SC = 1 + 0.045*Cpb, SH = 1 + 0.015*Cpb*T;
+  const RT = -Math.sin(rad(2*dTheta))*Rc;
+  return Math.sqrt((dL/SL)**2 + (dC/SC)**2 + (dH/SH)**2 + RT*(dC/SC)*(dH/SH));
+}
+const BRETTEL = {
+  protan: { m1:[0.14980,1.19548,-0.34528,0.10764,0.84864,0.04372,0.00384,-0.00540,1.00156],
+            m2:[0.14570,1.16172,-0.30742,0.10816,0.85291,0.03892,0.00386,-0.00524,1.00139], n:[0.00048,0.00393,-0.00441] },
+  deutan: { m1:[0.36477,0.86381,-0.22858,0.26294,0.64245,0.09462,-0.02006,0.02728,0.99278],
+            m2:[0.37298,0.88166,-0.25464,0.25954,0.63506,0.10540,-0.01980,0.02784,0.99196], n:[-0.00281,-0.00611,0.00892] },
+  tritan: { m1:[1.01277,0.13548,-0.14826,-0.01243,0.86812,0.14431,0.07589,0.80500,0.11911],
+            m2:[0.93678,0.18979,-0.12657,0.06154,0.81526,0.12320,-0.37562,1.12767,0.24796], n:[0.03901,-0.02788,-0.01113] },
+};
+function simulate(rgb, kind) {
+  if (kind === 'normal') return rgb;
+  const p = BRETTEL[kind], v = rgb.map(lin);
+  const dot = v[0]*p.n[0] + v[1]*p.n[1] + v[2]*p.n[2];
+  const m = dot >= 0 ? p.m1 : p.m2;
+  return [0,1,2].map(i => m[i*3]*v[0] + m[i*3+1]*v[1] + m[i*3+2]*v[2]).map(unlin);
+}
+
+/* ---------- the palette ---------- */
+const FILL = '#362d3e';      // window_1..5 interior, the new opaque panel fill
+const FILL5 = '#414141';     // window_5 interior, for the skin-following question
+const HALO = '#181818';      // the single 1px offset shadow
+const AA = 4.5, FLOOR = 3.0, DE = 20;
+
+const INK = {
+  'law ours #40c8f8': '#40c8f8',
+  'law theirs #f89890': '#f89890',
+  'law later #e331c5': '#e331c5',
+  'law neither #a0a0a0': '#a0a0a0',
+  'gutter good #78c850': '#78c850',
+  'gutter bad #e13d3d': '#e13d3d',
+  'gutter neutral #a0a0a0': '#a0a0a0',
+  'quoted weak-to #4AA500': '#4AA500',
+  'quoted resisted #FE8E00': '#FE8E00',
+  'quoted immune #929292': '#929292',
+  'chrome gold #f8b050': '#f8b050',
+  'body #f8f8f8': '#f8f8f8',
+};
+const kinds = ['normal','protan','deutan','tritan'];
+const RG = ['normal','protan','deutan'];        // the conditions that carry prevalence
+const sims = c => Object.fromEntries(kinds.map(k => [k, simulate(hex(c), k)]));
+const cache = new Map();
+const S = c => { if (!cache.has(c)) cache.set(c, sims(c)); return cache.get(c); };
+const dE = (a, b, k) => ciede2000(S(a)[k], S(b)[k]);
+const worstOver = (a, b, ks) => Math.min(...ks.map(k => dE(a, b, k)));
+
+const f2 = n => n.toFixed(2);
+const row = c => '| ' + c.join(' | ') + ' |';
+const sep = n => '|' + Array(n).fill('---').join('|') + '|';
+const P = console.log;
+const pf = (v,t) => v >= t ? 'pass' : '**FAIL**';
+
+P('### 1. The two opaque fills, and the halo against them\n');
+P(row(['', 'colour', 'relative luminance', 'halo `#181818` vs it']));
+P(sep(4));
+P(row(['halo', '`'+HALO+'`', relLum(hex(HALO)).toFixed(4), '—']));
+for (const [l, f] of [['new panel fill (window_1..5)', FILL], ['window_5 interior', FILL5]]) {
+  P(row([l, '`'+f+'`', relLum(hex(f)).toFixed(4),
+    relLum(hex(HALO)) < relLum(hex(f)) ? `darker by ${f2(relLum(hex(f))/relLum(hex(HALO)))}x` : '**LIGHTER — inverts**']));
+}
+P('\nfor comparison, the backdrops this replaces:\n');
+P(row(['old backdrop', 'composited', 'relative luminance']));
+P(sep(3));
+for (const [l, c, a, bk] of [['A prototype over black','#2b2438',0.95,'#000000'], ['B prototype over white','#2b2438',0.95,'#ffffff'],
+                              ['C shipped over black','#0c0c18',0.88,'#000000'], ['D shipped over white','#0c0c18',0.88,'#ffffff']]) {
+  const v = hex(c).map((x,i) => x*a + hex(bk)[i]*(1-a));
+  P(row([l, '`'+toHex(v)+'`', relLum(v).toFixed(4)]));
+}
+
+P('\n### 2. Contrast on the opaque fill — one number per ink\n');
+P(row(['ink', `on \`${FILL}\``, `AA ${AA}`, `${FLOOR}:1 floor`, `on \`${FILL5}\``, `AA on ${FILL5}`, `${FLOOR}:1 on ${FILL5}`, 'verdict differs?', `on halo \`${HALO}\``, 'AA on halo']));
+P(sep(10));
+const differ = [];
+for (const [name, h] of Object.entries(INK)) {
+  const c1 = contrast(hex(h), hex(FILL)), c2 = contrast(hex(h), hex(FILL5)), ch = contrast(hex(h), hex(HALO));
+  const v1 = c1 >= AA ? 'AA' : c1 >= FLOOR ? 'floor' : 'below floor';
+  const v2 = c2 >= AA ? 'AA' : c2 >= FLOOR ? 'floor' : 'below floor';
+  if (v1 !== v2) differ.push([name, v1, v2, c1, c2]);
+  P(row([name, f2(c1), pf(c1,AA), pf(c1,FLOOR), f2(c2), pf(c2,AA), pf(c2,FLOOR),
+    v1 === v2 ? 'no' : `**yes — ${v1} → ${v2}**`, f2(ch), pf(ch,AA)]));
+}
+P('\n**Inks whose verdict differs between the two interiors:** ' +
+  (differ.length ? differ.map(d => `\`${d[0]}\` (${d[1]} → ${d[2]}, ${f2(d[3])} → ${f2(d[4])})`).join('; ') : '_none_'));
+
+P('\n### 3. The `theirs` sweep, gates ranked by prevalence x consequence\n');
+// HARD: inside the law column, and against the body ink it shares a text stream with,
+// under normal/protan/deutan -- the conditions that carry real prevalence.
+// SOFT: tritanopia on any gate (~0.01%), and chrome gold, which also differs by
+// position, font and case.
+const HARD = { 'neither #a0a0a0': '#a0a0a0', 'ours #40c8f8': '#40c8f8', 'later #e331c5': '#e331c5', 'body #f8f8f8': '#f8f8f8' };
+const SOFT = { 'chrome #f8b050': '#f8b050', 'bad-news #e13d3d': '#e13d3d' };
+const GAME = ('#006090 #0093ff #00a4ff #1c4e80 #2d5c74 #2db4ff #306850 #313874 #323d5b #352166 #3890f8 '
+  + '#392725 #399cff #404040 #40c8f8 #415c5f #484848 #4aa500 #4bb400 #4e637c #4f6729 #52c200 #572d1e '
+  + '#574f4a #5acee7 #5f442d #5f5010 #632929 #636363 #6363b5 #663878 #69402a #6b5a73 #6e672c #707070 '
+  + '#735a4a #782155 #78c850 #7b63e7 #7bce52 #7c1818 #804618 #81a6be #9141cb #929292 #984038 #9cadf7 '
+  + '#a0a060 #a0a0a0 #a55239 #a68e17 #ada594 #adbd21 #ae7a3b #b1b100 #bda55a #c07800 #ccbe00 #d0d0c8 '
+  + '#d52929 #d64b00 #ded6b5 #e020c0 #e13d3d #e64a18 #e70808 #e8e8a8 #ebd773 #ef4179 #ef70ef #f75231 '
+  + '#f7b18b #f83018 #f88880 #f89890 #f8b050 #f8d038 #f8f8f8 #fca2a2 #fe8e00 #ff5500 #ff7400 #ffbd73 '
+  + '#ffc631 #ffffff').split(' ');
+const score = c => {
+  const hardE = Object.fromEntries(Object.entries(HARD).map(([k,v]) => [k, worstOver(c, v, RG)]));
+  const softE = Object.fromEntries(Object.entries(SOFT).map(([k,v]) => [k, worstOver(c, v, RG)]));
+  const tritE = Object.fromEntries([...Object.entries(HARD), ...Object.entries(SOFT)].map(([k,v]) => [k, dE(c, v, 'tritan')]));
+  return { c, aa: contrast(hex(c), hex(FILL)), hardE, softE, tritE,
+    hardMin: Math.min(...Object.values(hardE)), softMin: Math.min(...Object.values(softE)),
+    tritMin: Math.min(...Object.values(tritE)) };
+};
+const taken = new Set(['#a0a0a0','#40c8f8','#e331c5','#f8f8f8','#e13d3d','#78c850','#f8b050']);
+const all = GAME.filter(c => !taken.has(c)).map(score);
+const inc = score('#f89890');
+P('**The incumbent**, scored the new way:\n');
+P(row(['candidate', 'AA on fill', ...Object.keys(HARD).map(k=>'vs '+k), 'hard min (n/p/d)', 'hard gates', ...Object.keys(SOFT).map(k=>'vs '+k), 'worst tritan']));
+P(sep(Object.keys(HARD).length + Object.keys(SOFT).length + 4));
+const line = s => row(['`'+s.c+'`', f2(s.aa), ...Object.keys(HARD).map(k=>f2(s.hardE[k])), f2(s.hardMin),
+  (s.aa>=AA && s.hardMin>=DE) ? '**PASS**' : '**fail**', ...Object.keys(SOFT).map(k=>f2(s.softE[k])), f2(s.tritMin)]);
+P(line(inc));
+const pass = all.filter(s => s.aa >= AA && s.hardMin >= DE).sort((a,b) => b.hardMin - a.hardMin);
+P(`\n**Candidates clearing AA on \`${FILL}\` and ΔE00 ≥ ${DE} on every HARD gate under normal, protanopia and deuteranopia:**\n`);
+if (!pass.length) P('_none_\n');
+else { P(row(['candidate', 'AA on fill', ...Object.keys(HARD).map(k=>'vs '+k), 'hard min (n/p/d)', 'hard gates', ...Object.keys(SOFT).map(k=>'vs '+k), 'worst tritan']));
+  P(sep(Object.keys(HARD).length + Object.keys(SOFT).length + 4));
+  for (const s of pass) P(line(s)); }
+P(`\n${pass.length} of ${all.length} unspent game colours clear the hard gates.`);
+const bothHardAndSoft = pass.filter(s => s.softMin >= DE);
+P(`of those, clearing the soft gates too (still under normal/protan/deutan): ${bothHardAndSoft.length}` +
+  (bothHardAndSoft.length ? ' — ' + bothHardAndSoft.map(s=>'`'+s.c+'`').join(' ') : ''));
+const alsoTritan = pass.filter(s => s.tritMin >= DE);
+P(`of those, also clearing every gate under tritanopia: ${alsoTritan.length}` +
+  (alsoTritan.length ? ' — ' + alsoTritan.map(s=>'`'+s.c+'`').join(' ') : ' — none'));
+P('\nwhat the equal-weight run reported, for comparison: 0 candidates cleared all six gates in all four conditions.');
+// What each shortlisted candidate already is in the game, and whether it collides with
+// an ink the panel spends elsewhere (the quoted effectiveness inks).
+const WHAT = {
+  '#ffc631':'TypeColor.ELECTRIC', '#ccbe00':'Color.YELLOW', '#f8d038':'Color.ULTRA',
+  '#b1b100':'effectiveness 0x, defense side', '#adbd21':'TypeColor.BUG', '#fe8e00':'**quoted resisted 1/2x**',
+  '#ff7400':'**quoted resisted 1/4x**', '#52c200':'**quoted super 8x**', '#4bb400':'**quoted super 4x**',
+  '#ebd773':'ShadowColor.YELLOW', '#7bce52':'TypeColor.GRASS', '#ffbd73':'ShadowColor.LIGHT_ORANGE',
+  '#bda55a':'TypeColor.ROCK',
+};
+const QUOTED = { 'weak-to #4AA500':'#4AA500', 'resisted #FE8E00':'#FE8E00', 'immune #929292':'#929292' };
+P('\n**What each is already, and how it sits against the quoted gutter inks** (worst of normal/protan/deutan):\n');
+P(row(['candidate', 'what it already is in the game', ...Object.keys(QUOTED).map(k=>'vs '+k), 'worst quoted', 'best chrome sep']));
+P(sep(Object.keys(QUOTED).length + 4));
+for (const s of pass) {
+  const q = Object.values(QUOTED).map(v => worstOver(s.c, v, RG));
+  P(row(['`'+s.c+'`', WHAT[s.c] || '-', ...q.map(f2), f2(Math.min(...q)), f2(s.softE['chrome #f8b050'])]));
+}
+P('\nbest chrome separation available among the ' + pass.length + ' hard-gate passers: '
+  + f2(Math.max(...pass.map(s => s.softE['chrome #f8b050'])))
+  + ' (`' + pass.slice().sort((a,b)=>b.softE['chrome #f8b050']-a.softE['chrome #f8b050'])[0].c + '`)');
+// Why they are all yellows: what survives on the blue-yellow axis under red-green loss.
+P('\n**Hue of every hard-gate passer** (normal vision), to show what the constraint selects:\n');
+const hue = ([r,g,b]) => { const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; if(!d) return 0;
+  let h; if(mx===r) h=((g-b)/d)%6; else if(mx===g) h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; return h<0?h+360:h; };
+P(pass.map(s => '`'+s.c+'` ' + hue(hex(s.c)).toFixed(0) + '°').join(' · '));
+P('\nall ' + pass.length + ' fall between ' + Math.min(...pass.map(s=>hue(hex(s.c)))).toFixed(0)
+  + '° and ' + Math.max(...pass.map(s=>hue(hex(s.c)))).toFixed(0) + '° — orange through yellow-green.');
+
 ```
