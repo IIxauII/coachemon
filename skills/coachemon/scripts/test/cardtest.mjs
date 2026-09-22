@@ -44,7 +44,7 @@ const verdictOf = m => cardSummary(m).verdict;
   // A catch worth a ball, on a wave that is otherwise a plain fight.
   const worth = { targets: [{ name: "Rattata", verdict: "catch", why: "new species" }] };
   assert.equal(verdictOf(battle({ field: { ...battle().field, slots: [slot({ ko: 3 })] }, catch: worth })), "catch");
-  // …and it beats the easy collapse too: an easy wave with a ball worth throwing still opens the panel.
+  // …and it beats `easy` too: a wave with a ball worth throwing is a catch wave, whatever else is quiet about it.
   assert.equal(verdictOf(battle({ catch: worth })), "catch");
   assert.equal(verdictOf(battle({ catch: { targets: [{ name: "Rattata", verdict: "skip", why: "already caught" }] }, field: { ...battle().field, slots: [slot({ ko: 3 })] } })), "fight");
   // A fight plan that is going to be lost is never easy.

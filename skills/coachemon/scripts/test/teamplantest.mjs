@@ -97,8 +97,8 @@ assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", "sandbox restored the
 assert.ok(!plan.compact && plan.summary === null, "a lost fight is never compact");
 assert.equal(plan.approxDoubles, false);
 
-// An early trainer with nothing to plan around: the plan collapses to one line. In a double battle the plan is still
-// one-on-one exchanges, and says so.
+// An early trainer with nothing to plan around: the plan is a win in two steps and no more. In a double battle the
+// plan is still one-on-one exchanges, and says so.
 {
   const ours = [
     mon("Charizard", 30, ["Fire","Flying"], "Blaze", [95,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true),

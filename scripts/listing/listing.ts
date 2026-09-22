@@ -28,8 +28,8 @@ export const KEYWORDS = ["coach", "overlay", "turn advice", "battle helper", "ro
  * have leaves the panel unmounted, and a blank shot is still a PNG of the right size, so nothing downstream notices. */
 export type Fixture = "battle" | "learn" | "rewards";
 
-/** The view the HUD renders a shot in, and the fixture it renders from. */
-export type Shot = { view: "full" | "mini"; fixture: Fixture; zoom: number };
+/** The fixture a shot renders from. The panel has one fidelity, so there is no view to pick. */
+export type Shot = { fixture: Fixture; zoom: number };
 
 export type ListingAsset = {
   /** Relative to `docs/listing/`, which is the folder a human uploads from; the icons climb out of it to where the
@@ -51,13 +51,11 @@ export type ListingAsset = {
  */
 export const LISTING_ASSETS: ListingAsset[] = [
   { file: "assets/screenshot-battle.png", width: 1280, height: 800, what: "CWS and AMO screenshot 1",
-    shot: { view: "full", fixture: "battle", zoom: 2 } },
+    shot: { fixture: "battle", zoom: 2 } },
   { file: "assets/screenshot-learn.png", width: 1280, height: 800, what: "CWS and AMO screenshot 2",
-    shot: { view: "full", fixture: "learn", zoom: 2 } },
+    shot: { fixture: "learn", zoom: 2 } },
   { file: "assets/screenshot-rewards.png", width: 1280, height: 800, what: "CWS and AMO screenshot 3",
-    shot: { view: "full", fixture: "rewards", zoom: 2 } },
-  { file: "assets/screenshot-mini.png", width: 1280, height: 800, what: "CWS and AMO screenshot 4",
-    shot: { view: "mini", fixture: "battle", zoom: 2.4 } },
+    shot: { fixture: "rewards", zoom: 2 } },
   // Both tiles are the mark set beside the wordmark, drawn in the design project rather than here — see
   // `docs/listing/README.md`. They carry no `shot` on purpose: one would make `render.ts` photograph the panel over
   // the top of them on the next redraw, which is how the panel ended up on a branding tile in the first place.

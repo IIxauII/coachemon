@@ -120,7 +120,7 @@ const drawn = () => (el.kids ?? []).map(function text(n) {
   console.log(`mid-wave ${wave.map(c => c.verdict).join(" → ")}`);
 }
 
-// ---- The full view carries the disclaimer, once, as its last line (§3)
+// ---- The panel carries the disclaimer, once, as its last line (§3)
 {
   const lines = drawn();
   assert.equal(lines.filter(l => /^Unofficial\./.test(l)).length, 1, JSON.stringify(lines));

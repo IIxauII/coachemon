@@ -73,7 +73,7 @@ From [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105
 | Game in copy | "PokéRogue" named plainly in the description body as the site the extension works on. Never in the title or keywords. "Pokémon" appears only in the disclaimer. |
 | Orion | Named in the CWS and AMO description bodies only. |
 | Positioning | HUD first. One closing paragraph says it can also connect a local AI agent over MCP, naming Claude nominatively with no implied endorsement. |
-| Disclaimer | Fixed, on every listing and inside the extension: *"Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company."* The extension has no About page, so it goes in the manifest `description` (shown on every browser's extension page) and as a dim footer line of the HUD's full view, a HUD source change **(picked here)**. |
+| Disclaimer | Fixed, on every listing and inside the extension: *"Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company."* The extension has no About page, so it goes in the manifest `description` (shown on every browser's extension page) and as a dim footer line at the foot of the HUD panel, a HUD source change **(picked here)**. |
 | Publisher | `IIxauII` on CWS and AMO. The Safari download is signed with the dev's individual Developer ID; it has no product page. |
 | Language | English only. |
 | Support | Email only, the listing's contact address. The repo is public but not a support surface. |
@@ -635,7 +635,7 @@ The coach reads through the same MCP server, never through `read.sh`. The coach 
 
 `read_card` and `read_starters` settle like every reading tool, return the envelope, and need no grant.
 
-**The extension toggle that turns the HUD on or off is the HUD's own header control** (full / mini / closed, persisted in the page's `localStorage["coach-hud-view"]`), which ships inside the extension. It is not a popup or an extension setting, because the permission set has no `storage` and the pairing ticket leaves the extension no UI. `read.sh hud` / `hud-off` are gone.
+**The extension toggle that turns the HUD on or off is the HUD's own header control** (the close control, and the tab that reopens it, persisted in the page's `localStorage["coach-hud-view"]`), which ships inside the extension. It is not a popup or an extension setting, because the permission set has no `storage` and the pairing ticket leaves the extension no UI. `read.sh hud` / `hud-off` are gone.
 
 ---
 

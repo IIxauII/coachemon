@@ -1,5 +1,5 @@
-== learn (full)
-🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 − {Minimal overview} × {Close}
+== learn
+🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 × {Close}
 ✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB}
 · Normal Tackle 2nd Normal move · weak Atk power 24 {base 40}
 ✕ Fire Ember SE on Bug/Steel/Grass… power 78 {base 40 · STAB}
@@ -8,21 +8,8 @@
 Learn → forget Ember +108 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Ember
-== learn (mini)
-🎓 Charmeleon learns Charmeleon + {Expand} × {Close}
-✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB}
-✕ Fire Ember SE on Bug/Steel/Grass… power 78 {base 40 · STAB}
-Learn → forget Ember
-== plan (full)
-🎯 W15 · Youngster Charizard − {Minimal overview} × {Close}
-⚔ Charizard Fire Flamethrower → Paras 1 hit
-foes weak to: Fire ×2
-Paras Paras L20 Bug Grass 100% ▲ Fire ×4 ↯ Normal Scratch → Charizard moves after
-Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard moves after ➜ Charizard Fire Flamethrower ~100% · 1 hit later
-♟ winnable · 2 steps + {Show the fight plan}
-Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
--- after + (full)
-🎯 W15 · Youngster Charizard − {Minimal overview} × {Close}
+== plan
+🎯 W15 · Youngster Charizard × {Close}
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
 foes weak to: Fire ×2
 Paras Paras L20 Bug Grass 100% ▲ Fire ×4 ↯ Normal Scratch → Charizard moves after
@@ -31,22 +18,8 @@ Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard move
 1 Charizard Fire Flamethrower → Paras KO · 100% left
 2 Charizard Fire Flamethrower → Oddish KO · 100% left
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== plan (mini)
-🎯 W15 · Youngster Charizard + {Expand} × {Close}
-⚔ Charizard Fire Flamethrower → Paras 1 hit
-♟ winnable · 2 steps + {Show the fight plan}
--- after + (mini)
-🎯 W15 · Youngster Charizard − {Minimal overview} × {Close}
-⚔ Charizard Fire Flamethrower → Paras 1 hit
-foes weak to: Fire ×2
-Paras Paras L20 Bug Grass 100% ▲ Fire ×4 ↯ Normal Scratch → Charizard moves after
-Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard moves after ➜ Charizard Fire Flamethrower ~100% · 1 hit later
-♟ Fight plan winnable
-1 Charizard Fire Flamethrower → Paras KO · 100% left
-2 Charizard Fire Flamethrower → Oddish KO · 100% left
-Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== learn team (full)
-🎓 Espeon learns Espeon Atk 65 / SpA 130 − {Minimal overview} × {Close}
+== learn team
+🎓 Espeon learns Espeon Atk 65 / SpA 130 × {Close}
 ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90}
 ✕ Dark Bite ⚠ weak Atk power 30 {base 60}
 · Psychic Psychic SE on Poison · set move (Fast Attacker) · only Psychic move on team power 191 {base 90 · STAB}
@@ -56,21 +29,13 @@ team: +SE Steel/Electric · ⚠ loses only Dark move
 Learn → forget Bite +87 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Bite · ⚠ loses only Dark move
-== learn team (mini)
-🎓 Espeon learns Espeon + {Expand} × {Close}
-✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90}
-✕ Dark Bite ⚠ weak Atk power 30 {base 60}
-team: ⚠ loses only Dark move
-Learn → forget Bite
-== rewards boss next (full)
-🛒 $500 nothing affordable 👑 boss next − {Minimal overview} × {Close}
+== rewards boss next
+🛒 $500 nothing affordable 👑 boss next × {Close}
 🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 · Leftovers held item · for Charizard/Morpeko
 · 5× Great Ball you have 20
-🩺 team: 2 issues · Morpeko: Quick Attack is a second Normal attack (Tackle) + {Show the team audit}
+🩺 Team audit
+· Morpeko: Quick Attack is a second Normal attack (Tackle)
+· nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary take TM Fire Fang → Morpeko (forget Tackle)
-== rewards boss next (mini)
-🛒 $500 👑 boss next + {Expand} × {Close}
-🎁 TM Fire Fang Morpeko → forget Tackle
-🩺 team: 2 issues · Morpeko: Quick Attack is a second Normal attack (Tackle) + {Show the team audit}

@@ -344,7 +344,7 @@ const PREVIEW_MARK = { exact: "", replay: "~", estimate: "?" };
 export const previewMark = (m, field) => (m.missed?.includes(field) ? "!" : PREVIEW_MARK[m.confidence?.[field]] ?? "");
 export const previewKind = m => (m.type === "me" ? "mystery" : m.fixed ? `★ ${m.type}` : m.type);
 // `Machop L9, Geodude L10`, or `2 mons L9–10` when there are too many to name.
-export const previewFoes = (m, long) => {
+const previewFoes = (m, long) => {
   if (!m.foes?.length) return m.me?.name ? m.me.name : "—";
   if (long || m.foes.length <= 2) return m.foes.map(f => `${f.name} L${f.level}`).join(", ");
   const lv = m.foes.map(f => f.level);

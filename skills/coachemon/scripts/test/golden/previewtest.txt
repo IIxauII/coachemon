@@ -142,15 +142,13 @@
 == pool shift  w12 replay  w15 estimate ["time of day turns over: the spawn pool shifts"]  w21 estimate ["the next biome brings its own spawn pool"]
 == grunt wave 35 {"confidence":{"type":"exact","trainer":"exact","foes":"exact","double":"estimate","levels":"estimate"},"notes":["this grunt's double is an unseeded roll: it can't be read ahead"]}
 == foe attacks ["Steel","Steel","Steel","Ground"]
-== card wave 13 (full)
+== card wave 13
 🔮 Next W13~ wild
 · Zubat L10~ Poison Flying Sturdy
 Tackle
 ~ holds while nothing else draws first · if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
-== card wave 13 (mini)
-🔮 W13~ wild Zubat L10~
 summary "W13 wild — Zubat L10 [~]"
-== card wave 20 (full)
+== card wave 20
 🔮 Next W20 trainer double~
 · Youngster2~
 · Geodude L16~ Rock Ground Sturdy
@@ -158,10 +156,8 @@ Tackle · Rock Slide
 · Machop L17~ Fighting Sturdy
 Tackle · Rock Slide
 ~ holds while nothing else draws first · if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
-== card wave 20 (mini)
-🔮 W20 trainer double~ Youngster2~ · Geodude L16, Machop L17~
 summary "W20 trainer Youngster2 (double) — Geodude L16, Machop L17 [~]"
-== card wave 8 (full)
+== card wave 8
 🔮 Next W8 ★ trainer
 · Rival1
 · Geodude L10 Rock Ground Sturdy
@@ -171,7 +167,5 @@ Tackle · Rock Slide
 · Machop L12 Fighting Sturdy
 Tackle · Rock Slide
 if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
-== card wave 8 (mini)
-🔮 W8 ★ trainer Rival1 · 3 mons L10–12
 summary "W8 ★ trainer Rival1 — Geodude L10, Machop L11, Machop L12"
 ok

@@ -1,5 +1,5 @@
 == hurt
-🛒 $15256 → $9670 − ×
+🛒 $15256 → $9670 ×
 buy first — taking the free reward closes the shop
 💰 Revive $2660 Morpeko fainted
 💰 Full Heal $1330 Scrafty status
@@ -9,223 +9,292 @@ buy first — taking the free reward closes the shop
 · 5× Poké Ball you have 34
 · Leppa Berry Charizard Leppa refills a move at 0 PP
 · X Accuracy only lasts a few battles
-🩺 team: 6 issues · 4 of 4 weak to Fighting, nobody resists +
+🩺 Team audit
+✗ 4 of 4 weak to Fighting, nobody resists
+✗ Blastoise: no Normal attack (no STAB)
+✗ Morpeko: no Normal attack (no STAB)
+✗ Scrafty: no Normal attack (no STAB)
+· Charizard: no Normal attack (no STAB)
+· nothing hits Poison/Ghost/Electric/Psychic +2 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == healthy
-🛒 $15256 − ×
+🛒 $15256 ×
 🎁 X Defense least bad · only lasts a few battles
 · 5× Poké Ball you have 34
 · Potion party healthy
 🎲 nothing good — reroll for $2250?
-🩺 team: 2 issues · Charizard: no Normal attack (no STAB) +
+🩺 Team audit
+✗ Charizard: no Normal attack (no STAB)
+· nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == wave 13 rare candy
-🛒 $1824 − ×
+🛒 $1824 ×
 🎁 Rare Candy Charizard Lv 16, at the Lv 16 cap where EXP can't level it
 · 5× Poké Ball you have 12
 · Max Ether PP fine
-🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Fire +4 super-effectively +
+🩺 Team audit
+· nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == rare candy catch-up
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 Rare Candy Morpeko Lv 11, furthest behind
-🩺 team: 4 issues · 2 of 2 weak to Fighting, nobody resists +
+🩺 Team audit
+✗ 2 of 2 weak to Fighting, nobody resists
+✗ Charizard: no Normal attack (no STAB)
+✗ Morpeko: no Normal attack (no STAB)
+· nothing hits Fighting/Poison/Ground/Rock +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == rare candy evolves
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 Rarer Candy +1 level for the whole party · 1 at the Lv 16 cap
 · Rare Candy Charmander evolves at Lv 16
-🩺 team: 4 issues · 2 of 2 weak to Fighting, nobody resists +
+🩺 Team audit
+✗ 2 of 2 weak to Fighting, nobody resists
+✗ Charizard: no Normal attack (no STAB)
+✗ Charmander: no Normal attack (no STAB)
+· nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == held items by holder
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 Leftovers Snorlax 1/16 HP a turn (2/4)
 · Quick Claw Snorlax 10% to move first
 · King's Rock Jolteon 10% flinch a hit
-🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+🩺 Team audit
+· nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == status orb
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 Flame Orb Machamp Guts wants the status
 · Toxic Orb Machamp Guts wants the status
-🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +7 super-effectively +
+🩺 Team audit
+· nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == status orb nobody
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 5× Poké Ball you have 3
 · Flame Orb does nothing for this team · for Charizard
-🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively +
+🩺 Team audit
+· nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == mints
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 Mint Snorlax Adamant +Atk −SpA, was Modest
 · Mint Modest +SpA −Atk · no better for anyone · for Machamp
-🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +7 super-effectively +
+🩺 Team audit
+· nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == exp at the cap
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 EXP. All nobody on the bench under the Lv 38 cap
 · EXP. Charm whole party at the Lv 38 cap
-🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+🩺 Team audit
+· nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == exp for the bench
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 EXP. All EXP for the bench · 1 under the Lv 38 cap
-🩺 team: 3 issues · 2 of 3 weak to Ground, nobody resists +
+🩺 Team audit
+✗ 2 of 3 weak to Ground, nobody resists
+✗ Pichu L20 trail Snorlax L45 — lead it on easy waves
+· nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == evolution item and eviolite
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 Leaf Stone Pikachu evolves now
-🩺 team: 4 issues · 2 of 2 weak to Fighting, nobody resists +
+🩺 Team audit
+✗ 2 of 2 weak to Fighting, nobody resists
+✗ Gloom: no Normal attack (no STAB)
+✗ Pikachu: no Normal attack (no STAB)
+· nothing hits Fighting/Poison/Bug/Ghost +9 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == vitamins and species boosters
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 Protein Snorlax +10% base Atk (carry)
 · Light Ball Pikachu ×2 Atk/SpA
 · Thick Club nobody it works for · for Snorlax/Jolteon +1
-🩺 team: 3 issues · 2 of 3 weak to Ground, nobody resists +
+🩺 Team audit
+✗ 2 of 3 weak to Ground, nobody resists
+✗ Pikachu L30 trail Snorlax L45 — lead it on easy waves
+· nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == wave 14 pp up
-🛒 $1824 − ×
+🛒 $1824 ×
 🎁 PP Up more PP on a move (permanent)
 · TM Round Comfey → forget Body Slam · +13 power
 · Potion party healthy
 🎲 nothing good — reroll for $500?
-🩺 team: 2 issues · Comfey: Body Slam is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Body Slam is physical on Atk 50 (SpA 90)
+· nothing hits Flying/Poison/Bug/Grass +2 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == wave 15 calm mind
-🛒 $900 − ×
+🛒 $900 ×
 🎁 TM Calm Mind Comfey setup +1 SpA/SpD
 · 5× Poké Ball you have 34
 · Full Heal no status
-🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+· nothing hits Poison/Bug/Steel/Fire +4 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm recipient
-🛒 $400 − ×
+🛒 $400 ×
 🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 · TM Thunder Fang TM — can't check who learns it
 · 5× Great Ball you have 34
-🩺 team: 2 issues · Morpeko: Quick Attack is a second Normal attack (Tackle) +
+🩺 Team audit
+· Morpeko: Quick Attack is a second Normal attack (Tackle)
+· nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == wave 18 free ether
-🛒 $1622 → $491 − ×
+🛒 $1622 → $491 ×
 buy first — taking the free reward closes the shop
 💰 Super Potion $599 Comfey 50% HP
 💰 Ether $532 Snorlax Body Slam 1/15
 🎁 Ether PP for Morpeko · saves $532
 · X Sp. Atk only lasts a few battles
 · Potion heals Comfey a little
-🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Bug +6 super-effectively +
+🩺 Team audit
+· nothing hits Poison/Ground/Rock/Bug +6 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == wave 23 lure vs ether
-🛒 $1474 → $144 − ×
+🛒 $1474 → $144 ×
 buy first — taking the free reward closes the shop
 💰 Max Ether $1330 Snorlax Body Slam 1/15
 🎁 Ether PP for Morpeko · saves $1330
 · Super Lure more double battles for a while
 · 5× Poké Ball you have 34
-🩺 team: 2 issues · 2 of 2 weak to Fighting, nobody resists +
+🩺 Team audit
+✗ 2 of 2 weak to Fighting, nobody resists
+· nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm best of two
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Crunch Snorlax → forget Tackle · +68 power
 · 5× Poké Ball you have 34
-🩺 team: 3 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+· Snorlax: Tackle is a second Normal attack (Body Slam)
+· nothing hits Flying/Poison/Bug/Ghost +4 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm skip
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 5× Poké Ball you have 3
 · TM Tackle skip · no upgrade for Snorlax · Snorlax keeps Brick Break
-🩺 team: 3 issues · Comfey: no Fairy attack (no STAB) +
+🩺 Team audit
+✗ Comfey: no Fairy attack (no STAB)
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+· nothing hits Fighting/Flying/Poison/Bug +5 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm compatibility fallback
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Fire Fang Morpeko free slot · +78 power
 · TM Psybeam Arcanine free slot · +77 power
-🩺 team: 2 issues · 2 of 2 weak to Ground, nobody resists +
+🩺 Team audit
+✗ 2 of 2 weak to Ground, nobody resists
+· nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm nobody
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 5× Poké Ball least bad · you have 34
 · TM Nuzzle skip · nobody can learn it
-🩺 team: 1 issue · nothing hits Flying/Poison/Ground/Rock +8 super-effectively +
+🩺 Team audit
+· nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm fainted recipient
-🛒 $400 − ×
+🛒 $400 ×
 🎁 TM Fire Fang Morpeko (fainted) → forget Tackle · +48 power
 · 5× Great Ball you have 34
-🩺 team: 2 issues · Morpeko: Quick Attack is a second Normal attack (Tackle) +
+🩺 Team audit
+· Morpeko: Quick Attack is a second Normal attack (Tackle)
+· nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm fainted hardcore
-🛒 $400 − ×
+🛒 $400 ×
 🎁 TM Fire Fang least bad · skip · nobody can learn it
-🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Ghost +6 super-effectively +
+🩺 Team audit
+· nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm fainted hardcore negative value
-🛒 $400 − ×
+🛒 $400 ×
 🎁 TM Fire Fang least bad · skip · nobody can learn it
-🩺 team: 1 issue · nothing hits Poison/Ground/Rock/Ghost +6 super-effectively +
+🩺 Team audit
+· nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm spread by doubles ahead
-🛒 $400 − ×
+🛒 $400 ×
 🎁 TM Hyper Voice Charizard free slot · +69 power
-🩺 team: 2 issues · Charizard: Tackle is physical on Atk 110 (SpA 150) +
+🩺 Team audit
+· Charizard: Tackle is physical on Atk 110 (SpA 150)
+· nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm setup full moveset
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Calm Mind Comfey setup +1 SpA/SpD → forget Tackle
 · 5× Poké Ball you have 34
-🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+· nothing hits Flying/Bug/Ghost/Steel +6 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == key items
-🛒 $72 nothing affordable − ×
+🛒 $72 nothing affordable ×
 🎁 Master Ball Master Ball — catches anything · you have 0
 · Mega Bracelet nobody on the team can Mega Evolve
 · Egg Voucher egg voucher — outlasts the run
-🩺 team: 1 issue · nothing hits Flying/Poison/Ground/Rock +8 super-effectively +
+🩺 Team audit
+· nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == mega capable
-🛒 $72 nothing affordable − ×
+🛒 $72 nothing affordable ×
 🎁 Mega Bracelet Charizard can Mega Evolve (needs its stone)
 · Fire Stone nobody can use it
 · Leftovers everyone's at max stack
-🩺 team: 2 issues · Charizard: no Normal attack (no STAB) +
+🩺 Team audit
+✗ Charizard: no Normal attack (no STAB)
+· nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == boss next
-🛒 $300 👑 boss next − ×
+🛒 $300 👑 boss next ×
 🎁 Super Potion heals Blastoise
 · Revive nobody fainted · spare for the boss
 · X Attack only lasts a few battles
-🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
+🩺 Team audit
+✗ Blastoise: no Normal attack (no STAB)
+· nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == elite four gauntlet
-🛒 $3000 → $2401 👑 boss next − ×
+🛒 $3000 → $2401 👑 boss next ×
 buy first — taking the free reward closes the shop
 💰 Super Potion $599 Blastoise 86% HP
 🎁 Max Revive nobody fainted · spare for the gauntlet
 · X Attack only lasts a few battles
 · 5× Great Ball you have 34
-🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
+🩺 Team audit
+✗ Blastoise: no Normal attack (no STAB)
+· nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 ⚑ Next big fight fixed battle next wave W182
 ✗ 5 big fights before the next full heal (W191)
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == ordinary boss run-up
-🛒 $3000 − ×
+🛒 $3000 ×
 🎁 5× Great Ball you have 34
 · Max Revive nobody fainted
-🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
+🩺 Team audit
+✗ Blastoise: no Normal attack (no STAB)
+· nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 ⚑ Next big fight boss in 4 W180
 ✚ full heal entering W181 — HP, status, PP, revives, Tera
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == no heal left
-🛒 $3000 → $2401 − ×
+🛒 $3000 → $2401 ×
 buy first — taking the free reward closes the shop
 💰 Super Potion $599 Blastoise 86% HP
 🎁 Max Revive nobody fainted · spare for the gauntlet
 · 5× Great Ball you have 34
-🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
+🩺 Team audit
+✗ Blastoise: no Normal attack (no STAB)
+· nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 ⚑ Next big fight fixed battle in 3 W195
 ✗ no full heal left — 2 big fights on what you have
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
@@ -236,7 +305,7 @@ buy first — taking the free reward closes the shop
 ✓ it carries no held items in phase 1 and has no passive ability
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == reroll preview
-🛒 $3000 − ×
+🛒 $3000 ×
 🎁 X Defense least bad · only lasts a few battles
 · 5× Poké Ball you have 34
 · Potion party healthy
@@ -245,10 +314,11 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 · Rare Candy Snorlax · Lv 45, at the Lv 16 cap where EXP can't level it
 › 1× Egg Voucher egg voucher — outlasts the run
 🔒 lock, reroll $700~ ✓ worth it 1× Egg Voucher · Leftovers · 5× Great Ball
-🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+🩺 Team audit
+· nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == reroll keep
-🛒 $400 − ×
+🛒 $400 ×
 🎁 Leftovers Snorlax 1/16 HP a turn
 · 5× Poké Ball you have 34
 🎲 reroll $250~ keep best 5× Great Ball (-12)
@@ -256,10 +326,11 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 › 5× Great Ball you have 34
 · X Attack only lasts a few battles
 🔒 lock, reroll $700~ can't pay X Attack · 5× Great Ball · X Attack
-🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+🩺 Team audit
+· nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == reroll over the buys
-🛒 $1300 → $236 − ×
+🛒 $1300 → $236 ×
 buy first — taking the free reward closes the shop
 💰 Hyper Potion $1064 Blastoise 32% HP
 🎁 X Defense least bad · only lasts a few battles
@@ -267,68 +338,92 @@ buy first — taking the free reward closes the shop
 › Master Ball Master Ball — catches anything · you have 0
 · Master Ball Master Ball — catches anything · you have 0
 · Master Ball Master Ball — catches anything · you have 0
-🩺 team: 2 issues · Blastoise: no Normal attack (no STAB) +
+🩺 Team audit
+✗ Blastoise: no Normal attack (no STAB)
+· nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == grip claw off contact
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 Grip Claw Jolteon 10% to steal an item when it attacks
-🩺 team: 2 issues · Wobbuffet: no attacking move +
+🩺 Team audit
+✗ Wobbuffet: no attacking move
+· nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == daily level cap
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 EXP. Charm more EXP · 2 under the Lv 52 cap
-🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+🩺 Team audit
+· nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == classic level cap
-🛒 $100 nothing affordable − ×
+🛒 $100 nothing affordable ×
 🎁 EXP. Charm whole party at the Lv 24 cap
-🩺 team: 1 issue · nothing hits Ground/Rock/Bug/Steel +7 super-effectively +
+🩺 Team audit
+· nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm the evolution move already passed
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Magical Leaf Comfey free slot · +78 power · or a Memory Mushroom
 · 5× Poké Ball you have 34
-🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+↺ Memory Mushroom: relearn Magical Leaf · +78 power
+· nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm the relearner move
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Magical Leaf Comfey free slot · +78 power · or a Memory Mushroom
-🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+↺ Memory Mushroom: relearn Magical Leaf · +78 power
+· nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm already used once
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Crunch Snorlax free slot · +116 power · or a Memory Mushroom
-🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +13 super-effectively +
+🩺 Team audit
+· nothing hits Fighting/Flying/Poison/Ground +13 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm status your call, one relearner
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Screech status TM — Comfey can learn it · Comfey can relearn it (Memory Mushroom)
-🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+· nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm status your call, all relearners
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Screech status TM — Comfey +1 can learn it · all can relearn it (Memory Mushroom)
-🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+· nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm status your call, one still paying
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Screech status TM — Comfey +1 can learn it
-🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+· nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == tm weighs the relearner with the payer
-🛒 $200 nothing affordable − ×
+🛒 $200 nothing affordable ×
 🎁 TM Crunch Snorlax free slot · +116 power
-🩺 team: 2 issues · Comfey: Tackle is physical on Atk 50 (SpA 90) +
+🩺 Team audit
+· Comfey: Tackle is physical on Atk 50 (SpA 90)
+↺ Memory Mushroom: relearn Crunch · +57 power
+· nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == reroll disabled
-🛒 $3000 − ×
+🛒 $3000 ×
 🎁 X Defense least bad · only lasts a few battles
-🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively +
+🩺 Team audit
+· nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == reroll preview unavailable
-🛒 $3000 − ×
+🛒 $3000 ×
 🎁 X Defense least bad · only lasts a few battles
 🎲 nothing good — reroll for $250?
-🩺 team: 1 issue · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively +
+🩺 Team audit
+· nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 ok

@@ -61,7 +61,7 @@ const splicers = () => Object.assign(new FusePokemonModifierType(), { name: "DNA
 const potion = () => Object.assign(new PokemonHpRestoreModifierType(), { name: "Potion", iconImage: "potion", tier: 0, restorePoints: 20, restorePercent: 10 });
 
 // `screen`: "party" (the Splicer's party screen, `partyUiMode` 9 SPLICE unless given) or "rewards".
-const mount = ({ view = "full", screen = "party", members = party(), picked = null, partyUiMode = 9, hardcore = false, spliced = false, free = [] }) => {
+const mount = ({ screen = "party", members = party(), picked = null, partyUiMode = 9, hardcore = false, spliced = false, free = [] }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const filter = p => (p.fusionSpecies || (hardcore && p.hp <= 0) ? "no effect" : null);
@@ -79,20 +79,16 @@ const mount = ({ view = "full", screen = "party", members = party(), picked = nu
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => view, setItem() {} };
+  globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  globalThis.__hud["90-render"].setView(view);
   return { el, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
 const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 const show = (label, opts) => {
-  let last;
-  for (const view of ["full", "mini"]) {
-    last = mount({ ...opts, view });
-    console.log(`== ${label} (${view})\n${lines(last.el)}`);
-  }
+  const last = mount(opts);
+  console.log(`== ${label}\n${lines(last.el)}`);
   const m = last.model;
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   console.log(`summary ${opts.screen === "rewards" ? last.summary?.rewards : last.summary?.fusion}`);

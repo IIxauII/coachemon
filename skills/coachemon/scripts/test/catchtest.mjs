@@ -70,7 +70,7 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   // A line's final BST is the party profile's, not the catch card's (`08-party.js`).
   const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, readTurn, accountRead, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
-    setGameTables: globalThis.__hud["04-game-tables"].setGameTables, setViewMode: globalThis.__hud["90-render"].setView };
+    setGameTables: globalThis.__hud["04-game-tables"].setGameTables };
   // `species`: the game's species registry, as 04-game-tables' chunk scan would hand it to the account read. One call:
   // `setGameTables` replaces the tables wholesale, so a second would drop whatever the first put there.
   if (events || registry) globalThis.__ca.setGameTables({ events, species: registry });
@@ -80,11 +80,8 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
 const show = (label, advice) => {
-  for (const v of ["full", "mini"]) {
-    globalThis.__ca.setViewMode(v);
-    console.log(`== ${label} (${v})`);
-    console.log(globalThis.__ca.drawCatch(advice).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
-  }
+  console.log(`== ${label}`);
+  console.log(globalThis.__ca.drawCatch(advice).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
 };
 const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.stringify(x))), JSON.stringify(x), `${label}: JSON-safe`);
 
@@ -237,7 +234,7 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   const t = advice.targets[0];
   assert.equal(t.verdict, "skip", `common owned Glameow: ${t.why}`);
   assert.ok(t.best.p >= 0.5, "a cheap ball would work — it's still not worth it");
-  for (const v of ["full", "mini"]) { globalThis.__ca.setViewMode(v); assert.deepEqual(globalThis.__ca.drawCatch(advice), [], `no card (${v})`); }
+  assert.deepEqual(globalThis.__ca.drawCatch(advice), [], "no card");
   show("common owned", advice);
 
   // Doubles: Patrat + Espurr. Espurr resists the team's Fighting weakness, but an Espurr is already on the team.

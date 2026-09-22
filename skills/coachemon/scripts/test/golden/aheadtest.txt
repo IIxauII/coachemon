@@ -21,8 +21,6 @@
 ✗ they're +5 levels on us
 ✗ 2 big fights before the next full heal (W31)
 🍀 luck 2 (C+) — 4.7% tier upgrade per reward
-== mini
-⚑ Rival 2 next wave W25 ⚠ risky
 summary "Rival 2 next wave (W25) risky — nothing hits Garchomp/Lucario super-effectively; they're +5 levels on us; 2 big fights before the next full heal"
 == variable power {"threats":[{"type":"Steel","n":2}],"verdict":"risky"}
 == luck {"value":14,"grade":"SSS","upgradePct":14.3}

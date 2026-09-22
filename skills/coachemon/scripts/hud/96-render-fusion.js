@@ -1,13 +1,12 @@
 // Fusion card (the 49-fusion model, on the party screen a DNA Splicer opens) and its plain-text summary. Loads after
 // 90-render: only call these from a draw or a summary, never at load time.
-// Full: up to three fusions in pick order (base ← the half it takes in) with their score and reasons, then the call.
-// Mini: the best fusion and the call.
+// Up to three fusions in pick order (base ← the half it takes in) with their score and reasons, then the call.
 import { fusionCall, signed } from "./49-fusion.js";
-import { FS, badge, bar, dim, h, line, mon, sep, tab, view } from "./90-render.js";
+import { FS, badge, bar, closed, dim, h, line, mon, sep, tab } from "./90-render.js";
 
 export const drawFusion = m => {
   const top = m.rows[0];
-  if (view() === "closed") return [tab("🧬", top ? mon(top.base.icon, top.base.name, 20) : null)];
+  if (closed()) return [tab("🧬", top ? mon(top.base.icon, top.base.name, 20) : null)];
   const header = bar("🧬", "Splice", m.picked ? mon(m.picked.icon, m.picked.name, 20) : null,
     m.picked ? h("span", { ...dim, fontWeight: "normal" }, "with") : null);
   const row = (f, i) => line(i ? "·" : f.fuse ? "★" : "·", i ? "#9aa" : f.fuse ? "#6d6" : "#9aa",
@@ -18,7 +17,6 @@ export const drawFusion = m => {
   const detail = f => line("", "#9aa", ...f.types.map(t => badge(t)),
     h("span", { color: "#9aa", fontSize: FS.tiny }, [...f.why, ...f.notes].join(" · ")));
   const call = h("div", { color: top?.fuse && !m.better ? "#6d6" : "#fa4", fontWeight: "bold", marginTop: "3px" }, fusionCall(m));
-  if (view() === "mini") return [header, top ? row(top, 0) : null, call].filter(Boolean);
   const out = [header];
   m.rows.forEach((f, i) => out.push(i ? h("div", sep) : null, row(f, i), detail(f)));
   out.push(call);

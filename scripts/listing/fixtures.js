@@ -98,12 +98,13 @@
   window.__fixtures = { battle, learn, rewards };
 
   /** The page the HUD expects: a Phaser game whose battle scene is the fixture, and an atlas that has nothing. */
-  window.__mountFixture = (name, view) => {
+  window.__mountFixture = name => {
     const scene = window.__fixtures[name]();
     window.Phaser = {
       Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } },
       Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } },
     };
-    try { localStorage.setItem("coach-hud-view", view); } catch {}
+    // The panel is open unless the stored value says "closed"; a shot always wants it open.
+    try { localStorage.setItem("coach-hud-view", "full"); } catch {}
   };
 })();
