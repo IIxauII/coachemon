@@ -15,6 +15,11 @@ an ink in response is a decision and belongs to its own ticket.
 > offset shadow covers down-and-right of a stroke; it never becomes the background, so it never
 > changes a WCAG ratio. The ink-on-halo column below is reported for perceived legibility only.
 >
+> **Fifth pass** re-gates by element rather than by palette: WCAG 1.4.3's 4.5:1 governs a row's
+> prose, but a gutter mark and a group frame are non-text under SC 1.4.11 and take **3:1**. Finding 6
+> reports that; Findings 1 and 4 keep the 4.5:1 figures, which remain correct for prose and remain
+> the binding role wherever an ink is text.
+>
 > The palette has moved four times while this note was being written. What is current:
 >
 > - **One shadow for the whole panel, `#181818`**, keeping the 1px offset. The per-style pairs from
@@ -392,7 +397,128 @@ Whatever is done here, it will not be "pick a better red": either an axis gives,
 being colour.
 
 
-## Finding 6 — what each ink becomes
+## Finding 6 — the gate is per-element, and it reopens less than it looks like
+
+Every threshold up to this pass was WCAG 1.4.3's **4.5:1**, which governs *text*. Two of the three
+things the palette's inks carry are not text:
+
+| element | what it is under WCAG 2.2 | threshold |
+|---|---|---|
+| a row's prose | text — SC 1.4.3 Contrast (Minimum) | **4.5:1** |
+| a gutter mark | graphical object conveying meaning — SC 1.4.11 Non-text Contrast | **3:1** |
+| a group frame | visual information identifying a component's state — SC 1.4.11 | **3:1** |
+
+Re-gating on that basis changes which inks are eligible for which job. It changes the *answers* much
+less, and the reason is the useful part.
+
+### Gutter bad as a mark: the relaxation reopens the wrong axis
+
+Gates for a mark: contrast ≥ 3 on `#362d3e`, ΔE00 ≥ 20 from gutter green `#78c850` and from gutter
+grey `#a0a0a0`, under normal vision, protanopia and deuteranopia.
+
+**Ten colours clear. None of them is a red.**
+
+| candidate | contrast | on `#414141` | ΔE vs green | ΔE vs grey |
+|---|---|---|---|---|
+| `#0093ff` | 4.13 | 3.22 | 55.78 | 26.44 |
+| `#3890f8` | 4.07 | 3.17 | 55.07 | 26.12 |
+| `#399cff` | 4.60 | 3.58 | 54.17 | 25.08 |
+| `#00a4ff` | 4.84 | 3.77 | 53.62 | 24.27 |
+| `#ffffff` | 13.11 | 10.21 | 28.99 | 22.91 |
+| `#2db4ff` | 5.67 | 4.42 | 51.31 | 22.69 |
+| `#f8f8f8` | 12.34 | 9.61 | 28.33 | 21.55 |
+| `#9cadf7` | 6.08 | 4.73 | 47.95 | 21.31 |
+| `#ef70ef` | 5.14 | 4.00 | 47.15 | 20.34 |
+| `#40c8f8` | 6.76 | 5.27 | 46.95 | 20.22 |
+
+Six blues, two whites, a lavender and a magenta. And the reason is exact:
+
+| candidate | contrast | 3:1 | ΔE vs green | ΔE vs grey | why it fails |
+|---|---|---|---|---|---|
+| `#e13d3d` | 3.08 | **pass** | **13.56** | 24.21 | **green 13.56** |
+| `#f83018` | 3.39 | **pass** | **11.91** | 27.60 | **green 11.91** |
+| `#f75231` | 3.87 | **pass** | **8.45** | 25.47 | **green 8.45** |
+| `#fb3041` | 3.50 | **pass** | **9.61** | 24.01 | **green 9.61** |
+| `#e64a18` | 3.34 | **pass** | **12.60** | 27.35 | **green 12.60** |
+| `#d64b00` | 3.04 | **pass** | **15.51** | 28.63 | **green 15.51** |
+| `#e70808` | **2.77** | FAIL | **16.56** | 29.18 | contrast *and* green |
+| `#d52929` | **2.61** | FAIL | **17.84** | 27.29 | contrast *and* green |
+| `#922030` | **1.54** | FAIL | 35.83 | 34.26 | contrast 1.54 |
+
+**The relaxation to 3:1 does exactly what was expected and it does not help.** Six reds that failed AA
+now clear the contrast gate — `#e13d3d` at 3.08, `#f83018` at 3.39, `#f75231` at 3.87. But contrast
+was never their only failure. **Every one of them fails the green gate**, and the green gate did not
+move. The best red on that axis that also clears 3:1 is `#d64b00` at **15.51**, inside the uncanny
+middle; `#922030` clears green at 35.83 and has contrast **1.54**.
+
+This is the same squeeze Finding 5 established, now confirmed at the relaxed threshold: under
+deuteranopia red and green both collapse onto the yellow axis, so a red must separate from `#78c850`
+by *lightness* — and a red light enough to do that has stopped being saturated enough to stay far from
+grey, while a red dark enough to stay saturated cannot clear even 3:1 on a fill of luminance 0.0301.
+**Relaxing the text threshold reopened the axis that was not binding.**
+
+### Gutter bad is still the ink most at risk, and 3:1 does not save it
+
+`#e13d3d` clears 3:1 by **0.08** — 3.08 against a 3.00 floor — and **fails 3:1 on `#414141` at 2.40**.
+So even its contrast pass holds only on one interior, and only barely. Its green separation is 13.56
+under deuteranopia, against a gate of 20. **Plainly: even at 3:1, gutter red is not saved.** It is
+still the ink most at risk in the palette, and the finding is now stronger rather than weaker, because
+the relaxed gate removes the last explanation that was not about colour-vision.
+
+### Law theirs: one value is unchanged, but a split is newly available
+
+**As a single value, nothing changes.** `theirs` is a row's text ink as well as a frame, so the text
+role binds at 4.5:1 and it never had the 3:1 option. The sweep returns the same **13 candidates,
+0 of them red, hue 27°–100°** as Finding 4 — the yellow seat, for the reason given there.
+
+**Split into its two roles, the picture opens.** A frame shares no text stream with body prose, so it
+drops the body gate and takes 3:1; text keeps 4.5:1 but its ΔE-from-grey gate is weaker, because —
+this note's own argument, applied in reverse — *a frame has no shape to fall back on and a line of
+text has words beside it*.
+
+- **As a frame** (3:1, law-mate gates, no body gate): **25 candidates, 6 of them red.**
+- **As text** (4.5:1, law-mate and body gates, grey relaxed): **18 candidates, 3 of them red.**
+
+| role | candidate | contrast | ΔE vs grey | ΔE vs ours | ΔE vs later | worst tritan |
+|---|---|---|---|---|---|---|
+| frame | `#d64b00` `Color.REDORANGE` | 3.04 | **28.63** | 53.91 | 43.09 | 4.65 |
+| frame | `#ff5500` effectiveness ⅛× | 4.09 | **28.11** | 51.44 | 43.55 | 6.58 |
+| frame | `#f83018` `ShadowColor.BRIGHT_RED` | 3.39 | **27.60** | 52.56 | 37.34 | 7.04 |
+| frame | `#e64a18` `Color.LUXURY` | 3.34 | **27.35** | 51.80 | 39.91 | 4.09 |
+| frame | `#f75231` `TypeColor.FIRE` | 3.87 | **25.47** | 48.00 | 36.90 | 5.24 |
+| frame | `#fb3041` HP-low atlas | 3.50 | **24.01** | 46.06 | 29.71 | 6.81 |
+| text | `#f7b18b` legacy PP-low shadow | 7.25 | 17.63 | 36.67 | 42.28 | — |
+| text | `#f88880` `SETTINGS_SELECTED` | 5.51 | 10.89 | 32.54 | 30.12 | — |
+| text | `#f89890` `Color.PINK` (incumbent) | 6.17 | 9.63 | 30.06 | 31.05 | — |
+
+**The split solves the actual problem.** Every red frame candidate clears the grey gate at 24–29,
+which is the collision that disqualified `theirs` in the first place — and it is precisely the frame,
+the element with no shape, that gets the strong separation. The text half then buys contrast with a
+weaker grey score, which is defensible because words sit beside it.
+
+### But a split has to read as one ink, and only two pairs do
+
+A split is only coherent if the two values read as **one ink in two weights** rather than as two
+different claims. Scoring each frame/text pair by ΔE00 between them in normal vision:
+
+| frame | text | frame contrast | frame ΔE grey | text contrast | text ΔE grey | ΔE between them | what they are |
+|---|---|---|---|---|---|---|---|
+| `#f75231` | `#f88880` | 3.87 | **25.47** | 5.51 | 10.89 | **14.33** | `TypeColor.FIRE` / `SETTINGS_SELECTED` |
+| `#fb3041` | `#f88880` | 3.50 | **24.01** | 5.51 | 10.89 | **14.99** | HP-low atlas / `SETTINGS_SELECTED` |
+
+**Two of the 18 red frame/text pairs read as one ink.** The rest are 18–26 ΔE apart, which is two
+colours, not one in two weights.
+
+And the honest caveat on both: **14.33 and 14.99 sit inside the band this note has called the uncanny
+middle** — different enough to see, not different enough to mean. For every other pair in this
+research that was a failure; here it is the goal, and the risk inverts with it. A reader who notices
+that the frame and the text are not quite the same red may read it as the panel being inconsistent
+rather than as one law in two weights. What mitigates it is the same thing that mitigates the
+two-column rule: the two values never appear in the same role, so there is no place where a reader
+sees them side by side answering the same question. That mitigation is an argument, not a measurement,
+and it is the decision ticket's to weigh.
+
+## Finding 7 — what each ink becomes
 
 | ink | normal | protan | deutan | tritan |
 |---|---|---|---|---|
@@ -461,16 +587,22 @@ which is chrome's. Re-weighting also corrects what is wrong with the incumbent: 
 against chrome is **tritan-only** (13.12 under red-green), and its real disqualifier is **`neither
 #a0a0a0` at 9.63 under protanopia**, inside one column, on a frame. Shortlist with trades in Finding 4.
 
-**The red, both of it.** `gutter bad #e13d3d` fails AA at 3.01 while carrying the heaviest mark load;
-`law theirs #f89890` sits ΔE00 9.63 from `#a0a0a0` under protanopia on a frame with no shape to fall
-back on. **No single red serves both, and no red serves either fully** — not among the ten named game
-reds, not among the 87 colours in the game's vocabulary, and not anywhere in sRGB. The best red that
-clears AA reaches ΔE00 17.48 (`#fcd4c0`, a pale peach at the edge of the family); the best that clears
-ΔE00 20 has contrast 2.86 (`#9c6c54`, a muted brown). The axes *are* satisfiable — seven game colours
-clear all three, and the best value in sRGB is `#6898f8` at worst-ΔE 24.29 — but every one of them is
-a blue, a magenta or a white. On a dark panel a red bright enough to read is a light red, and light
-reds are exactly what protanopia and deuteranopia collapse onto light greys. The two requirements are
-opposed along the one dimension a red has to spend.
+**The red, both of it — and the per-element gate does not rescue it.** Re-gating a gutter mark and a
+group frame to SC 1.4.11's 3:1 lets six reds clear contrast that failed AA, `#e13d3d` among them at
+3.08. **None of them clears the green gate**, which did not move: `#e13d3d` 13.56, `#f83018` 11.91,
+`#f75231` 8.45, and the best red that clears 3:1 is `#d64b00` at 15.51 against a gate of 20. The
+relaxation reopened the axis that was not binding. `#e13d3d` also clears 3:1 by 0.08 on `#362d3e` and
+**fails it outright on `#414141`** at 2.40. **Plainly: even at 3:1, gutter red is not saved**, and it
+remains the ink most at risk in the palette.
+
+**For `theirs`, a single value is unchanged — 13 candidates, none red, hue 27°–100°, because as a
+row's text ink it never had the 3:1 option. Splitting it by role does open the reds**: as a frame
+(3:1, no body gate) six reds clear, every one of them separated from grey by 24–29, which is exactly
+the collision that disqualified `theirs` and exactly the element that has no shape to fall back on. As
+text (4.5:1, grey relaxed because words sit beside it) three reds clear. **Only two of the 18 possible
+pairs read as one ink in two weights**: `#f75231`/`#f88880` at ΔE00 14.33 and `#fb3041`/`#f88880` at
+14.99 — both inside the band this note has called the uncanny middle, which here is the goal rather
+than the failure, with the corresponding risk that a reader reads the difference as inconsistency.
 
 **Closed by the change, not by measurement** — recorded because they were real: the eight per-style
 shadows, all brighter than the fill; and `#78c850` vs `#f8b050` at ΔE00 2.14 under protanopia, retired
@@ -1153,4 +1285,192 @@ P(pass.map(s => '`'+s.c+'` ' + hue(hex(s.c)).toFixed(0) + '°').join(' · '));
 P('\nall ' + pass.length + ' fall between ' + Math.min(...pass.map(s=>hue(hex(s.c)))).toFixed(0)
   + '° and ' + Math.max(...pass.map(s=>hue(hex(s.c)))).toFixed(0) + '° — orange through yellow-green.');
 
+```
+
+## Appendix D: the per-element re-gate
+
+Throwaway, no dependencies. `node regate.mjs` reproduces Finding 6.
+
+```js
+// Throwaway: per-element gates (#345, fifth pass).
+// Text 4.5:1 (SC 1.4.3); gutter marks and group frames 3:1 (SC 1.4.11).
+// No dependencies. Run: node regate.mjs
+
+const hex = h => { const n = parseInt(h.replace('#',''),16); return [n>>16&255, n>>8&255, n&255]; };
+const lin = c => { const s = c/255; return s <= 0.04045 ? s/12.92 : ((s+0.055)/1.055)**2.4; };
+const unlin = v => { const s = v <= 0.0031308 ? v*12.92 : 1.055*v**(1/2.4)-0.055; return s*255; };
+const relLum = rgb => { const [r,g,b] = rgb.map(lin); return 0.2126*r + 0.7152*g + 0.0722*b; };
+const contrast = (a,b) => { const [x,y] = [relLum(a),relLum(b)].sort((p,q)=>q-p); return (x+0.05)/(y+0.05); };
+const XYZ = rgb => { const [r,g,b] = rgb.map(lin); return [
+  (0.4124564*r+0.3575761*g+0.1804375*b)*100,(0.2126729*r+0.7151522*g+0.0721750*b)*100,(0.0193339*r+0.1191920*g+0.9503041*b)*100]; };
+const WP = [95.047,100.000,108.883];
+const lab = rgb => { const f = t => t > 216/24389 ? Math.cbrt(t) : (841/108)*t + 4/29;
+  const [x,y,z] = XYZ(rgb).map((v,i)=>f(v/WP[i])); return [116*y-16, 500*(x-y), 200*(y-z)]; };
+const deg = r=>r*180/Math.PI, rad = d=>d*Math.PI/180;
+function ciede2000(rgb1, rgb2) {
+  const [L1,a1,b1]=lab(rgb1), [L2,a2,b2]=lab(rgb2);
+  const C1=Math.hypot(a1,b1), C2=Math.hypot(a2,b2), Cb=(C1+C2)/2;
+  const G=0.5*(1-Math.sqrt(Cb**7/(Cb**7+25**7)));
+  const ap1=(1+G)*a1, ap2=(1+G)*a2;
+  const Cp1=Math.hypot(ap1,b1), Cp2=Math.hypot(ap2,b2);
+  const hpf=(a,b)=>{ if(a===0&&b===0) return 0; const h=deg(Math.atan2(b,a)); return h<0?h+360:h; };
+  const hp1=hpf(ap1,b1), hp2=hpf(ap2,b2);
+  const dL=L2-L1, dC=Cp2-Cp1;
+  let dh=0; if (Cp1*Cp2!==0){ dh=hp2-hp1; if(dh>180)dh-=360; else if(dh<-180)dh+=360; }
+  const dH=2*Math.sqrt(Cp1*Cp2)*Math.sin(rad(dh)/2);
+  const Lb=(L1+L2)/2, Cpb=(Cp1+Cp2)/2;
+  let hb;
+  if (Cp1*Cp2===0) hb=hp1+hp2;
+  else if (Math.abs(hp1-hp2)<=180) hb=(hp1+hp2)/2;
+  else hb = hp1+hp2<360 ? (hp1+hp2+360)/2 : (hp1+hp2-360)/2;
+  const T=1-0.17*Math.cos(rad(hb-30))+0.24*Math.cos(rad(2*hb))+0.32*Math.cos(rad(3*hb+6))-0.20*Math.cos(rad(4*hb-63));
+  const dTheta=30*Math.exp(-(((hb-275)/25)**2));
+  const Rc=2*Math.sqrt(Cpb**7/(Cpb**7+25**7));
+  const SL=1+(0.015*(Lb-50)**2)/Math.sqrt(20+(Lb-50)**2);
+  const SC=1+0.045*Cpb, SH=1+0.015*Cpb*T;
+  const RT=-Math.sin(rad(2*dTheta))*Rc;
+  return Math.sqrt((dL/SL)**2+(dC/SC)**2+(dH/SH)**2+RT*(dC/SC)*(dH/SH));
+}
+const BRETTEL = {
+  protan:{m1:[0.14980,1.19548,-0.34528,0.10764,0.84864,0.04372,0.00384,-0.00540,1.00156],
+          m2:[0.14570,1.16172,-0.30742,0.10816,0.85291,0.03892,0.00386,-0.00524,1.00139],n:[0.00048,0.00393,-0.00441]},
+  deutan:{m1:[0.36477,0.86381,-0.22858,0.26294,0.64245,0.09462,-0.02006,0.02728,0.99278],
+          m2:[0.37298,0.88166,-0.25464,0.25954,0.63506,0.10540,-0.01980,0.02784,0.99196],n:[-0.00281,-0.00611,0.00892]},
+  tritan:{m1:[1.01277,0.13548,-0.14826,-0.01243,0.86812,0.14431,0.07589,0.80500,0.11911],
+          m2:[0.93678,0.18979,-0.12657,0.06154,0.81526,0.12320,-0.37562,1.12767,0.24796],n:[0.03901,-0.02788,-0.01113]},
+};
+function simulate(rgb, kind) {
+  if (kind === 'normal') return rgb;
+  const p = BRETTEL[kind], v = rgb.map(lin);
+  const dot = v[0]*p.n[0]+v[1]*p.n[1]+v[2]*p.n[2];
+  const m = dot >= 0 ? p.m1 : p.m2;
+  return [0,1,2].map(i=>m[i*3]*v[0]+m[i*3+1]*v[1]+m[i*3+2]*v[2]).map(unlin);
+}
+
+/* ---------- setup ---------- */
+const FILL = '#362d3e', FILL5 = '#414141';
+const TEXT = 4.5, NONTEXT = 3.0, DE = 20;
+const kinds = ['normal','protan','deutan','tritan'];
+const RG = ['normal','protan','deutan'];
+const cache = new Map();
+const S = c => { if(!cache.has(c)) cache.set(c, Object.fromEntries(kinds.map(k=>[k,simulate(hex(c),k)]))); return cache.get(c); };
+const dE = (a,b,k) => ciede2000(S(a)[k], S(b)[k]);
+const w = (a,b,ks=RG) => Math.min(...ks.map(k=>dE(a,b,k)));
+const C = (c, f=FILL) => contrast(hex(c), hex(f));
+const hue = ([r,g,b]) => { const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn; if(!d) return 0;
+  let h; if(mx===r)h=((g-b)/d)%6; else if(mx===g)h=(b-r)/d+2; else h=(r-g)/d+4; h*=60; return h<0?h+360:h; };
+const chroma = c => { const r=hex(c); return Math.max(...r)-Math.min(...r); };
+const isRed = c => chroma(c) >= 60 && (hue(hex(c)) >= 330 || hue(hex(c)) <= 25);
+
+const GAME = ('#006090 #0093ff #00a4ff #1c4e80 #2d5c74 #2db4ff #306850 #313874 #323d5b #352166 #3890f8 '
+  + '#392725 #399cff #404040 #40c8f8 #415c5f #484848 #4aa500 #4bb400 #4e637c #4f6729 #52c200 #572d1e '
+  + '#574f4a #5acee7 #5f442d #5f5010 #632929 #636363 #6363b5 #663878 #69402a #6b5a73 #6e672c #707070 '
+  + '#735a4a #782155 #78c850 #7b63e7 #7bce52 #7c1818 #804618 #81a6be #9141cb #929292 #984038 #9cadf7 '
+  + '#a0a060 #a0a0a0 #a55239 #a68e17 #ada594 #adbd21 #ae7a3b #b1b100 #bda55a #c07800 #ccbe00 #d0d0c8 '
+  + '#d52929 #d64b00 #ded6b5 #e020c0 #e13d3d #e64a18 #e70808 #e8e8a8 #ebd773 #ef4179 #ef70ef #f75231 '
+  + '#f7b18b #f83018 #f88880 #f89890 #f8b050 #f8d038 #f8f8f8 #fca2a2 #fe8e00 #ff5500 #ff7400 #ffbd73 '
+  + '#ffc631 #ffffff').split(' ').concat(['#fb3041','#922030']);
+
+const f2 = n => n.toFixed(2);
+const row = c => '| ' + c.join(' | ') + ' |';
+const sep = n => '|' + Array(n).fill('---').join('|') + '|';
+const P = console.log;
+const pf = (v,t) => v >= t ? 'pass' : '**FAIL**';
+
+P('### 1. The gate, per element\n');
+P(row(['element','what it is under WCAG 2.2','threshold']));
+P(sep(3));
+P(row(["a row's prose",'text — SC 1.4.3 Contrast (Minimum)','**4.5:1**']));
+P(row(['a gutter mark','graphical object conveying meaning — SC 1.4.11 Non-text Contrast','**3:1**']));
+P(row(['a group frame',"visual information identifying a component's state — SC 1.4.11",'**3:1**']));
+
+/* ---- 1. gutter bad, re-gated as a MARK ---- */
+P('\n### 2. Gutter bad, gated as a mark (3:1)\n');
+P('Gates: contrast >= 3 on `' + FILL + '`, dE00 >= ' + DE + ' from `#78c850` and `#a0a0a0`, under normal/protan/deutan.\n');
+const markPass = GAME.filter(c => C(c) >= NONTEXT && w(c,'#78c850') >= DE && w(c,'#a0a0a0') >= DE);
+P(row(['candidate','red?','contrast on fill','3:1','on `'+FILL5+'`','3:1 there','dE vs green (n/p/d)','dE vs grey (n/p/d)','worst tritan of the two']));
+P(sep(9));
+for (const c of markPass.sort((a,b)=>Math.min(w(b,'#78c850'),w(b,'#a0a0a0'))-Math.min(w(a,'#78c850'),w(a,'#a0a0a0')))) {
+  P(row(['`'+c+'`', isRed(c)?'**red**':'-', f2(C(c)), pf(C(c),NONTEXT), f2(C(c,FILL5)), pf(C(c,FILL5),NONTEXT),
+    f2(w(c,'#78c850')), f2(w(c,'#a0a0a0')), f2(Math.min(dE(c,'#78c850','tritan'), dE(c,'#a0a0a0','tritan')))]));
+}
+P(`\n${markPass.length} clear the mark gates, of which ${markPass.filter(isRed).length} are reds.`);
+P('\nthe incumbent and the near misses, for reference:\n');
+P(row(['candidate','contrast on fill','3:1','dE vs green','dE vs grey','why it fails, if it does']));
+P(sep(6));
+for (const c of ['#e13d3d','#f83018','#e70808','#d52929','#f75231','#fb3041','#d64b00','#e64a18','#922030']) {
+  const why = [];
+  if (C(c) < NONTEXT) why.push('contrast ' + f2(C(c)));
+  if (w(c,'#78c850') < DE) why.push('green ' + f2(w(c,'#78c850')));
+  if (w(c,'#a0a0a0') < DE) why.push('grey ' + f2(w(c,'#a0a0a0')));
+  P(row(['`'+c+'`', f2(C(c)), pf(C(c),NONTEXT), f2(w(c,'#78c850')), f2(w(c,'#a0a0a0')), why.length ? why.join(', ') : '**clears**']));
+}
+
+/* ---- 2. theirs: single value vs split ---- */
+P('\n### 3. Law theirs — one value, or a split?\n');
+const LAWMATES = { 'neither #a0a0a0':'#a0a0a0', 'ours #40c8f8':'#40c8f8', 'later #e331c5':'#e331c5' };
+const BODY = '#f8f8f8';
+const taken = new Set(['#a0a0a0','#40c8f8','#e331c5','#f8f8f8','#e13d3d','#78c850','#f8b050']);
+const pool = GAME.filter(c => !taken.has(c));
+// single value: text role binds at 4.5, and every law gate plus body at DE
+const single = pool.filter(c => C(c) >= TEXT && Object.values(LAWMATES).every(v => w(c,v) >= DE) && w(c,BODY) >= DE);
+P('**As a single value** the text role binds at 4.5:1, and every law gate plus body applies.\n');
+P(`Candidates: **${single.length}** — ${single.length ? single.map(c=>'`'+c+'`').join(' ') : '_none_'}`);
+P(`Of those, reds: **${single.filter(isRed).length}**. Hue range: ` +
+  (single.length ? Math.min(...single.map(c=>hue(hex(c)))).toFixed(0)+'-'+Math.max(...single.map(c=>hue(hex(c)))).toFixed(0)+' deg' : 'n/a'));
+P('\nThis is unchanged by the re-gating: as text, `theirs` never had the 3:1 option.\n');
+
+// frame role: 3:1, no body gate (a frame shares no text stream), law mates still apply
+const frame = pool.filter(c => C(c) >= NONTEXT && Object.values(LAWMATES).every(v => w(c,v) >= DE));
+// text role: 4.5:1, law mates + body, but grey relaxed (words sit beside it) -- report grey achieved
+const text = pool.filter(c => C(c) >= TEXT && w(c,'#40c8f8') >= DE && w(c,'#e331c5') >= DE && w(c,BODY) >= DE);
+P(`**As a frame** (3:1, no body gate — a frame shares no text stream): **${frame.length}** candidates, of which **${frame.filter(isRed).length}** are reds.`);
+P(`**As text** (4.5:1, grey gate relaxed because words sit beside it): **${text.length}** candidates, of which **${text.filter(isRed).length}** are reds.\n`);
+P('the frame candidates that are reds:\n');
+P(row(['candidate','contrast on fill','3:1','dE vs grey','dE vs ours','dE vs later','worst tritan']));
+P(sep(7));
+for (const c of frame.filter(isRed).sort((a,b)=>w(b,'#a0a0a0')-w(a,'#a0a0a0'))) {
+  P(row(['`'+c+'`', f2(C(c)), pf(C(c),NONTEXT), f2(w(c,'#a0a0a0')), f2(w(c,'#40c8f8')), f2(w(c,'#e331c5')),
+    f2(Math.min(...Object.values(LAWMATES).map(v=>dE(c,v,'tritan'))))]));
+}
+P('\nthe text candidates that are reds, with the grey separation each actually achieves:\n');
+P(row(['candidate','contrast on fill','4.5:1','dE vs grey (n/p/d)','grey >= '+DE+'?','dE vs ours','dE vs later','dE vs body']));
+P(sep(8));
+for (const c of text.filter(isRed).sort((a,b)=>w(b,'#a0a0a0')-w(a,'#a0a0a0'))) {
+  P(row(['`'+c+'`', f2(C(c)), pf(C(c),TEXT), f2(w(c,'#a0a0a0')), pf(w(c,'#a0a0a0'),DE), f2(w(c,'#40c8f8')), f2(w(c,'#e331c5')), f2(w(c,BODY))]));
+}
+
+/* ---- 3. the best split pair ---- */
+P('\n### 4. The best split pair\n');
+P('A split only works if the two values read as **one ink in two weights**. So alongside the gates,');
+P('the pair itself is scored: dE00 between frame and text value in normal vision, small is good.\n');
+const pairs = [];
+for (const fr of frame.filter(isRed)) for (const tx of text.filter(isRed)) {
+  if (fr === tx) continue;
+  pairs.push({ fr, tx, sameInk: dE(fr,tx,'normal'), frGrey: w(fr,'#a0a0a0'), txGrey: w(tx,'#a0a0a0'),
+    frC: C(fr), txC: C(tx) });
+}
+pairs.sort((a,b) => (b.frGrey - a.frGrey) || (a.sameInk - b.sameInk));
+P(row(['frame value','text value','frame contrast','text contrast','frame dE vs grey','text dE vs grey','dE between the two (normal)','reads as one ink?']));
+P(sep(8));
+for (const p of pairs.slice(0, 12)) {
+  P(row(['`'+p.fr+'`','`'+p.tx+'`', f2(p.frC), f2(p.txC), f2(p.frGrey), f2(p.txGrey), f2(p.sameInk),
+    p.sameInk < 15 ? 'yes' : p.sameInk < 25 ? 'marginal' : '**no — two inks**']));
+}
+P(`\n${pairs.length} red frame/text pairs in total; top 12 by frame grey-separation shown.`);
+const coherent = pairs.filter(p => p.sameInk < 15);
+P('\n**The pairs that read as one ink** (dE00 < 15 in normal vision) — the only splits that are');
+P('visually coherent:\n');
+P(row(['frame','text','frame contrast','frame dE grey','text contrast','text dE grey','dE between them','what they are']));
+P(sep(8));
+const WHAT2 = { '#f75231':'TypeColor.FIRE', '#f88880':'SETTINGS_SELECTED', '#f89890':'Color.PINK (the incumbent)',
+  '#f7b18b':'MOVE_PP_NEAR_EMPTY shadow, legacy', '#fb3041':'HP-low atlas', '#d64b00':'Color.REDORANGE',
+  '#ff5500':'effectiveness 1/8x', '#f83018':'ShadowColor.BRIGHT_RED', '#e64a18':'Color.LUXURY' };
+for (const p of coherent) {
+  P(row(['`'+p.fr+'`','`'+p.tx+'`', f2(p.frC), f2(p.frGrey), f2(p.txC), f2(p.txGrey), f2(p.sameInk),
+    (WHAT2[p.fr]||'?') + ' / ' + (WHAT2[p.tx]||'?')]));
+}
+
+P(`pairs that also read as one ink (dE < 15 in normal vision): **${coherent.length}**` +
+  (coherent.length ? ' — best is `' + coherent[0].fr + '` / `' + coherent[0].tx + '` at dE ' + f2(coherent[0].sameInk) : ''));
 ```
