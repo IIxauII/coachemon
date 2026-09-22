@@ -33,9 +33,14 @@ export const slowestKo = sl => (sl.koEach?.length ? Math.max(...sl.koEach) : sl.
 // sentence for both surfaces that say it: the panel's ⚔ line and the card the coach reads.
 export const deadEndText = sl => (sl.stopped?.length ? `nothing it can use — ${sl.stopped.join(" · ")}` : "nothing it can do");
 
-// Damaging move types across the living party: the foe rows only list weaknesses we can hit. The party profile's
-// coverage table (`08-party.js`), so the rows and the cards that score matchups read one moveset the same way.
-const moveTypesOf = party => partyProfile(party).ourTypes;
+// What the living party can hit with and what hits it, off one profile (`08-party.js`), so the rows and the cards
+// that score matchups read one moveset the same way. `moveTypes`: damaging move types, which is what keeps the foe
+// rows from listing a weakness nobody can hit. `weak`: the attacking types two or more of us are weak to, with how
+// many of us each one hits — the foes line falls back to it when nothing threatens a KO (#349 §6).
+const partyTypes = party => {
+  const profile = partyProfile(party);
+  return { moveTypes: profile.ourTypes, weak: profile.weakTypes.map(t => [t, profile.weakTo(t).length]) };
+};
 
 // The battle card: the planner's field model, the whole-fight plan (trainer battles) and the catch advice (wild), put
 // together here rather than inside the planner. All three read one **turn** (`25-turn.js`), which is the refresh's
@@ -56,7 +61,7 @@ export const composeBattleCard = (turn, account) => {
   const gate = turn.exact?.() ?? { ok: true };
   if (!gate.ok) {
     const { pin: _pin, ...shell } = battleModel(turn);
-    return { ...shell, teamPlan: null, catch: null, trainer: !!trainer, double, moveTypes: [], verdict: "unavailable" };
+    return { ...shell, teamPlan: null, catch: null, trainer: !!trainer, double, moveTypes: [], weak: [], verdict: "unavailable" };
   }
   // Same turn the ⚔ line is answered on, so a returning switch-in is priced at base stat stages in both (#285).
   const team = trainer ? teamPlanner(arrivalTurn(turn)) : null;
@@ -69,7 +74,7 @@ export const composeBattleCard = (turn, account) => {
     catch: trainer ? null : catchAdvice(turn, account),
     trainer: !!trainer,
     double,
-    moveTypes: moveTypesOf(party.filter(p => p && p.hp > 0)),
+    ...partyTypes(party.filter(p => p && p.hp > 0)),
   };
   card.verdict = verdictOf(card);
   return card;
@@ -98,6 +103,9 @@ const battleCard = (s, account) => readTurn(s, turn => {
 // is a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
   .filter(([name, t]) => name && t).map(([name, t]) => ({ mon: name, level: t.level, from: t.from, move: t.move, after: !!t.after }));
+// The ones worth saying out loud: a likely KO this turn, or one that lands once the mon has acted. One predicate, so
+// the foes line and the structured read can never disagree about what counts as danger.
+const dangerList = m => dangerTags(m).filter(d => d.level === "ko" || d.after);
 const catchWorthIt = m => !!m.catch?.targets?.some(t => t.verdict !== "skip");
 const planLost = m => !!m.teamPlan && m.teamPlan.result !== "win";
 // An easy wave: a wild fight with nothing to decide. No boss, no danger tag, no switch (nor a missing one), every
@@ -160,8 +168,27 @@ export const readCard = (s, account) => {
 // ---- The summary
 const slotText = sl => `${sl.name} ${sl.move ?? deadEndText(sl)}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
+// The battle's field line: what to do this turn, one clause per field slot — or, where the enemy's move couldn't be
+// made, why there is no advice at all. The act group's summary is this string **verbatim** (#349 §6), so the strip,
+// the watch line and the structured read are one string and cannot disagree.
+export const actSummary = card => (card.unavailable ? `no advice — ${card.unavailable}`
+  : card.field ? card.field.slots.map(slotText).join(" ; ") : null);
+
+// The foes group's line (#349 §6): what threatens a KO this turn — `💀 Charizard ← Butterfree Gust`, `⚠` once the mon
+// has acted — and, with nothing threatening one, what the party itself is weak to. Both are fields the coach has
+// already computed; this only joins them, which is what keeps it presentation.
+// A mon the turn both attacks with and switches out carries its threat on two rows, so the same entry reaches this
+// twice; a line that says one thing twice is worse than one that says it once, so identical clauses collapse.
+export const foesSummary = card => {
+  const danger = dangerList(card).map(d => `${d.level === "ko" ? "💀" : "⚠"} ${d.mon} ← ${d.from} ${d.move}`);
+  if (danger.length) return [...new Set(danger)].join(" · ");
+  // "we're weak to", not "weak to": the group is called Foes and a row below it reads `foes weak to:`, which is the
+  // other direction entirely. The one word is what keeps the two from reading as each other.
+  return card.weak?.length ? `we're weak to ${card.weak.map(([t, n]) => `${t} ×${n}`).join(" · ")}` : null;
+};
+
 // The fight plan in one line: its verdict, the win condition, then what it warns about (a likely loss says why).
-const planSummary = tp => {
+export const planSummary = tp => {
   if (!tp) return null;
   if (tp.summary) return tp.summary;
   const lost = tp.result !== "win";
@@ -241,7 +268,7 @@ export const cardSummary = card => {
   if (card.kind === "learn") return { ...base, learn: learnSummary(card) };
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
   // Nothing the enemy model feeds is being claimed, so the read says that and why, and claims nothing else.
-  if (card.unavailable) return { ...base, verdict: "unavailable", field: `no advice — ${card.unavailable}` };
+  if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card) };
   // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170 §A).
   const saveFor = name => {
     const r = (card.teamPlan?.reserve ?? []).find(x => x.name === name);
@@ -251,8 +278,8 @@ export const cardSummary = card => {
   };
   return { ...base,
     verdict: card.verdict ?? verdictOf(card),
-    field: card.field ? card.field.slots.map(slotText).join(" ; ") : null,
-    danger: dangerTags(card).filter(d => d.level === "ko" || d.after)
+    field: actSummary(card),
+    danger: dangerList(card)
       .map(({ mon: name, from, move, level }) => ({ mon: name, from, move, level: level === "ko" ? "ko" : "after", saveFor: saveFor(name) })),
     plan: planSummary(card.teamPlan) };
 };

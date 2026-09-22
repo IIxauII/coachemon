@@ -1,21 +1,33 @@
-// Battle card (the 60-card battle model): the ⚔ line per field slot, the switches, the catch section, the foe rows
-// and the fight plan.
+// Battle card (the 60-card battle model), the first card to be drawn as **group**s (#349 §1): `act` — the ⚔ line per
+// field slot and the switches to get there — then `foes`, then `catch` on a wild wave or `plan` on a trainer's, then
+// `road`. Each group's summary is read off the model, never written here (§6).
 import { STATUS_FRAMES } from "./01-core.js";
-import { deadEndText, hitsText } from "./60-card.js";
-import { FS, badge, bar, closed, dim, h, hpColor, img, line, mon, tab } from "./90-render.js";
+import { catchSummary } from "./45-catch.js";
+import { previewSummary } from "./48-preview.js";
+import { aheadSummary } from "./49-ahead.js";
+import { actSummary, deadEndText, foesSummary, hitsText, planSummary } from "./60-card.js";
+import { FS, badge, bar, closed, dim, group, h, hpColor, img, line, mon, tab } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
+// A group with nothing in it is not drawn: an empty tab is filler, and the options themselves say it one glance
+// lower (§6). `act` is never empty — every kind's string produces something.
+const some = (id, label, summary, rows) => {
+  const g = group(id, label, summary, rows);
+  return g.summary || g.rows.length ? g : null;
+};
+
 export const drawBattle = m => {
-  // The exact enemy move couldn't be made (#183): the card says so and shows nothing else. The next refresh tries
-  // again, so a one-off breach flickers rather than sticking.
+  // The exact enemy move couldn't be made (#183): an ordinary card with exactly one `act` group, whose summary says
+  // so and which shows nothing else. The inline ⚠ that carried this is gone — the summary carries it. The next
+  // refresh tries again, so a one-off breach flickers rather than sticking.
   if (m.unavailable) {
-    if (closed()) return [tab("\u26a0", null)];
-    return [bar("\ud83c\udfaf", m.title), line("\u26a0", "#fa4", h("span", { color: "#fa4" }, `no advice — ${m.unavailable}`))];
+    if (closed()) return [group("act", "Now", null, [tab("\u26a0", null)])];
+    return [group("act", "Now", actSummary(m), [bar("\ud83c\udfaf", m.title)])];
   }
-  if (closed()) return [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)];
+  if (closed()) return [group("act", "Now", null, [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)])];
   const f = m.field;
 
   // Send-in icons only add something when they go beyond the ⚔ mons: a trainer's later foes.
@@ -160,6 +172,18 @@ export const drawBattle = m => {
         : !r.pick && !f ? line("➜", "#8cf", h("span", dim, "no damaging move lands")) : null,
       r.notes?.length ? line("·", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, r.notes.join(" · "))) : null);
   });
-  return [header, ...field, ...drawCatch(m), team, ...rows, ...drawTeamPlan(m), ...drawPreview(m.preview),
-    ...drawAhead(m.ahead)].filter(Boolean);
+  // The header is chrome, not a row: it carries the card's identity and the panel's one control, and the strip takes
+  // it in #356. Until then it rides in `act`, the way an un-migrated card's own header rides in the adapter's group.
+  //
+  // `road` merges the preview and the look-ahead, because two tabs about what is coming is how a card reaches six.
+  // `catch` keeps a group of its own rather than joining `foes`: catching is a different decision from fighting,
+  // with its own verdict and its own numbers.
+  const road = [...drawPreview(m.preview), ...drawAhead(m.ahead)];
+  return [
+    some("act", "Now", actSummary(m), [header, ...field]),
+    some("foes", "Foes", foesSummary(m), [team, ...rows]),
+    some("catch", "Catch", catchSummary(m.catch), drawCatch(m)),
+    some("plan", "Plan", planSummary(m.teamPlan), drawTeamPlan(m)),
+    some("road", "Road", [previewSummary(m.preview), aheadSummary(m.ahead)].filter(Boolean).join(" · "), road),
+  ].filter(Boolean);
 };

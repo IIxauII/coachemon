@@ -2,6 +2,7 @@
 // time. Takes the `catchAdvice` view, or a battle model carrying it as `catch`.
 // Skips aren't drawn: no line means nothing worth a ball. One line per target —
 // `🎯 catch: [ball] Great 78% — new species, covers Ground weakness` — then the odds of every ball we hold and the reasons.
+import { catchTargets } from "./45-catch.js";
 import { FS, closed, dim, h, img, line, mon } from "./90-render.js";
 
 export const drawCatch = m => {
@@ -13,8 +14,8 @@ export const drawCatch = m => {
   const ball = (x, height = 14) => [img("items", x.key, x.ball, height, null),
     h("span", { marginRight: "3px" }, x.ball.replace(/ Ball$/, ""))];
   const pct = p => `${Math.round(p * 100)}%`;
-  const out = [h("div", { borderTop: "1px solid rgba(255,255,255,.12)", margin: "5px 0 2px" })];
-  const targets = c.targets.filter(t => t.verdict !== "skip");
+  const out = [];
+  const targets = catchTargets(c);
   if (!targets.length) return [];
   for (const t of targets) {
     const color = COLOR[t.verdict];

@@ -352,11 +352,6 @@ Buzzwole Buzzwole L159 Bug Fighting 👑 100% ▲ — ↯ Bug Lunge → Mamoswin
 ⚔ Mamoswine ⚠ Steel ×2 100% {Mega Golisopod's Iron Head: ~100% of current HP, 63% KO} Ground Precipice Blades → Mega Golisopod
 ⤵ Mamoswine falls this turn › Metagross in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
-Mega Golisopod Mega Golisopod L153 Bug Steel 👑 100% ▲ — ↯ Steel Iron Head → Mamoswine 100% likely · moves after
-♟ Fight plan winnable
-1 Mamoswine Ground Precipice Blades → Mega Golisopod sacrifice → Metagross in free
-2 Metagross free Steel Meteor Mash → Mega Golisopod KO · 30% left
-✝ Mamoswine 100% · sacrifice to Mega Golisopod so Metagross comes in free
 == guzma w165 turn 3 (live)
 🎯 W200 · Cyrus Golduck › Mamoswine × {Close}
 ⚔ Golduck ⚠ Steel 100% {Mega Golisopod's Iron Head: ~100% of current HP} Water Surf → Mega Golisopod

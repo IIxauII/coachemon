@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, closed, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw } from "./90-render.js";
+import { battleScene, clearMissed, closed, disclaimer, drawGroups, dropGame, el, group, missedSprite, setDraw, setRedraw } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
 import { drawEncounter } from "./96-render-encounter.js";
 import { drawFusion } from "./96-render-fusion.js";
@@ -14,7 +14,12 @@ import { drawRewards } from "./96-render-rewards.js";
 import { drawStarters } from "./96-render-starters.js";
 import { drawBiome } from "./97-render-biome.js";
 
-const DRAW = { learn: drawLearn, rewards: drawRewards, battle: drawBattle, biome: drawBiome, encounter: drawEncounter, starters: drawStarters, fusion: drawFusion };
+// A renderer's product is an ordered list of groups (#349 §1). Until a kind is split into its own (#352, #353) it is
+// wrapped: its node tree is presented as one `act` group carrying neither label nor summary, so it draws and reads
+// exactly as it did — its own header among the rows, and no heading above it.
+const adapt = draw => card => [group("act", "", null, draw(card))];
+const DRAW = { learn: adapt(drawLearn), rewards: adapt(drawRewards), battle: drawBattle, biome: adapt(drawBiome),
+  encounter: adapt(drawEncounter), starters: adapt(drawStarters), fusion: adapt(drawFusion) };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
@@ -24,8 +29,9 @@ export const shownCard = () => shown;
 let failure = null;
 export const lastFailure = () => failure;
 
-// The render layer draws a card as text through this, so `cardText` never has to know which draw goes with which kind
-// — that stays here (§11.1). The disclaimer is not in it: that is the panel's footer, not a card's.
+// The render layer derives a card's text from its groups through this, so `cardText` never has to know which draw
+// goes with which kind — that stays here (§11.1). The disclaimer is not in it: that is the panel's footer, not a
+// card's.
 setDraw(card => (DRAW[card.kind] ? DRAW[card.kind](card) : null));
 
 // The **account read**: what the run has caught and unlocked, plus the party it would join and the event's shiny
@@ -80,7 +86,9 @@ export const tick = () => {
     if (sig !== last) {
       clearMissed();
       // The panel carries the disclaimer as its footer line (§3); it is the panel's, so no card draws it.
-      el.replaceChildren(...DRAW[card.kind](card), ...(closed() ? [] : [disclaimer()]));
+      // The shell shells the groups: for now a plain stack, one rule between them. The tab bar and the pane come
+      // with the drawer (#357), and the strip with #356.
+      el.replaceChildren(...drawGroups(DRAW[card.kind](card)), ...(closed() ? [] : [disclaimer()]));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missedSprite() ? "" : sig;
     }

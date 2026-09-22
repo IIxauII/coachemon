@@ -9,7 +9,7 @@
 // Nothing is drawn when the preview is unavailable — a build past the pin, or no run seed: the tally is the place
 // that reports drift, and a card that nags on every tick is worse than a quiet one.
 import { previewKind, previewMark } from "./48-preview.js";
-import { FS, badge, dim, h, line, mon, sep } from "./90-render.js";
+import { FS, badge, dim, h, line, mon } from "./90-render.js";
 
 export const drawPreview = m => {
   if (!m || m.unavailable) return [];
@@ -17,8 +17,9 @@ export const drawPreview = m => {
   const kind = h("span", { color: m.type === "trainer" ? "#fa4" : m.type === "me" ? "#c9f" : "#9aa", marginRight: "3px" },
     `${previewKind(m)}${m.double ? ` double${previewMark(m, "double")}` : ""}`);
   const who = m.trainer ? `${m.trainer.name}${previewMark(m, "trainer")}` : null;
-  // A section inside the shop or battle card, not a card of its own: its own rule above it, and no control of its own.
-  const out = [h("div", sep), line("🔮", "#9aa", h("span", { fontWeight: "bold", marginRight: "3px" }, `Next ${head}`), kind)];
+  // Rows of the road group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
+  // control of its own.
+  const out = [line("🔮", "#9aa", h("span", { fontWeight: "bold", marginRight: "3px" }, `Next ${head}`), kind)];
   if (who) out.push(line("·", "#fa4", h("span", {}, who)));
   for (const f of m.foes) {
     out.push(line(f.segments > 1 ? "👑" : "·", f.segments > 1 ? "#fa4" : "#9aa",

@@ -1,6 +1,6 @@
 // The panel itself: its element, the sprites and text helpers every card is drawn from, and whether the user has it
 // closed. It draws no card and decides nothing - 60-card works out what is on screen, the renderers above turn one
-// card into nodes, and 98-tick puts the two together.
+// card into groups, and 98-tick puts the two together.
 // State another file needs is read and written through functions, never exported as a binding.
 let game = null;
 const sprites = new Map();
@@ -70,16 +70,66 @@ let isClosed = false;
 try { isClosed = localStorage.getItem(VIEW_KEY) === "closed"; } catch {}
 export const closed = () => isClosed;
 
-// ---- The card as plain text (§11.1)
-// The stream's `text` is the card the panel draws, read back as lines: one source, so the two can never disagree. It
-// is always the whole card — whether the user has the panel closed is theirs, and a subscriber asked for the card.
+// ---- Groups (#349 §1)
+// A renderer's product is an ordered list of **group**s, not a list of nodes: `{ id, label, summary, rows }`. The
+// shell decides how to shell them, so separation between groups is the shell's business and no renderer draws a
+// divider of its own.
+//
+// The ids are closed at eight and semantic — a group means the same thing wherever it appears, which is what lets
+// one be remembered as the cards change under it. A ninth means retiring or merging one, not adding one here.
+//
+// One list, in the fixed order the plain text walks and the tab bar will sit in, whatever the drawer is showing
+// (§5): a renderer cannot lead with what matters most on its own kind, so a tab sits in the same place always.
+// `act` leads it, which is what makes the first line of a card's text its call.
+export const GROUP_IDS = ["act", "foes", "catch", "plan", "options", "audit", "road", "notes"];
+// `label` is the group's name on the tab; `summary` is what it concluded, and may be absent. `rows` are nodes: a row
+// is two inline columns, the gutter and the body, so it flattens to `mark body`.
+export const group = (id, label, summary, rows) => {
+  if (!GROUP_IDS.includes(id)) throw new Error(`unknown group ${id}`);
+  return { id, label: label ?? "", summary: summary || null, rows: (rows ?? []).filter(Boolean) };
+};
+
+// What heads a group's pane, and its block in the plain text — one rule, so the two cannot disagree.
+// `act` is headed by its summary alone: the strip above it is its label (§6), which is also what makes the first
+// line of the card's text the call and not a heading. A group with no summary is headed by its label alone, and one
+// with neither — the temporary adapter's whole-card group (98-tick) — is headed by nothing.
+// The name and what it concluded are held apart by a colon, or the heading reads as one sentence: `Foes: we're weak
+// to Fire ×2`, where the pane has bold against dim to do the same work. A colon rather than the ` — ` the repo
+// usually spends on claim→detail, because the summaries already spend one inside themselves.
+const headingText = g => (g.id === "act" ? g.summary
+  : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
+const headingNode = g => {
+  if (!headingText(g)) return null;
+  return g.id === "act"
+    ? h("div", { fontWeight: "bold" }, g.summary)
+    : h("div", {}, h("span", { fontWeight: "bold", marginRight: "4px" }, g.label), g.summary ? h("span", dim, g.summary) : null);
+};
+
+// The drawer, for now a plain stack: every group, headed, with the shell's own rule between them. The tab bar and
+// the pane arrive in #357; nothing here knows what a view is.
+export const drawGroups = groups => (groups ?? []).flatMap((g, i) =>
+  [i ? h("div", sep) : null, headingNode(g), ...g.rows].filter(Boolean));
+
+// ---- The card as plain text (§11.1, §5)
+// The stream's `text` is derived from the group list rather than read back off the drawn card, so the two cannot
+// disagree by construction. It is always the whole card — whether the user has the panel closed is theirs, and a
+// subscriber asked for the card — and always in the fixed group order, whatever the drawer is showing.
 // 98-tick registers the draw for a kind here, the way it registers the redraw: dispatch stays its business.
 let drawFn = () => null;
 export const setDraw = fn => { drawFn = fn; };
+
+// The group list as plain data: the same groups in the fixed order, with their rows flattened to one string each.
+// This is the seam the content half of the card is tested at, and what #361 puts on the wire.
+export const groupsText = groups => GROUP_IDS.flatMap(id => (groups ?? []).filter(g => g.id === id))
+  .map(g => ({ id: g.id, label: g.label, summary: g.summary, rows: g.rows.flatMap(nodeLines).map(clean).filter(Boolean) }));
+
 export const cardText = card => {
   if (!card) return null;
-  const nodes = renderText(() => drawFn(card));
-  return nodes && nodes.length ? nodesText(nodes) : null;
+  const groups = renderText(() => drawFn(card));
+  if (!groups?.length) return null;
+  const text = groupsText(groups)
+    .map(g => [headingText(g), ...g.rows].filter(Boolean).join("\n")).filter(Boolean).join("\n");
+  return text || null;
 };
 const renderText = draw => {
   const wasClosed = isClosed;
@@ -113,7 +163,7 @@ const nodeLines = n => {
   if (inline) out.push(inline);
   return out;
 };
-const nodesText = nodes => nodes.flatMap(nodeLines).map(l => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
+const clean = l => l.replace(/\s+/g, " ").trim();
 
 // ---- The disclaimer (§3)
 // Fixed wording, on every listing and inside the extension. The panel has no About page, so it carries it as a footer.

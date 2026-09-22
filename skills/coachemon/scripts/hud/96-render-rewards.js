@@ -6,6 +6,8 @@ import { drawAudit } from "./95-render-audit.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawReroll } from "./95-render-reroll.js";
 
+const ruled = rows => (rows.length ? [h("div", sep), ...rows] : []);
+
 export const drawRewards = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   if (closed()) return [tab("🛒", p ? itemImg(p.icon, p.name) : null)];
@@ -55,7 +57,9 @@ export const drawRewards = m => {
     ...drawReroll(m),
     // What is wrong with the team itself, while this shop can still patch it.
     ...drawAudit(m.audit),
-    // What the shop is being stocked for: the wave the run seed has already decided on (it draws its own rule), then
-    // the next big fight the calendar holds and whether this party is ready for it.
-    ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
+    // What the shop is being stocked for: the wave the run seed has already decided on, then the next big fight the
+    // calendar holds and whether this party is ready for it. The two shared sections stopped ruling themselves off
+    // when they became rows of the battle card's road group (#349 §1), so this card rules them off until it becomes
+    // groups itself (#352).
+    ...ruled(drawPreview(m.preview)), ...ruled(drawAhead(m.ahead))].filter(Boolean);
 };
