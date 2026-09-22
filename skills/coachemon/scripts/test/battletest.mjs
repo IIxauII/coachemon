@@ -64,8 +64,7 @@ const scenarios = {
   tera: { double: false, trainer: { isBoss: false }, teras: ["Lycanroc"], party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,120], [["Flamethrower","Fire",90,"S"],["Air Slash","Flying",75,"S"]], true, 120)],
     foes: [teraMon("Lycanroc", 70, ["Rock"], "Keen Eye", [200,190,100,80,90,140], [["Stone Edge","Rock",100,"P"]], true, "Steel")] },
-  // A trap the planned move runs into goes on the slot line (collapsed and mini) and on the foe row's ✦: Fire into
-  // Thick Fat.
+  // A trap the planned move runs into goes on the foe row's ✦: Fire into Thick Fat.
   trap: { double: false, party: [
     mon("Charizard", 66, ["Fire","Flying"], "Blaze", [190,125,118,160,128,148], [["Flamethrower","Fire",90,"S"]], true)],
     foes: [mon("Swinub", 20, ["Ice","Ground"], "Thick Fat", [60,50,80,30,30,20], [["Tackle","Normal",40,"P"]], true)] },
@@ -132,43 +131,31 @@ const scenarios = {
 };
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
 const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
-// Every node with a click handler, depth first, to press the panel's buttons.
-const buttons = n => (n == null || typeof n === "string" ? [] : [...(n.onclick ? [n] : []), ...(n.children ?? []).flatMap(buttons)]);
 
 for (const [label, sc] of Object.entries(scenarios)) {
-  for (const VIEW of ["full", "mini"]) {
-    let el;
-    globalThis.window = globalThis; delete globalThis.__coachHud; delete globalThis.__queued;
-    class PM { queueMessage() { globalThis.__queued = (globalThis.__queued ?? 0) + 1; } getCurrentPhase() { return { phaseName: "CommandPhase" }; } }
-    const pm = new PM();
-    const onField = () => sc.party.filter(p => p.isOnField());
-    for (const f of sc.foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => { pm.queueMessage("side effect"); return 1; }; f.id = f.name; }
-    for (const p of sc.party) p.id = p.name;
-    const trainer = sc.trainer ? { getName: () => "Tester", config: sc.trainer, isDouble: () => false,
-      // `bench` / `summonIndex` let a scenario name the party indices the trainer scores and the one it sends in;
-      // the defaults are every foe but the first, and the first of them.
-      getPartyMemberMatchupScores: () => { pm.queueMessage("side effect"); return (sc.bench ?? sc.foes.map((_f, i) => i).slice(1)).map(i => [i, 5]); },
-      getSortedPartyMemberMatchupScores: sc2 => sc2.slice().sort((a, b) => b[1] - a[1]),
-      getNextSummonIndex: () => sc.summonIndex ?? 1, shouldTera: e => !!sc.teras?.includes(e.name) } : null;
-    const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
-    globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
-    const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
-    globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
-    globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-    globalThis.localStorage = { getItem: () => VIEW, setItem() {} };
-    eval(bundle("hud"));
-    if (sc.trainer && VIEW === "full") console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
-    console.log(`== ${label} (${VIEW})\n${lines(el)}`);
-    if (VIEW === "full") {
-      // The card's own line, the way the watcher prints it; its full shape is cardtest's business.
-      const x = globalThis.__coachHud.summary();
-      console.log(`summary ${x.verdict} | ${x.field}${x.danger.length ? ` | ${x.danger.map(d => `${d.level === "ko" ? "\u{1F480}" : "\u26a0"} ${d.mon}`).join(" ")}` : ""}${x.plan ? ` | plan: ${x.plan}` : ""}`);
-    }
-    // A collapsed wave: `+` shows the chosen view, and it holds for the rest of the wave.
-    const plus = (el.kids ?? []).length === 1 ? buttons(el.kids[0]).find(b => b.children.includes("+")) : null;
-    if (plus) {
-      plus.onclick({ stopPropagation() {} });
-      console.log(`-- after + (${VIEW})\n${lines(el)}`);
-    }
-  }
+  let el;
+  globalThis.window = globalThis; delete globalThis.__coachHud; delete globalThis.__queued;
+  class PM { queueMessage() { globalThis.__queued = (globalThis.__queued ?? 0) + 1; } getCurrentPhase() { return { phaseName: "CommandPhase" }; } }
+  const pm = new PM();
+  const onField = () => sc.party.filter(p => p.isOnField());
+  for (const f of sc.foes) { f.getOpponents = () => onField(); f.getMatchupScore = () => { pm.queueMessage("side effect"); return 1; }; f.id = f.name; }
+  for (const p of sc.party) p.id = p.name;
+  const trainer = sc.trainer ? { getName: () => "Tester", config: sc.trainer, isDouble: () => false,
+    // `bench` / `summonIndex` let a scenario name the party indices the trainer scores and the one it sends in;
+    // the defaults are every foe but the first, and the first of them.
+    getPartyMemberMatchupScores: () => { pm.queueMessage("side effect"); return (sc.bench ?? sc.foes.map((_f, i) => i).slice(1)).map(i => [i, 5]); },
+    getSortedPartyMemberMatchupScores: sc2 => sc2.slice().sort((a, b) => b[1] - a[1]),
+    getNextSummonIndex: () => sc.summonIndex ?? 1, shouldTera: e => !!sc.teras?.includes(e.name) } : null;
+  const scene = { phaseManager: pm, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: { waveIndex: 89, turn: 1, double: sc.double, enemySwitchCounter: 0, getBattlerCount: () => (sc.double ? 2 : 1), trainer }, ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
+  globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
+  const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
+  globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
+  globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
+  globalThis.localStorage = { getItem: () => "full", setItem() {} };
+  eval(bundle("hud"));
+  if (sc.trainer) console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
+  console.log(`== ${label}\n${lines(el)}`);
+  // The card's own line, the way the watcher prints it; its full shape is cardtest's business.
+  const x = globalThis.__coachHud.summary();
+  console.log(`summary ${x.verdict} | ${x.field}${x.danger.length ? ` | ${x.danger.map(d => `${d.level === "ko" ? "\u{1F480}" : "\u26a0"} ${d.mon}`).join(" ")}` : ""}${x.plan ? ` | plan: ${x.plan}` : ""}`);
 }

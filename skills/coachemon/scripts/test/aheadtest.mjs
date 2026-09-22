@@ -155,8 +155,7 @@ const mount = opts => {
 // Ice Beam answers the rival's Garchomp (Dragon/Ground), Earthquake its Lucario (Fighting/Steel).
 const team = () => [pk("Milotic", 18, ["Water"], ["Surf", "Ice Beam"]), pk("Lucario", 18, ["Fighting", "Steel"], ["Earthquake"])];
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-const card = (ah, m, v = "full") => { globalThis.localStorage = { getItem: () => v, setItem() {} };
-  return ah.drawAhead(m, v).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"); };
+const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
 
 // ---- 1. The calendar: four arithmetic rules, in precedence order, and no RNG anywhere in it.
 {
@@ -222,7 +221,6 @@ const card = (ah, m, v = "full") => { globalThis.localStorage = { getItem: () =>
   assert.deepEqual(m2.readiness.unanswered, ["Garchomp", "Lucario"]);
   assert.ok(m2.readiness.levelGap < 0, "they out-level us");
   console.log(`== card\n${card(ah2, m2)}`);
-  console.log(`== mini\n${card(ah2, m2, "mini")}`);
   console.log(`summary ${JSON.stringify(ah2.aheadSummary(m2))}`);
 
   // What they swing back with is the preview's `attackTypes`, and those are read by 08-party's coverage rule (#266):

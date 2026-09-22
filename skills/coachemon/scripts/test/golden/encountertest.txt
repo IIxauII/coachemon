@@ -1,23 +1,19 @@
-== chest, prize (full)
-🎭 Mysterious Chest common − {Minimal overview} × {Close}
+== chest, prize
+🎭 Mysterious Chest common × {Close}
 ★ Open it 🔮 {fixed by the run seed: this is what happens} — pick of 3 Ultra items
 no trap this time
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== chest, prize (mini)
-🎭 Mysterious Chest common + {Expand} × {Close}
-★ Open it 🔮 {fixed by the run seed: this is what happens} — pick of 3 Ultra items
-· Leave — shop only, no reward
 summary Mysterious Chest: take Open it — pick of 3 Ultra items
-== chest, trap (full)
-🎭 Mysterious Chest common − {Minimal overview} × {Close}
+== chest, trap
+🎭 Mysterious Chest common × {Close}
 ✗ Open it 🔮 {fixed by the run seed: this is what happens} — trap: Garchomp faints, then a Gimmighoul boss fight
 ⚔ boss · costs Garchomp a revive
 ★ Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Mysterious Chest: take Leave — shop only, no reward · avoid Open it
-== store (full)
-🎭 Department Store Sale common − {Minimal overview} × {Close}
+== store
+🎭 Department Store Sale common × {Close}
 · TMs 🔮 {fixed by the run seed: this is what happens} — pick of 5 TMs: 2 Common, 2 Great, 1 Ultra
 ★ Vitamins 🔮 {fixed by the run seed: this is what happens} — pick of 3: 2 vitamins, 1 PP Up
 a vitamin is permanent
@@ -26,8 +22,8 @@ one-battle boosts
 · Poké Balls 🔮 {fixed by the run seed: this is what happens} — pick of 4 ball packs: 1 Poké, 1 Great, 1 Ultra, 1 Rogue
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Department Store Sale: take Vitamins — pick of 3: 2 vitamins, 1 PP Up
-== fight or flight, thief (full)
-🎭 Fight or Flight common − {Minimal overview} × {Close}
+== fight or flight, thief
+🎭 Fight or Flight common × {Close}
 · Battle — fight Tyranitar (+2 to a random stat) for Leftovers; catchable
 ⚔ boss · L44 boss vs your L40, 2 mons hit it SE, 2 weak to it
 ★ Steal — Leftovers (Great tier), no fight, EXP
@@ -35,8 +31,8 @@ by Sneasel · free
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Fight or Flight: take Steal — Leftovers (Great tier), no fight, EXP
-== fiery fallout (full)
-🎭 Fiery Fallout common − {Minimal overview} × {Close}
+== fiery fallout
+🎭 Fiery Fallout common × {Close}
 · Battle — fight 2 Volcarona (double, Fire Spin traps your leads, sun, +1 SpD/Spe) → your lead gets a type booster + rewards
 ⚔ double · 2× ~L62 vs your L40, 1 mon hits it SE
 ✗ Search 🔮 {fixed by the run seed: this is what happens} — non-Fire mons lose 20% max HP; Jolteon is burned and its ability becomes Heatproof for good
@@ -45,16 +41,16 @@ Jolteon loses Volt Absorb
 by Arcanine
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Fiery Fallout: take Fire help — no fight: your lead gets a type booster + rewards, EXP · avoid Search
-== berries, faster (full)
-🎭 Berries Abound common − {Minimal overview} × {Close}
+== berries, faster
+🎭 Berries Abound common × {Close}
 · Battle — fight Ursaring → pick of 5 berries + 2 berries
 ⚔ boss · L34 boss vs your L40, nothing hits it SE
 ★ Race — Jolteon outruns it: 2 berries + pick of 5 berries, no fight, EXP
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Berries Abound: take Race — Jolteon outruns it: 2 berries + pick of 5 berries, no fight, EXP
-== part-timer (full)
-🎭 Part-Timer common − {Minimal overview} × {Close}
+== part-timer
+🎭 Part-Timer common × {Close}
 ★ Deliver — Jolteon earns $2,424 (Speed); its moves drop to 2 PP
 pick a mon you won't need PP on
 · Warehouse — Garchomp earns $2,244 (HP/Atk/Def); its moves drop to 2 PP
@@ -62,8 +58,8 @@ pick a mon you won't need PP on
 needs a mon with Charm / Attract / Captivate …
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Part-Timer: take Deliver — Jolteon earns $2,424 (Speed); its moves drop to 2 PP
-== vitamin dealer, rich (full)
-🎭 Shady Vitamin Dealer common − {Minimal overview} × {Close}
+== vitamin dealer, rich
+🎭 Shady Vitamin Dealer common × {Close}
 ✗ Cheap 🔮 {fixed by the run seed: this is what happens} — $750: 2 random vitamins on one mon; it loses ½ HP and its nature changes — Garchomp becomes Modest (+SpA −Atk)
 on Garchomp
 ★ Pricey — $2,520: 2 random vitamins on one mon, no side effects
@@ -71,8 +67,8 @@ leaves $17,480
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Shady Vitamin Dealer: take Pricey — $2,520: 2 random vitamins on one mon, no side effects · avoid Cheap
-== teleport to a rare biome (full)
-🎭 Teleporting Hijinks common − {Minimal overview} × {Close}
+== teleport to a rare biome
+🎭 Teleporting Hijinks common × {Close}
 · Pay 🔮 {fixed by the run seed: this is what happens} — $950: teleport to Fairy Cave, fight an enraged boss there
 ⚔ boss · Fairy Cave is a rare biome
 ★ Machine 🔮 {fixed by the run seed: this is what happens} — free: teleport to Fairy Cave, fight an enraged boss there, EXP
@@ -81,8 +77,8 @@ summary Shady Vitamin Dealer: take Pricey — $2,520: 2 random vitamins on one m
 ⚔ boss
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Teleporting Hijinks: take Machine — free: teleport to Fairy Cave, fight an enraged boss there, EXP
-== uncommon breed, new species (full)
-🎭 Uncommon Breed common − {Minimal overview} × {Close}
+== uncommon breed, new species
+🎭 Uncommon Breed common × {Close}
 · Battle — fight Eevee (boosted); catchable → rewards
 ⚔ wild · L38 vs your L40, nothing hits it SE
 · Berries — give 4 random berries: Eevee joins with a 2nd egg move
@@ -91,8 +87,8 @@ new species
 by Milotic · new species
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
-== gts (full)
-🎭 Global Trade System common − {Minimal overview} × {Close}
+== gts
+🎭 Global Trade System common × {Close}
 · Trade — trade: best offer Jolteon → Salamence (final BST +75)
 no clear upgrade
 ? Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
@@ -101,8 +97,8 @@ a gamble
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Global Trade System: your call
-== lost at sea (full)
-🎭 Lost at Sea common − {Minimal overview} × {Close}
+== lost at sea
+🎭 Lost at Sea common × {Close}
 ★ Surf — sail through free, EXP
 by Lapras
 – Fly — fly out free, EXP
@@ -111,28 +107,24 @@ needs a mon that can learn Fly
 a guide costs nothing
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Lost at Sea: take Surf — sail through free, EXP · avoid Wander
-== strong stuff (full)
-🎭 The Strong Stuff common − {Minimal overview} × {Close}
+== strong stuff
+🎭 The Strong Stuff common × {Close}
 ✗ Drink — no fight: Garchomp & Lapras lose 15 in every base stat, the rest gain 10; rewards
 weakens your two strongest
 ★ Battle — fight Shuckle (5 bars, +1 Def/SpD, berries; Gastro Acid + Stealth Rock on you) → Soul Dew + rewards
 ⚔ boss · ~L35 boss (5 bars) vs your L40, 1 mon hits it SE, 1 weak to it
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary The Strong Stuff: take Battle — fight Shuckle (5 bars, +1 Def/SpD, berries; Gastro Acid + Stealth Rock on you) → Soul Dew + rewards · avoid Drink
-== field trip (not judged) (full)
-🎭 Field Trip common − {Minimal overview} × {Close}
+== field trip (not judged)
+🎭 Field Trip common × {Close}
 ? Deal
 $1,010 · Garchomp, Lapras qualify
 ? Refuse
 not judged yet: options and requirements only
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== field trip (not judged) (mini)
-🎭 Field Trip common + {Expand} × {Close}
-? Deal
-? Refuse
 summary Field Trip: not judged
-== training session, a liability ability (full)
-🎭 Training Session ultra − {Minimal overview} × {Close}
+== training session, a liability ability
+🎭 Training Session ultra × {Close}
 · Light — it fights you as a 3-bar boss of itself → 2 of its weakest IVs go up (+10 under 11, +5 under 21, else +3)
 every member is near-maxed
 · Medium — it fights you as a 3-bar boss of itself → pick any nature for it
@@ -141,38 +133,24 @@ no member's nature is hurting it
 Slaking is stuck with Truant
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== training session, a liability ability (mini)
-🎭 Training Session ultra + {Expand} × {Close}
-· Light — it fights you as a 3-bar boss of itself → 2 of its weakest IVs go up (+10 under 11, +5 under 21, else +3)
-· Medium — it fights you as a 3-bar boss of itself → pick any nature for it
-★ Heavy — it fights you as a 4-bar boss of itself, +1 to every stat on entry → pick any of its abilities, hidden included
-· Leave — shop only, no reward
 summary Training Session: take Heavy — it fights you as a 4-bar boss of itself, +1 to every stat on entry → pick any of its abilities, hidden included
-== salesman, a new species (full)
-🎭 The Pokémon Salesman ultra − {Minimal overview} × {Close}
+== salesman, a new species
+🎭 The Pokémon Salesman ultra × {Close}
 ★ Buy — $2,020: Larvesta (hidden ability) joins at L5
 new species, hits Bug/Psychic/Ice (no one else does)
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== salesman, a new species (mini)
-🎭 The Pokémon Salesman ultra + {Expand} × {Close}
-★ Buy — $2,020: Larvesta (hidden ability) joins at L5
-· Leave — shop only, no reward
 summary The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5
-== trash to treasure (full)
-🎭 Trash to Treasure ultra − {Minimal overview} × {Close}
+== trash to treasure
+🎭 Trash to Treasure ultra × {Close}
 ★ Investigate — fight a Gmax Garbodor boss (6 bars, opens Toxic on your lead and Stockpile on itself; no switching) → Leftovers + Rogue / Ultra / Great rewards
 ⚔ boss · ~L128 boss (6 bars) vs your L125, 1 mon hits it SE
 · Dig — Leftovers to Lapras, Shell Bell to Garchomp — and shop items cost 2.5× for the rest of the run
 60 waves of shopping left to pay it
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== trash to treasure (mini)
-🎭 Trash to Treasure ultra + {Expand} × {Close}
-★ Investigate — fight a Gmax Garbodor boss (6 bars, opens Toxic on your lead and Stockpile on itself; no switching) → Leftovers + Rogue / Ultra / Great rewards
-· Dig — Leftovers to Lapras, Shell Bell to Garchomp — and shop items cost 2.5× for the rest of the run
 summary Trash to Treasure: take Investigate — fight a Gmax Garbodor boss (6 bars, opens Toxic on your lead and Stockpile on itself; no switching) → Leftovers + Rogue / Ultra / Great rewards
-== clowning around (full)
-🎭 Clowning Around ultra − {Minimal overview} × {Close}
+== clowning around
+🎭 Clowning Around ultra × {Close}
 ★ Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
 ⚔ double · Prankster is worth keeping — 2 mons at ~L92 vs your L90, 2 of yours fit to fight
 ? Item shuffle — Garchomp's berries and Ultra / Rogue items are rerolled inside their own tiers
@@ -180,14 +158,9 @@ same count, different items
 ? Type shuffle 🔮 {fixed by the run seed: this is what happens} — every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal
 1 member gains STAB on a move it already has
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== clowning around (mini)
-🎭 Clowning Around ultra + {Expand} × {Close}
-★ Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
-? Item shuffle — Garchomp's berries and Ultra / Rogue items are rerolled inside their own tiers
-? Type shuffle 🔮 {fixed by the run seed: this is what happens} — every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal
 summary Clowning Around: take Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
-== expert breeder (full)
-🎭 The Expert Pokémon Breeder ultra − {Minimal overview} × {Close}
+== expert breeder
+🎭 The Expert Pokémon Breeder ultra × {Close}
 ★ Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
 3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Magikarp fainted at 0 friendship with no rewards
 · Lapras — Lapras fights the breeder's 3 alone → 2 Great eggs + 5 Common eggs + a Soothe Bell + rewards
@@ -195,36 +168,23 @@ summary Clowning Around: take Battle — double vs boss Mr. Mime and boss Blacep
 · Jolteon — Jolteon fights the breeder's 3 alone → 3 Common eggs + a Soothe Bell + rewards
 3 mons at ~L82 vs your L80, 1 of yours fit to fight — lose and the party comes back, Jolteon fainted at 0 friendship with no rewards
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== expert breeder (mini)
-🎭 The Expert Pokémon Breeder ultra + {Expand} × {Close}
-★ Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
-· Lapras — Lapras fights the breeder's 3 alone → 2 Great eggs + 5 Common eggs + a Soothe Bell + rewards
-· Jolteon — Jolteon fights the breeder's 3 alone → 3 Common eggs + a Soothe Bell + rewards
 summary The Expert Pokémon Breeder: take Magikarp — Magikarp fights the breeder's 3 alone → 4 Great eggs + 5 Common eggs + a Soothe Bell + rewards
-== dark deal, it takes the weakest (full)
-🎭 Dark Deal rogue − {Minimal overview} × {Close}
+== dark deal, it takes the weakest
+🎭 Dark Deal rogue × {Close}
 ★ Deal 🔮 {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
 ⚔ boss · Jolteon is your weakest link
 · Refuse — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== dark deal, it takes the weakest (mini)
-🎭 Dark Deal rogue + {Expand} × {Close}
-★ Deal 🔮 {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
-· Refuse — shop only, no reward
 summary Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
-== a trainer's test (full)
-🎭 A Trainer's Test rogue − {Minimal overview} × {Close}
+== a trainer's test
+🎭 A Trainer's Test rogue × {Close}
 ★ Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
 ⚔ trainer · 6 mons at ~L68 vs your L65, 3 of yours fit to fight
 · Decline — a full party heal + a Rare egg, then the shop with no free reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== a trainer's test (mini)
-🎭 A Trainer's Test rogue + {Expand} × {Close}
-★ Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
-· Decline — a full party heal + a Rare egg, then the shop with no free reward
 summary A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
-== weird dream (full)
-🎭 Weird Dream rogue − {Minimal overview} × {Close}
+== weird dream
+🎭 Weird Dream rogue × {Close}
 ★ Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints
 +260 base stats across the party; natures come out neutral, which is what the Mints are for
 · Battle — fight that same team at your own levels, holding your items → pick one of 2 Rogue / 2 Ultra / 2 Great, and one member without a passive gets one for the run
@@ -232,26 +192,17 @@ summary A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four stren
 ✗ Refuse — every member loses 10% of its level (your L90 drops 9)
 the only option that costs you something and gives nothing back
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== weird dream (mini)
-🎭 Weird Dream rogue + {Expand} × {Close}
-★ Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints
-· Battle — fight that same team at your own levels, holding your items → pick one of 2 Rogue / 2 Ultra / 2 Great, and one member without a passive gets one for the run
-✗ Refuse — every member loses 10% of its level (your L90 drops 9)
 summary Weird Dream: take Accept — your whole party is swapped: Garchomp → Dragonite (+100), Lapras → Gyarados (+105), Jolteon → Zapdos (+55) — same levels, held items and the better IVs, then a full heal; pick one of a Memory Mushroom, a Rogue Ball or 4 Mints · avoid Refuse
-== winstrate, three left standing (full)
-🎭 The Winstrate Challenge rogue − {Minimal overview} × {Close}
+== winstrate, three left standing
+🎭 The Winstrate Challenge rogue × {Close}
 ✗ Accept — 5 trainer battles back to back, 13 mons in all, no healing between → a Premium Voucher + a Macho Brace
 ⚔ trainer · 13 mons at ~L122 vs your L120, 3 of yours fit to fight
 ★ Refuse — a full party heal + a Rarer Candy
 you would not finish the run of five
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-== winstrate, three left standing (mini)
-🎭 The Winstrate Challenge rogue + {Expand} × {Close}
-✗ Accept — 5 trainer battles back to back, 13 mons in all, no healing between → a Premium Voucher + a Macho Brace
-★ Refuse — a full party heal + a Rarer Candy
 summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Candy · avoid Accept
-== mysterious challengers (full)
-🎭 Mysterious Challengers great − {Minimal overview} × {Close}
+== mysterious challengers
+🎭 Mysterious Challengers great × {Close}
 · Normal — fight Youngster Joey → a Common TM, a Great TM, a Memory Mushroom + the usual rolls
 ⚔ trainer · their own team at ~L32 vs your L32, 3 of yours fit to fight
 ★ Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls
@@ -260,8 +211,8 @@ summary The Winstrate Challenge: take Refuse — a full party heal + a Rarer Can
 ⚔ trainer · 6 mons at ~L37 vs your L32, 3 of yours fit to fight
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Mysterious Challengers: take Hard — fight Ace Trainer May → 2 Ultra + 2 Great + the usual rolls · avoid Brutal
-== slumbering snorlax, thief (full)
-🎭 Slumbering Snorlax great − {Minimal overview} × {Close}
+== slumbering snorlax, thief
+🎭 Slumbering Snorlax great × {Close}
 · Battle — fight Snorlax (asleep 6 turns, but it opens with Snore and holds Sitrus + Enigma) → Leftovers + rewards; catchable
 ⚔ boss · ~L34 boss vs your L40, nothing hits it SE
 · Rest — nap beside it: the whole party is healed and revived, then nothing — no reward, no shop
@@ -271,16 +222,16 @@ by Weavile
 · balls work in its battle
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Slumbering Snorlax: take Steal — steal its Leftovers: no fight, Leftovers, and its EXP to the thief
-== safari zone (full)
-🎭 Safari Zone great − {Minimal overview} × {Close}
+== safari zone
+🎭 Safari Zone great × {Close}
 ★ Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level
 leaves $3,990
 · Leave — shop only, no reward
 · can't name the three mons: the game's starter table hasn't been read yet
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Safari Zone: take Pay — $1,010: three wild mons in turn — ball, bait, mud or run each time, each turn judged as it comes. Safari-ball odds (×1.5), doubled shiny and hidden-ability rolls, species of starter cost 5 or less at this wave's level
-== safari zone, a minigame turn (full)
-🎭 Safari Zone great − {Minimal overview} × {Close}
+== safari zone, a minigame turn
+🎭 Safari Zone great × {Close}
 ★ Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48%
 throwing until it is settled lands it 55% of the time from here
 · Throw bait — catch +2 → 62%, and 4 times in 5 flee +1 → 73%; then it rolls to bolt
@@ -293,8 +244,8 @@ you would be giving up a 55% catch
 · worth a ball: new species
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee
-== delibirdy (full)
-🎭 Delibird-y great − {Minimal overview} × {Close}
+== delibirdy
+🎭 Delibird-y great × {Close}
 ★ Money — $1,010: an Amulet Coin
 leaves $3,990
 · Food — hand over a berry for a Candy Jar, or a Reviver Seed for a Berry Pouch
@@ -303,8 +254,8 @@ by Snorlax · the item is gone for good
 by Snorlax · the item is gone for good — pick something you don't use
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Delibird-y: take Money — $1,010: an Amulet Coin
-== absolute avarice (full)
-🎭 Absolute Avarice great − {Minimal overview} × {Close}
+== absolute avarice
+🎭 Absolute Avarice great × {Close}
 ★ Battle 🔮 {fixed by the run seed: this is what happens} — fight Greedent (3 bars, +1 SpD, Stuff Cheeks on turn 1, eating the 7 berries it took) → rewards, and a Reviver Seed for every mon without one
 ⚔ boss · ~L35 boss (3 bars) vs your L40, nothing hits it SE · 3 seeds at stake
 · Beg 🔮 {fixed by the run seed: this is what happens} — beg: 2 berries of your 7 come back, random types, the rest are gone
@@ -312,8 +263,8 @@ summary Delibird-y: take Money — $1,010: an Amulet Coin
 a free mon, for every berry you own
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Absolute Avarice: take Battle — fight Greedent (3 bars, +1 SpD, Stuff Cheeks on turn 1, eating the 7 berries it took) → rewards, and a Reviver Seed for every mon without one
-== dancing lessons, dancer (full)
-🎭 Dancing Lessons great − {Minimal overview} × {Close}
+== dancing lessons, dancer
+🎭 Dancing Lessons great × {Close}
 · Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
 ⚔ boss · L34 boss vs your L40, 2 mons hit it SE
 · Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
@@ -323,8 +274,8 @@ by Lopunny · new species, covers Fighting weakness
 · balls work in its battle
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used
-== bug-type superfan (full)
-🎭 Bug-Type Superfan great − {Minimal overview} × {Close}
+== bug-type superfan
+🎭 Bug-Type Superfan great × {Close}
 · Battle 🔮 {fixed by the run seed: this is what happens} — fight Bug-Type Superfan → rewards, then a free tutor move: Megahorn, Bug Buzz, Sticky Web & U-turn
 ⚔ trainer · 3 mons at ~L32 vs your L40, 4 of yours fit to fight
 · Show — show off your bug types (1 bug) → a Super Lure + a Great Ball
@@ -333,8 +284,8 @@ by Scyther · 5 more bugs would make it a Master Ball
 by Scyther · the item is gone for good
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Bug-Type Superfan: take Give — hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight
-== fun and games (full)
-🎭 Fun and Games great − {Minimal overview} × {Close}
+== fun and games
+🎭 Fun and Games great × {Close}
 · Play — $750: pick a mon, then three turns on a Wobbuffet at that mon's level (0 IVs, Mild, it never attacks). Under 3% HP a Multi Lens, under 15% a Scope Lens, under 33% a Wide Lens, over that nothing. KO it and you lose and pay $750 again
 pick a mon whose damage you can hold back, not your hardest hitter
 · Leave — shop only, no reward

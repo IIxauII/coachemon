@@ -266,7 +266,7 @@ const build = (run, party, next, foes) => {
   if (foes.length) findings.push(...deadStatus(party, foes, next.wave), ...weakestLink(party, foes, next.wave));
   findings.push(...levelSpread(s, party), ...expAtCap(s, party));
   // What loses fights first; among the rest, a standing coverage hole last — almost every party has some, and it
-  // shouldn't be the line the collapsed card leads with while a dead slot is there to fix.
+  // shouldn't be the line the audit leads with while a dead slot is there to fix.
   const rank = f => (f.level === "high" ? 0 : f.kind === "coverage" ? 2 : 1);
   const sorted = findings.map((f, i) => ({ ...f, i })).sort((a, b) => rank(a) - rank(b) || a.i - b.i).map(({ i, ...f }) => f);
   for (const [mon, fix] of fixes) {

@@ -469,16 +469,13 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   console.log(`== foe attacks ${JSON.stringify(foe.attackTypes)}`);
 }
 
-// ---- 8. The card, in both views, plus the one-line summary.
+// ---- 8. The card, plus the one-line summary.
 {
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
   for (const from of [12, 19, 7]) {
     const { scene, pv } = mount({ wave: from });
     const m = pv.previewNext(scene);
-    for (const v of ["full", "mini"]) {
-      globalThis.localStorage = { getItem: () => v, setItem() {} };
-      console.log(`== card wave ${from + 1} (${v})\n${pv.drawPreview(m, v).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n")}`);
-    }
+    console.log(`== card wave ${from + 1}\n${pv.drawPreview(m).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n")}`);
     console.log(`summary ${JSON.stringify(pv.previewSummary(m))}`);
   }
 }

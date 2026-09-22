@@ -1,28 +1,23 @@
 // Next-wave card (the 48-preview model) and its plain-text summary. Loads after 90-render: only call these from a
 // draw or a summary, never at load time.
-// Mini: one line — `🔮 W13 trainer Youngster Ben · double · Machop L9, Geodude L10`. Full adds a row per foe with its
-// types, ability and moves, the boss bars, and a footer naming anything the preview can't promise.
+// A row per foe with its types, ability and moves, the boss bars, and a footer naming anything the preview can't
+// promise.
 // A field the preview can't pin is marked: `~` it holds only while the game draws what this replay draws, `?` it is a
 // guess, `!` it has already been wrong once this run (see `window.__coachHud.preview`). The whole card is a read of
-// the seed *as the run stands*, so the full view always closes with "if nothing changes": a catch, an evolution, a
-// shop pick or a biome change re-rolls what the replay fed on, mark or no mark.
+// the seed *as the run stands*, so it always closes with "if nothing changes": a catch, an evolution, a shop pick or
+// a biome change re-rolls what the replay fed on, mark or no mark.
 // Nothing is drawn when the preview is unavailable — a build past the pin, or no run seed: the tally is the place
 // that reports drift, and a card that nags on every tick is worse than a quiet one.
-import { previewFoes, previewKind, previewMark } from "./48-preview.js";
-import { FS, badge, dim, h, line, mon, sep, view } from "./90-render.js";
+import { previewKind, previewMark } from "./48-preview.js";
+import { FS, badge, dim, h, line, mon, sep } from "./90-render.js";
 
-export const drawPreview = (m, viewOverride) => {
+export const drawPreview = m => {
   if (!m || m.unavailable) return [];
-  const v = viewOverride ?? view();
   const head = `W${m.wave}${previewMark(m, "type")}`;
   const kind = h("span", { color: m.type === "trainer" ? "#fa4" : m.type === "me" ? "#c9f" : "#9aa", marginRight: "3px" },
     `${previewKind(m)}${m.double ? ` double${previewMark(m, "double")}` : ""}`);
   const who = m.trainer ? `${m.trainer.name}${previewMark(m, "trainer")}` : null;
-  if (v !== "full") {
-    return [line("🔮", "#9aa", h("span", { marginRight: "3px" }, head), kind,
-      h("span", dim, `${who ? `${who} · ` : ""}${previewFoes(m, false)}${previewMark(m, "foes")}`))];
-  }
-  // A section inside the shop or battle card, not a card of its own: its own rule above it, and no view buttons.
+  // A section inside the shop or battle card, not a card of its own: its own rule above it, and no control of its own.
   const out = [h("div", sep), line("🔮", "#9aa", h("span", { fontWeight: "bold", marginRight: "3px" }, `Next ${head}`), kind)];
   if (who) out.push(line("·", "#fa4", h("span", {}, who)));
   for (const f of m.foes) {

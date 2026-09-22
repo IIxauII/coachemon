@@ -1,6 +1,6 @@
 // Rewards card (the 52-shop model): what to buy, what free reward to take and who it goes to, then the sections the
 // screen is judged against — the reroll ahead, the team audit, the next wave and the next big fight.
-import { FS, bar, dim, h, itemImg, line, mon, sep, tab, view } from "./90-render.js";
+import { FS, bar, closed, dim, h, itemImg, line, mon, sep, tab } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawAudit } from "./95-render-audit.js";
 import { drawPreview } from "./95-render-preview.js";
@@ -8,23 +8,23 @@ import { drawReroll } from "./95-render-reroll.js";
 
 export const drawRewards = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
-  if (view() === "closed") return [tab("🛒", p ? itemImg(p.icon, p.name) : null)];
+  if (closed()) return [tab("🛒", p ? itemImg(p.icon, p.name) : null)];
   const header = bar("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
-    view() === "full" && !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, "nothing affordable") : null,
+    !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, "nothing affordable") : null,
     m.bossNext ? h("span", { color: "#fa4", fontSize: FS.tiny }, "👑 boss next") : null);
   const buyRows = m.buys.length
     ? m.buys.map(b => line("💰", "#ec4", itemImg(b.icon, b.name),
         h("span", { fontWeight: "bold" }, b.name), h("span", { ...dim, marginLeft: "4px" }, `$${b.cost}`),
         h("span", { flex: "1" }), mon(b.target, b.targetName, 20), h("span", dim, b.why)))
     : [];
-  // A TM names its best recipient by icon and the move it replaces, instead of the "TM for X (over Y)" text; full view
-  // adds the effective power it gains. Other options' rows use it too, in their smaller type.
+  // A TM names its best recipient by icon and the move it replaces, instead of the "TM for X (over Y)" text, plus the
+  // effective power it gains. Other options' rows use it too, in their smaller type.
   const tmTo = (f, style = dim) => {
     const b = f.best;
     if (!b) return null;
     const forget = b.forget ? `→ forget ${b.forget}` : "free slot";
     const what = b.setup ? `setup ${b.setup}${b.forget ? ` ${forget}` : ""}` : f.tm === "maybe" ? `${b.reason} — your call` : forget;
-    const gain = view() === "full" && f.tm === "take" && !b.setup && b.gain > 0 ? ` · +${b.gain} power` : "";
+    const gain = f.tm === "take" && !b.setup && b.gain > 0 ? ` · +${b.gain} power` : "";
     // The recipient the TM could never have been drawn for: a Memory Mushroom would teach it the same move, so the
     // TM is one of two routes rather than the only one. Not a reason to skip it — the Mushroom costs a slot too.
     const relearn = (f.relearn ?? []).includes(b.name) ? " · or a Memory Mushroom" : "";
@@ -39,7 +39,6 @@ export const drawRewards = m => {
   };
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? heldTo(p) ?? h("span", dim, p.why)) : null;
-  if (view() === "mini") return [header, ...buyRows, take, ...drawReroll(m), ...drawAudit(m.audit), ...drawPreview(m.preview), ...drawAhead(m.ahead)].filter(Boolean);
   // Who can use it, when the reason doesn't already name them (a holder is the answer already).
   const usersText = f => {
     if (f.holder) return "";

@@ -1,14 +1,14 @@
 // Starter card (the 51-starters model) and its plain-text summary. Loads after 90-render: only call these from a draw or
 // a summary, never at load time.
-// Full: every proposal with its cost, the types its STAB hits and what it's weak to, one line per pick with its role and
-// reasons, then the species under the cursor. Mini: the best proposal on one line.
+// Every proposal with its cost, the types its STAB hits and what it's weak to, one line per pick with its role and
+// reasons, then the species under the cursor.
 import { ptsText } from "./51-starters.js";
-import { FS, bar, dim, h, line, mon, sep, tab, view } from "./90-render.js";
+import { FS, bar, closed, dim, h, line, mon, sep, tab } from "./90-render.js";
 
 export const drawStarters = m => {
   const best = m.picks[0];
   const lead = best?.members.find(x => x.role === "carry") ?? best?.members[0];
-  if (view() === "closed") return [tab("🌱", lead ? mon(lead.icon, lead.name, 20) : null)];
+  if (closed()) return [tab("🌱", lead ? mon(lead.icon, lead.name, 20) : null)];
   const header = bar("🌱", "Starters", h("span", { ...dim, fontWeight: "normal" }, `${ptsText(m.spent)}/${m.limit} pts`));
   const ROLE = { carry: "#8cf", support: "#c9f" };
   const chosen = m.chosen.length
@@ -19,11 +19,6 @@ export const drawStarters = m => {
   const teamTail = t => [h("span", { ...dim, marginLeft: "4px" }, `${ptsText(t.cost)} pts · SE vs ${t.covers} types`),
     t.weak.length ? h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "4px" }, `· weak ${t.weak.join("/")}`) : null,
     t.noCarry ? h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "4px" }, "· no carry") : null];
-  if (view() === "mini") {
-    return [header, chosen,
-      line("★", "#6d6", ...best.members.flatMap((x, i) => [i ? h("span", dim, "+") : null, mon(x.icon, x.name, 20),
-        x.chosen ? null : h("span", { fontWeight: x.role === "carry" ? "bold" : "normal" }, x.name)]), ...teamTail(best))].filter(Boolean);
-  }
   const out = [header, chosen];
   m.picks.forEach((t, i) => {
     out.push(h("div", sep), line(i ? "·" : "★", i ? "#9aa" : "#6d6", h("span", { fontWeight: "bold" }, t.label), ...teamTail(t)));

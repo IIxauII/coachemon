@@ -45,7 +45,7 @@ const page = (asset: ShotAsset): string => `<!doctype html>
 <body>
 <!-- In the body, not the head: the HUD appends its panel to document.body the moment it runs (§5.2). -->
 <script>${fixtures}</script>
-<script>window.__mountFixture(${JSON.stringify(asset.shot.fixture)}, ${JSON.stringify(asset.shot.view)});</script>
+<script>window.__mountFixture(${JSON.stringify(asset.shot.fixture)});</script>
 <script>${hud}</script>
 `;
 
@@ -72,7 +72,7 @@ try {
     if (size.width !== asset.width || size.height !== asset.height) {
       throw new Error(`${asset.file}: Chrome wrote ${size.width}×${size.height}, not ${asset.width}×${asset.height}`);
     }
-    process.stdout.write(`${asset.file} ${size.width}×${size.height} (${asset.shot.fixture}, ${asset.shot.view})\n`);
+    process.stdout.write(`${asset.file} ${size.width}×${size.height} (${asset.shot.fixture})\n`);
   }
 } finally {
   rmSync(work, { recursive: true, force: true });

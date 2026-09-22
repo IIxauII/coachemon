@@ -103,7 +103,7 @@ const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.ch
 const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
 // Mounts the HUD on a biome-choice scene. `tables`: what loadGameTables would have found (null: not loaded yet).
-const mount = ({ view = "full", labels = ["Swamp", "Construction Site"], party = team(), wave = 30, from = 3, offset = 0, t = tables(), dex = {}, gameMode } = {}) => {
+const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave = 30, from = 3, offset = 0, t = tables(), dex = {}, gameMode } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const handler = { config: { options: labels.map(label => ({ label, handler: () => true })) } };
@@ -117,7 +117,7 @@ const mount = ({ view = "full", labels = ["Swamp", "Construction Site"], party =
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => view, setItem() {} };
+  globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
   // The chunk scan finds nothing under node: hand over what it would have found, and draw the card again.
   const { setGameTables } = globalThis.__hud["04-game-tables"];
@@ -133,11 +133,9 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
 
 // ---- 1. Garchomp / Snorlax / Lapras: Swamp (Water/Ground/Poison) over Construction Site (Fighting/Steel, Snorlax weak).
 {
-  for (const view of ["full", "mini"]) {
-    const { el } = mount({ view });
-    console.log(`== swamp vs construction site (${view})\n${lines(el)}`);
-    if (view === "full") console.log(`summary ${globalThis.__coachHud.summary().biome}`);
-  }
+  const { el } = mount();
+  console.log(`== swamp vs construction site\n${lines(el)}`);
+  console.log(`summary ${globalThis.__coachHud.summary().biome}`);
   const m = mount().model();
   jsonSafe(m, "model");
   assert.equal(m.kind, "biome");
@@ -237,7 +235,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
 // Brock's Rock meets two hitters but Lapras is weak.
 {
   const { el } = mount({ wave: 40 });
-  console.log(`== gym at wave 50 (full)\n${lines(el)}`);
+  console.log(`== gym at wave 50\n${lines(el)}`);
   const [swamp, site] = globalThis.__coachHud.last().options;
   assert.ok(swamp.reasons.some(r => r.gym && r.good && r.text === "W50 gym Poison (Janine): 2 hit SE"), JSON.stringify(swamp.reasons));
   assert.ok(site.reasons.some(r => r.gym && r.good && r.text === "W50 gym Rock (Brock): 2 hit SE, Lapras weak"), JSON.stringify(site.reasons));
@@ -283,15 +281,15 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(normal.options[1].reasons.some(r => /Snorlax/.test(r.text)), "a fainted Snorlax still fights in the next biome");
   const { el } = mount({ party, gameMode: { challenges: [{ id: 9, value: 1 }] } });
   const hard = globalThis.__coachHud.last();
-  console.log(`== hardcore, Snorlax fainted (full)\n${lines(el)}`);
+  console.log(`== hardcore, Snorlax fainted\n${lines(el)}`);
   assert.equal(hard.fainted, 1);
   assert.ok(!hard.options[1].reasons.some(r => /Snorlax/.test(r.text)), JSON.stringify(hard.options[1].reasons));
 }
 
 // ---- 11. A near tie gets a pick anyway, by the unrounded score, and says what decided it.
 {
-  const { el } = mount({ view: "mini", labels: ["Swamp", "Marsh"] });
-  console.log(`== swamp vs marsh (mini)\n${lines(el)}`);
+  const { el } = mount({ labels: ["Swamp", "Marsh"] });
+  console.log(`== swamp vs marsh\n${lines(el)}`);
   const m = globalThis.__coachHud.last();
   const [a, b] = m.options;
   assert.ok(Math.abs(a.score - b.score) <= 2, `a near tie: ${a.score} vs ${b.score}`);

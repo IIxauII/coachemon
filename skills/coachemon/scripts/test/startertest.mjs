@@ -88,7 +88,7 @@ const account = () => {
 };
 
 // `challenges`: gameMode challenges; `fresh`: getSpeciesData strips unlocks the way Fresh Start's STARTER_SELECT_MODIFY does.
-const mount = ({ view = "full", limit = 10, chosen = [], valid = STARTERS, challenges = [], fresh = false, withTables = true, looking = null, picking = true }) => {
+const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], fresh = false, withTables = true, looking = null, picking = true }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const { dexData, starterData } = account();
@@ -126,21 +126,22 @@ const mount = ({ view = "full", limit = 10, chosen = [], valid = STARTERS, chall
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => view, setItem() {} };
+  globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  if (withTables) globalThis.__hud["04-game-tables"].setGameTables(tables);
-  globalThis.__hud["90-render"].setView(view);
+  // The chunk scan finds nothing under node: hand over what the game's tables would have been, then draw again, so
+  // the card is the one a loaded grid shows rather than the estimate the first tick made.
+  if (withTables) {
+    globalThis.__hud["04-game-tables"].setGameTables(tables);
+    globalThis.__hud["98-tick"].tick();
+  }
   return { el, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
 const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 const show = (label, opts) => {
-  let last;
-  for (const view of ["full", "mini"]) {
-    last = mount({ ...opts, view });
-    console.log(`== ${label} (${view})\n${lines(last.el)}`);
-  }
+  const last = mount(opts);
+  console.log(`== ${label}\n${lines(last.el)}`);
   console.log(`summary ${last.summary?.starters}`);
   return last.model;
 };

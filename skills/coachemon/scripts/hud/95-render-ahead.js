@@ -1,27 +1,20 @@
 // Look-ahead card (the 49-ahead model) and its plain-text summary. Loads after 90-render: only call these from a
 // draw or a summary, never at load time.
-// Mini: one line — `⚑ Cynthia in 3 (W195) · 5 mons L92 · risky`. Full adds the readiness reasons, the no-heal
-// stretch, what the wave's rewards are pinned to, party luck, and the Eternatus checklist before wave 200.
+// The readiness reasons, the no-heal stretch, what the wave's rewards are pinned to, party luck, and the Eternatus
+// checklist before wave 200.
 // The card only ever says what the calendar and the seed already decided: the schedule is arithmetic on the wave
 // index, and a named trainer comes from the preview's replay, which marks its own confidence.
 import { aheadIn, aheadWho } from "./49-ahead.js";
-import { FS, dim, h, line, sep, view } from "./90-render.js";
+import { FS, dim, h, line, sep } from "./90-render.js";
 
 const AHEAD_COLOR = { ready: "#6d6", watch: "#ec4", risky: "#e55" };
-const AHEAD_MARK = { ready: "✓", watch: "≈", risky: "⚠" };
-export const drawAhead = (a, viewOverride) => {
+export const drawAhead = a => {
   if (!a?.next) return [];
-  const v = viewOverride ?? view();
   const r = a.readiness;
   const color = r ? AHEAD_COLOR[r.verdict] : "#9aa";
   const head = h("span", { fontWeight: "bold", marginRight: "3px" }, `${aheadWho(a)} ${aheadIn(a.next.in)}`);
   const where = h("span", dim, `W${a.next.wave}`);
-  if (v !== "full") {
-    return [line("⚑", color, head, where,
-      h("span", { flex: "1" }),
-      r ? h("span", { color }, `${AHEAD_MARK[r.verdict]} ${r.verdict}`) : null)];
-  }
-  // A section inside the shop or battle card, not a card of its own: its own rule above it, and no view buttons.
+  // A section inside the shop or battle card, not a card of its own: its own rule above it, and no control of its own.
   const out = [h("div", sep), line("⚑", color, h("span", { fontWeight: "bold", marginRight: "3px" }, "Next big fight"),
     head, where, h("span", { flex: "1" }),
     a.next.double ? h("span", { ...dim, fontSize: FS.tiny, marginRight: "3px" }, "double") : null,

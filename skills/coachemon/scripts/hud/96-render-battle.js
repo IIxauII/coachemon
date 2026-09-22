@@ -1,8 +1,8 @@
 // Battle card (the 60-card battle model): the ⚔ line per field slot, the switches, the catch section, the foe rows
-// and the fight plan. An easy wild wave collapses to one line.
+// and the fight plan.
 import { STATUS_FRAMES } from "./01-core.js";
-import { deadEndText, hitsText, slowestKo } from "./60-card.js";
-import { FS, badge, bar, button, collapsedCard, dim, h, hpColor, img, line, mon, tab, view } from "./90-render.js";
+import { deadEndText, hitsText } from "./60-card.js";
+import { FS, badge, bar, closed, dim, h, hpColor, img, line, mon, tab } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
 import { drawPreview } from "./95-render-preview.js";
@@ -12,25 +12,11 @@ export const drawBattle = m => {
   // The exact enemy move couldn't be made (#183): the card says so and shows nothing else. The next refresh tries
   // again, so a one-off breach flickers rather than sticking.
   if (m.unavailable) {
-    if (view() === "closed") return [tab("\u26a0", null)];
+    if (closed()) return [tab("\u26a0", null)];
     return [bar("\ud83c\udfaf", m.title), line("\u26a0", "#fa4", h("span", { color: "#fa4" }, `no advice — ${m.unavailable}`))];
   }
-  const collapsed = collapsedCard(m);
-  if (view() === "closed") return [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)];
+  if (closed()) return [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)];
   const f = m.field;
-  // The trap abilities the planner already found on the foes this slot's move hits.
-  const trapTag = sl => (sl.traps ?? []).map(a => h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "3px" }, `⚠ ${a}`));
-
-  // Easy wild wave: one line, one ⚔ per slot. `+` shows the chosen view for the rest of the wave.
-  if (collapsed) {
-    return [h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "3px", fontWeight: "bold" },
-      "🎯", m.title,
-      ...f.slots.flatMap(sl => [h("span", { color: "#8cf", marginLeft: "4px" }, "⚔"), mon(sl.icon, sl.name, 20),
-        h("span", {}, sl.move),
-        ...(sl.target === "both" ? [h("span", dim, "→ both")] : sl.target ? [h("span", dim, "→"), mon(sl.target.icon, sl.target.name, 18)] : []),
-        h("span", { ...dim, fontWeight: "normal" }, `· ${hitsText(slowestKo(sl))}`), ...trapTag(sl)]),
-      h("span", { flex: "1" }), h("span", { width: "4px" }), button("+", "Show details", view()), button("×", "Close", "closed"))];
-  }
 
   // Send-in icons only add something when they go beyond the ⚔ mons: a trainer's later foes.
   const slotNames = new Set(f?.slots.map(sl => sl.name) ?? []);
@@ -57,15 +43,14 @@ export const drawBattle = m => {
     ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), sw.out.threat ? threatTag(sw.out.threat) : null, h("span", { color, margin: "0 3px" }, "out ›")] : [h("span", { color, marginRight: "3px" }, "send")]),
     mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail),
     sw.in.takes ? h("span", { ...dim, fontSize: FS.tiny, marginLeft: "4px" }, `· ${takesText(sw.in.takes)}`) : null);
-  // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn). Mini has no
-  // foe rows, so a trap ability the move runs into goes on the slot itself.
+  // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn). The trap
+  // abilities the move runs into are on the foe rows below, not here.
   const slotLine = (sl, label) => step(label, "⚔", "#8cf",
     mon(sl.icon, sl.name, 22),
     sl.threat ? threatTag(sl.threat) : null,
     ...(sl.move ? [badge(sl.type), h("span", { fontWeight: "bold" }, sl.move)] : [h("span", dim, deadEndText(sl))]),
     ...(sl.target === "both" ? [h("span", { color: "#8cf", marginLeft: "4px" }, "→ both")]
       : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
-    ...(view() === "mini" ? trapTag(sl) : []),
     h("span", { flex: "1" }),
     sl.ko ? h("span", dim, hitsText(sl.ko)) : null,
     sl.notes?.length ? h("span", { ...dim, fontSize: FS.tiny, marginLeft: "4px" }, sl.notes.join(" · ")) : null);
@@ -81,7 +66,7 @@ export const drawBattle = m => {
     mon(es.from.icon, es.from.name, 20), h("span", { color: "#c9f", margin: "0 3px" }, "→"),
     mon(es.to.icon, es.to.name, 20), h("span", { color: "#c9f", marginLeft: "3px" },
       es.back ? "returns from the other slot — moves aimed at it" : "switches — moves aimed at it")));
-  const ifStay = m.ifStay && view() === "full"
+  const ifStay = m.ifStay
     ? line("↺", "#9aa", h("span", { ...dim, marginRight: "4px" }, "if it stays:"), ...m.ifStay.flatMap((sl, i) => [i ? h("span", dim, " · ") : null, ...slotMove(sl)]))
     : null;
   const noSafeSwitch = () => {
@@ -119,12 +104,10 @@ export const drawBattle = m => {
     // Doubles: both slots on one foe says why. A split needs no line: the ⚔ targets already show it.
     f.targeting?.kind === "focus" ? line("◎", "#8cf", h("span", { color: "#8cf", marginRight: "3px" }, "focus"), mon(f.targeting.target.icon, f.targeting.target.name, 18),
       h("span", dim, `: ${f.targeting.note}${f.targeting.pko > 0 && f.targeting.pko < 100 ? ` (${f.targeting.pko}%)` : ""}`)) : null,
-    ...(view() === "full" ? f.optional.map(sw => swapLine(sw, "#9aa", "in · optional")) : []),
+    ...f.optional.map(sw => swapLine(sw, "#9aa", "in · optional")),
     f.noSafeSwitch ? noSafeSwitch() : null,
     ifStay,
   ];
-
-  if (view() === "mini") return [header, ...field, ...drawCatch(m), ...drawTeamPlan(m)].filter(Boolean);
 
   // Only types the party has a damaging move of: a weakness nobody can hit is noise.
   const usable = ([t]) => !m.moveTypes || m.moveTypes.includes(t);

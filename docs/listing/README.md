@@ -9,7 +9,7 @@ job rather than an afternoon (§3, §6 of [the spec](../spec/extension-distribut
 | [`description.md`](description.md) | title, keywords, summary and the description body for both stores |
 | [`store-disclosure.md`](store-disclosure.md) | single purpose, host access, remote code, data usage, licence, source submission |
 | [`../../PRIVACY.md`](../../PRIVACY.md) | the privacy policy, served at <https://iixauii.github.io/coachemon/PRIVACY> |
-| `assets/screenshot-*.png` | 1280×800 screenshots, four of them |
+| `assets/screenshot-*.png` | 1280×800 screenshots, three of them |
 | `assets/promo-small.png` | 440×280 small promo tile: the mark beside the wordmark |
 | `assets/promo-marquee.png` | 1400×560 marquee promo tile: the same, set larger |
 | `assets/icon-1024.png` | the master the Safari app icon set is generated from ([§14.6](../runbooks/safari-release.md)) |
@@ -56,9 +56,9 @@ One more that looks like a framing mistake and is not. The learn shot wraps its 
 that is the panel at the 320 px it actually ships at; `zoom` scales the whole card uniformly, so no zoom unwraps it
 and only overriding the width would — which would photograph the panel at a width no player ever sees.
 
-The promo tiles are not shots any more. They used to be: both were the mini panel at whatever zoom fitted, and the
+The promo tiles are not shots any more. They used to be: both were the panel at whatever zoom fitted, and the
 small one had to sit at `zoom: 1` because 320 × 1.4 already overflowed a 440 px frame, so it read as a cropped card
-rather than a tile. They are branding surfaces, and the four screenshots are what show the panel — so they now carry
+rather than a tile. They are branding surfaces, and the screenshots are what show the panel — so they now carry
 the mark, the wordmark and "Turn-by-turn coach overlay" on the mark's own field. Neither names the game, which is the
 rule the title and the keywords follow (§3).
 

@@ -1,5 +1,5 @@
-// The panel itself: its element, the sprites and text helpers every card is drawn from, and the view the user has
-// picked. It draws no card and decides nothing - 60-card works out what is on screen, the renderers above turn one
+// The panel itself: its element, the sprites and text helpers every card is drawn from, and whether the user has it
+// closed. It draws no card and decides nothing - 60-card works out what is on screen, the renderers above turn one
 // card into nodes, and 98-tick puts the two together.
 // State another file needs is read and written through functions, never exported as a binding.
 let game = null;
@@ -60,26 +60,20 @@ export const hpColor = hp => (hp > 50 ? "#6d6" : hp > 20 ? "#ec4" : "#e55");
 export const itemImg = (icon, name) => img("items", icon, name, 18, null);
 export const sep = { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" };
 
-// Panel views: "full" (everything), "mini" (one line per foe), "closed" (tab).
-// An easy wild wave collapses to one line in either view; a view button pressed during a wave holds for the rest
-// of it (`hold` is that wave's key), so the panel doesn't collapse again under the user.
+// The panel has one fidelity, so there are two states: the panel, and the closed tab (#349 §2). Nothing switches
+// between them but the user — no card collapses itself, and no section opens itself.
+// The stored value is still the old three-valued one, and nothing migrates it: anything that isn't "closed" reads as
+// the panel, so a stored middle view draws as the panel. Closing or reopening writes the key as it always did, so
+// the middle value survives only until the user next touches the control; #349 §15 moves it to a key of its own.
 const VIEW_KEY = "coach-hud-view";
-let current = "full";
-try { current = localStorage.getItem(VIEW_KEY) || current; } catch {}
-let shownWave = null, hold = null;
-export const view = () => current;
-export const shownCardWave = () => shownWave;
-export const setShownCardWave = w => { shownWave = w; };
-export const heldWave = () => hold;
-// An easy wild wave is one line, until the user picks a view for this wave. Never while rendering for text: the card
-// event carries the whole card, whatever the user has the panel collapsed to (§11.1).
-export const collapsedCard = card => !asText && current !== "closed" && hold !== shownWave && card?.verdict === "easy";
+let isClosed = false;
+try { isClosed = localStorage.getItem(VIEW_KEY) === "closed"; } catch {}
+export const closed = () => isClosed;
 
 // ---- The card as plain text (§11.1)
 // The stream's `text` is the card the panel draws, read back as lines: one source, so the two can never disagree. It
-// is always the full, uncollapsed card — the user's own view is theirs, and a subscriber asked for the whole thing.
+// is always the whole card — whether the user has the panel closed is theirs, and a subscriber asked for the card.
 // 98-tick registers the draw for a kind here, the way it registers the redraw: dispatch stays its business.
-let asText = false;
 let drawFn = () => null;
 export const setDraw = fn => { drawFn = fn; };
 export const cardText = card => {
@@ -88,10 +82,9 @@ export const cardText = card => {
   return nodes && nodes.length ? nodesText(nodes) : null;
 };
 const renderText = draw => {
-  const wasView = current, wasText = asText;
-  current = "full";
-  asText = true;
-  try { return draw(); } finally { current = wasView; asText = wasText; }
+  const wasClosed = isClosed;
+  isClosed = false;
+  try { return draw(); } finally { isClosed = wasClosed; }
 };
 
 const tagOf = n => String(n.tagName ?? "").toUpperCase();
@@ -102,7 +95,7 @@ const kidsOf = n => (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n
 const nodeLines = n => {
   if (n == null) return [];
   if (typeof n !== "object") return [String(n)];
-  // A control the panel draws for the mouse — a view button, the tab — is not part of what the card says.
+  // A control the panel draws for the mouse — the close control, the tab — is not part of what the card says.
   if (n.style && n.style.cursor === "pointer") return [];
   if (tagOf(n) === "IMG") return [String(n.title ?? "")];
   const kids = kidsOf(n);
@@ -123,40 +116,36 @@ const nodeLines = n => {
 const nodesText = nodes => nodes.flatMap(nodeLines).map(l => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
 
 // ---- The disclaimer (§3)
-// Fixed wording, on every listing and inside the extension. The panel has no About page, so the full view carries it.
+// Fixed wording, on every listing and inside the extension. The panel has no About page, so it carries it as a footer.
 const DISCLAIMER = "Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
 export const disclaimer = () => h("div", { ...dim, fontSize: FS.tiny, marginTop: "4px" }, DISCLAIMER);
 
-// The refresh itself lives in 98-tick, above every renderer; it registers itself here so a view button can ask for
-// a redraw without this file knowing what a card is.
+// The refresh itself lives in 98-tick, above every renderer; it registers itself here so the close control can ask
+// for a redraw without this file knowing what a card is.
 let redrawFn = () => {};
 export const setRedraw = fn => { redrawFn = fn; };
-export const redraw = () => redrawFn();
-export const setView = v => {
-  current = v;
-  hold = shownWave;
-  try { localStorage.setItem(VIEW_KEY, v); } catch {}
-  redraw();
-};
-// `next`: the view to switch to, or a function to run.
-export const button = (label, title, next) => {
-  const n = h("span", { cursor: "pointer", padding: "0 4px", borderRadius: "3px", background: "rgba(255,255,255,.1)", fontWeight: "bold" }, label);
-  n.title = title;
-  n.addEventListener("click", e => { e.stopPropagation(); typeof next === "function" ? next() : setView(next); });
-  return n;
+const setClosed = next => {
+  isClosed = next;
+  try { localStorage.setItem(VIEW_KEY, next ? "closed" : "full"); } catch {}
+  redrawFn();
 };
 
+// The panel's one control: shut it, and the tab that brings it back.
+const closeButton = () => {
+  const n = h("span", { cursor: "pointer", padding: "0 4px", borderRadius: "3px", background: "rgba(255,255,255,.1)", fontWeight: "bold" }, "×");
+  n.title = "Close";
+  n.addEventListener("click", e => { e.stopPropagation(); setClosed(true); });
+  return n;
+};
 export const tab = (emoji, icon) => {
   const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, emoji, icon);
   n.title = "Open coach";
-  n.addEventListener("click", e => { e.stopPropagation(); setView("mini"); });
+  n.addEventListener("click", e => { e.stopPropagation(); setClosed(false); });
   return n;
 };
 export const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" },
   emoji, title, h("span", { flex: "1" }), ...right,
-  h("span", { width: "4px" }),
-  current === "full" ? button("−", "Minimal overview", "mini") : button("+", "Expand", "full"),
-  button("×", "Close", "closed"));
+  h("span", { width: "4px" }), closeButton());
 
 export const el = document.createElement("div");
 el.id = "coach-hud";

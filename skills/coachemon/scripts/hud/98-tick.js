@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, collapsedCard, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw, setShownCardWave, view } from "./90-render.js";
+import { battleScene, clearMissed, closed, disclaimer, dropGame, el, missedSprite, setDraw, setRedraw } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
 import { drawEncounter } from "./96-render-encounter.js";
 import { drawFusion } from "./96-render-fusion.js";
@@ -74,16 +74,13 @@ export const tick = () => {
     journalCheck(s, card);
     if (!card) { el.style.display = "none"; shown = null; return; }
     shown = card;
-    // A view picked by a button holds until the card or wave changes.
-    setShownCardWave(`${card.kind}:${card.wave}`);
-    const collapsed = collapsedCard(card);
-    const sig = JSON.stringify([view(), collapsed, card]);
+    const sig = JSON.stringify([closed(), card]);
     el.style.display = "block";
-    el.style.width = view() === "full" && !collapsed ? "300px" : "auto";
+    el.style.width = closed() ? "auto" : "300px";
     if (sig !== last) {
       clearMissed();
-      // The full view carries the disclaimer as its footer line (§3); it is the panel's, so no card draws it.
-      el.replaceChildren(...DRAW[card.kind](card), ...(view() === "full" && !collapsed ? [disclaimer()] : []));
+      // The panel carries the disclaimer as its footer line (§3); it is the panel's, so no card draws it.
+      el.replaceChildren(...DRAW[card.kind](card), ...(closed() ? [] : [disclaimer()]));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missedSprite() ? "" : sig;
     }
@@ -96,5 +93,5 @@ export const tick = () => {
   }
 };
 
-// A view button redraws from the card already read, rather than waiting for the next refresh.
+// The close control redraws from the card already read, rather than waiting for the next refresh.
 setRedraw(() => { last = ""; tick(); });
