@@ -1,16 +1,19 @@
-// Rewards card (the 52-shop model): what to buy, what free reward to take and who it goes to, then the sections the
-// screen is judged against — the reroll ahead, the team audit, the next wave and the next big fight.
-import { FS, bar, closed, dim, h, itemImg, line, mon, sep, tab } from "./90-render.js";
+// Rewards card (the 52-shop model), as **group**s (#349 §1): `act` — the buys, then the free reward, then the
+// reroll, because a reroll is a shop action and `act` already carries the ordering rule that taking the free reward
+// closes the shop — then `options`, the rewards it passed over, then `audit` and `road`. Each group's summary is read
+// off the model, never written here (§6).
+import { auditSummary } from "./50-audit.js";
+import { rewardsSummary } from "./52-shop.js";
+import { roadSummary } from "./60-card.js";
+import { FS, bar, closed, dim, group, h, itemImg, line, mon, sep, some, tab } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawAudit } from "./95-render-audit.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawReroll } from "./95-render-reroll.js";
 
-const ruled = rows => (rows.length ? [h("div", sep), ...rows] : []);
-
 export const drawRewards = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
-  if (closed()) return [tab("🛒", p ? itemImg(p.icon, p.name) : null)];
+  if (closed()) return [group("act", "Now", null, [tab("🛒", p ? itemImg(p.icon, p.name) : null)])];
   const header = bar("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
     !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, "nothing affordable") : null,
     m.bossNext ? h("span", { color: "#fa4", fontSize: FS.tiny }, "👑 boss next") : null);
@@ -50,16 +53,26 @@ export const drawRewards = m => {
   const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", "#9aa", itemImg(f.icon, f.name),
     h("span", dim, f.name), h("span", { flex: "1" }),
     tmTo(f, { color: "#9aa", fontSize: FS.tiny }) ?? heldTo(f, { color: "#9aa", fontSize: FS.tiny }) ?? h("span",{ color: f.tm === "skip" ? "#e77" : "#9aa", fontSize: FS.tiny }, `${f.why}${usersText(f)}`)));
-  return [header,
-    m.buys.length ? h("div", { ...dim, fontSize: FS.tiny }, "buy first — taking the free reward closes the shop") : null,
-    ...buyRows, m.buys.length ? h("div", sep) : null, take, ...others,
-    // What the next reroll brings, read off the stream (or the old hint without the preview).
-    ...drawReroll(m),
+  // The header is chrome, not a row: it carries the card's identity and the panel's one control, and the strip takes
+  // it in #356. Until then it rides in `act`, as the battle card's does.
+  //
+  // The rule between the buys and the free reward stays: both are `act`'s own rows, so it separates two parts of one
+  // group rather than two groups — which is the shell's business and nothing a renderer draws (§1).
+  return [
+    some("act", "Now", rewardsSummary(m), [header,
+      m.buys.length ? h("div", { ...dim, fontSize: FS.tiny }, "buy first — taking the free reward closes the shop") : null,
+      ...buyRows, m.buys.length ? h("div", sep) : null, take,
+      // What the next reroll brings, read off the stream (or the old hint without the preview).
+      ...drawReroll(m)]),
+    // The shop's unpicked rewards: the judged list, which on every kind is `options` (§1). No summary and no count —
+    // the options themselves say it one glance lower (§6).
+    some("options", "Others", null, others),
     // What is wrong with the team itself, while this shop can still patch it.
-    ...drawAudit(m.audit),
+    some("audit", "Team", auditSummary(m.audit), drawAudit(m.audit)),
     // What the shop is being stocked for: the wave the run seed has already decided on, then the next big fight the
-    // calendar holds and whether this party is ready for it. The two shared sections stopped ruling themselves off
-    // when they became rows of the battle card's road group (#349 §1), so this card rules them off until it becomes
-    // groups itself (#352).
-    ...ruled(drawPreview(m.preview)), ...ruled(drawAhead(m.ahead))].filter(Boolean);
+    // calendar holds and whether this party is ready for it. The line is the battle card's own (`roadSummary`); the
+    // two rows are spelled out again because the two cards that draw a road sit on the same bundle layer, so neither
+    // can import a builder from the other and a shared one would have to sit below the sections it draws.
+    some("road", "Road", roadSummary(m.preview, m.ahead), [...drawPreview(m.preview), ...drawAhead(m.ahead)]),
+  ].filter(Boolean);
 };

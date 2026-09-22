@@ -18,11 +18,12 @@ globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => null, setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { drawBattle } = globalThis.__hud["96-render-battle"];
+const { drawLearn } = globalThis.__hud["96-render-learn"];
 const { GROUP_IDS, cardText, groupsText } = globalThis.__hud["90-render"];
 
 
-const show = (label, card) => {
-  const groups = groupsText(drawBattle(card));
+const show = (label, card, draw = drawBattle) => {
+  const groups = groupsText(draw(card));
   console.log(`== ${label}`);
   for (const g of groups) {
     console.log(`${g.id} | ${g.label || "—"} | ${g.summary ?? "—"}`);
@@ -191,6 +192,47 @@ const catchAdvice = {
   assert.equal(cardText(card), "no advice — the enemy AI call threw\n🎯 W89");
   // The inline ⚠ row that used to carry it is gone: the summary carries it.
   assert.ok(!groups[0].rows.some(r => r.includes("no advice")), groups[0].rows.join("\n"));
+}
+
+// ---- Learn: act · options · audit · notes, with a team line (#352)
+// `options` is the current move slots, `audit` the team line — the same two ids the battle card spends on other
+// things, which is the point of a closed set: a tab means what it means whatever card is under it.
+const move = (over = {}) => ({ name: "Earth Power", type: "Ground", cat: "special", value: 117, power: 90, hits: 1,
+  acc: 100, stab: false, fixed: false, why: null, notes: [], ...over });
+const learn = (over = {}) => ({
+  kind: "learn", wave: 27, icon: null, name: "Espeon", atk: 65, spa: 130,
+  move: move({ notes: ["SE on Rock/Steel/Fire…"] }),
+  moves: [move({ name: "Bite", type: "Dark", cat: "physical", value: 30, power: 60, notes: ["weak Atk"] }),
+    move({ name: "Psychic", type: "Psychic", value: 191, stab: true, notes: ["only Psychic move on team"] })],
+  forget: 0, compare: 0, decision: "learn", gain: 87,
+  verdict: ["Learn → forget Bite", "#6d6"],
+  team: { gains: ["Steel", "Electric"], loses: ["Dark"], onlyType: "Dark" },
+  blind: "the run seed is past the pinned build", ...over,
+});
+{
+  const card = learn();
+  const groups = show("learn · a team line, and a big fight it couldn't read", card, drawLearn);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options", "audit", "notes"]);
+  // The call, verbatim off the model, and the only place the verdict itself appears. The only-type loss rides in the
+  // same string, so the slot that loses it carries a bare ⚠ and the sentence stays on the team line that ⚠ points
+  // at: a summary quotes what its rows say rather than replacing it, as the battle card's foes line does (#351).
+  assert.equal(groups[0].summary, "Learn → forget Bite · ⚠ loses only Dark move");
+  assert.ok(!groups.some(g => g.rows.some(r => r.includes("Learn → forget"))), "the verdict line has left the rows");
+  // What the swap gains left the verdict line with it, and sits on the row of the move that gains it.
+  assert.ok(groups[0].rows.some(r => r.includes("Earth Power") && r.includes("+87 power")), groups[0].rows.join("\n"));
+  // `options` and `notes` head their panes with their label alone — no summary, and no count of what is below (§6).
+  assert.deepEqual([groups[1].summary, groups[3].summary], [null, null]);
+  const text = cardText(card);
+  assert.ok(text.includes("\nMoves\n✕ Dark Bite ⚠ weak Atk power 30\n"), text);
+  assert.ok(text.includes("\nTeam\nteam: +SE Steel/Electric · −SE Dark · ⚠ loses only Dark move\n"), text);
+  assert.ok(text.endsWith("\nNotes\nnext big fight unread: the run seed is past the pinned build"), text);
+}
+
+// ---- Learn with nothing to say about the team: the group is not drawn at all
+{
+  const groups = show("learn · no team line, no notes", learn({ team: null, blind: null }), drawLearn);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options"]);
+  assert.equal(groups[0].summary, "Learn → forget Bite");
 }
 
 console.log("ok");

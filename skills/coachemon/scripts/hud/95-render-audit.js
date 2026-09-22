@@ -2,7 +2,7 @@
 // call these from a draw or a summary, never at load time.
 // Every finding, always: ✗ what loses fights and · what costs tempo, with the Memory Mushroom move under a dead slot
 // it would fix.
-import { FS, closed, dim, h, line, sep } from "./90-render.js";
+import { FS, closed, dim, h, line } from "./90-render.js";
 
 export const drawAudit = a => {
   const found = a?.findings ?? [];
@@ -10,7 +10,9 @@ export const drawAudit = a => {
   const red = "#e77", amber = "#ec4";
   const high = found.some(f => f.level === "high");
   const MAX = 8;
-  const out = [h("div", sep), line("🩺", high ? red : amber, h("span", { fontWeight: "bold", marginRight: "3px" }, "Team audit"),
+  // Rows of the audit group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
+  // control of its own.
+  const out = [line("🩺", high ? red : amber, h("span", { fontWeight: "bold", marginRight: "3px" }, "Team audit"),
     a.vs ? h("span", dim, `vs W${a.vs.wave} ${a.vs.who}`) : null)];
   for (const f of found.slice(0, MAX)) {
     out.push(line(f.level === "high" ? "✗" : "·", f.level === "high" ? red : amber,

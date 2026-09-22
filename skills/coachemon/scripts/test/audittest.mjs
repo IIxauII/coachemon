@@ -181,6 +181,9 @@ for (const [label, sc] of Object.entries(scenarios)) {
   eval(bundle("hud", { expose: true }));
   const { rewardsModel } = globalThis.__hud["52-shop"], { teamAudit } = globalThis.__hud["50-audit"];
   const { drawRewards } = globalThis.__hud["96-render-rewards"], { cardSummary } = globalThis.__hud["60-card"];
+  // The card is a list of groups now (#352), so the shell's own flattening is what turns it back into the panel's
+  // rows — headings among them, which is where `audit.summary` shows up.
+  const { drawGroups } = globalThis.__hud["90-render"];
   const { previewNext } = globalThis.__hud["48-preview"];
   const { readRun } = globalThis.__hud["26-run"];
   // The learn scorer the audit's dead-slot check reads, so a scenario can assert what a slot is actually worth.
@@ -191,7 +194,8 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const m = readRun(scene, run => rewardsModel(run, handler));
   if (sc.ahead) m.audit = readRun(scene, run => teamAudit(run, sc.ahead));
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-  console.log(`== ${label}\n` + drawRewards({ ...m, wave: sc.wave, preview: readRun(scene, previewNext) }).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
+  console.log(`== ${label}\n` + drawGroups(drawRewards({ ...m, wave: sc.wave, preview: readRun(scene, previewNext) }))
+    .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n"));
   const a = m.audit;
   for (const f of a.findings) console.log(`${f.level === "high" ? "✗" : "·"} ${f.kind} ${f.text}${f.relearn ? ` ↺ ${f.relearn.move} over ${f.relearn.forget ?? "(free slot)"} +${f.relearn.gain}` : ""}`);
   console.log(`mushroom ${m.free.map(f => `${f.name}: ${f.v} ${f.why}`).join(" | ")}`);

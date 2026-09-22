@@ -187,6 +187,12 @@ export const foesSummary = card => {
   return card.weak?.length ? `we're weak to ${card.weak.map(([t, n]) => `${t} ×${n}`).join(" · ")}` : null;
 };
 
+// The road group's line (#349 §6): the preview string, then the look-ahead string, joined with ` · ` and skipping
+// whichever is absent. Two cards draw a road — the battle card and the rewards card — so the join lives beside the
+// other group summaries rather than once in each renderer, where the two could drift apart.
+export const roadSummary = (preview, ahead) =>
+  [previewSummary(preview), aheadSummary(ahead)].filter(Boolean).join(" · ") || null;
+
 // The fight plan in one line: its verdict, the win condition, then what it warns about (a likely loss says why).
 export const planSummary = tp => {
   if (!tp) return null;

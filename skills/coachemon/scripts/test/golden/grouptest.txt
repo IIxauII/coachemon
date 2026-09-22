@@ -80,4 +80,22 @@ foes | Foes | ⚠ Venusaur ← Arcanine Flare Blitz
 == unavailable
 act | Now | no advice — the enemy AI call threw
     🎯 W89
+== learn · a team line, and a big fight it couldn't read
+act | Now | Learn → forget Bite · ⚠ loses only Dark move
+    🎓 Espeon learns Espeon Atk 65 / SpA 130
+    ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
+options | Moves | —
+    ✕ Dark Bite ⚠ weak Atk power 30
+    · Psychic Psychic only Psychic move on team power 191
+audit | Team | —
+    team: +SE Steel/Electric · −SE Dark · ⚠ loses only Dark move
+notes | Notes | —
+    next big fight unread: the run seed is past the pinned build
+== learn · no team line, no notes
+act | Now | Learn → forget Bite
+    🎓 Espeon learns Espeon Atk 65 / SpA 130
+    ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
+options | Moves | —
+    ✕ Dark Bite weak Atk power 30
+    · Psychic Psychic only Psychic move on team power 191
 ok
