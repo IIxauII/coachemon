@@ -1,0 +1,83 @@
+== wild · threat turn needing a switch
+act | Now | Charizard Flamethrower → Lycanroc · 2 hits
+    🎯 W89
+    ⚔ Charizard 💀 Rock ×4 567% Fire Flamethrower → Lycanroc 2 hits
+    ⇄ Charizard 💀 Rock ×4 567% out › Blastoise in · takes ~23% · resists Stone Edge
+foes | Foes | 💀 Charizard ← Lycanroc Stone Edge
+    Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2 ↯ Rock Stone Edge ~567% HP · moves first
+catch | Catch | catch Toxicroak — Ultra 62%
+    🎯 Toxicroak catch: Ultra 62% — new species, covers Ground weakness
+    Great ×9 44% Ultra ×4 62%
+    ★ not in the dex
+    ⚑ resists Ground
+road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — nothing hits Garchomp super-effectively
+    🔮 Next W90 wild
+    · Toxicroak L71 Poison Fighting Dry Skin
+    Sludge Bomb
+    if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
+    ⚑ Next big fight gym leader in 6 W95 👑 2 bars
+    · Garchomp L96
+    🎁 it pays Rogue
+    ✗ nothing hits Garchomp super-effectively
+    ✚ full heal entering W100 — HP, status, PP, revives, Tera
+    🍀 luck 3 (C) — 6% tier upgrade per reward
+== wild · quiet, and no catch
+act | Now | Charizard Flamethrower → Lycanroc · 2 hits
+    🎯 W89
+    ⚔ Charizard Fire Flamethrower → Lycanroc 2 hits
+foes | Foes | we're weak to Fire ×2
+    Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2
+road | Road | W90 wild — Toxicroak L71
+    🔮 Next W90 wild
+    · Toxicroak L71 Poison Fighting Dry Skin
+    Sludge Bomb
+    if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
+== wild · a maybe, which is not a catch verdict
+act | Now | Charizard Flamethrower → Lycanroc · 2 hits
+    🎯 W89
+    ⚔ Charizard Fire Flamethrower → Lycanroc 2 hits
+foes | Foes | we're weak to Fire ×2
+    Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2
+catch | Catch | —
+    🎯 Zubat maybe: Great 44% — covers Flying
+    Great ×9 44%
+== trainer · fight plan
+act | Now | Blastoise Wave Crash → Garchomp · 2 hits
+    🎯 W89 · Cynthia Blastoise › Venusaur
+    ⚔ Blastoise Water Wave Crash → Garchomp 2 hits
+foes | Foes | —
+    foes weak to: Ice ×2 Fire ×1
+    Garchomp Garchomp L96 Dragon Ground 👑 100% ▲ Ice ×4
+    Spiritomb Spiritomb L95 Ghost Dark 100% ▲ —
+    Roserade Roserade L95 Grass Poison 100% ▲ Fire ×2
+plan | Plan | winnable · ☠ Garchomp KOs 2/4 · Roserade outspeeds the whole bench
+    ♟ Fight plan winnable
+    ☠ Garchomp Garchomp 👑 KOs 2/4 · win condition
+    🛡 Lapras save for Garchomp ~34%/turn
+    1 Blastoise Water Wave Crash → Garchomp KO · 40% left
+    2 Lapras ⇄ Ice Ice Beam → Roserade KO · 70% left
+    ⚠ Roserade outspeeds the whole bench
+road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — nothing hits Garchomp super-effectively
+    🔮 Next W90 wild
+    · Toxicroak L71 Poison Fighting Dry Skin
+    Sludge Bomb
+    if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
+    ⚑ Next big fight gym leader in 6 W95 👑 2 bars
+    · Garchomp L96
+    🎁 it pays Rogue
+    ✗ nothing hits Garchomp super-effectively
+    ✚ full heal entering W100 — HP, status, PP, revives, Tera
+    🍀 luck 3 (C) — 6% tier upgrade per reward
+== double · a return from the other slot
+act | Now | Blastoise Wave Crash → Ludicolo · 2 hits ; Venusaur Power Whip → Arcanine · 2 hits
+    🎯 W89 · Tester
+    ⇆ Arcanine → Gyarados returns from the other slot — moves aimed at it
+    ⚔ Blastoise Water Wave Crash → Ludicolo 2 hits
+    ⚔ Venusaur ⚠ Fire ×2 88% Grass Power Whip → Arcanine 2 hits
+foes | Foes | ⚠ Venusaur ← Arcanine Flare Blitz
+    Ludicolo Ludicolo L80 Water Grass 100% ▲ Water ×2
+    Arcanine Arcanine L80 Fire 100% ▲ Water ×2
+== unavailable
+act | Now | no advice — the enemy AI call threw
+    🎯 W89
+ok

@@ -5,7 +5,7 @@
 // The card only ever says what the calendar and the seed already decided: the schedule is arithmetic on the wave
 // index, and a named trainer comes from the preview's replay, which marks its own confidence.
 import { aheadIn, aheadWho } from "./49-ahead.js";
-import { FS, dim, h, line, sep } from "./90-render.js";
+import { FS, dim, h, line } from "./90-render.js";
 
 const AHEAD_COLOR = { ready: "#6d6", watch: "#ec4", risky: "#e55" };
 export const drawAhead = a => {
@@ -14,8 +14,9 @@ export const drawAhead = a => {
   const color = r ? AHEAD_COLOR[r.verdict] : "#9aa";
   const head = h("span", { fontWeight: "bold", marginRight: "3px" }, `${aheadWho(a)} ${aheadIn(a.next.in)}`);
   const where = h("span", dim, `W${a.next.wave}`);
-  // A section inside the shop or battle card, not a card of its own: its own rule above it, and no control of its own.
-  const out = [h("div", sep), line("⚑", color, h("span", { fontWeight: "bold", marginRight: "3px" }, "Next big fight"),
+  // Rows of the road group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
+  // control of its own.
+  const out = [line("⚑", color, h("span", { fontWeight: "bold", marginRight: "3px" }, "Next big fight"),
     head, where, h("span", { flex: "1" }),
     a.next.double ? h("span", { ...dim, fontSize: FS.tiny, marginRight: "3px" }, "double") : null,
     a.next.bars ? h("span", { color: "#fa4", fontSize: FS.tiny }, `👑 ${a.next.bars + 1} bars`) : null)];

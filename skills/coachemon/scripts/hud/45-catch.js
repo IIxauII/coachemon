@@ -396,6 +396,23 @@ export const catchAdvice = (turn, account) => {
   return { targets };
 };
 
+// The targets worth speaking up for. A skip is not a catch verdict: it is never drawn, and it never reaches the
+// group's line — one rule, read by both, so the pane and its heading can never disagree about what is on offer.
+export const catchTargets = c => (c?.targets ?? []).filter(t => t.verdict !== "skip");
+
+// The catch group's line (#349 §6): the best target and what the ball it deserves is worth — `catch Toxicroak — Ultra
+// 62%`. **A `catch` verdict alone earns one** — that is what "empty where there is no catch verdict" names, and a
+// `maybe` is not it: it is still drawn in the pane, and its group is headed by its label alone, which is the same
+// rule a group with nothing to conclude lives by. Pure, and computes nothing `catchAdvice` hasn't: the target with
+// the best odds leads, and a boss no ball reaches yet has no odds to give, so it names itself without them.
+export const catchSummary = c => {
+  const targets = catchTargets(c).filter(t => t.verdict === "catch");
+  if (!targets.length) return null;
+  const [t] = targets.slice().sort((a, b) => (b.best?.p ?? 0) - (a.best?.p ?? 0));
+  const odds = t.best ? ` — ${t.best.ball.replace(/ Ball$/, "")} ${Math.round(t.best.p * 100)}%` : "";
+  return `catch ${t.name}${odds}`;
+};
+
 // What owning `foe` is worth with no ball in the picture: the account and team reasons a throw is weighed on, for a
 // mon a Mystery Encounter hands over. No turn: this is the account's question, not the battle's.
 export const catchWorth = (account, foe) => {

@@ -13,7 +13,6 @@ export const drawTeamPlan = m => {
   const approx = !!m?.double;
   const entryTag = { free: ["free", "#6d6"], switch: ["⇄", amber] }; // a switch-in also says so in `why`
   const out = [
-    h("div", { borderTop: "1px solid rgba(255,255,255,.12)", margin: "5px 0 2px" }),
     line("♟", "#c9f", h("span", { fontWeight: "bold" }, "Fight plan"), approx ? h("span", { ...small, marginLeft: "4px" }, "steps approximate") : null,
       h("span", { flex: "1" }),
       h("span", { color: lost ? red : "#6d6" }, lost ? "likely lost" : "winnable")),
