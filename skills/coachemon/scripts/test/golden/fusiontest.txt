@@ -57,9 +57,12 @@ spends Mimikyu L30 · Thick Fat → no ability (Disguise doesn't work fused) · 
 == party screen, not splicing
 kind null
 == rewards, full party
+take DNA Splicers → Snorlax
 🛒 $500 nothing affordable ×
 🎁 DNA Splicers Snorlax fuse Snorlax ← Salamence · +7 · spends Salamence L22
+Others
 · Potion party healthy
+Team 4 issues: 2 of 6 weak to Fairy, nobody resists; Magikarp: no Water attack (no STAB); Magikarp L20/Salamence L22/Mimikyu L30 trail Garchomp L50 — lead them on easy waves
 🩺 Team audit
 ✗ 2 of 6 weak to Fairy, nobody resists
 ✗ Magikarp: no Water attack (no STAB)
@@ -68,9 +71,12 @@ kind null
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary take DNA Splicers → Snorlax
 == rewards, two members
+take DNA Splicers
 🛒 $500 nothing affordable ×
 🎁 DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −31
+Others
 · Potion party healthy
+Team 3 issues: Magikarp: no Water attack (no STAB); Magikarp L20 trail Garchomp L50 — lead it on easy waves; nothing hits Fighting/Flying/Ground/Bug +7 super-effectively
 🩺 Team audit
 ✗ Magikarp: no Water attack (no STAB)
 ✗ Magikarp L20 trail Garchomp L50 — lead it on easy waves

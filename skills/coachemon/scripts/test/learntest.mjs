@@ -52,7 +52,11 @@ const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) 
   const model = learnModel({ ...learnState(scene), roster });
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");
   const txt = n => typeof n === "string" ? n : n.children.map(txt).join(" ");
-  return { model, text: el.kids.slice(1).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
+  // The card as the shell draws it, less the header bar: that is chrome — the card's identity and the panel's one
+  // control — and the strip takes it in #356. What leads the card now is the `act` heading, which is the call the
+  // card came to (#352), so it stays where the verdict row used to close the card.
+  const [head, , ...rest] = el.kids;
+  return { model, text: [head, ...rest].map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
 };
 const show = (label, r) => console.log(`== ${label}\n${r.text}`);
 const byName = (m, n) => m.moves.find(x => x.name === n);

@@ -88,6 +88,13 @@ export const group = (id, label, summary, rows) => {
   if (!GROUP_IDS.includes(id)) throw new Error(`unknown group ${id}`);
   return { id, label: label ?? "", summary: summary || null, rows: (rows ?? []).filter(Boolean) };
 };
+// The same group, or nothing at all when it has neither summary nor rows: an empty tab is filler, and the options
+// themselves say it one glance lower (§6). The label-alone rule is for a group with rows and nothing to conclude,
+// not for one with nothing. Every renderer that builds more than one group wants this, so it lives here.
+export const some = (id, label, summary, rows) => {
+  const g = group(id, label, summary, rows);
+  return g.summary || g.rows.length ? g : null;
+};
 
 // What heads a group's pane, and its block in the plain text — one rule, so the two cannot disagree.
 // `act` is headed by its summary alone: the strip above it is its label (§6), which is also what makes the first

@@ -14,11 +14,11 @@ import { drawRewards } from "./96-render-rewards.js";
 import { drawStarters } from "./96-render-starters.js";
 import { drawBiome } from "./97-render-biome.js";
 
-// A renderer's product is an ordered list of groups (#349 §1). Until a kind is split into its own (#352, #353) it is
+// A renderer's product is an ordered list of groups (#349 §1). Until a kind is split into its own (#353) it is
 // wrapped: its node tree is presented as one `act` group carrying neither label nor summary, so it draws and reads
 // exactly as it did — its own header among the rows, and no heading above it.
 const adapt = draw => card => [group("act", "", null, draw(card))];
-const DRAW = { learn: adapt(drawLearn), rewards: adapt(drawRewards), battle: drawBattle, biome: adapt(drawBiome),
+const DRAW = { learn: drawLearn, rewards: drawRewards, battle: drawBattle, biome: adapt(drawBiome),
   encounter: adapt(drawEncounter), starters: adapt(drawStarters), fusion: adapt(drawFusion) };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
