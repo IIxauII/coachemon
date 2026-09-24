@@ -3,7 +3,10 @@
 // tag, and the fight plan the battle card always draws in full. The panel has one fidelity, so every card here is
 // drawn once. The content half of a card is pinned in grouptest, which draws nothing.
 import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { bundle } from "../hud-bundle.mjs";
+const HUD = fileURLToPath(new URL("../hud", import.meta.url));
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
 const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p, category: cat[c], accuracy: a, moveTarget: 3, isChargingMove: () => false, attrs: [] });
@@ -258,7 +261,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   // being the open one — which is weight and ink, never the gold the authorship rule owns.
   assert.equal(openGroup(), "act");
   assert.deepEqual([tabs[0].style.fontWeight, tabs[0].style.color], ["bold", "#f8f8f8"]);
-  assert.deepEqual([tabs[1].style.fontWeight, tabs[1].style.color], ["normal", "#9aa"]);
+  assert.deepEqual([tabs[1].style.fontWeight, tabs[1].style.color], ["normal", "#a0a0a0"]);
   assert.ok(!tabs.some(t => t.style.color === "#f8b050"), "gold never says which tab is open");
   assert.deepEqual(tabs.map(t => flat(t).replace(/[A-Za-z]/g, "")), tabs.map(() => ""), "labels only: no mark, no count");
   // The pane is what scrolls, past the budget the game's message box leaves — and the panel itself no longer does,
@@ -304,6 +307,98 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.equal(head.children.length, 1, "the caption alone: no dot and no word");
   assert.equal(head.children[0].style.color, "#f8b050", "and the one thing on it is the caption");
   assert.ok(txt(call).startsWith("Learn → forget"), txt(call));
+}
+
+// ---- The colour law and the closed palette (#349 §8, #360)
+// **Colour answers direction, and nothing else.** The tokens are recorded rather than restated, so moving any of
+// them is a golden diff and not a silent redesign — and the two carriers the law lives in, the gutter's ink and the
+// open group's frame, are asserted outright, because they are what makes direction legible with no text read.
+{
+  const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+  const el = mount(scene, { expose: true });
+  const { drawer, GROUP_IDS, GUTTER_INK, IMMUNE, LAW_INK, MARKS, line } = globalThis.__hud["90-render"];
+  console.log("== colour law");
+  // **The law's four inks**, every one of them a colour the game already draws: its summary blue for what we do, its
+  // selected-setting salmon for what is done to us, its master-tier magenta for what is later, its locked-setting
+  // grey for neither. Which group wears which is the `frames` line below, read off what the panel drew rather than
+  // restated here — the mapping lives in one place, and a copy of it in this file would pin nothing.
+  console.log(`law ${Object.entries(LAW_INK).map(([k, v]) => `${k} ${v}`).join(" | ")}`);
+  assert.deepEqual(LAW_INK, { ours: "#40c8f8", theirs: "#f88880", later: "#e331c5", none: "#a0a0a0" });
+  // **The open group's frame**, one per group id, in the fixed order the bar walks. A card with one group opens on
+  // it whatever the panel remembers, so each id is asked by drawing a card that has only that group. `foes` is the
+  // one tab where something is coming at us, and its frame is the one that is not the law's ink as text: a frame has
+  // nothing but colour where text has words beside it, so `theirs` is held as one ink in two weights.
+  const frames = GROUP_IDS.map(id => drawer([{ id, label: id, summary: null, rows: [] }])[1].style.border);
+  console.log(`frames ${GROUP_IDS.map((id, i) => `${id} ${frames[i]}`).join(" | ")}`);
+  assert.deepEqual(frames, ["1px solid #40c8f8", "1px solid #f75231", "1px solid #40c8f8", "1px solid #e331c5",
+    "1px solid #40c8f8", "1px solid #e331c5", "1px solid #e331c5", "1px solid #a0a0a0"]);
+  // **The law frame insets one row's padding within the gold authorship rule**, so gold reads as the object's edge
+  // and the law as a state inside it. Both gaps are rungs of the ladder and both are pinned to their value, because
+  // "the two rules never touch" is an invariant a zero would break silently: the panel's own padding is what stands
+  // between the gold rule and the frame, and the pane's own is what keeps the rows off the frame.
+  const [, pane] = drawer([{ id: "act", label: "Now", summary: null, rows: [] }]);
+  console.log(`frame inset ${el.style.padding} · pane padding ${pane.style.padding}`);
+  const RUNG = "clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)";
+  assert.equal(el.style.padding, `calc(0.75 * ${RUNG}) ${RUNG}`, "one row's padding stands between the gold rule and the law frame");
+  assert.equal(pane.style.padding, `calc(0.5 * ${RUNG}) calc(0.75 * ${RUNG})`, "and the frame keeps the rows off itself");
+  // **The three gutter inks**, settled: green for good news, red for bad, grey for neither. An emoji forfeits the
+  // ink and keeps its own colour, a blank gutter takes none, and **immune** is the `×0` case of `▼` — `▼`'s glyph
+  // in the neutral ink, which is the sixteenth mark.
+  assert.deepEqual(GUTTER_INK, { good: "#78c850", bad: "#e13d3d", flat: "#a0a0a0" });
+  const gutter = mark => { const g = line(mark).children[0]; return `${txt(g) || "·blank·"} ${g.style.color || "·none·"}`; };
+  console.log(`gutter ${[..."⚔➜★✓▲", "|", ..."↯✗✦⚠▼", "|", ..."⇄⤵≈↺·", IMMUNE, "|", "💀", "👑", "🎲", "🔒", ""].map(m => (m === "|" ? "|" : gutter(m))).join(" ")}`);
+  for (const m of "⚔➜★✓▲") assert.equal(line(m).children[0].style.color, GUTTER_INK.good, m);
+  for (const m of "↯✗✦⚠▼") assert.equal(line(m).children[0].style.color, GUTTER_INK.bad, m);
+  for (const m of [..."⇄⤵≈↺·", IMMUNE]) assert.equal(line(m).children[0].style.color, GUTTER_INK.flat, m);
+  assert.equal(txt(line(IMMUNE).children[0]).trim(), "▼", "immune is a mark, not a shape: it wears ▼'s glyph");
+  for (const m of ["💀", "👑", "🎲", "🔒"]) assert.equal(line(m).children[0].style.color, "", `${m} forfeits the ink`);
+  assert.equal(line("").children[0].style.color, "", "a blank gutter makes no claim, so it takes no ink");
+  // Every mark in the closed alphabet is accounted for above. A sixteenth shape added to `MARKS` and to neither the
+  // good nor the bad set would otherwise fall through to grey unnoticed — a new mark is a new claim about news, and
+  // it has to be told which.
+  const asked = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·", "💀", "👑", "🎲", "🔒"];
+  assert.deepEqual(MARKS.filter(m => !asked.includes(m)), [], "a mark the alphabet gained but the gutter was never told the news of");
+  // **Chrome gold never appears inside a row** (§8, §9): it is the tab labels, the open group's summary line and the
+  // strip's caption, and it is inert. The panel is walked whole rather than by fixture, because a row that reached
+  // for gold would be one renderer's line and not a shape this file draws.
+  const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
+  const paneRows = (el.kids[3].children ?? []).flatMap(n => [n, ...under(n)]);
+  assert.deepEqual(paneRows.filter(n => n?.style?.color === "#f8b050"), [], "gold never appears inside a row");
+  // **The effectiveness colours are the caller's to ask for**, so a suffix that merely looks like a multiplier does
+  // not get one: `×4` on the foes-weak-to row counts four foes, and inking it super-effective green would be that
+  // row reading its own output back as a fact. `badge` colours a suffix only when it was told the suffix is one.
+  const { badge } = globalThis.__hud["90-render"];
+  const suffixInk = (...args) => badge(...args).children[1]?.style?.color ?? "";
+  console.log(`effectiveness ×4 ${suffixInk("Fire", "×4", true)} · ×¼ ${suffixInk("Fire", "×¼", true)} · ×0 ${suffixInk("Fire", "×0", true)} · count ×4 ${suffixInk("Fire", "×4") || "·none·"}`);
+  assert.deepEqual([suffixInk("Fire", "×4", true), suffixInk("Fire", "×¼", true), suffixInk("Fire", "×0", true)],
+    ["#4AA500", "#FE8E00", "#929292"], "the game's own effectiveness table, quoted");
+  assert.equal(suffixInk("Fire", "×4"), "", "a count of four foes is not ×4 effective");
+  assert.equal(suffixInk("Fire", "70%", true), "", "and a share the table has no opinion about takes no colour either");
+  // **A renderer never spells a colour.** The law is the shell's, handed down as `ink.ours` · `ink.theirs` ·
+  // `ink.later` · `dim`, and the gutter's ink is the mark's own — so a renderer that wrote a hex would have left the
+  // law. This is what says so for the branches no fixture here reaches: the whole palette lives in one file.
+  const renderers = readdirSync(HUD).filter(f => /^9[0-9]-render/.test(f) && f !== "90-render.js");
+  const spelt = renderers.filter(f => /"#[0-9a-fA-F]{3,6}"/.test(readFileSync(`${HUD}/${f}`, "utf8")));
+  assert.deepEqual(spelt, [], "a renderer that spells a colour has left the law: the inks are the shell's to hand down");
+  // **The palette is closed**, and every seat in it is named: the skin, the law and its one frame split, the gutter,
+  // the verdict dot, the game's effectiveness table, the game's HP overlay, and the type atlas's text fallback.
+  // A hex that belongs to none of them is a colour the panel invented — which is the one thing §8 forbids outright.
+  const src = bundle("hud");
+  const SEATS = {
+    skin: ["#362d3e", "#f8f8f8", "#f8b050", "#181818"],
+    law: ["#40c8f8", "#f88880", "#e331c5", "#a0a0a0", "#f75231"],
+    gutter: ["#78c850", "#e13d3d"],
+    verdict: ["#78c850", "#f8b050", "#e13d3d", "#40c8f8"],
+    effectiveness: ["#4AA500", "#FE8E00", "#929292"],
+    hp: ["#39ff7b", "#f3b200", "#fb3041"],
+    types: ["#a8a878", "#c03028", "#a890f0", "#a040a0", "#e0c068", "#b8a038", "#a8b820", "#705898", "#b8b8d0",
+      "#f08030", "#6890f0", "#78c850", "#f8d030", "#f85888", "#98d8d8", "#7038f8", "#705848", "#e888c8", "#ffffff"],
+  };
+  const seated = new Set(Object.values(SEATS).flat());
+  const inks = [...new Set((src.match(/"#[0-9a-fA-F]{3,6}"/g) ?? []).map(s => s.slice(1, -1)))].sort();
+  console.log(`palette ${inks.join(" ")}`);
+  assert.deepEqual(inks.filter(c => !seated.has(c)), [], "the panel invents no colour: every hex in it has a seat");
 }
 
 // ---- The footprint and the type ladder (#349 §4, #355)

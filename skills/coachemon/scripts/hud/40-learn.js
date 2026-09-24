@@ -709,12 +709,15 @@ export const learnModel = ({ pk, mv, double, party, roster = null }) => {
   const blind = roster?.unavailable ?? null;
   const { plan } = learnAdvice(pk, mv, { double, party: party?.length ? party : [pk], roster: blind ? null : roster });
   const { moves, incoming, forget, compare, team } = plan;
+  // The call alone. It used to travel with an ink, from before the colour law: **colour is the panel's and never
+  // the model's** (#349 §8), and the one thing that ink said — is this good news — is the gutter's question now,
+  // answered by the mark the row wears. Nothing ever read it.
   const verdict = {
-    free: ["Learns it — free slot", "#6d6"],
-    status: ["Can't score this one — your call", "#fa4"],
-    "only-status": ["Nothing scorable to drop — your call", "#fa4"],
-    learn: [`Learn → forget ${moves[forget]?.name}`, "#6d6"],
-    skip: [`Skip — not an upgrade${moves[compare] ? ` over ${moves[compare].name}` : ""}`, "#e55"],
+    free: "Learns it — free slot",
+    status: "Can't score this one — your call",
+    "only-status": "Nothing scorable to drop — your call",
+    learn: `Learn → forget ${moves[forget]?.name}`,
+    skip: `Skip — not an upgrade${moves[compare] ? ` over ${moves[compare].name}` : ""}`,
   }[plan.kind];
   return {
     kind: "learn", icon: iconOf(pk), name: pk.name, move: incoming, moves, forget, compare, verdict,
@@ -725,5 +728,5 @@ export const learnModel = ({ pk, mv, double, party, roster = null }) => {
 // `Learn → forget Tackle · ⚠ loses only Dark move`, for the watcher and the battle read.
 export const learnSummary = m => {
   const only = m.team?.onlyType && m.forget >= 0 ? ` · ⚠ loses only ${m.team.onlyType} move` : "";
-  return `${m.verdict[0]}${only}`;
+  return `${m.verdict}${only}`;
 };

@@ -9,33 +9,36 @@
 // Nothing is drawn when the preview is unavailable — a build past the pin, or no run seed: the tally is the place
 // that reports drift, and a card that nags on every tick is worse than a quiet one.
 import { previewKind, previewMark } from "./48-preview.js";
-import { badge, dim, h, ICON, line, mon } from "./90-render.js";
+import { badge, dim, h, ICON, ink, line, mon } from "./90-render.js";
 
 export const drawPreview = m => {
   if (!m || m.unavailable) return [];
   const head = `W${m.wave}${previewMark(m, "type")}`;
-  const kind = h("span", { color: m.type === "trainer" ? "#fa4" : m.type === "me" ? "#c9f" : "#9aa", marginRight: "3px" },
+  // The preview is a wave that has not arrived, so every row of it is **later** (#349 §8). What kind of wave it is
+  // — trainer, mystery encounter or wild — is a subject and not a direction, and the word already says it: three
+  // inks for three kinds is the spend the law took away.
+  const kind = h("span", { ...ink.later, marginRight: "3px" },
     `${previewKind(m)}${m.double ? ` double${previewMark(m, "double")}` : ""}`);
   const who = m.trainer ? `${m.trainer.name}${previewMark(m, "trainer")}` : null;
   // Rows of the road group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
   // control of its own.
-  const out = [line("", "#9aa", h("span", { fontWeight: "bold", marginRight: "3px" }, `Next ${head}`), kind)];
-  if (who) out.push(line("·", "#fa4", h("span", {}, who)));
+  const out = [line("", h("span", { fontWeight: "bold", marginRight: "3px" }, `Next ${head}`), kind)];
+  if (who) out.push(line("·", h("span", {}, who)));
   for (const f of m.foes) {
-    out.push(line(f.segments > 1 ? "👑" : "·", f.segments > 1 ? "#fa4" : "#9aa",
+    out.push(line(f.segments > 1 ? "👑" : "·",
       mon(f.icon, f.name, ICON.ref), h("span", { marginRight: "3px" }, `L${f.level}${previewMark(m, "foes")}`),
       ...f.types.map(t => badge(t, "")), h("span", { flex: "1" }),
       h("span", dim, [f.ability, f.segments > 1 ? `${f.segments} bars` : null].filter(Boolean).join(" · "))));
-    if (f.moves?.length) out.push(line("", "#9aa", h("span", dim, f.moves.join(" · "))));
+    if (f.moves?.length) out.push(line("", h("span", dim, f.moves.join(" · "))));
   }
   // Confidence is not a gutter mark (90-render's alphabet), so the mystery encounter's row takes the neutral `·`
   // and its leading word carries the kind the `?` used to.
-  if (m.me?.name) out.push(line("·", "#c9f", h("span", dim, "mystery:"), h("span", { marginLeft: "3px" }, m.me.name)));
+  if (m.me?.name) out.push(line("·", h("span", dim, "mystery:"), h("span", { marginLeft: "3px" }, m.me.name)));
   const caveats = [...(m.notes ?? [])];
   if (m.missed?.length) caveats.push(`! ${m.missed.join(", ")} has been wrong this run`);
   else if (Object.values(m.confidence ?? {}).includes("replay")) caveats.push("~ holds while nothing else draws first");
   // Standing, not conditional: every field above is only the wave the seed holds *if nothing changes* first.
   caveats.push("if nothing changes: a catch, evolution, shop pick or biome change re-rolls this");
-  out.push(line("", "#9aa", h("span", dim, caveats.join(" · "))));
+  out.push(line("", h("span", dim, caveats.join(" · "))));
   return out;
 };

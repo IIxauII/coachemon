@@ -119,7 +119,7 @@ for (const [label, pk, newMove, double] of cases) {
   assert.equal(byName(r.model, "Night Shade").power, Math.round(64 * 50 / (2 * 64 / 5 + 2)), "damage = level, as power at this level");
   assert.ok(byName(r.model, "Night Shade").fixed && !byName(r.model, "Night Shade").se.length, "fixed damage ignores type effectiveness");
   assert.equal(byName(r.model, "Grass Knot").power, 60);
-  assert.ok(r.model.forget >= 0 && r.model.forget !== 3, `a power −1 move can be forgotten (${r.model.verdict[0]})`);
+  assert.ok(r.model.forget >= 0 && r.model.forget !== 3, `a power −1 move can be forgotten (${r.model.verdict})`);
   assert.equal(r.model.atk, 70); assert.equal(r.model.spa, 140);
 }
 
