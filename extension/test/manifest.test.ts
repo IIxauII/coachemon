@@ -52,19 +52,21 @@ test("Chrome's floor is `world: \"MAIN\"`'s, on a service worker (§5.3)", () =>
   assert.ok(!("key" in m));
 });
 
-test("Firefox carries the CSP override, the gecko id and the data-collection declaration (§5.3)", () => {
+test("Firefox carries the CSP override, the gecko id, the 142 floor and the data-collection declaration (§5.3)", () => {
   const m = store("firefox");
   assert.deepEqual(m.background, { scripts: ["background.js"] });
   assert.deepEqual(m.action, { default_title: ACTION_TITLE });
   assert.deepEqual(m.content_security_policy, { extension_pages: "script-src 'self'" });
+  // Exact, so neither half of #380 can regress unseen: a floor below 142, or a `gecko_android` key. `manifest.ts`
+  // says why each one matters; §5.3 is the source.
   assert.deepEqual(m.browser_specific_settings, {
     gecko: {
       id: GECKO_ID,
-      strict_min_version: "128.0",
+      strict_min_version: "142.0",
       data_collection_permissions: { required: ["none"], optional: ["websiteContent"] },
     },
   });
-  // The title is the 128–139 consent experience itself, so it must say what the click allows (§8.4).
+  // The click is what requests the data-collection permission, so the title must say what it allows (§8.4).
   assert.match(ACTION_TITLE, /local AI agent read this game/);
 });
 

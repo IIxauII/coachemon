@@ -71,13 +71,8 @@ export default defineBackground(() => {
         return info?.name ?? null;
       },
       permissions: {
-        getAll: () => browser.permissions.getAll() as Promise<Record<string, unknown>>,
         contains: p => browser.permissions.contains(p as never),
         request: p => browser.permissions.request(p as never),
-      },
-      store: {
-        get: key => localStorage.getItem(key),
-        set: (key, value) => localStorage.setItem(key, value),
       },
       onClick: fn => browser.action.onClicked.addListener(fn),
     },
