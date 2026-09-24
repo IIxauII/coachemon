@@ -60,8 +60,10 @@ export const hpColor = hp => (hp > 50 ? "#6d6" : hp > 20 ? "#ec4" : "#e55");
 export const itemImg = (icon, name) => img("items", icon, name, 18, null);
 export const sep = { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" };
 
-// The panel has one fidelity, so there are two states: the panel, and the closed tab (#349 §2). Nothing switches
-// between them but the user — no card collapses itself, and no section opens itself.
+// The panel has one fidelity, so there are two states: the panel, and the glyph a dismissal leaves behind (#349 §2).
+// Nothing switches between them but the user — no card collapses itself, and no section opens itself. Both states
+// are the shell's: a renderer returns the card's groups and never asks which one is up, which is why the card's text
+// no longer has to force a view on a draw to read it.
 // The stored value is still the old three-valued one, and nothing migrates it: anything that isn't "closed" reads as
 // the panel, so a stored middle view draws as the panel. Closing or reopening writes the key as it always did, so
 // the middle value survives only until the user next touches the control; #349 §15 moves it to a key of its own.
@@ -98,8 +100,8 @@ export const some = (id, label, summary, rows) => {
 
 // What heads a group's pane, and its block in the plain text — one rule, so the two cannot disagree.
 // `act` is headed by its summary alone: the strip above it is its label (§6), which is also what makes the first
-// line of the card's text the call and not a heading. A group with no summary is headed by its label alone, and one
-// with neither — the temporary adapter's whole-card group (98-tick) — is headed by nothing.
+// line of the card's text the call and not a heading. A group with no summary is headed by its label alone — and an
+// `act` with none is therefore headed by nothing, since its label is the strip's.
 // The name and what it concluded are held apart by a colon, or the heading reads as one sentence: `Foes: we're weak
 // to Fire ×2`, where the pane has bold against dim to do the same work. A colon rather than the ` — ` the repo
 // usually spends on claim→detail, because the summaries already spend one inside themselves.
@@ -119,8 +121,8 @@ export const drawGroups = groups => (groups ?? []).flatMap((g, i) =>
 
 // ---- The card as plain text (§11.1, §5)
 // The stream's `text` is derived from the group list rather than read back off the drawn card, so the two cannot
-// disagree by construction. It is always the whole card — whether the user has the panel closed is theirs, and a
-// subscriber asked for the card — and always in the fixed group order, whatever the drawer is showing.
+// disagree by construction. It is always the whole card and always in the fixed group order, whatever the drawer is
+// showing — and it needs no view forced on a renderer to be so, because no renderer knows what a view is.
 // 98-tick registers the draw for a kind here, the way it registers the redraw: dispatch stays its business.
 let drawFn = () => null;
 export const setDraw = fn => { drawFn = fn; };
@@ -128,47 +130,30 @@ export const setDraw = fn => { drawFn = fn; };
 // The group list as plain data: the same groups in the fixed order, with their rows flattened to one string each.
 // This is the seam the content half of the card is tested at, and what #361 puts on the wire.
 export const groupsText = groups => GROUP_IDS.flatMap(id => (groups ?? []).filter(g => g.id === id))
-  .map(g => ({ id: g.id, label: g.label, summary: g.summary, rows: g.rows.flatMap(nodeLines).map(clean).filter(Boolean) }));
+  .map(g => ({ id: g.id, label: g.label, summary: g.summary, rows: g.rows.map(rowText).map(clean).filter(Boolean) }));
 
 export const cardText = card => {
   if (!card) return null;
-  const groups = renderText(() => drawFn(card));
+  const groups = drawFn(card);
   if (!groups?.length) return null;
   const text = groupsText(groups)
     .map(g => [headingText(g), ...g.rows].filter(Boolean).join("\n")).filter(Boolean).join("\n");
   return text || null;
 };
-const renderText = draw => {
-  const wasClosed = isClosed;
-  isClosed = false;
-  try { return draw(); } finally { isClosed = wasClosed; }
-};
 
 const tagOf = n => String(n.tagName ?? "").toUpperCase();
-// A div is the panel's only block: everything else sits on the line it was appended to.
-const isBlock = n => n != null && typeof n === "object" && tagOf(n) === "DIV";
 const kidsOf = n => (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? []);
+// **A row flattens to one line**, and that is the whole constraint a future layout has to meet (§5): a row is two
+// inline columns — the gutter and the body — so it reads as `mark body`. The walker never decides where a line ends
+// and never has to know what a control is, because a row never holds one.
 // A sprite reads as what it stands for: `img` titles every icon with the name it drew.
-const nodeLines = n => {
-  if (n == null) return [];
-  if (typeof n !== "object") return [String(n)];
-  // A control the panel draws for the mouse — the close control, the tab — is not part of what the card says.
-  if (n.style && n.style.cursor === "pointer") return [];
-  if (tagOf(n) === "IMG") return [String(n.title ?? "")];
+const rowText = n => {
+  if (n == null) return "";
+  if (typeof n !== "object") return String(n);
+  if (tagOf(n) === "IMG") return String(n.title ?? "");
   const kids = kidsOf(n);
-  if (!kids.length) return [String(n.textContent ?? "")];
-  const out = [];
-  let inline = "";
-  for (const k of kids) {
-    const lines = nodeLines(k).filter(Boolean);
-    if (!lines.length) continue;
-    if (isBlock(k)) {
-      if (inline) { out.push(inline); inline = ""; }
-      out.push(...lines);
-    } else inline = inline ? `${inline} ${lines.join(" ")}` : lines.join(" ");
-  }
-  if (inline) out.push(inline);
-  return out;
+  if (!kids.length) return String(n.textContent ?? "");
+  return kids.map(rowText).filter(Boolean).join(" ");
 };
 const clean = l => l.replace(/\s+/g, " ").trim();
 
@@ -187,22 +172,29 @@ const setClosed = next => {
   redrawFn();
 };
 
-// The panel's one control: shut it, and the tab that brings it back.
-const closeButton = () => {
-  const n = h("span", { cursor: "pointer", padding: "0 4px", borderRadius: "3px", background: "rgba(255,255,255,.1)", fontWeight: "bold" }, "×");
+// The panel's one control: shut it, and the glyph that brings it back. **Controls are the shell's, never a row's**
+// (§5) — a control inside a row is a control inside the card's text, which is what the flattener used to have to
+// drop by its mouse cursor. It sits in the panel's own corner rather than on a line of its own, so it costs no
+// height while the strip is still to come (#356).
+export const closeButton = () => {
+  const n = h("span", { position: "absolute", top: "4px", right: "4px", cursor: "pointer", padding: "0 4px", borderRadius: "3px", background: "rgba(255,255,255,.1)", fontWeight: "bold" }, "×");
   n.title = "Close";
   n.addEventListener("click", e => { e.stopPropagation(); setClosed(true); });
   return n;
 };
-export const tab = (emoji, icon) => {
+// What a dismissed panel leaves behind, and the only way back. Named for what it is rather than for a tab, because
+// the drawer's tab bar takes that word in #357.
+export const glyph = (emoji, icon) => {
   const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, emoji, icon);
   n.title = "Open coach";
   n.addEventListener("click", e => { e.stopPropagation(); setClosed(false); });
   return n;
 };
-export const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" },
-  emoji, title, h("span", { flex: "1" }), ...right,
-  h("span", { width: "4px" }), closeButton());
+// The card's own header line: what the card is about, and whatever the kind puts on the right of it. It is a row
+// like any other — the panel's control is the shell's and sits in the panel's corner, so the line reserves room for
+// it and nothing else. The strip takes this line in #356.
+export const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold", paddingRight: "18px" },
+  emoji, title, h("span", { flex: "1" }), ...right);
 
 export const el = document.createElement("div");
 el.id = "coach-hud";

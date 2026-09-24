@@ -2,11 +2,11 @@
 // never at load time. Takes the `teamPlan` view, or a battle model carrying it as `teamPlan`.
 // The whole plan, always: the enemy win condition, who to reserve for it, sacrifices, the step order and the
 // warnings. Doubles: the plan is worked out one-on-one, so its steps are approximate.
-import { FS, badge, closed, dim, h, line, mon } from "./90-render.js";
+import { FS, badge, dim, h, line, mon } from "./90-render.js";
 
 export const drawTeamPlan = m => {
   const tp = m?.steps ? m : m?.teamPlan;
-  if (!tp || closed()) return [];
+  if (!tp) return [];
   const red = "#e55", amber = "#fa4";
   const small = { color: "#9aa", fontSize: FS.tiny };
   const lost = tp.result !== "win";

@@ -98,4 +98,75 @@ act | Now | Learn → forget Bite
 options | Moves | —
     ✕ Dark Bite weak Atk power 30
     · Psychic Psychic only Psychic move on team power 191
+== rewards · a TM to take and a potion to buy
+act | Now | take TM Fire Fang → Morpeko (forget Tackle) · buy Super Potion
+    🛒 $1200 → $950 👑 boss next
+    buy first — taking the free reward closes the shop
+    💰 Super Potion $250 Charizard tops up the carry
+    🎁 TM Fire Fang Morpeko → forget Tackle · +25 power
+options | Others | —
+    · Leftovers Charizard passive healing
+audit | Team | 1 issue: nothing hits Ground
+    🩺 Team audit vs W35 Giovanni
+    ✗ nothing hits Ground
+== encounter · a chest worth opening
+act | Now | Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave
+    🎭 Mysterious Chest Common
+options | Options | —
+    ★ Open it — pick of 3 Ultra items
+    1 in 4 it bites
+    ✗ Leave
+    nothing for it
+notes | Notes | —
+    · the trap is rolled on the option, not before it
+== encounter · not judged yet
+act | Now | Mysterious Chest: not judged · avoid Leave
+    🎭 Mysterious Chest Common
+options | Options | —
+    ✓ Open it — pick of 3 Ultra items
+    1 in 4 it bites
+    ✗ Leave
+    nothing for it
+notes | Notes | —
+    not judged yet: options and requirements only
+== starters · a proposal, a pick made and a cursor
+act | Now | best: Gible (carry) + Magikarp · 10/10 pts · weak Ice
+    🌱 Starters 4/10 pts
+    ✓ picked: Gible
+options | Proposals | —
+    ★ best 10 pts · SE vs 9 types · weak Ice
+    Gible Gible ✓ 4 carry outspeeds
+    Magikarp Magikarp 1 Gyarados later
+    👁 Rattata Rattata 1 pts · #18 of 40 frail
+notes | Notes | —
+    Fresh Start: no passives, egg moves or luck
+== starters · nothing to add
+act | Now | nothing to add
+    🌱 Starters 4/10 pts
+    ✓ picked: Gible · team full
+== fusion · two candidates and a Spliced note
+act | Now | Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite
+    🧬 Splice
+options | Fusions | —
+    ★ Garchomp Garchomp ← Dragonite Dragonite +21
+    Dragon Ground +42 BST
+    · Garchomp Garchomp ← Lapras Lapras +4
+    Dragon Ground loses Ice
+notes | Notes | —
+    Spliced Endless: unfused mons run on half their base stats
+== biome · swamp over construction site
+act | Now | Swamp 72 pick — Garchomp resists · Construction Site 55
+    🗺 Next biome from Slum
+options | Biomes | —
+    ★ Swamp Water 40% Poison 30% 72
+    · mostly Wooper 22%
+    ✓ Garchomp resists
+    · Construction Site Water 40% Poison 30% 55
+    ✗ Lapras weak
+== biome · no spawn data yet
+act | Now | Swamp · Construction Site
+    🗺 Next biome
+    · Swamp
+    · Construction Site
+    reading the game's biome tables…
 ok

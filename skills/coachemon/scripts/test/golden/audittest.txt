@@ -1,6 +1,6 @@
 == wave 29 whitney
 take Memory Mushroom → Minccino
-🛒 $500 nothing affordable 👑 boss next ×
+🛒 $500 nothing affordable 👑 boss next
 🎁 Memory Mushroom Minccino relearn Take Down over Helping Hand · +84 power
 Others
 · 5× Poké Ball you have 20
@@ -31,7 +31,7 @@ mushroom Memory Mushroom: 18 Minccino · relearn Take Down over Helping Hand · 
 summary 10 issues: Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand); Diglett: no Ground attack (no STAB) (relearn Bulldoze); Diglett L12/Houndour L16/Wiglett L16 trail Fletchinder L23 — lead them on easy waves
 == wave 164 guzma
 take 5× Poké Ball
-🛒 $500 nothing affordable ×
+🛒 $500 nothing affordable
 🎁 5× Poké Ball least bad · you have 20
 Team 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
 🩺 Team audit vs W165 Guzma
@@ -61,7 +61,7 @@ mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
 == clean
 take 5× Poké Ball
-🛒 $500 nothing affordable ×
+🛒 $500 nothing affordable
 🎁 5× Poké Ball least bad · you have 20
 Team 1 issue: nothing hits Dark super-effectively
 🩺 Team audit

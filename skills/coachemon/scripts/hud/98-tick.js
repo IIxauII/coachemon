@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, closed, disclaimer, drawGroups, dropGame, el, group, missedSprite, setDraw, setRedraw } from "./90-render.js";
+import { battleScene, clearMissed, closeButton, closed, disclaimer, drawGroups, dropGame, el, glyph, missedSprite, setDraw, setRedraw } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
 import { drawEncounter } from "./96-render-encounter.js";
 import { drawFusion } from "./96-render-fusion.js";
@@ -14,12 +14,14 @@ import { drawRewards } from "./96-render-rewards.js";
 import { drawStarters } from "./96-render-starters.js";
 import { drawBiome } from "./97-render-biome.js";
 
-// A renderer's product is an ordered list of groups (#349 §1). Until a kind is split into its own (#353) it is
-// wrapped: its node tree is presented as one `act` group carrying neither label nor summary, so it draws and reads
-// exactly as it did — its own header among the rows, and no heading above it.
-const adapt = draw => card => [group("act", "", null, draw(card))];
-const DRAW = { learn: drawLearn, rewards: drawRewards, battle: drawBattle, biome: adapt(drawBiome),
-  encounter: adapt(drawEncounter), starters: adapt(drawStarters), fusion: adapt(drawFusion) };
+// A renderer's product is an ordered list of groups (#349 §1) — every kind's, now that the last four have followed,
+// so the adapter that presented a node tree as one whole-card group is gone and with it everything it kept alive.
+const DRAW = { learn: drawLearn, rewards: drawRewards, battle: drawBattle, biome: drawBiome,
+  encounter: drawEncounter, starters: drawStarters, fusion: drawFusion };
+// The glyph a dismissed panel leaves behind, per kind. It is the shell's, not a card's: a renderer returns groups
+// and knows nothing about what a view is (#349 §2), so no card draws its own way back any more. #358 makes it a
+// bare glyph that carries nothing live at all.
+const GLYPH = { learn: "🎓", rewards: "🛒", battle: "🎯", biome: "🗺", encounter: "🎭", starters: "🌱", fusion: "🧬" };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
@@ -85,10 +87,13 @@ export const tick = () => {
     el.style.width = closed() ? "auto" : "300px";
     if (sig !== last) {
       clearMissed();
-      // The panel carries the disclaimer as its footer line (§3); it is the panel's, so no card draws it.
+      // The panel carries the disclaimer as its footer line (§3); it is the panel's, so no card draws it. So is the
+      // close control and the glyph that brings the panel back — controls are the shell's, never a row's (§5).
       // The shell shells the groups: for now a plain stack, one rule between them. The tab bar and the pane come
       // with the drawer (#357), and the strip with #356.
-      el.replaceChildren(...drawGroups(DRAW[card.kind](card)), ...(closed() ? [] : [disclaimer()]));
+      el.replaceChildren(...(closed()
+        ? [glyph(GLYPH[card.kind] ?? "🎯", null)]
+        : [closeButton(), ...drawGroups(DRAW[card.kind](card)), disclaimer()]));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missedSprite() ? "" : sig;
     }

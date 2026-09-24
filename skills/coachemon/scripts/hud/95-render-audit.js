@@ -2,11 +2,11 @@
 // call these from a draw or a summary, never at load time.
 // Every finding, always: ✗ what loses fights and · what costs tempo, with the Memory Mushroom move under a dead slot
 // it would fix.
-import { FS, closed, dim, h, line } from "./90-render.js";
+import { FS, dim, h, line } from "./90-render.js";
 
 export const drawAudit = a => {
   const found = a?.findings ?? [];
-  if (!found.length || closed()) return [];
+  if (!found.length) return [];
   const red = "#e77", amber = "#ec4";
   const high = found.some(f => f.level === "high");
   const MAX = 8;

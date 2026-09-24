@@ -5,7 +5,7 @@
 import { auditSummary } from "./50-audit.js";
 import { rewardsSummary } from "./52-shop.js";
 import { roadSummary } from "./60-card.js";
-import { FS, bar, closed, dim, group, h, itemImg, line, mon, sep, some, tab } from "./90-render.js";
+import { FS, bar, dim, h, itemImg, line, mon, sep, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawAudit } from "./95-render-audit.js";
 import { drawPreview } from "./95-render-preview.js";
@@ -13,7 +13,6 @@ import { drawReroll } from "./95-render-reroll.js";
 
 export const drawRewards = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
-  if (closed()) return [group("act", "Now", null, [tab("🛒", p ? itemImg(p.icon, p.name) : null)])];
   const header = bar("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
     !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, "nothing affordable") : null,
     m.bossNext ? h("span", { color: "#fa4", fontSize: FS.tiny }, "👑 boss next") : null);

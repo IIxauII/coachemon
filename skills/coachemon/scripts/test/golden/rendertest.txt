@@ -1,6 +1,7 @@
 == learn
+× {Close}
 Learn → forget Ember
-🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 × {Close}
+🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80
 ✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB} +108 power
 Moves
 · Normal Tackle 2nd Normal move · weak Atk power 24 {base 40}
@@ -10,8 +11,9 @@ Moves
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Ember
 == plan
+× {Close}
 Charizard Flamethrower → Paras · 1 hit
-🎯 W15 · Youngster Charizard × {Close}
+🎯 W15 · Youngster Charizard
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
 Foes
 foes weak to: Fire ×2
@@ -23,8 +25,9 @@ Plan winnable · Charizard
 2 Charizard Fire Flamethrower → Oddish KO · 100% left
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == learn team
+× {Close}
 Learn → forget Bite · ⚠ loses only Dark move
-🎓 Espeon learns Espeon Atk 65 / SpA 130 × {Close}
+🎓 Espeon learns Espeon Atk 65 / SpA 130
 ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90} +87 power
 Moves
 ✕ Dark Bite ⚠ weak Atk power 30 {base 60}
@@ -36,8 +39,9 @@ team: +SE Steel/Electric · ⚠ loses only Dark move
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Bite · ⚠ loses only Dark move
 == rewards boss next
+× {Close}
 take TM Fire Fang → Morpeko (forget Tackle)
-🛒 $500 nothing affordable 👑 boss next × {Close}
+🛒 $500 nothing affordable 👑 boss next
 🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 Others
 · Leftovers held item · for Charizard/Morpeko
