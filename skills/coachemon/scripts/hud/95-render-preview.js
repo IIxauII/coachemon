@@ -9,7 +9,7 @@
 // Nothing is drawn when the preview is unavailable — a build past the pin, or no run seed: the tally is the place
 // that reports drift, and a card that nags on every tick is worse than a quiet one.
 import { previewKind, previewMark } from "./48-preview.js";
-import { badge, dim, h, line, mon } from "./90-render.js";
+import { badge, dim, h, ICON, line, mon } from "./90-render.js";
 
 export const drawPreview = m => {
   if (!m || m.unavailable) return [];
@@ -23,7 +23,7 @@ export const drawPreview = m => {
   if (who) out.push(line("·", "#fa4", h("span", {}, who)));
   for (const f of m.foes) {
     out.push(line(f.segments > 1 ? "👑" : "·", f.segments > 1 ? "#fa4" : "#9aa",
-      mon(f.icon, f.name, 18), h("span", { marginRight: "3px" }, `L${f.level}${previewMark(m, "foes")}`),
+      mon(f.icon, f.name, ICON.ref), h("span", { marginRight: "3px" }, `L${f.level}${previewMark(m, "foes")}`),
       ...f.types.map(t => badge(t, "")), h("span", { flex: "1" }),
       h("span", dim, [f.ability, f.segments > 1 ? `${f.segments} bars` : null].filter(Boolean).join(" · "))));
     if (f.moves?.length) out.push(line("", "#9aa", h("span", dim, f.moves.join(" · "))));

@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, closeButton, closed, disclaimer, drawGroups, dropGame, el, glyph, missedSprite, reserveForControl, setDraw, setRedraw } from "./90-render.js";
+import { battleScene, clearMissed, closeButton, closed, disclaimer, drawGroups, dropGame, el, glyph, missedSprite, PANEL_W, reserveForControl, setDraw, setRedraw } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
 import { drawEncounter } from "./96-render-encounter.js";
 import { drawFusion } from "./96-render-fusion.js";
@@ -101,7 +101,9 @@ export const tick = () => {
     shown = card;
     const sig = JSON.stringify([closed(), card]);
     el.style.display = "block";
-    el.style.width = closed() ? "auto" : "300px";
+    // The panel's width is the ladder's, not a literal: a dismissal shrinks to the glyph, and nothing else here
+    // knows a number (#349 §4).
+    el.style.width = closed() ? "auto" : PANEL_W;
     if (sig !== last) {
       clearMissed();
       // The disclaimer, the close control and the glyph that brings the panel back are all the panel's own, so no

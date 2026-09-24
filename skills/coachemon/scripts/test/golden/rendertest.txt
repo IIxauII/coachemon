@@ -57,10 +57,19 @@ panel background: #362d3e
 panel color: #f8f8f8
 panel border: 1px solid #f8b050
 panel boxShadow: 1px 1px 0 #181818
-panel font: 16px/1.25 emerald, ui-monospace, Menlo, monospace
-rows font: 8px/1.5 pkmnems, ui-monospace, Menlo, monospace
+chrome font: calc(2 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px))/1.25 emerald, ui-monospace, Menlo, monospace
+rows font: clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)/1.5 pkmnems, ui-monospace, Menlo, monospace
 == dismissed
 🎯 {Open coach}
+== footprint
+panel position: fixed
+panel top: 8px
+panel left: 8px
+panel width: clamp(224.64px, calc(0.156 * min(100vw, 177.78vh)), 449.28px)
+panel boxSizing: border-box
+panel padding: calc(0.75 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)) clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)
+panel maxHeight: calc(0.40 * min(100vw, 177.78vh) - 8px)
+panel overflowY: auto
 == failed refresh
 
 TEXT coach: the scene went away

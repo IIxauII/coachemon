@@ -105,7 +105,8 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   console.log("== skin");
   // The game's window interior, opaque; its outline as one shadow at 1px offset for the whole panel; its message
   // white; and the one treatment the game never draws, a 1px flat gold rule around the whole object.
-  for (const k of ["background", "color", "border", "boxShadow", "font"]) console.log(`panel ${k}: ${el.style[k]}`);
+  for (const k of ["background", "color", "border", "boxShadow"]) console.log(`panel ${k}: ${el.style[k]}`);
+  console.log(`chrome font: ${el.style.fontSize}/${el.style.lineHeight} ${el.style.fontFamily}`);
   // The two faces, split by the game's own density rule: the default face for chrome, the dense face at half the
   // size for rows. The shell decides which register a node is in, so a row is where the dense face shows up.
   const rows = el.kids.filter(n => n?.style?.fontFamily);
@@ -138,7 +139,8 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   // The drawn tree above only covers the branches this file's fixtures reach, and a leftover size can sit on one
   // they don't — a foe's TERA tag, say. So the source is checked as well: the shell's row register is the only
   // place in the panel that sets a size at all.
-  assert.deepEqual(src.match(/fontSize:/g), ["fontSize:"], "the shell's row register is the only size the panel sets");
+  assert.deepEqual(src.match(/fontSize:/g), ["fontSize:", "fontSize:"],
+    "the two registers — the panel's own chrome and the shell's row register — are the only sizes the panel sets");
 
   // The panel carries no mark, wordmark or name of its own (§9).
   assert.ok(!/coachemon|coach hud/i.test(lines(el)), lines(el));
@@ -151,6 +153,30 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.equal(shut.style.border, "1px solid #f8b050");
   assert.deepEqual(motion(shut), [], "the dismissed glyph carries nothing live either");
   assert.ok(!/coachemon|coach hud/i.test(lines(shut)), lines(shut));
+}
+
+// ---- The footprint and the type ladder (#349 §4, #355)
+// Every length on the panel is one knob's — the game's own drawn width, in pure CSS — so the panel covers the same
+// share of the field at every window shape and wears the type the game is wearing. The numbers are recorded rather
+// than restated: moving one is a golden diff. They are geometric facts about real fonts at real sizes, measured
+// against the game's own font files, and nothing re-derives them here.
+{
+  const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+  const el = mount(scene);
+  console.log("== footprint");
+  // Position stays the viewport's top-left — off 16:9 that corner is the game's own letterbox bar — and the width is
+  // a fraction of the game clamped to 0.75×–1.5× of its 300px reference, with the box as the footprint.
+  for (const k of ["position", "top", "left", "width", "boxSizing", "padding", "maxHeight", "overflowY"]) console.log(`panel ${k}: ${el.style[k]}`);
+  // No canvas rect read and no resize observer: the footprint is pure CSS, which is what makes it survive a resize
+  // with nothing listening.
+  const src = bundle("hud");
+  assert.equal(src.match(/getBoundingClientRect|ResizeObserver|addEventListener\("resize"/g), null,
+    "the footprint reads no canvas rect and observes no resize");
+  // The width cap that stood beside the old font-size knob is gone with it: nothing pins the panel to a pixel width.
+  assert.equal(el.style.maxWidth, undefined, "no width cap of its own");
+  // A dismissal is the one thing that shrinks the panel off the ladder, to whatever the glyph needs.
+  assert.equal(mount(scene, { view: "closed" }).style.width, "auto");
 }
 
 // A refresh that threw: one line, inside the gold rule, with no strip, no tab bar, no drawer and no law frame (§11).
