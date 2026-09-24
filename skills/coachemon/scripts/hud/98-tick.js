@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, controls, disclaimer, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelView, setDraw, setRedraw, strip } from "./90-render.js";
+import { battleScene, clearMissed, controls, disclaimer, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setDraw, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
 import { captionFusion, drawFusion } from "./96-render-fusion.js";
@@ -43,11 +43,11 @@ const KIND = {
 const open = card => {
   const kind = KIND[card.kind];
   const groups = kind.draw(card);
-  return [controls(), strip(card, kind.caption(card), groups), ...(panelView() === "drawer" ? drawer(groups) : []), disclaimer()];
+  return [controls(), strip(card, kind.caption(card), groups), ...(panelState() === "drawer" ? drawer(groups) : []), disclaimer()];
 };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
-const sigOf = card => JSON.stringify([panelView(), openGroup(), card]);
+const sigOf = card => JSON.stringify([panelState(), openGroup(), card]);
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
 export const shownCard = () => shown;
 
@@ -112,12 +112,12 @@ export const tick = () => {
     el.style.display = "block";
     // The panel's width is the ladder's, not a literal: a dismissal shrinks to the glyph, and nothing else here
     // knows a number (#349 §4).
-    el.style.width = panelView() === "closed" ? "auto" : PANEL_W;
+    el.style.width = panelState() === "closed" ? "auto" : PANEL_W;
     if (sig !== last) {
       clearMissed();
       // The disclaimer, the panel's two controls and the glyph that brings it back are all the panel's own, so no
       // card draws any of them — controls are the shell's, never a row's (§5).
-      el.replaceChildren(...(panelView() === "closed" ? [glyph()] : open(card)));
+      el.replaceChildren(...(panelState() === "closed" ? [glyph()] : open(card)));
       // Icon atlases load lazily; redraw next tick until every sprite is in. The signature is taken again rather
       // than reused: a card with no group the player was on moves the drawer to `act` as it draws (#349 §3), and
       // that move belongs in what was drawn.

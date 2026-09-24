@@ -298,7 +298,9 @@ load();
 // **One state and not a pair of flags**: the shell reads the state it is in rather than two predicates that can be
 // asked an impossible question. Which of the three it is decides what the shell shells, and nothing else here. The
 // view behind a dismissal is the panel's own business, which is why only this file ever sees it.
-export const panelView = () => (dismissed ? "closed" : view);
+// **State and view are not the same word**: the view is one of `VIEWS`, and the state is that view or the `closed`
+// the dismissal covers it with. Only the state leaves this file, which is why the export is not named for the view.
+export const panelState = () => (dismissed ? "closed" : view);
 export const openGroup = () => openId;
 // Every move the player makes is written as it is made, so the panel survives a reload the player never planned —
 // which is the whole point of the key. **A state change redraws and a group move does not**: a state is only ever
