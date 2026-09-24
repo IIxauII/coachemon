@@ -18,7 +18,6 @@ Biomes
 ★ catch Machoke hits Normal/Ice · new
 👑 W40 boss: Gurdurr 100%
 · onward: rare Laboratory (1/3) · Factory
-Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
 == no tables
 ⌃ {Hide the drawer} × {Close}
@@ -26,7 +25,6 @@ summary Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits 
 · Swamp
 · Construction Site
 reading the game's biome tables…
-Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == gym at wave 50
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome from Tall Grass Swamp 86 pick — edges Construction Site on defense, Garchomp resists, 2 mons hit SE · Construction Site 85
@@ -49,7 +47,6 @@ Biomes
 ✓ W50 gym Rock (Brock): 2 hit SE, Lapras weak
 ★ catch Machoke hits Normal/Ice · new
 · onward: rare Laboratory (1/3) · Factory
-Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == hardcore, Snorlax fainted
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome from Tall Grass Swamp 84 pick — edges Construction Site on the big fight, 2 mons hit SE, catch Toxicroak (hits Normal/Ice, new) · Construction Site 82
@@ -73,7 +70,6 @@ Biomes
 · onward: rare Laboratory (1/3) · Factory
 Notes
 ⚠ judged without 1 fainted — no revive at the next heal
-Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == swamp vs marsh
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome from Tall Grass Swamp 85 · Marsh 86 pick — edges Swamp on offense, 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new)
@@ -93,7 +89,6 @@ Biomes
 ★ catch Toxicroak covers Fighting · hits Normal/Ice · new
 👑 W40 boss: Toxapex 100%
 · onward: Tall Grass
-Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == spawn pool time of day, waveCycleOffset 3
 11:day  12:day  14:day  15:dusk  17:dusk  19:dusk  20:dusk
 == boss share  endless w301–310 0.1360  endless w101–110 0.1000  classic 0.1000
@@ -103,5 +98,4 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 · Swamp
 · Construction Site
 unread: biome: no types
-Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 ok
