@@ -52,3 +52,17 @@ Team 2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing
 · nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary take TM Fire Fang → Morpeko (forget Tackle)
+== skin
+panel background: #362d3e
+panel color: #f8f8f8
+panel border: 1px solid #f8b050
+panel boxShadow: 1px 1px 0 #181818
+panel font: 16px/1.25 emerald, ui-monospace, Menlo, monospace
+rows font: 8px/1.5 pkmnems, ui-monospace, Menlo, monospace
+== dismissed
+🎯 {Open coach}
+== failed refresh
+
+TEXT coach: the scene went away
+== nothing to coach
+hidden

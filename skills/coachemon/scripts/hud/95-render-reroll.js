@@ -5,7 +5,7 @@
 // Every line is `~`: it holds while nothing else draws from the stream before the press. `!` once a reroll this run came
 // out different from its preview (`window.__coachHud.reroll()`).
 import { rerollLabel, rerollMark } from "./50-reroll.js";
-import { FS, dim, h, itemImg, line } from "./90-render.js";
+import { dim, h, itemImg, line } from "./90-render.js";
 
 const REROLL_VERDICT = { reroll: ["✓ worth it", "#6d6"], "instead of buys": ["✓ over the buys", "#ec4"], keep: ["keep", "#9aa"], short: ["can't pay", "#e77"] };
 const rerollBest = roll => (roll.best >= 0 ? roll.offers[roll.best] : null);
@@ -19,13 +19,13 @@ export const drawReroll = m => {
     const b = rerollBest(roll);
     out.push(line(roll.lock ? "🔒" : "🎲", color, h("span", { marginRight: "3px" }, `${rerollLabel(r, roll)} $${roll.cost}${rerollMark(r)}`),
       h("span", { color, marginRight: "3px" }, text),
-      h("span", { ...dim, fontSize: FS.tiny }, i === 0 && b ? `best ${b.name} (${roll.gain >= 0 ? "+" : ""}${roll.gain})`
+      h("span", dim, i === 0 && b ? `best ${b.name} (${roll.gain >= 0 ? "+" : ""}${roll.gain})`
         : roll.offers.map(f => f.name).join(" · "))));
     if (i > 0) return;
     for (const f of roll.offers) {
       out.push(line(f === b ? "›" : "·", f === b ? color : "#9aa", itemImg(f.icon, f.name),
         h("span", f === b ? {} : dim, `${f.name}${f.upgraded ? " ⬆" : ""}`), h("span", { flex: "1" }),
-        h("span", { color: "#9aa", fontSize: FS.tiny }, f.holder ? `${f.holder.name} · ${f.why.replace(`${f.holder.name} · `, "")}` : f.why)));
+        h("span", dim, f.holder ? `${f.holder.name} · ${f.why.replace(`${f.holder.name} · `, "")}` : f.why)));
     }
   });
   return out;

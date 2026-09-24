@@ -29,8 +29,34 @@ const sprite = (key, frame) => {
   return sprites.get(id) ?? "";
 };
 
-// HUD font sizes: one knob scales every view.
-export const FS = { base: "12px", small: "11px", tiny: "10px" };
+// ---- The skin (#349 §8, §9)
+// The panel quotes the game's window instead of inventing a box: the game's window interior as the fill, its outline
+// as one shadow at 1px offset for the whole object, its message white for body text. **The fill is opaque**, and the
+// cost is named: an opaque panel occludes strictly more. It is taken because a translucent fill made the effective
+// background whatever the battle happened to be doing, which is why contrast had three answers and why the shadow
+// inverted on the commonest one.
+// Authorship is the one treatment the game never draws: a 1px flat gold rule around the whole object — whatever is
+// showing, since the panel is one object that changes height. The ink is quoted and the treatment is not, because
+// the game's own windows are a beveled nine-slice. So the panel never draws the game's window texture at all, pins
+// this one interior, and does not follow the player's chosen skin — which is what holds §8's palette shut.
+// It never names itself either: no mark, no wordmark, nowhere.
+export const SKIN = { fill: "#362d3e", body: "#f8f8f8", rule: "#f8b050", shadow: "#181818" };
+
+// The panel's two **register**s, split by the game's own rule for its own dense lists: its default face for
+// **chrome** — the shell's own lines and every group heading — and its dense face at **half the size** for **rows**.
+// The game draws `emerald` at 96px and switches to `pkmnems` at 48px for its party lists, move labels and
+// instructions (`src/ui/text.ts`); the panel is a dense list, so it blends in by adopting the rule rather than by
+// picking a font. Both faces are the page's own — the game declares them — so the fallback only serves a page that
+// has neither.
+// Face, size and line box travel together, because they are one decision: the rung is the one the game itself wears
+// on its own 1920 canvas, which is where #355's ladder lands for every ordinary window, and the line box is an
+// integer at that rung because both faces are pixel designs and a fractional one softens them.
+// A register has one size. The old three-value knob was three independent literals, and what a row emphasises it
+// emphasises with ink (§8) — so nothing below a row sets a size of its own, and the drawn-panel golden says so.
+export const REGISTER = {
+  chrome: { face: "emerald, ui-monospace, Menlo, monospace", size: "16px", line: "1.25" },
+  rows: { face: "pkmnems, ui-monospace, Menlo, monospace", size: "8px", line: "1.5" },
+};
 export const h = (tag, style, ...kids) => {
   const n = document.createElement(tag);
   Object.assign(n.style, style);
@@ -52,7 +78,7 @@ export const img = (key, frame, title, height, fallback = title) => {
 };
 export const mon = (icon, name, height = 24) => (icon ? img(icon[0], icon[1], name, height, name) : name);
 export const badge = (type, suffix = "") => h("span", { whiteSpace: "nowrap", marginRight: "3px" },
-  img("types", type.toLowerCase(), type, 13), suffix && h("b", { fontSize: FS.small }, suffix));
+  img("types", type.toLowerCase(), type, 13), suffix && h("b", {}, suffix));
 export const dim = { color: "#9aa" };
 export const line = (label, color, ...kids) => h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" },
   h("span", { color, width: "14px", flex: "none" }, label), ...kids);
@@ -114,10 +140,21 @@ const headingNode = g => {
     : h("div", {}, h("span", { fontWeight: "bold", marginRight: "4px" }, g.label), g.summary ? h("span", dim, g.summary) : null);
 };
 
+// Which register a node is drawn in is the **shell's**, never a renderer's: the shell heads a group in chrome and
+// puts its rows in the dense face at half the size (§9). A renderer returns rows and never says what face it wanted,
+// the same way it never says what view it is in.
+// The longhands and not the `font` shorthand: the shorthand resets every font longhand it does not name, so it would
+// un-bold a row that is already bold — the card's own header line, for one.
+const inRows = node => {
+  const r = REGISTER.rows;
+  if (node?.style) Object.assign(node.style, { fontFamily: r.face, fontSize: r.size, lineHeight: r.line });
+  return node;
+};
+
 // The drawer, for now a plain stack: every group, headed, with the shell's own rule between them. The tab bar and
 // the pane arrive in #357; nothing here knows what a view is.
 export const drawGroups = groups => (groups ?? []).flatMap((g, i) =>
-  [i ? h("div", sep) : null, headingNode(g), ...g.rows].filter(Boolean));
+  [i ? h("div", sep) : null, headingNode(g), ...g.rows.map(inRows)].filter(Boolean));
 
 // ---- The card as plain text (§11.1, §5)
 // The stream's `text` is derived from the group list rather than read back off the drawn card, so the two cannot
@@ -160,7 +197,9 @@ const clean = l => l.replace(/\s+/g, " ").trim();
 // ---- The disclaimer (§3)
 // Fixed wording, on every listing and inside the extension. The panel has no About page, so it carries it as a footer.
 const DISCLAIMER = "Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
-export const disclaimer = () => h("div", { ...dim, fontSize: FS.tiny, marginTop: "4px" }, DISCLAIMER);
+// A footnote, so it is in the dense register rather than in chrome — the panel's chrome is what the player reads, and
+// this is what they read once. #362 takes the footer off the panel altogether.
+export const disclaimer = () => inRows(h("div", { ...dim, marginTop: "4px" }, DISCLAIMER));
 
 // The refresh itself lives in 98-tick, above every renderer; it registers itself here so the close control can ask
 // for a redraw without this file knowing what a card is.
@@ -177,7 +216,9 @@ const setClosed = next => {
 // drop by its mouse cursor. It sits in the panel's own corner rather than on a line of its own, so it costs no
 // height while the strip is still to come (#356).
 export const closeButton = () => {
-  const n = h("span", { position: "absolute", top: "4px", right: "4px", cursor: "pointer", padding: "0 4px", borderRadius: "3px", background: "rgba(255,255,255,.1)", fontWeight: "bold" }, "×");
+  // No fill and no radius of its own: the panel's fill is the game's window interior and the panel invents no second
+  // one (§8, §9). The strip takes this control in #356.
+  const n = h("span", { position: "absolute", top: "4px", right: "4px", cursor: "pointer", padding: "0 4px", fontWeight: "bold" }, "×");
   n.title = "Close";
   n.addEventListener("click", e => { e.stopPropagation(); setClosed(true); });
   return n;
@@ -207,9 +248,12 @@ export const el = document.createElement("div");
 el.id = "coach-hud";
 Object.assign(el.style, {
   position: "fixed", top: "8px", left: "8px", zIndex: "2147483647",
-  maxWidth: "min(320px, calc(100vw - 16px))", padding: "6px 8px", borderRadius: "6px",
-  background: "rgba(12,12,24,.88)", color: "#eee",
-  font: `${FS.base}/1.4 ui-monospace, Menlo, monospace`,
+  maxWidth: "min(320px, calc(100vw - 16px))", padding: "6px 8px",
+  background: SKIN.fill, color: SKIN.body,
+  // One rule and one shadow for the whole object, so they hold whatever the panel is showing — the strip alone, the
+  // strip over the drawer, or the one line a failed refresh leaves (§11). Square corners: the rule is flat.
+  border: `1px solid ${SKIN.rule}`, boxShadow: `1px 1px 0 ${SKIN.shadow}`,
+  font: `${REGISTER.chrome.size}/${REGISTER.chrome.line} ${REGISTER.chrome.face}`,
   userSelect: "none", display: "none",
 });
 // Keep clicks on the panel from reaching the game underneath.
