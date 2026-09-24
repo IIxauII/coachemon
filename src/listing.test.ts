@@ -6,7 +6,8 @@ import { sourcesZipName } from "../scripts/release/artifacts.ts";
 import { DISCLAIMER, KEYWORDS, LISTING_ASSETS, PRIVACY_URL, SUPPORT_EMAIL, listingPath, pngSize, repoPath } from "../scripts/listing/listing.ts";
 import { FONT_FILES, GAME_VERSION, LETTERBOX, STAGE, framePage, stagePage } from "../scripts/listing/page.ts";
 import { STORE_PORT } from "./protocol/version.ts";
-import type { Face, ShotAsset } from "../scripts/listing/page.ts";
+import type { Face } from "../scripts/listing/page.ts";
+import type { ShotAsset } from "../scripts/listing/listing.ts";
 
 /** Stand-ins for the rendered font files: the page is handed its faces, so a test never needs the pinned clone. */
 const FACES: Face[] = Object.entries(FONT_FILES).map(([family, file]) => ({ family, url: `fake:${file}` }));

@@ -18,7 +18,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { repoPath } from "./listing.ts";
-import type { ListingAsset, Shot } from "./listing.ts";
+import type { Fixture, ShotAsset } from "./listing.ts";
 
 /** The game's own letterbox colour, `body { background }` of the clone's `index.css` — the colour a player sees
  * beside a canvas that is not 16:9, and where the panel sits. It replaces a neutral grey on which the panel's gold
@@ -68,12 +68,12 @@ export const gameFonts = (): Face[] => {
   }));
 };
 
-/** An asset that is photographed, as opposed to the icons and tiles the design project draws. */
-export type ShotAsset = ListingAsset & { shot: Shot };
+/** What the frame names the stage by, and what `render.ts` writes it as: one name, said once. */
+export const STAGE_FILE = "stage.html";
 
 /** The stage: the panel at the pinned game, over a fixture scene and nothing else. */
 export const stagePage = (
-  { fixture, fixtures, hud, fonts }: { fixture: Shot["fixture"]; fixtures: string; hud: string; fonts: Face[] },
+  { fixture, fixtures, hud, fonts }: { fixture: Fixture; fixtures: string; hud: string; fonts: Face[] },
 ): string => `<!doctype html>
 <meta charset="utf-8">
 <style>
@@ -97,7 +97,7 @@ ${fonts.map(f => `  @font-face { font-family: "${f.family}"; src: url(${f.url}) 
 `;
 
 /** The frame: the store's own window size, the letterbox behind it, and the stage scaled to fill it. */
-export const framePage = (asset: ShotAsset, stage = "stage.html"): string => `<!doctype html>
+export const framePage = (asset: ShotAsset): string => `<!doctype html>
 <meta charset="utf-8">
 <style>
   /* Flat, not a gradient: a dithered gradient costs a quarter of a megabyte per shot in PNG and says nothing. */
@@ -113,5 +113,5 @@ export const framePage = (asset: ShotAsset, stage = "stage.html"): string => `<!
     transform: translate(-50%, -50%) scale(${asset.shot.zoom});
   }
 </style>
-<body><iframe src="${stage}" scrolling="no"></iframe>
+<body><iframe src="${STAGE_FILE}" scrolling="no"></iframe>
 `;

@@ -69,6 +69,10 @@ export const LISTING_ASSETS: ListingAsset[] = [
   { file: "../../extension/public/icons/128.png", width: 128, height: 128, what: "CWS and AMO store icon" },
 ];
 
+/** An asset that is photographed, as opposed to the icons and the tiles the design project draws. The narrowing
+ * lives beside the table because it is a fact about the table: an asset with a `shot` is a row `render.ts` draws. */
+export type ShotAsset = ListingAsset & { shot: Shot };
+
 const root = new URL("../../", import.meta.url);
 
 export const repoPath = (rel: string): string => fileURLToPath(new URL(rel, root));

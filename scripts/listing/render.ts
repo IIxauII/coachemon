@@ -21,8 +21,8 @@ import { dirname, join } from "node:path";
 // @ts-expect-error: plain .mjs without type declarations
 import { bundle } from "../../skills/coachemon/scripts/hud-bundle.mjs";
 import { LISTING_ASSETS, listingPath, pngSize, repoPath } from "./listing.ts";
-import { framePage, gameFonts, stagePage } from "./page.ts";
-import type { ShotAsset } from "./page.ts";
+import { STAGE_FILE, framePage, gameFonts, stagePage } from "./page.ts";
+import type { ShotAsset } from "./listing.ts";
 
 /** The assets that are photographed; the icons and promo tiles in the table come from the design project instead. */
 const shots = LISTING_ASSETS.filter((a): a is ShotAsset => a.shot !== undefined);
@@ -70,10 +70,11 @@ const shoot = (args: string[], out: string): Promise<void> => {
       last = size;
     }, SHUTTER.poll);
     child.on("error", err => finish(err));
-    // A Chrome that exits on its own before the poll has seen the file: believe the exit code over the clock.
+    // A Chrome that has exited without writing is a Chrome nothing is coming from, whatever it exited with: say so
+    // now rather than watch an empty path until the deadline.
     child.on("exit", code => {
-      if (code !== 0 && statSync(out, { throwIfNoEntry: false }) === undefined) {
-        finish(new Error(`${out}: Chrome exited ${code}\n${stderr}`));
+      if (statSync(out, { throwIfNoEntry: false }) === undefined) {
+        finish(new Error(`${out}: Chrome exited ${code} without writing a shot\n${stderr}`));
       }
     });
   });
@@ -86,7 +87,7 @@ try {
     const out = listingPath(asset.file);
     // Two files rather than one `srcdoc`: the stage carries megabytes of inlined font, and an attribute is no place
     // for it. They are rewritten per shot because the stage names the fixture and the frame names the zoom.
-    writeFileSync(join(work, "stage.html"), stagePage({ fixture: asset.shot.fixture, fixtures, hud, fonts }));
+    writeFileSync(join(work, STAGE_FILE), stagePage({ fixture: asset.shot.fixture, fixtures, hud, fonts }));
     writeFileSync(frame, framePage(asset));
     mkdirSync(dirname(out), { recursive: true });
     await shoot([
