@@ -296,7 +296,7 @@ Output: extension/.output/firefox-mv3-store/
 
 From [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110), as amended by the pairing ticket.
 
-**The permission set is the static content-script match on `https://pokerogue.net/*` and nothing else, on every target.** Optional `nativeMessaging` is dropped everywhere, no loopback host permission is declared anywhere, and there is no `scripting`, `tabs` or `storage`. The HUD's view preference stays in the page's own `localStorage["coach-hud-view"]`. Not `*.pokerogue.net`: the beta site was never reviewed against.
+**The permission set is the static content-script match on `https://pokerogue.net/*` and nothing else, on every target.** Optional `nativeMessaging` is dropped everywhere, no loopback host permission is declared anywhere, and there is no `scripting`, `tabs` or `storage`. The HUD's view preference stays in the page's own `localStorage["coach-hud-panel"]`. Not `*.pokerogue.net`: the beta site was never reviewed against.
 
 **What the transport never carries:** typed form text. The `menu` command does not return modal input values (today's `extra.inputs` on login, register and change-password is removed). `screenshot` and `eval` exist only in dev builds.
 
@@ -635,7 +635,7 @@ The coach reads through the same MCP server, never through `read.sh`. The coach 
 
 `read_card` and `read_starters` settle like every reading tool, return the envelope, and need no grant.
 
-**The extension toggle that turns the HUD on or off is the HUD's own header control** (the close control, and the tab that reopens it, persisted in the page's `localStorage["coach-hud-view"]`), which ships inside the extension. It is not a popup or an extension setting, because the permission set has no `storage` and the pairing ticket leaves the extension no UI. `read.sh hud` / `hud-off` are gone.
+**The extension toggle that turns the HUD on or off is the HUD's own header control** (the close control, and the glyph that reopens it), which ships inside the extension. It is not a popup or an extension setting, because the permission set has no `storage` and the pairing ticket leaves the extension no UI. `read.sh hud` / `hud-off` are gone. The panel has three states — **strip**, **strip + drawer** and **closed** — and one key holds the state and the last open group together, in the page's `localStorage["coach-hud-panel"]`, so the panel the player left is the panel they come back to. That key replaces the one that held the view alone, whose three values migrate once and are then dropped.
 
 ---
 

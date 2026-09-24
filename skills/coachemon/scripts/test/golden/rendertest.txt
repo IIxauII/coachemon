@@ -1,26 +1,26 @@
 == learn
 × {Close}
-🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 Learn → forget Ember
+🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 Learn → forget Ember {Show or hide the drawer}
 Now Moves
 ✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB} +108 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Ember
 == plan
 × {Close}
-trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hit
+trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hit {Show or hide the drawer}
 Now Foes Plan
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == learn team
 × {Close}
-🎓 Espeon learns Espeon Atk 65 / SpA 130 Learn → forget Bite · ⚠ loses only Dark move
+🎓 Espeon learns Espeon Atk 65 / SpA 130 Learn → forget Bite · ⚠ loses only Dark move {Show or hide the drawer}
 Now Moves Team
 ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90} +87 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Bite · ⚠ loses only Dark move
 == rewards boss next
 × {Close}
-🛒 $500 nothing affordable 👑 boss next take TM Fire Fang → Morpeko (forget Tackle)
+🛒 $500 nothing affordable 👑 boss next take TM Fire Fang → Morpeko (forget Tackle) {Show or hide the drawer}
 Now Others Team
 🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -33,7 +33,7 @@ panel boxShadow: 1px 1px 0 #181818
 chrome font: calc(2 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px))/1.25 emerald, ui-monospace, Menlo, monospace
 rows font: clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)/1.5 pkmnems, ui-monospace, Menlo, monospace
 == dismissed
-🎯 {Open coach}
+🧭 {Open coach}
 == strip
 head trainer 🎯 W15 · Youngster Charizard
 call Charizard Flamethrower → Paras · 1 hit
@@ -69,3 +69,25 @@ panel overflowY: undefined
 TEXT coach: the scene went away
 == nothing to coach
 hidden
+== remembers · first run
+drawer · act
+== remembers · migrate full
+drawer · {"view":"drawer","group":"act"}
+== remembers · migrate mini
+strip · {"view":"strip","group":"act"}
+== remembers · migrate closed
+closed · {"view":"closed","group":"act"}
+== remembers · reload on foes
+tabs Now | Foes | Plan
+open foes
+== remembers · the fallback
+tabs Now | Moves
+open act
+== remembers · drawer shut
+strip · {"view":"strip","group":"foes"}
+× {Close}
+trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hit {Show or hide the drawer}
+Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
+== remembers · dismissed
+closed · {"view":"closed","group":"foes"}
+🧭 {Open coach}

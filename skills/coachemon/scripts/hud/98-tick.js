@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, closeButton, closed, disclaimer, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, setDraw, setRedraw, strip } from "./90-render.js";
+import { battleScene, clearMissed, closeButton, closed, disclaimer, drawer, drawerOpen, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, setDraw, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
 import { captionFusion, drawFusion } from "./96-render-fusion.js";
@@ -16,19 +16,19 @@ import { captionBiome, drawBiome } from "./97-render-biome.js";
 
 // What the shell needs per kind: the renderer that turns one card into groups (#349 §1) — every kind's, now that
 // the last four have followed, so the adapter that presented a node tree as one whole-card group is gone and with
-// it everything it kept alive — the caption its strip wears, and the glyph a dismissal leaves behind. The strip and
-// the glyph are both the shell's and not a card's: a renderer returns groups and a caption, and knows nothing about
-// what a view is (#349 §2), so no card draws its own strip or its own way back. What the glyph is left with is the
-// kind's own emoji; #358 takes that too, for one glyph that is the same every wave. One table, so a new kind is one
-// entry.
+// it everything it kept alive — and the caption its strip wears. The strip is the shell's and not a card's: a
+// renderer returns groups and a caption, and knows nothing about what a view is (#349 §2), so no card draws its own
+// strip or its own way back. The glyph a dismissal leaves behind has left this table with the kind's emoji it used
+// to carry: **dismissed means silent**, so it is one mark that is the same every wave (#349 §10) and the shell owns
+// it outright. One table, so a new kind is one entry.
 const KIND = {
-  battle: { draw: drawBattle, caption: captionBattle, glyph: "🎯" },
-  rewards: { draw: drawRewards, caption: captionRewards, glyph: "🛒" },
-  learn: { draw: drawLearn, caption: captionLearn, glyph: "🎓" },
-  encounter: { draw: drawEncounter, caption: captionEncounter, glyph: "🎭" },
-  starters: { draw: drawStarters, caption: captionStarters, glyph: "🌱" },
-  fusion: { draw: drawFusion, caption: captionFusion, glyph: "🧬" },
-  biome: { draw: drawBiome, caption: captionBiome, glyph: "🗺" },
+  battle: { draw: drawBattle, caption: captionBattle },
+  rewards: { draw: drawRewards, caption: captionRewards },
+  learn: { draw: drawLearn, caption: captionLearn },
+  encounter: { draw: drawEncounter, caption: captionEncounter },
+  starters: { draw: drawStarters, caption: captionStarters },
+  fusion: { draw: drawFusion, caption: captionFusion },
+  biome: { draw: drawBiome, caption: captionBiome },
 };
 
 // The panel as the shell shells it: its own control, the **strip**, the **drawer** — the tab bar and the open
@@ -37,14 +37,17 @@ const KIND = {
 // appearing on the strip while `act` is the group on show — is accepted. The control floats in the panel's corner,
 // so the shell leaves it room on the first line it draws, which is the strip's head; no renderer knows the control
 // is there.
+// **Shutting the drawer keeps the strip** (#349 §2, §3): the bar and the pane go and the one line the player always
+// needs stays, so a whole run can be watched on one line. The card is still drawn in full — the groups are what the
+// text is derived from — so what the drawer costs when it is shut is the shelling and nothing the coach computed.
 const open = card => {
   const kind = KIND[card.kind];
   const groups = kind.draw(card);
-  return [closeButton(), strip(card, kind.caption(card), groups), ...drawer(groups), disclaimer()];
+  return [closeButton(), strip(card, kind.caption(card), groups), ...(drawerOpen() ? drawer(groups) : []), disclaimer()];
 };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
-const sigOf = card => JSON.stringify([closed(), openGroup(), card]);
+const sigOf = card => JSON.stringify([closed(), drawerOpen(), openGroup(), card]);
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
 export const shownCard = () => shown;
 
@@ -114,7 +117,7 @@ export const tick = () => {
       clearMissed();
       // The disclaimer, the close control and the glyph that brings the panel back are all the panel's own, so no
       // card draws any of them — controls are the shell's, never a row's (§5).
-      el.replaceChildren(...(closed() ? [glyph(KIND[card.kind].glyph)] : open(card)));
+      el.replaceChildren(...(closed() ? [glyph()] : open(card)));
       // Icon atlases load lazily; redraw next tick until every sprite is in. The signature is taken again rather
       // than reused: a card with no group the player was on moves the drawer to `act` as it draws (#349 §3), and
       // that move belongs in what was drawn.

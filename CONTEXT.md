@@ -89,7 +89,7 @@ The line of a **card** that stays in front of the player whatever else they have
 
 ## Drawer
 
-Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them. A **tab bar** names every group the card has, one **tab** each, in an order that is the same on every card; the open group's own contents are its **pane**, and a pane too tall for the panel scrolls inside itself. A tab carries its group's name and nothing else — no mark, no count, no state but being the open one.
+Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them. A **tab bar** names every group the card has, one **tab** each, in an order that is the same on every card; the open group's own contents are its **pane**, and a pane too tall for the panel scrolls inside itself. A tab carries its group's name and nothing else — no mark, no count, no state but being the open one. The drawer can be shut, leaving the **strip** alone, and the panel dismissed altogether, leaving a bare glyph that is the same on every wave and is only the way back. Which group is open is remembered by id as the cards change under it and across a reload; a card with no group of that id moves the drawer to `act` and does not move it back when the group returns.
 
 ## Minigame turn
 
