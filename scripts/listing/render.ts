@@ -43,10 +43,12 @@ const work = mkdtempSync(join(tmpdir(), "coachemon-listing-"));
 const SHUTTER = { limit: 120_000, poll: 250 };
 
 /**
- * Take one shot. **The run waits for the picture, not for the browser**: a headless Chrome that has written its
- * screenshot does not always exit — it is a whole browser with nothing left to do — and a renderer that waits for it
- * never comes back. So the shot is complete when the PNG has appeared and stopped growing, and the browser is then
- * dismissed. The old file is removed first, so what is waited on is this run's picture and never the committed one.
+ * Take one shot, into `out` — **a path inside the work dir, never the committed asset**: a run that fails or times
+ * out must leave what is committed alone, and the picture only moves into `docs/listing/assets/` once it is one.
+ *
+ * **The run waits for the picture, not for the browser**: a headless Chrome that has written its screenshot does not
+ * always exit — it is a whole browser with nothing left to do — and a renderer that waits for it never comes back.
+ * So the shot is complete when the PNG has appeared and stopped growing, and the browser is then dismissed.
  */
 const shoot = (args: string[], out: string): Promise<void> => {
   rmSync(out, { force: true });
@@ -80,6 +82,7 @@ const shoot = (args: string[], out: string): Promise<void> => {
 try {
   for (const asset of shots) {
     const frame = join(work, "frame.html");
+    const shot = join(work, "shot.png");
     const out = listingPath(asset.file);
     // Two files rather than one `srcdoc`: the stage carries megabytes of inlined font, and an attribute is no place
     // for it. They are rewritten per shot because the stage names the fixture and the frame names the zoom.
@@ -92,12 +95,14 @@ try {
       // repo's own server may already hold open.
       `--user-data-dir=${join(work, "profile")}`,
       `--window-size=${asset.width},${asset.height}`, "--virtual-time-budget=4000",
-      `--screenshot=${out}`, `file://${frame}`,
-    ], out);
-    const size = pngSize(readFileSync(out));
+      `--screenshot=${shot}`, `file://${frame}`,
+    ], shot);
+    const png = readFileSync(shot);
+    const size = pngSize(png);
     if (size.width !== asset.width || size.height !== asset.height) {
       throw new Error(`${asset.file}: Chrome wrote ${size.width}×${size.height}, not ${asset.width}×${asset.height}`);
     }
+    writeFileSync(out, png);
     process.stdout.write(`${asset.file} ${size.width}×${size.height} (${asset.shot.fixture} @ ${asset.shot.zoom}×)\n`);
   }
 } finally {
