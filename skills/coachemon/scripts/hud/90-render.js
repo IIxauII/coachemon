@@ -115,7 +115,13 @@ export const img = (key, frame, title, rungs, fallback = title) => {
   if (!url) {
     // Optional sprites (fallback null) may simply not exist; don't retry those.
     if (fallback !== null) missed = true;
-    return fallback;
+    // **The fallback is an element, not a bare string**, because the rows and the caption that hold a sprite are
+    // flex containers whose spacing is a `gap`. Contiguous text collapses into one anonymous flex item, so a
+    // string fallback landing beside a neighbouring string is spaced by neither the gap nor a space of its own:
+    // `Youngster` and `Charizard` drew as `YoungsterCharizard`. Only a missing sprite could show it, which is
+    // every store shot (§12) and a game whose atlas has not loaded. The flattener joins siblings with a space
+    // either way, so the card's text is unchanged.
+    return typeof fallback === "string" && fallback !== "" ? h("span", { margin: "0 2px" }, fallback) : fallback;
   }
   const i = document.createElement("img");
   i.src = url;
