@@ -103,7 +103,7 @@ server.registerTool(
   "read_card",
   {
     description:
-      "What the coach panel on the tab is showing right now: the card's kind (battle, learn, reward, biome, encounter), its verdict, its plain text and the summary behind it. Read-only, and the same payload the panel's card events carry — read it once after subscribing to catch the card already up. Returns card_error: no-hud when the panel is not running.",
+      "What the coach panel on the tab is showing right now: the card's kind (battle, learn, reward, biome, encounter), its verdict, its groups, its plain text and the summary behind it. `groups` is the card's named parts in the order the panel shows them — act (what to do now), foes, catch, plan, options, audit, road, notes — each with a label, a summary and its rows as plain lines, so read the group you want by id instead of parsing the text; `text` is those same groups written out. Read-only, and the same payload the panel's card events carry — read it once after subscribing to catch the card already up. Returns card_error: no-hud when the panel is not running.",
     inputSchema: {},
   },
   async (_args, extra) => run("read_card", {}, () => driver.readCard(context(extra as Extra))),

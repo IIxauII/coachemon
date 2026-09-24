@@ -86,7 +86,7 @@ const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
 /** What `read_card` shows when the tab has no coach panel on it: a card of nothing, with `card_error` saying why (§11.4). */
-const NO_CARD = { kind: null, key: null, wave: null, verdict: null, text: null, summary: null } as const;
+const NO_CARD = { kind: null, key: null, wave: null, verdict: null, groups: null, text: null, summary: null } as const;
 
 const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
 
@@ -192,7 +192,7 @@ export class Driver {
       return {
         menu: await this.#game.menu(),
         fields: {
-          kind: shown.kind, key: shown.key, card_wave: shown.wave, verdict: shown.verdict, text: shown.text, summary: shown.summary,
+          kind: shown.kind, key: shown.key, card_wave: shown.wave, verdict: shown.verdict, groups: shown.groups, text: shown.text, summary: shown.summary,
           ...(card.ok ? {} : { card_error: card.why }),
         },
         // A failed page read is reported, never explained; `no-hud` is the one the player can act on themselves.

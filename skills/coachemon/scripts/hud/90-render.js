@@ -480,17 +480,27 @@ export const groupsOf = card => (card ? drawFn(card) : null);
 
 
 // The group list as plain data: the same groups in the fixed order, with their rows flattened to one string each.
-// This is the seam the content half of the card is tested at, and what #361 puts on the wire.
-export const groupsText = groups => inOrder(groups)
+// This is the seam the content half of the card is tested at, and what #361 puts on the wire. Named for what it
+// returns — groups — beside `textOfGroups` below, which returns the text: the pair reads in both directions.
+export const flatGroups = groups => inOrder(groups)
   .map(g => ({ id: g.id, label: g.label, summary: g.summary, rows: g.rows.map(rowText).map(clean).filter(Boolean) }));
 
-export const cardText = card => {
-  const groups = groupsOf(card);
-  if (!groups?.length) return null;
-  const text = groupsText(groups)
-    .map(g => [headingText(g), ...g.rows].filter(Boolean).join("\n")).filter(Boolean).join("\n");
-  return text || null;
+// The text, walked off the **flattened** groups and nothing else (#361 §5): it is the projection of exactly what the
+// wire carries, so the two cannot disagree by construction — not two readings of one model, but one reading and a
+// projection of it.
+const textOfGroups = wire => wire
+  .map(g => [headingText(g), ...g.rows].filter(Boolean).join("\n")).filter(Boolean).join("\n") || null;
+
+// **The card as the wire carries it** (#361): the group list flattened, and the text derived from it. Both
+// projections come off one group list, so a caller that wants both pays for one draw — and the stream, which wants
+// both, no longer draws the card a second time to say what it says.
+export const wireCard = groups => {
+  if (!groups?.length) return { groups: [], text: null };
+  const wire = flatGroups(groups);
+  return { groups: wire, text: textOfGroups(wire) };
 };
+
+export const cardText = card => wireCard(groupsOf(card)).text;
 
 const tagOf = n => String(n.tagName ?? "").toUpperCase();
 const kidsOf = n => (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? []);
@@ -498,6 +508,16 @@ const kidsOf = n => (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n
 // inline columns — the gutter and the body — so it reads as `mark body`. The walker never decides where a line ends
 // and never has to know what a control is, because a row never holds one.
 // A sprite reads as what it stands for: `img` titles every icon with the name it drew.
+//
+// **Two losses are kept rather than closed** (#349 §5, #361), because closing either costs more than it is worth:
+//
+// 1. **The text depends on sprite-atlas load state.** An optional sprite that has not loaded yet contributes
+//    nothing where a loaded one contributes its title, so the same card can flatten to two different strings. It is
+//    tolerable only because the stream deduplicates on kind, key and verdict: a changed text never re-fires, and
+//    the most the drift can do is make a later read differ from the event it followed.
+// 2. **A title on a non-image node never reaches the text.** Only `IMG` is read for its title, so what a row says
+//    in a tooltip alone is lost: the biome score breakdown, the learn power breakdown, the threat detail, the note
+//    that every bench mon is KO'd coming in, and the seed-fixed note.
 const rowText = n => {
   if (n == null) return "";
   if (typeof n !== "object") return String(n);

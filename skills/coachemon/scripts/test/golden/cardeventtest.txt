@@ -1,4 +1,6 @@
 verdict Learn → forget Ember
+group act | Now | Learn → forget Ember | rows 1
+group options | Moves | — | rows 4
 text
 Learn → forget Ember
 ✓ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 +108 power
@@ -8,6 +10,8 @@ Moves
 · Dragon Dragon Breath SE on Dragon power 72
 · Normal Scratch 2nd Normal move · weak Atk power 24
 dedupe ok
+groups act foes
+groups act foes
 mid-wave easy → danger
 footer Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 coach error scene gone

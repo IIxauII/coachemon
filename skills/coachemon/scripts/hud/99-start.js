@@ -14,8 +14,8 @@ import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { cardEvent, cardSummary } from "./60-card.js";
-import { cardText, el } from "./90-render.js";
-import { lastFailure, shownCard, tick } from "./98-tick.js";
+import { el, wireCard } from "./90-render.js";
+import { lastFailure, shownCard, shownGroups, tick } from "./98-tick.js";
 
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
 const CARD_KINDS = ["battle", "learn", "reward", "biome", "encounter"];
@@ -30,12 +30,20 @@ const push = (type, detail) => {
 };
 
 // The card the panel is showing, as an event body. Null when there is nothing to coach, or when the refresh threw.
-// Drawing the card again is the expensive half, so the stream only asks for it once the key or the verdict has moved.
 const eventNow = () => { try { return cardEvent(shownCard()); } catch { return null; } };
+// **`groups` and `text` are one product, off the groups the refresh already drew** (§11.1, #361 §5): the wire's
+// group carries its rows already flattened, because nodes cannot cross a wire, and the text is the projection of
+// exactly that — so the two cannot disagree, and neither costs a second draw of the card.
+// One assembly site for the body the read answers with and the stream pushes, so a field cannot land on one and
+// not the other — and so what the relay's gate judges is the shape both carry.
+const bodyOf = ev => {
+  let wire = null;
+  try { wire = wireCard(shownGroups()); } catch { return null; }
+  return wire ? { ...ev, groups: wire.groups, text: wire.text } : null;
+};
 const cardNow = () => {
   const ev = eventNow();
-  if (!ev) return null;
-  try { return { ...ev, text: cardText(shownCard()) }; } catch { return null; }
+  return ev ? bodyOf(ev) : null;
 };
 
 const stream = () => {
@@ -55,15 +63,15 @@ const stream = () => {
   // keyed on the wave alone.
   const sig = `${ev.kind}|${ev.key}|${ev.verdict}`;
   if (sig === sentCard) return;
-  let text = null;
-  try { text = cardText(shownCard()); } catch {}
-  if (typeof text !== "string") return;
+  const body = bodyOf(ev);
+  if (typeof body?.text !== "string") return;
   sentCard = sig;
-  push(CARD_EVENT, { kind: ev.kind, key: ev.key, wave: ev.wave, verdict: ev.verdict, text });
+  push(CARD_EVENT, body);
 };
 
-// `stats()` is what a live check reads the refresh cost off, so the stream is inside the measurement: pushing a card
-// draws it a second time, and that is part of what a refresh costs.
+// `stats()` is what a live check reads the refresh cost off, so the stream is inside the measurement: what a push
+// costs on top of a draw is part of what a refresh costs. It is the flattening alone now — the groups the stream
+// ships and derives its text from are the ones the refresh above it already drew (#361 §5).
 let lastTickMs = 0, maxTickMs = 0;
 const timedTick = () => {
   const t0 = performance.now();

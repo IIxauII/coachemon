@@ -40,9 +40,8 @@ const KIND = {
 // **Shutting the drawer keeps the strip** (#349 §2, §3): the bar and the pane go and the one line the player always
 // needs stays, so a whole run can be watched on one line. The card is still drawn in full — the groups are what the
 // text is derived from — so what the drawer costs when it is shut is the shelling and nothing the coach computed.
-const open = card => {
+const open = (card, groups) => {
   const kind = KIND[card.kind];
-  const groups = kind.draw(card);
   return [controls(), strip(card, kind.caption(card), groups), ...(panelState() === "drawer" ? drawer(groups) : []), disclaimer()];
 };
 
@@ -50,6 +49,19 @@ let last = ""; // the change signature of what is on screen: the DOM is only reb
 const sigOf = card => JSON.stringify([panelState(), openGroup(), card]);
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
 export const shownCard = () => shown;
+// **The shown card's groups, drawn once per refresh and shared** (#361 §5): the shell shells them and the stream
+// puts them on the wire with the text derived from them, where the stream used to draw the card a second time to
+// say what it said. Lazy, so a refresh that neither redraws nor pushes draws nothing at all, and dropped with the
+// card it belongs to, so nothing here can hand out last refresh's groups.
+// `undefined` is "not drawn yet" and `null` is "drawn, and there was nothing": a card whose renderer yields nothing
+// is drawn once too, rather than again on every call.
+let groups;
+export const shownGroups = () => {
+  if (!shown) return null;
+  if (groups === undefined) groups = KIND[shown.kind]?.draw(shown) ?? null;
+  return groups;
+};
+const setShown = card => { shown = card; groups = undefined; };
 
 // What the last refresh died on, or null: the panel shows it, and 99-start pushes it once per distinct message (§11.1).
 let failure = null;
@@ -90,7 +102,7 @@ export const tick = () => {
     failure = null;
     const s = battleScene();
     // Mid-reload or on the title screen: nothing to coach, and the scene isn't wired up yet.
-    if (!s?.ui) { el.style.display = "none"; shown = null; return; }
+    if (!s?.ui) { el.style.display = "none"; setShown(null); return; }
     // Score a reroll the player just made, and the last wave preview against the wave that actually arrived, before
     // the card reads the next ones. Both are reads of the scene, and both are the tick's business, not a card's.
     rerollCheck(s);
@@ -104,8 +116,8 @@ export const tick = () => {
     // runs on every refresh rather than only on the encounter card, because the half worth recording — what the game
     // did with the pick — lands on the waves after the option screen is gone.
     journalCheck(s, card);
-    if (!card) { el.style.display = "none"; shown = null; return; }
-    shown = card;
+    if (!card) { el.style.display = "none"; setShown(null); return; }
+    setShown(card);
     // What is on screen, so a tab click or a dismissal rebuilds and a refresh that changed nothing does not. The
     // open group is in it because the drawer draws one group of the card, not all of them.
     const sig = sigOf(card);
@@ -117,7 +129,7 @@ export const tick = () => {
       clearMissed();
       // The disclaimer, the panel's two controls and the glyph that brings it back are all the panel's own, so no
       // card draws any of them — controls are the shell's, never a row's (§5).
-      el.replaceChildren(...(panelState() === "closed" ? [glyph()] : open(card)));
+      el.replaceChildren(...(panelState() === "closed" ? [glyph()] : open(card, shownGroups())));
       // Icon atlases load lazily; redraw next tick until every sprite is in. The signature is taken again rather
       // than reused: a card with no group the player was on moves the drawer to `act` as it draws (#349 §3), and
       // that move belongs in what was drawn.

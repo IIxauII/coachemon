@@ -922,7 +922,9 @@ function coachTab(over: Pick<FakeScreen, "card" | "starters" | "unreachable">) {
 
 test("read_card returns the card the panel is showing, in the settled envelope (§11.4)", async () => {
   const summary = { kind: "battle", wave: 12, verdict: "danger", plan: null };
-  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", text: "⚔ Charizard Ember → Rattata", summary }) });
+  const groups = [{ id: "act", label: "Now", summary: "Charizard Ember → Rattata · 1 hit", rows: [] },
+    { id: "foes", label: "Foes", summary: "we're weak to Rock ×2", rows: ["💀 Charizard ← Lycanroc Stone Edge"] }];
+  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember → Rattata", summary }) });
   const r = await outcome(tab.driver.readCard({}));
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.screen, "COMMAND");
@@ -932,6 +934,7 @@ test("read_card returns the card the panel is showing, in the settled envelope (
   assert.equal(r.key, "12");
   assert.equal(r.verdict, "danger");
   assert.equal(r.text, "⚔ Charizard Ember → Rattata");
+  assert.deepEqual(r.groups, groups, "the groups the panel drew, read by name rather than parsed out of the text");
   assert.deepEqual(r.summary, summary);
   assert.equal(r.card_error, undefined);
 });
@@ -942,6 +945,7 @@ test("read_card on a tab with no panel says so and keeps reading the game (§11.
   assert.equal(r.status, "ok", JSON.stringify(r));
   assert.equal(r.card_error, "no-hud");
   assert.equal(r.kind, null);
+  assert.equal(r.groups, null);
   assert.equal(r.summary, null);
   assert.match(String(r.next), /coach panel is not running/);
 });
@@ -949,7 +953,7 @@ test("read_card on a tab with no panel says so and keeps reading the game (§11.
 test("read_card needs no grant: it never claims the tab another driver holds", async () => {
   const fake = fakeGame({
     lockHolder: 4242,
-    card: () => ({ ok: true, kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "your call", text: "🎓 Flamethrower", summary: null }),
+    card: () => ({ ok: true, kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "your call", groups: [], text: "🎓 Flamethrower", summary: null }),
     read: (): ScreenRead => ({
       ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 14, turn: 1,
       runLive: true, tutorialActive: false, handler: null, cursor: 0, modeChain: [], messageText: null, onActionInput: false,
@@ -982,7 +986,7 @@ test("read_starters reports a failed read rather than an empty grid", async () =
 });
 
 test("read_card keeps the panel's own wave when it is a refresh behind the game", async () => {
-  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "11", wave: 11, verdict: "easy", text: "⚔", summary: null }) });
+  const tab = coachTab({ card: () => ({ ok: true, kind: "battle", key: "11", wave: 11, verdict: "easy", groups: [], text: "⚔", summary: null }) });
   const r = await outcome(tab.driver.readCard({}));
   assert.equal(r.wave, 12, "the envelope is the settled game's wave");
   assert.equal(r.card_wave, 11, "the card is still on the wave before it");
