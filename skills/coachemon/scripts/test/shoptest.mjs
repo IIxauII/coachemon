@@ -645,7 +645,15 @@ for (const [label, sc] of Object.entries(scenarios)) {
   // The chunk scan finds nothing under node: hand the reroll preview its functions, and draw the card again.
   if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-  console.log(`== ${label}\n` + (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
+  // The card as the panel draws it, whole: its own control, the strip, then **every group's pane**. The drawer shows
+  // one group at a time and the tab bar decides which (#357), so a golden about what the card *says* walks the card's
+  // own groups rather than the one pane a click happens to have open — the bar is rendertest's business.
+  const kids = el.kids ?? [];
+  const groups = hud["90-render"].groupsOf(globalThis.__coachHud.last());
+  const whole = kids.length === 5 && groups
+    ? [...kids.slice(0, 2), ...groups.flatMap(g => hud["90-render"].pane(g)), kids[4]]
+    : kids;
+  console.log(`== ${label}\n` + whole.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
   const m = globalThis.__sm(scene, handler);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   sc.expect?.(m, globalThis.__api, sc, scene);

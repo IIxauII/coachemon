@@ -11,7 +11,7 @@ Others
 · 5× Poké Ball you have 34
 · Leppa Berry Charizard Leppa refills a move at 0 PP
 · X Accuracy only lasts a few battles
-Team 6 issues: 4 of 4 weak to Fighting, nobody resists; Blastoise: no Normal attack (no STAB); Morpeko: no Normal attack (no STAB)
+6 issues: 4 of 4 weak to Fighting, nobody resists; Blastoise: no Normal attack (no STAB); Morpeko: no Normal attack (no STAB)
 🩺 Team audit
 ✗ 4 of 4 weak to Fighting, nobody resists
 ✗ Blastoise: no Normal attack (no STAB)
@@ -28,7 +28,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · 5× Poké Ball you have 34
 · Potion party healthy
-Team 2 issues: Charizard: no Normal attack (no STAB); nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
+2 issues: Charizard: no Normal attack (no STAB); nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 🩺 Team audit
 ✗ Charizard: no Normal attack (no STAB)
 · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
@@ -40,7 +40,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · 5× Poké Ball you have 12
 · Max Ether PP fine
-Team 1 issue: nothing hits Poison/Ground/Rock/Fire +4 super-effectively
+1 issue: nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 🩺 Team audit
 · nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -48,7 +48,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $100 nothing affordable take Rare Candy → Morpeko
 🎁 Rare Candy Morpeko Lv 11, furthest behind
-Team 4 issues: 2 of 2 weak to Fighting, nobody resists; Charizard: no Normal attack (no STAB); Morpeko: no Normal attack (no STAB)
+4 issues: 2 of 2 weak to Fighting, nobody resists; Charizard: no Normal attack (no STAB); Morpeko: no Normal attack (no STAB)
 🩺 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 ✗ Charizard: no Normal attack (no STAB)
@@ -61,7 +61,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 Rarer Candy +1 level for the whole party · 1 at the Lv 16 cap
 Others
 · Rare Candy Charmander evolves at Lv 16
-Team 4 issues: 2 of 2 weak to Fighting, nobody resists; Charizard: no Normal attack (no STAB); Charmander: no Normal attack (no STAB)
+4 issues: 2 of 2 weak to Fighting, nobody resists; Charizard: no Normal attack (no STAB); Charmander: no Normal attack (no STAB)
 🩺 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 ✗ Charizard: no Normal attack (no STAB)
@@ -75,7 +75,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · Quick Claw Snorlax 10% to move first
 · King's Rock Jolteon 10% flinch a hit
-Team 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 🩺 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -85,7 +85,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 Flame Orb Machamp Guts wants the status
 Others
 · Toxic Orb Machamp Guts wants the status
-Team 1 issue: nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
+1 issue: nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 🩺 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -95,7 +95,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 5× Poké Ball you have 3
 Others
 · Flame Orb does nothing for this team · for Charizard
-Team 1 issue: nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
+1 issue: nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 🩺 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -105,7 +105,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 Mint Snorlax Adamant +Atk −SpA, was Modest
 Others
 · Mint Modest +SpA −Atk · no better for anyone · for Machamp
-Team 1 issue: nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
+1 issue: nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 🩺 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -115,7 +115,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 EXP. All nobody on the bench under the Lv 38 cap
 Others
 · EXP. Charm whole party at the Lv 38 cap
-Team 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 🩺 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -123,7 +123,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $100 nothing affordable take EXP. All
 🎁 EXP. All EXP for the bench · 1 under the Lv 38 cap
-Team 3 issues: 2 of 3 weak to Ground, nobody resists; Pichu L20 trail Snorlax L45 — lead it on easy waves; nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+3 issues: 2 of 3 weak to Ground, nobody resists; Pichu L20 trail Snorlax L45 — lead it on easy waves; nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 🩺 Team audit
 ✗ 2 of 3 weak to Ground, nobody resists
 ✗ Pichu L20 trail Snorlax L45 — lead it on easy waves
@@ -133,7 +133,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $100 nothing affordable take Leaf Stone → Pikachu
 🎁 Leaf Stone Pikachu evolves now
-Team 4 issues: 2 of 2 weak to Fighting, nobody resists; Gloom: no Normal attack (no STAB); Pikachu: no Normal attack (no STAB)
+4 issues: 2 of 2 weak to Fighting, nobody resists; Gloom: no Normal attack (no STAB); Pikachu: no Normal attack (no STAB)
 🩺 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 ✗ Gloom: no Normal attack (no STAB)
@@ -147,7 +147,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · Light Ball Pikachu ×2 Atk/SpA
 · Thick Club nobody it works for · for Snorlax/Jolteon +1
-Team 3 issues: 2 of 3 weak to Ground, nobody resists; Pikachu L30 trail Snorlax L45 — lead it on easy waves; nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+3 issues: 2 of 3 weak to Ground, nobody resists; Pikachu L30 trail Snorlax L45 — lead it on easy waves; nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 🩺 Team audit
 ✗ 2 of 3 weak to Ground, nobody resists
 ✗ Pikachu L30 trail Snorlax L45 — lead it on easy waves
@@ -161,7 +161,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · TM Round Comfey → forget Body Slam · +13 power
 · Potion party healthy
-Team 2 issues: Comfey: Body Slam is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Bug/Grass +2 super-effectively
+2 issues: Comfey: Body Slam is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Bug/Grass +2 super-effectively
 🩺 Team audit
 · Comfey: Body Slam is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Poison/Bug/Grass +2 super-effectively
@@ -173,7 +173,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · 5× Poké Ball you have 34
 · Full Heal no status
-Team 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Poison/Bug/Steel/Fire +4 super-effectively
+2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Poison/Bug/Steel/Fire +4 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Poison/Bug/Steel/Fire +4 super-effectively
@@ -185,7 +185,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · TM Thunder Fang TM — can't check who learns it
 · 5× Great Ball you have 34
-Team 2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Poison/Ground/Rock/Fire +4 super-effectively
+2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 🩺 Team audit
 · Morpeko: Quick Attack is a second Normal attack (Tackle)
 · nothing hits Poison/Ground/Rock/Fire +4 super-effectively
@@ -200,7 +200,7 @@ buy first — taking the free reward closes the shop
 Others
 · X Sp. Atk only lasts a few battles
 · Potion heals Comfey a little
-Team 1 issue: nothing hits Poison/Ground/Rock/Bug +6 super-effectively
+1 issue: nothing hits Poison/Ground/Rock/Bug +6 super-effectively
 🩺 Team audit
 · nothing hits Poison/Ground/Rock/Bug +6 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -213,7 +213,7 @@ buy first — taking the free reward closes the shop
 Others
 · Super Lure more double battles for a while
 · 5× Poké Ball you have 34
-Team 2 issues: 2 of 2 weak to Fighting, nobody resists; nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
+2 issues: 2 of 2 weak to Fighting, nobody resists; nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
 🩺 Team audit
 ✗ 2 of 2 weak to Fighting, nobody resists
 · nothing hits Fighting/Poison/Ground/Rock +9 super-effectively
@@ -224,7 +224,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 TM Crunch Snorlax → forget Tackle · +68 power
 Others
 · 5× Poké Ball you have 34
-Team 3 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); Snorlax: Tackle is a second Normal attack (Body Slam); nothing hits Flying/Poison/Bug/Ghost +4 super-effectively
+3 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); Snorlax: Tackle is a second Normal attack (Body Slam); nothing hits Flying/Poison/Bug/Ghost +4 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · Snorlax: Tackle is a second Normal attack (Body Slam)
@@ -236,7 +236,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 5× Poké Ball you have 3
 Others
 · TM Tackle skip · no upgrade for Snorlax · Snorlax keeps Brick Break
-Team 3 issues: Comfey: no Fairy attack (no STAB); Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Fighting/Flying/Poison/Bug +5 super-effectively
+3 issues: Comfey: no Fairy attack (no STAB); Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Fighting/Flying/Poison/Bug +5 super-effectively
 🩺 Team audit
 ✗ Comfey: no Fairy attack (no STAB)
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
@@ -248,7 +248,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 TM Fire Fang Morpeko free slot · +78 power
 Others
 · TM Psybeam Arcanine free slot · +77 power
-Team 2 issues: 2 of 2 weak to Ground, nobody resists; nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
+2 issues: 2 of 2 weak to Ground, nobody resists; nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
 🩺 Team audit
 ✗ 2 of 2 weak to Ground, nobody resists
 · nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
@@ -259,7 +259,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 5× Poké Ball least bad · you have 34
 Others
 · TM Nuzzle skip · nobody can learn it
-Team 1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
+1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 🩺 Team audit
 · nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -269,7 +269,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 TM Fire Fang Morpeko (fainted) → forget Tackle · +48 power
 Others
 · 5× Great Ball you have 34
-Team 2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Poison/Ground/Rock/Fire +4 super-effectively
+2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Poison/Ground/Rock/Fire +4 super-effectively
 🩺 Team audit
 · Morpeko: Quick Attack is a second Normal attack (Tackle)
 · nothing hits Poison/Ground/Rock/Fire +4 super-effectively
@@ -278,7 +278,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $400 take TM Fire Fang
 🎁 TM Fire Fang least bad · skip · nobody can learn it
-Team 1 issue: nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
+1 issue: nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
 🩺 Team audit
 · nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -286,7 +286,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $400 take TM Fire Fang
 🎁 TM Fire Fang least bad · skip · nobody can learn it
-Team 1 issue: nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
+1 issue: nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
 🩺 Team audit
 · nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -294,7 +294,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $400 take TM Hyper Voice → Charizard
 🎁 TM Hyper Voice Charizard free slot · +69 power
-Team 2 issues: Charizard: Tackle is physical on Atk 110 (SpA 150); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+2 issues: Charizard: Tackle is physical on Atk 110 (SpA 150); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 🩺 Team audit
 · Charizard: Tackle is physical on Atk 110 (SpA 150)
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
@@ -305,7 +305,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 TM Calm Mind Comfey setup +1 SpA/SpD → forget Tackle
 Others
 · 5× Poké Ball you have 34
-Team 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Bug/Ghost/Steel +6 super-effectively
+2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Bug/Ghost/Steel +6 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Bug/Ghost/Steel +6 super-effectively
@@ -317,7 +317,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · Mega Bracelet nobody on the team can Mega Evolve
 · Egg Voucher egg voucher — outlasts the run
-Team 1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
+1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 🩺 Team audit
 · nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -328,7 +328,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · Fire Stone nobody can use it
 · Leftovers everyone's at max stack
-Team 2 issues: Charizard: no Normal attack (no STAB); nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
+2 issues: Charizard: no Normal attack (no STAB); nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
 🩺 Team audit
 ✗ Charizard: no Normal attack (no STAB)
 · nothing hits Fighting/Flying/Poison/Ground +9 super-effectively
@@ -340,7 +340,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · Revive nobody fainted · spare for the boss
 · X Attack only lasts a few battles
-Team 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 🩺 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
@@ -354,11 +354,11 @@ buy first — taking the free reward closes the shop
 Others
 · X Attack only lasts a few battles
 · 5× Great Ball you have 34
-Team 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 🩺 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
-Road fixed battle next wave (W182) — 5 big fights before the next full heal
+fixed battle next wave (W182) — 5 big fights before the next full heal
 ⚑ Next big fight fixed battle next wave W182
 ✗ 5 big fights before the next full heal (W191)
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
@@ -369,11 +369,11 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 5× Great Ball you have 34
 Others
 · Max Revive nobody fainted
-Team 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 🩺 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
-Road boss in 4 (W180)
+boss in 4 (W180)
 ⚑ Next big fight boss in 4 W180
 ✚ full heal entering W181 — HP, status, PP, revives, Tera
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
@@ -386,11 +386,11 @@ buy first — taking the free reward closes the shop
 🎁 Max Revive nobody fainted · spare for the gauntlet
 Others
 · 5× Great Ball you have 34
-Team 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 🩺 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
-Road fixed battle in 3 (W195) — no full heal left before the final wave
+fixed battle in 3 (W195) — no full heal left before the final wave
 ⚑ Next big fight fixed battle in 3 W195
 ✗ no full heal left — 2 big fights on what you have
 🍀 luck 0 (D) — 3.1% tier upgrade per reward
@@ -412,7 +412,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 Others
 · 5× Poké Ball you have 34
 · Potion party healthy
-Team 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 🩺 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -427,7 +427,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🔒 lock, reroll $700~ can't pay X Attack · 5× Great Ball · X Attack
 Others
 · 5× Poké Ball you have 34
-Team 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 🩺 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -441,7 +441,7 @@ buy first — taking the free reward closes the shop
 › Master Ball Master Ball — catches anything · you have 0
 · Master Ball Master Ball — catches anything · you have 0
 · Master Ball Master Ball — catches anything · you have 0
-Team 2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
+2 issues: Blastoise: no Normal attack (no STAB); nothing hits Flying/Poison/Ghost/Water +5 super-effectively
 🩺 Team audit
 ✗ Blastoise: no Normal attack (no STAB)
 · nothing hits Flying/Poison/Ghost/Water +5 super-effectively
@@ -450,7 +450,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $100 nothing affordable take Grip Claw → Jolteon
 🎁 Grip Claw Jolteon 10% to steal an item when it attacks
-Team 2 issues: Wobbuffet: no attacking move; nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
+2 issues: Wobbuffet: no attacking move; nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
 🩺 Team audit
 ✗ Wobbuffet: no attacking move
 · nothing hits Ground/Rock/Bug/Ghost +9 super-effectively
@@ -459,7 +459,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $100 nothing affordable take EXP. Charm
 🎁 EXP. Charm more EXP · 2 under the Lv 52 cap
-Team 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 🩺 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -467,7 +467,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $100 nothing affordable take EXP. Charm
 🎁 EXP. Charm whole party at the Lv 24 cap
-Team 1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
+1 issue: nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 🩺 Team audit
 · nothing hits Ground/Rock/Bug/Steel +7 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -477,7 +477,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎁 TM Magical Leaf Comfey free slot · +78 power · or a Memory Mushroom
 Others
 · 5× Poké Ball you have 34
-Team 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Magical Leaf); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Magical Leaf); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 ↺ Memory Mushroom: relearn Magical Leaf · +78 power
@@ -487,7 +487,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $200 nothing affordable take TM Magical Leaf → Comfey
 🎁 TM Magical Leaf Comfey free slot · +78 power · or a Memory Mushroom
-Team 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Magical Leaf); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Magical Leaf); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 ↺ Memory Mushroom: relearn Magical Leaf · +78 power
@@ -497,7 +497,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $200 nothing affordable take TM Crunch → Snorlax
 🎁 TM Crunch Snorlax free slot · +116 power · or a Memory Mushroom
-Team 1 issue: nothing hits Fighting/Flying/Poison/Ground +13 super-effectively
+1 issue: nothing hits Fighting/Flying/Poison/Ground +13 super-effectively
 🩺 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +13 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -505,7 +505,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $200 nothing affordable take TM Screech
 🎁 TM Screech status TM — Comfey can learn it · Comfey can relearn it (Memory Mushroom)
-Team 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
@@ -514,7 +514,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $200 nothing affordable take TM Screech
 🎁 TM Screech status TM — Comfey +1 can learn it · all can relearn it (Memory Mushroom)
-Team 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
@@ -523,7 +523,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $200 nothing affordable take TM Screech
 🎁 TM Screech status TM — Comfey +1 can learn it
-Team 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 · nothing hits Flying/Poison/Ground/Rock +10 super-effectively
@@ -532,7 +532,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $200 nothing affordable take TM Crunch → Snorlax
 🎁 TM Crunch Snorlax free slot · +116 power
-Team 2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Crunch); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
+2 issues: Comfey: Tackle is physical on Atk 50 (SpA 90) (relearn Crunch); nothing hits Flying/Poison/Ground/Rock +10 super-effectively
 🩺 Team audit
 · Comfey: Tackle is physical on Atk 50 (SpA 90)
 ↺ Memory Mushroom: relearn Crunch · +57 power
@@ -542,7 +542,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ×
 🛒 $3000 take X Defense
 🎁 X Defense least bad · only lasts a few battles
-Team 1 issue: nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
+1 issue: nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 🩺 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -551,7 +551,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🛒 $3000 take X Defense
 🎁 X Defense least bad · only lasts a few battles
 🎲 nothing good — reroll for $250?
-Team 1 issue: nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
+1 issue: nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 🩺 Team audit
 · nothing hits Fighting/Flying/Poison/Ground +11 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.

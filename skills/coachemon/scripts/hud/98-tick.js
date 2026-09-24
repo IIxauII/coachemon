@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, closeButton, closed, disclaimer, drawGroups, dropGame, el, glyph, missedSprite, PANEL_W, setDraw, setRedraw, strip } from "./90-render.js";
+import { battleScene, clearMissed, closeButton, closed, disclaimer, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, setDraw, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
 import { captionFusion, drawFusion } from "./96-render-fusion.js";
@@ -31,19 +31,20 @@ const KIND = {
   biome: { draw: drawBiome, caption: captionBiome, glyph: "🗺" },
 };
 
-// The panel as the shell shells it: its own control, the **strip**, the card's groups as a plain stack with one
-// rule between them, and the disclaimer footer. **Strip and drawer are both visible, strip above drawer** (#349
-// §2): the call is never a click away, including while the player reads another group, and the cost — the act
-// summary appearing on the strip while `act` is the group on show — is accepted. The control floats in the panel's
-// corner, so the shell leaves it room on the first line it draws, which is the strip's head; no renderer knows the
-// control is there. The tab bar and the pane come with the drawer (#357).
+// The panel as the shell shells it: its own control, the **strip**, the **drawer** — the tab bar and the open
+// group's pane — and the disclaimer footer. **Strip and drawer are both visible, strip above drawer** (#349 §2):
+// the call is never a click away, including while the player reads another group, and the cost — the act summary
+// appearing on the strip while `act` is the group on show — is accepted. The control floats in the panel's corner,
+// so the shell leaves it room on the first line it draws, which is the strip's head; no renderer knows the control
+// is there.
 const open = card => {
   const kind = KIND[card.kind];
   const groups = kind.draw(card);
-  return [closeButton(), strip(card, kind.caption(card), groups), ...drawGroups(groups), disclaimer()];
+  return [closeButton(), strip(card, kind.caption(card), groups), ...drawer(groups), disclaimer()];
 };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
+const sigOf = card => JSON.stringify([closed(), openGroup(), card]);
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
 export const shownCard = () => shown;
 
@@ -102,7 +103,9 @@ export const tick = () => {
     journalCheck(s, card);
     if (!card) { el.style.display = "none"; shown = null; return; }
     shown = card;
-    const sig = JSON.stringify([closed(), card]);
+    // What is on screen, so a tab click or a dismissal rebuilds and a refresh that changed nothing does not. The
+    // open group is in it because the drawer draws one group of the card, not all of them.
+    const sig = sigOf(card);
     el.style.display = "block";
     // The panel's width is the ladder's, not a literal: a dismissal shrinks to the glyph, and nothing else here
     // knows a number (#349 §4).
@@ -112,8 +115,10 @@ export const tick = () => {
       // The disclaimer, the close control and the glyph that brings the panel back are all the panel's own, so no
       // card draws any of them — controls are the shell's, never a row's (§5).
       el.replaceChildren(...(closed() ? [glyph(KIND[card.kind].glyph)] : open(card)));
-      // Icon atlases load lazily; redraw next tick until every sprite is in.
-      last = missedSprite() ? "" : sig;
+      // Icon atlases load lazily; redraw next tick until every sprite is in. The signature is taken again rather
+      // than reused: a card with no group the player was on moves the drawer to `act` as it draws (#349 §3), and
+      // that move belongs in what was drawn.
+      last = missedSprite() ? "" : sigOf(card);
     }
   } catch (e) {
     dropGame();

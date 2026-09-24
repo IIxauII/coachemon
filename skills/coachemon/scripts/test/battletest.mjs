@@ -130,7 +130,19 @@ const scenarios = {
       mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [270,155,130,110,160,135], [["Waterfall","Water",80,"P"]], false)] },
 };
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+// The card as the panel draws it, whole: its own control, the strip, then **every group's pane**. The drawer shows
+// one group at a time and the tab bar decides which (#357), so a golden about what a card *says* walks the card's own
+// groups rather than the one pane a click happens to have open — the bar and the pane are rendertest's business.
+const lines = el => {
+  const kids = el.kids ?? [];
+  const { groupsOf, pane } = globalThis.__hud["90-render"];
+  const groups = groupsOf(globalThis.__coachHud.last());
+  // The panel is its control, the strip, the tab bar, the open pane and the footer, so the drawer is the two in the
+  // middle; anything else — a dismissal, a failed refresh — is taken as it was drawn.
+  const whole = kids.length === 5 && groups ? [...kids.slice(0, 2), ...groups.flatMap(g => pane(g)), kids[4]] : kids;
+  return whole.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+};
+
 
 for (const [label, sc] of Object.entries(scenarios)) {
   let el;
@@ -152,7 +164,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud"));
+  eval(bundle("hud", { expose: true }));
   if (sc.trainer) console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
   console.log(`== ${label}\n${lines(el)}`);
   // The card's own line, the way the watcher prints it; its full shape is cardtest's business.

@@ -73,12 +73,10 @@ export const PANEL_W = `clamp(${0.75 * REF_W}px, calc(${SHARE} * ${GAME_W}), ${1
 // The inset from the viewport corner, and the height the panel may not exceed. The inset is the one length here that
 // stays off the ladder: it is a gap from the viewport's edge rather than a share of the game, and 8px off a
 // letterboxed corner covers no game pixel at any window shape.
-// The game's message box owns the bottom 27%, so its top edge sits at `0.73 ÷ (16/9) = 0.4106 × game-w`; the panel's
-// budget is 0.40 of the game width, less the inset, which is what keeps it clear of the message box and the command
-// menu at every window shape. Against
-// everything the model draws today the cap never fires — the tallest pane any card produces is about 187px against a
-// 713px budget at a 1920 game — so it ships as a guard for content that does not exist yet. #357 moves it onto the
-// drawer's pane; while the panel is one stack, the panel is the pane.
+// The game's message box owns the bottom 27%, so its top edge sits at `0.73 ÷ (16/9) = 0.4106 × game-w`; the budget
+// is 0.40 of the game width, less the inset, which is what keeps the panel clear of the message box and the command
+// menu at every window shape. It is **the drawer's pane** that carries it (§4): the strip and the tab bar are always
+// on screen and are never what a card makes tall, so the thing that has to stop growing is the pane.
 const INSET = "8px";
 const MAX_H = `calc(0.40 * ${GAME_W} - ${INSET})`;
 
@@ -154,10 +152,13 @@ export const closed = () => isClosed;
 // The ids are closed at eight and semantic — a group means the same thing wherever it appears, which is what lets
 // one be remembered as the cards change under it. A ninth means retiring or merging one, not adding one here.
 //
-// One list, in the fixed order the plain text walks and the tab bar will sit in, whatever the drawer is showing
+// One list, in the fixed order the plain text walks and the tab bar sits in, whatever the drawer is showing
 // (§5): a renderer cannot lead with what matters most on its own kind, so a tab sits in the same place always.
 // `act` leads it, which is what makes the first line of a card's text its call.
 export const GROUP_IDS = ["act", "foes", "catch", "plan", "options", "audit", "road", "notes"];
+// The card's groups in that order, whatever order the renderer returned them in: **the tab bar and the plain text
+// walk the same list**, so a tab sits in the same place always and the text never depends on what is on screen.
+const inOrder = groups => GROUP_IDS.flatMap(id => (groups ?? []).filter(g => g.id === id));
 // `label` is the group's name on the tab; `summary` is what it concluded, and may be absent. `rows` are nodes: a row
 // is two inline columns, the gutter and the body, so it flattens to `mark body`.
 export const group = (id, label, summary, rows) => {
@@ -186,12 +187,17 @@ const headingText = g => (g.id === "act" ? g.summary
 // and the strip is above whatever the drawer is showing. The cut is the browser's and lands on the drawn node alone;
 // `groups[].summary` and the card's text are never cut by the panel (§5, §6).
 const ONE_LINE = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-const headingNode = g => {
+// **The open group's `summary` heads its pane, or its `label` alone where the summary is absent** (§2). The name is
+// on the tab directly above it, so a pane that carried the label too would spend its first line telling the player
+// what they just clicked. This is where the drawn heading and the plain text's part company: the text has no tabs,
+// so its heading keeps the label, which is what lets a reader tell `foes` from `audit` from `road` (§5).
+const paneHeading = g => {
   // `act` is not headed in the pane at all: **the act group's pane does not repeat the call**, because the strip
   // directly above it is its heading (§6). The heading is still `act`'s in the plain *text*, which has no strip —
   // which is what keeps the first line of a card's text its call.
-  if (g.id === "act" || !headingText(g)) return null;
-  return h("div", ONE_LINE, h("span", { fontWeight: "bold", marginRight: "4px" }, g.label), g.summary ? h("span", dim, g.summary) : null);
+  if (g.id === "act") return null;
+  const text = g.summary || g.label;
+  return text ? h("div", ONE_LINE, text) : null;
 };
 
 // Which register a node is drawn in is the **shell's**, never a renderer's: the shell heads a group in chrome and
@@ -205,15 +211,53 @@ const inRows = node => {
   return node;
 };
 
-// The drawer, for now a plain stack: every group, headed, with the shell's own rule between them. The tab bar and
-// the pane arrive in #357; nothing here knows what a view is.
-// A group that draws nothing takes no rule with it. Since the strip heads `act`, an `act` whose rows are only
-// supporting lines — and on the light cards there are none — otherwise opens the stack with a divider above the
-// first thing in it.
-export const drawGroups = groups => (groups ?? [])
-  .map(g => [headingNode(g), ...g.rows.map(inRows)].filter(Boolean))
-  .filter(block => block.length)
-  .flatMap((block, i) => (i ? [h("div", sep), ...block] : block));
+// The **pane**: the open group's block — its heading, then its rows in the dense register. The shell's own rule
+// between groups went with the stack that needed it: one group is on screen at a time, so there is nothing to
+// hold it apart from.
+export const pane = g => [paneHeading(g), ...g.rows.map(inRows)].filter(Boolean);
+
+// The **tab bar**: one tab per group the card has, in the fixed global order, **labels only** so the bar stays
+// legible at reference width. It never wraps, never scrolls and has no overflow menu — **the cap is five tabs,
+// enforced by the vocabulary and not by this layout** (§1), so the bar is free to be one unwrapped line. A label
+// that overruns its share is cut by the browser rather than pushing the bar onto a second line.
+// **No tab carries an unread mark, a count or any state of its own** (§2, §10): every wave brings a new card, so a
+// *new* mark would light every tab every wave and mean nothing, and a mark for a finding new *within* a card would
+// need an event the model does not define. Which tab is open is told by weight and ink — never by gold, which is the
+// authorship rule's and is inert.
+const BAR = { display: "flex", flexWrap: "nowrap", gap: rung(1), overflow: "hidden", margin: "3px 0", minWidth: "0" };
+const TAB = { flex: "0 1 auto", minWidth: "0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer" };
+const tab = (g, open) => {
+  const n = h("span", { ...TAB, color: open ? SKIN.body : dim.color, fontWeight: open ? "bold" : "normal" }, g.label || g.id);
+  // The one thing a tab does, and the only control the drawer has. It asks for a redraw through the same hook the
+  // close control uses, so the pane changes under the click rather than on the next refresh.
+  n.addEventListener("click", e => { e.stopPropagation(); if (!open) { openId = g.id; redrawFn(); } });
+  return n;
+};
+
+// Which group is open. **The panel never switches it by itself** (§2): the player picks the group, and what is on
+// screen is what they last asked for. Nothing is remembered across a reload yet — #358 gives this a storage key —
+// so the drawer opens on `act`.
+// A card with no such group falls back to `act`, and the fallback is **written back** rather than held as a detour:
+// it is a move, with no jump back when the group reappears (§3). Since the ids are semantic, a player sitting on
+// `foes` lands on `act` for a learn card, whose kept moves are `options`.
+let openId = "act";
+export const openGroup = () => openId;
+
+// The drawer: the tab bar, then the open group's pane. Both are the shell's — a renderer returns groups and never
+// asks which one is up. **A card with one group draws a bar with one tab**, which is no branch here: the
+// whole-card replacement is an ordinary card that happens to have only `act`.
+// **The pane is what scrolls**, past the budget the game's message box leaves (§4). The panel's height is the
+// strip, the bar, and a pane that stops growing, which is what makes it something the player can rely on. Against
+// everything the model draws today the threshold never fires — the tallest pane any card produces is about 187px
+// against a 713px budget at a 1920 game — so it ships as a guard for content that does not exist yet.
+const PANE = { maxHeight: MAX_H, overflowY: "auto" };
+export const drawer = groups => {
+  const list = inOrder(groups);
+  const open = list.find(g => g.id === openId) ?? list.find(g => g.id === "act") ?? list[0];
+  if (!open) return [];
+  openId = open.id;
+  return [h("div", BAR, ...list.map(g => tab(g, g === open))), h("div", PANE, ...pane(open))];
+};
 
 // ---- The card as plain text (§11.1, §5)
 // The stream's `text` is derived from the group list rather than read back off the drawn card, so the two cannot
@@ -222,10 +266,14 @@ export const drawGroups = groups => (groups ?? [])
 // 98-tick registers the draw for a kind here, the way it registers the redraw: dispatch stays its business.
 let drawFn = () => null;
 export const setDraw = fn => { drawFn = fn; };
+// A card's groups, dispatched by its kind — what the text below walks. Exported because the drawer shows one group
+// at a time (#357), so a golden about what a card *says* asks for the card's groups rather than reading back the one
+// pane a click happens to have open.
+export const groupsOf = card => (card ? drawFn(card) : null);
 
 // The group list as plain data: the same groups in the fixed order, with their rows flattened to one string each.
 // This is the seam the content half of the card is tested at, and what #361 puts on the wire.
-export const groupsText = groups => GROUP_IDS.flatMap(id => (groups ?? []).filter(g => g.id === id))
+export const groupsText = groups => inOrder(groups)
   .map(g => ({ id: g.id, label: g.label, summary: g.summary, rows: g.rows.map(rowText).map(clean).filter(Boolean) }));
 
 export const cardText = card => {
@@ -291,7 +339,7 @@ const reserveForControl = node => {
   return node;
 };
 // What a dismissed panel leaves behind, and the only way back. Named for what it is rather than for a tab, because
-// the drawer's tab bar takes that word in #357.
+// the drawer's tab bar owns that word.
 export const glyph = emoji => {
   const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, emoji);
   n.title = "Open coach";
@@ -354,7 +402,6 @@ Object.assign(el.style, {
   // panel covers the share of the game the ladder says it does. Padding is a rung too — 6px by 8px at the game's own
   // rung — so the one knob scales the box along with what is in it.
   boxSizing: "border-box", width: PANEL_W, padding: `${rung(0.75)} ${ROWS}`,
-  maxHeight: MAX_H, overflowY: "auto",
   background: SKIN.fill, color: SKIN.body,
   // One rule and one shadow for the whole object, so they hold whatever the panel is showing — the strip alone, the
   // strip over the drawer, or the one line a failed refresh leaves (§11). Square corners: the rule is flat.
