@@ -16,7 +16,7 @@ import { drawTeamPlan } from "./95-render-team.js";
 export const captionBattle = m => {
   const slotNames = new Set(m.field?.slots.map(sl => sl.name) ?? []);
   const order = m.trainer || (m.order ?? []).some(o => !slotNames.has(o.name)) ? m.order ?? [] : [];
-  return caption("\ud83c\udfaf", m.title,
+  return caption("🎯", m.title,
     ...order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, ICON.mon)]));
 };
 
