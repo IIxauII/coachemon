@@ -18,7 +18,7 @@ Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
 Pikachu Pikachu 1 final BST 485 (Raichu) · Pokérus 1.5× EXP · but evolves by item or condition
 Pidgey Pidgey 1 final BST 479 (Pidgeot)
 Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
-👁 Rattata Rattata 1 pts · #9 of 10 IVs 186/186 · final BST 413 (Raticate)
+· cursor: Rattata Rattata 1 pts · #9 of 10 IVs 186/186 · final BST 413 (Raticate)
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Gible picked
@@ -95,7 +95,7 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 Gible Gible 6 carry final BST 600 (Garchomp)
 Charmander Charmander 3 final BST 534 (Charizard)
 Magikarp Magikarp 1 final BST 540 (Gyarados)
-👁 Magikarp Magikarp 1 pts · #4 of 10 · in best final BST 540 (Gyarados) · IVs 60/186
+· cursor: Magikarp Magikarp 1 pts · #4 of 10 · in best final BST 540 (Gyarados) · IVs 60/186
 Notes
 Fresh Start: no passives, egg moves or luck
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.

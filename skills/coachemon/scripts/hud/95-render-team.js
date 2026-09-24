@@ -12,16 +12,16 @@ export const drawTeamPlan = m => {
   const approx = !!m?.double;
   const entryTag = { free: ["free", "#6d6"], switch: ["⇄", amber] }; // a switch-in also says so in `why`
   const out = [
-    line("♟", "#c9f", h("span", { fontWeight: "bold" }, "Fight plan"), approx ? h("span", { ...dim, marginLeft: "4px" }, "steps approximate") : null,
+    line("", "#c9f", h("span", { fontWeight: "bold" }, "Fight plan"), approx ? h("span", { ...dim, marginLeft: "4px" }, "steps approximate") : null,
       h("span", { flex: "1" }),
       h("span", { color: lost ? red : "#6d6" }, lost ? "likely lost" : "winnable")),
   ];
   if (tp.win) {
-    out.push(line("☠", red, mon(tp.win.icon, tp.win.name, ICON.mon), h("span", { fontWeight: "bold", marginLeft: "2px" }, tp.win.name),
+    out.push(line("💀", red, mon(tp.win.icon, tp.win.name, ICON.mon), h("span", { fontWeight: "bold", marginLeft: "2px" }, tp.win.name),
       tp.win.boss ? "👑" : null, h("span", { flex: "1" }), h("span", dim, `KOs ${tp.win.kills}/${tp.win.of} · win condition`)));
   }
   for (const r of tp.reserve) {
-    out.push(line("🛡", "#6d6", mon(r.icon, r.name, ICON.mon), h("span", { ...dim, margin: "0 3px" }, "save for"), mon(r.for.icon, r.for.name, ICON.ref),
+    out.push(line("⤵", "#6d6", mon(r.icon, r.name, ICON.mon), h("span", { ...dim, margin: "0 3px" }, "save for"), mon(r.for.icon, r.for.name, ICON.ref),
       h("span", { flex: "1" }), h("span", r.acts ? dim : { color: amber }, `~${r.per}%/turn${r.acts ? "" : " · KO'd first"}`)));
   }
   // Foes still to come that only one of ours beats: the ⚔ line prices spending it, this says who and for what.
@@ -32,7 +32,11 @@ export const drawTeamPlan = m => {
   }
   tp.steps.forEach((st, i) => {
     const tag = entryTag[st.entry];
-    out.push(line(`${approx ? "~" : ""}${i + 1}`, "#8cf",
+    // The step's own number is the row's, not the gutter's: the gutter says what kind of news a row is, and an
+    // ordinal is neither good nor bad. `➜` is what the gutter carries instead — a step is what lands later — and the
+    // `~` a double's approximate plan wears stays a confidence suffix on the ordinal it qualifies (#349 §7).
+    out.push(line("➜", "#8cf",
+      h("span", { ...dim, marginRight: "3px" }, `${i + 1}.${approx ? "~" : ""}`),
       mon(st.send.icon, st.send.name, ICON.mon),
       tag ? h("span", { color: tag[1], marginRight: "2px" }, tag[0]) : null,
       ...(st.move ? [st.type ? badge(st.type) : null, h("span", { marginRight: "2px" }, st.move)] : [h("span", dim, "—")]),
@@ -42,14 +46,14 @@ export const drawTeamPlan = m => {
       st.notes?.length ? h("span", { ...dim, marginLeft: "4px" }, st.notes.join(" · ")) : null));
   });
   for (const x of tp.sacrifice) {
-    out.push(line("✝", amber, mon(x.icon, x.name, ICON.mon), h("span", { color: amber, margin: "0 3px" }, `${x.hp}% · sacrifice to`),
+    out.push(line("✗", amber, mon(x.icon, x.name, ICON.mon), h("span", { color: amber, margin: "0 3px" }, `${x.hp}% · sacrifice to`),
       mon(x.vs.icon, x.vs.name, ICON.ref), h("span", { ...dim, margin: "0 3px" }, "so"), mon(x.frees.icon, x.frees.name, ICON.ref),
       h("span", dim, "comes in free")));
   }
   // The plan's own preferred turn, priced, when it is clearly better than the one the ⚔ line chose (#113). One line,
   // never a competing step list: the ⚔ line still decides the turn.
   if (tp.prefers) {
-    out.push(line("♟", amber, h("span", { color: amber, marginRight: "3px" }, "prefers:"), h("span", {}, tp.prefers.text),
+    out.push(line("≈", amber, h("span", { color: amber, marginRight: "3px" }, "prefers:"), h("span", {}, tp.prefers.text),
       h("span", { ...dim, marginLeft: "4px" }, tp.prefers.flips ? `(+${tp.prefers.gain} · turns the fight)` : `(+${tp.prefers.gain})`)));
   }
   for (const w of tp.warnings) out.push(line("⚠", red, h("span", { color: red }, w)));

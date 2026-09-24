@@ -1964,7 +1964,7 @@ export const battleModel = (baseTurn, { team = null } = {}) => {
     enemySwitches: active.filter(f => predicted.has(f)).map(f => ({
       from: { icon: iconOf(f), name: f.name }, to: { icon: iconOf(predicted.get(f).to), name: predicted.get(f).to.name }, sure: switching(f),
       // The switch-in is the mon the other slot is withdrawing this turn: it needs its own wording, because
-      // `⇆ B → D` with the usual tail, rendered while the player watches D leave the other slot, reads as a broken HUD.
+      // `⇄ B → D` with the usual tail, rendered while the player watches D leave the other slot, reads as a broken HUD.
       back: !!predicted.get(f).back,
     })),
     ifStay: ifStay ? ifStay.view.slots : null,

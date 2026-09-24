@@ -7,38 +7,38 @@
 == limited support 1: heal null · 5 fights before it
 == ready {"who":"Rival 2","exact":true,"verdict":"ready","notes":["we're +5 levels on them","2 mons hit super-effectively"]}
 == card
-⚑ Next big fight Rival 2 next wave W25
-🎁 it pays Ultra · Great · Great
+Next big fight Rival 2 next wave W25
+· it pays Ultra · Great · Great
 ✓ we're +5 levels on them
 ✓ 2 mons hit super-effectively
 ✗ 2 big fights before the next full heal (W31)
-🍀 luck 2 (C+) — 4.7% tier upgrade per reward
+· luck 2 (C+) — 4.7% tier upgrade per reward
 == risky {"verdict":"risky","unanswered":["Garchomp","Lucario"],"gap":-5,"notes":["nothing hits Garchomp/Lucario super-effectively","they're +5 levels on us"]}
 == card
-⚑ Next big fight Rival 2 next wave W25
-🎁 it pays Ultra · Great · Great
+Next big fight Rival 2 next wave W25
+· it pays Ultra · Great · Great
 ✗ nothing hits Garchomp/Lucario super-effectively
 ✗ they're +5 levels on us
 ✗ 2 big fights before the next full heal (W31)
-🍀 luck 2 (C+) — 4.7% tier upgrade per reward
+· luck 2 (C+) — 4.7% tier upgrade per reward
 summary "Rival 2 next wave (W25) risky — nothing hits Garchomp/Lucario super-effectively; they're +5 levels on us; 2 big fights before the next full heal"
 == variable power {"threats":[{"type":"Steel","n":2}],"verdict":"risky"}
 == luck {"value":14,"grade":"SSS","upgradePct":14.3}
 == pinned rewards after wave 25 {"tiers":["Ultra","Great","Great"],"luckUpgrades":false}
 == eternatus {"foe":"Eternatus","bars":3,"facts":["phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax","Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double","Eternamax's Recover has 1 PP (ppUp −4): it can heal half its bar exactly once","phase 1's Cosmic Power raises its defences every use — stalling makes it worse","it carries no held items in phase 1 and has no passive ability","Milotic carries 5 held items — spread them before 200"]}
 == card
-⚑ Next big fight final boss in 2 W200 👑 4 bars
+Next big fight final boss in 2 W200 👑 4 bars
 · Eternatus L100
 ✗ only Lucario hits super-effectively
 ✗ 3 extra health bars to break
 ✗ no full heal left — 1 big fight on what you have
-🍀 luck 2 (C+) — 4.7% tier upgrade per reward
-☠ phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax
-☠ Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double
+· luck 2 (C+) — 4.7% tier upgrade per reward
+✗ phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax
+✗ Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double
 ✓ Eternamax's Recover has 1 PP (ppUp −4): it can heal half its bar exactly once
-☠ phase 1's Cosmic Power raises its defences every use — stalling makes it worse
+✗ phase 1's Cosmic Power raises its defences every use — stalling makes it worse
 ✓ it carries no held items in phase 1 and has no passive ability
-☠ Milotic carries 5 held items — spread them before 200
+✗ Milotic carries 5 held items — spread them before 200
 == far fight {"wave":110,"kind":"gym","foes":[],"readiness":null}
 == doubles ahead  41–44 0.125  grunt 35 0.3333333333333333  admin 66 0  rival 25 0
 ok

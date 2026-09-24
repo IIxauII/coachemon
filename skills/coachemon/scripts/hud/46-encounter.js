@@ -118,7 +118,7 @@ const readOptions = (s, h, me, party) => {
 // status or shiny multiplier and no critical capture, which is the whole of what makes it unlike a normal throw.
 // `isPokemonFlee`: the flee rate is read off the **species** catch rate, never the modified one, and rolled against
 // `randSeedInt(256)` at the end of every turn that is not a catch and not a run — a failed ball included.
-// Both rolls are on the live stream, not a fork, so these are odds and the card never marks them 🔮.
+// Both rolls are on the live stream, not a fork, so these are odds and the card never calls them `fixed`.
 const clampStage = st => Math.min(Math.max(st ?? 0, -6), 6);
 const stageMod = st => stage(clampStage(st));
 const safariCatch = (rate, st) => {
@@ -141,7 +141,7 @@ const safariThree = c => {
   return { mons: out.mons.map(m => ({ ...m, wanted: worthKeeping(m.worth) })) };
 };
 const worthKeeping = worth => !!worth && worth.value >= worth.show;
-const safariName = m => `${m.name}${m.shiny ? " ★shiny" : ""} L${m.level ?? "?"}${m.hiddenAbility ? " (hidden ability)" : ""}`;
+const safariName = m => `${m.name}${m.shiny ? " shiny" : ""} L${m.level ?? "?"}${m.hiddenAbility ? " (hidden ability)" : ""}`;
 // The two reasons a catch is weighed on, as the card says them everywhere else it prices one.
 const worthWhy = worth => (worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new");
 // The menu the fee buys, spelled once: the fee names it a screen early and every turn re-opens it.
@@ -314,7 +314,7 @@ const RULES = {
     const worth = mon ? tryDo(() => catchWorth(c.account, mon)) : null;
     const wanted = worth && worth.value >= worth.show;
     const hidden = tryDo(() => mon.abilityIndex === 2);
-    const name = mon ? `${tryDo(() => mon.getNameToRender(), mon.name) ?? mon.name}${mon.shiny ? " ★shiny" : ""}${hidden ? " (hidden ability)" : ""}`
+    const name = mon ? `${tryDo(() => mon.getNameToRender(), mon.name) ?? mon.name}${mon.shiny ? " shiny" : ""}${hidden ? " (hidden ability)" : ""}`
       : c.token("purchasePokemon") ?? "a mon";
     const afford = c.spare(price) >= 0;
     const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
@@ -667,7 +667,7 @@ const RULES = {
     const fight = c.fight(f);
     const worth = mon ? tryDo(() => catchWorth(c.account, mon)) : null;
     const wanted = worth && worth.value >= worth.show;
-    const name = mon ? `${mon.name}${mon.shiny ? " ★shiny" : ""}` : "it";
+    const name = mon ? `${mon.name}${mon.shiny ? " shiny" : ""}` : "it";
     const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
     const charm = c.opt(2).enabled, berries = c.opt(1).enabled;
     return [
@@ -838,7 +838,7 @@ const RULES = {
     const worth = live ? tryDo(() => catchWorth(c.account, live)) : null;
     const wanted = worth && worth.value >= worth.show;
     const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
-    const name = `${shown?.name ?? "Oricorio"}${live?.shiny ? " ★shiny" : ""}`;
+    const name = `${shown?.name ?? "Oricorio"}${live?.shiny ? " shiny" : ""}`;
     const recruit = c.opt(2).enabled;
     return [
       { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable`,
@@ -1010,6 +1010,6 @@ export const encounterSummary = m => {
   const avoid = m.options.filter(o => o.verdict === "avoid").map(o => o.label);
   const head = pick ? `take ${pick.label}${pick.outcome ? ` — ${pick.outcome}` : ""}` : m.known ? "your call" : "not judged";
   // A minigame turn is about the mon in front of you, not the encounter as a whole, so the read names it.
-  const who = m.minigame ? ` vs ${m.minigame.mon}${m.minigame.shiny ? " ★shiny" : ""}` : "";
+  const who = m.minigame ? ` vs ${m.minigame.mon}${m.minigame.shiny ? " shiny" : ""}` : "";
   return `${m.name}${who}: ${head}${avoid.length ? ` · avoid ${avoid.join(", ")}` : ""}`;
 };

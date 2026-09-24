@@ -2,7 +2,7 @@
 ⌃ {Hide the drawer} × {Close}
 🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 Learn → forget Ember
 Now Moves
-✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB} +108 power
+✓ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB} +108 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Ember
 == plan
@@ -15,14 +15,14 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 ⌃ {Hide the drawer} × {Close}
 🎓 Espeon learns Espeon Atk 65 / SpA 130 Learn → forget Bite · ⚠ loses only Dark move
 Now Moves Team
-✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90} +87 power
+✓ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90} +87 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Bite · ⚠ loses only Dark move
 == rewards boss next
 ⌃ {Hide the drawer} × {Close}
 🛒 $500 nothing affordable 👑 boss next take TM Fire Fang → Morpeko (forget Tackle)
 Now Others Team
-🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
+★ TM Fire Fang Morpeko → forget Tackle · +48 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary take TM Fire Fang → Morpeko (forget Tackle)
 == skin

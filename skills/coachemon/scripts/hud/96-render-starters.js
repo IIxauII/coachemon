@@ -41,7 +41,8 @@ export const drawStarters = m => {
   });
   const v = m.viewing;
   if (v) {
-    options.push(h("div", sep), line("👁", "#9aa", mon(v.icon, v.name, ICON.mon), h("span", {}, v.name),
+    // The cursor is neutral news — `·`, with the word `cursor:` carrying the kind the eye used to (#349 §7).
+    options.push(h("div", sep), line("·", "#9aa", h("span", dim, "cursor:"), mon(v.icon, v.name, ICON.mon), h("span", {}, v.name),
       h("span", { ...dim, marginLeft: "3px" }, `${ptsText(v.cost)} pts · #${v.rank} of ${v.of}${v.inPick ? ` · in ${v.inPick}` : ""}`),
       h("span", { flex: "1" }), h("span", dim, v.why.join(" · "))));
   }

@@ -2,7 +2,7 @@
 ⌃ {Hide the drawer} × {Close}
 🎭 Mysterious Chest common Mysterious Chest: take Open it — pick of 3 Ultra items
 Options
-★ Open it 🔮 {fixed by the run seed: this is what happens} — pick of 3 Ultra items
+★ Open it fixed {fixed by the run seed: this is what happens} — pick of 3 Ultra items
 no trap this time
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -11,7 +11,7 @@ summary Mysterious Chest: take Open it — pick of 3 Ultra items
 ⌃ {Hide the drawer} × {Close}
 🎭 Mysterious Chest common Mysterious Chest: take Leave — shop only, no reward · avoid Open it
 Options
-✗ Open it 🔮 {fixed by the run seed: this is what happens} — trap: Garchomp faints, then a Gimmighoul boss fight
+✗ Open it fixed {fixed by the run seed: this is what happens} — trap: Garchomp faints, then a Gimmighoul boss fight
 ⚔ boss · costs Garchomp a revive
 ★ Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -20,12 +20,12 @@ summary Mysterious Chest: take Leave — shop only, no reward · avoid Open it
 ⌃ {Hide the drawer} × {Close}
 🎭 Department Store Sale common Department Store Sale: take Vitamins — pick of 3: 2 vitamins, 1 PP Up
 Options
-· TMs 🔮 {fixed by the run seed: this is what happens} — pick of 5 TMs: 2 Common, 2 Great, 1 Ultra
-★ Vitamins 🔮 {fixed by the run seed: this is what happens} — pick of 3: 2 vitamins, 1 PP Up
+· TMs fixed {fixed by the run seed: this is what happens} — pick of 5 TMs: 2 Common, 2 Great, 1 Ultra
+★ Vitamins fixed {fixed by the run seed: this is what happens} — pick of 3: 2 vitamins, 1 PP Up
 a vitamin is permanent
-· X Items 🔮 {fixed by the run seed: this is what happens} — pick of 5: 4 X items, 1 Dire Hit
+· X Items fixed {fixed by the run seed: this is what happens} — pick of 5: 4 X items, 1 Dire Hit
 one-battle boosts
-· Poké Balls 🔮 {fixed by the run seed: this is what happens} — pick of 4 ball packs: 1 Poké, 1 Great, 1 Ultra, 1 Rogue
+· Poké Balls fixed {fixed by the run seed: this is what happens} — pick of 4 ball packs: 1 Poké, 1 Great, 1 Ultra, 1 Rogue
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Department Store Sale: take Vitamins — pick of 3: 2 vitamins, 1 PP Up
 == fight or flight, thief
@@ -45,7 +45,7 @@ summary Fight or Flight: take Steal — Leftovers (Great tier), no fight, EXP
 Options
 · Battle — fight 2 Volcarona (double, Fire Spin traps your leads, sun, +1 SpD/Spe) → your lead gets a type booster + rewards
 ⚔ double · 2× ~L62 vs your L40, 1 mon hits it SE
-✗ Search 🔮 {fixed by the run seed: this is what happens} — non-Fire mons lose 20% max HP; Jolteon is burned and its ability becomes Heatproof for good
+✗ Search fixed {fixed by the run seed: this is what happens} — non-Fire mons lose 20% max HP; Jolteon is burned and its ability becomes Heatproof for good
 Jolteon loses Volt Absorb
 ★ Fire help — no fight: your lead gets a type booster + rewards, EXP
 by Arcanine
@@ -68,7 +68,7 @@ Options
 ★ Deliver — Jolteon earns $2,424 (Speed); its moves drop to 2 PP
 pick a mon you won't need PP on
 · Warehouse — Garchomp earns $2,244 (HP/Atk/Def); its moves drop to 2 PP
-– Sell — a charmer earns $1,512; its moves drop to 2 PP
+· off Sell — a charmer earns $1,512; its moves drop to 2 PP
 needs a mon with Charm / Attract / Captivate …
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Part-Timer: take Deliver — Jolteon earns $2,424 (Speed); its moves drop to 2 PP
@@ -76,7 +76,7 @@ summary Part-Timer: take Deliver — Jolteon earns $2,424 (Speed); its moves dro
 ⌃ {Hide the drawer} × {Close}
 🎭 Shady Vitamin Dealer common Shady Vitamin Dealer: take Pricey — $2,520: 2 random vitamins on one mon, no side effects · avoid Cheap
 Options
-✗ Cheap 🔮 {fixed by the run seed: this is what happens} — $750: 2 random vitamins on one mon; it loses ½ HP and its nature changes — Garchomp becomes Modest (+SpA −Atk)
+✗ Cheap fixed {fixed by the run seed: this is what happens} — $750: 2 random vitamins on one mon; it loses ½ HP and its nature changes — Garchomp becomes Modest (+SpA −Atk)
 on Garchomp
 ★ Pricey — $2,520: 2 random vitamins on one mon, no side effects
 leaves $17,480
@@ -87,9 +87,9 @@ summary Shady Vitamin Dealer: take Pricey — $2,520: 2 random vitamins on one m
 ⌃ {Hide the drawer} × {Close}
 🎭 Teleporting Hijinks common Teleporting Hijinks: take Machine — free: teleport to Fairy Cave, fight an enraged boss there, EXP
 Options
-· Pay 🔮 {fixed by the run seed: this is what happens} — $950: teleport to Fairy Cave, fight an enraged boss there
+· Pay fixed {fixed by the run seed: this is what happens} — $950: teleport to Fairy Cave, fight an enraged boss there
 ⚔ boss · Fairy Cave is a rare biome
-★ Machine 🔮 {fixed by the run seed: this is what happens} — free: teleport to Fairy Cave, fight an enraged boss there, EXP
+★ Machine fixed {fixed by the run seed: this is what happens} — free: teleport to Fairy Cave, fight an enraged boss there, EXP
 ⚔ boss · by Jolteon · Fairy Cave is a rare biome
 · Inspect — stay: fight a boss here → Magnet / Metal Coat in the rewards
 ⚔ boss
@@ -113,9 +113,9 @@ summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and
 Options
 · Trade — trade: best offer Jolteon → Salamence (final BST +75)
 no clear upgrade
-? Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
 a gamble
-? Item Trade — trade a held item for a random item one tier up
+· Item Trade — trade a held item for a random item one tier up
 · Leave — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Global Trade System: your call
@@ -125,7 +125,7 @@ summary Global Trade System: your call
 Options
 ★ Surf — sail through free, EXP
 by Lapras
-– Fly — fly out free, EXP
+· off Fly — fly out free, EXP
 needs a mon that can learn Fly
 ✗ Wander — every mon loses ¼ max HP (never faints); Jolteon ends low
 a guide costs nothing
@@ -145,9 +145,9 @@ summary The Strong Stuff: take Battle — fight Shuckle (5 bars, +1 Def/SpD, ber
 ⌃ {Hide the drawer} × {Close}
 🎭 Field Trip common Field Trip: not judged
 Options
-? Deal
+· Deal
 $1,010 · Garchomp, Lapras qualify
-? Refuse
+· Refuse
 Notes
 not judged yet: options and requirements only
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -190,9 +190,9 @@ summary Trash to Treasure: take Investigate — fight a Gmax Garbodor boss (6 ba
 Options
 ★ Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
 ⚔ double · Prankster is worth keeping — 2 mons at ~L92 vs your L90, 2 of yours fit to fight
-? Item shuffle — Garchomp's berries and Ultra / Rogue items are rerolled inside their own tiers
+· Item shuffle — Garchomp's berries and Ultra / Rogue items are rerolled inside their own tiers
 same count, different items
-? Type shuffle 🔮 {fixed by the run seed: this is what happens} — every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal
+· Type shuffle fixed {fixed by the run seed: this is what happens} — every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal
 1 member gains STAB on a move it already has
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Clowning Around: take Battle — double vs boss Mr. Mime and boss Blacephalon (Fire / Electric, Prankster; Mr. Mime copies that ability, both Taunt your slots) → rewards, then Prankster onto one of your mons for good
@@ -212,7 +212,7 @@ summary The Expert Pokémon Breeder: take Magikarp — Magikarp fights the breed
 ⌃ {Hide the drawer} × {Close}
 🎭 Dark Deal rogue Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
 Options
-★ Deal 🔮 {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+★ Deal fixed {fixed by the run seed: this is what happens} — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
 ⚔ boss · Jolteon is your weakest link
 · Refuse — shop only, no reward
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -318,9 +318,9 @@ summary Delibird-y: take Money — $1,010: an Amulet Coin
 ⌃ {Hide the drawer} × {Close}
 🎭 Absolute Avarice great Absolute Avarice: take Battle — fight Greedent (3 bars, +1 SpD, Stuff Cheeks on turn 1, eating the 7 berries it took) → rewards, and a Reviver Seed for every mon without one
 Options
-★ Battle 🔮 {fixed by the run seed: this is what happens} — fight Greedent (3 bars, +1 SpD, Stuff Cheeks on turn 1, eating the 7 berries it took) → rewards, and a Reviver Seed for every mon without one
+★ Battle fixed {fixed by the run seed: this is what happens} — fight Greedent (3 bars, +1 SpD, Stuff Cheeks on turn 1, eating the 7 berries it took) → rewards, and a Reviver Seed for every mon without one
 ⚔ boss · ~L35 boss (3 bars) vs your L40, nothing hits it SE · 3 seeds at stake
-· Beg 🔮 {fixed by the run seed: this is what happens} — beg: 2 berries of your 7 come back, random types, the rest are gone
+· Beg fixed {fixed by the run seed: this is what happens} — beg: 2 berries of your 7 come back, random types, the rest are gone
 · Let it eat — let it eat: Greedent joins at L38 with its passive and Thrash / Body Press / Stuff Cheeks / Slack Off; every berry is gone
 a free mon, for every berry you own
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -343,7 +343,7 @@ summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping
 ⌃ {Hide the drawer} × {Close}
 🎭 Bug-Type Superfan great Bug-Type Superfan: take Give — hand over the bug item → a Golden Bug Net (Rogue) + a Reviver Seed, no fight
 Options
-· Battle 🔮 {fixed by the run seed: this is what happens} — fight Bug-Type Superfan → rewards, then a free tutor move: Megahorn, Bug Buzz, Sticky Web & U-turn
+· Battle fixed {fixed by the run seed: this is what happens} — fight Bug-Type Superfan → rewards, then a free tutor move: Megahorn, Bug Buzz, Sticky Web & U-turn
 ⚔ trainer · 3 mons at ~L32 vs your L40, 4 of yours fit to fight
 · Show — show off your bug types (1 bug) → a Super Lure + a Great Ball
 by Scyther · 5 more bugs would make it a Master Ball

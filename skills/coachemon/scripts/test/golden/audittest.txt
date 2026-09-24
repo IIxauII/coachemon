@@ -1,9 +1,9 @@
 == wave 29 whitney
-🎁 Memory Mushroom Minccino relearn Take Down over Helping Hand · +84 power
+★ Memory Mushroom Minccino relearn Take Down over Helping Hand · +84 power
 Others
 · 5× Poké Ball you have 20
 10 issues: Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand); Diglett: no Ground attack (no STAB) (relearn Bulldoze); Diglett L12/Houndour L16/Wiglett L16 trail Fletchinder L23 — lead them on easy waves
-🩺 Team audit
+Team audit
 ✗ Minccino: 1 attack, 3 status moves
 ↺ Memory Mushroom: relearn Take Down over Helping Hand · +84 power
 ✗ Diglett: no Ground attack (no STAB)
@@ -28,9 +28,9 @@ Others
 mushroom Memory Mushroom: 18 Minccino · relearn Take Down over Helping Hand · +84 power | 5× Poké Ball: -4 you have 20
 summary 10 issues: Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand); Diglett: no Ground attack (no STAB) (relearn Bulldoze); Diglett L12/Houndour L16/Wiglett L16 trail Fletchinder L23 — lead them on easy waves
 == wave 164 guzma
-🎁 5× Poké Ball least bad · you have 20
+★ 5× Poké Ball least bad · you have 20
 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
-🩺 Team audit vs W165 Guzma
+Team audit vs W165 Guzma
 ✗ Araquanid (W165) has one answer: Crobat Wing Attack
 ✗ Flygon (W165) has one answer: Dudunsparce Blizzard (70%)
 ✗ only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
@@ -56,9 +56,9 @@ summary 10 issues: Minccino: 1 attack, 3 status moves (relearn Take Down over He
 mushroom 5× Poké Ball: -4 least bad · you have 20
 summary 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack
 == clean
-🎁 5× Poké Ball least bad · you have 20
+★ 5× Poké Ball least bad · you have 20
 1 issue: nothing hits Dark super-effectively
-🩺 Team audit
+Team audit
 · nothing hits Dark super-effectively
 · coverage nothing hits Dark super-effectively
 mushroom 5× Poké Ball: -4 least bad · you have 20

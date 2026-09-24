@@ -70,7 +70,7 @@ export const drawBattle = m => {
   ];
   // `back`: the switch-in is the mon the other slot is withdrawing this same turn, walking straight back in on this
   // one (#285). Named as a return, because the usual tail rendered while the player watches it leave reads as a bug.
-  const enemySwitches = m.enemySwitches.map(es => line("⇆", "#c9f",
+  const enemySwitches = m.enemySwitches.map(es => line("⇄", "#c9f",
     mon(es.from.icon, es.from.name, ICON.mon), h("span", { color: "#c9f", margin: "0 3px" }, "→"),
     mon(es.to.icon, es.to.name, ICON.mon), h("span", { color: "#c9f", marginLeft: "3px" },
       es.back ? "returns from the other slot — moves aimed at it" : "switches — moves aimed at it")));
@@ -106,11 +106,11 @@ export const drawBattle = m => {
       h("span", { color: "#6d6", marginLeft: "3px" }, "in free")) : null,
     // After our KO the trainer sends the best matchup against what we leave out, so the next foe is predictable and
     // the plan already has an answer in front of it (#170 §G).
-    f.nextIn ? line("↪", "#c9f", h("span", { ...dim, marginRight: "3px" }, "next in likely:"),
+    f.nextIn ? line("⤵", "#c9f", h("span", { ...dim, marginRight: "3px" }, "next in likely:"),
       mon(f.nextIn.foe.icon, f.nextIn.foe.name, ICON.mon), h("span", { color: "#c9f", margin: "0 3px" }, "› answer"),
       mon(f.nextIn.answer.icon, f.nextIn.answer.name, ICON.mon)) : null,
     // Doubles: both slots on one foe says why. A split needs no line: the ⚔ targets already show it.
-    f.targeting?.kind === "focus" ? line("◎", "#8cf", h("span", { color: "#8cf", marginRight: "3px" }, "focus"), mon(f.targeting.target.icon, f.targeting.target.name, ICON.ref),
+    f.targeting?.kind === "focus" ? line("·", "#8cf", h("span", { color: "#8cf", marginRight: "3px" }, "focus"), mon(f.targeting.target.icon, f.targeting.target.name, ICON.ref),
       h("span", dim, `: ${f.targeting.note}${f.targeting.pko > 0 && f.targeting.pko < 100 ? ` (${f.targeting.pko}%)` : ""}`)) : null,
     ...f.optional.map(sw => swapLine(sw, "#9aa", "in · optional")),
     f.noSafeSwitch ? noSafeSwitch() : null,
@@ -139,9 +139,9 @@ export const drawBattle = m => {
         STATUS_FRAMES[r.status] ? img("statuses", STATUS_FRAMES[r.status], STATUS_FRAMES[r.status], ICON.mark, null) : null,
         h("span", { flex: "1" }),
         h("span", { color: hpColor(r.hp) }, `${r.hp}%`)),
-      r.traps.length ? line("✦", "#fa4", ...r.traps.map(a => h("span", { color: "#fa4", marginRight: "6px" }, `⚠ ${a}`))) : null,
+      r.traps.length ? line("✦", "#fa4", ...r.traps.map(a => h("span", { color: "#fa4", marginRight: "6px" }, a))) : null,
       line("▲", "#6d6", ...(weak.length ? weak.map(([t, x]) => badge(t, x)) : [h("span", dim, "—")])),
-      avoid.length ? line("✕", "#e55", ...avoid.map(([t, x]) => badge(t, x))) : null,
+      avoid.length ? line("▼", "#e55", ...avoid.map(([t, x]) => badge(t, x))) : null,
       // The enemy's likely move into the pokémon we put in front of it: its damage (% of that mon's HP) once the
       // model carries it, otherwise how likely the AI is to pick it.
       r.likely ? line("↯", "#e77",

@@ -130,6 +130,30 @@ export const dim = { color: "#9aa" };
 // The gutter: one mark's column, a rung and three quarters wide, rather than a width of its own. Exported because a
 // row with a column ahead of the gutter — the fight plan's `now:` / `next:` steps — has to line up with one without.
 export const GUTTER = rung(1.75);
+// ---- The closed alphabet (#349 §7)
+// **The gutter answers exactly one question — *is this good news*** — and what lets it answer without a legend is
+// that the vocabulary is closed. Sixteen marks: the fifteen shapes below, plus *immune*, which is the `×0` case of
+// `▼` and carries no glyph of its own. Beside them stand the four emoji, which keep the gutter but **forfeit its
+// ink**: an emoji is its own colour, so those rows say *this is a thing of a kind* rather than *this is good or bad*.
+//
+// Good news and bad news are told apart by the mark's **shape**, never by its colour, so the column still works for a
+// colour-blind player — which is why the re-maps of §7 all land on shapes that were already mutually distinct.
+//
+// Three things sit outside it, deliberately:
+//   - **Confidence** is a third register — `~` replay, `?` estimate, `!` already wrong this run. A claim's certainty
+//     is not the same question as whether it is good news, so none of the three is ever a gutter mark.
+//   - **Inline connectives** inside prose — `→`, `←`, `›`, `—`, `×`, the fractions — are typography, not marks.
+//     Governing them would have closed the cap on punctuation rather than on meaning.
+//   - **A blank gutter**, which is what a continuation row and a group's own heading row wear: they add to the row
+//     above rather than making a claim of their own, and a section that was a mark is a tab with a label now.
+// Where a re-map would have lied, the mark became a **word** instead: `upgraded`, `shiny`, `rare`, `fixed`, and
+// catch's three reason kinds. A seventeenth mark is the expensive answer; a word costs nothing.
+//
+// Exported for the same reason `GROUP_IDS` is: the set is the contract, and the group-list golden holds every card
+// to it. `line` does not refuse an unknown mark the way `group` refuses an unknown id — a stray glyph is one wrong
+// character on one row, where a stray id would break the tab bar and the view the panel remembers, and a panel that
+// throws mid-draw tells the player less than one that draws the wrong tick.
+export const MARKS = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·", "💀", "👑", "🎲", "🔒"];
 export const line = (label, color, ...kids) => h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" },
   h("span", { color, width: GUTTER, flex: "none" }, label), ...kids);
 export const hpColor = hp => (hp > 50 ? "#6d6" : hp > 20 ? "#ec4" : "#e55");

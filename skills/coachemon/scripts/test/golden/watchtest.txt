@@ -2,7 +2,7 @@
 0 NEW BATTLE w12 wild · fight | Rattata L12 Normal [Run Away] 40/40
 == easy and trainer
 0 NEW BATTLE w12 wild · easy | Rattata L12
-1 NEW BATTLE w13 double Youngster Ben · trainer | Machop L9 Normal [Run Away] 40/40 · Geodude L10 Normal [Run Away] 40/40 | plan: winnable · ☠ Charizard KOs 2/2
+1 NEW BATTLE w13 double Youngster Ben · trainer | Machop L9 Normal [Run Away] 40/40 · Geodude L10 Normal [Run Away] 40/40 | plan: winnable · 💀 Charizard KOs 2/2
 == HUD verdict trails the read
 3 NEW BATTLE w12 wild | Rattata L12 Normal [Run Away] 40/40
 == danger mid-wave

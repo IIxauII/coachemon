@@ -12,7 +12,7 @@ export const drawAudit = a => {
   const MAX = 8;
   // Rows of the audit group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
   // control of its own.
-  const out = [line("🩺", high ? red : amber, h("span", { fontWeight: "bold", marginRight: "3px" }, "Team audit"),
+  const out = [line("", high ? red : amber, h("span", { fontWeight: "bold", marginRight: "3px" }, "Team audit"),
     a.vs ? h("span", dim, `vs W${a.vs.wave} ${a.vs.who}`) : null)];
   for (const f of found.slice(0, MAX)) {
     // A finding's level is the mark and the ink, and that is all it is: the size rung that used to say it a second

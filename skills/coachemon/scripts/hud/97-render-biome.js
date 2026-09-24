@@ -16,7 +16,7 @@ export const drawBiome = m => {
   // out. It is a footnote on how the scores were arrived at, not a supporting line for the call, so it is `notes` —
   // the same place the encounter card puts "not judged yet".
   const fainted = m.fainted
-    ? line("✚", "#9aa", h("span", dim, `judged without ${m.fainted} fainted — no revive at the next heal`)) : null;
+    ? line("⚠", "#9aa", h("span", dim, `judged without ${m.fainted} fainted — no revive at the next heal`)) : null;
   if (!m.options.some(o => o.score != null)) {
     // Nothing scored: an ordinary card with exactly one `act` group, and the shell never special-cases it (§1).
     // There is no judged list yet, so there is nothing for `options` to be.
@@ -29,7 +29,8 @@ export const drawBiome = m => {
   const MARK = { pick: "★", close: "≈", worse: "·" };
   const options = [];
   for (const o of m.options) {
-    if (o.score == null) { options.push(line("?", "#9aa", h("span", dim, `${o.label} — no data`))); continue; }
+    // Confidence is not a gutter mark (90-render's alphabet); the row's own "no data" carries the kind.
+    if (o.score == null) { options.push(line("·", "#9aa", h("span", dim, `${o.label} — no data`))); continue; }
     const color = COLOR[o.verdict];
     const name = h("span", { color, fontWeight: "bold", marginRight: "3px" }, o.label);
     const score = h("span", { color, marginRight: "3px" }, `${o.score}`);
@@ -43,20 +44,22 @@ export const drawBiome = m => {
       options.push(line("·", "#9aa", h("span", dim, `mostly ${o.common.map(([n, pct]) => `${n} ${pct}%`).join(" · ")}`)));
     }
     if (o.trainers) {
-      options.push(line("👤", "#9aa", h("span", dim, `trainers ${o.trainers.pct}%: ${o.trainers.names.join(" · ")}`)));
+      options.push(line("·", "#9aa", h("span", dim, `trainers ${o.trainers.pct}%: ${o.trainers.names.join(" · ")}`)));
     }
     for (const r of o.reasons) {
       // The catch names its species by icon (the name when the sprite isn't loaded) and then only what it's good for.
       options.push(r.catch && o.catch
-        ? line("🎯", "#c9f", h("span", dim, "catch"), mon(o.catch.icon, o.catch.name, ICON.ref), h("span", dim, o.catch.tags.join(" · ")))
+        ? line("★", "#c9f", h("span", dim, "catch"), mon(o.catch.icon, o.catch.name, ICON.ref), h("span", dim, o.catch.tags.join(" · ")))
         : line(r.good ? "✓" : "✗", r.good ? "#6d6" : "#e77", h("span", {}, r.text)));
     }
     if (o.fight && !o.fight.gym && o.fight.foes.length) {
       options.push(line("👑", "#fa4", h("span", dim, `W${o.fight.wave} boss: ${o.fight.foes.map(([n, pct]) => `${n} ${pct}%`).join(" · ")}`)));
     }
     if (o.onward?.length) {
-      options.push(line("→", "#9aa", h("span", dim,
-        o.onward.map(x => `${x.rare ? "★" : ""}${x.name}${x.chance > 1 ? ` (1/${x.chance})` : ""}`).join(" · "))));
+      // `★` means one thing — the pick — so a rare exit is the word `rare`, and the row leads with `onward` where
+      // the arrow used to carry the kind.
+      options.push(line("·", "#9aa", h("span", dim,
+        `onward: ${o.onward.map(x => `${x.rare ? "rare " : ""}${x.name}${x.chance > 1 ? ` (1/${x.chance})` : ""}`).join(" · ")}`)));
     }
   }
   // `options` and `notes` head their panes with their label alone — the biomes themselves say it one glance lower

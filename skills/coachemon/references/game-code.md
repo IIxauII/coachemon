@@ -1377,7 +1377,7 @@ does not. Two consequences. `MysteryEncounterPhase.start` calls `updateSeedOffse
 `optionSelectSettings` guard (`mystery-encounter-phases.ts:55`), so **every re-entry adds another 512** and all three
 forks move with it; and the `encounteredEvents` push and the `selectedOption` write are both inside that guard, so the
 journal records the encounter and its first pick only, never a minigame turn. Both rolls above are on the live stream
-rather than a fork, so a minigame turn is odds and never 🔮. There is no turn limit: a mon leaves only by being caught,
+rather than a fork, so a minigame turn is odds and never `fixed`. There is no turn limit: a mon leaves only by being caught,
 by bolting, or by the player running, which makes the stage pair (catch −6…+6, flee −6…+6, both reset per mon by
 `summonSafariPokemon`) the whole state of a turn — and "throw now" against "set up first" a comparison of played-out
 chances rather than a lookup. An override option is not on `me.options`, so `me.options.indexOf(opt)` is −1 for all of
@@ -1444,7 +1444,7 @@ in play (`:83`). It is part of the save, so it survives a reload. `55-journal.js
 watching the input.
 
 **Measured, in part**: `npm run oracle:encounter` runs the card against the real game headless on upstream's own vitest
-harness in the pinned clone, so the 🔮 claims it covers are checked against what the game then did rather than against a
+harness in the pinned clone, so the seed-fixed claims it covers are checked against what the game then did rather than against a
 mock — the teleport destination, the part-timer's pay, both chest branches, all four store shops, the fallout's burn
 target, the dealer's nature, Bug-Type Superfan's four tutor moves and Absolute Avarice's returned berry count. Read the
 exit code: `0` every case run agrees, `1` a case disagrees and nothing else, `2` no answer — the clone is unprovisioned,
@@ -1453,7 +1453,7 @@ clone raises one unhandled `localStorage` rejection during i18n init, which vite
 cases went — upstream's own encounter tests exit non-zero in that clone for the same reason — so the oracle reads its
 answer from vitest's results and ignores that one known rejection (#296).
 
-**Unmeasured**: every other 🔮 outcome is a replay of the source's draw order, never checked against an encounter as it
+**Unmeasured**: every other seed-fixed outcome is a replay of the source's draw order, never checked against an encounter as it
 resolved. A closure that gains an early `await`, or a draw before the one the HUD replays, makes it confidently wrong.
 The oracle (`npm run oracle:encounter`) arrives at every **common and great** encounter and checks two of the great tier's
 claims outright, but it does not reach the **ultra or rogue** tiers at all — so those rules rest on the source alone,
@@ -1644,7 +1644,7 @@ applies at once and `EvolutionItemModifier.apply` (`src/modifier/modifier.ts:233
 form-change item's filter (`src/modifier/modifier-type.ts:1224`) only checks the species' item trigger; its generator
 (`:1575`, draws) is what checks Mega Bracelet / Dynamax Band access.
 
-**Luck and locking.** Party luck is already on the ⚑ card (§12). A Lock Capsule keeps rarities on a reroll, but its
+**Luck and locking.** Party luck is already in the `road` group (§12). A Lock Capsule keeps rarities on a reroll, but its
 pool weight is 0 in classic (`src/modifier/init-modifier-pools.ts:580`); locked tiers can still be upgraded by luck
 (§19).
 
