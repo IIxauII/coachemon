@@ -4,3 +4,4 @@ node_modules
 extension/.output/
 extension/.wxt/
 .review-receipts/
+.DS_Store
