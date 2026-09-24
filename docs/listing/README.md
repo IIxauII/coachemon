@@ -26,7 +26,15 @@ a filing that no longer matches the artifact is a false statement to a store, no
 Only the screenshots are generated. `render.ts` is deterministic and writes over what is committed; commit the diff,
 it *is* the change.
 
+**Prerequisite: a provisioned pinned clone.** The shots declare the game's own two faces, read out of
+`.cache/pokerogue/v<pin>/assets/fonts` — a fixture page carries none of the game's font rules and would otherwise draw
+the panel in a face nobody plays with (§3, [#349 §12](https://github.com/IIxauII/coachemon/issues/349)). The files are
+rendered into the page and never committed or redistributed. `drift:check` clones the pin; the fonts live in its
+`assets` submodule, which that clone alone does not fill in.
+
 ```sh
+npm run drift:check             # clones .cache/pokerogue/v<pin>
+cd .cache/pokerogue/v<pin> && git submodule update --init --depth 1 assets
 npm run listing:render          # the screenshots (needs Chrome installed)
 ```
 
@@ -44,17 +52,26 @@ The shots are the real HUD — the same `bundle("hud")` the extension ships — 
 stands for. Nothing is captured from a live game: no canvas, no franchise art, no real run (§1.9). Set
 `COACHEMON_CHROME` if Chrome is not at the default macOS path.
 
+Each shot is two documents, which `scripts/listing/page.ts` explains: a **stage** pinned to a game width of 1920,
+where the panel is the 300 px one a player at 1080p sees, and a store-sized **frame** that scales the stage to fill
+it. The panel's footprint follows the viewport, so a shot laid out in the 1280 px frame itself would photograph a
+200 px panel on a rung nobody plays at. `zoom` in `LISTING_ASSETS` is that per-asset factor; a fractional one is
+accepted and softens both pixel faces.
+
 To add a shot, add a fixture to `fixtures.js` and a row to `LISTING_ASSETS`; the test picks it up from the table.
 
-Two artefacts of the fallback path, on purpose rather than by oversight. A name reads twice on the enemy rows
-("Paras **Paras** L34") because the panel draws the icon and then the name, and with no atlas the icon falls back to
-that same name; and a fallback sits flush against the text before it ("CharizardFire"), because two sprites need no
-space between them. Both are what §3 asked for — the shot is the panel as it draws without sprites, not a retouched
-picture of it — and removing them means changing the shipped HUD, which this ticket does not.
+One artefact of the fallback path, on purpose rather than by oversight: a fallback sits flush against the text
+before it — "CharizardFire" on the battle row, "Espeon learnsEspeon" on the learn strip — because two sprites need no
+space between them, and with no atlas both fall back to the name they stand for. It is what §3 asked for — the shot
+is the panel as it draws without sprites, not a retouched picture of it — and removing it means changing the shipped
+HUD, which no listing ticket does.
 
-One more that looks like a framing mistake and is not. The learn shot wraps its header and truncates a line, because
-that is the panel at the 320 px it actually ships at; `zoom` scales the whole card uniformly, so no zoom unwraps it
-and only overriding the width would — which would photograph the panel at a width no player ever sees.
+Its twin is gone with the group layout: the doubled enemy name ("Paras **Paras** L34") was a row of the old whole-card
+view, and the drawer these shots open on is `act`, which draws no enemy rows. Open the shots on `foes` and it is back.
+
+One more that looks like a framing mistake and is not. The learn shot truncates a line, because that is the panel at
+the 300 px it actually ships at; the frame's factor scales the whole card uniformly, so no factor unwraps a line and
+only overriding the width would — which would photograph the panel at a width no player ever sees.
 
 The promo tiles are not shots any more. They used to be: both were the panel at whatever zoom fitted, and the
 small one had to sit at `zoom: 1` because 320 × 1.4 already overflowed a 440 px frame, so it read as a cropped card

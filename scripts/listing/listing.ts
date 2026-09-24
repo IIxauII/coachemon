@@ -5,7 +5,8 @@
  * `render.ts` draws and `src/listing.test.ts` checks.
  *
  * Artwork never ships (§1.9): every asset here is either the mark, drawn in the design project and copied in, or a
- * fixture render of the HUD on a neutral background. No game canvas, no capture of a real run.
+ * fixture render of the HUD on the game's own letterbox colour. No game canvas, no franchise art, no capture of a
+ * real run.
  */
 import { fileURLToPath } from "node:url";
 
@@ -28,7 +29,8 @@ export const KEYWORDS = ["coach", "overlay", "turn advice", "battle helper", "ro
  * have leaves the panel unmounted, and a blank shot is still a PNG of the right size, so nothing downstream notices. */
 export type Fixture = "battle" | "learn" | "rewards";
 
-/** The fixture a shot renders from. The panel has one fidelity, so there is no view to pick. */
+/** The fixture a shot renders from, and the factor the stage it stands on is scaled by. The panel has one fidelity,
+ * so there is no view to pick. */
 export type Shot = { fixture: Fixture; zoom: number };
 
 export type ListingAsset = {
@@ -46,16 +48,18 @@ export type ListingAsset = {
 
 /**
  * Sizes are the stores' own: CWS screenshots are 1280×800, its small promo tile 440×280 and its marquee 1400×560;
- * AMO takes any size and reuses the same screenshots. `zoom` is the CSS zoom the panel is drawn at, picked so the
- * card fills the frame without cropping — a 320 px panel is unreadable at 1280 px wide otherwise.
+ * AMO takes any size and reuses the same screenshots. `zoom` is the factor the *stage* is scaled by, picked so the
+ * card fills the frame without cropping — the panel is laid out at a pinned game width of 1920, where it is 300 px
+ * wide, and 300 px is unreadable in a 1280 px frame otherwise (`page.ts`, #349 §12). A fractional factor is accepted
+ * and softens both pixel faces, so a whole one is worth keeping where one fits.
  */
 export const LISTING_ASSETS: ListingAsset[] = [
   { file: "assets/screenshot-battle.png", width: 1280, height: 800, what: "CWS and AMO screenshot 1",
-    shot: { fixture: "battle", zoom: 2 } },
+    shot: { fixture: "battle", zoom: 3 } },
   { file: "assets/screenshot-learn.png", width: 1280, height: 800, what: "CWS and AMO screenshot 2",
-    shot: { fixture: "learn", zoom: 2 } },
+    shot: { fixture: "learn", zoom: 3 } },
   { file: "assets/screenshot-rewards.png", width: 1280, height: 800, what: "CWS and AMO screenshot 3",
-    shot: { fixture: "rewards", zoom: 2 } },
+    shot: { fixture: "rewards", zoom: 3 } },
   // Both tiles are the mark set beside the wordmark, drawn in the design project rather than here — see
   // `docs/listing/README.md`. They carry no `shot` on purpose: one would make `render.ts` photograph the panel over
   // the top of them on the next redraw, which is how the panel ended up on a branding tile in the first place.
