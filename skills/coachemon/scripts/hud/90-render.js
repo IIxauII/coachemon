@@ -182,18 +182,25 @@ export const closeButton = () => {
   n.addEventListener("click", e => { e.stopPropagation(); setClosed(true); });
   return n;
 };
+// The control floats in the panel's corner rather than sitting on a line, so whatever the panel draws first has to
+// leave room for it — the act summary otherwise, which is the widest run the model produces, runs under the ×. The
+// shell applies this to its own first line: no renderer knows the control is there.
+export const reserveForControl = node => {
+  if (node) node.style.paddingRight = "18px";
+  return node;
+};
 // What a dismissed panel leaves behind, and the only way back. Named for what it is rather than for a tab, because
 // the drawer's tab bar takes that word in #357.
-export const glyph = (emoji, icon) => {
-  const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, emoji, icon);
+export const glyph = emoji => {
+  const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, emoji);
   n.title = "Open coach";
   n.addEventListener("click", e => { e.stopPropagation(); setClosed(false); });
   return n;
 };
-// The card's own header line: what the card is about, and whatever the kind puts on the right of it. It is a row
-// like any other — the panel's control is the shell's and sits in the panel's corner, so the line reserves room for
-// it and nothing else. The strip takes this line in #356.
-export const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold", paddingRight: "18px" },
+// The card's own header line: what the card is about, and whatever the kind puts on the right of it. A row like any
+// other — it reserves nothing for the panel's control, because the control is the shell's and the shell reserves
+// its own room. The strip takes this line in #356.
+export const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" },
   emoji, title, h("span", { flex: "1" }), ...right);
 
 export const el = document.createElement("div");

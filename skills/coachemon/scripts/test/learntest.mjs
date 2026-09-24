@@ -52,11 +52,12 @@ const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) 
   const model = learnModel({ ...learnState(scene), roster });
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");
   const txt = n => typeof n === "string" ? n : n.children.map(txt).join(" ");
-  // The card as the shell draws it, less the panel's own close control and the card's header bar: both are chrome —
-  // the control is the shell's and the header is the card's identity — and the strip takes the header in #356. What
-  // leads the card now is the `act` heading, which is the call the card came to (#352), so it stays where the
-  // verdict row used to close the card.
-  const [, head, , ...rest] = el.kids;
+  // The card as the shell draws it, less the panel's own close control — dropped by name, so a shell that reorders
+  // its chrome doesn't silently eat a row — and less the card's header bar: both are chrome, the control the
+  // shell's and the header the card's identity, and the strip takes the header in #356. What leads the card now is
+  // the `act` heading, which is the call the card came to (#352), so it stays where the verdict row used to close
+  // the card.
+  const [head, , ...rest] = el.kids.filter(k => k.title !== "Close");
   return { model, text: [head, ...rest].map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
 };
 const show = (label, r) => console.log(`== ${label}\n${r.text}`);

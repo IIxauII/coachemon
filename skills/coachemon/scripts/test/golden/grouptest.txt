@@ -154,7 +154,7 @@ options | Fusions | —
     Dragon Ground loses Ice
 notes | Notes | —
     Spliced Endless: unfused mons run on half their base stats
-== biome · swamp over construction site
+== biome · swamp over construction site, one fainted
 act | Now | Swamp 72 pick — Garchomp resists · Construction Site 55
     🗺 Next biome from Slum
 options | Biomes | —
@@ -163,6 +163,15 @@ options | Biomes | —
     ✓ Garchomp resists
     · Construction Site Water 40% Poison 30% 55
     ✗ Lapras weak
+notes | Notes | —
+    ✚ judged without 1 fainted — no revive at the next heal
+== biome · nobody fainted
+act | Now | Swamp 72 pick — Garchomp resists
+    🗺 Next biome from Slum
+options | Biomes | —
+    ★ Swamp Water 40% Poison 30% 72
+    · mostly Wooper 22%
+    ✓ Garchomp resists
 == biome · no spawn data yet
 act | Now | Swamp · Construction Site
     🗺 Next biome

@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, closeButton, closed, disclaimer, drawGroups, dropGame, el, glyph, missedSprite, setDraw, setRedraw } from "./90-render.js";
+import { battleScene, clearMissed, closeButton, closed, disclaimer, drawGroups, dropGame, el, glyph, missedSprite, reserveForControl, setDraw, setRedraw } from "./90-render.js";
 import { drawBattle } from "./96-render-battle.js";
 import { drawEncounter } from "./96-render-encounter.js";
 import { drawFusion } from "./96-render-fusion.js";
@@ -14,14 +14,31 @@ import { drawRewards } from "./96-render-rewards.js";
 import { drawStarters } from "./96-render-starters.js";
 import { drawBiome } from "./97-render-biome.js";
 
-// A renderer's product is an ordered list of groups (#349 §1) — every kind's, now that the last four have followed,
-// so the adapter that presented a node tree as one whole-card group is gone and with it everything it kept alive.
-const DRAW = { learn: drawLearn, rewards: drawRewards, battle: drawBattle, biome: drawBiome,
-  encounter: drawEncounter, starters: drawStarters, fusion: drawFusion };
-// The glyph a dismissed panel leaves behind, per kind. It is the shell's, not a card's: a renderer returns groups
-// and knows nothing about what a view is (#349 §2), so no card draws its own way back any more. #358 makes it a
-// bare glyph that carries nothing live at all.
-const GLYPH = { learn: "🎓", rewards: "🛒", battle: "🎯", biome: "🗺", encounter: "🎭", starters: "🌱", fusion: "🧬" };
+// What the shell needs per kind: the renderer that turns one card into groups (#349 §1) — every kind's, now that
+// the last four have followed, so the adapter that presented a node tree as one whole-card group is gone and with
+// it everything it kept alive — and the glyph a dismissal leaves behind. The glyph is the shell's and not a card's:
+// a renderer returns groups and knows nothing about what a view is (#349 §2), so no card draws its own way back any
+// more, and the mon icon and pick label one used to carry are gone with them. What is left is the kind's own emoji;
+// #358 takes that too, for one glyph that is the same every wave. One table, so a new kind is one entry.
+const KIND = {
+  battle: { draw: drawBattle, glyph: "🎯" },
+  rewards: { draw: drawRewards, glyph: "🛒" },
+  learn: { draw: drawLearn, glyph: "🎓" },
+  encounter: { draw: drawEncounter, glyph: "🎭" },
+  starters: { draw: drawStarters, glyph: "🌱" },
+  fusion: { draw: drawFusion, glyph: "🧬" },
+  biome: { draw: drawBiome, glyph: "🗺" },
+};
+
+// The panel as the shell shells it: its own control, the card's groups as a plain stack with one rule between
+// them, and the disclaimer footer. The control floats in the panel's corner, so the shell leaves it room on the
+// first line it draws — no renderer knows the control is there. The tab bar and the pane come with the drawer
+// (#357), and the strip with #356.
+const open = card => {
+  const rows = drawGroups(KIND[card.kind].draw(card));
+  reserveForControl(rows[0]);
+  return [closeButton(), ...rows, disclaimer()];
+};
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
@@ -34,7 +51,7 @@ export const lastFailure = () => failure;
 // The render layer derives a card's text from its groups through this, so `cardText` never has to know which draw
 // goes with which kind — that stays here (§11.1). The disclaimer is not in it: that is the panel's footer, not a
 // card's.
-setDraw(card => (DRAW[card.kind] ? DRAW[card.kind](card) : null));
+setDraw(card => (KIND[card.kind] ? KIND[card.kind].draw(card) : null));
 
 // The **account read**: what the run has caught and unlocked, plus the party it would join and the event's shiny
 // multiplier. It is not turn state — the catch card weighs a throw by it, and the Mystery Encounter card weighs a
@@ -87,13 +104,9 @@ export const tick = () => {
     el.style.width = closed() ? "auto" : "300px";
     if (sig !== last) {
       clearMissed();
-      // The panel carries the disclaimer as its footer line (§3); it is the panel's, so no card draws it. So is the
-      // close control and the glyph that brings the panel back — controls are the shell's, never a row's (§5).
-      // The shell shells the groups: for now a plain stack, one rule between them. The tab bar and the pane come
-      // with the drawer (#357), and the strip with #356.
-      el.replaceChildren(...(closed()
-        ? [glyph(GLYPH[card.kind] ?? "🎯", null)]
-        : [closeButton(), ...drawGroups(DRAW[card.kind](card)), disclaimer()]));
+      // The disclaimer, the close control and the glyph that brings the panel back are all the panel's own, so no
+      // card draws any of them — controls are the shell's, never a row's (§5).
+      el.replaceChildren(...(closed() ? [glyph(KIND[card.kind].glyph)] : open(card)));
       // Icon atlases load lazily; redraw next tick until every sprite is in.
       last = missedSprite() ? "" : sig;
     }

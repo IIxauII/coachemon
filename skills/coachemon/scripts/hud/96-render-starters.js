@@ -43,12 +43,13 @@ export const drawStarters = m => {
       h("span", { ...dim, marginLeft: "3px" }, `${ptsText(v.cost)} pts · #${v.rank} of ${v.of}${v.inPick ? ` · in ${v.inPick}` : ""}`),
       h("span", { flex: "1" }), h("span", { color: "#9aa", fontSize: FS.tiny }, v.why.join(" · "))));
   }
-  const notes = [m.fresh ? "Fresh Start: no passives, egg moves or luck" : null, m.mono ? "single type: shared weaknesses not counted" : null,
+  // Every caveat on one row, joined — unlike the encounter card's, which are a row apiece because each is its own note.
+  const noteText = [m.fresh ? "Fresh Start: no passives, egg moves or luck" : null, m.mono ? "single type: shared weaknesses not counted" : null,
     m.inverse ? "Inverse Battle: coverage inverted" : null, m.data ? null : "final forms estimated until the game's tables load"].filter(Boolean);
   // `options` and `notes` head their panes with their label alone — the proposals themselves say it one glance lower (§6).
   return [
     some("act", "Now", startersSummary(m), [header, chosen]),
     some("options", "Proposals", null, options),
-    some("notes", "Notes", null, notes.length ? [line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, notes.join(" · ")))] : []),
+    some("notes", "Notes", null, noteText.length ? [line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, noteText.join(" · ")))] : []),
   ].filter(Boolean);
 };

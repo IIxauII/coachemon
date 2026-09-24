@@ -10,7 +10,9 @@ import { FS, badge, bar, dim, group, h, line, mon, some } from "./90-render.js";
 export const drawBiome = m => {
   // The header is the card's own identity line; the strip takes it in #356.
   const header = bar("🗺", "Next biome", m.from ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, `from ${m.from}`) : null);
-  // Under Hardcore or a no-heal Limited Support the fainted don't come back at the X1 heal: say who the card left out.
+  // Under Hardcore or a no-heal Limited Support the fainted don't come back at the X1 heal: say who the card left
+  // out. It is a footnote on how the scores were arrived at, not a supporting line for the call, so it is `notes` —
+  // the same place the encounter card puts "not judged yet".
   const fainted = m.fainted
     ? line("✚", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, `judged without ${m.fainted} fainted — no revive at the next heal`)) : null;
   if (!m.options.some(o => o.score != null)) {
@@ -31,6 +33,8 @@ export const drawBiome = m => {
     const score = h("span", { color, marginRight: "3px" }, `${o.score}`);
     score.title = `offense ${o.offense} · defense ${o.defense} · catches ${o.opportunity} · big fight ${o.bossFit}`;
     // A rule between one biome and the next; the boundary above the first is `act`'s, which the shell draws (§1).
+    // Keyed on what is already in the group rather than on the loop index, because an unscored option above this
+    // one has pushed a row of its own and this is no longer the first thing in the pane.
     options.push(h("div", options.length ? { marginTop: "4px", paddingTop: "3px", borderTop: "1px solid rgba(255,255,255,.12)" } : {},
       line(MARK[o.verdict], color, name, h("span", { flex: "1" }), ...o.mix.map(([t, pct]) => badge(t, `${pct}%`)), score)));
     if (o.common?.length) {
@@ -53,9 +57,13 @@ export const drawBiome = m => {
         o.onward.map(x => `${x.rare ? "★" : ""}${x.name}${x.chance > 1 ? ` (1/${x.chance})` : ""}`).join(" · "))));
     }
   }
-  // `options` heads its pane with its label alone — the biomes themselves say it one glance lower (§6).
+  // `options` and `notes` head their panes with their label alone — the biomes themselves say it one glance lower
+  // (§6) — and `notes` isn't drawn at all on the ordinary card that has no footnote to make.
+  // `act.summary` is the model's line over the offered biomes, so it is never empty on a card the game produced:
+  // an option list is what the biome screen is.
   return [
-    some("act", "Now", biomeSummary(m), [header, fainted]),
+    some("act", "Now", biomeSummary(m), [header]),
     some("options", "Biomes", null, options),
+    some("notes", "Notes", null, [fainted]),
   ].filter(Boolean);
 };

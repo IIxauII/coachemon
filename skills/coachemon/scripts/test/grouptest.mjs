@@ -337,17 +337,26 @@ const fusionRow = (over = {}) => ({ base: { icon: null, name: "Garchomp" }, othe
   assert.ok(cardText(card).endsWith("\nNotes\nSpliced Endless: unfused mons run on half their base stats"), cardText(card));
 }
 
-// Biome: the offered biomes are `options`.
+// Biome: the offered biomes are `options`, and a caveat on how they were judged is `notes`.
 const biomeOption = (over = {}) => ({ label: "Swamp", id: 1, score: 72, offense: 30, defense: 20, opportunity: 12, bossFit: 10,
   verdict: "pick", mix: [["Water", 40], ["Poison", 30]], common: [["Wooper", 22]], trainers: null,
   reasons: [{ good: true, text: "Garchomp resists" }], catch: null, fight: null, onward: [], ...over });
 {
-  const card = { kind: "biome", wave: 30, from: "Slum", pick: 0, data: true, trainers: true, fainted: 0,
+  const card = { kind: "biome", wave: 30, from: "Slum", pick: 0, data: true, trainers: true, fainted: 1,
     options: [biomeOption(), biomeOption({ label: "Construction Site", id: 2, score: 55, verdict: "worse", common: [], reasons: [{ good: false, text: "Lapras weak" }] })] };
-  const groups = show("biome · swamp over construction site", card, drawBiome);
-  assert.deepEqual(groups.map(g => g.id), ["act", "options"]);
+  const groups = show("biome · swamp over construction site, one fainted", card, drawBiome);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
   assert.equal(groups[0].summary, "Swamp 72 pick — Garchomp resists · Construction Site 55");
   assert.ok(cardText(card).includes("\nBiomes\n★ Swamp"), cardText(card));
+  // Who the judging left out is a footnote, not a supporting line for the call.
+  assert.ok(cardText(card).endsWith("\nNotes\n✚ judged without 1 fainted — no revive at the next heal"), cardText(card));
+}
+
+// Nothing to footnote: the `notes` group is not drawn at all, the same as any group with nothing in it.
+{
+  const groups = show("biome · nobody fainted", { kind: "biome", wave: 30, from: "Slum", pick: 0, data: true, trainers: true, fainted: 0,
+    options: [biomeOption()] }, drawBiome);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options"]);
 }
 
 // A biome with no scores: an ordinary card with exactly one `act` group, the same as starters with nothing to add.
