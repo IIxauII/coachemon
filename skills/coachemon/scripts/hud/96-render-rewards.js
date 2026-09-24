@@ -5,7 +5,7 @@
 import { auditSummary } from "./50-audit.js";
 import { rewardsSummary } from "./52-shop.js";
 import { roadSummary } from "./60-card.js";
-import { bar, dim, h, itemImg, line, mon, sep, some } from "./90-render.js";
+import { bar, dim, h, ICON, itemImg, line, mon, sep, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawAudit } from "./95-render-audit.js";
 import { drawPreview } from "./95-render-preview.js";
@@ -19,7 +19,7 @@ export const drawRewards = m => {
   const buyRows = m.buys.length
     ? m.buys.map(b => line("💰", "#ec4", itemImg(b.icon, b.name),
         h("span", { fontWeight: "bold" }, b.name), h("span", { ...dim, marginLeft: "4px" }, `$${b.cost}`),
-        h("span", { flex: "1" }), mon(b.target, b.targetName, 20), h("span", dim, b.why)))
+        h("span", { flex: "1" }), mon(b.target, b.targetName, ICON.mon), h("span", dim, b.why)))
     : [];
   // A TM names its best recipient by icon and the move it replaces, instead of the "TM for X (over Y)" text, plus the
   // effective power it gains. Other options' rows use it too, in the dim ink that tells them from the pick.
@@ -32,14 +32,14 @@ export const drawRewards = m => {
     // The recipient the TM could never have been drawn for: a Memory Mushroom would teach it the same move, so the
     // TM is one of two routes rather than the only one. Not a reason to skip it — the Mushroom costs a slot too.
     const relearn = (f.relearn ?? []).includes(b.name) ? " · or a Memory Mushroom" : "";
-    return [mon(b.icon, b.name, 20), h("span", style, `${b.fainted ? "(fainted) " : ""}${what}${gain}${relearn}`)];
+    return [mon(b.icon, b.name, ICON.mon), h("span", style, `${b.fainted ? "(fainted) " : ""}${what}${gain}${relearn}`)];
   };
   // A held item, mint, vitamin or candy names the member it should go to by icon, ahead of its reason — which then
   // drops the "<name> · " it opens with.
   const heldTo = (f, style = dim) => {
     if (!f.holder) return null;
     const lead = `${f.holder.name} · `;
-    return [mon(f.holder.icon, f.holder.name, 20), h("span", style, f.why.startsWith(lead) ? f.why.slice(lead.length) : f.why)];
+    return [mon(f.holder.icon, f.holder.name, ICON.mon), h("span", style, f.why.startsWith(lead) ? f.why.slice(lead.length) : f.why)];
   };
   const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? heldTo(p) ?? h("span", dim, p.why)) : null;

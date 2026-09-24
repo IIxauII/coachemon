@@ -5,7 +5,7 @@
 // and *Viewing* are a row apiece, and neither earns a group of its own. The call is `act.summary`, read off the
 // model and never written here (§6).
 import { ptsText, startersSummary } from "./51-starters.js";
-import { bar, dim, group, h, line, mon, sep, some } from "./90-render.js";
+import { bar, dim, group, h, ICON, line, mon, sep, some } from "./90-render.js";
 
 export const drawStarters = m => {
   const best = m.picks[0];
@@ -13,7 +13,7 @@ export const drawStarters = m => {
   const header = bar("🌱", "Starters", h("span", { ...dim, fontWeight: "normal" }, `${ptsText(m.spent)}/${m.limit} pts`));
   const ROLE = { carry: "#8cf", support: "#c9f" };
   const chosen = m.chosen.length
-    ? line("✓", "#6d6", h("span", { ...dim, marginRight: "3px" }, "picked:"), ...m.chosen.map(x => mon(x.icon, x.name, 20)),
+    ? line("✓", "#6d6", h("span", { ...dim, marginRight: "3px" }, "picked:"), ...m.chosen.map(x => mon(x.icon, x.name, ICON.mon)),
         m.full ? h("span", dim, "· team full") : m.room <= 0 ? h("span", dim, "· no points left") : null)
     : null;
   // Nothing to propose: an ordinary card with exactly one `act` group, and the shell never special-cases it (§1).
@@ -29,7 +29,7 @@ export const drawStarters = m => {
     options.push(i ? h("div", sep) : null,
       line(i ? "·" : "★", i ? "#9aa" : "#6d6", h("span", { fontWeight: "bold" }, t.label), ...teamTail(t)));
     for (const x of t.members) {
-      options.push(line("", "#9aa", mon(x.icon, x.name, 20),
+      options.push(line("", "#9aa", mon(x.icon, x.name, ICON.mon),
         h("span", x.chosen ? dim : { fontWeight: "bold" }, x.name), x.chosen ? h("span", { color: "#6d6", marginLeft: "2px" }, "✓") : null,
         h("span", { ...dim, marginLeft: "3px" }, `${ptsText(x.cost)}`),
         x.role ? h("span", { color: ROLE[x.role], marginLeft: "3px" }, x.role) : null,
@@ -39,7 +39,7 @@ export const drawStarters = m => {
   });
   const v = m.viewing;
   if (v) {
-    options.push(h("div", sep), line("👁", "#9aa", mon(v.icon, v.name, 20), h("span", {}, v.name),
+    options.push(h("div", sep), line("👁", "#9aa", mon(v.icon, v.name, ICON.mon), h("span", {}, v.name),
       h("span", { ...dim, marginLeft: "3px" }, `${ptsText(v.cost)} pts · #${v.rank} of ${v.of}${v.inPick ? ` · in ${v.inPick}` : ""}`),
       h("span", { flex: "1" }), h("span", dim, v.why.join(" · "))));
   }

@@ -4,15 +4,15 @@
 // `options` is up to three fusions in pick order (base ← the half it takes in) with their score and reasons. The
 // call line has left the rows: `act.summary` carries it, read off the model and never written here (§6).
 import { fusionSummary, signed } from "./49-fusion.js";
-import { badge, bar, dim, h, line, mon, sep, some } from "./90-render.js";
+import { badge, bar, dim, h, ICON, line, mon, sep, some } from "./90-render.js";
 
 export const drawFusion = m => {
   // The header is the card's own identity line; the strip takes it in #356.
-  const header = bar("🧬", "Splice", m.picked ? mon(m.picked.icon, m.picked.name, 20) : null,
+  const header = bar("🧬", "Splice", m.picked ? mon(m.picked.icon, m.picked.name, ICON.mon) : null,
     m.picked ? h("span", { ...dim, fontWeight: "normal" }, "with") : null);
   const row = (f, i) => line(i ? "·" : f.fuse ? "★" : "·", i ? "#9aa" : f.fuse ? "#6d6" : "#9aa",
-    mon(f.base.icon, f.base.name, 20), h("span", { fontWeight: "bold" }, f.base.name),
-    h("span", { ...dim, margin: "0 3px" }, "←"), mon(f.other.icon, f.other.name, 20), h("span", {}, f.other.name),
+    mon(f.base.icon, f.base.name, ICON.mon), h("span", { fontWeight: "bold" }, f.base.name),
+    h("span", { ...dim, margin: "0 3px" }, "←"), mon(f.other.icon, f.other.name, ICON.mon), h("span", {}, f.other.name),
     h("span", { flex: "1" }),
     h("span", { color: f.fuse ? "#6d6" : "#9aa", marginLeft: "4px" }, signed(f.value)));
   const detail = f => line("", "#9aa", ...f.types.map(t => badge(t)),

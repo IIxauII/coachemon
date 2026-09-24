@@ -2,7 +2,7 @@
 // never at load time. Takes the `teamPlan` view, or a battle model carrying it as `teamPlan`.
 // The whole plan, always: the enemy win condition, who to reserve for it, sacrifices, the step order and the
 // warnings. Doubles: the plan is worked out one-on-one, so its steps are approximate.
-import { badge, dim, h, line, mon } from "./90-render.js";
+import { badge, dim, h, ICON, line, mon } from "./90-render.js";
 
 export const drawTeamPlan = m => {
   const tp = m?.steps ? m : m?.teamPlan;
@@ -17,33 +17,33 @@ export const drawTeamPlan = m => {
       h("span", { color: lost ? red : "#6d6" }, lost ? "likely lost" : "winnable")),
   ];
   if (tp.win) {
-    out.push(line("☠", red, mon(tp.win.icon, tp.win.name, 22), h("span", { fontWeight: "bold", marginLeft: "2px" }, tp.win.name),
+    out.push(line("☠", red, mon(tp.win.icon, tp.win.name, ICON.mon), h("span", { fontWeight: "bold", marginLeft: "2px" }, tp.win.name),
       tp.win.boss ? "👑" : null, h("span", { flex: "1" }), h("span", dim, `KOs ${tp.win.kills}/${tp.win.of} · win condition`)));
   }
   for (const r of tp.reserve) {
-    out.push(line("🛡", "#6d6", mon(r.icon, r.name, 20), h("span", { ...dim, margin: "0 3px" }, "save for"), mon(r.for.icon, r.for.name, 18),
+    out.push(line("🛡", "#6d6", mon(r.icon, r.name, ICON.mon), h("span", { ...dim, margin: "0 3px" }, "save for"), mon(r.for.icon, r.for.name, ICON.ref),
       h("span", { flex: "1" }), h("span", r.acts ? dim : { color: amber }, `~${r.per}%/turn${r.acts ? "" : " · KO'd first"}`)));
   }
   // Foes still to come that only one of ours beats: the ⚔ line prices spending it, this says who and for what.
   for (const r of tp.only ?? []) {
-    out.push(line("🔒", "#6d6", mon(r.icon, r.name, 20), h("span", { ...dim, margin: "0 3px" }, "only answer to"),
-      ...r.for.flatMap((f, i) => [i ? h("span", dim, ",") : null, mon(f.icon, f.name, 18)]),
+    out.push(line("🔒", "#6d6", mon(r.icon, r.name, ICON.mon), h("span", { ...dim, margin: "0 3px" }, "only answer to"),
+      ...r.for.flatMap((f, i) => [i ? h("span", dim, ",") : null, mon(f.icon, f.name, ICON.ref)]),
       h("span", { flex: "1" }), h("span", r.acts ? dim : { color: amber }, `~${r.per}%/turn${r.acts ? "" : " · KO'd first"}`)));
   }
   tp.steps.forEach((st, i) => {
     const tag = entryTag[st.entry];
     out.push(line(`${approx ? "~" : ""}${i + 1}`, "#8cf",
-      mon(st.send.icon, st.send.name, 20),
+      mon(st.send.icon, st.send.name, ICON.mon),
       tag ? h("span", { color: tag[1], marginRight: "2px" }, tag[0]) : null,
       ...(st.move ? [st.type ? badge(st.type) : null, h("span", { marginRight: "2px" }, st.move)] : [h("span", dim, "—")]),
-      h("span", dim, "→"), mon(st.vs.icon, st.vs.name, 18),
+      h("span", dim, "→"), mon(st.vs.icon, st.vs.name, ICON.ref),
       h("span", { flex: "1" }),
       h("span", st.sacrifice ? { color: amber } : dim, st.why),
       st.notes?.length ? h("span", { ...dim, marginLeft: "4px" }, st.notes.join(" · ")) : null));
   });
   for (const x of tp.sacrifice) {
-    out.push(line("✝", amber, mon(x.icon, x.name, 20), h("span", { color: amber, margin: "0 3px" }, `${x.hp}% · sacrifice to`),
-      mon(x.vs.icon, x.vs.name, 18), h("span", { ...dim, margin: "0 3px" }, "so"), mon(x.frees.icon, x.frees.name, 18),
+    out.push(line("✝", amber, mon(x.icon, x.name, ICON.mon), h("span", { color: amber, margin: "0 3px" }, `${x.hp}% · sacrifice to`),
+      mon(x.vs.icon, x.vs.name, ICON.ref), h("span", { ...dim, margin: "0 3px" }, "so"), mon(x.frees.icon, x.frees.name, ICON.ref),
       h("span", dim, "comes in free")));
   }
   // The plan's own preferred turn, priced, when it is clearly better than the one the ⚔ line chose (#113). One line,

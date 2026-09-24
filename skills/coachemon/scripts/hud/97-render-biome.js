@@ -5,7 +5,7 @@
 // met, every reason (the gym leader ahead among them), the best catch, the wild boss on the tenth wave and where the
 // biome leads next. The call is `act.summary`, read off the model and never written here (§6).
 import { biomeSummary } from "./47-biome.js";
-import { badge, bar, dim, group, h, line, mon, some } from "./90-render.js";
+import { badge, bar, dim, group, h, ICON, line, mon, some } from "./90-render.js";
 
 export const drawBiome = m => {
   // The header is the card's own identity line; the strip takes it in #356.
@@ -46,7 +46,7 @@ export const drawBiome = m => {
     for (const r of o.reasons) {
       // The catch names its species by icon (the name when the sprite isn't loaded) and then only what it's good for.
       options.push(r.catch && o.catch
-        ? line("🎯", "#c9f", h("span", dim, "catch"), mon(o.catch.icon, o.catch.name, 18), h("span", dim, o.catch.tags.join(" · ")))
+        ? line("🎯", "#c9f", h("span", dim, "catch"), mon(o.catch.icon, o.catch.name, ICON.ref), h("span", dim, o.catch.tags.join(" · ")))
         : line(r.good ? "✓" : "✗", r.good ? "#6d6" : "#e77", h("span", {}, r.text)));
     }
     if (o.fight && !o.fight.gym && o.fight.foes.length) {

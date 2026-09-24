@@ -42,6 +42,46 @@ const sprite = (key, frame) => {
 // It never names itself either: no mark, no wordmark, nowhere.
 export const SKIN = { fill: "#362d3e", body: "#f8f8f8", rule: "#f8b050", shadow: "#181818" };
 
+// ---- The footprint and the type ladder (#349 §4)
+// The panel is a constant fraction of the game rather than a pixel width against a canvas that scales, so it covers
+// the same share of the field at every window shape. The canvas is a fitted 1920×1080, so the game's drawn width is
+// reproducible in pure CSS — no canvas rect read, no resize observer, neither of which the repo has or gains.
+// Position stays the viewport's top-left: off 16:9 that corner *is* the game's own letterbox bar, so the panel
+// occludes nothing there for free and does not relocate when the player resizes.
+// The knob is a JS constant inlined into every length rather than a CSS custom property: the only API that puts a
+// custom property on an element is the very one §10's no-motion guard bans, and the panel injects no stylesheet.
+const GAME_W = "min(100vw, 177.78vh)";
+// The **row rung**: the game's own dense face at 8px on its own 1920 canvas, doubling where the rounding flips — game
+// width 2880 and 4800 — and held between 8px and 24px, so every ordinary window sits on the game's own rung.
+// `8 × round(game-w / 1920)` is the same number as `round(game-w / 240, 8px)`, which is what CSS can say without
+// dividing a length by a length.
+const ROWS = `clamp(8px, round(${GAME_W} / 240, 8px), 24px)`;
+// Chrome is twice the rows — the game's own density rule, taken off the window rather than invented here.
+const CHROME = `calc(2 * ${ROWS})`;
+// n rungs of that ladder, as a CSS length. **One knob now scales the panel, not its text**: every width and sprite
+// height below is a rung count, so a size change is one edit rather than a dozen independent literals. Exported,
+// because a row's own columns are on the same ladder and a renderer must be able to say so.
+export const rung = n => `calc(${n} * ${ROWS})`;
+
+// The panel's **width**: 0.156 of the game — 300px at a 1920 game — clamped to 0.75×–1.5× of that reference. Below
+// the floor legibility stops paying for proportion; above the ceiling, which binds at game width 2880, a crisp panel
+// stops reading as part of upscaled pixel art. Past 2880 the ladder and this clamp deliberately part company: the
+// type keeps climbing in a box that has stopped growing, so a pane's capacity roughly halves and a tall pane scrolls.
+const SHARE = 0.156;
+const REF_W = SHARE * 1920;
+export const PANEL_W = `clamp(${0.75 * REF_W}px, calc(${SHARE} * ${GAME_W}), ${1.5 * REF_W}px)`;
+// The inset from the viewport corner, and the height the panel may not exceed. The inset is the one length here that
+// stays off the ladder: it is a gap from the viewport's edge rather than a share of the game, and 8px off a
+// letterboxed corner covers no game pixel at any window shape.
+// The game's message box owns the bottom 27%, so its top edge sits at `0.73 ÷ (16/9) = 0.4106 × game-w`; the panel's
+// budget is 0.40 of the game width, less the inset, which is what keeps it clear of the message box and the command
+// menu at every window shape. Against
+// everything the model draws today the cap never fires — the tallest pane any card produces is about 187px against a
+// 713px budget at a 1920 game — so it ships as a guard for content that does not exist yet. #357 moves it onto the
+// drawer's pane; while the panel is one stack, the panel is the pane.
+const INSET = "8px";
+const MAX_H = `calc(0.40 * ${GAME_W} - ${INSET})`;
+
 // The panel's two **register**s, split by the game's own rule for its own dense lists: its default face for
 // **chrome** — the shell's own lines and every group heading — and its dense face at **half the size** for **rows**.
 // The game draws `emerald` at 96px and switches to `pkmnems` at 48px for its party lists, move labels and
@@ -54,8 +94,8 @@ export const SKIN = { fill: "#362d3e", body: "#f8f8f8", rule: "#f8b050", shadow:
 // A register has one size. The old three-value knob was three independent literals, and what a row emphasises it
 // emphasises with ink (§8) — so nothing below a row sets a size of its own, and the drawn-panel golden says so.
 export const REGISTER = {
-  chrome: { face: "emerald, ui-monospace, Menlo, monospace", size: "16px", line: "1.25" },
-  rows: { face: "pkmnems, ui-monospace, Menlo, monospace", size: "8px", line: "1.5" },
+  chrome: { face: "emerald, ui-monospace, Menlo, monospace", size: CHROME, line: "1.25" },
+  rows: { face: "pkmnems, ui-monospace, Menlo, monospace", size: ROWS, line: "1.5" },
 };
 export const h = (tag, style, ...kids) => {
   const n = document.createElement(tag);
@@ -63,7 +103,12 @@ export const h = (tag, style, ...kids) => {
   n.append(...kids.flat().filter(k => k != null && k !== ""));
   return n;
 };
-export const img = (key, frame, title, height, fallback = title) => {
+// Sprite heights are rungs of the same ladder rather than literals of their own, so the icons wear the game's type
+// ladder along with the text. Four steps, named for the job a sprite does on a row and not for a size: the foe
+// card's portrait, the mon a row is about, a mon the row merely refers to, and the small marks — type, category,
+// status, ball.
+export const ICON = { big: 3.5, mon: 2.5, ref: 2.25, mark: 1.5 };
+export const img = (key, frame, title, rungs, fallback = title) => {
   const url = sprite(key, frame);
   if (!url) {
     // Optional sprites (fallback null) may simply not exist; don't retry those.
@@ -73,17 +118,20 @@ export const img = (key, frame, title, height, fallback = title) => {
   const i = document.createElement("img");
   i.src = url;
   i.title = title;
-  Object.assign(i.style, { height: `${height}px`, imageRendering: "pixelated", verticalAlign: "middle", margin: "0 1px" });
+  Object.assign(i.style, { height: rung(rungs), imageRendering: "pixelated", verticalAlign: "middle", margin: "0 1px" });
   return i;
 };
-export const mon = (icon, name, height = 24) => (icon ? img(icon[0], icon[1], name, height, name) : name);
+export const mon = (icon, name, rungs = ICON.mon) => (icon ? img(icon[0], icon[1], name, rungs, name) : name);
 export const badge = (type, suffix = "") => h("span", { whiteSpace: "nowrap", marginRight: "3px" },
-  img("types", type.toLowerCase(), type, 13), suffix && h("b", {}, suffix));
+  img("types", type.toLowerCase(), type, ICON.mark), suffix && h("b", {}, suffix));
 export const dim = { color: "#9aa" };
+// The gutter: one mark's column, a rung and three quarters wide, rather than a width of its own. Exported because a
+// row with a column ahead of the gutter — the fight plan's `now:` / `next:` steps — has to line up with one without.
+export const GUTTER = rung(1.75);
 export const line = (label, color, ...kids) => h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" },
-  h("span", { color, width: "14px", flex: "none" }, label), ...kids);
+  h("span", { color, width: GUTTER, flex: "none" }, label), ...kids);
 export const hpColor = hp => (hp > 50 ? "#6d6" : hp > 20 ? "#ec4" : "#e55");
-export const itemImg = (icon, name) => img("items", icon, name, 18, null);
+export const itemImg = (icon, name) => img("items", icon, name, ICON.ref, null);
 export const sep = { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" };
 
 // The panel has one fidelity, so there are two states: the panel, and the glyph a dismissal leaves behind (#349 §2).
@@ -227,7 +275,8 @@ export const closeButton = () => {
 // leave room for it — the act summary otherwise, which is the widest run the model produces, runs under the ×. The
 // shell applies this to its own first line: no renderer knows the control is there.
 export const reserveForControl = node => {
-  if (node) node.style.paddingRight = "18px";
+  // The control's own column, in rungs like everything else, so the room it is left grows with it.
+  if (node) node.style.paddingRight = rung(2.25);
   return node;
 };
 // What a dismissed panel leaves behind, and the only way back. Named for what it is rather than for a tab, because
@@ -247,13 +296,19 @@ export const bar = (emoji, title, ...right) => h("div", { display: "flex", align
 export const el = document.createElement("div");
 el.id = "coach-hud";
 Object.assign(el.style, {
-  position: "fixed", top: "8px", left: "8px", zIndex: "2147483647",
-  maxWidth: "min(320px, calc(100vw - 16px))", padding: "6px 8px",
+  position: "fixed", top: INSET, left: INSET, zIndex: "2147483647",
+  // The width is the footprint and not the text column, so the rule, the shadow and the padding are inside it: the
+  // panel covers the share of the game the ladder says it does. Padding is a rung too — 6px by 8px at the game's own
+  // rung — so the one knob scales the box along with what is in it.
+  boxSizing: "border-box", width: PANEL_W, padding: `${rung(0.75)} ${ROWS}`,
+  maxHeight: MAX_H, overflowY: "auto",
   background: SKIN.fill, color: SKIN.body,
   // One rule and one shadow for the whole object, so they hold whatever the panel is showing — the strip alone, the
   // strip over the drawer, or the one line a failed refresh leaves (§11). Square corners: the rule is flat.
   border: `1px solid ${SKIN.rule}`, boxShadow: `1px 1px 0 ${SKIN.shadow}`,
-  font: `${REGISTER.chrome.size}/${REGISTER.chrome.line} ${REGISTER.chrome.face}`,
+  // The longhands and not the `font` shorthand: the size is a `calc()` now, and a calculation ahead of the
+  // shorthand's `/` line-height is a parse a panel should not be betting on.
+  fontFamily: REGISTER.chrome.face, fontSize: REGISTER.chrome.size, lineHeight: REGISTER.chrome.line,
   userSelect: "none", display: "none",
 });
 // Keep clicks on the panel from reaching the game underneath.
