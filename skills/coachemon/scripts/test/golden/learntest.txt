@@ -1,5 +1,5 @@
 == Charizard ← Flare Blitz
-Skip — not an upgrade over Dragon Breath
+🎓 Charizard learns Charizard Atk 122 / SpA 154 Skip — not an upgrade over Dragon Breath
 ✚ Fire Flare Blitz 3rd Fire move · recoil 25% of damage · weak Atk power 64 −8 power
 Moves
 · Fire Heat Wave 2nd Fire move · spread · set move (Offensive Protect) power 133
@@ -10,7 +10,7 @@ Team
 team: −SE Dragon
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Venusaur ← Solar Beam
-Skip — not an upgrade over Double-Edge
+🎓 Venusaur learns Venusaur Atk 133 / SpA 142 Skip — not an upgrade over Double-Edge
 ✚ Grass Solar Beam 2nd Grass move · charge turn power 68 −26 power
 Moves
 ↔ Normal Double-Edge neutral on Flying/Poison/Bug… · recoil 25% of damage power 94
@@ -19,7 +19,7 @@ Moves
 · Grass Power Whip SE on Ground/Rock/Water power 186
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Blastoise ← Skull Bash
-Skip — not an upgrade over Aqua Tail
+🎓 Blastoise learns Blastoise Atk 119 / SpA 121 Skip — not an upgrade over Aqua Tail
 ✚ Normal Skull Bash neutral on Water · charge turn power 65 −7 power
 Moves
 ↔ Water Aqua Tail 3rd Water move power 72
@@ -28,7 +28,7 @@ Moves
 · Water Hydro Pump 3rd Water move power 79
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Scrafty ← Head Smash
-Learn → forget Brick Break
+🎓 Scrafty learns Scrafty Atk 150 / SpA 62 Learn → forget Brick Break
 ✚ Rock Head Smash SE on Flying/Bug/Fire · recoil 25% of damage power 117 +49 power
 Moves
 · Fighting Focus Punch 3rd Fighting move power 135
@@ -39,7 +39,7 @@ Team
 team: +SE Flying/Bug/Fire
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Nidoking ← Double Kick
-Learn → forget Tackle
+🎓 Nidoking learns Nidoking Atk 120 / SpA 100 Learn → forget Tackle
 ✚ Fighting Double Kick 2 hits · SE on Normal/Ice power 76 +36 power
 Moves
 ✕ Normal Tackle power 40
@@ -50,7 +50,7 @@ Team
 team: +SE Normal/Ice
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Cloyster (Skill Link) ← Triple Axel
-Learns it — free slot
+🎓 Cloyster learns Cloyster Atk 140 / SpA 90 Learns it — free slot
 ✚ Ice Triple Axel 2.7 hits · 2nd Ice move power 122
 Moves
 · Ice Icicle Spear 5 hits · SE on Ground/Grass/Dragon · set move (Fast Attacker) power 293
@@ -58,7 +58,7 @@ Moves
 · Normal Tackle power 40
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Gengar ← Shadow Ball
-Learn → forget Super Fang
+🎓 Gengar learns Gengar Atk 70 / SpA 140 Learn → forget Super Fang
 ✚ Ghost Shadow Ball SE on Ghost/Psychic · 2nd Ghost move · set move (Wallbreaker) power 140 +81 power
 Moves
 · Ghost Night Shade damage = level power 116
@@ -69,7 +69,7 @@ Team
 team: +SE Ghost/Psychic
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Metagross ← Steel Beam
-Learn → forget Bullet Punch
+🎓 Metagross learns Metagross Atk 135 / SpA 125 Learn → forget Bullet Punch
 ✚ Steel Steel Beam 2nd Steel move · −50% HP each use power 76 +10 power
 Moves
 · Psychic Zen Headbutt SE on Fighting power 127
@@ -78,7 +78,7 @@ Moves
 ✕ Steel Bullet Punch 2nd Steel move · priority +1 · set move (Bulky Support) power 66
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Dragonite ← Outrage
-Learn → forget Dragon Claw
+🎓 Dragonite learns Dragonite Atk 134 / SpA 100 Learn → forget Dragon Claw
 ✚ Dragon Outrage SE on Dragon · locks 2–3 turns, then confused · set move (Bulky Setup) power 178 +36 power
 Moves
 ✕ Dragon Dragon Claw SE on Dragon power 142
@@ -87,7 +87,7 @@ Moves
 · Electric Thunder Punch SE on Flying/Water power 95
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Arcanine ← Overheat
-Learn → forget Wild Charge
+🎓 Arcanine learns Arcanine Atk 110 / SpA 120 Learn → forget Wild Charge
 ✚ Fire Overheat 2nd Fire move · −2 SpA after use power 105 +27 power
 Moves
 · Fire Flamethrower SE on Bug/Steel/Grass… power 176
@@ -98,7 +98,7 @@ Team
 team: −SE Flying/Water
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Emolga ← Spark
-Learn → forget Charge
+🎓 Emolga learns Emolga Atk 26 / SpA 26 Learn → forget Charge
 ✚ Electric Spark 2nd Electric move power 73 +68 power
 Moves
 · Electric Thunder Shock SE on Water power 72
@@ -107,7 +107,7 @@ Moves
 ✕ Electric Charge +1 SpD power 5
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Tyranitar ← Iron Head (team)
-Learn → forget Tackle
+🎓 Tyranitar learns Tyranitar Atk 134 / SpA 95 Learn → forget Tackle
 ✚ Steel Iron Head SE on Rock/Fairy power 99 +58 power
 Moves
 · Dark Crunch 2nd Dark move power 90
@@ -118,7 +118,7 @@ Team
 team: +SE Fairy
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Houndoom ← Nasty Plot (TM)
-Learn → forget Howl
+🎓 Houndoom learns Houndoom Atk 120 / SpA 160 Learn → forget Howl
 ✚ Dark Nasty Plot +2 SpA · set move (Fast Attacker) power 72 +69 power
 Moves
 · Dark Crunch 2nd Dark move · weak Atk power 68
@@ -127,7 +127,7 @@ Moves
 · Fire Incinerate SE on Bug/Steel/Grass… power 117
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Fletchinder ← Roost
-Learn → forget Growl
+🎓 Fletchinder learns Fletchinder Atk 130 / SpA 62 Learn → forget Growl
 ✚ Flying Roost heal 50% · set move (Bulky Attacker, evolved) power 67 +59 power
 Moves
 · Flying Acrobatics SE on Fighting power 97
@@ -136,7 +136,7 @@ Moves
 · Normal Quick Attack priority +1 power 47
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Minccino ← Triple Axel
-Learn → forget Helping Hand
+🎓 Minccino learns Minccino Atk 110 / SpA 60 Learn → forget Helping Hand
 ✚ Ice Triple Axel 2.4 hits · SE on Flying/Ground/Grass… · set move (Fast Attacker, evolved) power 137 +137 power
 Moves
 · Normal Pound power 78
@@ -147,7 +147,7 @@ Team
 team: +SE Flying/Ground/Grass…
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Houndour ← Nasty Plot
-Learn → forget Howl
+🎓 Houndour learns Houndour Atk 60 / SpA 80 Learn → forget Howl
 ✚ Dark Nasty Plot +2 SpA · set move (Fast Attacker, evolved) power 67 +64 power
 Moves
 · Dark Bite SE on Ghost/Psychic · weak Atk power 88
@@ -156,7 +156,7 @@ Moves
 · Fire Incinerate SE on Bug/Steel/Grass… power 117
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Azumarill (Huge Power) ← Liquidation
-Learn → forget Surf
+🎓 Azumarill learns Azumarill Atk 180 / SpA 110 Learn → forget Surf
 ✚ Water Liquidation 2nd Water move · set move (Bulky Attacker) power 115 +53 power
 Moves
 · Water Aqua Jet 2nd Water move · priority +1 · set move (Bulky Attacker) power 66
@@ -165,7 +165,7 @@ Moves
 ✕ Water Surf 2nd Water move · weak SpA power 62
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Sylveon (Pixilate) ← Hyper Voice
-Learns it — free slot
+🎓 Sylveon learns Sylveon Atk 65 / SpA 130 Learns it — free slot
 ✚ Fairy Hyper Voice Pixilate · SE on Dragon/Dark · set move (Bulky Setup) power 245
 Moves
 · Ghost Shadow Ball SE on Ghost/Psychic power 101
@@ -175,7 +175,7 @@ Team
 team: +SE Dragon/Dark
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == Venusaur ← Solar Beam (no sun)
-Learns it — free slot
+🎓 Venusaur learns Venusaur Atk 100 / SpA 142 Learns it — free slot
 ✚ Grass Solar Beam 2nd Grass move · charge turn (not in sun) power 68
 Moves
 · Poison Sludge Bomb SE on Grass/Fairy · set move (Bulky Support) power 211
@@ -184,7 +184,7 @@ Moves
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == STAB by share [12,19,27,34,41]
 == Ludicolo ← Soak (Skarmory ahead)
-Skip — not an upgrade over Zen Headbutt
+🎓 Ludicolo learns Ludicolo Atk 70 / SpA 90 Skip — not an upgrade over Zen Headbutt
 ✚ Water Soak pure Water power 35 −36 power
 Moves
 · Water Scald SE on Fire power 144

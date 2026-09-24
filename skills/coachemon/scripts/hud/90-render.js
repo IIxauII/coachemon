@@ -181,11 +181,17 @@ export const some = (id, label, summary, rows) => {
 // usually spends on claim→detail, because the summaries already spend one inside themselves.
 const headingText = g => (g.id === "act" ? g.summary
   : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
+// **Other group headings are one line in the pane, then an ellipsis** — about 55 characters at reference width.
+// Nothing is budgeted there, because nothing there is the call: the one line the player always needs is the strip's,
+// and the strip is above whatever the drawer is showing. The cut is the browser's and lands on the drawn node alone;
+// `groups[].summary` and the card's text are never cut by the panel (§5, §6).
+const ONE_LINE = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 const headingNode = g => {
-  if (!headingText(g)) return null;
-  return g.id === "act"
-    ? h("div", { fontWeight: "bold" }, g.summary)
-    : h("div", {}, h("span", { fontWeight: "bold", marginRight: "4px" }, g.label), g.summary ? h("span", dim, g.summary) : null);
+  // `act` is not headed in the pane at all: **the act group's pane does not repeat the call**, because the strip
+  // directly above it is its heading (§6). The heading is still `act`'s in the plain *text*, which has no strip —
+  // which is what keeps the first line of a card's text its call.
+  if (g.id === "act" || !headingText(g)) return null;
+  return h("div", ONE_LINE, h("span", { fontWeight: "bold", marginRight: "4px" }, g.label), g.summary ? h("span", dim, g.summary) : null);
 };
 
 // Which register a node is drawn in is the **shell's**, never a renderer's: the shell heads a group in chrome and
@@ -201,8 +207,13 @@ const inRows = node => {
 
 // The drawer, for now a plain stack: every group, headed, with the shell's own rule between them. The tab bar and
 // the pane arrive in #357; nothing here knows what a view is.
-export const drawGroups = groups => (groups ?? []).flatMap((g, i) =>
-  [i ? h("div", sep) : null, headingNode(g), ...g.rows.map(inRows)].filter(Boolean));
+// A group that draws nothing takes no rule with it. Since the strip heads `act`, an `act` whose rows are only
+// supporting lines — and on the light cards there are none — otherwise opens the stack with a divider above the
+// first thing in it.
+export const drawGroups = groups => (groups ?? [])
+  .map(g => [headingNode(g), ...g.rows.map(inRows)].filter(Boolean))
+  .filter(block => block.length)
+  .flatMap((block, i) => (i ? [h("div", sep), ...block] : block));
 
 // ---- The card as plain text (§11.1, §5)
 // The stream's `text` is derived from the group list rather than read back off the drawn card, so the two cannot
@@ -272,9 +283,9 @@ export const closeButton = () => {
   return n;
 };
 // The control floats in the panel's corner rather than sitting on a line, so whatever the panel draws first has to
-// leave room for it — the act summary otherwise, which is the widest run the model produces, runs under the ×. The
-// shell applies this to its own first line: no renderer knows the control is there.
-export const reserveForControl = node => {
+// leave room for it — the caption otherwise runs under the ×. The shell applies this to its own first line, which
+// is now the strip's head: no renderer knows the control is there.
+const reserveForControl = node => {
   // The control's own column, in rungs like everything else, so the room it is left grows with it.
   if (node) node.style.paddingRight = rung(2.25);
   return node;
@@ -287,11 +298,48 @@ export const glyph = emoji => {
   n.addEventListener("click", e => { e.stopPropagation(); setClosed(false); });
   return n;
 };
-// The card's own header line: what the card is about, and whatever the kind puts on the right of it. A row like any
-// other — it reserves nothing for the panel's control, because the control is the shell's and the shell reserves
-// its own room. The strip takes this line in #356.
-export const bar = (emoji, title, ...right) => h("div", { display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" },
-  emoji, title, h("span", { flex: "1" }), ...right);
+
+// ---- The strip (#349 §2, §6)
+// **The one line the player always needs**, in front of them whatever is open or shut, in one fixed order: the
+// verdict dot, the verdict word, the caption, and the call. It sits above everything else the panel shows, so the
+// thing to do now is never a click away — including while the player reads another group.
+//
+// The **caption** is the kind's emoji and what the card is about. It is built by the kind's own renderer, because
+// only that file knows what its card is about, and drawn here, because the strip is the shell's — the same split
+// the groups already live by. Its arrow-separated list is **our** actives, never the enemy roster: it is who we are
+// sending, which on a double is the pair on the field.
+// It is chrome, in the game's label gold, and inert: gold never changes state (§8, §10). It wraps rather than
+// clipping, which past game width 2880 is what it actually does — the point where the ladder and the width clamp
+// part company (§4). The panel never writes its own name here or anywhere (§9).
+export const caption = (emoji, title, ...rest) => h("div",
+  { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px", minWidth: "0", fontWeight: "bold", color: SKIN.rule },
+  emoji, title, ...rest);
+
+// **The dot's five colours sit outside the colour law** (§8): they answer *what kind of wave is this*, which is
+// neither of the law's two questions — not *is this good news* and not *who is acting*. Quoted game colours all the
+// same, since nothing in the palette is invented. Trainer and fight share the gold on purpose: the word spelled out
+// beside the dot is what tells them apart, and a reader who cannot see the ink reads the word.
+const VERDICT = { easy: "#78c850", trainer: "#f8b050", danger: "#e13d3d", catch: "#40c8f8", fight: "#f8b050" };
+// One fixed position, a rung of the ladder square and round: the dot is the one thing on the strip that is only
+// colour, so it carries no text of its own and the word carries all of it.
+const dot = ink => h("span", { width: rung(1), height: rung(1), flex: "none", borderRadius: "50%", background: ink });
+
+// The strip itself. `groups` is the card's own list, so the call is `act.summary` and nothing beside it — **the
+// strip, the verdict and the watch line all come from one string and cannot disagree** (§6).
+// **A card with no verdict draws no dot and no word**; the caption and the call still draw. The verdict is a battle
+// card's one-word call, and a battle whose enemy move could not be read has none either — its call already says so.
+export const strip = (card, captionNode, groups) => {
+  const ink = VERDICT[card?.verdict];
+  const head = reserveForControl(h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" },
+    ink ? dot(ink) : null, ink ? h("span", { fontWeight: "bold" }, card.verdict) : null, captionNode));
+  // **Two lines, then an ellipsis** — about 115 characters at reference width. The leading clause must fit; what
+  // follows the first ` · ` may clip, because it is reasoning and not the call. The cut is the browser's and lands
+  // on this node alone: the panel never cuts a string, so `groups[].summary` and the card's text are whole (§5).
+  const call = (groups ?? []).find(g => g.id === "act")?.summary;
+  return h("div", {}, head, call
+    ? h("div", { fontWeight: "bold", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: "2", overflow: "hidden" }, call)
+    : null);
+};
 
 export const el = document.createElement("div");
 el.id = "coach-hud";

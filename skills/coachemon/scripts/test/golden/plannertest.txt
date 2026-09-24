@@ -1,5 +1,4 @@
 == cyrus (live)
-🎯 W200 · Cyrus Metagross
 ⇆ Gyarados → Weavile switches — moves aimed at it
 now: ⇄ Morpeko out › Metagross in
 next: ⚔ Metagross ⚠ Dark ×2 56% {next turn: Weavile's Knock Off: ~56% of current HP} Steel Meteor Mash → Weavile 2 hits boss: 2 bars — no 1HKO
@@ -17,7 +16,6 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Dark Knock Off
 ♟ prefers: let Scrafty fall → Metagross in free (+28)
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Metagross
 == cyrus, no Metagross (live)
-🎯 W200 · Cyrus Morpeko
 ⇆ Gyarados → Weavile switches — moves aimed at it
 ⚔ Morpeko 💀 Ice 100% 3-hit {next turn: Weavile's Triple Axel: ~100% of current HP, 67% KO, before it can act} Electric Aura Wheel → Weavile
 ⤵ Morpeko falls this turn › Scrafty in free
@@ -35,7 +33,6 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 ↯ Ice Triple Axel → 
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Morpeko
 == building blocks ok
 == cyrus (fallback)
-🎯 W200 · Cyrus Morpeko › Scrafty
 ⚔ Morpeko ⚠ Water 103% {Gyarados's Waterfall: ~103% of current HP} Electric Aura Wheel → Gyarados 1 hit
 ↪ next in likely: Weavile › answer Scrafty
 foes weak to: Electric ×1 Fighting ×1
@@ -46,7 +43,6 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Ice Triple Axe
 1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
 2 Scrafty ⇄ Fighting High Jump Kick → Weavile switch in, takes a hit · KO · 22% left
 == switch-in never acts (live)
-🎯 W200 · Cyrus Charizard
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Lycanroc
 ⤵ Charizard falls this turn › Blastoise in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
@@ -81,7 +77,6 @@ Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100%
 == dead end: nothing it can use — Encore (live)
 ⚔ Cacnea ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP} nothing it can use — Encore
 == doubles focus (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 2 hits
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 ◎ focus Hydreigon : KO before it moves
@@ -92,7 +87,6 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 ~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
 ~2 Lucario Fighting Aura Sphere → Snorlax KO · 60% left
 == doubles split (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Weezing 1 hit
 ⚔ Lucario Fighting Aura Sphere → Toxapex 1 hit
 Weezing Weezing L80 Poison 100% ▲ — ↯ Poison Sludge Bomb → Garchomp 50% likely · moves after
@@ -101,7 +95,6 @@ Toxapex Toxapex L80 Poison Water 100% ▲ — ↯ Water Scald → Lucario 50% li
 ~1 Garchomp Dragon Dragon Claw → Weezing KO · 100% left
 ~2 Lucario Fighting Aura Sphere → Toxapex KO · 100% left
 == doubles focus on a leaving foe (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⇆ Hydreigon → Ferrothorn switches — moves aimed at it
 ⚔ Garchomp Dragon Dragon Claw → Ferrothorn
 ⚔ Lucario Fighting Aura Sphere → Ferrothorn
@@ -117,7 +110,6 @@ Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → 
 ~3 Lucario Fighting Aura Sphere → Hydreigon KO · 100% left
 ~4 Lucario Fighting Aura Sphere → Snorlax KO · 60% left
 == doubles: a status play (live)
-🎯 W200 · Cyrus Breloom › Salamence
 ⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
 ⚔ Salamence ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP, 34% KO} Dragon Dragon Claw → Munchlax 1 hit
 Machamp Machamp L80 Fighting 100% ▲ — ↯ Fighting Close Combat → Breloom 50% likely · 50% first
@@ -135,7 +127,6 @@ Munchlax Munchlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Salamence 50%
 no Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
 Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
 == doubles spare hit: spread, the redirect would carry the wrong move (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
 ⚔ Lucario Fighting Close Combat → Snorlax 2 hits
 foes weak to: Fighting ×2 Dragon ×1
@@ -145,7 +136,6 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50
 ~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
 ~2 Lucario Fighting Close Combat → Snorlax KO · 94% left
 == doubles spare hit: focus, the redirect carries the same move (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit spare hit — KO without it
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 1 hit spare hit — goes to Snorlax if Hydreigon falls first
 ◎ focus Hydreigon : KO before it moves
@@ -156,7 +146,6 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 ~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
 ~2 Lucario Fighting Aura Sphere → Snorlax KO · 60% left
 == doubles spare hit: focus, the partner's KO is not certain (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit spare hit — KO without it
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 1 hit
 ◎ focus Hydreigon : KO before it moves
@@ -167,7 +156,6 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50
 ~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 84% left
 ~2 Lucario Fighting Close Combat → Snorlax KO · 94% left
 == doubles: two killable foes, one far more dangerous (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Porygon-Z 2 hits
 ⚔ Lucario Fighting Aura Sphere → Porygon-Z 2 hits
 ◎ focus Porygon-Z : KO this turn
@@ -178,7 +166,6 @@ Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garcho
 ~1 Garchomp Dragon Dragon Claw → Porygon-Z KO · 63% left
 ~2 Lucario Fighting Aura Sphere → Dunsparce KO · 93% left
 == doubles: the same two foes, now outsped (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Porygon-Z 2 hits
 ⚔ Lucario Fighting Aura Sphere → Porygon-Z 2 hits
 ◎ focus Porygon-Z : KO before it moves
@@ -189,7 +176,6 @@ Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garcho
 ~1 Garchomp Dragon Dragon Claw → Porygon-Z KO · 68% left
 ~2 Lucario Fighting Aura Sphere → Dunsparce KO · 95% left
 == free switch — same field in the command phase (live)
-🎯 W200 · Cyrus Ninetales › Swampert
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
 ⤵ Ninetales falls this turn › Swampert in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
@@ -205,7 +191,6 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 ✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
 == free switch — switch (live)
-🎯 W200 · Cyrus Swampert
 ⇄ free switch? Ninetales → Swampert (no hit taken)
 ⚔ Swampert ⚠ Rock 100% {Rhyperior's Stone Edge: ~100% of current HP, 35% KO} Water Surf → Rhyperior 1 hit
 foes weak to: Water ×2
@@ -219,7 +204,6 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 84%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
 == free switch — stay (live)
-🎯 W200 · Cyrus Swampert
 ⇄ free switch? stay — Swampert is best here
 ⚔ Swampert ⚠ Rock 100% {Rhyperior's Stone Edge: ~100% of current HP, 35% KO} Water Surf → Rhyperior 1 hit
 foes weak to: Water ×2
@@ -233,7 +217,6 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 68%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
 == doubles spread move KOs our partner (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
 ⚔ Lucario Fighting Aura Sphere → Heatran 3 hits
 ◎ focus Heatran : most damage
@@ -244,7 +227,6 @@ Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Fl
 ~1 Garchomp Ground Earthquake → Heatran KO · 80% left
 ~2 Garchomp Ground Earthquake → Magnezone KO · 80% left
 == doubles spread move scratches our partner (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Ground Earthquake → both 1 hit hits Lucario 23%
 ⚔ Lucario Fighting Aura Sphere → Heatran 3 hits spare hit — KO without it
 foes weak to: Fighting ×2 Ground ×2
@@ -254,7 +236,6 @@ Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Fl
 ~1 Garchomp Ground Earthquake → Heatran KO · 100% left
 ~2 Garchomp Ground Earthquake → Magnezone KO · 100% left
 == doubles spread move, one foe left (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
 ⚔ Lucario Fighting Aura Sphere → Heatran 3 hits
 ◎ focus Heatran : most damage
@@ -262,7 +243,6 @@ Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cann
 ♟ Fight plan steps approximate winnable
 ~1 Garchomp Ground Earthquake → Heatran KO · 80% left
 == doubles overkill (live)
-🎯 W200 · Cyrus Charizard › Venusaur
 ⚔ Charizard Fire Heat Wave → both 1 hit
 ⚔ Venusaur Grass Giga Drain → Rattata 1 hit spare hit — KO without it
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Hyper Fang → Venusaur 50% likely · moves after
@@ -271,7 +251,6 @@ Pidgey Pidgey L30 Normal Flying 100% ▲ — ↯ Flying Wing Attack → Charizar
 ~1 Charizard Fire Heat Wave → Rattata KO · 100% left
 ~2 Charizard Fire Heat Wave → Pidgey KO · 100% left
 == doubles slot 0 locked (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Snorlax locked in
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 foes weak to: Fighting ×2 Dragon ×1
@@ -281,7 +260,6 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 ~1 Lucario Fighting Aura Sphere → Hydreigon KO · 71% left
 ~2 Lucario Fighting Aura Sphere → Snorlax KO · 32% left
 == doubles slot 0 locked into a spread move one foe answers (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Normal Boomburst → both locked in · Snorlax 2 hits
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 foes weak to: Fighting ×2 Dragon ×1
@@ -291,7 +269,6 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 ~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
 ~2 Garchomp Normal Boomburst → Snorlax KO · 93% left
 == doubles slot 0 switching (live)
-🎯 W200 · Cyrus Lucario › Metagross
 now: ⇄ Garchomp out › Metagross in · takes ~16%
 now: ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 next: ⚔ Metagross Steel Meteor Mash → Hydreigon 2 hits
@@ -302,7 +279,6 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Metagross 
 ~1 Lucario Fighting Aura Sphere → Hydreigon KO · 71% left
 ~2 Lucario Fighting Aura Sphere → Snorlax KO · 32% left
 == doubles protect (live)
-🎯 W200 · Cyrus Garchomp › Lucario
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
 ⚔ Lucario 💀 Dark 100% {Hydreigon's Dark Pulse: ~100% of current HP, before it can act} Normal Protect Garchomp KOs Hydreigon first
 foes weak to: Fighting ×2 Dragon ×1
@@ -312,7 +288,6 @@ Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 5
 ~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
 ~2 Garchomp Dragon Dragon Claw → Snorlax KO · 53% left
 == doubles helping hand (live)
-🎯 W200 · Cyrus Garchomp › Clefable
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit with Helping Hand
 ⚔ Clefable Normal Helping Hand Garchomp KOs Hydreigon
 foes weak to: Dragon ×1
@@ -333,7 +308,6 @@ next: ⚔ Crobat Flying Wing Attack → Buzzwole
 == summary
 {"danger":[{"mon":"Mamoswine","from":"Mega Golisopod","move":"Iron Head","level":"after","saveFor":"Xurkitree"}],"plan":"likely lost · ☠ Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in"}
 == guzma w165 turn 1 (live)
-🎯 W200 · Cyrus Metagross › Mamoswine
 now: ⇄ Mamoswine ⚠ Steel ×2 100% {Mega Golisopod's Iron Head: ~100% of current HP, 63% KO} out › Metagross in · takes ~23% · resists Iron Head
 next: ⚔ Metagross Steel Meteor Mash → Mega Golisopod
 foes weak to: Ground ×1
@@ -353,7 +327,6 @@ Buzzwole Buzzwole L159 Bug Fighting 👑 100% ▲ — ↯ Bug Lunge → Mamoswin
 ⤵ Mamoswine falls this turn › Metagross in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 == guzma w165 turn 3 (live)
-🎯 W200 · Cyrus Golduck › Mamoswine
 ⚔ Golduck ⚠ Steel 100% {Mega Golisopod's Iron Head: ~100% of current HP} Water Surf → Mega Golisopod
 ⤵ Golduck falls this turn › Metagross in free
 ⇄ Golduck ⚠ Steel 100% {Mega Golisopod's Iron Head: ~100% of current HP} out › Metagross in · optional · takes ~23% · resists Iron Head

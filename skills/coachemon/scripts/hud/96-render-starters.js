@@ -5,12 +5,14 @@
 // and *Viewing* are a row apiece, and neither earns a group of its own. The call is `act.summary`, read off the
 // model and never written here (§6).
 import { ptsText, startersSummary } from "./51-starters.js";
-import { bar, dim, group, h, ICON, line, mon, sep, some } from "./90-render.js";
+import { caption, dim, group, h, ICON, line, mon, sep, some } from "./90-render.js";
+
+// The strip's caption: the screen, and what the starter budget has been spent down to.
+export const captionStarters = m => caption("🌱", "Starters",
+  h("span", { ...dim, fontWeight: "normal" }, `${ptsText(m.spent)}/${m.limit} pts`));
 
 export const drawStarters = m => {
   const best = m.picks[0];
-  // The header is the card's own identity line; the strip takes it in #356.
-  const header = bar("🌱", "Starters", h("span", { ...dim, fontWeight: "normal" }, `${ptsText(m.spent)}/${m.limit} pts`));
   const ROLE = { carry: "#8cf", support: "#c9f" };
   const chosen = m.chosen.length
     ? line("✓", "#6d6", h("span", { ...dim, marginRight: "3px" }, "picked:"), ...m.chosen.map(x => mon(x.icon, x.name, ICON.mon)),
@@ -18,7 +20,7 @@ export const drawStarters = m => {
     : null;
   // Nothing to propose: an ordinary card with exactly one `act` group, and the shell never special-cases it (§1).
   // The line that used to say so is `act.summary` now — `startersSummary` carries it, so it is said once.
-  if (!best) return [group("act", "Now", startersSummary(m), [header, chosen])];
+  if (!best) return [group("act", "Now", startersSummary(m), [chosen])];
   const teamTail = t => [h("span", { ...dim, marginLeft: "4px" }, `${ptsText(t.cost)} pts · SE vs ${t.covers} types`),
     t.weak.length ? h("span", { color: "#fa4", marginLeft: "4px" }, `· weak ${t.weak.join("/")}`) : null,
     t.noCarry ? h("span", { color: "#fa4", marginLeft: "4px" }, "· no carry") : null];
@@ -48,7 +50,7 @@ export const drawStarters = m => {
     m.inverse ? "Inverse Battle: coverage inverted" : null, m.data ? null : "final forms estimated until the game's tables load"].filter(Boolean);
   // `options` and `notes` head their panes with their label alone — the proposals themselves say it one glance lower (§6).
   return [
-    some("act", "Now", startersSummary(m), [header, chosen]),
+    some("act", "Now", startersSummary(m), [chosen]),
     some("options", "Proposals", null, options),
     some("notes", "Notes", null, noteText.length ? [line("", "#9aa", h("span", dim, noteText.join(" · ")))] : []),
   ].filter(Boolean);

@@ -5,11 +5,13 @@
 // met, every reason (the gym leader ahead among them), the best catch, the wild boss on the tenth wave and where the
 // biome leads next. The call is `act.summary`, read off the model and never written here (§6).
 import { biomeSummary } from "./47-biome.js";
-import { badge, bar, dim, group, h, ICON, line, mon, some } from "./90-render.js";
+import { badge, caption, dim, group, h, ICON, line, mon, some } from "./90-render.js";
+
+// The strip's caption: the choice, and the biome it is being made from.
+export const captionBiome = m => caption("🗺", "Next biome",
+  m.from ? h("span", { ...dim, fontWeight: "normal" }, `from ${m.from}`) : null);
 
 export const drawBiome = m => {
-  // The header is the card's own identity line; the strip takes it in #356.
-  const header = bar("🗺", "Next biome", m.from ? h("span", { ...dim, fontWeight: "normal" }, `from ${m.from}`) : null);
   // Under Hardcore or a no-heal Limited Support the fainted don't come back at the X1 heal: say who the card left
   // out. It is a footnote on how the scores were arrived at, not a supporting line for the call, so it is `notes` —
   // the same place the encounter card puts "not judged yet".
@@ -18,7 +20,7 @@ export const drawBiome = m => {
   if (!m.options.some(o => o.score != null)) {
     // Nothing scored: an ordinary card with exactly one `act` group, and the shell never special-cases it (§1).
     // There is no judged list yet, so there is nothing for `options` to be.
-    return [group("act", "Now", biomeSummary(m), [header,
+    return [group("act", "Now", biomeSummary(m), [
       ...m.options.map(o => line("·", "#9aa", h("span", {}, o.label))),
       line("", "#9aa", h("span", dim,
         m.unread ? `unread: ${m.unread}` : m.data ? "no spawn data for these biomes" : "reading the game's biome tables…"))])];
@@ -62,7 +64,7 @@ export const drawBiome = m => {
   // `act.summary` is the model's line over the offered biomes, so it is never empty on a card the game produced:
   // an option list is what the biome screen is.
   return [
-    some("act", "Now", biomeSummary(m), [header]),
+    some("act", "Now", biomeSummary(m), []),
     some("options", "Biomes", null, options),
     some("notes", "Notes", null, [fainted]),
   ].filter(Boolean);

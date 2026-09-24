@@ -4,24 +4,28 @@
 import { STATUS_FRAMES } from "./01-core.js";
 import { catchSummary } from "./45-catch.js";
 import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummary } from "./60-card.js";
-import { badge, bar, dim, group, GUTTER, h, hpColor, ICON, img, line, mon, rung, some } from "./90-render.js";
+import { badge, caption, dim, group, GUTTER, h, hpColor, ICON, img, line, mon, rung, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
+// The strip's caption: the wave, the trainer if there is one, and the mons we are sending. **Our** actives, not the
+// enemy roster — `order` is who the plan puts in front of each foe, which on a double is the pair on the field. It
+// is dropped where it would only repeat the ⚔ lines below it: a wild single's one slot is already on the card.
+export const captionBattle = m => {
+  const slotNames = new Set(m.field?.slots.map(sl => sl.name) ?? []);
+  const order = m.trainer || (m.order ?? []).some(o => !slotNames.has(o.name)) ? m.order ?? [] : [];
+  return caption("\ud83c\udfaf", m.title,
+    ...order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, ICON.mon)]));
+};
+
 export const drawBattle = m => {
   // The exact enemy move couldn't be made (#183): an ordinary card with exactly one `act` group, whose summary says
   // so and which shows nothing else. The inline ⚠ that carried this is gone — the summary carries it. The next
   // refresh tries again, so a one-off breach flickers rather than sticking.
-  if (m.unavailable) return [group("act", "Now", actSummary(m), [bar("\ud83c\udfaf", m.title)])];
+  if (m.unavailable) return [group("act", "Now", actSummary(m), [])];
   const f = m.field;
-
-  // Send-in icons only add something when they go beyond the ⚔ mons: a trainer's later foes.
-  const slotNames = new Set(f?.slots.map(sl => sl.name) ?? []);
-  const order = m.trainer || m.order.some(o => !slotNames.has(o.name)) ? m.order : [];
-  const header = bar("🎯", m.title,
-    ...order.flatMap((o, i) => [i ? h("span", dim, "›") : null, mon(o.icon, o.name, ICON.mon)]));
 
   const threatTag = t => {
     const n = h("span", { display: "inline-flex", alignItems: "center", marginRight: "4px", color: t.level === "ko" ? "#e55" : "#fa4" },
@@ -161,16 +165,12 @@ export const drawBattle = m => {
         : !r.pick && !f ? line("➜", "#8cf", h("span", dim, "no damaging move lands")) : null,
       r.notes?.length ? line("·", "#9aa", h("span", dim, r.notes.join(" · "))) : null);
   });
-  // The header is the card's identity line and carries the panel's one control. The strip takes it in #356; until
-  // then it is a row of `act` and draws in the dense register like any other row, because §9's chrome is the tab
-  // labels, the strip, the verdict and the group summaries — and the strip is what this line becomes.
-  //
   // `road` merges the preview and the look-ahead, because two tabs about what is coming is how a card reaches six.
   // `catch` keeps a group of its own rather than joining `foes`: catching is a different decision from fighting,
   // with its own verdict and its own numbers.
   const road = [...drawPreview(m.preview), ...drawAhead(m.ahead)];
   return [
-    some("act", "Now", actSummary(m), [header, ...field]),
+    some("act", "Now", actSummary(m), field),
     some("foes", "Foes", foesSummary(m), [team, ...rows]),
     some("catch", "Catch", catchSummary(m.catch), drawCatch(m)),
     some("plan", "Plan", planSummary(m.teamPlan), drawTeamPlan(m)),

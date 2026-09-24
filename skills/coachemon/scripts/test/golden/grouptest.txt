@@ -1,6 +1,5 @@
 == wild · threat turn needing a switch
 act | Now | Charizard Flamethrower → Lycanroc · 2 hits
-    🎯 W89
     ⚔ Charizard 💀 Rock ×4 567% Fire Flamethrower → Lycanroc 2 hits
     ⇄ Charizard 💀 Rock ×4 567% out › Blastoise in · takes ~23% · resists Stone Edge
 foes | Foes | 💀 Charizard ← Lycanroc Stone Edge
@@ -23,7 +22,6 @@ road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — noth
     🍀 luck 3 (C) — 6% tier upgrade per reward
 == wild · quiet, and no catch
 act | Now | Charizard Flamethrower → Lycanroc · 2 hits
-    🎯 W89
     ⚔ Charizard Fire Flamethrower → Lycanroc 2 hits
 foes | Foes | we're weak to Fire ×2
     Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2
@@ -34,7 +32,6 @@ road | Road | W90 wild — Toxicroak L71
     if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
 == wild · a maybe, which is not a catch verdict
 act | Now | Charizard Flamethrower → Lycanroc · 2 hits
-    🎯 W89
     ⚔ Charizard Fire Flamethrower → Lycanroc 2 hits
 foes | Foes | we're weak to Fire ×2
     Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2
@@ -43,7 +40,6 @@ catch | Catch | —
     Great ×9 44%
 == trainer · fight plan
 act | Now | Blastoise Wave Crash → Garchomp · 2 hits
-    🎯 W89 · Cynthia Blastoise › Venusaur
     ⚔ Blastoise Water Wave Crash → Garchomp 2 hits
 foes | Foes | —
     foes weak to: Ice ×2 Fire ×1
@@ -70,7 +66,6 @@ road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — noth
     🍀 luck 3 (C) — 6% tier upgrade per reward
 == double · a return from the other slot
 act | Now | Blastoise Wave Crash → Ludicolo · 2 hits ; Venusaur Power Whip → Arcanine · 2 hits
-    🎯 W89 · Tester
     ⇆ Arcanine → Gyarados returns from the other slot — moves aimed at it
     ⚔ Blastoise Water Wave Crash → Ludicolo 2 hits
     ⚔ Venusaur ⚠ Fire ×2 88% Grass Power Whip → Arcanine 2 hits
@@ -79,10 +74,8 @@ foes | Foes | ⚠ Venusaur ← Arcanine Flare Blitz
     Arcanine Arcanine L80 Fire 100% ▲ Water ×2
 == unavailable
 act | Now | no advice — the enemy AI call threw
-    🎯 W89
 == learn · a team line, and a big fight it couldn't read
 act | Now | Learn → forget Bite · ⚠ loses only Dark move
-    🎓 Espeon learns Espeon Atk 65 / SpA 130
     ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
 options | Moves | —
     ✕ Dark Bite ⚠ weak Atk power 30
@@ -93,14 +86,12 @@ notes | Notes | —
     next big fight unread: the run seed is past the pinned build
 == learn · no team line, no notes
 act | Now | Learn → forget Bite
-    🎓 Espeon learns Espeon Atk 65 / SpA 130
     ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
 options | Moves | —
     ✕ Dark Bite weak Atk power 30
     · Psychic Psychic only Psychic move on team power 191
 == rewards · a TM to take and a potion to buy
 act | Now | take TM Fire Fang → Morpeko (forget Tackle) · buy Super Potion
-    🛒 $1200 → $950 👑 boss next
     buy first — taking the free reward closes the shop
     💰 Super Potion $250 Charizard tops up the carry
     🎁 TM Fire Fang Morpeko → forget Tackle · +25 power
@@ -111,7 +102,6 @@ audit | Team | 1 issue: nothing hits Ground
     ✗ nothing hits Ground
 == encounter · a chest worth opening
 act | Now | Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave
-    🎭 Mysterious Chest Common
 options | Options | —
     ★ Open it — pick of 3 Ultra items
     1 in 4 it bites
@@ -121,7 +111,6 @@ notes | Notes | —
     · the trap is rolled on the option, not before it
 == encounter · not judged yet
 act | Now | Mysterious Chest: not judged · avoid Leave
-    🎭 Mysterious Chest Common
 options | Options | —
     ✓ Open it — pick of 3 Ultra items
     1 in 4 it bites
@@ -131,7 +120,6 @@ notes | Notes | —
     not judged yet: options and requirements only
 == starters · a proposal, a pick made and a cursor
 act | Now | best: Gible (carry) + Magikarp · 10/10 pts · weak Ice
-    🌱 Starters 4/10 pts
     ✓ picked: Gible
 options | Proposals | —
     ★ best 10 pts · SE vs 9 types · weak Ice
@@ -142,11 +130,9 @@ notes | Notes | —
     Fresh Start: no passives, egg moves or luck
 == starters · nothing to add
 act | Now | nothing to add
-    🌱 Starters 4/10 pts
     ✓ picked: Gible · team full
 == fusion · two candidates and a Spliced note
 act | Now | Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite
-    🧬 Splice
 options | Fusions | —
     ★ Garchomp Garchomp ← Dragonite Dragonite +21
     Dragon Ground +42 BST
@@ -156,7 +142,6 @@ notes | Notes | —
     Spliced Endless: unfused mons run on half their base stats
 == biome · swamp over construction site, one fainted
 act | Now | Swamp 72 pick — Garchomp resists · Construction Site 55
-    🗺 Next biome from Slum
 options | Biomes | —
     ★ Swamp Water 40% Poison 30% 72
     · mostly Wooper 22%
@@ -167,14 +152,12 @@ notes | Notes | —
     ✚ judged without 1 fainted — no revive at the next heal
 == biome · nobody fainted
 act | Now | Swamp 72 pick — Garchomp resists
-    🗺 Next biome from Slum
 options | Biomes | —
     ★ Swamp Water 40% Poison 30% 72
     · mostly Wooper 22%
     ✓ Garchomp resists
 == biome · no spawn data yet
 act | Now | Swamp · Construction Site
-    🗺 Next biome
     · Swamp
     · Construction Site
     reading the game's biome tables…

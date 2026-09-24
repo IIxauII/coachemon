@@ -120,7 +120,9 @@ const catchAdvice = {
   const text = cardText(card);
   assert.ok(text.includes("\nFoes: we're weak to Fire ×2\n"), text);
   assert.ok(text.includes("\nRoad: W90 wild — Toxicroak L71\n🔮 Next W90 wild\n"), text);
-  assert.ok(text.startsWith("Charizard Flamethrower → Lycanroc · 2 hits\n🎯 W89\n"), text);
+  // The call leads the text and nothing heads it: the card's identity line has left the rows for the strip's
+  // caption, which the text has no need of — the watch CLI already carries the kind, the wave and the verdict (§6).
+  assert.ok(text.startsWith("Charizard Flamethrower → Lycanroc · 2 hits\n⚔ Charizard"), text);
   // No ball worth throwing means no catch group at all — an empty tab is filler (§6).
   assert.ok(!groups.some(g => g.id === "catch"));
   // Only the preview: the look-ahead is absent, so the road line is the preview string alone.
@@ -194,7 +196,7 @@ const catchAdvice = {
   const groups = show("unavailable", card);
   assert.deepEqual(groups.map(g => g.id), ["act"]);
   assert.equal(groups[0].summary, "no advice — the enemy AI call threw");
-  assert.equal(cardText(card), "no advice — the enemy AI call threw\n🎯 W89");
+  assert.equal(cardText(card), "no advice — the enemy AI call threw");
   // The inline ⚠ row that used to carry it is gone: the summary carries it.
   assert.ok(!groups[0].rows.some(r => r.includes("no advice")), groups[0].rows.join("\n"));
 }
