@@ -4,7 +4,7 @@
 // `options` is up to three fusions in pick order (base ← the half it takes in) with their score and reasons. The
 // call line has left the rows: `act.summary` carries it, read off the model and never written here (§6).
 import { fusionSummary, signed } from "./49-fusion.js";
-import { FS, badge, bar, dim, h, line, mon, sep, some } from "./90-render.js";
+import { badge, bar, dim, h, line, mon, sep, some } from "./90-render.js";
 
 export const drawFusion = m => {
   // The header is the card's own identity line; the strip takes it in #356.
@@ -16,11 +16,11 @@ export const drawFusion = m => {
     h("span", { flex: "1" }),
     h("span", { color: f.fuse ? "#6d6" : "#9aa", marginLeft: "4px" }, signed(f.value)));
   const detail = f => line("", "#9aa", ...f.types.map(t => badge(t)),
-    h("span", { color: "#9aa", fontSize: FS.tiny }, [...f.why, ...f.notes].join(" · ")));
+    h("span", dim, [...f.why, ...f.notes].join(" · ")));
   // A rule between one candidate and the next, never above the first: that boundary is the one between `act` and
   // `options`, which is the shell's to draw (§1).
   const options = m.rows.flatMap((f, i) => [i ? h("div", sep) : null, row(f, i), detail(f)]);
-  const notes = m.spliced ? [line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, "Spliced Endless: unfused mons run on half their base stats"))] : [];
+  const notes = m.spliced ? [line("", "#9aa", h("span", dim, "Spliced Endless: unfused mons run on half their base stats"))] : [];
   // `options` and `notes` head their panes with their label alone — the candidates themselves say it one glance lower (§6).
   return [
     some("act", "Now", fusionSummary(m), [header]),

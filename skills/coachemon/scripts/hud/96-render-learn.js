@@ -2,7 +2,7 @@
 // then `options`, the slots it is weighed against, then `audit`, the team line, and `notes`. The verdict is no longer
 // a row: it is `act.summary`, read off the model and never written here (§6).
 import { learnSummary } from "./40-learn.js";
-import { FS, badge, bar, dim, h, img, line, mon, some } from "./90-render.js";
+import { badge, bar, dim, h, img, line, mon, some } from "./90-render.js";
 
 // "3× Water" (the move would be the third of its type) reads as "3rd Water move".
 const ordinal = n => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
@@ -12,7 +12,7 @@ const powerTitle = x => [`base ${x.power}${x.hits > 1 ? ` × ${x.hits} hits` : "
   x.stab ? "STAB" : null, x.fixed ? "fixed damage" : null].filter(Boolean).join(" · ");
 export const drawLearn = m => {
   const header = bar("🎓", `${m.name} learns`, mon(m.icon, m.name, 20),
-    m.atk != null ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, `Atk ${m.atk} / SpA ${m.spa}`) : null);
+    m.atk != null ? h("span", { ...dim, fontWeight: "normal" }, `Atk ${m.atk} / SpA ${m.spa}`) : null);
   // The slot the new move would take: the one to forget, or on a skip the one it lost to.
   const slot = m.forget >= 0 ? m.forget : m.compare;
   // Only-type loss: the slot's own "only X move on team" note becomes a ⚠ by its name; the team line says it.
@@ -29,7 +29,7 @@ export const drawLearn = m => {
       h("span", { fontWeight: "bold", marginLeft: "2px" }, x.name),
       warn ? h("span", { color: "#fa4", marginLeft: "3px" }, "⚠") : null,
       h("span", { flex: "1" }),
-      notes.length ? h("span", { color: "#9aa", fontSize: FS.tiny, marginRight: "4px" }, notes.map(learnNote).join(" · ")) : null,
+      notes.length ? h("span", { color: "#9aa", marginRight: "4px" }, notes.map(learnNote).join(" · ")) : null,
       power, tail);
   };
   const warnAt = i => i === slot && !!onlyNote;
@@ -52,10 +52,12 @@ export const drawLearn = m => {
     ? h("span", { ...dim, marginLeft: "6px" }, `${m.gain > 0 ? "+" : "−"}${Math.abs(m.gain)} power`) : null;
   // The next big fight went unread, so the roster fits above are missing: said once, dim, only when it happened.
   const blind = m.blind ? line("", "#9aa", h("span", dim, `next big fight unread: ${m.blind}`)) : null;
-  // The header is chrome, not a row: it carries the card's identity and the panel's one control, and the strip takes
-  // it in #356. Until then it rides in `act`, as the battle card's does. The rule that used to hold the incoming
-  // move apart from the slots is gone with it — that boundary is the one between `act` and `options`, which is the
-  // shell's to draw (§1).
+  // The header is the card's identity line and carries the panel's one control. The strip takes it in #356; until
+  // then it is a row of `act` and draws in the dense register like any other row, because §9's chrome is the tab
+  // labels, the strip, the verdict and the group summaries — and the strip is what this line becomes.
+  //
+  // The rule that used to hold the incoming move apart from the slots is gone with it — that boundary is the one
+  // between `act` and `options`, which is the shell's to draw (§1).
   return [
     some("act", "Now", learnSummary(m), [header, row(m.move, "✚", "#6d6", false, gain)]),
     some("options", "Moves", null,

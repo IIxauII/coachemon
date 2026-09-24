@@ -2,18 +2,17 @@
 // never at load time. Takes the `teamPlan` view, or a battle model carrying it as `teamPlan`.
 // The whole plan, always: the enemy win condition, who to reserve for it, sacrifices, the step order and the
 // warnings. Doubles: the plan is worked out one-on-one, so its steps are approximate.
-import { FS, badge, dim, h, line, mon } from "./90-render.js";
+import { badge, dim, h, line, mon } from "./90-render.js";
 
 export const drawTeamPlan = m => {
   const tp = m?.steps ? m : m?.teamPlan;
   if (!tp) return [];
   const red = "#e55", amber = "#fa4";
-  const small = { color: "#9aa", fontSize: FS.tiny };
   const lost = tp.result !== "win";
   const approx = !!m?.double;
   const entryTag = { free: ["free", "#6d6"], switch: ["⇄", amber] }; // a switch-in also says so in `why`
   const out = [
-    line("♟", "#c9f", h("span", { fontWeight: "bold" }, "Fight plan"), approx ? h("span", { ...small, marginLeft: "4px" }, "steps approximate") : null,
+    line("♟", "#c9f", h("span", { fontWeight: "bold" }, "Fight plan"), approx ? h("span", { ...dim, marginLeft: "4px" }, "steps approximate") : null,
       h("span", { flex: "1" }),
       h("span", { color: lost ? red : "#6d6" }, lost ? "likely lost" : "winnable")),
   ];
@@ -35,12 +34,12 @@ export const drawTeamPlan = m => {
     const tag = entryTag[st.entry];
     out.push(line(`${approx ? "~" : ""}${i + 1}`, "#8cf",
       mon(st.send.icon, st.send.name, 20),
-      tag ? h("span", { color: tag[1], fontSize: FS.tiny, marginRight: "2px" }, tag[0]) : null,
+      tag ? h("span", { color: tag[1], marginRight: "2px" }, tag[0]) : null,
       ...(st.move ? [st.type ? badge(st.type) : null, h("span", { marginRight: "2px" }, st.move)] : [h("span", dim, "—")]),
       h("span", dim, "→"), mon(st.vs.icon, st.vs.name, 18),
       h("span", { flex: "1" }),
-      h("span", st.sacrifice ? { color: amber, fontSize: FS.tiny } : small, st.why),
-      st.notes?.length ? h("span", { ...small, marginLeft: "4px" }, st.notes.join(" · ")) : null));
+      h("span", st.sacrifice ? { color: amber } : dim, st.why),
+      st.notes?.length ? h("span", { ...dim, marginLeft: "4px" }, st.notes.join(" · ")) : null));
   });
   for (const x of tp.sacrifice) {
     out.push(line("✝", amber, mon(x.icon, x.name, 20), h("span", { color: amber, margin: "0 3px" }, `${x.hp}% · sacrifice to`),
@@ -54,6 +53,6 @@ export const drawTeamPlan = m => {
       h("span", { ...dim, marginLeft: "4px" }, tp.prefers.flips ? `(+${tp.prefers.gain} · turns the fight)` : `(+${tp.prefers.gain})`)));
   }
   for (const w of tp.warnings) out.push(line("⚠", red, h("span", { color: red }, w)));
-  if (tp.notes?.length) out.push(line("·", "#9aa", h("span", small, tp.notes.join(" · "))));
+  if (tp.notes?.length) out.push(line("·", "#9aa", h("span", dim, tp.notes.join(" · "))));
   return out;
 };

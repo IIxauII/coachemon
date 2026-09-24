@@ -5,7 +5,7 @@
 // and *Viewing* are a row apiece, and neither earns a group of its own. The call is `act.summary`, read off the
 // model and never written here (§6).
 import { ptsText, startersSummary } from "./51-starters.js";
-import { FS, bar, dim, group, h, line, mon, sep, some } from "./90-render.js";
+import { bar, dim, group, h, line, mon, sep, some } from "./90-render.js";
 
 export const drawStarters = m => {
   const best = m.picks[0];
@@ -20,8 +20,8 @@ export const drawStarters = m => {
   // The line that used to say so is `act.summary` now — `startersSummary` carries it, so it is said once.
   if (!best) return [group("act", "Now", startersSummary(m), [header, chosen])];
   const teamTail = t => [h("span", { ...dim, marginLeft: "4px" }, `${ptsText(t.cost)} pts · SE vs ${t.covers} types`),
-    t.weak.length ? h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "4px" }, `· weak ${t.weak.join("/")}`) : null,
-    t.noCarry ? h("span", { color: "#fa4", fontSize: FS.tiny, marginLeft: "4px" }, "· no carry") : null];
+    t.weak.length ? h("span", { color: "#fa4", marginLeft: "4px" }, `· weak ${t.weak.join("/")}`) : null,
+    t.noCarry ? h("span", { color: "#fa4", marginLeft: "4px" }, "· no carry") : null];
   const options = [];
   m.picks.forEach((t, i) => {
     // A rule between one proposal and the next, never above the first: that boundary is the one between `act` and
@@ -32,16 +32,16 @@ export const drawStarters = m => {
       options.push(line("", "#9aa", mon(x.icon, x.name, 20),
         h("span", x.chosen ? dim : { fontWeight: "bold" }, x.name), x.chosen ? h("span", { color: "#6d6", marginLeft: "2px" }, "✓") : null,
         h("span", { ...dim, marginLeft: "3px" }, `${ptsText(x.cost)}`),
-        x.role ? h("span", { color: ROLE[x.role], fontSize: FS.tiny, marginLeft: "3px" }, x.role) : null,
+        x.role ? h("span", { color: ROLE[x.role], marginLeft: "3px" }, x.role) : null,
         h("span", { flex: "1" }),
-        h("span", { color: "#9aa", fontSize: FS.tiny }, x.why.join(" · "))));
+        h("span", dim, x.why.join(" · "))));
     }
   });
   const v = m.viewing;
   if (v) {
     options.push(h("div", sep), line("👁", "#9aa", mon(v.icon, v.name, 20), h("span", {}, v.name),
       h("span", { ...dim, marginLeft: "3px" }, `${ptsText(v.cost)} pts · #${v.rank} of ${v.of}${v.inPick ? ` · in ${v.inPick}` : ""}`),
-      h("span", { flex: "1" }), h("span", { color: "#9aa", fontSize: FS.tiny }, v.why.join(" · "))));
+      h("span", { flex: "1" }), h("span", dim, v.why.join(" · "))));
   }
   // Every caveat on one row, joined — unlike the encounter card's, which are a row apiece because each is its own note.
   const noteText = [m.fresh ? "Fresh Start: no passives, egg moves or luck" : null, m.mono ? "single type: shared weaknesses not counted" : null,
@@ -50,6 +50,6 @@ export const drawStarters = m => {
   return [
     some("act", "Now", startersSummary(m), [header, chosen]),
     some("options", "Proposals", null, options),
-    some("notes", "Notes", null, noteText.length ? [line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, noteText.join(" · ")))] : []),
+    some("notes", "Notes", null, noteText.length ? [line("", "#9aa", h("span", dim, noteText.join(" · ")))] : []),
   ].filter(Boolean);
 };

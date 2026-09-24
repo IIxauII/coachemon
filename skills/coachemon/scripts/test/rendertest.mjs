@@ -1,6 +1,7 @@
-// Card rendering and the watcher's summary of each card: the learn-move card with its team line and only-type
-// warning, the rewards card's TM recipient and boss-next tag, and the fight plan the battle card always draws in
-// full. The panel has one fidelity, so every card here is drawn once.
+// The **drawn** panel: the skin it wears, the states it shows between decisions, and the watcher's summary of each
+// card — the learn-move card with its team line and only-type warning, the rewards card's TM recipient and boss-next
+// tag, and the fight plan the battle card always draws in full. The panel has one fidelity, so every card here is
+// drawn once. The content half of a card is pinned in grouptest, which draws nothing.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
@@ -9,15 +10,15 @@ const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p,
 const pk = (name, types, atk, spa, moves) => ({ name, level: 30, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })) });
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const mount = scene => {
+const mount = (scene, { expose = false, view = "full" } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud"));
+  globalThis.localStorage = { getItem: () => view, setItem() {} };
+  eval(bundle("hud", { expose }));
   return el;
 };
 const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
@@ -93,4 +94,89 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const el = mount(scene);
   console.log(`== rewards boss next\n${lines(el)}`);
   console.log(`summary ${globalThis.__coachHud.summary().rewards}`);
+}
+
+// ---- The skin (#349 §8, §9), and what the panel shows between decisions (§11)
+// The tokens are recorded rather than restated, so moving any of them is a golden diff and not a silent redesign.
+{
+  const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+  const el = mount(scene);
+  console.log("== skin");
+  // The game's window interior, opaque; its outline as one shadow at 1px offset for the whole panel; its message
+  // white; and the one treatment the game never draws, a 1px flat gold rule around the whole object.
+  for (const k of ["background", "color", "border", "boxShadow", "font"]) console.log(`panel ${k}: ${el.style[k]}`);
+  // The two faces, split by the game's own density rule: the default face for chrome, the dense face at half the
+  // size for rows. The shell decides which register a node is in, so a row is where the dense face shows up.
+  const rows = el.kids.filter(n => n?.style?.fontFamily);
+  const rowFonts = [...new Set(rows.map(n => `${n.style.fontSize}/${n.style.lineHeight} ${n.style.fontFamily}`))];
+  console.log(`rows font: ${rowFonts.join(" | ")}`);
+  assert.equal(rowFonts.length, 1, "one row register, not three");
+  // A row the shell put in the dense face keeps whatever weight it already had: the card's own header line is bold,
+  // and the register must not flatten it.
+  assert.ok(rows.some(n => n.style.fontWeight === "bold"), "the dense register keeps a row's weight");
+  // **A register has one size**, which the shell sets on the row and nothing below the row overrides. This is the
+  // assertion that bites: a leftover literal inside a row is not merely a third rung, it renders *larger* than the
+  // row containing it, which the old base/small/tiny scale could never produce.
+  const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
+  const sized = rows.flatMap(under).filter(n => n?.style?.fontSize);
+  assert.deepEqual(sized.map(n => n.style.fontSize), [], "nothing inside a row sets a size of its own");
+
+  // §10: the panel never signals. No transition, no animation and no keyframe anywhere — asserted, which is how §10
+  // is enforced rather than merely written down. Reduced motion needs no handling because there is no motion.
+  const styles = n => (n == null || typeof n !== "object" ? [] : [n.style ?? {}, ...(n.children ?? []).flatMap(styles)]);
+  const motion = p => [p.style, ...(p.kids ?? []).flatMap(styles)].flatMap(Object.keys).filter(k => /^(transition|animation)/i.test(k));
+  assert.deepEqual(motion(el), [], "nothing drawn on the panel carries a transition or an animation");
+  const src = bundle("hud");
+  assert.ok(!src.includes("@keyframes"), "the panel declares no keyframes");
+  // The words themselves can't be banned — the model's own prose talks about the game's turn animations — so the
+  // guard is on the forms a style is set by: a property or an assignment, in any branch, drawn by this file's
+  // fixtures or not. `cssText` and `setProperty` are banned outright, because either would let one in without the
+  // guard ever seeing the word.
+  assert.equal(src.match(/\b(transition|animation)[A-Za-z]*\s*[:=]/gi), null, "no branch of the panel sets a transition or an animation");
+  assert.equal(src.match(/\b(cssText|setProperty)\b/g), null, "the panel sets no style through cssText or setProperty, which would slip past the guard above");
+  // The drawn tree above only covers the branches this file's fixtures reach, and a leftover size can sit on one
+  // they don't — a foe's TERA tag, say. So the source is checked as well: the shell's row register is the only
+  // place in the panel that sets a size at all.
+  assert.deepEqual(src.match(/fontSize:/g), ["fontSize:"], "the shell's row register is the only size the panel sets");
+
+  // The panel carries no mark, wordmark or name of its own (§9).
+  assert.ok(!/coachemon|coach hud/i.test(lines(el)), lines(el));
+
+  // Dismissed: a bare glyph from the settled alphabet, inside the same rule. It names the panel no more than the
+  // panel names itself — that was the one place a name would have cost no layout pixels, and it is declined (§9) —
+  // and it carries nothing live, because dismissed means silent (§10).
+  const shut = mount(scene, { view: "closed" });
+  console.log(`== dismissed\n${lines(shut)}`);
+  assert.equal(shut.style.border, "1px solid #f8b050");
+  assert.deepEqual(motion(shut), [], "the dismissed glyph carries nothing live either");
+  assert.ok(!/coachemon|coach hud/i.test(lines(shut)), lines(shut));
+}
+
+// A refresh that threw: one line, inside the gold rule, with no strip, no tab bar, no drawer and no law frame (§11).
+{
+  const el = mount({ get ui() { throw new Error("the scene went away"); } });
+  console.log(`== failed refresh\n${lines(el)}`);
+  assert.equal(el.style.display, "block");
+  assert.equal(el.style.border, "1px solid #f8b050", "a broken panel still reads as the coach's own object");
+  assert.equal(el.kids, undefined, "nothing is shelled around the line");
+}
+
+// Nothing to coach — mid-reload or the title screen — hides the panel entirely, as today (§11).
+{
+  const el = mount({ ui: null });
+  assert.equal(el.style.display, "none");
+  console.log("== nothing to coach\nhidden");
+}
+
+// A sprite the atlas has not loaded falls back to the name it stands for, and the panel redraws on the next refresh
+// until the sprite lands — the draw signature is never banked while a sprite is still missing (§11).
+{
+  const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
+  const el = mount(scene, { expose: true });
+  assert.ok(lines(el).includes("Charmeleon"), "the icon falls back to the name");
+  assert.ok(globalThis.__hud["90-render"].missedSprite(), "a wanted sprite that wasn't there is remembered");
+  el.kids = undefined;
+  globalThis.__hud["98-tick"].tick();
+  assert.ok(el.kids, "the same card is drawn again while a sprite is still missing");
 }

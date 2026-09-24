@@ -5,7 +5,7 @@
 // The card only ever says what the calendar and the seed already decided: the schedule is arithmetic on the wave
 // index, and a named trainer comes from the preview's replay, which marks its own confidence.
 import { aheadIn, aheadWho } from "./49-ahead.js";
-import { FS, dim, h, line } from "./90-render.js";
+import { dim, h, line } from "./90-render.js";
 
 const AHEAD_COLOR = { ready: "#6d6", watch: "#ec4", risky: "#e55" };
 export const drawAhead = a => {
@@ -18,12 +18,12 @@ export const drawAhead = a => {
   // control of its own.
   const out = [line("⚑", color, h("span", { fontWeight: "bold", marginRight: "3px" }, "Next big fight"),
     head, where, h("span", { flex: "1" }),
-    a.next.double ? h("span", { ...dim, fontSize: FS.tiny, marginRight: "3px" }, "double") : null,
-    a.next.bars ? h("span", { color: "#fa4", fontSize: FS.tiny }, `👑 ${a.next.bars + 1} bars`) : null)];
+    a.next.double ? h("span", { ...dim, marginRight: "3px" }, "double") : null,
+    a.next.bars ? h("span", { color: "#fa4" }, `👑 ${a.next.bars + 1} bars`) : null)];
   // The roster, unless the next-wave card above is already showing it: the same foes twice is noise, the readiness
   // reasons under them are not.
   if (a.next.foes?.length && a.next.in > 1) {
-    out.push(line("·", "#9aa", h("span", { ...dim, fontSize: FS.tiny },
+    out.push(line("·", "#9aa", h("span", dim,
       a.next.foes.map(f => `${f.name} L${f.level}`).join(" · "))));
   }
   // What beating it pays, when the fixed-battle table pins the tiers. No roll: it is the config's own list.
@@ -47,10 +47,10 @@ export const drawAhead = a => {
       ? `these rewards are pinned to ${a.thisWave.tiers.join(" · ")}${a.thisWave.luckUpgrades ? "" : " — luck can't upgrade them"}`
       : "luck can't upgrade these rewards")));
   }
-  out.push(line("🍀", "#9aa", h("span", { ...dim, fontSize: FS.tiny },
+  out.push(line("🍀", "#9aa", h("span", dim,
     `luck ${a.luck.value} (${a.luck.grade}) — ${a.luck.upgradePct}% tier upgrade per reward${a.thisWave && !a.thisWave.luckUpgrades ? ", off this wave" : ""}`)));
   for (const f of a.eternatus?.facts ?? []) {
-    out.push(line(f.good ? "✓" : "☠", f.good ? "#6d6" : "#c9f", h("span", { fontSize: FS.tiny }, f.text)));
+    out.push(line(f.good ? "✓" : "☠", f.good ? "#6d6" : "#c9f", f.text));
   }
   return out;
 };

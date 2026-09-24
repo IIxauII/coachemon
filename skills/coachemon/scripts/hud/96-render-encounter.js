@@ -5,12 +5,12 @@
 // starts (a battle), what it costs, who it takes and why the call went that way; a seed-fixed outcome is marked 🔮.
 // The call itself is `act.summary`, read off the model and never written here (§6).
 import { encounterSummary } from "./46-encounter.js";
-import { FS, bar, dim, h, line, some } from "./90-render.js";
+import { bar, dim, h, line, some } from "./90-render.js";
 
 const ENCOUNTER_MARK = { take: ["★", "#6d6"], ok: ["·", "#9aa"], avoid: ["✗", "#e77"], off: ["–", "#667"] };
 export const drawEncounter = m => {
   // The header is the card's own identity line; the strip takes it in #356.
-  const header = bar("🎭", m.name, m.tier ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, m.tier) : null);
+  const header = bar("🎭", m.name, m.tier ? h("span", { ...dim, fontWeight: "normal" }, m.tier) : null);
   const options = [];
   m.options.forEach((o, k) => {
     const [mark, color] = ENCOUNTER_MARK[o.verdict] ?? ["?", "#ec4"];
@@ -27,11 +27,11 @@ export const drawEncounter = m => {
       m.known && o.by ? `by ${o.by}` : o.qualifies?.length ? `${o.qualifies.join(", ")} qualif${o.qualifies.length === 1 ? "ies" : "y"}` : null,
       o.why,
     ].filter(Boolean);
-    if (bits.length) options.push(line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, bits.join(" · "))));
+    if (bits.length) options.push(line("", "#9aa", h("span", dim, bits.join(" · "))));
   });
   const notes = [
-    ...m.notes.map(n => line("·", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, n))),
-    m.known ? null : line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, "not judged yet: options and requirements only")),
+    ...m.notes.map(n => line("·", "#9aa", h("span", dim, n))),
+    m.known ? null : line("", "#9aa", h("span", dim, "not judged yet: options and requirements only")),
   ];
   // `options` and `notes` head their panes with their label alone — the options themselves say it one glance lower (§6).
   return [

@@ -4,7 +4,7 @@
 import { STATUS_FRAMES } from "./01-core.js";
 import { catchSummary } from "./45-catch.js";
 import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummary } from "./60-card.js";
-import { FS, badge, bar, dim, group, h, hpColor, img, line, mon, some } from "./90-render.js";
+import { badge, bar, dim, group, h, hpColor, img, line, mon, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
 import { drawPreview } from "./95-render-preview.js";
@@ -26,7 +26,7 @@ export const drawBattle = m => {
   const threatTag = t => {
     const n = h("span", { display: "inline-flex", alignItems: "center", marginRight: "4px", color: t.level === "ko" ? "#e55" : "#fa4" },
       t.level === "ko" ? "💀" : "⚠", badge(t.type, t.e >= 2 ? `×${t.e}` : ""),
-      h("span", { fontSize: FS.tiny, marginLeft: "1px" }, `${t.pct}%${t.hits ? ` ${t.hits}-hit` : ""}`));
+      h("span", { marginLeft: "1px" }, `${t.pct}%${t.hits ? ` ${t.hits}-hit` : ""}`));
     n.title = `${t.next ? "next turn: " : ""}${t.from}'s ${t.move}: ~${t.pct}% of current HP`
       + `${t.pko > 0 && t.pko < 100 ? `, ${t.pko}% KO` : ""}${t.level === "ko" ? ", before it can act" : ""}`;
     return n;
@@ -41,7 +41,7 @@ export const drawBattle = m => {
   const swapLine = (sw, color, tail, label) => step(label, "⇄", color,
     ...(sw.out ? [mon(sw.out.icon, sw.out.name, 20), sw.out.threat ? threatTag(sw.out.threat) : null, h("span", { color, margin: "0 3px" }, "out ›")] : [h("span", { color, marginRight: "3px" }, "send")]),
     mon(sw.in.icon, sw.in.name, 20), h("span", { color, marginLeft: "3px" }, tail),
-    sw.in.takes ? h("span", { ...dim, fontSize: FS.tiny, marginLeft: "4px" }, `· ${takesText(sw.in.takes)}`) : null);
+    sw.in.takes ? h("span", { ...dim, marginLeft: "4px" }, `· ${takesText(sw.in.takes)}`) : null);
   // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn). The trap
   // abilities the move runs into are on the foe rows below, not here.
   const slotLine = (sl, label) => step(label, "⚔", "#8cf",
@@ -52,7 +52,7 @@ export const drawBattle = m => {
       : sl.target ? [h("span", { color: "#8cf", margin: "0 2px 0 4px" }, "→"), mon(sl.target.icon, sl.target.name, 20)] : []),
     h("span", { flex: "1" }),
     sl.ko ? h("span", dim, hitsText(sl.ko)) : null,
-    sl.notes?.length ? h("span", { ...dim, fontSize: FS.tiny, marginLeft: "4px" }, sl.notes.join(" · ")) : null);
+    sl.notes?.length ? h("span", { ...dim, marginLeft: "4px" }, sl.notes.join(" · ")) : null);
   const firstText = p => (p >= 100 ? "moves first" : p <= 0 ? "moves after" : `${p}% first`);
   const slotMove = sl => [
     mon(sl.icon, sl.name, 20),
@@ -125,7 +125,7 @@ export const drawBattle = m => {
         ...r.types.map(t => badge(t)),
         // It Terastallizes before it moves this turn, so the types, weaknesses and damage above are already its
         // Tera type's.
-        r.tera ? h("span", { color: "#c9f", fontSize: "9px", marginRight: "3px" }, "TERA") : null,
+        r.tera ? h("span", { color: "#c9f", marginRight: "3px" }, "TERA") : null,
         r.boss ? "👑" : null,
         STATUS_FRAMES[r.status] ? img("statuses", STATUS_FRAMES[r.status], STATUS_FRAMES[r.status], 10, null) : null,
         h("span", { flex: "1" }),
@@ -154,13 +154,14 @@ export const drawBattle = m => {
             h("span", { fontWeight: "bold" }, r.pick.move),
             h("span", { ...dim, marginLeft: "4px" }, `~${r.pick.pct}%${r.pick.ko ? ` · ${hitsText(r.pick.ko)}` : ""}`),
             r.pick.risky ? h("span", { color: "#fa4" }, " ⚠ loses trade") : null,
-            h("span", { color: "#9aa", fontSize: FS.tiny, marginLeft: "4px" }, "later"),
-            r.pick.notes?.length ? h("span", { color: "#9aa", fontSize: FS.tiny, marginLeft: "4px" }, r.pick.notes.join(" · ")) : null)
+            h("span", { color: "#9aa", marginLeft: "4px" }, "later"),
+            r.pick.notes?.length ? h("span", { color: "#9aa", marginLeft: "4px" }, r.pick.notes.join(" · ")) : null)
         : !r.pick && !f ? line("➜", "#8cf", h("span", dim, "no damaging move lands")) : null,
-      r.notes?.length ? line("·", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, r.notes.join(" · "))) : null);
+      r.notes?.length ? line("·", "#9aa", h("span", dim, r.notes.join(" · "))) : null);
   });
-  // The header is chrome, not a row: it carries the card's identity and the panel's one control, and the strip takes
-  // it in #356. Until then it rides in `act`, the way an un-migrated card's own header rides in the adapter's group.
+  // The header is the card's identity line and carries the panel's one control. The strip takes it in #356; until
+  // then it is a row of `act` and draws in the dense register like any other row, because §9's chrome is the tab
+  // labels, the strip, the verdict and the group summaries — and the strip is what this line becomes.
   //
   // `road` merges the preview and the look-ahead, because two tabs about what is coming is how a card reaches six.
   // `catch` keeps a group of its own rather than joining `foes`: catching is a different decision from fighting,
