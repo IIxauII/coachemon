@@ -7,6 +7,7 @@
 // different diffs, and nothing below asserts a node.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { GROUP_IDS as RELAY_GROUP_IDS } from "../../../../extension/src/relay/channel.ts";
 
 // Enough page for the bundle to build its element and for a row to be a node; nothing here reads one.
 globalThis.window = globalThis;
@@ -24,7 +25,12 @@ const { drawEncounter } = globalThis.__hud["96-render-encounter"];
 const { drawStarters } = globalThis.__hud["96-render-starters"];
 const { drawFusion } = globalThis.__hud["96-render-fusion"];
 const { drawBiome } = globalThis.__hud["97-render-biome"];
-const { GROUP_IDS, MARKS, cardText, groupsText } = globalThis.__hud["90-render"];
+const { GROUP_IDS, MARKS, cardText, flatGroups } = globalThis.__hud["90-render"];
+
+// The relay keeps its own copy of the ids, because the panel is a source the extension bundles rather than imports
+// (`extension/src/relay/channel.ts`). This is what pins the copy to the original: retiring or merging a group
+// (#349 §1) has to be done on both, or a card the panel draws stops crossing the gate.
+assert.deepEqual([...RELAY_GROUP_IDS], GROUP_IDS, "the relay's group ids are the panel's");
 
 
 // ---- The closed alphabet (#349 §7)
@@ -48,7 +54,7 @@ const RETIRED = {
 const glyphsIn = text => [...text].filter(ch => !/[\p{L}\p{N}\s]/u.test(ch) && !/[\x20-\x7e]/.test(ch));
 
 const show = (label, card, draw = drawBattle) => {
-  const groups = groupsText(draw(card));
+  const groups = flatGroups(draw(card));
   console.log(`== ${label}`);
   for (const g of groups) {
     console.log(`${g.id} | ${g.label || "—"} | ${g.summary ?? "—"}`);
@@ -63,6 +69,12 @@ const show = (label, card, draw = drawBattle) => {
   assert.ok(groups.length <= 5, "five tabs is the cap");
   assert.equal(groups[0]?.id, "act", "every card leads with act");
   assert.ok(groups[0].summary, "act is never empty");
+  // **The strip's length budget** (#349 §6): two lines, then an ellipsis — about 115 characters at reference width —
+  // and the **leading clause must fit**; what follows the first ` · ` may clip, because it is reasoning and not the
+  // call. The clamp only ever eats the end, so the clause is what CI can hold. The wire golden holds the same budget
+  // over what actually ships; here it is held over every kind, including the two that are never streamed.
+  const clause = groups[0].summary.split(" · ")[0];
+  assert.ok(clause.length <= 115, `${label}: the act summary's leading clause is ${clause.length} > 115: ${clause}`);
   // `text` is derived from the group list rather than read back off the drawn card (§5), so it carries every group
   // in the same fixed order and nothing besides — and its first line is the call, which is the line the watch CLI
   // prints per event. What a heading reads is pinned against literals at each card below.

@@ -41,6 +41,13 @@ export type ExtensionEvent = { t: "event"; tab: number; kind: EventKind; body: R
 export type EventKind = "card" | "coach-error";
 
 /**
+ * One **group** of a **card**, as everything outside the panel sees it (§11.1, #349 §5): nodes cannot cross a wire,
+ * so a group leaves the page with its rows already flattened to one string each. Both surfaces that carry a card —
+ * the relay's card event and the `card` command's result — are this same shape, so they are declared once here.
+ */
+export type CardGroup = { id: string; label: string; summary: string | null; rows: string[] };
+
+/**
  * The dev loop's reload (§5.4). Not a command: it needs no tab, takes no arguments and is never answered, because the
  * extension it reaches is about to restart. The hub fans it out to every `flavour: "dev"` browser and to nothing else,
  * so it can never touch a store build — which is also why the guard bans the string from a store artifact (§5.5).

@@ -27,23 +27,43 @@ test("no panel on the page refuses no-hud (§10.1)", t => {
 test("the card read is the card event's own fields plus the summary (§11.1, §11.4)", t => {
   onPage(t, scene);
   const summary = { kind: "battle", wave: 12, verdict: "danger", field: "Charizard Ember → Rattata · 1 hit" };
-  hud(t, { summary: () => summary, card: () => ({ kind: "battle", key: "12", wave: 12, verdict: "danger", text: "⚔ Charizard Ember" }) });
-  assert.deepEqual(send("card", {}), { ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", text: "⚔ Charizard Ember", summary });
+  const groups = [{ id: "act", label: "Act", summary: "Charizard Ember → Rattata · 1 hit", rows: [] }];
+  hud(t, { summary: () => summary, card: () => ({ kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember" }) });
+  assert.deepEqual(send("card", {}), { ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "⚔ Charizard Ember", summary });
+});
+
+test("a late join reads the decision on screen by group and not by line (§11.1, #361)", t => {
+  onPage(t, scene);
+  const groups = [
+    { id: "act", label: "Act", summary: "Charizard Ember → Rattata · 1 hit", rows: [] },
+    { id: "foes", label: "Foes", summary: "we're weak to Rock ×2", rows: ["💀 Charizard ← Lycanroc Stone Edge"] },
+  ];
+  hud(t, { summary: () => ({ kind: "battle" }), card: () => ({ kind: "battle", key: "12", wave: 12, verdict: "danger", groups, text: "x" }) });
+  const r = send("card", {});
+  assert.deepEqual(r.groups, groups);
+  assert.equal(r.groups?.find((g: { id: string }) => g.id === "foes")?.rows[0], "💀 Charizard ← Lycanroc Stone Edge");
+});
+
+test("a panel that is not carrying groups reads null rather than an empty card (§11.4)", t => {
+  onPage(t, scene);
+  hud(t, { summary: () => ({ kind: "battle" }), card: () => ({ kind: "battle", key: "12", wave: 12, verdict: "easy", groups: "act", text: "x" }) });
+  assert.equal(send("card", {}).groups, null);
 });
 
 test("a panel with nothing to coach reads as a card of nulls, not as a missing panel", t => {
   onPage(t, scene);
   hud(t, { summary: () => null, card: () => null });
-  assert.deepEqual(send("card", {}), { ok: true, kind: null, key: null, wave: null, verdict: null, text: null, summary: null });
+  assert.deepEqual(send("card", {}), { ok: true, kind: null, key: null, wave: null, verdict: null, groups: null, text: null, summary: null });
 });
 
-test("a panel from before the card events falls back to what its summary says", t => {
+test("the structured summary is read with no panel drawn at all: a read never needs a document (§11.4)", t => {
   onPage(t, scene);
   hud(t, { summary: () => ({ kind: "rewards", wave: 15, verdict: null }) });
   const r = send("card", {});
   assert.equal(r.kind, "rewards");
   assert.equal(r.wave, 15);
   assert.equal(r.key, null);
+  assert.equal(r.groups, null);
   assert.equal(r.text, null);
 });
 
@@ -57,5 +77,5 @@ test("a panel that throws reads as a card of nulls: a broken HUD never fails the
       throw new Error("planner blew up");
     },
   });
-  assert.deepEqual(send("card", {}), { ok: true, kind: null, key: null, wave: null, verdict: null, text: null, summary: null });
+  assert.deepEqual(send("card", {}), { ok: true, kind: null, key: null, wave: null, verdict: null, groups: null, text: null, summary: null });
 });

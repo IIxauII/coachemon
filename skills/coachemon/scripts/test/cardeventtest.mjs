@@ -4,7 +4,40 @@
 import assert from "node:assert";
 import { bundle } from "../hud-bundle.mjs";
 import { hudScript, stamp } from "../../../../extension/src/build/artifact.ts";
-import { EVENT, cardBody, coachErrorBody } from "../../../../extension/src/relay/channel.ts";
+import { EVENT, GROUP_IDS, cardBody, coachErrorBody } from "../../../../extension/src/relay/channel.ts";
+
+// The strip is two lines, then an ellipsis — about 115 characters at reference width — and **the leading clause must
+// fit**; what follows the first ` · ` may clip, because it is reasoning and not the call (#349 §6). The clamp only
+// ever eats the end, so what CI can hold is the clause, and this is where it is held: every act summary that reaches
+// the wire is one the strip drew.
+const CLAUSE_BUDGET = 115;
+
+/**
+ * What every card detail on the wire has to be (#361): the relay's gate, `groups` flattened, and `text` the
+ * projection of `groups` in the fixed tab order — each group headed by its label and its summary, `act` by its
+ * summary alone, then its rows one per line — so the two cannot disagree by construction.
+ */
+const wireOk = card => {
+  const body = cardBody(card);
+  assert.notEqual(body, null, `the relay refuses this detail: ${JSON.stringify(card)}`);
+  const ids = body.groups.map(g => g.id);
+  assert.deepEqual(ids, ids.slice().sort((a, b) => GROUP_IDS.indexOf(a) - GROUP_IDS.indexOf(b)), "the groups come in the fixed tab order");
+  assert.equal(ids[0], "act", "every card leads with act");
+  // Pre-flattened: nodes cannot cross a wire, so a row is already the one line it reads as.
+  for (const g of body.groups) for (const r of g.rows) assert.equal(typeof r, "string", `${g.id} row is not flattened: ${JSON.stringify(r)}`);
+  // The heading law restated by hand rather than imported from the panel: projecting the groups with the panel's own
+  // projection would assert the function equals itself. This is the second opinion, and the golden's text below is
+  // the third — a change to the law has to be made here as well as in `90-render.js`, deliberately.
+  const heading = g => (g.id === "act" ? g.summary : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
+  const projected = body.groups.map(g => [heading(g), ...g.rows].filter(Boolean).join("\n")).filter(Boolean).join("\n");
+  assert.equal(body.text, projected, "the text is the projection of the groups and nothing else");
+  const call = body.groups[0].summary;
+  assert.equal(body.text.split("\n")[0], call, "the first line of the text is the act summary");
+  // The strip's budget, held on the clause alone.
+  const clause = call.split(" · ")[0];
+  assert.ok(clause.length <= CLAUSE_BUDGET, `the act summary's leading clause is ${clause.length} > ${CLAUSE_BUDGET}: ${clause}`);
+  return body;
+};
 
 const BUILD = "0.0.0+cafef00dbeef";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
@@ -24,7 +57,10 @@ const learnScene = move => ({
 let scene = learnScene(["Flamethrower","Fire",90,"S"]);
 let el = null, ticker = null;
 const events = [];
+// Every node the panel makes, counted: what proves the card is drawn once per refresh rather than again per read.
+let made = 0;
 const node = tag => {
+  made++;
   const n = { tagName: tag, style: {}, children: [], title: "",
     addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; n.children = k; } };
   return n;
@@ -62,19 +98,24 @@ const drawn = () => (el.kids ?? []).map(function text(n) {
 {
   assert.equal(cards().length, 1, "the first refresh pushes the card it drew");
   const card = cards()[0];
-  const body = cardBody(card);
-  assert.notEqual(body, null, `the relay refuses this detail: ${JSON.stringify(card)}`);
+  const body = wireOk(card);
   assert.equal(body.kind, "learn");
   assert.equal(body.key, "12|Charmeleon|Flamethrower");
   assert.equal(body.wave, 12);
   console.log(`verdict ${body.verdict}`);
+  // The groups as the agent reads them: a decision by name, not by line.
+  for (const g of body.groups) console.log(`group ${g.id} | ${g.label} | ${g.summary ?? "—"} | rows ${g.rows.length}`);
   console.log(`text\n${body.text}`);
   // The text is the card the panel drew, not the panel's own footer.
   assert.ok(body.text.includes("Flamethrower"), body.text);
   assert.ok(!/Unofficial\./.test(body.text), "the disclaimer is the panel's footer, never a card's text");
 
   // A late joiner reads the very event it missed: `card()` is the `card` command's answer (§11.1, §11.4).
-  assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, text: body.text });
+  const made0 = made;
+  assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text });
+  // **The groups are built once per fire and both projections come off them** (#361 §5): the read that follows the
+  // refresh draws no card of its own, where the stream used to draw one to say what it said.
+  assert.equal(made, made0, `the card read drew ${made - made0} nodes of its own`);
 
   tick();
   assert.equal(cards().length, 1, "the same card again is not a second event");
@@ -117,6 +158,8 @@ const drawn = () => (el.kids ?? []).map(function text(n) {
   tick();
   const wave = cards().slice(before);
   assert.deepEqual(wave.map(c => [c.kind, c.key, c.verdict]), [["battle", "20", "easy"], ["battle", "20", "danger"]]);
+  // Every card on the wire, not only the first: a battle card carries more groups than a learn card does.
+  for (const c of wave) console.log(`groups ${wireOk(c).groups.map(g => g.id).join(" ")}`);
   console.log(`mid-wave ${wave.map(c => c.verdict).join(" → ")}`);
 }
 
