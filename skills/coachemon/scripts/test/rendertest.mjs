@@ -167,6 +167,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene, { expose: true });
   const { captionBattle, drawBattle } = globalThis.__hud["96-render-battle"];
+  const { strip } = globalThis.__hud["90-render"];
   // The panel is its control, then the strip, then the drawer.
   const [head, call] = el.kids[1].children;
   const [dot, word, caption] = head.children;
@@ -193,6 +194,16 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.equal(flat(call), act.summary);
   assert.equal(call.style.WebkitLineClamp, "2");
   assert.deepEqual([call.style.display, call.style.overflow], ["-webkit-box", "hidden"]);
+  // **The leading clause must fit**; what follows the first ` · ` may clip, because it is reasoning and not the
+  // call. How much of the reasoning survives is a measurement against real fonts at a real width, which stays out
+  // of CI (#349's testing decisions) — what is assertable here is the half that makes the budget mean anything: a
+  // long summary reaches the node whole, leading clause first, so the browser's clamp can only ever eat the tail.
+  // And `overflowWrap`, so an unbroken run clips with it instead of pushing past the panel's edge.
+  const long = { id: "act", summary: "Blastoise Wave Crash → Garchomp · 2 hits · Garchomp outspeeds and Earthquake takes 88% · switch costs the turn" };
+  const longCall = strip({ verdict: "danger" }, captionBattle({ kind: "battle", title: "W89" }), [long]).children[1];
+  assert.equal(flat(longCall), long.summary, "the panel hands the browser the whole string, never a cut one");
+  assert.ok(flat(longCall).startsWith(long.summary.split(" · ")[0]), "the leading clause leads it");
+  assert.equal(longCall.style.overflowWrap, "anywhere");
   // The act pane does not repeat the call: the strip directly above it is its heading, so the drawer opens on the
   // supporting lines.
   const drawer = el.kids.slice(2);

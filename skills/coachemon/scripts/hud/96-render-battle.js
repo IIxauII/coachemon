@@ -11,8 +11,11 @@ import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
 // The strip's caption: the wave, the trainer if there is one, and the mons we are sending. **Our** actives, not the
-// enemy roster — `order` is who the plan puts in front of each foe, which on a double is the pair on the field. It
-// is dropped where it would only repeat the ⚔ lines below it: a wild single's one slot is already on the card.
+// enemy roster — `order` is who the plan puts in front of each foe, which on a double is the pair on the field.
+// It is dropped where it would only repeat the call sitting directly under it. That used to be an argument about
+// the ⚔ lines below the header; on a strip it is a stronger one, because the call names every slot it is about —
+// so a wild wave's list would say twice, in icons, what the line beneath already says in words. A trainer's does
+// not: its `order` reaches past the field to the bench mons the fight plan sends later, which the call never names.
 export const captionBattle = m => {
   const slotNames = new Set(m.field?.slots.map(sl => sl.name) ?? []);
   const order = m.trainer || (m.order ?? []).some(o => !slotNames.has(o.name)) ? m.order ?? [] : [];

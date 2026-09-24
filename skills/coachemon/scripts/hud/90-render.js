@@ -335,9 +335,14 @@ export const strip = (card, captionNode, groups) => {
   // **Two lines, then an ellipsis** — about 115 characters at reference width. The leading clause must fit; what
   // follows the first ` · ` may clip, because it is reasoning and not the call. The cut is the browser's and lands
   // on this node alone: the panel never cuts a string, so `groups[].summary` and the card's text are whole (§5).
+  // Since the clamp only ever eats the *end*, the leading clause is what survives by construction — what the budget
+  // then decides is how much of the reasoning goes with it, and that is a measurement, not a rule CI can hold.
+  // `overflowWrap` is what keeps that true of a run with no space in it: an unbroken token would otherwise push past
+  // the panel's own edge rather than clip, and the clause that must fit is the one it would push out.
   const call = (groups ?? []).find(g => g.id === "act")?.summary;
   return h("div", {}, head, call
-    ? h("div", { fontWeight: "bold", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: "2", overflow: "hidden" }, call)
+    ? h("div", { fontWeight: "bold", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: "2",
+        overflow: "hidden", overflowWrap: "anywhere", minWidth: "0" }, call)
     : null);
 };
 
