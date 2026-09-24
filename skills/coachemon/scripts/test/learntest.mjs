@@ -53,10 +53,11 @@ const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) 
   const model = learnModel({ ...learnState(scene), roster });
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");
   const txt = n => typeof n === "string" ? n : n.children.map(txt).join(" ");
-  // The card as the shell draws it, less the panel's own close control — dropped by name, so a shell that reorders
-  // its chrome doesn't silently eat a row. What leads it is the **strip**: the card's identity line as the caption,
-  // and beside it the call the card came to (#356).
-  const rest = wholeCard(el).filter(k => k.title !== "Close");
+  // The card as the shell draws it, less the panel's own controls — the caret and the × sit together in the panel's
+  // corner, so they are one child and it is the first (#358). Dropped by position rather than by name, because the
+  // cluster carries no name of its own and naming it would put a tooltip over the panel's corner. What leads what is
+  // left is the **strip**: the card's identity line as the caption, and beside it the call the card came to (#356).
+  const rest = wholeCard(el).slice(1);
   return { model, text: rest.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
 };
 const show = (label, r) => console.log(`== ${label}\n${r.text}`);

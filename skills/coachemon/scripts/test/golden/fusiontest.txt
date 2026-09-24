@@ -1,5 +1,5 @@
 == full party
-×
+⌃ ×
 🧬 Splice Snorlax ← Salamence (+7) · pick Snorlax first, then Salamence
 Fusions
 ★ Snorlax Snorlax ← Salamence Salamence +7
@@ -11,7 +11,7 @@ Ghost Flying spends Salamence L22 · Disguise → Intimidate · Mimikyu BST 476 
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Snorlax ← Salamence (+7) · pick Snorlax first, then Salamence
 == Magikarp picked first
-×
+⌃ ×
 🧬 Splice Magikarp with Magikarp ← Salamence (−3) · back out: Snorlax ← Salamence is better (+7)
 Fusions
 · Magikarp Magikarp ← Salamence Salamence −3
@@ -23,7 +23,7 @@ Water Fairy spends Azumarill L42 · Magikarp BST 200 → 311 · Swift Swim → H
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Magikarp ← Salamence (−3) · back out: Snorlax ← Salamence is better (+7)
 == Hardcore, Salamence fainted
-×
+⌃ ×
 🧬 Splice Mimikyu ← Magikarp (−4) · no fusion worth a member — back out, the Splicer stays unspent
 Fusions
 · Mimikyu Mimikyu ← Magikarp Magikarp −4
@@ -35,7 +35,7 @@ Normal Fairy spends Mimikyu L30 · Thick Fat → no ability (Disguise doesn't wo
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Mimikyu ← Magikarp (−4) · no fusion worth a member — back out, the Splicer stays unspent
 == two members
-×
+⌃ ×
 🧬 Splice Garchomp ← Magikarp (−31) · no fusion worth a member — back out, the Splicer stays unspent
 Fusions
 · Garchomp Garchomp ← Magikarp Magikarp −31
@@ -45,7 +45,7 @@ Water Ground spends Garchomp L50 · Magikarp BST 200 → 401 · Swift Swim → R
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Garchomp ← Magikarp (−31) · no fusion worth a member — back out, the Splicer stays unspent
 == Spliced Endless
-×
+⌃ ×
 🧬 Splice Garchomp ← Salamence (+81) · pick Garchomp first, then Salamence
 Fusions
 ★ Garchomp Garchomp ← Salamence Salamence +81
@@ -63,7 +63,7 @@ spends Mimikyu L30 · Thick Fat → no ability (Disguise doesn't work fused) · 
 == party screen, not splicing
 kind null
 == rewards, full party
-×
+⌃ ×
 🛒 $500 nothing affordable take DNA Splicers → Snorlax
 🎁 DNA Splicers Snorlax fuse Snorlax ← Salamence · +7 · spends Salamence L22
 Others
@@ -77,7 +77,7 @@ Others
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary take DNA Splicers → Snorlax
 == rewards, two members
-×
+⌃ ×
 🛒 $500 nothing affordable take DNA Splicers
 🎁 DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −31
 Others

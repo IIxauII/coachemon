@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, closeButton, disclaimer, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelView, setDraw, setRedraw, strip } from "./90-render.js";
+import { battleScene, clearMissed, controls, disclaimer, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelView, setDraw, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
 import { captionFusion, drawFusion } from "./96-render-fusion.js";
@@ -34,16 +34,16 @@ const KIND = {
 // The panel as the shell shells it: its own control, the **strip**, the **drawer** — the tab bar and the open
 // group's pane — and the disclaimer footer. **Strip and drawer are both visible, strip above drawer** (#349 §2):
 // the call is never a click away, including while the player reads another group, and the cost — the act summary
-// appearing on the strip while `act` is the group on show — is accepted. The control floats in the panel's corner,
-// so the shell leaves it room on the first line it draws, which is the strip's head; no renderer knows the control
-// is there.
+// appearing on the strip while `act` is the group on show — is accepted. The controls float in the panel's corner,
+// so the shell leaves them room on the first line it draws, which is the strip's head; no renderer knows they are
+// there.
 // **Shutting the drawer keeps the strip** (#349 §2, §3): the bar and the pane go and the one line the player always
 // needs stays, so a whole run can be watched on one line. The card is still drawn in full — the groups are what the
 // text is derived from — so what the drawer costs when it is shut is the shelling and nothing the coach computed.
 const open = card => {
   const kind = KIND[card.kind];
   const groups = kind.draw(card);
-  return [closeButton(), strip(card, kind.caption(card), groups), ...(panelView() === "drawer" ? drawer(groups) : []), disclaimer()];
+  return [controls(), strip(card, kind.caption(card), groups), ...(panelView() === "drawer" ? drawer(groups) : []), disclaimer()];
 };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
@@ -115,7 +115,7 @@ export const tick = () => {
     el.style.width = panelView() === "closed" ? "auto" : PANEL_W;
     if (sig !== last) {
       clearMissed();
-      // The disclaimer, the close control and the glyph that brings the panel back are all the panel's own, so no
+      // The disclaimer, the panel's two controls and the glyph that brings it back are all the panel's own, so no
       // card draws any of them — controls are the shell's, never a row's (§5).
       el.replaceChildren(...(panelView() === "closed" ? [glyph()] : open(card)));
       // Icon atlases load lazily; redraw next tick until every sprite is in. The signature is taken again rather

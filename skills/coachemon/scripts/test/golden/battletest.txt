@@ -1,14 +1,14 @@
 == easy
-× {Close}
-easy 🎯 W89 Charizard Heat Wave → Rattata · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Charizard Heat Wave → Rattata · 1 hit
 ⚔ Charizard Fire Heat Wave → Rattata 1 hit
 we're weak to Flying ×2 · Electric ×2
 Rattata Rattata L20 Normal 100% ▲ Fighting ↯ Normal Tackle → Charizard moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Heat Wave → Rattata · 1 hit
 == easyDouble
-× {Close}
-easy 🎯 W89 Charizard Heat Wave → both · 1 hit ; Venusaur Power Whip → Rattata · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Charizard Heat Wave → both · 1 hit ; Venusaur Power Whip → Rattata · 1 hit
 ⚔ Charizard Fire Heat Wave → both 1 hit
 ⚔ Venusaur Grass Power Whip → Rattata 1 hit spare hit — KO without it
 we're weak to Flying ×2 · Electric ×2
@@ -17,8 +17,8 @@ Pidgey Pidgey L20 Normal Flying 100% ▲ — ↯ Flying Gust → Charizard moves
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Heat Wave → both · 1 hit ; Venusaur Power Whip → Rattata · 1 hit
 == double
-× {Close}
-fight 🎯 W89 Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip → Nidoqueen · 2 hits {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+fight 🎯 W89 Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 ⚔ Charizard Fire Heat Wave → both Bisharp 1 hit · Nidoqueen 3 hits
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
 we're weak to Flying ×2 · Electric ×2
@@ -27,8 +27,8 @@ Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → 
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary fight | Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 == lastFoe
-× {Close}
-easy 🎯 W89 Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 ⚔ Charizard Fire Heat Wave → Nidoqueen 2 hits
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
 ◎ focus Nidoqueen : KO before it moves
@@ -37,8 +37,8 @@ Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → 
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 == threat
-× {Close}
-danger 🎯 W89 Charizard Flamethrower → Lycanroc · 3 hits {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W89 Charizard Flamethrower → Lycanroc · 3 hits
 ⚔ Charizard 💀 Rock ×4 567% {Lycanroc's Stone Edge: ~567% of current HP, before it can act} Fire Flamethrower → Lycanroc 3 hits
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 💀 Charizard ← Lycanroc Stone Edge
@@ -46,8 +46,8 @@ Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard move
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary danger | Charizard Flamethrower → Lycanroc · 3 hits | 💀 Charizard
 == switchin
-× {Close}
-danger 🎯 W89 Charizard Flamethrower → Lycanroc {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W89 Charizard Flamethrower → Lycanroc
 ⚔ Charizard 💀 Rock ×4 636% {Lycanroc's Stone Edge: ~636% of current HP, before it can act} Fire Flamethrower → Lycanroc
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 💀 Charizard ← Lycanroc Stone Edge
@@ -56,8 +56,8 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary danger | Charizard Flamethrower → Lycanroc | 💀 Charizard
 queued during prediction: 0; queueMessage restored: true
 == predict
-× {Close}
-trainer 🎯 W89 · Tester Venusaur Venusaur Power Whip → Ludicolo · 2 hits {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W89 · Tester Venusaur Venusaur Power Whip → Ludicolo · 2 hits
 ⇆ Arcanine → Ludicolo switches — moves aimed at it
 now: ⇄ Blastoise out › Venusaur in
 next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
@@ -73,16 +73,16 @@ winnable · Venusaur › Blastoise
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary trainer | Venusaur Power Whip → Ludicolo · 2 hits | plan: winnable · Venusaur › Blastoise
 == risk
-× {Close}
-danger 🎯 W89 Venusaur Power Whip → Aurorus · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+danger 🎯 W89 Venusaur Power Whip → Aurorus · 1 hit
 ⚔ Venusaur ⚠ Ice ×2 87% {Aurorus's Ice Beam: ~87% of current HP} Grass Power Whip → Aurorus 1 hit
 Foes
 Aurorus Aurorus L66 Rock Ice 100% ▲ Grass ↯ Ice Ice Beam → Venusaur moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary danger | Venusaur Power Whip → Aurorus · 1 hit
 == single
-× {Close}
-fight 🎯 W89 Charizard Air Slash → Ninetales · 3 hits {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+fight 🎯 W89 Charizard Air Slash → Ninetales · 3 hits
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
 ⇄ Charizard out › Blastoise in · optional · takes ~23% · resists Flamethrower
 we're weak to Flying ×2 · Electric ×2
@@ -91,8 +91,8 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary fight | Charizard Air Slash → Ninetales · 3 hits
 queued during prediction: 0; queueMessage restored: true
 == tera
-× {Close}
-trainer 🎯 W89 · Tester Charizard Charizard Flamethrower → Lycanroc · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W89 · Tester Charizard Charizard Flamethrower → Lycanroc · 1 hit
 ⚔ Charizard 💀 Rock ×4 378% {Lycanroc's Stone Edge: ~378% of current HP, before it can act} Fire Flamethrower → Lycanroc 1 hit
 💀 Charizard ← Lycanroc Stone Edge
 Lycanroc Lycanroc L70 Steel TERA 100% ▲ Fire ↯ Rock Stone Edge → Charizard moves first
@@ -105,16 +105,16 @@ likely lost · ☠ Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary trainer | Charizard Flamethrower → Lycanroc · 1 hit | 💀 Charizard | plan: likely lost · ☠ Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 == trap
-× {Close}
-easy 🎯 W89 Charizard Flamethrower → Swinub · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Charizard Flamethrower → Swinub · 1 hit
 ⚔ Charizard Fire Flamethrower → Swinub 1 hit
 Foes
 Swinub Swinub L20 Ice Ground 100% ✦ ⚠ Thick Fat ▲ — ↯ Normal Tackle → Charizard moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Flamethrower → Swinub · 1 hit
 == fieldTrap
-× {Close}
-easy 🎯 W89 Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 ⚔ Charizard Fire Flamethrower → Druddigon 2 hits
 ⚔ Blastoise Water Hydro Pump → Krookodile 1 hit
 we're weak to Electric ×2
@@ -123,8 +123,8 @@ Krookodile Krookodile L40 Ground Dark 100% ✦ ⚠ Moxie ▲ Water ↯ Dark Crun
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 == contactTrap
-× {Close}
-easy 🎯 W89 Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 ⚔ Charizard Fire Flare Blitz → Krookodile 2 hits spare hit — KO without it
 ⚔ Blastoise Water Hydro Pump → Krookodile 1 hit
 ◎ focus Krookodile : KO before it moves
@@ -134,8 +134,8 @@ Krookodile Krookodile L40 Ground Dark 100% ✦ ⚠ Moxie ▲ Water ↯ Dark Crun
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 == modelled
-× {Close}
-easy 🎯 W89 Scrafty Brick Break → Pineco · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Scrafty Brick Break → Pineco · 1 hit
 ⚔ Scrafty Fighting Brick Break → Pineco 1 hit
 Foes
 Pineco Pineco L20 Bug 100% ▲ — ↯ Normal Tackle → Scrafty moves after
@@ -143,8 +143,8 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary easy | Scrafty Brick Break → Pineco · 1 hit
 queued during prediction: 0; queueMessage restored: true
 == intimidateIn
-× {Close}
-trainer 🎯 W89 · Tester Blastoise Blastoise Wave Crash → Arcanine · 2 hits {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W89 · Tester Blastoise Blastoise Wave Crash → Arcanine · 2 hits
 ⇆ Ludicolo → Arcanine switches — moves aimed at it
 ⚔ Blastoise Water Wave Crash → Arcanine 2 hits
 ↺ if it stays: Blastoise Water Wave Crash → Ludicolo
@@ -160,8 +160,8 @@ likely lost · ☠ Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximi
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely lost · ☠ Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
 == soundproof
-× {Close}
-easy 🎯 W89 Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit
 ⚔ Exploud Normal Hyper Voice → both Rattata 1 hit
 ⚔ Venusaur Grass Power Whip → Whismur 1 hit
 Foes
@@ -170,16 +170,16 @@ Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Tackle → Exploud moves afte
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit
 == deadEnd
-× {Close}
-fight 🎯 W89 Exploud nothing it can do {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+fight 🎯 W89 Exploud nothing it can do
 ⚔ Exploud nothing it can do
 Foes
 Whismur Whismur L30 Normal 100% ✦ ⚠ Soundproof ▲ —
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary fight | Exploud nothing it can do
 == intimidate
-× {Close}
-easy 🎯 W89 Scrafty Brick Break → Granbull · 2 hits {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+easy 🎯 W89 Scrafty Brick Break → Granbull · 2 hits
 ⚔ Scrafty Fighting Brick Break → Granbull 2 hits
 Foes
 Granbull Granbull L30 Fairy 100% ▲ — ↯ Normal Tackle → Scrafty moves after
@@ -187,8 +187,8 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary easy | Scrafty Brick Break → Granbull · 2 hits
 queued during prediction: 0; queueMessage restored: true
 == doubleReturn
-× {Close}
-trainer 🎯 W89 · Tester Blastoise › Venusaur Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W89 · Tester Blastoise › Venusaur Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits
 ⇆ Arcanine → Gyarados switches — moves aimed at it
 ⇆ Ludicolo → Arcanine returns from the other slot — moves aimed at it
 ⚔ Blastoise Steel Flash Cannon → Arcanine 2 hits then Wave Crash

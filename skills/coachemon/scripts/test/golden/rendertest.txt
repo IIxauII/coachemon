@@ -1,26 +1,26 @@
 == learn
-× {Close}
-🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 Learn → forget Ember {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 Learn → forget Ember
 Now Moves
 ✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB} +108 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Ember
 == plan
-× {Close}
-trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hit {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hit
 Now Foes Plan
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == learn team
-× {Close}
-🎓 Espeon learns Espeon Atk 65 / SpA 130 Learn → forget Bite · ⚠ loses only Dark move {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+🎓 Espeon learns Espeon Atk 65 / SpA 130 Learn → forget Bite · ⚠ loses only Dark move
 Now Moves Team
 ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90} +87 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Bite · ⚠ loses only Dark move
 == rewards boss next
-× {Close}
-🛒 $500 nothing affordable 👑 boss next take TM Fire Fang → Morpeko (forget Tackle) {Show or hide the drawer}
+⌃ {Hide the drawer} × {Close}
+🛒 $500 nothing affordable 👑 boss next take TM Fire Fang → Morpeko (forget Tackle)
 Now Others Team
 🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -72,11 +72,11 @@ hidden
 == remembers · first run
 drawer · act
 == remembers · migrate full
-drawer · {"view":"drawer","group":"act"}
+drawer · {"view":"drawer","closed":false,"group":"act"}
 == remembers · migrate mini
-strip · {"view":"strip","group":"act"}
+strip · {"view":"strip","closed":false,"group":"act"}
 == remembers · migrate closed
-closed · {"view":"closed","group":"act"}
+closed · {"view":"drawer","closed":true,"group":"act"}
 == remembers · reload on foes
 tabs Now | Foes | Plan
 open foes
@@ -84,10 +84,12 @@ open foes
 tabs Now | Moves
 open act
 == remembers · drawer shut
-strip · {"view":"strip","group":"foes"}
-× {Close}
-trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hit {Show or hide the drawer}
+strip · {"view":"strip","closed":false,"group":"foes"}
+⌄ {Show the drawer} × {Close}
+trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hit
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == remembers · dismissed
-closed · {"view":"closed","group":"foes"}
+closed · {"view":"drawer","closed":true,"group":"foes"}
 🎯 {Open coach}
+== remembers · reopened onto the strip
+strip
