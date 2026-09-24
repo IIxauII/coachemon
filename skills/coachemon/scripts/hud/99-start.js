@@ -10,6 +10,7 @@
 // source the extension bundles rather than imports; test/cardeventtest.mjs runs what ships past the relay's own
 // validators, so a detail the extension would drop fails the tests instead of a live tab.
 import { sandboxBreachCount } from "./01-core.js";
+import { dropChunkHandoff } from "./04-game-tables.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalClear, journalEntries, journalStats } from "./55-journal.js";
@@ -83,7 +84,7 @@ const timedTick = () => {
 const timer = setInterval(timedTick, 1000);
 timedTick();
 window.__coachHud = {
-  stop: () => { clearInterval(timer); el.remove(); delete window.__coachHud; },
+  stop: () => { clearInterval(timer); el.remove(); dropChunkHandoff(); delete window.__coachHud; },
   stats: () => ({ breaches: sandboxBreachCount(), lastTickMs, maxTickMs }),
   last: () => shownCard(),
   summary: () => cardSummary(shownCard()),

@@ -249,6 +249,18 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.equal(blind.fight, null);
   assert.equal(blind.trainers, null);
   assert.ok(blind.score > 0);
+  // And they can land *after* a card has drawn without them: the scan commits the tables as soon as biomes and species
+  // are in, then fills the rest of them in place, a chunk at a time (#381). The model the run read memoised was built
+  // without them, so what has to notice is its key — it counts the tables rather than asking whether there are any.
+  const want = mount({ wave: 40 }).model().options[0].trainers;
+  const late = tables({ trainers: undefined });
+  const landing = mount({ wave: 40, t: late });
+  const before = landing.model().options[0].trainers;
+  late.trainers = TRAINERS;
+  globalThis.__hud["98-tick"].tick();
+  console.log(`== trainer configs landing late\nbefore  ${JSON.stringify(before)}\nafter   ${JSON.stringify(landing.model().options[0].trainers)}`);
+  assert.equal(before, null);
+  assert.deepEqual(landing.model().options[0].trainers, want, "the trainers that landed after the card drew");
 }
 
 // ---- 8. Wild evolutions by the game's thresholds: an even chance per level across [t, round(1.2·t)], a delayed trade

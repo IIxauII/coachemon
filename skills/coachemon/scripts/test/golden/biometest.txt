@@ -47,6 +47,9 @@ Biomes
 ✓ W50 gym Rock (Brock): 2 hit SE, Lapras weak
 ★ catch Machoke hits Normal/Ice · new
 · onward: rare Laboratory (1/3) · Factory
+== trainer configs landing late
+before  null
+after   {"pct":6,"names":["Parasol Lady","Black Belt"]}
 == hardcore, Snorlax fainted
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome from Tall Grass Swamp 84 pick — edges Construction Site on the big fight, 2 mons hit SE, catch Toxicroak (hits Normal/Ice, new) · Construction Site 82

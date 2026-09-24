@@ -12,6 +12,14 @@
 // four move ids). It's async, so the first refresh or two draw a card without game data. Without the trainer configs
 // the biome card leaves the trainer waves out, as it does fixed waves. Nothing is copied from the game.
 //
+// **How the import is written.** The HUD is one classic script, so it can't `import` a chunk itself, and it must not
+// *call* `import(url)` either: the Firefox add-on linter rejects a computed argument to `import`, and `hud.js` ships
+// inside the extension (#381). So the read goes one step out — a `<script type="module">` per chunk whose own source
+// text imports that one URL as a string literal and hands the namespace back through a page global. The element is
+// appended and removed at once: insertion is what starts the module, and removing it afterwards neither cancels nor
+// re-runs anything (the same append-and-drop `read.sh` injects the HUD with). One element per chunk, so a chunk that
+// 404s or throws on first evaluation loses only itself, as the per-URL catch did before.
+//
 // The scan matches mostly by shape — the structure of what a chunk exports — and by name only where the shape says
 // nothing: `getBiomeName`, and the two reward functions. So it has no drift-ref block of its own in
 // `scripts/hud-deps.ts`: what each table *means* is the reading card's dependency and sits in that card's block, the
@@ -58,6 +66,37 @@ const scan = (ns, found) => {
     }
   }
 };
+// What the scan has picked up so far, across every attempt: a page that loads its chunks late can assemble the tables
+// out of two attempts, and a chunk scanned twice adds nothing (every `scan` write is a first-one-wins).
+const found = {};
+// Commits what is there the moment it is enough — the tables as soon as biomes and species are in, the reward pair as
+// soon as both functions are — rather than waiting for every chunk to answer, which nothing can tell it anyway (an
+// import that fails says nothing at all). `tables` *is* `found`, so a chunk that lands later fills it in place, and a
+// card built meanwhile simply hasn't got that table yet: each one is already its own maybe to every reader
+// (`51-starters.js` keys its cache on which of them are there).
+const commit = () => {
+  if (!tables && found.biomes && found.species) setGameTables(found);
+  if (!rewardFns && REWARD_FNS.every(k => found[k])) setRewardFns({ regenerate: found[REWARD_FNS[0]], options: found[REWARD_FNS[1]] });
+};
+// The page global an injected module hands its namespace to. Injecting the HUD again overwrites it, so a chunk still in
+// flight reaches the panel that is running rather than the one it was injected for.
+const HANDOFF = "__coachHudChunk";
+// The panel's own teardown drops it again (99-start's `stop`), so a stopped HUD leaves the page as it found it (§9.6):
+// it is the one mark the read makes that outlives the elements it injects. A chunk still in flight then lands nowhere,
+// which is what a stopped panel wants.
+// @only 99-start: dropChunkHandoff
+export const dropChunkHandoff = () => { delete window[HANDOFF]; };
+// One chunk, one module script. The URL is a literal in the source the browser parses, which is what keeps `import(`
+// out of `hud.js` altogether (#381).
+const inject = url => {
+  try {
+    const el = document.createElement("script");
+    el.type = "module";
+    el.textContent = `import * as ns from ${JSON.stringify(url)};window.${HANDOFF}?.(ns);`;
+    document.documentElement.appendChild(el);
+    el.remove();
+  } catch {}
+};
 // Retried every 30 s while not found: the HUD may be injected before the game has loaded its chunks.
 const loadGameTables = () => {
   if ((tables && rewardFns) || Date.now() - triedAt < 30000) return;
@@ -72,12 +111,8 @@ const loadGameTables = () => {
       .map(e => e.name))];
   } catch {}
   if (!urls.length) return;
-  const found = {};
-  Promise.all(urls.map(u => import(u).then(ns => scan(ns, found), () => {})))
-    .then(() => {
-      if (!tables && found.biomes && found.species) setGameTables(found);
-      if (!rewardFns && REWARD_FNS.every(k => found[k])) setRewardFns({ regenerate: found[REWARD_FNS[0]], options: found[REWARD_FNS[1]] });
-    });
+  window[HANDOFF] = ns => { try { scan(ns, found); } catch {} commit(); };
+  for (const u of urls) inject(u);
 };
 
 // The game's timed event manager, or null while the tables aren't read (starts the read).

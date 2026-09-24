@@ -1,0 +1,20 @@
+== the read the HUD starts
+imported                    loading-scene-1a2b3c4d.js  FadeOut-5e6f7a8b.js  data-9c0d1e2f.js  rewards-3a4b5c6d.js
+skipped                     6 of 10 entries
+element                     <script type=module>, appended then dropped
+source                      import * as ns from "…/assets/loading-scene-1a2b3c4d.js";window.__coachHudChunk?.(ns);
+== a second read, 1 s later
+imported                    0 chunks
+== what each chunk commits
+before any chunk            none  events=no  rewardFns=no
+biomes, no species          none
+species join them           biomeName+biomes+species
+the data chunk              abilities+biomeName+biomes+eggMoves+events+moves+species+trainers
+same object, filled         true
+rewards before              no
+rewards after               yes
+== once both are found
+imported                    0 chunks
+== the panel stops
+handoff before              function
+handoff after               undefined

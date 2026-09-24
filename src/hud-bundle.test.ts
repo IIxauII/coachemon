@@ -132,3 +132,14 @@ test("the HUD bundle ships comment-stripped and still parses (§5.2)", () => {
   assert.doesNotMatch(stripped, /^\s*\/\*/m);
   assert.doesNotThrow(() => new Function(stripped));
 });
+
+// The Firefox add-on linter rejects `import()` whose argument it can't see is a literal, and `hud.js` ships inside the
+// extension (#381). The chunk scan reaches the game's own modules through an injected module script instead, so what
+// ships holds no `import()` call at all — the one shape of this check that can't drift with how the scan is written.
+// Stripped, because that is the form the linter reads (§5.2): the scan's own comments may name the call it avoids.
+test("the shipped HUD calls no import() (§5.2)", () => {
+  assert.doesNotMatch(stripComments(bundle("hud")), /(?<![\w$.])import\s*\(/);
+  // And still reads the chunks: a script the HUD gives `type = "module"`, whose source is the import. Without this the
+  // check above would also pass on a HUD that had stopped reading them altogether.
+  assert.match(stripComments(bundle("hud")), /\.type = "module";/);
+});
