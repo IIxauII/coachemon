@@ -90,9 +90,6 @@ const seen = name => events.filter(e => e.type === name).map(e => {
 });
 const cards = () => seen(EVENT.card);
 const errors = () => seen(EVENT.coachError);
-const drawn = () => (el.kids ?? []).map(function text(n) {
-  return n == null ? "" : typeof n === "string" ? n : n.children && n.children.length ? n.children.map(text).join(" ") : String(n.textContent ?? "");
-});
 
 // ---- One event per decision, deduplicated on key and verdict
 {
@@ -106,9 +103,8 @@ const drawn = () => (el.kids ?? []).map(function text(n) {
   // The groups as the agent reads them: a decision by name, not by line.
   for (const g of body.groups) console.log(`group ${g.id} | ${g.label} | ${g.summary ?? "—"} | rows ${g.rows.length}`);
   console.log(`text\n${body.text}`);
-  // The text is the card the panel drew, not the panel's own footer.
+  // The text is the card the panel drew.
   assert.ok(body.text.includes("Flamethrower"), body.text);
-  assert.ok(!/Unofficial\./.test(body.text), "the disclaimer is the panel's footer, never a card's text");
 
   // A late joiner reads the very event it missed: `card()` is the `card` command's answer (§11.1, §11.4).
   const made0 = made;
@@ -161,13 +157,6 @@ const drawn = () => (el.kids ?? []).map(function text(n) {
   // Every card on the wire, not only the first: a battle card carries more groups than a learn card does.
   for (const c of wave) console.log(`groups ${wireOk(c).groups.map(g => g.id).join(" ")}`);
   console.log(`mid-wave ${wave.map(c => c.verdict).join(" → ")}`);
-}
-
-// ---- The panel carries the disclaimer, once, as its last line (§3)
-{
-  const lines = drawn();
-  assert.equal(lines.filter(l => /^Unofficial\./.test(l)).length, 1, JSON.stringify(lines));
-  console.log(`footer ${lines[lines.length - 1]}`);
 }
 
 // ---- A failed refresh: one event per distinct message

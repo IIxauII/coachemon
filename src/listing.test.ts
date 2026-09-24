@@ -9,11 +9,15 @@ import { STORE_PORT } from "./protocol/version.ts";
 const listing = (rel: string) => readFileSync(listingPath(rel), "utf8");
 const privacy = () => readFileSync(repoPath("PRIVACY.md"), "utf8");
 
-test("the disclaimer is one wording, in the manifest, the HUD and every listing text", () => {
-  // The manifest says it in one sentence rather than two, so it carries the affiliation half verbatim (§3).
+test("the disclaimer is one wording, in the manifest and every listing text", () => {
+  // **The manifest `description` is the single carrier inside the extension** (§3, #362): the panel drew it as a
+  // footer until the strip and drawer retired the full view it hung off, and it was deleted rather than rehoused,
+  // so the extension page every browser shows is where a player reads it. The manifest says it in one sentence
+  // rather than two, so it opens on "Unofficial" and carries the affiliation half verbatim.
+  assert.equal(DESCRIPTION.startsWith("Unofficial"), true);
   assert.equal(DESCRIPTION.includes(DISCLAIMER.replace("Unofficial. ", "")), true);
   const hud = readFileSync(repoPath("skills/coachemon/scripts/hud/90-render.js"), "utf8");
-  assert.equal(hud.includes(DISCLAIMER), true);
+  assert.equal(hud.includes("Unofficial"), false, "the panel carries no disclaimer of its own");
   for (const doc of ["description.md", "store-disclosure.md"]) assert.equal(listing(doc).includes(DISCLAIMER), true);
   assert.equal(privacy().includes(DISCLAIMER), true);
 });

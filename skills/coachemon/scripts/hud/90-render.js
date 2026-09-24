@@ -77,7 +77,7 @@ export const PANEL_W = `clamp(${0.75 * REF_W}px, calc(${SHARE} * ${GAME_W}), ${1
 // budget is 0.40 of the game width, less the inset. **It is the drawer's pane that carries it** (§4), which is where
 // §4 puts it: the strip and the bar are always on screen and are never what a card makes tall, so the thing that has
 // to stop growing is the pane.
-// So the *panel* may stand taller than the budget by the strip, the bar, the footer and the padding — it is the pane
+// So the *panel* may stand taller than the budget by the strip, the bar and the padding — it is the pane
 // that is bounded, not the object. Named here rather than discovered: against everything the model draws today the
 // threshold never fires at all (the tallest pane is about 187px against a 713px budget at a 1920 game), so the
 // arithmetic only matters for content that does not exist yet, and the guard it needs then is the pane's.
@@ -527,13 +527,6 @@ const rowText = n => {
   return kids.map(rowText).filter(Boolean).join(" ");
 };
 const clean = l => l.replace(/\s+/g, " ").trim();
-
-// ---- The disclaimer (§3)
-// Fixed wording, on every listing and inside the extension. The panel has no About page, so it carries it as a footer.
-const DISCLAIMER = "Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
-// A footnote, so it is in the dense register rather than in chrome — the panel's chrome is what the player reads, and
-// this is what they read once. #362 takes the footer off the panel altogether.
-export const disclaimer = () => inRows(h("div", { ...dim, marginTop: "4px" }, DISCLAIMER));
 
 // The refresh itself lives in 98-tick, above every renderer; it registers itself here so the close control can ask
 // for a redraw without this file knowing what a card is.

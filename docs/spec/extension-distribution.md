@@ -73,7 +73,7 @@ From [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105
 | Game in copy | "PokéRogue" named plainly in the description body as the site the extension works on. Never in the title or keywords. "Pokémon" appears only in the disclaimer. |
 | Orion | Named in the CWS and AMO description bodies only. |
 | Positioning | HUD first. One closing paragraph says it can also connect a local AI agent over MCP, naming Claude nominatively with no implied endorsement. |
-| Disclaimer | Fixed, on every listing and inside the extension: *"Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company."* The extension has no About page, so it goes in the manifest `description` (shown on every browser's extension page) and as a dim footer line at the foot of the HUD panel, a HUD source change **(picked here)**. |
+| Disclaimer | Fixed, on every listing and inside the extension: *"Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company."* The extension has no About page, so the manifest `description` — shown on every browser's extension page — is the **single carrier** inside the extension **(picked here)**. The panel drew it as a dim footer line until [The disclaimer leaves the panel](https://github.com/IIxauII/coachemon/issues/362): the footer hung off the full view, and retiring that view for the strip and drawer orphaned it, so it was deleted from the HUD source rather than rehoused. The panel draws no disclaimer. |
 | Publisher | `IIxauII` on CWS and AMO. The Safari download is signed with the dev's individual Developer ID; it has no product page. |
 | Language | English only. |
 | Support | Email only, the listing's contact address. The repo is public but not a support surface. |

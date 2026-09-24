@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, controls, disclaimer, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setDraw, setRedraw, strip } from "./90-render.js";
+import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setDraw, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
 import { captionFusion, drawFusion } from "./96-render-fusion.js";
@@ -32,7 +32,7 @@ const KIND = {
 };
 
 // The panel as the shell shells it: its own control, the **strip**, the **drawer** — the tab bar and the open
-// group's pane — and the disclaimer footer. **Strip and drawer are both visible, strip above drawer** (#349 §2):
+// group's pane. **Strip and drawer are both visible, strip above drawer** (#349 §2):
 // the call is never a click away, including while the player reads another group, and the cost — the act summary
 // appearing on the strip while `act` is the group on show — is accepted. The controls float in the panel's corner,
 // so the shell leaves them room on the first line it draws, which is the strip's head; no renderer knows they are
@@ -42,7 +42,7 @@ const KIND = {
 // text is derived from — so what the drawer costs when it is shut is the shelling and nothing the coach computed.
 const open = (card, groups) => {
   const kind = KIND[card.kind];
-  return [controls(), strip(card, kind.caption(card), groups), ...(panelState() === "drawer" ? drawer(groups) : []), disclaimer()];
+  return [controls(), strip(card, kind.caption(card), groups), ...(panelState() === "drawer" ? drawer(groups) : [])];
 };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves
@@ -68,8 +68,7 @@ let failure = null;
 export const lastFailure = () => failure;
 
 // The render layer derives a card's text from its groups through this, so `cardText` never has to know which draw
-// goes with which kind — that stays here (§11.1). The disclaimer is not in it: that is the panel's footer, not a
-// card's.
+// goes with which kind — that stays here (§11.1).
 setDraw(card => (KIND[card.kind] ? KIND[card.kind].draw(card) : null));
 
 // The **account read**: what the run has caught and unlocked, plus the party it would join and the event's shiny
@@ -127,8 +126,8 @@ export const tick = () => {
     el.style.width = panelState() === "closed" ? "auto" : PANEL_W;
     if (sig !== last) {
       clearMissed();
-      // The disclaimer, the panel's two controls and the glyph that brings it back are all the panel's own, so no
-      // card draws any of them — controls are the shell's, never a row's (§5).
+      // The panel's two controls and the glyph that brings it back are the panel's own, so no card draws either of
+      // them — controls are the shell's, never a row's (§5).
       el.replaceChildren(...(panelState() === "closed" ? [glyph()] : open(card, shownGroups())));
       // Icon atlases load lazily; redraw next tick until every sprite is in. The signature is taken again rather
       // than reused: a card with no group the player was on moves the drawer to `act` as it draws (#349 §3), and

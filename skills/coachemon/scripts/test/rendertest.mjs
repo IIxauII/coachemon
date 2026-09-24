@@ -467,9 +467,10 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const flat = n => txt(n).replace(/\s+/g, " ").trim();
   const remembers = () => JSON.parse(store.get(PANEL_KEY));
   const open = () => globalThis.__hud["90-render"].openGroup();
-  // The panel is its controls, the strip, the bar, the pane and the footer — so a shut drawer is three children and
-  // a dismissal is one. What is drawn is how each state is told apart, rather than a getter nobody but a test calls.
-  const state = el => (el.kids.length === 1 ? "closed" : el.kids.length === 3 ? "strip" : "drawer");
+  // The panel is its controls, the strip, the bar and the pane — it carries no disclaimer of its own (#362) — so a
+  // shut drawer is two children and a dismissal is one. What is drawn is how each state is told apart, rather than a
+  // getter nobody but a test calls.
+  const state = el => (el.kids.length === 1 ? "closed" : el.kids.length === 2 ? "strip" : "drawer");
   const click = n => n.onclick({ stopPropagation() {} });
   // The panel's two controls, in its corner: the caret that shuts the drawer, and the × that dismisses the panel.
   const caret = el => el.kids[0].children[0];

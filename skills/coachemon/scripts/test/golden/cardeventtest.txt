@@ -13,5 +13,4 @@ dedupe ok
 groups act foes
 groups act foes
 mid-wave easy → danger
-footer Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 coach error scene gone
