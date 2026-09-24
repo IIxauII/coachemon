@@ -11,6 +11,7 @@ import {
   BANNED_MANIFEST_WORDS,
   DESCRIPTION,
   GECKO_ID,
+  GECKO_MIN_VERSION,
   MATCHES,
   manifestFor,
   storeVersion,
@@ -60,12 +61,19 @@ test("Firefox carries the CSP override, the gecko id and the data-collection dec
   assert.deepEqual(m.browser_specific_settings, {
     gecko: {
       id: GECKO_ID,
-      strict_min_version: "128.0",
+      strict_min_version: GECKO_MIN_VERSION,
       data_collection_permissions: { required: ["none"], optional: ["websiteContent"] },
     },
   });
-  // The title is the 128–139 consent experience itself, so it must say what the click allows (§8.4).
+  // The title is the pre-140 consent experience itself, so it must say what the click allows (§8.4).
   assert.match(ACTION_TITLE, /local AI agent read this game/);
+});
+
+test("the Firefox floor clears `data_collection_permissions` on both platforms, desktop-only (§5.3)", () => {
+  // Both halves are load-bearing and neither is obvious, so both are pinned; `GECKO_MIN_VERSION` carries the why.
+  assert.equal(GECKO_MIN_VERSION, "142.0");
+  const bss = store("firefox").browser_specific_settings as Record<string, unknown>;
+  assert.ok(!("gecko_android" in bss), "a `gecko_android` key would list the add-on on Firefox for Android");
 });
 
 test("Safari gets an event page and the 18 floor (§5.3)", () => {

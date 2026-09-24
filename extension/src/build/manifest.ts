@@ -24,7 +24,26 @@ export const HOMEPAGE = "https://github.com/IIxauII/coachemon";
 /** Permanent once AMO has seen it (§5.3). */
 export const GECKO_ID = "coachemon@iixauii.github.io";
 
-/** What the Firefox toolbar button says it does, which is the 128–139 consent experience itself (§8.4). */
+/**
+ * The Firefox floor, and why it is not `world: "MAIN"`'s own 128 (§5.3).
+ *
+ * `data_collection_permissions` reached Firefox 140 on desktop and 142 on Android, and the AMO linter warns once per
+ * platform against a declared floor that predates it (#379, #380). `gecko_android.strict_min_version` defaults to
+ * this number, so one 142 answers both platforms. The alternative — `gecko` at 140 with a `gecko_android` saying 142
+ * — answers them by *listing the add-on on Firefox for Android*, which nothing here is built or tested for: omitting
+ * `gecko_android` is precisely what keeps an add-on desktop-only.
+ *
+ * The price is Firefox 140 and 141 **and ESR 140**, which is the part worth saying out loud: an ESR is a year of
+ * enterprise and distro installs pinned to one number, and 142 locks all of them out. It is payable because ESR 140
+ * reaches end of life on 2026-09-29 and ESR 153, which clears the floor, shipped on 2026-09-15. ESR 115 was already
+ * below the old 128 floor, so nothing changes for it.
+ *
+ * 128 remains the *capability* floor, so 128–141 are capable but unsupported rather than broken. §8.4's pre-140
+ * consent path is therefore kept as a fallback rather than deleted.
+ */
+export const GECKO_MIN_VERSION = "142.0";
+
+/** What the Firefox toolbar button says it does, which is the pre-140 consent experience itself (§8.4). */
 export const ACTION_TITLE = "Coachemon: click once to let a local AI agent read this game";
 
 /** Not `*.pokerogue.net`: the beta site was never reviewed against (§6). */
@@ -94,7 +113,7 @@ function perTarget(target: Target): Manifest {
       browser_specific_settings: {
         gecko: {
           id: GECKO_ID,
-          strict_min_version: "128.0",
+          strict_min_version: GECKO_MIN_VERSION,
           data_collection_permissions: DATA_COLLECTION_PERMISSIONS,
         },
       },

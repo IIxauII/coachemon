@@ -1,5 +1,5 @@
 /**
- * Firefox's consent (§8.4): the 140+ data-collection permission, the 128–139 toolbar click, and Orion — which runs the
+ * Firefox's consent (§8.4): the 140+ data-collection permission, the pre-140 toolbar click, and Orion — which runs the
  * AMO build and must count as consented without ever showing a click.
  */
 import assert from "node:assert/strict";
@@ -89,7 +89,7 @@ test("a refused 140+ request leaves the browser unconsented (§8.4)", async () =
   assert.equal(r.granted(), 0);
 });
 
-test("Firefox 128–139 records the click in its own localStorage (§8.4)", async () => {
+test("a Firefox with no built-in consent records the click in its own localStorage (§8.4)", async () => {
   const h = deps({ all: { permissions: [], origins: [] } });
   const r = await run(h);
   assert.equal(r.granted(), 0);
@@ -100,7 +100,7 @@ test("Firefox 128–139 records the click in its own localStorage (§8.4)", asyn
   assert.deepEqual(h.requested, []);
 });
 
-test("Firefox 128–139 remembers a click from a previous session (§8.4)", async () => {
+test("a Firefox with no built-in consent remembers a click from a previous session (§8.4)", async () => {
   const r = await run(deps({ all: { permissions: [] }, stored: "true" }));
   assert.equal(r.granted(), 1);
 });

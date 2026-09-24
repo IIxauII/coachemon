@@ -4,9 +4,13 @@
  * Orion's answer was never observed (§16).
  *
  * Firefox 140 and later have built-in data consent, detected by a `data_collection` key in `permissions.getAll()`.
- * Firefox 128–139 have none, and Mozilla's guidance is a custom consent experience: the toolbar click is it, with the
+ * Firefox below 140 has none, and Mozilla's guidance is a custom consent experience: the toolbar click is it, with the
  * action's title saying what the click allows, recorded in the extension origin's own `localStorage` — no `storage`
  * permission, and the Firefox build's background is an event page, so it has one.
+ *
+ * The manifest floor is 142 (§5.3, #379, #380), so no Firefox that can install this build reaches the second path.
+ * It is kept rather than deleted, as the fallback for a Firefox that reports no `data_collection` key — the detection
+ * is what chooses, so nothing here has to know the floor.
  */
 import type { Target } from "../../../src/protocol/wire.ts";
 
@@ -25,7 +29,7 @@ export type ConsentDeps = {
     contains: (p: unknown) => Promise<boolean>;
     request: (p: unknown) => Promise<boolean>;
   };
-  /** `localStorage`, for the 128–139 path. */
+  /** `localStorage`, for the pre-140 path. */
   store: { get: (key: string) => string | null; set: (key: string, value: string) => void };
   /** `action.onClicked`. */
   onClick: (fn: () => void) => void;
@@ -47,7 +51,7 @@ export async function startConsent(d: ConsentDeps, grant: () => void): Promise<v
     if (await d.permissions.contains(DATA_COLLECTION)) grant();
     return;
   }
-  // 128–139: the click itself is the consent experience, and the action's title is what states it (§5.3).
+  // Pre-140: the click itself is the consent experience, and the action's title is what states it (§5.3).
   d.onClick(() => {
     d.store.set(CONSENT_KEY, "true");
     grant();
