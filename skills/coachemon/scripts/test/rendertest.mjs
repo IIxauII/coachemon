@@ -113,13 +113,16 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const rowFonts = [...new Set(rows.map(n => `${n.style.fontSize}/${n.style.lineHeight} ${n.style.fontFamily}`))];
   console.log(`rows font: ${rowFonts.join(" | ")}`);
   assert.equal(rowFonts.length, 1, "one row register, not three");
-  // A row the shell put in the dense face keeps whatever weight it already had: the card's own header line is bold,
-  // and the register must not flatten it.
-  assert.ok(rows.some(n => n.style.fontWeight === "bold"), "the dense register keeps a row's weight");
+  const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
+  // What a row emphasises it keeps: the register must not flatten a weight already on it. No card leads with a bold
+  // row any more — the header line that was one is the strip's caption now (#356) — so the emphasis the register has
+  // to survive is the one inside a row, and the rule itself is held to the three longhands. The `font` shorthand
+  // resets every longhand it does not name, which is exactly how the weight would go.
+  assert.ok(rows.flatMap(under).some(n => n?.style?.fontWeight === "bold"), "a row's own emphasis survives the register");
+  assert.equal(bundle("hud").match(/\bfont:/g), null, "the panel sets the two faces through the longhands, never the font shorthand");
   // **A register has one size**, which the shell sets on the row and nothing below the row overrides. This is the
   // assertion that bites: a leftover literal inside a row is not merely a third rung, it renders *larger* than the
   // row containing it, which the old base/small/tiny scale could never produce.
-  const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
   const sized = rows.flatMap(under).filter(n => n?.style?.fontSize);
   assert.deepEqual(sized.map(n => n.style.fontSize), [], "nothing inside a row sets a size of its own");
 
@@ -153,6 +156,75 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.equal(shut.style.border, "1px solid #f8b050");
   assert.deepEqual(motion(shut), [], "the dismissed glyph carries nothing live either");
   assert.ok(!/coachemon|coach hud/i.test(lines(shut)), lines(shut));
+}
+
+// ---- The strip (#349 §2, §6, #356)
+// The one line the player always needs, across its two lines: the verdict dot, the verdict word and the caption on
+// the first, the call on the second. It sits above everything else the panel shows, so the thing to do now is never
+// a click away — and the act pane below it does not repeat it.
+{
+  const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+  const el = mount(scene, { expose: true });
+  const { captionBattle, drawBattle } = globalThis.__hud["96-render-battle"];
+  const { strip } = globalThis.__hud["90-render"];
+  // The panel is its control, then the strip, then the drawer.
+  const [head, call] = el.kids[1].children;
+  const [dot, word, caption] = head.children;
+  const flat = n => txt(n).replace(/\s+/g, " ").trim();
+  console.log(`== strip\nhead ${flat(head)}\ncall ${flat(call)}\ndot ${dot.style.background} ${dot.style.width} ${dot.style.borderRadius}`);
+  // The dot's five colours are outside the colour law and quoted from the game all the same; a trainer wave's is the
+  // game's label gold, and the word beside it is what tells gold's two verdicts apart.
+  assert.equal(dot.style.background, "#f8b050");
+  assert.equal(flat(word), "trainer");
+  // The caption is the kind's emoji and what the card is about, in gold chrome. Its arrow-separated list is **our**
+  // mons — who we are sending — and never the foes the card is about.
+  assert.equal(caption.style.color, "#f8b050");
+  assert.ok(flat(caption).startsWith("🎯 W15 · Youngster"), flat(caption));
+  assert.ok(flat(caption).includes("Charizard") && !/Paras|Oddish/.test(flat(caption)), flat(caption));
+  // On a double that list is the pair on the field, in the same arrow-separated shape.
+  assert.equal(flat(captionBattle({ kind: "battle", title: "W89 · Tester", trainer: true, double: true,
+    field: { slots: [{ name: "Blastoise" }, { name: "Venusaur" }] },
+    order: [{ icon: null, name: "Blastoise" }, { icon: null, name: "Venusaur" }] })),
+    "🎯 W89 · Tester Blastoise › Venusaur");
+  // The call is `act.summary` verbatim, so the strip, the verdict and the watch line are one string. It wraps to two
+  // lines and is then cut by the browser — nothing on the panel truncates a string, so the group's own summary and
+  // the card's text stay whole.
+  const act = drawBattle(globalThis.__coachHud.last()).find(g => g.id === "act");
+  assert.equal(flat(call), act.summary);
+  assert.equal(call.style.WebkitLineClamp, "2");
+  assert.deepEqual([call.style.display, call.style.overflow], ["-webkit-box", "hidden"]);
+  // **The leading clause must fit**; what follows the first ` · ` may clip, because it is reasoning and not the
+  // call. How much of the reasoning survives is a measurement against real fonts at a real width, which stays out
+  // of CI (#349's testing decisions) — what is assertable here is the half that makes the budget mean anything: a
+  // long summary reaches the node whole, leading clause first, so the browser's clamp can only ever eat the tail.
+  // And `overflowWrap`, so an unbroken run clips with it instead of pushing past the panel's edge.
+  const long = { id: "act", summary: "Blastoise Wave Crash → Garchomp · 2 hits · Garchomp outspeeds and Earthquake takes 88% · switch costs the turn" };
+  const longCall = strip({ verdict: "danger" }, captionBattle({ kind: "battle", title: "W89" }), [long]).children[1];
+  assert.equal(flat(longCall), long.summary, "the panel hands the browser the whole string, never a cut one");
+  assert.ok(flat(longCall).startsWith(long.summary.split(" · ")[0]), "the leading clause leads it");
+  assert.equal(longCall.style.overflowWrap, "anywhere");
+  // The act pane does not repeat the call: the strip directly above it is its heading, so the drawer opens on the
+  // supporting lines.
+  const drawer = el.kids.slice(2);
+  assert.ok(!drawer.some(n => flat(n) === act.summary), "the act pane does not repeat the call");
+  // Every other group is still headed in the pane, on one line then an ellipsis: nothing is budgeted there, because
+  // nothing there is the call.
+  const foesHead = drawer.find(n => flat(n).startsWith("Foes"));
+  assert.deepEqual([foesHead.style.whiteSpace, foesHead.style.overflow, foesHead.style.textOverflow],
+    ["nowrap", "hidden", "ellipsis"]);
+}
+
+// A card with no verdict draws no dot and no word; the caption and the call still draw. The verdict is a battle
+// card's one-word call, so the learn card has none.
+{
+  const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
+  const el = mount(scene);
+  const [head, call] = el.kids[1].children;
+  console.log(`== strip · no verdict\nhead ${txt(head).replace(/\s+/g, " ").trim()}\ncall ${txt(call)}`);
+  assert.equal(head.children.length, 1, "the caption alone: no dot and no word");
+  assert.equal(head.children[0].style.color, "#f8b050", "and the one thing on it is the caption");
+  assert.ok(txt(call).startsWith("Learn → forget"), txt(call));
 }
 
 // ---- The footprint and the type ladder (#349 §4, #355)

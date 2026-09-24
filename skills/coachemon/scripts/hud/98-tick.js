@@ -5,39 +5,42 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, closeButton, closed, disclaimer, drawGroups, dropGame, el, glyph, missedSprite, PANEL_W, reserveForControl, setDraw, setRedraw } from "./90-render.js";
-import { drawBattle } from "./96-render-battle.js";
-import { drawEncounter } from "./96-render-encounter.js";
-import { drawFusion } from "./96-render-fusion.js";
-import { drawLearn } from "./96-render-learn.js";
-import { drawRewards } from "./96-render-rewards.js";
-import { drawStarters } from "./96-render-starters.js";
-import { drawBiome } from "./97-render-biome.js";
+import { battleScene, clearMissed, closeButton, closed, disclaimer, drawGroups, dropGame, el, glyph, missedSprite, PANEL_W, setDraw, setRedraw, strip } from "./90-render.js";
+import { captionBattle, drawBattle } from "./96-render-battle.js";
+import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
+import { captionFusion, drawFusion } from "./96-render-fusion.js";
+import { captionLearn, drawLearn } from "./96-render-learn.js";
+import { captionRewards, drawRewards } from "./96-render-rewards.js";
+import { captionStarters, drawStarters } from "./96-render-starters.js";
+import { captionBiome, drawBiome } from "./97-render-biome.js";
 
 // What the shell needs per kind: the renderer that turns one card into groups (#349 §1) — every kind's, now that
 // the last four have followed, so the adapter that presented a node tree as one whole-card group is gone and with
-// it everything it kept alive — and the glyph a dismissal leaves behind. The glyph is the shell's and not a card's:
-// a renderer returns groups and knows nothing about what a view is (#349 §2), so no card draws its own way back any
-// more, and the mon icon and pick label one used to carry are gone with them. What is left is the kind's own emoji;
-// #358 takes that too, for one glyph that is the same every wave. One table, so a new kind is one entry.
+// it everything it kept alive — the caption its strip wears, and the glyph a dismissal leaves behind. The strip and
+// the glyph are both the shell's and not a card's: a renderer returns groups and a caption, and knows nothing about
+// what a view is (#349 §2), so no card draws its own strip or its own way back. What the glyph is left with is the
+// kind's own emoji; #358 takes that too, for one glyph that is the same every wave. One table, so a new kind is one
+// entry.
 const KIND = {
-  battle: { draw: drawBattle, glyph: "🎯" },
-  rewards: { draw: drawRewards, glyph: "🛒" },
-  learn: { draw: drawLearn, glyph: "🎓" },
-  encounter: { draw: drawEncounter, glyph: "🎭" },
-  starters: { draw: drawStarters, glyph: "🌱" },
-  fusion: { draw: drawFusion, glyph: "🧬" },
-  biome: { draw: drawBiome, glyph: "🗺" },
+  battle: { draw: drawBattle, caption: captionBattle, glyph: "🎯" },
+  rewards: { draw: drawRewards, caption: captionRewards, glyph: "🛒" },
+  learn: { draw: drawLearn, caption: captionLearn, glyph: "🎓" },
+  encounter: { draw: drawEncounter, caption: captionEncounter, glyph: "🎭" },
+  starters: { draw: drawStarters, caption: captionStarters, glyph: "🌱" },
+  fusion: { draw: drawFusion, caption: captionFusion, glyph: "🧬" },
+  biome: { draw: drawBiome, caption: captionBiome, glyph: "🗺" },
 };
 
-// The panel as the shell shells it: its own control, the card's groups as a plain stack with one rule between
-// them, and the disclaimer footer. The control floats in the panel's corner, so the shell leaves it room on the
-// first line it draws — no renderer knows the control is there. The tab bar and the pane come with the drawer
-// (#357), and the strip with #356.
+// The panel as the shell shells it: its own control, the **strip**, the card's groups as a plain stack with one
+// rule between them, and the disclaimer footer. **Strip and drawer are both visible, strip above drawer** (#349
+// §2): the call is never a click away, including while the player reads another group, and the cost — the act
+// summary appearing on the strip while `act` is the group on show — is accepted. The control floats in the panel's
+// corner, so the shell leaves it room on the first line it draws, which is the strip's head; no renderer knows the
+// control is there. The tab bar and the pane come with the drawer (#357).
 const open = card => {
-  const rows = drawGroups(KIND[card.kind].draw(card));
-  reserveForControl(rows[0]);
-  return [closeButton(), ...rows, disclaimer()];
+  const kind = KIND[card.kind];
+  const groups = kind.draw(card);
+  return [closeButton(), strip(card, kind.caption(card), groups), ...drawGroups(groups), disclaimer()];
 };
 
 let last = ""; // the change signature of what is on screen: the DOM is only rebuilt when it moves

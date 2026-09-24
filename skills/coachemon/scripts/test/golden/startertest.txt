@@ -1,7 +1,6 @@
 == classic, 10 points
 ×
-best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
-🌱 Starters 0/10 pts
+🌱 Starters 0/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
@@ -24,8 +23,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Gible picked
 ×
-best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
-🌱 Starters 6/10 pts
+🌱 Starters 6/10 pts best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 ✓ picked: Gible
 Proposals
 ★ best 10 pts · SE vs 10 types
@@ -46,8 +44,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == no tables
 ×
-best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
-🌱 Starters 0/10 pts
+🌱 Starters 0/10 pts best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
 Proposals
 ★ best 10 pts · SE vs 12 types
 Squirtle Squirtle 3 carry final BST ~534 · luck +3
@@ -70,8 +67,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
 == single type, 1 point
 ×
-best: Magikarp (carry) · 1/1 pts
-🌱 Starters 0/1 pts
+🌱 Starters 0/1 pts best: Magikarp (carry) · 1/1 pts
 Proposals
 ★ best 1 pts · SE vs 6 types
 Magikarp Magikarp 1 carry final BST 540 (Gyarados) · passive Moxie
@@ -81,8 +77,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary best: Magikarp (carry) · 1/1 pts
 == Fresh Start
 ×
-best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
-🌱 Starters 0/10 pts
+🌱 Starters 0/10 pts best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
 Proposals
 ★ best 10 pts · SE vs 12 types · weak Rock
 Dratini Dratini 4 carry final BST 600 (Dragonite)

@@ -1,7 +1,6 @@
 == swamp vs construction site
 × {Close}
-Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
-🗺 Next biome from Tall Grass
+🗺 Next biome from Tall Grass Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
 Biomes
 ★ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
@@ -23,16 +22,14 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
 == no tables
 × {Close}
-Swamp · Construction Site
-🗺 Next biome
+🗺 Next biome Swamp · Construction Site
 · Swamp
 · Construction Site
 reading the game's biome tables…
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == gym at wave 50
 × {Close}
-Swamp 86 pick — edges Construction Site on defense, Garchomp resists, 2 mons hit SE · Construction Site 85
-🗺 Next biome from Tall Grass
+🗺 Next biome from Tall Grass Swamp 86 pick — edges Construction Site on defense, Garchomp resists, 2 mons hit SE · Construction Site 85
 Biomes
 ★ Swamp Poison 71% Water 31% Ground 27% 86 {offense 86 · defense -1 · catches 100 · big fight 100}
 · mostly Arbok 22% · Gulpin 22% · Quagsire 21%
@@ -55,8 +52,7 @@ Biomes
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == hardcore, Snorlax fainted
 × {Close}
-Swamp 84 pick — edges Construction Site on the big fight, 2 mons hit SE, catch Toxicroak (hits Normal/Ice, new) · Construction Site 82
-🗺 Next biome from Tall Grass
+🗺 Next biome from Tall Grass Swamp 84 pick — edges Construction Site on the big fight, 2 mons hit SE, catch Toxicroak (hits Normal/Ice, new) · Construction Site 82
 Biomes
 ★ Swamp Poison 72% Water 38% Fighting 29% 84 {offense 87 · defense 2 · catches 67 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
@@ -80,8 +76,7 @@ Notes
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == swamp vs marsh
 × {Close}
-Swamp 85 · Marsh 86 pick — edges Swamp on offense, 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new)
-🗺 Next biome from Tall Grass
+🗺 Next biome from Tall Grass Swamp 85 · Marsh 86 pick — edges Swamp on offense, 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new)
 Biomes
 ≈ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
@@ -104,8 +99,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 == boss share  endless w301–310 0.1360  endless w101–110 0.1000  classic 0.1000
 == build throws
 × {Close}
-Swamp · Construction Site
-🗺 Next biome
+🗺 Next biome Swamp · Construction Site
 · Swamp
 · Construction Site
 unread: biome: no types

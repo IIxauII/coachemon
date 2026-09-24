@@ -173,9 +173,10 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   const rowsOf = g => g.rows.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
   const groups = globalThis.__hud["96-render-battle"].drawBattle(card);
   const lines = groups.flatMap(rowsOf);
-  // `field`: the act group's own rows, less the header the strip takes in #356.
+  // `field`: the act group's own rows, which since #356 are the supporting lines and nothing else — the card's
+  // identity line has left them for the strip's caption, and the call for the strip itself.
   // `scene` is the turn now: what the planner is handed, and what a scenario tweaks.
-  return { lines, field: rowsOf(groups.find(g => g.id === "act")).slice(1), groups, card, scene: turn };
+  return { lines, field: rowsOf(groups.find(g => g.id === "act")), groups, card, scene: turn };
 };
 // The Cyrus mistake: Scrafty sent in "→ High Jump Kick" as if the move happened this turn.
 const assertNoImmediateScrafty = field => {

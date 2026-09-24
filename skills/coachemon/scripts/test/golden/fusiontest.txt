@@ -1,7 +1,6 @@
 == full party
 ×
-Snorlax ← Salamence (+7) · pick Snorlax first, then Salamence
-🧬 Splice
+🧬 Splice Snorlax ← Salamence (+7) · pick Snorlax first, then Salamence
 Fusions
 ★ Snorlax Snorlax ← Salamence Salamence +7
 Normal Flying spends Salamence L22 · Snorlax BST 540 → 572 · Thick Fat → Intimidate · offers Dragon Rush/Bounce
@@ -13,8 +12,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary Snorlax ← Salamence (+7) · pick Snorlax first, then Salamence
 == Magikarp picked first
 ×
-Magikarp ← Salamence (−3) · back out: Snorlax ← Salamence is better (+7)
-🧬 Splice Magikarp with
+🧬 Splice Magikarp with Magikarp ← Salamence (−3) · back out: Snorlax ← Salamence is better (+7)
 Fusions
 · Magikarp Magikarp ← Salamence Salamence −3
 Water Flying spends Salamence L22 · Magikarp BST 200 → 402 · Swift Swim → Intimidate · offers Dragon Rush/Bounce · Magikarp still evolves
@@ -26,8 +24,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary Magikarp ← Salamence (−3) · back out: Snorlax ← Salamence is better (+7)
 == Hardcore, Salamence fainted
 ×
-Mimikyu ← Magikarp (−4) · no fusion worth a member — back out, the Splicer stays unspent
-🧬 Splice
+🧬 Splice Mimikyu ← Magikarp (−4) · no fusion worth a member — back out, the Splicer stays unspent
 Fusions
 · Mimikyu Mimikyu ← Magikarp Magikarp −4
 Ghost Water Mimikyu BST 476 → 340 · spends Magikarp L20 · Disguise → Swift Swim · offers Tackle · Magikarp still evolves
@@ -39,8 +36,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary Mimikyu ← Magikarp (−4) · no fusion worth a member — back out, the Splicer stays unspent
 == two members
 ×
-Garchomp ← Magikarp (−31) · no fusion worth a member — back out, the Splicer stays unspent
-🧬 Splice
+🧬 Splice Garchomp ← Magikarp (−31) · no fusion worth a member — back out, the Splicer stays unspent
 Fusions
 · Garchomp Garchomp ← Magikarp Magikarp −31
 Dragon Water Garchomp BST 600 → 401 · spends Magikarp L20 · Rough Skin → Swift Swim · offers Tackle · Magikarp still evolves · keeps passive Sand Force
@@ -50,8 +46,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary Garchomp ← Magikarp (−31) · no fusion worth a member — back out, the Splicer stays unspent
 == Spliced Endless
 ×
-Garchomp ← Salamence (+81) · pick Garchomp first, then Salamence
-🧬 Splice
+🧬 Splice Garchomp ← Salamence (+81) · pick Garchomp first, then Salamence
 Fusions
 ★ Garchomp Garchomp ← Salamence Salamence +81
 Dragon Flying Garchomp BST 301 → 602 · spends Salamence L22 · Rough Skin → Intimidate · offers Dragon Rush/Bounce · keeps passive Sand Force
@@ -69,8 +64,7 @@ spends Mimikyu L30 · Thick Fat → no ability (Disguise doesn't work fused) · 
 kind null
 == rewards, full party
 ×
-take DNA Splicers → Snorlax
-🛒 $500 nothing affordable
+🛒 $500 nothing affordable take DNA Splicers → Snorlax
 🎁 DNA Splicers Snorlax fuse Snorlax ← Salamence · +7 · spends Salamence L22
 Others
 · Potion party healthy
@@ -84,8 +78,7 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 summary take DNA Splicers → Snorlax
 == rewards, two members
 ×
-take DNA Splicers
-🛒 $500 nothing affordable
+🛒 $500 nothing affordable take DNA Splicers
 🎁 DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −31
 Others
 · Potion party healthy

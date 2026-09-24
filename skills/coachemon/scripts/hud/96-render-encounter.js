@@ -5,12 +5,13 @@
 // starts (a battle), what it costs, who it takes and why the call went that way; a seed-fixed outcome is marked 🔮.
 // The call itself is `act.summary`, read off the model and never written here (§6).
 import { encounterSummary } from "./46-encounter.js";
-import { bar, dim, h, line, some } from "./90-render.js";
+import { caption, dim, h, line, some } from "./90-render.js";
 
 const ENCOUNTER_MARK = { take: ["★", "#6d6"], ok: ["·", "#9aa"], avoid: ["✗", "#e77"], off: ["–", "#667"] };
+// The strip's caption: which encounter this is, and how rare it is.
+export const captionEncounter = m => caption("🎭", m.name, m.tier ? h("span", { ...dim, fontWeight: "normal" }, m.tier) : null);
+
 export const drawEncounter = m => {
-  // The header is the card's own identity line; the strip takes it in #356.
-  const header = bar("🎭", m.name, m.tier ? h("span", { ...dim, fontWeight: "normal" }, m.tier) : null);
   const options = [];
   m.options.forEach((o, k) => {
     const [mark, color] = ENCOUNTER_MARK[o.verdict] ?? ["?", "#ec4"];
@@ -35,7 +36,7 @@ export const drawEncounter = m => {
   ];
   // `options` and `notes` head their panes with their label alone — the options themselves say it one glance lower (§6).
   return [
-    some("act", "Now", encounterSummary(m), [header]),
+    some("act", "Now", encounterSummary(m), []),
     some("options", "Options", null, options),
     some("notes", "Notes", null, notes),
   ].filter(Boolean);
