@@ -318,13 +318,13 @@ const setClosed = next => {
   redrawFn();
 };
 
-// The panel's one control: shut it, and the glyph that brings it back. **Controls are the shell's, never a row's**
-// (§5) — a control inside a row is a control inside the card's text, which is what the flattener used to have to
-// drop by its mouse cursor. It sits in the panel's own corner rather than on a line of its own, so it costs no
-// height while the strip is still to come (#356).
+// The dismissal: shut the panel, and the glyph that brings it back. One of the shell's two controls, the other being
+// the tab. **Controls are the shell's, never a row's** (§5) — a control inside a row is a control inside the card's
+// text, which is what the flattener used to have to drop by its mouse cursor. It sits in the panel's own corner
+// rather than on a line of its own, so it costs no height.
 export const closeButton = () => {
   // No fill and no radius of its own: the panel's fill is the game's window interior and the panel invents no second
-  // one (§8, §9). The strip takes this control in #356.
+  // one (§8, §9).
   const n = h("span", { position: "absolute", top: "4px", right: "4px", cursor: "pointer", padding: "0 4px", fontWeight: "bold" }, "×");
   n.title = "Close";
   n.addEventListener("click", e => { e.stopPropagation(); setClosed(true); });
