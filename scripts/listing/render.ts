@@ -9,9 +9,10 @@
  * each of them is what it is. **It needs a provisioned pinned clone**, because the faces are read out of it.
  *
  * Chrome is asked for one screenshot per asset and nothing else: `--headless --screenshot` sizes the shot by
- * `--window-size`, which is why the store sizes in `listing.ts` are the window and the stage is fitted with CSS
- * `zoom` rather than by scaling the image afterwards — a zoomed stage re-lays out and stays sharp, a scaled PNG does
- * not. `--virtual-time-budget` gives the HUD's first tick time to land before the shutter.
+ * `--window-size`, which is why the store sizes in `listing.ts` are the window and the stage is fitted by scaling it
+ * in the page rather than by scaling the image afterwards — a scaled stage is re-rasterised at the frame's own scale
+ * and stays sharp, a scaled PNG does not. `--virtual-time-budget` gives the HUD's first tick time to land before the
+ * shutter.
  */
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";

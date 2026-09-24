@@ -2,12 +2,12 @@
  * The page a listing screenshot is photographed from (§3, [#349 §12](https://github.com/IIxauII/coachemon/issues/349)).
  *
  * It is two documents, and the seam between them is the whole point. The **stage** is a pinned 1920×1080 viewport
- * holding the real HUD over a fixture scene; the **frame** is the store-sized window that holds the stage and zooms
+ * holding the real HUD over a fixture scene; the **frame** is the store-sized window that holds the stage and scales
  * it to fill. They cannot be one document: the panel's footprint is a share of `min(100vw, 177.78vh)` (#349 §4), so a
  * 1280 px shot window would lay the panel out at about 200 px on a rung no player sees. An iframe gives the panel the
- * viewport of a game at 1080p — the reference width *and* the reference rung — and CSS `zoom` on the frame's side
- * then scales the whole stage to suit the store's size. Fractional factors are accepted; both faces are pixel
- * designs and soften at them.
+ * viewport of a game at 1080p — the reference width *and* the reference rung — and a scale on the frame's side
+ * then fits the whole stage to the store's size. Fractional factors are accepted; both faces are pixel designs and
+ * soften at them.
  *
  * Nothing here comes from a live game: no canvas, no capture, no sprite atlas (§1.9, §3). What the game does lend is
  * the two things a shot cannot be honest without — **its two faces**, because a fixture page carries none of the
