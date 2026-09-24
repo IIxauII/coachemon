@@ -20,7 +20,7 @@ export const captionRewards = m => caption("🛒", `$${m.money}`, m.buys.length 
 export const drawRewards = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   const buyRows = m.buys.length
-    ? m.buys.map(b => line("💰", "#ec4", itemImg(b.icon, b.name),
+    ? m.buys.map(b => line("✓", "#ec4", itemImg(b.icon, b.name),
         h("span", { fontWeight: "bold" }, b.name), h("span", { ...dim, marginLeft: "4px" }, `$${b.cost}`),
         h("span", { flex: "1" }), mon(b.target, b.targetName, ICON.mon), h("span", dim, b.why)))
     : [];
@@ -44,7 +44,7 @@ export const drawRewards = m => {
     const lead = `${f.holder.name} · `;
     return [mon(f.holder.icon, f.holder.name, ICON.mon), h("span", style, f.why.startsWith(lead) ? f.why.slice(lead.length) : f.why)];
   };
-  const take = p ? line("🎁", "#6d6", itemImg(p.icon, p.name),
+  const take = p ? line("★", "#6d6", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? heldTo(p) ?? h("span", dim, p.why)) : null;
   // Who can use it, when the reason doesn't already name them (a holder is the answer already).
   const usersText = f => {

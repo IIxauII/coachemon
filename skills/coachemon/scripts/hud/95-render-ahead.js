@@ -16,7 +16,7 @@ export const drawAhead = a => {
   const where = h("span", dim, `W${a.next.wave}`);
   // Rows of the road group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
   // control of its own.
-  const out = [line("⚑", color, h("span", { fontWeight: "bold", marginRight: "3px" }, "Next big fight"),
+  const out = [line("", color, h("span", { fontWeight: "bold", marginRight: "3px" }, "Next big fight"),
     head, where, h("span", { flex: "1" }),
     a.next.double ? h("span", { ...dim, marginRight: "3px" }, "double") : null,
     a.next.bars ? h("span", { color: "#fa4" }, `👑 ${a.next.bars + 1} bars`) : null)];
@@ -28,7 +28,7 @@ export const drawAhead = a => {
   }
   // What beating it pays, when the fixed-battle table pins the tiers. No roll: it is the config's own list.
   if (a.next.rewards?.tiers.length) {
-    out.push(line("🎁", "#8cf", h("span", dim, `it pays ${a.next.rewards.tiers.join(" · ")}`)));
+    out.push(line("·", "#8cf", h("span", dim, `it pays ${a.next.rewards.tiers.join(" · ")}`)));
   }
   for (const n of r?.notes ?? []) {
     out.push(line(n.good ? "✓" : "✗", n.good ? "#6d6" : "#e77", h("span", {}, n.text)));
@@ -40,17 +40,17 @@ export const drawAhead = a => {
       ? `${a.fightsBeforeHeal} big fights before the next full heal (W${a.heal.wave})`
       : `no full heal left — ${a.fightsBeforeHeal} big ${a.fightsBeforeHeal === 1 ? "fight" : "fights"} on what you have`)));
   } else {
-    out.push(line("✚", "#6d6", h("span", dim, `full heal entering W${a.heal.wave} — HP, status, PP, revives, Tera`)));
+    out.push(line("✓", "#6d6", h("span", dim, `full heal entering W${a.heal.wave} — HP, status, PP, revives, Tera`)));
   }
   if (a.thisWave) {
-    out.push(line("🎁", "#8cf", h("span", dim, a.thisWave.tiers.length
+    out.push(line("·", "#8cf", h("span", dim, a.thisWave.tiers.length
       ? `these rewards are pinned to ${a.thisWave.tiers.join(" · ")}${a.thisWave.luckUpgrades ? "" : " — luck can't upgrade them"}`
       : "luck can't upgrade these rewards")));
   }
-  out.push(line("🍀", "#9aa", h("span", dim,
+  out.push(line("·", "#9aa", h("span", dim,
     `luck ${a.luck.value} (${a.luck.grade}) — ${a.luck.upgradePct}% tier upgrade per reward${a.thisWave && !a.thisWave.luckUpgrades ? ", off this wave" : ""}`)));
   for (const f of a.eternatus?.facts ?? []) {
-    out.push(line(f.good ? "✓" : "☠", f.good ? "#6d6" : "#c9f", f.text));
+    out.push(line(f.good ? "✓" : "✗", f.good ? "#6d6" : "#c9f", f.text));
   }
   return out;
 };

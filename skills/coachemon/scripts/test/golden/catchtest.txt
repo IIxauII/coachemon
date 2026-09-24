@@ -1,41 +1,41 @@
 == boss
-🎯 Pikachu maybe: break its bars first — only a Master Ball works now, new species
+≈ Pikachu maybe: break its bars first — only a Master Ball works now, new species
 Poké ×5 0% Great ×5 0% Ultra ×5 0% Master ×1 100%
-★ new species
+· account new species
 == new species
-🎯 Pikachu catch: Poké 77% — new species
+★ Pikachu catch: Poké 77% — new species
 Poké ×5 77% Great ×3 96% Ultra ×2 100% Rogue ×1 100% Master ×1 100%
-★ new species
+· account new species
 == skip
 
 == escape
-🎯 Arcanine catch: Ultra 65% — ends it: we can't KO it, it KOs Venusaur
+★ Arcanine catch: Ultra 65% — ends it: we can't KO it, it KOs Venusaur
 Poké ×5 44% Ultra ×5 65%
-⇥ ends it: we can't KO it, it KOs Venusaur
+· escape ends it: we can't KO it, it KOs Venusaur
 == team
-🎯 Pidgeot catch: Ultra 50% — new species, stronger than Pikachu (BST 479 vs 320), sleep/paralyse it for better odds
+★ Pidgeot catch: Ultra 50% — new species, stronger than Pikachu (BST 479 vs 320), sleep/paralyse it for better odds
 Poké ×5 34% Great ×5 42% Ultra ×5 50%
-★ new species
-⚑ covers Ground weakness
-⚑ hits Fighting/Bug/Grass (no one else does)
-⚑ stronger than Pikachu (BST 479 vs 320)
-⚑ party full: replaces Pikachu
+· account new species
+· team covers Ground weakness
+· team hits Fighting/Bug/Grass (no one else does)
+· team stronger than Pikachu (BST 479 vs 320)
+· team party full: replaces Pikachu
 == common owned
 
 == hidden ability
-🎯 Glameow catch: Great 70% — new hidden ability
+★ Glameow catch: Great 70% — new hidden ability
 Poké ×10 56% Great ×3 70% Ultra ×3 82% Rogue ×2 100% Master ×1 100%
-★ new hidden ability
+· account new hidden ability
 == unevolved upgrade
-🎯 Charmander catch: Great 40% — ends it: 3 turns to KO, new species, sleep/paralyse it for better odds
+★ Charmander catch: Great 40% — ends it: 3 turns to KO, new species, sleep/paralyse it for better odds
 Poké ×10 31% Great ×5 40%
-★ new species
-⚑ covers Fire weakness
-⚑ stronger than Ariados (final BST ~529 vs 400)
-⇥ ends it: 3 turns to KO
+· account new species
+· team covers Fire weakness
+· team stronger than Ariados (final BST ~529 vs 400)
+· escape ends it: 3 turns to KO
 == challenge final boss
-🎯 Eternatus maybe: break its bars first — no ball works on this boss, new species, stronger than Venusaur (BST 690 vs 525)
+≈ Eternatus maybe: break its bars first — no ball works on this boss, new species, stronger than Venusaur (BST 690 vs 525)
 Poké ×5 0% Master ×1 0%
-★ new species
-⚑ stronger than Venusaur (BST 690 vs 525)
+· account new species
+· team stronger than Venusaur (BST 690 vs 525)
 ok

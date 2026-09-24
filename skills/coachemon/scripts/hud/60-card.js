@@ -199,7 +199,7 @@ export const planSummary = tp => {
   if (tp.summary) return tp.summary;
   const lost = tp.result !== "win";
   return [lost ? "likely lost" : "winnable",
-    tp.win ? `☠ ${tp.win.name} KOs ${tp.win.kills}/${tp.win.of}` : null,
+    tp.win ? `💀 ${tp.win.name} KOs ${tp.win.kills}/${tp.win.of}` : null,
     ...tp.warnings.map(w => w.replace(/^likely lost: /, "")),
     tp.sacrifice.length ? `sacrifice ${tp.sacrifice.map(x => `${x.name} → ${x.frees.name} in free`).join(", ")}` : null,
   ].filter(Boolean).join(" · ");

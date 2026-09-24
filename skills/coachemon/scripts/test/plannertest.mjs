@@ -667,7 +667,7 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   const slots = slotLines(field);
   assert.equal(slots.length, 2);
   assert.ok(slots.every(l => /→ Hydreigon/.test(l)), `both slots aim at Hydreigon:\n${field.join("\n")}`);
-  assert.ok(field.some(l => /^◎ focus Hydreigon : KO before it moves/.test(l)), "focus is explained");
+  assert.ok(field.some(l => /^· focus Hydreigon : KO before it moves/.test(l)), "focus is explained");
 }
 
 // 7. Split: each foe falls to one of our slots, so aiming at both KOs both.
@@ -681,7 +681,7 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   const slots = slotLines(field);
   assert.ok(slots.some(l => /^⚔ Garchomp .*→ Weezing/.test(l)) && slots.some(l => /^⚔ Lucario .*→ Toxapex/.test(l)), `split targets:\n${field.join("\n")}`);
   assert.ok(!field.some(l => /^⋔/.test(l)), "a split needs no line: the ⚔ targets show it");
-  assert.ok(!field.some(l => /^◎/.test(l)), "no focus");
+  assert.ok(!field.some(l => /^· focus/.test(l)), "no focus");
 }
 
 // 8. Scenario 6, but Hydreigon is predicted to switch out to Ferrothorn: focusing the leaving mon is pointless.
@@ -697,7 +697,7 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   console.log(`== doubles focus on a leaving foe (live)\n${lines.join("\n")}`);
   assert.ok(field.some(l => /Hydreigon → Ferrothorn switches/.test(l)), "switch predicted");
   assert.ok(!slotLines(field).some(l => /→ Hydreigon/.test(l)), `no slot aims at the leaving Hydreigon:\n${field.join("\n")}`);
-  assert.ok(!field.some(l => /^◎ focus Hydreigon/.test(l)), "no focus on the leaving Hydreigon");
+  assert.ok(!field.some(l => /^· focus Hydreigon/.test(l)), "no focus on the leaving Hydreigon");
 }
 
 // 8b. A status play in a double (#262). Machamp outspeeds and 1HKOs Breloom, and neither of ours dents it this turn;
@@ -883,7 +883,7 @@ Object.assign(TABLE, {
   const { lines, field } = at([pz(2), du(3)]);
   console.log(`== doubles: two killable foes, one far more dangerous (live)\n${lines.join("\n")}`);
   assert.equal(focusOf(field), "Porygon-Z+Porygon-Z", `the pair focuses the dangerous foe:\n${field.join("\n")}`);
-  assert.ok(field.some(l => /^◎ focus Porygon-Z/.test(l)), "and says so on the ◎ row");
+  assert.ok(field.some(l => /^· focus Porygon-Z/.test(l)), "and says so on the · row");
 
   // Not slot order: swapping the two foes' positions keeps the same pick.
   assert.equal(focusOf(at([du(2), pz(3)]).field), "Porygon-Z+Porygon-Z", "the pick follows the foe, not the field position");
@@ -920,11 +920,11 @@ Object.assign(TABLE, {
   assert.equal(focusOf(single.field), "Porygon-Z+Porygon-Z", `single-target foes: the dangerous one is still focused:\n${single.field.join("\n")}`);
 
   // The same field with the foes slower, kept from when it was this block's control: `pBefore` is 1, so the pair also
-  // gets there first, and the ◎ row names that rather than the removal itself.
+  // gets there first, and the · row names that rather than the removal itself.
   const slow = at([pz(2, 40), du(3, 40)]);
   console.log(`== doubles: the same two foes, now outsped (live)\n${slow.lines.join("\n")}`);
   assert.equal(focusOf(slow.field), "Porygon-Z+Porygon-Z", `outspeeding them, the dangerous foe is focused:\n${slow.field.join("\n")}`);
-  assert.ok(slow.field.some(l => /^◎ focus Porygon-Z : KO before it moves/.test(l)), "and the ◎ row names why it is worth more");
+  assert.ok(slow.field.some(l => /^· focus Porygon-Z : KO before it moves/.test(l)), "and the · row names why it is worth more");
 }
 
 // ---- 9–11. Free switch: the game asks "Will you switch Pokémon?" before the first turn (CheckSwitchPhase).
@@ -1232,7 +1232,7 @@ Object.assign(TABLE, {
   const sum = cardSummary(m);
   console.log(`== summary\n${JSON.stringify({ danger: sum.danger, plan: sum.plan })}`);
   assert.deepEqual(sum.danger, [{ mon: "Mamoswine", from: "Mega Golisopod", move: "Iron Head", level: "after", saveFor: "Xurkitree" }]);
-  assert.equal(sum.plan, "likely lost · ☠ Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in");
+  assert.equal(sum.plan, "likely lost · 💀 Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in");
   // A plain ⚠ (a real KO chance, not a likely KO) stays off the list.
   assert.deepEqual(cardSummary({ ...m, field: { ...m.field, slots: [{ ...m.field.slots[0], threat: threat("risk", false) }] } }).danger, []);
   // `saveFor` also reads the foes only this mon beats (#170 §A), which the win condition's reserve never covered.

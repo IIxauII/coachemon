@@ -57,9 +57,11 @@ export const drawLearn = m => {
   // The rule that used to hold the incoming move apart from the slots is gone with it — that boundary is the one
   // between `act` and `options`, which is the shell's to draw (§1).
   return [
-    some("act", "Now", learnSummary(m), [row(m.move, "✚", "#6d6", false, gain)]),
+    some("act", "Now", learnSummary(m), [row(m.move, "✓", "#6d6", false, gain)]),
     some("options", "Moves", null,
-      m.moves.map((x, i) => (i === m.forget ? row(x, "✕", "#e55", warnAt(i)) : i === slot ? row(x, "↔", "#fa4", warnAt(i)) : row(x, "·", "#9aa")))),
+      // The slot losing its move is *removed* — `✗`, the same news as an avoid; the slot the new move lost to on a
+      // skip is the pick that kept its place — `★` (#349 §7). `✕` is gone from the panel entirely.
+      m.moves.map((x, i) => (i === m.forget ? row(x, "✗", "#e55", warnAt(i)) : i === slot ? row(x, "★", "#fa4", warnAt(i)) : row(x, "·", "#9aa")))),
     // A learn card runs no team audit — the team line is all it has to say about the team, so the group is headed by
     // its label alone (§6).
     some("audit", "Team", null, [teamLine(teamParts)]),

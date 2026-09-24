@@ -31,7 +31,7 @@ summary fight | Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip →
 easy 🎯 W89 Charizard Heat Wave → Nidoqueen · 2 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
 ⚔ Charizard Fire Heat Wave → Nidoqueen 2 hits
 ⚔ Venusaur Grass Power Whip → Nidoqueen 2 hits
-◎ focus Nidoqueen : KO before it moves
+· focus Nidoqueen : KO before it moves
 we're weak to Flying ×2 · Electric ×2
 Nidoqueen Nidoqueen L64 Poison Ground 100% ▲ Water ↯ Poison Sludge Bomb → Charizard moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
@@ -58,18 +58,18 @@ queued during prediction: 0; queueMessage restored: true
 == predict
 ⌃ {Hide the drawer} × {Close}
 trainer 🎯 W89 · Tester Venusaur Venusaur Power Whip → Ludicolo · 2 hits
-⇆ Arcanine → Ludicolo switches — moves aimed at it
+⇄ Arcanine → Ludicolo switches — moves aimed at it
 now: ⇄ Blastoise out › Venusaur in
 next: ⚔ Venusaur Grass Power Whip → Ludicolo 2 hits
 ↺ if it stays: Blastoise Steel Flash Cannon → Arcanine
 Foes
 foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ▲ Water
-Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼ ↯ Water Surf → Venusaur moves after
+Ludicolo Ludicolo L80 Water Grass 100% ▲ — ▼ Water ×¼ ↯ Water Surf → Venusaur moves after
 winnable · Venusaur › Blastoise
-♟ Fight plan winnable
-1 Venusaur ⇄ Grass Power Whip → Ludicolo switch in, takes a hit · KO · 61% left
-2 Blastoise ⇄ Water Wave Crash → Arcanine switch in, takes a hit · KO · 13% left
+Fight plan winnable
+➜ 1. Venusaur ⇄ Grass Power Whip → Ludicolo switch in, takes a hit · KO · 61% left
+➜ 2. Blastoise ⇄ Water Wave Crash → Arcanine switch in, takes a hit · KO · 13% left
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary trainer | Venusaur Power Whip → Ludicolo · 2 hits | plan: winnable · Venusaur › Blastoise
 == risk
@@ -86,7 +86,7 @@ fight 🎯 W89 Charizard Air Slash → Ninetales · 3 hits
 ⚔ Charizard Flying Air Slash → Ninetales 3 hits
 ⇄ Charizard out › Blastoise in · optional · takes ~23% · resists Flamethrower
 we're weak to Flying ×2 · Electric ×2
-Ninetales Ninetales L72 Fire 100% ✦ ⚠ Flash Fire ▲ Water ✕ Fire ×0 ↯ Fire Flamethrower → Charizard moves after
+Ninetales Ninetales L72 Fire 100% ✦ Flash Fire ▲ Water ▼ Fire ×0 ↯ Fire Flamethrower → Charizard moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary fight | Charizard Air Slash → Ninetales · 3 hits
 queued during prediction: 0; queueMessage restored: true
@@ -96,20 +96,20 @@ trainer 🎯 W89 · Tester Charizard Charizard Flamethrower → Lycanroc · 1 hi
 ⚔ Charizard 💀 Rock ×4 378% {Lycanroc's Stone Edge: ~378% of current HP, before it can act} Fire Flamethrower → Lycanroc 1 hit
 💀 Charizard ← Lycanroc Stone Edge
 Lycanroc Lycanroc L70 Steel TERA 100% ▲ Fire ↯ Rock Stone Edge → Charizard moves first
-likely lost · ☠ Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
-♟ Fight plan likely lost
-☠ Lycanroc Lycanroc KOs 1/1 · win condition
-🛡 Charizard save for Lycanroc ~100%/turn · KO'd first
-1 Charizard Fire Flamethrower → Lycanroc falls · foe at 100%
+likely lost · 💀 Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
+Fight plan likely lost
+💀 Lycanroc Lycanroc KOs 1/1 · win condition
+⤵ Charizard save for Lycanroc ~100%/turn · KO'd first
+➜ 1. Charizard Fire Flamethrower → Lycanroc falls · foe at 100%
 ⚠ likely lost: nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-summary trainer | Charizard Flamethrower → Lycanroc · 1 hit | 💀 Charizard | plan: likely lost · ☠ Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
+summary trainer | Charizard Flamethrower → Lycanroc · 1 hit | 💀 Charizard | plan: likely lost · 💀 Lycanroc KOs 1/1 · nobody outspeeds Lycanroc and it KOs 1 of 1 — maximise damage before it comes in, keep Charizard healthy
 == trap
 ⌃ {Hide the drawer} × {Close}
 easy 🎯 W89 Charizard Flamethrower → Swinub · 1 hit
 ⚔ Charizard Fire Flamethrower → Swinub 1 hit
 Foes
-Swinub Swinub L20 Ice Ground 100% ✦ ⚠ Thick Fat ▲ — ↯ Normal Tackle → Charizard moves after
+Swinub Swinub L20 Ice Ground 100% ✦ Thick Fat ▲ — ↯ Normal Tackle → Charizard moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Flamethrower → Swinub · 1 hit
 == fieldTrap
@@ -119,7 +119,7 @@ easy 🎯 W89 Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro P
 ⚔ Blastoise Water Hydro Pump → Krookodile 1 hit
 we're weak to Electric ×2
 Druddigon Druddigon L40 Dragon 100% ▲ — ↯ Normal Tackle → Charizard moves after
-Krookodile Krookodile L40 Ground Dark 100% ✦ ⚠ Moxie ▲ Water ↯ Dark Crunch → Blastoise moves after
+Krookodile Krookodile L40 Ground Dark 100% ✦ Moxie ▲ Water ↯ Dark Crunch → Blastoise moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 == contactTrap
@@ -127,10 +127,10 @@ summary easy | Charizard Flamethrower → Druddigon · 2 hits ; Blastoise Hydro 
 easy 🎯 W89 Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 ⚔ Charizard Fire Flare Blitz → Krookodile 2 hits spare hit — KO without it
 ⚔ Blastoise Water Hydro Pump → Krookodile 1 hit
-◎ focus Krookodile : KO before it moves
+· focus Krookodile : KO before it moves
 we're weak to Electric ×2
-Druddigon Druddigon L40 Dragon 100% ✦ ⚠ Rough Skin ▲ — ↯ Normal Tackle → Blastoise moves after
-Krookodile Krookodile L40 Ground Dark 100% ✦ ⚠ Moxie ▲ Water ↯ Dark Crunch → Charizard moves after
+Druddigon Druddigon L40 Dragon 100% ✦ Rough Skin ▲ — ↯ Normal Tackle → Blastoise moves after
+Krookodile Krookodile L40 Ground Dark 100% ✦ Moxie ▲ Water ↯ Dark Crunch → Charizard moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Charizard Flare Blitz → Krookodile · 2 hits ; Blastoise Hydro Pump → Krookodile · 1 hit
 == modelled
@@ -145,27 +145,27 @@ queued during prediction: 0; queueMessage restored: true
 == intimidateIn
 ⌃ {Hide the drawer} × {Close}
 trainer 🎯 W89 · Tester Blastoise Blastoise Wave Crash → Arcanine · 2 hits
-⇆ Ludicolo → Arcanine switches — moves aimed at it
+⇄ Ludicolo → Arcanine switches — moves aimed at it
 ⚔ Blastoise Water Wave Crash → Arcanine 2 hits
 ↺ if it stays: Blastoise Water Wave Crash → Ludicolo
 Foes
-Ludicolo Ludicolo L80 Water Grass 100% ▲ — ✕ Water ×¼
-Arcanine Arcanine L80 Fire 100% ✦ ⚠ Intimidate ▲ Water ↯ Fire Flare Blitz → Blastoise moves first
-likely lost · ☠ Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
-♟ Fight plan likely lost
-☠ Ludicolo Ludicolo KOs 1/1 · win condition
-1 Blastoise Water Wave Crash → Arcanine KO · 50% left
-2 Blastoise Water Wave Crash → Ludicolo falls · foe at 88%
+Ludicolo Ludicolo L80 Water Grass 100% ▲ — ▼ Water ×¼
+Arcanine Arcanine L80 Fire 100% ✦ Intimidate ▲ Water ↯ Fire Flare Blitz → Blastoise moves first
+likely lost · 💀 Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
+Fight plan likely lost
+💀 Ludicolo Ludicolo KOs 1/1 · win condition
+➜ 1. Blastoise Water Wave Crash → Arcanine KO · 50% left
+➜ 2. Blastoise Water Wave Crash → Ludicolo falls · foe at 88%
 ⚠ likely lost: nothing we have hurts Ludicolo — maximise damage before it comes in
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
-summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely lost · ☠ Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
+summary trainer | Blastoise Wave Crash → Arcanine · 2 hits | plan: likely lost · 💀 Ludicolo KOs 1/1 · nothing we have hurts Ludicolo — maximise damage before it comes in
 == soundproof
 ⌃ {Hide the drawer} × {Close}
 easy 🎯 W89 Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit
 ⚔ Exploud Normal Hyper Voice → both Rattata 1 hit
 ⚔ Venusaur Grass Power Whip → Whismur 1 hit
 Foes
-Whismur Whismur L30 Normal 100% ✦ ⚠ Soundproof ▲ — ↯ Normal Pound → Venusaur moves after
+Whismur Whismur L30 Normal 100% ✦ Soundproof ▲ — ↯ Normal Pound → Venusaur moves after
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Tackle → Exploud moves after
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary easy | Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → Whismur · 1 hit
@@ -174,7 +174,7 @@ summary easy | Exploud Hyper Voice → both · 1 hit ; Venusaur Power Whip → W
 fight 🎯 W89 Exploud nothing it can do
 ⚔ Exploud nothing it can do
 Foes
-Whismur Whismur L30 Normal 100% ✦ ⚠ Soundproof ▲ —
+Whismur Whismur L30 Normal 100% ✦ Soundproof ▲ —
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary fight | Exploud nothing it can do
 == intimidate
@@ -189,20 +189,20 @@ queued during prediction: 0; queueMessage restored: true
 == doubleReturn
 ⌃ {Hide the drawer} × {Close}
 trainer 🎯 W89 · Tester Blastoise › Venusaur Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits
-⇆ Arcanine → Gyarados switches — moves aimed at it
-⇆ Ludicolo → Arcanine returns from the other slot — moves aimed at it
+⇄ Arcanine → Gyarados switches — moves aimed at it
+⇄ Ludicolo → Arcanine returns from the other slot — moves aimed at it
 ⚔ Blastoise Steel Flash Cannon → Arcanine 2 hits then Wave Crash
 ⚔ Venusaur Grass Power Whip → Gyarados 3 hits
 ↺ if it stays: Blastoise Water Wave Crash → Arcanine · Venusaur Poison Sludge Bomb → Ludicolo
 Foes
 foes weak to: Water ×1
 Arcanine Arcanine L80 Fire 100% ▲ Water
-Ludicolo Ludicolo L80 Water Grass 100% ▲ Poison ✕ Water ×¼
-Gyarados Gyarados L80 Water Flying 100% ✦ ⚠ Intimidate ▲ — ↯ Water Waterfall → Venusaur moves first
+Ludicolo Ludicolo L80 Water Grass 100% ▲ Poison ▼ Water ×¼
+Gyarados Gyarados L80 Water Flying 100% ✦ Intimidate ▲ — ↯ Water Waterfall → Venusaur moves first
 winnable · Venusaur › Blastoise
-♟ Fight plan steps approximate winnable
-~1 Venusaur Grass Power Whip → Gyarados KO · 47% left
-~2 Blastoise Water Wave Crash → Arcanine KO · 42% left
-~3 Venusaur Poison Sludge Bomb → Ludicolo KO · 27% left
+Fight plan steps approximate winnable
+➜ 1.~ Venusaur Grass Power Whip → Gyarados KO · 47% left
+➜ 2.~ Blastoise Water Wave Crash → Arcanine KO · 42% left
+➜ 3.~ Venusaur Poison Sludge Bomb → Ludicolo KO · 27% left
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary trainer | Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits | plan: winnable · Venusaur › Blastoise

@@ -23,8 +23,10 @@ export const drawReroll = m => {
         : roll.offers.map(f => f.name).join(" · "))));
     if (i > 0) return;
     for (const f of roll.offers) {
-      out.push(line(f === b ? "›" : "·", f === b ? color : "#9aa", itemImg(f.icon, f.name),
-        h("span", f === b ? {} : dim, `${f.name}${f.upgraded ? " ⬆" : ""}`), h("span", { flex: "1" }),
+      // The best offer is the pick, so it wears `★`; a tier bump is a word, because the only mark it could take —
+      // `▲` — already means *foe weak to*, and a 17th mark costs more than a word does (#349 §7).
+      out.push(line(f === b ? "★" : "·", f === b ? color : "#9aa", itemImg(f.icon, f.name),
+        h("span", f === b ? {} : dim, `${f.name}${f.upgraded ? " upgraded" : ""}`), h("span", { flex: "1" }),
         h("span", dim, f.holder ? `${f.holder.name} · ${f.why.replace(`${f.holder.name} · `, "")}` : f.why)));
     }
   });

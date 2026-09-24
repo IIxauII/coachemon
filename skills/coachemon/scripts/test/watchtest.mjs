@@ -36,7 +36,7 @@ replay("new battle", [
 replay("easy and trainer", [
   snap({ hud: hud({ verdict: "easy", field: "Charizard Ember → Rattata · 1 hit" }) }),
   snap({ wave: 13, trainer: "Youngster Ben", double: true, enemy: [foe("Machop", 9), foe("Geodude", 10)],
-    hud: hud({ wave: 13, verdict: "trainer", plan: "winnable · ☠ Charizard KOs 2/2" }) }),
+    hud: hud({ wave: 13, verdict: "trainer", plan: "winnable · 💀 Charizard KOs 2/2" }) }),
 ]);
 
 // The HUD's verdict trails the read: the line is held for three polls, then goes out without one.

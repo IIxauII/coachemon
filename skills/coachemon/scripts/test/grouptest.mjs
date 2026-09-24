@@ -24,8 +24,28 @@ const { drawEncounter } = globalThis.__hud["96-render-encounter"];
 const { drawStarters } = globalThis.__hud["96-render-starters"];
 const { drawFusion } = globalThis.__hud["96-render-fusion"];
 const { drawBiome } = globalThis.__hud["97-render-biome"];
-const { GROUP_IDS, cardText, groupsText } = globalThis.__hud["90-render"];
+const { GROUP_IDS, MARKS, cardText, groupsText } = globalThis.__hud["90-render"];
 
+
+// ---- The closed alphabet (#349 §7)
+// `MARKS` is the register itself, imported rather than restated: the set lives beside the gutter it governs, the way
+// `GROUP_IDS` lives beside the tab bar, and a test that kept its own copy would pass while the panel drifted.
+// What the alphabet does **not** govern: inline connectives inside prose are typography, and a fraction or a
+// multiplier is a number.
+const TYPOGRAPHY = [..."→←›—–−×…½¼⅓⅔"];
+// The marks §7 retired, each named with what it became, so a reappearance fails by name rather than as a stray
+// glyph. This is history and belongs here rather than in the panel: the renderers only need to know the set that is
+// live. Two of them survive off the gutter and so are only retired *as marks* — `🎯` is still the battle card's
+// caption emoji and the dismissed panel's glyph, and `✕` is the shape the close control was named for.
+const RETIRED = {
+  "✕": "▼ on the walls row, ✗ on the forgotten move", "⇆": "⇄", "↪": "⤵", "↔": "★", "⇥": "the word `escape`",
+  "✝": "✗", "🛡": "⤵", "✚": "✓, or ⚠ on a caveat", "💰": "✓", "🎯": "★ / ≈", "🍀": "·", "👤": "·", "👁": "·",
+  "⚑": "no mark — the tab carries it", "♟": "no mark — the tab carries it", "🩺": "no mark — the tab carries it",
+  "🎁": "★ on the pick, · on a fact", "◎": "·", "⬆": "the word `upgraded`", "🔮": "the word `fixed`", "☠": "💀",
+};
+// Every glyph a card spends, anywhere in its text — the gutter marks, the marks that stand alone as a claim inside a
+// row, and the model strings the summaries are read from. Letters, digits, whitespace and ASCII are not marks.
+const glyphsIn = text => [...text].filter(ch => !/[\p{L}\p{N}\s]/u.test(ch) && !/[\x20-\x7e]/.test(ch));
 
 const show = (label, card, draw = drawBattle) => {
   const groups = groupsText(draw(card));
@@ -51,6 +71,13 @@ const show = (label, card, draw = drawBattle) => {
   const rows = groups.flatMap(g => g.rows);
   assert.deepEqual(lines.filter(l => rows.includes(l)), rows, "every group's rows, in the group order and no other");
   assert.equal(lines.length, rows.length + groups.filter(g => g.label || g.summary).length, "a heading a group, and nothing else");
+  // The alphabet is closed (§7). Held over the card's whole text rather than over the first token of a row, because a
+  // foe row is a block of several lines and a mark can stand alone as a claim inside one — and because the summaries
+  // this text is built from are the model's own strings, which is where three of the re-maps had to land.
+  for (const ch of glyphsIn(cardText(card))) {
+    assert.ok(!RETIRED[ch], `${label}: ${ch} is retired — it is ${RETIRED[ch]} now`);
+    assert.ok(MARKS.includes(ch) || TYPOGRAPHY.includes(ch), `${label}: ${ch} is not in the closed alphabet`);
+  }
   return groups;
 };
 
@@ -119,7 +146,7 @@ const catchAdvice = {
   // label (§6). Literals, so the rule is pinned rather than restated.
   const text = cardText(card);
   assert.ok(text.includes("\nFoes: we're weak to Fire ×2\n"), text);
-  assert.ok(text.includes("\nRoad: W90 wild — Toxicroak L71\n🔮 Next W90 wild\n"), text);
+  assert.ok(text.includes("\nRoad: W90 wild — Toxicroak L71\nNext W90 wild\n"), text);
   // The call leads the text and nothing heads it: the card's identity line has left the rows for the strip's
   // caption, which the text has no need of — the watch CLI already carries the kind, the wave and the verdict (§6).
   assert.ok(text.startsWith("Charizard Flamethrower → Lycanroc · 2 hits\n⚔ Charizard"), text);
@@ -133,7 +160,10 @@ const catchAdvice = {
 {
   const card = battle({ weak: [["Fire", 2]], catch: { targets: [
     { icon: null, name: "Zubat", verdict: "maybe", why: "covers Flying", best: { ball: "Great Ball", short: "GB", key: "gb", count: 9, p: 0.44 },
-      chance: [{ ball: "Great Ball", short: "GB", key: "gb", count: 9, p: 0.44 }], reasons: [] },
+      chance: [{ ball: "Great Ball", short: "GB", key: "gb", count: 9, p: 0.44 }],
+      // Why to catch, not how good it is: the three kinds are words in the row and the gutter stays neutral (§7).
+      reasons: [{ kind: "account", text: "not in the dex" }, { kind: "team", text: "covers Flying" },
+        { kind: "escape", text: "ends a fight that costs a member" }] },
   ] } });
   const groups = show("wild · a maybe, which is not a catch verdict", card);
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "catch"]);
@@ -141,7 +171,7 @@ const catchAdvice = {
   // group falls back on the same rule any group with nothing to conclude lives by.
   assert.equal(groups[2].summary, null);
   assert.ok(groups[2].rows.length, "the maybe is still drawn");
-  assert.ok(cardText(card).includes("\nCatch\n🎯 Zubat maybe:"), cardText(card));
+  assert.ok(cardText(card).includes("\nCatch\n≈ Zubat maybe:"), cardText(card));
 }
 
 // ---- Trainer: act · foes · plan · road, six foes and a fight plan
@@ -150,9 +180,13 @@ const catchAdvice = {
   const card = battle({
     trainer: true, verdict: "trainer", title: "W89 · Cynthia", order: [{ icon: null, name: "Blastoise" }, { icon: null, name: "Venusaur" }],
     field: field({ slots: [slot({ name: "Blastoise", move: "Wave Crash", type: "Water", target: chomp, ko: 2 })] }),
-    rows: [foe({ name: "Garchomp", lv: 96, types: ["Dragon", "Ground"], weak: [["Ice", "×4"]], boss: true }),
-      foe({ name: "Spiritomb", lv: 95, types: ["Ghost", "Dark"], weak: [] }),
-      foe({ name: "Roserade", lv: 95, types: ["Grass", "Poison"], weak: [["Fire", "×2"]] })],
+    // The straining card, and the one that spends most of the gutter: a trap row, a walls row, an enemy move and a
+    // pick for a foe no slot is on yet, so every mark the battle renderer can draw is drawn here (§7).
+    rows: [foe({ name: "Garchomp", lv: 96, types: ["Dragon", "Ground"], weak: [["Ice", "×4"]], boss: true,
+        likely: { move: "Earthquake", type: "Ground", pct: 62, first: 100, at: null, hits: 0, confidence: "exact" } }),
+      foe({ name: "Spiritomb", lv: 95, types: ["Ghost", "Dark"], weak: [], traps: ["Pressure"], avoid: [["Water", "×½"]] }),
+      foe({ name: "Roserade", lv: 95, types: ["Grass", "Poison"], weak: [["Fire", "×2"]],
+        pick: { icon: null, name: "Lapras", cat: "special", type: "Ice", move: "Ice Beam", pct: 71, ko: 2, later: true, risky: false, notes: [] } })],
     team: [["Ice", 2], ["Fire", 1]],
     moveTypes: ["Water", "Ice", "Fire"],
     teamPlan: { result: "win", summary: null,
@@ -169,7 +203,7 @@ const catchAdvice = {
   // heads it, in the text as in the pane, with no filler count (§6).
   assert.equal(groups[1].summary, null);
   assert.ok(cardText(card).includes("\nFoes\nfoes weak to: Ice ×2 Fire ×1\n"), cardText(card));
-  assert.equal(groups[2].summary, "winnable · ☠ Garchomp KOs 2/4 · Roserade outspeeds the whole bench");
+  assert.equal(groups[2].summary, "winnable · 💀 Garchomp KOs 2/4 · Roserade outspeeds the whole bench");
   // A trainer battle never offers a ball, so there is no catch group whatever the wave holds.
   assert.ok(!groups.some(g => g.id === "catch"));
 }
@@ -230,7 +264,7 @@ const learn = (over = {}) => ({
   // `options` and `notes` head their panes with their label alone — no summary, and no count of what is below (§6).
   assert.deepEqual([groups[1].summary, groups[3].summary], [null, null]);
   const text = cardText(card);
-  assert.ok(text.includes("\nMoves\n✕ Dark Bite ⚠ weak Atk power 30\n"), text);
+  assert.ok(text.includes("\nMoves\n✗ Dark Bite ⚠ weak Atk power 30\n"), text);
   assert.ok(text.includes("\nTeam\nteam: +SE Steel/Electric · −SE Dark · ⚠ loses only Dark move\n"), text);
   assert.ok(text.endsWith("\nNotes\nnext big fight unread: the run seed is past the pinned build"), text);
 }
@@ -351,7 +385,7 @@ const biomeOption = (over = {}) => ({ label: "Swamp", id: 1, score: 72, offense:
   assert.equal(groups[0].summary, "Swamp 72 pick — Garchomp resists · Construction Site 55");
   assert.ok(cardText(card).includes("\nBiomes\n★ Swamp"), cardText(card));
   // Who the judging left out is a footnote, not a supporting line for the call.
-  assert.ok(cardText(card).endsWith("\nNotes\n✚ judged without 1 fainted — no revive at the next heal"), cardText(card));
+  assert.ok(cardText(card).endsWith("\nNotes\n⚠ judged without 1 fainted — no revive at the next heal"), cardText(card));
 }
 
 // Nothing to footnote: the `notes` group is not drawn at all, the same as any group with nothing in it.

@@ -70,7 +70,7 @@ const verdictOf = m => cardSummary(m).verdict;
     { mon: "Charizard", from: "Butterfree", move: "Gust", level: "ko", saveFor: null },
     { mon: "Pidgey", from: "Rattata", move: "Tackle", level: "after", saveFor: "Butterfree" },
   ]);
-  assert.equal(s.plan, "winnable · ☠ Charizard KOs 2/3 · Butterfree outspeeds");
+  assert.equal(s.plan, "winnable · 💀 Charizard KOs 2/3 · Butterfree outspeeds");
   console.log("battle summary ok");
   console.log(JSON.stringify(s));
 }

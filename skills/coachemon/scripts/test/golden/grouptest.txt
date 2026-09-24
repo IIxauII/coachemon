@@ -5,28 +5,28 @@ act | Now | Charizard Flamethrower → Lycanroc · 2 hits
 foes | Foes | 💀 Charizard ← Lycanroc Stone Edge
     Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2 ↯ Rock Stone Edge ~567% HP · moves first
 catch | Catch | catch Toxicroak — Ultra 62%
-    🎯 Toxicroak catch: Ultra 62% — new species, covers Ground weakness
+    ★ Toxicroak catch: Ultra 62% — new species, covers Ground weakness
     Great ×9 44% Ultra ×4 62%
-    ★ not in the dex
-    ⚑ resists Ground
+    · account not in the dex
+    · team resists Ground
 road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — nothing hits Garchomp super-effectively
-    🔮 Next W90 wild
+    Next W90 wild
     · Toxicroak L71 Poison Fighting Dry Skin
     Sludge Bomb
     if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
-    ⚑ Next big fight gym leader in 6 W95 👑 2 bars
+    Next big fight gym leader in 6 W95 👑 2 bars
     · Garchomp L96
-    🎁 it pays Rogue
+    · it pays Rogue
     ✗ nothing hits Garchomp super-effectively
-    ✚ full heal entering W100 — HP, status, PP, revives, Tera
-    🍀 luck 3 (C) — 6% tier upgrade per reward
+    ✓ full heal entering W100 — HP, status, PP, revives, Tera
+    · luck 3 (C) — 6% tier upgrade per reward
 == wild · quiet, and no catch
 act | Now | Charizard Flamethrower → Lycanroc · 2 hits
     ⚔ Charizard Fire Flamethrower → Lycanroc 2 hits
 foes | Foes | we're weak to Fire ×2
     Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2
 road | Road | W90 wild — Toxicroak L71
-    🔮 Next W90 wild
+    Next W90 wild
     · Toxicroak L71 Poison Fighting Dry Skin
     Sludge Bomb
     if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
@@ -36,37 +36,40 @@ act | Now | Charizard Flamethrower → Lycanroc · 2 hits
 foes | Foes | we're weak to Fire ×2
     Lycanroc Lycanroc L70 Rock 100% ▲ Water ×2
 catch | Catch | —
-    🎯 Zubat maybe: Great 44% — covers Flying
+    ≈ Zubat maybe: Great 44% — covers Flying
     Great ×9 44%
+    · account not in the dex
+    · team covers Flying
+    · escape ends a fight that costs a member
 == trainer · fight plan
 act | Now | Blastoise Wave Crash → Garchomp · 2 hits
     ⚔ Blastoise Water Wave Crash → Garchomp 2 hits
 foes | Foes | —
     foes weak to: Ice ×2 Fire ×1
-    Garchomp Garchomp L96 Dragon Ground 👑 100% ▲ Ice ×4
-    Spiritomb Spiritomb L95 Ghost Dark 100% ▲ —
-    Roserade Roserade L95 Grass Poison 100% ▲ Fire ×2
-plan | Plan | winnable · ☠ Garchomp KOs 2/4 · Roserade outspeeds the whole bench
-    ♟ Fight plan winnable
-    ☠ Garchomp Garchomp 👑 KOs 2/4 · win condition
-    🛡 Lapras save for Garchomp ~34%/turn
-    1 Blastoise Water Wave Crash → Garchomp KO · 40% left
-    2 Lapras ⇄ Ice Ice Beam → Roserade KO · 70% left
+    Garchomp Garchomp L96 Dragon Ground 👑 100% ▲ Ice ×4 ↯ Ground Earthquake ~62% HP · moves first
+    Spiritomb Spiritomb L95 Ghost Dark 100% ✦ Pressure ▲ — ▼ Water ×½
+    Roserade Roserade L95 Grass Poison 100% ▲ Fire ×2 ➜ Lapras Ice Ice Beam ~71% · 2 hits later
+plan | Plan | winnable · 💀 Garchomp KOs 2/4 · Roserade outspeeds the whole bench
+    Fight plan winnable
+    💀 Garchomp Garchomp 👑 KOs 2/4 · win condition
+    ⤵ Lapras save for Garchomp ~34%/turn
+    ➜ 1. Blastoise Water Wave Crash → Garchomp KO · 40% left
+    ➜ 2. Lapras ⇄ Ice Ice Beam → Roserade KO · 70% left
     ⚠ Roserade outspeeds the whole bench
 road | Road | W90 wild — Toxicroak L71 · gym leader in 6 (W95) watch — nothing hits Garchomp super-effectively
-    🔮 Next W90 wild
+    Next W90 wild
     · Toxicroak L71 Poison Fighting Dry Skin
     Sludge Bomb
     if nothing changes: a catch, evolution, shop pick or biome change re-rolls this
-    ⚑ Next big fight gym leader in 6 W95 👑 2 bars
+    Next big fight gym leader in 6 W95 👑 2 bars
     · Garchomp L96
-    🎁 it pays Rogue
+    · it pays Rogue
     ✗ nothing hits Garchomp super-effectively
-    ✚ full heal entering W100 — HP, status, PP, revives, Tera
-    🍀 luck 3 (C) — 6% tier upgrade per reward
+    ✓ full heal entering W100 — HP, status, PP, revives, Tera
+    · luck 3 (C) — 6% tier upgrade per reward
 == double · a return from the other slot
 act | Now | Blastoise Wave Crash → Ludicolo · 2 hits ; Venusaur Power Whip → Arcanine · 2 hits
-    ⇆ Arcanine → Gyarados returns from the other slot — moves aimed at it
+    ⇄ Arcanine → Gyarados returns from the other slot — moves aimed at it
     ⚔ Blastoise Water Wave Crash → Ludicolo 2 hits
     ⚔ Venusaur ⚠ Fire ×2 88% Grass Power Whip → Arcanine 2 hits
 foes | Foes | ⚠ Venusaur ← Arcanine Flare Blitz
@@ -76,9 +79,9 @@ foes | Foes | ⚠ Venusaur ← Arcanine Flare Blitz
 act | Now | no advice — the enemy AI call threw
 == learn · a team line, and a big fight it couldn't read
 act | Now | Learn → forget Bite · ⚠ loses only Dark move
-    ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
+    ✓ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
 options | Moves | —
-    ✕ Dark Bite ⚠ weak Atk power 30
+    ✗ Dark Bite ⚠ weak Atk power 30
     · Psychic Psychic only Psychic move on team power 191
 audit | Team | —
     team: +SE Steel/Electric · −SE Dark · ⚠ loses only Dark move
@@ -86,19 +89,19 @@ notes | Notes | —
     next big fight unread: the run seed is past the pinned build
 == learn · no team line, no notes
 act | Now | Learn → forget Bite
-    ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
+    ✓ Ground Earth Power SE on Rock/Steel/Fire… power 117 +87 power
 options | Moves | —
-    ✕ Dark Bite weak Atk power 30
+    ✗ Dark Bite weak Atk power 30
     · Psychic Psychic only Psychic move on team power 191
 == rewards · a TM to take and a potion to buy
 act | Now | take TM Fire Fang → Morpeko (forget Tackle) · buy Super Potion
     buy first — taking the free reward closes the shop
-    💰 Super Potion $250 Charizard tops up the carry
-    🎁 TM Fire Fang Morpeko → forget Tackle · +25 power
+    ✓ Super Potion $250 Charizard tops up the carry
+    ★ TM Fire Fang Morpeko → forget Tackle · +25 power
 options | Others | —
     · Leftovers Charizard passive healing
 audit | Team | 1 issue: nothing hits Ground
-    🩺 Team audit vs W35 Giovanni
+    Team audit vs W35 Giovanni
     ✗ nothing hits Ground
 == encounter · a chest worth opening
 act | Now | Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave
@@ -125,7 +128,7 @@ options | Proposals | —
     ★ best 10 pts · SE vs 9 types · weak Ice
     Gible Gible ✓ 4 carry outspeeds
     Magikarp Magikarp 1 Gyarados later
-    👁 Rattata Rattata 1 pts · #18 of 40 frail
+    · cursor: Rattata Rattata 1 pts · #18 of 40 frail
 notes | Notes | —
     Fresh Start: no passives, egg moves or luck
 == starters · nothing to add
@@ -149,7 +152,7 @@ options | Biomes | —
     · Construction Site Water 40% Poison 30% 55
     ✗ Lapras weak
 notes | Notes | —
-    ✚ judged without 1 fainted — no revive at the next heal
+    ⚠ judged without 1 fainted — no revive at the next heal
 == biome · nobody fainted
 act | Now | Swamp 72 pick — Garchomp resists
 options | Biomes | —

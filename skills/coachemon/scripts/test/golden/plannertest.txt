@@ -1,22 +1,22 @@
 == cyrus (live)
-⇆ Gyarados → Weavile switches — moves aimed at it
+⇄ Gyarados → Weavile switches — moves aimed at it
 now: ⇄ Morpeko out › Metagross in
 next: ⚔ Metagross ⚠ Dark ×2 56% {next turn: Weavile's Knock Off: ~56% of current HP} Steel Meteor Mash → Weavile 2 hits boss: 2 bars — no 1HKO
 ↺ if it stays: Morpeko Electric Aura Wheel → Gyarados
 foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Dark Knock Off → Metagross 85% likely · moves first
-♟ Fight plan likely lost
-☠ Weavile Weavile 👑 KOs 3/3 · win condition
-🛡 Scrafty save for Weavile ~100%/turn
-🛡 Metagross save for Weavile ~69%/turn
-1 Metagross ⇄ Steel Meteor Mash → Weavile switch in, takes a hit · falls · foe at 89%
-2 Morpeko free Electric Aura Wheel → Weavile falls · foe at 69%
-3 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 68%
-♟ prefers: let Scrafty fall → Metagross in free (+28)
+Fight plan likely lost
+💀 Weavile Weavile 👑 KOs 3/3 · win condition
+⤵ Scrafty save for Weavile ~100%/turn
+⤵ Metagross save for Weavile ~69%/turn
+➜ 1. Metagross ⇄ Steel Meteor Mash → Weavile switch in, takes a hit · falls · foe at 89%
+➜ 2. Morpeko free Electric Aura Wheel → Weavile falls · foe at 69%
+➜ 3. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 68%
+≈ prefers: let Scrafty fall → Metagross in free (+28)
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Metagross
 == cyrus, no Metagross (live)
-⇆ Gyarados → Weavile switches — moves aimed at it
+⇄ Gyarados → Weavile switches — moves aimed at it
 ⚔ Morpeko 💀 Ice 100% 3-hit {next turn: Weavile's Triple Axel: ~100% of current HP, 67% KO, before it can act} Electric Aura Wheel → Weavile
 ⤵ Morpeko falls this turn › Scrafty in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
@@ -24,33 +24,33 @@ Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Dark Knock Off
 foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 ↯ Ice Triple Axel → Morpeko 83% likely · 3-hit · moves first
-♟ Fight plan likely lost
-☠ Weavile Weavile 👑 KOs 2/2 · win condition
-🛡 Scrafty save for Weavile ~100%/turn
-🛡 Morpeko save for Weavile ~28%/turn
-1 Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
-2 Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
+Fight plan likely lost
+💀 Weavile Weavile 👑 KOs 2/2 · win condition
+⤵ Scrafty save for Weavile ~100%/turn
+⤵ Morpeko save for Weavile ~28%/turn
+➜ 1. Morpeko Electric Aura Wheel → Weavile falls · foe at 78%
+➜ 2. Scrafty free Fighting High Jump Kick → Weavile falls · foe at 76%
 ⚠ likely lost: nobody KOs Weavile 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Scrafty, Morpeko
 == building blocks ok
 == cyrus (fallback)
 ⚔ Morpeko ⚠ Water 103% {Gyarados's Waterfall: ~103% of current HP} Electric Aura Wheel → Gyarados 1 hit
-↪ next in likely: Weavile › answer Scrafty
+⤵ next in likely: Weavile › answer Scrafty
 foes weak to: Electric ×1 Fighting ×1
 Gyarados Gyarados L82 Water Flying 100% ▲ Electric ×4 ↯ Water Waterfall → Morpeko moves after
 Weavile Weavile L84 Dark Ice 👑 100% ▲ Fighting ×4 Steel ↯ Ice Triple Axel → Scrafty moves first ➜ Scrafty Fighting High Jump Kick ~100% · 2 hits later boss: 2 bars — no 1HKO
-♟ Fight plan winnable
+Fight plan winnable
 🔒 Scrafty only answer to Weavile ~100%/turn
-1 Morpeko Electric Aura Wheel → Gyarados KO · 82% left
-2 Scrafty ⇄ Fighting High Jump Kick → Weavile switch in, takes a hit · KO · 22% left
+➜ 1. Morpeko Electric Aura Wheel → Gyarados KO · 82% left
+➜ 2. Scrafty ⇄ Fighting High Jump Kick → Weavile switch in, takes a hit · KO · 22% left
 == switch-in never acts (live)
 ⚔ Charizard 💀 Rock ×4 100% {Lycanroc's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Lycanroc
 ⤵ Charizard falls this turn › Blastoise in free
 ⇄ no safe switch {every bench mon is KO'd coming in or before it acts}
 Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100% likely · moves first
-♟ Fight plan winnable
-1 Charizard Fire Flamethrower → Lycanroc sacrifice → Blastoise in free
-2 Blastoise free Water Wave Crash → Lycanroc KO · 41% left
-✝ Charizard 63% · sacrifice to Lycanroc so Blastoise comes in free
+Fight plan winnable
+➜ 1. Charizard Fire Flamethrower → Lycanroc sacrifice → Blastoise in free
+➜ 2. Blastoise free Water Wave Crash → Lycanroc KO · 41% left
+✗ Charizard 63% · sacrifice to Lycanroc so Blastoise comes in free
 == item thief note ok
 == depth 2: Fake Out then Return (live)
 ⚔ Ambipom Normal Fake Out → Slowbro 3 hits then Return
@@ -79,50 +79,50 @@ Lycanroc Lycanroc L70 Rock 100% ▲ Water ↯ Rock Stone Edge → Charizard 100%
 == doubles focus (live)
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 2 hits
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
-◎ focus Hydreigon : KO before it moves
+· focus Hydreigon : KO before it moves
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
-~2 Lucario Fighting Aura Sphere → Snorlax KO · 60% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
+➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 60% left
 == doubles split (live)
 ⚔ Garchomp Dragon Dragon Claw → Weezing 1 hit
 ⚔ Lucario Fighting Aura Sphere → Toxapex 1 hit
 Weezing Weezing L80 Poison 100% ▲ — ↯ Poison Sludge Bomb → Garchomp 50% likely · moves after
 Toxapex Toxapex L80 Poison Water 100% ▲ — ↯ Water Scald → Lucario 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Weezing KO · 100% left
-~2 Lucario Fighting Aura Sphere → Toxapex KO · 100% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Weezing KO · 100% left
+➜ 2.~ Lucario Fighting Aura Sphere → Toxapex KO · 100% left
 == doubles focus on a leaving foe (live)
-⇆ Hydreigon → Ferrothorn switches — moves aimed at it
+⇄ Hydreigon → Ferrothorn switches — moves aimed at it
 ⚔ Garchomp Dragon Dragon Claw → Ferrothorn
 ⚔ Lucario Fighting Aura Sphere → Ferrothorn
-◎ focus Ferrothorn : most damage
+· focus Ferrothorn : most damage
 ↺ if it stays: Garchomp Dragon Dragon Claw → Hydreigon · Lucario Fighting Aura Sphere → Hydreigon
 foes weak to: Fighting ×3 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
 Ferrothorn Ferrothorn L80 Grass Steel 100% ▲ Fighting ↯ Steel Gyro Ball → Garchomp 100% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Ferrothorn KO · 18% left
-~2 Garchomp Dragon Dragon Claw → Hydreigon falls · foe at 45%
-~3 Lucario Fighting Aura Sphere → Hydreigon KO · 100% left
-~4 Lucario Fighting Aura Sphere → Snorlax KO · 60% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Ferrothorn KO · 18% left
+➜ 2.~ Garchomp Dragon Dragon Claw → Hydreigon falls · foe at 45%
+➜ 3.~ Lucario Fighting Aura Sphere → Hydreigon KO · 100% left
+➜ 4.~ Lucario Fighting Aura Sphere → Snorlax KO · 60% left
 == doubles: a status play (live)
 ⚔ Breloom 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Grass Spore → Machamp sleep
 ⚔ Salamence ⚠ Fighting 100% {Machamp's Close Combat: ~100% of current HP, 34% KO} Dragon Dragon Claw → Munchlax 1 hit
 Machamp Machamp L80 Fighting 100% ▲ — ↯ Fighting Close Combat → Breloom 50% likely · 50% first
 Munchlax Munchlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Salamence 50% likely · moves after
-♟ Fight plan steps approximate winnable
-☠ Machamp Machamp KOs 2/2 · win condition
-~1 Salamence Dragon Dragon Claw → Machamp KO · 86% left
-~2 Salamence Dragon Dragon Claw → Munchlax KO · 86% left
+Fight plan steps approximate winnable
+💀 Machamp Machamp KOs 2/2 · win condition
+➜ 1.~ Salamence Dragon Dragon Claw → Machamp KO · 86% left
+➜ 2.~ Salamence Dragon Dragon Claw → Munchlax KO · 86% left
 ⚠ nothing we have hurts Machamp — maximise damage before it comes in
 == doubles: nothing for a status play to add (live)
 ⚔ Breloom Grass Seed Bomb → Munchlax spare hit — KO without it
 ⚔ Salamence Dragon Dragon Claw → Munchlax 1 hit
-◎ focus Munchlax : KO before it moves
+· focus Munchlax : KO before it moves
 == doubles: the partner is scored on the hypothesis (live)
 no Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
 Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~100% of current HP, 50% KO, before it can act} Dragon Dragon Claw → Machamp 2 hits
@@ -132,49 +132,49 @@ Spore on the field: ⚔ Salamence 💀 Fighting 100% {Machamp's Close Combat: ~1
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
-~2 Lucario Fighting Close Combat → Snorlax KO · 94% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
+➜ 2.~ Lucario Fighting Close Combat → Snorlax KO · 94% left
 == doubles spare hit: focus, the redirect carries the same move (live)
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit spare hit — KO without it
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 1 hit spare hit — goes to Snorlax if Hydreigon falls first
-◎ focus Hydreigon : KO before it moves
+· focus Hydreigon : KO before it moves
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
-~2 Lucario Fighting Aura Sphere → Snorlax KO · 60% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
+➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 60% left
 == doubles spare hit: focus, the partner's KO is not certain (live)
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit spare hit — KO without it
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 1 hit
-◎ focus Hydreigon : KO before it moves
+· focus Hydreigon : KO before it moves
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 20% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Lucario 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 84% left
-~2 Lucario Fighting Close Combat → Snorlax KO · 94% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Hydreigon KO · 84% left
+➜ 2.~ Lucario Fighting Close Combat → Snorlax KO · 94% left
 == doubles: two killable foes, one far more dangerous (live)
 ⚔ Garchomp Dragon Dragon Claw → Porygon-Z 2 hits
 ⚔ Lucario Fighting Aura Sphere → Porygon-Z 2 hits
-◎ focus Porygon-Z : KO this turn
+· focus Porygon-Z : KO this turn
 foes weak to: Fighting ×2
 Porygon-Z Porygon-Z L80 Normal 100% ▲ Fighting ↯ Normal Tri Attack → Garchomp 50% likely · 50% first
 Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · 50% first
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Porygon-Z KO · 63% left
-~2 Lucario Fighting Aura Sphere → Dunsparce KO · 93% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Porygon-Z KO · 63% left
+➜ 2.~ Lucario Fighting Aura Sphere → Dunsparce KO · 93% left
 == doubles: the same two foes, now outsped (live)
 ⚔ Garchomp Dragon Dragon Claw → Porygon-Z 2 hits
 ⚔ Lucario Fighting Aura Sphere → Porygon-Z 2 hits
-◎ focus Porygon-Z : KO before it moves
+· focus Porygon-Z : KO before it moves
 foes weak to: Fighting ×2
 Porygon-Z Porygon-Z L80 Normal 100% ▲ Fighting ↯ Normal Tri Attack → Garchomp 50% likely · moves after
 Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Porygon-Z KO · 68% left
-~2 Lucario Fighting Aura Sphere → Dunsparce KO · 95% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Porygon-Z KO · 68% left
+➜ 2.~ Lucario Fighting Aura Sphere → Dunsparce KO · 95% left
 == free switch — same field in the command phase (live)
 ⚔ Ninetales 💀 Rock ×2 100% {Rhyperior's Stone Edge: ~100% of current HP, 80% KO, before it can act} Fire Flamethrower → Rhyperior
 ⤵ Ninetales falls this turn › Swampert in free
@@ -182,13 +182,13 @@ Dunsparce Dunsparce L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garcho
 foes weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Ninetales 100% likely · moves first
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
-♟ Fight plan likely lost
-☠ Tyranitar Tyranitar KOs 2/2 · win condition
-🛡 Swampert save for Tyranitar ~50%/turn
-1 Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
-2 Swampert free Water Surf → Rhyperior KO (75%) · 29% left
-3 Swampert Water Surf → Tyranitar falls · foe at 100%
-✝ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
+Fight plan likely lost
+💀 Tyranitar Tyranitar KOs 2/2 · win condition
+⤵ Swampert save for Tyranitar ~50%/turn
+➜ 1. Ninetales Fire Flamethrower → Rhyperior sacrifice → Swampert in free
+➜ 2. Swampert free Water Surf → Rhyperior KO (75%) · 29% left
+➜ 3. Swampert Water Surf → Tyranitar falls · foe at 100%
+✗ Ninetales 63% · sacrifice to Rhyperior so Swampert comes in free
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
 == free switch — switch (live)
 ⇄ free switch? Ninetales → Swampert (no hit taken)
@@ -196,12 +196,12 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 foes weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Swampert 100% likely · moves first
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
-♟ Fight plan likely lost
-☠ Tyranitar Tyranitar KOs 2/2 · win condition
-🛡 Swampert save for Tyranitar ~50%/turn
-1 Swampert free Water Surf → Rhyperior KO (60%) · 28% left
-2 Swampert Water Surf → Tyranitar falls · foe at 100%
-3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 84%
+Fight plan likely lost
+💀 Tyranitar Tyranitar KOs 2/2 · win condition
+⤵ Swampert save for Tyranitar ~50%/turn
+➜ 1. Swampert free Water Surf → Rhyperior KO (60%) · 28% left
+➜ 2. Swampert Water Surf → Tyranitar falls · foe at 100%
+➜ 3. Ninetales free Fire Flamethrower → Tyranitar falls · foe at 84%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
 == free switch — stay (live)
 ⇄ free switch? stay — Swampert is best here
@@ -209,65 +209,65 @@ Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert mo
 foes weak to: Water ×2
 Rhyperior Rhyperior L72 Ground Rock 100% ▲ Water ×4 ↯ Rock Stone Edge → Swampert 100% likely · moves first
 Tyranitar Tyranitar L72 Rock Dark 100% ▲ Water ↯ Dark Crunch → Swampert moves first ➜ Swampert Water Surf ~54% · 2 hits ⚠ loses trade later
-♟ Fight plan likely lost
-☠ Tyranitar Tyranitar KOs 2/2 · win condition
-🛡 Swampert save for Tyranitar ~50%/turn
-1 Swampert Water Surf → Rhyperior KO (60%) · 28% left
-2 Swampert Water Surf → Tyranitar falls · foe at 100%
-3 Ninetales free Fire Flamethrower → Tyranitar falls · foe at 68%
+Fight plan likely lost
+💀 Tyranitar Tyranitar KOs 2/2 · win condition
+⤵ Swampert save for Tyranitar ~50%/turn
+➜ 1. Swampert Water Surf → Rhyperior KO (60%) · 28% left
+➜ 2. Swampert Water Surf → Tyranitar falls · foe at 100%
+➜ 3. Ninetales free Fire Flamethrower → Tyranitar falls · foe at 68%
 ⚠ likely lost: nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Swampert
 == doubles spread move KOs our partner (live)
 ⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
 ⚔ Lucario Fighting Aura Sphere → Heatran 3 hits
-◎ focus Heatran : most damage
+· focus Heatran : most damage
 foes weak to: Fighting ×2 Ground ×2
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
 Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Lucario 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Ground Earthquake → Heatran KO · 80% left
-~2 Garchomp Ground Earthquake → Magnezone KO · 80% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Ground Earthquake → Heatran KO · 80% left
+➜ 2.~ Garchomp Ground Earthquake → Magnezone KO · 80% left
 == doubles spread move scratches our partner (live)
 ⚔ Garchomp Ground Earthquake → both 1 hit hits Lucario 23%
 ⚔ Lucario Fighting Aura Sphere → Heatran 3 hits spare hit — KO without it
 foes weak to: Fighting ×2 Ground ×2
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Lucario 50% likely · moves after
 Magnezone Magnezone L80 Electric Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Ground Earthquake → Heatran KO · 100% left
-~2 Garchomp Ground Earthquake → Magnezone KO · 100% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Ground Earthquake → Heatran KO · 100% left
+➜ 2.~ Garchomp Ground Earthquake → Magnezone KO · 100% left
 == doubles spread move, one foe left (live)
 ⚔ Garchomp Dragon Dragon Claw → Heatran 3 hits
 ⚔ Lucario Fighting Aura Sphere → Heatran 3 hits
-◎ focus Heatran : most damage
+· focus Heatran : most damage
 Heatran Heatran L80 Fire Steel 100% ▲ Fighting Ground ×4 ↯ Steel Flash Cannon → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Ground Earthquake → Heatran KO · 80% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Ground Earthquake → Heatran KO · 80% left
 == doubles overkill (live)
 ⚔ Charizard Fire Heat Wave → both 1 hit
 ⚔ Venusaur Grass Giga Drain → Rattata 1 hit spare hit — KO without it
 Rattata Rattata L30 Normal 100% ▲ — ↯ Normal Hyper Fang → Venusaur 50% likely · moves after
 Pidgey Pidgey L30 Normal Flying 100% ▲ — ↯ Flying Wing Attack → Charizard 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Charizard Fire Heat Wave → Rattata KO · 100% left
-~2 Charizard Fire Heat Wave → Pidgey KO · 100% left
+Fight plan steps approximate winnable
+➜ 1.~ Charizard Fire Heat Wave → Rattata KO · 100% left
+➜ 2.~ Charizard Fire Heat Wave → Pidgey KO · 100% left
 == doubles slot 0 locked (live)
 ⚔ Garchomp Dragon Dragon Claw → Snorlax locked in
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Lucario Fighting Aura Sphere → Hydreigon KO · 71% left
-~2 Lucario Fighting Aura Sphere → Snorlax KO · 32% left
+Fight plan steps approximate winnable
+➜ 1.~ Lucario Fighting Aura Sphere → Hydreigon KO · 71% left
+➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 32% left
 == doubles slot 0 locked into a spread move one foe answers (live)
 ⚔ Garchomp Normal Boomburst → both locked in · Snorlax 2 hits
 ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
-~2 Garchomp Normal Boomburst → Snorlax KO · 93% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
+➜ 2.~ Garchomp Normal Boomburst → Snorlax KO · 93% left
 == doubles slot 0 switching (live)
 now: ⇄ Garchomp out › Metagross in · takes ~16%
 now: ⚔ Lucario Fighting Aura Sphere → Hydreigon 2 hits
@@ -275,27 +275,27 @@ next: ⚔ Metagross Steel Meteor Mash → Hydreigon 2 hits
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Lucario 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Metagross 100% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Lucario Fighting Aura Sphere → Hydreigon KO · 71% left
-~2 Lucario Fighting Aura Sphere → Snorlax KO · 32% left
+Fight plan steps approximate winnable
+➜ 1.~ Lucario Fighting Aura Sphere → Hydreigon KO · 71% left
+➜ 2.~ Lucario Fighting Aura Sphere → Snorlax KO · 32% left
 == doubles protect (live)
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit
 ⚔ Lucario 💀 Dark 100% {Hydreigon's Dark Pulse: ~100% of current HP, before it can act} Normal Protect Garchomp KOs Hydreigon first
 foes weak to: Fighting ×2 Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Fighting Dragon ↯ Dark Dark Pulse → Garchomp 0% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ Fighting ↯ Normal Body Slam → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
-~2 Garchomp Dragon Dragon Claw → Snorlax KO · 53% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Hydreigon KO · 100% left
+➜ 2.~ Garchomp Dragon Dragon Claw → Snorlax KO · 53% left
 == doubles helping hand (live)
 ⚔ Garchomp Dragon Dragon Claw → Hydreigon 1 hit with Helping Hand
 ⚔ Clefable Normal Helping Hand Garchomp KOs Hydreigon
 foes weak to: Dragon ×1
 Hydreigon Hydreigon L80 Dark Dragon 100% ▲ Dragon Fairy ×4 ↯ Dark Dark Pulse → Garchomp 50% likely · moves after
 Snorlax Snorlax L80 Normal 100% ▲ — ↯ Normal Body Slam → Garchomp 50% likely · moves after
-♟ Fight plan steps approximate winnable
-~1 Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
-~2 Garchomp Dragon Dragon Claw → Snorlax KO · 23% left
+Fight plan steps approximate winnable
+➜ 1.~ Garchomp Dragon Dragon Claw → Hydreigon KO · 68% left
+➜ 2.~ Garchomp Dragon Dragon Claw → Snorlax KO · 23% left
 == drain
 Meteor Mash into a draining Golisopod: 5 hits
 == on-KO boost
@@ -306,7 +306,7 @@ next: ⚔ Crobat Flying Wing Attack → Buzzwole
 ⚔ Mamoswine Ground Earthquake → Buzzwole 3 hits
 ⇄ Mamoswine out › Crobat in · optional · takes ~6% · resists Lunge
 == summary
-{"danger":[{"mon":"Mamoswine","from":"Mega Golisopod","move":"Iron Head","level":"after","saveFor":"Xurkitree"}],"plan":"likely lost · ☠ Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in"}
+{"danger":[{"mon":"Mamoswine","from":"Mega Golisopod","move":"Iron Head","level":"after","saveFor":"Xurkitree"}],"plan":"likely lost · 💀 Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in"}
 == guzma w165 turn 1 (live)
 now: ⇄ Mamoswine ⚠ Steel ×2 100% {Mega Golisopod's Iron Head: ~100% of current HP, 63% KO} out › Metagross in · takes ~23% · resists Iron Head
 next: ⚔ Metagross Steel Meteor Mash → Mega Golisopod
@@ -314,14 +314,14 @@ foes weak to: Ground ×1
 Mega Golisopod Mega Golisopod L153 Bug Steel 👑 100% ▲ — ↯ Steel Iron Head → Metagross 100% likely · moves after
 Xurkitree Xurkitree L153 Electric 100% ▲ Ground ➜ Mamoswine Ground Precipice Blades ~95% · 2 hits later
 Buzzwole Buzzwole L159 Bug Fighting 👑 100% ▲ — ↯ Bug Lunge → Mamoswine 100% likely · moves first ➜ Mamoswine Ground Precipice Blades ~32% ⚠ loses trade later
-♟ Fight plan winnable
+Fight plan winnable
 🔒 Mamoswine only answer to Xurkitree ~96%/turn
-1 Metagross ⇄ Steel Meteor Mash → Mega Golisopod switch in, takes a hit · falls · foe at 27%
-2 Golduck free Water Surf → Mega Golisopod KO · 100% left
-3 Mamoswine ⇄ Ground Precipice Blades → Xurkitree switch in, takes a hit · KO · 100% left
-4 Golduck ⇄ Water Surf → Buzzwole switch in, takes a hit · sacrifice → Mamoswine in free
-5 Mamoswine free Ground Precipice Blades → Buzzwole KO · 14% left
-✝ Golduck 100% · sacrifice to Buzzwole so Mamoswine comes in free
+➜ 1. Metagross ⇄ Steel Meteor Mash → Mega Golisopod switch in, takes a hit · falls · foe at 27%
+➜ 2. Golduck free Water Surf → Mega Golisopod KO · 100% left
+➜ 3. Mamoswine ⇄ Ground Precipice Blades → Xurkitree switch in, takes a hit · KO · 100% left
+➜ 4. Golduck ⇄ Water Surf → Buzzwole switch in, takes a hit · sacrifice → Mamoswine in free
+➜ 5. Mamoswine free Ground Precipice Blades → Buzzwole KO · 14% left
+✗ Golduck 100% · sacrifice to Buzzwole so Mamoswine comes in free
 == guzma w165 turn 1, no later foes (live)
 ⚔ Mamoswine ⚠ Steel ×2 100% {Mega Golisopod's Iron Head: ~100% of current HP, 63% KO} Ground Precipice Blades → Mega Golisopod
 ⤵ Mamoswine falls this turn › Metagross in free
@@ -334,14 +334,14 @@ foes weak to: Ground ×1
 Mega Golisopod Mega Golisopod L153 Bug Steel 👑 100% ▲ — ↯ Steel Iron Head → Golduck 100% likely · moves after
 Xurkitree Xurkitree L153 Electric 100% ▲ Ground ➜ Mamoswine Ground Precipice Blades ~95% · 2 hits later
 Buzzwole Buzzwole L159 Bug Fighting 👑 100% ▲ — ↯ Bug Lunge → Mamoswine 100% likely · moves first ➜ Mamoswine Ground Precipice Blades ~32% ⚠ loses trade later
-♟ Fight plan likely lost
+Fight plan likely lost
 🔒 Mamoswine only answer to Xurkitree ~96%/turn
-1 Golduck Water Surf → Mega Golisopod sacrifice → Metagross in free
-2 Metagross free Steel Meteor Mash → Mega Golisopod KO · 30% left
-3 Mamoswine ⇄ Ground Precipice Blades → Xurkitree switch in, takes a hit · KO · 100% left
-4 Metagross ⇄ Steel Meteor Mash → Buzzwole switch in, takes a hit · sacrifice → Mamoswine in free
-5 Mamoswine free Ground Precipice Blades → Buzzwole falls · foe at 18%
-✝ Golduck 5% · sacrifice to Mega Golisopod so Metagross comes in free
-✝ Metagross 100% · sacrifice to Buzzwole so Mamoswine comes in free
+➜ 1. Golduck Water Surf → Mega Golisopod sacrifice → Metagross in free
+➜ 2. Metagross free Steel Meteor Mash → Mega Golisopod KO · 30% left
+➜ 3. Mamoswine ⇄ Ground Precipice Blades → Xurkitree switch in, takes a hit · KO · 100% left
+➜ 4. Metagross ⇄ Steel Meteor Mash → Buzzwole switch in, takes a hit · sacrifice → Mamoswine in free
+➜ 5. Mamoswine free Ground Precipice Blades → Buzzwole falls · foe at 18%
+✗ Golduck 5% · sacrifice to Mega Golisopod so Metagross comes in free
+✗ Metagross 100% · sacrifice to Buzzwole so Mamoswine comes in free
 ⚠ likely lost: the plan runs out with 1 foe standing — maximise damage
 ok

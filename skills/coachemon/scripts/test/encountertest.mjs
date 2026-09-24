@@ -602,7 +602,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   for (const offset of [90000, 60000, 30000]) {
     assert.ok(paid.forks.includes(offset), `a fork per mon at waveIndex × 1000 × remaining: ${paid.forks}`);
   }
-  assert.match(m.options[0].outcome, /Rattata L32, Pidgey ★shiny L32, Caterpie L32 in turn/,
+  assert.match(m.options[0].outcome, /Rattata L32, Pidgey shiny L32, Caterpie L32 in turn/,
     `the three are named in summon order: ${m.options[0].outcome}`);
   assert.match(m.options[0].outcome, /each turn judged as it comes/, "the bait-and-mud call still belongs to the turn");
   assert.equal(m.options[0].exact, true, "the three come out of a seed fork, so the option is a seed read");
@@ -619,7 +619,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
     draws, tables, options: [option({ mode: 1, requirements: [money$(2)] }), option()],
     menu: [option(), option(), option(), option()],
     misc: { pokemon: nidorina, safariPokemonRemaining: 2, catchStage: 0, fleeStage: 0 } }).model();
-  assert.equal(turn.options[3].outcome, "let it go — Pidgey ★shiny L32 is next, 2 mons left after this one");
+  assert.equal(turn.options[3].outcome, "let it go — Pidgey shiny L32 is next, 2 mons left after this one");
   // Three mons new to the dex, so the one behind this turn is worth a ball — which is what makes running a real call.
   assert.deepEqual(turn.minigame.next, { name: "Pidgey", shiny: true, level: 32, wanted: true });
 }

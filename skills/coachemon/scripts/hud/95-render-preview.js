@@ -19,7 +19,7 @@ export const drawPreview = m => {
   const who = m.trainer ? `${m.trainer.name}${previewMark(m, "trainer")}` : null;
   // Rows of the road group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
   // control of its own.
-  const out = [line("🔮", "#9aa", h("span", { fontWeight: "bold", marginRight: "3px" }, `Next ${head}`), kind)];
+  const out = [line("", "#9aa", h("span", { fontWeight: "bold", marginRight: "3px" }, `Next ${head}`), kind)];
   if (who) out.push(line("·", "#fa4", h("span", {}, who)));
   for (const f of m.foes) {
     out.push(line(f.segments > 1 ? "👑" : "·", f.segments > 1 ? "#fa4" : "#9aa",
@@ -28,7 +28,9 @@ export const drawPreview = m => {
       h("span", dim, [f.ability, f.segments > 1 ? `${f.segments} bars` : null].filter(Boolean).join(" · "))));
     if (f.moves?.length) out.push(line("", "#9aa", h("span", dim, f.moves.join(" · "))));
   }
-  if (m.me?.name) out.push(line("?", "#c9f", h("span", {}, m.me.name)));
+  // Confidence is not a gutter mark (90-render's alphabet), so the mystery encounter's row takes the neutral `·`
+  // and its leading word carries the kind the `?` used to.
+  if (m.me?.name) out.push(line("·", "#c9f", h("span", dim, "mystery:"), h("span", { marginLeft: "3px" }, m.me.name)));
   const caveats = [...(m.notes ?? [])];
   if (m.missed?.length) caveats.push(`! ${m.missed.join(", ")} has been wrong this run`);
   else if (Object.values(m.confidence ?? {}).includes("replay")) caveats.push("~ holds while nothing else draws first");
