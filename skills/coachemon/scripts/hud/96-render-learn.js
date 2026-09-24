@@ -2,7 +2,7 @@
 // then `options`, the slots it is weighed against, then `audit`, the team line, and `notes`. The verdict is no longer
 // a row: it is `act.summary`, read off the model and never written here (§6).
 import { learnSummary } from "./40-learn.js";
-import { FS, badge, bar, closed, dim, group, h, img, line, mon, some, tab } from "./90-render.js";
+import { FS, badge, bar, dim, h, img, line, mon, some } from "./90-render.js";
 
 // "3× Water" (the move would be the third of its type) reads as "3rd Water move".
 const ordinal = n => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
@@ -11,7 +11,6 @@ const learnNote = n => n.replace(/^(\d+)× (\w+)$/, (_, k, t) => `${ordinal(+k)}
 const powerTitle = x => [`base ${x.power}${x.hits > 1 ? ` × ${x.hits} hits` : ""}`, x.acc < 100 ? `${x.acc}% acc` : null,
   x.stab ? "STAB" : null, x.fixed ? "fixed damage" : null].filter(Boolean).join(" · ");
 export const drawLearn = m => {
-  if (closed()) return [group("act", "Now", null, [tab("🎓", mon(m.icon, m.name, 20))])];
   const header = bar("🎓", `${m.name} learns`, mon(m.icon, m.name, 20),
     m.atk != null ? h("span", { ...dim, fontWeight: "normal", fontSize: FS.tiny }, `Atk ${m.atk} / SpA ${m.spa}`) : null);
   // The slot the new move would take: the one to forget, or on a skip the one it lost to.

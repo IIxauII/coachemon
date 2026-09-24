@@ -19,6 +19,11 @@ globalThis.localStorage = { getItem: () => null, setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { drawBattle } = globalThis.__hud["96-render-battle"];
 const { drawLearn } = globalThis.__hud["96-render-learn"];
+const { drawRewards } = globalThis.__hud["96-render-rewards"];
+const { drawEncounter } = globalThis.__hud["96-render-encounter"];
+const { drawStarters } = globalThis.__hud["96-render-starters"];
+const { drawFusion } = globalThis.__hud["96-render-fusion"];
+const { drawBiome } = globalThis.__hud["97-render-biome"];
 const { GROUP_IDS, cardText, groupsText } = globalThis.__hud["90-render"];
 
 
@@ -233,6 +238,134 @@ const learn = (over = {}) => ({
   const groups = show("learn · no team line, no notes", learn({ team: null, blind: null }), drawLearn);
   assert.deepEqual(groups.map(g => g.id), ["act", "options"]);
   assert.equal(groups[0].summary, "Learn → forget Bite");
+}
+
+// ---- Rewards: act · options · audit · road (#352)
+{
+  const card = {
+    kind: "rewards", wave: 29, money: 1200, left: 950, affordable: 2, bossNext: true,
+    buys: [{ icon: "potion", name: "Super Potion", cost: 250, target: null, targetName: "Charizard", why: "tops up the carry" }],
+    free: [
+      { icon: "tm", name: "TM Fire Fang", tm: "take", why: "", relearn: [], holder: null, users: [],
+        best: { icon: null, name: "Morpeko", forget: "Tackle", gain: 25, setup: null, fainted: false, reason: null } },
+      { icon: "leftovers", name: "Leftovers", tm: null, why: "Charizard · passive healing", best: null, users: [],
+        holder: { icon: null, name: "Charizard" }, relearn: [] },
+    ],
+    pick: 0, audit: { findings: [{ level: "high", text: "nothing hits Ground" }], vs: { wave: 35, who: "Giovanni" } },
+    preview: null, ahead: null, rerollAhead: null, reroll: null,
+  };
+  const groups = show("rewards · a TM to take and a potion to buy", card, drawRewards);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options", "audit"]);
+  assert.equal(groups[0].summary, "take TM Fire Fang → Morpeko (forget Tackle) · buy Super Potion");
+  // The reroll is a shop action, so it rides in `act` — and with no road to speak of there is no road group at all.
+  assert.equal(groups[2].summary, "1 issue: nothing hits Ground");
+}
+
+// ---- The four light cards: encounter, starters, fusion and biome all take `act` · `options` · `notes` (#353)
+// One shape, three groups, whatever the decision is about. Starters' *Picked* is in `act` and the species under the
+// cursor is a row in `options`; neither earns a group of its own.
+// Starters and fusion are asserted here even though neither is a streamed kind: their groups only ever reach a card
+// read, so this golden is the only place they are pinned at all.
+
+// Encounter: the judged options are `options`, and the card's own footnotes are `notes`.
+const encounter = (over = {}) => ({
+  kind: "encounter", wave: 33, type: 1, name: "Mysterious Chest", tier: "Common", known: true, minigame: null,
+  options: [
+    { label: "Open it", verdict: "take", outcome: "pick of 3 Ultra items", exact: false, battle: null, cost: 0, by: null, qualifies: [], why: "1 in 4 it bites" },
+    { label: "Leave", verdict: "avoid", outcome: null, exact: false, battle: null, cost: 0, by: null, qualifies: [], why: "nothing for it" },
+  ],
+  pick: 0, notes: ["the trap is rolled on the option, not before it"], ...over,
+});
+{
+  const card = encounter();
+  const groups = show("encounter · a chest worth opening", card, drawEncounter);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
+  assert.equal(groups[0].summary, "Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave");
+  // The picked option stays in `options` where it already is — there are no synthesized act rows (§6).
+  assert.ok(groups[1].rows.some(r => r.includes("Open it")), groups[1].rows.join("\n"));
+  assert.deepEqual([groups[1].summary, groups[2].summary], [null, null]);
+  const text = cardText(card);
+  assert.ok(text.includes("\nOptions\n★ Open it — pick of 3 Ultra items\n"), text);
+  assert.ok(text.endsWith("\nNotes\n· the trap is rolled on the option, not before it"), text);
+}
+
+// An encounter the card can't read: the options and their requirements only, with the caveat as a note.
+{
+  const groups = show("encounter · not judged yet", encounter({ known: false, pick: -1, notes: [] }), drawEncounter);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
+  assert.equal(groups[0].summary, "Mysterious Chest: not judged · avoid Leave");
+}
+
+// Starters: *Picked* joins `act`, and the species under the cursor is a row in `options`.
+const starters = (over = {}) => ({
+  kind: "starters", wave: 1, limit: 10, spent: 4, room: 6, full: false, data: true,
+  chosen: [{ icon: null, name: "Gible" }],
+  picks: [{ label: "best", cost: 10, covers: 9, weak: ["Ice"], noCarry: false,
+    members: [{ icon: null, name: "Gible", cost: 4, role: "carry", chosen: true, why: ["outspeeds"] },
+      { icon: null, name: "Magikarp", cost: 1, role: null, chosen: false, why: ["Gyarados later"] }] }],
+  viewing: { icon: null, name: "Rattata", cost: 1, rank: 18, of: 40, inPick: null, why: ["frail"] },
+  fresh: true, mono: false, inverse: false, ...over,
+});
+{
+  const card = starters();
+  const groups = show("starters · a proposal, a pick made and a cursor", card, drawStarters);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
+  assert.equal(groups[0].summary, "best: Gible (carry) + Magikarp · 10/10 pts · weak Ice");
+  assert.ok(groups[0].rows.some(r => r.includes("picked: Gible")), groups[0].rows.join("\n"));
+  // The row the cursor is on is a row of `options`, not a group of its own.
+  assert.ok(groups[1].rows.some(r => r.includes("Rattata")), groups[1].rows.join("\n"));
+  assert.ok(cardText(card).includes("\nProposals\n★ best"), cardText(card));
+}
+
+// Starters with nothing to add: an ordinary card with exactly one `act` group, and the shell never knows (§1).
+{
+  const groups = show("starters · nothing to add", starters({ picks: [], full: true, room: 0, viewing: null }), drawStarters);
+  assert.deepEqual(groups.map(g => g.id), ["act"]);
+  assert.equal(groups[0].summary, "nothing to add");
+}
+
+// Fusion: the call line leaves the rows, because `act.summary` carries it.
+const fusionRow = (over = {}) => ({ base: { icon: null, name: "Garchomp" }, other: { icon: null, name: "Dragonite" },
+  value: 21, fuse: true, types: ["Dragon", "Ground"], why: ["+42 BST"], notes: [], ...over });
+{
+  const card = { kind: "fusion", wave: 42, picked: null, better: null, spliced: true,
+    rows: [fusionRow(), fusionRow({ other: { icon: null, name: "Lapras" }, value: 4, fuse: false, why: ["loses Ice"] })] };
+  const groups = show("fusion · two candidates and a Spliced note", card, drawFusion);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
+  assert.equal(groups[0].summary, "Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite");
+  assert.ok(!groups.some(g => g.rows.some(r => r.includes("pick Garchomp first"))), "the call has left the rows");
+  assert.ok(cardText(card).endsWith("\nNotes\nSpliced Endless: unfused mons run on half their base stats"), cardText(card));
+}
+
+// Biome: the offered biomes are `options`, and a caveat on how they were judged is `notes`.
+const biomeOption = (over = {}) => ({ label: "Swamp", id: 1, score: 72, offense: 30, defense: 20, opportunity: 12, bossFit: 10,
+  verdict: "pick", mix: [["Water", 40], ["Poison", 30]], common: [["Wooper", 22]], trainers: null,
+  reasons: [{ good: true, text: "Garchomp resists" }], catch: null, fight: null, onward: [], ...over });
+{
+  const card = { kind: "biome", wave: 30, from: "Slum", pick: 0, data: true, trainers: true, fainted: 1,
+    options: [biomeOption(), biomeOption({ label: "Construction Site", id: 2, score: 55, verdict: "worse", common: [], reasons: [{ good: false, text: "Lapras weak" }] })] };
+  const groups = show("biome · swamp over construction site, one fainted", card, drawBiome);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
+  assert.equal(groups[0].summary, "Swamp 72 pick — Garchomp resists · Construction Site 55");
+  assert.ok(cardText(card).includes("\nBiomes\n★ Swamp"), cardText(card));
+  // Who the judging left out is a footnote, not a supporting line for the call.
+  assert.ok(cardText(card).endsWith("\nNotes\n✚ judged without 1 fainted — no revive at the next heal"), cardText(card));
+}
+
+// Nothing to footnote: the `notes` group is not drawn at all, the same as any group with nothing in it.
+{
+  const groups = show("biome · nobody fainted", { kind: "biome", wave: 30, from: "Slum", pick: 0, data: true, trainers: true, fainted: 0,
+    options: [biomeOption()] }, drawBiome);
+  assert.deepEqual(groups.map(g => g.id), ["act", "options"]);
+}
+
+// A biome with no scores: an ordinary card with exactly one `act` group, the same as starters with nothing to add.
+{
+  const card = { kind: "biome", wave: 30, from: null, pick: -1, data: false, trainers: false, fainted: 0, unread: null,
+    options: [{ label: "Swamp", id: null }, { label: "Construction Site", id: null }] };
+  const groups = show("biome · no spawn data yet", card, drawBiome);
+  assert.deepEqual(groups.map(g => g.id), ["act"]);
+  assert.equal(groups[0].summary, "Swamp · Construction Site");
 }
 
 console.log("ok");

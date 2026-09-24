@@ -35,9 +35,11 @@ const page = (asset: ShotAsset): string => `<!doctype html>
   html, body { margin: 0; height: 100%; }
   /* Flat, not a gradient: a dithered gradient costs a quarter of a megabyte per shot in PNG and says nothing. */
   body { display: grid; place-items: center; background: #e7eaf1; }
-  /* The panel is fixed to the top-left corner of a game tab; for a shot it sits in the middle of the frame instead. */
+  /* The panel is fixed to the top-left corner of a game tab; for a shot it sits in the middle of the frame instead.
+     Relative rather than static, because the panel's close control is positioned against the panel's own corner:
+     a static panel is no containing block, and the control would land in the frame's corner instead. */
   #coach-hud {
-    position: static !important; display: block !important;
+    position: relative !important; display: block !important;
     zoom: ${asset.shot.zoom};
     box-shadow: 0 6px 24px rgba(16, 18, 34, .28);
   }

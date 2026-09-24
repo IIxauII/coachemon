@@ -1,5 +1,8 @@
 == classic, 10 points
-🌱 Starters 0/10 pts ×
+×
+best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+🌱 Starters 0/10 pts
+Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible 6 carry final BST 600 (Garchomp) · passive Rough Skin
 Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
@@ -20,8 +23,11 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Gible: Dratini (carry) + Magikarp + Squirtle + Pikachu + Pidgey · 10/10 pts · weak Rock; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == Gible picked
-🌱 Starters 6/10 pts ×
+×
+best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
+🌱 Starters 6/10 pts
 ✓ picked: Gible
+Proposals
 ★ best 10 pts · SE vs 10 types
 Gible Gible ✓ 6 carry final BST 600 (Garchomp) · but Rough Skin is off
 Magikarp Magikarp 1 final BST 540 (Gyarados) · passive Moxie
@@ -39,7 +45,10 @@ Azurill Azurill 1 final BST 420 (Azumarill) · but evolves by item or condition
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary best: Gible (carry) + Magikarp + Squirtle · 10/10 pts; without Magikarp: Gible (carry) + Squirtle + Pikachu · 10/10 pts; fuller: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts
 == no tables
-🌱 Starters 0/10 pts ×
+×
+best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
+🌱 Starters 0/10 pts
+Proposals
 ★ best 10 pts · SE vs 12 types
 Squirtle Squirtle 3 carry final BST ~534 · luck +3
 Bulbasaur Bulbasaur 3 final BST ~538
@@ -55,18 +64,26 @@ Rattata Rattata 1 IVs 186/186 · final BST ~400
 Squirtle Squirtle 3 carry final BST ~534 · luck +3
 Bulbasaur Bulbasaur 3 final BST ~538
 Charmander Charmander 3 final BST ~529
+Notes
 final forms estimated until the game's tables load
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary best: Squirtle (carry) + Bulbasaur + Charmander + Azurill · 10/10 pts; without Squirtle: Bulbasaur (carry) + Charmander + Magikarp + Azurill + Rattata · 9/10 pts; trio: Squirtle (carry) + Bulbasaur + Charmander · 9/10 pts
 == single type, 1 point
-🌱 Starters 0/1 pts ×
+×
+best: Magikarp (carry) · 1/1 pts
+🌱 Starters 0/1 pts
+Proposals
 ★ best 1 pts · SE vs 6 types
 Magikarp Magikarp 1 carry final BST 540 (Gyarados) · passive Moxie
+Notes
 single type: shared weaknesses not counted
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary best: Magikarp (carry) · 1/1 pts
 == Fresh Start
-🌱 Starters 0/10 pts ×
+×
+best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts
+🌱 Starters 0/10 pts
+Proposals
 ★ best 10 pts · SE vs 12 types · weak Rock
 Dratini Dratini 4 carry final BST 600 (Dragonite)
 Charmander Charmander 3 final BST 534 (Charizard)
@@ -84,6 +101,7 @@ Gible Gible 6 carry final BST 600 (Garchomp)
 Charmander Charmander 3 final BST 534 (Charizard)
 Magikarp Magikarp 1 final BST 540 (Gyarados)
 👁 Magikarp Magikarp 1 pts · #4 of 10 · in best final BST 540 (Gyarados) · IVs 60/186
+Notes
 Fresh Start: no passives, egg moves or luck
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary best: Dratini (carry) + Charmander + Magikarp + Pikachu + Azurill · 10/10 pts · weak Rock; without Dratini: Gible (carry) + Magikarp + Pikachu + Pidgey + Azurill · 10/10 pts; trio: Gible (carry) + Charmander + Magikarp · 10/10 pts

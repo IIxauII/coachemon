@@ -3,11 +3,11 @@
 // Skips aren't drawn: no line means nothing worth a ball. One line per target —
 // `🎯 catch: [ball] Great 78% — new species, covers Ground weakness` — then the odds of every ball we hold and the reasons.
 import { catchTargets } from "./45-catch.js";
-import { FS, closed, dim, h, img, line, mon } from "./90-render.js";
+import { FS, dim, h, img, line, mon } from "./90-render.js";
 
 export const drawCatch = m => {
   const c = m?.targets ? m : m?.catch;
-  if (!c?.targets?.length || closed()) return [];
+  if (!c?.targets?.length) return [];
   const COLOR = { catch: "#6d6", maybe: "#ec4" };
   const KIND = { account: ["★", "#c9f"], team: ["⚑", "#8cf"], escape: ["⇥", "#fa4"] };
   // Ball sprites live in the `items` atlas (may not be loaded yet); the name is always spelled out: "Great", "Ultra".

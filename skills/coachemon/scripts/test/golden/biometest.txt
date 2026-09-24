@@ -1,5 +1,8 @@
 == swamp vs construction site
-🗺 Next biome from Tall Grass × {Close}
+× {Close}
+Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
+🗺 Next biome from Tall Grass
+Biomes
 ★ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
 👤 trainers 8%: Parasol Lady · Black Belt
@@ -19,13 +22,18 @@
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
 == no tables
-🗺 Next biome × {Close}
+× {Close}
+Swamp · Construction Site
+🗺 Next biome
 · Swamp
 · Construction Site
 reading the game's biome tables…
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == gym at wave 50
-🗺 Next biome from Tall Grass × {Close}
+× {Close}
+Swamp 86 pick — edges Construction Site on defense, Garchomp resists, 2 mons hit SE · Construction Site 85
+🗺 Next biome from Tall Grass
+Biomes
 ★ Swamp Poison 71% Water 31% Ground 27% 86 {offense 86 · defense -1 · catches 100 · big fight 100}
 · mostly Arbok 22% · Gulpin 22% · Quagsire 21%
 👤 trainers 6%: Parasol Lady · Black Belt
@@ -46,8 +54,10 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 → ★Laboratory (1/3) · Factory
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == hardcore, Snorlax fainted
-🗺 Next biome from Tall Grass × {Close}
-✚ judged without 1 fainted — no revive at the next heal
+× {Close}
+Swamp 84 pick — edges Construction Site on the big fight, 2 mons hit SE, catch Toxicroak (hits Normal/Ice, new) · Construction Site 82
+🗺 Next biome from Tall Grass
+Biomes
 ★ Swamp Poison 72% Water 38% Fighting 29% 84 {offense 87 · defense 2 · catches 67 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
 👤 trainers 8%: Parasol Lady · Black Belt
@@ -65,9 +75,14 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 🎯 catch Machoke hits Normal/Ice · new
 👑 W40 boss: Gurdurr 100%
 → ★Laboratory (1/3) · Factory
+Notes
+✚ judged without 1 fainted — no revive at the next heal
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == swamp vs marsh
-🗺 Next biome from Tall Grass × {Close}
+× {Close}
+Swamp 85 · Marsh 86 pick — edges Swamp on offense, 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new)
+🗺 Next biome from Tall Grass
+Biomes
 ≈ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
 👤 trainers 8%: Parasol Lady · Black Belt
@@ -88,7 +103,9 @@ Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Compan
 11:day  12:day  14:day  15:dusk  17:dusk  19:dusk  20:dusk
 == boss share  endless w301–310 0.1360  endless w101–110 0.1000  classic 0.1000
 == build throws
-🗺 Next biome × {Close}
+× {Close}
+Swamp · Construction Site
+🗺 Next biome
 · Swamp
 · Construction Site
 unread: biome: no types

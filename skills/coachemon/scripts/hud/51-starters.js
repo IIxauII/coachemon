@@ -329,5 +329,8 @@ const viewed = (h, m) => {
 export const ptsText = x => `${Math.round(x * 100) / 100}`;
 
 // `best: Gible (carry) + Magikarp + Pikachu · 10/10 pts; without Gible: …`, for the watcher and the battle read.
+// With nothing to propose it says so rather than saying nothing: it is the card's `act` summary, and `act` is the
+// one group that is never empty (#349 §6). The card drew this line itself until the summary took it over.
 export const startersSummary = m =>
-  m.picks.map(t => `${t.label}: ${t.members.map(x => `${x.name}${x.role === "carry" ? " (carry)" : ""}`).join(" + ")} · ${ptsText(t.cost)}/${m.limit} pts${t.weak.length ? ` · weak ${t.weak.join("/")}` : ""}`).join("; ") || null;
+  m.picks.map(t => `${t.label}: ${t.members.map(x => `${x.name}${x.role === "carry" ? " (carry)" : ""}`).join(" + ")} · ${ptsText(t.cost)}/${m.limit} pts${t.weak.length ? ` · weak ${t.weak.join("/")}` : ""}`).join("; ")
+  || (m.full || m.room <= 0 ? "nothing to add" : "no caught starter fits");

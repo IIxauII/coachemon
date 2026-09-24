@@ -1,12 +1,13 @@
-// Fusion card (the 49-fusion model, on the party screen a DNA Splicer opens) and its plain-text summary. Loads after
-// 90-render: only call these from a draw or a summary, never at load time.
-// Up to three fusions in pick order (base ← the half it takes in) with their score and reasons, then the call.
-import { fusionCall, signed } from "./49-fusion.js";
-import { FS, badge, bar, closed, dim, h, line, mon, sep, tab } from "./90-render.js";
+// Fusion card (the 49-fusion model, on the party screen a DNA Splicer opens), as **group**s (#349 §1): `act` ·
+// `options` · `notes`, the same three every light card takes. Loads after 90-render: only call these from a draw,
+// never at load time.
+// `options` is up to three fusions in pick order (base ← the half it takes in) with their score and reasons. The
+// call line has left the rows: `act.summary` carries it, read off the model and never written here (§6).
+import { fusionSummary, signed } from "./49-fusion.js";
+import { FS, badge, bar, dim, h, line, mon, sep, some } from "./90-render.js";
 
 export const drawFusion = m => {
-  const top = m.rows[0];
-  if (closed()) return [tab("🧬", top ? mon(top.base.icon, top.base.name, 20) : null)];
+  // The header is the card's own identity line; the strip takes it in #356.
   const header = bar("🧬", "Splice", m.picked ? mon(m.picked.icon, m.picked.name, 20) : null,
     m.picked ? h("span", { ...dim, fontWeight: "normal" }, "with") : null);
   const row = (f, i) => line(i ? "·" : f.fuse ? "★" : "·", i ? "#9aa" : f.fuse ? "#6d6" : "#9aa",
@@ -16,10 +17,14 @@ export const drawFusion = m => {
     h("span", { color: f.fuse ? "#6d6" : "#9aa", marginLeft: "4px" }, signed(f.value)));
   const detail = f => line("", "#9aa", ...f.types.map(t => badge(t)),
     h("span", { color: "#9aa", fontSize: FS.tiny }, [...f.why, ...f.notes].join(" · ")));
-  const call = h("div", { color: top?.fuse && !m.better ? "#6d6" : "#fa4", fontWeight: "bold", marginTop: "3px" }, fusionCall(m));
-  const out = [header];
-  m.rows.forEach((f, i) => out.push(i ? h("div", sep) : null, row(f, i), detail(f)));
-  out.push(call);
-  if (m.spliced) out.push(line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, "Spliced Endless: unfused mons run on half their base stats")));
-  return out.filter(Boolean);
+  // A rule between one candidate and the next, never above the first: that boundary is the one between `act` and
+  // `options`, which is the shell's to draw (§1).
+  const options = m.rows.flatMap((f, i) => [i ? h("div", sep) : null, row(f, i), detail(f)]);
+  const notes = m.spliced ? [line("", "#9aa", h("span", { ...dim, fontSize: FS.tiny }, "Spliced Endless: unfused mons run on half their base stats"))] : [];
+  // `options` and `notes` head their panes with their label alone — the candidates themselves say it one glance lower (§6).
+  return [
+    some("act", "Now", fusionSummary(m), [header]),
+    some("options", "Fusions", null, options),
+    some("notes", "Notes", null, notes),
+  ].filter(Boolean);
 };

@@ -4,7 +4,7 @@
 import { STATUS_FRAMES } from "./01-core.js";
 import { catchSummary } from "./45-catch.js";
 import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummary } from "./60-card.js";
-import { FS, badge, bar, closed, dim, group, h, hpColor, img, line, mon, some, tab } from "./90-render.js";
+import { FS, badge, bar, dim, group, h, hpColor, img, line, mon, some } from "./90-render.js";
 import { drawAhead } from "./95-render-ahead.js";
 import { drawCatch } from "./95-render-catch.js";
 import { drawPreview } from "./95-render-preview.js";
@@ -14,11 +14,7 @@ export const drawBattle = m => {
   // The exact enemy move couldn't be made (#183): an ordinary card with exactly one `act` group, whose summary says
   // so and which shows nothing else. The inline ⚠ that carried this is gone — the summary carries it. The next
   // refresh tries again, so a one-off breach flickers rather than sticking.
-  if (m.unavailable) {
-    if (closed()) return [group("act", "Now", null, [tab("\u26a0", null)])];
-    return [group("act", "Now", actSummary(m), [bar("\ud83c\udfaf", m.title)])];
-  }
-  if (closed()) return [group("act", "Now", null, [tab("🎯", m.order[0] ? mon(m.order[0].icon, m.order[0].name, 20) : null)])];
+  if (m.unavailable) return [group("act", "Now", actSummary(m), [bar("\ud83c\udfaf", m.title)])];
   const f = m.field;
 
   // Send-in icons only add something when they go beyond the ⚔ mons: a trainer's later foes.
