@@ -24,7 +24,7 @@ export const HOMEPAGE = "https://github.com/IIxauII/coachemon";
 /** Permanent once AMO has seen it (§5.3). */
 export const GECKO_ID = "coachemon@iixauii.github.io";
 
-/** What the Firefox toolbar button says it does, which is the 128–139 consent experience itself (§8.4). */
+/** What the Firefox toolbar button says it does: the click is what requests the data-collection permission (§8.4). */
 export const ACTION_TITLE = "Coachemon: click once to let a local AI agent read this game";
 
 /** Not `*.pokerogue.net`: the beta site was never reviewed against (§6). */
@@ -92,9 +92,14 @@ function perTarget(target: Target): Manifest {
       // Drops MV3's default `upgrade-insecure-requests`, which turns `ws://127.0.0.1` into a failing TLS handshake.
       content_security_policy: { extension_pages: "script-src 'self'" },
       browser_specific_settings: {
+        // 142, not the 128 that `world: "MAIN"` alone would need: `data_collection_permissions` is mandatory on AMO,
+        // and Firefox for Android only understood it from 142. No `gecko_android` key — omitting it is what keeps the
+        // add-on desktop-only, and the linter then checks Android against this floor, which is why 128 warned (#380).
+        // Declaring `gecko_android` would clear the warning too, by offering Coachemon on Android, where nothing can
+        // reach the hub on `127.0.0.1`.
         gecko: {
           id: GECKO_ID,
-          strict_min_version: "128.0",
+          strict_min_version: "142.0",
           data_collection_permissions: DATA_COLLECTION_PERMISSIONS,
         },
       },

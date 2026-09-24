@@ -39,17 +39,17 @@ Four target browsers, three stores. Every target carries the HUD **and** the tra
 | Target | Installs from | Build | Floor | Background | Keepalive that holds it |
 |---|---|---|---|---|---|
 | **Chrome** | Chrome Web Store | `chrome-mv3` | 111 | `service_worker` | service worker sends a socket frame every 20 s **[live]** Chrome 153 |
-| **Firefox** | AMO (listed) | `firefox-mv3` | 128 | `scripts` (event page) | content script messages the background every 20 s **[live]** Firefox 156 |
+| **Firefox** | AMO (listed) | `firefox-mv3` | 142 | `scripts` (event page) | content script messages the background every 20 s **[live]** Firefox 156 |
 | **Safari** (macOS) | Developer ID-signed, notarized download from the GitHub Release | `safari-mv3` → packager | 18 | `scripts` | unmeasured **[unverified]** |
 | **Orion** (macOS) | the CWS or AMO listing, player's choice | none of its own | Orion 1.1.2 tested | runs `service_worker` as a persistent page **[live]** | none needed **[live]** |
 
 **Transport pass bar**, the same for every target: the hub delivers a command to an open `pokerogue.net` tab **within about 1 s after 5 or more minutes idle**, by whatever the extension does (held socket, keepalive, reconnect) ([What Safari without a transport costs](https://github.com/IIxauII/coachemon/issues/120)). The per-engine smoke checks in §16 use it as their acceptance line.
 
-The floors are set by `content_scripts[].world: "MAIN"`: Chrome 111, Firefox 128, Safari 18 **[doc]** ([Page-world execution across Chrome, Firefox and Safari](https://github.com/IIxauII/coachemon/issues/99)). Every build carries **both** keepalives plus reconnect-on-wake, since the combination is untested and Safari's is unmeasured (§8.2).
+The floors are set by `content_scripts[].world: "MAIN"`: Chrome 111, Firefox 128, Safari 18 **[doc]** ([Page-world execution across Chrome, Firefox and Safari](https://github.com/IIxauII/coachemon/issues/99)). Firefox alone ships a floor above its own — 142, set by `data_collection_permissions` rather than by the page world (§5.3). Every build carries **both** keepalives plus reconnect-on-wake, since the combination is untested and Safari's is unmeasured (§8.2).
 
 ### 2.1 Where the targets differ, and what each difference costs
 
-- **Page world.** `world: "MAIN"` works on Chrome, Firefox 128+, Safari 26.2 **[live]** and Orion 1.1.2 **[live]**. Firefox 102–127 silently runs such a script isolated; the manifest floor makes those versions uninstallable (§9.4). `browser` is defined in Safari's MAIN world and undefined in Orion's **[live]**, so nothing detects the world by `browser`.
+- **Page world.** `world: "MAIN"` works on Chrome, Firefox 128+, Safari 26.2 **[live]** and Orion 1.1.2 **[live]**. Firefox 102–127 silently runs such a script isolated; the manifest floor, higher still at 142, makes those versions uninstallable (§9.4). `browser` is defined in Safari's MAIN world and undefined in Orion's **[live]**, so nothing detects the world by `browser`.
 - **`pokerogue.net` serves no CSP** of any kind **[live]** 2026-09-16. If it ever ships one, Chrome applies it to MAIN-world code and Firefox does not **[doc]**. Nothing watches for that (out of scope, §18).
 - **Site access.** Safari runs nothing until the player grants access in Safari › Settings › Extensions; no prompt appears, and the grant injects into an already open tab without a reload **[live]** Safari 26.2. Chrome and Orion do **not** inject into tabs open at install; the player reloads **[live]** Orion.
 - **Loopback.** Chrome and Firefox pass the transport bar with no `127.0.0.1` host permission and no Local Network Access prompt **[live]** Chrome 153, Firefox 156. Orion passes **[live]**, but only unsigned sideloads were tested, and only with `http://127.0.0.1/*` declared; the store builds declare none **[unverified]** on Orion. Safari's background page reached `127.0.0.1` over `fetch` and WebSocket on an unsigned temporary build **[live]** Safari 26.2; a signed build is **[unverified]** and ships anyway, with no HUD-only fallback.
@@ -224,7 +224,7 @@ No `permissions`, `optional_permissions`, `host_permissions` or `optional_host_p
   "browser_specific_settings": {
     "gecko": {
       "id": "coachemon@iixauii.github.io",
-      "strict_min_version": "128.0",
+      "strict_min_version": "142.0",
       "data_collection_permissions": { "required": ["none"], "optional": ["websiteContent"] }
     }
   }
@@ -232,6 +232,8 @@ No `permissions`, `optional_permissions`, `host_permissions` or `optional_host_p
 ```
 
 - The gecko id is picked here and is permanent once AMO has seen it.
+- **The floor is 142, not the 128 the page world would need.** `data_collection_permissions` is mandatory on AMO — since 2025-11-03 for new extensions, and for every extension through the first half of 2026 **[doc]** — and the key was understood by Firefox 140 and Firefox for Android 142. The linter warns once per floor that predates either, and with no `gecko_android` key it checks Android against this same one, so 128 drew both warnings ([#380](https://github.com/IIxauII/coachemon/issues/380)). 142 clears them and keeps 140–141 out too, which the desktop warning asked for: addons-linter on the built store artifact drops from three warnings to one **[live]**, the survivor being §6's declared `import()`.
+- **No `gecko_android` key, deliberately.** Omitting it is what marks the add-on desktop-only **[doc]**; declaring it would also have silenced the Android warning, by offering Coachemon on Firefox for Android, where nothing can reach a hub on `127.0.0.1`. The cost of the floor is Firefox 128–141, ESR 140 included.
 - The CSP override drops the default `upgrade-insecure-requests`, which turns `ws://127.0.0.1` into a failing TLS handshake **[live]**. If AMO rejects the override, the Firefox build alone switches its hub connection to `fetch` long-poll (§8.1); that fallback is named, not built.
 - If AMO rejects `required: ["none"]` next to an optional list, the fallback is `required: ["websiteContent"]` and no consent click (§8.4).
 
@@ -428,10 +430,10 @@ All frames are JSON text messages. Types live in `src/protocol/wire.ts`. `PRODUC
 ### 8.4 Firefox consent
 
 - The Firefox build connects and sends `hello` with `consent: false`, then **no `tab` frames, no replies and no events** until the player consents. Status rung 5 names the click.
-- **Firefox 140 and later**, detected by a `data_collection` key in `permissions.getAll()`: `action.onClicked` → `permissions.request({ data_collection: ["websiteContent"] })`. Consent is `permissions.contains` on the same.
-- **Firefox 128–139** have no built-in data consent, and Mozilla's guidance is a custom consent experience **[doc]**. The toolbar click is that experience (picked here): the action title states what the click allows (§5.3), and the click records consent in the extension origin's own `localStorage` (no `storage` permission).
+- **Every Firefox that can install this build** has built-in data consent, since the floor is 142 (§5.3): `action.onClicked` → `permissions.request({ data_collection: ["websiteContent"] })`. Consent is `permissions.contains` on the same. Nothing is detected first and nothing is stored.
+- Firefox 128–139 had no built-in data consent, and carried a custom consent experience instead **[doc]** — the same click, recorded in the extension origin's own `localStorage`. The 142 floor retired those versions, and that path went with them ([#380](https://github.com/IIxauII/coachemon/issues/380)).
 - Consent granted → the background sends `{"t":"consent","consent":true}` and the tabs.
-- Chrome, Safari and Orion have no consent step and always send `consent: true`. The Firefox build tells Firefox from Orion by `runtime.getBrowserInfo()`: only `name: "Firefox"` takes either consent path above; anything else, Orion running the AMO build included, counts as consented **[unverified]** (Orion's answer to `getBrowserInfo` was never observed).
+- Chrome, Safari and Orion have no consent step and always send `consent: true`. The Firefox build tells Firefox from Orion by `runtime.getBrowserInfo()`: only `name: "Firefox"` takes the consent path above; anything else, Orion running the AMO build included, counts as consented **[unverified]** (Orion's answer to `getBrowserInfo` was never observed).
 - If AMO forces `required: ["websiteContent"]` (§5.3), consent is implied by install and the click goes away.
 
 ### 8.5 Protocol window
@@ -477,7 +479,7 @@ Synchronous cross-world dispatch is established in principle only **[unverified]
 
 ### 9.4 World check
 
-- **Manifest floors** (§5.3) make Firefox 102–127, the known silent-isolated case, uninstallable.
+- **Manifest floors** (§5.3) make Firefox 102–127, the known silent-isolated case, uninstallable — and in fact everything below 142.
 - **Runtime backstop, timing-free:** `relay.js` runs at `document_start` and sets `globalThis.__coachemonIsolated = COACHEMON_BUILD` in its own world. `page.js` and the wrapper around `hud.js` check `typeof __coachemonIsolated !== "undefined"` first. If they can see it they ran isolated: they dispatch `coachemon:wrong-world`, register no handlers, and the HUD does not start.
 - The relay reports `{t:"tab", state:"wrong-world"}`; the tab is not counted; status rung 6.
 
@@ -841,7 +843,7 @@ Each was accepted knowingly by a closed ticket. None blocks building; a build ti
 | AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/coachemon/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | named fallbacks (§5.3, §8.1) |
 | A CWS reviewer accepts the declared remote code (`04-game-tables.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | declared Yes (§6) |
 | Chrome Web Store API v2 can cancel a pending review — **confirmed, no longer a premise** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/coachemon/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
-| Firefox 128–139's toolbar-click consent satisfies AMO | this spec (§8.4) | if AMO objects, `required: ["websiteContent"]` |
+| The 142 floor is worth its cost: Firefox 128–141, ESR 140 included, cannot install at all | [Firefox manifest: strict_min_version 128 predates data_collection_permissions support (Android)](https://github.com/IIxauII/coachemon/issues/380) | none; any lower floor is a linter warning (§5.3) |
 | Nintendo does not act on the -ÉMON name | [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105) | no trademark filed; answer the listing email |
 | Chrome's Local Network Access leaves extension workers alone as enforcement rolls out | [Loopback transport on Chrome and Firefox](https://github.com/IIxauII/coachemon/issues/161) | none |
 
