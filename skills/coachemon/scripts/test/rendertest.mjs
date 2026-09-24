@@ -49,9 +49,10 @@ const trainer = { getName: () => "Youngster", config: { isBoss: false }, isDoubl
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene);
   console.log(`== plan\n${lines(el)}`);
-  // Nothing on the panel opens a section: the only control it draws is the close one.
-  const opener = n => (n == null || typeof n === "string" ? null : n.onclick && n.title !== "Close" ? n : (n.children ?? []).map(opener).find(Boolean));
-  assert.equal(el.kids.map(opener).find(Boolean) ?? null, null, "the panel draws no in-pane opener");
+  // Nothing inside the pane opens anything: a group is a tab, and a tab is open or it is not — there is no in-pane
+  // expansion anywhere (§2). The controls the panel does draw are the shell's own: the close one, and the tabs.
+  const control = n => (n == null || typeof n === "string" ? null : n.onclick ? n : (n.children ?? []).map(control).find(Boolean));
+  assert.equal(control(el.kids[3]) ?? null, null, "the pane draws no control of its own");
 }
 
 // Learn with a team: Espeon trades Bite, the team's only Dark move, for Earth Power — the team line carries the SE
@@ -108,12 +109,13 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   for (const k of ["background", "color", "border", "boxShadow"]) console.log(`panel ${k}: ${el.style[k]}`);
   console.log(`chrome font: ${el.style.fontSize}/${el.style.lineHeight} ${el.style.fontFamily}`);
   // The two faces, split by the game's own density rule: the default face for chrome, the dense face at half the
-  // size for rows. The shell decides which register a node is in, so a row is where the dense face shows up.
-  const rows = el.kids.filter(n => n?.style?.fontFamily);
+  // size for rows. The shell decides which register a node is in, so a row is where the dense face shows up —
+  // wherever the shell put it, which since #357 is inside the drawer's pane.
+  const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
+  const rows = [...el.kids, ...el.kids.flatMap(under)].filter(n => n?.style?.fontFamily);
   const rowFonts = [...new Set(rows.map(n => `${n.style.fontSize}/${n.style.lineHeight} ${n.style.fontFamily}`))];
   console.log(`rows font: ${rowFonts.join(" | ")}`);
   assert.equal(rowFonts.length, 1, "one row register, not three");
-  const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
   // What a row emphasises it keeps: the register must not flatten a weight already on it. No card leads with a bold
   // row any more — the header line that was one is the strip's caption now (#356) — so the emphasis the register has
   // to survive is the one inside a row, and the rule itself is held to the three longhands. The `font` shorthand
@@ -206,13 +208,77 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.equal(longCall.style.overflowWrap, "anywhere");
   // The act pane does not repeat the call: the strip directly above it is its heading, so the drawer opens on the
   // supporting lines.
-  const drawer = el.kids.slice(2);
-  assert.ok(!drawer.some(n => flat(n) === act.summary), "the act pane does not repeat the call");
-  // Every other group is still headed in the pane, on one line then an ellipsis: nothing is budgeted there, because
-  // nothing there is the call.
-  const foesHead = drawer.find(n => flat(n).startsWith("Foes"));
-  assert.deepEqual([foesHead.style.whiteSpace, foesHead.style.overflow, foesHead.style.textOverflow],
+  const [, paneBox] = el.kids.slice(2);
+  assert.ok(!(paneBox.children ?? []).some(n => flat(n) === act.summary), "the act pane does not repeat the call");
+}
+
+// ---- The drawer (#349 §1, §2, §4, #357)
+// The tab bar under the strip and the pane under that: one group on screen at a time, the one the player picked.
+{
+  const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+  const el = mount(scene, { expose: true });
+  const { drawer, openGroup } = globalThis.__hud["90-render"];
+  const { drawBattle } = globalThis.__hud["96-render-battle"];
+  const flat = n => txt(n).replace(/\s+/g, " ").trim();
+  // The panel is its control, the strip, the bar, the pane, the footer — so the drawer is two children and not a
+  // stack of every group the card has.
+  const [bar, paneBox] = el.kids.slice(2);
+  const tabs = bar.children;
+  console.log(`== drawer\ntabs ${tabs.map(flat).join(" | ")}\nopen ${openGroup()}\npane ${paneBox.children.map(flat).join(" / ")}`);
+  // The tokens are recorded rather than restated: which ink says a tab is open, and the pane's own budget, are both
+  // golden diffs if they move.
+  console.log(`bar ${tabs.map(t => `${t.style.fontWeight} ${t.style.color}`).join(" | ")}`);
+  console.log(`pane cap ${paneBox.style.maxHeight} ${paneBox.style.overflowY}`);
+  // One tab per group the card has, labels only, in the fixed global order — `foes` in the same place whatever kind
+  // of decision is up, because the shell walks `GROUP_IDS` and not the order a renderer happened to return.
+  const groups = drawBattle(globalThis.__coachHud.last());
+  // A trainer wave with nothing to catch and nothing rolled ahead has three groups, so the bar has three tabs.
+  assert.deepEqual(tabs.map(flat), ["Now", "Foes", "Plan"]);
+  assert.deepEqual(tabs.map(flat), globalThis.__hud["90-render"].GROUP_IDS
+    .flatMap(id => groups.filter(g => g.id === id)).map(g => g.label), "the bar is in the fixed global order");
+  // The bar never wraps, never scrolls and has no overflow menu: a label that overruns is the browser's to cut.
+  assert.equal(bar.style.flexWrap, "nowrap");
+  assert.equal(bar.style.overflow, "hidden");
+  assert.deepEqual([...new Set(tabs.map(t => t.style.textOverflow))], ["ellipsis"]);
+  // With nothing remembered yet, the drawer opens on `act`, and no tab carries a mark, a count or any state beyond
+  // being the open one — which is weight and ink, never the gold the authorship rule owns.
+  assert.equal(openGroup(), "act");
+  assert.deepEqual([tabs[0].style.fontWeight, tabs[0].style.color], ["bold", "#f8f8f8"]);
+  assert.deepEqual([tabs[1].style.fontWeight, tabs[1].style.color], ["normal", "#9aa"]);
+  assert.ok(!tabs.some(t => t.style.color === "#f8b050"), "gold never says which tab is open");
+  assert.deepEqual(tabs.map(t => flat(t).replace(/[A-Za-z]/g, "")), tabs.map(() => ""), "labels only: no mark, no count");
+  // The pane is what scrolls, past the budget the game's message box leaves — and the panel itself no longer does,
+  // so the strip and the bar are never what scrolls away.
+  assert.deepEqual([paneBox.style.maxHeight, paneBox.style.overflowY], ["calc(0.40 * min(100vw, 177.78vh) - 8px)", "auto"]);
+  assert.deepEqual([el.style.maxHeight, el.style.overflowY], [undefined, undefined]);
+  // A tab click opens that group's pane and nothing else: the panel never switches the open group by itself.
+  tabs[1].onclick({ stopPropagation() {} });
+  const [bar2, pane2] = el.kids.slice(2);
+  console.log(`== drawer · foes\ntabs ${bar2.children.map(flat).join(" | ")}\nopen ${openGroup()}\npane ${pane2.children.map(flat).join(" / ")}`);
+  assert.equal(openGroup(), "foes");
+  // Its summary heads the pane, and **its label alone where the summary is absent** — which is this card's foes,
+  // whose danger list is empty. One line then an ellipsis, because nothing there is the call.
+  const foesGroup = groups.find(g => g.id === "foes");
+  assert.equal(flat(pane2.children[0]), foesGroup.label);
+  assert.equal(foesGroup.summary, null, "and this one concluded nothing");
+  assert.deepEqual([pane2.children[0].style.whiteSpace, pane2.children[0].style.overflow, pane2.children[0].style.textOverflow],
     ["nowrap", "hidden", "ellipsis"]);
+  // Where there is a summary it is the heading, and the label does not come with it: the tab directly above the pane
+  // is the name, so a pane that repeated it would spend its first line on what the player just clicked.
+  const said = "\u{1f480} Charizard ← Butterfree Gust";
+  const [, saidPane] = drawer([{ id: "act", label: "Now", summary: "switch", rows: [] }, { id: "foes", label: "Foes", summary: said, rows: [] }]);
+  assert.equal(openGroup(), "foes", "and the group the player is on stays open across a new card that has it");
+  assert.equal(flat(saidPane.children[0]), said);
+  // A card the player's group is not on moves the drawer to `act` as it draws, and does not jump back when the
+  // group returns: the fallback is a move, not a detour (§3).
+  const one = [{ id: "act", label: "Now", summary: "no advice — the enemy AI call threw", rows: [] }];
+  const [oneBar, onePane] = drawer(one);
+  console.log(`== drawer · one group\ntabs ${oneBar.children.map(flat).join(" | ")}\nopen ${openGroup()}\npane ${onePane.children.map(flat).join(" / ")}`);
+  assert.deepEqual(oneBar.children.map(flat), ["Now"], "a whole-card replacement draws a bar with one tab");
+  assert.equal(openGroup(), "act");
+  assert.deepEqual(drawer(groups)[0].children.map(flat), ["Now", "Foes", "Plan"]);
+  assert.equal(openGroup(), "act", "and the drawer does not jump back to the group the fallback left");
 }
 
 // A card with no verdict draws no dot and no word; the caption and the call still draw. The verdict is a battle
@@ -238,7 +304,8 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const el = mount(scene);
   console.log("== footprint");
   // Position stays the viewport's top-left — off 16:9 that corner is the game's own letterbox bar — and the width is
-  // a fraction of the game clamped to 0.75×–1.5× of its 300px reference, with the box as the footprint.
+  // a fraction of the game clamped to 0.75×–1.5× of its 300px reference, with the box as the footprint. The height
+  // budget is not the panel's any more: it is the drawer's pane that stops growing and scrolls (#357).
   for (const k of ["position", "top", "left", "width", "boxSizing", "padding", "maxHeight", "overflowY"]) console.log(`panel ${k}: ${el.style[k]}`);
   // No canvas rect read and no resize observer: the footprint is pure CSS, which is what makes it survive a resize
   // with nothing listening.

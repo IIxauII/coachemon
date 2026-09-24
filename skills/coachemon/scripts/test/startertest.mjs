@@ -4,6 +4,7 @@
 // rendered card and its summary, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { wholeCard } from "./panel.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // Test fixtures, not game data: [id, name, types, base stats, cost, evolutions [[id, level, item?]], passive, hidden].
@@ -138,7 +139,9 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], fre
 };
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+const lines = el => wholeCard(el)
+  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+
 const show = (label, opts) => {
   const last = mount(opts);
   console.log(`== ${label}\n${lines(last.el)}`);

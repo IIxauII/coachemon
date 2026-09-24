@@ -19,6 +19,7 @@
 // Prints the rendered card, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { wholeCard } from "./panel.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -61,7 +62,9 @@ const typeReq = types => make("TypeRequirement", { queryParty: party => party.fi
 const option = ({ mode = 0, requirements = [], primary = [], met } = {}) => ({ optionMode: mode, requirements, primaryPokemonRequirements: primary, primaryPokemon: undefined, met });
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+const lines = el => wholeCard(el)
+  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+
 
 // Scripted fork draws: `draws[offset]` is the sequence a fork sown at that offset yields (taken modulo the range);
 // a fork at an unscripted offset yields 0s. `forks` records every offset sown.

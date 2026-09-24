@@ -5,6 +5,7 @@
 // summaries, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { wholeCard } from "./panel.mjs";
 
 class ModifierType {}
 class PokemonModifierType extends ModifierType {}
@@ -85,7 +86,9 @@ const mount = ({ screen = "party", members = party(), picked = null, partyUiMode
 };
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+const lines = el => wholeCard(el)
+  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+
 const show = (label, opts) => {
   const last = mount(opts);
   console.log(`== ${label}\n${lines(last.el)}`);

@@ -89,7 +89,7 @@ The line of a **card** that stays in front of the player whatever else they have
 
 ## Drawer
 
-Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them.
+Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them. A **tab bar** names every group the card has, one **tab** each, in an order that is the same on every card; the open group's own contents are its **pane**, and a pane too tall for the panel scrolls inside itself. A tab carries its group's name and nothing else — no mark, no count, no state but being the open one.
 
 ## Minigame turn
 

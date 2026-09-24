@@ -9,6 +9,7 @@
 // counts when fainted, and a near tie that names what decided it. Prints the rendered card, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { wholeCard } from "./panel.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -100,7 +101,9 @@ const team = (opts = {}) => [
 ];
 
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+const lines = el => wholeCard(el)
+  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+
 
 // Mounts the HUD on a biome-choice scene. `tables`: what loadGameTables would have found (null: not loaded yet).
 const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave = 30, from = 3, offset = 0, t = tables(), dex = {}, gameMode } = {}) => {

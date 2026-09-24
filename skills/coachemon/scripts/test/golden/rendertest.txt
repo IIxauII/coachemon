@@ -1,51 +1,28 @@
 == learn
 × {Close}
 🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80 Learn → forget Ember
+Now Moves
 ✚ Fire Flamethrower SE on Bug/Steel/Grass… · set move (Fast Attacker, evolved) power 186 {base 90 · STAB} +108 power
-Moves
-· Normal Tackle 2nd Normal move · weak Atk power 24 {base 40}
-✕ Fire Ember SE on Bug/Steel/Grass… power 78 {base 40 · STAB}
-· Dragon Dragon Breath SE on Dragon power 72 {base 60}
-· Normal Scratch 2nd Normal move · weak Atk power 24 {base 40}
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Ember
 == plan
 × {Close}
 trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hit
+Now Foes Plan
 ⚔ Charizard Fire Flamethrower → Paras 1 hit
-Foes
-foes weak to: Fire ×2
-Paras Paras L20 Bug Grass 100% ▲ Fire ×4 ↯ Normal Scratch → Charizard moves after
-Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard moves after ➜ Charizard Fire Flamethrower ~100% · 1 hit later
-Plan winnable · Charizard
-♟ Fight plan winnable
-1 Charizard Fire Flamethrower → Paras KO · 100% left
-2 Charizard Fire Flamethrower → Oddish KO · 100% left
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == learn team
 × {Close}
 🎓 Espeon learns Espeon Atk 65 / SpA 130 Learn → forget Bite · ⚠ loses only Dark move
+Now Moves Team
 ✚ Ground Earth Power SE on Rock/Steel/Fire… power 117 {base 90} +87 power
-Moves
-✕ Dark Bite ⚠ weak Atk power 30 {base 60}
-· Psychic Psychic SE on Poison · set move (Fast Attacker) · only Psychic move on team power 191 {base 90 · STAB}
-· Ghost Shadow Ball set move (Fast Attacker) · only Ghost move on team power 96 {base 80}
-· Fairy Dazzling Gleam SE on Dragon/Dark · only Fairy move on team power 98 {base 80}
-Team
-team: +SE Steel/Electric · ⚠ loses only Dark move
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary Learn → forget Bite · ⚠ loses only Dark move
 == rewards boss next
 × {Close}
 🛒 $500 nothing affordable 👑 boss next take TM Fire Fang → Morpeko (forget Tackle)
+Now Others Team
 🎁 TM Fire Fang Morpeko → forget Tackle · +48 power
-Others
-· Leftovers held item · for Charizard/Morpeko
-· 5× Great Ball you have 20
-Team 2 issues: Morpeko: Quick Attack is a second Normal attack (Tackle); nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
-🩺 Team audit
-· Morpeko: Quick Attack is a second Normal attack (Tackle)
-· nothing hits Fighting/Poison/Ground/Rock +5 super-effectively
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 summary take TM Fire Fang → Morpeko (forget Tackle)
 == skin
@@ -61,6 +38,20 @@ rows font: clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)/1.5 pkmnems,
 head trainer 🎯 W15 · Youngster Charizard
 call Charizard Flamethrower → Paras · 1 hit
 dot #f8b050 calc(1 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)) 50%
+== drawer
+tabs Now | Foes | Plan
+open act
+pane ⚔ Charizard Fire Flamethrower → Paras 1 hit
+bar bold #f8f8f8 | normal #9aa | normal #9aa
+pane cap calc(0.40 * min(100vw, 177.78vh) - 8px) auto
+== drawer · foes
+tabs Now | Foes | Plan
+open foes
+pane Foes / foes weak to: Fire ×2 / Paras Paras L20 Bug Grass 100% ▲ Fire ×4 ↯ Normal Scratch → Charizard moves after / Oddish Oddish L20 Grass Poison 100% ▲ Fire ↯ Grass Absorb → Charizard moves after ➜ Charizard Fire Flamethrower ~100% · 1 hit later
+== drawer · one group
+tabs Now
+open act
+pane 
 == strip · no verdict
 head 🎓 Charmeleon learns Charmeleon Atk 64 / SpA 80
 call Learn → forget Ember
@@ -71,8 +62,8 @@ panel left: 8px
 panel width: clamp(224.64px, calc(0.156 * min(100vw, 177.78vh)), 449.28px)
 panel boxSizing: border-box
 panel padding: calc(0.75 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)) clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)
-panel maxHeight: calc(0.40 * min(100vw, 177.78vh) - 8px)
-panel overflowY: auto
+panel maxHeight: undefined
+panel overflowY: undefined
 == failed refresh
 
 TEXT coach: the scene went away

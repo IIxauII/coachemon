@@ -1,4 +1,5 @@
 import { bundle } from "../hud-bundle.mjs";
+import { wholeCard } from "./panel.mjs";
 import { MoveFlags } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
@@ -130,7 +131,9 @@ const scenarios = {
       mon("Gyarados", 80, ["Water","Flying"], "Intimidate", [270,155,130,110,160,135], [["Waterfall","Water",80,"P"]], false)] },
 };
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const lines = el => (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+const lines = el => wholeCard(el)
+  .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
+
 
 for (const [label, sc] of Object.entries(scenarios)) {
   let el;
@@ -152,7 +155,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
-  eval(bundle("hud"));
+  eval(bundle("hud", { expose: true }));
   if (sc.trainer) console.log(`queued during prediction: ${globalThis.__queued ?? 0}; queueMessage restored: ${!Object.prototype.hasOwnProperty.call(pm, "queueMessage") && typeof pm.queueMessage === "function"}`);
   console.log(`== ${label}\n${lines(el)}`);
   // The card's own line, the way the watcher prints it; its full shape is cardtest's business.

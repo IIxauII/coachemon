@@ -68,7 +68,7 @@ kind null
 🎁 DNA Splicers Snorlax fuse Snorlax ← Salamence · +7 · spends Salamence L22
 Others
 · Potion party healthy
-Team 4 issues: 2 of 6 weak to Fairy, nobody resists; Magikarp: no Water attack (no STAB); Magikarp L20/Salamence L22/Mimikyu L30 trail Garchomp L50 — lead them on easy waves
+4 issues: 2 of 6 weak to Fairy, nobody resists; Magikarp: no Water attack (no STAB); Magikarp L20/Salamence L22/Mimikyu L30 trail Garchomp L50 — lead them on easy waves
 🩺 Team audit
 ✗ 2 of 6 weak to Fairy, nobody resists
 ✗ Magikarp: no Water attack (no STAB)
@@ -82,7 +82,7 @@ summary take DNA Splicers → Snorlax
 🎁 DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −31
 Others
 · Potion party healthy
-Team 3 issues: Magikarp: no Water attack (no STAB); Magikarp L20 trail Garchomp L50 — lead it on easy waves; nothing hits Fighting/Flying/Ground/Bug +7 super-effectively
+3 issues: Magikarp: no Water attack (no STAB); Magikarp L20 trail Garchomp L50 — lead it on easy waves; nothing hits Fighting/Flying/Ground/Bug +7 super-effectively
 🩺 Team audit
 ✗ Magikarp: no Water attack (no STAB)
 ✗ Magikarp L20 trail Garchomp L50 — lead it on easy waves

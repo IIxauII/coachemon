@@ -3,6 +3,7 @@
 // the team, and the learn / forget / skip verdict. Prints the rendered card, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { wholeCard } from "./panel.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
 // An attr: "Name" or ["Name", { fields }] — the game's attr instances, identified by constructor name. The HUD
@@ -55,7 +56,7 @@ const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) 
   // The card as the shell draws it, less the panel's own close control — dropped by name, so a shell that reorders
   // its chrome doesn't silently eat a row. What leads it is the **strip**: the card's identity line as the caption,
   // and beside it the call the card came to (#356).
-  const rest = el.kids.filter(k => k.title !== "Close");
+  const rest = wholeCard(el).filter(k => k.title !== "Close");
   return { model, text: rest.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
 };
 const show = (label, r) => console.log(`== ${label}\n${r.text}`);

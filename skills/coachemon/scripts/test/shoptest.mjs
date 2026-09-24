@@ -6,6 +6,7 @@
 // the picks.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { wholeCard } from "./panel.mjs";
 class ModifierType {}
 class PokemonModifierType extends ModifierType {}
 class PokemonHpRestoreModifierType extends PokemonModifierType {}
@@ -645,7 +646,7 @@ for (const [label, sc] of Object.entries(scenarios)) {
   // The chunk scan finds nothing under node: hand the reroll preview its functions, and draw the card again.
   if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
-  console.log(`== ${label}\n` + (el.kids ?? []).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
+  console.log(`== ${label}\n` + wholeCard(el).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
   const m = globalThis.__sm(scene, handler);
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   sc.expect?.(m, globalThis.__api, sc, scene);
