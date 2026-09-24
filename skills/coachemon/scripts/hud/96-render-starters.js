@@ -5,7 +5,7 @@
 // and *Viewing* are a row apiece, and neither earns a group of its own. The call is `act.summary`, read off the
 // model and never written here (§6).
 import { ptsText, startersSummary } from "./51-starters.js";
-import { caption, dim, group, h, ICON, line, mon, sep, some } from "./90-render.js";
+import { caption, dim, group, h, ICON, ink, line, mon, sep, some } from "./90-render.js";
 
 // The strip's caption: the screen, and what the starter budget has been spent down to.
 export const captionStarters = m => caption("🌱", "Starters",
@@ -13,28 +13,29 @@ export const captionStarters = m => caption("🌱", "Starters",
 
 export const drawStarters = m => {
   const best = m.picks[0];
-  const ROLE = { carry: "#8cf", support: "#c9f" };
+  // A no-arrow kind, so the law degrades to **ours** alone (#349 §8). A role is a job and not a direction, so carry
+  // and support take the one ink between them — two inks for two roles is the spend the law took away.
   const chosen = m.chosen.length
-    ? line("✓", "#6d6", h("span", { ...dim, marginRight: "3px" }, "picked:"), ...m.chosen.map(x => mon(x.icon, x.name, ICON.mon)),
+    ? line("✓", h("span", { ...dim, marginRight: "3px" }, "picked:"), ...m.chosen.map(x => mon(x.icon, x.name, ICON.mon)),
         m.full ? h("span", dim, "· team full") : m.room <= 0 ? h("span", dim, "· no points left") : null)
     : null;
   // Nothing to propose: an ordinary card with exactly one `act` group, and the shell never special-cases it (§1).
   // The line that used to say so is `act.summary` now — `startersSummary` carries it, so it is said once.
   if (!best) return [group("act", "Now", startersSummary(m), [chosen])];
   const teamTail = t => [h("span", { ...dim, marginLeft: "4px" }, `${ptsText(t.cost)} pts · SE vs ${t.covers} types`),
-    t.weak.length ? h("span", { color: "#fa4", marginLeft: "4px" }, `· weak ${t.weak.join("/")}`) : null,
-    t.noCarry ? h("span", { color: "#fa4", marginLeft: "4px" }, "· no carry") : null];
+    t.weak.length ? h("span", { ...ink.ours, marginLeft: "4px" }, `· weak ${t.weak.join("/")}`) : null,
+    t.noCarry ? h("span", { ...ink.ours, marginLeft: "4px" }, "· no carry") : null];
   const options = [];
   m.picks.forEach((t, i) => {
     // A rule between one proposal and the next, never above the first: that boundary is the one between `act` and
     // `options`, which is the shell's to draw (§1).
     options.push(i ? h("div", sep) : null,
-      line(i ? "·" : "★", i ? "#9aa" : "#6d6", h("span", { fontWeight: "bold" }, t.label), ...teamTail(t)));
+      line(i ? "·" : "★", h("span", { fontWeight: "bold" }, t.label), ...teamTail(t)));
     for (const x of t.members) {
-      options.push(line("", "#9aa", mon(x.icon, x.name, ICON.mon),
-        h("span", x.chosen ? dim : { fontWeight: "bold" }, x.name), x.chosen ? h("span", { color: "#6d6", marginLeft: "2px" }, "✓") : null,
+      options.push(line("", mon(x.icon, x.name, ICON.mon),
+        h("span", x.chosen ? dim : { fontWeight: "bold" }, x.name), x.chosen ? h("span", { ...ink.ours, marginLeft: "2px" }, "✓") : null,
         h("span", { ...dim, marginLeft: "3px" }, `${ptsText(x.cost)}`),
-        x.role ? h("span", { color: ROLE[x.role], marginLeft: "3px" }, x.role) : null,
+        x.role ? h("span", { ...ink.ours, marginLeft: "3px" }, x.role) : null,
         h("span", { flex: "1" }),
         h("span", dim, x.why.join(" · "))));
     }
@@ -42,7 +43,7 @@ export const drawStarters = m => {
   const v = m.viewing;
   if (v) {
     // The cursor is neutral news — `·`, with the word `cursor:` carrying the kind the eye used to (#349 §7).
-    options.push(h("div", sep), line("·", "#9aa", h("span", dim, "cursor:"), mon(v.icon, v.name, ICON.mon), h("span", {}, v.name),
+    options.push(h("div", sep), line("·", h("span", dim, "cursor:"), mon(v.icon, v.name, ICON.mon), h("span", {}, v.name),
       h("span", { ...dim, marginLeft: "3px" }, `${ptsText(v.cost)} pts · #${v.rank} of ${v.of}${v.inPick ? ` · in ${v.inPick}` : ""}`),
       h("span", { flex: "1" }), h("span", dim, v.why.join(" · "))));
   }
@@ -53,6 +54,6 @@ export const drawStarters = m => {
   return [
     some("act", "Now", startersSummary(m), [chosen]),
     some("options", "Proposals", null, options),
-    some("notes", "Notes", null, noteText.length ? [line("", "#9aa", h("span", dim, noteText.join(" · ")))] : []),
+    some("notes", "Notes", null, noteText.length ? [line("", h("span", dim, noteText.join(" · ")))] : []),
   ].filter(Boolean);
 };

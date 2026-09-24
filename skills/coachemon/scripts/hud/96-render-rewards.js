@@ -15,12 +15,14 @@ import { drawReroll } from "./95-render-reroll.js";
 // the whole card is about.
 export const captionRewards = m => caption("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
   !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal" }, "nothing affordable") : null,
-  m.bossNext ? h("span", { color: "#fa4" }, "👑 boss next") : null);
+  // No ink of its own: the caption is chrome, and chrome is the gold the whole line already wears (#349 §8, §9).
+  // The crown is what says *boss*, and it keeps its own colour the way every emoji does.
+  m.bossNext ? h("span", {}, "👑 boss next") : null);
 
 export const drawRewards = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   const buyRows = m.buys.length
-    ? m.buys.map(b => line("✓", "#ec4", itemImg(b.icon, b.name),
+    ? m.buys.map(b => line("✓", itemImg(b.icon, b.name),
         h("span", { fontWeight: "bold" }, b.name), h("span", { ...dim, marginLeft: "4px" }, `$${b.cost}`),
         h("span", { flex: "1" }), mon(b.target, b.targetName, ICON.mon), h("span", dim, b.why)))
     : [];
@@ -44,7 +46,7 @@ export const drawRewards = m => {
     const lead = `${f.holder.name} · `;
     return [mon(f.holder.icon, f.holder.name, ICON.mon), h("span", style, f.why.startsWith(lead) ? f.why.slice(lead.length) : f.why)];
   };
-  const take = p ? line("★", "#6d6", itemImg(p.icon, p.name),
+  const take = p ? line("★", itemImg(p.icon, p.name),
     h("span", { fontWeight: "bold" }, p.name), h("span", { flex: "1" }), tmTo(p) ?? heldTo(p) ?? h("span", dim, p.why)) : null;
   // Who can use it, when the reason doesn't already name them (a holder is the answer already).
   const usersText = f => {
@@ -52,9 +54,11 @@ export const drawRewards = m => {
     const rest = (f.users ?? []).filter(n => !f.why.includes(n));
     return rest.length ? ` · for ${rest.slice(0, 2).join("/")}${rest.length > 2 ? ` +${rest.length - 2}` : ""}` : "";
   };
-  const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", "#9aa", itemImg(f.icon, f.name),
+  const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", itemImg(f.icon, f.name),
     h("span", dim, f.name), h("span", { flex: "1" }),
-    tmTo(f) ?? heldTo(f) ?? h("span", f.tm === "skip" ? { color: "#e77" } : dim, `${f.why}${usersText(f)}`)));
+    // A passed-over reward reads as passed over by its `·` against the pick's `★`, and its reason spells out why.
+    // The red that said *skip* a second time was the gutter's question answered in the wrong column (#349 §7, §8).
+    tmTo(f) ?? heldTo(f) ?? h("span", dim, `${f.why}${usersText(f)}`)));
   // The rule between the buys and the free reward stays: both are `act`'s own rows, so it separates two parts of one
   // group rather than two groups — which is the shell's business and nothing a renderer draws (§1).
   return [

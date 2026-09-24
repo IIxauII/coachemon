@@ -124,12 +124,95 @@ export const img = (key, frame, title, rungs, fallback = title) => {
   return i;
 };
 export const mon = (icon, name, rungs = ICON.mon) => (icon ? img(icon[0], icon[1], name, rungs, name) : name);
-export const badge = (type, suffix = "") => h("span", { whiteSpace: "nowrap", marginRight: "3px" },
-  img("types", type.toLowerCase(), type, ICON.mark), suffix && h("b", {}, suffix));
-export const dim = { color: "#9aa" };
-// The gutter: one mark's column, a rung and three quarters wide, rather than a width of its own. Exported because a
-// row with a column ahead of the gutter — the fight plan's `now:` / `next:` steps — has to line up with one without.
-export const GUTTER = rung(1.75);
+// ---- The colour law (#349 §8)
+// **Colour answers direction, and nothing else** — not urgency, not certainty, not how good the news is. One ink for
+// what we do, one for what they do to us, one for what is later, one for neither. The law lives in a row's **text
+// ink** and in the **open group's frame**, which is what gives it a carrier that is not text: direction is legible
+// with no text read at all.
+//
+// Two columns, two questions, and neither ever answers the other's (§7): the gutter says *is this good news*, and
+// everything right of it says *who is acting*. That, and not a shorter list of characters, is what makes the
+// vocabulary readable without a legend.
+//
+// **Nothing here is invented.** The rule the palette arrives at: quote the game where the colour is decoration, and
+// use the panel's own inks where the colour is load-bearing. Every value below is a colour the game already draws —
+// its summary blue, its selected-setting salmon, its Fire-type red, its master-tier magenta, its locked-setting grey.
+export const LAW_INK = { ours: "#40c8f8", theirs: "#f88880", later: "#e331c5", none: "#a0a0a0" };
+// The three directions as styles, so a renderer never writes a colour: `ink.ours`, `ink.theirs`, `ink.later`, and
+// `dim` for neither. **A renderer that spells a hex has left the law**, which is why none of them spells one and the
+// drawn-panel golden says so.
+export const ink = { ours: { color: LAW_INK.ours }, theirs: { color: LAW_INK.theirs }, later: { color: LAW_INK.later } };
+export const dim = { color: LAW_INK.none };
+// **On a card with no arrow the law degrades to *ours* alone** — encounter, biome, starters, fusion, learn and most
+// of rewards. Nothing is being done to us there, so `theirs` and `later` never appear, and their absence is itself
+// the information. The law never means something different on a different kind.
+//
+// The frame's mapping reads as a **timeline** rather than as a subject: *later* is anything past the turn in front
+// of you, whether three turns away or three waves away, and *ours* is anything the player is choosing right now. So
+// `foes` is the one tab where something is coming at you, and the frame says so before a word is read.
+const GROUP_LAW = { act: "ours", foes: "theirs", catch: "ours", plan: "later", options: "ours", audit: "later", road: "later", notes: "none" };
+// **`theirs` splits between the frame and row text**, and is held to reading as one ink in two weights rather than
+// as two colours: a frame has nothing but colour, where text has words beside it. The frame takes the game's
+// Fire-type red, which as text sits too dark on the panel's fill; the salmon it pairs with is 11.33 from grey as
+// text, which is the distance the split buys.
+const FRAME = { ...LAW_INK, theirs: "#f75231" };
+// **Chrome gold never appears inside a row** (§8, §9): it is the tab labels, the open group's summary line and the
+// strip's caption, and it is inert. The law frame insets one row's padding within it — the padding the panel already
+// spends — so gold reads as the object's edge and the law as a state inside it, and the two rules never touch.
+//
+// **The gates, and why they are not all-pairs.** Prose is held at 4.5:1; a gutter mark and a group frame are
+// graphical objects conveying meaning and state, and are held at 3:1. Gates apply only to pairs a reader can
+// confuse — the gutter's inks against each other, the law's inks against each other, and a law ink against body —
+// because under red-green deficiency the space collapses to one blue-to-yellow axis on which the panel already
+// spends seven positions, and an all-pairs gate eliminates candidates for collisions nobody can experience.
+//
+// **The figures are not recomputed here.** They were measured once against the pinned interior and are recorded in
+// §8 with their five accepted costs, which anyone revisiting the palette should read before moving a value:
+//   1. Against every viable red, the gutter's green sits in the uncanny band under deuteranopia: for roughly 8% of
+//      male players the gutter's good and bad are told apart **by shape alone**. Green is kept anyway.
+//   2. **No red anywhere in sRGB** clears contrast, separation from grey and separation from green at once. This is
+//      a permanent property of the problem, not a search that stopped early.
+//   3. The gutter's bad-news red clears its 3:1 floor by 0.08 — the ink most at risk in the palette.
+//   4. `later` knowingly misses prose AA at 3.44, the one exception to *prose stays at 4.5*, and sits 12.41 from
+//      `ours` because red-green deficiency renders that magenta as blue. For those readers *now* and *not yet* are
+//      told apart by words, marks and the tab label.
+//   5. `theirs` as text sits 11.33 from grey, which is the split above.
+// All five are measured **against one window interior**. On the game's brightest skin the gutter's bad-news red and
+// the whole `later` register fall below the 3:1 floor, and the grey that serves both columns drops out of AA — so
+// §9's decision not to follow the player's skin is what holds this palette shut, and reversing it reopens it.
+
+// **A type badge is the game's atlas sprite**, and the game's type ink serves only as the text fallback for a page
+// whose atlas has not loaded: a red pill and red text can never read as the same claim, so the badge owns a visual
+// register of its own and never borrows the law's.
+const TYPE_INK = {
+  normal: "#a8a878", fighting: "#c03028", flying: "#a890f0", poison: "#a040a0", ground: "#e0c068", rock: "#b8a038",
+  bug: "#a8b820", ghost: "#705898", steel: "#b8b8d0", fire: "#f08030", water: "#6890f0", grass: "#78c850",
+  electric: "#f8d030", psychic: "#f85888", ice: "#98d8d8", dragon: "#7038f8", dark: "#705848", fairy: "#e888c8",
+  stellar: "#ffffff",
+};
+// **The multiplier beside a badge takes the game's own effectiveness colours**, quoted from its damage table, so a
+// decade of instinct still works where the number already says what the colour says. Only the three the table has an
+// opinion about: `×4` super, `×¼` resisted, `×0` immune.
+//
+// **Whether a suffix is an effectiveness is the caller's to say, never this file's to guess**: a suffix that reads
+// like a multiplier need not be one — the count of foes weak to a type is written `×3`, and with four foes it is
+// written `×4`. Matching the rendered string would ink that count as *super effective*, which is the caller's own
+// fact re-derived wrongly from its own output. So the caller passes `eff`, and a badge that was not told takes no
+// colour whatever its suffix says.
+const EFFECT_INK = { "×4": "#4AA500", "×¼": "#FE8E00", "×0": "#929292" };
+export const badge = (type, suffix = "", eff = false) => {
+  // `img` hands back the name when the atlas has not loaded, and only then is the type's own ink spent — on the
+  // text standing in for the sprite, never beside it.
+  const drawn = img("types", type.toLowerCase(), type, ICON.mark);
+  const mult = eff ? EFFECT_INK[suffix] : null;
+  return h("span", { whiteSpace: "nowrap", marginRight: "3px" },
+    typeof drawn === "string" ? h("span", { color: TYPE_INK[type.toLowerCase()] }, drawn) : drawn,
+    suffix && h("b", mult ? { color: mult } : {}, suffix));
+};
+// The gutter: one mark's column, a rung and three quarters wide, rather than a width of its own. It is the
+// column's, so it stays this file's: a row with a column *ahead* of the gutter — the fight plan's `now:` / `next:`
+// steps — lines up with one without by wearing `gutterMark` below, not by being handed the width.
+const GUTTER = rung(1.75);
 // ---- The closed alphabet (#349 §7)
 // **The gutter answers exactly one question — *is this good news*** — and what lets it answer without a legend is
 // that the vocabulary is closed. Sixteen marks: the fifteen shapes below, plus *immune*, which is the `×0` case of
@@ -154,9 +237,34 @@ export const GUTTER = rung(1.75);
 // character on one row, where a stray id would break the tab bar and the view the panel remembers, and a panel that
 // throws mid-draw tells the player less than one that draws the wrong tick.
 export const MARKS = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·", "💀", "👑", "🎲", "🔒"];
-export const line = (label, color, ...kids) => h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" },
-  h("span", { color, width: GUTTER, flex: "none" }, label), ...kids);
-export const hpColor = hp => (hp > 50 ? "#6d6" : hp > 20 ? "#ec4" : "#e55");
+// **The gutter is inked good-or-bad** (§8), and the ink is the mark's rather than the caller's: the column answers
+// one question, so a row cannot be given an ink that disagrees with its own shape. A renderer passes a mark and gets
+// the law's answer — which is why `line` no longer takes a colour at all.
+// An **emoji forfeits the ink and keeps its own colour**: those rows say *this is a thing of a kind*, not *this is
+// good or bad*. A blank gutter takes none either — a continuation row makes no claim of its own.
+export const GUTTER_INK = { good: "#78c850", bad: "#e13d3d", flat: LAW_INK.none };
+const GOOD = "⚔➜★✓▲", BAD = "↯✗✦⚠▼";
+// **immune** is the sixteenth mark and not a sixteenth shape: it is the `×0` case of `▼`, drawn with `▼`'s glyph and
+// told apart by the grey the law gives it and the `×0` beside it. A wall we cannot get through at all is not bad
+// news about this turn the way a resist is — it is a door that is simply shut — so it sits with the neutral marks.
+export const IMMUNE = "immune";
+const gutterInk = mark => (!mark || (mark !== IMMUNE && mark.codePointAt(0) > 0xffff) ? null
+  : GOOD.includes(mark) ? GUTTER_INK.good : BAD.includes(mark) ? GUTTER_INK.bad : GUTTER_INK.flat);
+// The gutter's own cell, and the row it heads. Both are exported because one row shape has a column *ahead* of the
+// gutter — the fight plan's `now:` / `next:` steps — and it has to line up with an ordinary row at every rung of the
+// ladder, which it can only do by wearing the same two.
+export const ROW = { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" };
+export const gutterMark = mark => h("span",
+  { color: gutterInk(mark) ?? "", width: GUTTER, flex: "none" }, mark === IMMUNE ? "▼" : mark);
+export const line = (mark, ...kids) => h("div", ROW, gutterMark(mark), ...kids);
+// **The HP bar stays a bar, never ink** (§8): the game's own overlay colours say what they say by filling a length,
+// and spending them on text would put a fourth register of good-and-bad against the gutter's one. The number beside
+// it carries no colour of its own, so the bar is the only thing the ink is on.
+const HP_INK = hp => (hp > 50 ? "#39ff7b" : hp > 20 ? "#f3b200" : "#fb3041");
+export const hpBar = hp => h("span", { display: "inline-flex", alignItems: "center", gap: "3px" },
+  h("span", { width: rung(2.5), height: rung(0.5), flex: "none", background: "rgba(255,255,255,.18)" },
+    h("span", { display: "block", width: `${Math.max(0, Math.min(100, hp))}%`, height: "100%", background: HP_INK(hp) })),
+  h("span", {}, `${hp}%`));
 export const itemImg = (icon, name) => img("items", icon, name, ICON.ref, null);
 export const sep = { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" };
 
@@ -238,6 +346,13 @@ const inRows = node => {
 // between groups went with the stack that needed it: one group is on screen at a time, so there is nothing to
 // hold it apart from.
 export const pane = g => [paneHeading(g), ...g.rows.map(inRows)].filter(Boolean);
+// **The open group's frame** (§8): the law's one carrier that is not text, so which direction the pane is about is
+// legible before a word is read. It is the group's own ink by the timeline mapping, and it changes only when the
+// player changes tab — a frame is state, not a signal (§10).
+// It **insets the panel's own padding within the gold authorship rule**, so gold reads as the object's edge and the
+// law as a state inside it, and the two rules never touch. The inset is the padding the panel already spends, taken
+// off the ladder like every other length rather than picked as a second number.
+const frameInk = id => FRAME[GROUP_LAW[id]] ?? LAW_INK.none;
 
 // The **tab bar**: one tab per group the card has, in the fixed global order, **labels only** so the bar stays
 // legible at reference width. It never wraps, never scrolls and has no overflow menu — **the cap is five tabs,
@@ -341,13 +456,14 @@ const setOpen = id => { if (id !== openId) { openId = id; save(); } };
 // strip, the bar, and a pane that stops growing, which is what makes it something the player can rely on. Against
 // everything the model draws today the threshold never fires — the tallest pane any card produces is about 187px
 // against a 713px budget at a 1920 game — so it ships as a guard for content that does not exist yet.
-const PANE = { maxHeight: MAX_H, overflowY: "auto" };
+const PANE = { maxHeight: MAX_H, overflowY: "auto", padding: `${rung(0.5)} ${rung(0.75)}` };
 export const drawer = groups => {
   const list = inOrder(groups);
   const open = list.find(g => g.id === openId) ?? list.find(g => g.id === "act") ?? list[0];
   if (!open) return [];
   setOpen(open.id);
-  return [h("div", BAR, ...list.map(g => tab(g, g === open))), h("div", PANE, ...pane(open))];
+  return [h("div", BAR, ...list.map(g => tab(g, g === open))),
+    h("div", { ...PANE, border: `1px solid ${frameInk(open.id)}` }, ...pane(open))];
 };
 
 // ---- The card as plain text (§11.1, §5)

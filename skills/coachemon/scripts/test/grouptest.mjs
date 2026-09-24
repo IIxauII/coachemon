@@ -246,7 +246,7 @@ const learn = (over = {}) => ({
   moves: [move({ name: "Bite", type: "Dark", cat: "physical", value: 30, power: 60, notes: ["weak Atk"] }),
     move({ name: "Psychic", type: "Psychic", value: 191, stab: true, notes: ["only Psychic move on team"] })],
   forget: 0, compare: 0, decision: "learn", gain: 87,
-  verdict: ["Learn → forget Bite", "#6d6"],
+  verdict: "Learn → forget Bite",
   team: { gains: ["Steel", "Electric"], loses: ["Dark"], onlyType: "Dark" },
   blind: "the run seed is past the pinned build", ...over,
 });

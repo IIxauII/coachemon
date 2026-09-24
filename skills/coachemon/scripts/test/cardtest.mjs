@@ -79,7 +79,7 @@ const verdictOf = m => cardSummary(m).verdict;
 {
   const kinds = {
     battle: battle(),
-    learn: { kind: "learn", wave: 12, verdict: ["Learn → forget Ember", "#6d6"], forget: 1, team: { onlyType: "Dark" } },
+    learn: { kind: "learn", wave: 12, verdict: "Learn → forget Ember", forget: 1, team: { onlyType: "Dark" } },
     rewards: { kind: "rewards", wave: 12, pick: 0, free: [{ name: "Leftovers", holder: { name: "Charizard" } }], buys: [], rerollAhead: null,
       audit: { findings: [{ text: "Charizard has one answer", level: "high" }] }, preview: null, ahead: null },
     biome: { kind: "biome", wave: 30, options: [{ label: "Swamp", score: 85, verdict: "pick", reasons: [{ text: "2 mons hit SE" }] }] },
@@ -119,7 +119,7 @@ const verdictOf = m => cardSummary(m).verdict;
   assert.deepEqual(cardEvent(rewards), { kind: "reward", key: "15|Leftovers,Ether", wave: 15, verdict: "take Leftovers → Charizard" });
   assert.equal(cardEvent({ ...rewards, free: [{ name: "Ether" }] }).key, "15|Ether");
   // Learn: wave, pokémon and the move on offer, with the learn call.
-  const learn = { kind: "learn", wave: 14, name: "Charmeleon", move: { name: "Flamethrower" }, verdict: ["Learn → forget Ember", "#6d6"], forget: 1, team: { onlyType: "Dark" } };
+  const learn = { kind: "learn", wave: 14, name: "Charmeleon", move: { name: "Flamethrower" }, verdict: "Learn → forget Ember", forget: 1, team: { onlyType: "Dark" } };
   assert.deepEqual(cardEvent(learn), { kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "Learn → forget Ember" });
   // Biome: the wave, and the option the card picks — not the first one it lists.
   const biome = { kind: "biome", wave: 30, options: [{ label: "Construction Site", score: 55, verdict: "keep", reasons: [] }, { label: "Swamp", score: 85, verdict: "pick", reasons: [{ text: "2 mons hit SE" }] }] };
