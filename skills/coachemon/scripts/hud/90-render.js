@@ -1,6 +1,6 @@
-// The panel itself: its element, the sprites and text helpers every card is drawn from, and whether the user has it
-// closed. It draws no card and decides nothing - 60-card works out what is on screen, the renderers above turn one
-// card into groups, and 98-tick puts the two together.
+// The panel itself: its element, the sprites and text helpers every card is drawn from, and what it remembers of the
+// view the player left it in. It draws no card and decides nothing - 60-card works out what is on screen, the
+// renderers above turn one card into groups, and 98-tick puts the two together.
 // State another file needs is read and written through functions, never exported as a binding.
 let game = null;
 const sprites = new Map();
@@ -136,18 +136,6 @@ export const hpColor = hp => (hp > 50 ? "#6d6" : hp > 20 ? "#ec4" : "#e55");
 export const itemImg = (icon, name) => img("items", icon, name, ICON.ref, null);
 export const sep = { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" };
 
-// The panel has one fidelity, so there are two states: the panel, and the glyph a dismissal leaves behind (#349 §2).
-// Nothing switches between them but the user — no card collapses itself, and no section opens itself. Both states
-// are the shell's: a renderer returns the card's groups and never asks which one is up, which is why the card's text
-// no longer has to force a view on a draw to read it.
-// The stored value is still the old three-valued one, and nothing migrates it: anything that isn't "closed" reads as
-// the panel, so a stored middle view draws as the panel. Closing or reopening writes the key as it always did, so
-// the middle value survives only until the user next touches the control; #349 §15 moves it to a key of its own.
-const VIEW_KEY = "coach-hud-view";
-let isClosed = false;
-try { isClosed = localStorage.getItem(VIEW_KEY) === "closed"; } catch {}
-export const closed = () => isClosed;
-
 // ---- Groups (#349 §1)
 // A renderer's product is an ordered list of **group**s, not a list of nodes: `{ id, label, summary, rows }`. The
 // shell decides how to shell them, so separation between groups is the shell's business and no renderer draws a
@@ -243,18 +231,84 @@ const tab = (g, open) => {
   const n = h("span", { ...TAB, color: open ? SKIN.body : dim.color, fontWeight: open ? "bold" : "normal" }, g.label);
   // The one thing a tab does, and the only control the drawer has. It asks for a redraw through the same hook the
   // close control uses, so the pane changes under the click rather than on the next refresh.
-  n.addEventListener("click", e => { e.stopPropagation(); if (!open) { openId = g.id; redrawFn(); } });
+  n.addEventListener("click", e => { e.stopPropagation(); if (!open) { setOpen(g.id); redrawFn(); } });
   return n;
 };
 
-// Which group is open. **The panel never switches it by itself** (§2): the player picks the group, and what is on
-// screen is what they last asked for. Nothing is remembered across a reload yet — #358 gives this a storage key —
-// so the drawer opens on `act`.
-// A card with no such group falls back to `act`, and the fallback is **written back** rather than held as a detour:
-// it is a move, with no jump back when the group reappears (§3). Since the ids are semantic, a player sitting on
-// `foes` lands on `act` for a learn card, whose kept moves are `options`.
+// ---- What the panel remembers (#349 §3, #358)
+// **One key holds the view and the last group id**, replacing the key that held the view alone. The panel the player
+// left is the panel they come back to, so reloading to escape a stuck menu does not also reset the coach.
+//
+// The three states, and the third is a dismissal rather than a size (§2):
+//   `drawer` — the strip over the drawer, the default and what a first run opens on;
+//   `strip`  — the strip alone, so a whole run can be watched on one line;
+//   `closed` — the panel gone, a bare glyph left.
+// **The panel never switches between them by itself**: no card collapses itself and no group opens itself. Every one
+// of them is the shell's — a renderer returns the card's groups and never asks which one is up.
+//
+// **The dismissal is stored as a flag over the view rather than as a third value of it**, because reopening restores
+// the view it covered (§2): a player watching a run on one line, who dismisses the panel to see the field, comes
+// back to the one line and not to a drawer they shut. The value is one object all the same — it is the panel's whole
+// state, and a state it can only be in one of.
+const PANEL_KEY = "coach-hud-panel";
+const VIEWS = ["drawer", "strip"];
+// The key it replaces and the three values it held, each as the view and the dismissal it becomes. It is read once,
+// on the first load that finds the new key empty, and then written forward and dropped: two keys that can disagree
+// would be a state the panel has to arbitrate on every read. The old key held neither a group nor a view behind its
+// dismissal, so a migrated panel opens on `act`, and a migrated dismissal has the drawer behind it.
+const OLD_KEY = "coach-hud-view";
+const MIGRATE = { full: ["drawer", false], mini: ["strip", false], closed: ["drawer", true] };
+
+// **First run, with nothing stored, opens the drawer on `act`** (§2): a player who has never opened the panel
+// discovers what the coach does without hunting for it. So the defaults are the first-run state, and a stored value
+// only ever moves off them — a key holding something this build does not know is a key it ignores.
+let view = "drawer";
+let dismissed = false;
+// Which group is open, remembered **by identity** and not by position, which is what lets it survive the card
+// changing under it. A card with no such group falls back to `act`, and the fallback is **written back** rather than
+// held as a detour: it is a move, with no jump back when the group reappears (§3). Since the ids are semantic, a
+// player sitting on `foes` lands on `act` for a learn card, whose kept moves are `options`.
 let openId = "act";
+
+const save = () => {
+  try { localStorage.setItem(PANEL_KEY, JSON.stringify({ view, closed: dismissed, group: openId })); } catch {}
+};
+// Storage is the page's and can refuse or hold anything at all, so every field is checked against what this build
+// knows rather than trusted: a panel that cannot read its key draws the first-run state, which is the one state that
+// is always safe to draw.
+const load = () => {
+  let raw = null;
+  try { raw = localStorage.getItem(PANEL_KEY); } catch { return; }
+  if (raw != null) {
+    let saved = null;
+    try { saved = JSON.parse(raw); } catch {}
+    if (VIEWS.includes(saved?.view)) view = saved.view;
+    if (typeof saved?.closed === "boolean") dismissed = saved.closed;
+    if (GROUP_IDS.includes(saved?.group)) openId = saved.group;
+    return;
+  }
+  let old = null;
+  try { old = localStorage.getItem(OLD_KEY); } catch { return; }
+  [view, dismissed] = MIGRATE[old] ?? [view, dismissed];
+  save();
+  try { localStorage.removeItem(OLD_KEY); } catch {}
+};
+load();
+
+// **One state and not a pair of flags**: the shell reads the state it is in rather than two predicates that can be
+// asked an impossible question. Which of the three it is decides what the shell shells, and nothing else here. The
+// view behind a dismissal is the panel's own business, which is why only this file ever sees it.
+// **State and view are not the same word**: the view is one of `VIEWS`, and the state is that view or the `closed`
+// the dismissal covers it with. Only the state leaves this file, which is why the export is not named for the view.
+export const panelState = () => (dismissed ? "closed" : view);
 export const openGroup = () => openId;
+// Every move the player makes is written as it is made, so the panel survives a reload the player never planned —
+// which is the whole point of the key. **A state change redraws and a group move does not**: a state is only ever
+// changed by a control the player pressed, where a group also moves *during* a draw, when a card has no group of
+// the id the player was on — so the tab, which is the one control that moves a group, asks for the redraw itself.
+const setView = next => { if (next !== view) { view = next; save(); redrawFn(); } };
+const setDismissed = next => { if (next !== dismissed) { dismissed = next; save(); redrawFn(); } };
+const setOpen = id => { if (id !== openId) { openId = id; save(); } };
 
 // The drawer: the tab bar, then the open group's pane. Both are the shell's — a renderer returns groups and never
 // asks which one is up. **A card with one group draws a bar with one tab**, which is no branch here: the
@@ -268,7 +322,7 @@ export const drawer = groups => {
   const list = inOrder(groups);
   const open = list.find(g => g.id === openId) ?? list.find(g => g.id === "act") ?? list[0];
   if (!open) return [];
-  openId = open.id;
+  setOpen(open.id);
   return [h("div", BAR, ...list.map(g => tab(g, g === open))), h("div", PANE, ...pane(open))];
 };
 
@@ -325,38 +379,55 @@ export const disclaimer = () => inRows(h("div", { ...dim, marginTop: "4px" }, DI
 // for a redraw without this file knowing what a card is.
 let redrawFn = () => {};
 export const setRedraw = fn => { redrawFn = fn; };
-const setClosed = next => {
-  isClosed = next;
-  try { localStorage.setItem(VIEW_KEY, next ? "closed" : "full"); } catch {}
-  redrawFn();
-};
 
-// The dismissal: shut the panel, and the glyph that brings it back. One of the shell's two controls, the other being
-// the tab. **Controls are the shell's, never a row's** (§5) — a control inside a row is a control inside the card's
-// text, which is what the flattener used to have to drop by its mouse cursor. It sits in the panel's own corner
-// rather than on a line of its own, so it costs no height.
-export const closeButton = () => {
-  // No fill and no radius of its own: the panel's fill is the game's window interior and the panel invents no second
-  // one (§8, §9).
-  const n = h("span", { position: "absolute", top: "4px", right: "4px", cursor: "pointer", padding: "0 4px", fontWeight: "bold" }, "×");
-  n.title = "Close";
-  n.addEventListener("click", e => { e.stopPropagation(); setClosed(true); });
+// The panel's own two controls, in its corner: the **caret**, which shuts the drawer and keeps the strip, and the
+// **×**, which dismisses the panel altogether. With the tab they are the shell's three, and **controls are the
+// shell's, never a row's** (§5) — a control inside a row is a control inside the card's text, which is what the
+// flattener used to have to drop by its mouse cursor. They float in the corner rather than sitting on a line of
+// their own, so they cost no height.
+// They are chrome and not marks, which is the same carve-out the × has always had from the closed alphabet (§7).
+// The caret's two shapes are the control saying what the click does, not the panel saying anything about the card:
+// it is the one thing on the panel whose state is the player's own, and §10's inert gold is untouched by it.
+// No fill and no radius of their own: the panel's fill is the game's window interior and the panel invents no second
+// one (§8, §9).
+const CONTROLS = { position: "absolute", top: "4px", right: "4px", display: "flex", alignItems: "center", gap: rung(0.25) };
+const control = (mark, title, onClick) => {
+  const n = h("span", { cursor: "pointer", padding: "0 4px", fontWeight: "bold" }, mark);
+  n.title = title;
+  n.addEventListener("click", e => { e.stopPropagation(); onClick(); });
   return n;
 };
-// The control floats in the panel's corner rather than sitting on a line, so whatever the panel draws first has to
-// leave room for it — the caption otherwise runs under the ×. The shell applies this to its own first line, which
-// is now the strip's head: no renderer knows the control is there.
+export const controls = () => h("div", CONTROLS,
+  view === "drawer"
+    ? control("⌃", "Hide the drawer", () => setView("strip"))
+    : control("⌄", "Show the drawer", () => setView("drawer")),
+  control("×", "Close", () => setDismissed(true)));
+// The controls float in the panel's corner rather than sitting on a line, so whatever the panel draws first has to
+// leave room for them — the caption otherwise runs under the ×. The shell applies this to its own first line, which
+// is now the strip's head: no renderer knows the controls are there.
 const reserveForControl = node => {
-  // The control's own column, in rungs like everything else, so the room it is left grows with it.
-  if (node) node.style.paddingRight = rung(2.25);
+  // Their own column, in rungs like everything else, so the room they are left grows with them. Two marks wide now,
+  // which is why the strip's head is the shell's to pad and not a renderer's to guess at.
+  if (node) node.style.paddingRight = rung(4.25);
   return node;
 };
 // What a dismissed panel leaves behind, and the only way back. Named for what it is rather than for a tab, because
 // the drawer's tab bar owns that word.
-export const glyph = emoji => {
-  const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, emoji);
+// **Dismissed means silent** (§10): one fixed mark, the same on every wave, carrying no verdict colour and nothing
+// else the card knows. A glyph that changed with the kind would be the panel signalling from a state the player
+// entered to stop it saying anything, and a dismissed panel that reports the wave is not dismissed.
+// It is **from the settled alphabet** and not a mark of its own (§9): the vocabulary is closed, so the way back is
+// one of the emoji already in it rather than a twentieth. It is the battle's, which is the one the dismissed panel
+// already wore on most waves — and because it never changes, it says nothing about the card underneath it. It names
+// the panel no more than the panel names itself (§9).
+const GLYPH = "🎯";
+// **Reopening restores the drawer that was there** — the view the player was in and the group it was left on, both
+// of which the dismissal covered rather than replaced. So dismissing is not also a reset: a player watching a run on
+// one line comes back to the one line.
+export const glyph = () => {
+  const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, GLYPH);
   n.title = "Open coach";
-  n.addEventListener("click", e => { e.stopPropagation(); setClosed(false); });
+  n.addEventListener("click", e => { e.stopPropagation(); setDismissed(false); });
   return n;
 };
 
@@ -401,6 +472,8 @@ export const strip = (card, captionNode, groups) => {
   // `overflowWrap` is what keeps that true of a run with no space in it: an unbroken token would otherwise push past
   // the panel's own edge rather than clip, and the clause that must fit is the one it would push out.
   const call = (groups ?? []).find(g => g.id === "act")?.summary;
+  // The strip carries no control of its own: it is the one line the player always reads, and what shuts the drawer
+  // under it is the caret in the panel's corner, beside the ×.
   return h("div", {}, head, call
     ? h("div", { fontWeight: "bold", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: "2",
         overflow: "hidden", overflowWrap: "anywhere", minWidth: "0" }, call)

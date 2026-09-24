@@ -9,15 +9,28 @@ const cat = { P: 0, S: 1, X: 2 };
 const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p, category: cat[c], accuracy: a, moveTarget: 3, isChargingMove: () => false, attrs: [] });
 const pk = (name, types, atk, spa, moves) => ({ name, level: 30, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })) });
 
+// The panel's one storage key, and a dismissed panel as it is stored: the view, whether a dismissal covers it, and
+// the last group id, together. The dismissal is a flag over the view because reopening restores the view it covered.
+const PANEL_KEY = "coach-hud-panel";
+const SHUT = { [PANEL_KEY]: JSON.stringify({ view: "drawer", closed: true, group: "act" }) };
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-const mount = (scene, { expose = false, view = "full" } = {}) => {
+// The page's own storage, as a store that behaves: **what the panel remembers is the key it wrote** (#358), so a
+// golden about that has to be able to read back what one mount wrote and hand it to the next. Every mount starts
+// from its own store unless it is seeded with one, so no scenario here inherits a view another left behind.
+let store = new Map();
+const mount = (scene, { expose = false, stored = null } = {}) => {
   let el;
+  store = new Map(Object.entries(stored ?? {}));
   globalThis.window = globalThis; delete globalThis.__coachHud;
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener(ev, fn) { if (ev === "click") n.onclick = fn; }, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
-  globalThis.localStorage = { getItem: () => view, setItem() {} };
+  globalThis.localStorage = {
+    getItem: k => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: k => store.delete(k),
+  };
   eval(bundle("hud", { expose }));
   return el;
 };
@@ -153,7 +166,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   // Dismissed: a bare glyph from the settled alphabet, inside the same rule. It names the panel no more than the
   // panel names itself — that was the one place a name would have cost no layout pixels, and it is declined (§9) —
   // and it carries nothing live, because dismissed means silent (§10).
-  const shut = mount(scene, { view: "closed" });
+  const shut = mount(scene, { stored: SHUT });
   console.log(`== dismissed\n${lines(shut)}`);
   assert.equal(shut.style.border, "1px solid #f8b050");
   assert.deepEqual(motion(shut), [], "the dismissed glyph carries nothing live either");
@@ -315,7 +328,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   // The width cap that stood beside the old font-size knob is gone with it: nothing pins the panel to a pixel width.
   assert.equal(el.style.maxWidth, undefined, "no width cap of its own");
   // A dismissal is the one thing that shrinks the panel off the ladder, to whatever the glyph needs.
-  assert.equal(mount(scene, { view: "closed" }).style.width, "auto");
+  assert.equal(mount(scene, { stored: SHUT }).style.width, "auto");
 }
 
 // A refresh that threw: one line, inside the gold rule, with no strip, no tab bar, no drawer and no law frame (§11).
@@ -344,4 +357,135 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   el.kids = undefined;
   globalThis.__hud["98-tick"].tick();
   assert.ok(el.kids, "the same card is drawn again while a sprite is still missing");
+}
+
+// ---- What the panel remembers (#349 §2, §3, #358)
+// One key holds the view and the last group id, so the panel the player left is the panel they come back to: a
+// reload to escape a stuck menu does not also reset the coach. Every mount below is a reload — the module state
+// goes with it — so what survives one is exactly what the key carried.
+{
+  const battle = () => ({ phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes });
+  // A learn card, whose groups are `act` · `options` · `audit` · `notes`: the card a player sitting on `foes` has no
+  // group of, which is what the one-way fallback is for.
+  const learn = () => ({ currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] });
+  const flat = n => txt(n).replace(/\s+/g, " ").trim();
+  const remembers = () => JSON.parse(store.get(PANEL_KEY));
+  const open = () => globalThis.__hud["90-render"].openGroup();
+  // The panel is its controls, the strip, the bar, the pane and the footer — so a shut drawer is three children and
+  // a dismissal is one. What is drawn is how each state is told apart, rather than a getter nobody but a test calls.
+  const state = el => (el.kids.length === 1 ? "closed" : el.kids.length === 3 ? "strip" : "drawer");
+  const click = n => n.onclick({ stopPropagation() {} });
+  // The panel's two controls, in its corner: the caret that shuts the drawer, and the × that dismisses the panel.
+  const caret = el => el.kids[0].children[0];
+  const close = el => el.kids[0].children[1];
+  const tabs = el => el.kids[2].children;
+
+  // **First run, with nothing stored**: the drawer, open on `act`, so a player who has never opened the panel
+  // discovers what the coach does without hunting for it.
+  {
+    const el = mount(battle(), { expose: true });
+    console.log(`== remembers · first run\n${state(el)} · ${open()}`);
+    assert.equal(state(el), "drawer");
+    assert.equal(open(), "act");
+  }
+
+  // **The old key's three values migrate**, and the key itself is dropped: two keys that can disagree is a state
+  // the panel would have to arbitrate on every read. The old key held neither a group nor a view behind its
+  // dismissal, so a migrated panel opens on `act` and a migrated dismissal has the drawer behind it.
+  for (const [old, drawn, saved] of [
+    ["full", "drawer", { view: "drawer", closed: false, group: "act" }],
+    ["mini", "strip", { view: "strip", closed: false, group: "act" }],
+    ["closed", "closed", { view: "drawer", closed: true, group: "act" }],
+  ]) {
+    const el = mount(battle(), { stored: { "coach-hud-view": old } });
+    console.log(`== remembers · migrate ${old}\n${state(el)} · ${store.get(PANEL_KEY)}`);
+    assert.equal(state(el), drawn);
+    assert.deepEqual(remembers(), saved);
+    assert.equal(store.has("coach-hud-view"), false, "the old key is dropped, not kept in step");
+  }
+
+  // **The open group is remembered by id across a reload.** The player picks `foes` on one card; the next page load
+  // draws the same card on `foes`, because the key carried the id and not a position.
+  {
+    const el = mount(battle(), { expose: true });
+    click(tabs(el)[1]);
+    assert.deepEqual(remembers(), { view: "drawer", closed: false, group: "foes" });
+    const back = mount(battle(), { expose: true, stored: Object.fromEntries(store) });
+    console.log(`== remembers · reload on foes\ntabs ${tabs(back).map(flat).join(" | ")}\nopen ${open()}`);
+    assert.equal(open(), "foes");
+    assert.deepEqual(tabs(back).map(t => t.style.fontWeight), ["normal", "bold", "normal"]);
+
+    // **A card with no group of that id falls back to `act`, and stays there when the group returns**: the fallback
+    // is a move, not a detour, so the player is never bounced between tabs. Since the ids are semantic, a player
+    // sitting on `foes` lands on `act` for a learn card, whose kept moves are `options`.
+    const moved = mount(learn(), { expose: true, stored: Object.fromEntries(store) });
+    console.log(`== remembers · the fallback\ntabs ${tabs(moved).map(flat).join(" | ")}\nopen ${open()}`);
+    assert.equal(open(), "act");
+    assert.deepEqual(remembers(), { view: "drawer", closed: false, group: "act" }, "the move is written back, so it survives too");
+    const returned = mount(battle(), { expose: true, stored: Object.fromEntries(store) });
+    assert.equal(open(), "act", "and no jump back when the group returns");
+    assert.ok(tabs(returned).map(flat).includes("Foes"), "the tab is there to be picked again");
+  }
+
+  // **Shutting the drawer keeps the strip**, so a whole run can be watched on one line. The caret in the panel's
+  // corner is what shuts it, and the strip itself carries no control at all.
+  {
+    const el = mount(battle(), { expose: true });
+    click(tabs(el)[1]);
+    click(caret(el));
+    console.log(`== remembers · drawer shut\n${state(el)} · ${store.get(PANEL_KEY)}\n${lines(el)}`);
+    assert.equal(state(el), "strip");
+    assert.deepEqual(remembers(), { view: "strip", closed: false, group: "foes" }, "and the group it was on is still remembered");
+    assert.equal(el.kids[1].onclick, undefined, "the strip is not itself a control");
+    const shut = mount(battle(), { expose: true, stored: Object.fromEntries(store) });
+    assert.equal(state(shut), "strip", "a reload comes back to the strip the player left");
+    // The caret says what the click does: one shape shuts the drawer, the other shows it.
+    assert.deepEqual([flat(caret(el)), flat(caret(shut))].map(m => m.split(" ")[0]), ["⌄", "⌄"]);
+    click(caret(shut));
+    assert.equal(state(shut), "drawer");
+    assert.equal(open(), "foes", "on the group the drawer was left on");
+    assert.equal(flat(caret(shut)).split(" ")[0], "⌃", "and the caret now shuts what it opened");
+  }
+
+  // **Closing dismisses the panel to a bare glyph, and reopening restores the drawer that was there.** Dismissed
+  // means silent: the glyph is the same mark on every kind of wave and carries no verdict colour — it is only the
+  // way back, so a dismissal is not also a reset.
+  {
+    const el = mount(battle(), { expose: true });
+    click(tabs(el)[1]);
+    click(close(el));
+    console.log(`== remembers · dismissed\n${state(el)} · ${store.get(PANEL_KEY)}\n${lines(el)}`);
+    assert.equal(state(el), "closed");
+    assert.deepEqual(remembers(), { view: "drawer", closed: true, group: "foes" });
+    // The same glyph every wave: the kind is not on it, so nothing about it says what the card underneath says.
+    const other = mount(learn(), { stored: Object.fromEntries(store) });
+    assert.equal(lines(other), lines(el), "one mark from the settled alphabet, whatever kind of decision is up");
+    assert.equal(lines(el).replace(/\{.*\}/, "").trim().length, 2, "a bare glyph and nothing beside it");
+    click(el.kids[0]);
+    assert.equal(state(el), "drawer");
+    assert.equal(open(), "foes", "reopening restores the drawer that was there");
+  }
+
+  // **The dismissal covers the view rather than replacing it**: a player watching a run on one line, who dismisses
+  // the panel to see the whole field, comes back to the one line and not to a drawer they shut.
+  {
+    const el = mount(battle(), { expose: true });
+    click(caret(el));
+    click(close(el));
+    assert.deepEqual(remembers(), { view: "strip", closed: true, group: "act" });
+    const back = mount(battle(), { expose: true, stored: Object.fromEntries(store) });
+    assert.equal(state(back), "closed", "a reload while dismissed stays dismissed");
+    click(back.kids[0]);
+    console.log(`== remembers · reopened onto the strip\n${state(back)}`);
+    assert.equal(state(back), "strip");
+  }
+
+  // A key this build cannot read is a key it ignores: the panel draws the first-run state, which is the one state
+  // that is always safe to draw. Storage is the page's and can hold anything at all.
+  for (const raw of ["", "{", JSON.stringify({ view: "mini", closed: "yes", group: "elsewhere" })]) {
+    const el = mount(battle(), { expose: true, stored: { [PANEL_KEY]: raw } });
+    assert.equal(state(el), "drawer");
+    assert.equal(open(), "act");
+  }
 }

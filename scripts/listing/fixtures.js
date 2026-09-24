@@ -104,7 +104,8 @@
       Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } },
       Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } },
     };
-    // The panel is open unless the stored value says "closed"; a shot always wants it open.
-    try { localStorage.setItem("coach-hud-view", "full"); } catch {}
+    // A shot always wants the panel open on the drawer, so it mounts against the panel's own key rather than
+    // leaving the first-run default to say so (#358).
+    try { localStorage.setItem("coach-hud-panel", JSON.stringify({ view: "drawer", group: "act" })); } catch {}
   };
 })();

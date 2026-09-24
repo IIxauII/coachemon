@@ -9,6 +9,6 @@ export const wholeCard = el => {
   const { groupsOf, pane } = globalThis.__hud["90-render"];
   const groups = groupsOf(globalThis.__coachHud.last());
   // The panel is its control, the strip, the tab bar, the open pane and the footer, so the drawer is the two in the
-  // middle. Anything else — a dismissal, a failed refresh — is taken exactly as it was drawn.
+  // middle. Anything else — a shut drawer, a dismissal, a failed refresh — is taken exactly as it was drawn.
   return kids.length === 5 && groups ? [...kids.slice(0, 2), ...groups.flatMap(g => pane(g)), kids[4]] : kids;
 };
