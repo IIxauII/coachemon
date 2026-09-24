@@ -159,11 +159,13 @@ export const GROUP_IDS = ["act", "foes", "catch", "plan", "options", "audit", "r
 // The card's groups in that order, whatever order the renderer returned them in: **the tab bar and the plain text
 // walk the same list**, so a tab sits in the same place always and the text never depends on what is on screen.
 const inOrder = groups => GROUP_IDS.flatMap(id => (groups ?? []).filter(g => g.id === id));
-// `label` is the group's name on the tab; `summary` is what it concluded, and may be absent. `rows` are nodes: a row
-// is two inline columns, the gutter and the body, so it flattens to `mark body`.
+// `label` is the group's name on the tab, and is required for that reason: **a tab carries its group's name**, so a
+// group with no label would put an id in front of the player. `summary` is what it concluded, and may be absent.
+// `rows` are nodes: a row is two inline columns, the gutter and the body, so it flattens to `mark body`.
 export const group = (id, label, summary, rows) => {
   if (!GROUP_IDS.includes(id)) throw new Error(`unknown group ${id}`);
-  return { id, label: label ?? "", summary: summary || null, rows: (rows ?? []).filter(Boolean) };
+  if (!label) throw new Error(`group ${id} has no label`);
+  return { id, label, summary: summary || null, rows: (rows ?? []).filter(Boolean) };
 };
 // The same group, or nothing at all when it has neither summary nor rows: an empty tab is filler, and the options
 // themselves say it one glance lower (§6). The label-alone rule is for a group with rows and nothing to conclude,
@@ -173,13 +175,14 @@ export const some = (id, label, summary, rows) => {
   return g.summary || g.rows.length ? g : null;
 };
 
-// What heads a group's pane, and its block in the plain text — one rule, so the two cannot disagree.
+// What heads a group's block **in the plain text**. The pane's own heading is a second rule below, because the two
+// readers differ: a pane has the group's name on the tab above it and text has no tabs at all.
 // `act` is headed by its summary alone: the strip above it is its label (§6), which is also what makes the first
 // line of the card's text the call and not a heading. A group with no summary is headed by its label alone — and an
 // `act` with none is therefore headed by nothing, since its label is the strip's.
 // The name and what it concluded are held apart by a colon, or the heading reads as one sentence: `Foes: we're weak
-// to Fire ×2`, where the pane has bold against dim to do the same work. A colon rather than the ` — ` the repo
-// usually spends on claim→detail, because the summaries already spend one inside themselves.
+// to Fire ×2`. A colon rather than the ` — ` the repo usually spends on claim→detail, because the summaries already
+// spend one inside themselves.
 const headingText = g => (g.id === "act" ? g.summary
   : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
 // **Other group headings are one line in the pane, then an ellipsis** — about 55 characters at reference width.
@@ -189,8 +192,8 @@ const headingText = g => (g.id === "act" ? g.summary
 const ONE_LINE = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 // **The open group's `summary` heads its pane, or its `label` alone where the summary is absent** (§2). The name is
 // on the tab directly above it, so a pane that carried the label too would spend its first line telling the player
-// what they just clicked. This is where the drawn heading and the plain text's part company: the text has no tabs,
-// so its heading keeps the label, which is what lets a reader tell `foes` from `audit` from `road` (§5).
+// what they just clicked. This is where the pane's heading and the text's part company: the text has no tabs, so it
+// keeps the label, which is what lets a reader tell `foes` from `audit` from `road` (§5).
 const paneHeading = g => {
   // `act` is not headed in the pane at all: **the act group's pane does not repeat the call**, because the strip
   // directly above it is its heading (§6). The heading is still `act`'s in the plain *text*, which has no strip —
@@ -227,7 +230,7 @@ export const pane = g => [paneHeading(g), ...g.rows.map(inRows)].filter(Boolean)
 const BAR = { display: "flex", flexWrap: "nowrap", gap: rung(1), overflow: "hidden", margin: "3px 0", minWidth: "0" };
 const TAB = { flex: "0 1 auto", minWidth: "0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer" };
 const tab = (g, open) => {
-  const n = h("span", { ...TAB, color: open ? SKIN.body : dim.color, fontWeight: open ? "bold" : "normal" }, g.label || g.id);
+  const n = h("span", { ...TAB, color: open ? SKIN.body : dim.color, fontWeight: open ? "bold" : "normal" }, g.label);
   // The one thing a tab does, and the only control the drawer has. It asks for a redraw through the same hook the
   // close control uses, so the pane changes under the click rather than on the next refresh.
   n.addEventListener("click", e => { e.stopPropagation(); if (!open) { openId = g.id; redrawFn(); } });
@@ -271,14 +274,14 @@ export const setDraw = fn => { drawFn = fn; };
 // pane a click happens to have open.
 export const groupsOf = card => (card ? drawFn(card) : null);
 
+
 // The group list as plain data: the same groups in the fixed order, with their rows flattened to one string each.
 // This is the seam the content half of the card is tested at, and what #361 puts on the wire.
 export const groupsText = groups => inOrder(groups)
   .map(g => ({ id: g.id, label: g.label, summary: g.summary, rows: g.rows.map(rowText).map(clean).filter(Boolean) }));
 
 export const cardText = card => {
-  if (!card) return null;
-  const groups = drawFn(card);
+  const groups = groupsOf(card);
   if (!groups?.length) return null;
   const text = groupsText(groups)
     .map(g => [headingText(g), ...g.rows].filter(Boolean).join("\n")).filter(Boolean).join("\n");

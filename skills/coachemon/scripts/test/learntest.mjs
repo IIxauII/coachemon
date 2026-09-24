@@ -3,6 +3,7 @@
 // the team, and the learn / forget / skip verdict. Prints the rendered card, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
+import { wholeCard } from "./panel.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
 // An attr: "Name" or ["Name", { fields }] — the game's attr instances, identified by constructor name. The HUD
@@ -52,14 +53,10 @@ const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) 
   const model = learnModel({ ...learnState(scene), roster });
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");
   const txt = n => typeof n === "string" ? n : n.children.map(txt).join(" ");
-  // The card as the shell draws it. What leads it is the **strip**: the card's identity line as the caption, and
-  // beside it the call the card came to (#356). Then every group's **pane** and the footer — the drawer itself shows
-  // one group at a time and the tab bar decides which (#357), so this walks the card's own groups rather than
-  // reading back what one click happens to have open. The panel's close control and the bar are not in it: this is
-  // a test about what the card says.
-  const { pane } = globalThis.__hud["90-render"];
-  const [, strip, , , footer] = el.kids;
-  const rest = [strip, ...globalThis.__hud["96-render-learn"].drawLearn(globalThis.__coachHud.last()).flatMap(pane), footer];
+  // The card as the shell draws it, less the panel's own close control — dropped by name, so a shell that reorders
+  // its chrome doesn't silently eat a row. What leads it is the **strip**: the card's identity line as the caption,
+  // and beside it the call the card came to (#356).
+  const rest = wholeCard(el).filter(k => k.title !== "Close");
   return { model, text: rest.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
 };
 const show = (label, r) => console.log(`== ${label}\n${r.text}`);
