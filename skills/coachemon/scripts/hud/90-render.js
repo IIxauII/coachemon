@@ -285,13 +285,14 @@ const load = () => {
 };
 load();
 
-export const closed = () => view === "closed";
-// Whether the drawer is showing, which is the one thing the shell needs to know to shell the panel.
-export const drawerOpen = () => view === "drawer";
+// **One state and not a pair of flags**: the shell reads the view it is in rather than two predicates that can be
+// asked an impossible question. Which of the three it is decides what the shell shells, and nothing else here.
+export const panelView = () => view;
 export const openGroup = () => openId;
 // Every move the player makes is written as it is made, so the panel survives a reload the player never planned —
-// which is the whole point of the key. The redraw is here rather than at each control, because every one of these
-// changes what is on screen.
+// which is the whole point of the key. **A view change redraws and a group move does not**: a view is only ever
+// changed by a control the player pressed, where a group also moves *during* a draw, when a card has no group of
+// the id the player was on — so the tab, which is the one control that moves a group, asks for the redraw itself.
 const setView = next => { if (next !== view) { view = next; save(); redrawFn(); } };
 const setOpen = id => { if (id !== openId) { openId = id; save(); } };
 
@@ -389,10 +390,12 @@ const reserveForControl = node => {
 // the drawer's tab bar owns that word.
 // **Dismissed means silent** (§10): one fixed mark, the same on every wave, carrying no verdict colour and nothing
 // else the card knows. A glyph that changed with the kind would be the panel signalling from a state the player
-// entered to stop it saying anything, and a dismissed panel that reports the wave is not dismissed. It is chrome and
-// not a row's mark, so it stands outside §7's closed alphabet, and it names the panel no more than the panel names
-// itself (§9).
-const GLYPH = "🧭";
+// entered to stop it saying anything, and a dismissed panel that reports the wave is not dismissed.
+// It is **from the settled alphabet** and not a mark of its own (§9): the vocabulary is closed, so the way back is
+// one of the emoji already in it rather than a twentieth. It is the battle's, which is the one the dismissed panel
+// already wore on most waves — and because it never changes, it says nothing about the card underneath it. It names
+// the panel no more than the panel names itself (§9).
+const GLYPH = "🎯";
 // **Reopening restores the drawer that was there** — the group the player left it on, which is the thing a dismissal
 // must not reset. It reopens onto the drawer rather than the strip because the key holds one view and the dismissal
 // is what that view now says: what survives a dismissal is the group, not a second view behind it.
@@ -454,7 +457,7 @@ export const strip = (card, captionNode, groups) => {
         overflow: "hidden", overflowWrap: "anywhere", minWidth: "0" }, call)
     : null);
   n.title = "Show or hide the drawer";
-  n.addEventListener("click", e => { e.stopPropagation(); setView(drawerOpen() ? "strip" : "drawer"); });
+  n.addEventListener("click", e => { e.stopPropagation(); setView(view === "drawer" ? "strip" : "drawer"); });
   return n;
 };
 

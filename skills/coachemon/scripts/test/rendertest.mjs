@@ -446,7 +446,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     assert.deepEqual(remembers(), { view: "closed", group: "foes" });
     // The same glyph every wave: the kind is not on it, so nothing about it says what the card underneath says.
     const other = mount(learn(), { stored: Object.fromEntries(store) });
-    assert.equal(lines(other), lines(el), "one mark, whatever kind of decision is up");
+    assert.equal(lines(other), lines(el), "one mark from the settled alphabet, whatever kind of decision is up");
     assert.equal(lines(el).replace(/\{.*\}/, "").trim().length, 2, "a bare glyph and nothing beside it");
     click(el.kids[0]);
     assert.equal(state(el), "drawer");

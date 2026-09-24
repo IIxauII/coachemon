@@ -33,7 +33,7 @@ panel boxShadow: 1px 1px 0 #181818
 chrome font: calc(2 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px))/1.25 emerald, ui-monospace, Menlo, monospace
 rows font: clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)/1.5 pkmnems, ui-monospace, Menlo, monospace
 == dismissed
-🧭 {Open coach}
+🎯 {Open coach}
 == strip
 head trainer 🎯 W15 · Youngster Charizard
 call Charizard Flamethrower → Paras · 1 hit
@@ -90,4 +90,4 @@ trainer 🎯 W15 · Youngster Charizard Charizard Flamethrower → Paras · 1 hi
 Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
 == remembers · dismissed
 closed · {"view":"closed","group":"foes"}
-🧭 {Open coach}
+🎯 {Open coach}
