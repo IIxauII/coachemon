@@ -34,7 +34,7 @@ export async function startConsent(d: ConsentDeps, grant: () => void): Promise<v
   // Anything that is not Firefox running the AMO build — Orion — counts as consented (§8.4).
   if (name !== "Firefox") return grant();
 
-  // The click is the consent experience, and the action's title is what states what it allows (§5.3).
+  // The click is the consent experience; the action's title is what states what it allows (§8.4, §5.3's `default_title`).
   d.onClick(() => void d.permissions.request(DATA_COLLECTION).then(ok => ok && grant()));
   if (await d.permissions.contains(DATA_COLLECTION)) grant();
 }

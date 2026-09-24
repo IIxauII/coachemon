@@ -92,11 +92,9 @@ function perTarget(target: Target): Manifest {
       // Drops MV3's default `upgrade-insecure-requests`, which turns `ws://127.0.0.1` into a failing TLS handshake.
       content_security_policy: { extension_pages: "script-src 'self'" },
       browser_specific_settings: {
-        // 142, not the 128 that `world: "MAIN"` alone would need: `data_collection_permissions` is mandatory on AMO,
-        // and Firefox for Android only understood it from 142. No `gecko_android` key — omitting it is what keeps the
-        // add-on desktop-only, and the linter then checks Android against this floor, which is why 128 warned (#380).
-        // Declaring `gecko_android` would clear the warning too, by offering Coachemon on Android, where nothing can
-        // reach the hub on `127.0.0.1`.
+        // 142, not the 128 `world: "MAIN"` alone would need: `data_collection_permissions` reached Firefox for
+        // Android only at 142, and with no `gecko_android` key the linter checks Android against this floor (§5.3).
+        // That key stays absent on purpose — omitting it is what keeps the add-on desktop-only (#379, #380).
         gecko: {
           id: GECKO_ID,
           strict_min_version: "142.0",
