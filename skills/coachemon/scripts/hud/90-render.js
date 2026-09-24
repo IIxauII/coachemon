@@ -73,10 +73,14 @@ export const PANEL_W = `clamp(${0.75 * REF_W}px, calc(${SHARE} * ${GAME_W}), ${1
 // The inset from the viewport corner, and the height the panel may not exceed. The inset is the one length here that
 // stays off the ladder: it is a gap from the viewport's edge rather than a share of the game, and 8px off a
 // letterboxed corner covers no game pixel at any window shape.
-// The game's message box owns the bottom 27%, so its top edge sits at `0.73 ÷ (16/9) = 0.4106 × game-w`; the budget
-// is 0.40 of the game width, less the inset, which is what keeps the panel clear of the message box and the command
-// menu at every window shape. It is **the drawer's pane** that carries it (§4): the strip and the tab bar are always
-// on screen and are never what a card makes tall, so the thing that has to stop growing is the pane.
+// The game's message box owns the bottom 27%, so its top edge sits at `0.73 ÷ (16/9) = 0.4106 × game-w`, and the
+// budget is 0.40 of the game width, less the inset. **It is the drawer's pane that carries it** (§4), which is where
+// §4 puts it: the strip and the bar are always on screen and are never what a card makes tall, so the thing that has
+// to stop growing is the pane.
+// So the *panel* may stand taller than the budget by the strip, the bar, the footer and the padding — it is the pane
+// that is bounded, not the object. Named here rather than discovered: against everything the model draws today the
+// threshold never fires at all (the tallest pane is about 187px against a 713px budget at a 1920 game), so the
+// arithmetic only matters for content that does not exist yet, and the guard it needs then is the pane's.
 const INSET = "8px";
 const MAX_H = `calc(0.40 * ${GAME_W} - ${INSET})`;
 
@@ -194,6 +198,10 @@ const ONE_LINE = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "elli
 // on the tab directly above it, so a pane that carried the label too would spend its first line telling the player
 // what they just clicked. This is where the pane's heading and the text's part company: the text has no tabs, so it
 // keeps the label, which is what lets a reader tell `foes` from `audit` from `road` (§5).
+// It is drawn in chrome at full strength and **not bold**, which is the whole distance between it and the strip's
+// call: the call is the one line the player always needs (§6) and carries the weight, the heading is the answer the
+// pane's own rows support (story 6) and carries none. It is not dimmed — the conclusion would then be the quietest
+// thing in a pane whose rows it is supposed to lead.
 const paneHeading = g => {
   // `act` is not headed in the pane at all: **the act group's pane does not repeat the call**, because the strip
   // directly above it is its heading (§6). The heading is still `act`'s in the plain *text*, which has no strip —
@@ -227,6 +235,8 @@ export const pane = g => [paneHeading(g), ...g.rows.map(inRows)].filter(Boolean)
 // *new* mark would light every tab every wave and mean nothing, and a mark for a finding new *within* a card would
 // need an event the model does not define. Which tab is open is told by weight and ink — never by gold, which is the
 // authorship rule's and is inert.
+// The gap between tabs is a rung, like every other length the ladder scales; the bar's own margin is the 3px the
+// shell already spends on the rule between blocks, because it is that same gap and not a share of the game.
 const BAR = { display: "flex", flexWrap: "nowrap", gap: rung(1), overflow: "hidden", margin: "3px 0", minWidth: "0" };
 const TAB = { flex: "0 1 auto", minWidth: "0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer" };
 const tab = (g, open) => {
