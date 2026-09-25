@@ -58,7 +58,7 @@ const stream = () => {
   }
   if (failed) return;
   const ev = eventNow();
-  // Only the five streamed kinds, and only a card the subscriber can act on: the relay drops anything else anyway.
+  // Only the streamed kinds, and only a card the subscriber can act on: the relay drops anything else anyway.
   // A card that cannot be streamed leaves the last signature standing, so coming back to it is not a second event.
   if (!ev || EVENT_KINDS.indexOf(ev.kind) < 0 || typeof ev.wave !== "number" || typeof ev.key !== "string" || typeof ev.verdict !== "string") return;
   // The kind rides in the signature because two kinds share a key on one wave: a biome choice and its battle are both
