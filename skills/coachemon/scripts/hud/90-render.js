@@ -43,16 +43,21 @@ const SKIN = { fill: "#362d3e", body: "#f8f8f8", rule: "#f8b050", shadow: "#1818
 const GAME_W = "min(100vw, 177.78vh)";
 // `round(game-w / 240, 8px)` is the same number as `8 × round(game-w / 1920)`, which is what CSS can say without
 // dividing a length by a length.
-const ROWS = `clamp(8px, round(${GAME_W} / 240, 8px), 24px)`;
-const CHROME = `calc(2 * ${ROWS})`;
+const ROWS = `clamp(10px, round(${GAME_W} / 240, 8px), 24px)`;
+// `round(…, 1px)` here and in `rung`: both faces and every sprite are pixel designs, and a fractional size softens
+// them — 1.6× the upper rungs is 25.6px and 38.4px, and `mark` at 1.35 rungs is 13.5px.
+const CHROME = `round(1.6 * ${ROWS}, 1px)`;
 // n rungs of that ladder, as a CSS length.
-export const rung = n => `calc(${n} * ${ROWS})`;
+export const rung = n => `round(calc(${n} * ${ROWS}), 1px)`;
 
 // `REF_W` is derived from `SHARE`, so the clamp multipliers and `SHARE` move together: raising the share alone drags
 // the width floor up with it.
-const SHARE = 0.156;
+const SHARE = 0.234;
 const REF_W = SHARE * 1920;
-export const PANEL_W = `clamp(${0.75 * REF_W}px, calc(${SHARE} * ${GAME_W}), ${1.5 * REF_W}px)`;
+// The two bounds are rounded because the products are binary floats: `0.5 * 0.234 * 1920` is `224.64000000000001`,
+// and the whole of it would ship into the style attribute.
+const px = n => `${Math.round(n * 100) / 100}px`;
+export const PANEL_W = `clamp(${px(0.5 * REF_W)}, calc(${SHARE} * ${GAME_W}), ${px(1.5 * REF_W)})`;
 // The game's message box owns the bottom 27% of the game, so its top edge is at `0.73 ÷ (16/9) = 0.4106 × game-w`,
 // and the budget is 0.40 of that width less the inset. It is the drawer's pane that carries the budget, not the
 // panel, which may stand taller by the strip, the bar and the padding.
@@ -73,7 +78,7 @@ export const h = (tag, style, ...kids) => {
 };
 // Sprite heights in rungs, named for the job a sprite does on a row: the foe card's portrait, the mon a row is about,
 // a mon it merely refers to, and the small marks — type, category, status, ball.
-export const ICON = { big: 3.5, mon: 2.5, ref: 2.25, mark: 1.5 };
+export const ICON = { big: 3.1, mon: 2.2, ref: 2.0, mark: 1.35 };
 export const img = (key, frame, title, rungs, fallback = title) => {
   const url = sprite(key, frame);
   if (!url) {

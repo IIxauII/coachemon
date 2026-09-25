@@ -321,9 +321,10 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   // because "the two rules never touch" is an invariant a zero would break silently.
   const [, pane] = drawer([{ id: "act", label: "Now", summary: null, rows: [] }]);
   console.log(`frame inset ${el.style.padding} · pane padding ${pane.style.padding}`);
-  const RUNG = "clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)";
-  assert.equal(el.style.padding, `calc(0.75 * ${RUNG}) ${RUNG}`, "one row's padding stands between the gold rule and the law frame");
-  assert.equal(pane.style.padding, `calc(0.5 * ${RUNG}) calc(0.75 * ${RUNG})`, "and the frame keeps the rows off itself");
+  const RUNG = "clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)";
+  const RUNGS = n => `round(calc(${n} * ${RUNG}), 1px)`;
+  assert.equal(el.style.padding, `${RUNGS(0.75)} ${RUNG}`, "one row's padding stands between the gold rule and the law frame");
+  assert.equal(pane.style.padding, `${RUNGS(0.5)} ${RUNGS(0.75)}`, "and the frame keeps the rows off itself");
   // **The three gutter inks**, settled: green for good news, red for bad, grey for neither. An emoji forfeits the
   // ink and keeps its own colour, a blank gutter takes none, and **immune** is `▼`'s glyph in the neutral ink.
   assert.deepEqual(GUTTER_INK, { good: "#78c850", bad: "#e13d3d", flat: "#a0a0a0" });

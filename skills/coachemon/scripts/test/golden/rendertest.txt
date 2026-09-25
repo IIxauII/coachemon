@@ -26,14 +26,14 @@ panel background: #362d3e
 panel color: #f8f8f8
 panel border: 1px solid #f8b050
 panel boxShadow: 1px 1px 0 #181818
-chrome font: calc(2 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px))/1.25 emerald, ui-monospace, Menlo, monospace
-rows font: clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)/1.5 pkmnems, ui-monospace, Menlo, monospace
+chrome font: round(1.6 * clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px), 1px)/1.25 emerald, ui-monospace, Menlo, monospace
+rows font: clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)/1.5 pkmnems, ui-monospace, Menlo, monospace
 == dismissed
 🎯 {Open coach}
 == strip
 head trainer 🎯 W15 · Youngster Charizard
 call Charizard Flamethrower → Paras · 1 hit
-dot #f8b050 calc(1 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)) 50%
+dot #f8b050 round(calc(1 * clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)), 1px) 50%
 == drawer
 tabs Now | Foes | Plan
 open act
@@ -54,7 +54,7 @@ call Learn → forget Ember
 == colour law
 law ours #40c8f8 | theirs #f88880 | later #e331c5 | none #a0a0a0
 frames act 1px solid #40c8f8 | foes 1px solid #f75231 | catch 1px solid #40c8f8 | plan 1px solid #e331c5 | options 1px solid #40c8f8 | audit 1px solid #e331c5 | road 1px solid #e331c5 | notes 1px solid #a0a0a0
-frame inset calc(0.75 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)) clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px) · pane padding calc(0.5 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)) calc(0.75 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px))
+frame inset round(calc(0.75 * clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)), 1px) clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px) · pane padding round(calc(0.5 * clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)), 1px) round(calc(0.75 * clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)), 1px)
 gutter ⚔ #78c850 ➜ #78c850 ★ #78c850 ✓ #78c850 ▲ #78c850 | ↯ #e13d3d ✗ #e13d3d ✦ #e13d3d ⚠ #e13d3d ▼ #e13d3d | ⇄ #a0a0a0 ⤵ #a0a0a0 ≈ #a0a0a0 ↺ #a0a0a0 · #a0a0a0 ▼ #a0a0a0 | 💀 ·none· 👑 ·none· 🎲 ·none· 🔒 ·none· ·blank· ·none·
 effectiveness ×4 #4AA500 · ×¼ #FE8E00 · ×0 #929292 · count ×4 ·none·
 palette #181818 #362d3e #39ff7b #40c8f8 #4AA500 #6890f0 #7038f8 #705848 #705898 #78c850 #929292 #98d8d8 #FE8E00 #a040a0 #a0a0a0 #a890f0 #a8a878 #a8b820 #b8a038 #b8b8d0 #c03028 #e0c068 #e13d3d #e331c5 #e888c8 #f08030 #f3b200 #f75231 #f85888 #f88880 #f8b050 #f8d030 #f8f8f8 #fb3041 #ffffff
@@ -62,9 +62,9 @@ palette #181818 #362d3e #39ff7b #40c8f8 #4AA500 #6890f0 #7038f8 #705848 #705898 
 panel position: fixed
 panel top: 8px
 panel left: 8px
-panel width: clamp(224.64px, calc(0.156 * min(100vw, 177.78vh)), 449.28px)
+panel width: clamp(224.64px, calc(0.234 * min(100vw, 177.78vh)), 673.92px)
 panel boxSizing: border-box
-panel padding: calc(0.75 * clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)) clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)
+panel padding: round(calc(0.75 * clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)), 1px) clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)
 panel maxHeight: undefined
 panel overflowY: undefined
 == failed refresh
