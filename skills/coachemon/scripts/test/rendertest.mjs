@@ -1,7 +1,6 @@
 // The **drawn** panel: the skin it wears, the states it shows between decisions, and the watcher's summary of each
-// card — the learn-move card with its team line and only-type warning, the rewards card's TM recipient and boss-next
-// tag, and the fight plan the battle card always draws in full. The panel has one fidelity, so every card here is
-// drawn once. The content half of a card is pinned in grouptest, which draws nothing.
+// card. The panel has one fidelity, so every card here is drawn once. The content half of a card is pinned in
+// grouptest, which draws nothing.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -12,14 +11,13 @@ const cat = { P: 0, S: 1, X: 2 };
 const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p, category: cat[c], accuracy: a, moveTarget: 3, isChargingMove: () => false, attrs: [] });
 const pk = (name, types, atk, spa, moves) => ({ name, level: 30, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })) });
 
-// The panel's one storage key, and a dismissed panel as it is stored: the view, whether a dismissal covers it, and
-// the last group id, together. The dismissal is a flag over the view because reopening restores the view it covered.
+// The panel's one storage key, and a dismissed panel as it is stored.
 const PANEL_KEY = "coach-hud-panel";
 const SHUT = { [PANEL_KEY]: JSON.stringify({ view: "drawer", closed: true, group: "act" }) };
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-// The page's own storage, as a store that behaves: **what the panel remembers is the key it wrote** (#358), so a
-// golden about that has to be able to read back what one mount wrote and hand it to the next. Every mount starts
-// from its own store unless it is seeded with one, so no scenario here inherits a view another left behind.
+// The page's own storage, as a store that behaves: a golden about what the panel remembers has to read back what one
+// mount wrote and hand it to the next. Every mount starts from its own store unless it is seeded with one, so no
+// scenario here inherits a view another left behind.
 let store = new Map();
 const mount = (scene, { expose = false, stored = null } = {}) => {
   let el;
@@ -65,8 +63,8 @@ const trainer = { getName: () => "Youngster", config: { isBoss: false }, isDoubl
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene);
   console.log(`== plan\n${lines(el)}`);
-  // Nothing inside the pane opens anything: a group is a tab, and a tab is open or it is not — there is no in-pane
-  // expansion anywhere (§2). The controls the panel does draw are the shell's own: the close one, and the tabs.
+  // Nothing inside the pane opens anything: a group is a tab, and a tab is open or it is not. The controls the panel
+  // does draw are the shell's own: the close one, and the tabs.
   const control = n => (n == null || typeof n === "string" ? null : n.onclick ? n : (n.children ?? []).map(control).find(Boolean));
   assert.equal(control(el.kids[3]) ?? null, null, "the pane draws no control of its own");
 }
@@ -113,7 +111,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   console.log(`summary ${globalThis.__coachHud.summary().rewards}`);
 }
 
-// ---- The skin (#349 §8, §9), and what the panel shows between decisions (§11)
+// ---- The skin, and what the panel shows between decisions
 // The tokens are recorded rather than restated, so moving any of them is a golden diff and not a silent redesign.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
@@ -124,37 +122,32 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   // white; and the one treatment the game never draws, a 1px flat gold rule around the whole object.
   for (const k of ["background", "color", "border", "boxShadow"]) console.log(`panel ${k}: ${el.style[k]}`);
   console.log(`chrome font: ${el.style.fontSize}/${el.style.lineHeight} ${el.style.fontFamily}`);
-  // The two faces, split by the game's own density rule: the default face for chrome, the dense face at half the
-  // size for rows. The shell decides which register a node is in, so a row is where the dense face shows up —
-  // wherever the shell put it, which since #357 is inside the drawer's pane.
+  // The two faces. The shell decides which register a node is in, so a row is where the dense face shows up —
+  // wherever the shell put it, which is inside the drawer's pane.
   const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
   const rows = [...el.kids, ...el.kids.flatMap(under)].filter(n => n?.style?.fontFamily);
   const rowFonts = [...new Set(rows.map(n => `${n.style.fontSize}/${n.style.lineHeight} ${n.style.fontFamily}`))];
   console.log(`rows font: ${rowFonts.join(" | ")}`);
   assert.equal(rowFonts.length, 1, "one row register, not three");
-  // What a row emphasises it keeps: the register must not flatten a weight already on it. No card leads with a bold
-  // row any more — the header line that was one is the strip's caption now (#356) — so the emphasis the register has
-  // to survive is the one inside a row, and the rule itself is held to the three longhands. The `font` shorthand
+  // What a row emphasises it keeps: the register must not flatten a weight already on it. The `font` shorthand
   // resets every longhand it does not name, which is exactly how the weight would go.
   assert.ok(rows.flatMap(under).some(n => n?.style?.fontWeight === "bold"), "a row's own emphasis survives the register");
   assert.equal(bundle("hud").match(/\bfont:/g), null, "the panel sets the two faces through the longhands, never the font shorthand");
-  // **A register has one size**, which the shell sets on the row and nothing below the row overrides. This is the
-  // assertion that bites: a leftover literal inside a row is not merely a third rung, it renders *larger* than the
-  // row containing it, which the old base/small/tiny scale could never produce.
+  // **A register has one size**, which the shell sets on the row and nothing below the row overrides. A leftover
+  // literal inside a row is not merely a third rung: it renders *larger* than the row containing it.
   const sized = rows.flatMap(under).filter(n => n?.style?.fontSize);
   assert.deepEqual(sized.map(n => n.style.fontSize), [], "nothing inside a row sets a size of its own");
 
-  // §10: the panel never signals. No transition, no animation and no keyframe anywhere — asserted, which is how §10
-  // is enforced rather than merely written down. Reduced motion needs no handling because there is no motion.
+  // The panel never signals. No transition, no animation and no keyframe anywhere, asserted rather than merely
+  // written down: reduced motion needs no handling because there is no motion.
   const styles = n => (n == null || typeof n !== "object" ? [] : [n.style ?? {}, ...(n.children ?? []).flatMap(styles)]);
   const motion = p => [p.style, ...(p.kids ?? []).flatMap(styles)].flatMap(Object.keys).filter(k => /^(transition|animation)/i.test(k));
   assert.deepEqual(motion(el), [], "nothing drawn on the panel carries a transition or an animation");
   const src = bundle("hud");
   assert.ok(!src.includes("@keyframes"), "the panel declares no keyframes");
   // The words themselves can't be banned — the model's own prose talks about the game's turn animations — so the
-  // guard is on the forms a style is set by: a property or an assignment, in any branch, drawn by this file's
-  // fixtures or not. `cssText` and `setProperty` are banned outright, because either would let one in without the
-  // guard ever seeing the word.
+  // guard is on the forms a style is set by: a property or an assignment, in any branch. `cssText` and
+  // `setProperty` are banned outright, because either would let one in without the guard ever seeing the word.
   assert.equal(src.match(/\b(transition|animation)[A-Za-z]*\s*[:=]/gi), null, "no branch of the panel sets a transition or an animation");
   assert.equal(src.match(/\b(cssText|setProperty)\b/g), null, "the panel sets no style through cssText or setProperty, which would slip past the guard above");
   // The drawn tree above only covers the branches this file's fixtures reach, and a leftover size can sit on one
@@ -163,12 +156,10 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.deepEqual(src.match(/fontSize:/g), ["fontSize:", "fontSize:"],
     "the two registers — the panel's own chrome and the shell's row register — are the only sizes the panel sets");
 
-  // The panel carries no mark, wordmark or name of its own (§9).
+  // The panel carries no mark, wordmark or name of its own.
   assert.ok(!/coachemon|coach hud/i.test(lines(el)), lines(el));
 
-  // Dismissed: a bare glyph from the settled alphabet, inside the same rule. It names the panel no more than the
-  // panel names itself — that was the one place a name would have cost no layout pixels, and it is declined (§9) —
-  // and it carries nothing live, because dismissed means silent (§10).
+  // Dismissed: a bare glyph from the settled alphabet, inside the same rule, carrying nothing the card knows.
   const shut = mount(scene, { stored: SHUT });
   console.log(`== dismissed\n${lines(shut)}`);
   assert.equal(shut.style.border, "1px solid #f8b050");
@@ -176,10 +167,9 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.ok(!/coachemon|coach hud/i.test(lines(shut)), lines(shut));
 }
 
-// ---- The strip (#349 §2, §6, #356)
+// ---- The strip
 // The one line the player always needs, across its two lines: the verdict dot, the verdict word and the caption on
-// the first, the call on the second. It sits above everything else the panel shows, so the thing to do now is never
-// a click away — and the act pane below it does not repeat it.
+// the first, the call on the second. It sits above everything else the panel shows.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
@@ -206,29 +196,27 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     order: [{ icon: null, name: "Blastoise" }, { icon: null, name: "Venusaur" }] })),
     "🎯 W89 · Tester Blastoise › Venusaur");
   // The call is `act.summary` verbatim, so the strip, the verdict and the watch line are one string. It wraps to two
-  // lines and is then cut by the browser — nothing on the panel truncates a string, so the group's own summary and
-  // the card's text stay whole.
+  // lines and is then cut by the browser; nothing on the panel truncates a string.
   const act = drawBattle(globalThis.__coachHud.last()).find(g => g.id === "act");
   assert.equal(flat(call), act.summary);
   assert.equal(call.style.WebkitLineClamp, "2");
   assert.deepEqual([call.style.display, call.style.overflow], ["-webkit-box", "hidden"]);
   // **The leading clause must fit**; what follows the first ` · ` may clip, because it is reasoning and not the
   // call. How much of the reasoning survives is a measurement against real fonts at a real width, which stays out
-  // of CI (#349's testing decisions) — what is assertable here is the half that makes the budget mean anything: a
-  // long summary reaches the node whole, leading clause first, so the browser's clamp can only ever eat the tail.
-  // And `overflowWrap`, so an unbroken run clips with it instead of pushing past the panel's edge.
+  // of CI — what is assertable here is that a long summary reaches the node whole, leading clause first, so the
+  // browser's clamp can only ever eat the tail. And `overflowWrap`, so an unbroken run clips with it instead of
+  // pushing past the panel's edge.
   const long = { id: "act", summary: "Blastoise Wave Crash → Garchomp · 2 hits · Garchomp outspeeds and Earthquake takes 88% · switch costs the turn" };
   const longCall = strip({ verdict: "danger" }, captionBattle({ kind: "battle", title: "W89" }), [long]).children[1];
   assert.equal(flat(longCall), long.summary, "the panel hands the browser the whole string, never a cut one");
   assert.ok(flat(longCall).startsWith(long.summary.split(" · ")[0]), "the leading clause leads it");
   assert.equal(longCall.style.overflowWrap, "anywhere");
-  // The act pane does not repeat the call: the strip directly above it is its heading, so the drawer opens on the
-  // supporting lines.
+  // The act pane does not repeat the call: the strip directly above it is its heading.
   const [, paneBox] = el.kids.slice(2);
   assert.ok(!(paneBox.children ?? []).some(n => flat(n) === act.summary), "the act pane does not repeat the call");
 }
 
-// ---- The drawer (#349 §1, §2, §4, #357)
+// ---- The drawer
 // The tab bar under the strip and the pane under that: one group on screen at a time, the one the player picked.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
@@ -242,8 +230,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const [bar, paneBox] = el.kids.slice(2);
   const tabs = bar.children;
   console.log(`== drawer\ntabs ${tabs.map(flat).join(" | ")}\nopen ${openGroup()}\npane ${paneBox.children.map(flat).join(" / ")}`);
-  // The tokens are recorded rather than restated: which ink says a tab is open, and the pane's own budget, are both
-  // golden diffs if they move.
+  // The tokens are recorded rather than restated: the open tab's ink and the pane's own budget are golden diffs.
   console.log(`bar ${tabs.map(t => `${t.style.fontWeight} ${t.style.color}`).join(" | ")}`);
   console.log(`pane cap ${paneBox.style.maxHeight} ${paneBox.style.overflowY}`);
   // One tab per group the card has, labels only, in the fixed global order — `foes` in the same place whatever kind
@@ -264,8 +251,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.deepEqual([tabs[1].style.fontWeight, tabs[1].style.color], ["normal", "#a0a0a0"]);
   assert.ok(!tabs.some(t => t.style.color === "#f8b050"), "gold never says which tab is open");
   assert.deepEqual(tabs.map(t => flat(t).replace(/[A-Za-z]/g, "")), tabs.map(() => ""), "labels only: no mark, no count");
-  // The pane is what scrolls, past the budget the game's message box leaves — and the panel itself no longer does,
-  // so the strip and the bar are never what scrolls away.
+  // The pane is what scrolls, past the budget the game's message box leaves; the panel itself no longer does.
   assert.deepEqual([paneBox.style.maxHeight, paneBox.style.overflowY], ["calc(0.40 * min(100vw, 177.78vh) - 8px)", "auto"]);
   assert.deepEqual([el.style.maxHeight, el.style.overflowY], [undefined, undefined]);
   // A tab click opens that group's pane and nothing else: the panel never switches the open group by itself.
@@ -281,13 +267,13 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.deepEqual([pane2.children[0].style.whiteSpace, pane2.children[0].style.overflow, pane2.children[0].style.textOverflow],
     ["nowrap", "hidden", "ellipsis"]);
   // Where there is a summary it is the heading, and the label does not come with it: the tab directly above the pane
-  // is the name, so a pane that repeated it would spend its first line on what the player just clicked.
+  // is the name.
   const said = "\u{1f480} Charizard ← Butterfree Gust";
   const [, saidPane] = drawer([{ id: "act", label: "Now", summary: "switch", rows: [] }, { id: "foes", label: "Foes", summary: said, rows: [] }]);
   assert.equal(openGroup(), "foes", "and the group the player is on stays open across a new card that has it");
   assert.equal(flat(saidPane.children[0]), said);
   // A card the player's group is not on moves the drawer to `act` as it draws, and does not jump back when the
-  // group returns: the fallback is a move, not a detour (§3).
+  // group returns: the fallback is a move, not a detour.
   const one = [{ id: "act", label: "Now", summary: "no advice — the enemy AI call threw", rows: [] }];
   const [oneBar, onePane] = drawer(one);
   console.log(`== drawer · one group\ntabs ${oneBar.children.map(flat).join(" | ")}\nopen ${openGroup()}\npane ${onePane.children.map(flat).join(" / ")}`);
@@ -309,42 +295,37 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.ok(txt(call).startsWith("Learn → forget"), txt(call));
 }
 
-// ---- The colour law and the closed palette (#349 §8, #360)
-// **Colour answers direction, and nothing else.** The tokens are recorded rather than restated, so moving any of
-// them is a golden diff and not a silent redesign — and the two carriers the law lives in, the gutter's ink and the
-// open group's frame, are asserted outright, because they are what makes direction legible with no text read.
+// ---- The colour law and the closed palette
+// The tokens are recorded rather than restated, so moving any of them is a golden diff. The two carriers the law
+// lives in, the gutter's ink and the open group's frame, are asserted outright.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene, { expose: true });
   const { drawer, GROUP_IDS, GUTTER_INK, IMMUNE, LAW_INK, MARKS, line } = globalThis.__hud["90-render"];
   console.log("== colour law");
-  // **The law's four inks**, every one of them a colour the game already draws: its summary blue for what we do, its
-  // selected-setting salmon for what is done to us, its master-tier magenta for what is later, its locked-setting
-  // grey for neither. Which group wears which is the `frames` line below, read off what the panel drew rather than
-  // restated here — the mapping lives in one place, and a copy of it in this file would pin nothing.
+  // **The law's four inks**, every one of them a colour the game already draws. Which group wears which is the
+  // `frames` line below, read off what the panel drew rather than restated here: the mapping lives in one place, and
+  // a copy of it in this file would pin nothing.
   console.log(`law ${Object.entries(LAW_INK).map(([k, v]) => `${k} ${v}`).join(" | ")}`);
   assert.deepEqual(LAW_INK, { ours: "#40c8f8", theirs: "#f88880", later: "#e331c5", none: "#a0a0a0" });
   // **The open group's frame**, one per group id, in the fixed order the bar walks. A card with one group opens on
   // it whatever the panel remembers, so each id is asked by drawing a card that has only that group. `foes` is the
-  // one tab where something is coming at us, and its frame is the one that is not the law's ink as text: a frame has
-  // nothing but colour where text has words beside it, so `theirs` is held as one ink in two weights.
+  // one frame that is not the law's ink as text, because a frame has nothing but colour where text has words beside
+  // it.
   const frames = GROUP_IDS.map(id => drawer([{ id, label: id, summary: null, rows: [] }])[1].style.border);
   console.log(`frames ${GROUP_IDS.map((id, i) => `${id} ${frames[i]}`).join(" | ")}`);
   assert.deepEqual(frames, ["1px solid #40c8f8", "1px solid #f75231", "1px solid #40c8f8", "1px solid #e331c5",
     "1px solid #40c8f8", "1px solid #e331c5", "1px solid #e331c5", "1px solid #a0a0a0"]);
-  // **The law frame insets one row's padding within the gold authorship rule**, so gold reads as the object's edge
-  // and the law as a state inside it. Both gaps are rungs of the ladder and both are pinned to their value, because
-  // "the two rules never touch" is an invariant a zero would break silently: the panel's own padding is what stands
-  // between the gold rule and the frame, and the pane's own is what keeps the rows off the frame.
+  // **The law frame insets one row's padding within the gold authorship rule.** Both gaps are pinned to their value,
+  // because "the two rules never touch" is an invariant a zero would break silently.
   const [, pane] = drawer([{ id: "act", label: "Now", summary: null, rows: [] }]);
   console.log(`frame inset ${el.style.padding} · pane padding ${pane.style.padding}`);
   const RUNG = "clamp(8px, round(min(100vw, 177.78vh) / 240, 8px), 24px)";
   assert.equal(el.style.padding, `calc(0.75 * ${RUNG}) ${RUNG}`, "one row's padding stands between the gold rule and the law frame");
   assert.equal(pane.style.padding, `calc(0.5 * ${RUNG}) calc(0.75 * ${RUNG})`, "and the frame keeps the rows off itself");
   // **The three gutter inks**, settled: green for good news, red for bad, grey for neither. An emoji forfeits the
-  // ink and keeps its own colour, a blank gutter takes none, and **immune** is the `×0` case of `▼` — `▼`'s glyph
-  // in the neutral ink, which is the sixteenth mark.
+  // ink and keeps its own colour, a blank gutter takes none, and **immune** is `▼`'s glyph in the neutral ink.
   assert.deepEqual(GUTTER_INK, { good: "#78c850", bad: "#e13d3d", flat: "#a0a0a0" });
   const gutter = mark => { const g = line(mark).children[0]; return `${txt(g) || "·blank·"} ${g.style.color || "·none·"}`; };
   console.log(`gutter ${[..."⚔➜★✓▲", "|", ..."↯✗✦⚠▼", "|", ..."⇄⤵≈↺·", IMMUNE, "|", "💀", "👑", "🎲", "🔒", ""].map(m => (m === "|" ? "|" : gutter(m))).join(" ")}`);
@@ -355,19 +336,18 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   for (const m of ["💀", "👑", "🎲", "🔒"]) assert.equal(line(m).children[0].style.color, "", `${m} forfeits the ink`);
   assert.equal(line("").children[0].style.color, "", "a blank gutter makes no claim, so it takes no ink");
   // Every mark in the closed alphabet is accounted for above. A sixteenth shape added to `MARKS` and to neither the
-  // good nor the bad set would otherwise fall through to grey unnoticed — a new mark is a new claim about news, and
-  // it has to be told which.
+  // good nor the bad set would otherwise fall through to grey unnoticed.
   const asked = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·", "💀", "👑", "🎲", "🔒"];
   assert.deepEqual(MARKS.filter(m => !asked.includes(m)), [], "a mark the alphabet gained but the gutter was never told the news of");
-  // **Chrome gold never appears inside a row** (§8, §9): it is the tab labels, the open group's summary line and the
-  // strip's caption, and it is inert. The panel is walked whole rather than by fixture, because a row that reached
-  // for gold would be one renderer's line and not a shape this file draws.
+  // **Chrome gold never appears inside a row**: it is the tab labels, the open group's summary line and the strip's
+  // caption. The panel is walked whole rather than by fixture, because a row that reached for gold would be one
+  // renderer's line and not a shape this file draws.
   const under = n => (n == null || typeof n !== "object" ? [] : (n.children ?? []).flatMap(k => [k, ...under(k)]));
   const paneRows = (el.kids[3].children ?? []).flatMap(n => [n, ...under(n)]);
   assert.deepEqual(paneRows.filter(n => n?.style?.color === "#f8b050"), [], "gold never appears inside a row");
   // **The effectiveness colours are the caller's to ask for**, so a suffix that merely looks like a multiplier does
-  // not get one: `×4` on the foes-weak-to row counts four foes, and inking it super-effective green would be that
-  // row reading its own output back as a fact. `badge` colours a suffix only when it was told the suffix is one.
+  // not get one: `×4` on the foes-weak-to row counts four foes. `badge` colours a suffix only when it was told the
+  // suffix is one.
   const { badge } = globalThis.__hud["90-render"];
   const suffixInk = (...args) => badge(...args).children[1]?.style?.color ?? "";
   console.log(`effectiveness ×4 ${suffixInk("Fire", "×4", true)} · ×¼ ${suffixInk("Fire", "×¼", true)} · ×0 ${suffixInk("Fire", "×0", true)} · count ×4 ${suffixInk("Fire", "×4") || "·none·"}`);
@@ -375,15 +355,13 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     ["#4AA500", "#FE8E00", "#929292"], "the game's own effectiveness table, quoted");
   assert.equal(suffixInk("Fire", "×4"), "", "a count of four foes is not ×4 effective");
   assert.equal(suffixInk("Fire", "70%", true), "", "and a share the table has no opinion about takes no colour either");
-  // **A renderer never spells a colour.** The law is the shell's, handed down as `ink.ours` · `ink.theirs` ·
-  // `ink.later` · `dim`, and the gutter's ink is the mark's own — so a renderer that wrote a hex would have left the
-  // law. This is what says so for the branches no fixture here reaches: the whole palette lives in one file.
+  // **A renderer never spells a colour.** This is what says so for the branches no fixture here reaches: the whole
+  // palette lives in one file.
   const renderers = readdirSync(HUD).filter(f => /^9[0-9]-render/.test(f) && f !== "90-render.js");
   const spelt = renderers.filter(f => /"#[0-9a-fA-F]{3,6}"/.test(readFileSync(`${HUD}/${f}`, "utf8")));
   assert.deepEqual(spelt, [], "a renderer that spells a colour has left the law: the inks are the shell's to hand down");
-  // **The palette is closed**, and every seat in it is named: the skin, the law and its one frame split, the gutter,
-  // the verdict dot, the game's effectiveness table, the game's HP overlay, and the type atlas's text fallback.
-  // A hex that belongs to none of them is a colour the panel invented — which is the one thing §8 forbids outright.
+  // **The palette is closed**, and every seat in it is named. A hex that belongs to none of them is a colour the
+  // panel invented.
   const src = bundle("hud");
   const SEATS = {
     skin: ["#362d3e", "#f8f8f8", "#f8b050", "#181818"],
@@ -401,32 +379,29 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.deepEqual(inks.filter(c => !seated.has(c)), [], "the panel invents no colour: every hex in it has a seat");
 }
 
-// ---- The footprint and the type ladder (#349 §4, #355)
+// ---- The footprint and the type ladder
 // Every length on the panel is one knob's — the game's own drawn width, in pure CSS — so the panel covers the same
-// share of the field at every window shape and wears the type the game is wearing. The numbers are recorded rather
-// than restated: moving one is a golden diff. They are geometric facts about real fonts at real sizes, measured
-// against the game's own font files, and nothing re-derives them here.
+// share of the field at every window shape. The numbers are recorded rather than restated: moving one is a golden
+// diff.
 {
   const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   const el = mount(scene);
   console.log("== footprint");
-  // Position stays the viewport's top-left — off 16:9 that corner is the game's own letterbox bar — and the width is
-  // a fraction of the game clamped to 0.75×–1.5× of its 300px reference, with the box as the footprint. The height
-  // budget is not the panel's any more: it is the drawer's pane that stops growing and scrolls (#357).
+  // Position stays the viewport's top-left — off 16:9 that corner is the game's own letterbox bar — and the width
+  // is a clamped fraction of the game, with the box as the footprint. The height budget is the drawer's pane's.
   for (const k of ["position", "top", "left", "width", "boxSizing", "padding", "maxHeight", "overflowY"]) console.log(`panel ${k}: ${el.style[k]}`);
   // No canvas rect read and no resize observer: the footprint is pure CSS, which is what makes it survive a resize
   // with nothing listening.
   const src = bundle("hud");
   assert.equal(src.match(/getBoundingClientRect|ResizeObserver|addEventListener\("resize"/g), null,
     "the footprint reads no canvas rect and observes no resize");
-  // The width cap that stood beside the old font-size knob is gone with it: nothing pins the panel to a pixel width.
   assert.equal(el.style.maxWidth, undefined, "no width cap of its own");
   // A dismissal is the one thing that shrinks the panel off the ladder, to whatever the glyph needs.
   assert.equal(mount(scene, { stored: SHUT }).style.width, "auto");
 }
 
-// A refresh that threw: one line, inside the gold rule, with no strip, no tab bar, no drawer and no law frame (§11).
+// A refresh that threw: one line, inside the gold rule, with no strip, no tab bar, no drawer and no law frame.
 {
   const el = mount({ get ui() { throw new Error("the scene went away"); } });
   console.log(`== failed refresh\n${lines(el)}`);
@@ -435,7 +410,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.equal(el.kids, undefined, "nothing is shelled around the line");
 }
 
-// Nothing to coach — mid-reload or the title screen — hides the panel entirely, as today (§11).
+// Nothing to coach — mid-reload or the title screen — hides the panel entirely, as today.
 {
   const el = mount({ ui: null });
   assert.equal(el.style.display, "none");
@@ -443,7 +418,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 }
 
 // A sprite the atlas has not loaded falls back to the name it stands for, and the panel redraws on the next refresh
-// until the sprite lands — the draw signature is never banked while a sprite is still missing (§11).
+// until the sprite lands: the draw signature is never banked while a sprite is still missing.
 {
   const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
   const el = mount(scene, { expose: true });
@@ -454,10 +429,9 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.ok(el.kids, "the same card is drawn again while a sprite is still missing");
 }
 
-// ---- What the panel remembers (#349 §2, §3, #358)
-// One key holds the view and the last group id, so the panel the player left is the panel they come back to: a
-// reload to escape a stuck menu does not also reset the coach. Every mount below is a reload — the module state
-// goes with it — so what survives one is exactly what the key carried.
+// ---- What the panel remembers
+// One key holds the view and the last group id. Every mount below is a reload — the module state goes with it — so
+// what survives one is exactly what the key carried.
 {
   const battle = () => ({ phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes });
@@ -467,9 +441,8 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const flat = n => txt(n).replace(/\s+/g, " ").trim();
   const remembers = () => JSON.parse(store.get(PANEL_KEY));
   const open = () => globalThis.__hud["90-render"].openGroup();
-  // The panel is its controls, the strip, the bar and the pane — it carries no disclaimer of its own (#362) — so a
-  // shut drawer is two children and a dismissal is one. What is drawn is how each state is told apart, rather than a
-  // getter nobody but a test calls.
+  // The panel is its controls, the strip, the bar and the pane, so a shut drawer is two children and a dismissal is
+  // one. What is drawn is how each state is told apart, rather than a getter nobody but a test calls.
   const state = el => (el.kids.length === 1 ? "closed" : el.kids.length === 2 ? "strip" : "drawer");
   const click = n => n.onclick({ stopPropagation() {} });
   // The panel's two controls, in its corner: the caret that shuts the drawer, and the × that dismisses the panel.
@@ -477,8 +450,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const close = el => el.kids[0].children[1];
   const tabs = el => el.kids[2].children;
 
-  // **First run, with nothing stored**: the drawer, open on `act`, so a player who has never opened the panel
-  // discovers what the coach does without hunting for it.
+  // **First run, with nothing stored**: the drawer, open on `act`.
   {
     const el = mount(battle(), { expose: true });
     console.log(`== remembers · first run\n${state(el)} · ${open()}`);
@@ -501,8 +473,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     assert.equal(store.has("coach-hud-view"), false, "the old key is dropped, not kept in step");
   }
 
-  // **The open group is remembered by id across a reload.** The player picks `foes` on one card; the next page load
-  // draws the same card on `foes`, because the key carried the id and not a position.
+  // **The open group is remembered by id across a reload**, because the key carried the id and not a position.
   {
     const el = mount(battle(), { expose: true });
     click(tabs(el)[1]);
@@ -513,8 +484,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     assert.deepEqual(tabs(back).map(t => t.style.fontWeight), ["normal", "bold", "normal"]);
 
     // **A card with no group of that id falls back to `act`, and stays there when the group returns**: the fallback
-    // is a move, not a detour, so the player is never bounced between tabs. Since the ids are semantic, a player
-    // sitting on `foes` lands on `act` for a learn card, whose kept moves are `options`.
+    // is a move, not a detour, so the player is never bounced between tabs.
     const moved = mount(learn(), { expose: true, stored: Object.fromEntries(store) });
     console.log(`== remembers · the fallback\ntabs ${tabs(moved).map(flat).join(" | ")}\nopen ${open()}`);
     assert.equal(open(), "act");
@@ -524,8 +494,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     assert.ok(tabs(returned).map(flat).includes("Foes"), "the tab is there to be picked again");
   }
 
-  // **Shutting the drawer keeps the strip**, so a whole run can be watched on one line. The caret in the panel's
-  // corner is what shuts it, and the strip itself carries no control at all.
+  // **Shutting the drawer keeps the strip**, so a whole run can be watched on one line. The caret shuts it.
   {
     const el = mount(battle(), { expose: true });
     click(tabs(el)[1]);
@@ -545,8 +514,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   }
 
   // **Closing dismisses the panel to a bare glyph, and reopening restores the drawer that was there.** Dismissed
-  // means silent: the glyph is the same mark on every kind of wave and carries no verdict colour — it is only the
-  // way back, so a dismissal is not also a reset.
+  // means silent: the glyph is the same mark on every kind of wave and carries no verdict colour.
   {
     const el = mount(battle(), { expose: true });
     click(tabs(el)[1]);
@@ -577,8 +545,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     assert.equal(state(back), "strip");
   }
 
-  // A key this build cannot read is a key it ignores: the panel draws the first-run state, which is the one state
-  // that is always safe to draw. Storage is the page's and can hold anything at all.
+  // A key this build cannot read is a key it ignores: the panel draws the first-run state, the one always safe to draw.
   for (const raw of ["", "{", JSON.stringify({ view: "mini", closed: "yes", group: "elsewhere" })]) {
     const el = mount(battle(), { expose: true, stored: { [PANEL_KEY]: raw } });
     assert.equal(state(el), "drawer");
