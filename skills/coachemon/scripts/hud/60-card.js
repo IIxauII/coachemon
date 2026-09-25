@@ -253,6 +253,15 @@ const KINDS = {
   fusion: { event: null, key: wave, call: s => leading(s.fusion) },
 };
 
+// **The kinds that stream, derived from the table above and never spelled a second time** (§11.1): the name a kind
+// goes out under, for every kind that has one. Named for the card event rather than for the card, because it is not
+// the card kinds — `starters` and `fusion` are cards the panel draws and never streams. 99-start gates `stream()` on
+// it and the relay keeps its own copy (`extension/src/relay/channel.ts`), pinned to this one by `cardtest.mjs`: the
+// panel's `rewards` goes out as `reward`, and a one-character drift on that rename would drop every shop card off
+// the wire in silence — `stream()` would simply return. Deriving is what makes the rename safe, since the list moves
+// with it (#388).
+export const EVENT_KINDS = Object.values(KINDS).map(k => k.event).filter(Boolean);
+
 export const cardEvent = card => {
   if (!card) return null;
   const k = KINDS[card.kind];

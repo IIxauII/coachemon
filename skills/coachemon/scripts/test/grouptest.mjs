@@ -7,7 +7,7 @@
 // different diffs, and nothing below asserts a node.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { GROUP_IDS as RELAY_GROUP_IDS } from "../../../../extension/src/relay/channel.ts";
+import { GROUP_IDS as RELAY_GROUP_IDS, cardBody } from "../../../../extension/src/relay/channel.ts";
 
 // Enough page for the bundle to build its element and for a row to be a node; nothing here reads one.
 globalThis.window = globalThis;
@@ -26,6 +26,7 @@ const { drawStarters } = globalThis.__hud["96-render-starters"];
 const { drawFusion } = globalThis.__hud["96-render-fusion"];
 const { drawBiome } = globalThis.__hud["97-render-biome"];
 const { GROUP_IDS, MARKS, flatGroups, wireCard } = globalThis.__hud["90-render"];
+const { EVENT_KINDS, cardEvent } = globalThis.__hud["60-card"];
 
 // The relay keeps its own copy of the ids, because the panel is a source the extension bundles rather than imports
 // (`extension/src/relay/channel.ts`). This is what pins the copy to the original: retiring or merging a group
@@ -58,8 +59,21 @@ const glyphsIn = text => [...text].filter(ch => !/[\p{L}\p{N}\s]/u.test(ch) && !
 // is `show`'s below, so a card and its renderer travel together here the way they do there.
 const textOf = (card, draw = drawBattle) => wireCard(draw(card)).text;
 
+// A build id for the gate below. Any string does: the relay checks that the key is there, not what is in it.
+const BUILD = "0.0.0+cafef00dbeef";
+// What `99-start.js`'s `stream()` pushes: one of the streamed kinds, and a card that has concluded something — a
+// biome the tables have not loaded for has no call yet and so is no event yet. Restated here rather than imported,
+// the way `cardeventtest.mjs` restates the heading law: this is the second opinion, so loosening the rule there has
+// to be done here as well, deliberately.
+const streams = ev => EVENT_KINDS.includes(ev.kind)
+  && typeof ev.wave === "number" && typeof ev.key === "string" && typeof ev.verdict === "string";
+
 const show = (label, card, draw = drawBattle) => {
-  const groups = flatGroups(draw(card));
+  // One draw, both projections, the way a refresh takes them (#361 §5): the groups every assertion below reads, the
+  // text derived from them, and — for a kind that streams — the very detail 99-start would push.
+  const drawn = draw(card);
+  const groups = flatGroups(drawn);
+  const wire = wireCard(drawn);
   console.log(`== ${label}`);
   for (const g of groups) {
     console.log(`${g.id} | ${g.label || "—"} | ${g.summary ?? "—"}`);
@@ -83,7 +97,7 @@ const show = (label, card, draw = drawBattle) => {
   // `text` is derived from the group list rather than read back off the drawn card (§5), so it carries every group
   // in the same fixed order and nothing besides — and its first line is the call, which is the line the watch CLI
   // prints per event. What a heading reads is pinned against literals at each card below.
-  const lines = textOf(card, draw).split("\n");
+  const lines = wire.text.split("\n");
   assert.equal(lines[0], groups[0].summary, "the first line of the text is the act summary");
   const rows = groups.flatMap(g => g.rows);
   assert.deepEqual(lines.filter(l => rows.includes(l)), rows, "every group's rows, in the group order and no other");
@@ -91,9 +105,19 @@ const show = (label, card, draw = drawBattle) => {
   // The alphabet is closed (§7). Held over the card's whole text rather than over the first token of a row, because a
   // foe row is a block of several lines and a mark can stand alone as a claim inside one — and because the summaries
   // this text is built from are the model's own strings, which is where three of the re-maps had to land.
-  for (const ch of glyphsIn(textOf(card, draw))) {
+  for (const ch of glyphsIn(wire.text)) {
     assert.ok(!RETIRED[ch], `${label}: ${ch} is retired — it is ${RETIRED[ch]} now`);
     assert.ok(MARKS.includes(ch) || TYPOGRAPHY.includes(ch), `${label}: ${ch} is not in the closed alphabet`);
+  }
+  // **Every card the panel would push crosses the relay's gate** (§11.1, #388). That gate is the card detail's
+  // version point: it takes exactly the declared keys and refuses everything else, so a kind whose event shape
+  // cannot cross — a group id the relay does not know, a field the panel sends and the gate does not — leaves the
+  // panel drawing a card the tab silently never sends. `cardeventtest.mjs` runs the two kinds it has a scene for
+  // past this same gate, on what actually ships; here every kind that streams crosses it, on the models below.
+  // The five that stream are `EVENT_KINDS`: `starters` and `fusion` are cards and not events, and are gated nowhere.
+  const ev = cardEvent(card);
+  if (ev && streams(ev)) {
+    assert.notEqual(cardBody({ build: BUILD, ...ev, ...wire }), null, `${label}: the relay refuses this card`);
   }
   return groups;
 };

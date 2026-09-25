@@ -26,12 +26,17 @@ export const MAX_DETAIL_BYTES = 1024 * 1024;
 export type CardDetail = { build: string; kind: string; key: string; wave: number; verdict: string; groups: CardGroup[]; text: string };
 export type CoachErrorDetail = { build: string; message: string };
 
-/** The kinds the HUD pushes (§11.1); the HUD model's `shop` arrives as `reward`. */
-export const CARD_KINDS = ["battle", "learn", "reward", "biome", "encounter"] as const;
+/**
+ * The kinds the HUD pushes (§11.1); the HUD model's `rewards` arrives as `reward`. Named for the card event and not
+ * for the card, because two card kinds — `starters` and `fusion` — never stream. The HUD's own list is
+ * `hud/60-card.js`'s `EVENT_KINDS`, derived there from its card table and kept here by hand: the panel is one source
+ * the extension bundles rather than imports. `cardtest.mjs` pins this copy to that one.
+ */
+export const EVENT_KINDS = ["battle", "learn", "reward", "biome", "encounter"] as const;
 
 /**
  * The eight group ids, closed (#349 §1). The HUD's own list is `hud/90-render.js`'s `GROUP_IDS`, kept here by hand
- * for the same reason `CARD_KINDS` is: the panel is one source the extension bundles rather than imports.
+ * for the same reason `EVENT_KINDS` is: the panel is one source the extension bundles rather than imports.
  */
 export const GROUP_IDS = ["act", "foes", "catch", "plan", "options", "audit", "road", "notes"] as const;
 
@@ -87,7 +92,7 @@ const str = (v: unknown): v is string => typeof v === "string";
 export function cardBody(d: Record<string, unknown>): Omit<CardDetail, "build"> | null {
   const keys = Object.keys(d).sort().join(",");
   if (keys !== "build,groups,key,kind,text,verdict,wave") return null;
-  if (!str(d.kind) || !(CARD_KINDS as readonly string[]).includes(d.kind)) return null;
+  if (!str(d.kind) || !(EVENT_KINDS as readonly string[]).includes(d.kind)) return null;
   if (!str(d.key) || !str(d.verdict) || !str(d.text) || typeof d.wave !== "number" || !Number.isFinite(d.wave)) return null;
   const groups = cardGroups(d.groups);
   if (groups === null) return null;
