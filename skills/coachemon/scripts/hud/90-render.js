@@ -2,6 +2,11 @@
 // view the player left it in. It draws no card and decides nothing - 60-card works out what is on screen, the
 // renderers above turn one card into groups, and 98-tick puts the two together.
 // State another file needs is read and written through functions, never exported as a binding.
+// Six names are exported for the tests and for nothing else: the laws a test pins rather than restates — the two
+// palettes, the closed alphabet and the closed group ids — and the two projections a golden reads a drawn card by.
+// Declaring them says so, so the panel's interface is what the panel offers its callers and a name reached only
+// from `test/` never passes for one (#388).
+// @only tests: LAW_INK, MARKS, GUTTER_INK, GROUP_IDS, pane, flatGroups
 let game = null;
 const sprites = new Map();
 let missed = false; // a wanted sprite wasn't loaded yet during the last draw
@@ -40,7 +45,7 @@ const sprite = (key, frame) => {
 // the game's own windows are a beveled nine-slice. So the panel never draws the game's window texture at all, pins
 // this one interior, and does not follow the player's chosen skin — which is what holds §8's palette shut.
 // It never names itself either: no mark, no wordmark, nowhere.
-export const SKIN = { fill: "#362d3e", body: "#f8f8f8", rule: "#f8b050", shadow: "#181818" };
+const SKIN = { fill: "#362d3e", body: "#f8f8f8", rule: "#f8b050", shadow: "#181818" };
 
 // ---- The footprint and the type ladder (#349 §4)
 // The panel is a constant fraction of the game rather than a pixel width against a canvas that scales, so it covers
@@ -95,7 +100,7 @@ const MAX_H = `calc(0.40 * ${GAME_W} - ${INSET})`;
 // integer at that rung because both faces are pixel designs and a fractional one softens them.
 // A register has one size. The old three-value knob was three independent literals, and what a row emphasises it
 // emphasises with ink (§8) — so nothing below a row sets a size of its own, and the drawn-panel golden says so.
-export const REGISTER = {
+const REGISTER = {
   chrome: { face: "emerald, ui-monospace, Menlo, monospace", size: CHROME, line: "1.25" },
   rows: { face: "pkmnems, ui-monospace, Menlo, monospace", size: ROWS, line: "1.5" },
 };
@@ -476,14 +481,10 @@ export const drawer = groups => {
 // The stream's `text` is derived from the group list rather than read back off the drawn card, so the two cannot
 // disagree by construction. It is always the whole card and always in the fixed group order, whatever the drawer is
 // showing — and it needs no view forced on a renderer to be so, because no renderer knows what a view is.
-// 98-tick registers the draw for a kind here, the way it registers the redraw: dispatch stays its business.
-let drawFn = () => null;
-export const setDraw = fn => { drawFn = fn; };
-// A card's groups, dispatched by its kind — what the text below walks. Exported because the drawer shows one group
-// at a time (#357), so a golden about what a card *says* asks for the card's groups rather than reading back the one
-// pane a click happens to have open.
-export const groupsOf = card => (card ? drawFn(card) : null);
-
+// **This layer never dispatches on a kind** (#388): it is handed groups and projects them, and which draw goes with
+// which kind stays 98-tick's one table. A second, late-bound copy of that dispatch lived here for the tests to walk
+// the card by; nothing that shipped ever called it, so the panel could change under a suite still drawing the old
+// shape — and a test's draw re-armed the missed-sprite latch the refresh reads.
 
 // The group list as plain data: the same groups in the fixed order, with their rows flattened to one string each.
 // This is the seam the content half of the card is tested at, and what #361 puts on the wire. Named for what it
@@ -505,8 +506,6 @@ export const wireCard = groups => {
   const wire = flatGroups(groups);
   return { groups: wire, text: textOfGroups(wire) };
 };
-
-export const cardText = card => wireCard(groupsOf(card)).text;
 
 const tagOf = n => String(n.tagName ?? "").toUpperCase();
 const kidsOf = n => (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? []);

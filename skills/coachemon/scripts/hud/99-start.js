@@ -6,20 +6,21 @@
 // The stream (§11.1): one event per new decision or changed verdict, and one per distinct HUD failure. The detail is a
 // JSON string carrying this build's id, which is what the relay pairs with and forwards (§9.1, §9.5); a panel injected
 // without the extension has no id and nobody listening, so it pushes nothing.
-// The names and the kinds are the relay's (`extension/src/relay/channel.ts`), kept here by hand because the panel is one
+// The event names are the relay's (`extension/src/relay/channel.ts`), kept here by hand because the panel is one
 // source the extension bundles rather than imports; test/cardeventtest.mjs runs what ships past the relay's own
-// validators, so a detail the extension would drop fails the tests instead of a live tab.
+// validators, so a detail the extension would drop fails the tests instead of a live tab. The kinds are not kept by
+// hand: `EVENT_KINDS` is derived from the card table 60-card already has, so the gate here and the name a kind
+// streams under cannot drift apart (#388).
 import { sandboxBreachCount } from "./01-core.js";
 import { dropChunkHandoff } from "./04-game-tables.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalClear, journalEntries, journalStats } from "./55-journal.js";
-import { cardEvent, cardSummary } from "./60-card.js";
+import { EVENT_KINDS, cardEvent, cardSummary } from "./60-card.js";
 import { el, wireCard } from "./90-render.js";
 import { lastFailure, shownCard, shownGroups, tick } from "./98-tick.js";
 
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
-const CARD_KINDS = ["battle", "learn", "reward", "biome", "encounter"];
 const hudBuild = typeof COACHEMON_BUILD === "string" ? COACHEMON_BUILD : null;
 let sentCard = null, sentError = null;
 
@@ -57,9 +58,9 @@ const stream = () => {
   }
   if (failed) return;
   const ev = eventNow();
-  // Only the five streamed kinds, and only a card the subscriber can act on: the relay drops anything else anyway.
+  // Only the streamed kinds, and only a card the subscriber can act on: the relay drops anything else anyway.
   // A card that cannot be streamed leaves the last signature standing, so coming back to it is not a second event.
-  if (!ev || CARD_KINDS.indexOf(ev.kind) < 0 || typeof ev.wave !== "number" || typeof ev.key !== "string" || typeof ev.verdict !== "string") return;
+  if (!ev || EVENT_KINDS.indexOf(ev.kind) < 0 || typeof ev.wave !== "number" || typeof ev.key !== "string" || typeof ev.verdict !== "string") return;
   // The kind rides in the signature because two kinds share a key on one wave: a biome choice and its battle are both
   // keyed on the wave alone.
   const sig = `${ev.kind}|${ev.key}|${ev.verdict}`;

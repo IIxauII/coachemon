@@ -3,6 +3,7 @@
 // what probe.js's old hand-kept key list was guarding.
 import assert from "node:assert";
 import { bundle } from "../hud-bundle.mjs";
+import { EVENT_KINDS as RELAY_EVENT_KINDS } from "../../../../extension/src/relay/channel.ts";
 
 // 60-card and the summaries are pure. The bundle still builds the panel element and starts its timer, so stub only
 // enough of the page for that: no DOM mock, and nothing here reads a node.
@@ -14,7 +15,16 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => null, setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { cardSummary, summaryKeys } = globalThis.__hud["60-card"];
+const { EVENT_KINDS, cardSummary, summaryKeys } = globalThis.__hud["60-card"];
+
+// The relay keeps its own copy of the streamed kinds, because the panel is a source the extension bundles rather
+// than imports (`extension/src/relay/channel.ts`). This is what pins the copy to the original, the way
+// `grouptest.mjs` pins the group ids: the panel's `rewards` goes out as `reward`, and a rename of that name in the
+// card table moves the derived list, so the copy has to move with it or the shop stops crossing the gate in
+// silence (#388). Order included: the relay's literal is written in the card table's order, and the whole list is
+// cheaper to keep honest than a set is. Strict, because the file's `assert` is the loose one and `grouptest.mjs:33`,
+// which this mirrors, runs under `node:assert/strict`.
+assert.deepStrictEqual([...RELAY_EVENT_KINDS], EVENT_KINDS, "the relay's streamed kinds are the panel's");
 
 const threat = (level, from = "Rattata", move = "Tackle") => ({ level, from, move, type: "Normal", e: 1, pct: 80, pko: 90 });
 const slot = (over = {}) => ({ name: "Charizard", move: "Ember", type: "Fire", cat: "special", target: { name: "Rattata" },

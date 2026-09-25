@@ -865,7 +865,7 @@ In dependency order. Each inherits §1 and the **[unverified]** premises it touc
 2. **Shared protocol and page handlers behind a seam**: `src/protocol/`, `src/page/` from `js.ts`, `GameLink` with the CDP implementation (§10.1, §10.2, §10.5, §12.1). The server still runs on CDP, all tests green.
 3. **The hub and the hub link**: `src/hub/`, `ws`, lifecycle, skew, auth, frames, grant, tabs, events, `COACHEMON_TRANSPORT=hub`, the status ladder (§7, §12). Testable with a fake extension client.
 4. **The extension package**: `extension/`, WXT, manifests, flavours, HUD build hook, background transport, keepalives, Firefox consent, relay, guard, CI workflow, AMO sources zip (§5, §8, §9).
-5. **Card events and coach reads**: `cardText`, `coachemon:card` / `coach-error` in the HUD, `read_card`, `read_starters`, `get_state full` fields (§11.1, §11.4).
+5. **Card events and coach reads**: `wireCard`, `coachemon:card` / `coach-error` in the HUD, `read_card`, `read_starters`, `get_state full` fields (§11.1, §11.4).
 6. **Watch CLI**: `watch.ts` behind the opt-in (§11.2).
 7. **Dev tooling**: dev table, dev loop, `eval`/`smoke`/`autoplay` on port 47148, and the per-engine relay and keepalive smoke checks (§5.4, §10.6, §16).
 8. **Release pipeline**: seed tag, second semantic-release, path filter, stamping, zips, `release-extension` job, submission and secrets (§14.1–§14.4).
