@@ -4,7 +4,7 @@
  *
  * The whole step hangs on one flag, for the reason §5.6 gives: the linter exits **0** on warnings, and every finding
  * that has reached us from a submission so far was a warning rather than an error — the data-collection floor on
- * desktop (#379) and on Android (#380), and `hud.js`'s dynamic `import()` (#381). So the second test pins the flag's
+ * desktop (#379) and on Android (#380), and `hud.js`'s dynamic `import()` (#381). So the last test pins the flag's
  * effect against the linter itself rather than trusting its documented default.
  */
 import assert from "node:assert/strict";
