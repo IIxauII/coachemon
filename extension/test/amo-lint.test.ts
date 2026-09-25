@@ -2,11 +2,10 @@
  * The AMO linter step (§5.6). The guard (§5.5) checks what *we* decided the manifest should say; `addons-linter` is
  * what AMO's own review runs, so it is the only check in CI that can tell us their verdict before a submission does.
  *
- * The whole step hangs on one flag. `addons-linter` exits **0** on warnings by default, and every finding that has
- * reached us from a submission so far was a warning, never an error: the data-collection floor on desktop (#379) and
- * on Android (#380), and `hud.js`'s dynamic `import()` (#381). A step without `--warnings-as-errors` would have been
- * green on all three — indistinguishable from having no step at all, which is what #384 was opened about. So the
- * second test below pins the flag's effect against the linter itself, rather than trusting its documented default.
+ * The whole step hangs on one flag, for the reason §5.6 gives: the linter exits **0** on warnings, and every finding
+ * that has reached us from a submission so far was a warning rather than an error — the data-collection floor on
+ * desktop (#379) and on Android (#380), and `hud.js`'s dynamic `import()` (#381). So the second test pins the flag's
+ * effect against the linter itself rather than trusting its documented default.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -19,8 +18,8 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const LINTER = fileURLToPath(new URL("../node_modules/.bin/addons-linter", import.meta.url));
 
-/** The artifact AMO is handed, which is also the one the step lints (§5.6). */
-const TARGET = ".output/firefox-mv3-store";
+/** The built artifact the step lints, which is what the store zip is made of (§5.6). */
+const ARTIFACT = ".output/firefox-mv3-store";
 
 const workflow = () => readFileSync(join(ROOT, ".github/workflows/extension.yml"), "utf8").split("\n");
 
@@ -46,17 +45,29 @@ const lint = (args: string[]) => spawnSync(LINTER, args, { encoding: "utf8" });
 
 test("CI lints the built Firefox artifact, and gates on warnings (§5.6)", () => {
   const lines = workflow();
-  const linter = lines.findIndex(line => line.includes("addons-linter"));
+  // The `- run:` line itself, never a comment that merely names the tool: §5.6's prose does that constantly.
+  const linter = lines.findIndex(line => /^\s*-\s+run:.*addons-linter/.test(line));
   assert.notEqual(linter, -1, "no addons-linter step in the extension workflow");
 
   const step = lines[linter]!;
   assert.ok(step.includes("--warnings-as-errors"), "the linter step must gate on warnings, or #379, #380 and #381 pass it");
-  assert.ok(step.includes(TARGET), `the linter step must lint ${TARGET}`);
+  assert.ok(step.includes(ARTIFACT), `the linter step must lint ${ARTIFACT}`);
 
   // The artifact has to exist before it can be linted, so the step comes after the build that writes it.
   const build = lines.findIndex(line => line.includes("build:all"));
   assert.notEqual(build, -1, "no build:all step in the extension workflow");
   assert.ok(build < linter, "the linter step must come after build:all, which writes the artifact it reads");
+});
+
+test("the linter is pinned here, so a release of it cannot turn master red (§5.6)", () => {
+  const pkg = JSON.parse(readFileSync(join(ROOT, "extension/package.json"), "utf8")) as {
+    devDependencies?: Record<string, string>;
+  };
+  assert.ok(pkg.devDependencies?.["addons-linter"], "addons-linter must be an extension devDependency, so the lockfile holds its version");
+
+  // `npm exec --no` runs that pinned copy or fails; `npx` would quietly fetch the latest release instead.
+  const step = workflow().find(line => /^\s*-\s+run:.*addons-linter/.test(line))!;
+  assert.ok(step.includes("npm exec --no"), "the step must run the pinned copy, never fetch one");
 });
 
 test("only --warnings-as-errors makes a warning fail the linter", () => {
