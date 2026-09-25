@@ -65,14 +65,26 @@ const EVO_SPREAD = [1, 1.1, 1.2];
 // Rare destinations worth naming when an option can lead there.
 const RARE_ONWARD = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 
-// The game tables (`04-game-tables.js`), with the one-time cache clear that goes with them: `formsAt` and
-// `trainerParty` answer with nothing while the chunk scan hasn't landed — a missing species registry answers nothing —
-// and cache that nothing, so the first read that finds tables drops both caches. The loader fills them once per page,
-// which is why once is enough and no invalidation crosses the module line.
-let cleared = false;
+// The game tables (`04-game-tables.js`), with the cache clear that goes with them: `formsAt` and `trainerParty` answer
+// with nothing while the chunk scan hasn't landed — a missing species registry answers nothing — and cache that
+// nothing, so a read that finds more tables than the last one did drops both caches.
+//
+// The count, not a one-time flag, because the scan no longer lands all at once: it commits the tables as soon as biomes
+// and species are in and fills the rest in place, a chunk at a time (#381), so "the loader fills them once per page" is
+// no longer something this module can rest on. What actually keeps a stale answer off the card is `biomeModel`'s memo
+// key, which counts the same tables — every negative answer that depends on a late table is guarded at its call site
+// today (`tables?.trainers` before any `trainerParty`), so this clear is the belt to that brace, and the thing that
+// stops the next such cache from being a silent one. Tables are only ever added, so the count only grows, and no
+// invalidation crosses the module line.
+// How many of the tables are there — the stand-in for *which* of them, in both places that have to notice one landing:
+// this clear, and the model's own memo key. The tables that are actually there, not the keys: a table the scan found
+// nothing for leaves its name behind.
+const tablesPresent = t => (t ? Object.values(t).filter(Boolean).length : 0);
+let clearedAt = 0;
 const readTables = () => {
   const t = gameTables();
-  if (t && !cleared) { cleared = true; formsCache.clear(); trainerCache.clear(); }
+  const n = tablesPresent(t);
+  if (n > clearedAt) { clearedAt = n; formsCache.clear(); trainerCache.clear(); }
   return t;
 };
 
@@ -451,8 +463,11 @@ const edgeOver = (a, b) => {
 };
 
 // `run` is the run read, whose memo keeps the model. The wave, the party's levels and standing are the run key's;
-// what the card reads beyond that — whether the tables have landed, the options on screen, each member's moveset
-// and the run's challenges — is its key within the run.
+// what the card reads beyond that — how many of the tables have landed, the options on screen, each member's moveset
+// and the run's challenges — is its key within the run. It counts the tables rather than asking whether there are any,
+// because the scan commits them as soon as biomes and species are in and fills the rest in place, a chunk at a time
+// (#381): the trainer configs and the biome names can land after this card first drew, and a model built without them
+// has to be rebuilt rather than kept.
 export const biomeModel = (run, h) => {
   const s = run.scene;
   const tables = readTables();
@@ -461,7 +476,7 @@ export const biomeModel = (run, h) => {
   // Everyone fights in the next biome, because entering an X1 revives the fallen — except where the run calendar
   // says that heal doesn't revive (Hardcore, or a Limited Support with no heal at all).
   const party = healRevives(s) ? everyone : everyone.filter(p => p.hp > 0);
-  const key = JSON.stringify([!!tables, labels, party.map(p => [p.id, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
+  const key = JSON.stringify([tablesPresent(tables), labels, party.map(p => [p.id, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
   const value = run.memo("biome", key, () => build(run, tables, labels, everyone, party));
   if (value.kind) return value;

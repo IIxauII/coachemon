@@ -108,6 +108,13 @@ for (const a of all) {
     assert.doesNotMatch(hud, /^\s*\/\*/m);
   });
 
+  // The Firefox add-on linter warns on `import()` whose argument it can't see is a literal, and the HUD is the one
+  // script that reaches the game's own modules (#381). It does that through an injected module script whose source
+  // imports one literal URL, so the packaged file calls `import` not at all.
+  test(`${a.name}: the HUD calls no import() (§5.2)`, () => {
+    assert.doesNotMatch(readFileSync(join(a.dir, "hud.js"), "utf8"), /(?<![\w$.])import\s*\(/);
+  });
+
   if (a.flavour === "store") {
     test(`${a.name}: the manifest declares no permission of any kind (§5.5 check 1)`, () => {
       const manifest = manifestOf(a);

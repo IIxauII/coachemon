@@ -2238,8 +2238,11 @@ Facts about the served build at `https://pokerogue.net`, not the source. Most of
 - Enums are numbers at runtime (see the header); e.g. `UiMode.MYSTERY_ENCOUNTER` is the bare `45`.
 
 **Reaching module-private or unexported tables.**
-- `04-game-tables.js` re-`import()`s the already-loaded `/assets/<name>-<hash>.js` chunk URLs; the browser returns the same
-  module instances without re-running them. It scans the namespaces by shape: a Map whose values carry
+- `04-game-tables.js` imports the already-loaded `/assets/<name>-<hash>.js` chunk URLs again; the browser returns the same
+  module instances without re-running them. It imports each one by injecting a `<script type="module">` whose own
+  source holds that URL as a literal, rather than calling `import(url)`, which the Firefox add-on linter rejects with
+  a computed argument (#381); the namespace comes back through the `window.__coachHudChunk` handoff. It scans the
+  namespaces by shape: a Map whose values carry
   `biomeLinks` + `pokemonPool` (`allBiomes`), an object with `getSpecies` / `getAllSpecies` (the species registry),
   a function named `getBiomeName`, an object whose values carry `trainerType` + `partyTemplates` (trainer configs),
   an object with `getShinyCatchMultiplier` (`timedEventManager`), and the reward functions of §19
@@ -2249,6 +2252,11 @@ Facts about the served build at `https://pokerogue.net`, not the source. Most of
   loaded chunks, `TrainerConfig` keeps its class and field names, a BOSS trainer carries `specialtyType`, the
   registry keeps `getEvolutions` / `getPrevolution` / `hasPrevolution`, `getEvolutions` returns `level` +
   `evoLevelThreshold`. `signatureSpecies` was **not** among the live exports. **Not checked in Orion.**
+- The injected module script was checked against the live build in Chrome (2026-09-24, title screen): all 10 loaded
+  chunks handed their namespace back, `allBiomes` a Map of 35, 921 moves and 319 abilities, both reward functions
+  found, and the page kept no injected element. The page serves no CSP that blocks an inline module script, which is
+  the one thing this way of importing needs. **Not checked in Firefox or Orion**, where only the linter's objection to
+  the old form (#381) is known.
 - `48-preview.js` calls the scene's `randomSpecies` wrapper when the build exposes it, and reproduces it otherwise.
 
 **Unverified on a live tab.**

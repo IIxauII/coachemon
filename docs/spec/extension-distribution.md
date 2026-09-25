@@ -27,7 +27,7 @@ A build ticket that cannot satisfy one of these reopens the decision; it does no
 5. **Web pages are the threat.** The loopback listener defends against drive-by pages and DNS rebinding. Same-user local processes and other installed extensions are outside the model, because the vocabulary is closed and never carries typed form text.
 6. **Never guess which save.** With more than one connected game tab, reads refuse as well as acts ([Migration off CDP and Apple Events](https://github.com/IIxauII/coachemon/issues/108)).
 7. **Nothing reloads the player's tab.** A reload is destructive on the escape ladder, so no build executes one on its own.
-8. **Zero telemetry, ever.** The extension's only network traffic is the loopback socket, and the HUD's `import()` of `pokerogue.net`'s own chunks.
+8. **Zero telemetry, ever.** The extension's only network traffic is the loopback socket, and the HUD's import of `pokerogue.net`'s own chunks (§5.2).
 9. **Artwork never ships.** No Pokémon or PokéRogue art in the icon, screenshots or bundle. Everything drawn comes from the live page ([Trademark exposure for a public listing](https://github.com/IIxauII/coachemon/issues/104)).
 
 ---
@@ -175,6 +175,7 @@ src/page/                        command handlers as real functions (§10.5)
 - **WXT**, per-browser via `wxt build -b chrome|firefox|safari --mode store|dev`. MV3 is forced for Firefox and Safari (WXT defaults both to MV2).
 - **The HUD bypasses WXT's bundler.** A `build:publicAssets` hook (or equivalent WXT hook) calls `bundle("hud")` from `skills/coachemon/scripts/hud-bundle.mjs`, strips comments, wraps it in the world check and build id (§9.4, §9.6), and writes `hud.js` into the output. The manifest lists it by hand. The HUD tests keep exercising the raw `bundle()`.
 - **Comments are stripped from `hud.js` in every build**, dev and store. This removes the 17 comment lines that quote PokéRogue code.
+- **`hud.js` calls `import()` nowhere.** The Firefox add-on linter warns on an `import()` argument it cannot see is a literal, and the HUD's chunk scan is the one place that reaches the game's own modules ([hud.js: unsafe call to import()](https://github.com/IIxauII/coachemon/issues/381)). The scan injects one `<script type="module">` per chunk whose own source imports that one URL as a string literal instead. The guard checks the built file for the call, and `src/hud-bundle.test.ts` checks the bundle.
 - **`page.js` and `relay.js`** are WXT unlisted scripts, listed by hand in the manifest next to `hud.js`. A WXT
   content script would emit to `content-scripts/relay.js` and generate a `content_scripts` entry of its own; as
   unlisted scripts both land at the output root and every content script is declared in one place, exactly as §5.3
@@ -842,7 +843,7 @@ Each was accepted knowingly by a closed ticket. None blocks building; a build ti
 | Orion's opt-in auto-update of store installs clears site permissions (orionfeedback #7361) | [Orion after the AppleScript route retires](https://github.com/IIxauII/coachemon/issues/118) | none; rung 7 covers the missing tab |
 | Orion after sleep/wake (orionfeedback #14474), long idle, hidden tab | [Agent transport on Orion](https://github.com/IIxauII/coachemon/issues/150) | reconnect-on-wake |
 | AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/coachemon/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | named fallbacks (§5.3, §8.1) |
-| A CWS reviewer accepts the declared remote code (`04-game-tables.js`'s `import()`) | [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | declared Yes (§6) |
+| A CWS reviewer accepts the declared remote code (`04-game-tables.js`'s chunk import) | [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | declared Yes (§6) |
 | Chrome Web Store API v2 can cancel a pending review — **confirmed, no longer a premise** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/coachemon/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
 | The 142 floor is worth its cost: Firefox 128–141, ESR 140 included, cannot install at all | [#379](https://github.com/IIxauII/coachemon/issues/379) and [#380](https://github.com/IIxauII/coachemon/issues/380), the desktop and Android halves of one floor | none; any lower floor is a linter warning (§5.3) |
 | Nintendo does not act on the -ÉMON name | [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105) | no trademark filed; answer the listing email |

@@ -216,7 +216,10 @@ export const starterModel = (s, h) => {
     unlocks += (st?.valueReduction ?? 0) + 3 * (st?.passiveAttr ?? 0) + 11 * (st?.eggMoves ?? 0) + 37 * (st?.abilityAttr ?? 0);
   }
   const key = JSON.stringify([limit, unlocks, chosen.map((sp, i) => [sp.speciesId, h.starters?.[i]?.passive, h.starters?.[i]?.abilityIndex]),
-    containers.length, !!tables, !!tables?.abilities, !!tables?.eggMoves, challenges.map(c => [c.id, c.value])]);
+    // Every table the card reads is its own maybe: the scan commits what it has and fills the rest in place, a chunk at
+    // a time (#381), so each one that lands has to be able to rebuild the card. `moves` rides in the same chunk as the
+    // other two today, which is the only reason leaving it out was never wrong.
+    containers.length, !!tables, !!tables?.abilities, !!tables?.eggMoves, !!tables?.moves, challenges.map(c => [c.id, c.value])]);
   if (cache.key !== key) cache = { key, value: build(s, h, { tables, challenges, has, limit, chosen, containers }) };
   const m = cache.value;
   const viewing = viewed(h, m);

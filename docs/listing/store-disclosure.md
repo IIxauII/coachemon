@@ -27,7 +27,7 @@ Shared facts:
 | **Privacy policy URL** | as above |
 | **Category / language** | Workflow & Planning; English. |
 
-Remote code is **Yes** because the HUD `import()`s the game's own modules. Filing *No* would be a false statement
+Remote code is **Yes** because the HUD imports the game's own modules. Filing *No* would be a false statement
 about code the reviewer can see running; the justification is the honest answer and has no `eval`, no fetched logic
 and no remote data table behind it (§1.2).
 
