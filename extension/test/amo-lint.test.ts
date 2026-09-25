@@ -23,6 +23,13 @@ const ARTIFACT = ".output/firefox-mv3-store";
 
 const workflow = () => readFileSync(join(ROOT, ".github/workflows/extension.yml"), "utf8").split("\n");
 
+/** Where the linter step sits in the workflow: the `- run:` line itself, never a comment that merely names the tool. */
+function linterStep(lines: string[]): number {
+  const at = lines.findIndex(line => /^\s*-\s+run:.*addons-linter/.test(line));
+  assert.notEqual(at, -1, "no addons-linter step in the extension workflow");
+  return at;
+}
+
 /**
  * A minimal add-on that trips a warning and nothing else: `strict_min_version` under the floor that
  * `data_collection_permissions` needs, which is #379 and #380 exactly. Written fresh per run, outside the repo.
@@ -45,9 +52,7 @@ const lint = (args: string[]) => spawnSync(LINTER, args, { encoding: "utf8" });
 
 test("CI lints the built Firefox artifact, and gates on warnings (§5.6)", () => {
   const lines = workflow();
-  // The `- run:` line itself, never a comment that merely names the tool: §5.6's prose does that constantly.
-  const linter = lines.findIndex(line => /^\s*-\s+run:.*addons-linter/.test(line));
-  assert.notEqual(linter, -1, "no addons-linter step in the extension workflow");
+  const linter = linterStep(lines);
 
   const step = lines[linter]!;
   assert.ok(step.includes("--warnings-as-errors"), "the linter step must gate on warnings, or #379, #380 and #381 pass it");
@@ -66,8 +71,8 @@ test("the linter is pinned here, so a release of it cannot turn master red (§5.
   assert.ok(pkg.devDependencies?.["addons-linter"], "addons-linter must be an extension devDependency, so the lockfile holds its version");
 
   // `npm exec --no` runs that pinned copy or fails; `npx` would quietly fetch the latest release instead.
-  const step = workflow().find(line => /^\s*-\s+run:.*addons-linter/.test(line))!;
-  assert.ok(step.includes("npm exec --no"), "the step must run the pinned copy, never fetch one");
+  const lines = workflow();
+  assert.ok(lines[linterStep(lines)]!.includes("npm exec --no"), "the step must run the pinned copy, never fetch one");
 });
 
 test("only --warnings-as-errors makes a warning fail the linter", () => {

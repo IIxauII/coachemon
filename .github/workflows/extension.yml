@@ -40,7 +40,8 @@ jobs:
         working-directory: extension
 
       # What AMO's own review runs, so a finding reaches us from a PR rather than a submission. The flag is the step:
-      # the linter exits 0 on warnings, and every finding so far was one (§5.6). `npm exec --no` never leaves the pin.
+      # the linter exits 0 on warnings, and every finding so far was one (§5.6). `npm exec --no` runs the pinned copy
+      # or fails, where `npx` would fetch the latest release instead.
       - run: npm exec --no -- addons-linter --warnings-as-errors .output/firefox-mv3-store
         working-directory: extension
 
