@@ -54,13 +54,12 @@ export const rung = n => `round(calc(${n} * ${ROWS}), 1px)`;
 // the width floor up with it.
 const SHARE = 0.234;
 const REF_W = SHARE * 1920;
-// The two bounds are rounded because the products are binary floats: `0.5 * 0.234 * 1920` is `224.64000000000001`,
-// and the whole of it would ship into the style attribute.
-const px = n => `${Math.round(n * 100) / 100}px`;
-export const PANEL_W = `clamp(${px(0.5 * REF_W)}, calc(${SHARE} * ${GAME_W}), ${px(1.5 * REF_W)})`;
+// Rounded because the products are binary floats: `0.5 * 0.234 * 1920` is `224.64000000000001`, and the whole of it
+// would ship into the style attribute.
+const pxRound = n => `${Math.round(n * 100) / 100}px`;
+export const PANEL_W = `clamp(${pxRound(0.5 * REF_W)}, calc(${SHARE} * ${GAME_W}), ${pxRound(1.5 * REF_W)})`;
 // The game's message box owns the bottom 27% of the game, so its top edge is at `0.73 ÷ (16/9) = 0.4106 × game-w`,
-// and the budget is 0.40 of that width less the inset. It is the drawer's pane that carries the budget, not the
-// panel, which may stand taller by the strip, the bar and the padding.
+// and the budget is 0.40 of that width less the inset. It bounds the pane, not the panel.
 const INSET = "8px";
 const MAX_H = `calc(0.40 * ${GAME_W} - ${INSET})`;
 
@@ -87,7 +86,7 @@ export const img = (key, frame, title, rungs, fallback = title) => {
     // **The fallback is an element, not a bare string**: the rows and the caption that hold a sprite are flex
     // containers spaced by a `gap`, and contiguous text collapses into one anonymous flex item — so a string fallback
     // landing beside a neighbouring string is spaced by neither the gap nor a space of its own, and `Youngster` and
-    // `Charizard` drew as `YoungsterCharizard`.
+    // `Charizard` drew as `YoungsterCharizard` (#378).
     return typeof fallback === "string" && fallback !== "" ? h("span", { margin: "0 2px" }, fallback) : fallback;
   }
   const i = document.createElement("img");
@@ -184,7 +183,7 @@ const paneHeading = g => {
 };
 
 // The longhands and not the `font` shorthand: the shorthand resets every font longhand it does not name, so it would
-// un-bold a row that is already bold.
+// un-bold a row that is already bold (#354).
 const inRows = node => {
   const r = REGISTER.rows;
   if (node?.style) Object.assign(node.style, { fontFamily: r.face, fontSize: r.size, lineHeight: r.line });

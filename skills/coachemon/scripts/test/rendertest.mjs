@@ -240,10 +240,9 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.deepEqual(tabs.map(flat), ["Now", "Foes", "Plan"]);
   assert.deepEqual(tabs.map(flat), globalThis.__hud["90-render"].GROUP_IDS
     .flatMap(id => groups.filter(g => g.id === id)).map(g => g.label), "the bar is in the fixed global order");
-  // The bar never wraps, never scrolls and has no overflow menu: a label that overruns is the browser's to cut.
-  assert.equal(bar.style.flexWrap, "nowrap");
-  assert.equal(bar.style.overflow, "hidden");
-  assert.deepEqual([...new Set(tabs.map(t => t.style.textOverflow))], ["ellipsis"]);
+  assert.equal(bar.style.flexWrap, "nowrap", "the bar never wraps");
+  assert.equal(bar.style.overflow, "hidden", "and never scrolls: there is no overflow menu");
+  assert.deepEqual([...new Set(tabs.map(t => t.style.textOverflow))], ["ellipsis"], "a label that overruns is the browser's to cut");
   // With nothing remembered yet, the drawer opens on `act`, and no tab carries a mark, a count or any state beyond
   // being the open one — which is weight and ink, never the gold the authorship rule owns.
   assert.equal(openGroup(), "act");
@@ -251,9 +250,9 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.deepEqual([tabs[1].style.fontWeight, tabs[1].style.color], ["normal", "#a0a0a0"]);
   assert.ok(!tabs.some(t => t.style.color === "#f8b050"), "gold never says which tab is open");
   assert.deepEqual(tabs.map(t => flat(t).replace(/[A-Za-z]/g, "")), tabs.map(() => ""), "labels only: no mark, no count");
-  // The pane is what scrolls, past the budget the game's message box leaves; the panel itself no longer does.
-  assert.deepEqual([paneBox.style.maxHeight, paneBox.style.overflowY], ["calc(0.40 * min(100vw, 177.78vh) - 8px)", "auto"]);
-  assert.deepEqual([el.style.maxHeight, el.style.overflowY], [undefined, undefined]);
+  assert.deepEqual([paneBox.style.maxHeight, paneBox.style.overflowY], ["calc(0.40 * min(100vw, 177.78vh) - 8px)", "auto"],
+    "the pane is what scrolls, past the budget the game's message box leaves");
+  assert.deepEqual([el.style.maxHeight, el.style.overflowY], [undefined, undefined], "and the panel itself no longer does");
   // A tab click opens that group's pane and nothing else: the panel never switches the open group by itself.
   tabs[1].onclick({ stopPropagation() {} });
   const [bar2, pane2] = el.kids.slice(2);
@@ -317,14 +316,14 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   console.log(`frames ${GROUP_IDS.map((id, i) => `${id} ${frames[i]}`).join(" | ")}`);
   assert.deepEqual(frames, ["1px solid #40c8f8", "1px solid #f75231", "1px solid #40c8f8", "1px solid #e331c5",
     "1px solid #40c8f8", "1px solid #e331c5", "1px solid #e331c5", "1px solid #a0a0a0"]);
-  // **The law frame insets one row's padding within the gold authorship rule.** Both gaps are pinned to their value,
-  // because "the two rules never touch" is an invariant a zero would break silently.
+  // Both gaps are pinned to their value because "the two rules never touch" is an invariant a zero would break
+  // silently.
   const [, pane] = drawer([{ id: "act", label: "Now", summary: null, rows: [] }]);
   console.log(`frame inset ${el.style.padding} · pane padding ${pane.style.padding}`);
   const RUNG = "clamp(10px, round(min(100vw, 177.78vh) / 240, 8px), 24px)";
-  const RUNGS = n => `round(calc(${n} * ${RUNG}), 1px)`;
-  assert.equal(el.style.padding, `${RUNGS(0.75)} ${RUNG}`, "one row's padding stands between the gold rule and the law frame");
-  assert.equal(pane.style.padding, `${RUNGS(0.5)} ${RUNGS(0.75)}`, "and the frame keeps the rows off itself");
+  const rungs = n => `round(calc(${n} * ${RUNG}), 1px)`;
+  assert.equal(el.style.padding, `${rungs(0.75)} ${RUNG}`, "one row's padding stands between the gold rule and the law frame");
+  assert.equal(pane.style.padding, `${rungs(0.5)} ${rungs(0.75)}`, "and the frame keeps the rows off itself");
   // **The three gutter inks**, settled: green for good news, red for bad, grey for neither. An emoji forfeits the
   // ink and keeps its own colour, a blank gutter takes none, and **immune** is `▼`'s glyph in the neutral ink.
   assert.deepEqual(GUTTER_INK, { good: "#78c850", bad: "#e13d3d", flat: "#a0a0a0" });
@@ -451,12 +450,11 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   const close = el => el.kids[0].children[1];
   const tabs = el => el.kids[2].children;
 
-  // **First run, with nothing stored**: the drawer, open on `act`.
   {
     const el = mount(battle(), { expose: true });
     console.log(`== remembers · first run\n${state(el)} · ${open()}`);
-    assert.equal(state(el), "drawer");
-    assert.equal(open(), "act");
+    assert.equal(state(el), "drawer", "first run, with nothing stored, is the drawer");
+    assert.equal(open(), "act", "open on `act`");
   }
 
   // **The old key's three values migrate**, and the key itself is dropped: two keys that can disagree is a state

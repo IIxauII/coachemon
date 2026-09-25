@@ -33,7 +33,12 @@ So:
 - **Constants ship bare.** No paragraph justifying a number. Where a derivation is worth keeping, one line of
   arithmetic beats ten of prose.
 - **In a test, the assertion message is the comment.** A block restating what the `assert` under it already says is one
-  more thing to keep in step, and it is the copy that will drift.
+  more thing to keep in step, and it is the copy that will drift. Where the block says something the messages don't,
+  that is a sign the messages are too thin — move the words into them.
+
+**The bar binds what you write and what you touch, not the whole tree at once.** `90-render.js` and `rendertest.mjs`
+were swept under #389; most of `hud/` still carries the `§` back-references the first bullet bans. Clear them from a
+file while you are already in it, rather than opening a sweep of its own.
 
 ## Commits
 
