@@ -20,8 +20,9 @@ already declare manifest keys. The grab key arrives in the background, and the b
 has been calling `tabs.sendMessage` into the relay with no `permissions` and no `host_permissions` since it shipped. Nothing new is
 spent, nothing banned by §5.5 is named, and the `commands` key trips no word the guard bans.
 
-The one target where the premise breaks is Safari. `browser.commands` works there from Safari 14 **[doc]**, but *changing* the
-shortcut was not supported until **Safari 26** **[doc]** — and the store manifest's Safari floor is `18.0` (§5.3). A player on
+The one target where the premise breaks is Safari. `browser.commands` is implemented there — Mozilla's compat data says from Safari 14,
+and Apple, who publishes no floor of its own, defers to that table **[doc]**. But *changing* the shortcut was not supported until
+**Safari 26**, which Apple does state outright **[doc]** — and the store manifest's Safari floor is `18.0` (§5.3). A player on
 Safari 18–18.6 gets whatever `suggested_key` says and has no way to change it. That is not a reason to abandon the approach; it is a
 reason for the Safari floor to be re-argued, or for the feature to be declared Safari-26-and-up.
 
@@ -58,8 +59,21 @@ which is free.
 |---|---|---|---|
 | Chrome | 25+ | 25+ | Chrome docs; MDN BCD **[doc]** |
 | Firefox | 48+ (desktop; **not** Firefox for Android) | 48+ | MDN BCD **[doc]** |
-| Safari | 14+, but **rebinding only from 26** | 14+ | MDN BCD, Apple release notes **[doc]** |
-| Orion (macOS) | full support, `update`/`reset` included | full support | Kagi's own API sheet **[doc]** |
+| Safari | 14+ per MDN, but **rebinding only from 26**; Apple publishes no floor | 14+ per MDN | MDN BCD, Apple release notes **[doc]** |
+| Orion macOS | full support, `update`/`reset` included | full support | Kagi's own API sheet **[doc]** |
+| Orion iOS/iPadOS | `Command` and `getAll` full support | **No support** | Kagi's own API sheet **[doc]** |
+
+**Apple never publishes a version floor for `commands`.** Its compatibility page is a *caveat* list — *"Check for these keys in your
+manifest and take action where needed"* — and `commands` appears in neither the manifest table nor the API table, which means only
+that Apple documented no Safari-specific caveat. The earliest mention of the API in any Safari release note is **16.4**: *"Removed
+Keyboard Shortcut conflict warnings for `browser.commands` when there are multiple commands without keyboard shortcuts assigned."*
+**[doc]** WebKit's own `WKWebExtension.Command` class documents the object. The `14` in the table is **Mozilla's** number, which Apple
+explicitly defers to. Treat the Safari floor for `commands` itself as **[unverified]** and the *rebinding* floor of 26 as **[doc]**,
+since that one Apple states outright.
+
+Orion's iOS row is a trap worth naming: `Command` and `getAll` are *Full support* there while `onCommand` is *No support*, so
+`getAll()` would keep reporting the binding as present while the event that delivers the keypress never fires. Irrelevant in practice —
+nothing on iOS reaches a hub on `127.0.0.1` — but it is the shape of failure to expect.
 
 Chrome's reference states the requirement plainly: *"The following keys must be declared in the manifest to use this API:
 `"commands"`"* — a manifest key, with no accompanying `permissions` entry. MDN lists the `commands` key as `Mandatory: No`,
@@ -95,14 +109,33 @@ The vendor docs corroborate what §8.3 already does.
   Mozilla's compatibility table."* **[doc]**
 - **Orion.** `tabs.sendMessage` *Full support* on macOS **[doc]**, and the transport bar passes **[live]** Orion 1.1.2 (§2).
 
+**`onCommand` hands the background the tab, so no lookup is needed at all.** The event's signature is
+`(command: string, tab?: tabs.Tab) => void` **[doc]**, and `sender.tab` on the inbound path is deliberately not scrubbed — Chromium's
+`chrome_messaging_delegate.cc` comments *"We don't bother scrubbing the tab object, because this is only reached as a result of a tab
+(or content script) messaging the extension"* **[doc]**. So the background never calls `tabs.query`, which is the one `tabs` method
+that would have wanted the permission. (Worth knowing anyway, since it fails quietly: `tabs.query({url: …})` with no permissions
+returns `[]` rather than throwing — *"'title' and 'url' properties are considered privileged data and can only be checked if the
+extension has access to the tab's data. Otherwise, this tab is considered not matched."* **[doc]**)
+
+Chromium's own feature table settles the permission question where the prose does not: in `_api_features.json` the `tabs` namespace
+carries **no `dependencies` key at all**, where a gated namespace such as `contextMenus` carries `"dependencies":
+["permission:contextMenus"]`; and `MessageService::OpenChannelToTabImpl`, the `tabs.sendMessage` path, runs no host-permission check —
+its only bail-out is *"The tab isn't loaded yet. Don't attempt to connect."* **[doc]** The failure mode is therefore never a permission
+error but *"Receiving end does not exist"*, which is exactly what `relay.ts`'s swallowed send already assumes.
+
 One thing the docs do **not** carry, and the repo does: Chrome's match-patterns page says match patterns are used both for *"Injecting
 content script"* and for *"Declaring host permissions that some Chrome APIs require in addition to their own permissions"* — it does
 not state that a `content_scripts` match confers host access for messaging. The reason it does not need to is that messaging into your
 *own* content script is not host access. §2's live passes settle it.
 
-**The last hop is already built.** The panel is MAIN-world (`hud.js`), where no extension API exists — §2.1 records `browser` as
-undefined in Orion's MAIN world **[live]**, and the relay exists precisely because MAIN cannot hear `runtime`. So anything arriving in
-the background reaches the panel through the ISOLATED relay's `coachemon:*` `CustomEvent` channel
+**The last hop is already built, and there is no shortcut around it.** The panel is MAIN-world (`hud.js`), which *"share[s] the
+execution environment with the host page's JavaScript"* **[doc]**. Chromium's feature table makes the consequence exact: `runtime`'s
+root is `privileged_extension`, and of its sub-features only `runtime.sendMessage`, `runtime.connect` and `runtime.id` are re-opened to
+a `web_page` context — **`runtime.onMessage` is not**, so a MAIN-world script cannot receive a `tabs.sendMessage` at all **[doc]**.
+(Re-opening even those three to a page needs `externally_connectable`, which routes to `onMessageExternal` and is one-way: *"It is not
+possible to send a message from an extension to a web page."* **[doc]**) §2.1 records the same from the other side: `browser` is
+undefined in Orion's MAIN world **[live]**. So anything arriving in the background reaches the panel through the ISOLATED relay's
+`coachemon:*` `CustomEvent` channel
 (`extension/src/relay/relay.ts`, `extension/src/relay/channel.ts`, §9.1). That is one more message type on an existing channel, not a
 new capability.
 
@@ -137,7 +170,7 @@ new capability.
 | Firefox | `about:addons` → gear → **Manage Extension Shortcuts** | **[doc]** |
 | Safari **26+** | Safari Settings | **[doc]** |
 | Safari **18–18.6** | **nowhere** | **[doc]** |
-| Orion | **no documented extension-shortcuts page** | **[unverified]** |
+| Orion macOS | Tools › Extensions › Manage Extensions, since Orion **0.99.127** (2024-03-20) | **[doc]** |
 
 A player may assign a key to a command that shipped with no `suggested_key` at all, on both Chrome and Firefox **[doc]**. That is the
 safest default: ship the command with *no* suggested key, let the browser's own page own the binding, and have no collision to lose to.
@@ -162,13 +195,27 @@ The store manifest declares `"safari": { "strict_min_version": "18.0" }` (§5.3)
 **[unverified]** in §16. Everything actually exercised on Safari in this repo was on **26.2** **[live]** (§2.1). So the practical
 exposure is narrow, but the *declared* floor and the rebinding floor disagree by eight major versions.
 
-**Orion documents no extension-shortcuts page.** Its keyboard-shortcuts help page covers only changing *Orion's own* shortcuts through
-macOS System Settings: *"You can change the keyboard shortcuts for Orion or other apps based on your specific needs."* **[doc]** Whether
-Orion surfaces an extension command in a menu (which is what would make the macOS App Shortcuts route work) is **[unverified]** — it was
-not observed, and Kagi does not say. Orion's sheet claims `commands.update` and `commands.reset` as *Full support* on macOS **[doc]**,
-which would let an extension rebind its own key programmatically, but this effort has no settings surface to drive them from (§391) and
-neither Chrome nor Safari has them (`update`/`reset`: Firefox 60+, Chrome and Safari `false` **[doc]**). So they are not a portable
-answer.
+**Orion has a rebinding UI, but it is undocumented in the help pages and Kagi's own tracker says it is broken.** The feature exists:
+Orion's release notes for **0.99.127** (2024-03-20) list *"Allow remapping extension keyboard shortcuts"* **[doc]**. But Kagi's help
+site never mentions it — `browser-extensions/macos-extensions.html` covers Tools › Extensions › Manage Extensions without a word about
+shortcuts, and the keyboard-shortcuts page is entirely about macOS App Shortcuts for Orion itself: *"You can change the keyboard
+shortcuts for Orion or other apps based on your specific needs."* **[doc]** The location above comes from a user post on Kagi's
+feedback site, not from Kagi.
+
+Two facts from that tracker change how a default should be picked:
+
+- **Orion's panel *adds* a binding rather than replacing the manifest's.** Kagi staff, 2025-06-11: *"Regarding setting new shortcuts for
+  extensions, no, we don't overwrite the old extension shortcuts, that panel allows you to add a new shortcut for an action."* **[doc]**
+  So a bad `suggested_key` cannot be rebound away on Orion — it can only be joined by a second one.
+- **Extension shortcuts are currently unreliable on Orion.** On Kagi's tracker, with staff reproduction or Kagi's own triage tags: a
+  shortcut that fires the command **twice per keypress** on 1.0.3 (tagged *Planned*), shortcuts that cannot be cleared because they
+  reappear (*Under Review*, on Kagi's own first-party extension), and an extension shortcut not firing at all, staff-reproduced
+   2026-02-14 and still reported on 1.0.6. **[doc]**, as vendor acknowledgement rather than as a measurement — none of this was
+  exercised here, so its effect on Coachemon is **[unverified]**.
+
+Orion's sheet claims `commands.update` and `commands.reset` as *Full support* on macOS **[doc]**, which would let an extension rebind
+its own key programmatically, but this effort has no settings surface to drive them from (§391) and neither Chrome nor Safari has them
+(`update`/`reset`: Firefox 60+, Chrome and Safari `false` **[doc]**). So they are not a portable answer.
 
 ---
 
@@ -183,17 +230,31 @@ Yes on Chrome and Firefox, by documented design. Unmeasured on Safari and Orion.
 - **Firefox event page.** *"Background scripts unload after a few seconds of inactivity"*, and they *"are restarted automatically when
   Firefox calls one of their WebExtensions API events listeners"*, with *"Listeners must be registered synchronously from the start of
   the page."* **[doc]**
-- **Safari.** Apple confirms the teardown but not the wake: *"With manifest version 3, all background pages are nonpersistent."*
-  **[doc]** §16 already carries the measurement that matters — *the unsigned page unloaded after about 32 s* — and the transport's
-  answer to it is reconnect-on-wake (§8.2), which is a *reconnect*, not a proof that an inbound event revives the page. **Whether
-  `commands.onCommand` wakes a torn-down Safari background is [unverified]**, and it is the single riskiest fact in this ticket.
+- **Safari.** Apple confirms the teardown — *"With manifest version 3, all background pages are nonpersistent"* and *"Safari unloads
+  your nonpersistent background page when the user isn't directly interacting with the extension"* **[doc]** — and describes the wake
+  in general terms, in WWDC21 session 10027: *"those events help the browser to determine if your background page should be loaded or
+  unloaded"*, and *"if our content script sends a message, the background page will be woken up so it can receive and react to that
+  message."* **[doc]** That is a statement about events in general, not about `onCommand`, and Apple documents no per-event list.
+  §16 already carries the measurement that matters — *the unsigned page unloaded after about 32 s* — which is suspiciously close to a
+  bug Apple then fixed: Safari 17.6, *"Fixed an issue where Safari Web Extension background pages would stop responding after about 30
+  seconds."* **[doc]** The transport's answer is reconnect-on-wake (§8.2), which is a *reconnect*, not a proof that an inbound event
+  revives the page. **Whether `commands.onCommand` wakes a torn-down Safari background is [unverified]**, and it is the single riskiest
+  fact in this ticket.
 - **Orion.** §2 records Orion running the `service_worker` as a *persistent* page **[live]** 1.1.2, so there is nothing to wake. That
   is the easy case, assuming it holds.
 
-A second Safari caveat, from §2.1 **[live]** Safari 26.2: *"Safari runs nothing until the player grants access in Safari › Settings ›
-Extensions; no prompt appears."* So on Safari the grab key can fire in a live background and still reach nothing, because there is no
-content script in the tab to send to. The panel is not drawn in that state either, so the player is not missing anything they can see —
-but the key is silently dead for the same reason the coach is.
+A second Safari caveat, and it is Apple's design rather than an accident. In Safari a `content_scripts` match is a **request**, not a
+grant: *"Specify a `matches` array for desired URL patterns in the `content_script` key in `manifest.json` to request permission for
+your content script to work in matching websites"*, and WWDC20 session 10665 says it plainly — *"this doesn't mean that your extension
+will automatically be given access to inject on those domains. Instead, the user will see your extension's toolbar icon badge the first
+time they visit a web site that matches what's declared in the manifest."* **[doc]** §2.1 records the same **[live]** on Safari 26.2:
+*"Safari runs nothing until the player grants access in Safari › Settings › Extensions; no prompt appears."*
+
+So on Safari the grab key can fire in a live background and reach nothing, because there is no content script in the tab to send to.
+The panel is not drawn in that state either, so the player is not missing anything they can see — the key is dead for the same reason
+the coach is. Worth flagging for a different ticket: Apple's documented grant affordance is *the toolbar button*, and **the Safari
+manifest declares no `action`** (§5.3 — only Firefox does, for the consent click). How a Safari player grants access to an extension
+with no browser action is **[unverified]**; no Apple source describes that flow.
 
 ---
 
@@ -216,8 +277,12 @@ The `_execute_action` reserved command is a third route: it opens the extension'
 without a background **[doc]**. It is no use here — the Firefox build's `action` exists only to carry the data-collection consent click
 (§8.4), Chrome and Safari declare no `action` at all, and §391 rules out a popup outright.
 
-A content script cannot register a browser-level shortcut by itself on any target: `commands` is a manifest key whose event is
-delivered to the extension's background context. **[doc]**
+A content script cannot register a browser-level shortcut by itself on any target. Chrome's content-script page lists the APIs a
+content script may touch — `dom`, `i18n`, `storage`, and six `runtime` members — and closes the list: *"Content scripts are unable to
+access other APIs directly."* `commands` is not on it, and in Chromium's feature table `commands` is `"contexts":
+["privileged_extension"]`, so dispatch into a content script is not merely undocumented but impossible. **[doc]** The background hop is
+mandatory for anything that is not the popup: *"This key combination triggers the `commands.onCommand` event in the service
+worker."* **[doc]**
 
 ---
 
@@ -228,7 +293,10 @@ delivered to the extension's background context. **[doc]**
    `extension/src/build/manifest.test.ts` pins it like every other key.
 2. **Ship it with no `suggested_key`.** A default that collides is silently dead and the player is told nothing. With no suggested key
    there is nothing to collide, the browser's own page owns the binding from the start, and the four-shortcut budget is untouched.
-   The cost is that the feature is inert until bound, so the panel has to say the key exists somewhere the player will read.
+   The cost is that the feature is inert until bound, so the panel has to say the key exists somewhere the player will read. Orion
+   raises the stakes on this: its panel *adds* a binding rather than replacing the manifest's, so a bad default there can be joined but
+   never taken away **[doc]**. Safari below 26 cannot rebind at all. A default is therefore something two of four targets cannot
+   undo.
 3. **A default, if one is wanted anyway, must be a `Ctrl`/`Alt`/`Command` combination.** Chrome forbids a bare key and forbids function
    keys; Firefox and Safari allow F1–F12 and Chrome does not. One cross-target default is therefore a modifier combination.
 4. **Safari's floor and Safari's rebinding disagree.** Rebinding arrived in Safari 26; the manifest says 18. Either the Safari floor
@@ -236,12 +304,19 @@ delivered to the extension's background context. **[doc]**
    entry at all and uses the page-level route. This is a decision, not a detail, and it belongs to #397 or a ticket of its own.
 5. **Safari gets one thing no other target does**: Safari 26 shows the command in the menubar, which is a mouse-reachable trigger and a
    discoverability surface for free.
-6. **One [unverified] premise is created, for §16**: *a `commands.onCommand` event wakes a torn-down Safari background.* Everything
-   else in this ticket is [doc] or [live]. The cheap check is the per-engine smoke run that §16 already provisions.
-7. **The page-level route stays live as the fallback and as the CDP answer.** It costs nothing, it works under both injection routes,
+6. **Two [unverified] premises are created, for §16.** *A `commands.onCommand` event wakes a torn-down Safari background* — Apple
+   documents the wake for events in general and names no event list, and the repo's own measurement is a page that unloaded after about
+   32 s. And *Orion delivers an extension shortcut once, reliably* — Kagi's tracker currently carries a staff-reproduced non-firing
+   shortcut, a command that fires twice per keypress, and shortcuts that cannot be cleared **[doc]**. Both are cheap to check on the
+   per-engine smoke run that §16 already provisions; everything else in this ticket is [doc] or [live].
+7. **The background never needs to find the tab.** `onCommand` is delivered as `(command, tab)`, so the one `tabs` call that would have
+   wanted the permission — `tabs.query` — is never made. Worth pinning in whatever test #397 leaves behind, because `tabs.query`
+   fails *silently* without the permission rather than throwing, so a future refactor that reaches for it would look like a dead key
+   rather than an error.
+8. **The page-level route stays live as the fallback and as the CDP answer.** It costs nothing, it works under both injection routes,
    and it is what the feature degrades to wherever the browser command does not arrive. #397's real question is therefore not
    *browser-or-page* but *browser-and-page*, and what the second one does when the first never fires.
-8. **Nothing here makes the grab a `command` in `CONTEXT.md`'s sense.** That word means *one step the hub carries to a game tab*, and
+9. **Nothing here makes the grab a `command` in `CONTEXT.md`'s sense.** That word means *one step the hub carries to a game tab*, and
    this step comes from the browser, unasked, with no hub involved. It travels the relay's channel but it is not hub traffic, and #397
    needs a name for it that is not *command*.
 
@@ -256,6 +331,10 @@ Vendor primary sources, all fetched 2026-09-25.
 - Chrome, match patterns — https://developer.chrome.com/docs/extensions/develop/concepts/match-patterns
 - Chrome, service worker lifecycle — https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle
 - Chrome, service worker events — https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/events
+- Chrome, content scripts and the `world` key — https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts and https://developer.chrome.com/docs/extensions/reference/manifest/content-scripts
+- Chrome, respond to commands — https://developer.chrome.com/docs/extensions/develop/ui/respond-to-commands
+- Chrome, message passing — https://developer.chrome.com/docs/extensions/develop/concepts/messaging
+- Chromium source: `chrome/common/extensions/api/_api_features.json` and `extensions/common/api/_api_features.json` (the `tabs`, `runtime` and `commands` feature entries); `extensions/browser/api/messaging/message_service.cc` (`OpenChannelToTabImpl`); `chrome/browser/extensions/api/messaging/chrome_messaging_delegate.cc` (tab scrubbing); `chrome/browser/extensions/api/tabs/tabs_api.cc` (`TabsQueryFunction::MatchesTab`) — https://chromium.googlesource.com/chromium/src/+/main/
 - MDN, `commands` manifest key — https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands
 - MDN, `tabs` API permissions — https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs
 - MDN, `tabs.sendMessage` — https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/sendMessage
@@ -264,5 +343,18 @@ Vendor primary sources, all fetched 2026-09-25.
 - Extension Workshop, MV3 migration guide — https://extensionworkshop.com/documentation/develop/manifest-v3-migration-guide/
 - Apple, Safari 26.0 release notes, Web Extensions — https://developer.apple.com/documentation/safari-release-notes/safari-26-release-notes
 - Apple, assessing your Safari web extension's browser compatibility — https://developer.apple.com/documentation/safariservices/assessing-your-safari-web-extension-s-browser-compatibility
+- Apple, Safari 16.4 release notes (earliest `browser.commands` mention) — https://developer.apple.com/documentation/safari-release-notes/safari-16_4-release-notes
+- Apple, Safari 17.6 release notes (background pages stopped responding after ~30 s) — https://developer.apple.com/documentation/safari-release-notes/safari-17_6-release-notes
+- Apple, optimizing your web extension for Safari — https://developer.apple.com/documentation/safariservices/optimizing-your-web-extension-for-safari
+- Apple, managing Safari web extension permissions — https://developer.apple.com/documentation/safariservices/managing-safari-web-extension-permissions
+- Apple, `WKWebExtension.Command` and its `activationKey` — https://developer.apple.com/documentation/webkit/wkwebextension/command
+- Apple, WWDC20 session 10665 *Meet Safari Web Extensions* — https://developer.apple.com/videos/play/wwdc2020/10665/
+- Apple, WWDC21 session 10027 *Explore Safari Web Extension improvements* — https://developer.apple.com/videos/play/wwdc2021/10027/
 - Kagi, Orion WebExtensions API support — https://help.kagi.com/orion/misc/technical.html and its linked support sheet
 - Kagi, Orion keyboard shortcuts — https://help.kagi.com/orion/support-and-community/keyboard-shortcuts.html
+- Kagi, Orion macOS release notes, 0.99.127 *"Allow remapping extension keyboard shortcuts"* — https://browser.kagi.com/updates/orion-release-notes.html#macos-orion-0-99-127
+- Kagi, Orion feedback tracker: https://orionfeedback.org/d/427-allow-remapping-extension-keyboard-shortcuts, https://orionfeedback.org/d/11266-keyboard-shortcuts-for-extensions-bitwarden-autofill-not-working, https://orionfeedback.org/d/12054-the-readwise-highlighter-chrome-extension-triggers-twice-when-you-use-the-keyboard-shortcut, https://orionfeedback.org/d/13216-unable-to-clear-kagi-translate-extension-keyboard-shortcuts
+
+**One near-miss recorded so a later session does not repeat it.** Safari 17.4's release notes document *"support for the `shortcuts`
+manifest member on macOS"*, rebindable in System Settings › Keyboard › Keyboard Shortcuts › App Shortcuts. That is the **web app**
+`shortcuts` member, not extension `commands`, and it is not a route to this feature.
