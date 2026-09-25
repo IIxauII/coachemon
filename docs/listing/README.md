@@ -53,9 +53,9 @@ stands for. Nothing is captured from a live game: no canvas, no franchise art, n
 `COACHEMON_CHROME` if Chrome is not at the default macOS path.
 
 Each shot is two documents, which `scripts/listing/page.ts` explains: a **stage** pinned to a game width of 1920,
-where the panel is the 300 px one a player at 1080p sees, and a store-sized **frame** that scales the stage to fill
+where the panel is the 449 px one a player at 1080p sees, and a store-sized **frame** that scales the stage to fill
 it. The panel's footprint follows the viewport, so a shot laid out in the 1280 px frame itself would photograph a
-200 px panel on a rung nobody plays at. `zoom` in `LISTING_ASSETS` is that per-asset factor; a fractional one is
+300 px panel on a rung nobody plays at. `zoom` in `LISTING_ASSETS` is that per-asset factor; a fractional one is
 accepted and softens both pixel faces.
 
 To add a shot, add a fixture to `fixtures.js` and a row to `LISTING_ASSETS`; the test picks it up from the table.
@@ -70,7 +70,7 @@ Its twin is gone with the group layout: the doubled enemy name ("Paras **Paras**
 view, and the drawer these shots open on is `act`, which draws no enemy rows. Open the shots on `foes` and it is back.
 
 One more that looks like a framing mistake and is not. The learn shot truncates a line, because that is the panel at
-the 300 px it actually ships at; the frame's factor scales the whole card uniformly, so no factor unwraps a line and
+the 449 px it actually ships at; the frame's factor scales the whole card uniformly, so no factor unwraps a line and
 only overriding the width would — which would photograph the panel at a width no player ever sees.
 
 The promo tiles are not shots any more. They used to be: both were the panel at whatever zoom fitted, and the

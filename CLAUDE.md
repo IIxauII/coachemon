@@ -37,8 +37,8 @@ So:
   that is a sign the messages are too thin — move the words into them.
 
 **The bar binds what you write and what you touch, not the whole tree at once.** `90-render.js` and `rendertest.mjs`
-were swept under #389; most of `hud/` still carries the `§` back-references the first bullet bans. Clear them from a
-file while you are already in it, rather than opening a sweep of its own.
+were swept under #389; most of `hud/` and the `scripts/listing/` files still carry the `§` back-references the first
+bullet bans. Clear one when you edit the line it sits on — that much is not a sweep, and it is how the rest goes.
 
 ## Commits
 

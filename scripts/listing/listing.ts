@@ -50,7 +50,7 @@ export type ListingAsset = {
  * Sizes are the stores' own: CWS screenshots are 1280×800, its small promo tile 440×280 and its marquee 1400×560;
  * AMO takes any size and reuses the same screenshots. `zoom` is the factor the *stage* is scaled by, picked so the
  * card fills the frame without cropping — the panel is laid out at a pinned game width of 1920, where it is 449 px
- * wide, and 449 px is unreadable in a 1280 px frame otherwise (`page.ts`, #349 §12). A fractional factor is accepted
+ * wide, and 449 px is unreadable in a 1280 px frame otherwise (`page.ts`). A fractional factor is accepted
  * and softens both pixel faces, so a whole one is worth keeping where one fits.
  *
  * **The factor is not independent of the panel's width share.** It was 3 while the panel was 300 px, and the wider
