@@ -5,7 +5,7 @@ import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
 import { journalCheck } from "./55-journal.js";
-import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setDraw, setRedraw, strip } from "./90-render.js";
+import { battleScene, clearMissed, controls, drawer, dropGame, el, glyph, missedSprite, openGroup, PANEL_W, panelState, setRedraw, strip } from "./90-render.js";
 import { captionBattle, drawBattle } from "./96-render-battle.js";
 import { captionEncounter, drawEncounter } from "./96-render-encounter.js";
 import { captionFusion, drawFusion } from "./96-render-fusion.js";
@@ -66,10 +66,6 @@ const setShown = card => { shown = card; groups = undefined; };
 // What the last refresh died on, or null: the panel shows it, and 99-start pushes it once per distinct message (§11.1).
 let failure = null;
 export const lastFailure = () => failure;
-
-// The render layer derives a card's text from its groups through this, so `cardText` never has to know which draw
-// goes with which kind — that stays here (§11.1).
-setDraw(card => (KIND[card.kind] ? KIND[card.kind].draw(card) : null));
 
 // The **account read**: what the run has caught and unlocked, plus the party it would join and the event's shiny
 // multiplier. It is not turn state — the catch card weighs a throw by it, and the Mystery Encounter card weighs a

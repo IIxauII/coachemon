@@ -25,7 +25,7 @@ const { drawEncounter } = globalThis.__hud["96-render-encounter"];
 const { drawStarters } = globalThis.__hud["96-render-starters"];
 const { drawFusion } = globalThis.__hud["96-render-fusion"];
 const { drawBiome } = globalThis.__hud["97-render-biome"];
-const { GROUP_IDS, MARKS, cardText, flatGroups } = globalThis.__hud["90-render"];
+const { GROUP_IDS, MARKS, flatGroups, wireCard } = globalThis.__hud["90-render"];
 
 // The relay keeps its own copy of the ids, because the panel is a source the extension bundles rather than imports
 // (`extension/src/relay/channel.ts`). This is what pins the copy to the original: retiring or merging a group
@@ -53,6 +53,11 @@ const RETIRED = {
 // row, and the model strings the summaries are read from. Letters, digits, whitespace and ASCII are not marks.
 const glyphsIn = text => [...text].filter(ch => !/[\p{L}\p{N}\s]/u.test(ch) && !/[\x20-\x7e]/.test(ch));
 
+// The card as plain text, off the renderer named at the call site: the panel's kind → draw dispatch is 98-tick's
+// and stays there, so a test says which renderer it means rather than asking a second table (#388). The signature
+// is `show`'s below, so a card and its renderer travel together here the way they do there.
+const textOf = (card, draw = drawBattle) => wireCard(draw(card)).text;
+
 const show = (label, card, draw = drawBattle) => {
   const groups = flatGroups(draw(card));
   console.log(`== ${label}`);
@@ -78,7 +83,7 @@ const show = (label, card, draw = drawBattle) => {
   // `text` is derived from the group list rather than read back off the drawn card (§5), so it carries every group
   // in the same fixed order and nothing besides — and its first line is the call, which is the line the watch CLI
   // prints per event. What a heading reads is pinned against literals at each card below.
-  const lines = cardText(card).split("\n");
+  const lines = textOf(card, draw).split("\n");
   assert.equal(lines[0], groups[0].summary, "the first line of the text is the act summary");
   const rows = groups.flatMap(g => g.rows);
   assert.deepEqual(lines.filter(l => rows.includes(l)), rows, "every group's rows, in the group order and no other");
@@ -86,7 +91,7 @@ const show = (label, card, draw = drawBattle) => {
   // The alphabet is closed (§7). Held over the card's whole text rather than over the first token of a row, because a
   // foe row is a block of several lines and a mark can stand alone as a claim inside one — and because the summaries
   // this text is built from are the model's own strings, which is where three of the re-maps had to land.
-  for (const ch of glyphsIn(cardText(card))) {
+  for (const ch of glyphsIn(textOf(card, draw))) {
     assert.ok(!RETIRED[ch], `${label}: ${ch} is retired — it is ${RETIRED[ch]} now`);
     assert.ok(MARKS.includes(ch) || TYPOGRAPHY.includes(ch), `${label}: ${ch} is not in the closed alphabet`);
   }
@@ -156,7 +161,7 @@ const catchAdvice = {
   assert.equal(groups[1].summary, "we're weak to Fire ×2");
   // A group is headed by its label and its summary; `act` by its summary alone, since the strip above it is its
   // label (§6). Literals, so the rule is pinned rather than restated.
-  const text = cardText(card);
+  const text = textOf(card);
   assert.ok(text.includes("\nFoes: we're weak to Fire ×2\n"), text);
   assert.ok(text.includes("\nRoad: W90 wild — Toxicroak L71\nNext W90 wild\n"), text);
   // The call leads the text and nothing heads it: the card's identity line has left the rows for the strip's
@@ -183,7 +188,7 @@ const catchAdvice = {
   // group falls back on the same rule any group with nothing to conclude lives by.
   assert.equal(groups[2].summary, null);
   assert.ok(groups[2].rows.length, "the maybe is still drawn");
-  assert.ok(cardText(card).includes("\nCatch\n≈ Zubat maybe:"), cardText(card));
+  assert.ok(textOf(card).includes("\nCatch\n≈ Zubat maybe:"), textOf(card));
 }
 
 // ---- Trainer: act · foes · plan · road, six foes and a fight plan
@@ -214,7 +219,7 @@ const catchAdvice = {
   // Nothing threatens a KO and no attacking type hits two of us, so the foes group has no summary: its label alone
   // heads it, in the text as in the pane, with no filler count (§6).
   assert.equal(groups[1].summary, null);
-  assert.ok(cardText(card).includes("\nFoes\nfoes weak to: Ice ×2 Fire ×1\n"), cardText(card));
+  assert.ok(textOf(card).includes("\nFoes\nfoes weak to: Ice ×2 Fire ×1\n"), textOf(card));
   assert.equal(groups[2].summary, "winnable · 💀 Garchomp KOs 2/4 · Roserade outspeeds the whole bench");
   // A trainer battle never offers a ball, so there is no catch group whatever the wave holds.
   assert.ok(!groups.some(g => g.id === "catch"));
@@ -242,7 +247,7 @@ const catchAdvice = {
   const groups = show("unavailable", card);
   assert.deepEqual(groups.map(g => g.id), ["act"]);
   assert.equal(groups[0].summary, "no advice — the enemy AI call threw");
-  assert.equal(cardText(card), "no advice — the enemy AI call threw");
+  assert.equal(textOf(card), "no advice — the enemy AI call threw");
   // The inline ⚠ row that used to carry it is gone: the summary carries it.
   assert.ok(!groups[0].rows.some(r => r.includes("no advice")), groups[0].rows.join("\n"));
 }
@@ -275,7 +280,7 @@ const learn = (over = {}) => ({
   assert.ok(groups[0].rows.some(r => r.includes("Earth Power") && r.includes("+87 power")), groups[0].rows.join("\n"));
   // `options` and `notes` head their panes with their label alone — no summary, and no count of what is below (§6).
   assert.deepEqual([groups[1].summary, groups[3].summary], [null, null]);
-  const text = cardText(card);
+  const text = textOf(card, drawLearn);
   assert.ok(text.includes("\nMoves\n✗ Dark Bite ⚠ weak Atk power 30\n"), text);
   assert.ok(text.includes("\nTeam\nteam: +SE Steel/Electric · −SE Dark · ⚠ loses only Dark move\n"), text);
   assert.ok(text.endsWith("\nNotes\nnext big fight unread: the run seed is past the pinned build"), text);
@@ -332,7 +337,7 @@ const encounter = (over = {}) => ({
   // The picked option stays in `options` where it already is — there are no synthesized act rows (§6).
   assert.ok(groups[1].rows.some(r => r.includes("Open it")), groups[1].rows.join("\n"));
   assert.deepEqual([groups[1].summary, groups[2].summary], [null, null]);
-  const text = cardText(card);
+  const text = textOf(card, drawEncounter);
   assert.ok(text.includes("\nOptions\n★ Open it — pick of 3 Ultra items\n"), text);
   assert.ok(text.endsWith("\nNotes\n· the trap is rolled on the option, not before it"), text);
 }
@@ -362,7 +367,7 @@ const starters = (over = {}) => ({
   assert.ok(groups[0].rows.some(r => r.includes("picked: Gible")), groups[0].rows.join("\n"));
   // The row the cursor is on is a row of `options`, not a group of its own.
   assert.ok(groups[1].rows.some(r => r.includes("Rattata")), groups[1].rows.join("\n"));
-  assert.ok(cardText(card).includes("\nProposals\n★ best"), cardText(card));
+  assert.ok(textOf(card, drawStarters).includes("\nProposals\n★ best"), textOf(card, drawStarters));
 }
 
 // Starters with nothing to add: an ordinary card with exactly one `act` group, and the shell never knows (§1).
@@ -382,7 +387,7 @@ const fusionRow = (over = {}) => ({ base: { icon: null, name: "Garchomp" }, othe
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
   assert.equal(groups[0].summary, "Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite");
   assert.ok(!groups.some(g => g.rows.some(r => r.includes("pick Garchomp first"))), "the call has left the rows");
-  assert.ok(cardText(card).endsWith("\nNotes\nSpliced Endless: unfused mons run on half their base stats"), cardText(card));
+  assert.ok(textOf(card, drawFusion).endsWith("\nNotes\nSpliced Endless: unfused mons run on half their base stats"), textOf(card, drawFusion));
 }
 
 // Biome: the offered biomes are `options`, and a caveat on how they were judged is `notes`.
@@ -395,9 +400,9 @@ const biomeOption = (over = {}) => ({ label: "Swamp", id: 1, score: 72, offense:
   const groups = show("biome · swamp over construction site, one fainted", card, drawBiome);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
   assert.equal(groups[0].summary, "Swamp 72 pick — Garchomp resists · Construction Site 55");
-  assert.ok(cardText(card).includes("\nBiomes\n★ Swamp"), cardText(card));
+  assert.ok(textOf(card, drawBiome).includes("\nBiomes\n★ Swamp"), textOf(card, drawBiome));
   // Who the judging left out is a footnote, not a supporting line for the call.
-  assert.ok(cardText(card).endsWith("\nNotes\n⚠ judged without 1 fainted — no revive at the next heal"), cardText(card));
+  assert.ok(textOf(card, drawBiome).endsWith("\nNotes\n⚠ judged without 1 fainted — no revive at the next heal"), textOf(card, drawBiome));
 }
 
 // Nothing to footnote: the `notes` group is not drawn at all, the same as any group with nothing in it.
