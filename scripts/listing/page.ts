@@ -31,9 +31,8 @@ export const LETTERBOX = "#484050";
 export const STAGE = { width: 1920, height: 1080 };
 
 /** The two faces the panel's registers name (`REGISTER` in `hud/90-render.js`), and the files the game declares them
- * from in its own `index.html`. The panel blends into the game by wearing the game's own rule — its default face for
- * chrome, its dense face at half the size for rows — so a shot that draws in neither is a shot of a panel that does
- * not ship. */
+ * from in its own `index.html`. The panel wears the game's default face for chrome and its dense face for rows, so a
+ * shot that draws in neither is a shot of a panel that does not ship. */
 export const FONT_FILES = { emerald: "pokemon-emerald-pro.ttf", pkmnems: "pkmnems.ttf" };
 
 /** The game version the clone is pinned to — the same pin the drift check and the encounter oracle read, so a shot

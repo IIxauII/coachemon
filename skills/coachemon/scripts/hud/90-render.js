@@ -1,6 +1,5 @@
 // The panel itself: its element, the sprites and text helpers every card is drawn from, and what it remembers of the
-// view the player left it in. It draws no card and decides nothing - 60-card works out what is on screen, the
-// renderers above turn one card into groups, and 98-tick puts the two together.
+// view the player left it in. It draws no card and decides nothing.
 // State another file needs is read and written through functions, never exported as a binding.
 // Six names are exported for the tests and for nothing else: the laws a test pins rather than restates — the two
 // palettes, the closed alphabet and the closed group ids — and the two projections a golden reads a drawn card by.
@@ -11,8 +10,8 @@ let game = null;
 const sprites = new Map();
 let missed = false; // a wanted sprite wasn't loaded yet during the last draw
 
-// The battle scene, through the Phaser game the page holds. `dropGame` forgets it after a failed refresh, so the
-// next one looks it up again (the page may have reloaded under us).
+// `dropGame` forgets the game after a failed refresh, so the next one looks it up again: the page may have reloaded
+// under us.
 export const battleScene = () => {
   game ??= Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
   return game.scene.getScene("battle");
@@ -34,72 +33,38 @@ const sprite = (key, frame) => {
   return sprites.get(id) ?? "";
 };
 
-// ---- The skin (#349 §8, §9)
-// The panel quotes the game's window instead of inventing a box: the game's window interior as the fill, its outline
-// as one shadow at 1px offset for the whole object, its message white for body text. **The fill is opaque**, and the
-// cost is named: an opaque panel occludes strictly more. It is taken because a translucent fill made the effective
-// background whatever the battle happened to be doing, which is why contrast had three answers and why the shadow
-// inverted on the commonest one.
-// Authorship is the one treatment the game never draws: a 1px flat gold rule around the whole object — whatever is
-// showing, since the panel is one object that changes height. The ink is quoted and the treatment is not, because
-// the game's own windows are a beveled nine-slice. So the panel never draws the game's window texture at all, pins
-// this one interior, and does not follow the player's chosen skin — which is what holds §8's palette shut.
-// It never names itself either: no mark, no wordmark, nowhere.
+// ---- The skin
 const SKIN = { fill: "#362d3e", body: "#f8f8f8", rule: "#f8b050", shadow: "#181818" };
 
-// ---- The footprint and the type ladder (#349 §4)
-// The panel is a constant fraction of the game rather than a pixel width against a canvas that scales, so it covers
-// the same share of the field at every window shape. The canvas is a fitted 1920×1080, so the game's drawn width is
-// reproducible in pure CSS — no canvas rect read, no resize observer, neither of which the repo has or gains.
-// Position stays the viewport's top-left: off 16:9 that corner *is* the game's own letterbox bar, so the panel
-// occludes nothing there for free and does not relocate when the player resizes.
-// The knob is a JS constant inlined into every length rather than a CSS custom property: the only API that puts a
-// custom property on an element is the very one §10's no-motion guard bans, and the panel injects no stylesheet.
+// ---- The footprint and the type ladder
+// The game's canvas is a fitted 1920×1080, so its drawn width is reproducible in pure CSS — no canvas rect read, no
+// resize observer. The knob is a JS constant inlined into every length and not a CSS custom property: the only API
+// that sets one on an element is the very API the no-motion guard bans, and the panel injects no stylesheet.
 const GAME_W = "min(100vw, 177.78vh)";
-// The **row rung**: the game's own dense face at 8px on its own 1920 canvas, doubling where the rounding flips — game
-// width 2880 and 4800 — and held between 8px and 24px, so every ordinary window sits on the game's own rung.
-// `8 × round(game-w / 1920)` is the same number as `round(game-w / 240, 8px)`, which is what CSS can say without
+// `round(game-w / 240, 8px)` is the same number as `8 × round(game-w / 1920)`, which is what CSS can say without
 // dividing a length by a length.
-const ROWS = `clamp(8px, round(${GAME_W} / 240, 8px), 24px)`;
-// Chrome is twice the rows — the game's own density rule, taken off the window rather than invented here.
-const CHROME = `calc(2 * ${ROWS})`;
-// n rungs of that ladder, as a CSS length. **One knob now scales the panel, not its text**: every width and sprite
-// height below is a rung count, so a size change is one edit rather than a dozen independent literals. Exported,
-// because a row's own columns are on the same ladder and a renderer must be able to say so.
-export const rung = n => `calc(${n} * ${ROWS})`;
+const ROWS = `clamp(10px, round(${GAME_W} / 240, 8px), 24px)`;
+// `round(…, 1px)` here and in `rung`: both faces and every sprite are pixel designs, and a fractional size softens
+// them — 1.6× the upper rungs is 25.6px and 38.4px, and `mark` at 1.35 rungs is 13.5px.
+const CHROME = `round(1.6 * ${ROWS}, 1px)`;
+// n rungs of that ladder, as a CSS length.
+export const rung = n => `round(calc(${n} * ${ROWS}), 1px)`;
 
-// The panel's **width**: 0.156 of the game — 300px at a 1920 game — clamped to 0.75×–1.5× of that reference. Below
-// the floor legibility stops paying for proportion; above the ceiling, which binds at game width 2880, a crisp panel
-// stops reading as part of upscaled pixel art. Past 2880 the ladder and this clamp deliberately part company: the
-// type keeps climbing in a box that has stopped growing, so a pane's capacity roughly halves and a tall pane scrolls.
-const SHARE = 0.156;
+// `REF_W` is derived from `SHARE`, so the clamp multipliers and `SHARE` move together: raising the share alone drags
+// the width floor up with it.
+const SHARE = 0.234;
 const REF_W = SHARE * 1920;
-export const PANEL_W = `clamp(${0.75 * REF_W}px, calc(${SHARE} * ${GAME_W}), ${1.5 * REF_W}px)`;
-// The inset from the viewport corner, and the height the panel may not exceed. The inset is the one length here that
-// stays off the ladder: it is a gap from the viewport's edge rather than a share of the game, and 8px off a
-// letterboxed corner covers no game pixel at any window shape.
-// The game's message box owns the bottom 27%, so its top edge sits at `0.73 ÷ (16/9) = 0.4106 × game-w`, and the
-// budget is 0.40 of the game width, less the inset. **It is the drawer's pane that carries it** (§4), which is where
-// §4 puts it: the strip and the bar are always on screen and are never what a card makes tall, so the thing that has
-// to stop growing is the pane.
-// So the *panel* may stand taller than the budget by the strip, the bar and the padding — it is the pane
-// that is bounded, not the object. Named here rather than discovered: against everything the model draws today the
-// threshold never fires at all (the tallest pane is about 187px against a 713px budget at a 1920 game), so the
-// arithmetic only matters for content that does not exist yet, and the guard it needs then is the pane's.
+// Rounded because the products are binary floats: `0.5 * 0.234 * 1920` is `224.64000000000001`, and the whole of it
+// would ship into the style attribute.
+const pxRound = n => `${Math.round(n * 100) / 100}px`;
+export const PANEL_W = `clamp(${pxRound(0.5 * REF_W)}, calc(${SHARE} * ${GAME_W}), ${pxRound(1.5 * REF_W)})`;
+// The game's message box owns the bottom 27% of the game, so its top edge is at `0.73 ÷ (16/9) = 0.4106 × game-w`,
+// and the budget is 0.40 of that width less the inset. It bounds the pane, not the panel.
 const INSET = "8px";
 const MAX_H = `calc(0.40 * ${GAME_W} - ${INSET})`;
 
-// The panel's two **register**s, split by the game's own rule for its own dense lists: its default face for
-// **chrome** — the shell's own lines and every group heading — and its dense face at **half the size** for **rows**.
-// The game draws `emerald` at 96px and switches to `pkmnems` at 48px for its party lists, move labels and
-// instructions (`src/ui/text.ts`); the panel is a dense list, so it blends in by adopting the rule rather than by
-// picking a font. Both faces are the page's own — the game declares them — so the fallback only serves a page that
-// has neither.
-// Face, size and line box travel together, because they are one decision: the rung is the one the game itself wears
-// on its own 1920 canvas, which is where #355's ladder lands for every ordinary window, and the line box is an
-// integer at that rung because both faces are pixel designs and a fractional one softens them.
-// A register has one size. The old three-value knob was three independent literals, and what a row emphasises it
-// emphasises with ink (§8) — so nothing below a row sets a size of its own, and the drawn-panel golden says so.
+// The panel's two registers. Both faces are the page's own — the game declares them — so the fallback only serves a
+// page that has neither. A register has one size, and nothing below a row sets a size of its own.
 const REGISTER = {
   chrome: { face: "emerald, ui-monospace, Menlo, monospace", size: CHROME, line: "1.25" },
   rows: { face: "pkmnems, ui-monospace, Menlo, monospace", size: ROWS, line: "1.5" },
@@ -110,22 +75,18 @@ export const h = (tag, style, ...kids) => {
   n.append(...kids.flat().filter(k => k != null && k !== ""));
   return n;
 };
-// Sprite heights are rungs of the same ladder rather than literals of their own, so the icons wear the game's type
-// ladder along with the text. Four steps, named for the job a sprite does on a row and not for a size: the foe
-// card's portrait, the mon a row is about, a mon the row merely refers to, and the small marks — type, category,
-// status, ball.
-export const ICON = { big: 3.5, mon: 2.5, ref: 2.25, mark: 1.5 };
+// Sprite heights in rungs, named for the job a sprite does on a row: the foe card's portrait, the mon a row is about,
+// a mon it merely refers to, and the small marks — type, category, status, ball.
+export const ICON = { big: 3.1, mon: 2.2, ref: 2.0, mark: 1.35 };
 export const img = (key, frame, title, rungs, fallback = title) => {
   const url = sprite(key, frame);
   if (!url) {
     // Optional sprites (fallback null) may simply not exist; don't retry those.
     if (fallback !== null) missed = true;
-    // **The fallback is an element, not a bare string**, because the rows and the caption that hold a sprite are
-    // flex containers whose spacing is a `gap`. Contiguous text collapses into one anonymous flex item, so a
-    // string fallback landing beside a neighbouring string is spaced by neither the gap nor a space of its own:
-    // `Youngster` and `Charizard` drew as `YoungsterCharizard`. Only a missing sprite could show it, which is
-    // every store shot (§12) and a game whose atlas has not loaded. The flattener joins siblings with a space
-    // either way, so the card's text is unchanged.
+    // **The fallback is an element, not a bare string**: the rows and the caption that hold a sprite are flex
+    // containers spaced by a `gap`, and contiguous text collapses into one anonymous flex item — so a string fallback
+    // landing beside a neighbouring string is spaced by neither the gap nor a space of its own, and `Youngster` and
+    // `Charizard` drew as `YoungsterCharizard` (#378).
     return typeof fallback === "string" && fallback !== "" ? h("span", { margin: "0 2px" }, fallback) : fallback;
   }
   const i = document.createElement("img");
@@ -135,142 +96,54 @@ export const img = (key, frame, title, rungs, fallback = title) => {
   return i;
 };
 export const mon = (icon, name, rungs = ICON.mon) => (icon ? img(icon[0], icon[1], name, rungs, name) : name);
-// ---- The colour law (#349 §8)
-// **Colour answers direction, and nothing else** — not urgency, not certainty, not how good the news is. One ink for
-// what we do, one for what they do to us, one for what is later, one for neither. The law lives in a row's **text
-// ink** and in the **open group's frame**, which is what gives it a carrier that is not text: direction is legible
-// with no text read at all.
-//
-// Two columns, two questions, and neither ever answers the other's (§7): the gutter says *is this good news*, and
-// everything right of it says *who is acting*. That, and not a shorter list of characters, is what makes the
-// vocabulary readable without a legend.
-//
-// **Nothing here is invented.** The rule the palette arrives at: quote the game where the colour is decoration, and
-// use the panel's own inks where the colour is load-bearing. Every value below is a colour the game already draws —
-// its summary blue, its selected-setting salmon, its Fire-type red, its master-tier magenta, its locked-setting grey.
+// ---- The colour law
 export const LAW_INK = { ours: "#40c8f8", theirs: "#f88880", later: "#e331c5", none: "#a0a0a0" };
-// The three directions as styles, so a renderer never writes a colour: `ink.ours`, `ink.theirs`, `ink.later`, and
-// `dim` for neither. **A renderer that spells a hex has left the law**, which is why none of them spells one and the
-// drawn-panel golden says so.
 export const ink = { ours: { color: LAW_INK.ours }, theirs: { color: LAW_INK.theirs }, later: { color: LAW_INK.later } };
 export const dim = { color: LAW_INK.none };
-// **On a card with no arrow the law degrades to *ours* alone** — encounter, biome, starters, fusion, learn and most
-// of rewards. Nothing is being done to us there, so `theirs` and `later` never appear, and their absence is itself
-// the information. The law never means something different on a different kind.
-//
-// The frame's mapping reads as a **timeline** rather than as a subject: *later* is anything past the turn in front
-// of you, whether three turns away or three waves away, and *ours* is anything the player is choosing right now. So
-// `foes` is the one tab where something is coming at you, and the frame says so before a word is read.
 const GROUP_LAW = { act: "ours", foes: "theirs", catch: "ours", plan: "later", options: "ours", audit: "later", road: "later", notes: "none" };
-// **`theirs` splits between the frame and row text**, and is held to reading as one ink in two weights rather than
-// as two colours: a frame has nothing but colour, where text has words beside it. The frame takes the game's
-// Fire-type red, which as text sits too dark on the panel's fill; the salmon it pairs with is 11.33 from grey as
-// text, which is the distance the split buys.
+// `theirs` is one ink in two weights rather than two colours: the frame takes the game's Fire-type red, which as text
+// sits too dark on the panel's fill.
 const FRAME = { ...LAW_INK, theirs: "#f75231" };
-// **Chrome gold never appears inside a row** (§8, §9): it is the tab labels, the open group's summary line and the
-// strip's caption, and it is inert. The law frame insets one row's padding within it — the padding the panel already
-// spends — so gold reads as the object's edge and the law as a state inside it, and the two rules never touch.
-//
-// **The gates, and why they are not all-pairs.** Prose is held at 4.5:1; a gutter mark and a group frame are
-// graphical objects conveying meaning and state, and are held at 3:1. Gates apply only to pairs a reader can
-// confuse — the gutter's inks against each other, the law's inks against each other, and a law ink against body —
-// because under red-green deficiency the space collapses to one blue-to-yellow axis on which the panel already
-// spends seven positions, and an all-pairs gate eliminates candidates for collisions nobody can experience.
-//
-// **The figures are not recomputed here.** They were measured once against the pinned interior and are recorded in
-// §8 with their five accepted costs, which anyone revisiting the palette should read before moving a value:
-//   1. Against every viable red, the gutter's green sits in the uncanny band under deuteranopia: for roughly 8% of
-//      male players the gutter's good and bad are told apart **by shape alone**. Green is kept anyway.
-//   2. **No red anywhere in sRGB** clears contrast, separation from grey and separation from green at once. This is
-//      a permanent property of the problem, not a search that stopped early.
-//   3. The gutter's bad-news red clears its 3:1 floor by 0.08 — the ink most at risk in the palette.
-//   4. `later` knowingly misses prose AA at 3.44, the one exception to *prose stays at 4.5*, and sits 12.41 from
-//      `ours` because red-green deficiency renders that magenta as blue. For those readers *now* and *not yet* are
-//      told apart by words, marks and the tab label.
-//   5. `theirs` as text sits 11.33 from grey, which is the split above.
-// All five are measured **against one window interior**. On the game's brightest skin the gutter's bad-news red and
-// the whole `later` register fall below the 3:1 floor, and the grey that serves both columns drops out of AA — so
-// §9's decision not to follow the player's skin is what holds this palette shut, and reversing it reopens it.
 
-// **A type badge is the game's atlas sprite**, and the game's type ink serves only as the text fallback for a page
-// whose atlas has not loaded: a red pill and red text can never read as the same claim, so the badge owns a visual
-// register of its own and never borrows the law's.
+// A type badge is the game's atlas sprite; the game's type ink serves only as the text fallback for a page whose
+// atlas has not loaded.
 const TYPE_INK = {
   normal: "#a8a878", fighting: "#c03028", flying: "#a890f0", poison: "#a040a0", ground: "#e0c068", rock: "#b8a038",
   bug: "#a8b820", ghost: "#705898", steel: "#b8b8d0", fire: "#f08030", water: "#6890f0", grass: "#78c850",
   electric: "#f8d030", psychic: "#f85888", ice: "#98d8d8", dragon: "#7038f8", dark: "#705848", fairy: "#e888c8",
   stellar: "#ffffff",
 };
-// **The multiplier beside a badge takes the game's own effectiveness colours**, quoted from its damage table, so a
-// decade of instinct still works where the number already says what the colour says. Only the three the table has an
-// opinion about: `×4` super, `×¼` resisted, `×0` immune.
-//
-// **Whether a suffix is an effectiveness is the caller's to say, never this file's to guess**: a suffix that reads
-// like a multiplier need not be one — the count of foes weak to a type is written `×3`, and with four foes it is
-// written `×4`. Matching the rendered string would ink that count as *super effective*, which is the caller's own
-// fact re-derived wrongly from its own output. So the caller passes `eff`, and a badge that was not told takes no
-// colour whatever its suffix says.
+// Only the three multipliers the game's own damage table has an opinion about.
+// **Whether a suffix is an effectiveness is the caller's to say, never this file's to guess**: the count of foes weak
+// to a type is written `×3`, and with four foes `×4` — matching the rendered string would ink that count as *super
+// effective*. So the caller passes `eff`, and a badge that was not told takes no colour whatever its suffix says.
 const EFFECT_INK = { "×4": "#4AA500", "×¼": "#FE8E00", "×0": "#929292" };
 export const badge = (type, suffix = "", eff = false) => {
-  // `img` hands back the name when the atlas has not loaded, and only then is the type's own ink spent — on the
-  // text standing in for the sprite, never beside it.
+  // The type's own ink is spent only on the text standing in for a missing sprite, never beside a drawn one.
   const drawn = img("types", type.toLowerCase(), type, ICON.mark);
   const mult = eff ? EFFECT_INK[suffix] : null;
   return h("span", { whiteSpace: "nowrap", marginRight: "3px" },
     typeof drawn === "string" ? h("span", { color: TYPE_INK[type.toLowerCase()] }, drawn) : drawn,
     suffix && h("b", mult ? { color: mult } : {}, suffix));
 };
-// The gutter: one mark's column, a rung and three quarters wide, rather than a width of its own. It is the
-// column's, so it stays this file's: a row with a column *ahead* of the gutter — the fight plan's `now:` / `next:`
-// steps — lines up with one without by wearing `gutterMark` below, not by being handed the width.
 const GUTTER = rung(1.75);
-// ---- The closed alphabet (#349 §7)
-// **The gutter answers exactly one question — *is this good news*** — and what lets it answer without a legend is
-// that the vocabulary is closed. Sixteen marks: the fifteen shapes below, plus *immune*, which is the `×0` case of
-// `▼` and carries no glyph of its own. Beside them stand the four emoji, which keep the gutter but **forfeit its
-// ink**: an emoji is its own colour, so those rows say *this is a thing of a kind* rather than *this is good or bad*.
-//
+// ---- The closed alphabet
 // Good news and bad news are told apart by the mark's **shape**, never by its colour, so the column still works for a
-// colour-blind player — which is why the re-maps of §7 all land on shapes that were already mutually distinct.
-//
-// Three things sit outside it, deliberately:
-//   - **Confidence** is a third register — `~` replay, `?` estimate, `!` already wrong this run. A claim's certainty
-//     is not the same question as whether it is good news, so none of the three is ever a gutter mark.
-//   - **Inline connectives** inside prose — `→`, `←`, `›`, `—`, `×`, the fractions — are typography, not marks.
-//     Governing them would have closed the cap on punctuation rather than on meaning.
-//   - **A blank gutter**, which is what a continuation row and a group's own heading row wear: they add to the row
-//     above rather than making a claim of their own, and a section that was a mark is a tab with a label now.
-// Where a re-map would have lied, the mark became a **word** instead: `upgraded`, `shiny`, `rare`, `fixed`, and
-// catch's three reason kinds. A seventeenth mark is the expensive answer; a word costs nothing.
-//
-// Exported for the same reason `GROUP_IDS` is: the set is the contract, and the group-list golden holds every card
-// to it. `line` does not refuse an unknown mark the way `group` refuses an unknown id — a stray glyph is one wrong
-// character on one row, where a stray id would break the tab bar and the view the panel remembers, and a panel that
-// throws mid-draw tells the player less than one that draws the wrong tick.
+// colour-blind player: a seventeenth mark has to be distinct from the sixteen by shape alone.
 export const MARKS = [..."⚔➜★✓▲↯✗✦⚠▼⇄⤵≈↺·", "💀", "👑", "🎲", "🔒"];
-// **The gutter is inked good-or-bad** (§8), and the ink is the mark's rather than the caller's: the column answers
-// one question, so a row cannot be given an ink that disagrees with its own shape. A renderer passes a mark and gets
-// the law's answer — which is why `line` no longer takes a colour at all.
-// An **emoji forfeits the ink and keeps its own colour**: those rows say *this is a thing of a kind*, not *this is
-// good or bad*. A blank gutter takes none either — a continuation row makes no claim of its own.
+// The gutter's ink is the mark's and not the caller's. An **emoji forfeits it and keeps its own colour**, which is the
+// `codePointAt` test below; a blank gutter takes none either.
 export const GUTTER_INK = { good: "#78c850", bad: "#e13d3d", flat: LAW_INK.none };
 const GOOD = "⚔➜★✓▲", BAD = "↯✗✦⚠▼";
-// **immune** is the sixteenth mark and not a sixteenth shape: it is the `×0` case of `▼`, drawn with `▼`'s glyph and
-// told apart by the grey the law gives it and the `×0` beside it. A wall we cannot get through at all is not bad
-// news about this turn the way a resist is — it is a door that is simply shut — so it sits with the neutral marks.
+// **immune** is the sixteenth mark and not a sixteenth shape: it is drawn with `▼`'s glyph and told apart by the grey
+// the law gives it and the `×0` beside it.
 export const IMMUNE = "immune";
 const gutterInk = mark => (!mark || (mark !== IMMUNE && mark.codePointAt(0) > 0xffff) ? null
   : GOOD.includes(mark) ? GUTTER_INK.good : BAD.includes(mark) ? GUTTER_INK.bad : GUTTER_INK.flat);
-// The gutter's own cell, and the row it heads. Both are exported because one row shape has a column *ahead* of the
-// gutter — the fight plan's `now:` / `next:` steps — and it has to line up with an ordinary row at every rung of the
-// ladder, which it can only do by wearing the same two.
 export const ROW = { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "1px" };
 export const gutterMark = mark => h("span",
   { color: gutterInk(mark) ?? "", width: GUTTER, flex: "none" }, mark === IMMUNE ? "▼" : mark);
 export const line = (mark, ...kids) => h("div", ROW, gutterMark(mark), ...kids);
-// **The HP bar stays a bar, never ink** (§8): the game's own overlay colours say what they say by filling a length,
-// and spending them on text would put a fourth register of good-and-bad against the gutter's one. The number beside
-// it carries no colour of its own, so the bar is the only thing the ink is on.
 const HP_INK = hp => (hp > 50 ? "#39ff7b" : hp > 20 ? "#f3b200" : "#fb3041");
 export const hpBar = hp => h("span", { display: "inline-flex", alignItems: "center", gap: "3px" },
   h("span", { width: rung(2.5), height: rung(0.5), flex: "none", background: "rgba(255,255,255,.18)" },
@@ -279,153 +152,82 @@ export const hpBar = hp => h("span", { display: "inline-flex", alignItems: "cent
 export const itemImg = (icon, name) => img("items", icon, name, ICON.ref, null);
 export const sep = { borderTop: "1px solid rgba(255,255,255,.12)", margin: "3px 0" };
 
-// ---- Groups (#349 §1)
-// A renderer's product is an ordered list of **group**s, not a list of nodes: `{ id, label, summary, rows }`. The
-// shell decides how to shell them, so separation between groups is the shell's business and no renderer draws a
-// divider of its own.
-//
-// The ids are closed at eight and semantic — a group means the same thing wherever it appears, which is what lets
-// one be remembered as the cards change under it. A ninth means retiring or merging one, not adding one here.
-//
-// One list, in the fixed order the plain text walks and the tab bar sits in, whatever the drawer is showing
-// (§5): a renderer cannot lead with what matters most on its own kind, so a tab sits in the same place always.
-// `act` leads it, which is what makes the first line of a card's text its call.
+// ---- Groups
 export const GROUP_IDS = ["act", "foes", "catch", "plan", "options", "audit", "road", "notes"];
-// The card's groups in that order, whatever order the renderer returned them in: **the tab bar and the plain text
-// walk the same list**, so a tab sits in the same place always and the text never depends on what is on screen.
+// The card's groups in the fixed order, whatever order the renderer returned them in.
 const inOrder = groups => GROUP_IDS.flatMap(id => (groups ?? []).filter(g => g.id === id));
-// `label` is the group's name on the tab, and is required for that reason: **a tab carries its group's name**, so a
-// group with no label would put an id in front of the player. `summary` is what it concluded, and may be absent.
-// `rows` are nodes: a row is two inline columns, the gutter and the body, so it flattens to `mark body`.
+// `label` is the group's name on the tab and is required for that reason: a group with no label would put an id in
+// front of the player. `rows` are nodes; a row flattens to `mark body`.
 export const group = (id, label, summary, rows) => {
   if (!GROUP_IDS.includes(id)) throw new Error(`unknown group ${id}`);
   if (!label) throw new Error(`group ${id} has no label`);
   return { id, label, summary: summary || null, rows: (rows ?? []).filter(Boolean) };
 };
-// The same group, or nothing at all when it has neither summary nor rows: an empty tab is filler, and the options
-// themselves say it one glance lower (§6). The label-alone rule is for a group with rows and nothing to conclude,
-// not for one with nothing. Every renderer that builds more than one group wants this, so it lives here.
+// The same group, or nothing at all when it has neither summary nor rows.
 export const some = (id, label, summary, rows) => {
   const g = group(id, label, summary, rows);
   return g.summary || g.rows.length ? g : null;
 };
 
-// What heads a group's block **in the plain text**. The pane's own heading is a second rule below, because the two
-// readers differ: a pane has the group's name on the tab above it and text has no tabs at all.
-// `act` is headed by its summary alone: the strip above it is its label (§6), which is also what makes the first
-// line of the card's text the call and not a heading. A group with no summary is headed by its label alone — and an
-// `act` with none is therefore headed by nothing, since its label is the strip's.
-// The name and what it concluded are held apart by a colon, or the heading reads as one sentence: `Foes: we're weak
-// to Fire ×2`. A colon rather than the ` — ` the repo usually spends on claim→detail, because the summaries already
-// spend one inside themselves.
+// What heads a group's block **in the plain text**. `paneHeading` below is the pane's own rule, because a pane has the
+// group's name on the tab above it and text has no tabs at all.
 const headingText = g => (g.id === "act" ? g.summary
   : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
-// **Other group headings are one line in the pane, then an ellipsis** — about 55 characters at reference width.
-// Nothing is budgeted there, because nothing there is the call: the one line the player always needs is the strip's,
-// and the strip is above whatever the drawer is showing. The cut is the browser's and lands on the drawn node alone;
-// `groups[].summary` and the card's text are never cut by the panel (§5, §6).
+// The cut is the browser's and lands on the drawn node alone: `groups[].summary` and the card's text are never cut.
 const ONE_LINE = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-// **The open group's `summary` heads its pane, or its `label` alone where the summary is absent** (§2). The name is
-// on the tab directly above it, so a pane that carried the label too would spend its first line telling the player
-// what they just clicked. This is where the pane's heading and the text's part company: the text has no tabs, so it
-// keeps the label, which is what lets a reader tell `foes` from `audit` from `road` (§5).
-// It is drawn in chrome at full strength and **not bold**, which is the whole distance between it and the strip's
-// call: the call is the one line the player always needs (§6) and carries the weight, the heading is the answer the
-// pane's own rows support (story 6) and carries none. It is not dimmed — the conclusion would then be the quietest
-// thing in a pane whose rows it is supposed to lead.
 const paneHeading = g => {
-  // `act` is not headed in the pane at all: **the act group's pane does not repeat the call**, because the strip
-  // directly above it is its heading (§6). The heading is still `act`'s in the plain *text*, which has no strip —
-  // which is what keeps the first line of a card's text its call.
+  // `act` is not headed in the pane: the strip directly above it is its heading. It keeps a heading in the plain text.
   if (g.id === "act") return null;
   const text = g.summary || g.label;
   return text ? h("div", ONE_LINE, text) : null;
 };
 
-// Which register a node is drawn in is the **shell's**, never a renderer's: the shell heads a group in chrome and
-// puts its rows in the dense face at half the size (§9). A renderer returns rows and never says what face it wanted,
-// the same way it never says what view it is in.
 // The longhands and not the `font` shorthand: the shorthand resets every font longhand it does not name, so it would
-// un-bold a row that is already bold — the card's own header line, for one.
+// un-bold a row that is already bold (#354).
 const inRows = node => {
   const r = REGISTER.rows;
   if (node?.style) Object.assign(node.style, { fontFamily: r.face, fontSize: r.size, lineHeight: r.line });
   return node;
 };
 
-// The **pane**: the open group's block — its heading, then its rows in the dense register. The shell's own rule
-// between groups went with the stack that needed it: one group is on screen at a time, so there is nothing to
-// hold it apart from.
 export const pane = g => [paneHeading(g), ...g.rows.map(inRows)].filter(Boolean);
-// **The open group's frame** (§8): the law's one carrier that is not text, so which direction the pane is about is
-// legible before a word is read. It is the group's own ink by the timeline mapping, and it changes only when the
-// player changes tab — a frame is state, not a signal (§10).
-// It **insets the panel's own padding within the gold authorship rule**, so gold reads as the object's edge and the
-// law as a state inside it, and the two rules never touch. The inset is the padding the panel already spends, taken
-// off the ladder like every other length rather than picked as a second number.
 const frameInk = id => FRAME[GROUP_LAW[id]] ?? LAW_INK.none;
 
-// The **tab bar**: one tab per group the card has, in the fixed global order, **labels only** so the bar stays
-// legible at reference width. It never wraps, never scrolls and has no overflow menu — **the cap is five tabs,
-// enforced by the vocabulary and not by this layout** (§1), so the bar is free to be one unwrapped line. A label
-// that overruns its share is cut by the browser rather than pushing the bar onto a second line.
-// **No tab carries an unread mark, a count or any state of its own** (§2, §10): every wave brings a new card, so a
-// *new* mark would light every tab every wave and mean nothing, and a mark for a finding new *within* a card would
-// need an event the model does not define. Which tab is open is told by weight and ink — never by gold, which is the
-// authorship rule's and is inert.
-// The gap between tabs is a rung, like every other length the ladder scales; the bar's own margin is the 3px the
-// shell already spends on the rule between blocks, because it is that same gap and not a share of the game.
+// The tab bar never wraps, never scrolls and has no overflow menu: the cap is five tabs, enforced by the vocabulary
+// and not by this layout. A label that overruns its share is cut by the browser.
 const BAR = { display: "flex", flexWrap: "nowrap", gap: rung(1), overflow: "hidden", margin: "3px 0", minWidth: "0" };
 const TAB = { flex: "0 1 auto", minWidth: "0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer" };
 const tab = (g, open) => {
   const n = h("span", { ...TAB, color: open ? SKIN.body : dim.color, fontWeight: open ? "bold" : "normal" }, g.label);
-  // The one thing a tab does, and the only control the drawer has. It asks for a redraw through the same hook the
-  // close control uses, so the pane changes under the click rather than on the next refresh.
+  // It asks for a redraw through the same hook the close control uses, so the pane changes under the click rather
+  // than on the next refresh.
   n.addEventListener("click", e => { e.stopPropagation(); if (!open) { setOpen(g.id); redrawFn(); } });
   return n;
 };
 
-// ---- What the panel remembers (#349 §3, #358)
-// **One key holds the view and the last group id**, replacing the key that held the view alone. The panel the player
-// left is the panel they come back to, so reloading to escape a stuck menu does not also reset the coach.
-//
-// The three states, and the third is a dismissal rather than a size (§2):
-//   `drawer` — the strip over the drawer, the default and what a first run opens on;
-//   `strip`  — the strip alone, so a whole run can be watched on one line;
-//   `closed` — the panel gone, a bare glyph left.
-// **The panel never switches between them by itself**: no card collapses itself and no group opens itself. Every one
-// of them is the shell's — a renderer returns the card's groups and never asks which one is up.
-//
+// ---- What the panel remembers
 // **The dismissal is stored as a flag over the view rather than as a third value of it**, because reopening restores
-// the view it covered (§2): a player watching a run on one line, who dismisses the panel to see the field, comes
-// back to the one line and not to a drawer they shut. The value is one object all the same — it is the panel's whole
-// state, and a state it can only be in one of.
+// the view it covered.
 const PANEL_KEY = "coach-hud-panel";
 const VIEWS = ["drawer", "strip"];
-// The key it replaces and the three values it held, each as the view and the dismissal it becomes. It is read once,
-// on the first load that finds the new key empty, and then written forward and dropped: two keys that can disagree
-// would be a state the panel has to arbitrate on every read. The old key held neither a group nor a view behind its
-// dismissal, so a migrated panel opens on `act`, and a migrated dismissal has the drawer behind it.
+// The key this one replaces, and the three values it held. It is read once, on the first load that finds the new key
+// empty, then written forward and dropped: two keys that can disagree would be a state to arbitrate on every read.
 const OLD_KEY = "coach-hud-view";
 const MIGRATE = { full: ["drawer", false], mini: ["strip", false], closed: ["drawer", true] };
 
-// **First run, with nothing stored, opens the drawer on `act`** (§2): a player who has never opened the panel
-// discovers what the coach does without hunting for it. So the defaults are the first-run state, and a stored value
-// only ever moves off them — a key holding something this build does not know is a key it ignores.
+// **First run, with nothing stored, opens the drawer on `act`**, so the defaults are the first-run state. A key
+// holding something this build does not know is a key it ignores.
 let view = "drawer";
 let dismissed = false;
-// Which group is open, remembered **by identity** and not by position, which is what lets it survive the card
-// changing under it. A card with no such group falls back to `act`, and the fallback is **written back** rather than
-// held as a detour: it is a move, with no jump back when the group reappears (§3). Since the ids are semantic, a
-// player sitting on `foes` lands on `act` for a learn card, whose kept moves are `options`.
+// Which group is open, remembered **by identity** and not by position, so it survives the card changing under it. A
+// card with no such group falls back to `act`, and the fallback is written back rather than held as a detour.
 let openId = "act";
 
 const save = () => {
   try { localStorage.setItem(PANEL_KEY, JSON.stringify({ view, closed: dismissed, group: openId })); } catch {}
 };
 // Storage is the page's and can refuse or hold anything at all, so every field is checked against what this build
-// knows rather than trusted: a panel that cannot read its key draws the first-run state, which is the one state that
-// is always safe to draw.
+// knows rather than trusted.
 const load = () => {
   let raw = null;
   try { raw = localStorage.getItem(PANEL_KEY); } catch { return; }
@@ -445,28 +247,17 @@ const load = () => {
 };
 load();
 
-// **One state and not a pair of flags**: the shell reads the state it is in rather than two predicates that can be
-// asked an impossible question. Which of the three it is decides what the shell shells, and nothing else here. The
-// view behind a dismissal is the panel's own business, which is why only this file ever sees it.
-// **State and view are not the same word**: the view is one of `VIEWS`, and the state is that view or the `closed`
-// the dismissal covers it with. Only the state leaves this file, which is why the export is not named for the view.
+// **State and view are not the same word**: the view is one of `VIEWS`, and the state is that view or the `closed` a
+// dismissal covers it with. Only the state leaves this file, which is why the export is not named for the view.
 export const panelState = () => (dismissed ? "closed" : view);
 export const openGroup = () => openId;
-// Every move the player makes is written as it is made, so the panel survives a reload the player never planned —
-// which is the whole point of the key. **A state change redraws and a group move does not**: a state is only ever
-// changed by a control the player pressed, where a group also moves *during* a draw, when a card has no group of
-// the id the player was on — so the tab, which is the one control that moves a group, asks for the redraw itself.
+// **A state change redraws and a group move does not**: a group also moves *during* a draw, when a card has no group
+// of the id the player was on — so the tab, the one control that moves a group, asks for the redraw itself.
 const setView = next => { if (next !== view) { view = next; save(); redrawFn(); } };
 const setDismissed = next => { if (next !== dismissed) { dismissed = next; save(); redrawFn(); } };
 const setOpen = id => { if (id !== openId) { openId = id; save(); } };
 
-// The drawer: the tab bar, then the open group's pane. Both are the shell's — a renderer returns groups and never
-// asks which one is up. **A card with one group draws a bar with one tab**, which is no branch here: the
-// whole-card replacement is an ordinary card that happens to have only `act`.
-// **The pane is what scrolls**, past the budget the game's message box leaves (§4). The panel's height is the
-// strip, the bar, and a pane that stops growing, which is what makes it something the player can rely on. Against
-// everything the model draws today the threshold never fires — the tallest pane any card produces is about 187px
-// against a 713px budget at a 1920 game — so it ships as a guard for content that does not exist yet.
+// The drawer: the tab bar, then the open group's pane. **The pane is what scrolls**, past the budget above.
 const PANE = { maxHeight: MAX_H, overflowY: "auto", padding: `${rung(0.5)} ${rung(0.75)}` };
 export const drawer = groups => {
   const list = inOrder(groups);
@@ -477,30 +268,21 @@ export const drawer = groups => {
     h("div", { ...PANE, border: `1px solid ${frameInk(open.id)}` }, ...pane(open))];
 };
 
-// ---- The card as plain text (§11.1, §5)
-// The stream's `text` is derived from the group list rather than read back off the drawn card, so the two cannot
-// disagree by construction. It is always the whole card and always in the fixed group order, whatever the drawer is
-// showing — and it needs no view forced on a renderer to be so, because no renderer knows what a view is.
+// ---- The card as plain text
 // **This layer never dispatches on a kind** (#388): it is handed groups and projects them, and which draw goes with
 // which kind stays 98-tick's one table. A second, late-bound copy of that dispatch lived here for the tests to walk
 // the card by; nothing that shipped ever called it, so the panel could change under a suite still drawing the old
 // shape — and a test's draw re-armed the missed-sprite latch the refresh reads.
 
 // The group list as plain data: the same groups in the fixed order, with their rows flattened to one string each.
-// This is the seam the content half of the card is tested at, and what #361 puts on the wire. Named for what it
-// returns — groups — beside `textOfGroups` below, which returns the text: the pair reads in both directions.
+// This is what goes on the wire.
 export const flatGroups = groups => inOrder(groups)
   .map(g => ({ id: g.id, label: g.label, summary: g.summary, rows: g.rows.map(rowText).map(clean).filter(Boolean) }));
 
-// The text, walked off the **flattened** groups and nothing else (#361 §5): it is the projection of exactly what the
-// wire carries, so the two cannot disagree by construction — not two readings of one model, but one reading and a
-// projection of it.
+// The text, walked off the **flattened** groups and nothing else, so the wire and the text cannot disagree.
 const textOfGroups = wire => wire
   .map(g => [headingText(g), ...g.rows].filter(Boolean).join("\n")).filter(Boolean).join("\n") || null;
 
-// **The card as the wire carries it** (#361): the group list flattened, and the text derived from it. Both
-// projections come off one group list, so a caller that wants both pays for one draw — and the stream, which wants
-// both, no longer draws the card a second time to say what it says.
 export const wireCard = groups => {
   if (!groups?.length) return { groups: [], text: null };
   const wire = flatGroups(groups);
@@ -509,20 +291,13 @@ export const wireCard = groups => {
 
 const tagOf = n => String(n.tagName ?? "").toUpperCase();
 const kidsOf = n => (n.childNodes ? Array.prototype.slice.call(n.childNodes) : n.children ?? []);
-// **A row flattens to one line**, and that is the whole constraint a future layout has to meet (§5): a row is two
-// inline columns — the gutter and the body — so it reads as `mark body`. The walker never decides where a line ends
-// and never has to know what a control is, because a row never holds one.
-// A sprite reads as what it stands for: `img` titles every icon with the name it drew.
+// **A row flattens to one line**: a row is two inline columns — the gutter and the body — so it reads as `mark body`.
+// A sprite reads as what it stands for, because `img` titles every icon with the name it drew.
 //
-// **Two losses are kept rather than closed** (#349 §5, #361), because closing either costs more than it is worth:
-//
-// 1. **The text depends on sprite-atlas load state.** An optional sprite that has not loaded yet contributes
-//    nothing where a loaded one contributes its title, so the same card can flatten to two different strings. It is
-//    tolerable only because the stream deduplicates on kind, key and verdict: a changed text never re-fires, and
-//    the most the drift can do is make a later read differ from the event it followed.
-// 2. **A title on a non-image node never reaches the text.** Only `IMG` is read for its title, so what a row says
-//    in a tooltip alone is lost: the biome score breakdown, the learn power breakdown, the threat detail, the note
-//    that every bench mon is KO'd coming in, and the seed-fixed note.
+// **Two losses are kept rather than closed.** An optional sprite that has not loaded contributes nothing where a
+// loaded one contributes its title, so the same card can flatten to two different strings — tolerable only because
+// the stream deduplicates on kind, key and verdict, so a changed text never re-fires. And only `IMG` is read for a
+// title, so what a row says in a tooltip alone never reaches the text.
 const rowText = n => {
   if (n == null) return "";
   if (typeof n !== "object") return String(n);
@@ -533,21 +308,14 @@ const rowText = n => {
 };
 const clean = l => l.replace(/\s+/g, " ").trim();
 
-// The refresh itself lives in 98-tick, above every renderer; it registers itself here so the close control can ask
-// for a redraw without this file knowing what a card is.
+// The refresh itself lives in 98-tick and registers itself here, so the close control can ask for a redraw without
+// this file knowing what a card is.
 let redrawFn = () => {};
 export const setRedraw = fn => { redrawFn = fn; };
 
 // The panel's own two controls, in its corner: the **caret**, which shuts the drawer and keeps the strip, and the
-// **×**, which dismisses the panel altogether. With the tab they are the shell's three, and **controls are the
-// shell's, never a row's** (§5) — a control inside a row is a control inside the card's text, which is what the
-// flattener used to have to drop by its mouse cursor. They float in the corner rather than sitting on a line of
-// their own, so they cost no height.
-// They are chrome and not marks, which is the same carve-out the × has always had from the closed alphabet (§7).
-// The caret's two shapes are the control saying what the click does, not the panel saying anything about the card:
-// it is the one thing on the panel whose state is the player's own, and §10's inert gold is untouched by it.
-// No fill and no radius of their own: the panel's fill is the game's window interior and the panel invents no second
-// one (§8, §9).
+// **×**, which dismisses the panel altogether. They float in the corner rather than sitting on a line of their own,
+// so they cost no height.
 const CONTROLS = { position: "absolute", top: "4px", right: "4px", display: "flex", alignItems: "center", gap: rung(0.25) };
 const control = (mark, title, onClick) => {
   const n = h("span", { cursor: "pointer", padding: "0 4px", fontWeight: "bold" }, mark);
@@ -560,28 +328,16 @@ export const controls = () => h("div", CONTROLS,
     ? control("⌃", "Hide the drawer", () => setView("strip"))
     : control("⌄", "Show the drawer", () => setView("drawer")),
   control("×", "Close", () => setDismissed(true)));
-// The controls float in the panel's corner rather than sitting on a line, so whatever the panel draws first has to
-// leave room for them — the caption otherwise runs under the ×. The shell applies this to its own first line, which
-// is now the strip's head: no renderer knows the controls are there.
+// The controls float in the panel's corner, so whatever the panel draws first has to leave room for them — the
+// caption otherwise runs under the ×. The shell applies this to its own first line; no renderer knows they are there.
 const reserveForControl = node => {
-  // Their own column, in rungs like everything else, so the room they are left grows with them. Two marks wide now,
-  // which is why the strip's head is the shell's to pad and not a renderer's to guess at.
   if (node) node.style.paddingRight = rung(4.25);
   return node;
 };
-// What a dismissed panel leaves behind, and the only way back. Named for what it is rather than for a tab, because
-// the drawer's tab bar owns that word.
-// **Dismissed means silent** (§10): one fixed mark, the same on every wave, carrying no verdict colour and nothing
-// else the card knows. A glyph that changed with the kind would be the panel signalling from a state the player
-// entered to stop it saying anything, and a dismissed panel that reports the wave is not dismissed.
-// It is **from the settled alphabet** and not a mark of its own (§9): the vocabulary is closed, so the way back is
-// one of the emoji already in it rather than a twentieth. It is the battle's, which is the one the dismissed panel
-// already wore on most waves — and because it never changes, it says nothing about the card underneath it. It names
-// the panel no more than the panel names itself (§9).
+// What a dismissed panel leaves behind, and the only way back. **Dismissed means silent**: one fixed mark, the same
+// on every wave, carrying no verdict colour and nothing else the card knows.
 const GLYPH = "🎯";
-// **Reopening restores the drawer that was there** — the view the player was in and the group it was left on, both
-// of which the dismissal covered rather than replaced. So dismissing is not also a reset: a player watching a run on
-// one line comes back to the one line.
+// **Reopening restores the drawer that was there** — the view the player was in and the group it was left on.
 export const glyph = () => {
   const n = h("span", { cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }, GLYPH);
   n.title = "Open coach";
@@ -589,49 +345,29 @@ export const glyph = () => {
   return n;
 };
 
-// ---- The strip (#349 §2, §6)
+// ---- The strip
 // **The one line the player always needs**, in front of them whatever is open or shut, in one fixed order: the
-// verdict dot, the verdict word, the caption, and the call. It sits above everything else the panel shows, so the
-// thing to do now is never a click away — including while the player reads another group.
-//
-// The **caption** is the kind's emoji and what the card is about. It is built by the kind's own renderer, because
-// only that file knows what its card is about, and drawn here, because the strip is the shell's — the same split
-// the groups already live by. Its arrow-separated list is **our** actives, never the enemy roster: it is who we are
-// sending, which on a double is the pair on the field.
-// It is chrome, in the game's label gold, and inert: gold never changes state (§8, §10). It wraps rather than
-// clipping, which past game width 2880 is what it actually does — the point where the ladder and the width clamp
-// part company (§4). The panel never writes its own name here or anywhere (§9).
+// verdict dot, the verdict word, the caption, and the call.
+// The **caption** is built by the kind's own renderer, because only that file knows what its card is about, and drawn
+// here, because the strip is the shell's. Its arrow-separated list is **our** actives, never the enemy roster.
 export const caption = (emoji, title, ...rest) => h("div",
   { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px", minWidth: "0", fontWeight: "bold", color: SKIN.rule },
   emoji, title, ...rest);
 
-// **The dot's five colours sit outside the colour law** (§8): they answer *what kind of wave is this*, which is
-// neither of the law's two questions — not *is this good news* and not *who is acting*. Quoted game colours all the
-// same, since nothing in the palette is invented. Trainer and fight share the gold on purpose: the word spelled out
-// beside the dot is what tells them apart, and a reader who cannot see the ink reads the word.
+// Trainer and fight share the gold on purpose: the word spelled out beside the dot is what tells them apart.
 const VERDICT = { easy: "#78c850", trainer: "#f8b050", danger: "#e13d3d", catch: "#40c8f8", fight: "#f8b050" };
-// One fixed position, a rung of the ladder square and round: the dot is the one thing on the strip that is only
-// colour, so it carries no text of its own and the word carries all of it.
 const dot = ink => h("span", { width: rung(1), height: rung(1), flex: "none", borderRadius: "50%", background: ink });
 
-// The strip itself. `groups` is the card's own list, so the call is `act.summary` and nothing beside it — **the
-// strip, the verdict and the watch line all come from one string and cannot disagree** (§6).
-// **A card with no verdict draws no dot and no word**; the caption and the call still draw. The verdict is a battle
-// card's one-word call, and a battle whose enemy move could not be read has none either — its call already says so.
+// **A card with no verdict draws no dot and no word**; the caption and the call still draw. A battle whose enemy move
+// could not be read has none either — its call already says so.
 export const strip = (card, captionNode, groups) => {
   const ink = VERDICT[card?.verdict];
   const head = reserveForControl(h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" },
     ink ? dot(ink) : null, ink ? h("span", { fontWeight: "bold" }, card.verdict) : null, captionNode));
-  // **Two lines, then an ellipsis** — about 115 characters at reference width. The leading clause must fit; what
-  // follows the first ` · ` may clip, because it is reasoning and not the call. The cut is the browser's and lands
-  // on this node alone: the panel never cuts a string, so `groups[].summary` and the card's text are whole (§5).
-  // Since the clamp only ever eats the *end*, the leading clause is what survives by construction — what the budget
-  // then decides is how much of the reasoning goes with it, and that is a measurement, not a rule CI can hold.
-  // `overflowWrap` is what keeps that true of a run with no space in it: an unbroken token would otherwise push past
-  // the panel's own edge rather than clip, and the clause that must fit is the one it would push out.
+  // **Two lines, then an ellipsis.** The cut is the browser's and lands on this node alone. `overflowWrap` is what
+  // keeps that true of a run with no space in it: an unbroken token would otherwise push past the panel's own edge
+  // rather than clip.
   const call = (groups ?? []).find(g => g.id === "act")?.summary;
-  // The strip carries no control of its own: it is the one line the player always reads, and what shuts the drawer
-  // under it is the caret in the panel's corner, beside the ×.
   return h("div", {}, head, call
     ? h("div", { fontWeight: "bold", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: "2",
         overflow: "hidden", overflowWrap: "anywhere", minWidth: "0" }, call)
@@ -642,16 +378,13 @@ export const el = document.createElement("div");
 el.id = "coach-hud";
 Object.assign(el.style, {
   position: "fixed", top: INSET, left: INSET, zIndex: "2147483647",
-  // The width is the footprint and not the text column, so the rule, the shadow and the padding are inside it: the
-  // panel covers the share of the game the ladder says it does. Padding is a rung too — 6px by 8px at the game's own
-  // rung — so the one knob scales the box along with what is in it.
+  // The width is the footprint and not the text column, so the rule, the shadow and the padding are inside it.
   boxSizing: "border-box", width: PANEL_W, padding: `${rung(0.75)} ${ROWS}`,
   background: SKIN.fill, color: SKIN.body,
-  // One rule and one shadow for the whole object, so they hold whatever the panel is showing — the strip alone, the
-  // strip over the drawer, or the one line a failed refresh leaves (§11). Square corners: the rule is flat.
+  // One rule and one shadow for the whole object, so they hold whatever the panel is showing. Square corners.
   border: `1px solid ${SKIN.rule}`, boxShadow: `1px 1px 0 ${SKIN.shadow}`,
-  // The longhands and not the `font` shorthand: the size is a `calc()` now, and a calculation ahead of the
-  // shorthand's `/` line-height is a parse a panel should not be betting on.
+  // The longhands and not the `font` shorthand: the size is a `calc()`, and a calculation ahead of the shorthand's
+  // `/` line-height is a parse a panel should not be betting on.
   fontFamily: REGISTER.chrome.face, fontSize: REGISTER.chrome.size, lineHeight: REGISTER.chrome.line,
   userSelect: "none", display: "none",
 });

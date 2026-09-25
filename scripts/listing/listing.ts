@@ -49,17 +49,21 @@ export type ListingAsset = {
 /**
  * Sizes are the stores' own: CWS screenshots are 1280×800, its small promo tile 440×280 and its marquee 1400×560;
  * AMO takes any size and reuses the same screenshots. `zoom` is the factor the *stage* is scaled by, picked so the
- * card fills the frame without cropping — the panel is laid out at a pinned game width of 1920, where it is 300 px
- * wide, and 300 px is unreadable in a 1280 px frame otherwise (`page.ts`, #349 §12). A fractional factor is accepted
+ * card fills the frame without cropping — the panel is laid out at a pinned game width of 1920, where it is 449 px
+ * wide, and 449 px is unreadable in a 1280 px frame otherwise (`page.ts`). A fractional factor is accepted
  * and softens both pixel faces, so a whole one is worth keeping where one fits.
+ *
+ * **The factor is not independent of the panel's width share.** It was 3 while the panel was 300 px, and the wider
+ * panel (#389) put 3 over the frame: 449 × 3 is 1348 px against a 1280 px shot, which crops the card rather than
+ * framing it, and a cropped shot is what ships to the store. Moving `SHARE` means re-checking it here.
  */
 export const LISTING_ASSETS: ListingAsset[] = [
   { file: "assets/screenshot-battle.png", width: 1280, height: 800, what: "CWS and AMO screenshot 1",
-    shot: { fixture: "battle", zoom: 3 } },
+    shot: { fixture: "battle", zoom: 2 } },
   { file: "assets/screenshot-learn.png", width: 1280, height: 800, what: "CWS and AMO screenshot 2",
-    shot: { fixture: "learn", zoom: 3 } },
+    shot: { fixture: "learn", zoom: 2 } },
   { file: "assets/screenshot-rewards.png", width: 1280, height: 800, what: "CWS and AMO screenshot 3",
-    shot: { fixture: "rewards", zoom: 3 } },
+    shot: { fixture: "rewards", zoom: 2 } },
   // Both tiles are the mark set beside the wordmark, drawn in the design project rather than here — see
   // `docs/listing/README.md`. They carry no `shot` on purpose: one would make `render.ts` photograph the panel over
   // the top of them on the next redraw, which is how the panel ended up on a branding tile in the first place.
