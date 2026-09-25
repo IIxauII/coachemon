@@ -79,8 +79,19 @@ Chrome's reference states the requirement plainly: *"The following keys must be 
 `"commands"`"* — a manifest key, with no accompanying `permissions` entry. MDN lists the `commands` key as `Mandatory: No`,
 `Manifest version: 2 or higher`, with no permission attached.
 
-Firefox for Android is `false` in BCD for the whole `commands` API **[doc]**. This costs nothing: the add-on is deliberately
-desktop-only (§5.3, no `gecko_android` key).
+Firefox's implementation makes the "no permission" claim structural rather than merely undocumented: `schemas/commands.json` gates the
+namespace on `"permissions": ["manifest:commands"]` — on the presence of the manifest key itself, with nothing user-facing to prompt
+about **[doc]**. `commands` is also absent from MDN's enumerated list of API permissions, which runs `activeTab` through `webRequest`.
+
+Firefox for Android is `false` in BCD for **every** entry in both `webextensions/manifest/commands.json` and
+`webextensions/api/commands.json` **[doc]**. This costs nothing: the add-on is deliberately desktop-only (§5.3, no `gecko_android`
+key). It is worth knowing that the failure there would be total and silent rather than partial.
+
+One Firefox caveat that is not knowable from documentation: **quarantined domains**. Firefox ships
+`extensions.quarantinedDomains.enabled = true` with an *empty* shipped list, populated at runtime from RemoteSettings **[doc]**.
+`pokerogue.net` is not on the hardcoded `extensions.webextensions.restrictedDomains` list, which is Mozilla properties only, but
+whether it is on the live remote list cannot be read from any document. **[unverified]** — and it is upstream of this ticket, since it
+would take the content script down and the coach with it, not just the key.
 
 Orion's own support sheet (linked from `help.kagi.com/orion/misc/technical.html`) lists, for Orion macOS, `commands.Command`,
 `commands.getAll`, `commands.onCommand`, `commands.reset` and `commands.update` as *Full support*, and `tabs.sendMessage` as *Full
@@ -110,7 +121,9 @@ The vendor docs corroborate what §8.3 already does.
 - **Orion.** `tabs.sendMessage` *Full support* on macOS **[doc]**, and the transport bar passes **[live]** Orion 1.1.2 (§2).
 
 **`onCommand` hands the background the tab, so no lookup is needed at all.** The event's signature is
-`(command: string, tab?: tabs.Tab) => void` **[doc]**, and `sender.tab` on the inbound path is deliberately not scrubbed — Chromium's
+`(command: string, tab?: tabs.Tab) => void` **[doc]** — MDN: *"`tab` — the tab that was active when the command shortcut was
+entered."* The second argument arrived in **Firefox 126** **[doc]**, comfortably below the 142 floor, so no fallback is needed on any
+Firefox that can install this build. And `sender.tab` on the inbound path is deliberately not scrubbed — Chromium's
 `chrome_messaging_delegate.cc` comments *"We don't bother scrubbing the tab object, because this is only reached as a result of a tab
 (or content script) messaging the extension"* **[doc]**. So the background never calls `tabs.query`, which is the one `tabs` method
 that would have wanted the permission. (Worth knowing anyway, since it fails quietly: `tabs.query({url: …})` with no permissions
@@ -149,16 +162,36 @@ new capability.
 - **Firefox: MDN states no limit** on either count. **[doc]**
 - **A shortcut must carry a modifier on Chrome.** *"Extension command shortcuts must include either `Ctrl` or `Alt`"*, with `Command`
   or `MacCtrl` substituting for `Ctrl` on macOS; `Shift` is optional-only. **[doc]** So the grab key cannot be a bare key — no bare
-  `Tab`, no bare backtick, no bare letter. BCD also has `F1`–`F12` as *not supported* on Chrome, while Firefox 53+ and Safari 14+ allow
-  them **[doc]** — so a single default that works on all four targets is a `Ctrl`/`Alt`/`Command` combination, not a function key.
+  `Tab`, no bare backtick, no bare letter. Firefox says the same with one exception: *"modifier (mandatory, except for function
+  keys)"*, and *"On Macs, `Ctrl` is interpreted as `Command`, so if you actually need `Ctrl`, specify `MacCtrl`."* **[doc]** BCD has
+  `F1`–`F12` as *not supported* on Chrome, while Firefox 53+ and Safari 14+ allow them **[doc]** — so a single default that works on all
+  four targets is a `Ctrl`/`Alt`/`Command` combination, not a function key. (Firefox 135+ lets a *user* assign `F13`–`F19`, which a
+  manifest may not. **[doc]**)
+- **`_execute_browser_action` is MV2-only; MV3's reserved name is `_execute_action`** (Chrome 88+, Firefox 91+, Safari 15.4+)
+  **[doc]**. Not used here — see §8.
 - **A collision is silent, and the player sees nothing.** Chrome: *"If an extension attempts to register a shortcut that is already
   used by another extension, the second extension's shortcut won't register as expected"*, and *"Certain operating system and Chrome
   shortcuts (e.g. window management) always take priority over Extension command shortcuts and cannot be overridden."* **[doc]** MDN
   is blunter: *"If a key combination is already used by the browser (like `"Ctrl+P"`) or by an existing add-on, then you can't override
   it. You can define it, but your event handler will not be called when the user presses the key combination."* **[doc]**
 
-  So the failure mode is **a key that does nothing**, with no error, no badge and no notice. Whatever the panel does when it gets the
-  keyboard, it must be discoverable some other way, or a player whose default collided will conclude the feature does not exist.
+  So the failure mode for a *manifest* default is **a key that does nothing**, with no error, no badge and no notice. Firefox's
+  `ExtensionShortcuts.sys.mjs` contains no logging code at all, which matches the documented silent drop **[doc]**. Whatever the panel
+  does when it gets the keyboard, it must be discoverable some other way, or a player whose default collided will conclude the feature
+  does not exist.
+
+  **A collision the player types in is a different story on Firefox.** `about:addons` tells them, in Firefox's own strings:
+  `shortcuts-exists = Already in use by { $addon }`, `shortcuts-system = Can't override a { -brand-short-name } shortcut`,
+  `shortcuts-duplicate-warning-message2 = { $shortcut } is being used as a shortcut in more than one case. Duplicate shortcuts may
+  cause unexpected behavior.` **[doc]** So the silence is specifically the silence of a *shipped default*, which is one more argument
+  for not shipping one.
+- **A dead binding is detectable at runtime, and on Firefox it is fixable.** `commands.getAll()` reports each command's actual
+  `shortcut`, so a build can compare what it got against what it asked for and know it lost. Firefox 137+ then has
+  `commands.openShortcutSettings()` — *"Opens the Manage Extension Shortcuts page, highlighting the extension's shortcut options, if it
+  has any"* **[doc]** — which is available on every Firefox that can install this build, since the floor is 142. Chrome and Safari have
+  no equivalent; on Chrome the shortcuts page can only be reached with `tabs.create()`, which the manifest can do without the `tabs`
+  permission but which §5.5 would need to be re-read against. This is the one place the panel could tell a player *why* their key is
+  dead.
 
 ---
 
@@ -229,7 +262,12 @@ Yes on Chrome and Firefox, by documented design. Unmeasured on Safari and Orion.
   synchronously on initial script execution."* **[doc]** `background.ts` already does exactly this, and its own header comment says why.
 - **Firefox event page.** *"Background scripts unload after a few seconds of inactivity"*, and they *"are restarted automatically when
   Firefox calls one of their WebExtensions API events listeners"*, with *"Listeners must be registered synchronously from the start of
-  the page."* **[doc]**
+  the page."* **[doc]** MDN never enumerates *which* events qualify, but Firefox's `parent/ext-commands.js` declares `onCommand` inside
+  a `PERSISTENT_EVENTS` block on an `ExtensionAPIPersistent` subclass, and `EventManager.primeListeners` wires primed listeners to
+  `wakeup: () => extension.wakeupBackground()` **[doc]**. So a keypress on a suspended event page primes, wakes and replays.
+  Also worth recording, because it is the sort of thing that gets over-claimed: Firefox's command handler calls
+  `addActiveTabPermission`, which per `ext-tabs-base.js` grants only when the extension already declares `activeTab` or has matching
+  origin controls. **The shortcut conjures no permission we did not declare.**
 - **Safari.** Apple confirms the teardown — *"With manifest version 3, all background pages are nonpersistent"* and *"Safari unloads
   your nonpersistent background page when the user isn't directly interacting with the extension"* **[doc]** — and describes the wake
   in general terms, in WWDC21 session 10027: *"those events help the browser to determine if your background page should be loaded or
@@ -297,26 +335,31 @@ worker."* **[doc]**
    raises the stakes on this: its panel *adds* a binding rather than replacing the manifest's, so a bad default there can be joined but
    never taken away **[doc]**. Safari below 26 cannot rebind at all. A default is therefore something two of four targets cannot
    undo.
-3. **A default, if one is wanted anyway, must be a `Ctrl`/`Alt`/`Command` combination.** Chrome forbids a bare key and forbids function
+3. **If a default is shipped anyway, the build can tell it lost.** `commands.getAll()` reports the shortcut actually in force, so a
+   comparison against what was asked for is the only detection there is — no browser reports a manifest collision. On Firefox alone
+   the panel could then act on it, with `commands.openShortcutSettings()` (137+, and the floor is 142). That is a small, contained
+   affordance, and it is the only answer anyone has to a silently dead key. Whether the panel should say anything at all is #397's,
+   and it sits awkwardly against #391's "no settings surface" — showing a player where to rebind is not a setting, but it is a surface.
+4. **A default, if one is wanted anyway, must be a `Ctrl`/`Alt`/`Command` combination.** Chrome forbids a bare key and forbids function
    keys; Firefox and Safari allow F1–F12 and Chrome does not. One cross-target default is therefore a modifier combination.
-4. **Safari's floor and Safari's rebinding disagree.** Rebinding arrived in Safari 26; the manifest says 18. Either the Safari floor
+5. **Safari's floor and Safari's rebinding disagree.** Rebinding arrived in Safari 26; the manifest says 18. Either the Safari floor
    moves to 26 for this feature, or the feature is documented as fixed-key on Safari 18–18.6, or the Safari build carries no `commands`
    entry at all and uses the page-level route. This is a decision, not a detail, and it belongs to #397 or a ticket of its own.
-5. **Safari gets one thing no other target does**: Safari 26 shows the command in the menubar, which is a mouse-reachable trigger and a
+6. **Safari gets one thing no other target does**: Safari 26 shows the command in the menubar, which is a mouse-reachable trigger and a
    discoverability surface for free.
-6. **Two [unverified] premises are created, for §16.** *A `commands.onCommand` event wakes a torn-down Safari background* — Apple
+7. **Two [unverified] premises are created, for §16.** *A `commands.onCommand` event wakes a torn-down Safari background* — Apple
    documents the wake for events in general and names no event list, and the repo's own measurement is a page that unloaded after about
    32 s. And *Orion delivers an extension shortcut once, reliably* — Kagi's tracker currently carries a staff-reproduced non-firing
    shortcut, a command that fires twice per keypress, and shortcuts that cannot be cleared **[doc]**. Both are cheap to check on the
    per-engine smoke run that §16 already provisions; everything else in this ticket is [doc] or [live].
-7. **The background never needs to find the tab.** `onCommand` is delivered as `(command, tab)`, so the one `tabs` call that would have
+8. **The background never needs to find the tab.** `onCommand` is delivered as `(command, tab)`, so the one `tabs` call that would have
    wanted the permission — `tabs.query` — is never made. Worth pinning in whatever test #397 leaves behind, because `tabs.query`
    fails *silently* without the permission rather than throwing, so a future refactor that reaches for it would look like a dead key
    rather than an error.
-8. **The page-level route stays live as the fallback and as the CDP answer.** It costs nothing, it works under both injection routes,
+9. **The page-level route stays live as the fallback and as the CDP answer.** It costs nothing, it works under both injection routes,
    and it is what the feature degrades to wherever the browser command does not arrive. #397's real question is therefore not
    *browser-or-page* but *browser-and-page*, and what the second one does when the first never fires.
-9. **Nothing here makes the grab a `command` in `CONTEXT.md`'s sense.** That word means *one step the hub carries to a game tab*, and
+10. **Nothing here makes the grab a `command` in `CONTEXT.md`'s sense.** That word means *one step the hub carries to a game tab*, and
    this step comes from the browser, unasked, with no hub involved. It travels the relay's channel but it is not hub traffic, and #397
    needs a name for it that is not *command*.
 
@@ -340,7 +383,9 @@ Vendor primary sources, all fetched 2026-09-25.
 - MDN, `tabs.sendMessage` — https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/sendMessage
 - MDN, background scripts / event pages — https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Background_scripts
 - MDN browser-compat-data, `webextensions.api.commands` and `webextensions.manifest.commands` (v8.1.3) — https://bcd.developer.mozilla.org/bcd/api/v0/current/webextensions.manifest.commands.json
+- MDN, `commands.onCommand`, `commands.update`, `commands.reset`, `commands.openShortcutSettings`, `runtime.MessageSender`, `Content_scripts`, `manifest.json/permissions`, `manifest.json/host_permissions` — all under https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/
 - Extension Workshop, MV3 migration guide — https://extensionworkshop.com/documentation/develop/manifest-v3-migration-guide/
+- Firefox source (mozilla-central): `browser/components/extensions/parent/ext-commands.js`, `child/ext-tabs.js`, `schemas/commands.json`, `schemas/tabs.json`; `toolkit/components/extensions/ExtensionShortcuts.sys.mjs`, `ExtensionCommon.sys.mjs`, `parent/ext-tabs-base.js`; `toolkit/locales/en-US/toolkit/about/aboutAddons.ftl`; `modules/libpref/init/all.js` — https://hg.mozilla.org/mozilla-central/file/tip/
 - Apple, Safari 26.0 release notes, Web Extensions — https://developer.apple.com/documentation/safari-release-notes/safari-26-release-notes
 - Apple, assessing your Safari web extension's browser compatibility — https://developer.apple.com/documentation/safariservices/assessing-your-safari-web-extension-s-browser-compatibility
 - Apple, Safari 16.4 release notes (earliest `browser.commands` mention) — https://developer.apple.com/documentation/safari-release-notes/safari-16_4-release-notes
