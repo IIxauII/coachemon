@@ -39,6 +39,13 @@ jobs:
       - run: npm test
         working-directory: extension
 
+      # What AMO's own review runs, against the artifact it will be handed. The guard above checks our intent; this
+      # checks their verdict, so a finding reaches us from a PR rather than from a submission (§5.6).
+      # `--warnings-as-errors` is the whole point: the linter exits 0 on warnings, and #379, #380 and #381 were all
+      # warnings, so without it this step would be green on exactly what it is here to catch.
+      - run: npx addons-linter --warnings-as-errors .output/firefox-mv3-store
+        working-directory: extension
+
       # The Firefox store zip and the AMO sources zip, built but not uploaded: releases are their own ticket (§5.6).
       - run: npx wxt zip -b firefox --mode store
         working-directory: extension

@@ -278,7 +278,13 @@ The string checks are a backstop; check 4 is the real one. If a vendored library
 
 ### 5.6 CI
 
-A `extension` job in a new `.github/workflows/extension.yml` (picked here) on every push and pull request: `npm ci --ignore-scripts` at the root, `npm ci` in `extension/`, `wxt build` for three browsers × two modes, the guard, `relay.test.ts`. No uploads; releases are §14.
+A `extension` job in a new `.github/workflows/extension.yml` (picked here) on every push and pull request: `npm ci --ignore-scripts` at the root, `npm ci` in `extension/`, `wxt build` for three browsers × two modes, the guard, `relay.test.ts`, then the AMO linter. No uploads; releases are §14.
+
+**The AMO linter.** `npx addons-linter --warnings-as-errors .output/firefox-mv3-store`, after the build that writes the artifact (#384). `addons-linter` is what AMO's own review runs: the guard (§5.5) checks what we decided the manifest should say, and this checks what AMO makes of it, which is a verdict no test of ours can stand in for. `addons-linter` is an `extension/` devDependency, so the version is in the lockfile and a linter release cannot turn `master` red on its own.
+
+**`--warnings-as-errors` is load-bearing.** The linter exits **0** on warnings, and every finding that has reached us from a submission was a warning, never an error: #379, #380 and #381. Without the flag the step would pass all three, which is the same blindness as having no step. `extension/test/amo-lint.test.ts` pins both halves — that the workflow's step carries the flag and lints the Firefox store artifact after `build:all`, and, against the linter itself, that the flag is what makes a warning fail.
+
+A finding that is a *declared, accepted* premise rather than a defect would fail this step. There is none today: the artifact lints clean at zero warnings. The first one takes an allowlist keyed by rule code, never a blanket `--warnings-as-errors=false`, which would hide the next #379 as effectively as no step at all.
 
 ### 5.7 AMO sources zip
 
@@ -845,7 +851,7 @@ Each was accepted knowingly by a closed ticket. None blocks building; a build ti
 | AMO accepts the `extension_pages` CSP override, and `required: ["none"]` beside an optional list | [Pairing protocol: MCP server and extension](https://github.com/IIxauII/coachemon/issues/107), [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | named fallbacks (§5.3, §8.1) |
 | A CWS reviewer accepts the declared remote code (`04-game-tables.js`'s chunk import) | [Permission set and privacy disclosure](https://github.com/IIxauII/coachemon/issues/110) | declared Yes (§6) |
 | Chrome Web Store API v2 can cancel a pending review — **confirmed, no longer a premise** | [Release channel, versioning, and how fixes reach users](https://github.com/IIxauII/coachemon/issues/109) | `:cancelSubmission` **[doc]**, wired as `--chrome-cancel-pending` (§14.4) |
-| The 142 floor is worth its cost: Firefox 128–141, ESR 140 included, cannot install at all | [#379](https://github.com/IIxauII/coachemon/issues/379) and [#380](https://github.com/IIxauII/coachemon/issues/380), the desktop and Android halves of one floor | none; any lower floor is a linter warning (§5.3) |
+| The 142 floor is worth its cost: Firefox 128–141, ESR 140 included, cannot install at all | [#379](https://github.com/IIxauII/coachemon/issues/379) and [#380](https://github.com/IIxauII/coachemon/issues/380), the desktop and Android halves of one floor | any lower floor is a linter warning (§5.3), which **CI now fails on** (§5.6) |
 | Nintendo does not act on the -ÉMON name | [Name and listing identity](https://github.com/IIxauII/coachemon/issues/105) | no trademark filed; answer the listing email |
 | Chrome's Local Network Access leaves extension workers alone as enforcement rolls out | [Loopback transport on Chrome and Firefox](https://github.com/IIxauII/coachemon/issues/161) | none |
 
