@@ -1,0 +1,129 @@
+<!doctype html>
+<!--
+  PROTOTYPE — throwaway. Ticket #399, map #391. Served at / by PROTOTYPE-keys.mjs.
+
+  Five treatments of the cursor on one stage, switchable from the bottom bar: none (the baseline), underline,
+  bracket, inverse, gutter caret — each in gold or body ink where it has an ink at all. The stage is an iframe
+  at exactly 1920x1080, so the panel inside it computes the reference lengths; this page only scales it.
+
+  Nothing in the white bar or the grey readout is part of the design being judged.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Coach panel — the focus mark and the walk</title>
+<style>
+  body { margin: 0; background: #0b0b10; color: #8b8ba3; font: 13px/1.5 ui-monospace, Menlo, monospace;
+    padding: 20px 20px 92px; }
+  h1 { color: #e8e8f0; font-size: 15px; margin: 0 0 6px; }
+  .qs { max-width: 1100px; margin: 0 0 14px; }
+  .qs li { margin: 2px 0; }
+  .qs b { color: #c8c8d8; font-weight: normal; }
+  .warn { color: #c08050; }
+  #wrap { position: relative; overflow: auto; border: 1px solid #23232f; background: #05050a;
+    display: inline-block; max-width: 100%; vertical-align: top; }
+  #pad { position: relative; }
+  #stage { width: 1920px; height: 1080px; border: 0; display: block; transform-origin: top left; }
+  #read { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 8px; min-height: 20px; }
+  #read div { white-space: nowrap }
+  #read span { color: #e8e8f0 }
+  #read .hot { color: #f8b050 }
+
+  /* ---- the switcher: deliberately not part of the design being evaluated ---- */
+  #bar { position: fixed; flex-wrap: nowrap; white-space: nowrap; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 9;
+    display: flex; align-items: center; gap: 2px; background: #fff; color: #111; border-radius: 999px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.6); padding: 5px 8px; font: 12px/1 ui-sans-serif, system-ui, sans-serif; }
+  #bar .sep { width: 1px; height: 22px; background: #ddd; margin: 0 6px }
+  #bar b { font-weight: 600; margin-right: 4px; color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: .06em }
+  button { font: inherit; border: 1px solid #ccc; background: #f6f6f6; color: #111; border-radius: 6px;
+    padding: 5px 8px; cursor: pointer; }
+  button.on { background: #111; color: #fff; border-color: #111 }
+</style>
+</head>
+<body>
+<h1>Coach panel — the cursor, the walk and the handover <span style="color:#666;font-weight:normal">· prototype for #399, map #391</span></h1>
+<ol class="qs">
+  <li><b>What the mark is.</b> Shape, weight or an existing ink — not a new hue (#337). Flip the five treatments on the same stop.</li>
+  <li><b>The caret and the ×.</b> They have no fill and no radius of their own: does each treatment survive them?</li>
+  <li><b>The walk at speed.</b> Hold → or press <em>walk ×14</em>: navigation, or flicker on a panel with no transitions?</li>
+  <li><b>The game going deaf.</b> Alt+C (or <em>grab</em>). Watch the game's stand-in keyboard, bottom left of the stage.</li>
+  <li><b>The keys coming back.</b> Alt+C again, and <em>card away</em> — the release nobody pressed (#396).</li>
+</ol>
+<p class="qs" style="margin:0 0 8px"><b>Click the stage once</b> so the keys land in it: <b>Alt+C</b> grabs and releases, <b>←/→</b> walk the ring, <b>↑/↓</b> scroll the pane, <b>Enter</b> activates. Hold <b>→</b> to lap it. At <em>fit</em> the rung is 10px scaled down; <em>2×</em> is for judging the mark itself.</p>
+<div id="read"></div>
+<div id="wrap"><div id="pad"><iframe id="stage" src="/panel"></iframe></div></div>
+
+<div id="bar">
+  <b>mark</b>
+  <button data-t="none">none</button><button data-t="underline">underline</button><button data-t="bracket">bracket</button><button data-t="inverse">inverse</button><button data-t="caret">caret</button>
+  <span class="sep"></span><b>ink</b>
+  <button data-i="gold">gold</button><button data-i="body">body</button>
+  <span class="sep"></span><b>card</b><span id="cards" style="display:flex;gap:2px"></span>
+  <span class="sep"></span><b>state</b>
+  <button data-s="drawer">drawer</button><button data-s="strip">strip</button><button data-s="closed">closed</button>
+  <span class="sep"></span>
+  <button id="grab">grab</button><button id="fast">walk ×14</button><button id="away">card away</button>
+  <span class="sep"></span>
+  <button data-z="fit" class="on">fit</button><button data-z="1">1:1</button><button data-z="2">2×</button><button id="reset">reset stored</button>
+</div>
+
+<script>
+const frame = document.getElementById("stage"), wrap = document.getElementById("wrap"), pad = document.getElementById("pad");
+const P = () => frame.contentWindow.PROTO;
+let zoom = "fit";
+const fit = () => {
+  const room = innerHeight - wrap.getBoundingClientRect().top - 96;
+  const s = zoom === "fit" ? Math.min((document.body.clientWidth - 42) / 1920, room / 1080) : Number(zoom);
+  frame.style.transform = `scale(${s})`;
+  pad.style.width = Math.round(1920 * s) + "px";
+  pad.style.height = Math.round(1080 * s) + "px";
+  wrap.style.height = Math.min(Math.round(1080 * s), Math.round(room)) + "px";
+};
+addEventListener("resize", fit);
+new ResizeObserver(fit).observe(document.body);
+
+const mark = (sel, attr, val) => {
+  for (const b of document.querySelectorAll(`button[${attr}]`)) b.classList.toggle("on", b.getAttribute(attr) === val);
+};
+for (const b of document.querySelectorAll("button[data-t]")) b.onclick = () => { P().treatment(b.dataset.t); mark(null, "data-t", b.dataset.t); frame.contentWindow.focus(); };
+for (const b of document.querySelectorAll("button[data-i]")) b.onclick = () => { P().ink(b.dataset.i); mark(null, "data-i", b.dataset.i); frame.contentWindow.focus(); };
+for (const b of document.querySelectorAll("button[data-s]")) b.onclick = () => { P().state(b.dataset.s); frame.contentWindow.focus(); };
+document.getElementById("grab").onclick = () => { P().grab(); frame.contentWindow.focus(); };
+document.getElementById("fast").onclick = () => { P().fast(); frame.contentWindow.focus(); };
+document.getElementById("reset").onclick = () => P().reset();
+for (const b of document.querySelectorAll("button[data-z]")) b.onclick = () => { zoom = b.dataset.z; mark(null, "data-z", zoom); fit(); };
+const awayBtn = document.getElementById("away");
+let isAway = false;
+awayBtn.onclick = () => { isAway = !isAway; awayBtn.classList.toggle("on", isAway); P().away(isAway); frame.contentWindow.focus(); };
+
+frame.onload = () => {
+  fit();
+  setTimeout(() => {
+    const names = P().cards();
+    document.getElementById("cards").replaceChildren(...names.map(n => {
+      const b = document.createElement("button");
+      b.textContent = n; b.dataset.c = n;
+      b.onclick = () => { P().card(n); mark(null, "data-c", n); frame.contentWindow.focus(); };
+      return b;
+    }));
+    mark(null, "data-c", names[0]);
+    mark(null, "data-t", "underline");
+    mark(null, "data-i", "gold");
+  }, 150);
+};
+
+// Surface the state after every action: the lengths the panel computed, where the cursor is, what the walk cost.
+addEventListener("message", e => {
+  const s = e.data;
+  if (!s || s.t !== "proto") return;
+  const f = (k, v, hot) => `<div>${k} <span class="${hot ? "hot" : ""}">${v}</span></div>`;
+  document.getElementById("read").innerHTML =
+    f("game-w", s.gameW + "px") + f("panel-w", s.panelW) + f("rung", s.rung) + f("chrome", s.chrome)
+    + f("card", s.card + (s.synthetic ? " (synthetic)" : "")) + f("view", s.away ? "not drawn" : s.view)
+    + f("open", s.open) + f("keyboard", s.held ? "the panel holds it — the game is deaf" : "the game's", s.held)
+    + f("cursor", s.held ? s.stop : "—", s.held) + f("ring", s.ring.join(" › ") || "—")
+    + f("storage writes", s.writes) + (s.stuck.length ? f("stuck in the game", s.stuck.join(" "), true) : "");
+});
+</script>
+</body>
+</html>

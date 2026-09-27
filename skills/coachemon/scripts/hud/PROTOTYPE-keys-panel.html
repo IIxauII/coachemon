@@ -1,0 +1,278 @@
+<!doctype html>
+<!--
+  PROTOTYPE — throwaway. Ticket #399, map #391. Served at /panel by PROTOTYPE-keys.mjs.
+
+  This document is exactly 1920x1080, so `min(100vw, 177.78vh)` inside it is the reference game-w and every
+  length the panel computes — panel width 449.28px, rung 10px, chrome 16px — is the one the design was drawn at.
+  The parent page scales it to fit.
+
+  The panel is the real thing: hud/90-render.js, bundled in expose mode, drawing real cards' groups off
+  /cards.json. Everything behind it is a stand-in and is drawn in dead grey so it cannot be mistaken for
+  panel ink. What this file adds — and the only thing here that is a proposal rather than shipped code — is
+  the keyboard layer: the grab, the mute, the ring, the walk and the cursor's five treatments.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>panel stage — 1920x1080</title>
+<style>
+  /* the game's own faces, out of the pinned clone */
+  @font-face { font-family: emerald; src: url(/fonts/emerald.ttf) format('truetype'); }
+  @font-face { font-family: pkmnems; src: url(/fonts/pkmnems.ttf) format('truetype'); }
+
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #05050a; }
+  /* ---- stand-in game furniture: dead grey, never panel ink ---- */
+  .canvas { position: absolute; inset: 0; background: #12121c;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 16px, transparent 16px 32px); }
+  .lbl { position: absolute; color: #35354a; font: 20px ui-monospace, monospace; letter-spacing: .1em; }
+  .mid { top: 300px; left: 0; right: 0; text-align: center; }
+  /* the message box owns the bottom 27% — the budget the pane's max-height is cut against */
+  .msg { position: absolute; left: 0; right: 0; bottom: 0; height: 291.6px; border-top: 3px solid #23233a;
+    background: rgba(18,16,30,.75); }
+  .msg .lbl { right: 24px; bottom: 16px; }
+  .tr { top: 24px; right: 32px; text-align: right; line-height: 1.6; }
+  /* what the game hears — a stand-in for Phaser's KeyboardManager, so the handover is visible */
+  #game-input { position: absolute; left: 24px; bottom: 24px; width: 620px; color: #4a4a66;
+    font: 15px/1.5 ui-monospace, monospace; }
+  #game-input b { color: #6a6a8c; font-weight: normal; letter-spacing: .08em; }
+  #game-log { height: 150px; overflow: hidden; display: flex; flex-direction: column-reverse; }
+  #game-log div { white-space: nowrap; }
+  #game-log .deaf { color: #6b4a4a; }
+  #game-log .stuck { color: #a05050; }
+  #held { min-height: 22px; }
+  #held span { display: inline-block; border: 1px solid #4a4a66; padding: 0 6px; margin-right: 4px; }
+  #held span.stuck { border-color: #a05050; color: #a05050; }
+  /* the prototype's own log: what the panel did that the player is not told */
+  #proto-log { position: absolute; right: 24px; top: 200px; width: 520px; text-align: right;
+    color: #5a5a44; font: 14px/1.5 ui-monospace, monospace; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <div class="lbl mid">stand-in · pokerogue.net canvas 1920×1080</div>
+  <div class="lbl tr">W89 · stand-in<br>the game's own HUD</div>
+  <div class="msg"><div class="lbl">message box · bottom 27%</div></div>
+  <div id="game-input">
+    <b>THE GAME'S KEYBOARD (stand-in)</b>
+    <div id="held"></div>
+    <div id="game-log"></div>
+  </div>
+  <div id="proto-log"></div>
+</div>
+
+<script>
+  // The panel's own storage writes, counted before the bundle loads: #395 accepted one write per stop while
+  // an arrow is held, and this is where you watch that bill arrive.
+  window.__writes = 0;
+  const _set = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = (k, v) => { if (k === "coach-hud-panel") window.__writes++; return _set(k, v); };
+</script>
+<script src="/hud.js"></script>
+<script>
+const H = __hud["90-render"];
+// Lifted from 90-render's SKIN, which does not export it.
+const GOLD = "#f8b050", BODY = "#f8f8f8", FILL = "#362d3e";
+
+let cards = null, cardName = null, cardJson = null, groupsCache = null;
+let treatment = "underline", inkName = "gold", away = false, held = false, i = 0;
+const ink = () => (inkName === "gold" ? GOLD : BODY);
+
+// ---- rebuilding a drawn card: real tags, real inline styles, real titles
+const atlasBox = src => {
+  const key = src.slice(6).split("/")[0];
+  const [w, h] = key.startsWith("types") ? [32, 14] : key.startsWith("items") ? [32, 32] : [32, 32];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">`
+    + `<rect x=".5" y=".5" width="${w - 1}" height="${h - 1}" fill="rgba(255,255,255,.07)" stroke="#8f83a0" stroke-dasharray="2 2"/></svg>`;
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+};
+const mk = j => {
+  if (j == null) return null;
+  if (typeof j === "string") return j;
+  const n = document.createElement(j.tag || "span");
+  Object.assign(n.style, j.style);
+  if (j.title) n.title = j.title;
+  if (j.src) n.src = j.src.startsWith("atlas:") ? atlasBox(j.src) : j.src;
+  for (const k of j.kids) { const c = mk(k); if (c != null) n.append(c); }
+  return n;
+};
+
+// ---- the draw, shelled the way 98-tick's `open()` shells it
+const barOrder = () => H.GROUP_IDS.flatMap(id => groupsCache.filter(g => g.id === id));
+const redraw = () => {
+  const st = H.panelState();
+  H.el.style.display = away ? "none" : "block";
+  H.el.style.width = st === "closed" ? "auto" : H.PANEL_W;
+  if (!away) {
+    H.el.replaceChildren(...(st === "closed" ? [H.glyph()]
+      : [H.controls(), H.strip(cardJson.card, mk(cardJson.caption), groupsCache), ...H.drawer(groupsCache)]));
+  }
+  if (held) applyMark();
+  report();
+};
+H.setRedraw(redraw);
+
+// ---- the ring: the tabs in drawn order, then the caret, then the × (#395). In `strip` it degrades to
+// [caret, ×] on its own; a dismissed panel is the glyph alone (#394).
+const stops = () => {
+  if (away) return [];
+  const st = H.panelState();
+  if (st === "closed") return [{ k: "glyph", el: H.el.children[0] }];
+  const ctl = H.el.children[0], out = [];
+  if (st === "drawer") for (const t of H.el.children[2].children) out.push({ k: "tab", el: t });
+  out.push({ k: "caret", el: ctl.children[0] }, { k: "close", el: ctl.children[1] });
+  return out;
+};
+// Where a grab lands, and where the cursor re-lands after the caret or the × moved the state (#394, #396).
+const land = () => {
+  if (H.panelState() !== "drawer") { i = 0; return; }
+  i = Math.max(0, barOrder().findIndex(g => g.id === H.openGroup()));
+};
+
+const click = el => el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+const walk = d => {
+  const r = stops();
+  if (!r.length) return;
+  i = (i + d + r.length) % r.length;
+  // A tab opens on arrival, down the panel's own click path — so the walk cannot diverge from the mouse.
+  if (r[i].k === "tab") click(r[i].el);
+  redraw();
+};
+const enter = () => {
+  const s = stops()[i];
+  if (!s) return;
+  click(s.el);   // idempotent on the open tab; the caret, the × and the glyph do what a click does
+  land();
+  redraw();
+};
+const rungPx = () => {
+  const p = document.createElement("div");
+  p.style.height = H.rung(1); p.style.position = "absolute"; p.style.visibility = "hidden";
+  document.body.append(p);
+  const px = p.getBoundingClientRect().height;
+  p.remove();
+  return px;
+};
+const scrollPane = d => {
+  if (H.panelState() !== "drawer" || away) return;
+  H.el.children[3].scrollTop += d * 3 * rungPx();   // three rungs a press, arbitrary: the step is #403's, not this ticket's
+  report();
+};
+
+// ---- the cursor's treatments. Applied after the draw, to the focused control alone (#338, #346).
+const sp = (ch, inked) => H.h("span", { flex: "none", color: inked ? ink() : "inherit" }, ch);
+const applyMark = () => {
+  const s = stops()[i];
+  if (!s || treatment === "none") return;
+  const el = s.el;
+  if (treatment === "underline") el.style.boxShadow = `inset 0 -1px 0 ${ink()}`;
+  else if (treatment === "inverse") Object.assign(el.style, { background: BODY, color: FILL, padding: "0 3px", margin: "0 -3px" });
+  else if (treatment === "bracket") { el.prepend(sp("▸")); el.append(sp("◂")); }
+  else if (treatment === "caret") el.parentNode.insertBefore(sp("›", true), el);
+};
+
+// ---- the game's keyboard, and the mute
+const gameHeld = new Set(), stuck = new Set();
+const logLine = (box, text, cls) => {
+  const d = document.createElement("div");
+  d.textContent = text;
+  if (cls) d.className = cls;
+  box.prepend(d);
+  while (box.children.length > 12) box.lastChild.remove();
+};
+const gameLog = (t, cls) => logLine(document.getElementById("game-log"), t, cls);
+const protoLog = t => logLine(document.getElementById("proto-log"), t);
+const drawHeld = () => {
+  const box = document.getElementById("held");
+  box.replaceChildren(...[...gameHeld].map(c => {
+    const s = document.createElement("span");
+    s.textContent = c;
+    if (stuck.has(c)) s.className = "stuck";
+    return s;
+  }));
+};
+
+const grab = () => {
+  if (away) { protoLog("grab refused — no card on screen, and nothing says so (#394)"); return; }
+  held = true;
+  land();
+  gameLog("— the game is deaf —", "deaf");
+  redraw();
+};
+const release = why => {
+  held = false;
+  gameLog(`— the game hears again${why ? ` (${why})` : ""} —`, "deaf");
+  redraw();
+};
+const toggle = () => (held ? release("the grab key again") : grab());
+
+window.addEventListener("keydown", e => {
+  // The grab. Live this is a browser shortcut (Alt+C, #397) that never reaches the page at all; here it is an
+  // ordinary page key, which is the one thing this stage cannot be faithful about.
+  if (e.altKey && e.code === "KeyC") { e.preventDefault(); toggle(); return; }
+  if (!held) { gameHeld.add(e.code); drawHeld(); gameLog(`input_down ${e.key}`); return; }
+  e.preventDefault(); e.stopPropagation();
+  gameLog(`swallowed ${e.key}${e.repeat ? " ·repeat" : ""}`, "deaf");
+  if (e.key === "ArrowRight") walk(1);
+  else if (e.key === "ArrowLeft") walk(-1);
+  else if (e.key === "ArrowDown") scrollPane(1);
+  else if (e.key === "ArrowUp") scrollPane(-1);
+  else if (e.key === "Enter") enter();
+}, true);
+window.addEventListener("keyup", e => {
+  if (!held) { gameHeld.delete(e.code); stuck.delete(e.code); drawHeld(); gameLog(`input_up ${e.key}`); return; }
+  e.preventDefault(); e.stopPropagation();
+  if (gameHeld.has(e.code)) {
+    stuck.add(e.code);
+    gameLog(`swallowed keyup ${e.key} — the game still holds it (#401)`, "stuck");
+    drawHeld();
+  }
+}, true);
+
+// ---- what the parent page drives
+const loadCard = name => {
+  cardName = name;
+  cardJson = cards[name];
+  groupsCache = cardJson.groups.map(g => H.group(g.id, g.label, g.summary, g.rows.map(mk)));
+  if (held) land();
+  redraw();
+};
+const setState = target => {
+  const st = () => H.panelState();
+  if (st() === "closed" && target !== "closed") click(H.el.children[0]);                 // the glyph is the way back
+  if (target === "strip" && st() === "drawer") click(H.el.children[0].children[0]);      // the caret
+  if (target === "drawer" && st() === "strip") click(H.el.children[0].children[0]);
+  if (target === "closed" && st() !== "closed") click(H.el.children[0].children[1]);     // the ×
+  if (held) land();
+  redraw();
+};
+const setAway = v => {
+  away = v;
+  if (away && held) release("the card went away — nobody pressed a key (#396)");
+  else redraw();
+};
+window.PROTO = {
+  cards: () => Object.keys(cards),
+  card: loadCard,
+  state: setState,
+  away: setAway,
+  grab: toggle,
+  treatment: t => { treatment = t; redraw(); },
+  ink: k => { inkName = k; redraw(); },
+  fast: (n = 14, ms = 55) => { let c = 0; const id = setInterval(() => { walk(1); if (++c >= n) clearInterval(id); }, ms); },
+  reset: () => { localStorage.removeItem("coach-hud-panel"); location.reload(); },
+};
+
+const report = () => {
+  const s = stops()[i];
+  parent.postMessage({ t: "proto", gameW: innerWidth, panelW: getComputedStyle(H.el).width,
+    chrome: getComputedStyle(H.el).fontSize, rung: rungPx() + "px", view: H.panelState(), open: H.openGroup(),
+    held, stop: s ? s.k : null, ring: stops().map(x => x.k), writes: window.__writes, stuck: [...stuck],
+    card: cardName, treatment, ink: inkName, away, synthetic: !!(cardJson && cardJson.synthetic) }, "*");
+};
+
+// Keys only land where the focus is, and this document is in an iframe.
+addEventListener("pointerdown", () => window.focus(), true);
+fetch("/cards.json").then(r => r.json()).then(j => { cards = j; loadCard(Object.keys(j)[0]); window.focus(); });
+</script>
+</body>
+</html>
