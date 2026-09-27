@@ -91,6 +91,27 @@ The line of a **card** that stays in front of the player whatever else they have
 
 Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them. A **tab bar** names every group the card has, one **tab** each, in an order that is the same on every card; the open group's own contents are its **pane**, and a pane too tall for the panel scrolls inside itself. A tab carries its group's name and nothing else — no mark, no count, no state but being the open one. The drawer can be shut by the caret in the panel's corner, leaving the **strip** alone, and the panel dismissed by the × beside it, leaving a bare glyph that is the same on every wave and is only the way back. A dismissal covers the panel rather than replacing it, so reopening comes back to the strip or the drawer the player left. Which group is open is remembered by id as the cards change under it and across a reload; a card with no group of that id moves the drawer to `act` and does not move it back when the group returns.
 
+## Grab
+
+The player handing the coach panel the keyboard: the act, the key that does it, and the state that follows, all one
+word. Only a drawn panel can be grabbed — where there is no **card** on screen there is nothing to hand the keyboard to,
+and the key does nothing at all. A grabbed panel keeps every key the player types away from the game, and a **cursor**
+inside it is what says so. The same key hands the keyboard back, so the two transitions are **grab** and **release** —
+two words for one press of one key.
+
+Prose says *a grabbed panel*, never *the grab state*. A grab is not a **command**: no process can grab a panel, only the
+player at the keyboard, and nothing about a grab reaches the **hub**.
+
+## Cursor
+
+The moving mark inside a grabbed panel, sitting on whatever the next keypress will act on. It reads as chrome rather than
+as something the coach is saying, and it is the whole of what says the game's keys are gone.
+
+Never called the *focus*: no DOM focus is involved, which is exactly the point — the mark is drawn state the panel keeps
+for itself, not something the browser is tracking, and the game never asks the browser what has focus either.
+PokéRogue's own code calls a **menu**'s selected index a cursor too, so wherever both could be read each is named for
+its owner: the panel's is the cursor, the game's is said to be the game's.
+
 ## Minigame turn
 
 One turn of a **continuous encounter**: an encounter that re-opens its own screen with a fresh menu until it is done — Safari Zone's ball / bait / mud / run, three wild mons in turn. The options on that menu are the game's **override options**, not the encounter's own, so nothing keys them by index and only an encounter the coach knows by name can judge them. A turn is its own decision on the same **card**, told apart by the mon in front of you and by the two stages its odds are read from.
@@ -125,8 +146,9 @@ Not to be confused with the game's own command menu (Fight, Ball, Pokémon, Run)
 
 ## Relay
 
-The extension's presence in one game tab: it carries a **command** in and its answer straight back out, and nothing
-else crosses. A tab becomes reachable only once its relay is there, so the relay is what the **hub** counts.
+The extension's presence in one game tab: it carries a **command** in and its answer straight back out, and a **grab**
+down to the panel and no answer back. A tab becomes reachable only once its relay is there, so the relay is what the
+**hub** counts.
 
 Nothing the page says is trusted, because anything already in the page could drive the game itself. Only answers the
 relay is waiting for and **card**s shaped exactly as the coach sends them leave a tab.

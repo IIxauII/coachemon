@@ -11,6 +11,8 @@ import {
   BANNED_MANIFEST_WORDS,
   DESCRIPTION,
   GECKO_ID,
+  GRAB_DESCRIPTION,
+  GRAB_SHORTCUT,
   MATCHES,
   manifestFor,
   storeVersion,
@@ -23,9 +25,26 @@ test("a store build declares no permission of any kind, on any target (§6)", ()
   for (const target of TARGETS) {
     const m = store(target);
     for (const key of BANNED_MANIFEST_KEYS) assert.ok(!(key in m), `${target} store manifest has ${key}`);
+    // The whole manifest as text, so the shortcut's `description` is held to the banned words like everything else.
     const text = JSON.stringify(m);
     for (const word of BANNED_MANIFEST_WORDS) assert.ok(!text.includes(word), `${target} store manifest mentions ${word}`);
   }
+});
+
+test("every target declares one shortcut for the grab, `Alt+C` on `default` and `mac` alike", () => {
+  for (const target of TARGETS) {
+    assert.deepEqual(
+      store(target).commands,
+      { [GRAB_SHORTCUT]: { suggested_key: { default: "Alt+C", mac: "Alt+C" }, description: GRAB_DESCRIPTION } },
+      `${target} does not ship exactly one shortcut, bound on both \`default\` and \`mac\``,
+    );
+  }
+  assert.equal(GRAB_SHORTCUT, "grab", "the shortcut is no longer named for the grab");
+  assert.equal(
+    GRAB_DESCRIPTION,
+    "Hand the coach panel the keyboard; press again to hand it back.",
+    "the only prose about this feature anywhere moved, and a player reads it off their browser's shortcuts page",
+  );
 });
 
 test("every target carries the same identity and the same two content scripts (§3, §5.3)", () => {

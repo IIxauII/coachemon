@@ -1,7 +1,7 @@
 // Starter card (the 51-starters model), as **group**s (#349 §1): `act` · `options` · `notes`, the same three every
 // light card takes. Loads after 90-render: only call these from a draw, never at load time.
 // `act` is the team so far; `options` is every proposal with its cost, the types its STAB hits and what it's weak
-// to, one line per member with its role and reasons, and the species under the cursor as the last row — *Picked*
+// to, one line per member with its role and reasons, and the species under the game's cursor as the last row — *Picked*
 // and *Viewing* are a row apiece, and neither earns a group of its own. The call is `act.summary`, read off the
 // model and never written here (§6).
 import { ptsText, startersSummary } from "./51-starters.js";
@@ -42,7 +42,7 @@ export const drawStarters = m => {
   });
   const v = m.viewing;
   if (v) {
-    // The cursor is neutral news — `·`, with the word `cursor:` carrying the kind the eye used to (#349 §7).
+    // The game's cursor is neutral news — `·`, with the drawn word `cursor:` carrying the kind the eye used to (#349).
     options.push(h("div", sep), line("·", h("span", dim, "cursor:"), mon(v.icon, v.name, ICON.mon), h("span", {}, v.name),
       h("span", { ...dim, marginLeft: "3px" }, `${ptsText(v.cost)} pts · #${v.rank} of ${v.of}${v.inPick ? ` · in ${v.inPick}` : ""}`),
       h("span", { flex: "1" }), h("span", dim, v.why.join(" · "))));

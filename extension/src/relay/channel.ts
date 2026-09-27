@@ -13,6 +13,9 @@ export const EVENT = {
   card: "coachemon:card",
   coachError: "coachemon:coach-error",
   wrongWorld: "coachemon:wrong-world",
+  // The one name that only ever runs downward: the panel is already pushing its card stream out over this channel, and
+  // a **grab** is that channel in the other direction. Deliberately absent from `EVENT_BY_KIND` below.
+  grab: "coachemon:grab",
 } as const;
 
 /** A reply or event over this is dropped at the relay, `too-large` (§9.7). The background caps the hub frame again. */

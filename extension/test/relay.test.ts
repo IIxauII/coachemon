@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
 import { onPage } from "../../src/page/fake-page.ts";
 import type { ToBackground } from "../src/messages.ts";
-import { EVENT, MAX_DETAIL_BYTES, cardBody, encode } from "../src/relay/channel.ts";
+import { EVENT, EVENT_BY_KIND, MAX_DETAIL_BYTES, cardBody, encode } from "../src/relay/channel.ts";
 import { startRelay, type Relay } from "../src/relay/relay.ts";
 import { startPage, type Handler } from "../src/page/register.ts";
 import type { Channel } from "../src/relay/channel.ts";
@@ -239,6 +239,30 @@ test("the relay never turns a page event into a command (§9.5)", () => {
   const before = t.sent.length;
   t.emit(EVENT.cmd, { build: BUILD, id: 1000, name: "press", args: { button: 0, fine: "x" } });
   assert.equal(t.sent.length, before);
+  assert.equal(r.state(), "ready");
+});
+
+test("a grab dispatches the grab event once, carrying this build's id, and is answered with nothing", () => {
+  const t = tab();
+  const r = t.relay();
+  t.page();
+  const grabs: unknown[] = [];
+  t.channel.addEventListener(EVENT.grab, e => void grabs.push(e.detail));
+  const before = t.sent.length;
+  assert.equal(r.grab(), undefined, "the relay answered a grab, which nothing is waiting for");
+  assert.deepEqual(grabs, [encode({ build: BUILD })], "one grab is not one event carrying this build's id");
+  assert.equal(t.sent.length, before, "a grab sent something upward");
+});
+
+test("a grab is never forwarded to the hub, in either direction", () => {
+  assert.deepEqual(EVENT_BY_KIND.map(([kind]) => kind), ["card", "coach-error"], "the upward event table grew");
+  assert.ok(!EVENT_BY_KIND.some(([, event]) => event === EVENT.grab), "the grab is forwarded upward");
+  const t = tab();
+  const r = t.relay();
+  t.page();
+  const before = t.sent.length;
+  t.emit(EVENT.grab, { build: BUILD });
+  assert.equal(t.sent.length, before, "a grab dispatched by page code reached the background");
   assert.equal(r.state(), "ready");
 });
 

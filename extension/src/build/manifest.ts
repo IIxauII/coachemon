@@ -30,6 +30,16 @@ export const ACTION_TITLE = "Coachemon: click once to let a local AI agent read 
 /** Not `*.pokerogue.net`: the beta site was never reviewed against (§6). */
 export const MATCHES = ["https://pokerogue.net/*"];
 
+/**
+ * The browser-level shortcut that hands the coach panel the keyboard, and the only prose about it anywhere: nothing
+ * else in the product names the key, because no API shipped here can read a binding back (#398).
+ *
+ * **The guard substring-matches the whole manifest**, this line included, so a word from `BANNED_MANIFEST_WORDS` here
+ * fails a store build — *tabs*, the very thing the arrows walk, among them.
+ */
+export const GRAB_SHORTCUT = "grab";
+export const GRAB_DESCRIPTION = "Hand the coach panel the keyboard; press again to hand it back.";
+
 /** What AMO is told the extension collects, declared in the manifest and filed by hand on the form (§5.3, §6).
  * Exported so `src/listing.test.ts` can pin the filing to it: a change here that the filing did not follow would
  * otherwise leave a false statement standing on the listing. */
@@ -72,6 +82,7 @@ export function manifestFor(o: { target: Target; flavour: Flavour; version: stri
       { matches: MATCHES, js: ["relay.js"], run_at: "document_start", world: "ISOLATED" },
       { matches: MATCHES, js: ["page.js", "hud.js"], run_at: "document_idle", world: "MAIN" },
     ],
+    commands: { [GRAB_SHORTCUT]: { suggested_key: { default: "Alt+C", mac: "Alt+C" }, description: GRAB_DESCRIPTION } },
     ...perTarget(o.target),
   };
   // The dev flavour alone gets permissions, for `screenshot` and for re-injection into open tabs (§5.4).

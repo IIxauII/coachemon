@@ -10,6 +10,7 @@ import { browser } from "wxt/browser";
 import { COMMAND_NAMES } from "../../src/protocol/commands.ts";
 import { DEV_COMMAND_NAMES } from "../../src/protocol/dev-commands.ts";
 import { devFrames, startDev } from "../src/dev/live.ts";
+import { startGrab } from "../src/grab.ts";
 import type { ToBackground } from "../src/messages.ts";
 import { startConsent } from "../src/transport/consent.ts";
 import { Transport } from "../src/transport/transport.ts";
@@ -57,6 +58,12 @@ export default defineBackground(() => {
 
   // `pagehide` is the usual way a tab leaves (§9.3); this catches the close that never fired one.
   browser.tabs.onRemoved.addListener(tab => transport.tabClosed(tab));
+
+  // The keyboard's hop into the focused tab. Nothing about it touches the transport: a grab never reaches the hub.
+  startGrab({
+    onCommand: fn => browser.commands.onCommand.addListener((_name, tab) => fn(tab?.id)),
+    toTab: (tab, message) => void Promise.resolve(browser.tabs.sendMessage(tab, message)).catch(() => {}),
+  });
 
   transport.start();
 

@@ -21,6 +21,16 @@ export type ToBackground = TabReport | Keepalive | EventReport;
 /** One command, forwarded from the hub frame unchanged but for the tab id (§7.6). */
 export type CmdMessage = { t: "cmd"; id: number; name: string; args: Record<string, unknown> };
 
+/**
+ * A **grab**, on its way down to one tab. It carries no direction: the panel holds the flag and reads it, so one
+ * message is the whole toggle and there is no `release` on the wire. Nothing answers it, and nothing about it ever
+ * travels the other way — a grab is not a **command** and never reaches the hub.
+ */
+export type GrabMessage = { t: "grab" };
+
+/** What the background sends down to a relay. */
+export type ToRelay = CmdMessage | GrabMessage;
+
 /** What the relay answers through `sendResponse`, ready to go on the wire as it stands. */
 export type RelayReply =
   | { t: "reply"; id: number; ok: true; result: unknown }

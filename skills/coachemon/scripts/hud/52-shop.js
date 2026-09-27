@@ -62,7 +62,7 @@ const tmRelearners = (t, users) => users.filter(p => {
     return Array.isArray(ids) && ids.some(x => (Array.isArray(x) ? x[1] : x) === t.moveId);
   } catch { return false; }
 });
-// A fainted member can still be taught a TM: the party screen's TM mode offers TEACH whoever the cursor is on, and
+// A fainted member can still be taught a TM: the party screen's TM mode offers TEACH whoever the game's cursor is on, and
 // the TM pool itself is drawn from the whole party. Only the Hardcore challenge takes it away: a fainted member there
 // goes through `PartyUiHandler.updateOptionsHardcore`, whose switch has no TM case at all, so it is offered nothing
 // but Cancel and the scroll options — not even the Release its other modes push.

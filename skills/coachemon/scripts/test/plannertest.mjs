@@ -26,7 +26,7 @@ const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex
     live, exact, wave: 200, turn: 3, double, trainer, party, foes,
     decision: phase === "CheckSwitchPhase" ? "check-switch" : "command",
     trickRoom: !!arena?.getTag?.("TRICK_ROOM"),
-    command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] } : null,
+    command: cmd && !cmd.skip ? { kind: cmd.command, gameCursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] } : null,
     outcome: (atk, def, pm, opts) => globalThis.__stub.outcome(atk, def, pm, opts),
     // A status move's own record: what the game would say about aiming it at `def`.
     statusMoves: (atk, def) => atk.moveset.filter(pm => pm.getMove().category === 2).map(pm => ({

@@ -174,10 +174,10 @@ const sceneFacts = (s, env, live) => {
     balls: id => s?.pokeballCounts?.[id] ?? 0,
     mode: modeFlags(s, live, b.waveIndex ?? 0),
     // Slot 1's command phase in a double: slot 0's command is already in (`CommandPhase.handleFightCommand` /
-    // `tryLeaveField`; `SelectTargetPhase` puts a chosen target on the command itself). The planner maps the cursor
-    // and the battler indices onto its own party and field; what is read off the scene is only this.
+    // `tryLeaveField`; `SelectTargetPhase` puts a chosen target on the command itself). The planner maps the game's
+    // own cursor and the battler indices onto its own party and field; what is read off the scene is only this.
     command: b.double && ph?.phaseName === "CommandPhase" && ph.fieldIndex === 1 && cmd && !cmd.skip
-      ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] }
+      ? { kind: cmd.command, gameCursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] }
       : null,
   };
 };

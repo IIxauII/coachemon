@@ -1767,17 +1767,17 @@ const cameInLastTurn = (turn, p) => (p.tempSummonData?.turnCount ?? 2) <= 1 && (
 // Slot 1's command phase in a double battle: slot 0's command is already in `turnCommands[0]` (CommandPhase
 // handleFightCommand / tryLeaveField; SelectTargetPhase puts a chosen target on the command itself). A move →
 // `{ me, pm, target }` with the target as an index into `active` ("both" for a spread move, null for our side);
-// a switch → `{ me, switchIn }` (cursor is the party index). Balls and runs skip slot 1's phase entirely.
+// a switch → `{ me, switchIn }` (`gameCursor` is the party index). Balls and runs skip slot 1's phase entirely.
 const lockedCommand = (turn, party, active, pair) => {
   const cmd = turn.facts.command;
   const me = party.find(p => p.isOnField?.() && p.getBattlerIndex?.() === BattlerIndex.PLAYER);
   if (!cmd || !me) return null;
   if (cmd.kind === Command.POKEMON) {
-    const switchIn = turn.facts.party[cmd.cursor];
+    const switchIn = turn.facts.party[cmd.gameCursor];
     return switchIn && party.includes(switchIn) ? { me, switchIn } : null;
   }
   if (cmd.kind !== Command.FIGHT) return null;
-  const pm = me.moveset[cmd.cursor] ?? me.moveset.find(m => m && m.moveId === cmd.move?.move) ?? null;
+  const pm = me.moveset[cmd.gameCursor] ?? me.moveset.find(m => m && m.moveId === cmd.move?.move) ?? null;
   const mv = pm?.getMove?.();
   const bi = cmd.targets[0];
   let target = null;

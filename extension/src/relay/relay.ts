@@ -29,6 +29,8 @@ export type RelayDeps = {
 export type Relay = {
   /** Answers one command from the background, synchronously (§9.2). */
   command: (msg: CmdMessage) => RelayReply;
+  /** Hands the panel the keyboard, or hands it back. The relay never learns whether a panel was drawn to take it. */
+  grab: () => void;
   /** What the relay would report for its tab: `null` until the page announces, then `ready` or `wrong-world`. */
   state: () => TabState | null;
 };
@@ -130,6 +132,7 @@ export function startRelay(d: RelayDeps): Relay {
       // No reply by the time dispatch returned: nobody is listening in the page. No timer, ever (§9.2).
       return answer ?? { t: "reply", id: msg.id, ok: false, code: "no-handler", message: `no page handler answered ${msg.name}` };
     },
+    grab: () => dispatch(EVENT.grab, {}),
     state: () => state,
   };
 }

@@ -202,7 +202,7 @@ const search = (fixed, cands, room, ctx, valid) => {
 let cache = { key: null, value: null };
 
 // The starter card's model: up to three proposals (the best team, the best without its lead pick, and a trio or a
-// fuller team), and the species the cursor is on.
+// fuller team), and the species the game's cursor is on.
 export const starterModel = (s, h) => {
   const tables = tryDo(() => gameTables());
   const challenges = (s.gameMode?.challenges ?? []).filter(c => c && c.value);
@@ -316,7 +316,7 @@ const build = (s, h, { tables, challenges, has, limit, chosen, containers }) => 
   return { card, values, proposals };
 };
 
-// The species under the cursor: its value, rank among what's caught and whether a proposal takes it.
+// The species under the game's cursor: its value, rank among what's caught and whether a proposal takes it.
 const viewed = (h, m) => {
   const sp = h.lastSpecies;
   if (!sp) return null;

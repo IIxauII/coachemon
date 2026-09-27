@@ -7,7 +7,7 @@
  */
 import { defineUnlistedScript } from "wxt/utils/define-unlisted-script";
 import { browser } from "wxt/browser";
-import type { CmdMessage } from "../src/messages.ts";
+import type { ToRelay } from "../src/messages.ts";
 import type { Channel } from "../src/relay/channel.ts";
 import { startRelay } from "../src/relay/relay.ts";
 
@@ -27,9 +27,15 @@ export default defineUnlistedScript(() => {
   });
 
   browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if ((message as CmdMessage | undefined)?.t !== "cmd") return;
+    const m = message as ToRelay | undefined;
+    if (m?.t === "grab") {
+      // `sendResponse` is deliberately not called: nothing answers a grab.
+      relay.grab();
+      return false;
+    }
+    if (m?.t !== "cmd") return;
     // Answered in this same turn, and the listener returns falsy: no async reply channel, no timer (§9.2).
-    sendResponse(relay.command(message as CmdMessage));
+    sendResponse(relay.command(m));
     return false;
   });
 });
