@@ -74,7 +74,7 @@ const H = __hud["90-render"];
 const GOLD = "#f8b050", BODY = "#f8f8f8", FILL = "#362d3e";
 
 let cards = null, cardName = null, cardJson = null, groupsCache = null;
-let treatment = "underline", inkName = "gold", away = false, held = false, i = 0;
+let treatment = "caret", inkName = "gold"   // the winner, #399, away = false, held = false, i = 0;
 const ink = () => (inkName === "gold" ? GOLD : BODY);
 
 // ---- rebuilding a drawn card: real tags, real inline styles, real titles
