@@ -8,7 +8,7 @@
 // heals and chip in between — a few HP branches carried turn to turn, so a coin-flip KO stays one. A voluntary
 // switch-in takes one hit before it acts; a fainted mon's replacement comes in free. After a foe faints the trainer
 // sends the bench mon with the best matchup score against the mon we have on the field, at the HP the plan has left it
-// on (trainer.getNextSummonIndex over getPartyMemberMatchupScores, spec §7). Our choices are searched with a small
+// on (trainer.getNextSummonIndex over getPartyMemberMatchupScores, game-code.md §7). Our choices are searched with a small
 // beam, each exchange's likelier ending carried on and the others weighed in its value; the enemy's choices are not
 // branched. Mid-exchange enemy switches, status, stat changes and doubles are not modelled — doubles are planned as
 // one slot against one foe at a time.

@@ -122,7 +122,7 @@ export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => 
   return qa * qb * cmp(MovePriorityInBracket.FIRST, MovePriorityInBracket.FIRST) + qa * (1 - qb) * cmp(MovePriorityInBracket.FIRST, y.bracket) + (1 - qa) * qb * cmp(x.bracket, MovePriorityInBracket.FIRST) + (1 - qa) * (1 - qb) * cmp(x.bracket, y.bracket);
 };
 
-// ---- Our own command's draw, which lands before the enemy decides (spec §6, #158)
+// ---- Our own command's draw, which lands before the enemy decides (game-code.md §6, #158)
 // `CommandPhase.handleFightCommand` resolves a `RANDOM_NEAR_ENEMY` move's target with
 // `getMoveTargets` → `randBattleSeedInt(<near enemies>)` as the command is made, and `EnemyCommandPhase` runs after
 // it — so with two or more opponents the foe's pick is a function of **our** command, and one such draw flipped it

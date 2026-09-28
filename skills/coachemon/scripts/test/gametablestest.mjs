@@ -167,7 +167,7 @@ clock += 31000;
 row("imported", `${attempt().length} chunks`);
 assert.deepEqual(attempt(), []);
 
-// ---- 5. The handoff is the one mark the read leaves on the page, so the panel's teardown drops it too (§9.6).
+// ---- 5. The handoff is the one mark the read leaves on the page, so the panel's teardown drops it too (extension-distribution.md §9.6).
 console.log("== the panel stops");
 row("handoff before", typeof window.__coachHudChunk);
 window.__coachHud.stop();

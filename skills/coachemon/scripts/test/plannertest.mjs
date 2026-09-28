@@ -167,7 +167,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-  // A renderer's product is a list of **group**s now (#349 §1); what this test is about is the rows the planner puts
+  // A renderer's product is a list of **group**s now (#349); what this test is about is the rows the planner puts
   // in them, so it reads the rows and leaves the summaries to the group golden. `txt` keeps a node's tooltip, which
   // the card's plain text drops, and several assertions below are on the tooltip.
   const rowsOf = g => g.rows.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
@@ -1360,7 +1360,7 @@ Object.assign(TABLE, {
   assert.equal(out.card.teamPlan, null);
   assert.equal(out.card.catch, null);
   // An ordinary card with exactly one `act` group, whose summary carries it: the inline ⚠ row that used to say it is
-  // gone, because the summary says it (#349 §1).
+  // gone, because the summary says it (#349).
   assert.deepEqual(out.groups.map(g => g.id), ["act"], "one group, and it is act");
   assert.equal(out.groups[0].summary, "no advice — the enemy AI call threw");
   assert.deepEqual(out.lines.filter(l => l.startsWith("⚠")), [], out.lines.join("\n"));

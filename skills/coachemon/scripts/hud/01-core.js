@@ -212,7 +212,7 @@ export const closeRead = () => { reading = null; };
 // Game-code calls only run while the game is waiting on a player decision: no phase is mid-execution, and the
 // enemy's decisions for the turn haven't been made yet. "check-switch" is the free "Will you switch?" prompt at an
 // encounter's start (and its party screen); "faint-switch" replaces a fainted mon. A U-turn-style mid-turn switch
-// (modal SwitchPhase with doReturn) is excluded: the turn is still resolving. See references/game-code.md §9.
+// (modal SwitchPhase with doReturn) is excluded: the turn is still resolving. See game-code.md §9.
 export const awaitingDecision = s => {
   const ph = s.phaseManager?.getCurrentPhase?.();
   if (ph?.phaseName === "CommandPhase") return "command";

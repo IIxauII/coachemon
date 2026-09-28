@@ -1,9 +1,9 @@
-// Biome choice card (SelectBiomePhase's OPTION_SELECT), as **group**s (#349 §1): `act` · `options` · `notes`, the
+// Biome choice card (SelectBiomePhase's OPTION_SELECT), as **group**s (#349): `act` · `options` · `notes`, the
 // same three every light card takes. Loads after 90-render: only call these from a draw, never at load time. Takes
 // the `biomeModel` view.
 // `options` is one line per biome — `★ Swamp 72` — with the encounter type mix, the species met most, the trainers
 // met, every reason (the gym leader ahead among them), the best catch, the wild boss on the tenth wave and where the
-// biome leads next. The call is `act.summary`, read off the model and never written here (§6).
+// biome leads next. The call is `act.summary`, read off the model and never written here.
 import { biomeSummary } from "./47-biome.js";
 import { badge, caption, dim, group, h, ICON, ink, line, mon, some } from "./90-render.js";
 
@@ -18,14 +18,14 @@ export const drawBiome = m => {
   const fainted = m.fainted
     ? line("⚠", h("span", dim, `judged without ${m.fainted} fainted — no revive at the next heal`)) : null;
   if (!m.options.some(o => o.score != null)) {
-    // Nothing scored: an ordinary card with exactly one `act` group, and the shell never special-cases it (§1).
+    // Nothing scored: an ordinary card with exactly one `act` group, and the shell never special-cases it (#349).
     // There is no judged list yet, so there is nothing for `options` to be.
     return [group("act", "Now", biomeSummary(m), [
       ...m.options.map(o => line("·", h("span", {}, o.label))),
       line("", h("span", dim,
         m.unread ? `unread: ${m.unread}` : m.data ? "no spawn data for these biomes" : "reading the game's biome tables…"))])];
   }
-  // A no-arrow kind, so the law degrades to **ours** alone (#349 §8). Which biome to take is the gutter's question,
+  // A no-arrow kind, so the law degrades to **ours** alone (#349). Which biome to take is the gutter's question,
   // answered by `★` · `≈` · `·` — so the three verdicts no longer carry three inks saying it again.
   const MARK = { pick: "★", close: "≈", worse: "·" };
   const options = [];
@@ -35,7 +35,7 @@ export const drawBiome = m => {
     const name = h("span", { ...ink.ours, fontWeight: "bold", marginRight: "3px" }, o.label);
     const score = h("span", { ...ink.ours, marginRight: "3px" }, `${o.score}`);
     score.title = `offense ${o.offense} · defense ${o.defense} · catches ${o.opportunity} · big fight ${o.bossFit}`;
-    // A rule between one biome and the next; the boundary above the first is `act`'s, which the shell draws (§1).
+    // A rule between one biome and the next; the boundary above the first is `act`'s, which the shell draws (#349).
     // Keyed on what is already in the group rather than on the loop index, because an unscored option above this
     // one has pushed a row of its own and this is no longer the first thing in the pane.
     options.push(h("div", options.length ? { marginTop: "4px", paddingTop: "3px", borderTop: "1px solid rgba(255,255,255,.12)" } : {},
@@ -63,7 +63,7 @@ export const drawBiome = m => {
     }
   }
   // `options` and `notes` head their panes with their label alone — the biomes themselves say it one glance lower
-  // (§6) — and `notes` isn't drawn at all on the ordinary card that has no footnote to make.
+  // (#349) — and `notes` isn't drawn at all on the ordinary card that has no footnote to make.
   // `act.summary` is the model's line over the offered biomes, so it is never empty on a card the game produced:
   // an option list is what the biome screen is.
   return [

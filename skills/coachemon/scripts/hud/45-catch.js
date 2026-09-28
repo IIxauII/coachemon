@@ -400,7 +400,7 @@ export const catchAdvice = (turn, account) => {
 // group's line — one rule, read by both, so the pane and its heading can never disagree about what is on offer.
 export const catchTargets = c => (c?.targets ?? []).filter(t => t.verdict !== "skip");
 
-// The catch group's line (#349 §6): the best target and what the ball it deserves is worth — `catch Toxicroak — Ultra
+// The catch group's line (#349): the best target and what the ball it deserves is worth — `catch Toxicroak — Ultra
 // 62%`. **A `catch` verdict alone earns one** — that is what "empty where there is no catch verdict" names, and a
 // `maybe` is not it: it is still drawn in the pane, and its group is headed by its label alone, which is the same
 // rule a group with nothing to conclude lives by. Pure, and computes nothing `catchAdvice` hasn't: the target with

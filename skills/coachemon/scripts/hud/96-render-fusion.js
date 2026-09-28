@@ -1,8 +1,8 @@
-// Fusion card (the 49-fusion model, on the party screen a DNA Splicer opens), as **group**s (#349 §1): `act` ·
+// Fusion card (the 49-fusion model, on the party screen a DNA Splicer opens), as **group**s (#349): `act` ·
 // `options` · `notes`, the same three every light card takes. Loads after 90-render: only call these from a draw,
 // never at load time.
 // `options` is up to three fusions in pick order (base ← the half it takes in) with their score and reasons. The
-// call line has left the rows: `act.summary` carries it, read off the model and never written here (§6).
+// call line has left the rows: `act.summary` carries it, read off the model and never written here.
 import { fusionSummary, signed } from "./49-fusion.js";
 import { badge, caption, dim, h, ICON, ink, line, mon, sep, some } from "./90-render.js";
 
@@ -11,7 +11,7 @@ export const captionFusion = m => caption("🧬", "Splice", m.picked ? mon(m.pic
   m.picked ? h("span", { ...dim, fontWeight: "normal" }, "with") : null);
 
 export const drawFusion = m => {
-  // A no-arrow kind, so the law degrades to **ours** alone (#349 §8). Whether a fusion is worth making is the
+  // A no-arrow kind, so the law degrades to **ours** alone (#349). Whether a fusion is worth making is the
   // gutter's `★`, and the score beside it carries its own sign.
   const row = (f, i) => line(i ? "·" : f.fuse ? "★" : "·",
     mon(f.base.icon, f.base.name, ICON.mon), h("span", { fontWeight: "bold" }, f.base.name),
@@ -21,10 +21,10 @@ export const drawFusion = m => {
   const detail = f => line("", ...f.types.map(t => badge(t)),
     h("span", dim, [...f.why, ...f.notes].join(" · ")));
   // A rule between one candidate and the next, never above the first: that boundary is the one between `act` and
-  // `options`, which is the shell's to draw (§1).
+  // `options`, which is the shell's to draw (#349).
   const options = m.rows.flatMap((f, i) => [i ? h("div", sep) : null, row(f, i), detail(f)]);
   const notes = m.spliced ? [line("", h("span", dim, "Spliced Endless: unfused mons run on half their base stats"))] : [];
-  // `options` and `notes` head their panes with their label alone — the candidates themselves say it one glance lower (§6).
+  // `options` and `notes` head their panes with their label alone — the candidates themselves say it one glance lower (#349).
   return [
     some("act", "Now", fusionSummary(m), []),
     some("options", "Fusions", null, options),

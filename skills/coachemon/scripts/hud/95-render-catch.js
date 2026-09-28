@@ -8,9 +8,9 @@ import { dim, h, ICON, img, ink, line, mon } from "./90-render.js";
 export const drawCatch = m => {
   const c = m?.targets ? m : m?.catch;
   if (!c?.targets?.length) return [];
-  // The verdict is the mark alone now: a catch is the pick, a maybe is the close call (#349 §7), and how good the
+  // The verdict is the mark alone now: a catch is the pick, a maybe is the close call (#349), and how good the
   // throw is was the one thing the ink beside them was saying twice. Catching is a decision the player is making
-  // right now, so every row here is **ours** (§8) — the ink the group's own frame wears.
+  // right now, so every row here is **ours** — the ink the group's own frame wears.
   const VERDICT = { catch: "★", maybe: "≈" };
   // A reason is *why* to catch, not how good the catch is, so the three kinds are **words** in the row and the
   // gutter stays neutral. One ink across the three, because they differ in kind and the law's question is

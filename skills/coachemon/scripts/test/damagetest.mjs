@@ -478,7 +478,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const sitrus = [new BerryModifier(0), new TurnHealModifier()];
   assert.equal(endOfTurnHp(m({ hp: 90, items: sitrus }), { s: at(SAND) }), -10 + 10, "80/160 isn't below half");
   assert.equal(endOfTurnHp(m({ hp: 85, items: sitrus }), { s: at(SAND) }), -10 + 40 + 10, "75/160 is");
-  // §21's order decides survival here: Sitrus eats at 5/160, and the poison chip then lands on 45, not on 5.
+  // game-code.md §21's order decides survival here: Sitrus eats at 5/160, and the poison chip then lands on 45, not on 5.
   assert.equal(endOfTurnHp(m({ hp: 5, items: sitrus, status: { effect: 1 } }), { s: at() }), 40 - 20 + 10, "Sitrus beats the poison chip");
   // A chip big enough to get there first still faints it, and a fainted mon heals nothing.
   assert.equal(endOfTurnHp(m({ hp: 5, maxHp: 400, items: sitrus, status: { effect: 1 } }), { s: at(SAND) }), -5, "the weather chip faints it first");
@@ -772,7 +772,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(versionAtLeast(null, "1.0.0"), false, "an unreadable version is older than everything");
 }
 
-// A fixed-damage hit returns before the Sturdy step (§4.3), so it takes a full-HP Sturdy mon down; a rolled hit
+// A fixed-damage hit returns before the Sturdy step (game-code.md §4), so it takes a full-HP Sturdy mon down; a rolled hit
 // still doesn't. Upstream #7620 flips this, and the version constant is what will flip with it.
 {
   class FixedDamageAttr {}

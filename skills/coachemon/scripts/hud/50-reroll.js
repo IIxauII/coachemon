@@ -1,6 +1,6 @@
 // Reroll preview: what the rewards screen's next reroll will offer, read off the stream before paying for it.
 //
-// ---- How the game rolls rewards (read from the pinned source, v1.12.0.11; references/game-code.md §19)
+// ---- How the game rolls rewards (read from the pinned source, v1.12.0.11; game-code.md §19)
 // `SelectModifierPhase.start` on the first roll of a wave calls `resetSeed()`, so the reward stream restarts at the wave
 // seed; a reroll doesn't, so it continues the stream from wherever the last roll left it. Either way it then calls
 // `regenerateModifierPoolThresholds(party, PLAYER, rerollCount)` — the per-tier weight tables, written to module-level

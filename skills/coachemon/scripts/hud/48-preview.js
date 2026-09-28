@@ -343,7 +343,7 @@ export const previewNext = run => previewFor(run, run.facts.wave + 1);
 const PREVIEW_MARK = { exact: "", replay: "~", estimate: "?" };
 export const previewMark = (m, field) => (m.missed?.includes(field) ? "!" : PREVIEW_MARK[m.confidence?.[field]] ?? "");
 // A fixed battle is named in a word, not a mark: `★` means one thing on the panel — the pick — and this is a
-// statement about the wave, not a judgement of it (#349 §7).
+// statement about the wave, not a judgement of it (#349).
 export const previewKind = m => (m.type === "me" ? "mystery" : m.fixed ? `fixed ${m.type}` : m.type);
 // `Machop L9, Geodude L10`, or `2 mons L9–10` when there are too many to name.
 const previewFoes = (m, long) => {

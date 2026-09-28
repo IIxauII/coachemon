@@ -7,7 +7,7 @@
 import { aheadIn, aheadWho } from "./49-ahead.js";
 import { dim, h, ink, line } from "./90-render.js";
 
-// Every row here is about a wave that has not arrived, so the whole section is **later** (#349 §8) — the ink the
+// Every row here is about a wave that has not arrived, so the whole section is **later** (#349) — the ink the
 // `road` group's own frame wears. How ready we are for it is the gutter's question, not the ink's, so the three
 // readiness verdicts no longer carry a colour of their own: `✓` and `✗` say it by shape.
 export const drawAhead = a => {
@@ -15,7 +15,7 @@ export const drawAhead = a => {
   const r = a.readiness;
   const head = h("span", { fontWeight: "bold", marginRight: "3px" }, `${aheadWho(a)} ${aheadIn(a.next.in)}`);
   const where = h("span", dim, `W${a.next.wave}`);
-  // Rows of the road group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
+  // Rows of the road group, not a card of its own: the shell rules groups apart (#349), and no section has a
   // control of its own.
   const out = [line("", h("span", { fontWeight: "bold", marginRight: "3px" }, "Next big fight"),
     head, where, h("span", { flex: "1" }),

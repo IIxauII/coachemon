@@ -1,6 +1,6 @@
-// Learn-move card (the 40-learn model), as **group**s (#349 §1): `act` — the incoming move and what the swap gains —
+// Learn-move card (the 40-learn model), as **group**s (#349): `act` — the incoming move and what the swap gains —
 // then `options`, the slots it is weighed against, then `audit`, the team line, and `notes`. The verdict is no longer
-// a row: it is `act.summary`, read off the model and never written here (§6).
+// a row: it is `act.summary`, read off the model and never written here.
 import { learnSummary } from "./40-learn.js";
 import { badge, caption, dim, h, ICON, img, ink, line, mon, some } from "./90-render.js";
 
@@ -20,7 +20,7 @@ export const drawLearn = m => {
   // Only-type loss: the slot's own "only X move on team" note becomes a ⚠ by its name; the team line says it.
   const onlyNote = m.team?.onlyType ? `only ${m.team.onlyType} move on team` : null;
   // `tail`: what the row has to add after its power — only the incoming move has any, and only ever the gain.
-  // A no-arrow kind, so the law degrades to **ours** alone (#349 §8). Which move to keep is the gutter's question —
+  // A no-arrow kind, so the law degrades to **ours** alone (#349). Which move to keep is the gutter's question —
   // the marks answer it, and no row ink does.
   const row = (x, mark, warn, tail) => {
     const notes = warn ? x.notes.filter(n => n !== onlyNote) : x.notes;
@@ -59,15 +59,15 @@ export const drawLearn = m => {
   // The next big fight went unread, so the roster fits above are missing: said once, dim, only when it happened.
   const blind = m.blind ? line("", h("span", dim, `next big fight unread: ${m.blind}`)) : null;
   // The rule that used to hold the incoming move apart from the slots is gone with it — that boundary is the one
-  // between `act` and `options`, which is the shell's to draw (§1).
+  // between `act` and `options`, which is the shell's to draw (#349).
   return [
     some("act", "Now", learnSummary(m), [row(m.move, "✓", false, gain)]),
     some("options", "Moves", null,
       // The slot losing its move is *removed* — `✗`, the same news as an avoid; the slot the new move lost to on a
-      // skip is the pick that kept its place — `★` (#349 §7). `✕` is gone from the panel entirely.
+      // skip is the pick that kept its place — `★` (#349). `✕` is gone from the panel entirely.
       m.moves.map((x, i) => (i === m.forget ? row(x, "✗", warnAt(i)) : i === slot ? row(x, "★", warnAt(i)) : row(x, "·")))),
     // A learn card runs no team audit — the team line is all it has to say about the team, so the group is headed by
-    // its label alone (§6).
+    // its label alone (#349).
     some("audit", "Team", null, [teamLine(teamParts)]),
     some("notes", "Notes", null, [blind]),
   ].filter(Boolean);

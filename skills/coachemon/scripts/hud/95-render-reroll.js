@@ -7,7 +7,7 @@
 import { rerollLabel, rerollMark } from "./50-reroll.js";
 import { dim, h, ink, itemImg, line } from "./90-render.js";
 
-// A reroll is a shop action the player is taking now, so the section is **ours** (#349 §8) — it draws inside `act`,
+// A reroll is a shop action the player is taking now, so the section is **ours** (#349) — it draws inside `act`,
 // whose frame wears the same ink. Whether the reroll is worth it is the verdict's own words; it was never the ink's
 // question, which is why the four verdicts no longer carry four colours.
 const REROLL_VERDICT = { reroll: "✓ worth it", "instead of buys": "✓ over the buys", keep: "keep", short: "can't pay" };
@@ -26,7 +26,7 @@ export const drawReroll = m => {
     if (i > 0) return;
     for (const f of roll.offers) {
       // The best offer is the pick, so it wears `★`; a tier bump is a word, because the only mark it could take —
-      // `▲` — already means *foe weak to*, and a 17th mark costs more than a word does (#349 §7).
+      // `▲` — already means *foe weak to*, and a 17th mark costs more than a word does (#349).
       out.push(line(f === b ? "★" : "·", itemImg(f.icon, f.name),
         h("span", f === b ? {} : dim, `${f.name}${f.upgraded ? " upgraded" : ""}`), h("span", { flex: "1" }),
         h("span", dim, f.holder ? `${f.holder.name} · ${f.why.replace(`${f.holder.name} · `, "")}` : f.why)));

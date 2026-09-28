@@ -119,7 +119,7 @@ const verdictOf = m => cardSummary(m).verdict;
   }
 }
 
-// ---- The card event: the kind the stream uses, the key it deduplicates on, and the leading call (§11.1)
+// ---- The card event: the kind the stream uses, the key it deduplicates on, and the leading call (extension-distribution.md §11.1)
 {
   const { cardEvent } = globalThis.__hud["60-card"];
   // A battle is keyed on the wave alone and carries the glossary's verdict.

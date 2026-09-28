@@ -1,9 +1,9 @@
 // Starts the refresh loop and pushes the card stream. Last in the bundle, so every module it calls is built before the
 // first tick. `stats()` exposes the sandbox restore-mismatch count and refresh cost for live checks; `last()` the card
 // last drawn, `summary()` its plain-text verdict, which probe.js passes through to the battle read, and `card()` the
-// very payload the `coachemon:card` events carry, which the `card` command reads for a subscriber's late join (§11.1).
+// very payload the `coachemon:card` events carry, which the `card` command reads for a subscriber's late join (extension-distribution.md §11.1).
 
-// The stream (§11.1): one event per new decision or changed verdict, and one per distinct HUD failure. The detail is a
+// The stream (extension-distribution.md §11.1): one event per new decision or changed verdict, and one per distinct HUD failure. The detail is a
 // JSON string carrying this build's id, which is what the relay pairs with and forwards (§9.1, §9.5); a panel injected
 // without the extension has no id and nobody listening, so it pushes nothing.
 // The event names are the relay's (`extension/src/relay/channel.ts`), kept here by hand because the panel is one
@@ -33,7 +33,7 @@ const push = (type, detail) => {
 
 // The card the panel is showing, as an event body. Null when there is nothing to coach, or when the refresh threw.
 const eventNow = () => { try { return cardEvent(shownCard()); } catch { return null; } };
-// **`groups` and `text` are one product, off the groups the refresh already drew** (§11.1, #361 §5): the wire's
+// **`groups` and `text` are one product, off the groups the refresh already drew** (extension-distribution.md §11.1): the wire's
 // group carries its rows already flattened, because nodes cannot cross a wire, and the text is the projection of
 // exactly that — so the two cannot disagree, and neither costs a second draw of the card.
 // One assembly site for the body the read answers with and the stream pushes, so a field cannot land on one and
@@ -73,7 +73,7 @@ const stream = () => {
 
 // `stats()` is what a live check reads the refresh cost off, so the stream is inside the measurement: what a push
 // costs on top of a draw is part of what a refresh costs. It is the flattening alone now — the groups the stream
-// ships and derives its text from are the ones the refresh above it already drew (#361 §5).
+// ships and derives its text from are the ones the refresh above it already drew (extension-distribution.md §11.1).
 let lastTickMs = 0, maxTickMs = 0;
 const timedTick = () => {
   const t0 = performance.now();

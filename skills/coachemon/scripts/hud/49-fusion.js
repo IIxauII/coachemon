@@ -2,7 +2,7 @@
 // the party member it costs. Read on the rewards card (is the Splicer worth taking?) and on the party screen the
 // Splicer opens (who to pick first, who second).
 //
-// ---- How the game fuses (read from the pinned source, v1.12.0.11; references/game-code.md §24)
+// ---- How the game fuses (read from the pinned source, v1.12.0.11; game-code.md §24)
 // - DNA Splicers is a consumable (`FusePokemonModifierType`): it can't be held. Taking it opens the party screen in
 //   `PartyUiMode.SPLICE`; the first pick (`transferCursor`) is the **base**, the second becomes its `fusionSpecies` and
 //   leaves the party for good. Backing out returns to the rewards screen with the Splicer unspent.

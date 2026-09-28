@@ -24,7 +24,7 @@ import { moveTraits } from "./07-move-traits.js";
 import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneStatusMoves, sceneStopped, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
 import { aiTargetScore, approxDistribution, sceneDistribution, sceneExactMoves, sceneReplayAI, sceneSendInScore, sceneSwitches, skipsTurn } from "./20-enemy-ai.js";
 
-// ---- Predicted Terastallization (spec §7)
+// ---- Predicted Terastallization (game-code.md §7)
 // TeraPhase runs at TurnStart, before any move, so a trainer mon that Terastallizes this turn already defends with
 // [getTeraType()] and gets Tera STAB by the time damage is dealt. The game computes all of that itself once
 // `isTerastallized` is set (TeraPhase also clears an added type), so the whole refresh runs with the flag set on the
@@ -185,7 +185,7 @@ const sceneFacts = (s, env, live) => {
 // ---- The speed tie the shuffle has already drawn
 // A speed tie is not a coin flip. The game shuffles the turn's move phases with `randSeedShuffle` under
 // `executeWithSeedOffset(turn × 1000 + <queue length>, waveSeed)` and only then sorts them by Speed — a stable sort,
-// so the shuffle decides every tie, and the priority pass after it is stable too (spec §5, `sortInSpeedOrder`). That
+// so the shuffle decides every tie, and the priority pass after it is stable too (game-code.md §5, `sortInSpeedOrder`). That
 // draw depends on nothing either side does this turn, so it is knowable before committing to a move.
 // In a single battle with both sides using a move the queue is [ours, theirs] and length 2, so one Fisher-Yates draw
 // settles it: drawing 0 swaps them. Trick Room reverses the sorted groups afterwards, which swaps a tie back.
@@ -357,7 +357,7 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
       const ex = live ? turn.exactMoves(ranges) : null;
       if (ex && !ex.ok) return { moves: [], switchTo: null, tera: false, skip, unavailable: ex.reason, exact: false, confidence: null };
       // A Commander Tatsugiri's command is written and then dropped by `TurnStartPhase`, so `EnemyCommandPhase` does
-      // call `getNextMove` for it (§7) and it does spend the draws — which is why the call above includes it. It
+      // call `getNextMove` for it (game-code.md §7) and it does spend the draws — which is why the call above includes it. It
       // never acts, so it has no move to report.
       if (skip) return { moves: [], switchTo: null, tera: false, skip: true, exact: false, confidence: null };
       const row = ex?.moves?.get(foe) ?? null;
@@ -369,7 +369,7 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
     // damage answer is memoised: working it out through the whole enemy model meant that on a turn where the AI
     // couldn't be asked, the fallback priced our damage pre-Tera and every later reader got that memo.
     teraNow: foe => memo("tera", foe, () => !turn.switches().get(foe) && !!tryDo(() => env.trainer?.shouldTera?.(foe), false)),
-    // The §6 distribution on its own, whatever the exact call said: every outcome with its chance. Later turns are
+    // The game-code.md §6 distribution on its own, whatever the exact call said: every outcome with its chance. Later turns are
     // played from it, and at a pin bump it is the exact call's **oracle** (#183) — asking both at one prompt is how
     // a drift between the game's own choice and this file's re-implementation of it shows up.
     enemyDistribution: foe => memo("dist", foe, () => (live
@@ -408,7 +408,7 @@ const makeTurn = (env, { live, facts, baseKey, patches = [], shared }) => {
   // we are still choosing, so there is no exact answer to have — not a fallback, a different moment — and the
   // distribution stands there, marked `estimate`.
   // The foes asked are the ones `EnemyCommandPhase` will ask: active, in field order, minus any the trainer switches
-  // out, whose `getNextMove` never runs (§7) and whose draws must not be spent before the next slot's call.
+  // out, whose `getNextMove` never runs (game-code.md §7) and whose draws must not be spent before the next slot's call.
   if (!patches.length) {
     shared.exactMoves = ranges => memo("exact", ranges.join(","), () => {
       if (!live || facts.decision !== "command") return { ok: true, moves: new Map() };

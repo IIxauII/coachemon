@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
-// ---- Mock game modes, shaped like `GameMode`'s own methods (references/game-code.md §12).
+// ---- Mock game modes, shaped like `GameMode`'s own methods (game-code.md §12).
 // The classic table, by the waves `ClassicFixedBossWaves` names: the youngster, the rivals, the evil team, the Elite
 // Four and the champion.
 const CLASSIC_FIXED = new Set([5, 8, 25, 35, 55, 62, 64, 66, 95, 112, 114, 115, 145, 164, 165, 182, 184, 186, 188, 190, 195]);

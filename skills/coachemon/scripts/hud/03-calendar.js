@@ -4,7 +4,7 @@
 // so an answer holds from any point in a run and costs no seed. What the run seed has already *rolled* is a different
 // question, and `48-preview.js` answers it by replaying the draws.
 //
-// ---- The four rules (read from the pinned source, v1.12.0.11; references/game-code.md §12)
+// ---- The four rules (read from the pinned source, v1.12.0.11; game-code.md §12)
 //   final  `gameMode.isWaveFinal(w)`                     Eternatus at 200 in classic; Daily 50; Endless every 250
 //   fixed  `gameMode.isFixedBattle(w)`                   the rival, the evil team, the Elite Four, the champion
 //   gym    `w % 30 === (offsetGym ? 0 : 20)`             the rule `isWaveTrainer` returns early on
@@ -136,7 +136,7 @@ const lookback = (s, w) => {
 };
 
 /**
- * How likely wave `w` in `biome` is a trainer battle: `GameMode.isWaveTrainer` (§10) as odds rather than as the roll
+ * How likely wave `w` in `biome` is a trainer battle: `GameMode.isWaveTrainer` (game-code.md §10) as odds rather than as the roll
  * `48-preview.js` replays. The certainties first — a gym wave always, Daily's X5 and its X0 past 10, and a wave the
  * run's own table has already claimed never — then the 1/`trainerChance` roll each of X2…X9 makes, blocked within two
  * waves of a gym or fixed battle and reduced by the chance a wave in its look-back took the slot first. The chance is

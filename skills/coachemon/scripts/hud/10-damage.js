@@ -90,7 +90,7 @@ const traitsNow = (env, atk, mv, live, def = null) => {
   return live && t.charge && t.charge.now(atk) ? { ...t, charge: false, semiCharge: false } : t;
 };
 
-// ---- Boss segments and survival (spec §3, §8). Pure math on read fields.
+// ---- Boss segments and survival (game-code.md §3, §8). Pure math on read fields.
 // calculateBossSegmentDamage (utils/damage, exported; EnemyPokemon.damage calls it), verbatim.
 const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
   const a = idx ?? Math.ceil(hp / segSize) - 1;
@@ -102,7 +102,7 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
   const c = Math.min(Math.max(Math.floor(Math.log2(excess / segSize)), 0), a - minIdx);
   return [Math.max(Math.floor(hp - floorHp + segSize * c), 1), a - c];
 };
-// Sturdy against a fixed-damage move (spec §4.3). `getAttackDamage` returns from its `FixedDamageAttr` branch
+// Sturdy against a fixed-damage move (game-code.md §4). `getAttackDamage` returns from its `FixedDamageAttr` branch
 // before the `PreDefendFullHpEndureAbAttr` step, so at our pin Seismic Toss, Night Shade, Super Fang, Psywave and
 // Final Gambit take a full-HP Sturdy mon down. Upstream's #7620 ("Sturdy now applies to moves that deal fixed
 // damage") moves the branch and is on the game's master, unreleased. So this is the live build's call, not ours:
@@ -151,7 +151,7 @@ const landHit = (f, st, d, ohko) => {
   let idx;
   // MoveEffectPhase rolls the enemy's endure token on the damage as it stands (`initialDmg >= target.hp`) and only
   // then hands it to `damageAndUpdate`, where the bar rule clamps it. So a boss can spend the token on a hit its
-  // own segment boundary was going to stop, and hold it for the rest of the turn (spec §3, §8).
+  // own segment boundary was going to stop, and hold it for the rest of the turn (game-code.md §3, §8).
   const raw = d;
   [d, idx] = barStep(f, st.hp, st.idx, d, ohko);
   const left = st.hp - d;
@@ -384,7 +384,7 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   return { by, after1, perChunk };
 };
 
-// ---- Turn end (spec §21). The HP a pokémon gains (+) or loses (−) between this turn's moves and the next command,
+// ---- Turn end (game-code.md §21). The HP a pokémon gains (+) or loses (−) between this turn's moves and the next command,
 // in the game's own phase order (`turnEndPhases`, `src/phase-manager.ts:228`): the moves' own Shell Bell, then
 // WeatherEffectPhase (the chip, then the weather abilities), BerryPhase, CheckStatusEffectPhase /
 // PostTurnStatusEffectPhase (the status chip), and TurnEndPhase (TURN_END tags, Leftovers, terrain, the enemy's
@@ -539,7 +539,7 @@ export const sceneTurnEndHp = (env, p, opts = {}) => {
   return applyTurnEnd(endOfTurnSteps(env, p, opts), hp, p.getMaxHp()) - hp;
 };
 
-// ---- Game path (spec §1, §2, §4, §5)
+// ---- Game path (game-code.md §1, §2, §4, §5)
 const RESULT_MULT = { [HitResult.EFFECTIVE]: 1, [HitResult.EXTREMELY_EFFECTIVE]: 4, [HitResult.SUPER_EFFECTIVE]: 2, [HitResult.NOT_VERY_EFFECTIVE]: 0.5,
   [HitResult.MOSTLY_INEFFECTIVE]: 0.25, [HitResult.ONE_HIT_KO]: 1, [HitResult.NO_EFFECT]: 0, [HitResult.IMMUNE]: 0 };
 // The random roll is 85..100 %, uniform over 16 values; the simulated call returns the 100 % one.
@@ -570,7 +570,7 @@ const PRESENT_HEAL = 19 / 100;
 // lens count 07-move-traits already checked against `canBeMultiStrikeEnhanced`.
 const lensShare = (n, k) => (!n ? 1 : k === 0 ? 1 - 0.25 * n : k === n + 1 ? 1 : 0.25);
 
-// The game's own damage at roll `r` (spec §4.6–7). A simulated call pins the roll at 1 and hands back the finished
+// The game's own damage at roll `r` (game-code.md §4). A simulated call pins the roll at 1 and hands back the finished
 // number, so `addRolls` spreads what the post-roll steps have already been applied to. Multipliers barely notice
 // that — they commute with the roll to within a HP of rounding — but `ModifiedDamageAttr` is a *cap*: False Swipe's
 // `min(damage, hp − 1)` lands on every roll alike, and spreading it invents a range the game never produces. For
@@ -585,7 +585,7 @@ const atRoll = (def, r, fn) => {
 };
 
 // Lock-On / Mind Reader's IGNORE_ACCURACY tag covers only the mon they were aimed at: `checkBypassAccAndInvuln`
-// reads the user's last one of those moves and asks whether *this* target was among its targets (§5). In a single
+// reads the user's last one of those moves and asks whether *this* target was among its targets (game-code.md §5). In a single
 // battle that is always the mon in front; in a double the other foe still rolls. Without a move history to read
 // (mocks) the tag stands on its own, as it did before.
 const lockedOn = (atk, def) => {
@@ -594,7 +594,7 @@ const lockedOn = (atk, def) => {
   const aimed = (atk.getLastXMoves(-1) ?? []).find(m => m.move === MoveId.LOCK_ON || m.move === MoveId.MIND_READER);
   return !!aimed?.targets?.includes(def.getBattlerIndex?.());
 };
-// Accuracy (§5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
+// Accuracy (game-code.md §5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
 const accuracy = (atk, def, move, ohko = false) => {
   if (move.moveTarget === MoveTarget.USER) return 1;
   if (ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr") || lockedOn(atk, def)
@@ -634,7 +634,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   const others = (env.field ?? []).filter(p => p && p !== atk && p.hp > 0 && (p.isOnField?.() ?? true));
   const spreadApplied = spread && (move.moveTarget === MoveTarget.ALL_OTHERS || move.moveTarget === MoveTarget.ALL_NEAR_OTHERS ? others : others.filter(p => p.isPlayer?.() !== atk.isPlayer?.())).length > 1;
 
-  // Hit counts (§2) come from the traits: MultiHitAttr type, Skill Link, Beat Up, Parental Bond / Multi-Lens strikes.
+  // Hit counts (game-code.md §2) come from the traits: MultiHitAttr type, Skill Link, Beat Up, Parental Bond / Multi-Lens strikes.
   const t = traitsNow(env, atk, move, true, def);
   const dist = t.hits.dist;
   const hitsMax = Math.max(...dist.map(x => x.n));
@@ -727,7 +727,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
   if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
-  // Sturdy doesn't reach a fixed-damage hit on this build (§4.3), so the target's facts lose it for this move only.
+  // Sturdy doesn't reach a fixed-damage hit on this build (game-code.md §4), so the target's facts lose it for this move only.
   const facts = targetFacts(env, def, ignoreAbility);
   const f = fixed && facts.sturdy && fixedIgnoresSturdy(env) ? { ...facts, sturdy: false } : facts;
   const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
@@ -738,7 +738,7 @@ const fromGame = (env, atk, def, pm, opts) => {
     * dist.filter(x => x.n > k).reduce((u, x) => u + x.p, 0) * [...m].reduce((u, [d, p]) => u + d * p, 0), 0);
   const [worst] = resolve({ ...f, pFocus: 0, pEndure: 0 }, maxes.map(d => new Map([[d, 1]])), [{ n: hitsMax, p: 1 }], 1, false, ohko);
 
-  // A target mid-Dig / Fly / Dive / Shadow Force is only hit if it moves first and comes out (spec §5), unless the
+  // A target mid-Dig / Fly / Dive / Shadow Force is only hit if it moves first and comes out (game-code.md §5), unless the
   // move reaches it there (Earthquake into Dig) or accuracy is bypassed. The planner knows the order.
   const semiTag = (def.summonData?.tags ?? []).find(t => isA(t, "SemiInvulnerableTag"));
   const semi = !!semiTag && move.moveTarget !== MoveTarget.USER && !(ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr")

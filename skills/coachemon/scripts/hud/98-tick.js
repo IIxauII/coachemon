@@ -14,12 +14,12 @@ import { captionRewards, drawRewards } from "./96-render-rewards.js";
 import { captionStarters, drawStarters } from "./96-render-starters.js";
 import { captionBiome, drawBiome } from "./97-render-biome.js";
 
-// What the shell needs per kind: the renderer that turns one card into groups (#349 §1) — every kind's, now that
+// What the shell needs per kind: the renderer that turns one card into groups (#349) — every kind's, now that
 // the last four have followed, so the adapter that presented a node tree as one whole-card group is gone and with
 // it everything it kept alive — and the caption its strip wears. The strip is the shell's and not a card's: a
-// renderer returns groups and a caption, and knows nothing about what a view is (#349 §2), so no card draws its own
+// renderer returns groups and a caption, and knows nothing about what a view is, so no card draws its own
 // strip or its own way back. The glyph a dismissal leaves behind has left this table with the kind's emoji it used
-// to carry: **dismissed means silent**, so it is one mark that is the same every wave (#349 §10) and the shell owns
+// to carry: **dismissed means silent**, so it is one mark that is the same every wave and the shell owns
 // it outright. One table, so a new kind is one entry.
 const KIND = {
   battle: { draw: drawBattle, caption: captionBattle },
@@ -32,12 +32,12 @@ const KIND = {
 };
 
 // The panel as the shell shells it: its own control, the **strip**, the **drawer** — the tab bar and the open
-// group's pane. **Strip and drawer are both visible, strip above drawer** (#349 §2):
+// group's pane. **Strip and drawer are both visible, strip above drawer** (#349):
 // the call is never a click away, including while the player reads another group, and the cost — the act summary
 // appearing on the strip while `act` is the group on show — is accepted. The controls float in the panel's corner,
 // so the shell leaves them room on the first line it draws, which is the strip's head; no renderer knows they are
 // there.
-// **Shutting the drawer keeps the strip** (#349 §2, §3): the bar and the pane go and the one line the player always
+// **Shutting the drawer keeps the strip**: the bar and the pane go and the one line the player always
 // needs stays, so a whole run can be watched on one line. The card is still drawn in full — the groups are what the
 // text is derived from — so what the drawer costs when it is shut is the shelling and nothing the coach computed.
 const open = (card, groups) => {
@@ -49,7 +49,7 @@ let last = ""; // the change signature of what is on screen: the DOM is only reb
 const sigOf = card => JSON.stringify([panelState(), openGroup(), card]);
 let shown = null; // the card last drawn: `window.__coachHud.last()` / `summary()`
 export const shownCard = () => shown;
-// **The shown card's groups, drawn once per refresh and shared** (#361 §5): the shell shells them and the stream
+// **The shown card's groups, drawn once per refresh and shared** (extension-distribution.md §11.1): the shell shells them and the stream
 // puts them on the wire with the text derived from them, where the stream used to draw the card a second time to
 // say what it said. Lazy, so a refresh that neither redraws nor pushes draws nothing at all, and dropped with the
 // card it belongs to, so nothing here can hand out last refresh's groups.
@@ -63,7 +63,7 @@ export const shownGroups = () => {
 };
 const setShown = card => { shown = card; groups = undefined; };
 
-// What the last refresh died on, or null: the panel shows it, and 99-start pushes it once per distinct message (§11.1).
+// What the last refresh died on, or null: the panel shows it, and 99-start pushes it once per distinct message (extension-distribution.md §11.1).
 let failure = null;
 export const lastFailure = () => failure;
 
@@ -118,15 +118,15 @@ export const tick = () => {
     const sig = sigOf(card);
     el.style.display = "block";
     // The panel's width is the ladder's, not a literal: a dismissal shrinks to the glyph, and nothing else here
-    // knows a number (#349 §4).
+    // knows a number (#349).
     el.style.width = panelState() === "closed" ? "auto" : PANEL_W;
     if (sig !== last) {
       clearMissed();
       // The panel's two controls and the glyph that brings it back are the panel's own, so no card draws either of
-      // them — controls are the shell's, never a row's (§5).
+      // them — controls are the shell's, never a row's (#349).
       el.replaceChildren(...(panelState() === "closed" ? [glyph()] : open(card, shownGroups())));
       // Icon atlases load lazily; redraw next tick until every sprite is in. The signature is taken again rather
-      // than reused: a card with no group the player was on moves the drawer to `act` as it draws (#349 §3), and
+      // than reused: a card with no group the player was on moves the drawer to `act` as it draws (#349), and
       // that move belongs in what was drawn.
       last = missedSprite() ? "" : sigOf(card);
     }

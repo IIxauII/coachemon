@@ -1,4 +1,4 @@
-// The card stream, through the script the extension actually ships (§11.1): `hudScript(bundle("hud"))` stamped with a
+// The card stream, through the script the extension actually ships (extension-distribution.md §11.1): `hudScript(bundle("hud"))` stamped with a
 // build id, run against a mocked page, with every `document` event captured. The relay's own validators judge what
 // came out, so a detail the extension would drop fails here instead of on a live tab (§9.5).
 import assert from "node:assert";
@@ -7,7 +7,7 @@ import { hudScript, stamp } from "../../../../extension/src/build/artifact.ts";
 import { EVENT, GROUP_IDS, cardBody, coachErrorBody } from "../../../../extension/src/relay/channel.ts";
 
 // The strip is two lines, then an ellipsis — about 115 characters at reference width — and **the leading clause must
-// fit**; what follows the first ` · ` may clip, because it is reasoning and not the call (#349 §6). The clamp only
+// fit**; what follows the first ` · ` may clip, because it is reasoning and not the call (#349). The clamp only
 // ever eats the end, so what CI can hold is the clause, and this is where it is held: every act summary that reaches
 // the wire is one the strip drew.
 const CLAUSE_BUDGET = 115;
@@ -106,10 +106,10 @@ const errors = () => seen(EVENT.coachError);
   // The text is the card the panel drew.
   assert.ok(body.text.includes("Flamethrower"), body.text);
 
-  // A late joiner reads the very event it missed: `card()` is the `card` command's answer (§11.1, §11.4).
+  // A late joiner reads the very event it missed: `card()` is the `card` command's answer (extension-distribution.md §11.1, §11.4).
   const made0 = made;
   assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text });
-  // **The groups are built once per fire and both projections come off them** (#361 §5): the read that follows the
+  // **The groups are built once per fire and both projections come off them** (extension-distribution.md §11.1): the read that follows the
   // refresh draws no card of its own, where the stream used to draw one to say what it said.
   assert.equal(made, made0, `the card read drew ${made - made0} nodes of its own`);
 
@@ -130,7 +130,7 @@ const errors = () => seen(EVENT.coachError);
   console.log("dedupe ok");
 }
 
-// ---- A verdict that changes mid-wave is a new event under the same key (§11.1)
+// ---- A verdict that changes mid-wave is a new event under the same key (extension-distribution.md §11.1)
 {
   const fighter = (name, lv, types, [hp, atk, def, spa, spd, spe], moves, boss) => ({
     id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0, species: { legendary: false },

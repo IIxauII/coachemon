@@ -200,7 +200,7 @@ const doublesNote = share => `${Math.round(share * 100)}% doubles ahead`;
 // only they are scaled: an inflicted status, which is dead into a foe immune to it, and disruption, which is worth a
 // lot against a foe that heals or sets up and little against one that just attacks. With no roster both are left
 // as they are, so the two cards can't disagree. Every rule below is `Pokemon.canSetStatus`, the ability attrs and
-// the battler tags as the pinned source has them (references/game-code.md §16), decided from what the preview hands
+// the battler tags as the pinned source has them (game-code.md §16), decided from what the preview hands
 // over: a foe's types, ability, passive and moveset. Leaf Guard (sun), Shields Down (form) and held items (Leftovers
 // under Heal Block) are out of its reach.
 const MOLD_BREAKERS = ["Mold Breaker", "Teravolt", "Turboblaze"];
@@ -338,7 +338,7 @@ const typeGain = (pk, mv, change, name, foe, ours) => {
   if (!ours.length || statusMoveBlocked(pk, mv, foe)) return 0;
   const types = foe.types ?? [];
   const set = change.kind === "set";
-  // The game's own conditions (references/game-code.md §"Typing"): neither move may hand a target a typing it already
+  // The game's own conditions (game-code.md §14): neither move may hand a target a typing it already
   // has, and a `set` is refused by Multitype and RKS System — the same three the battle plan refuses, so the two cards
   // agree about which foes a rewrite is simply wasted on. Terastallization is the one condition left out: it is a live
   // read the preview doesn't carry, and a Tera'd foe in the roster is scored as if it weren't.
@@ -710,7 +710,7 @@ export const learnModel = ({ pk, mv, double, party, roster = null }) => {
   const { plan } = learnAdvice(pk, mv, { double, party: party?.length ? party : [pk], roster: blind ? null : roster });
   const { moves, incoming, forget, compare, team } = plan;
   // The call alone. It used to travel with an ink, from before the colour law: **colour is the panel's and never
-  // the model's** (#349 §8), and the one thing that ink said — is this good news — is the gutter's question now,
+  // the model's** (#349), and the one thing that ink said — is this good news — is the gutter's question now,
   // answered by the mark the row wears. Nothing ever read it.
   const verdict = {
     free: "Learns it — free slot",

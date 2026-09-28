@@ -1,7 +1,7 @@
 // Starter picker: on the starter grid at the start of a run, which starters this account should take within the point
 // budget. It proposes whole teams from what is unlocked, each pick with a short reason.
 //
-// ---- How the game decides (read from the pinned source, v1.12.0.11; references/game-code.md §23)
+// ---- How the game decides (read from the pinned source, v1.12.0.11; game-code.md §23)
 // - The grid is StarterSelectUiHandler, UiMode.STARTER_SELECT. Its pop-ups (add, moves, nature, start) change the UI
 //   mode, so the handler is read from `ui.handlers[STARTER_SELECT]`; `starterSelectCallback` is set only while a team
 //   is being chosen for a run (SelectStarterPhase). Daily runs never show the grid.
@@ -333,7 +333,7 @@ export const ptsText = x => `${Math.round(x * 100) / 100}`;
 
 // `best: Gible (carry) + Magikarp + Pikachu · 10/10 pts; without Gible: …`, for the watcher and the battle read.
 // With nothing to propose it says so rather than saying nothing: it is the card's `act` summary, and `act` is the
-// one group that is never empty (#349 §6). The card drew this line itself until the summary took it over.
+// one group that is never empty (#349). The card drew this line itself until the summary took it over.
 export const startersSummary = m =>
   m.picks.map(t => `${t.label}: ${t.members.map(x => `${x.name}${x.role === "carry" ? " (carry)" : ""}`).join(" + ")} · ${ptsText(t.cost)}/${m.limit} pts${t.weak.length ? ` · weak ${t.weak.join("/")}` : ""}`).join("; ")
   || (m.full || m.room <= 0 ? "nothing to add" : "no caught starter fits");

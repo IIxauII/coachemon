@@ -1,6 +1,6 @@
-// Battle card (the 60-card battle model), the first card to be drawn as **group**s (#349 §1): `act` — the ⚔ line per
+// Battle card (the 60-card battle model), the first card to be drawn as **group**s (#349): `act` — the ⚔ line per
 // field slot and the switches to get there — then `foes`, then `catch` on a wild wave or `plan` on a trainer's, then
-// `road`. Each group's summary is read off the model, never written here (§6).
+// `road`. Each group's summary is read off the model, never written here.
 import { STATUS_FRAMES } from "./01-core.js";
 import { catchSummary } from "./45-catch.js";
 import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummary } from "./60-card.js";
@@ -32,7 +32,7 @@ export const drawBattle = m => {
 
   const threatTag = t => {
     // A threat is **theirs** whatever its level: how bad it is, the skull and the ⚠ already say by shape, and
-    // spending a second ink on the same question is what the law took away (§8).
+    // spending a second ink on the same question is what the law took away (#349).
     const n = h("span", { display: "inline-flex", alignItems: "center", marginRight: "4px", ...ink.theirs },
       t.level === "ko" ? "💀" : "⚠", badge(t.type, t.e >= 2 ? `×${t.e}` : "", true),
       h("span", { marginLeft: "1px" }, `${t.pct}%${t.hits ? ` ${t.hits}-hit` : ""}`));
@@ -43,7 +43,7 @@ export const drawBattle = m => {
   // A switch uses the turn: with one, the plan reads as steps — `now:` the switch (and any slot that still
   // attacks this turn), `next:` the switch-in's move.
   // The step label takes a column ahead of the gutter, and the gutter itself is the shell's, so a step row and a
-  // plain one line up at every rung of the ladder rather than only at the game's own (#349 §4).
+  // plain one line up at every rung of the ladder rather than only at the game's own (#349).
   const step = (label, mark, ...kids) => h("div", ROW,
     label ? h("span", { ...dim, width: rung(3.75), flex: "none" }, label) : null,
     gutterMark(mark), ...kids);
@@ -127,7 +127,7 @@ export const drawBattle = m => {
   const team = m.trainer && m.rows.length > 1 && teamWeak.length
     // `×n` here counts the foes weak to the type — it is not an effectiveness, so the badge is not told it is one
     // and takes no effectiveness colour. `×4` on this row means four foes, and inking it super-effective green
-    // would be this row's own fact read back off its own text (#349 §8).
+    // would be this row's own fact read back off its own text (#349).
     ? line("", h("span", { ...ink.theirs, marginRight: "4px" }, "foes weak to:"), ...teamWeak.map(([t, n]) => badge(t, `×${n}`)))
     : null;
   const rows = m.rows.map(r => {
@@ -148,7 +148,7 @@ export const drawBattle = m => {
         hpBar(r.hp)),
       r.traps.length ? line("✦", ...r.traps.map(a => h("span", { ...ink.theirs, marginRight: "6px" }, a))) : null,
       line("▲", ...(weak.length ? weak.map(([t, x]) => badge(t, x, true)) : [h("span", dim, "—")])),
-      // A wall nothing of ours gets through is **immune**, the `×0` case of `▼` and the sixteenth mark (§7): it
+      // A wall nothing of ours gets through is **immune**, the `×0` case of `▼` and the sixteenth mark (#349): it
       // takes the neutral ink rather than the resist's red, because a shut door is not bad news about this turn.
       // A row carrying both is a resist row — the red is the news in it.
       avoid.length ? line(avoid.every(([, x]) => x === "×0") ? IMMUNE : "▼", ...avoid.map(([t, x]) => badge(t, x, true))) : null,
