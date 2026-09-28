@@ -402,7 +402,7 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.equal(scene.currentBattle.battleSeedState, before, "and the stream is back where it started");
 }
 
-// A foe the trainer switches out never reaches `getNextMove` (§7), so it isn't asked — its draws are not spent
+// A foe the trainer switches out never reaches `getNextMove` (game-code.md §7), so it isn't asked — its draws are not spent
 // before the slot that does move. The two benches are disjoint by party-index parity (#285), so the mock answers per
 // `trainerSlot`: slot 0's tag has a bench worth switching to, slot 1's has none.
 {

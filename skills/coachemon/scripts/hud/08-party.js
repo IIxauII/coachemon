@@ -17,7 +17,7 @@
 //     Return) is a damaging move of its type. The catch, biome and look-ahead cards used to require `power > 0` and
 //     so read a Grass Knot mon as having no Grass at all; the learn card already counted it.
 //   - **Fixed damage does not.** Seismic Toss, Night Shade, Super Fang and co. ignore type effectiveness entirely
-//     (§4.3), so they are no one's answer to anything. The learn card already excluded them.
+//     (game-code.md §1), so they are no one's answer to anything. The learn card already excluded them.
 // The rule itself is `isCoverage`, exported: the wave preview reads a foe's attacks with it too (#266), so what the
 // coach counts as an attack is one rule whichever side of the field the mon is on.
 import { TYPES, vs, effectiveness, defenderOf, typesOf, hasAttr } from "./01-core.js";
@@ -112,7 +112,7 @@ export const finalBstOf = x => {
 };
 
 /**
- * The party's luck — `getPartyLuckValue` (modifier-type.ts, §12), re-implemented. It is what shifts a wild spawn's
+ * The party's luck — `getPartyLuckValue` (modifier-type.ts, game-code.md §12), re-implemented. It is what shifts a wild spawn's
  * tier thresholds and buys a reward a tier upgrade, so the number matters wherever it is read.
  *
  * **In Daily it is not the party's at all**: a `randSeedInt(15)` in a fork at offset 0 on the run seed, or the event

@@ -36,7 +36,7 @@ export const deadEndText = sl => (sl.stopped?.length ? `nothing it can use — $
 // What the living party can hit with and what hits it, off one profile (`08-party.js`), so the rows and the cards
 // that score matchups read one moveset the same way. `moveTypes`: damaging move types, which is what keeps the foe
 // rows from listing a weakness nobody can hit. `weak`: the attacking types two or more of us are weak to, with how
-// many of us each one hits — the foes line falls back to it when nothing threatens a KO (#349 §6).
+// many of us each one hits — the foes line falls back to it when nothing threatens a KO (#349).
 const partyTypes = party => {
   const profile = partyProfile(party);
   return { moveTypes: profile.ourTypes, weak: profile.weakTypes.map(t => [t, profile.weakTo(t).length]) };
@@ -44,7 +44,7 @@ const partyTypes = party => {
 
 // The battle card: the planner's field model, the whole-fight plan (trainer battles) and the catch advice (wild), put
 // together here rather than inside the planner. All three read one **turn** (`25-turn.js`), which is the refresh's
-// single sandbox and its single set of answers — every damage number post-Tera, every AI number pre-Tera (spec §7).
+// single sandbox and its single set of answers — every damage number post-Tera, every AI number pre-Tera (game-code.md §7).
 //
 // The order is the authority decided in #113: the fight plan's tables and searches are built first, the ⚔ line reads
 // them to price what a turn costs the rest of the fight, and the plan is then rendered **pinned to the turn the ⚔
@@ -169,12 +169,12 @@ export const readCard = (s, account) => {
 const slotText = sl => `${sl.name} ${sl.move ?? deadEndText(sl)}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
 // The battle's field line: what to do this turn, one clause per field slot — or, where the enemy's move couldn't be
-// made, why there is no advice at all. The act group's summary is this string **verbatim** (#349 §6), so the strip,
+// made, why there is no advice at all. The act group's summary is this string **verbatim** (#349), so the strip,
 // the watch line and the structured read are one string and cannot disagree.
 export const actSummary = card => (card.unavailable ? `no advice — ${card.unavailable}`
   : card.field ? card.field.slots.map(slotText).join(" ; ") : null);
 
-// The foes group's line (#349 §6): what threatens a KO this turn — `💀 Charizard ← Butterfree Gust`, `⚠` once the mon
+// The foes group's line (#349): what threatens a KO this turn — `💀 Charizard ← Butterfree Gust`, `⚠` once the mon
 // has acted — and, with nothing threatening one, what the party itself is weak to. Both are fields the coach has
 // already computed; this only joins them, which is what keeps it presentation.
 // A mon the turn both attacks with and switches out carries its threat on two rows, so the same entry reaches this
@@ -187,7 +187,7 @@ export const foesSummary = card => {
   return card.weak?.length ? `we're weak to ${card.weak.map(([t, n]) => `${t} ×${n}`).join(" · ")}` : null;
 };
 
-// The road group's line (#349 §6): the preview string, then the look-ahead string, joined with ` · ` and skipping
+// The road group's line (#349): the preview string, then the look-ahead string, joined with ` · ` and skipping
 // whichever is absent. Two cards draw a road — the battle card and the rewards card — so the join lives beside the
 // other group summaries rather than once in each renderer, where the two could drift apart.
 export const roadSummary = (preview, ahead) =>
@@ -214,7 +214,7 @@ const EMPTY = {
 };
 export const summaryKeys = () => Object.keys(EMPTY);
 
-// ---- The card event (§11.1)
+// ---- The card event (extension-distribution.md §11.1)
 // What the panel pushes whenever the card it shows changes: the kind the stream uses, the key it is deduplicated on,
 // the wave and the leading call. The watcher's old per-kind keys move here, so the stream and the card agree by
 // construction. `starters` and `fusion` have no event kind of their own: they are read, never streamed.
@@ -253,7 +253,7 @@ const KINDS = {
   fusion: { event: null, key: wave, call: s => leading(s.fusion) },
 };
 
-// **The kinds that stream, derived from the table above and never spelled a second time** (§11.1): the name a kind
+// **The kinds that stream, derived from the table above and never spelled a second time** (extension-distribution.md §11.1): the name a kind
 // goes out under, for every kind that has one. Named for the card event rather than for the card, because it is not
 // the card kinds — `starters` and `fusion` are cards the panel draws and never streams. 99-start gates `stream()` on
 // it and the relay keeps its own copy (`extension/src/relay/channel.ts`), pinned to this one by `cardtest.mjs`: the
@@ -284,7 +284,7 @@ export const cardSummary = card => {
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
   // Nothing the enemy model feeds is being claimed, so the read says that and why, and claims nothing else.
   if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card) };
-  // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170 §A).
+  // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170).
   const saveFor = name => {
     const r = (card.teamPlan?.reserve ?? []).find(x => x.name === name);
     if (r) return r.for.name;

@@ -1,15 +1,15 @@
-// Mystery Encounter card (UiMode 45), as **group**s (#349 §1): `act` · `options` · `notes`, the same three every
+// Mystery Encounter card (UiMode 45), as **group**s (#349): `act` · `options` · `notes`, the same three every
 // light card takes. Loads after 90-render: only call these from a draw, never at load time. Takes the
 // `encounterModel` view.
 // The judged options are `options` — one line per option, `★ Open it — pick of 3 Ultra items`, and under it what it
 // starts (a battle), what it costs, who it takes and why the call went that way; a seed-fixed outcome says `fixed`.
-// The call itself is `act.summary`, read off the model and never written here (§6).
+// The call itself is `act.summary`, read off the model and never written here.
 import { encounterSummary } from "./46-encounter.js";
 import { caption, dim, h, ink, line, some } from "./90-render.js";
 
 // An option the party can't pick is neutral news, not bad news, so it takes `·` and the word `off` leads its row.
 // The unknown verdict falls on `·` too, since `?` is confidence and confidence is not a gutter mark (90-render).
-// This card is one of the no-arrow kinds 90-render names, so the law degrades to **ours** alone (#349 §8). Which is
+// This card is one of the no-arrow kinds 90-render names, so the law degrades to **ours** alone (#349). Which is
 // why a verdict is a mark and no longer a mark and an ink: good-or-bad is the gutter's one question, answered once.
 const ENCOUNTER_MARK = { take: "★", ok: "·", avoid: "✗", off: "·" };
 // The strip's caption: which encounter this is, and how rare it is.
@@ -43,7 +43,7 @@ export const drawEncounter = m => {
     ...m.notes.map(n => line("·", h("span", dim, n))),
     m.known ? null : line("", h("span", dim, "not judged yet: options and requirements only")),
   ];
-  // `options` and `notes` head their panes with their label alone — the options themselves say it one glance lower (§6).
+  // `options` and `notes` head their panes with their label alone — the options themselves say it one glance lower (#349).
   return [
     some("act", "Now", encounterSummary(m), []),
     some("options", "Options", null, options),

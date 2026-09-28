@@ -1,4 +1,4 @@
-// The group list, as plain data and with no drawn card in sight (#349 §1, §5, §6). A renderer's product is an
+// The group list, as plain data and with no drawn card in sight (#349). A renderer's product is an
 // ordered list of `{ id, label, summary, rows }`, so this is where the content half of the card is pinned: which
 // groups a kind has and in what order, where each summary is read from, that a group with nothing to say is headed
 // by its label alone, and that the card's plain text is the projection of the list and nothing else.
@@ -30,17 +30,17 @@ const { EVENT_KINDS, cardEvent } = globalThis.__hud["60-card"];
 
 // The relay keeps its own copy of the ids, because the panel is a source the extension bundles rather than imports
 // (`extension/src/relay/channel.ts`). This is what pins the copy to the original: retiring or merging a group
-// (#349 §1) has to be done on both, or a card the panel draws stops crossing the gate.
+// (#349) has to be done on both, or a card the panel draws stops crossing the gate.
 assert.deepEqual([...RELAY_GROUP_IDS], GROUP_IDS, "the relay's group ids are the panel's");
 
 
-// ---- The closed alphabet (#349 §7)
+// ---- The closed alphabet (#349)
 // `MARKS` is the register itself, imported rather than restated: the set lives beside the gutter it governs, the way
 // `GROUP_IDS` lives beside the tab bar, and a test that kept its own copy would pass while the panel drifted.
 // What the alphabet does **not** govern: inline connectives inside prose are typography, and a fraction or a
 // multiplier is a number.
 const TYPOGRAPHY = [..."→←›—–−×…½¼⅓⅔"];
-// The marks §7 retired, each named with what it became, so a reappearance fails by name rather than as a stray
+// The marks #349 retired, each named with what it became, so a reappearance fails by name rather than as a stray
 // glyph. This is history and belongs here rather than in the panel: the renderers only need to know the set that is
 // live. Two of them survive off the gutter and so are only retired *as marks* — `🎯` is still the battle card's
 // caption emoji and the dismissed panel's glyph, and `✕` is the shape the close control was named for.
@@ -81,21 +81,21 @@ const show = (label, card, draw = drawBattle) => {
     for (const r of g.rows) console.log(`    ${r}`);
   }
   // The ids are closed at eight and come in one fixed order, the tabs cap at five, and every card has an `act`
-  // group that is never empty (§1).
+  // group that is never empty (#349).
   for (const g of groups) assert.ok(GROUP_IDS.includes(g.id), `${g.id} is not one of the eight`);
   assert.deepEqual(groups.map(g => g.id), groups.map(g => g.id).slice().sort((a, b) => GROUP_IDS.indexOf(a) - GROUP_IDS.indexOf(b)), "groups come in the fixed order");
   // Five tabs is the cap, enforced by the vocabulary rather than by the layout: the bar never wraps, never scrolls
-  // and has no overflow menu (#349 §1). It lives in that spec and nowhere else — CONTEXT.md stays glossary-only.
+  // and has no overflow menu (#349). It lives in that spec and nowhere else — CONTEXT.md stays glossary-only.
   assert.ok(groups.length <= 5, "five tabs is the cap");
   assert.equal(groups[0]?.id, "act", "every card leads with act");
   assert.ok(groups[0].summary, "act is never empty");
-  // **The strip's length budget** (#349 §6): two lines, then an ellipsis — about 115 characters at reference width —
+  // **The strip's length budget** (#349): two lines, then an ellipsis — about 115 characters at reference width —
   // and the **leading clause must fit**; what follows the first ` · ` may clip, because it is reasoning and not the
   // call. The clamp only ever eats the end, so the clause is what CI can hold. The wire golden holds the same budget
   // over what actually ships; here it is held over every kind, including the two that are never streamed.
   const clause = groups[0].summary.split(" · ")[0];
   assert.ok(clause.length <= 115, `${label}: the act summary's leading clause is ${clause.length} > 115: ${clause}`);
-  // `text` is derived from the group list rather than read back off the drawn card (§5), so it carries every group
+  // `text` is derived from the group list rather than read back off the drawn card (#349), so it carries every group
   // in the same fixed order and nothing besides — and its first line is the call, which is the line the watch CLI
   // prints per event. What a heading reads is pinned against literals at each card below.
   const lines = wire.text.split("\n");
@@ -103,14 +103,14 @@ const show = (label, card, draw = drawBattle) => {
   const rows = groups.flatMap(g => g.rows);
   assert.deepEqual(lines.filter(l => rows.includes(l)), rows, "every group's rows, in the group order and no other");
   assert.equal(lines.length, rows.length + groups.filter(g => g.label || g.summary).length, "a heading a group, and nothing else");
-  // The alphabet is closed (§7). Held over the card's whole text rather than over the first token of a row, because a
+  // The alphabet is closed (#349). Held over the card's whole text rather than over the first token of a row, because a
   // foe row is a block of several lines and a mark can stand alone as a claim inside one — and because the summaries
   // this text is built from are the model's own strings, which is where three of the re-maps had to land.
   for (const ch of glyphsIn(wire.text)) {
     assert.ok(!RETIRED[ch], `${label}: ${ch} is retired — it is ${RETIRED[ch]} now`);
     assert.ok(MARKS.includes(ch) || TYPOGRAPHY.includes(ch), `${label}: ${ch} is not in the closed alphabet`);
   }
-  // **Every card the panel would push crosses the relay's gate** (§11.1, #388). That gate is the card detail's
+  // **Every card the panel would push crosses the relay's gate** (extension-distribution.md §11.1, #388). That gate is the card detail's
   // version point: it takes exactly the declared keys and refuses everything else, so a kind whose event shape
   // cannot cross — a group id the relay does not know, a field the panel sends and the gate does not — leaves the
   // panel drawing a card the tab silently never sends. `cardeventtest.mjs` runs the two kinds it has a scene for
@@ -172,7 +172,7 @@ const catchAdvice = {
   });
   const { groups } = show("wild · threat turn needing a switch", card);
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "catch", "road"]);
-  // The danger entries, not the fallback: something threatens a KO (§6).
+  // The danger entries, not the fallback: something threatens a KO (#349).
   assert.equal(groups[1].summary, "💀 Charizard ← Lycanroc Stone Edge");
   assert.equal(groups[2].summary, "catch Toxicroak — Ultra 62%");
   // `road` merges the preview and the look-ahead, joined with ` · `.
@@ -186,13 +186,13 @@ const catchAdvice = {
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "road"]);
   assert.equal(groups[1].summary, "we're weak to Fire ×2");
   // A group is headed by its label and its summary; `act` by its summary alone, since the strip above it is its
-  // label (§6). Literals, so the rule is pinned rather than restated.
+  // label (#349). Literals, so the rule is pinned rather than restated.
   assert.ok(text.includes("\nFoes: we're weak to Fire ×2\n"), text);
   assert.ok(text.includes("\nRoad: W90 wild — Toxicroak L71\nNext W90 wild\n"), text);
   // The call leads the text and nothing heads it: the card's identity line has left the rows for the strip's
-  // caption, which the text has no need of — the watch CLI already carries the kind, the wave and the verdict (§6).
+  // caption, which the text has no need of — the watch CLI already carries the kind, the wave and the verdict (#349).
   assert.ok(text.startsWith("Charizard Flamethrower → Lycanroc · 2 hits\n⚔ Charizard"), text);
-  // No ball worth throwing means no catch group at all — an empty tab is filler (§6).
+  // No ball worth throwing means no catch group at all — an empty tab is filler (#349).
   assert.ok(!groups.some(g => g.id === "catch"));
   // Only the preview: the look-ahead is absent, so the road line is the preview string alone.
   assert.equal(groups[2].summary, "W90 wild — Toxicroak L71");
@@ -203,13 +203,13 @@ const catchAdvice = {
   const card = battle({ weak: [["Fire", 2]], catch: { targets: [
     { icon: null, name: "Zubat", verdict: "maybe", why: "covers Flying", best: { ball: "Great Ball", short: "GB", key: "gb", count: 9, p: 0.44 },
       chance: [{ ball: "Great Ball", short: "GB", key: "gb", count: 9, p: 0.44 }],
-      // Why to catch, not how good it is: the three kinds are words in the row and the gutter stays neutral (§7).
+      // Why to catch, not how good it is: the three kinds are words in the row and the gutter stays neutral (#349).
       reasons: [{ kind: "account", text: "not in the dex" }, { kind: "team", text: "covers Flying" },
         { kind: "escape", text: "ends a fight that costs a member" }] },
   ] } });
   const { groups, text } = show("wild · a maybe, which is not a catch verdict", card);
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "catch"]);
-  // A `maybe` is drawn but concludes nothing: `catch.summary` is empty where there is no catch verdict (§6), and the
+  // A `maybe` is drawn but concludes nothing: `catch.summary` is empty where there is no catch verdict (#349), and the
   // group falls back on the same rule any group with nothing to conclude lives by.
   assert.equal(groups[2].summary, null);
   assert.ok(groups[2].rows.length, "the maybe is still drawn");
@@ -223,7 +223,7 @@ const catchAdvice = {
     trainer: true, verdict: "trainer", title: "W89 · Cynthia", order: [{ icon: null, name: "Blastoise" }, { icon: null, name: "Venusaur" }],
     field: field({ slots: [slot({ name: "Blastoise", move: "Wave Crash", type: "Water", target: chomp, ko: 2 })] }),
     // The straining card, and the one that spends most of the gutter: a trap row, a walls row, an enemy move and a
-    // pick for a foe no slot is on yet, so every mark the battle renderer can draw is drawn here (§7).
+    // pick for a foe no slot is on yet, so every mark the battle renderer can draw is drawn here (#349).
     rows: [foe({ name: "Garchomp", lv: 96, types: ["Dragon", "Ground"], weak: [["Ice", "×4"]], boss: true,
         likely: { move: "Earthquake", type: "Ground", pct: 62, first: 100, at: null, hits: 0, confidence: "exact" } }),
       foe({ name: "Spiritomb", lv: 95, types: ["Ghost", "Dark"], weak: [], traps: ["Pressure"], avoid: [["Water", "×½"]] }),
@@ -242,7 +242,7 @@ const catchAdvice = {
   const { groups, text } = show("trainer · fight plan", card);
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "plan", "road"]);
   // Nothing threatens a KO and no attacking type hits two of us, so the foes group has no summary: its label alone
-  // heads it, in the text as in the pane, with no filler count (§6).
+  // heads it, in the text as in the pane, with no filler count (#349).
   assert.equal(groups[1].summary, null);
   assert.ok(text.includes("\nFoes\nfoes weak to: Ice ×2 Fire ×1\n"), text);
   assert.equal(groups[2].summary, "winnable · 💀 Garchomp KOs 2/4 · Roserade outspeeds the whole bench");
@@ -303,7 +303,7 @@ const learn = (over = {}) => ({
   assert.ok(!groups.some(g => g.rows.some(r => r.includes("Learn → forget"))), "the verdict line has left the rows");
   // What the swap gains left the verdict line with it, and sits on the row of the move that gains it.
   assert.ok(groups[0].rows.some(r => r.includes("Earth Power") && r.includes("+87 power")), groups[0].rows.join("\n"));
-  // `options` and `notes` head their panes with their label alone — no summary, and no count of what is below (§6).
+  // `options` and `notes` head their panes with their label alone — no summary, and no count of what is below (#349).
   assert.deepEqual([groups[1].summary, groups[3].summary], [null, null]);
   assert.ok(text.includes("\nMoves\n✗ Dark Bite ⚠ weak Atk power 30\n"), text);
   assert.ok(text.includes("\nTeam\nteam: +SE Steel/Electric · −SE Dark · ⚠ loses only Dark move\n"), text);
@@ -358,7 +358,7 @@ const encounter = (over = {}) => ({
   const { groups, text } = show("encounter · a chest worth opening", card, drawEncounter);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
   assert.equal(groups[0].summary, "Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave");
-  // The picked option stays in `options` where it already is — there are no synthesized act rows (§6).
+  // The picked option stays in `options` where it already is — there are no synthesized act rows (#349).
   assert.ok(groups[1].rows.some(r => r.includes("Open it")), groups[1].rows.join("\n"));
   assert.deepEqual([groups[1].summary, groups[2].summary], [null, null]);
   assert.ok(text.includes("\nOptions\n★ Open it — pick of 3 Ultra items\n"), text);
@@ -393,7 +393,7 @@ const starters = (over = {}) => ({
   assert.ok(text.includes("\nProposals\n★ best"), text);
 }
 
-// Starters with nothing to add: an ordinary card with exactly one `act` group, and the shell never knows (§1).
+// Starters with nothing to add: an ordinary card with exactly one `act` group, and the shell never knows (#349).
 {
   const { groups } = show("starters · nothing to add", starters({ picks: [], full: true, room: 0, viewing: null }), drawStarters);
   assert.deepEqual(groups.map(g => g.id), ["act"]);

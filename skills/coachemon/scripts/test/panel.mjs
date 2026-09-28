@@ -13,7 +13,7 @@ export const wholeCard = el => {
   const { pane } = globalThis.__hud["90-render"];
   const { shownGroups } = globalThis.__hud["98-tick"];
   const groups = shownGroups();
-  // The panel is its control, the strip, the tab bar and the open pane — it carries no disclaimer of its own (§3,
+  // The panel is its control, the strip, the tab bar and the open pane — it carries no disclaimer of its own (extension-distribution.md §3,
   // #362) — so the drawer is the two at the end. Anything else — a shut drawer, a dismissal, a failed refresh — is
   // taken exactly as it was drawn.
   return kids.length === 4 && groups ? [...kids.slice(0, 2), ...groups.flatMap(g => pane(g))] : kids;

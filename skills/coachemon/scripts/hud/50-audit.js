@@ -12,7 +12,7 @@
 // - **Roster checks** read the next big fight's roster from 49-ahead (the preview's replay, only within its look-ahead
 //   window): who outspeeds its fastest foe, a foe only one member hits super-effectively, a status move most of the
 //   roster is immune to, and the member that answers nothing in it.
-// The game rules it rests on are in references/game-code.md §17. The thresholds are first cuts. A finding is `{ kind, level, text, mon? }`: `level` "high" for what loses fights
+// The game rules it rests on are in game-code.md §17. The thresholds are first cuts. A finding is `{ kind, level, text, mon? }`: `level` "high" for what loses fights
 // (single answers, speed, a shared weakness), "low" for what only costs tempo.
 import { TYPES, abilitiesOf, effectiveness, typesOf, vs } from "./01-core.js";
 import { isDamaging, isFixed, learnAdvice, learnMoveById, slotScores } from "./40-learn.js";

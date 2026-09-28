@@ -14,13 +14,13 @@ import { badge, dim, h, ICON, ink, line, mon } from "./90-render.js";
 export const drawPreview = m => {
   if (!m || m.unavailable) return [];
   const head = `W${m.wave}${previewMark(m, "type")}`;
-  // The preview is a wave that has not arrived, so every row of it is **later** (#349 §8). What kind of wave it is
+  // The preview is a wave that has not arrived, so every row of it is **later** (#349). What kind of wave it is
   // — trainer, mystery encounter or wild — is a subject and not a direction, and the word already says it: three
   // inks for three kinds is the spend the law took away.
   const kind = h("span", { ...ink.later, marginRight: "3px" },
     `${previewKind(m)}${m.double ? ` double${previewMark(m, "double")}` : ""}`);
   const who = m.trainer ? `${m.trainer.name}${previewMark(m, "trainer")}` : null;
-  // Rows of the road group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
+  // Rows of the road group, not a card of its own: the shell rules groups apart (#349), and no section has a
   // control of its own.
   const out = [line("", h("span", { fontWeight: "bold", marginRight: "3px" }, `Next ${head}`), kind)];
   if (who) out.push(line("·", h("span", {}, who)));

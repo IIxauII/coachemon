@@ -154,7 +154,7 @@ const flatten = rs => rs.map(flat);
   assert.equal(partyLuck(benched), 6, "a member not allowed in battle adds none");
   assert.equal(partyLuck([mon(SPECIES.lapras, 40, [], { luck: 14 }), mon(SPECIES.snorlax, 40, [], { luck: 9 })]), 14, "clamped at 14");
 
-  // The three terms of `getPartyLuckValue` that are not the party's at all (§12).
+  // The three terms of `getPartyLuckValue` that are not the party's at all (game-code.md §12).
   const rnd = globalThis.Phaser.Math.RND;
   let forked = null, drew = null;
   rnd.integerInRange = (min, max) => { drew = [min, max]; return 11; };

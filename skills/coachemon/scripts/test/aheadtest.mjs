@@ -314,7 +314,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   console.log(`== far fight ${JSON.stringify({ wave: far.next.wave, kind: far.next.kind, foes: far.next.foes, readiness: far.readiness })}`);
 }
 
-// ---- 9. The double battles a TM is judged against (§16): what shortens the odds, and the one wave whose double no
+// ---- 9. The double battles a TM is judged against (game-code.md §16): what shortens the odds, and the one wave whose double no
 // seed decides.
 {
   const { scene, ah } = mount({ wave: 40, party: team() });

@@ -1,7 +1,7 @@
-// Rewards card (the 52-shop model), as **group**s (#349 §1): `act` — the buys, then the free reward, then the
+// Rewards card (the 52-shop model), as **group**s (#349): `act` — the buys, then the free reward, then the
 // reroll, because a reroll is a shop action and `act` already carries the ordering rule that taking the free reward
 // closes the shop — then `options`, the rewards it passed over, then `audit` and `road`. Each group's summary is read
-// off the model, never written here (§6).
+// off the model, never written here.
 import { auditSummary } from "./50-audit.js";
 import { rewardsSummary } from "./52-shop.js";
 import { roadSummary } from "./60-card.js";
@@ -15,7 +15,7 @@ import { drawReroll } from "./95-render-reroll.js";
 // the whole card is about.
 export const captionRewards = m => caption("🛒", `$${m.money}`, m.buys.length ? h("span", dim, `→ $${m.left}`) : null,
   !m.buys.length && m.affordable === 0 ? h("span", { ...dim, fontWeight: "normal" }, "nothing affordable") : null,
-  // No ink of its own: the caption is chrome, and chrome is the gold the whole line already wears (#349 §8, §9).
+  // No ink of its own: the caption is chrome, and chrome is the gold the whole line already wears (#349).
   // The crown is what says *boss*, and it keeps its own colour the way every emoji does.
   m.bossNext ? h("span", {}, "👑 boss next") : null);
 
@@ -57,18 +57,18 @@ export const drawRewards = m => {
   const others = m.free.filter((_, i) => i !== m.pick).map(f => line("·", itemImg(f.icon, f.name),
     h("span", dim, f.name), h("span", { flex: "1" }),
     // A passed-over reward reads as passed over by its `·` against the pick's `★`, and its reason spells out why.
-    // The red that said *skip* a second time was the gutter's question answered in the wrong column (#349 §7, §8).
+    // The red that said *skip* a second time was the gutter's question answered in the wrong column (#349).
     tmTo(f) ?? heldTo(f) ?? h("span", dim, `${f.why}${usersText(f)}`)));
   // The rule between the buys and the free reward stays: both are `act`'s own rows, so it separates two parts of one
-  // group rather than two groups — which is the shell's business and nothing a renderer draws (§1).
+  // group rather than two groups — which is the shell's business and nothing a renderer draws (#349).
   return [
     some("act", "Now", rewardsSummary(m), [
       m.buys.length ? h("div", dim, "buy first — taking the free reward closes the shop") : null,
       ...buyRows, m.buys.length ? h("div", sep) : null, take,
       // What the next reroll brings, read off the stream (or the old hint without the preview).
       ...drawReroll(m)]),
-    // The shop's unpicked rewards: the judged list, which on every kind is `options` (§1). No summary and no count —
-    // the options themselves say it one glance lower (§6).
+    // The shop's unpicked rewards: the judged list, which on every kind is `options` (#349). No summary and no count —
+    // the options themselves say it one glance lower.
     some("options", "Others", null, others),
     // What is wrong with the team itself, while this shop can still patch it.
     some("audit", "Team", auditSummary(m.audit), drawAudit(m.audit)),

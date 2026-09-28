@@ -9,7 +9,7 @@ export const drawTeamPlan = m => {
   if (!tp) return [];
   const lost = tp.result !== "win";
   const approx = !!m?.double;
-  // The fight plan is every turn but the one in front of the player, so the whole section is **later** (#349 §8) —
+  // The fight plan is every turn but the one in front of the player, so the whole section is **later** (#349) —
   // the ink the `plan` group's own frame wears. Whether a step is a sacrifice, a warning or the plan simply being
   // lost is the gutter's question and the row's own words; it was never the ink's, which is what the three amber,
   // red and green spends here were doing.
@@ -37,7 +37,7 @@ export const drawTeamPlan = m => {
     const tag = entryTag[st.entry];
     // The step's own number is the row's, not the gutter's: the gutter says what kind of news a row is, and an
     // ordinal is neither good nor bad. `➜` is what the gutter carries instead — a step is what lands later — and the
-    // `~` a double's approximate plan wears stays a confidence suffix on the ordinal it qualifies (#349 §7).
+    // `~` a double's approximate plan wears stays a confidence suffix on the ordinal it qualifies (#349).
     out.push(line("➜",
       h("span", { ...dim, marginRight: "3px" }, `${i + 1}.${approx ? "~" : ""}`),
       mon(st.send.icon, st.send.name, ICON.mon),

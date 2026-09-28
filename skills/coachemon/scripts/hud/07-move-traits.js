@@ -49,7 +49,7 @@ const COMMAND_CONDITION = [MoveId.SUCKER_PUNCH, MoveId.THUNDERCLAP];
 // Gigaton Hammer / Blood Moon can't be picked twice in a row; the game says so through this restriction's i18n key.
 const NO_REPEAT_KEY = "battle:moveDisabledConsecutive";
 
-// The count distribution of one use, before the target's HP or a boss bar cuts it (§2). A bare MultiHitAttr is
+// The count distribution of one use, before the target's HP or a boss bar cuts it (game-code.md §2). A bare MultiHitAttr is
 // TWO_TO_FIVE: 7/20, 7/20, 3/20, 3/20 for 2–5 (mean 3.1), or 5 flat with Skill Link. Water Shuriken becomes THREE
 // for Ash-Greninja; Beat Up hits once for the user plus once per party member with no status. Parental Bond and
 // each Multi-Lens stack add a strike to a move that can take one (`target` only refines Parental Bond's spread

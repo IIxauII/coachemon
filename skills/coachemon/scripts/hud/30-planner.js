@@ -122,7 +122,7 @@ export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => 
   return qa * qb * cmp(MovePriorityInBracket.FIRST, MovePriorityInBracket.FIRST) + qa * (1 - qb) * cmp(MovePriorityInBracket.FIRST, y.bracket) + (1 - qa) * qb * cmp(x.bracket, MovePriorityInBracket.FIRST) + (1 - qa) * (1 - qb) * cmp(x.bracket, y.bracket);
 };
 
-// ---- Our own command's draw, which lands before the enemy decides (spec §6, #158)
+// ---- Our own command's draw, which lands before the enemy decides (game-code.md §6, #158)
 // `CommandPhase.handleFightCommand` resolves a `RANDOM_NEAR_ENEMY` move's target with
 // `getMoveTargets` → `randBattleSeedInt(<near enemies>)` as the command is made, and `EnemyCommandPhase` runs after
 // it — so with two or more opponents the foe's pick is a function of **our** command, and one such draw flipped it
@@ -1380,7 +1380,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const bestAny = top(plans);
   const bestStay = top(plans.filter(p => p.swaps === 0));
   // A mon on the field that is going down this turn whatever we do — the foe's hit takes it, or turn-end residual
-  // does — has nothing left to lose (#170 §E). Switching it out trades its last action for an entry hit, while
+  // does — has nothing left to lose (#170). Switching it out trades its last action for an entry hit, while
   // letting it fall brings the next mon in free.
   const doomedMemo = new Map();
   const doomedNowOf = me => {
@@ -1391,11 +1391,11 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     return doomedMemo.get(me);
   };
   // …or a field the fight plan needs elsewhere: the stay margin is there to stop the advice flipping between
-  // near-equal turns, and spending the only answer to a foe still to come is not a near-equal turn (#170 §A).
+  // near-equal turns, and spending the only answer to a foe still to come is not a near-equal turn (#170).
   const failing = plan => plan.picks.some(p => !p.locked && (!p.move || p.score < 0)) || (plan.planCost ?? 0) >= PLAN_FAIL;
   const margin = freeSwitch ? 0.5 : 3;
   // Staying can be "failing" only because the mon on the field is spending its last turn. That is not a reason to
-  // pay for a switch, so the ordinary margin applies and the free entry its faint buys is kept (#170 §E).
+  // pay for a switch, so the ordinary margin applies and the free entry its faint buys is kept (#170).
   const dying = plan => plan.picks.filter(p => !p.locked && (!p.move || p.score < 0));
   const lastStand = !!bestStay && (bestStay.planCost ?? 0) < PLAN_FAIL
     && dying(bestStay).length > 0 && dying(bestStay).every(p => current.includes(p.me) && doomedNowOf(p.me));
@@ -1441,7 +1441,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     if (p.then) out.push(`then ${p.then.name}`);
     const fed = foe && (p.trade?.pTheyKoFirst ?? 0) >= 0.5 && party.length > 1 ? koBoost(foe) : null;
     if (fed) out.push(`KO feeds ${foe.name}'s ${fed.ability} (${koBoostText(fed)})`);
-    // The fight plan is keeping this mon for a foe still to come (#170 §A) and taking the turn with it costs the
+    // The fight plan is keeping this mon for a foe still to come (#170) and taking the turn with it costs the
     // rest of the fight enough for the plan to mind: name the foe it was being kept for. When the plan doesn't mind
     // — it wanted this mon out anyway — there is nothing being spent and nothing to say.
     const saved = (best.planCost ?? 0) >= PLAN_NOTE ? team?.holdFor(party.indexOf(p.me)) : null;
@@ -1547,8 +1547,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const picks = best.picks.map(p => (support.has(p) ? { ...p, move: null, target: null } : helps.has(p) && typeof p.target === "number" ? { ...p, hits: 1 } : p));
 
   // This turn's action, for the fight plan to be re-searched around (#113 "⚔ seeds ♟"), and what that plan says
-  // comes next: the mon a doomed field mon's faint brings in free (#170 §E), and the foe the trainer sends after our
-  // KO with the answer the plan puts in front of it (#170 §G).
+  // comes next: the mon a doomed field mon's faint brings in free (#170), and the foe the trainer sends after our
+  // KO with the answer the plan puts in front of it.
   // In a double the plan still runs one exchange at a time, against the foe in slot 0: pin the ⚔ slot aimed there,
   // so its step 1 is an action the player is actually being told to take. (The score term stays out of doubles —
   // `planValueOf` — but a plan that contradicts the line on screen is the thing #113 set out to end.)
@@ -1570,7 +1570,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       freeEntry: doomedNow ? ahead?.freeEntry ?? null : null,
       nextIn: ahead?.nextIn ?? null,
       // Staying is failing but every switch-in would be KO'd coming in: say so rather than stay silent. Not when one
-      // is offered as optional — a mon on its last turn keeps the field (#170 §E), and the switch is there to take.
+      // is offered as optional — a mon on its last turn keeps the field (#170), and the switch is there to take.
       noSafeSwitch: !freeSwitch && best.swaps === 0 && failing(best) && !alt && party.length > current.length,
       freeSwitch,
       slots: best.picks.map((p, i) => {
@@ -1652,7 +1652,7 @@ const PLAN_CAP = 3;
 const PLAN_NOTE = 0.25;
 // …and before the field counts as failing, so the stay margin stops protecting it.
 const PLAN_FAIL = 1;
-// How sure a mon's fall this turn has to be before the turn counts as its last (#170 §E).
+// How sure a mon's fall this turn has to be before the turn counts as its last (#170).
 const DOOMED = 0.8;
 // A status move gives up a sure hit for a modelled effect: it has to win by this much (first cut).
 const STATUS_COST = 0.2;

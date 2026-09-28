@@ -1,8 +1,8 @@
 // Predictions of what the enemy AI does this turn: switch (EnemyCommandPhase) or move (EnemyPokemon.getNextMove).
 // Two readings of the same decision live here, and they answer different questions:
 // - **The exact move** (`sceneExactMoves`): the game's own `getNextMove()` called at the command prompt, which
-//   returns the move and target the enemy will use (§6, #158 live). This turn's plan is played on it (#183).
-// - **The distribution** (`sceneDistribution`, `sceneReplayAI`): §6 and §7 re-implemented from the pinned source, so
+//   returns the move and target the enemy will use (game-code.md §6, #158 live). This turn's plan is played on it (#183).
+// - **The distribution** (`sceneDistribution`, `sceneReplayAI`): game-code.md §6 and §7 re-implemented from the pinned source, so
 //   every outcome comes with its chance. There is no fixed draw to reproduce a turn ahead or against a hypothetical
 //   field, so later turns and `aiReplay` stay with it — and it is the exact call's own oracle at a pin bump.
 //
@@ -304,7 +304,7 @@ const finish = rows => [...rows.values()].filter(r => r.p > 1e-12).map(({ tp, sc
   return { ...r, score: score == null ? null : Number.isFinite(score / (scoreW || 1)) ? score / (scoreW || 1) : null, targets: targetDist.map(t => t.battlerIndex), targetDist };
 }).sort((a, b) => b.p - a.p);
 
-// ---- The enemy's exact move (spec §6; measured in #158, decided in #183)
+// ---- The enemy's exact move (game-code.md §6; measured in #158, decided in #183)
 // At the command prompt the battle stream sits where `incrementTurn` re-sowed it, and nothing draws from it between
 // our command and `EnemyCommandPhase` — so the game's own `getNextMove()`, called here, returns **the move and
 // target the enemy will use**, not a sample. 69 of 69 live over waves 1–12, singles and doubles, wild, trainer and

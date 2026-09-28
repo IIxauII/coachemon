@@ -167,7 +167,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-  // A renderer's product is a list of **group**s now (#349 §1); what this test is about is the rows the planner puts
+  // A renderer's product is a list of **group**s now (#349); what this test is about is the rows the planner puts
   // in them, so it reads the rows and leaves the summaries to the group golden. `txt` keeps a node's tooltip, which
   // the card's plain text drops, and several assertions below are on the tooltip.
   const rowsOf = g => g.rows.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
@@ -180,7 +180,7 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
 };
 // The Cyrus mistake: Scrafty sent in "→ High Jump Kick" as if the move happened this turn.
 const assertNoImmediateScrafty = field => {
-  // A ⇄ switch line, not the ⤵ free entry a doomed mon's faint buys (#170 §E), which names no switch at all.
+  // A ⇄ switch line, not the ⤵ free entry a doomed mon's faint buys (#170), which names no switch at all.
   assert.ok(!field.some(l => /⇄.*Scrafty in(?! · optional)/.test(l) && !/^now:/.test(l)) || field.some(l => /^next: ⚔ Scrafty/.test(l)), "a Scrafty switch must be split into now/next");
   assert.ok(!field.some(l => /High Jump Kick/.test(l) && !/^next:/.test(l) && !/^↺/.test(l)), `High Jump Kick shown as an immediate action:\n${field.join("\n")}`);
 };
@@ -953,7 +953,7 @@ const rhyperiorSwitches = foes => active => new Map(active.includes(foes[0]) ? [
   const { party, foes } = freeSwitchCase(false);
   const { lines, field } = render({ party, foes, live: true, dist: stoneEdge, switches: () => new Map() });
   console.log(`== free switch — same field in the command phase (live)\n${lines.join("\n")}`);
-  // A ⇄ line again: Ninetales is going down this turn, so the ⤵ names the free entry its faint buys (#170 §E).
+  // A ⇄ line again: Ninetales is going down this turn, so the ⤵ names the free entry its faint buys (#170).
   assert.ok(!field.some(l => /⇄.*Swampert in(?! · optional)/.test(l)), `Swampert would be KO'd coming in:\n${field.join("\n")}`);
 }
 
@@ -1134,7 +1134,7 @@ const hydreigonSnorlax = () => [
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon 1 hit .*with Helping Hand/);
 }
 
-// ---- 20. Drain (#90 §C, the Guzma w165 Golisopod): a drain move wins back half of what it deals every turn.
+// ---- 20. Drain (#90, the Guzma w165 Golisopod): a drain move wins back half of what it deals every turn.
 // Meteor Mash (85–100) into a 300 HP Golisopod is a 4HKO. Its Leech Life lands ~55 on Metagross and heals ~28 of it
 // a turn, so the fourth Mash falls short: 5. A full-HP foe can't heal past its max.
 Object.assign(TABLE, {
@@ -1172,7 +1172,7 @@ Object.assign(TABLE, {
   globalThis.__stub.outcome = outcome;
 }
 
-// ---- 21. On-KO boosts (#90 §D, Guzma's Buzzwole): a foe with Beast Boost gets stronger for every KO we feed it.
+// ---- 21. On-KO boosts (#90, Guzma's Buzzwole): a foe with Beast Boost gets stronger for every KO we feed it.
 // Read off the ability: Beast Boost's changes are a function of the holder (its highest stat), Soul-Heart counts
 // every faint.
 {
@@ -1214,7 +1214,7 @@ Object.assign(TABLE, {
   assert.ok(plain.some(l => /^⚔ Mamoswine/.test(l)) && plain.some(l => /Crobat in · optional/.test(l)), `stay without the boost:\n${plain.join("\n")}`);
 }
 
-// ---- 22. The summary the watcher and the battle read get (#90 §H, §I): a likely KO after our mon acts is a second
+// ---- 22. The summary the watcher and the battle read get (#90): a likely KO after our mon acts is a second
 // danger level, naming the foe the fight plan saves that mon for, and the fight plan's verdict comes along — Guzma's
 // turn 1, where Mamoswine acts once and then falls to Iron Head.
 {
@@ -1235,7 +1235,7 @@ Object.assign(TABLE, {
   assert.equal(sum.plan, "likely lost · 💀 Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in");
   // A plain ⚠ (a real KO chance, not a likely KO) stays off the list.
   assert.deepEqual(cardSummary({ ...m, field: { ...m.field, slots: [{ ...m.field.slots[0], threat: threat("risk", false) }] } }).danger, []);
-  // `saveFor` also reads the foes only this mon beats (#170 §A), which the win condition's reserve never covered.
+  // `saveFor` also reads the foes only this mon beats (#170), which the win condition's reserve never covered.
   const only = { ...m, teamPlan: { ...m.teamPlan, reserve: [], only: [{ name: "Mamoswine", for: [{ name: "Xurkitree" }, { name: "Buzzwole" }] }] } };
   assert.equal(cardSummary(only).danger[0].saveFor, "Xurkitree, Buzzwole");
 }
@@ -1273,7 +1273,7 @@ Object.assign(TABLE, {
   const ironHead = () => [{ name: "Iron Head", type: "Steel", p: 1, score: 10, targets: [0] }];
   const at = opts => render({ ...guzma(opts), live: true, dist: ironHead, switches: () => new Map() });
 
-  // 23. §A — turn 1: Mamoswine is on the field against Mega Golisopod. Its Precipice Blades is neutral and needs
+  // 23. #170 — turn 1: Mamoswine is on the field against Mega Golisopod. Its Precipice Blades is neutral and needs
   // three hits through two boss bars; Iron Head is ×2 and takes it in one, right after it acts. Spending it here is
   // spending the only Xurkitree answer, so the ⚔ line puts Golduck in and the plan says what is kept for what.
   {
@@ -1295,7 +1295,7 @@ Object.assign(TABLE, {
     assert.match(lineOf(field, "Mamoswine"), /Precipice Blades → Mega Golisopod/, `with nothing to save it for, Mamoswine attacks:\n${field.join("\n")}`);
   }
 
-  // 25. §E — turn 3: Golduck is on 23 HP and poisoned in front of Golisopod, which takes it this turn anyway. A
+  // 25. #170 — turn 3: Golduck is on 23 HP and poisoned in front of Golisopod, which takes it this turn anyway. A
   // switch would pay an entry hit to save a mon that is going down regardless and throw away its last attack, while
   // a faint brings the next mon in for nothing — so the ⚔ line stays and attacks and names the free entry.
   {
@@ -1360,7 +1360,7 @@ Object.assign(TABLE, {
   assert.equal(out.card.teamPlan, null);
   assert.equal(out.card.catch, null);
   // An ordinary card with exactly one `act` group, whose summary carries it: the inline ⚠ row that used to say it is
-  // gone, because the summary says it (#349 §1).
+  // gone, because the summary says it (#349).
   assert.deepEqual(out.groups.map(g => g.id), ["act"], "one group, and it is act");
   assert.equal(out.groups[0].summary, "no advice — the enemy AI call threw");
   assert.deepEqual(out.lines.filter(l => l.startsWith("⚠")), [], out.lines.join("\n"));

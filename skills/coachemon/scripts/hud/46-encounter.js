@@ -1,7 +1,7 @@
 // Mystery Encounter card: on an encounter's option screen, what each option really does for this party — the outcome,
 // who it takes, what it costs, what's at stake, whether it starts a battle — and a take / ok / avoid call.
 //
-// ---- How the game decides (read from the pinned source, v1.12.0.11; references/game-code.md §13)
+// ---- How the game decides (read from the pinned source, v1.12.0.11; game-code.md §13)
 // The screen is UiMode.MYSTERY_ENCOUNTER, served by MysteryEncounterUiHandler while MysteryEncounterPhase waits.
 // `displayEncounterOptions` has already called `option.meetsRequirements()` for every option and kept the answers in
 // `optionsMeetsReqs`; an unmet option is unselectable only in optionMode DISABLED_OR_DEFAULT / DISABLED_OR_SPECIAL.
@@ -110,7 +110,7 @@ const readOptions = (s, h, me, party) => {
   });
 };
 
-// ---- Safari Zone's minigame (§13)
+// ---- Safari Zone's minigame (game-code.md §13)
 // Paying opens a continuous encounter: three wild mons in turn, each offering ball / bait / mud / run until it is
 // caught, it bolts, or you walk away. Both odds are arithmetic on two stages that reset with every mon.
 // `throwPokeball`: `catchRate = round(species.catchRate × 1.5 × stageMod(catchStage))`, then a twitch rate of its own

@@ -1,6 +1,6 @@
 // Biome route advisor: when the game offers a choice of next biome (the party holds a Map), which one suits the party.
 //
-// ---- How the game decides (read from the pinned source, v1.12.0.11; not called live; references/game-code.md §10)
+// ---- How the game decides (read from the pinned source, v1.12.0.11; not called live; game-code.md §10)
 // SelectBiomePhase.start: `let{biomeLinks:v}=allBiomes.get(arena.biomeId)`; links are ids or [id, n] (offered with
 // chance 1/n); with a MapModifier and more than one left: `ui.setMode(15 /* OPTION_SELECT */, {options: biomes.map(b =>
 // ({label: getBiomeName(b), handler}))})`. The handler closes over the id, so an option is only its localized label.

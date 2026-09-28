@@ -81,7 +81,7 @@ const commit = () => {
 // The page global an injected module hands its namespace to. Injecting the HUD again overwrites it, so a chunk still in
 // flight reaches the panel that is running rather than the one it was injected for.
 const HANDOFF = "__coachHudChunk";
-// The panel's own teardown drops it again (99-start's `stop`), so a stopped HUD leaves the page as it found it (§9.6):
+// The panel's own teardown drops it again (99-start's `stop`), so a stopped HUD leaves the page as it found it (extension-distribution.md §9.6):
 // it is the one mark the read makes that outlives the elements it injects. A chunk still in flight then lands nowhere,
 // which is what a stopped panel wants.
 // @only 99-start: dropChunkHandoff

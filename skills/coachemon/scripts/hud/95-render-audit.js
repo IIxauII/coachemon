@@ -8,13 +8,13 @@ export const drawAudit = a => {
   const found = a?.findings ?? [];
   if (!found.length) return [];
   const MAX = 8;
-  // Rows of the audit group, not a card of its own: the shell rules groups apart (#349 §1), and no section has a
+  // Rows of the audit group, not a card of its own: the shell rules groups apart (#349), and no section has a
   // control of its own.
   const out = [line("", h("span", { fontWeight: "bold", marginRight: "3px" }, "Team audit"),
     a.vs ? h("span", dim, `vs W${a.vs.wave} ${a.vs.who}`) : null)];
   for (const f of found.slice(0, MAX)) {
-    // A finding's level is its mark, and that is all it is (#349 §7): the size rung that used to say it a second
-    // time went with the knob (#349 §4), and the ink that said it a third is the gutter's now — the audit is a
+    // A finding's level is its mark, and that is all it is (#349): the size rung that used to say it a second
+    // time went with the knob, and the ink that said it a third is the gutter's now — the audit is a
     // group about waves we have not fought yet, so every row in it is **later** whatever the finding says.
     out.push(line(f.level === "high" ? "✗" : "·", f.text));
     if (f.relearn) {

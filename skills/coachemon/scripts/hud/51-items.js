@@ -2,7 +2,7 @@
 // 52-shop.js asks `rewardValue` first and falls back to its own need / TM / ball / tier logic when it answers null.
 // Every item is judged on the member it would go to — the best holder among those the game's select filter lets
 // hold it — with that member named in the reason. Effects, stack limits and the level cap are the game's own
-// (references/game-code.md §15); the weights are first cuts on the rewards card's scale, where covering a real need
+// (game-code.md §15); the weights are first cuts on the rewards card's scale, where covering a real need
 // is 10–30 and the tier alone is 10 a step.
 import { TYPES, abilitiesOf, hasAttr, iconOf, natureOf, typesOf } from "./01-core.js";
 import { splicerReward } from "./49-fusion.js";
