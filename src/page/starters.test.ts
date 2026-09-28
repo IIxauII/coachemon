@@ -32,7 +32,7 @@ function gridScene() {
   return { ui: { mode: UiMode.STARTER_SELECT, handlers: { [UiMode.STARTER_SELECT]: h } }, gameData: gameData() };
 }
 
-test("the grid fields start_run uses are unchanged, and every unlocked species comes with them (§11.4)", t => {
+test("the grid fields start_run uses are unchanged, and every unlocked species comes with them (extension-distribution.md §11.4)", t => {
   onPage(t, gridScene());
   const r = send("starters", {});
   assert.equal(r.ok, true);
@@ -46,7 +46,7 @@ test("the grid fields start_run uses are unchanged, and every unlocked species c
   assert.deepEqual(r.owned, [{ id: 4, cost: 3, ivTotal: 81, passiveUnlocked: true, hiddenAbility: true, eggMoves: 3, costReduction: 1, candy: 40 }]);
 });
 
-test("off the starter grid the owned species still read, with no cost and an empty grid (§11.4)", t => {
+test("off the starter grid the owned species still read, with no cost and an empty grid (extension-distribution.md §11.4)", t => {
   onPage(t, { ui: { mode: UiMode.TITLE, handlers: {} }, gameData: gameData() });
   const r = send("starters", {});
   assert.equal(r.ok, true);
@@ -61,7 +61,7 @@ test("a species the dex holds but starterData does not is skipped rather than re
   assert.deepEqual(send("starters", {}).owned, []);
 });
 
-test("a gameData that throws on every path leaves the read ok and empty (§6.2 fault isolation)", t => {
+test("a gameData that throws on every path leaves the read ok and empty (v1-tool-surface.md §6.2 fault isolation)", t => {
   onPage(t, {
     ui: { mode: UiMode.TITLE, handlers: {} },
     get gameData(): never {

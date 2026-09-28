@@ -8,7 +8,7 @@ function optionScene() {
   return { ui: { mode: 13, handlers: { 13: h } }, phaseManager: { currentPhase: { phaseName: "TitlePhase" } } };
 }
 
-test("a cursor act reads back the fingerprint after moving, and the next act on it runs (§10.2)", t => {
+test("a cursor act reads back the fingerprint after moving, and the next act on it runs (extension-distribution.md §10.2)", t => {
   onPage(t, optionScene());
   const { fine } = send("probe", {});
   const moved = send("cursor.option", { index: 2, fine });
@@ -19,7 +19,7 @@ test("a cursor act reads back the fingerprint after moving, and the next act on 
   assert.equal(send("cursor.option", { index: 1, fine: moved.fine }).ok, true);
 });
 
-test("key sends the button as a keydown then a keyup on window, keyCode pinned (§10.4)", t => {
+test("key sends the button as a keydown then a keyup on window, keyCode pinned (extension-distribution.md §10.4)", t => {
   const seen: { type: string; key: string; code: string; keyCode: number; which: number }[] = [];
   const g = globalThis as { window?: unknown; KeyboardEvent?: unknown };
   const prev = { window: g.window, KeyboardEvent: g.KeyboardEvent };

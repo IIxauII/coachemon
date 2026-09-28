@@ -140,7 +140,7 @@ test("a press carries the fingerprint it was decided on, and is ok once it reach
   assert.deepEqual(s.sent, [{ command: "press", args: { button: Button.DOWN, fine: "command|0" } }]);
 });
 
-test("an act on a game that moved did nothing, and says where the game is now (§10.2)", async () => {
+test("an act on a game that moved did nothing, and says where the game is now (extension-distribution.md §10.2)", async () => {
   const moved = always({ ok: false, why: "moved", fine: "command|1" });
   const { game } = stubLink({ press: moved, modal: moved, cursorOption: moved });
   const expected = { ok: false, why: "moved", threw: false, fine: "command|1" };

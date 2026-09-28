@@ -1,5 +1,5 @@
 /**
- * The per-engine smoke checks (§16) on a fake clock: the five-minute idle is a number the test hands over, not a wait.
+ * The per-engine smoke checks (extension-distribution.md §16) on a fake clock: the five-minute idle is a number the test hands over, not a wait.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -55,20 +55,20 @@ test("no hub is recorded, not thrown, and names the port actually dialled", asyn
   assert.match(run.reached ? "" : run.why, /no hub answered on 127\.0\.0\.1:47148/);
 });
 
-test("no ready tab says so, and a wrong-world tab says which premise failed (§9.4)", async () => {
+test("no ready tab says so, and a wrong-world tab says which premise failed (extension-distribution.md §9.4)", async () => {
   const none = await runChecks(deps({ state: { t: "state", extensions: [ext()], tabs: [], driver: null } }), { at });
   assert.match(none.reached ? "" : none.why, /no pokerogue\.net tab is connected/);
   const isolated = await runChecks(deps({ state: { t: "state", extensions: [ext()], tabs: [tab({ state: "wrong-world" })], driver: null } }), { at });
   assert.match(isolated.reached ? "" : isolated.why, /ran isolated/);
 });
 
-test("more than one tab is not an engine result: the hub refuses every command (§7.5)", async () => {
+test("more than one tab is not an engine result: the hub refuses every command (extension-distribution.md §7.5)", async () => {
   const state: HubState = { t: "state", extensions: [ext()], tabs: [tab(), tab({ tab: 6 })], driver: null };
   const run = await runChecks(deps({ state }), { at });
   assert.match(run.reached ? "" : run.why, /2 pokerogue\.net tabs/);
 });
 
-test("a store build is checked too: §16's Orion premise is about the store zip", async () => {
+test("a store build is checked too: extension-distribution.md §16's Orion premise is about the store zip", async () => {
   const state: HubState = { t: "state", extensions: [ext({ flavour: "store" })], tabs: [tab()], driver: null };
   const r = await result(deps({ state }), { engine: "orion" });
   assert.equal(r.flavour, "store");
@@ -77,7 +77,7 @@ test("a store build is checked too: §16's Orion premise is about the store zip"
 
 // ------------------------------------------------------------ the checks
 
-test("one probe that comes back at all is the relay premise (§9.2)", async () => {
+test("one probe that comes back at all is the relay premise (extension-distribution.md §9.2)", async () => {
   const d = deps();
   const r = await result(d);
   assert.deepEqual(d.asked, ["probe", "probe"]);
@@ -85,7 +85,7 @@ test("one probe that comes back at all is the relay premise (§9.2)", async () =
   assert.equal(r.checks[0]?.pass, true);
 });
 
-test("`no-handler` from a ready tab is an engine that dispatches asynchronously (§9.2)", async () => {
+test("`no-handler` from a ready tab is an engine that dispatches asynchronously (extension-distribution.md §9.2)", async () => {
   const d = deps({ answers: [{ ok: false, code: "no-handler", message: "no page handler answered probe" }] });
   const r = await result(d);
   assert.equal(r.checks[0]?.pass, false);
@@ -99,7 +99,7 @@ test("another refusal is inconclusive, and says which one it was", async () => {
   assert.match(r.checks[0]?.note ?? "", /inconclusive: the hub refused timeout/);
 });
 
-test("the keepalive check idles 5 minutes, then holds the command to the 1 s bar (§2)", async () => {
+test("the keepalive check idles 5 minutes, then holds the command to the 1 s bar (extension-distribution.md §2)", async () => {
   const d = deps({ cost: [5, 300] });
   const r = await result(d);
   assert.deepEqual(d.slept, [IDLE_MS]);
@@ -111,7 +111,7 @@ test("the keepalive check idles 5 minutes, then holds the command to the 1 s bar
   });
 });
 
-test("a command slower than the bar fails the check rather than rounding to it (§2)", async () => {
+test("a command slower than the bar fails the check rather than rounding to it (extension-distribution.md §2)", async () => {
   const r = await result(deps({ cost: [5, BAR_MS + 1] }));
   assert.equal(r.checks[1]?.pass, false);
 });
@@ -130,7 +130,7 @@ test("the idle is the dev's to shorten, and the result records what it actually 
   assert.equal(r.idleMs, 30_000);
 });
 
-test("Orion runs someone else's build, so the engine is named and the build recorded as it stands (§2)", async () => {
+test("Orion runs someone else's build, so the engine is named and the build recorded as it stands (extension-distribution.md §2)", async () => {
   const r = await result(deps(), { engine: "orion" });
   assert.equal(r.engine, "orion");
   assert.equal(r.target, "chrome");
@@ -158,7 +158,7 @@ test("a later run replaces that engine's result and leaves the others alone", ()
   assert.equal(again.firefox?.version, "1.2.0");
 });
 
-test("the report keeps a line for every engine of §2, reached or not", () => {
+test("the report keeps a line for every engine of extension-distribution.md §2, reached or not", () => {
   const text = report(merge({}, passed("chrome")));
   assert.match(text, /^chrome .*pass/m);
   for (const engine of ["firefox", "safari", "orion"]) {

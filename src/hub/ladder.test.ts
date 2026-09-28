@@ -17,7 +17,7 @@ function sight(o: Partial<Reachability> = {}): Reachability {
   return { trouble: null, extensions: [ext()], tabs: [tab()], ...o };
 }
 
-test("rung 1: the port is held by something that is not the hub (§12.3)", () => {
+test("rung 1: the port is held by something that is not the hub (extension-distribution.md §12.3)", () => {
   const r = reach(sight({ trouble: { kind: "foreign", port: 47147, process: "node", pid: 811 } }));
   assert.deepEqual(r, { code: "unreachable", rung: 1, line: "Port 47147 is held by node (pid 811), not the Coachemon hub. Quit it, then retry." });
   // `lsof` is not everywhere, and the line still has to work without it.
@@ -25,12 +25,12 @@ test("rung 1: the port is held by something that is not the hub (§12.3)", () =>
   assert.equal(anon?.line, "Port 47147 is held by another program, not the Coachemon hub. Quit it, then retry.");
 });
 
-test("rung 2: the hub would not start, named by the first line of its stderr (§12.3)", () => {
+test("rung 2: the hub would not start, named by the first line of its stderr (extension-distribution.md §12.3)", () => {
   const r = reach(sight({ trouble: { kind: "no-start", stderr: "Error: cannot find module ws\n    at file:///x\n" } }));
   assert.deepEqual(r, { code: "unreachable", rung: 2, line: "The Coachemon hub would not start: Error: cannot find module ws." });
 });
 
-test("version skew is not a rung: each side gets its own line (§7.3)", () => {
+test("version skew is not a rung: each side gets its own line (extension-distribution.md §7.3)", () => {
   assert.deepEqual(reach(sight({ trouble: { kind: "skew-driving" } })), {
     code: "unreachable",
     rung: null,
@@ -43,13 +43,13 @@ test("version skew is not a rung: each side gets its own line (§7.3)", () => {
   });
 });
 
-test("rung 3: the hub is up and no browser has connected (§12.3)", () => {
+test("rung 3: the hub is up and no browser has connected (extension-distribution.md §12.3)", () => {
   const r = reach(sight({ extensions: [], tabs: [] }));
   assert.equal(r?.rung, 3);
   assert.match(r!.line, /^No browser has Coachemon connected\. Install Coachemon .*and open pokerogue\.net\.$/);
 });
 
-test("rung 4: an extension outside the protocol window, in whichever direction (§8.5, §12.3)", () => {
+test("rung 4: an extension outside the protocol window, in whichever direction (extension-distribution.md §8.5, §12.3)", () => {
   const behind = reach(sight({ extensions: [ext({ protocol: PROTOCOL - 2, version: "0.9.0", target: "firefox" })] }));
   assert.deepEqual(behind, { code: "unreachable", rung: 4, line: "Coachemon 0.9.0 in Firefox is too old for this plugin. Update the extension." });
   const ahead = reach(sight({ extensions: [ext({ protocol: PROTOCOL + 1, version: "2.0.0" })] }));
@@ -58,29 +58,29 @@ test("rung 4: an extension outside the protocol window, in whichever direction (
   assert.equal(reach(sight({ extensions: [ext({ protocol: PROTOCOL - 1 })] })), null);
 });
 
-test("rung 4 also covers a command the extension did not list, and that tool alone (§8.5)", () => {
+test("rung 4 also covers a command the extension did not list, and that tool alone (extension-distribution.md §8.5)", () => {
   const s = sight({ extensions: [ext({ commands: ["probe", "menu"] })] });
   assert.equal(reach({ ...s, needs: ["probe", "menu"] }), null, "a tool whose commands are all there keeps working");
   const r = reach({ ...s, needs: ["probe", "starters"] });
   assert.deepEqual(r, { code: "missing_command", rung: 4, line: "Coachemon 1.2.0 in Chrome is too old for this plugin. Update the extension." });
 });
 
-test("rung 5: a browser waiting for consent (§8.4, §12.3)", () => {
+test("rung 5: a browser waiting for consent (extension-distribution.md §8.4, §12.3)", () => {
   const r = reach(sight({ extensions: [ext({ target: "firefox", consent: false })] }));
   assert.deepEqual(r, { code: "unreachable", rung: 5, line: "Coachemon in Firefox is waiting for your OK: click the Coachemon icon in the toolbar once." });
 });
 
-test("rung 6: a tab whose page scripts ran isolated (§9.4, §12.3)", () => {
+test("rung 6: a tab whose page scripts ran isolated (extension-distribution.md §9.4, §12.3)", () => {
   const r = reach(sight({ extensions: [ext({ target: "safari" })], tabs: [tab({ target: "safari", state: "wrong-world" })] }));
   assert.deepEqual(r, { code: "unreachable", rung: 6, line: "Coachemon can't reach the game in Safari. Update Safari." });
 });
 
-test("rung 7: connected, with no ready tab (§12.3)", () => {
+test("rung 7: connected, with no ready tab (extension-distribution.md §12.3)", () => {
   const r = reach(sight({ tabs: [] }));
   assert.deepEqual(r, { code: "unreachable", rung: 7, line: "Coachemon is connected, but no pokerogue.net tab is ready. Open or reload pokerogue.net." });
 });
 
-test("rung 8: more than one ready tab refuses with the list, never a guess (§1.6, §12.3)", () => {
+test("rung 8: more than one ready tab refuses with the list, never a guess (extension-distribution.md §1, §12.3)", () => {
   const tabs = [tab({ tab: 1 }), tab({ conn: 2, tab: 9, target: "firefox" as Target, title: "PokéRogue — save 2" })];
   const r = reach(sight({ extensions: [ext(), ext({ conn: 2, target: "firefox" })], tabs }));
   assert.equal(r?.code, "tabs");

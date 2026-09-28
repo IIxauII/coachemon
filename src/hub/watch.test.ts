@@ -63,9 +63,9 @@ const BATTLE_LINE = "BATTLE w12 · danger | Gyarados L34 will KO Pikachu";
 /** A card of nulls: the late join has nothing to print, so the test's first line is the one it is about. */
 const NO_CARD = { ok: true, kind: null, key: null, wave: null, verdict: null, text: null, summary: null };
 
-// ------------------------------------------------------------------ the lines (§11.2)
+// ------------------------------------------------------------------ the lines (extension-distribution.md §11.2)
 
-test("each streamed card kind is one summary line, with the first line of its text (§11.2)", () => {
+test("each streamed card kind is one summary line, with the first line of its text (extension-distribution.md §11.2)", () => {
   assert.equal(cardLine({ kind: "battle", wave: 12, verdict: "danger", text: "Gyarados will KO Pikachu\nswitch" }), "BATTLE w12 · danger | Gyarados will KO Pikachu");
   assert.equal(cardLine({ kind: "learn", wave: 14, verdict: "your call", text: "Pikachu wants Thunder" }), "LEARN w14 · your call | Pikachu wants Thunder");
   assert.equal(cardLine({ kind: "reward", wave: 15, verdict: "buy first", text: "free: Ultra Ball" }), "REWARDS w15 · buy first | free: Ultra Ball");
@@ -73,14 +73,14 @@ test("each streamed card kind is one summary line, with the first line of its te
   assert.equal(cardLine({ kind: "encounter", wave: 23, verdict: "not judged", text: "Mysterious Chest" }), "ENCOUNTER w23 · not judged | Mysterious Chest");
 });
 
-test("the panel's own `rewards` kind reads as REWARDS, and a kind that never streams says nothing (§11.1)", () => {
+test("the panel's own `rewards` kind reads as REWARDS, and a kind that never streams says nothing (extension-distribution.md §11.1)", () => {
   assert.equal(cardLine({ kind: "rewards", wave: 15, verdict: "buy first", text: "free: Ultra Ball" }), "REWARDS w15 · buy first | free: Ultra Ball");
   assert.equal(cardLine({ kind: "starters", wave: 1, verdict: "pick Bulbasaur", text: "…" }), null);
   assert.equal(cardLine({ kind: null, wave: null, verdict: null, text: null }), null);
   assert.equal(cardLine({}), null);
 });
 
-test("the first line of the text is cut at 300 characters (§11.2)", () => {
+test("the first line of the text is cut at 300 characters (extension-distribution.md §11.2)", () => {
   assert.equal(cardLine({ kind: "battle", wave: 1, verdict: "fight", text: `${"x".repeat(400)}\nsecond` }), `BATTLE w1 · fight | ${"x".repeat(300)}`);
 });
 
@@ -91,7 +91,7 @@ test("a card missing a wave, a verdict or a text drops just that part of the lin
   assert.equal(cardLine({ kind: "battle", wave: 3, verdict: "easy", text: "   \nb" }), "BATTLE w3 · easy");
 });
 
-test("a HUD failure, a tab split and a return are their own lines (§11.2)", () => {
+test("a HUD failure, a tab split and a return are their own lines (extension-distribution.md §11.2)", () => {
   assert.equal(feedLine({ t: "event", kind: "coach-error", body: { message: "refresh threw" } }), "COACH ERROR refresh threw");
   assert.equal(feedLine({ t: "notice", kind: "resume", tabs: [] }), "RESUMED");
   assert.equal(
@@ -107,9 +107,9 @@ test("a HUD failure, a tab split and a return are their own lines (§11.2)", () 
   );
 });
 
-// ------------------------------------------------------------------ the loop (§11.2)
+// ------------------------------------------------------------------ the loop (extension-distribution.md §11.2)
 
-test("while the game is unreachable the ladder line prints once, and again only when it changes (§11.2)", async () => {
+test("while the game is unreachable the ladder line prints once, and again only when it changes (extension-distribution.md §11.2)", async () => {
   // A dead port, not merely a free one: the loop dials it every retry for the whole phase, so a hub of another test
   // file's that took it would answer one of those dials and the ladder would read that hub's rungs instead (#327).
   const port = await deadPort();
@@ -128,7 +128,7 @@ test("while the game is unreachable the ladder line prints once, and again only 
   await w.done;
 });
 
-test("once a tab is ready the CLI subscribes and prints the card it joined on (§11.2)", async () => {
+test("once a tab is ready the CLI subscribes and prints the card it joined on (extension-distribution.md §11.2)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port);
   const w = watching(h.port);
@@ -139,7 +139,7 @@ test("once a tab is ready the CLI subscribes and prints the card it joined on (�
   await w.done;
 });
 
-test("a card event on the stream is one line, and the watch role never claims the grant (§11.2)", async () => {
+test("a card event on the stream is one line, and the watch role never claims the grant (extension-distribution.md §11.2)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port);
   const w = watching(h.port);
@@ -157,7 +157,7 @@ test("a card event on the stream is one line, and the watch role never claims th
   await w.done;
 });
 
-test("a HUD failure on the stream is COACH ERROR (§11.2)", async () => {
+test("a HUD failure on the stream is COACH ERROR (extension-distribution.md §11.2)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port);
   const w = watching(h.port);
@@ -170,7 +170,7 @@ test("a HUD failure on the stream is COACH ERROR (§11.2)", async () => {
   await w.done;
 });
 
-test("a second tab prints TABS, and closing it prints RESUMED then a fresh card read (§11.2)", async () => {
+test("a second tab prints TABS, and closing it prints RESUMED then a fresh card read (extension-distribution.md §11.2)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1);
   const w = watching(h.port);
@@ -189,13 +189,13 @@ test("a second tab prints TABS, and closing it prints RESUMED then a fresh card 
   await w.done;
 });
 
-test("a CLI that joins an already-split tab count reads the card once, not twice (§11.2)", async () => {
+test("a CLI that joins an already-split tab count reads the card once, not twice (extension-distribution.md §11.2)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1);
   ext.send({ t: "tab", tab: 2, state: "ready", title: "PokéRogue" });
   autoCard(ext, CARD);
   const w = watching(h.port);
-  // The hub tells a subscriber about a split it joined into, so the split is reported without the loop's help (§7.5).
+  // The hub tells a subscriber about a split it joined into, so the split is reported without the loop's help (extension-distribution.md §7.5).
   await until(() => w.lines.some(l => l.startsWith("TABS ")));
 
   ext.send({ t: "tab", tab: 2, state: "gone", title: "PokéRogue" });
@@ -208,7 +208,7 @@ test("a CLI that joins an already-split tab count reads the card once, not twice
   await w.done;
 });
 
-test("a rung the TABS line replaced is printed again when it comes back (§11.2)", async () => {
+test("a rung the TABS line replaced is printed again when it comes back (extension-distribution.md §11.2)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1);
   const w = watching(h.port);

@@ -40,7 +40,7 @@ async function answer(ext: Ext, result: unknown): Promise<{ name: string; args: 
   return { name: cmd.name, args: cmd.args };
 }
 
-test("a command crosses the hub and its result comes back as the page's own (§12.1)", async () => {
+test("a command crosses the hub and its result comes back as the page's own (extension-distribution.md §12.1)", async () => {
   const { ext, link } = await linked();
   const menu = link.menu();
   const sent = await answer(ext, { readable: true, mode: 2, family: "command", options: [], cursor: 0, text: null, extra: {} });
@@ -48,7 +48,7 @@ test("a command crosses the hub and its result comes back as the page's own (§1
   assert.deepEqual(await menu, { readable: true, mode: 2, family: "command", options: [], cursor: 0, text: null, extra: {} });
 });
 
-test("a relay refusal becomes a Fault, so LinkGame cannot tell the transports apart (§9.7, §12.1)", async () => {
+test("a relay refusal becomes a Fault, so LinkGame cannot tell the transports apart (extension-distribution.md §9.7, §12.1)", async () => {
   const { ext, link } = await linked();
   const menu = link.menu();
   const cmd = await ext.take<{ t: "cmd"; id: number }>(f => f.t === "cmd");
@@ -57,13 +57,13 @@ test("a relay refusal becomes a Fault, so LinkGame cannot tell the transports ap
   assert.ok(isFault(r) && r.fault === "no-handler", JSON.stringify(r));
 });
 
-test("a refusal the hub answers itself is a Fault too, carrying the hub's code (§7.6)", async () => {
+test("a refusal the hub answers itself is a Fault too, carrying the hub's code (extension-distribution.md §7.6)", async () => {
   const { link } = await linked({ commands: ["probe", "menu"] });
   const r = await link.starters();
   assert.ok(isFault(r) && r.fault === "missing-command", JSON.stringify(r));
 });
 
-test("only the driver pumps, and it pumps every probe once it holds the grant (§10.3)", async () => {
+test("only the driver pumps, and it pumps every probe once it holds the grant (extension-distribution.md §10.3)", async () => {
   const { ext, link } = await linked();
   const before = link.probe({});
   assert.deepEqual((await answer(ext, { ready: false, why: "no-phaser", frame: null, domMode: null, pumped: false, errorAt: null })).args, {});
@@ -75,7 +75,7 @@ test("only the driver pumps, and it pumps every probe once it holds the grant (�
   await after;
 });
 
-test("a contended claim is the tool's refusal, and the link stops pumping (§7.5)", async () => {
+test("a contended claim is the tool's refusal, and the link stops pumping (extension-distribution.md §7.5)", async () => {
   const { hub, ext, link } = await linked();
   const other = await fakeClient(hub.port);
   other.send({ t: "claim" });
@@ -89,7 +89,7 @@ test("a contended claim is the tool's refusal, and the link stops pumping (§7.5
   await probe;
 });
 
-test("presence carries the browsers, the tab count and the driver, and the ladder's line when there is one (§12.3)", async () => {
+test("presence carries the browsers, the tab count and the driver, and the ladder's line when there is one (extension-distribution.md §12.3)", async () => {
   const { hub, link } = await linked();
   const p = await link.presence();
   assert.deepEqual(p.facts, {
@@ -110,7 +110,7 @@ test("presence carries the browsers, the tab count and the driver, and the ladde
   assert.equal(many.facts.tabs, 2);
 });
 
-test("a tool's needed command the extension never listed is rung 4, and its command list is the link's (§8.5)", async () => {
+test("a tool's needed command the extension never listed is rung 4, and its command list is the link's (extension-distribution.md §8.5)", async () => {
   const { link } = await linked({ commands: ["probe", "menu"] });
   assert.deepEqual([...link.commands].sort(), ["menu", "probe"]);
   assert.equal((await link.presence(["probe", "menu"])).reach, null);
@@ -119,7 +119,7 @@ test("a tool's needed command the extension never listed is rung 4, and its comm
   assert.equal(short.reach?.rung, 4);
 });
 
-test("the command list is the routed extension's, not what two browsers happen to share (§7.5, §10.1)", async () => {
+test("the command list is the routed extension's, not what two browsers happen to share (extension-distribution.md §7.5, §10.1)", async () => {
   const { hub, link } = await linked({ commands: ["probe", "menu", "starters"] });
   // A second browser with a poorer table, and no ready tab: it is not where commands go, so it takes nothing away.
   const other = await fakeExtension(hub.port, { target: "firefox", commands: ["probe"] });
@@ -128,7 +128,7 @@ test("the command list is the routed extension's, not what two browsers happen t
   assert.deepEqual([...link.commands].sort(), ["menu", "probe", "starters"]);
 });
 
-test("the raw-key rung goes out as the key command, on the fingerprint it was decided on (§10.4)", async () => {
+test("the raw-key rung goes out as the key command, on the fingerprint it was decided on (extension-distribution.md §10.4)", async () => {
   const { ext, link } = await linked();
   const sent = link.rawKey(Button.UP, "fp-7");
   assert.deepEqual(await answer(ext, { ok: true }), { name: "key", args: { button: "UP", fine: "fp-7" } });
@@ -137,7 +137,7 @@ test("the raw-key rung goes out as the key command, on the fingerprint it was de
   assert.equal(await link.rawKey(Button.CYCLE_SHINY, "fp-7"), false);
 });
 
-test("the console tail is one probe asking for it, and every probe carries the page's latest error (§12.4)", async () => {
+test("the console tail is one probe asking for it, and every probe carries the page's latest error (extension-distribution.md §12.4)", async () => {
   const { ext, link } = await linked();
   const seen: number[] = [];
   link.onRejection(t => seen.push(t));
@@ -155,12 +155,12 @@ test("the console tail is one probe asking for it, and every probe carries the p
   assert.deepEqual(seen, [1234]);
 });
 
-test("screenshot against a store build says what to use instead (§12.2)", async () => {
+test("screenshot against a store build says what to use instead (extension-distribution.md §12.2)", async () => {
   const { link } = await linked();
   await assert.rejects(link.screenshot(), (e: Refusal) => e.code === "unavailable" && /dev build of Coachemon/.test(e.message));
 });
 
-test("screenshot works against a dev build, which registered it (§10.6)", async () => {
+test("screenshot works against a dev build, which registered it (extension-distribution.md §10.6)", async () => {
   const { ext, link } = await linked({ flavour: "dev", commands: [...COMMAND_NAMES, "screenshot"] });
   const png = link.screenshot();
   const asked = await answer(ext, { ok: true, id: 1, part: 0, parts: 1, png: "iVBOR" });
@@ -168,7 +168,7 @@ test("screenshot works against a dev build, which registered it (§10.6)", async
   assert.equal(await png, "iVBOR");
 });
 
-test("a capture too large for one frame is asked for part by part, all from the one capture (§10.6)", async () => {
+test("a capture too large for one frame is asked for part by part, all from the one capture (extension-distribution.md §10.6)", async () => {
   const { ext, link } = await linked({ flavour: "dev", commands: [...COMMAND_NAMES, "screenshot"] });
   const png = link.screenshot();
   await answer(ext, { ok: true, id: 4, part: 0, parts: 3, png: "iVB" });
@@ -177,7 +177,7 @@ test("a capture too large for one frame is asked for part by part, all from the 
   assert.equal(await png, "iVBOR0KGg");
 });
 
-test("a capture that expired under us is `unavailable`, not half an image (§10.6)", async () => {
+test("a capture that expired under us is `unavailable`, not half an image (extension-distribution.md §10.6)", async () => {
   const { ext, link } = await linked({ flavour: "dev", commands: [...COMMAND_NAMES, "screenshot"] });
   const png = link.screenshot();
   await answer(ext, { ok: true, id: 4, part: 0, parts: 2, png: "iVB" });
@@ -185,7 +185,7 @@ test("a capture that expired under us is `unavailable`, not half an image (§10.
   await assert.rejects(png, (e: Refusal) => e.code === "unavailable" && e.detail.why === "expired");
 });
 
-test("an unreachable hub is a reach, not a throw: every tool refuses with the rung's line (§12.3)", async () => {
+test("an unreachable hub is a reach, not a throw: every tool refuses with the rung's line (extension-distribution.md §12.3)", async () => {
   const link = new HubLink({ port: 1, version: "1.0.0", spawnHub: () => ({ pid: null, stderr: () => "spawn failed", exited: Promise.resolve(1), release: () => {} }), portHolder: () => ({ process: null, pid: null }) });
   const p = await link.presence();
   assert.equal(p.reach?.rung, 2);
@@ -194,7 +194,7 @@ test("an unreachable hub is a reach, not a throw: every tool refuses with the ru
   assert.ok(isFault(r), JSON.stringify(r));
 });
 
-test("a browser that has not consented yet keeps the link on rung 5 (§8.4)", async () => {
+test("a browser that has not consented yet keeps the link on rung 5 (extension-distribution.md §8.4)", async () => {
   const hub = await startHub({ port: 0, version: "1.0.0" });
   shut.push(() => hub.close());
   const ext = await fakeExtension(hub.port, { target: "firefox", consent: false });
@@ -204,7 +204,7 @@ test("a browser that has not consented yet keeps the link on rung 5 (§8.4)", as
   assert.equal((await link.presence()).reach?.rung, 5);
 });
 
-test("the dev checkout reaches the dev hub's port, and everything else the store one (§7.2, §12.1)", () => {
+test("the dev checkout reaches the dev hub's port, and everything else the store one (extension-distribution.md §7.2, §12.1)", () => {
   assert.equal(hubPort({} as NodeJS.ProcessEnv), STORE_PORT);
   assert.equal(hubPort({ COACHEMON_DEV: "1" } as unknown as NodeJS.ProcessEnv), DEV_PORT);
   assert.equal(hubPort({ COACHEMON_DEV: "0" } as unknown as NodeJS.ProcessEnv), STORE_PORT);

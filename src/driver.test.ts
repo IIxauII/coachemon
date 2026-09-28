@@ -366,7 +366,7 @@ test("press(UP) on SUMMARY/LEARN_MOVE moves one row and reports changed (#32)", 
   assert.equal(r.raw_keyboard_fallback, false);
 });
 
-test("a press that moves neither the fingerprint nor the menu cursor still retries once on the raw keyboard (§6.4, #32)", async () => {
+test("a press that moves neither the fingerprint nor the menu cursor still retries once on the raw keyboard (v1-tool-surface.md §6.4, #32)", async () => {
   const tab = fakeTab({ stallAfterPress: false });
   const r = await outcome(tab.driver.press("LEFT", {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
@@ -723,16 +723,16 @@ test("an acting call refuses loop_frozen when the frame does not advance across 
   assert.equal(r.frame, 7);
 });
 
-test("a transport whose settles pump has no frozen loop to refuse (§10.3, §12.2)", async () => {
+test("a transport whose settles pump has no frozen loop to refuse (extension-distribution.md §10.3, §12.2)", async () => {
   const presses: number[] = [];
-  // The fingerprint never moves on this scripted screen, so the press takes §6.4's one raw-keyboard retry.
+  // The fingerprint never moves on this scripted screen, so the press takes v1-tool-surface.md §6.4's one raw-keyboard retry.
   const tab = guardedTab({ pumps: true, frame: () => 7, onPress: b => { presses.push(b); }, onRawKey: () => true, menu: () => commandMenu(0) });
   const r = await outcome(tab.driver.press("ACTION", {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
   assert.deepEqual(presses, [Button.ACTION]);
 });
 
-test("every tool refuses with the failing rung's line before it reads anything (§12.2, §12.3)", async () => {
+test("every tool refuses with the failing rung's line before it reads anything (extension-distribution.md §12.2, §12.3)", async () => {
   const unreachable = { code: "unreachable" as const, rung: 7, line: "Coachemon is connected, but no pokerogue.net tab is ready. Open or reload pokerogue.net." };
   // No `read` is scripted: a tool that got as far as settling would fail with `unexpected read`.
   const tab = drive({ unreachable });
@@ -743,7 +743,7 @@ test("every tool refuses with the failing rung's line before it reads anything (
   }
 });
 
-test("more than one tab refuses `tabs` with the list, and a missing command refuses alone (§7.5, §8.5)", async () => {
+test("more than one tab refuses `tabs` with the list, and a missing command refuses alone (extension-distribution.md §7.5, §8.5)", async () => {
   const tabs = [{ conn: 1, tab: 1, target: "chrome" as const, title: "PokéRogue", state: "ready" as const }];
   const many = drive({ unreachable: { code: "tabs", rung: 8, line: "2 pokerogue.net tabs are open (Chrome: PokéRogue; Firefox: PokéRogue). Close all but one.", tabs } });
   const r = await outcome(many.driver.getState("lean", {}));
@@ -755,7 +755,7 @@ test("more than one tab refuses `tabs` with the list, and a missing command refu
   assert.equal(s.error, "missing_command", JSON.stringify(s));
 });
 
-test("status reports reachability, the transport's own facts and the game, and answers when nothing is reachable (§12.3)", async () => {
+test("status reports reachability, the transport's own facts and the game, and answers when nothing is reachable (extension-distribution.md §12.3)", async () => {
   const tab = guardedTab();
   const ok = await tab.driver.status();
   assert.equal(ok.reachable, true);
@@ -774,7 +774,7 @@ test("status reports reachability, the transport's own facts and the game, and a
   assert.equal(out.run_live, false);
 });
 
-test("a press decided on a screen the game has since left refuses game_moved, pressing nothing (§10.2)", async () => {
+test("a press decided on a screen the game has since left refuses game_moved, pressing nothing (extension-distribution.md §10.2)", async () => {
   // The game moves on its own during the guard's frame check, between the settled read and the press.
   let frames = 0;
   const presses: number[] = [];
@@ -821,14 +821,14 @@ function confirmTab() {
   return { ...tab, answered: () => answered };
 }
 
-test("select_option commits on the fingerprint its own cursor move left, not the one it settled on (§10.2)", async () => {
+test("select_option commits on the fingerprint its own cursor move left, not the one it settled on (extension-distribution.md §10.2)", async () => {
   const tab = confirmTab();
   const r = await outcome(tab.driver.selectOption("No", undefined, undefined, {}));
   assert.equal(r.error, undefined, JSON.stringify(r));
   assert.equal(tab.answered(), "No");
 });
 
-test("auto-advance that finds the game moved on settles again and answers the message now showing (§10.2)", async () => {
+test("auto-advance that finds the game moved on settles again and answers the message now showing (extension-distribution.md §10.2)", async () => {
   // Two messages; the second replaces itself with a third just before the auto-advance press reaches it.
   let shown = 0;
   let raced = false;
@@ -908,7 +908,7 @@ test("a frame read that fails is not a frozen loop", async () => {
   assert.equal(presses, 1);
 });
 
-// ---- The coach's read-only tools (§11.4)
+// ---- The coach's read-only tools (extension-distribution.md §11.4)
 
 /** A settled COMMAND screen that scripts nothing but the reads a coach tool makes. */
 function coachTab(over: Pick<FakeScreen, "card" | "starters" | "unreachable">) {
@@ -920,7 +920,7 @@ function coachTab(over: Pick<FakeScreen, "card" | "starters" | "unreachable">) {
   return drive({ ...over, read, menu: () => commandMenu(0) });
 }
 
-test("read_card returns the card the panel is showing, in the settled envelope (§11.4)", async () => {
+test("read_card returns the card the panel is showing, in the settled envelope (extension-distribution.md §11.4)", async () => {
   const summary = { kind: "battle", wave: 12, verdict: "danger", plan: null };
   const groups = [{ id: "act", label: "Now", summary: "Charizard Ember → Rattata · 1 hit", rows: [] },
     { id: "foes", label: "Foes", summary: "we're weak to Rock ×2", rows: ["💀 Charizard ← Lycanroc Stone Edge"] }];
@@ -939,7 +939,7 @@ test("read_card returns the card the panel is showing, in the settled envelope (
   assert.equal(r.card_error, undefined);
 });
 
-test("read_card on a tab with no panel says so and keeps reading the game (§11.4)", async () => {
+test("read_card on a tab with no panel says so and keeps reading the game (extension-distribution.md §11.4)", async () => {
   const tab = coachTab({ card: () => ({ ok: false, why: "no-hud" }) });
   const r = await outcome(tab.driver.readCard({}));
   assert.equal(r.status, "ok", JSON.stringify(r));
@@ -966,7 +966,7 @@ test("read_card needs no grant: it never claims the tab another driver holds", a
   assert.equal(r.kind, "learn");
 });
 
-test("read_starters returns the unlocks and the grid, without the read's own ok flag (§11.4)", async () => {
+test("read_starters returns the unlocks and the grid, without the read's own ok flag (extension-distribution.md §11.4)", async () => {
   const owned = [{ id: 4, cost: 3, ivTotal: 81, passiveUnlocked: true, hiddenAbility: false, eggMoves: 3, costReduction: 1, candy: 40 }];
   const tab = coachTab({ starters: () => ({ ok: true, cursor: 2, scrollCursor: 0, grid: [{ i: 0, name: "Charmander", id: 4, cost: 3 }], party: ["Charmander"], valueLimit: 10, partyValid: true, owned }) });
   const r = await outcome(tab.driver.readStarters({}));
@@ -992,7 +992,7 @@ test("read_card keeps the panel's own wave when it is a refresh behind the game"
   assert.equal(r.card_wave, 11, "the card is still on the wave before it");
 });
 
-test("get_state names the coach's enums on both sides of the field (§11.4)", async () => {
+test("get_state names the coach's enums on both sides of the field (extension-distribution.md §11.4)", async () => {
   const mon = (over: Record<string, unknown>) => ({ name: "Charizard", status: StatusEffect.BURN, types: [PokemonType.FIRE, PokemonType.FLYING], moves: [{ name: "Flamethrower", type: PokemonType.FIRE, category: MoveCategory.SPECIAL }], ...over });
   const tab = coachTab({});
   tab.game.snapshot = async () => ({ ok: true, snapshot: { ready: true, mode: 0, party: [mon({})], enemy: [mon({ name: "Gyarados", status: 0 })] } });
@@ -1005,7 +1005,7 @@ test("get_state names the coach's enums on both sides of the field (§11.4)", as
   assert.deepEqual(enemy[0].types, ["FIRE", "FLYING"]);
 });
 
-test("a coach tool refuses by rung when nothing can reach the game (§12.3)", async () => {
+test("a coach tool refuses by rung when nothing can reach the game (extension-distribution.md §12.3)", async () => {
   const unreachable = { rung: 2, code: "unreachable", line: "No browser is connected to the hub." } as const;
   for (const call of [(d: Driver) => d.readCard({}), (d: Driver) => d.readStarters({})]) {
     const r = await outcome(call(coachTab({ unreachable }).driver));

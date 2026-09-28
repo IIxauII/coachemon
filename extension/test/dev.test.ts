@@ -1,5 +1,5 @@
 /**
- * The dev-only table (§10.6). The guard proves these names never reach a store artifact; this proves they do what the
+ * The dev-only table (extension-distribution.md §10.6). The guard proves these names never reach a store artifact; this proves they do what the
  * dev loop and `scripts/eval.ts` need of them.
  */
 import assert from "node:assert/strict";
@@ -77,7 +77,7 @@ test("a capture that fits in one frame comes back whole, prefix stripped", async
   assert.deepEqual(part, { ok: true, id: 1, part: 0, parts: 1, png: c.body });
 });
 
-test("a capture over the frame cap crosses in parts, and only part 0 captures (§10.6)", async () => {
+test("a capture over the frame cap crosses in parts, and only part 0 captures (extension-distribution.md §10.6)", async () => {
   const c = capture(SCREENSHOT_CHUNK * 2 + 5);
   const dev = devCommands(c.api);
   const first = (await result(dev(cmd("screenshot")))) as ScreenshotPart & { ok: true };
@@ -147,7 +147,7 @@ test("a store command is not the background's to answer", () => {
 
 // -------------------------------------------------------------- reinject
 
-test("a reloaded dev build puts both worlds' scripts back into every game tab (§5.4)", async () => {
+test("a reloaded dev build puts both worlds' scripts back into every game tab (extension-distribution.md §5.4)", async () => {
   const done: string[] = [];
   await reinject({
     gameTabs: async () => [11, 22],
@@ -179,7 +179,7 @@ test("no tabs to query is no re-injection, not a failure", async () => {
 
 // ----------------------------------------------------------- the dev loop
 
-test("the watcher rebuilds for what the build reads (§5.4)", () => {
+test("the watcher rebuilds for what the build reads (extension-distribution.md §5.4)", () => {
   for (const path of [
     "src/page/probe.ts",
     "src/protocol/commands.ts",
@@ -192,7 +192,7 @@ test("the watcher rebuilds for what the build reads (§5.4)", () => {
   }
 });
 
-test("the watcher never rebuilds for its own output, or a build would never stop (§5.4)", () => {
+test("the watcher never rebuilds for its own output, or a build would never stop (extension-distribution.md §5.4)", () => {
   for (const path of [
     "extension/.output/chrome-mv3-dev/page.js",
     "extension/.wxt/wxt.d.ts",

@@ -54,7 +54,7 @@ function frozenLoop() {
   return { loop, scene };
 }
 
-test("pump ticks the loop once when its frame has not advanced since the previous probe (§10.3)", t => {
+test("pump ticks the loop once when its frame has not advanced since the previous probe (extension-distribution.md §10.3)", t => {
   const { loop, scene } = frozenLoop();
   onPage(t, scene, { loop });
   send("probe", {});
