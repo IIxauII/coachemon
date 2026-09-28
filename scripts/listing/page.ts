@@ -10,12 +10,12 @@
  * then fits the whole stage to the store's size. Fractional factors are accepted; both faces are pixel designs and
  * soften at them.
  *
- * Nothing here comes from a live game: no canvas, no capture, no sprite atlas (§3). What the game does lend is
- * the two things a shot cannot be honest without — **its two faces**, because a fixture page carries none of the
- * game's font rules and would otherwise draw the panel in a face nobody plays with, and **its letterbox colour**,
- * because off 16:9 the panel really does sit on it. The font files are read out of the pinned clone and inlined into
- * the page as data URLs: **rendered, never committed or redistributed**, since the game's own licence file does not
- * annotate them. That is what makes this pipeline depend on a provisioned clone.
+ * Nothing here comes from a live game: no canvas, no capture, no sprite atlas (extension-distribution.md §3). What
+ * the game does lend is the two things a shot cannot be honest without — **its two faces**, because a fixture page
+ * carries none of the game's font rules and would otherwise draw the panel in a face nobody plays with, and **its
+ * letterbox colour**, because off 16:9 the panel really does sit on it. The font files are read out of the pinned
+ * clone and inlined into the page as data URLs: **rendered, never committed or redistributed**, since the game's own
+ * licence file does not annotate them. That is what makes this pipeline depend on a provisioned clone.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { repoPath } from "./listing.ts";

@@ -88,7 +88,7 @@ const str = (v: unknown): v is string => typeof v === "string";
  * card that never crosses, so the two are only ever changed together. That costs no `PROTOCOL` bump — the panel and
  * the relay judging it ship in one build and are paired by build id, so a tab on an older build is out of play
  * rather than half understood — while the `card` command's result, which the hub carries opaquely, only gains a
- * field (§10.7).
+ * field (extension-distribution.md §10.7).
  */
 export function cardBody(d: Record<string, unknown>): Omit<CardDetail, "build"> | null {
   const keys = Object.keys(d).sort().join(",");
