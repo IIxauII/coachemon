@@ -1,9 +1,9 @@
 /**
  * The generated enums the page handlers compare against (#164). Not itself a page function: a plain table each
- * transport hands into the call (§10.5) — the CDP link as JSON inside the `dispatch` expression, the extension by
- * importing it — because a stringified handler has no imports at runtime. A pin bump that renumbers `UiMode` moves
- * every page comparison with it instead of breaking the reader silently; the same holds for the starter bit flags,
- * which `starters` reads out of `gameData` (§11.4).
+ * transport hands into the call (extension-distribution.md §10.5) — the CDP link as JSON inside the `dispatch`
+ * expression, the extension by importing it — because a stringified handler has no imports at runtime. A pin bump
+ * that renumbers `UiMode` moves every page comparison with it instead of breaking the reader silently; the same
+ * holds for the starter bit flags, which `starters` reads out of `gameData` (§11.4).
  */
 import { AbilityAttr, Passive, SummaryUiMode, UiMode } from "../enums/generated.ts";
 

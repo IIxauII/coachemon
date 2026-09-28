@@ -39,8 +39,8 @@ export type ProbeResult = Always & (
  * progress fingerprint need, in one read. Every field is guarded; a missing path yields null, never a throw.
  *
  * `pump` runs one `game.loop.tick()` first when the loop's frame has not advanced since the previous probe, which is
- * what keeps a hidden tab's frozen loop moving for the driver's settles (§10.3). `errorAt` and `tail` come from the
- * page's error recorder, when one is installed. Self-contained (§10.5).
+ * what keeps a hidden tab's frozen loop moving for the driver's settles (extension-distribution.md §10.3). `errorAt`
+ * and `tail` come from the page's error recorder, when one is installed. Self-contained (§10.5).
  */
 export function probe(L: Located | Unlocated, args: ProbeArgs): ProbeResult {
   const g = globalThis as any;

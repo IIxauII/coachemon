@@ -1,7 +1,7 @@
 /**
- * The result envelope (#7 §3, #14): every tool result carries a status and the
- * `{wave, screen}` header; anything but `ok` carries a fixed diagnostic.
- * Which status a call returns, and the precedence between them, is
+ * The result envelope (v1-tool-surface.md §3, #14): every tool result carries
+ * a status and the `{wave, screen}` header; anything but `ok` carries a fixed
+ * diagnostic. Which status a call returns, and the precedence between them, is
  * `call-outcome.ts`'s to decide (#126).
  */
 import type { StuckReport } from "./stuck/detector.ts";

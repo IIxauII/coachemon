@@ -3,7 +3,8 @@
  *
  * The MCP SDK's stdio transport passes a safe subset of ours when none is given, and that subset does not include
  * `COACHEMON_TRANSPORT` or `COACHEMON_DEV` — the two that decide which transport the server uses and which hub port it
- * dials (§7.2, §12.1). Without them a checkout could never drive a paired dev build of the extension.
+ * dials (extension-distribution.md §7.2, §12.1). Without them a checkout could never drive a paired dev build of the
+ * extension.
  */
 
 /** What the SDK would have inherited anyway: a server needs a `PATH` and a `HOME` like any other process. */

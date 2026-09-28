@@ -1,8 +1,8 @@
 /**
- * The CDP link (§12.1): every store command as one `Runtime.evaluate` of the page handler, stringified with `dispatch`,
- * the locator, `fine` and `disc` as its arguments (§10.5). One source serves this link and the extension until CDP is
- * deleted at the flip. Because the whole command is one evaluate, an act's fingerprint check and the act itself run
- * in the same page turn (§10.2).
+ * The CDP link (extension-distribution.md §12.1): every store command as one `Runtime.evaluate` of the page handler,
+ * stringified with `dispatch`, the locator, `fine` and `disc` as its arguments (§10.5). One source serves this link and
+ * the extension until CDP is deleted at the flip. Because the whole command is one evaluate, an act's fingerprint check
+ * and the act itself run in the same page turn (§10.2).
  *
  * It is also the tab's CDP side (`Tab`): attach-else-launch, focus emulation, the trusted raw keyboard, and CDP's own
  * exception and console events.
@@ -23,7 +23,7 @@ import { isThrown, type CdpSession } from "./session.ts";
 /** The part of `CdpSession` the link drives. */
 export type LinkSession = Pick<CdpSession, "attached" | "launchedChrome" | "onException" | "ensure" | "evaluate" | "keepAlive" | "rawKey" | "screenshot" | "consoleTail">;
 
-/** Each button's keyboard equivalent, for the raw fallback (§6.4). Phaser binds to `window`, so a dispatched key reaches the game (#9). */
+/** Each button's keyboard equivalent, for the raw fallback (v1-tool-surface.md §6.4). Phaser binds to `window`, so a dispatched key reaches the game (#9). */
 const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: number]>> = {
   [Button.UP]: ["ArrowUp", "ArrowUp", 38],
   [Button.DOWN]: ["ArrowDown", "ArrowDown", 40],
@@ -45,7 +45,7 @@ const UNCONTENDED: Contention = { contended: false, holder: null };
 
 export class CdpLink implements GameLink, Tab {
   readonly commands: ReadonlySet<CommandName> = new Set(COMMAND_NAMES);
-  /** CDP reads never advance a frozen loop: the guard still checks the frame and refuses `loop_frozen` (#23, §10.3). */
+  /** CDP reads never advance a frozen loop: the guard still checks the frame and refuses `loop_frozen` (#23, extension-distribution.md §10.3). */
   readonly pumps = false;
   readonly #session: LinkSession;
   readonly #lock: DriverLock | null;
@@ -84,7 +84,8 @@ export class CdpLink implements GameLink, Tab {
 
   /**
    * Attach-else-launch is this transport's whole reachability: there is no hub, no browser list and no tab count, so
-   * none of the ladder's rungs can be evaluated and a tab that will not attach is simply not there (§12.3).
+   * none of the ladder's rungs can be evaluated and a tab that will not attach is simply not there
+   * (extension-distribution.md §12.3).
    */
   async presence(): Promise<Presence> {
     let error: string | null = null;
@@ -102,8 +103,9 @@ export class CdpLink implements GameLink, Tab {
   }
 
   /**
-   * The pidfile lock is CDP's driver grant, and stays until the flip deletes this link (§7.5, §13.2). Taking it here
-   * and not at startup is what makes the role begin at the first act: a session that only reads never calls this.
+   * The pidfile lock is CDP's driver grant, and stays until the flip deletes this link
+   * (extension-distribution.md §7.5, §13.2). Taking it here and not at startup is what makes the role begin at the
+   * first act: a session that only reads never calls this.
    */
   async claim(): Promise<Claim> {
     const c = this.#lock?.take() ?? UNCONTENDED;
@@ -124,7 +126,7 @@ export class CdpLink implements GameLink, Tab {
     return true;
   }
 
-  /** CDP's own console events, already collected: nothing is asked of the page (§12.4). */
+  /** CDP's own console events, already collected: nothing is asked of the page (extension-distribution.md §12.4). */
   async tail(): Promise<ConsoleLine[]> {
     return this.#session.consoleTail();
   }

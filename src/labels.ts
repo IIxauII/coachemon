@@ -1,8 +1,8 @@
 /**
- * Label matching for `select_option` (#7 §6.3): normalise both sides, then
- * match exactly. No fuzzy matching — on a screen where `Apply` and `Cancel`
- * are one keystroke apart and one of them can end a run, a confident wrong
- * match is the worst available failure.
+ * Label matching for `select_option` (v1-tool-surface.md §6.3): normalise
+ * both sides, then match exactly. No fuzzy matching — on a screen where
+ * `Apply` and `Cancel` are one keystroke apart and one of them can end a
+ * run, a confident wrong match is the worst available failure.
  */
 
 /** Strip BBCode (`[shadow]Apply[/shadow]` is real, #6), trim, collapse whitespace, case-fold. */

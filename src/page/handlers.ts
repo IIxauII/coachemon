@@ -1,6 +1,6 @@
 /**
- * The page's dispatch table: one handler per store command (§10.1). The extension registers exactly these in a store
- * build; the CDP link stringifies them one at a time (§10.5).
+ * The page's dispatch table: one handler per store command (extension-distribution.md §10.1). The extension
+ * registers exactly these in a store build; the CDP link stringifies them one at a time (§10.5).
  */
 import type { CommandName } from "../protocol/commands.ts";
 import { cursorLearn, cursorOption, cursorShop, cursorStarter, key, modal, press } from "./acts.ts";

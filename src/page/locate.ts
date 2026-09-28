@@ -3,8 +3,9 @@
  * `scene.getScene('battle')`. Never `pool[0]`, never `scenes[0]`, never cached: rediscovered on every command.
  *
  * Every function under `src/page/` runs inside the game tab, stringified by the CDP link or bundled into the extension
- * (§10.5). Each is self-contained: no imports at runtime, no module state, nothing from outside but its arguments and
- * the page's globals. Type imports are fine; they are erased. The HUD keeps its own copy of this locator.
+ * (extension-distribution.md §10.5). Each is self-contained: no imports at runtime, no module state, nothing from
+ * outside but its arguments and the page's globals. Type imports are fine; they are erased. The HUD keeps its own copy
+ * of this locator.
  */
 import type { Discriminators } from "./disc.ts";
 import type { PageModes } from "./modes.ts";

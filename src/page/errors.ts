@@ -10,8 +10,9 @@ export type Recorder = {
 
 /**
  * Start recording the page's uncaught errors, unhandled rejections and console errors and warnings, for `probe`'s
- * `errorAt` and `tail` (§10.1, §12.4). Idempotent: a second call keeps the first recorder. The extension's page script
- * installs it on load; the CDP link does not, because CDP reports the same through its own events. Self-contained.
+ * `errorAt` and `tail` (extension-distribution.md §10.1, §12.4). Idempotent: a second call keeps the first recorder.
+ * The extension's page script installs it on load; the CDP link does not, because CDP reports the same through its own
+ * events. Self-contained.
  */
 export function recordErrors(): void {
   const g = globalThis as any;

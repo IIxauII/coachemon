@@ -46,7 +46,7 @@ export type Rung =
 
 /**
  * What CANCEL does on a screen. Replaces the hand-maintained `cancel_effect`
- * table in the v1 tool surface spec §5; `read_menu` derives it from here.
+ * table in v1-tool-surface.md §5; `read_menu` derives it from here.
  */
 export type CancelEffect =
   /** Leaves the screen without choosing. */

@@ -29,7 +29,7 @@ import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
 import type { Choice } from "./stuck/detector.ts";
 
-/** Auto-advance press cap (#7 §6.8). Set here, as configuration: #13 never fixed a number. Twelve is the stuck window. */
+/** Auto-advance press cap (v1-tool-surface.md §6.8). Set here, as configuration: #13 never fixed a number. Twelve is the stuck window. */
 export const AUTO_ADVANCE_CAP = 12;
 /** Bound on cursor-walk presses inside one `select_option`. The longest measured walk is a 6-slot party list. */
 const NAV_CAP = 24;
@@ -54,7 +54,7 @@ type Call = CallContext & {
   last: SettleResult | null;
   /**
    * The fine fingerprint of the latest game the call has seen, from its settles and its own cursor moves. Every act is
-   * sent on it, and the page refuses one the game has moved off (§10.2).
+   * sent on it, and the page refuses one the game has moved off (extension-distribution.md §10.2).
    */
   fine: string;
   /** What the call will press on, set once every check before the first press has passed. */
@@ -82,18 +82,18 @@ const REAL_CLOCK: Clock = { now: Date.now, sleep: ms => new Promise(r => setTime
 
 const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 
-/** The starter grid with its filter bar active, where the server never acts (§6.5). */
+/** The starter grid with its filter bar active, where the server never acts (v1-tool-surface.md §6.5). */
 const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
-/** What `read_card` shows when the tab has no coach panel on it: a card of nothing, with `card_error` saying why (§11.4). */
+/** What `read_card` shows when the tab has no coach panel on it: a card of nothing, with `card_error` saying why (extension-distribution.md §11.4). */
 const NO_CARD = { kind: null, key: null, wave: null, verdict: null, groups: null, text: null, summary: null } as const;
 
 const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
 
 /**
  * What each tool sends into the tab, so a tool whose commands the installed extension never registered refuses alone
- * and every other one keeps working (§8.5). The cursor commands are not here: a family without its setter is walked
- * with presses instead, which the link's refusal already falls back to.
+ * and every other one keeps working (extension-distribution.md §8.5). The cursor commands are not here: a family
+ * without its setter is walked with presses instead, which the link's refusal already falls back to.
  */
 const TOOL_COMMANDS = {
   get_state: ["probe", "menu", "snapshot"],
@@ -104,7 +104,7 @@ const TOOL_COMMANDS = {
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
   // `screenshot` is not in the store table at all: an unreachable game still refuses by rung, and a store build then
-  // says the picture needs a dev build (§10.6, §12.2).
+  // says the picture needs a dev build (extension-distribution.md §10.6, §12.2).
   screenshot: [],
 } as const satisfies Record<string, readonly CommandName[]>;
 
@@ -124,8 +124,9 @@ export class Driver {
 
   /**
    * The transport is CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub, which only the dev sets until the flip
-   * deletes both the variable and the CDP link (§12.1). The pidfile lock rides with CDP and goes with it. Creating it
-   * takes nothing: the lock is only taken when the link first claims the tab, so a server that only reads never holds it.
+   * deletes both the variable and the CDP link (extension-distribution.md §12.1). The pidfile lock rides with CDP and
+   * goes with it. Creating it takes nothing: the lock is only taken when the link first claims the tab, so a server that
+   * only reads never holds it.
    */
   static create(home: string = DEFAULTS.home): Driver {
     if (usesHub()) {
@@ -138,7 +139,7 @@ export class Driver {
 
   // ------------------------------------------------------------------ tools
 
-  /** The only tool that answers when the game is out of reach: it reports the failing rung instead of refusing (§12.3). */
+  /** The only tool that answers when the game is out of reach: it reports the failing rung instead of refusing (extension-distribution.md §12.3). */
   async status(): Promise<Record<string, unknown>> {
     const presence = await this.#game.presence();
     const head = { status: "ok", reachable: presence.reach === null, reach: presence.reach && { rung: presence.reach.rung, line: presence.reach.line }, ...presence.facts };
@@ -180,10 +181,10 @@ export class Driver {
   }
 
   /**
-   * The card the coach panel is showing (§11.4): read-only, no grant, settled like every other read. It is the same
-   * payload the HUD's `card` events carry, so a subscriber that has just joined reads the event it missed (§11.1).
-   * The envelope's `wave` is the settled game's and `card_wave` the one the card is about: they differ only while the
-   * panel is a refresh behind the game.
+   * The card the coach panel is showing (extension-distribution.md §11.4): read-only, no grant, settled like every
+   * other read. It is the same payload the HUD's `card` events carry, so a subscriber that has just joined reads the
+   * event it missed (§11.1). The envelope's `wave` is the settled game's and `card_wave` the one the card is about:
+   * they differ only while the panel is a refresh behind the game.
    */
   readCard(ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#read("read_card", ctx, async () => {
@@ -201,7 +202,7 @@ export class Driver {
     });
   }
 
-  /** Every starter this account has unlocked, and the grid `start_run` picks from when it is open (§11.4). Read-only. */
+  /** Every starter this account has unlocked, and the grid `start_run` picks from when it is open (extension-distribution.md §11.4). Read-only. */
   readStarters(ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#read("read_starters", ctx, async () => {
       const read = await this.#game.starters();
@@ -264,7 +265,7 @@ export class Driver {
         const cursorAfter = await this.#menuCursor();
         landedUnseen = cursorAfter !== null && cursorAfter !== cursorBefore;
       }
-      // §6.4: retry once through the raw keyboard, never through processInput again.
+      // v1-tool-surface.md §6.4: retry once through the raw keyboard, never through processInput again.
       if (unmoved && !landedUnseen) {
         rawFallback = await this.#game.rawKey(button, ready.fine);
         if (rawFallback) s = await this.#settle(ready.fine, call);
@@ -595,7 +596,7 @@ export class Driver {
     return this.#settle(preFp, call);
   }
 
-  /** One press on the call's fingerprint. `false`: the game had moved off it, and nothing was pressed (§10.2). */
+  /** One press on the call's fingerprint. `false`: the game had moved off it, and nothing was pressed (extension-distribution.md §10.2). */
   async #tryPress(button: Button, call: Call): Promise<boolean> {
     const r = await this.#act(call, fine => this.#game.press(button, fine));
     if (r.ok) return true;
@@ -623,7 +624,7 @@ export class Driver {
     return r;
   }
 
-  /** The game moved between the read an act was decided on and the act (§10.2): settle on where it went, then refuse. */
+  /** The game moved between the read an act was decided on and the act (extension-distribution.md §10.2): settle on where it went, then refuse. */
   async #refuseMoved(call: Call, preFp: string, what: string): Promise<never> {
     const s = await this.#settle(preFp, call);
     const screen = s.last?.ready ? s.last.screen : "UNKNOWN(-1)";
@@ -634,7 +635,8 @@ export class Driver {
 
   /**
    * Every tool's first move: can a command reach the game at all, and does the connected extension have what this tool
-   * needs (§12.2)? The refusal is the ladder's line, with its rung, so the agent reads the same words `status` gives.
+   * needs (extension-distribution.md §12.2)? The refusal is the ladder's line, with its rung, so the agent reads the
+   * same words `status` gives.
    *
    * It sits outside the call, before the deadline is set: nothing has been asked of the game, so there is no call for
    * `CallOutcomes` to end. The grant is taken inside the call, where a refusal does end one.
@@ -645,7 +647,7 @@ export class Driver {
     throw new Refusal(reach.code, reach.line, { rung: reach.rung, ...(reach.tabs ? { tabs: reach.tabs } : {}) });
   }
 
-  /** An acting call takes the right to act before it reads anything, so nothing is settled on a game we may not touch (§7.5). */
+  /** An acting call takes the right to act before it reads anything, so nothing is settled on a game we may not touch (extension-distribution.md §7.5). */
   async #claim(): Promise<void> {
     const c = await this.#game.claim();
     if (!c.ok) throw new Refusal(c.code, c.message, c.detail ?? {});
@@ -655,7 +657,7 @@ export class Driver {
     const screen = ready.screen;
     if (isSettingsMode(ready.mode)) throw new Refusal("settings_mode", `The game is on ${screen}; six settings carry requireReload and the reload fires on leaving, killing a live run. Leave Settings by hand.`, { screen });
     if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
-    // A transport whose settles pump has no frozen loop to refuse: the driver's own polls keep it turning (§10.3).
+    // A transport whose settles pump has no frozen loop to refuse: the driver's own polls keep it turning (extension-distribution.md §10.3).
     if (this.#game.pumps) return;
     // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
     await this.#game.keepAlive();
@@ -703,8 +705,9 @@ export class Driver {
    * Press the rule's step until the cursor reads `to`, each press settled against the call's deadline. `null` once it
    * is there; the unsettled result if the deadline ran out first. A settled press that leaves the cursor where it was
    * refuses at once: the same press again does the same (#34). So does a step that reads another Screen than `from`,
-   * the menu the walk was planned on: nothing is committed there. A press the game moved ahead of (§10.2) was never
-   * sent: the walk settles and steps again from wherever the cursor now is.
+   * the menu the walk was planned on: nothing is committed there. A press the game moved ahead of
+   * (extension-distribution.md §10.2) was never sent: the walk settles and steps again from wherever the cursor now
+   * is.
    */
   async #walk(from: MenuRead, { to, rule }: Walk, call: Call): Promise<SettleResult | null> {
     let prev: number | null = null;
@@ -740,7 +743,7 @@ export class Driver {
       // Only MESSAGE(0) with a live prompt; CONFIRM is never advanced — ACTION is consent (#8).
       if (r.mode !== UiMode.MESSAGE || !(r.awaitingActionInput && r.onActionInput)) break;
       if (presses >= AUTO_ADVANCE_CAP) return { settle: s, messages, presses, capped: true };
-      // A message that went away before its ACTION arrived was never answered (§10.2): settle, and look again.
+      // A message that went away before its ACTION arrived was never answered (extension-distribution.md §10.2): settle, and look again.
       if (!(await this.#tryPress(Button.ACTION, call))) {
         s = await this.#settle(r.fine, call);
         continue;
@@ -780,8 +783,8 @@ export class Driver {
         ...(snap.ok ? this.#cleanSnapshot(snap.snapshot) : { snapshot_error: snap.why }),
         menu: this.#menuSummary(afterRead, menu),
       },
-      // The cap stopped a long chain with a live MESSAGE still up: progress, not stuck (#7 §6.8, #45). A MESSAGE
-      // that really repeats trips the detector across calls.
+      // The cap stopped a long chain with a live MESSAGE still up: progress, not stuck (v1-tool-surface.md §6.8,
+      // #45). A MESSAGE that really repeats trips the detector across calls.
       adv.capped ? `press("ACTION"): auto-advance stopped after ${AUTO_ADVANCE_CAP} messages with more to read` : undefined,
     );
   }
@@ -840,7 +843,8 @@ export class Driver {
       ...clean,
       biome: typeof biome === "number" ? { int: biome, name: NAMES.BiomeId[biome] ?? null } : null,
       // The page reads the game's enums as the integers they are; naming them is the server's job, and the coach's
-      // fields are named on both sides of the field, as `probe.js` named them for the coach skill (§11.4).
+      // fields are named on both sides of the field, as `probe.js` named them for the coach skill
+      // (extension-distribution.md §11.4).
       party: named(party),
       enemy: named(enemy),
     };
@@ -888,8 +892,8 @@ export class Driver {
 
 /**
  * A side of the field with its enums named: the status, the types and each move's type and category, as `probe.js`
- * named them (§11.4). A number with no name in the pinned tables stays the number, and a field the detail did not ask
- * for stays away.
+ * named them (extension-distribution.md §11.4). A number with no name in the pinned tables stays the number, and a
+ * field the detail did not ask for stays away.
  */
 function named(side: unknown): unknown {
   if (!Array.isArray(side)) return side;

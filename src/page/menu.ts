@@ -28,9 +28,10 @@ export type MenuResult =
   | { readable: false; why: "no-handler"; mode: number; disc?: undefined };
 
 /**
- * The generic menu reader (#4's families, corrected by #6 and #7 §7). `config.options` first; scene geometry only where
- * no option array exists. The discriminators come back once, as `disc`: the adapter fills each family's fields from
- * them, so `extra` never copies one. A modal's typed form text never leaves the page (§6). Self-contained (§10.5).
+ * The generic menu reader (#4's families, corrected by #6 and v1-tool-surface.md §7). `config.options` first; scene
+ * geometry only where no option array exists. The discriminators come back once, as `disc`: the adapter fills each
+ * family's fields from them, so `extra` never copies one. A modal's typed form text never leaves the page
+ * (extension-distribution.md §6). Self-contained (§10.5).
  */
 export function menu(L: Located, _args: Record<string, never>): MenuResult {
   const __txt = (o: any) => (o && typeof o.text === "string") ? o.text : null;
@@ -114,12 +115,12 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       const buttons = [btn(h.rerollButtonContainer, 0), btn(h.transferButtonContainer, 1), btn(h.checkButtonContainer, 2), btn(h.lockRarityButtonContainer, 3)];
       if (h.continueButtonContainer && h.continueButtonContainer.visible) buttons.push(btn(h.continueButtonContainer, 4));
       rows.push({ row: 0, kind: "buttons", items: buttons.filter(b => b.visible && b.label) });
-      // `desc` is the game's own description of the offer, the one field of `probe.js`'s reward read nothing else carries (§11.4).
+      // `desc` is the game's own description of the offer, the one field of `probe.js`'s reward read nothing else carries (extension-distribution.md §11.4).
       const item = (o: any, col: number) => ({ col, label: __try(() => o.modifierTypeOption.type.name), cost: __try(() => o.modifierTypeOption.cost), desc: __try(() => o.modifierTypeOption.type.getDescription()) });
       rows.push({ row: 1, kind: "reward", items: (h.options || []).map(item) });
       const shop = h.shopOptionsRows || [];
       for (let r = 0; r < shop.length; r++) {
-        // Shop rows are indexed backwards: row n >= 2 is shopOptionsRows.at(-(n-1)) (#7 §7).
+        // Shop rows are indexed backwards: row n >= 2 is shopOptionsRows.at(-(n-1)) (v1-tool-surface.md §7).
         rows.push({ row: 2 + r, kind: "shop", items: (shop[shop.length - 1 - r] || []).map(item) });
       }
       out.extra.rows = rows;

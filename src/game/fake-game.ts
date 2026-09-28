@@ -6,8 +6,9 @@
  * `rawKey`) throw `unexpected <op>` when the screen does not script them, failing the test instead of passing it through
  * a fallback. The rest have benign defaults: an advancing frame, an empty snapshot, an attached tab.
  *
- * With `guardFine` the fake checks acts the way the page does (§10.2): an act whose fingerprint is not the screen's
- * current one refuses `moved` without reaching the screen, and a cursor act answers the fingerprint it left.
+ * With `guardFine` the fake checks acts the way the page does (extension-distribution.md §10.2): an act whose fingerprint
+ * is not the screen's current one refuses `moved` without reaching the screen, and a cursor act answers the fingerprint it
+ * left.
  */
 import type { Clock } from "../driver.ts";
 import type { Button } from "../enums/generated.ts";
@@ -30,11 +31,11 @@ export type FakeScreen = {
   /** Replaces the advancing frame counter: a constant freezes the loop. */
   frame?: () => number | null;
   snapshot?: (d: SnapshotDetail) => Record<string, unknown>;
-  /** Another live process holding the driver lock: this fake's claim is refused, as the CDP link's is (§7.5). */
+  /** Another live process holding the driver lock: this fake's claim is refused, as the CDP link's is (extension-distribution.md §7.5). */
   lockHolder?: number;
-  /** The transport's settles pump, so no acting call checks the frame for a frozen loop (§10.3). */
+  /** The transport's settles pump, so no acting call checks the frame for a frozen loop (extension-distribution.md §10.3). */
   pumps?: boolean;
-  /** Nothing can reach the game: every tool refuses with this rung's line before it reads anything (§12.3). */
+  /** Nothing can reach the game: every tool refuses with this rung's line before it reads anything (extension-distribution.md §12.3). */
   unreachable?: Reach;
   /** Acts refuse `moved` off the screen's current fingerprint, as the page does. */
   guardFine?: boolean;

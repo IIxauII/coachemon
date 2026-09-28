@@ -1,6 +1,7 @@
 /**
- * coachemon: the MCP server. Nine tools (#7, §12.2), stdio transport. Attachment
- * is lazy, on first use; there is no connect/disconnect tool.
+ * coachemon: the MCP server. Nine tools (#7, extension-distribution.md §12.2),
+ * stdio transport. Attachment is lazy, on first use; there is no
+ * connect/disconnect tool.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -58,7 +59,7 @@ async function run(tool: string, args: unknown, fn: () => Promise<Record<string,
   try {
     const result = await fn();
     logCall(tool, args, Date.now() - t, result);
-    // run_interrupted is an error by contract (#7 §3): the run may still exist server-side.
+    // run_interrupted is an error by contract (v1-tool-surface.md §3): the run may still exist server-side.
     return json(result, result.status === "run_interrupted");
   } catch (e) {
     const body = e instanceof Refusal ? { error: e.code, message: e.message, ...e.detail } : { error: "internal", message: (e as Error).message ?? String(e) };
@@ -168,7 +169,7 @@ server.registerTool(
       const data = await driver.screenshot();
       return { content: [{ type: "image" as const, data, mimeType: "image/png" }] };
     } catch (e) {
-      // `unavailable` when the transport has no screenshot at all: a store build of Coachemon has no dev table (§12.2).
+      // `unavailable` when the transport has no screenshot at all: a store build of Coachemon has no dev table (extension-distribution.md §12.2).
       if (e instanceof Refusal) return json({ error: e.code, message: e.message, ...e.detail }, true);
       return json({ error: "screenshot_failed", message: (e as Error).message }, true);
     }

@@ -1,7 +1,8 @@
 /**
- * The game port over a link (#127, §12.1). It alone knows what a link's answers mean for the Driver: a `Fault` ends
- * here, reads degrade to their not-readable values, acts say whether the page threw, refused or found the game `moved`,
- * and both reads' discriminators become the Screen (#133). It knows nothing of the transport underneath.
+ * The game port over a link (#127, extension-distribution.md §12.1). It alone knows what a link's answers mean for the
+ * Driver: a `Fault` ends here, reads degrade to their not-readable values, acts say whether the page threw, refused or
+ * found the game `moved`, and both reads' discriminators become the Screen (#133). It knows nothing of the transport
+ * underneath.
  */
 import { UiMode, type Button } from "../enums/generated.ts";
 import type { Refused } from "../page/acts.ts";
@@ -84,7 +85,7 @@ export class LinkGame implements GamePort {
   }
 
   async card(): Promise<CardRead | Failed> {
-    // `no-hud` is the page's own refusal (§10.1), so it degrades like any other unreadable read.
+    // `no-hud` is the page's own refusal (extension-distribution.md §10.1), so it degrades like any other unreadable read.
     return answered<CardRead>(await this.#link.card());
   }
 
