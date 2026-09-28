@@ -38,11 +38,9 @@ decides nothing. A gnarly module-private helper earns a contract, a trivial expo
 *changing* the constant is a gotcha and stays — `90-render.js`'s `SHARE`: "raising the share alone drags the width
 floor up with it".
 
-## What the bar binds
-
-**What you write and what you touch, not the whole tree at once.** Bring a line to the bar when you edit the line it
-sits on: that much is not a sweep, and it is how the rest of the tree goes. The tree-wide pass is handed off as its own
-issues, which carry the slices and the gate.
+**What you touch, not the whole tree at once.** Bring a line to the bar when you edit the line it sits on: that much is
+not a sweep, and it is how the rest of the tree goes. The tree-wide pass is handed off as its own issues, which carry
+the slices and the gate.
 
 ## Citations
 
@@ -115,8 +113,7 @@ Three one-line forms, each meaning what it means here and never re-explained whe
 
 ## Worked pairs
 
-Three, and they calibrate the bar's judgement calls: how short a scar goes, how much of a gotcha is the code's own
-job, and how far a contract cuts. A citation needs none — the rule above rewrites a line mechanically.
+A citation needs none — the rule above rewrites a line mechanically.
 
 ### Scar — `90-render.js`, the sprite fallback
 
