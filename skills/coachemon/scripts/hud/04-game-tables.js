@@ -1,36 +1,9 @@
-// The game's own tables, read out of its loaded chunks: the one place in the HUD that reaches into the page's modules.
-// Every card that needs game data — species, abilities, moves, egg moves, biomes, trainer configs, the timed event
-// manager, the reward roll's two functions — asks here, and gets null while the read hasn't landed.
-//
-// The live build keeps function and class names and exports these across chunks (loading-scene exports allBiomes,
-// FadeOut exports the species data registry and getBiomeName). `loadGameTables` imports the already-loaded /assets/*.js
-// modules again — the browser hands back the same module instances, nothing re-runs — and picks the exports by shape:
-// a Map whose values carry biomeLinks + pokemonPool, an object with getSpecies/getAllSpecies, a function named
-// getBiomeName, the trainer configs (an object whose values carry trainerType + partyTemplates), and the timed event
-// manager (getShinyCatchMultiplier; the catch card's shiny odds), and for the starter card the ability and move lists
-// (arrays indexed by id: an ability has a name and no power, a move has power and pp) and the egg moves (species id →
-// four move ids). It's async, so the first refresh or two draw a card without game data. Without the trainer configs
-// the biome card leaves the trainer waves out, as it does fixed waves. Nothing is copied from the game.
-//
-// **How the import is written.** The HUD is one classic script, so it can't `import` a chunk itself, and it must not
-// *call* `import(url)` either: the Firefox add-on linter rejects a computed argument to `import`, and `hud.js` ships
-// inside the extension (#381). So the read goes one step out — a `<script type="module">` per chunk whose own source
-// text imports that one URL as a string literal and hands the namespace back through a page global. The element is
-// appended and removed at once: insertion is what starts the module, and removing it afterwards neither cancels nor
-// re-runs anything (the same append-and-drop `read.sh` injects the HUD with). One element per chunk, so a chunk that
-// 404s or throws on first evaluation loses only itself, as the per-URL catch did before.
-//
-// The scan matches mostly by shape — the structure of what a chunk exports — and by name only where the shape says
-// nothing: `getBiomeName`, and the two reward functions. So it has no drift-ref block of its own in
-// `scripts/hud-deps.ts`: what each table *means* is the reading card's dependency and sits in that card's block, the
-// reward pair under 50-reroll's. (`getBiomeName` is in no block, which it wasn't before this file either: a rename
-// upstream drops the biome card's labels to `#id` with no drift signal.)
+// The one place in the HUD that reaches into the page's modules (game-code.md §22). Every getter starts the read and
+// answers null until it lands.
 
 let tables = null, triedAt = -Infinity;
 // @only tests: setGameTables, setRewardFns
 export const setGameTables = t => { tables = t; };
-// The reward roll's two module functions, for 50-reroll's preview. Kept apart from `tables`: a build that renamed
-// them still has biome data, and a build without biome data can still roll rewards.
 const REWARD_FNS = ["regenerateModifierPoolThresholds", "getPlayerModifierTypeOptions"];
 let rewardFns = null;
 export const setRewardFns = f => { rewardFns = f; };
@@ -45,6 +18,7 @@ const scan = (ns, found) => {
     } else if (typeof v === "object" && typeof v.getSpecies === "function" && typeof v.getAllSpecies === "function") {
       found.species ??= v;
     } else if (typeof v === "function" && v.name === "getBiomeName") {
+      // In no drift-ref block of `scripts/hud-deps.ts`: an upstream rename drops the biome labels to `#id` silently.
       found.biomeName ??= v;
     } else if (typeof v === "function" && REWARD_FNS.includes(v.name)) {
       found[v.name] ??= v;
@@ -66,28 +40,21 @@ const scan = (ns, found) => {
     }
   }
 };
-// What the scan has picked up so far, across every attempt: a page that loads its chunks late can assemble the tables
-// out of two attempts, and a chunk scanned twice adds nothing (every `scan` write is a first-one-wins).
 const found = {};
-// Commits what is there the moment it is enough — the tables as soon as biomes and species are in, the reward pair as
-// soon as both functions are — rather than waiting for every chunk to answer, which nothing can tell it anyway (an
-// import that fails says nothing at all). `tables` *is* `found`, so a chunk that lands later fills it in place, and a
-// card built meanwhile simply hasn't got that table yet: each one is already its own maybe to every reader
-// (`51-starters.js` keys its cache on which of them are there).
+// `tables` is `found` itself, so a chunk that lands later fills it in place: every table stays a maybe to its reader
+// after the getter first answers.
 const commit = () => {
   if (!tables && found.biomes && found.species) setGameTables(found);
   if (!rewardFns && REWARD_FNS.every(k => found[k])) setRewardFns({ regenerate: found[REWARD_FNS[0]], options: found[REWARD_FNS[1]] });
 };
-// The page global an injected module hands its namespace to. Injecting the HUD again overwrites it, so a chunk still in
-// flight reaches the panel that is running rather than the one it was injected for.
 const HANDOFF = "__coachHudChunk";
-// The panel's own teardown drops it again (99-start's `stop`), so a stopped HUD leaves the page as it found it (extension-distribution.md §9.6):
-// it is the one mark the read makes that outlives the elements it injects. A chunk still in flight then lands nowhere,
-// which is what a stopped panel wants.
+// A stopped HUD leaves the page as it found it, and this global is the one mark the read leaves behind
+// (extension-distribution.md §9.6).
 // @only 99-start: dropChunkHandoff
 export const dropChunkHandoff = () => { delete window[HANDOFF]; };
-// One chunk, one module script. The URL is a literal in the source the browser parses, which is what keeps `import(`
-// out of `hud.js` altogether (#381).
+// Never `import(url)`: the Firefox add-on linter rejects a computed argument to `import`, and `hud.js` ships inside the
+// extension (#381). The URL is a literal in the module's own source instead; appending starts it, and removing it
+// cancels nothing.
 const inject = url => {
   try {
     const el = document.createElement("script");
@@ -97,12 +64,10 @@ const inject = url => {
     el.remove();
   } catch {}
 };
-// Retried every 30 s while not found: the HUD may be injected before the game has loaded its chunks.
 const loadGameTables = () => {
   if ((tables && rewardFns) || Date.now() - triedAt < 30000) return;
   triedAt = Date.now();
-  // Only the game's own Vite chunks (`/assets/<name>-<hash>.js`, loaded as script or modulepreload): importing a URL
-  // that was never a module would run it anew.
+  // Only the game's own chunks: importing a URL that was never a module would run it anew.
   let urls = [];
   try {
     urls = [...new Set(performance.getEntriesByType("resource")
@@ -115,10 +80,7 @@ const loadGameTables = () => {
   for (const u of urls) inject(u);
 };
 
-// The game's timed event manager, or null while the tables aren't read (starts the read).
 export const gameEvents = () => { loadGameTables(); return tables?.events ?? null; };
-// `{ regenerate, options }`: the reward roll's module functions, or null while they aren't found (starts the read).
+// `{ regenerate, options }`
 export const gameRewardFns = () => { loadGameTables(); return rewardFns; };
-// The tables themselves (`species`, `abilities`, `moves`, `eggMoves` among them), or null while they aren't read
-// (starts the read).
 export const gameTables = () => { loadGameTables(); return tables; };

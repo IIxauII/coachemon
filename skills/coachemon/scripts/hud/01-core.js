@@ -1,4 +1,3 @@
-// Shared building blocks: type chart, ability immunities, stats, move attributes, icons.
 export const TYPES = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // attacker: [super effective, not very effective, no effect]
 export const CHART = {
@@ -28,7 +27,6 @@ export const ABILITY_IMMUNE = {
   "Volt Absorb": "Electric", "Lightning Rod": "Electric", "Motor Drive": "Electric",
   "Sap Sipper": "Grass",
 };
-// Immunities by move flag rather than type.
 export const ABILITY_IMMUNE_FLAG = { "Soundproof": MoveFlags.SOUND_BASED, "Bulletproof": MoveFlags.BALLBOMB_MOVE, "Overcoat": MoveFlags.POWDER_MOVE, "Wind Rider": MoveFlags.WIND_MOVE };
 export const moveHasFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
 
@@ -38,19 +36,11 @@ export const vs = (atk, def) => {
   const [se, nve, none] = CHART[atk] ?? [[], [], []];
   return none.includes(def) ? 0 : se.includes(def) ? 2 : nve.includes(def) ? 0.5 : 1;
 };
-// ---- One effectiveness
-// Everything that asks "how hard does this type hit that" goes through `effectiveness`, and it answers about a plain
-// **defender**: `{ types: [name], abilities: [name] }`. That is all the chart and the ability immunities need, so a
-// species the biome card only knows by name is asked the same way as a mon on the field — the cards can't drift apart
-// on the type chart, and a defender with no abilities simply has no ability immunities.
-// `defenderOf` adapts what the HUD holds instead: a live mon (through the game's own `getTypes` / `getAbility`), a
-// preview foe from the replay (`{ types, ability, passive }`), or a plain defender, which it hands back unchanged. It
-// is idempotent, and `effectiveness` runs it on whatever it is given, so no caller can pass the wrong shape.
+// Idempotent, so `effectiveness` takes a live mon, a replayed foe (`{ types, ability, passive }`) or a plain defender.
 export const defenderOf = x => (typeof x?.getTypes === "function"
   ? { types: typesOf(x), abilities: abilitiesOf(x) }
   : { types: x?.types ?? [], abilities: (x?.abilities ?? [x?.ability, x?.passive]).filter(Boolean) });
-// `mv` (optional): the move, so flag immunities (Soundproof and co.) apply too. They are read wherever a move is
-// known; a caller that has only a type gets the chart and the type immunities.
+// Pass `mv` wherever the move is known: without it, Soundproof and the other flag immunities never apply.
 export const effectiveness = (type, defender, mv) => {
   const { types, abilities: ab } = defenderOf(defender);
   if (ab.some(a => ABILITY_IMMUNE[a] === type || (mv && ABILITY_IMMUNE_FLAG[a] && moveHasFlag(mv, ABILITY_IMMUNE_FLAG[a])))) return 0;
@@ -61,8 +51,6 @@ export const effectiveness = (type, defender, mv) => {
   if (m >= 2 && ab.some(a => a === "Solid Rock" || a === "Filter" || a === "Prism Armor")) m *= 0.75;
   return m;
 };
-// Natures: the enum is the grid 5·raised + lowered over [Atk, Def, Spe, SpA, SpD], neutral on the diagonal.
-// `upStat` / `downStat` are Stat indices (1 atk, 2 def, 3 spa, 4 spd, 5 spe); null when neutral.
 const NATURE_STATS = ["Atk", "Def", "Spe", "SpA", "SpD"];
 const NATURE_STAT_IDS = [Stat.ATK, Stat.DEF, Stat.SPD, Stat.SPATK, Stat.SPDEF];
 const NATURES = ["Hardy", "Lonely", "Brave", "Adamant", "Naughty", "Bold", "Docile", "Relaxed", "Impish", "Lax", "Timid",
@@ -74,12 +62,9 @@ export const natureOf = n => {
     upStat: neutral ? null : NATURE_STAT_IDS[up], downStat: neutral ? null : NATURE_STAT_IDS[down] };
 };
 export const stage = s => (s >= 0 ? (2 + s) / 2 : 2 / (2 - s));
-// i: 1 atk, 2 def, 3 spa, 4 spd, 5 spe. statStages has no HP slot.
+// `i` is a `Stat` index; `statStages` has no HP slot.
 export const stat = (p, i) => p.getStat(i) * stage(p.summonData?.statStages?.[i - 1] ?? 0);
 
-// A damage distribution ([{ d, p }] or a Map d → p) cut down to at most `k` points by joining the two closest
-// neighbours into their weighted mean, over and over: the KO thresholds that matter keep their sharp edges, a miss
-// (0) and a crit stay apart from the rolls. A point's hit count `n`, where given, is averaged the same way.
 export const squeezeDist = (points, k) => {
   const out = [...(points instanceof Map ? [...points].map(([d, p]) => ({ d, p })) : points.map(x => ({ ...x })))]
     .filter(x => x.p > 0).sort((a, b) => a.d - b.d);
@@ -93,34 +78,22 @@ export const squeezeDist = (points, k) => {
   return out;
 };
 
-// Reward rarities, indexed by `ModifierTier`. Named here rather than on the shop card, because the look-ahead quotes a
-// fixed battle's pinned tiers waves before a shop exists (49-ahead's `rewardRules`) and a file never reads a later one.
+// Indexed by `ModifierTier`.
 export const TIER_NAMES = ["Common", "Great", "Ultra", "Rogue", "Master", "Luxury"];
 
 export const SPREAD_TARGETS = [MoveTarget.ALL_OTHERS, MoveTarget.ALL_NEAR_OTHERS, MoveTarget.ALL_NEAR_ENEMIES, MoveTarget.ALL_ENEMIES];
 export const hasAttr = (mv, name) => (mv.attrs || []).some(a => a.constructor.name === name);
 
-// Abilities that answer a contact move and only a contact move, so the move decides whether they bite.
 export const CONTACT_PUNISH = ["Iron Barbs", "Rough Skin", "Static", "Flame Body", "Poison Point", "Effect Spore", "Cursed Body", "Gooey", "Tangling Hair", "Mummy"];
 
-// Trap abilities, split by the question each one asks (CONTEXT.md, `Trap`). A **move trap** turns on *which* move we
-// pick, so it is answered against one: 30-planner's `bites` asks it of the move a slot chose, or of a slot's whole
-// pool. A **field trap** holds whatever we pick — it prices our hits, drops or KOs, undoes chip or status, or ignores
-// our boosts — so its presence on the field is the warning, and there is no move to ask about.
+// (CONTEXT.md, `Trap`)
 export const MOVE_TRAPS = new Set([...Object.keys(ABILITY_IMMUNE), ...Object.keys(ABILITY_IMMUNE_FLAG), "Wonder Guard",
   "Thick Fat", "Heatproof", "Fluffy", "Solid Rock", "Filter", "Prism Armor", "Intimidate",
-  // Punish contact: chip, status, stat drops, a lost ability.
   ...CONTACT_PUNISH]);
-// Turn our hits, stat drops or KOs into boosts; undo chip or status; ignore our boosts or residual damage; or change
-// what a status play into them is worth.
 export const FIELD_TRAPS = new Set(["Guts", "Simple", "Weak Armor", "Stamina",
   "Justified", "Defiant", "Competitive", "Moxie", "Beast Boost", "Speed Boost", "Shed Skin", "Natural Cure", "Regenerator", "Unaware", "Magic Guard", "Marvel Scale", "Fur Coat"]);
-// Every trap, the two kinds plus Sturdy, which is neither: the KO model already counts it, so nothing warns about it.
 export const TRAPS = new Set([...MOVE_TRAPS, ...FIELD_TRAPS, "Sturdy"]);
-// How good an ability is, as a percent swing on a mon's power: a short list of standouts, good ones and liabilities,
-// everything else 0. Named here rather than on the fusion advisor that first needed it (#148), because the encounter
-// card asks the same question of an ability an encounter hands out — Training Session's pick, Clowning Around's
-// override — and a file never reads a later one.
+// A percent swing on a mon's power.
 export const GREAT_ABILITY = 12, GOOD_ABILITY = 6, BAD_ABILITY = -20;
 const GREAT_ABILITIES = new Set(["Speed Boost", "Parental Bond", "Adaptability", "Magic Guard", "Multiscale", "Shadow Shield", "Protean",
   "Libero", "Beast Boost", "Moxie", "Regenerator", "Intimidate", "Good as Gold", "Unaware", "Prankster", "Sheer Force",
@@ -138,13 +111,8 @@ export const abilityValue = name =>
 export const STATUS_FRAMES = [null, "poison", "toxic", "paralysis", "sleep", "freeze", "burn"]; // by StatusEffect
 export const iconOf = p => { try { return [p.getIconAtlasKey(), String(p.getIconId())]; } catch { return null; } };
 
-// ---- Which build the page is running
-// The HUD is written against one pinned version of the game, so a rule that changed between builds has to ask which
-// one it is in rather than pick a side. `gameVersionOf` is the dotted string the game keeps on its Phaser config
-// ("1.12.0.11"); `versionAtLeast` compares two of those segment by segment, missing segments counting as 0.
-// A version that can't be read is older than everything: the pinned reading is what the HUD has, so it is what it
-// falls back to.
 export const gameVersionOf = s => { try { return s?.game?.config?.gameVersion ?? null; } catch { return null; } };
+// An unreadable version is older than everything, so a caller's `false` branch must be the pinned build's rule.
 export const versionAtLeast = (version, least) => {
   if (!version) return false;
   const a = String(version).split("."), b = String(least).split(".");
@@ -155,20 +123,12 @@ export const versionAtLeast = (version, least) => {
   return true;
 };
 
-// ---- Calling the game's own code safely
-// Even the game's "simulated" paths have hidden effects (see game-code.md §0): they can
-// queue ability displays/messages, record abilities in waveData/summonData.abilitiesApplied, draw from the battle
-// RNG (Outrage-type targeting, consecutive Protect, Shell Side Arm ties, Psywave) or Phaser's global RNG (Present),
-// and write turnData (Tera Shell's moveEffectiveness; our own multi-hit hitCount/hitsLeft). `sandbox` runs `fn`
-// with the phase queue muted and restores all of that afterwards. It is synchronous, so nothing else runs in
-// between and the restore is exact. Wrap a whole refresh in one sandbox; never call game functions outside it
-// unless the spec lists them as pure reads.
 const QUEUE_METHODS = ["pushPhase", "unshiftPhase", "pushNew", "unshiftNew", "queueMessage", "queueAbilityDisplay", "hideAbilityBar", "queueFaintPhase"];
-let sandboxBreaches = 0; // times a restore didn't match — surfaced on the panel, never expected
+let sandboxBreaches = 0;
 export const sandboxBreachCount = () => sandboxBreaches;
 // @only 25-turn, 26-run, 20-enemy-ai, tests: sandbox
+// `fn` must finish synchronously: the restore runs the moment it returns (game-code.md §0).
 export const sandbox = (s, fn) => {
-  // A scene without a phase manager (a mock, mid-teardown) has no queue to mute; the restores below are no-ops on it.
   const pm = s.phaseManager ?? {};
   const queue = QUEUE_METHODS.filter(k => typeof pm[k] === "function").map(k => [k, Object.prototype.hasOwnProperty.call(pm, k), pm[k]]);
   const rnd = Phaser.Math.RND.state();
@@ -198,9 +158,7 @@ export const sandbox = (s, fn) => {
     if (Phaser.Math.RND.state() !== rnd || (battle && battle.battleSeedState !== seed)) sandboxBreaches++;
   }
 };
-// The two reads that open a sandbox — the turn read (25-turn) and the run read (26-run) — never look at the game at
-// once: each opens while nothing else is reading and throws if the other is. Sequential, never nested, so "the one
-// sandbox this refresh" stays true of each. Only those two files hold the latch.
+// The turn read and the run read each open their own sandbox, and this keeps them one after the other, never nested.
 // @only 25-turn, 26-run, tests: openRead, closeRead
 let reading = null;
 export const openRead = name => {
@@ -209,36 +167,25 @@ export const openRead = name => {
 };
 export const closeRead = () => { reading = null; };
 
-// Game-code calls only run while the game is waiting on a player decision: no phase is mid-execution, and the
-// enemy's decisions for the turn haven't been made yet. "check-switch" is the free "Will you switch?" prompt at an
-// encounter's start (and its party screen); "faint-switch" replaces a fainted mon. A U-turn-style mid-turn switch
-// (modal SwitchPhase with doReturn) is excluded: the turn is still resolving. See game-code.md §9.
+// Game calls run only while this answers: nothing is mid-execution and the enemy has not chosen yet (game-code.md §9).
 export const awaitingDecision = s => {
   const ph = s.phaseManager?.getCurrentPhase?.();
   if (ph?.phaseName === "CommandPhase") return "command";
-  // SwitchPhase(0, slot, isModal false, doReturn true) is the party screen after answering Yes.
   if (ph?.phaseName === "CheckSwitchPhase" || (ph?.phaseName === "SwitchPhase" && !ph.isModal)) return "check-switch";
   if (ph?.phaseName === "SwitchPhase" && ph.isModal && !ph.doReturn) return "faint-switch";
   return null;
 };
 
-// A game call writes `turnData` as it goes — our own multi-hit hitCount/hitsLeft, Tera Shell's moveEffectiveness —
-// and the next call in the same turn would read what the last one left. The turn's sandbox puts all of it back, but
-// only when the whole refresh ends, so a read that writes turnData undoes it as soon as it is done. This is what the
-// old per-call sandboxes were really for; unlike them it nests nothing and touches nothing else.
+// The sandbox restores `turnData` only when the refresh ends, so without this the next call in the same refresh reads
+// the hitCount, hitsLeft or Tera Shell effectiveness the last one left (game-code.md §0).
 export const keepTurnData = (mons, fn) => {
   const saved = mons.filter(p => p?.turnData).map(p => [p.turnData, { hitCount: p.turnData.hitCount, hitsLeft: p.turnData.hitsLeft, moveEffectiveness: p.turnData.moveEffectiveness }]);
   try { return fn(); } finally { for (const [td, v] of saved) Object.assign(td, v); }
 };
 
-// ---- Forcing the battle RNG
-// Game code the HUD calls draws from the battle RNG in a few places — the enemy AI's Outrage-type targeting and
-// consecutive Protect, a move's own `applyConditions`. `forcedRng` answers those draws from `pick(range)` instead and
-// records the ranges asked for, so each branch can be evaluated and weighed by its chance rather than sampled;
-// `withPick` sets the answer for one call and hands back the ranges it drew. The sandbox restores the seed either way,
-// so these only decide *which* branch the call takes. Only inside `sandbox`.
 let rngPick = range => (range - 1) >> 1;
 let rngRanges = [];
+// Only inside `sandbox`.
 export const forcedRng = (s, fn) => {
   const battle = s.currentBattle;
   const own = Object.prototype.hasOwnProperty.call(battle, "randSeedInt"), prev = battle.randSeedInt;
