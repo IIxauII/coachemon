@@ -6,9 +6,9 @@
  *
  * `L`, `scene`, `ui`, `game` are in scope, as in the handlers under src/page/.
  *
- * With `COACHEMON_TRANSPORT=hub` it goes as the dev table's `eval` command instead (§10.6), to the dev hub's port when
- * `COACHEMON_DEV=1` (§7.2). Only a dev build of the extension registers the command; a store build answers
- * `unknown-command`, which is the whole point of the flavours (§5.4).
+ * With `COACHEMON_TRANSPORT=hub` it goes as the dev table's `eval` command instead (extension-distribution.md §10.6),
+ * to the dev hub's port when `COACHEMON_DEV=1` (§7.2). Only a dev build of the extension registers the command; a store
+ * build answers `unknown-command`, which is the whole point of the flavours (§5.4).
  */
 import { CdpSession, isThrown } from "../src/cdp/session.ts";
 import { HubClient } from "../src/hub/client.ts";

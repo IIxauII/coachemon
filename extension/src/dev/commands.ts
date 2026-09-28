@@ -1,7 +1,7 @@
 /**
- * The dev-only command table (§10.6): `eval` in the page, `screenshot` and `reload` in the background. Imported only
- * by a `--mode dev` build — a store build must not carry these names at all, and the guard fails an artifact that
- * does (§5.5).
+ * The dev-only command table (extension-distribution.md §10.6): `eval` in the page, `screenshot` and `reload` in the
+ * background. Imported only by a `--mode dev` build — a store build must not carry these names at all, and the guard
+ * fails an artifact that does (§5.5).
  *
  * Everything here is dependency-injected and free of `wxt/browser`, so the tests drive it with no browser; the live
  * wiring is `live.ts`, the one file a store build never bundles.
@@ -15,8 +15,8 @@ import type { Handler } from "../page/register.ts";
 
 /**
  * How much base64 one `screenshot` reply carries. A game tab's PNG runs to several MB of base64 and every frame is
- * capped at 1 MB in two places (§8.3, §9.7), so a capture crosses in parts the caller asks for one at a time. Base64
- * needs no JSON escaping, so a frame is this plus its envelope and nothing more.
+ * capped at 1 MB in two places (extension-distribution.md §8.3, §9.7), so a capture crosses in parts the caller asks
+ * for one at a time. Base64 needs no JSON escaping, so a frame is this plus its envelope and nothing more.
  */
 export const SCREENSHOT_CHUNK = 512 * 1024;
 
@@ -73,7 +73,8 @@ export function devCommands(api: DevApi): LocalAnswer {
 
   return cmd => {
     if (cmd.name === "reload") {
-      // Answered first and reloaded after: `runtime.reload()` takes the socket this reply goes out on (§5.4).
+      // Answered first and reloaded after: `runtime.reload()` takes the socket this reply goes out on
+      // (extension-distribution.md §5.4).
       api.soon(() => api.reload());
       return Promise.resolve(answer(cmd.id, { ok: true }));
     }
@@ -83,9 +84,9 @@ export function devCommands(api: DevApi): LocalAnswer {
 }
 
 /**
- * `eval` (§10.6): a function body run after the scene locator, with `L`, `scene`, `ui` and `game` in scope, exactly as
- * `scripts/eval.ts` has always evaluated one. A `read` in the dispatch table, so off the game it refuses with the
- * locator's reason like any other read (§10.1).
+ * `eval` (extension-distribution.md §10.6): a function body run after the scene locator, with `L`, `scene`, `ui` and
+ * `game` in scope, exactly as `scripts/eval.ts` has always evaluated one. A `read` in the dispatch table, so off the
+ * game it refuses with the locator's reason like any other read (§10.1).
  */
 export const DEV_PAGE_HANDLERS: Record<string, Handler> = { eval: { kind: "read", run: evaluate } };
 

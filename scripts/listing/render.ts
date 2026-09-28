@@ -1,9 +1,10 @@
 /**
- * Draws the listing screenshots into `docs/listing/assets/` (§3). Run: node scripts/listing/render.ts
+ * Draws the listing screenshots into `docs/listing/assets/` (extension-distribution.md §3). Run: node
+ * scripts/listing/render.ts
  *
  * Every shot is the real HUD — `bundle("hud")`, the same source the extension ships — mounted over a fixture snapshot
  * in a headless Chrome and photographed. Nothing comes from a live game: no canvas, no capture of a real run, and no
- * sprite atlas, so every icon falls back to the name it stands for (§1.9, §3).
+ * sprite atlas, so every icon falls back to the name it stands for (§3).
  *
  * The page itself — the pinned stage, the letterbox behind it and the game's two faces — is `page.ts`, which says why
  * each of them is what it is. **It needs a provisioned pinned clone**, because the faces are read out of it.
@@ -35,7 +36,8 @@ const hud = bundle("hud");
 const fonts = gameFonts();
 
 /** Spelled out rather than taken from `src/cdp/session.ts`: that module's `DEFAULTS.chromePath` already resolves this
- * same variable, so reading it there bought nothing and tied the renderer to a module §13.2 deletes at the flip. */
+ * same variable, so reading it there bought nothing and tied the renderer to a module extension-distribution.md §13.2
+ * deletes at the flip. */
 const chrome = process.env.COACHEMON_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(join(tmpdir(), "coachemon-listing-"));
 

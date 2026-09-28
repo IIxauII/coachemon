@@ -12,8 +12,8 @@
  * Several calls can be chained: `node scripts/smoke.ts status read_menu`.
  *
  * With `COACHEMON_DEV=1` the server it spawns talks to the dev hub on 47148 instead of the store hub, which is how a
- * checkout reaches a paired dev build of the extension (§7.2); `COACHEMON_TRANSPORT=hub` is what selects the hub at
- * all (§12.1). Both are passed through to the server, which the MCP SDK does not do by itself.
+ * checkout reaches a paired dev build of the extension (extension-distribution.md §7.2); `COACHEMON_TRANSPORT=hub` is
+ * what selects the hub at all (§12.1). Both are passed through to the server, which the MCP SDK does not do by itself.
  *
  * The per-engine smoke checks (§16) are the other mode, and they do not go through the server at all. They dial the
  * same port everything else does — 47147, or 47148 with `COACHEMON_DEV=1` — so a dev build is checked on the dev hub
@@ -44,9 +44,9 @@ if (flag("--engines")) await engines();
 else await tools();
 
 /**
- * The relay and keepalive checks against whichever engine has the one counted tab right now (§16). One engine per run:
- * with more than one tab the hub refuses reads as well as acts. The ledger keeps every engine's latest result, so the
- * report names the ones this machine never reached.
+ * The relay and keepalive checks against whichever engine has the one counted tab right now
+ * (extension-distribution.md §16). One engine per run: with more than one tab the hub refuses reads as well as acts.
+ * The ledger keeps every engine's latest result, so the report names the ones this machine never reached.
  */
 async function engines(): Promise<void> {
   const path = value("--ledger", ".cache/engine-checks.json");
@@ -72,7 +72,8 @@ async function engines(): Promise<void> {
         sleep: ms => new Promise(r => setTimeout(r, ms)),
         say: line => process.stderr.write(`${line}\n`),
       },
-      // Unnamed, the engine is the build's own target, which is right for every engine but Orion (§2).
+      // Unnamed, the engine is the build's own target, which is right for every engine but Orion
+      // (extension-distribution.md §2).
       { engine: value("--engine", "") || undefined, idleMs: Number(value("--idle", "300")) * 1000 },
     );
     client.close();

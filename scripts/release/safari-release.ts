@@ -1,7 +1,8 @@
 /**
- * The Safari half of a release, run by hand on the dev's Mac (§14.6). Safari is not a store and this is not CI: the
- * build needs an individual Apple Developer Program membership, a Developer ID Application identity in the login
- * keychain, Xcode, and a `notarytool` credential profile. `docs/runbooks/safari-release.md` sets those up once.
+ * The Safari half of a release, run by hand on the dev's Mac (extension-distribution.md §14.6). Safari is not a store
+ * and this is not CI: the build needs an individual Apple Developer Program membership, a Developer ID Application
+ * identity in the login keychain, Xcode, and a `notarytool` credential profile. `docs/runbooks/safari-release.md` sets
+ * those up once.
  *
  *   node scripts/release/safari-release.ts 0.1.0
  *   node scripts/release/safari-release.ts 0.1.0 --dry-run
@@ -48,8 +49,8 @@ const die = (message: string): never => {
 
 /**
  * A dry run prints the plan and runs none of it, so it is the one mode that has to work before the membership exists:
- * §16 leaves enrolment off-map, and until it lands this is how the dev reads what the release will do. So a missing
- * tool or identity is a warning here and a refusal everywhere else.
+ * extension-distribution.md §16 leaves enrolment off-map, and until it lands this is how the dev reads what the release
+ * will do. So a missing tool or identity is a warning here and a refusal everywhere else.
  */
 const missing = (message: string): void => {
   if (!dryRun) die(message);

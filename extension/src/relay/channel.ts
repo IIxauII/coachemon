@@ -1,7 +1,7 @@
 /**
- * The relay channel (§9.1): `CustomEvent`s on `document`, detail always a JSON string, so Firefox Xray wrappers and
- * `cloneInto` never come up. Both worlds share this module's names; only the relay ever imports the validators, because
- * only the upward direction is defended (§9.5).
+ * The relay channel (extension-distribution.md §9.1): `CustomEvent`s on `document`, detail always a JSON string, so
+ * Firefox Xray wrappers and `cloneInto` never come up. Both worlds share this module's names; only the relay ever
+ * imports the validators, because only the upward direction is defended (§9.5).
  */
 import type { CardGroup, EventKind } from "../../../src/protocol/wire.ts";
 
@@ -15,7 +15,7 @@ export const EVENT = {
   wrongWorld: "coachemon:wrong-world",
 } as const;
 
-/** A reply or event over this is dropped at the relay, `too-large` (§9.7). The background caps the hub frame again. */
+/** A reply or event over this is dropped at the relay, `too-large` (extension-distribution.md §9.7). The background caps the hub frame again. */
 export const MAX_DETAIL_BYTES = 1024 * 1024;
 
 /**
@@ -27,15 +27,15 @@ export type CardDetail = { build: string; kind: string; key: string; wave: numbe
 export type CoachErrorDetail = { build: string; message: string };
 
 /**
- * The kinds the HUD pushes (§11.1); the HUD model's `rewards` arrives as `reward`. Named for the card event and not
- * for the card, because two card kinds — `starters` and `fusion` — never stream. The HUD's own list is
- * `hud/60-card.js`'s `EVENT_KINDS`, derived there from its card table and kept here by hand: the panel is one source
- * the extension bundles rather than imports. `cardtest.mjs` pins this copy to that one.
+ * The kinds the HUD pushes (extension-distribution.md §11.1); the HUD model's `rewards` arrives as `reward`. Named for
+ * the card event and not for the card, because two card kinds — `starters` and `fusion` — never stream. The HUD's own
+ * list is `hud/60-card.js`'s `EVENT_KINDS`, derived there from its card table and kept here by hand: the panel is one
+ * source the extension bundles rather than imports. `cardtest.mjs` pins this copy to that one.
  */
 export const EVENT_KINDS = ["battle", "learn", "reward", "biome", "encounter"] as const;
 
 /**
- * The eight group ids, closed (#349 §1). The HUD's own list is `hud/90-render.js`'s `GROUP_IDS`, kept here by hand
+ * The eight group ids, closed (#349). The HUD's own list is `hud/90-render.js`'s `GROUP_IDS`, kept here by hand
  * for the same reason `EVENT_KINDS` is: the panel is one source the extension bundles rather than imports.
  */
 export const GROUP_IDS = ["act", "foes", "catch", "plan", "options", "audit", "road", "notes"] as const;
@@ -59,7 +59,7 @@ export function encode(detail: unknown): string {
 /**
  * Like `decode`, but at any size. A reply has to be identified before it can be refused for being too large: the
  * ownership checks come first, or any MAIN-world code could poison an in-flight command with one oversized reply
- * (§9.5). Everything else uses the bounded `decode`.
+ * (extension-distribution.md §9.5). Everything else uses the bounded `decode`.
  */
 export function decodeAny(detail: unknown): Record<string, unknown> | null {
   if (typeof detail !== "string") return null;
@@ -71,7 +71,7 @@ export function decodeAny(detail: unknown): Record<string, unknown> | null {
   }
 }
 
-/** A detail that is not a JSON object, or is over the cap, is not ours: dropped without a word (§9.5). */
+/** A detail that is not a JSON object, or is over the cap, is not ours: dropped without a word (extension-distribution.md §9.5). */
 export function decode(detail: unknown): Record<string, unknown> | null {
   if (typeof detail !== "string" || detail.length > MAX_DETAIL_BYTES) return null;
   return decodeAny(detail);
@@ -80,8 +80,9 @@ export function decode(detail: unknown): Record<string, unknown> | null {
 const str = (v: unknown): v is string => typeof v === "string";
 
 /**
- * The forgery defence, by structure (§9.5): a card event forwards upward only with exactly the declared keys and types.
- * Page code can forge a well-shaped card, which it could read from the game anyway; a mis-shaped one never crosses.
+ * The forgery defence, by structure (extension-distribution.md §9.5): a card event forwards upward only with exactly
+ * the declared keys and types. Page code can forge a well-shaped card, which it could read from the game anyway; a
+ * mis-shaped one never crosses.
  *
  * **This gate is the card detail's version point** (#361): a field the panel sends and the gate does not know is a
  * card that never crosses, so the two are only ever changed together. That costs no `PROTOCOL` bump — the panel and
@@ -101,8 +102,8 @@ export function cardBody(d: Record<string, unknown>): Omit<CardDetail, "build"> 
 
 /**
  * `groups`, checked the way the detail around it is: exact keys, a closed id, and rows that are strings — a group
- * is data the agent reads by name, so a mis-shaped one never crosses (§9.5). An empty list needs no rule of its own:
- * a card with nothing drawn has no `text` either, and the HUD pushes no card without one.
+ * is data the agent reads by name, so a mis-shaped one never crosses (extension-distribution.md §9.5). An empty list
+ * needs no rule of its own: a card with nothing drawn has no `text` either, and the HUD pushes no card without one.
  */
 function cardGroups(v: unknown): CardGroup[] | null {
   if (!Array.isArray(v)) return null;

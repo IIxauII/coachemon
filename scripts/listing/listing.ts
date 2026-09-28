@@ -1,28 +1,28 @@
 /**
- * What the Chrome Web Store and AMO listing forms ask for, as one table (§3, §6 of
- * `docs/spec/extension-distribution.md`). The copy itself is `docs/listing/`, because a human pastes it into a form;
- * this file holds the few strings that must agree with the extension and with each other, and the asset table that
- * `render.ts` draws and `src/listing.test.ts` checks.
+ * What the Chrome Web Store and AMO listing forms ask for, as one table (extension-distribution.md §3, §6). The copy
+ * itself is `docs/listing/`, because a human pastes it into a form; this file holds the few strings that must agree
+ * with the extension and with each other, and the asset table that `render.ts` draws and `src/listing.test.ts` checks.
  *
- * Artwork never ships (§1.9): every asset here is either the mark, drawn in the design project and copied in, or a
+ * Artwork never ships: every asset here is either the mark, drawn in the design project and copied in, or a
  * fixture render of the HUD on the game's own letterbox colour. No game canvas, no franchise art, no capture of a
  * real run.
  */
 import { fileURLToPath } from "node:url";
 
-/** The fixed line, on every listing and inside the extension (§3). The HUD and the manifest each carry their own
- * copy — the HUD because it is plain JS the extension bundles rather than imports — and the test pins all three. */
+/** The fixed line, on every listing and inside the extension (extension-distribution.md §3). The HUD and the manifest
+ * each carry their own copy — the HUD because it is plain JS the extension bundles rather than imports — and the test
+ * pins all three. */
 export const DISCLAIMER = "Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
 
-/** GitHub Pages, from `master` / root, which is why `PRIVACY.md` carries Jekyll front matter (§3). */
+/** GitHub Pages, from `master` / root, which is why `PRIVACY.md` carries Jekyll front matter (extension-distribution.md §3). */
 export const PRIVACY_URL = "https://iixauii.github.io/coachemon/PRIVACY";
 
-/** Support is email only; the repo is public but not a support surface (§3). */
+/** Support is email only; the repo is public but not a support surface (extension-distribution.md §3). */
 export const SUPPORT_EMAIL = "xauyxau+coachemon@gmail.com";
 
 /** One list for both forms. It was two — five in `description.md`, three in `store-disclosure.md`, with nothing
  * saying why — which left a human filling the CWS and AMO forms with two different answers to one question. No
- * keyword is a franchise word and the game is not among them (§3). */
+ * keyword is a franchise word and the game is not among them (extension-distribution.md §3). */
 export const KEYWORDS = ["coach", "overlay", "turn advice", "battle helper", "roguelite"];
 
 /** The fixture scenes `scripts/listing/fixtures.js` builds. Named rather than free text: a name that file does not
@@ -69,7 +69,7 @@ export const LISTING_ASSETS: ListingAsset[] = [
   // the top of them on the next redraw, which is how the panel ended up on a branding tile in the first place.
   { file: "assets/promo-small.png", width: 440, height: 280, what: "CWS small promo tile" },
   { file: "assets/promo-marquee.png", width: 1400, height: 560, what: "CWS marquee promo tile" },
-  { file: "assets/icon-1024.png", width: 1024, height: 1024, what: "Safari app icon master (§14.6)" },
+  { file: "assets/icon-1024.png", width: 1024, height: 1024, what: "Safari app icon master (extension-distribution.md §14.6)" },
   { file: "../../extension/public/icons/128.png", width: 128, height: 128, what: "CWS and AMO store icon" },
 ];
 

@@ -1,7 +1,7 @@
 /**
- * Firefox's consent (§8.4). Only the Firefox build ever withholds it, and only on Firefox itself: Orion installs the
- * AMO build and counts as consented, which it is told apart by `runtime.getBrowserInfo()` — an accepted premise, since
- * Orion's answer was never observed (§16).
+ * Firefox's consent (extension-distribution.md §8.4). Only the Firefox build ever withholds it, and only on Firefox
+ * itself: Orion installs the AMO build and counts as consented, which it is told apart by `runtime.getBrowserInfo()` —
+ * an accepted premise, since Orion's answer was never observed (§16).
  *
  * The manifest floor is Firefox 142 (§5.3), so every version that can install this build has built-in data consent:
  * the toolbar click requests `data_collection` and `permissions.contains` is the state. Nothing is stored, and nothing
@@ -31,10 +31,11 @@ export type ConsentDeps = {
 export async function startConsent(d: ConsentDeps, grant: () => void): Promise<void> {
   if (d.target !== "firefox") return grant();
   const name = await d.browserName();
-  // Anything that is not Firefox running the AMO build — Orion — counts as consented (§8.4).
+  // Anything that is not Firefox running the AMO build — Orion — counts as consented (extension-distribution.md §8.4).
   if (name !== "Firefox") return grant();
 
-  // The click is the consent experience; the action's title is what states what it allows (§8.4, §5.3's `default_title`).
+  // The click is the consent experience; the action's title is what states what it allows
+  // (extension-distribution.md §8.4, §5.3's `default_title`).
   d.onClick(() => void d.permissions.request(DATA_COLLECTION).then(ok => ok && grant()));
   if (await d.permissions.contains(DATA_COLLECTION)) grant();
 }

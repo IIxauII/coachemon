@@ -1,7 +1,7 @@
 /**
- * The dev loop (§5.4): watch what the extension is built from, rerun the dev build, and tell the running dev build to
- * reload itself. It is `wxt dev`'s job, done by hand, because `wxt dev` force-adds `tabs` and `scripting`, runs a
- * throwaway profile, does not watch `hud/`, and covers neither Safari nor Orion (§5.2).
+ * The dev loop (extension-distribution.md §5.4): watch what the extension is built from, rerun the dev build, and tell
+ * the running dev build to reload itself. It is `wxt dev`'s job, done by hand, because `wxt dev` force-adds `tabs` and
+ * `scripting`, runs a throwaway profile, does not watch `hud/`, and covers neither Safari nor Orion (§5.2).
  *
  *   node extension/scripts/dev.ts                       # chrome
  *   node extension/scripts/dev.ts --target chrome,firefox
@@ -53,7 +53,8 @@ function build(): boolean {
 async function reload(): Promise<void> {
   const client = new HubClient({ port: DEV_PORT, version: PLUGIN_VERSION });
   try {
-    // Nothing answers it: every extension it reaches is restarting (§5.4). Only a hub we could not reach is news.
+    // Nothing answers it: every extension it reaches is restarting (extension-distribution.md §5.4). Only a hub we
+    // could not reach is news.
     const trouble = await client.devReload();
     say(trouble === null ? "reload: sent" : `reload: no hub on ${DEV_PORT} (${trouble.kind})`);
   } finally {

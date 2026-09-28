@@ -8,7 +8,7 @@
  *   node scripts/autoplay.ts --waves 2 [--max-calls 200] [--log .cache/autoplay.jsonl]
  *
  * `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server, which is how this runs against a paired
- * dev build of the extension on the dev hub (§7.2).
+ * dev build of the extension on the dev hub (extension-distribution.md §7.2).
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";

@@ -1,6 +1,6 @@
 /**
- * The MAIN-world half of the relay channel (§9, §10.5): it registers the page handlers, answers `coachemon:cmd` inside
- * the dispatch that delivered it, and announces itself so the relay can count the tab.
+ * The MAIN-world half of the relay channel (extension-distribution.md §9, §10.5): it registers the page handlers,
+ * answers `coachemon:cmd` inside the dispatch that delivered it, and announces itself so the relay can count the tab.
  *
  * Nothing here knows the game: `src/page/` holds the handlers, and `dispatch` runs the locator, the act fingerprint
  * check and the handler in one page turn. This file is only the channel and the instance bookkeeping.
@@ -16,7 +16,7 @@ import { STORE_COMMANDS } from "../../../src/protocol/commands.ts";
 
 export type Handler = { kind: "read" | "act"; run: (L: any, args: any) => unknown };
 
-/** What a page instance leaves on `window`, so the next copy can replace it in place (§9.6). */
+/** What a page instance leaves on `window`, so the next copy can replace it in place (extension-distribution.md §9.6). */
 export type PageInstance = { build: string; stop: () => void };
 
 export type PageDeps = {
@@ -27,18 +27,19 @@ export type PageDeps = {
   build: string;
   /**
    * The world marker's visibility, read by the caller as `typeof __coachemonIsolated !== "undefined"`: if this script
-   * can see the relay's own-world global, it ran isolated and must do nothing but say so (§9.4).
+   * can see the relay's own-world global, it ran isolated and must do nothing but say so
+   * (extension-distribution.md §9.4).
    */
   isolated: boolean;
   /**
    * `window`. Never `host`: CONTEXT.md reserves that word for Apple's host app, which is the browser.
    */
   global: { __coachemonPage?: PageInstance };
-  /** Beyond the store table: the dev commands, in a dev build only (§10.6). */
+  /** Beyond the store table: the dev commands, in a dev build only (extension-distribution.md §10.6). */
   extra?: Record<string, Handler>;
 };
 
-/** The store table as handlers: exactly `STORE_COMMANDS`, one per command, and nothing else in a store build (§10.1). */
+/** The store table as handlers: exactly `STORE_COMMANDS`, one per command, and nothing else in a store build (extension-distribution.md §10.1). */
 function storeHandlers(): Record<string, Handler> {
   const out: Record<string, Handler> = {};
   for (const [name, spec] of Object.entries(STORE_COMMANDS)) {
@@ -53,12 +54,14 @@ export function startPage(d: PageDeps): PageInstance {
   };
 
   if (d.isolated) {
-    // No handlers, no HUD, no presence: the relay reports `wrong-world` and the tab is not counted (§9.4).
+    // No handlers, no HUD, no presence: the relay reports `wrong-world` and the tab is not counted
+    // (extension-distribution.md §9.4).
     dispatchEvent(EVENT.wrongWorld, { side: "page" });
     return { build: d.build, stop: () => {} };
   }
 
-  // The newest copy always wins, including over a copy with no build id left by `read.sh` (§9.6).
+  // The newest copy always wins, including over a copy with no build id left by `read.sh`
+  // (extension-distribution.md §9.6).
   d.global.__coachemonPage?.stop();
 
   const table = { ...storeHandlers(), ...d.extra };
@@ -85,7 +88,8 @@ export function startPage(d: PageDeps): PageInstance {
       const result = dispatch(locate, fine, disc, handler.run, cmd.name, handler.kind, PAGE_MODES, args);
       dispatchEvent(EVENT.reply, { id: cmd.id, ok: true, result });
     } catch (e) {
-      // Only the message crosses: a stack is page internals and the server treats `threw` as a failed read (§9.7).
+      // Only the message crosses: a stack is page internals and the server treats `threw` as a failed read
+      // (extension-distribution.md §9.7).
       dispatchEvent(EVENT.reply, { id: cmd.id, ok: false, code: "threw", message: e instanceof Error ? e.message : String(e) });
     }
   };
@@ -103,7 +107,7 @@ export function startPage(d: PageDeps): PageInstance {
   };
   d.global.__coachemonPage = instance;
 
-  // Both sides announce on load; whoever is second answers the other's hello (§9.3).
+  // Both sides announce on load; whoever is second answers the other's hello (extension-distribution.md §9.3).
   dispatchEvent(EVENT.hello, { side: "page", commands });
   return instance;
 }
