@@ -1,5 +1,5 @@
-// What the coach reads off a move's attributes, read once (#128). No battle state and no game calls, so it works
-// outside a battle; what a trait is worth stays with each caller.
+// What the coach reads off a move's attributes, read once (#128). No battle state, and no game calls beyond the move's
+// and its attributes' own methods, so it works outside a battle; what a trait is worth stays with each caller.
 
 import { SPREAD_TARGETS } from "./01-core.js";
 
@@ -23,9 +23,10 @@ const SELF_SIDE = new Set([MoveTarget.USER, MoveTarget.NEAR_ALLY, MoveTarget.ALL
   MoveTarget.USER_AND_ALLIES, MoveTarget.USER_SIDE, MoveTarget.PARTY]);
 const ALLY_ONLY = new Set([MoveTarget.NEAR_ALLY, MoveTarget.ALLY]);
 const sideFlags = (mv, a) => ({ self: !!a?.selfTarget, side: SELF_SIDE.has(mv?.moveTarget), ally: ALLY_ONLY.has(mv?.moveTarget) });
-// `chance` −1 is a move that doesn't roll.
+// A negative `chance` is certain, like 100: every move that doesn't roll passes −1 (game-code.md §5).
 const guaranteedChance = mv => !(mv?.chance > 0 && mv.chance < 100);
-// These read the target's chosen command, which doesn't exist yet while we choose (game-code.md §6).
+// These read the target's chosen command, which doesn't exist yet while we choose (game-code.md §6). Upper Hand is
+// left out on purpose: it needs a priority move from the target, not just an attack.
 const COMMAND_CONDITION = [MoveId.SUCKER_PUNCH, MoveId.THUNDERCLAP];
 // Gigaton Hammer and Blood Moon share one restriction, known here by its i18n key (game-code.md §5).
 const NO_REPEAT_KEY = "battle:moveDisabledConsecutive";
@@ -62,7 +63,7 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const charge = charging
     ? { skip: instant.length ? { weather: weatherCharge } : null, now: (u = user) => instant.some(a => { try { return !!a.condition?.(u, mv); } catch { return false; } }) }
     : false;
-  // `useHp`: the ratio is of max HP, not of the damage dealt.
+  // `useHp`: the ratio is of max HP, not of the damage dealt (game-code.md §5).
   const rec = firstAttr(mv, "RecoilAttr");
   const recoil = rec
     ? { ratio: rec.damageRatio ?? 0.25, useHp: !!rec.useHp, blocked: !rec.unblockable && (guarded || hasAbAttr(user, "BlockRecoilDamageAttr")) }

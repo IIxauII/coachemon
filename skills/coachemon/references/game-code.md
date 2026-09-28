@@ -537,7 +537,7 @@ Reverse the speed order under Trick Room. It is safe to call without the sandbox
 Break ties with `sortInSpeedOrder`. Quick Claw puts the holder in the FIRST bracket with probability 0.1·stack; Quick Draw does so with 0.3, on attacks only.
 The HUD's version is `actionOrder` in `30-planner.js`.
 
-**Move conditions, restrictions and miss effects.** A `Move` keeps its conditions in three private lists, `conditions`
+**Move conditions, restrictions, miss effects and recoil.** A `Move` keeps its conditions in three private lists, `conditions`
 (`src/data/moves/move.ts:182`), `conditionsSeq2` (`:186`) and `conditionsSeq3` (`:223`), chosen by
 `condition(c, checkSequence)` (`:504-521`). Fake Out, First Impression and Mat Block each put a fresh
 `FirstMoveCondition` in `conditionsSeq3` (`:10288-10290`, `:11686-11687`, `:11369`). Gigaton Hammer and Blood Moon share
@@ -545,7 +545,12 @@ one `consecutiveUseRestriction` (`src/data/moves/move-condition.ts:292-295`), a 
 `"battle:moveDisabledConsecutive"`, pushed onto the private `restrictions` list (`move.ts:598`). Thrash, Petal Dance,
 Outrage and Raging Fury pair `FrenzyAttr` with `MissEffectAttr(frenzyMissFunc)` (`src/data/moves/move-utils.ts:126-133`),
 which only ends the lock: it drops the queued uses and removes `FRENZY`, and deals no damage. Crash damage is
-`crashDamageFunc` (`move.ts:6522-6536`), on the Jump Kick moves.
+`crashDamageFunc` (`move.ts:6522-6536`), on the Jump Kick moves. `RecoilAttr(useHp = false, damageRatio = 0.25,
+unblockable = false)` (`move.ts:2206`) takes `damageRatio` of the user's max HP when `useHp` is set, else of
+`turnData.totalDamageDealt` (`:2238`); Chloroblast is `RecoilAttr(true, 0.5)` (`:12330-12331`). A move's `chance` is a
+required constructor argument (`:261`), −1 on every move whose effect doesn't roll; `StatusEffectAttr`,
+`StatStageChangeAttr` and `AddBattlerTagAttr` treat a negative chance or 100 as certain (`:3108-3109`, `:3972-3973`,
+`:6645-6646`), reading it through `getMoveChance` (`:1758-1759`).
 
 ---
 
@@ -1043,7 +1048,7 @@ on an X5 wave (`src/battle-scene.ts:1577`): waves X1–X4 spawn from X0's time o
 (`src/enums/biome-pool-tier.ts`); time of day -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT (`src/enums/time-of-day.ts`). A
 gym leader's signature species are closures in `partyMemberFuncs` (`initForGymLeader`,
 `src/data/trainers/trainer-config.ts:680`), so a leader is judged by `specialtyType`. How `04-game-tables.js` reaches these
-tables at runtime is a live-bundle matter (its header).
+tables at runtime is a live-bundle matter (§22).
 
 **What the ten waves after a biome choice hold.** A choice at wave X0 covers X1…X10 of the new biome.
 `GameMode.isWaveTrainer` (`src/game-mode.ts:206`) — draws global RND: forks per earlier wave, one draw on the stream.
@@ -2084,7 +2089,7 @@ are not on this walk: `updateSpeciesDexIvs` is called with `getRootSpeciesId(tru
 `Pokemon.calculateBaseStats` (`src/field/pokemon.ts:1618`, no state writes, no RNG) takes the *form's* base stats, applies the Flip Stat
 challenge and Shuckle Juice / Old Gateau, averages with the fusion's form stat by stat rounding up (halves them in Spliced
 Endless when unfused), then applies vitamins, and returns a fresh array (`:1619`). Its one side effect is a log: each of
-its three `applyModifiers` calls (`:1621`, `:1623`, `:1637`) reaches `applyModifiersInternal`, which `console.log`s
+its three `applyModifiers` calls (`:1622`, `:1624`, `:1638`) reaches `applyModifiersInternal`, which `console.log`s
 `Applied …` once per applied modifier (`src/battle-scene.ts:2949`). A held-item change (`updatePartyForModifiers`,
 `src/battle-scene.ts:2823`), `changeForm` (`:4464`), `fuse` (`:6254`) and `unfuse` (through `clearFusionSpecies`,
 `:3090`) each go on to `calculateStats` (`:1575`), which rewrites `stats`. Shininess itself is set at spawn by `trySetShiny`

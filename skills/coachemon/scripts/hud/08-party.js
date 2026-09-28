@@ -17,7 +17,8 @@ export const typesOfSpecies = sp => [sp?.type1, sp?.type2].filter(t => t != null
 
 const formOf = (sp, i) => (i != null && Array.isArray(sp?.forms) && sp.forms.length ? sp.forms[i] ?? sp : sp);
 // `calculateBaseStats` logs "Applied …" to the page's console once per vitamin, Shuckle Juice or Old Gateau, every
-// tick, so it is cached against `level` and `stats`: whatever moves its answer also rewrites them (game-code.md §20).
+// tick, so it is cached against `level` and `stats`, which whatever moves its answer recalculates (game-code.md §20).
+// `calculateStats` floors, though, so a +1 base stat on a low-level mon can leave `stats` as they were and go unseen.
 // A copy goes out each time, as the game's own call does, or a caller's mutation poisons the cache.
 const baseStatsCache = new WeakMap();
 const baseStatsOf = mon => {
