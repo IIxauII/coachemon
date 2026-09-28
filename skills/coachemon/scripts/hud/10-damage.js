@@ -102,7 +102,7 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
   const c = Math.min(Math.max(Math.floor(Math.log2(excess / segSize)), 0), a - minIdx);
   return [Math.max(Math.floor(hp - floorHp + segSize * c), 1), a - c];
 };
-// Sturdy against a fixed-damage move (game-code.md §4). `getAttackDamage` returns from its `FixedDamageAttr` branch
+// Sturdy against a fixed-damage move (game-code.md §1). `getAttackDamage` returns from its `FixedDamageAttr` branch
 // before the `PreDefendFullHpEndureAbAttr` step, so at our pin Seismic Toss, Night Shade, Super Fang, Psywave and
 // Final Gambit take a full-HP Sturdy mon down. Upstream's #7620 ("Sturdy now applies to moves that deal fixed
 // damage") moves the branch and is on the game's master, unreleased. So this is the live build's call, not ours:
@@ -570,7 +570,7 @@ const PRESENT_HEAL = 19 / 100;
 // lens count 07-move-traits already checked against `canBeMultiStrikeEnhanced`.
 const lensShare = (n, k) => (!n ? 1 : k === 0 ? 1 - 0.25 * n : k === n + 1 ? 1 : 0.25);
 
-// The game's own damage at roll `r` (game-code.md §4). A simulated call pins the roll at 1 and hands back the finished
+// The game's own damage at roll `r` (game-code.md §1). A simulated call pins the roll at 1 and hands back the finished
 // number, so `addRolls` spreads what the post-roll steps have already been applied to. Multipliers barely notice
 // that — they commute with the roll to within a HP of rounding — but `ModifiedDamageAttr` is a *cap*: False Swipe's
 // `min(damage, hp − 1)` lands on every roll alike, and spreading it invents a range the game never produces. For
@@ -727,7 +727,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
   if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
-  // Sturdy doesn't reach a fixed-damage hit on this build (game-code.md §4), so the target's facts lose it for this move only.
+  // Sturdy doesn't reach a fixed-damage hit on this build (game-code.md §1), so the target's facts lose it for this move only.
   const facts = targetFacts(env, def, ignoreAbility);
   const f = fixed && facts.sturdy && fixedIgnoresSturdy(env) ? { ...facts, sturdy: false } : facts;
   const ends = resolve(f, perHit, dist, acc, checkAll, ohko);

@@ -103,13 +103,13 @@ export const drawBattle = m => {
         ...f.slots.filter(sl => !sl.enter).map(sl => slotLine(sl, "now:")),
         ...f.slots.filter(sl => sl.enter).map(sl => slotLine(sl, "next:"))]
       : [...f.slots.map(sl => slotLine(sl)), ...f.switches.map(sw => swapLine(sw, ink.ours, "in"))]),
-    // The mon on the field is going down this turn, so the next one comes in without paying for a switch (#170 §E):
+    // The mon on the field is going down this turn, so the next one comes in without paying for a switch (#170):
     // the fight plan's own step 2, named here so the turn line reads as "stay, and this is what follows".
     f.freeEntry ? line("⤵", mon(f.freeEntry.out.icon, f.freeEntry.out.name, ICON.mon),
       h("span", { ...dim, margin: "0 3px" }, "falls this turn ›"), mon(f.freeEntry.in.icon, f.freeEntry.in.name, ICON.mon),
       h("span", { ...ink.ours, marginLeft: "3px" }, "in free")) : null,
     // After our KO the trainer sends the best matchup against what we leave out, so the next foe is predictable and
-    // the plan already has an answer in front of it (#170 §G).
+    // the plan already has an answer in front of it (#170).
     f.nextIn ? line("⤵", h("span", { ...dim, marginRight: "3px" }, "next in likely:"),
       mon(f.nextIn.foe.icon, f.nextIn.foe.name, ICON.mon), h("span", { ...ink.later, margin: "0 3px" }, "› answer"),
       mon(f.nextIn.answer.icon, f.nextIn.answer.name, ICON.mon)) : null,

@@ -2,7 +2,7 @@
 // Two readings of the same decision live here, and they answer different questions:
 // - **The exact move** (`sceneExactMoves`): the game's own `getNextMove()` called at the command prompt, which
 //   returns the move and target the enemy will use (game-code.md §6, #158 live). This turn's plan is played on it (#183).
-// - **The distribution** (`sceneDistribution`, `sceneReplayAI`): §6 and §7 re-implemented from the pinned source, so
+// - **The distribution** (`sceneDistribution`, `sceneReplayAI`): game-code.md §6 and §7 re-implemented from the pinned source, so
 //   every outcome comes with its chance. There is no fixed draw to reproduce a turn ahead or against a hypothetical
 //   field, so later turns and `aiReplay` stay with it — and it is the exact call's own oracle at a pin bump.
 //

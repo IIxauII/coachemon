@@ -17,7 +17,7 @@
 //     Return) is a damaging move of its type. The catch, biome and look-ahead cards used to require `power > 0` and
 //     so read a Grass Knot mon as having no Grass at all; the learn card already counted it.
 //   - **Fixed damage does not.** Seismic Toss, Night Shade, Super Fang and co. ignore type effectiveness entirely
-//     (game-code.md §4), so they are no one's answer to anything. The learn card already excluded them.
+//     (game-code.md §1), so they are no one's answer to anything. The learn card already excluded them.
 // The rule itself is `isCoverage`, exported: the wave preview reads a foe's attacks with it too (#266), so what the
 // coach counts as an attack is one rule whichever side of the field the mon is on.
 import { TYPES, vs, effectiveness, defenderOf, typesOf, hasAttr } from "./01-core.js";

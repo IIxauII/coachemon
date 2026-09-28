@@ -284,7 +284,7 @@ export const cardSummary = card => {
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
   // Nothing the enemy model feeds is being claimed, so the read says that and why, and claims nothing else.
   if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card) };
-  // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170 §A).
+  // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170).
   const saveFor = name => {
     const r = (card.teamPlan?.reserve ?? []).find(x => x.name === name);
     if (r) return r.for.name;

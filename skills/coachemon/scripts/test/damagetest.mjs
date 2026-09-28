@@ -772,7 +772,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(versionAtLeast(null, "1.0.0"), false, "an unreadable version is older than everything");
 }
 
-// A fixed-damage hit returns before the Sturdy step (game-code.md §4), so it takes a full-HP Sturdy mon down; a rolled hit
+// A fixed-damage hit returns before the Sturdy step (game-code.md §1), so it takes a full-HP Sturdy mon down; a rolled hit
 // still doesn't. Upstream #7620 flips this, and the version constant is what will flip with it.
 {
   class FixedDamageAttr {}

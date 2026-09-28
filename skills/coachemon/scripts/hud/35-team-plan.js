@@ -494,7 +494,7 @@ const tpModel = (T, double, party, foes, facing) => {
     if (win < 0 || kills[fi] > kills[win] || (kills[fi] === kills[win] && hurt(fi) < hurt(win))) win = fi;
   });
 
-  // The per-foe answer matrix (#170 §A): who answers each foe 1-on-1 — `per` the share of its HP they take a turn,
+  // The per-foe answer matrix (#170): who answers each foe 1-on-1 — `per` the share of its HP they take a turn,
   // `beats` they win the exchange outright, `acts` they get to hurt it at all. It is an input, not a panel section:
   // it picks the win condition's answers and the foes only one of ours beats, which are what the ⚔ line prices.
   const matrix = foes.map((f, fi) => tpAlive(start.oh)
@@ -542,7 +542,7 @@ const tpModel = (T, double, party, foes, facing) => {
     }
     return atMemo.get(k);
   };
-  // What the pinned plan says happens after this turn (#170 §E and §G): the mon that comes in free when ours falls,
+  // What the pinned plan says happens after this turn (#170): the mon that comes in free when ours falls,
   // and the foe the trainer then sends, with the answer the plan puts in front of it.
   const after = pin => {
     const plan = at(pin);
@@ -660,7 +660,7 @@ const tpView = (M, plan, pinned) => {
     reserve: answers.map(a => ({
       ...ref(party[a.mi]), for: ref(foes[win]), per: Math.min(100, Math.round(a.per * 100)), acts: a.acts,
     })),
-    // Foes only one of ours beats, and who that is (#170 §A). The ⚔ line prices exposing them.
+    // Foes only one of ours beats, and who that is (#170). The ⚔ line prices exposing them.
     only: onlyBy.map(o => ({ ...ref(party[o.mi]), for: o.fis.map(fi => ref(foes[fi])), per: Math.min(100, Math.round(o.per * 100)), acts: o.acts })),
     prefers,
     pinned: !!pinned,
