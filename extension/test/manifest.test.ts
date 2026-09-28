@@ -1,5 +1,5 @@
 /**
- * The manifests (§5.3, §5.4), pinned key by key. The guard checks the artifact; this checks the intent, so a change
+ * The manifests (extension-distribution.md §5.3, §5.4), pinned key by key. The guard checks the artifact; this checks the intent, so a change
  * to a reviewed value has to be deliberate.
  */
 import assert from "node:assert/strict";
@@ -19,7 +19,7 @@ import {
 const TARGETS: Target[] = ["chrome", "firefox", "safari"];
 const store = (target: Target) => manifestFor({ target, flavour: "store", version: "1.2.3" });
 
-test("a store build declares no permission of any kind, on any target (§6)", () => {
+test("a store build declares no permission of any kind, on any target (extension-distribution.md §6)", () => {
   for (const target of TARGETS) {
     const m = store(target);
     for (const key of BANNED_MANIFEST_KEYS) assert.ok(!(key in m), `${target} store manifest has ${key}`);
@@ -28,7 +28,7 @@ test("a store build declares no permission of any kind, on any target (§6)", ()
   }
 });
 
-test("every target carries the same identity and the same two content scripts (§3, §5.3)", () => {
+test("every target carries the same identity and the same two content scripts (extension-distribution.md §3, §5.3)", () => {
   for (const target of TARGETS) {
     const m = store(target);
     assert.equal(m.name, "Coachemon");
@@ -40,11 +40,11 @@ test("every target carries the same identity and the same two content scripts (�
       { matches: MATCHES, js: ["page.js", "hud.js"], run_at: "document_idle", world: "MAIN" },
     ]);
   }
-  // Not `*.pokerogue.net`: the beta site was never reviewed against (§6).
+  // Not `*.pokerogue.net`: the beta site was never reviewed against (extension-distribution.md §6).
   assert.deepEqual(MATCHES, ["https://pokerogue.net/*"]);
 });
 
-test("Chrome's floor is `world: \"MAIN\"`'s, on a service worker (§5.3)", () => {
+test("Chrome's floor is `world: \"MAIN\"`'s, on a service worker (extension-distribution.md §5.3)", () => {
   const m = store("chrome");
   assert.equal(m.minimum_chrome_version, "111");
   assert.deepEqual(m.background, { service_worker: "background.js" });
@@ -52,13 +52,13 @@ test("Chrome's floor is `world: \"MAIN\"`'s, on a service worker (§5.3)", () =>
   assert.ok(!("key" in m));
 });
 
-test("Firefox carries the CSP override, the gecko id, the 142 floor and the data-collection declaration (§5.3)", () => {
+test("Firefox carries the CSP override, the gecko id, the 142 floor and the data-collection declaration (extension-distribution.md §5.3)", () => {
   const m = store("firefox");
   assert.deepEqual(m.background, { scripts: ["background.js"] });
   assert.deepEqual(m.action, { default_title: ACTION_TITLE });
   assert.deepEqual(m.content_security_policy, { extension_pages: "script-src 'self'" });
   // Exact, so neither half of #380 can regress unseen: a floor below 142, or a `gecko_android` key. `manifest.ts`
-  // says why each one matters; §5.3 is the source.
+  // says why each one matters; extension-distribution.md §5.3 is the source.
   assert.deepEqual(m.browser_specific_settings, {
     gecko: {
       id: GECKO_ID,
@@ -66,17 +66,17 @@ test("Firefox carries the CSP override, the gecko id, the 142 floor and the data
       data_collection_permissions: { required: ["none"], optional: ["websiteContent"] },
     },
   });
-  // The click is what requests the data-collection permission, so the title must say what it allows (§8.4).
+  // The click is what requests the data-collection permission, so the title must say what it allows (extension-distribution.md §8.4).
   assert.match(ACTION_TITLE, /local AI agent read this game/);
 });
 
-test("Safari gets an event page and the 18 floor (§5.3)", () => {
+test("Safari gets an event page and the 18 floor (extension-distribution.md §5.3)", () => {
   const m = store("safari");
   assert.deepEqual(m.background, { scripts: ["background.js"], persistent: false });
   assert.deepEqual(m.browser_specific_settings, { safari: { strict_min_version: "18.0" } });
 });
 
-test("the dev flavour adds exactly the two permissions it needs (§5.4)", () => {
+test("the dev flavour adds exactly the two permissions it needs (extension-distribution.md §5.4)", () => {
   for (const target of TARGETS) {
     const m = manifestFor({ target, flavour: "dev", version: "1.2.3" });
     assert.deepEqual(m.permissions, ["scripting", "activeTab"]);
@@ -87,7 +87,7 @@ test("the dev flavour adds exactly the two permissions it needs (§5.4)", () => 
   }
 });
 
-test("a store version is three numbers, whatever package.json says (§14.2)", () => {
+test("a store version is three numbers, whatever package.json says (extension-distribution.md §14.2)", () => {
   assert.equal(storeVersion("1.2.3"), "1.2.3");
   assert.equal(storeVersion("0.0.0-placeholder"), "0.0.0");
   assert.equal(storeVersion("10.20.30+build"), "10.20.30");

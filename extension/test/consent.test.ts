@@ -1,5 +1,5 @@
 /**
- * Firefox's consent (§8.4): the data-collection permission the toolbar click asks for, and Orion — which runs the
+ * Firefox's consent (extension-distribution.md §8.4): the data-collection permission the toolbar click asks for, and Orion — which runs the
  * AMO build and must count as consented without ever showing a click.
  */
 import assert from "node:assert/strict";
@@ -40,7 +40,7 @@ async function run(h: ReturnType<typeof deps>) {
   };
 }
 
-test("Chrome and Safari have no consent step at all (§8.4)", async () => {
+test("Chrome and Safari have no consent step at all (extension-distribution.md §8.4)", async () => {
   for (const target of ["chrome", "safari"] as Target[]) {
     const h = deps({ target });
     const r = await run(h);
@@ -49,14 +49,14 @@ test("Chrome and Safari have no consent step at all (§8.4)", async () => {
   }
 });
 
-test("Orion running the AMO build counts as consented (§8.4)", async () => {
+test("Orion running the AMO build counts as consented (extension-distribution.md §8.4)", async () => {
   const h = deps({ target: "firefox", name: "Orion" });
   const r = await run(h);
   assert.equal(r.granted(), 1);
   assert.equal(h.clicks.length, 0);
 });
 
-test("Firefox asks for the data-collection permission on the click (§8.4)", async () => {
+test("Firefox asks for the data-collection permission on the click (extension-distribution.md §8.4)", async () => {
   const h = deps({ contains: false });
   const r = await run(h);
   assert.equal(r.granted(), 0, "consent before the click");
@@ -65,12 +65,12 @@ test("Firefox asks for the data-collection permission on the click (§8.4)", asy
   assert.equal(r.granted(), 1);
 });
 
-test("Firefox that already holds the permission starts consented (§8.4)", async () => {
+test("Firefox that already holds the permission starts consented (extension-distribution.md §8.4)", async () => {
   const r = await run(deps({ contains: true }));
   assert.equal(r.granted(), 1);
 });
 
-test("a refused request leaves the browser unconsented (§8.4)", async () => {
+test("a refused request leaves the browser unconsented (extension-distribution.md §8.4)", async () => {
   const h = deps({ requestGrants: false });
   const r = await run(h);
   await r.click();

@@ -1,5 +1,5 @@
 /**
- * The AMO linter step (§5.6). The guard (§5.5) checks what *we* decided the manifest should say; `addons-linter` is
+ * The AMO linter step (extension-distribution.md §5.6). The guard (§5.5) checks what *we* decided the manifest should say; `addons-linter` is
  * what AMO's own review runs, so it is the only check in CI that can tell us their verdict before a submission does.
  *
  * The whole step hangs on one flag, for the reason §5.6 gives: the linter exits **0** on warnings, and every finding
@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const LINTER = fileURLToPath(new URL("../node_modules/.bin/addons-linter", import.meta.url));
 
-/** The built artifact the step lints, which is what the store zip is made of (§5.6). */
+/** The built artifact the step lints, which is what the store zip is made of (extension-distribution.md §5.6). */
 const ARTIFACT = ".output/firefox-mv3-store";
 
 const workflow = () => readFileSync(join(ROOT, ".github/workflows/extension.yml"), "utf8").split("\n");
@@ -50,7 +50,7 @@ function warningOnlyAddon(): string {
 
 const lint = (args: string[]) => spawnSync(LINTER, args, { encoding: "utf8" });
 
-test("CI lints the built Firefox artifact, and gates on warnings (§5.6)", () => {
+test("CI lints the built Firefox artifact, and gates on warnings (extension-distribution.md §5.6)", () => {
   const lines = workflow();
   const linter = linterStep(lines);
 
@@ -64,7 +64,7 @@ test("CI lints the built Firefox artifact, and gates on warnings (§5.6)", () =>
   assert.ok(build < linter, "the linter step must come after build:all, which writes the artifact it reads");
 });
 
-test("the linter is pinned here, so a release of it cannot turn master red (§5.6)", () => {
+test("the linter is pinned here, so a release of it cannot turn master red (extension-distribution.md §5.6)", () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, "extension/package.json"), "utf8")) as {
     devDependencies?: Record<string, string>;
   };

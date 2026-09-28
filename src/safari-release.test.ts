@@ -24,7 +24,7 @@ const PLAN = {
 };
 
 test("the notarized app's zip is named for the release, not for what the packager fed on", () => {
-  // The release already carries `coachemon-safari-web-extension-<v>.zip`, the unpackaged folder (§14.2). The hand
+  // The release already carries `coachemon-safari-web-extension-<v>.zip`, the unpackaged folder (extension-distribution.md §14.2). The hand
   // build adds a second Safari asset, and the two names must not collide on the same release.
   assert.equal(safariAppZipName("0.1.0"), "Coachemon-safari-0.1.0.zip");
   assert.notEqual(safariAppZipName("0.1.0"), zipName("safari", "0.1.0"));
@@ -110,12 +110,12 @@ test("the runner's post-unpack check hangs off an id, not off a printed sentence
   assert.notEqual(unpack[0].title, unpack[0].id);
 });
 
-test("the converter is driven exactly as §14.6 spells it out, under the name it really has", () => {
+test("the converter is driven exactly as extension-distribution.md §14.6 spells it out, under the name it really has", () => {
   const step = safariSteps(PLAN).find(s => s.command === "xcrun" && s.args[0].startsWith("safari-web-extension"));
   assert.ok(step, "no converter step");
   const paths = safariPaths(PLAN);
   assert.deepEqual(step.args, [
-    // The converter, not the "packager" §14.6 named: `xcrun` finds no such tool, so the spec's name would abort
+    // The converter, not the "packager" extension-distribution.md §14.6 named: `xcrun` finds no such tool, so the spec's name would abort
     // every run three steps in. Apple's page is titled "Packaging a web extension for Safari"; the tool is not.
     "safari-web-extension-converter",
     paths.unpacked,

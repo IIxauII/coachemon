@@ -1,5 +1,5 @@
 /**
- * The store-artifact guard (§5.5). It runs against what the build actually wrote, not against the source, and CI runs
+ * The store-artifact guard (extension-distribution.md §5.5). It runs against what the build actually wrote, not against the source, and CI runs
  * it after every build: it is the thing standing between a dev affordance and a store review.
  *
  * Check 4 — the dispatch keys — is the real one. The string checks are a backstop; if a vendored library ever trips
@@ -20,13 +20,13 @@ import { EVENT, encode } from "../src/relay/channel.ts";
 const OUT = fileURLToPath(new URL("../.output/", import.meta.url));
 
 /**
- * Anything that would be a dev affordance or the dev port, in a store artifact's files. §5.5 spells the interpreter
+ * Anything that would be a dev affordance or the dev port, in a store artifact's files. extension-distribution.md §5.5 spells the interpreter
  * check as `new Function(`; the minifier drops the `new`, which no artifact would ever have tripped on, so the bare
  * call is banned too.
  */
 const BANNED_IN_STORE = ["47148", "eval(", "new Function(", "Function(", "screenshot", "captureVisibleTab", "executeScript", "runtime.reload", "dev-reload"];
 
-/** The store hub's URL, which a store build must actually dial (§8.1). */
+/** The store hub's URL, which a store build must actually dial (extension-distribution.md §8.1). */
 const REQUIRED_IN_STORE = "ws://127.0.0.1:47147";
 
 type Artifact = { name: string; dir: string; flavour: "store" | "dev"; target: string };
@@ -50,7 +50,7 @@ const manifestOf = (a: Artifact) => JSON.parse(readFileSync(join(a.dir, "manifes
 
 /**
  * Check 4: load the built `page.js` in a context with nothing but a fake document, and read the command list out of
- * the hello it announces itself with (§9.3). A store artifact's list must **equal** `STORE_COMMANDS`.
+ * the hello it announces itself with (extension-distribution.md §9.3). A store artifact's list must **equal** `STORE_COMMANDS`.
  */
 function commandsOf(a: Artifact): { build: string; commands: string[]; answers: boolean } {
   const doc = new EventTarget();
@@ -64,7 +64,7 @@ function commandsOf(a: Artifact): { build: string; commands: string[]; answers: 
   runInContext(readFileSync(join(a.dir, "page.js"), "utf8"), context);
   assert.ok(hellos.length >= 1, `${a.name}: page.js announced no hello`);
   const first = hellos[0];
-  // The double announce: a relay hello of the page's own build is answered once more (§9.3).
+  // The double announce: a relay hello of the page's own build is answered once more (extension-distribution.md §9.3).
   doc.dispatchEvent(new CustomEvent(EVENT.hello, { detail: encode({ build: first.build, side: "relay" }) }));
   return { build: first.build, commands: first.commands ?? [], answers: hellos.length === 2 };
 }
@@ -76,16 +76,16 @@ test("there are artifacts to guard", () => {
 });
 
 for (const a of all) {
-  test(`${a.name}: LICENSE and THIRD_PARTY_NOTICES.md ship with it (§15)`, () => {
+  test(`${a.name}: LICENSE and THIRD_PARTY_NOTICES.md ship with it (extension-distribution.md §15)`, () => {
     for (const name of ["LICENSE", "THIRD_PARTY_NOTICES.md"]) {
       const text = readFileSync(join(a.dir, name), "utf8");
       assert.ok(text.length > 100, `${name} is missing or empty`);
     }
-    // The corresponding-source line carries the real version, not the spec's placeholder (§15).
+    // The corresponding-source line carries the real version, not the spec's placeholder (extension-distribution.md §15).
     assert.doesNotMatch(readFileSync(join(a.dir, "THIRD_PARTY_NOTICES.md"), "utf8"), /extension-v<version>/);
   });
 
-  test(`${a.name}: the page registers exactly the commands this flavour may have (§5.5 check 4)`, () => {
+  test(`${a.name}: the page registers exactly the commands this flavour may have (extension-distribution.md §5.5 check 4)`, () => {
     const { build, commands, answers } = commandsOf(a);
     assert.match(build, /^\d+\.\d+\.\d+\+[0-9a-f]{12}$/, "the build id was not stamped");
     assert.ok(answers, "the page did not answer a relay hello");
@@ -95,14 +95,14 @@ for (const a of all) {
     } else {
       // A dev build may add to the table but never drop a store command.
       for (const name of COMMAND_NAMES) assert.ok(commands.includes(name), `dev build is missing ${name}`);
-      // Only the page's half of the dev table is here: the other two are the background's, and never reach a tab (§10.6).
+      // Only the page's half of the dev table is here: the other two are the background's, and never reach a tab (extension-distribution.md §10.6).
       const [inPage, ...inBackground] = DEV_COMMAND_NAMES;
       assert.ok(commands.includes(inPage), `dev build does not register ${inPage}`);
       for (const name of inBackground) assert.ok(!commands.includes(name), `the page registered ${name}`);
     }
   });
 
-  test(`${a.name}: the HUD ships comment-stripped (§5.2)`, () => {
+  test(`${a.name}: the HUD ships comment-stripped (extension-distribution.md §5.2)`, () => {
     const hud = readFileSync(join(a.dir, "hud.js"), "utf8");
     assert.doesNotMatch(hud, /^\s*\/\//m);
     assert.doesNotMatch(hud, /^\s*\/\*/m);
@@ -111,19 +111,19 @@ for (const a of all) {
   // The Firefox add-on linter warns on `import()` whose argument it can't see is a literal, and the HUD is the one
   // script that reaches the game's own modules (#381). It does that through an injected module script whose source
   // imports one literal URL, so the packaged file calls `import` not at all.
-  test(`${a.name}: the HUD calls no import() (§5.2)`, () => {
+  test(`${a.name}: the HUD calls no import() (extension-distribution.md §5.2)`, () => {
     assert.doesNotMatch(readFileSync(join(a.dir, "hud.js"), "utf8"), /(?<![\w$.])import\s*\(/);
   });
 
   if (a.flavour === "store") {
-    test(`${a.name}: the manifest declares no permission of any kind (§5.5 check 1)`, () => {
+    test(`${a.name}: the manifest declares no permission of any kind (extension-distribution.md §5.5 check 1)`, () => {
       const manifest = manifestOf(a);
       for (const key of BANNED_MANIFEST_KEYS) assert.ok(!(key in manifest), `store manifest has ${key}`);
       const text = JSON.stringify(manifest);
       for (const word of BANNED_MANIFEST_WORDS) assert.ok(!text.includes(word), `store manifest mentions ${word}`);
     });
 
-    test(`${a.name}: no dev affordance and no dev port in any file (§5.5 check 2)`, () => {
+    test(`${a.name}: no dev affordance and no dev port in any file (extension-distribution.md §5.5 check 2)`, () => {
       for (const f of files(a.dir)) {
         const text = readFileSync(f.path, "utf8");
         for (const banned of BANNED_IN_STORE) {
@@ -134,7 +134,7 @@ for (const a of all) {
       assert.ok(dials, `no file dials ${REQUIRED_IN_STORE}`);
     });
   } else {
-    test(`${a.name}: a dev artifact never carries the store port (§5.5 check 3)`, () => {
+    test(`${a.name}: a dev artifact never carries the store port (extension-distribution.md §5.5 check 3)`, () => {
       for (const f of files(a.dir)) {
         assert.ok(!readFileSync(f.path, "utf8").includes("47147"), `${f.rel} contains 47147`);
       }
@@ -142,13 +142,13 @@ for (const a of all) {
   }
 
   if (a.target === "safari") {
-    test(`${a.name}: Safari's background is \`scripts\`, not a service worker (§5.3)`, () => {
+    test(`${a.name}: Safari's background is \`scripts\`, not a service worker (extension-distribution.md §5.3)`, () => {
       assert.deepEqual(manifestOf(a).background, { scripts: ["background.js"], persistent: false });
     });
   }
 
   if (a.target === "firefox") {
-    test(`${a.name}: Firefox overrides the CSP that breaks \`ws://127.0.0.1\` (§5.3)`, () => {
+    test(`${a.name}: Firefox overrides the CSP that breaks \`ws://127.0.0.1\` (extension-distribution.md §5.3)`, () => {
       const manifest = manifestOf(a);
       assert.deepEqual(manifest.content_security_policy, { extension_pages: "script-src 'self'" });
       assert.deepEqual((manifest.background as Record<string, unknown>).scripts, ["background.js"]);

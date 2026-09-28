@@ -35,7 +35,7 @@ function client(port: number, o: Partial<ConstructorParameters<typeof HubClient>
   return c;
 }
 
-test("a client connects to a running hub, and its commands reach the tab (§7.2)", async () => {
+test("a client connects to a running hub, and its commands reach the tab (extension-distribution.md §7.2)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 3);
   const c = client(h.port);
@@ -49,7 +49,7 @@ test("a client connects to a running hub, and its commands reach the tab (§7.2)
   assert.deepEqual(await reply, { t: "reply", id: 1, ok: true, result: { readable: true } });
 });
 
-test("a hub that will not start is rung 2's stderr, and its death ends the wait early (§7.2)", async () => {
+test("a hub that will not start is rung 2's stderr, and its death ends the wait early (extension-distribution.md §7.2)", async () => {
   const port = await deadPort();
   const c = client(port, { spawnHub: () => deadSpawn("Error: cannot find module ws\n    at x") });
   const t0 = Date.now();
@@ -57,7 +57,7 @@ test("a hub that will not start is rung 2's stderr, and its death ends the wait 
   assert.ok(Date.now() - t0 < 3_000, `a child that has exited is not waited out: took ${Date.now() - t0} ms`);
 });
 
-test("a hub that never answers and never exits is given the whole spawn budget (§7.2)", async () => {
+test("a hub that never answers and never exits is given the whole spawn budget (extension-distribution.md §7.2)", async () => {
   const port = await deadPort();
   const c = client(port, { spawnHub: () => ({ pid: null, stderr: () => "", exited: new Promise(() => {}), release: () => {} }) });
   const t0 = Date.now();
@@ -66,7 +66,7 @@ test("a hub that never answers and never exits is given the whole spawn budget (
   assert.ok(Date.now() - t0 >= 3_000, "the client retries every 100 ms for the full 3 s budget");
 });
 
-test("a spawn that does come up is connected to, and the child is released then (§7.2)", async () => {
+test("a spawn that does come up is connected to, and the child is released then (extension-distribution.md §7.2)", async () => {
   const port = await deadPort();
   let released = 0;
   const c = client(port, {
@@ -79,7 +79,7 @@ test("a spawn that does come up is connected to, and the child is released then 
   assert.equal(released, 1, "the stderr pipe is destroyed and the child unref'd once we are connected");
 });
 
-test("a port that answers but is not a hub is rung 1, whether it speaks HTTP or a silent WebSocket (§7.2, §7.4)", async () => {
+test("a port that answers but is not a hub is rung 1, whether it speaks HTTP or a silent WebSocket (extension-distribution.md §7.2, §7.4)", async () => {
   const holder = () => ({ process: "OtherApp", pid: 4242 });
 
   const http = createServer((_req, res) => res.writeHead(200).end("hello"));
@@ -96,7 +96,7 @@ test("a port that answers but is not a hub is rung 1, whether it speaks HTTP or 
   assert.deepEqual(await client(silentPort, { portHolder: holder }).ready(), { kind: "foreign", port: silentPort, process: "OtherApp", pid: 4242 });
 });
 
-test("a hub newer than this plugin copy refuses every call, and says which side to restart (§7.3)", async () => {
+test("a hub newer than this plugin copy refuses every call, and says which side to restart (extension-distribution.md §7.3)", async () => {
   const h = await hub({ version: "2.0.0" });
   const c = client(h.port);
   assert.deepEqual(await c.ready(), { kind: "skew-hub-newer" });
@@ -104,7 +104,7 @@ test("a hub newer than this plugin copy refuses every call, and says which side 
   assert.equal(r.ok === false && r.code, "unreachable", "no hub to ask is not the same as no tab (§7.6)");
 });
 
-test("a newer client retires an idle older hub and takes its place (§7.3)", async () => {
+test("a newer client retires an idle older hub and takes its place (extension-distribution.md §7.3)", async () => {
   const port = await deadPort();
   const old = await hub({ version: "0.9.0", port });
   let spawned = 0;
@@ -120,7 +120,7 @@ test("a newer client retires an idle older hub and takes its place (§7.3)", asy
   assert.equal(old.port, port);
 });
 
-test("a newer client leaves an older hub alone while someone is driving on it (§7.3)", async () => {
+test("a newer client leaves an older hub alone while someone is driving on it (extension-distribution.md §7.3)", async () => {
   const h = await hub({ version: "0.9.0" });
   const driver = await fakeClient(h.port);
   driver.send({ t: "claim" });
@@ -130,7 +130,7 @@ test("a newer client leaves an older hub alone while someone is driving on it (�
   assert.deepEqual(await c.ready(), { kind: "skew-driving" });
 });
 
-test("claim and its refusal cross the client (§7.5)", async () => {
+test("claim and its refusal cross the client (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   const a = client(h.port);
   const b = client(h.port);
@@ -139,7 +139,7 @@ test("claim and its refusal cross the client (§7.5)", async () => {
   assert.equal((await b.state())?.driver, "other");
 });
 
-test("a subscribed client hears events and notices (§7.5)", async () => {
+test("a subscribed client hears events and notices (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1);
   const heard: ToClient[] = [];
@@ -163,7 +163,7 @@ test("a hub that goes away mid-command answers the command instead of hanging", 
   assert.equal(r.ok, false);
 });
 
-test("a real client spawns the real hub process and is talking to it inside the budget (§7.2)", async () => {
+test("a real client spawns the real hub process and is talking to it inside the budget (extension-distribution.md §7.2)", async () => {
   const port = await deadPort();
   const spawned: HubProcess[] = [];
   const c = new HubClient({
@@ -193,7 +193,7 @@ test("a real client spawns the real hub process and is talking to it inside the 
   loser.release();
 });
 
-test("plugin versions compare as the three numbers semantic-release writes (§7.3)", () => {
+test("plugin versions compare as the three numbers semantic-release writes (extension-distribution.md §7.3)", () => {
   assert.equal(compare("1.2.0", "1.2.0"), 0);
   assert.equal(compare("1.10.0", "1.9.0"), 1);
   assert.equal(compare("0.28.0", "1.0.0"), -1);

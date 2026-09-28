@@ -42,7 +42,7 @@ test("the menu reader picks learn_move from disc's summaryUiMode", t => {
   assert.equal(send("menu", {}).family, "learn_move");
 });
 
-test("a login modal's buttons and form labels are read, its typed form text never is (§6)", t => {
+test("a login modal's buttons and form labels are read, its typed form text never is (extension-distribution.md §6)", t => {
   const text = (s: string) => ({ text: s });
   const h = {
     buttonLabels: [text("Login"), text("Register")],
@@ -59,7 +59,7 @@ test("a login modal's buttons and form labels are read, its typed form text neve
   assert.equal(JSON.stringify(menu).includes("pikachu123"), false);
 });
 
-test("a reward offer carries the game's own description, the field probe.js's reward read had (§11.4)", t => {
+test("a reward offer carries the game's own description, the field probe.js's reward read had (extension-distribution.md §11.4)", t => {
   const offer = (name: string, cost: number, desc: string) => ({ modifierTypeOption: { type: { name, getDescription: () => desc }, cost } });
   const h = {
     rowCursor: 1, cursor: 0, rerollCost: 250,

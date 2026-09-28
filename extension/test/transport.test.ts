@@ -1,5 +1,5 @@
 /**
- * The background transport (§8) on a fake clock and a fake socket: dialing only with a tab, the welcome check and its
+ * The background transport (extension-distribution.md §8) on a fake clock and a fake socket: dialing only with a tab, the welcome check and its
  * 10 min back-off, the retry schedule, the ping keepalive, forwarding, and Firefox's consent gate.
  */
 import assert from "node:assert/strict";
@@ -74,14 +74,14 @@ function harness(o: Partial<TransportDeps> = {}) {
 /** What a relay says when its tab is ready; the tab id is the argument to `fromTab`, not part of the frame. */
 const ready = () => ({ t: "tab", state: "ready", title: "PokéRogue" }) as const;
 
-test("no game tab, no loopback traffic (§8.1)", () => {
+test("no game tab, no loopback traffic (extension-distribution.md §8.1)", () => {
   const h = harness();
   h.t.start();
   h.advance(60_000);
   assert.equal(h.dials.length, 0);
 });
 
-test("a ready tab dials, and the hello is all that crosses before the welcome (§7.4, §8.1)", () => {
+test("a ready tab dials, and the hello is all that crosses before the welcome (extension-distribution.md §7.4, §8.1)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   assert.equal(h.dials.length, 1);
@@ -103,7 +103,7 @@ test("a ready tab dials, and the hello is all that crosses before the welcome (�
   assert.deepEqual(wire.sent.slice(1), [{ t: "tab", tab: 1, state: "ready", title: "PokéRogue" }]);
 });
 
-test("the ping holds the service worker, every 20 s while connected (§8.2)", () => {
+test("the ping holds the service worker, every 20 s while connected (extension-distribution.md §8.2)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   const wire = h.connect();
@@ -111,7 +111,7 @@ test("the ping holds the service worker, every 20 s while connected (§8.2)", ()
   assert.equal(wire.sent.filter(f => f.t === "ping").length, 3);
 });
 
-test("silence on the port backs off 10 minutes, then dials again (§8.1)", () => {
+test("silence on the port backs off 10 minutes, then dials again (extension-distribution.md §8.1)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   h.advance(WELCOME_MS);
@@ -122,7 +122,7 @@ test("silence on the port backs off 10 minutes, then dials again (§8.1)", () =>
   assert.equal(h.dials.length, 2);
 });
 
-test("a wrong product on the port is the same 10 minutes (§8.1)", () => {
+test("a wrong product on the port is the same 10 minutes (extension-distribution.md §8.1)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   h.dials[0].h.open();
@@ -134,7 +134,7 @@ test("a wrong product on the port is the same 10 minutes (§8.1)", () => {
   assert.equal(h.dials.length, 2);
 });
 
-test("a dropped socket retries 1 s, 2 s, 5 s, then every 20 s (§8.1)", () => {
+test("a dropped socket retries 1 s, 2 s, 5 s, then every 20 s (extension-distribution.md §8.1)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   for (const [i, ms] of [...RETRY_MS, RETRY_STEADY_MS, RETRY_STEADY_MS].entries()) {
@@ -146,7 +146,7 @@ test("a dropped socket retries 1 s, 2 s, 5 s, then every 20 s (§8.1)", () => {
   }
 });
 
-test("a welcome resets the retry schedule (§8.1)", () => {
+test("a welcome resets the retry schedule (extension-distribution.md §8.1)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   h.connect().h.closed();
@@ -156,7 +156,7 @@ test("a welcome resets the retry schedule (§8.1)", () => {
   assert.equal(h.dials.length, 3);
 });
 
-test("a command goes to its tab and the relay's reply goes back unchanged (§8.3)", async () => {
+test("a command goes to its tab and the relay's reply goes back unchanged (extension-distribution.md §8.3)", async () => {
   const h = harness();
   h.reply(() => Promise.resolve({ t: "reply", id: 17, ok: true, result: { mode: 3 } }));
   h.t.fromTab(1, ready());
@@ -167,7 +167,7 @@ test("a command goes to its tab and the relay's reply goes back unchanged (§8.3
   assert.deepEqual(wire.sent.at(-1), { t: "reply", id: 17, ok: true, result: { mode: 3 } });
 });
 
-test("a command the background answers itself never reaches the tab (§10.6)", async () => {
+test("a command the background answers itself never reaches the tab (extension-distribution.md §10.6)", async () => {
   const asked: string[] = [];
   const h = harness({
     local: cmd => {
@@ -188,7 +188,7 @@ test("a command the background answers itself never reaches the tab (§10.6)", a
   assert.equal(h.toTab.length, 1);
 });
 
-test("a frame only this build knows is handled by it and answered by nobody (§5.4)", () => {
+test("a frame only this build knows is handled by it and answered by nobody (extension-distribution.md §5.4)", () => {
   const seen: string[] = [];
   const h = harness({
     extra: frame => {
@@ -218,7 +218,7 @@ test("a store build knows no such frame, and one it cannot have is dropped in si
   assert.equal(wire.sent.length, before);
 });
 
-test("a tab that closed under us is `tab-gone`, the code only the background adds (§9.7)", async () => {
+test("a tab that closed under us is `tab-gone`, the code only the background adds (extension-distribution.md §9.7)", async () => {
   for (const answer of [() => Promise.reject(new Error("no receiving end")), () => Promise.resolve(undefined)]) {
     const h = harness();
     h.reply(answer);
@@ -233,7 +233,7 @@ test("a tab that closed under us is `tab-gone`, the code only the background add
   }
 });
 
-test("a reply frame over 1 MB is refused rather than sent (§8.3)", async () => {
+test("a reply frame over 1 MB is refused rather than sent (extension-distribution.md §8.3)", async () => {
   const h = harness();
   h.reply(() => Promise.resolve({ t: "reply", id: 4, ok: true, result: "x".repeat(MAX_DETAIL_BYTES) }));
   h.t.fromTab(1, ready());
@@ -243,7 +243,7 @@ test("a reply frame over 1 MB is refused rather than sent (§8.3)", async () => 
   assert.deepEqual(wire.sent.at(-1), { t: "reply", id: 4, ok: false, code: "too-large", message: "reply over 1 MB" });
 });
 
-test("a HUD event carries the tab it came from (§8.3)", () => {
+test("a HUD event carries the tab it came from (extension-distribution.md §8.3)", () => {
   const h = harness();
   h.t.fromTab(9, ready());
   const wire = h.connect();
@@ -251,7 +251,7 @@ test("a HUD event carries the tab it came from (§8.3)", () => {
   assert.deepEqual(wire.sent.at(-1), { t: "event", tab: 9, kind: "card", body: { kind: "battle", wave: 3 } });
 });
 
-test("a gone tab is reported, and stops being one the hub counts (§9.3)", () => {
+test("a gone tab is reported, and stops being one the hub counts (extension-distribution.md §9.3)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   const wire = h.connect();
@@ -260,7 +260,7 @@ test("a gone tab is reported, and stops being one the hub counts (§9.3)", () =>
   assert.deepEqual(h.t.ready, []);
 });
 
-test("a restarted background re-learns its tabs from the keepalive and dials again (§8.2)", () => {
+test("a restarted background re-learns its tabs from the keepalive and dials again (extension-distribution.md §8.2)", () => {
   const h = harness();
   h.t.start();
   assert.equal(h.dials.length, 0);
@@ -270,7 +270,7 @@ test("a restarted background re-learns its tabs from the keepalive and dials aga
   assert.deepEqual(wire.sent.at(-1), { t: "tab", tab: 5, state: "ready", title: "PokéRogue" });
 });
 
-test("a keepalive from a tab with no state yet dials but announces nothing (§8.1)", () => {
+test("a keepalive from a tab with no state yet dials but announces nothing (extension-distribution.md §8.1)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   const wire = h.connect();
@@ -280,11 +280,11 @@ test("a keepalive from a tab with no state yet dials but announces nothing (§8.
   assert.deepEqual(h.t.ready, [1]);
 });
 
-test("Firefox connects, says `consent: false`, and sends nothing else until the click (§8.4)", async () => {
+test("Firefox connects, says `consent: false`, and sends nothing else until the click (extension-distribution.md §8.4)", async () => {
   const h = harness({ target: "firefox", consent: false });
   h.reply(() => Promise.resolve({ t: "reply", id: 1, ok: true, result: "leaked" }));
   h.t.fromTab(1, ready());
-  // It dials: that `consent: false` hello is the only thing that lets the status ladder name the click (§12.3).
+  // It dials: that `consent: false` hello is the only thing that lets the status ladder name the click (extension-distribution.md §12.3).
   const wire = h.connect();
   assert.equal((wire.sent[0] as ExtensionHello).consent, false);
   h.t.fromTab(1, { t: "event", kind: "card", body: { kind: "battle", wave: 1 } });
@@ -294,7 +294,7 @@ test("Firefox connects, says `consent: false`, and sends nothing else until the 
   assert.deepEqual(h.t.ready, []);
 });
 
-test("the click sends `consent`, then every tab the hub was never told about (§8.4)", () => {
+test("the click sends `consent`, then every tab the hub was never told about (extension-distribution.md §8.4)", () => {
   const h = harness({ target: "firefox", consent: false });
   h.t.fromTab(1, ready());
   const wire = h.connect();
@@ -308,7 +308,7 @@ test("the click sends `consent`, then every tab the hub was never told about (§
   assert.deepEqual(h.t.ready, [1, 2]);
 });
 
-test("a wrong-world tab is reported and never counted (§9.4)", () => {
+test("a wrong-world tab is reported and never counted (extension-distribution.md §9.4)", () => {
   const h = harness();
   h.t.fromTab(1, ready());
   const wire = h.connect();

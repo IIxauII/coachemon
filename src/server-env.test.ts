@@ -4,7 +4,7 @@ import { serverEnv } from "./server-env.ts";
 
 const env = (o: Record<string, string | undefined>) => serverEnv(o as NodeJS.ProcessEnv);
 
-test("the two variables that pick the transport and the port reach the server (§7.2, §12.1)", () => {
+test("the two variables that pick the transport and the port reach the server (extension-distribution.md §7.2, §12.1)", () => {
   const out = env({ COACHEMON_TRANSPORT: "hub", COACHEMON_DEV: "1", PATH: "/bin" });
   assert.equal(out.COACHEMON_TRANSPORT, "hub");
   assert.equal(out.COACHEMON_DEV, "1");

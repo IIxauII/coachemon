@@ -50,7 +50,7 @@ function commandScene(inputs: number[]) {
   };
 }
 
-test("every command runs self-contained in the tab: nothing it needs is left behind in the server (§10.5)", async () => {
+test("every command runs self-contained in the tab: nothing it needs is left behind in the server (extension-distribution.md §10.5)", async () => {
   const inputs: number[] = [];
   const link = new CdpLink(tabSession(commandScene(inputs)).session);
   const probe = await link.probe({});
@@ -77,7 +77,7 @@ test("every command runs self-contained in the tab: nothing it needs is left beh
   assert.deepEqual(inputs, [Button.DOWN]);
 });
 
-test("the act and its fingerprint check go to the tab in one evaluate, so nothing runs between them (§10.2)", async () => {
+test("the act and its fingerprint check go to the tab in one evaluate, so nothing runs between them (extension-distribution.md §10.2)", async () => {
   const s = tabSession(commandScene([]));
   await new CdpLink(s.session).press({ button: Button.ACTION, fine: "f" });
   assert.equal(s.sent.length, 1);

@@ -52,7 +52,7 @@ function battleScene(over: Record<string, unknown> = {}) {
   };
 }
 
-test("lean and party are what they were: the coach's battle fields are full's alone (§11.4)", t => {
+test("lean and party are what they were: the coach's battle fields are full's alone (extension-distribution.md §11.4)", t => {
   onPage(t, battleScene());
   const lean = send("snapshot", { detail: "lean" });
   assert.equal(lean.party[0].stats, undefined);
@@ -64,7 +64,7 @@ test("lean and party are what they were: the coach's battle fields are full's al
   assert.equal(party.trainer, undefined);
 });
 
-test("full carries probe.js's battle fields per party member (§11.4)", t => {
+test("full carries probe.js's battle fields per party member (extension-distribution.md §11.4)", t => {
   onPage(t, battleScene());
   const p = send("snapshot", { detail: "full" }).party[0];
   assert.deepEqual(p.types, [9, 2]);
@@ -80,7 +80,7 @@ test("full carries probe.js's battle fields per party member (§11.4)", t => {
   assert.deepEqual(p.moves, [{ name: "Flamethrower", pp: 12, maxPp: 15, power: 90, category: 1, type: 9, accuracy: 100 }]);
 });
 
-test("full carries them for the enemy too, bars left of a boss's total included (§11.4)", t => {
+test("full carries them for the enemy too, bars left of a boss's total included (extension-distribution.md §11.4)", t => {
   onPage(t, battleScene());
   const e = send("snapshot", { detail: "full" }).enemy[0];
   assert.equal(e.ability, "Blaze");
@@ -91,7 +91,7 @@ test("full carries them for the enemy too, bars left of a boss's total included 
   assert.equal(e.moves.length, 1);
 });
 
-test("full names the trainer, and null in a wild fight (§11.4)", t => {
+test("full names the trainer, and null in a wild fight (extension-distribution.md §11.4)", t => {
   onPage(t, battleScene());
   assert.equal(send("snapshot", { detail: "full" }).trainer, "Rival");
 });
@@ -106,7 +106,7 @@ test("a wild wave has no trainer and no passive on a mon without one", t => {
   assert.equal(full.party[0].passive, null);
 });
 
-test("a mon whose every coach path throws still reads, field by field (§6.2 fault isolation)", t => {
+test("a mon whose every coach path throws still reads, field by field (v1-tool-surface.md §6.2 fault isolation)", t => {
   const broken = {
     name: "Broken",
     get species(): never {

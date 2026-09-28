@@ -1,5 +1,5 @@
 /**
- * The relay contract (§9), driven end to end: the relay and the page script on one `EventTarget`, which is a faithful
+ * The relay contract (extension-distribution.md §9), driven end to end: the relay and the page script on one `EventTarget`, which is a faithful
  * stand-in for `document` in the one way that matters — `dispatchEvent` runs listeners synchronously, so a test that
  * passes here is a test of §9.2's "reply before dispatch returns" and not of a mock.
  */
@@ -46,7 +46,7 @@ function tab(o: { build?: string } = {}) {
 
 const tabFrames = (sent: ToBackground[]) => sent.filter(m => m.t === "tab");
 
-test("the double announce makes a tab ready in either load order (§9.3)", () => {
+test("the double announce makes a tab ready in either load order (extension-distribution.md §9.3)", () => {
   for (const order of ["relay first", "page first"] as const) {
     const t = tab();
     if (order === "relay first") {
@@ -62,7 +62,7 @@ test("the double announce makes a tab ready in either load order (§9.3)", () =>
   }
 });
 
-test("a page script of another build never makes the tab ready (§9.6)", () => {
+test("a page script of another build never makes the tab ready (extension-distribution.md §9.6)", () => {
   const t = tab();
   const r = t.relay("1.2.3+aaaaaaaaaaaa");
   t.page({ build: "1.2.4+bbbbbbbbbbbb" });
@@ -70,7 +70,7 @@ test("a page script of another build never makes the tab ready (§9.6)", () => {
   assert.deepEqual(tabFrames(t.sent), []);
 });
 
-test("a command is answered inside the dispatch that delivered it (§9.2)", (c: TestContext) => {
+test("a command is answered inside the dispatch that delivered it (extension-distribution.md §9.2)", (c: TestContext) => {
   onPage(c, { ui: { mode: 0, handlers: {} } });
   const t = tab();
   const r = t.relay();
@@ -81,7 +81,7 @@ test("a command is answered inside the dispatch that delivered it (§9.2)", (c: 
   assert.equal(reply.ok, true);
 });
 
-test("off the game every command still answers, with the locator's reason (§10.1)", () => {
+test("off the game every command still answers, with the locator's reason (extension-distribution.md §10.1)", () => {
   const t = tab();
   const r = t.relay();
   t.page();
@@ -95,7 +95,7 @@ test("off the game every command still answers, with the locator's reason (§10.
   assert.equal(probe.result.ready, false);
 });
 
-test("no page script, or a name it does not hold, is `no-handler` with no timer (§9.2)", () => {
+test("no page script, or a name it does not hold, is `no-handler` with no timer (extension-distribution.md §9.2)", () => {
   const t = tab();
   const lonely = t.relay();
   assert.deepEqual(lonely.command({ t: "cmd", id: 3, name: "probe", args: {} }), {
@@ -111,7 +111,7 @@ test("no page script, or a name it does not hold, is `no-handler` with no timer 
   assert.equal((unknown as { code: string }).code, "no-handler");
 });
 
-test("a handler that throws crosses as `threw`, its message only (§9.7)", (c: TestContext) => {
+test("a handler that throws crosses as `threw`, its message only (extension-distribution.md §9.7)", (c: TestContext) => {
   onPage(c, { ui: { mode: 0, handlers: {} } });
   const t = tab();
   const r = t.relay();
@@ -125,7 +125,7 @@ test("a handler that throws crosses as `threw`, its message only (§9.7)", (c: T
   });
 });
 
-test("a reply over 1 MB is dropped at the relay as `too-large` (§9.7)", (c: TestContext) => {
+test("a reply over 1 MB is dropped at the relay as `too-large` (extension-distribution.md §9.7)", (c: TestContext) => {
   onPage(c, { ui: { mode: 0, handlers: {} } });
   const t = tab();
   const r = t.relay();
@@ -135,7 +135,7 @@ test("a reply over 1 MB is dropped at the relay as `too-large` (§9.7)", (c: Tes
   assert.equal((reply as { code: string }).code, "too-large");
 });
 
-test("a forged oversized reply cannot poison an in-flight command (§9.5)", (c: TestContext) => {
+test("a forged oversized reply cannot poison an in-flight command (extension-distribution.md §9.5)", (c: TestContext) => {
   onPage(c, { ui: { mode: 0, handlers: {} } });
   const t = tab();
   const r = t.relay();
@@ -160,7 +160,7 @@ test("a forged oversized reply cannot poison an in-flight command (§9.5)", (c: 
   });
 });
 
-test("page scripts that ran isolated report `wrong-world` and register nothing (§9.4)", () => {
+test("page scripts that ran isolated report `wrong-world` and register nothing (extension-distribution.md §9.4)", () => {
   const t = tab();
   const r = t.relay();
   t.page({ isolated: true });
@@ -175,7 +175,7 @@ test("page scripts that ran isolated report `wrong-world` and register nothing (
   });
 });
 
-test("the newest page script replaces the running one in place (§9.6)", (c: TestContext) => {
+test("the newest page script replaces the running one in place (extension-distribution.md §9.6)", (c: TestContext) => {
   onPage(c, { ui: { mode: 0, handlers: {} } });
   const channel = new EventTarget() as unknown as Channel;
   const host: { __coachemonPage?: { build: string; stop: () => void } } = {};
@@ -201,7 +201,7 @@ test("the newest page script replaces the running one in place (§9.6)", (c: Tes
   second.stop();
 });
 
-test("a card event crosses only with exactly the declared keys and types (§9.5)", () => {
+test("a card event crosses only with exactly the declared keys and types (extension-distribution.md §9.5)", () => {
   const t = tab();
   t.relay();
   t.page();
@@ -221,7 +221,7 @@ test("a card event crosses only with exactly the declared keys and types (§9.5)
   ]);
 });
 
-test("an event over 1 MB is dropped, not truncated (§9.7)", () => {
+test("an event over 1 MB is dropped, not truncated (extension-distribution.md §9.7)", () => {
   const t = tab();
   t.relay();
   t.page();
@@ -229,7 +229,7 @@ test("an event over 1 MB is dropped, not truncated (§9.7)", () => {
   assert.deepEqual(t.sent.filter(m => m.t === "event"), []);
 });
 
-test("the relay never turns a page event into a command (§9.5)", () => {
+test("the relay never turns a page event into a command (extension-distribution.md §9.5)", () => {
   const t = tab();
   const r = t.relay();
   t.page();
@@ -242,7 +242,7 @@ test("the relay never turns a page event into a command (§9.5)", () => {
   assert.equal(r.state(), "ready");
 });
 
-test("the 20 s tick carries the tab's state, which is how a restarted background re-learns it (§8.2)", () => {
+test("the 20 s tick carries the tab's state, which is how a restarted background re-learns it (extension-distribution.md §8.2)", () => {
   const t = tab();
   t.relay();
   t.page();
@@ -251,7 +251,7 @@ test("the 20 s tick carries the tab's state, which is how a restarted background
   assert.deepEqual(t.sent.at(-1), { t: "keepalive", state: "ready", title: "PokéRogue" });
 });
 
-test("`pagehide` takes the tab out of the count (§9.3)", () => {
+test("`pagehide` takes the tab out of the count (extension-distribution.md §9.3)", () => {
   const t = tab();
   t.relay();
   t.page();
@@ -260,7 +260,7 @@ test("`pagehide` takes the tab out of the count (§9.3)", () => {
   assert.deepEqual(tabFrames(t.sent).at(-1), { t: "tab", state: "gone", title: "PokéRogue" });
 });
 
-test("`cardBody` rejects every shape but the one the HUD sends (§9.5)", () => {
+test("`cardBody` rejects every shape but the one the HUD sends (extension-distribution.md §9.5)", () => {
   const groups = [{ id: "act", label: "Act", summary: "keep Ember", rows: [] }, { id: "options", label: "Moves", summary: null, rows: ["✓ Ember"] }];
   const good = { build: BUILD, kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep" };
   assert.deepEqual(cardBody(good), { kind: "learn", key: "w14-x", wave: 14, verdict: "your call", groups, text: "keep" });
@@ -275,7 +275,7 @@ test("`cardBody` rejects every shape but the one the HUD sends (§9.5)", () => {
   }
 });
 
-test("`cardBody` checks the shape of every group, not just that `groups` is there (§9.5, #361)", () => {
+test("`cardBody` checks the shape of every group, not just that `groups` is there (extension-distribution.md §9.5, #361)", () => {
   const card = (groups: unknown) => ({ build: BUILD, kind: "battle" as const, key: "20", wave: 20, verdict: "easy", groups, text: "t" });
   // Nothing drawn is an empty list, which crosses: `text` is what says the card is empty.
   assert.deepEqual(cardBody(card([]))?.groups, []);

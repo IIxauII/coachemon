@@ -40,9 +40,9 @@ async function ask(c: Client, id: number, name: string, args: Record<string, unk
   return c.take<ClientReply>(f => f.t === "reply" && (f as ClientReply).id === id);
 }
 
-// --------------------------------------------------------------------- §7.4 auth
+// --------------------------------------------------------------------- extension-distribution.md §7.4 auth
 
-test("the upgrade takes a local client and an extension origin, and 403s anything else (§7.4)", async () => {
+test("the upgrade takes a local client and an extension origin, and 403s anything else (extension-distribution.md §7.4)", async () => {
   const h = await hub();
   assert.equal(authorize({ host: `127.0.0.1:${h.port}` }, h.port), "client");
   assert.equal(authorize({ host: `127.0.0.1:${h.port}`, origin: "moz-extension://uuid" }, h.port), "browser");
@@ -55,13 +55,13 @@ test("the upgrade takes a local client and an extension origin, and 403s anythin
   assert.equal(authorize({ host: `localhost:${h.port}` }, h.port), null);
 });
 
-test("a wrong Host or a page Origin is refused on the wire, not just in the check (§7.4)", async () => {
+test("a wrong Host or a page Origin is refused on the wire, not just in the check (extension-distribution.md §7.4)", async () => {
   const h = await hub();
   await assert.rejects(open(h.port, { Host: `evil.example:${h.port}` }), /403/);
   await assert.rejects(open(h.port, { Origin: "https://pokerogue.net" }), /403/);
 });
 
-test("the hub answers a hello with the product marker, and says nothing before one (§7.4, §7.6)", async () => {
+test("the hub answers a hello with the product marker, and says nothing before one (extension-distribution.md §7.4, §7.6)", async () => {
   const h = await hub({ version: "1.2.0" });
   const welcome = { t: "welcome", product: PRODUCT, protocol: PROTOCOL, version: "1.2.0" };
 
@@ -76,9 +76,9 @@ test("the hub answers a hello with the product marker, and says nothing before o
   assert.deepEqual(await client.take(f => f.t === "welcome"), welcome);
 });
 
-// ------------------------------------------------------------------ §7.5 routing
+// ------------------------------------------------------------------ extension-distribution.md §7.5 routing
 
-test("a command goes to the one counted tab and its reply comes back on the client's own id (§7.5)", async () => {
+test("a command goes to the one counted tab and its reply comes back on the client's own id (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 77);
   const client = await fakeClient(h.port);
@@ -94,7 +94,7 @@ test("a command goes to the one counted tab and its reply comes back on the clie
   assert.deepEqual(reply, { t: "reply", id: 5, ok: true, result: { readable: true } });
 });
 
-test("zero tabs refuse no-tab and more than one refuses tabs with the list, at once (§7.5)", async () => {
+test("zero tabs refuse no-tab and more than one refuses tabs with the list, at once (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   const client = await fakeClient(h.port);
   const none = await ask(client, 1, "menu");
@@ -113,7 +113,7 @@ test("zero tabs refuse no-tab and more than one refuses tabs with the list, at o
   );
 });
 
-test("a name outside the store table refuses unknown-command, and a dev name reaches only a dev build (§10.6)", async () => {
+test("a name outside the store table refuses unknown-command, and a dev name reaches only a dev build (extension-distribution.md §10.6)", async () => {
   const h = await hub();
   await readyTab(h.port, 1);
   const client = await fakeClient(h.port);
@@ -124,7 +124,7 @@ test("a name outside the store table refuses unknown-command, and a dev name rea
   assert.equal(dev.ok === false && dev.code, "unknown-command");
 });
 
-test("a dev build takes the dev table (§10.6)", async () => {
+test("a dev build takes the dev table (extension-distribution.md §10.6)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1, { flavour: "dev", commands: ["probe", "eval"] });
   const client = await fakeClient(h.port);
@@ -134,7 +134,7 @@ test("a dev build takes the dev table (§10.6)", async () => {
   assert.equal(cmd.name, "eval");
 });
 
-test("`dev-reload` reaches every dev build, needing no tab, and never a store build (§5.4)", async () => {
+test("`dev-reload` reaches every dev build, needing no tab, and never a store build (extension-distribution.md §5.4)", async () => {
   const h = await hub();
   // No tab anywhere: the dev loop's reload has to work on the build whose relay the last change broke.
   const dev = await fakeExtension(h.port, { flavour: "dev" });
@@ -146,7 +146,7 @@ test("`dev-reload` reaches every dev build, needing no tab, and never a store bu
   assert.deepEqual(store.seen.filter(f => f.t === "dev-reload"), []);
 });
 
-test("a command the connected extension did not list refuses missing-command (§8.5)", async () => {
+test("a command the connected extension did not list refuses missing-command (extension-distribution.md §8.5)", async () => {
   const h = await hub();
   await readyTab(h.port, 1, { commands: ["probe", "menu"] });
   const client = await fakeClient(h.port);
@@ -155,7 +155,7 @@ test("a command the connected extension did not list refuses missing-command (§
   assert.equal(r.ok === false && r.code, "missing-command");
 });
 
-test("an extension outside the protocol window has its commands refused protocol (§8.5)", async () => {
+test("an extension outside the protocol window has its commands refused protocol (extension-distribution.md §8.5)", async () => {
   const h = await hub();
   await readyTab(h.port, 1, { protocol: PROTOCOL + 1 });
   const client = await fakeClient(h.port);
@@ -164,7 +164,7 @@ test("an extension outside the protocol window has its commands refused protocol
   assert.equal(r.ok === false && r.code, "protocol");
 });
 
-test("the previous protocol is still inside the window (§8.5)", async () => {
+test("the previous protocol is still inside the window (extension-distribution.md §8.5)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1, { protocol: PROTOCOL - 1 });
   const client = await fakeClient(h.port);
@@ -173,7 +173,7 @@ test("the previous protocol is still inside the window (§8.5)", async () => {
   await ext.take(f => f.t === "cmd");
 });
 
-test("an extension that never answers gets the client a timeout, and a late reply is dropped (§7.6)", async () => {
+test("an extension that never answers gets the client a timeout, and a late reply is dropped (extension-distribution.md §7.6)", async () => {
   const h = await hub({ timeoutMs: 120 });
   const ext = await readyTab(h.port, 1);
   const client = await fakeClient(h.port);
@@ -199,9 +199,9 @@ test("a browser that disconnects mid-command refuses the command instead of hang
   assert.equal(r.ok === false && r.code, "no-tab");
 });
 
-// -------------------------------------------------------------------- §7.5 grant
+// -------------------------------------------------------------------- extension-distribution.md §7.5 grant
 
-test("claim takes the grant and a second client's claim is contended until the holder's socket closes (§7.5)", async () => {
+test("claim takes the grant and a second client's claim is contended until the holder's socket closes (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   await readyTab(h.port, 1);
   const a = await fakeClient(h.port);
@@ -222,7 +222,7 @@ test("claim takes the grant and a second client's claim is contended until the h
   assert.equal((await state(b)).driver, "you");
 });
 
-test("the first act claims implicitly, and another client's act is refused contended (§7.5)", async () => {
+test("the first act claims implicitly, and another client's act is refused contended (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1);
   const a = await fakeClient(h.port);
@@ -240,7 +240,7 @@ test("the first act claims implicitly, and another client's act is refused conte
   await ext.take(f => f.t === "cmd" && (f as { name: string }).name === "menu");
 });
 
-test("a pumping probe needs the grant and never takes it (§7.5, §10.3)", async () => {
+test("a pumping probe needs the grant and never takes it (extension-distribution.md §7.5, §10.3)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1);
   const a = await fakeClient(h.port);
@@ -260,9 +260,9 @@ test("a pumping probe needs the grant and never takes it (§7.5, §10.3)", async
   await ext.take(f => f.t === "cmd");
 });
 
-// --------------------------------------------------------------------- §7.5 tabs
+// --------------------------------------------------------------------- extension-distribution.md §7.5 tabs
 
-test("a tab counts only once it is ready and its browser has consent (§7.5, §8.4)", async () => {
+test("a tab counts only once it is ready and its browser has consent (extension-distribution.md §7.5, §8.4)", async () => {
   const h = await hub();
   const ext = await fakeExtension(h.port, { target: "firefox", consent: false });
   const client = await fakeClient(h.port);
@@ -276,7 +276,7 @@ test("a tab counts only once it is ready and its browser has consent (§7.5, §8
   await ext.take(f => f.t === "cmd");
 });
 
-test("a wrong-world tab is not counted, and a gone tab leaves the list (§9.3, §9.4)", async () => {
+test("a wrong-world tab is not counted, and a gone tab leaves the list (extension-distribution.md §9.3, §9.4)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1);
   const client = await fakeClient(h.port);
@@ -295,7 +295,7 @@ test("a wrong-world tab is not counted, and a gone tab leaves the list (§9.3, �
   await tabsCount(client, 0);
 });
 
-test("state names every connected extension, its command list and who is driving (§7.6)", async () => {
+test("state names every connected extension, its command list and who is driving (extension-distribution.md §7.6)", async () => {
   const h = await hub();
   await readyTab(h.port, 12, { target: "firefox", version: "1.3.0", commands: ["probe", "menu"] });
   const client = await fakeClient(h.port);
@@ -307,9 +307,9 @@ test("state names every connected extension, its command list and who is driving
   assert.equal(s.driver, null);
 });
 
-// ------------------------------------------------------------------- §7.5 events
+// ------------------------------------------------------------------- extension-distribution.md §7.5 events
 
-test("events fan out to subscribers only, and an unsubscribed client hears nothing (§7.5)", async () => {
+test("events fan out to subscribers only, and an unsubscribed client hears nothing (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 1);
   const sub = await fakeClient(h.port);
@@ -323,7 +323,7 @@ test("events fan out to subscribers only, and an unsubscribed client hears nothi
   assert.deepEqual(quiet.seen.filter(f => f.t === "event"), []);
 });
 
-test("a client that subscribes into an already-split tab count hears the notice too (§7.5)", async () => {
+test("a client that subscribes into an already-split tab count hears the notice too (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   await readyTab(h.port, 1, { target: "chrome" });
   await readyTab(h.port, 2, { target: "firefox" });
@@ -336,7 +336,7 @@ test("a client that subscribes into an already-split tab count hears the notice 
   assert.equal(notice.tabs.length, 2);
 });
 
-test("with more than one tab the hub forwards no events and notices once, then resumes at one (§7.5)", async () => {
+test("with more than one tab the hub forwards no events and notices once, then resumes at one (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   const first = await readyTab(h.port, 1, { target: "chrome" });
   const sub = await fakeClient(h.port);
@@ -361,14 +361,14 @@ test("with more than one tab the hub forwards no events and notices once, then r
   assert.deepEqual(await sub.take(f => f.t === "event"), { t: "event", kind: "card", body: { text: "back" } });
 });
 
-// ----------------------------------------------------------------- §7.2 lifecycle
+// ----------------------------------------------------------------- extension-distribution.md §7.2 lifecycle
 
-test("a second hub on the same port gets EADDRINUSE, which is the first one's win (§7.2)", async () => {
+test("a second hub on the same port gets EADDRINUSE, which is the first one's win (extension-distribution.md §7.2)", async () => {
   const h = await hub();
   await assert.rejects(startHub({ port: h.port, version: "1.0.0" }), (e: NodeJS.ErrnoException) => e.code === "EADDRINUSE");
 });
 
-test("retire closes every connection and calls for the exit (§7.3)", async () => {
+test("retire closes every connection and calls for the exit (extension-distribution.md §7.3)", async () => {
   let retired = 0;
   const h = await hub({ onRetire: () => retired++ });
   const ext = await readyTab(h.port, 1);
@@ -379,7 +379,7 @@ test("retire closes every connection and calls for the exit (§7.3)", async () =
   assert.equal(retired, 1);
 });
 
-test("the hub exits after its idle window with no clients and no counted tabs (§7.2)", async () => {
+test("the hub exits after its idle window with no clients and no counted tabs (extension-distribution.md §7.2)", async () => {
   let idle = 0;
   const h = await hub({ idleMs: 40, onIdle: () => idle++ });
   // An extension connection without a counted tab does not keep the hub alive.
@@ -389,7 +389,7 @@ test("the hub exits after its idle window with no clients and no counted tabs (�
   h.close();
 });
 
-test("a client, or a counted tab, keeps the hub alive (§7.2)", async () => {
+test("a client, or a counted tab, keeps the hub alive (extension-distribution.md §7.2)", async () => {
   let idle = 0;
   const h = await hub({ idleMs: 40, onIdle: () => idle++ });
   await readyTab(h.port, 1);

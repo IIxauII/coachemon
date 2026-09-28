@@ -20,7 +20,7 @@ test("an act on the fingerprint it was decided on runs", t => {
   assert.deepEqual(inputs, [3]);
 });
 
-test("an act refuses moved when the game left the fingerprint it was decided on, and does nothing (§10.2)", t => {
+test("an act refuses moved when the game left the fingerprint it was decided on, and does nothing (extension-distribution.md §10.2)", t => {
   const inputs: number[] = [];
   const scene = commandScene(inputs);
   onPage(t, scene);
