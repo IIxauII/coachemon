@@ -16,9 +16,9 @@
 /**
  * Dwell for an uncorroborated hold: the call budget (#14's `CALL_BUDGET_MS`).
  * The `EncounterPhase` → first `COMMAND` leg has never been cleanly measured
- * (#7 §6.6), so nothing shorter is defensible. It still reports on the first
- * call that exhausts its budget, instead of after five decisions that a hung
- * game can never produce.
+ * (v1-tool-surface.md §6.6), so nothing shorter is defensible. It still
+ * reports on the first call that exhausts its budget, instead of after five
+ * decisions that a hung game can never produce.
  */
 export const HANG_DWELL_MS = 30_000;
 

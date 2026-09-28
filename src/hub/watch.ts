@@ -1,6 +1,7 @@
 /**
- * The watch CLI's engine (§11.2): a hub client with `role: "watch"` that prints one summary line per card event, and
- * nothing else. It never claims the grant, sends no act, and injects nothing — the coach reads, and the player drives.
+ * The watch CLI's engine (extension-distribution.md §11.2): a hub client with `role: "watch"` that prints one summary
+ * line per card event, and nothing else. It never claims the grant, sends no act, and injects nothing — the coach
+ * reads, and the player drives.
  *
  * Two halves. `cardLine` and `feedLine` are pure: a frame in, the line out, so every format in §11.2 is a table test
  * rather than a live run. `runWatch` is the loop around them: connect (spawning the hub if needed, §7.2), print the
@@ -12,9 +13,9 @@ import { HubClient, type ClientOptions } from "./client.ts";
 import { reach, tabsLine } from "./ladder.ts";
 import type { ClientEvent, Notice } from "../protocol/wire.ts";
 
-/** How much of the card's first line a summary carries (§11.2). */
+/** How much of the card's first line a summary carries (extension-distribution.md §11.2). */
 const TEXT_CUT = 300;
-/** How often the CLI retries while the game is out of reach (§11.2). */
+/** How often the CLI retries while the game is out of reach (extension-distribution.md §11.2). */
 const RETRY_MS = 5_000;
 
 /**
@@ -25,7 +26,7 @@ const RETRY_MS = 5_000;
  */
 export type CardFacts = { kind?: unknown; wave?: unknown; verdict?: unknown; text?: unknown };
 
-/** What each streamed card kind is called on the feed. The panel's own `rewards` streams as `reward` (§11.1). */
+/** What each streamed card kind is called on the feed. The panel's own `rewards` streams as `reward` (extension-distribution.md §11.1). */
 const LABEL: Record<string, string> = {
   battle: "BATTLE",
   learn: "LEARN",
@@ -58,15 +59,15 @@ export function feedLine(f: ClientEvent | Notice): string | null {
 
 export type WatchOptions = {
   port: number;
-  /** This plugin copy's version, for the handshake's skew comparison (§7.3). */
+  /** This plugin copy's version, for the handshake's skew comparison (extension-distribution.md §7.3). */
   version: string;
   /** Where a line goes. The default is stdout, which is what `Monitor` reads. */
   print?: (line: string) => void;
-  /** How long between retries while the game is out of reach; the spec's 5 s by default (§11.2). */
+  /** How long between retries while the game is out of reach; the spec's 5 s by default (extension-distribution.md §11.2). */
   retryMs?: number;
   /** Ends the loop and closes the connection. Without one the CLI runs until the process does. */
   signal?: AbortSignal;
-  /** Test seam: what starting a hub on the port does (§7.2). */
+  /** Test seam: what starting a hub on the port does (extension-distribution.md §7.2). */
   spawnHub?: ClientOptions["spawnHub"];
   /** Test seam: who holds the port when it answers but is not a hub (rung 1). */
   portHolder?: ClientOptions["portHolder"];
@@ -85,7 +86,7 @@ export async function runWatch(o: WatchOptions): Promise<void> {
   const print = o.print ?? ((l: string) => console.log(l));
   const retryMs = o.retryMs ?? RETRY_MS;
 
-  /** The ladder line already on screen, so the same one is not printed twice (§11.2). */
+  /** The ladder line already on screen, so the same one is not printed twice (extension-distribution.md §11.2). */
   let ladder: string | null = null;
   /** A `card` read still owed: the late join, and the one after every stretch out of reach. */
   let owed = true;
@@ -115,7 +116,7 @@ export async function runWatch(o: WatchOptions): Promise<void> {
       // A notice is what the player is looking at now, so no ladder line stands behind it to be compared against —
       // the loop may never see the rung the notice describes, since a split can open and close between two polls.
       ladder = null;
-      // A tab count back to one is a new card as far as we know: the stream said nothing while it was split (§7.5).
+      // A tab count back to one is a new card as far as we know: the stream said nothing while it was split (extension-distribution.md §7.5).
       if (f.kind === "resume") void readCard();
     },
     spawnHub: o.spawnHub,
@@ -127,7 +128,7 @@ export async function runWatch(o: WatchOptions): Promise<void> {
       const trouble = await client.ready();
       const state = trouble === null ? await client.state() : null;
       if (trouble === null && !subscribed) {
-        // Subscribing needs only a hub: the tab count is the hub's story to tell, and it tells it on subscribe (§7.5).
+        // Subscribing needs only a hub: the tab count is the hub's story to tell, and it tells it on subscribe (extension-distribution.md §7.5).
         subscribed = true;
         await client.subscribe();
       }
@@ -154,8 +155,9 @@ export async function runWatch(o: WatchOptions): Promise<void> {
 }
 
 /**
- * All of the card's text a summary line carries: its first line, cut to `TEXT_CUT` (§11.2). A card the HUD has not
- * drawn text for carries none. Not `ladder.ts`'s `firstLine`, which picks the first *non-blank* line out of a stack.
+ * All of the card's text a summary line carries: its first line, cut to `TEXT_CUT`
+ * (extension-distribution.md §11.2). A card the HUD has not drawn text for carries none. Not `ladder.ts`'s
+ * `firstLine`, which picks the first *non-blank* line out of a stack.
  */
 function summaryText(text: unknown): string {
   if (typeof text !== "string") return "";

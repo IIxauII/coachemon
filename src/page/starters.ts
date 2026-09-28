@@ -26,8 +26,8 @@ export type StartersResult = {
 
 /**
  * Starter-select facts `start_run` needs before it presses anything, and every unlocked species for `read_starters`
- * (§11.4): `owned` is what `probe.js` read off `gameData`, so it answers off the grid too. The filter bar is its own
- * Screen, refused before this read. Self-contained (§10.5).
+ * (extension-distribution.md §11.4): `owned` is what `probe.js` read off `gameData`, so it answers off the grid too.
+ * The filter bar is its own Screen, refused before this read. Self-contained (§10.5).
  */
 export function starters(L: Located, _args: Record<string, never>): StartersResult {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };

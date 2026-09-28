@@ -6,11 +6,11 @@ export type CardResult =
   | { ok: false; why: "no-hud" };
 
 /**
- * The card the HUD is showing (§10.1, §11.4): `__coachHud.card()` is the very payload its `coachemon:card` events
- * carry — kind, dedupe key, wave, verdict, the card's **groups** and its plain text — and `summary` is
- * `__coachHud.summary()`, the fields `read.sh battle`'s `hud` had. A subscriber's late join reads here and gets the
- * event it missed (§11.1), groups and all, so an agent joining a decision already on screen reads it by group name
- * rather than by parsing lines.
+ * The card the HUD is showing (extension-distribution.md §10.1, §11.4): `__coachHud.card()` is the very payload its
+ * `coachemon:card` events carry — kind, dedupe key, wave, verdict, the card's **groups** and its plain text — and
+ * `summary` is `__coachHud.summary()`, the fields `read.sh battle`'s `hud` had. A subscriber's late join reads here
+ * and gets the event it missed (§11.1), groups and all, so an agent joining a decision already on screen reads it by
+ * group name rather than by parsing lines.
  *
  * `summary` is the liveness gate and is read on its own: the structured read keeps working with no panel drawn, so
  * it never depends on a document existing.

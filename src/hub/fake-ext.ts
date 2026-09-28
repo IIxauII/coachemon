@@ -2,7 +2,8 @@
  * The fakes the hub's tests drive it with: an extension, a client, a port no hub will answer on, and a hub start that
  * never comes up.
  * The two sockets are real `ws` sockets on the loopback port the hub bound, so the tests exercise the upgrade check
- * too: a browser sends an extension-scheme `Origin` and a local client sends none, exactly as the real ones do (§7.4).
+ * too: a browser sends an extension-scheme `Origin` and a local client sends none, exactly as the real ones do
+ * (extension-distribution.md §7.4).
  */
 import { readFileSync } from "node:fs";
 import { createServer } from "node:net";

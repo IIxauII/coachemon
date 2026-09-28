@@ -3,7 +3,8 @@ import type { Located } from "./locate.ts";
 export type SnapshotDetail = "lean" | "party" | "items" | "full";
 
 /**
- * `get_state` (#7 §6.2). Every field inside its own guard; `detail` widens it. Self-contained (§10.5).
+ * `get_state` (v1-tool-surface.md §6.2). Every field inside its own guard; `detail` widens it. Self-contained
+ * (extension-distribution.md §10.5).
  *
  * `full` adds the coach's battle fields to every party **and** enemy member — the ones `probe.js` read for the coach
  * skill (§11.4) — so a coach reading through the MCP server sees what `read.sh battle` showed it. Its `stats` are the
@@ -60,7 +61,7 @@ export function snapshot(L: Located, args: { detail: SnapshotDetail }): Record<s
   if (withCoach) out.trainer = __try(() => b && b.trainer ? b.trainer.getName() : null);
   if (withItems) {
     // The party's own modifiers and the held ones together: `held` says which is which, and a mon's own `held` names
-    // what it is holding (§11.4).
+    // what it is holding (extension-distribution.md §11.4).
     out.items = __try(() => (scene.modifiers || []).map((m: any) => ({
       name: __try(() => m.type.name), type: __try(() => m.type.id || m.type.identifier || null),
       stack: __try(() => m.stackCount), max: __try(() => m.getMaxStackCount ? m.getMaxStackCount() : null),

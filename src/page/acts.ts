@@ -1,7 +1,7 @@
 /**
- * The act handlers (§10.1). `dispatch` has already checked `fine` against this page turn's fingerprint (§10.2), so each
- * runs on the game the act was decided on. A cursor act reads the fingerprint back after moving, for the next act to
- * expect. Each is self-contained (§10.5).
+ * The act handlers (extension-distribution.md §10.1). `dispatch` has already checked `fine` against this page turn's
+ * fingerprint (§10.2), so each runs on the game the act was decided on. A cursor act reads the fingerprint back after
+ * moving, for the next act to expect. Each is self-contained (§10.5).
  */
 import type { Located } from "./locate.ts";
 
@@ -23,9 +23,9 @@ export function press(L: Located, args: { button: number; fine: string }): Press
 }
 
 /**
- * A button as an untrusted `keydown` then `keyup` on `window` (§10.4). `keyCode` is set in the constructor and pinned
- * as well; Phaser never checks `isTrusted`. The two events alternate `type`, so Phaser's duplicate-event bailout keeps
- * both, and a `keydown` never goes out without its `keyup`.
+ * A button as an untrusted `keydown` then `keyup` on `window` (extension-distribution.md §10.4). `keyCode` is set in
+ * the constructor and pinned as well; Phaser never checks `isTrusted`. The two events alternate `type`, so Phaser's
+ * duplicate-event bailout keeps both, and a `keydown` never goes out without its `keyup`.
  */
 export function key(_L: Located, args: { button: string; fine: string }): KeyResult {
   const KEYS: Record<string, [string, string, number]> = {
@@ -57,7 +57,7 @@ export function cursorOption(L: Located, args: { index: number; fine: string }):
   return { ok: true, fullCursor: h.fullCursor, cursor: h.cursor, fine: L.fine() };
 }
 
-/** Shop: `setRowCursor` then `setCursor`; order is load-bearing (#7 §7). */
+/** Shop: `setRowCursor` then `setCursor`; order is load-bearing (v1-tool-surface.md §7). */
 export function cursorShop(L: Located, args: { row: number; col: number; fine: string }): CursorShopResult {
   const h = L.ui.handlers[L.m.MODIFIER_SELECT];
   h.setRowCursor(args.row);

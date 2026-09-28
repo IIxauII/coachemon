@@ -1,10 +1,11 @@
 /**
- * Composite screen id (#7 §4): `ui.mode` alone does not identify a screen.
- * `PARTY(8)` is fourteen screens told apart by `partyUiMode`, each with a
- * different meaning and escape; `SAVE_SLOT`, `SUMMARY`, `ALERT_MODAL` and
- * `STARTER_SELECT` carry their own discriminators. The id is what Claude
- * reasons about and the key the escape ladder answers to. Only the game
- * adapter computes it: every read arrives with its Screen.
+ * Composite screen id (v1-tool-surface.md §4): `ui.mode` alone does not
+ * identify a screen. `PARTY(8)` is fourteen screens told apart by
+ * `partyUiMode`, each with a different meaning and escape; `SAVE_SLOT`,
+ * `SUMMARY`, `ALERT_MODAL` and `STARTER_SELECT` carry their own
+ * discriminators. The id is what Claude reasons about and the key the
+ * escape ladder answers to. Only the game adapter computes it: every read
+ * arrives with its Screen.
  */
 import { NAMES, SaveSlotUiMode, SummaryUiMode, UiMode } from "./enums/generated.ts";
 import type { Discriminators } from "./page/disc.ts";

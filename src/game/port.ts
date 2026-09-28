@@ -110,7 +110,8 @@ export type Failed = { ok: false; why: string };
 /**
  * What an act did. `threw`: the page threw, as opposed to refusing (no scene, no button action, cursor elsewhere).
  * Every act carries the fine fingerprint it was decided on; `why: "moved"` means the game had left it, so nothing was
- * done (§10.2). `fine`, when present, is the fingerprint the act left the game on: the next act's to expect.
+ * done (extension-distribution.md §10.2). `fine`, when present, is the fingerprint the act left the game on: the next
+ * act's to expect.
  */
 export type Act = { ok: true; fine?: string } | { ok: false; why: string; threw: boolean; fine?: string };
 
@@ -124,15 +125,15 @@ export type CursorTarget =
   | { family: "starter_select"; index: number }
   | { family: "learn_move"; row: number };
 
-/** The starter-select facts `start_run` needs before it presses anything, and the unlocks `read_starters` reports (§11.4). */
+/** The starter-select facts `start_run` needs before it presses anything, and the unlocks `read_starters` reports (extension-distribution.md §11.4). */
 export type StarterGrid = StartersResult;
 
-/** The card the panel is showing (§11.1). A page with no panel on it is a failed read like any other: `why: "no-hud"`. */
+/** The card the panel is showing (extension-distribution.md §11.1). A page with no panel on it is a failed read like any other: `why: "no-hud"`. */
 export type CardRead = Extract<CardResult, { ok: true }>;
 
 export type { MenuOption, SnapshotDetail, ConsoleLine };
 
-/** The Driver's way to the game: typed game operations, plus the tab's CDP side until the flip (§13.2). */
+/** The Driver's way to the game: typed game operations, plus the tab's CDP side until the flip (extension-distribution.md §13.2). */
 export interface GamePort extends Tab {
   // game operations
   /** The settle predicate. A throw → `{ ready: false, why }`. */
@@ -147,7 +148,7 @@ export interface GamePort extends Tab {
   /** The modal family's own button action, if the game is still on `fine`. */
   modalButton(i: number, fine: string): Promise<Act>;
   starters(): Promise<StarterGrid | Failed>;
-  /** What the coach panel is showing right now, for `read_card` and a subscriber's late join (§11.1). */
+  /** What the coach panel is showing right now, for `read_card` and a subscriber's late join (extension-distribution.md §11.1). */
   card(): Promise<CardRead | Failed>;
   snapshot(d: SnapshotDetail): Promise<{ ok: true; snapshot: Record<string, unknown> } | Failed>;
   /** A base64 PNG. */

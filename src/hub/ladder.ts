@@ -1,14 +1,15 @@
 /**
- * The reachability ladder (§12.3): what stands between a tool call and a game tab, as one line the player can act on.
- * Eight rungs, evaluated in order over every connected browser; the first failing one is what `status` reports and what
- * every other tool refuses with. Version skew (§7.3) is not a rung: it has its own two lines and no number.
+ * The reachability ladder (extension-distribution.md §12.3): what stands between a tool call and a game tab, as one
+ * line the player can act on. Eight rungs, evaluated in order over every connected browser; the first failing one is
+ * what `status` reports and what every other tool refuses with. Version skew (§7.3) is not a rung: it has its own two
+ * lines and no number.
  *
  * Pure: it reads the hub's `state` and how the connection to the hub itself went, and knows nothing about sockets.
  */
 import { PROTOCOL } from "../protocol/version.ts";
 import type { ExtensionInfo, Target, TabInfo } from "../protocol/wire.ts";
 
-/** Why nothing can be asked of the hub: the port is not ours (rung 1), it would not start (rung 2), or we are skewed (§7.3). */
+/** Why nothing can be asked of the hub: the port is not ours (rung 1), it would not start (rung 2), or we are skewed (extension-distribution.md §7.3). */
 export type HubTrouble =
   | { kind: "foreign"; port: number; process: string | null; pid: number | null }
   | { kind: "no-start"; stderr: string }
@@ -28,7 +29,7 @@ export type Reachability = {
   trouble: HubTrouble | null;
   extensions: readonly ExtensionInfo[];
   tabs: readonly TabInfo[];
-  /** The commands the tool is about to use; one the extension did not list refuses alone, on rung 4's wording (§8.5). */
+  /** The commands the tool is about to use; one the extension did not list refuses alone, on rung 4's wording (extension-distribution.md §8.5). */
   needs?: readonly string[];
 };
 
@@ -63,11 +64,11 @@ export function reach(s: Reachability): Reach | null {
   if (old) return unreachable(4, tooOld(old));
   const ahead = s.extensions.find(e => e.protocol > PROTOCOL);
   if (ahead) return unreachable(4, `Coachemon ${ahead.version} in ${NAME[ahead.target]} is newer than this plugin. Update the plugin: claude plugin update coachemon.`);
-  // A command the installed extension never registered: this one tool refuses, and every other keeps working (§8.5).
+  // A command the installed extension never registered: this one tool refuses, and every other keeps working (extension-distribution.md §8.5).
   const short = s.needs?.length ? s.extensions.find(e => s.needs!.some(n => !e.commands.includes(n))) : undefined;
   if (short) return { code: "missing_command", rung: 4, line: tooOld(short) };
 
-  // Only the Firefox build ever withholds consent (§8.4); the target is named anyway, because Orion runs that build too.
+  // Only the Firefox build ever withholds consent (extension-distribution.md §8.4); the target is named anyway, because Orion runs that build too.
   const waiting = s.extensions.find(e => !e.consent);
   if (waiting) return unreachable(5, `Coachemon in ${NAME[waiting.target]} is waiting for your OK: click the Coachemon icon in the toolbar once.`);
 
@@ -82,7 +83,8 @@ export function reach(s: Reachability): Reach | null {
 
 /**
  * Rung 8's line: how many tabs are open and which windows they are in, so the player knows what to close. Exported
- * because the watch CLI prints it from a `tabs` notice, which carries the tabs and not the line (§11.2).
+ * because the watch CLI prints it from a `tabs` notice, which carries the tabs and not the line
+ * (extension-distribution.md §11.2).
  */
 export function tabsLine(tabs: readonly TabInfo[]): string {
   const which = tabs.map(t => `${NAME[t.target]}: ${t.title}`).join("; ");

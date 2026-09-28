@@ -2,7 +2,7 @@
  * The menu families (see CONTEXT.md): how the Driver reaches an Option on each and commits it. Whether a family moves
  * by `setCursor` or by presses, its step rule, what a `setCursor` miss means, how it commits and the refusals that
  * belong to one family all live here, as a plan the Driver executes. The evidence for each family's movement is
- * `docs/spec/v1-tool-surface.md` §7.
+ * v1-tool-surface.md §7.
  *
  * Pure: no port, no clock, no settle. Matching a label to an Option and the menu-level refusals stay in `selectOption`.
  */
@@ -70,55 +70,56 @@ export function planSelect(menu: MenuRead, target: MenuOption): Plan {
   });
 
   switch (menu.family) {
-    // §7 TITLE / CONFIRM / OPTION_SELECT: setCursor over the unskipped list, which handles the scroll maths.
+    // v1-tool-surface.md §7 TITLE / CONFIRM / OPTION_SELECT: setCursor over the unskipped list, which handles the scroll maths.
     case "option_select": {
       const unskipped = menu.extra.unskippedIndices;
       const j = unskipped ? unskipped.indexOf(i) : i;
       if (j < 0) throw new Refusal("option_skipped", `option ${target.label} is not selectable right now`, { options: menu.options.map(o => o.label) });
       return plan({ kind: "set", to: { family: "option_select", index: j }, miss: "walk", walk: { to: j, rule: "list" } });
     }
-    // §7 COMMAND: presses over the 2×2 grid. Command.BALL is the second command, refused by position, not by the
-    // localised label (#56).
+    // v1-tool-surface.md §7 COMMAND: presses over the 2×2 grid. Command.BALL is the second command, refused by
+    // position, not by the localised label (#56).
     case "command":
       if (i === 1 && menu.extra.catchable === false) throw cannotCatch(menu, target);
       return plan(walk("grid2x2"));
-    // §7 FIGHT: presses, UP/DOWN ±2 and LEFT/RIGHT ±1 over a 2×2. MYSTERY_ENCOUNTER has no §7 row; its options sit on
-    // the same grid.
+    // v1-tool-surface.md §7 FIGHT: presses, UP/DOWN ±2 and LEFT/RIGHT ±1 over a 2×2. MYSTERY_ENCOUNTER has no §7 row;
+    // its options sit on the same grid.
     case "fight":
     case "mystery_encounter":
       return plan(walk("grid2x2"));
-    // BALL has no §7 row: presses over a plain list. Its rows carry a ballType, Cancel does not (#46, #56).
+    // BALL has no v1-tool-surface.md §7 row: presses over a plain list. Its rows carry a ballType, Cancel does not (#46, #56).
     case "ball":
       if ("ballType" in target && menu.extra.catchable === false) throw cannotCatch(menu, target);
       return plan(walk("list"));
-    // §7 TARGET_SELECT: presses; the cursor is a BattlerIndex. A spread move ignores the cursor: ACTION hits every
-    // target and no direction moves it (#33).
+    // v1-tool-surface.md §7 TARGET_SELECT: presses; the cursor is a BattlerIndex. A spread move ignores the
+    // cursor: ACTION hits every target and no direction moves it (#33).
     case "target_select":
       if (menu.extra.isMultipleTargets) return plan({ kind: "none" }, { targets: "all" });
       return plan(walk("battler_grid"));
-    // §7 MODIFIER_SELECT: setRowCursor then setCursor, measured live every wave.
+    // v1-tool-surface.md §7 MODIFIER_SELECT: setRowCursor then setCursor, measured live every wave.
     case "modifier_select":
       return plan({ kind: "set", to: { family: "modifier_select", row: Number(target.row), col: Number(target.col) }, miss: "refuse", cursor: "shop cursor" });
-    // §7 STARTER_SELECT grid: setCursor, measured live (#8).
+    // v1-tool-surface.md §7 STARTER_SELECT grid: setCursor, measured live (#8).
     case "starter_select":
       return plan({ kind: "set", to: { family: "starter_select", index: i }, miss: "refuse", cursor: "grid cursor" });
-    // §7 SUMMARY/LEARN_MOVE: setCursor(row) while moveSelect is on; presses (UP/DOWN ±1, wrapping over rows 0–4) as
-    // the fallback. ACTION on a moveset row forgets it, on row 4 declines the new move (#31).
+    // v1-tool-surface.md §7 SUMMARY/LEARN_MOVE: setCursor(row) while moveSelect is on; presses (UP/DOWN ±1,
+    // wrapping over rows 0–4) as the fallback. ACTION on a moveset row forgets it, on row 4 declines the new move
+    // (#31).
     case "learn_move":
       return plan({ kind: "set", to: { family: "learn_move", row: i }, miss: "walk", walk: { to: i, rule: "list" } });
-    // §7 PARTY: the slot list is a DOWN-cycle, 0..n-1 → 6 (Cancel) → 0; the option phase is a plain list, presses always.
+    // v1-tool-surface.md §7 PARTY: the slot list is a DOWN-cycle, 0..n-1 → 6 (Cancel) → 0; the option phase is a plain list, presses always.
     case "party":
       return plan(walk(menu.extra.optionsMode ? "list" : "down_cycle"));
-    // §7 SAVE_SLOT: presses over cursor + scrollCursor. MENU has no §7 row: presses over a plain list.
+    // v1-tool-surface.md §7 SAVE_SLOT: presses over cursor + scrollCursor. MENU has no §7 row: presses over a plain list.
     case "save_slot":
     case "menu":
       return plan(walk("list"));
-    // Modals have no §7 row: committed through the handler's own button action, mouse-only by construction (#13), with
-    // no cursor to move.
+    // Modals have no v1-tool-surface.md §7 row: committed through the handler's own button action, mouse-only by
+    // construction (#13), with no cursor to move.
     case "modal":
       return { reach: { kind: "none" }, commit: { kind: "modal_button", index: i }, choice: { kind: "modal_button", index: i }, extra: {} };
-    // No Option to select (§7 SUMMARY: never position; anything unmodelled: nothing). `selectOption` refuses an empty
-    // menu before planning, so reaching here is defensive.
+    // No Option to select (v1-tool-surface.md §7 SUMMARY: never position; anything unmodelled: nothing).
+    // `selectOption` refuses an empty menu before planning, so reaching here is defensive.
     case "acknowledge":
     case "paged_viewer":
     case "unmapped":

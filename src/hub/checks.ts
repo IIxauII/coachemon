@@ -1,5 +1,6 @@
 /**
- * The per-engine smoke checks (§16), run by `scripts/smoke.ts` against whichever build is connected.
+ * The per-engine smoke checks (extension-distribution.md §16), run by `scripts/smoke.ts` against whichever build is
+ * connected.
  *
  * Either flavour, on either port: both checks are one `probe`, which is a store command, and the Orion premise §16
  * names is specifically about a store install — "smoke run on Orion with the store zip". A dev-only checker could
@@ -15,7 +16,7 @@
  *    after 5 or more minutes idle**, by whatever the extension does — held socket, keepalive, reconnect. Both
  *    keepalives ship in one build, which is itself unverified on Chrome and Firefox (§8.2, §16).
  *
- * One engine at a time: with more than one counted tab the hub refuses reads as well as acts (§1.6, §7.5), so a run
+ * One engine at a time: with more than one counted tab the hub refuses reads as well as acts (§1, §7.5), so a run
  * checks the engine that is connected now and the ledger remembers the rest. An engine that was never reached keeps
  * its place in the report, which is what "records a result for any it cannot" means.
  *
@@ -24,14 +25,14 @@
 import type { HubState, TabInfo } from "../protocol/wire.ts";
 
 /**
- * The four engines of §2. An **engine** is the browser running a build; a **target** is the build it runs. They are
- * the same word for three of them and not for Orion, which installs the Chrome or the Firefox build, so an engine
- * cannot be read off the wire and the dev names it. The spec keeps both words for this reason — "the per-engine smoke
- * checks in §16", against a `target` in every frame.
+ * The four engines of extension-distribution.md §2. An **engine** is the browser running a build; a **target** is the
+ * build it runs. They are the same word for three of them and not for Orion, which installs the Chrome or the Firefox
+ * build, so an engine cannot be read off the wire and the dev names it. The spec keeps both words for this reason —
+ * "the per-engine smoke checks in §16", against a `target` in every frame.
  */
 export const ENGINES = ["chrome", "firefox", "safari", "orion"] as const;
 
-/** §2's pass bar: about 1 s, after 5 or more minutes idle. */
+/** extension-distribution.md §2's pass bar: about 1 s, after 5 or more minutes idle. */
 export const IDLE_MS = 5 * 60_000;
 export const BAR_MS = 1_000;
 
@@ -103,8 +104,9 @@ export async function runChecks(d: CheckDeps, o: CheckOptions = {}): Promise<Run
   const ext = state.extensions.find(e => e.conn === ready[0]!.conn);
   if (ext === undefined) return { reached: false, why: "the counted tab's extension is not in the hub's state" };
 
-  // Either flavour: both checks are `probe`, a store command, and §16's Orion premise is specifically about the store
-  // zip — "smoke run on Orion with the store zip" — so refusing a store build would refuse the one run that matters.
+  // Either flavour: both checks are `probe`, a store command, and extension-distribution.md §16's Orion premise is
+  // specifically about the store zip — "smoke run on Orion with the store zip" — so refusing a store build would
+  // refuse the one run that matters.
   c.say(`checking ${o.engine ?? ext.target} — ${ext.target} ${ext.flavour} ${ext.version} on 127.0.0.1:${d.port}`);
   const checks = [await relay(c), await keepalive(c, idleMs, barMs)];
   return {
@@ -123,7 +125,8 @@ export async function runChecks(d: CheckDeps, o: CheckOptions = {}): Promise<Run
 
 /**
  * One `probe` against a tab the hub already counts as ready. What it answers does not matter — an unbooted game is a
- * perfectly good `ready: false` — only that an answer came back at all rather than the relay's `no-handler` (§9.2).
+ * perfectly good `ready: false` — only that an answer came back at all rather than the relay's `no-handler`
+ * (extension-distribution.md §9.2).
  */
 async function relay(d: Ctx): Promise<CheckResult> {
   const t0 = d.now();
@@ -141,7 +144,7 @@ async function relay(d: Ctx): Promise<CheckResult> {
   return { check: "relay", pass: false, ms, note: `inconclusive: the hub refused ${a.code} (${a.message})` };
 }
 
-/** §2's pass bar, by the only measurement that means anything: leave it alone long enough, then ask for one command. */
+/** extension-distribution.md §2's pass bar, by the only measurement that means anything: leave it alone long enough, then ask for one command. */
 async function keepalive(d: Ctx, idleMs: number, barMs: number): Promise<CheckResult> {
   d.say(`  keepalive: idle for ${Math.round(idleMs / 1000)} s, then one command`);
   await d.sleep(idleMs);
@@ -157,7 +160,7 @@ async function keepalive(d: Ctx, idleMs: number, barMs: number): Promise<CheckRe
   return { check: "keepalive", pass, ms, note: `a command reached the tab ${ms} ms after ${Math.round(idleMs / 1000)} s idle` };
 }
 
-/** Why no tab counts, in the words the tab states themselves give (§9.3, §9.4). */
+/** Why no tab counts, in the words the tab states themselves give (extension-distribution.md §9.3, §9.4). */
 function notReady(tabs: readonly TabInfo[]): string {
   if (tabs.length === 0) return "no pokerogue.net tab is connected; open or reload pokerogue.net";
   const wrong = tabs.filter(t => t.state === "wrong-world");
@@ -169,7 +172,7 @@ export function merge(ledger: Ledger, result: EngineResult): Ledger {
   return { ...ledger, [result.engine]: result };
 }
 
-/** The ledger as a table, every engine of §2 on it, the ones never reached included. */
+/** The ledger as a table, every engine of extension-distribution.md §2 on it, the ones never reached included. */
 export function report(ledger: Ledger): string {
   const rows = ENGINES.map(engine => {
     const r = ledger[engine];

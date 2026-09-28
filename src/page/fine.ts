@@ -3,7 +3,8 @@ import type { PageModes } from "./modes.ts";
 
 /**
  * The fine fingerprint: the settle loop's "has the game stopped moving" (#14: within-press, timing axis). `probe`
- * reports it, and every act recomputes it in the same page turn before acting (§10.2). Self-contained (§10.5).
+ * reports it, and every act recomputes it in the same page turn before acting (extension-distribution.md §10.2).
+ * Self-contained (§10.5).
  */
 export function fine(L: Scene, modes: PageModes): string {
   const __try = (f: () => Page) => { try { return f(); } catch (e) { return null; } };

@@ -13,7 +13,7 @@ export type Discriminators = {
 
 /**
  * The discriminators off handler `h`, which may be null. One function for `probe` and `menu`, handed to both through
- * `L`, so the two reads cannot read them differently (#133). Self-contained (§10.5).
+ * `L`, so the two reads cannot read them differently (#133). Self-contained (extension-distribution.md §10.5).
  */
 export function disc(h: Page): Discriminators {
   return {
