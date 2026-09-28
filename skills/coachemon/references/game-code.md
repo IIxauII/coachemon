@@ -2091,7 +2091,7 @@ challenge and Shuckle Juice / Old Gateau, averages with the fusion's form stat b
 Endless when unfused), then applies vitamins, and returns a fresh array (`:1619`). Its one side effect is a log: each of
 its three `applyModifiers` calls (`:1622`, `:1624`, `:1638`) reaches `applyModifiersInternal`, which `console.log`s
 `Applied …` once per applied modifier (`src/battle-scene.ts:2949`). A held-item change (`updatePartyForModifiers`,
-`src/battle-scene.ts:2823`), `changeForm` (`:4464`), `fuse` (`:6254`) and `unfuse` (through `clearFusionSpecies`,
+`src/battle-scene.ts:2823`), `changeForm` (`src/field/pokemon.ts:4464`), `fuse` (`:6254`) and `unfuse` (through `clearFusionSpecies`,
 `:3090`) each go on to `calculateStats` (`:1575`), which rewrites `stats`. Shininess itself is set at spawn by `trySetShiny`
 (`src/field/pokemon.ts:2865`) — writes `shiny`, no draw of its own (the `id` was drawn at construction, line 398):
 `(trainerId ^ secretId) ^ (id >>> 16 ^ id & 0xffff) < threshold`, threshold 64 of 65536 (`BASE_SHINY_CHANCE`,
