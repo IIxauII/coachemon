@@ -105,11 +105,11 @@ const skipLiteral = (src, i, prev) => {
   return i;
 };
 
-// Strips every comment from a bundled script. The extension ships `hud.js` comment-stripped in every flavour (§5.2 of
-// docs/spec/extension-distribution.md), which is what removes the comment lines that quote PokéRogue's own code. A
-// block comment leaves its newlines behind, so nothing that relied on a line break gets joined; blank lines and
-// trailing whitespace then collapse. Uses the same literal scanner as the import rules, so a `//` inside a string, a
-// template or a regex survives.
+// Strips every comment from a bundled script. The extension ships `hud.js` comment-stripped in every flavour
+// (extension-distribution.md §5.2), which is what removes the comment lines that quote PokéRogue's own code. A block
+// comment leaves its newlines behind, so nothing that relied on a line break gets joined; blank lines and trailing
+// whitespace then collapse. Uses the same literal scanner as the import rules, so a `//` inside a string, a template
+// or a regex survives.
 export const stripComments = src => {
   let out = "", i = 0, prev = "";
   while (i < src.length) {

@@ -1,5 +1,6 @@
-// The fixture snapshots the listing screenshots are drawn from (§3): a scene object shaped like the game's, with no
-// sprite atlas, so every icon falls back to the name it stands for and no franchise art can reach a store.
+// The fixture snapshots the listing screenshots are drawn from (extension-distribution.md §3): a scene object shaped
+// like the game's, with no sprite atlas, so every icon falls back to the name it stands for and no franchise art can
+// reach a store.
 //
 // This file runs in the page, before the HUD bundle, as a classic script: it puts `__fixtures` and a fake `Phaser` on
 // `window`, and the bundle finds them exactly as it finds the real game's. The mocks are the HUD's own test mocks

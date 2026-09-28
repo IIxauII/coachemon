@@ -1,8 +1,8 @@
 /**
- * The Safari release, by hand, every release (§14.6). Safari is not a store: nothing in CI can produce this artifact,
- * because it needs the dev's individual Apple Developer Program membership, their Developer ID signing identity in a
- * local keychain, and Xcode. So this half is the plan — pure, and covered by `src/safari-release.test.ts` — and
- * `safari-release.ts` is the runner that carries it out on the dev's Mac.
+ * The Safari release, by hand, every release (extension-distribution.md §14.6). Safari is not a store: nothing in CI
+ * can produce this artifact, because it needs the dev's individual Apple Developer Program membership, their Developer
+ * ID signing identity in a local keychain, and Xcode. So this half is the plan — pure, and covered by
+ * `src/safari-release.test.ts` — and `safari-release.ts` is the runner that carries it out on the dev's Mac.
  *
  * The order is the part worth pinning down. `notarytool` returns a ticket that lives on Apple's servers; `stapler`
  * writes it into the app so a first launch offline is not a refusal. Neither touches the zip that was submitted, so
@@ -13,14 +13,14 @@ import { join } from "node:path";
 import { safariAppZipName, zipName } from "./artifacts.ts";
 
 /**
- * The containing app's name and bundle identifier (§14.6, both picked by the spec). The app is the packager's
- * generated near-shell and stays that way: the Developer ID route has no review, and Attachment 7 bars bundling the
- * extension with an app that has a different purpose.
+ * The containing app's name and bundle identifier (extension-distribution.md §14.6, both picked by the spec). The app
+ * is the packager's generated near-shell and stays that way: the Developer ID route has no review, and Attachment 7
+ * bars bundling the extension with an app that has a different purpose.
  */
 export const APP_NAME = "Coachemon";
 export const BUNDLE_ID = "io.github.iixauii.coachemon";
 
-/** The tag the extension stream cuts (§14.1); both the download and the upload address the same release. */
+/** The tag the extension stream cuts (extension-distribution.md §14.1); both the download and the upload address the same release. */
 export const extensionTag = (version: string): string => `extension-v${version}`;
 
 /**
@@ -190,7 +190,7 @@ export function acceptedSubmissionId(output: string, profile: string): string {
   return id;
 }
 
-/** §14.6 as commands, in order. Pure: the runner executes these, and a dry run prints them. */
+/** extension-distribution.md §14.6 as commands, in order. Pure: the runner executes these, and a dry run prints them. */
 export function safariSteps(plan: SafariPlan): SafariStep[] {
   const p = safariPaths(plan);
   const tag = extensionTag(plan.version);
@@ -222,9 +222,9 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       title: `Package the extension into the ${APP_NAME} near-shell`,
       command: "xcrun",
       args: [
-        // `safari-web-extension-converter`, and not the `safari-web-extension-packager` §14.6 named: Apple's page is
-        // titled "Packaging a web extension for Safari", but the tool it documents is the converter, and `xcrun`
-        // finds no packager on any Mac. The spec is corrected where it says this.
+        // `safari-web-extension-converter`, and not the `safari-web-extension-packager` extension-distribution.md §14.6
+        // named: Apple's page is titled "Packaging a web extension for Safari", but the tool it documents is the
+        // converter, and `xcrun` finds no packager on any Mac. The spec is corrected where it says this.
         "safari-web-extension-converter",
         p.unpacked,
         "--project-location", p.project,

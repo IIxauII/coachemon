@@ -1,7 +1,7 @@
 /**
- * The extension stream's commit filter (§14.2), a local semantic-release plugin. Its two hooks wrap the stock
- * `commit-analyzer` and `release-notes-generator` and hand them only the commits that touched what the extension
- * ships, so a server-only commit never bumps the extension stream and a HUD fix bumps both.
+ * The extension stream's commit filter (extension-distribution.md §14.2), a local semantic-release plugin. Its two
+ * hooks wrap the stock `commit-analyzer` and `release-notes-generator` and hand them only the commits that touched what
+ * the extension ships, so a server-only commit never bumps the extension stream and a HUD fix bumps both.
  *
  * The wrapped plugins are not installed anywhere in this repo: they are semantic-release's own dependencies, and the
  * release toolchain is deliberately not a devDependency (see `.github/workflows/release.yml`). So resolution starts
@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
-/** What the extension ships (§14.2). Whole directories, so every prefix ends in `/`. */
+/** What the extension ships (extension-distribution.md §14.2). Whole directories, so every prefix ends in `/`. */
 export const EXTENSION_PATHS = [
   "extension/",
   "src/protocol/",

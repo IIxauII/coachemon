@@ -1,6 +1,7 @@
 /**
- * The relay (§9): the ISOLATED-world content script's whole behaviour, as one function over injected dependencies so
- * the tests drive it against a plain `EventTarget` (§9.2's synchrony is then the real thing, not a mock).
+ * The relay (extension-distribution.md §9): the ISOLATED-world content script's whole behaviour, as one function over
+ * injected dependencies so the tests drive it against a plain `EventTarget` (§9.2's synchrony is then the real thing,
+ * not a mock).
  *
  * It is the only part that talks to both the background and the page, and the only place the upward direction is
  * defended: a page-originated event becomes a hub event only if it is structurally exactly what the HUD sends (§9.5).
@@ -14,7 +15,7 @@ export type RelayDeps = {
   channel: Channel;
   /** `(type, detail) => new CustomEvent(type, { detail })`. */
   makeEvent: MakeEvent;
-  /** This build's id, which is also the world marker's value (§9.4). */
+  /** This build's id, which is also the world marker's value (extension-distribution.md §9.4). */
   build: string;
   /** `runtime.sendMessage`. Failures are swallowed: a background that is gone will re-learn on the next tick. */
   send: (message: ToBackground) => void;
@@ -27,7 +28,7 @@ export type RelayDeps = {
 };
 
 export type Relay = {
-  /** Answers one command from the background, synchronously (§9.2). */
+  /** Answers one command from the background, synchronously (extension-distribution.md §9.2). */
   command: (msg: CmdMessage) => RelayReply;
   /** What the relay would report for its tab: `null` until the page announces, then `ready` or `wrong-world`. */
   state: () => TabState | null;
@@ -41,10 +42,10 @@ function overCap(detail: string): boolean {
 }
 
 export function startRelay(d: RelayDeps): Relay {
-  /** At most one command is ever in flight: `command` dispatches and reads the answer in the same page turn (§9.2). */
+  /** At most one command is ever in flight: `command` dispatches and reads the answer in the same page turn (extension-distribution.md §9.2). */
   let pending: { id: number; reply: RelayReply | null } | null = null;
   let state: TabState | null = null;
-  /** Answered once, so a hello storm between two loaded copies cannot bounce forever (§9.3). */
+  /** Answered once, so a hello storm between two loaded copies cannot bounce forever (extension-distribution.md §9.3). */
   let greeted = false;
 
   const dispatch = (type: string, detail: unknown): void => {
@@ -56,7 +57,7 @@ export function startRelay(d: RelayDeps): Relay {
     d.send({ t: "tab", state: next, title: d.title() });
   };
 
-  /** A detail from the page counts only with our own build id: the relay pairs only with page scripts of its build (§9.6). */
+  /** A detail from the page counts only with our own build id: the relay pairs only with page scripts of its build (extension-distribution.md §9.6). */
   const mine = (detail: unknown, read: (d: unknown) => Record<string, unknown> | null = decode): Record<string, unknown> | null => {
     const parsed = read(detail);
     return parsed && parsed.build === d.build ? parsed : null;
@@ -70,7 +71,7 @@ export function startRelay(d: RelayDeps): Relay {
       greeted = true;
       dispatch(EVENT.hello, { side: "relay" });
     }
-    // Presence waits on the page handlers alone, never on the HUD or on game boot (§9.3).
+    // Presence waits on the page handlers alone, never on the HUD or on game boot (extension-distribution.md §9.3).
     if (state !== "ready") report("ready");
   });
 
@@ -78,7 +79,8 @@ export function startRelay(d: RelayDeps): Relay {
     if (!pending || pending.reply) return;
     const raw = e.detail;
     // Ownership first, size second: otherwise any MAIN-world code could turn an in-flight command into `too-large`
-    // by dispatching one oversized reply, which is exactly what the structural defence is there to stop (§9.5).
+    // by dispatching one oversized reply, which is exactly what the structural defence is there to stop
+    // (extension-distribution.md §9.5).
     const reply = mine(raw, decodeAny);
     if (!reply || reply.id !== pending.id) return;
     if (typeof raw === "string" && overCap(raw)) {
@@ -93,7 +95,8 @@ export function startRelay(d: RelayDeps): Relay {
   for (const [kind, event] of EVENT_BY_KIND) {
     d.channel.addEventListener(event, e => {
       const raw = e.detail;
-      // An oversized event is dropped here and nowhere else: nothing upward carries it (§9.7).
+      // An oversized event is dropped here and nowhere else: nothing upward carries it
+      // (extension-distribution.md §9.7).
       if (typeof raw !== "string" || overCap(raw)) return;
       const detail = mine(raw);
       const body = detail && eventBody(kind, detail);
@@ -108,10 +111,11 @@ export function startRelay(d: RelayDeps): Relay {
 
   d.onPageHide(() => report("gone"));
 
-  // What holds Firefox's event page, and how a restarted background re-learns this tab (§8.2).
+  // What holds Firefox's event page, and how a restarted background re-learns this tab
+  // (extension-distribution.md §8.2).
   d.every(() => d.send({ t: "keepalive", state, title: d.title() }), KEEPALIVE_MS);
 
-  // Ours is the first hello when the relay wins the race; the page answers it (§9.3).
+  // Ours is the first hello when the relay wins the race; the page answers it (extension-distribution.md §9.3).
   dispatch(EVENT.hello, { side: "relay" });
 
   return {
@@ -127,7 +131,8 @@ export function startRelay(d: RelayDeps): Relay {
       } finally {
         pending = null;
       }
-      // No reply by the time dispatch returned: nobody is listening in the page. No timer, ever (§9.2).
+      // No reply by the time dispatch returned: nobody is listening in the page. No timer, ever
+      // (extension-distribution.md §9.2).
       return answer ?? { t: "reply", id: msg.id, ok: false, code: "no-handler", message: `no page handler answered ${msg.name}` };
     },
     state: () => state,

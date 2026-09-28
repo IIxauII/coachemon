@@ -1,7 +1,8 @@
 /**
- * The background's transport (§8): the one socket to the hub per browser, the tab bookkeeping behind it, and the
- * forwarding in both directions. Every browser API it needs is injected, so the tests drive the whole state machine —
- * dial, welcome check, back-off, retries, keepalive, consent gate — on fake timers with no browser at all.
+ * The background's transport (extension-distribution.md §8): the one socket to the hub per browser, the tab bookkeeping
+ * behind it, and the forwarding in both directions. Every browser API it needs is injected, so the tests drive the
+ * whole state machine — dial, welcome check, back-off, retries, keepalive, consent gate — on fake timers with no
+ * browser at all.
  *
  * It dials only while a `pokerogue.net` tab is present, so a player with no game open makes no loopback traffic (§8.1).
  */
@@ -10,13 +11,13 @@ import type { ExtensionHello, Flavour, FromExtension, TabState, Target, ToExtens
 import { MAX_DETAIL_BYTES } from "../relay/channel.ts";
 import { TOO_LARGE, type EventReport, type RelayReply, type ToBackground } from "../messages.ts";
 
-/** No `welcome` with the hub's product marker in this long and the port belongs to someone else (§8.1). */
+/** No `welcome` with the hub's product marker in this long and the port belongs to someone else (extension-distribution.md §8.1). */
 export const WELCOME_MS = 2_000;
-/** How long a wrong answer on the port is left alone. A squatter is not retried at us every 20 s (§8.1). */
+/** How long a wrong answer on the port is left alone. A squatter is not retried at us every 20 s (extension-distribution.md §8.1). */
 export const WELCOME_BACKOFF_MS = 10 * 60_000;
-/** What holds Chrome's service worker (§8.2). */
+/** What holds Chrome's service worker (extension-distribution.md §8.2). */
 export const PING_MS = 20_000;
-/** After a close or an error: 1 s, 2 s, 5 s, then every 20 s while a tab is present (§8.1). */
+/** After a close or an error: 1 s, 2 s, 5 s, then every 20 s while a tab is present (extension-distribution.md §8.1). */
 export const RETRY_MS = [1_000, 2_000, 5_000] as const;
 export const RETRY_STEADY_MS = 20_000;
 
@@ -33,30 +34,30 @@ export type TransportDeps = {
   url: string;
   target: Target;
   flavour: Flavour;
-  /** The extension's own version, stamped into the manifest by CI (§14.2). */
+  /** The extension's own version, stamped into the manifest by CI (extension-distribution.md §14.2). */
   version: string;
   build: string;
-  /** Exactly what this build's page script registers, which is what the hub checks a tool's command against (§8.5). */
+  /** Exactly what this build's page script registers, which is what the hub checks a tool's command against (extension-distribution.md §8.5). */
   commands: string[];
   dial: (url: string, h: SocketHandlers) => Socket;
   /** `setTimeout` returning its own cancel, so nothing leaks a numeric handle across a service-worker restart. */
   after: (ms: number, fn: () => void) => () => void;
-  /** `tabs.sendMessage`, which needs no `tabs` permission for a tab we have a content script in (§8.3). */
+  /** `tabs.sendMessage`, which needs no `tabs` permission for a tab we have a content script in (extension-distribution.md §8.3). */
   toTab: (tab: number, message: unknown) => Promise<unknown>;
   /**
    * Commands the background answers itself rather than forwarding, or `null` for a name that is not one of them. Only
-   * a dev build has any: `screenshot` needs the browser's capture API and `reload` ends the extension (§10.6). The
-   * transport never learns what they are — it only asks first.
+   * a dev build has any: `screenshot` needs the browser's capture API and `reload` ends the extension
+   * (extension-distribution.md §10.6). The transport never learns what they are — it only asks first.
    */
   local?: (cmd: Extract<ToExtension, { t: "cmd" }>) => Promise<RelayReply> | null;
   /**
    * A frame this build knows and the transport does not; `true` means it was handled and nothing else looks at it.
-   * Only a dev build has one, for the dev loop's `dev-reload` (§5.4). The transport never learns the name, so a store
-   * artifact does not contain it — which is exactly what the guard checks (§5.5). Named for `PageDeps.extra`, which is
-   * the same idea one world down.
+   * Only a dev build has one, for the dev loop's `dev-reload` (extension-distribution.md §5.4). The transport never
+   * learns the name, so a store artifact does not contain it — which is exactly what the guard checks (§5.5). Named for
+   * `PageDeps.extra`, which is the same idea one world down.
    */
   extra?: (frame: ToExtension) => boolean;
-  /** Firefox until the player clicks (§8.4); every other target starts consented. */
+  /** Firefox until the player clicks (extension-distribution.md §8.4); every other target starts consented. */
   consent: boolean;
 };
 
@@ -64,9 +65,9 @@ type Phase = "idle" | "dialing" | "live" | "waiting";
 
 export class Transport {
   readonly #d: TransportDeps;
-  /** Tab id → its last reported state, across every relay in this browser. A tab counts only while `ready` (§7.5). */
+  /** Tab id → its last reported state, across every relay in this browser. A tab counts only while `ready` (extension-distribution.md §7.5). */
   readonly #tabs = new Map<number, { state: TabState; title: string }>();
-  /** Tabs held back until the welcome lands, so nothing about the player's game reaches a squatter on the port (§7.4). */
+  /** Tabs held back until the welcome lands, so nothing about the player's game reaches a squatter on the port (extension-distribution.md §7.4). */
   readonly #held: number[] = [];
   #socket: Socket | null = null;
   #phase: Phase = "idle";
@@ -81,14 +82,15 @@ export class Transport {
     this.#consent = d.consent;
   }
 
-  /** The tabs the hub is told about: ready, and only once the browser has consent (§8.4). */
+  /** The tabs the hub is told about: ready, and only once the browser has consent (extension-distribution.md §8.4). */
   get ready(): number[] {
     return this.#consent ? this.#present : [];
   }
 
   /**
    * Every ready tab, consent or not. This is what dialing looks at: an unconsented Firefox still connects and says
-   * `consent: false`, because that frame is the only thing that lets the status ladder name the click (§8.4, §12.3).
+   * `consent: false`, because that frame is the only thing that lets the status ladder name the click
+   * (extension-distribution.md §8.4, §12.3).
    */
   get #present(): number[] {
     return [...this.#tabs].filter(([, t]) => t.state === "ready").map(([tab]) => tab);
@@ -100,7 +102,8 @@ export class Transport {
 
   /**
    * Whatever a relay just said about its tab, from a `tab` frame or from a keepalive. A keepalive is how a restarted
-   * background re-learns the tabs it had, which is the only mechanism Safari is assumed to have (§8.2).
+   * background re-learns the tabs it had, which is the only mechanism Safari is assumed to have
+   * (extension-distribution.md §8.2).
    */
   fromTab(tab: number, message: ToBackground): void {
     if (message.t === "event") return this.#event(tab, message);
@@ -123,7 +126,7 @@ export class Transport {
     this.#send({ t: "tab", tab, state: "gone", title: known.title });
   }
 
-  /** The player consented (§8.4). The hub hears the flip, then every tab it was never told about. */
+  /** The player consented (extension-distribution.md §8.4). The hub hears the flip, then every tab it was never told about. */
   grant(): void {
     if (this.#consent) return;
     this.#consent = true;
@@ -132,7 +135,7 @@ export class Transport {
     this.#dialIfWanted();
   }
 
-  /** Background start, and every reconnect-on-wake (§8.2). */
+  /** Background start, and every reconnect-on-wake (extension-distribution.md §8.2). */
   start(): void {
     this.#dialIfWanted();
   }
@@ -174,7 +177,8 @@ export class Transport {
       commands: this.#d.commands,
     };
     this.#raw(hello);
-    // Before the welcome, only the hello goes out: `#send` holds the tab frames until the hub proved itself (§7.4).
+    // Before the welcome, only the hello goes out: `#send` holds the tab frames until the hub proved itself
+    // (extension-distribution.md §7.4).
     for (const tab of this.ready) this.#held.push(tab);
   }
 
@@ -193,7 +197,7 @@ export class Transport {
 
   #welcomed(product: string): void {
     if (this.#phase !== "dialing") return;
-    // A wrong product is a foreign process on our port: the same 10 min as silence (§8.1).
+    // A wrong product is a foreign process on our port: the same 10 min as silence (extension-distribution.md §8.1).
     if (product !== PRODUCT) return this.#noWelcome();
     this.#cancelWelcome?.();
     this.#cancelWelcome = null;
@@ -243,7 +247,8 @@ export class Transport {
   // -------------------------------------------------------------- forwarding
 
   async #forward(cmd: Extract<ToExtension, { t: "cmd" }>): Promise<void> {
-    // The background's own commands never reach a tab, and a tab is not needed to answer them (§10.6).
+    // The background's own commands never reach a tab, and a tab is not needed to answer them
+    // (extension-distribution.md §10.6).
     const mine = this.#d.local?.(cmd);
     if (mine) return this.#send(await mine);
     let reply: RelayReply;
@@ -252,7 +257,8 @@ export class Transport {
       reply = (answer as RelayReply | undefined)
         ?? { t: "reply", id: cmd.id, ok: false, code: "tab-gone", message: "the tab did not answer" };
     } catch (e) {
-      // `tabs.sendMessage` rejects when the tab closed, which is the one thing the background adds to the codes (§9.7).
+      // `tabs.sendMessage` rejects when the tab closed, which is the one thing the background adds to the codes
+      // (extension-distribution.md §9.7).
       reply = { t: "reply", id: cmd.id, ok: false, code: "tab-gone", message: e instanceof Error ? e.message : String(e) };
     }
     this.#send(reply);
@@ -272,7 +278,7 @@ export class Transport {
     this.#send({ t: "tab", tab, state: known.state, title: known.title });
   }
 
-  /** Everything but the hello: held while there is no proved hub, and dropped entirely without consent (§8.4). */
+  /** Everything but the hello: held while there is no proved hub, and dropped entirely without consent (extension-distribution.md §8.4). */
   #send(frame: FromExtension): void {
     if (this.#phase !== "live" || !this.#consent) return;
     this.#raw(frame);
@@ -280,8 +286,9 @@ export class Transport {
 
   #raw(frame: FromExtension): void {
     const data = JSON.stringify(frame);
-    // The cap a second time, on the frame itself (§8.3). The relay already dropped an oversized reply body; a frame
-    // that is still over refuses rather than goes out, and an event — which nothing is waiting for — is dropped.
+    // The cap a second time, on the frame itself (extension-distribution.md §8.3). The relay already dropped an
+    // oversized reply body; a frame that is still over refuses rather than goes out, and an event — which nothing is
+    // waiting for — is dropped.
     if (data.length > MAX_DETAIL_BYTES) {
       if (frame.t !== "reply") return;
       const over: FromExtension = { t: "reply", id: frame.id, ok: false, code: "too-large", message: TOO_LARGE };

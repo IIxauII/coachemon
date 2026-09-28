@@ -1,11 +1,12 @@
 /**
- * What the dev loop watches (§5.4). The walking and the building are `extension/scripts/dev.ts`; the two decisions
- * worth pinning are here, because a watcher that rebuilds on its own output never stops rebuilding.
+ * What the dev loop watches (extension-distribution.md §5.4). The walking and the building are
+ * `extension/scripts/dev.ts`; the two decisions worth pinning are here, because a watcher that rebuilds on its own
+ * output never stops rebuilding.
  *
  * Not bundled by anything: no entrypoint imports it, so it never reaches an artifact of either flavour.
  */
 
-/** The four roots of §5.4, relative to the repo root. `extension/` covers the glue, the manifests and the build. */
+/** The four roots of extension-distribution.md §5.4, relative to the repo root. `extension/` covers the glue, the manifests and the build. */
 export const WATCHED = ["skills/coachemon/scripts/hud", "src/page", "src/protocol", "extension"] as const;
 
 /** A burst of file events — an editor writing, a formatter following it — is one build. */

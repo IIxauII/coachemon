@@ -1,6 +1,6 @@
 /**
- * semantic-release's `publish` for the extension stream (§14.4): from 1.0.0 on, upload the Chrome and Firefox
- * artifacts to their stores and submit them for review. 0.x is unlisted — it says so and stops.
+ * semantic-release's `publish` for the extension stream (extension-distribution.md §14.4): from 1.0.0 on, upload the
+ * Chrome and Firefox artifacts to their stores and submit them for review. 0.x is unlisted — it says so and stops.
  *
  * Chrome goes through Web Store API v2: v1.1 stops being supported on 2026-10-15, and v2 is what can cancel a pending
  * review before submitting the newest build (`POST /v2/{name}:cancelSubmission`, confirmed against the API reference
@@ -31,22 +31,22 @@ const version = releaseVersion(versionArg("scripts/release/submit-extension.ts")
 const verifyOnly = process.argv.includes("--verify");
 
 if (!submitsToStores(version)) {
-  console.log(`extension-v${version} is a 0.x release: unlisted, so nothing is submitted to a store (§14.1)`);
+  console.log(`extension-v${version} is a 0.x release: unlisted, so nothing is submitted to a store (extension-distribution.md §14.1)`);
   process.exit(0);
 }
 
 const missing = missingSubmitEnv(process.env);
 if (missing.length > 0) {
-  console.error(`cannot submit extension-v${version}: ${missing.join(", ")} missing from the environment (§14.4)`);
+  console.error(`cannot submit extension-v${version}: ${missing.join(", ")} missing from the environment (extension-distribution.md §14.4)`);
   process.exit(1);
 }
 if (verifyOnly) {
-  console.log(`extension-v${version} submits to both stores, and every credential it needs is present (§14.4)`);
+  console.log(`extension-v${version} submits to both stores, and every credential it needs is present (extension-distribution.md §14.4)`);
   process.exit(0);
 }
 
-// AMO's extension id is the gecko id (§5.3), read off the build that is about to be uploaded so it cannot drift from
-// what `manifestFor` wrote.
+// AMO's extension id is the gecko id (extension-distribution.md §5.3), read off the build that is about to be uploaded
+// so it cannot drift from what `manifestFor` wrote.
 const built = join(EXTENSION_DIR, ".output", "firefox-mv3-store", "manifest.json");
 const firefox = JSON.parse(readFileSync(built, "utf8")) as {
   browser_specific_settings?: { gecko?: { id?: string } };
@@ -59,7 +59,7 @@ if (!gecko) {
 
 const output = (name: string) => join(".output", name);
 
-// Safari is not a store: §14.6 packages and notarizes it by hand from the release's own zip.
+// Safari is not a store: extension-distribution.md §14.6 packages and notarizes it by hand from the release's own zip.
 execFileSync(
   "npx",
   [

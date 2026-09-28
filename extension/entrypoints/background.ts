@@ -1,6 +1,6 @@
 /**
- * `background.js` (§8): the one socket to the hub per browser. It owns nothing about the game — it dials while a tab
- * is present, forwards commands to the tab and replies back, and keeps itself alive.
+ * `background.js` (extension-distribution.md §8): the one socket to the hub per browser. It owns nothing about the game
+ * — it dials while a tab is present, forwards commands to the tab and replies back, and keeps itself alive.
  *
  * Listeners are registered in the first turn, before anything is awaited, because Chrome's service worker restarts on
  * every event and only listeners registered synchronously wake it (§8.2).
@@ -16,7 +16,8 @@ import { Transport } from "../src/transport/transport.ts";
 
 export default defineBackground(() => {
   // `COACHEMON_FLAVOUR` is a build-time constant, so a store build drops both branches and the dev modules with them:
-  // everything they name — `captureVisibleTab`, `executeScript`, the dev command names — is what the guard bans (§5.5).
+  // everything they name — `captureVisibleTab`, `executeScript`, the dev command names — is what the guard bans
+  // (extension-distribution.md §5.5).
   const dev = COACHEMON_FLAVOUR === "dev";
 
   const transport = new Transport({
@@ -26,7 +27,8 @@ export default defineBackground(() => {
     version: COACHEMON_VERSION,
     build: COACHEMON_BUILD,
     commands: dev ? [...COMMAND_NAMES, ...DEV_COMMAND_NAMES] : [...COMMAND_NAMES],
-    // Firefox starts unconsented and says so on the wire; every other target has no consent step (§8.4).
+    // Firefox starts unconsented and says so on the wire; every other target has no consent step
+    // (extension-distribution.md §8.4).
     consent: COACHEMON_TARGET !== "firefox",
     dial: (url, h) => {
       const ws = new WebSocket(url);
@@ -40,11 +42,14 @@ export default defineBackground(() => {
       const handle = setTimeout(fn, ms);
       return () => clearTimeout(handle);
     },
-    // No `tabs` permission: a tab we have a content script in is addressable by id anyway (§8.3).
+    // No `tabs` permission: a tab we have a content script in is addressable by id anyway
+    // (extension-distribution.md §8.3).
     toTab: (tab, message) => Promise.resolve(browser.tabs.sendMessage(tab, message)),
-    // The dev table's two background commands, and the re-injection that follows its own reload (§5.4, §10.6).
+    // The dev table's two background commands, and the re-injection that follows its own reload
+    // (extension-distribution.md §5.4, §10.6).
     local: dev ? startDev() : undefined,
-    // The dev loop's reload, which needs no tab and so reaches a build whose relay the last change broke (§5.4).
+    // The dev loop's reload, which needs no tab and so reaches a build whose relay the last change broke
+    // (extension-distribution.md §5.4).
     extra: dev ? devFrames : undefined,
   });
 
@@ -55,7 +60,8 @@ export default defineBackground(() => {
     }
   });
 
-  // `pagehide` is the usual way a tab leaves (§9.3); this catches the close that never fired one.
+  // `pagehide` is the usual way a tab leaves (extension-distribution.md §9.3); this catches the close that never fired
+  // one.
   browser.tabs.onRemoved.addListener(tab => transport.tabClosed(tab));
 
   transport.start();
@@ -65,7 +71,7 @@ export default defineBackground(() => {
       target: COACHEMON_TARGET,
       browserName: async () => {
         // Firefox-only, and absent from Chrome's typings, which is the point: this is how the Firefox build tells
-        // Firefox from Orion running the same AMO build (§8.4).
+        // Firefox from Orion running the same AMO build (extension-distribution.md §8.4).
         const runtime = browser.runtime as { getBrowserInfo?: () => Promise<{ name: string }> };
         const info = await runtime.getBrowserInfo?.();
         return info?.name ?? null;

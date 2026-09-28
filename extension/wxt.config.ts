@@ -1,6 +1,7 @@
 /**
- * The extension build (§5.2). A wiring file: the manifests are `src/build/manifest.ts`, what the HUD hook writes is
- * `src/build/artifact.ts`, and both are unit-tested. MV3 is forced, because WXT defaults Firefox and Safari to MV2.
+ * The extension build (extension-distribution.md §5.2). A wiring file: the manifests are `src/build/manifest.ts`, what
+ * the HUD hook writes is `src/build/artifact.ts`, and both are unit-tested. MV3 is forced, because WXT defaults Firefox
+ * and Safari to MV2.
  *
  * `wxt dev` is deliberately not used: it force-adds `tabs` and `scripting`, runs a throwaway profile, does not watch
  * `hud/`, and covers neither Safari nor Orion (§5.2). Builds are `wxt build -b chrome|firefox|safari --mode store|dev`.
@@ -20,12 +21,12 @@ const root = fileURLToPath(new URL(".", import.meta.url));
 const repo = join(root, "..");
 const version = storeVersion(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version);
 
-/** Anything but the dev flavour is a store build: a plain `wxt build` must never produce a dev artifact (§5.4). */
+/** Anything but the dev flavour is a store build: a plain `wxt build` must never produce a dev artifact (extension-distribution.md §5.4). */
 const flavourOf = (mode: string): Flavour => (mode === "dev" ? "dev" : "store");
 
 const targetOf = (browser: string): Target => {
   if (browser === "firefox" || browser === "safari") return browser;
-  // Orion installs the Chrome or the Firefox build; it is never a target of its own (§2).
+  // Orion installs the Chrome or the Firefox build; it is never a target of its own (extension-distribution.md §2).
   if (browser !== "chrome") throw new Error(`unknown target browser ${browser}; build -b chrome|firefox|safari`);
   return "chrome";
 };
@@ -42,7 +43,7 @@ export default defineConfig({
     define: {
       COACHEMON_BUILD: JSON.stringify(BUILD_PLACEHOLDER),
       // The whole URL, not a port: the store artifact then holds `ws://127.0.0.1:47147/` literally and the dev port
-      // never appears in it at all, which is what the guard checks either way (§5.5).
+      // never appears in it at all, which is what the guard checks either way (extension-distribution.md §5.5).
       COACHEMON_HUB_URL: JSON.stringify(`ws://127.0.0.1:${flavourOf(mode) === "dev" ? DEV_PORT : STORE_PORT}/`),
       COACHEMON_TARGET: JSON.stringify(targetOf(browser)),
       COACHEMON_FLAVOUR: JSON.stringify(flavourOf(mode)),
@@ -52,17 +53,20 @@ export default defineConfig({
   zip: {
     // `{{version}}` is the manifest's, so the stamped `package.json`'s three numbers. Only store builds are ever
     // zipped, so no mode suffix is needed. `zip:extension:done` below renames whatever this writes to what `zipName`
-    // says, which is the one name an artifact has (§14.2); the template only has to tell the browsers apart.
+    // says, which is the one name an artifact has (extension-distribution.md §14.2); the template only has to tell the
+    // browsers apart.
     artifactTemplate: "coachemon-{{browser}}-{{version}}.zip",
     sourcesTemplate: sourcesZipName("{{version}}"),
-    // The AMO sources zip (§5.7): the repo root, limited to what `npx wxt build -b firefox` actually needs.
+    // The AMO sources zip (extension-distribution.md §5.7): the repo root, limited to what `npx wxt build -b firefox`
+    // actually needs.
     sourcesRoot: "..",
     includeSources: [
       "extension/**",
       "src/protocol/**",
       "src/page/**",
       "src/enums/generated.ts",
-      // This config imports it for the artifact names, so `wxt build` inside the zip needs it to load at all (§5.7).
+      // This config imports it for the artifact names, so `wxt build` inside the zip needs it to load at all
+      // (extension-distribution.md §5.7).
       "scripts/release/artifacts.ts",
       "skills/coachemon/scripts/hud-bundle.mjs",
       "skills/coachemon/scripts/hud/**",
@@ -76,12 +80,12 @@ export default defineConfig({
   hooks: {
     /**
      * The HUD bypasses WXT's bundler: `bundle("hud")` is written as `hud.js` exactly as the skill produces it, but
-     * wrapped and comment-stripped (§5.2). The HUD tests keep exercising the raw `bundle()`.
+     * wrapped and comment-stripped (extension-distribution.md §5.2). The HUD tests keep exercising the raw `bundle()`.
      */
     "build:publicAssets": (_wxt, files) => {
       files.push(
         { relativeDest: "hud.js", contents: hudScript(bundle("hud")) },
-        // Both shipped in every artifact, because `hud.js` goes out comment-stripped (§15).
+        // Both shipped in every artifact, because `hud.js` goes out comment-stripped (extension-distribution.md §15).
         { relativeDest: "LICENSE", contents: readFileSync(join(repo, "LICENSE"), "utf8") },
         {
           relativeDest: "THIRD_PARTY_NOTICES.md",
@@ -90,13 +94,14 @@ export default defineConfig({
       );
     },
     /**
-     * WXT normalises an MV3 background to a service worker. Safari's must be `scripts` (§5.3), so it goes back in
-     * after generation; Firefox's WXT already writes as an event page by itself.
+     * WXT normalises an MV3 background to a service worker. Safari's must be `scripts`
+     * (extension-distribution.md §5.3), so it goes back in after generation; Firefox's WXT already writes as an event
+     * page by itself.
      */
     "build:manifestGenerated": (wxt, manifest) => {
       if (wxt.config.browser === "safari") (manifest as Record<string, unknown>).background = SAFARI_BACKGROUND;
     },
-    /** The build id is a hash over `hud.js` and `page.js`, so it can only be stamped once both exist (§5.2). */
+    /** The build id is a hash over `hud.js` and `page.js`, so it can only be stamped once both exist (extension-distribution.md §5.2). */
     "build:done": wxt => {
       const out = wxt.config.outDir;
       const build = buildId(version, ["hud.js", "page.js"].map(f => readFileSync(join(out, f), "utf8")));
@@ -111,12 +116,12 @@ export default defineConfig({
     },
     /**
      * `artifactTemplate` cannot branch on the browser, and Safari's artifact is named for what it holds rather than
-     * for the browser: §14.6 unzips it and hands the folder to `xcrun safari-web-extension-converter`. So the one name
-     * the template cannot write is written here (§14.2).
+     * for the browser: extension-distribution.md §14.6 unzips it and hands the folder to `xcrun
+     * safari-web-extension-converter`. So the one name the template cannot write is written here (§14.2).
      */
     "zip:extension:done": (wxt, zipPath) => {
       // A release artifact is a store build by definition, and these names carry no mode: zipping a dev build would
-      // write it over the store zip's exact name (§5.4).
+      // write it over the store zip's exact name (extension-distribution.md §5.4).
       if (flavourOf(wxt.config.mode) !== "store") {
         throw new Error(`wxt zip is for store builds only; --mode ${wxt.config.mode} would overwrite a store artifact`);
       }

@@ -26,7 +26,7 @@
  * which of its readings to redo.
  *
  * Keys are HUD modules under `skills/coachemon/scripts/hud/`; a moved hash
- * names the modules to re-read. `52-shop.js` owns only its TM claims (§16):
+ * names the modules to re-read. `52-shop.js` owns only its TM claims (game-code.md §16):
  * its spending rules rest on `03-calendar.js`'s run calendar and its item
  * judgements on `51-items.js`, which are listed under those modules.
  */
@@ -38,7 +38,7 @@ const SCENE = "src/battle-scene.ts";
 
 export const HUD_DEPS = {
   /**
-   * §0: why every HUD call runs inside `sandbox` — the bookkeeping `simulated` does not suppress, and the
+   * game-code.md §0: why every HUD call runs inside `sandbox` — the bookkeeping `simulated` does not suppress, and the
    * draws and writes it restores: the battle stream and the seed-fork state, Outrage-type targeting, Shell
    * Side Arm's tie, Present's roll and heal, Tera Shell's `moveEffectiveness`.
    */
@@ -53,7 +53,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §12 and §10. The **run calendar**: the four rules that say what kind of fight a
+   * game-code.md §12 and §10. The **run calendar**: the four rules that say what kind of fight a
    * wave is, the heal schedule and who it revives, and `isWaveTrainer` as odds. All
    * *re-implemented* — they are pure arithmetic on the wave index, so the HUD reads
    * them rather than calling the game every tick, and this file holds the only
@@ -124,7 +124,7 @@ export const HUD_DEPS = {
     `${M}#RemoveTypeAttr.apply`,
     `src/data/abilities/ab-attrs.ts#BlockNonDirectDamageAbAttr.constructor`,
     `src/data/abilities/ab-attrs.ts#BlockRecoilDamageAttr.apply`,
-    // §2 hit counts: the multi-hit type and the strikes Parental Bond and Multi-Lens add.
+    // game-code.md §2 hit counts: the multi-hit type and the strikes Parental Bond and Multi-Lens add.
     `${M}#MultiHitAttr.getHitCount`,
     `${M}#MultiHitAttr.apply`,
     `${M}#MultiHitPowerIncrementAttr.apply`,
@@ -152,7 +152,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §1–§5, §8, §18 drain, §21 end of turn. `getAttackDamage` is called (simulated,
+   * game-code.md §1–§5, §8, §18 drain, §21 end of turn. `getAttackDamage` is called (simulated,
    * sandboxed); everything the simulated call leaves out is re-implemented: the
    * damage roll, crits, accuracy, multi-hit counts, boss segments, Sturdy / Focus
    * Band / endure, and turn-end HP — the phases that run after the moves: weather,
@@ -207,7 +207,8 @@ export const HUD_DEPS = {
     `src/phases/move-phase.ts#MovePhase.thirdFailureCheck`,
     `${M}#Move.doesFlagEffectApply`,
     `src/phases/move-effect-phase.ts#MoveEffectPhase.protectedCheck`,
-    // §18 drain: the share of each hit's damage dealt that heals the user, Heal Block, Healing Charm, Liquid Ooze.
+    // game-code.md §18 drain: the share of each hit's damage dealt that heals the user, Heal Block, Healing Charm,
+    // Liquid Ooze.
     `${M}#HitHealAttr.apply`,
     `${M}#HitHealAttr.getHealAmount`,
     `src/phases/move-effect-phase.ts#MoveEffectPhase.applyMoveEffects`,
@@ -220,9 +221,9 @@ export const HUD_DEPS = {
     `${P}#Pokemon.getMoveType`,
     `${P}#Pokemon.getMoveCategory`,
     `${P}#Pokemon.getCritStage`,
-    // §2 hit counts and per-hit power: the multi-hit type (Ash-Greninja's Water Shuriken), Skill Link, Parental Bond
-    // and Multi-Lens strikes, the `turnData` MoveEffectPhase sets and the power steps read off it, a miss or faint
-    // ending the use, and a spread move's target count.
+    // game-code.md §2 hit counts and per-hit power: the multi-hit type (Ash-Greninja's Water Shuriken), Skill Link,
+    // Parental Bond and Multi-Lens strikes, the `turnData` MoveEffectPhase sets and the power steps read off it, a miss
+    // or faint ending the use, and a spread move's target count.
     `${M}#MultiHitAttr.apply`,
     `${M}#WaterShurikenMultiHitTypeAttr.apply`,
     `src/data/abilities/ab-attrs.ts#MaxMultiHitAbAttr.apply`,
@@ -239,12 +240,12 @@ export const HUD_DEPS = {
     `${M}#PresentPowerAttr.apply`,
     `${M}#RandomLevelDamageAttr.getDamage`,
     `src/data/abilities/ab-attrs.ts#FullHpResistTypeAbAttr.apply`,
-    // §3, §8 survival: the classic final boss's last segment, Sturdy.
+    // game-code.md §3, §8 survival: the classic final boss's last segment, Sturdy.
     `${P}#EnemyPokemon.getMinimumSegmentIndex`,
     `src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr.canApply`,
-    // §21 `endOfTurnHp`: the turn-end phase order, weather chip and who it spares, berries, status chip and the
-    // status orbs, the TURN_END tags, Leftovers, Shell Bell, the enemy's per-turn heal, and the weather, status and
-    // turn-end abilities. The order between these phases is the model, not a detail: the weather chip lands before
+    // game-code.md §21 `endOfTurnHp`: the turn-end phase order, weather chip and who it spares, berries, status chip
+    // and the status orbs, the TURN_END tags, Leftovers, Shell Bell, the enemy's per-turn heal, and the weather, status
+    // and turn-end abilities. The order between these phases is the model, not a detail: the weather chip lands before
     // the berry predicate reads the HP, and the berry before the status chip, which is what decides survival.
     `src/phase-manager.ts#turnEndPhases`,
     `src/phases/weather-effect-phase.ts#WeatherEffectPhase.start`,
@@ -294,7 +295,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §6, §7. Two readings of one decision. `sceneExactMoves` **calls the game's own**
+   * game-code.md §6, §7. Two readings of one decision. `sceneExactMoves` **calls the game's own**
    * `getNextMove` at the command prompt, which returns the move and target the enemy
    * will use rather than a sample (§6, #158 live: 69/69); this turn's plan is played
    * on it (#183). The rest re-implements the whole choice to get every outcome with
@@ -337,19 +338,19 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §0, §7, §14. The one door between the coach engine and the live battle: it opens the single sandbox, settles the
-   * Tera a trainer is about to use, writes a hypothesis on and off, and makes every per-mon game call the planner,
-   * the fight plan and the catch card used to make for themselves. Nothing below it decides *when* a game call is
-   * allowed, so a change to any of these reaches all three cards at once.
+   * game-code.md §0, §7, §14. The one door between the coach engine and the live battle: it opens the single sandbox,
+   * settles the Tera a trainer is about to use, writes a hypothesis on and off, and makes every per-mon game call the
+   * planner, the fight plan and the catch card used to make for themselves. Nothing below it decides *when* a game call
+   * is allowed, so a change to any of these reaches all three cards at once.
    */
   "25-turn.js": [
-    // §7 predicted Tera: `shouldTera` is called, and the flag replays what TeraPhase writes — the added type it
-    // clears included. Damage is asked with it on, the AI with it off (EnemyCommandPhase runs first).
+    // game-code.md §7 predicted Tera: `shouldTera` is called, and the flag replays what TeraPhase writes — the added
+    // type it clears included. Damage is asked with it on, the AI with it off (EnemyCommandPhase runs first).
     `src/field/trainer.ts#Trainer.shouldTera`,
     `src/phases/tera-phase.ts#TeraPhase.end`,
     `src/phases/enemy-command-phase.ts#EnemyCommandPhase.start`,
-    // §14 a typing written onto a mon: the two fields `assuming` sets are the ones the game's own type read goes
-    // through, so a changed read (or a changed write) silently stops a retype from reaching any number.
+    // game-code.md §14 a typing written onto a mon: the two fields `assuming` sets are the ones the game's own type
+    // read goes through, so a changed read (or a changed write) silently stops a retype from reaching any number.
     `${P}#Pokemon.getTypes`,
     `${P}#Pokemon.getBaseTypes`,
     `${M}#ChangeTypeAttr.apply`,
@@ -376,7 +377,7 @@ export const HUD_DEPS = {
     `${P}#Pokemon.getMatchupScore`,
   ],
 
-  /** §5 turn order and §9 free switches: no safe call returns either, so both are re-derived. */
+  /** game-code.md §5 turn order and §9 free switches: no safe call returns either, so both are re-derived. */
   "30-planner.js": [
     // The benefit nudge (#128): a move's cost to its user, as the game's own move scoring measures it — full step 7
     // of getNextMove for *our* move, through 20-enemy-ai's `aiTargetScore`. A changed benefit score changes which
@@ -415,7 +416,8 @@ export const HUD_DEPS = {
     `src/data/arena-tag.ts#SpikesTag.getDamageHpRatio`,
     `src/data/arena-tag.ts#StealthRockTag.getDamageHpRatio`,
     `src/data/arena-tag.ts#ToxicSpikesTag.activateTrap`,
-    // §18 on-KO boosts: who gains stages when a mon faints, and Beast Boost's pick of stat. Also 35-team-plan's.
+    // game-code.md §18 on-KO boosts: who gains stages when a mon faints, and Beast Boost's pick of stat. Also
+    // 35-team-plan's.
     `src/phases/faint-phase.ts#FaintPhase.doFaint`,
     `src/data/abilities/ab-attrs.ts#PostVictoryStatStageChangeAbAttr.apply`,
     `src/data/abilities/ab-attrs.ts#PostKnockOutStatStageChangeAbAttr.apply`,
@@ -475,7 +477,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §13. Safari Zone's three mons, replayed before the fee is paid (#313). The whole
+   * game-code.md §13. Safari Zone's three mons, replayed before the fee is paid (#313). The whole
    * module is a replay of one draw sequence, so every function in it *and their order*
    * are the dependency: `summonSafariPokemon`'s fork offset, the parameters it hands
    * `getRandomEncounterPokemon`, that function's own branch order (the event arm before
@@ -505,7 +507,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §20. Catch odds and whether a ball is allowed at all, both re-implemented; the
+   * game-code.md §20. Catch odds and whether a ball is allowed at all, both re-implemented; the
    * fusion-aware shiny check and its candy, the event's shiny multiplier, and the move
    * that leaves a foe at 1 HP. What a catch does (Limited Catch, a full party, the dex
    * bits and candy) is re-implemented too; the game-mode checks are called, with
@@ -577,7 +579,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §13. The Mystery Encounter card calls nothing that decides an outcome: it
+   * game-code.md §13. The Mystery Encounter card calls nothing that decides an outcome: it
    * reads the handler's requirement answers, and re-implements what each of the
    * common, great, ultra and rogue encounters it knows does from its source file — so
    * every encounter const, the helpers and tuning constants its outcome is spelled
@@ -720,7 +722,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §10: the biome choice the phase offers, and what each of the ten waves it
+   * game-code.md §10: the biome choice the phase offers, and what each of the ten waves it
    * covers holds: the spawn and trainer rules behind the pools it scans, the gym
    * leader on the gym wave, and wild evolutions by level. All re-implemented as
    * odds. Which wave is which, how likely a trainer is on it and who comes back
@@ -753,7 +755,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §11. The preview replays `newBattle`'s own draws in the game's own order inside
+   * game-code.md §11. The preview replays `newBattle`'s own draws in the game's own order inside
    * `executeWithSeedOffset`, so every method it calls *and their order* are the
    * dependency: a reordered draw desynchronises every field after it, and the
    * arrival tally would only notice after the fact. `shiftCharCodes` and
@@ -795,7 +797,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §12. Reward luck and the classic final boss, plus what the run calendar's
+   * game-code.md §12. Reward luck and the classic final boss, plus what the run calendar's
    * answers mean for the party. The schedule and the heal themselves are
    * `03-calendar.js`'s and the party's luck value is `08-party.js`'s; what is left
    * here is re-implemented: the HUD quotes the luck upgrade odds and the Eternamax
@@ -814,8 +816,8 @@ export const HUD_DEPS = {
     `${P}#EnemyPokemon.getMinimumSegmentIndex`,
     `src/data/moves/pokemon-move.ts#PokemonMove.getMovePp`,
     `src/phases/damage-anim-phase.ts#DamageAnimPhase.end`,
-    // §16: `doubleOdds`, the share of double battles ahead a TM is judged by — the abilities that shorten the odds,
-    // and the evil-team grunt's unseeded 1/3 (which waves those are is `03-calendar.js`'s).
+    // game-code.md §16: `doubleOdds`, the share of double battles ahead a TM is judged by — the abilities that shorten
+    // the odds, and the evil-team grunt's unseeded 1/3 (which waves those are is `03-calendar.js`'s).
     `src/utils/common.ts#randInt`,
     `${SCENE}#BattleScene.checkIsDouble`,
     `${SCENE}#BattleScene.getDoubleBattleChance`,
@@ -831,7 +833,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §17. The team audit. It calls only `getLearnableLevelMoves` (the relearn
+   * game-code.md §17. The team audit. It calls only `getLearnableLevelMoves` (the relearn
    * list a Memory Mushroom indexes, read as `[level, MoveId]`) and scores with
    * the learn card; the rest is re-implemented: status type immunities, which
    * priority an ability grants an attack, raw Speed for turn order, and the
@@ -850,8 +852,8 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * The fusion advisor (§24): the Splicer's select filter and party screen, pick order (first = base), and what a
-   * fusion is — averaged base stats, the stat formula, the second type rule, the other half's ability (and the
+   * The fusion advisor (game-code.md §24): the Splicer's select filter and party screen, pick order (first = base), and
+   * what a fusion is — averaged base stats, the stat formula, the second type rule, the other half's ability (and the
    * abilities that don't work fused) — all re-implemented from species data.
    */
   "49-fusion.js": [
@@ -874,7 +876,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §15. The rewards card judges held items, mints, vitamins, EXP items, candy
+   * game-code.md §15. The rewards card judges held items, mints, vitamins, EXP items, candy
    * and evolution items by the member they would go to. It calls only select
    * filters and `getMaxExpLevel`; what an item does is re-implemented from its
    * modifier (per-stack effects, stack limits), who benefits from the game's
@@ -921,7 +923,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §19. The reroll preview calls the reward roll's two module functions from the
+   * game-code.md §19. The reroll preview calls the reward roll's two module functions from the
    * live stream position and replays what a reroll's `SelectModifierPhase` does
    * with them: the reroll count it passes, the tiers it carries (used only under
    * the lock), the settings it drops, the count and the cost. A changed draw
@@ -957,7 +959,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §16. Who a TM can be taught to: the select filter (called), the pool drawn
+   * game-code.md §16. Who a TM can be taught to: the select filter (called), the pool drawn
    * from the whole party's compatible TMs, the party screen's TM
    * mode (a fainted member is offered TEACH) and Hardcore's exception, which
    * gives a fainted member only Release. The challenge id comes through as a
@@ -976,7 +978,7 @@ export const HUD_DEPS = {
   ],
 
   /**
-   * §23. The starter card: the grid's handler (which starters are valid, the
+   * game-code.md §23. The starter card: the grid's handler (which starters are valid, the
    * point budget, the challenge-adjusted account data, the strict check a team
    * needs one member to pass), what a starter costs and the luck it brings,
    * the species' own evolution and passive reads, what the run starts with,

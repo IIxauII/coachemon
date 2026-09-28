@@ -1,7 +1,8 @@
 /**
- * The coach's feed (§11.2): `node <skill dir>/scripts/watch.ts`, run under Claude's `Monitor`. One short line per card
- * the HUD shows — a new battle, a learn prompt, a reward screen, a biome choice, a Mystery Encounter — plus the HUD's
- * own failures and the tab-count notices. Lines are summaries, because notifications truncate; `read_card` has the rest.
+ * The coach's feed (extension-distribution.md §11.2): `node <skill dir>/scripts/watch.ts`, run under Claude's
+ * `Monitor`. One short line per card the HUD shows — a new battle, a learn prompt, a reward screen, a biome choice, a
+ * Mystery Encounter — plus the HUD's own failures and the tab-count notices. Lines are summaries, because notifications
+ * truncate; `read_card` has the rest.
  *
  * Read-only and hands-off: it is a hub client with `role: "watch"`, so it never claims the driver grant, presses
  * nothing and injects nothing. The player drives; the coach reads.

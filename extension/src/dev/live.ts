@@ -1,8 +1,8 @@
 /**
- * The dev table's live wiring (§5.4, §10.6): the browser APIs `commands.ts` and `reinject.ts` are injected with, and
- * what the dev background does on start. Kept apart from them so the logic stays testable with no browser, and so that
- * everything a store build must not contain — `captureVisibleTab`, `executeScript`, `runtime.reload` — sits in one
- * file that a store build never bundles (§5.5).
+ * The dev table's live wiring (extension-distribution.md §5.4, §10.6): the browser APIs `commands.ts` and `reinject.ts`
+ * are injected with, and what the dev background does on start. Kept apart from them so the logic stays testable with
+ * no browser, and so that everything a store build must not contain — `captureVisibleTab`, `executeScript`,
+ * `runtime.reload` — sits in one file that a store build never bundles (§5.5).
  */
 import { browser } from "wxt/browser";
 import type { ToExtension } from "../../../src/protocol/wire.ts";
@@ -40,7 +40,7 @@ function liveInjector(): Injector {
 
 /**
  * What a dev background does that a store one does not: answer `screenshot` and `reload` itself, and put the content
- * scripts back into the tabs its own `runtime.reload()` orphaned (§5.4).
+ * scripts back into the tabs its own `runtime.reload()` orphaned (extension-distribution.md §5.4).
  */
 export function startDev(): LocalAnswer {
   void reinject(liveInjector());
@@ -48,9 +48,9 @@ export function startDev(): LocalAnswer {
 }
 
 /**
- * The frames a dev build knows and the store transport does not (§5.4). The name lives here rather than in the
- * transport so that a store artifact never contains the string `dev-reload` at all (§5.5) — and it never needs to,
- * since the hub fans the frame out to dev builds alone.
+ * The frames a dev build knows and the store transport does not (extension-distribution.md §5.4). The name lives here
+ * rather than in the transport so that a store artifact never contains the string `dev-reload` at all (§5.5) — and it
+ * never needs to, since the hub fans the frame out to dev builds alone.
  */
 export function devFrames(frame: ToExtension): boolean {
   if (frame.t !== "dev-reload") return false;
