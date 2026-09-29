@@ -1,5 +1,5 @@
 // Biome route advisor: when the game offers a choice of next biome (the party holds a Map), which one suits the party.
-// Mystery Encounters, which take some wild and trainer waves at random, are not modelled (game-code.md §10).
+// Mystery Encounter waves are not modelled.
 import { TYPES, effectiveness } from "./01-core.js";
 import { healRevives, poolAnchorWave, trainerOdds, waveKind } from "./03-calendar.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";

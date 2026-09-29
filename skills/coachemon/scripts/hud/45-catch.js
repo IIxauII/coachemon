@@ -1,6 +1,6 @@
-// Catch coach: each ball's odds on a wild foe, what the catch is worth to the team and to the account, and whether a
-// throw ends a dangerous fight sooner. It reads the battle only through `turn`, the account only through `account`,
-// and never the scene (game-code.md §20).
+// Catch coach (game-code.md §20): each ball's odds on a wild foe, what the catch is worth to the team and to the
+// account, and whether a throw ends a dangerous fight sooner. It reads the battle only through `turn`, the account
+// only through `account`, and never the scene.
 import { abilitiesOf, hasAttr, iconOf, typesOf } from "./01-core.js";
 import { damagingTypes, partyProfile, partyReasons } from "./08-party.js";
 import { koCurve, koTurn, useOf } from "./10-damage.js";
@@ -52,8 +52,7 @@ const battleBlocked = (turn, account, active) => {
   if (biomeId === BiomeId.END && (battleType ?? BattleType.WILD) === BattleType.WILD) {
     const dex = account.dex;
     const uncaught = active.some(f => !big(dex[f.species?.speciesId]?.caughtAttr));
-    // `starterData`'s keys stand in for `getAllStarters()`: a fresh save holds one per starter, but a loaded one keeps
-    // whatever keys it was saved with (game-code.md §20).
+    // Stands in for `getAllStarters()`, which a loaded save's keys need not match (game-code.md §20).
     const missing = Object.keys(account.starter).filter(id => !big(dex[id]?.caughtAttr)).length;
     if ((mode.classic && !mode.finalBoss && uncaught) || (mode.freshStart && !mode.finalBoss) || (mode.endless && !mode.endlessMinorBoss)) return "End biome";
     if ((mode.classic && mode.finalBoss && missing > 1) || (mode.freshStart && mode.finalBoss) || (mode.endless && mode.endlessMinorBoss)
@@ -62,7 +61,8 @@ const battleBlocked = (turn, account, active) => {
   return null;
 };
 
-// The bosses that refuse even a Master Ball with bars left (game-code.md §20).
+// The bosses that refuse even a Master Ball with bars left. `anyChallenges` is true in every challenge run, however
+// its challenges are set (game-code.md §20).
 const masterBlocked = turn => {
   const { mode } = turn.facts;
   if (mode.finalBoss) return mode.anyChallenges;
@@ -116,12 +116,11 @@ const accountReasons = (account, foe) => {
     out.push({ kind: "account", text: root !== sp.speciesId && !big(rootDex?.caughtAttr) ? "new species + starter" : "new species", w: 3 });
     if (rare) out.push({ kind: "account", text: sp.mythical ? "mythical" : "legendary", w: 2 });
   }
-  // `Pokemon.getDexAttr()`, rebuilt.
+  // `Pokemon.getDexAttr()`, rebuilt (game-code.md §20, §23).
   const variant = foe.variant ?? 0;
   const attr = (foe.gender === Gender.GENDERLESS || foe.gender == null ? 0n : foe.gender === Gender.FEMALE ? 8n : 4n)
     | (foe.shiny ? 2n : 1n) | (variant >= 2 ? 64n : variant === 1 ? 32n : 16n) | (1n << BigInt(7 + (foe.formIndex ?? 0)));
-  // Candy follows `isShiny()`, a shiny fusion half included, with the base `variant`; the dex's shiny bit is the base's
-  // alone (game-code.md §20).
+  // The base `variant`, not `getVariant()` (game-code.md §20).
   const candy = 5 * 2 ** variant * (foe.isBoss?.() ? 2 : 1);
   // A Daily run pays candy only for a new dex attribute, asked of the **masked** bits of the entry the candy goes to
   // (game-code.md §20): read raw, `attr` promises candy the game won't pay. Only this line is masked. The reasons

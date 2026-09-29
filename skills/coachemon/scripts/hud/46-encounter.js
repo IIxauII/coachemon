@@ -131,7 +131,7 @@ const context = (s, me, options, account) => {
   const wave = b.waveIndex;
   const party = s.getPlayerParty().filter(Boolean);
   const alive = party.filter(p => p.hp > 0 && tryDo(() => p.isAllowedInBattle(), true));
-  // `getHighestLevelPlayerPokemon(true, false)`: the first of the living at the highest level.
+  // The game's `getHighestLevelPlayerPokemon(true, false)` (game-code.md §13).
   const top = alive.reduce((t, p) => (!t || p.level > t.level ? p : t), null);
   const profile = partyProfile(alive);
   const waveMoney = mult => tryDo(() => s.getWaveMoneyAmount(mult), 0);
@@ -186,7 +186,7 @@ const context = (s, me, options, account) => {
     return !cur || (tryDo(() => cur.getStackCount()) ?? 0) < (tryDo(() => cur.getMaxStackCount()) ?? Infinity);
   }) ?? null;
   const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
-  // The whole party's best level, fainted included — what `getHighestLevelPlayerPokemon(false, true)` reads.
+  // The game's `getHighestLevelPlayerPokemon(false, true)`, fainted included (game-code.md §13).
   const best = party.reduce((t, p) => Math.max(t, p.level ?? 0), 0) || (top?.level ?? 1);
   const maxHp = party.reduce((t, p) => t + tryDo(() => p.getMaxHp(), 0), 0);
   const wounded = maxHp ? party.reduce((t, p) => t + Math.max(tryDo(() => p.getMaxHp(), 0) - p.hp, 0), 0) / maxHp : 0;
@@ -740,6 +740,7 @@ const RULES = {
     // The whole party, fainted included (game-code.md §13).
     const bugs = c.party.filter(p => tryDo(() => p.isOfType(PokemonType.BUG), typesOf(p).includes("Bug"))).length;
     const extras = [c.held("MegaEvolutionAccessModifier") ? null : "a Mega Bracelet",
+      // "Likely": the game adds the evolution item only when it finds one on offer (game-code.md §13).
       c.held("GigantamaxAccessModifier") ? null : "a Dynamax Band", "likely an evolution or form-change item"].filter(Boolean);
     const prize = bugs < 2 ? "a Super Lure + a Great Ball" : bugs < 4 ? "a Quick Claw + a Max Lure + an Ultra Ball"
       : bugs < 6 ? "a Grip Claw + a Max Lure + a Rogue Ball" : `a Master Ball, ${joinNames(extras)}`;
