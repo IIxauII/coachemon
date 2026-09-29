@@ -2522,8 +2522,8 @@ answered stays armed (`:200-256`).
 text is still typing (`src/ui/handlers/party-ui-handler.ts:912-929`).
 
 **Tutorials.** With `tutorialActive` on the current `AwaitableUiHandler`, `UI.processInput` hands input only to
-`processTutorialInput`, which answers ACTION and CANCEL alike and refuses the rest (`src/ui/ui.ts:261-273`,
-`src/ui/handlers/awaitable-ui-handler.ts:20-31`); an active overlay short-circuits both first (`ui.ts:261-273`).
+`processTutorialInput`, which answers ACTION and CANCEL alike and refuses the rest; an active overlay short-circuits
+both first (`src/ui/ui.ts:261-273`, `src/ui/handlers/awaitable-ui-handler.ts:20-31`).
 
 **MENU never reaches a handler.** A MENU key-down goes only to `UiInputs.buttonMenu` (`src/ui-inputs.ts:182-208`);
 nothing calls `ui.processInput(Button.MENU)`. It does nothing under `disableMenu`, opens the MENU overlay on TITLE,
