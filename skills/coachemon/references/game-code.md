@@ -774,13 +774,10 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
   `src/battle-scene.ts:786-790`), so an on-field mon's party index is its field index (`getFieldIndex`,
   `src/field/pokemon.ts:7016-7017`). `SwitchSummonPhase` takes `party[slotIndex]` (`src/phases/switch-summon-phase.ts:128`),
   calls `resetSummonData()` on it (`:134`, stat stages back to 0; Baton Pass restores them later, `:247-248`) and swaps
-  the two party entries (`:190-191`). In a double, `Trainer.genPartyMember` tags even party indices `TRAINER` and
-  odd ones `TRAINER_PARTNER` whenever `isDouble()` (`doubleOnly` single trainers included, `src/field/trainer.ts:432`),
-  and each slot scores only its own tag's bench (`src/field/trainer.ts:552-560`). `ForceSwitchOutAttr` filters by that tag only for an `isPartner()`
-  trainer (`src/data/moves/move.ts:7458-7466`), so a Roar into a `doubleOnly` trainer's double can leave both slots
-  holding one tag. Both then score the same bench and break ties at the same seed offset
-  (`src/field/trainer.ts:615-617`), so they name the same index, and slot 1's switch, which runs second, finds slot
-  0's withdrawn mon in that entry and sends it straight back.
+  the two party entries (`:190-191`). Each slot scores only its own tag's bench (`src/field/trainer.ts:552-560`), so
+  once the parity breaks (the two benches, above) both slots can hold one tag. Both then score the same bench and
+  break ties at the same seed offset (`src/field/trainer.ts:615-617`), so they name the same index, and slot 1's
+  switch, which runs second, finds slot 0's withdrawn mon in that entry and sends it straight back.
 - **`skipTurn`.** It is set for a Commander Tatsugiri inside Dondozo, and for
   `mysteryEncounter.skipEnemyBattleTurns` (`src/phases/enemy-command-phase.ts:27,41-47`). The command is still
   written, and the counter still moves, but `TurnStartPhase` drops skipped commands
