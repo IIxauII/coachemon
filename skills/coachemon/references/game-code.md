@@ -812,6 +812,7 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
 | Mini Black Hole | TurnEndPhase, holder not fainted (`modifier.ts:3255`): opponent picked, then `stack` items picked, all `randBattleSeedInt` (`:3174`) | battle | expectation: steals per turn |
 | Sticky Hold | `tryTransferHeldItemModifier` (`src/battle-scene.ts:2547-2555`): `BlockItemTheftAbAttr` on the holder cancels a cross-side transfer | no | ability attr |
 | Sleep / freeze / paralysis | `doSetStatus` (`pokemon.ts:4989`): sleep counter 2 (⅓) or 3 (⅔), freeze 3 (`:5032`). `MovePhase.checkSleep` (`move-phase.ts:317`) ticks it (Early Bird −1 more), wakes at ≤0 → 1 or 2 turns lost; `checkFreeze` (`:361`) ticks, thaws on `randBattleSeedInt(4)===0` or ≤0 → lost with ¾, then 9/16, never a third; `checkPara` (`:518`) `randBattleSeedInt(8)===0`; Speed `>>1` (`pokemon.ts:1555`) | battle | expectation |
+| Confusion | `ConfusedTag.lapse` (`src/data/battler-tags.ts:869-903`), before each move: ticks down, and if still confused, `randBattleSeedInt(3) === 0` → the user takes `toDmgValue(((2·lv/5+2)·40·Atk/Def/50+2)·randBattleSeedIntRange(85,100)/100)` off its effective Atk and Def, and the move is cancelled | battle | expectation |
 | Enemy wave heal | TurnEndPhase `EnemyTurnHealModifier.apply` (`modifier.ts:3520`): `max(floor(maxHp/50)·stack, 1)` when not full, never past maxHp−1 (§21) | no | `s.enemyModifiers` |
 | Enemy wave status | Each hit of an enemy attack move (`move-effect-phase.ts:810`): `applyShuffledModifiers` (order shuffled in a seed fork, `battle-scene.ts:2897`), each `randSeedFloat() <= chance·stack` (5 % burn/poison, 2.5 % others, max 10; `modifier.ts:3555`, `:3575`) → `trySetStatus`. `EnemyStatusEffectHealChanceModifier` 2.5 %·stack cure at turn end (`:3615`) | global | `s.enemyModifiers` |
 | Choice items, Life Orb, Expert Belt, Focus Sash, Loaded Dice | no modifier type exists (`src/modifier/modifier-type.ts`) | — | drop from models |
@@ -1064,6 +1065,14 @@ doReturn true)` (`:72`).
 
 The faint-replacement `SwitchPhase` is also idle UI (the party screen), so game calls are safe there. Tell it apart
 from a mid-turn `SwitchPhase` by `isModal && !doReturn`; the check-switch one has `!isModal`.
+
+**A switch-in lands with fresh summon data.** `SwitchSummonPhase` calls `resetSummonData()` on the mon it sends in,
+whatever the switch type (`src/phases/switch-summon-phase.ts:128-134`; `src/field/pokemon.ts:5147-5156`), so its stat
+stages are 0 however it left. Baton Pass then copies the outgoing mon's stages and passable tags onto it
+(`transferSummon`, `switch-summon-phase.ts:247-248`; `src/field/pokemon.ts:4253-4279`). In a double both slots may
+name the same bench index. Each switch swaps its two party entries (`switch-summon-phase.ts:190-191`), and the
+switches run in the outgoing mons' speed order (`SwitchSummonPhase` is a dynamic phase: `src/dynamic-queue-manager.ts:13-29`,
+`src/queues/pokemon-phase-priority-queue.ts:6-9`), so the later one sends in the mon the earlier one withdrew, reset.
 
 ---
 
@@ -1987,6 +1996,15 @@ move's own `PostVictoryStatStageChangeAttr` (Fell Stinger) comes after and isn't
 (`src/field/pokemon.ts:2311`). The planner prices a KO it would score on us at `FEED_COST` (0.5 turns) a stage on an
 attacking stat or Speed, half that on a defence, times P(it KOs us first), while someone is left to face it. The team
 plan counts each side's KOs and scales later exchanges' hits by the stages (Speed left out).
+
+**A move aimed at a fainted mon.** In a double, `FaintPhase.doFaint` calls `redirectPokemonMoves(pokemon, ally)` when
+the fainted mon has an ally (`src/phases/faint-phase.ts:197-201`); a mon forced out or fleeing does the same
+(`src/data/moves/move.ts:7438-7441`, `src/data/abilities/ab-attrs.ts:5764-5766`). If that ally is active, every
+still-queued `MovePhase` with exactly one target, aimed at the fainted mon by a user on the other side, is rewritten in
+place to target the ally (`src/queues/move-phase-priority-queue.ts:49-71`). Spread moves and moves from the fainted
+mon's own side are left alone. Nothing is checked at that point: the same move lands, status moves included, and its
+accuracy and type are checked as usual when it runs. A move whose target is gone and wasn't redirected fails with its PP
+spent (`src/phases/move-phase.ts:207,758-775`), unless it sets a hazard (`AddArenaTrapTagAttr`).
 
 **Switch-in cost.** A command switch resolves before moves (`src/phases/turn-start-phase.ts:28-45,122-130`), so the
 switch-in takes what the foe chose against the mon leaving (§9). The ⇄ line names that share of its HP and the likeliest

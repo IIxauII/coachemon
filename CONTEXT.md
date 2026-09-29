@@ -340,7 +340,7 @@ Priced that way the pick turns on a second axis too: how sure the first hit is. 
 
 ## Return
 
-In a double, the switch-in that is the mon the **other** slot is withdrawing this same turn: both slots' benches name the same party index, the game resolves the slots in field order, and so the second slot's send-in is the mon the first has already pulled. The card says *returns from the other slot* where an ordinary switch-in *switches*, because the usual wording, read while the player watches that mon leave the other slot, looks like a broken panel. A return is also the one switch-in that the coach sees still carrying stat stages it is about to lose — it is on the field as the coach reads it, and a switch-in's summon data is reset when it lands — so the turn read and the fight plan both price it at base stages.
+In a double, the switch-in that is the mon the **other** slot is withdrawing this same turn: both slots' benches name the same party index, the game resolves the two switches one after the other, and so the later send-in is the mon the earlier switch has already pulled. The card says *returns from the other slot* where an ordinary switch-in *switches*, because the usual wording, read while the player watches that mon leave the other slot, looks like a broken panel. A return is also the one switch-in that the coach sees still carrying stat stages it is about to lose — it is on the field as the coach reads it, and a switch-in's summon data is reset when it lands — so the turn read and the fight plan both price it at base stages.
 
 ## Hypothesis
 
