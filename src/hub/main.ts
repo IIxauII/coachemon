@@ -1,9 +1,4 @@
-/**
- * The hub process (extension-distribution.md §7.2): `node src/hub/main.ts --port <port>`, spawned detached by the first
- * client that finds nothing on the port. It writes nothing to disk, takes no configuration beyond the port, and exits
- * on its own once nothing needs it: after the idle window, when a newer plugin copy retires it, or at once when another
- * hub already has the port — two clients racing to spawn one is normal, and the loser exits 0 in silence.
- */
+/** The hub process (extension-distribution.md §7.2). */
 import { startHub } from "./hub.ts";
 import { PLUGIN_VERSION } from "../plugin-version.ts";
 import { STORE_PORT } from "../protocol/version.ts";
@@ -25,7 +20,7 @@ try {
     });
   }
 } catch (e) {
-  // Another hub owns the port: it is the one per machine, and there is nothing to say (extension-distribution.md §7.2).
+  // A lost race to spawn: another hub has the port (extension-distribution.md §7.2).
   if ((e as NodeJS.ErrnoException).code === "EADDRINUSE") process.exit(0);
   process.stderr.write(`[coachemon-hub] ${(e as Error).message}\n`);
   process.exit(1);
