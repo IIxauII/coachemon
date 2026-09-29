@@ -1,19 +1,5 @@
-// Team audit: what is wrong with how the party is built, said between waves while there is still a shop, a TM or a
-// Memory Mushroom to fix it with. Every other card judges one decision; this one judges the team the decisions made.
-// It came out of two lost runs (#89): a wave-165 Guzma loss at level parity, where only one mon outsped the bosses and
-// one Blizzard was the only answer to Flygon, and a wave-30 Whitney loss where half the party was weak to Fighting,
-// nobody resisted Rock, and a Diglett eleven levels behind carried a Normal move as its only attack. Everything the
-// audit needed was on the party snapshot; no card said it.
-//
-// Two kinds of check, told apart because they rest on different things:
-// - **Party checks** read only the party. The party profile (CONTEXT.md): a type most of us are weak to and nobody
-//   resists, the types no move of ours hits super-effectively. Then each member: dead move slots (and the level-up move a Memory Mushroom would put in one), members left
-//   far behind the carry, EXP items stacked on a party that sits at the level cap.
-// - **Roster checks** read the next big fight's roster from 49-ahead (the preview's replay, only within its look-ahead
-//   window): who outspeeds its fastest foe, a foe only one member hits super-effectively, a status move most of the
-//   roster is immune to, and the member that answers nothing in it.
-// The game rules it rests on are in game-code.md §17. The thresholds are first cuts. A finding is `{ kind, level, text, mon? }`: `level` "high" for what loses fights
-// (single answers, speed, a shared weakness), "low" for what only costs tempo.
+// How the party is built, judged between waves (CONTEXT.md, `Team audit`; game-code.md §17). A finding is
+// `{ kind, level, text, mon? }`: `level` "high" for what loses fights, "low" for what only costs tempo.
 import { TYPES, abilitiesOf, effectiveness, typesOf, vs } from "./01-core.js";
 import { isDamaging, isFixed, learnAdvice, learnMoveById, slotScores } from "./40-learn.js";
 import { doubleOdds } from "./49-ahead.js";
@@ -22,12 +8,8 @@ const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch 
 const movesOf = p => (p?.moveset ?? []).filter(Boolean).map(pm => tryDo(() => pm.getMove())).filter(Boolean);
 const nameOf = mv => String(mv?.name ?? "").replace(/ \(N\)$/, "");
 const list = (xs, n = 3) => `${xs.slice(0, n).join("/")}${xs.length > n ? ` +${xs.length - n}` : ""}`;
-// Attacks whose type the chart applies to: fixed damage (Seismic Toss) hits everything for the same number.
 const typedAttacks = p => movesOf(p).filter(mv => isDamaging(mv) && !isFixed(mv) && mv.power !== 0);
 
-// ---- Party checks
-// A shared weakness: an attacking type at least two of us (and a third of the party) take double from, with nobody
-// resisting it — so there is no safe switch-in when it comes. Ability immunities count as a resist (`effectiveness`).
 const sharedWeakness = party => {
   if (party.length < 2) return [];
   return TYPES.map(t => {
@@ -40,13 +22,10 @@ const sharedWeakness = party => {
       text: `${x.weak.length} of ${party.length} weak to ${x.t}${x.quad.length ? ` (${x.quad.map(p => p.name).join("/")} ×4)` : ""}, nobody resists` }));
 };
 
-// Defending types no attack of ours hits super-effectively. Single types, as the chart has them: a dual type is hit
-// super-effectively by anything that hits either half, so the single types are the holes worth naming. Types the next
-// big fight brings go first.
 const typeHoles = (party, rosterTypes) => {
   const ours = new Set(party.flatMap(p => typedAttacks(p).map(mv => TYPES[mv.type])));
   if (!ours.size) return [];
-  // Normal is left out: only Fighting hits it super-effectively, and nothing resists being hit neutrally by the rest.
+  // Not Normal: only Fighting hits it super-effectively, so nearly every party would name it.
   const holes = TYPES.filter(d => d !== "Normal" && ![...ours].some(t => vs(t, d) >= 2));
   if (!holes.length) return [];
   const ahead = holes.filter(t => rosterTypes.has(t));
@@ -55,16 +34,8 @@ const typeHoles = (party, rosterTypes) => {
     text: `nothing hits ${list(sorted, 4)} super-effectively${ahead.length ? ` — ${list(ahead, 2)} ahead` : ""}` }];
 };
 
-// Dead or weak move slots, by rules a player would name, scored with the learn card's own `slotScores` so the two
-// cards can't disagree about a move:
-// - no attack of the mon's own type (no STAB), or no attack at all;
-// - an attack on the stat it doesn't use (Play Rough on Atk 223 / SpA 312);
-// - setup that boosts only the attack stat it doesn't use (Nasty Plot on a physical attacker);
-// - a second attack of a type it already has, the weaker of the two;
-// - a status move the learn scorer rates as nearly worthless (Growl, Leer, Helping Hand in singles);
-// - a moveset that is mostly status.
-const WEAK_STATUS = 20;      // a status slot scored below this is dead weight (Scary Face 16, Growl 8; Howl on a physical attacker 30)
-const OFF_STAT = 0.75;       // an attack on a stat below this share of the other one
+const WEAK_STATUS = 20;
+const OFF_STAT = 0.75;
 const slotFindings = (p, party, double) => {
   const scored = tryDo(() => slotScores(p, { double, party }));
   if (!scored?.moves?.length) return [];
@@ -74,7 +45,7 @@ const slotFindings = (p, party, double) => {
   const own = tryDo(() => typesOf(p), []);
   const attacks = scored.moves.map((x, i) => ({ x, mv: moves[i] })).filter(({ mv }) => mv && isDamaging(mv));
   if (!attacks.length) add("no attacking move", null, "high");
-  // Fixed damage and a type the scorer can't pin (Weather Ball) claim no STAB either way, so they don't count against it.
+  // Fixed damage and a type the scorer can't pin (Weather Ball) claim no STAB either way.
   else if (own.length && !attacks.some(({ x }) => x.stab || x.fixed || x.notes?.includes("type varies"))) {
     add(`no ${list(own, 2)} attack (no STAB)`, null, attacks.length === 1 ? "high" : "low");
   }
@@ -102,8 +73,8 @@ const slotFindings = (p, party, double) => {
   }
   const status = scored.moves.filter((_, i) => moves[i]?.category === MoveCategory.STATUS);
   for (const x of status) {
-    // `alone` is the move's own worth, before the learn scorer's crowded-moveset penalty: a mostly-status moveset is
-    // the finding below, made once, and a slot must earn its "does little" on what the move itself does (#233).
+    // `alone` is the move's worth before the learn scorer's crowded-moveset penalty: a mostly-status moveset is its
+    // own finding, made once (#233).
     const own = x.alone ?? x.value;
     if (x.value !== null && own < WEAK_STATUS && !out.some(f => f.slot === x.name)) add(`${x.name} does little${x.why ? ` (${x.why})` : ""}`, x.name);
   }
@@ -111,16 +82,10 @@ const slotFindings = (p, party, double) => {
   return out;
 };
 
-// The best move a Memory Mushroom could put back: every move the game's relearn list offers this mon, run through
-// the learn card's own decision, the biggest gain that clears the learn threshold. `getLearnableLevelMoves()`
-// (pokemon.ts) is `[level, MoveId][]`: level-up moves at or under its level (evolution, prevolution and fusion moves
-// included), its unlocked egg moves when it was a starter outside Daily and Fresh Start, and TMs it has used, minus
-// what it knows — the list `RememberMoveModifier` indexes. A pure read of learnsets. `double` as for the learn card.
-// null when nothing is an upgrade.
 const RELEARN_MIN_GAIN = 10;
-// Judged blind to the roster ahead (#122), like the slot scores whose dead slot it fixes: both are party checks.
-// Memoised: the rewards card asks every tick, and each call runs the learn decision once per relearnable move.
 const relearnMemo = new Map();
+// The best move a Memory Mushroom could put back (game-code.md §17), or null when none clears `RELEARN_MIN_GAIN`.
+// Blind to the roster ahead, like the slot scores: both are party checks (#122).
 export const relearnBest = (p, party, double = 0) => {
   const ids = (tryDo(() => p.getLearnableLevelMoves(), []) ?? []).map(x => (Array.isArray(x) ? x[1] : x));
   const key = JSON.stringify([p.id, p.level, (p.moveset ?? []).map(m => m?.moveId), ids, Math.round(double * 100),
@@ -143,9 +108,6 @@ const relearnScan = (p, party, double, ids) => {
   return best;
 };
 
-// Members far behind the carry can't switch into anything, so the top of the party absorbs every hit. Behind is
-// at least 5 levels and under three quarters of the carry's level: 12 against 23 is a problem at wave 30, 150
-// against 162 is not.
 const levelSpread = (s, party) => {
   if (party.length < 2) return [];
   const carry = party.reduce((a, p) => (!a || p.level > a.level ? p : a), null);
@@ -158,8 +120,7 @@ const levelSpread = (s, party) => {
     text: `${list(behind.map(p => `${p.name} L${p.level}`), 3)} trail ${carry.name} L${carry.level} — lead ${behind.length === 1 ? "it" : "them"} on easy waves${share ? ` (EXP. All ×${share} feeds the bench)` : ""}` }];
 };
 
-// EXP items bought for a party that sits at the level cap: EXP past `getMaxExpLevel()` is lost, so every stack
-// held is a pick that could have been a battle item.
+// A party at the cap gains nothing from any EXP item (game-code.md §17).
 const EXP_CLASSES = new Set(["ExpBoosterModifier", "ExpShareModifier"]);
 const expAtCap = (s, party) => {
   const stacks = (s.modifiers ?? []).filter(m => EXP_CLASSES.has(m?.constructor?.name))
@@ -170,27 +131,18 @@ const expAtCap = (s, party) => {
     text: `whole party at the Lv ${cap} cap: ${stacks} EXP item stacks do nothing — take battle items` }];
 };
 
-// ---- Roster checks, against the next big fight's foes (plain data from 48-preview's `foeOf`)
-// A replayed foe is a plain defender, so `effectiveness` reads it the way it reads a mon on the field: one type
-// chart, one ability-immunity table (01-core's `defenderOf`).
-// A member's answers to a foe: its attacks that hit it super-effectively off the stat it actually attacks with (a
-// Play Rough on Atk 223 beside SpA 312 is not an answer), with their accuracy. Atk counts Huge / Pure Power, as the
-// learn card's does.
 const ATK_DOUBLED = ["Huge Power", "Pure Power"];
 const onStat = (p, mv) => {
   const atk = tryDo(() => p.getStat(Stat.ATK), 0) * (tryDo(() => abilitiesOf(p), []).some(a => ATK_DOUBLED.includes(a)) ? 2 : 1);
   const spa = tryDo(() => p.getStat(Stat.SPATK), 0);
   return mv.category === MoveCategory.PHYSICAL ? atk >= spa * OFF_STAT : spa >= atk * OFF_STAT;
 };
-// The move is in hand here, so the foe's flag immunities count too — a Soundproof foe has no answer to take from
-// a sound move, whatever the chart says about its types.
+// With the move passed, `effectiveness` counts the foe's flag immunities too: Soundproof against a sound move.
 const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[mv.type], foe, mv) >= 2 && onStat(p, mv))
   .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
 
-// Speed: the fight is decided by who moves first more than by levels. Flag when at most one of us outspeeds the
-// roster's fastest foe and nobody has a priority attack to go around it. Raw Speed on both sides: no stages, items
-// or abilities, which move during the fight.
-const PRIORITY_ABILITIES = new Set(["Gale Wings"]); // Flying moves at full HP; Prankster and Triage don't attack
+// Gale Wings alone makes an attack faster (game-code.md §17).
+const PRIORITY_ABILITIES = new Set(["Gale Wings"]);
 const speedCheck = (party, foes, wave) => {
   const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD - 1] ?? 0) > (a?.stats?.[Stat.SPD - 1] ?? -1) ? f : a), null);
   const spe = fastest?.stats?.[Stat.SPD - 1]; // 48-preview's `stats` is Atk…Spe, no HP
@@ -211,8 +163,7 @@ const singleAnswers = (party, foes, wave) => foes.map(f => {
     text: `${f.name} (W${wave}) has one answer: ${who[0].p.name} ${m.name}${m.acc < 100 ? ` (${m.acc}%)` : ""}` };
 }).filter(Boolean);
 
-// StatusEffect → the types it can't land on: `Pokemon.canSetStatus`'s type checks. Corrosion on the user cancels
-// the poison ones (`IgnoreTypeStatusEffectImmunityAbAttr`); the foes' abilities are left out.
+// `canSetStatus`'s type checks alone (game-code.md §17).
 const STATUS_IMMUNE = { [StatusEffect.POISON]: ["Poison", "Steel"], [StatusEffect.TOXIC]: ["Poison", "Steel"], [StatusEffect.PARALYSIS]: ["Electric"],
   [StatusEffect.FREEZE]: ["Ice"], [StatusEffect.BURN]: ["Fire"] };
 const deadStatus = (party, foes, wave) => party.flatMap(p => movesOf(p).filter(mv => mv.category === MoveCategory.STATUS).flatMap(mv => {
@@ -224,7 +175,6 @@ const deadStatus = (party, foes, wave) => party.flatMap(p => movesOf(p).filter(m
     text: `${p.name}: ${nameOf(mv)} can't land on ${n} of ${foes.length} foes at W${wave}` }] : [];
 }));
 
-// The member that hits nothing in the roster super-effectively: first in line to replace, when someone else does.
 const weakestLink = (party, foes, wave) => {
   const idle = party.filter(p => !foes.some(f => answersTo(p, f).length));
   if (!idle.length || idle.length === party.length || party.length < 4) return [];
@@ -232,10 +182,7 @@ const weakestLink = (party, foes, wave) => {
     text: `${list(idle.map(p => p.name), 2)} ${idle.length === 1 ? "answers" : "answer"} nothing at W${wave} — first to replace` }];
 };
 
-// ---- The audit
-// `run`: the run read, whose memo keeps the audit; `ahead`: 49-ahead's model (for the roster, when it is near enough
-// to be named). What it reads beyond the run key — the roster it was handed and each member's moveset — is the key
-// within it.
+// `ahead` is `aheadModel`'s. The memo key holds what the audit reads beyond the run key: the roster and each moveset.
 export const teamAudit = (run, ahead) => {
   const party = run.facts.party;
   if (!party.length) return null;
@@ -254,7 +201,6 @@ const build = (run, party, next, foes) => {
   }
   findings.push(...sharedWeakness(party),
     ...typeHoles(party, new Set(foes.flatMap(f => f.types ?? []))));
-  // Dead slots, and the relearn that fixes one: named once per member, on its highest-ranked finding (below).
   const fixes = new Map();
   for (const p of party) {
     const slots = slotFindings(p, party, double);
@@ -265,12 +211,9 @@ const build = (run, party, next, foes) => {
   }
   if (foes.length) findings.push(...deadStatus(party, foes, next.wave), ...weakestLink(party, foes, next.wave));
   findings.push(...levelSpread(s, party), ...expAtCap(s, party));
-  // What loses fights first; among the rest, a standing coverage hole last — almost every party has some, and it
-  // shouldn't be the line the audit leads with while a dead slot is there to fix.
   const rank = f => (f.level === "high" ? 0 : f.kind === "coverage" ? 2 : 1);
   const sorted = findings.map((f, i) => ({ ...f, i })).sort((a, b) => rank(a) - rank(b) || a.i - b.i).map(({ i, ...f }) => f);
   for (const [mon, fix] of fixes) {
-    // The slot it replaces when that slot is flagged; else the member's top finding.
     const at = sorted.find(f => f.kind === "slot" && f.mon === mon && f.level === "high")
       ?? sorted.find(f => f.kind === "slot" && f.mon === mon && fix.forget && f.slot === fix.forget)
       ?? sorted.find(f => f.kind === "slot" && f.mon === mon);
@@ -279,8 +222,6 @@ const build = (run, party, next, foes) => {
   return { wave, vs: foes.length ? { wave: next.wave, who: next.trainer ?? next.label } : null, findings: sorted };
 };
 
-// `4 issues: Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon …`, what loses
-// fights first.
 export const auditSummary = a => {
   const found = a?.findings ?? [];
   if (!found.length) return null;
