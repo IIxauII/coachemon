@@ -1735,10 +1735,11 @@ SpD]`, neutral on the diagonal. There is **no Ability Capsule** at this tag; the
 **EXP and the level cap.** `getMaxExpLevel(ignoreLevelCap)` (`src/battle-scene.ts:2310`) — pure: `w =
 getWaveForDifficulty(r)` for the rounded wave `r = ceil(wave / 10) × 10`, which is `r` itself outside Daily and
 `r + 30 + floor(r / 5)` in Daily (`src/game-mode.ts:192-198`), so wave 30 caps at 52 there and 24 in classic; cap
-`ceil((1 + w/2 + (w/25)²) × 1.2 / 2) × 2 + 2` (wave 10 → 10, 20 → 16, 50 → 38, 200 → 200); with `ignoreLevelCap`, `MAX_SAFE_INTEGER`. `applyPartyExp`
-(`:3332`, §17) shares EXP only among members **below** the cap — a member at it gets nothing and its share is not
-passed on — and `PlayerPokemon.addExp` (`src/field/pokemon.ts:6329`, writes `exp` / `level`) stops at it. Exp Share
-gives the bench `0.2 × stacks` of a participant's share; EXP Charms multiply every member's share in `ExpPhase`.
+`ceil((1 + w/2 + (w/25)²) × 1.2 / 2) × 2 + 2` (wave 10 → 10, 20 → 16, 50 → 38, 200 → 200); with `ignoreLevelCap`,
+`MAX_SAFE_INTEGER`. `applyPartyExp` (`:3332`, §17) shares EXP only among members **below** the cap — a member at
+it gets nothing and its share is not passed on — and `PlayerPokemon.addExp` (`src/field/pokemon.ts:6329`, writes
+`exp` / `level`) stops at it. Exp Share gives the bench `0.2 × stacks` of a participant's share; EXP Charms multiply
+every member's share in `ExpPhase`.
 **Rare Candy ignores the cap**: `PokemonLevelIncrementModifier.apply` (`src/modifier/modifier.ts:2263`) checks
 `getMaxExpLevel(true)`, writes `level` / `exp` and queues a `LevelUpPhase`, so it is the only way to level a member at
 the cap. EXP Balance and the Oval Charm aren't in any reward pool at this tag.
