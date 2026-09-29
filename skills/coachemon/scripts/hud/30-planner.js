@@ -88,7 +88,7 @@ export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => 
 // The draw our `RANDOM_NEAR_ENEMY` command makes before the enemy picks, so the pick is predicted per command
 // (game-code.md §6, #158). Not covered, which is why such a row is `~`: at slot 0's prompt slot 1's command is still
 // to come and may draw too, and a `VariableTargetAttr` can turn another target random. Slot 0's command, read at slot
-// 1's prompt, has already drawn: the stream we predict from is past it.
+// 1's prompt, has already drawn, yet is drawn again here (#476).
 const commandDraws = (turn, me, myPm) => {
   if (!turn.facts.double || !me?.isOnField?.()) return [];
   const mv = myPm?.getMove?.();
@@ -148,8 +148,8 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   });
 };
 
-// P(`p` gets to use `mv` this turn, or next turn with `next`): sleep, freeze, paralysis and confusion as game-code.md §8
-// has them.
+// P(`p` gets to use `mv` this turn, or next turn with `next`): sleep, freeze, paralysis and confusion as game-code.md
+// §8 has them.
 export const actChance = (p, mv = null, next = false) => {
   const later = next ? 1 : 0;
   if (!next && p.getTag?.("RECHARGING")) return 0;
@@ -452,7 +452,8 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const freeThey = opts.free && aimedAtField;
   const pFirst = t ? 1 - (t.pKo > 0 ? t.koFirst : t.first) : 1;
   const pF = opts.free ? 1 : pFirst;
-  // The target's cancelled attempt is the joint's `pBefore` to price, not this: counting it here counts it twice.
+  // The target's cancelled attempt is the joint's `pBefore` to price, not `pFirstField`'s: counting it here counts it
+  // twice.
   const pFirstField = aimedAtField ? pFirst : tThey ? 1 - (tThey.pKo > 0 ? tThey.koFirst : tThey.first) : 1;
   const pFField = freeThey ? 1 : pFirstField;
   // Our move doing its job (Focus Punch not hit first, Sucker Punch meeting an attack); `steady`: the part that recurs
@@ -1022,7 +1023,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const o = planOutcomes(turn, p.me, partner).find(x => x.name === p.move.name);
     return o?.expected > 0 ? { mon: partner, share: Math.min(1, o.expected / partner.getMaxHp()), pKo: o.pKo ?? 0 } : null;
   };
-  // P(`p`'s hit finds its target felled by the partner and lands on the other foe), per #236.
+  // The chance `p`'s hit finds its target felled by the partner and lands on the other foe (#236).
   const redirectOdds = (p, q, payers) => {
     if (!pair || !q || p.redirScore == null || p.play || q.play) return 0;
     if (typeof p.target !== "number" || q.target !== p.target) return 0;
