@@ -1,8 +1,3 @@
-// Engine scenarios against the real 10-damage, 20-enemy-ai, 30-planner and 35-team-plan code on mocked game objects:
-// moves the user can't pick, charge / recharge turns, a move's own costs (contact chip, recoil, Steel Beam, crash,
-// self-KO, lock-in, stat drops, can't repeat), status and semi-invulnerability in the threat model, and the planner
-// during a faint replacement. Prints one line per check, so run.mjs keeps a golden of the numbers.
-// Usage: node test/enginetest.mjs
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
@@ -25,10 +20,10 @@ class PostDefendContactDamageAbAttr { constructor(r) { this.damageRatio = r; } }
 class BattlerTag { constructor(tagType, turnCount = 1) { Object.assign(this, { tagType, turnCount }); } }
 class SemiInvulnerableTag extends BattlerTag {}
 
-// Damage per hit is the move's power unless a scenario's table says otherwise ("attacker>move>defender").
+// "attacker>move>defender" → damage per hit; a pair left out hits for the move's power.
 let TABLE = {};
-// `userBenefit` is what the game's own move scoring takes off a move that costs its user (RecoilAttr,
-// HalfSacrificialAttr and their kin override `getUserBenefitScore`): the planner's drawback rule reads it.
+// `userBenefit` is `getUserBenefitScore`, which a cost to the user lowers (game-code.md §6) and the planner's
+// drawback rule reads.
 const move = (id, name, power, { type = 0, cat = 0, acc = 100, attrs = [], flags = 0, cond = null, charging = false, chargeAttrs = [], conditions = [], restrictions = [], priority = 0, userBenefit = 0 } = {}) => {
   const mv = {
     id, name, type, power, accuracy: acc, category: cat, moveTarget: 3, priority, flags, attrs, chance: -1, conditions, conditionsSeq2: [], conditionsSeq3: [], restrictions, chargeAttrs,
@@ -81,13 +76,10 @@ globalThis.Phaser = {
   Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } },
   Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene } } } }] } } },
 };
-// The panel starts too, with nothing to show: the scene has no UI.
 globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: () => ({ style: {}, addEventListener() {} }) };
 globalThis.setInterval = () => 0;
 eval(bundle("hud", { expose: true }));
 const hud = globalThis.__hud;
-// Every question about the live battle is asked through one turn read (`hud/25-turn.js`), the way the card asks it:
-// the turn opens the sandbox, settles Tera and keys the answers. A scenario asks one question, so it opens one turn.
 const ask = fn => hud["25-turn"].readTurn(scene, fn);
 const P = hud["30-planner"];
 const E = {
@@ -104,7 +96,7 @@ const E = {
   moveTraits: hud["07-move-traits"].moveTraits, costNotes: hud["07-move-traits"].costNotes,
   tpFight: hud["35-team-plan"].tpFight, TRAPS: hud["01-core"].TRAPS,
 };
-// Fresh field for each case: the turn number is part of the key every turn read is answered under.
+// The turn number keys every turn read's answers, so each case bumps it or is answered from the last case's.
 const setup = (ours, foes) => {
   party = ours; enemies = foes;
   for (const p of [...ours, ...foes]) p.getOpponents = () => (p.isPlayer() ? foes : ours).filter(x => x.isOnField());
@@ -114,7 +106,7 @@ const near = (a, b, msg, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${msg}
 const r2 = x => Math.round(x * 100) / 100;
 const log = (...a) => console.log(...a);
 
-// ---- D. Moves that can't be picked or would fail are left out; conditions that read the foe's command are kept.
+// ---- Moves that can't be picked or would fail are left out; conditions that read the foe's command are kept.
 {
   const fakeOut = move(252, "Fake Out", 40, { cond: () => false, conditions: [new FirstMoveCondition()] });
   const disabled = pmOf(move(2, "Slash", 70), false);
@@ -135,9 +127,7 @@ const log = (...a) => console.log(...a);
   assert.equal(E.moveOutcome(me, foe, pmOf(fakeOut)).traits.once, true, "Fake Out is first-turn only");
 }
 
-// ---- D2. Which restriction did it (#263). The gate that drops the move and the reader that names it are the same
-// one, so the pool and the reason can't disagree: the tag is read by class, like every other tag. A move dropped by
-// its own condition has no tag behind it and stays unnamed — that says something about the turn, not about us.
+// ---- A restriction tag names the move it drops, and a move its own condition dropped names nothing (#263).
 {
   const encore = new (class EncoreTag { isMoveRestricted(id) { return id !== 3; } })();
   const slash = pmOf(move(2, "Slash", 70), false);
@@ -154,7 +144,7 @@ const log = (...a) => console.log(...a);
   assert.deepEqual(E.stopped(plain, foe), [], "a move its own condition dropped names nothing");
 }
 
-// ---- E. What a move costs its user, with a note per cost.
+// ---- What a move costs its user, with a note per cost.
 {
   const barbs = { name: "Iron Barbs", getAttrs: n => (n === "PostDefendContactDamageAbAttr" ? [new PostDefendContactDamageAbAttr(8)] : []) };
   const furySwipes = move(154, "Fury Swipes", 18, { acc: 80, flags: 1, attrs: [new MultiHitAttr(1)] });
@@ -190,10 +180,9 @@ const log = (...a) => console.log(...a);
   }
 }
 
-// ---- A. Charge and recharge turns. Watchog into Golem: Hyper Beam 3HKO takes 5 turns (a recharge between hits);
-// Body Slam's 68–80 rolls (a crit 1 in 24) 4HKO the 300 HP only 37 % of the time, so 5 hits in 5 turns — as long, but
-// with no turn it can't act, so it's the pick.
+// ---- Charge and recharge turns count: Hyper Beam's 3HKO takes 5 turns, as long as Body Slam's, which is the pick.
 {
+  // Body Slam's 68–80 rolls (a crit 1 in 24) 4HKO the 300 HP Golem only 37 % of the time, so it takes 5.
   const hyperBeam = move(63, "Hyper Beam", 150, { cat: 1, attrs: [new RechargeAttr()] });
   const bodySlam = move(34, "Body Slam", 85);
   const golem = mon("Golem", { player: false, hp: 300, spe: 40, moves: [move(89, "Rock Throw", 10)] });
@@ -206,7 +195,7 @@ const log = (...a) => console.log(...a);
   assert.deepEqual([hb.hitsWe, hb.turnsWe, bs.hitsWe, bs.turnsWe], [3, 5, 5, 5]);
   assert.equal(E.duel(watchog, golem).mine.name, "Body Slam");
 
-  // Solar Beam charges a turn per hit, unless its instant-charge condition (sun) holds.
+  // Solar Beam charges a turn per use, unless its instant-charge condition (sun) holds (game-code.md §5).
   let sunny = false;
   const solarBeam = move(76, "Solar Beam", 120, { cat: 1, charging: true, chargeAttrs: [new InstantChargeAttr(() => sunny)] });
   const bulba = mon("Venusaur", { hp: 300, spe: 80, moves: [solarBeam] });
@@ -219,7 +208,7 @@ const log = (...a) => console.log(...a);
   log(`A Solar Beam: ${dark.turnsWe} turns, in sun ${sun.turnsWe}`);
   assert.deepEqual([dark.turnsWe, sun.turnsWe], [6, 3]);
 
-  // Focus Punch fails when the foe's attack lands first; Sucker Punch only works into an attack.
+  // Focus Punch fails once a damaging hit lands first; Sucker Punch only works into an attack (game-code.md §5).
   const focusPunch = move(264, "Focus Punch", 400, { attrs: [new PreUseInterruptAttr()], priority: -3 });
   const sucker = move(389, "Sucker Punch", 400, { priority: 1 });
   const puncher = mon("Breloom", { hp: 300, spe: 70, moves: [focusPunch, sucker] });
@@ -244,7 +233,7 @@ const log = (...a) => console.log(...a);
   assert.deepEqual([plain, withRecharge, dig.turns, 300 - dig.mh], [3, 5, 6, 2]);
 }
 
-// ---- F. Status in the threat model: the foe's hits weighted by the chance it acts.
+// ---- Status in the threat model: the foe's hits weighted by the chance it acts.
 {
   const quake = move(89, "Earthquake", 100);
   const me = mon("Pikachu", { hp: 1000, spe: 50 });
@@ -273,7 +262,7 @@ const log = (...a) => console.log(...a);
   }
   near(expectedWith(f => { f.getTag = n => (n === "RECHARGING" ? new BattlerTag("RECHARGING") : null); }, true), plain, "recharging acts again next turn");
 
-  // Our side: asleep for two more turns, the KO waits; paralysis thins each turn's damage.
+  // Our side: asleep, the KO waits.
   const golem = mon("Golem", { player: false, hp: 300, spe: 40, moves: [move(88, "Rock Throw", 10)] });
   const slam = move(34, "Body Slam", 160);
   const sleeper = mon("Snorlax", { hp: 500, spe: 30, moves: [slam], status: { effect: 4, sleepTurnsRemaining: 3 } });
@@ -283,12 +272,11 @@ const log = (...a) => console.log(...a);
   setup([sleeper], [golem]);
   const awake = E.exchange(sleeper, sleeper.moveset[0], golem);
   log(`F our Snorlax: ${awake.turnsWe} turns awake, ${asleep.turnsWe} asleep`);
-  // Body Slam's 136–160 rolls (1 in 24 a crit) take the 300 HP Golem in two uses only about 46 % of the time: its mean
-  // (151) says 2, the odds say 3.
+  // Body Slam's 136–160 rolls (a crit 1 in 24) 2HKO the 300 HP Golem only about 46 % of the time, so awake takes 3.
   assert.deepEqual([awake.turnsWe, asleep.turnsWe], [3, 5]);
   assert.ok(asleep.pWeKoFirst <= awake.pWeKoFirst);
 
-  // A foe mid-Dig: a faster attacker's hit misses this turn; Earthquake reaches it.
+  // A foe mid-Dig: a faster attacker's hit misses this turn; Earthquake reaches it (game-code.md §5).
   const tackle = move(33, "Strike", 400);
   const eq = move(89, "Earthquake", 400, { attrs: [new HitsTagAttr("UNDERGROUND")] });
   const digger = () => mon("Dugtrio", { player: false, hp: 300, spe: 50, semi: new SemiInvulnerableTag("UNDERGROUND"), moves: [move(91, "Dig", 80)] });
@@ -305,8 +293,7 @@ const log = (...a) => console.log(...a);
   assert.deepEqual([miss.turnsWe, reach.turnsWe, after.turnsWe], [2, 1, 1]);
 }
 
-// ---- Bug 8. Picking a fainted mon's replacement: our slot is empty, so the foe's own AI has nobody to aim at and
-// scores every move −∞ (its first move "100 %"). The threat on the replacement must come from the replay instead.
+// ---- Picking a fainted mon's replacement: the foe's AI has nobody to aim at, so the threat comes from the replay.
 {
   phase = { phaseName: "SwitchPhase", isModal: true, doReturn: false };
   const tackle = move(33, "Tackle", 20);
@@ -325,8 +312,7 @@ const log = (...a) => console.log(...a);
   phase = { phaseName: "CommandPhase" };
 }
 
-// ---- Drawbacks decide between moves, as the game's own scoring marks them: Steel Beam (−50 % HP, and a user
-// benefit score to match) vs the slightly weaker, clean Flash Cannon.
+// ---- Drawbacks, as the game's own scoring marks them, decide between Steel Beam and the clean Flash Cannon.
 {
   const steelBeam = move(796, "Steel Beam", 140, { cat: 1, attrs: [new HalfSacrificialAttr()], userBenefit: -10 });
   const flashCannon = move(430, "Flash Cannon", 120, { cat: 1 });

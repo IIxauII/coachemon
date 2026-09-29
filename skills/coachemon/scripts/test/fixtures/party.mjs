@@ -1,15 +1,6 @@
-// One party, shared by the tests that ask about the party as a whole (`hud/08-party.js`). The card tests keep their
-// own mon builders — a card needs a scene, a battle and a screen around the party — but nothing about a *profile*
-// depends on any of that, so the profile is checked against this one team.
-//
-// The team is built to exercise every part of the profile at once:
-//   Garchomp   Dragon/Ground, BST 600, final form   — immune to Electric, ×4 weak to Ice
-//   Snorlax    Normal, BST 540, final form
-//   Lapras     Water/Ice, BST 535, final form
-//   Magikarp   Water, BST 200, one stage from Gyarados — the weakest member, by an *estimated* final BST
-// So: Fighting, Grass and Electric are shared weaknesses (two members weak, fewer resisting), while Ice is not — only
-// Garchomp is weak to it and Lapras resists it. Normal, Fighting, Bug, Water, Ice, Dark and Fairy are holes: no move
-// on the team hits them super-effectively.
+// Fighting, Grass and Electric are shared weaknesses — two members weak, fewer resisting — while Ice is not: only
+// Garchomp is weak to it and Lapras resists it. Normal, Fighting, Bug, Water, Ice, Dark and Fairy are holes. Magikarp
+// is the weakest member by an *estimated* final BST, not its own.
 
 export const TY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water",
   "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy"];
@@ -21,9 +12,8 @@ class GyroBallPowerAttr {}
 export const ATTRS = { FixedDamageAttr, GyroBallPowerAttr };
 
 /**
- * A species as the profile reads one: its id, its types, its BST, and the evolutions the game hands over as
- * `[[speciesId, level], …]` (`getEvolutionLevels`). `root` is the line's first member, which is what makes a catch a
- * duplicate.
+ * `evos`: `[[speciesId, level], …]`, as `getEvolutionLevels` returns them. `root` is the line's first member: a catch
+ * sharing it is a duplicate.
  */
 export const species = (id, name, types, bst, { evos = [], root = id } = {}) => ({
   speciesId: id, name, baseTotal: bst,
@@ -58,7 +48,6 @@ export const SPECIES = {
   sudowoodo: species(185, "Sudowoodo", ["Rock"], 410),
 };
 
-/** The shared party, freshly built each call so a test can't leak state into the next one. */
 export const party = () => [
   mon(SPECIES.garchomp, 50, [["Earthquake", "Ground", 100, "P"], ["Dragon Claw", "Dragon", 80, "P"]], { ability: "Rough Skin", luck: 3 }),
   mon(SPECIES.snorlax, 48, [["Body Slam", "Normal", 85, "P"], ["Crunch", "Dark", 80, "P"]], { ability: "Thick Fat", luck: 1 }),
