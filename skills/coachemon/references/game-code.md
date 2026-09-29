@@ -1020,6 +1020,14 @@ doReturn true)` (`:72`).
 The faint-replacement `SwitchPhase` is also idle UI (the party screen), so game calls are safe there. Tell it apart
 from a mid-turn `SwitchPhase` by `isModal && !doReturn`; the check-switch one has `!isModal`.
 
+**A switch-in lands with fresh summon data.** `SwitchSummonPhase` calls `resetSummonData()` on the mon it sends in,
+whatever the switch type (`src/phases/switch-summon-phase.ts:128-134`; `src/field/pokemon.ts:5147-5156`), so its stat
+stages are 0 however it left. Baton Pass then copies the outgoing mon's stages and passable tags onto it
+(`transferSummon`, `switch-summon-phase.ts:247-248`; `src/field/pokemon.ts:4253-4279`). In a double both slots may
+name the same bench index. Each switch swaps its two party entries (`switch-summon-phase.ts:190-191`), and the
+switches run in the outgoing mons' speed order (`SwitchSummonPhase` is a dynamic phase: `src/dynamic-queue-manager.ts:13-29`,
+`src/queues/pokemon-phase-priority-queue.ts:6-9`), so the later one sends in the mon the earlier one withdrew, reset.
+
 ---
 
 ## 10. Biome choice, and module-private game tables
@@ -1914,6 +1922,15 @@ move's own `PostVictoryStatStageChangeAttr` (Fell Stinger) comes after and isn't
 (`src/field/pokemon.ts:2311`). The planner prices a KO it would score on us at `FEED_COST` (0.5 turns) a stage on an
 attacking stat or Speed, half that on a defence, times P(it KOs us first), while someone is left to face it. The team
 plan counts each side's KOs and scales later exchanges' hits by the stages (Speed left out).
+
+**A move aimed at a fainted mon.** In a double, `FaintPhase.doFaint` calls `redirectPokemonMoves(pokemon, ally)` when
+the fainted mon has an ally (`src/phases/faint-phase.ts:197-201`); a mon forced out or fleeing does the same
+(`src/data/moves/move.ts:7438-7441`, `src/data/abilities/ab-attrs.ts:5764-5766`). If that ally is active, every
+still-queued `MovePhase` with exactly one target, aimed at the fainted mon by a user on the other side, is rewritten in
+place to target the ally (`src/queues/move-phase-priority-queue.ts:49-71`). Spread moves and moves from the fainted
+mon's own side are left alone. Nothing is checked at that point: the same move lands, status moves included, and its
+accuracy and type are checked as usual when it runs. A move whose target is gone and wasn't redirected fails with its PP
+spent (`src/phases/move-phase.ts:207,758-775`), unless it sets a hazard (`AddArenaTrapTagAttr`).
 
 **Switch-in cost.** A command switch resolves before moves (`src/phases/turn-start-phase.ts:28-45,122-130`), so the
 switch-in takes what the foe chose against the mon leaving (§9). The ⇄ line names that share of its HP and the likeliest
