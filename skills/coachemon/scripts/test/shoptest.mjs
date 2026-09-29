@@ -99,7 +99,7 @@ const pk = (name, hp, max, status, moves, f = {}) => ({
   // relearner, and null for an egg move or a used TM. Left off, the member doesn't expose the method.
   ...(f.relearn ? { getLearnableLevelMoves: () => f.relearn } : {}),
 });
-// A TM the listed members can learn (the game's selectFilter: null = compatible and not known).
+// A TM the listed members can learn (the game's selectFilter: null = compatible and not known, game-code.md §16).
 const tm = (id, learners, tier = 1) => mk(TmModifierType, { name: `TM ${MOVES[id].name}`, iconImage: "tm", tier, moveId: id,
   selectFilter: p => (learners.includes(p.name) && !p.moveset.some(m => m.moveId === id) ? null : "no effect") });
 
