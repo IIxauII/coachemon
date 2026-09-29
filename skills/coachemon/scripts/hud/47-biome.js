@@ -1,84 +1,29 @@
 // Biome route advisor: when the game offers a choice of next biome (the party holds a Map), which one suits the party.
-//
-// ---- How the game decides (read from the pinned source, v1.12.0.11; not called live; game-code.md §10)
-// SelectBiomePhase.start: `let{biomeLinks:v}=allBiomes.get(arena.biomeId)`; links are ids or [id, n] (offered with
-// chance 1/n); with a MapModifier and more than one left: `ui.setMode(15 /* OPTION_SELECT */, {options: biomes.map(b =>
-// ({label: getBiomeName(b), handler}))})`. The handler closes over the id, so an option is only its localized label.
-// Biome data (`allBiomes`, a Map BiomeId → {pokemonPool, trainerPool, trainerChance, biomeLinks}) is module-private:
-// nothing on the scene holds another biome's pools (Arena copies only its own). pokemonPool[tier][timeOfDay] lists
-// species ids; trainerPool[tier] lists trainer types; tier 0–4 COMMON…ULTRA_RARE, 5–8 BOSS…BOSS_ULTRA_RARE; timeOfDay
-// -1 ALL, 0 DAWN, 1 DAY, 2 DUSK, 3 NIGHT. Arena.getTimeOfDay: ABYSS always night, else (wave + waveCycleOffset) % 40:
-// < 15 day, < 20 dusk, < 35 night, else dawn.
-//
-// What each of the ten waves the choice covers holds. Which wave is which, and how likely a trainer is on it, is the
-// **run calendar**'s (`03-calendar.js`): a fixed battle or the final wave is not the biome's and is left out, a gym
-// wave is always a trainer, X1 and X0 never are, and any other wave rolls 1/trainerChance with its look-back. What is
-// left below is what the biome itself decides.
-// - A trainer: `Arena.randomTrainerType` rolls randSeedInt(512) over trainerPool tiers 0–4 (156+ common, 32+ uncommon,
-//   6+ rare, 1+ super rare, 0 ultra; no luck), or randSeedInt(64) over the boss tiers 5–8 (20+, 6+, 1+, 0) when the
-//   biome has a BOSS trainer and `isTrainerBoss` (the gym wave; Daily: X0 in 20–40): the gym leader is the biome's.
-//   An empty tier drops to the one below. Its party (`Trainer.genNewPartyMemberSpecies`): the config's speciesPools by
-//   the same 512 roll, else `speciesFilter` over every catchable species, taken back to its base form; a gym leader's
-//   filter is its specialty type (its signature slots are closures, unreadable, and mostly that type too).
-// - Otherwise a wild one: `Arena.randomSpecies` rolls randSeedInt(512 − 2·luck) over the same tier cuts, or
-//   randSeedInt(64 − luck/2) on a boss wave (`isBoss`, X0 in classic); a Daily event seed's `forcedWaves` pins the
-//   tier. An empty tier drops to the one below; a legend-like species (BST < 660) rerolls before difficulty wave 55
-//   (BST ≥ 660: before 80). `getWildSpeciesForLevel` then evolves it by chance (`determineEnemySpecies`): each
-//   evolution whose threshold t = max(its required level, evoLevelThreshold[kind]) the spawn has reached is picked evenly and taken
-//   when randSeedIntRange(t, round(t·m)) ≤ level (m 1.2 wild, 1.1 boss and trainer), again from the evolved form; a
-//   species below its own prevolution's threshold is replaced by the prevolution first. Kind: 2 wild, 1 boss/trainer.
-// Mystery Encounters take some wild and trainer waves at random; not modelled.
-//
-// ---- Where the tables come from at runtime
-// `04-game-tables.js`, which reads the game's own chunks. The read is async, so the first refresh or two draw the card
-// without spawn data; without the trainer configs the trainer waves are left out, as fixed waves are.
-//
-// ---- Scoring (per offered biome, explainable on purpose)
-// Encounters: every wave's wild and trainer species at those odds, each wave counting once, evolved at the party's top
-// level. The party is everyone, because entering an X1 heals and revives — except where the calendar says that heal
-// doesn't revive, and then the fainted stay out.
-// - offense: per encounter, the best multiplier any party move reaches (STAB ×1.5): SE 1, neutral 0.5, resisted 0.
-// - defense: per encounter, share of the party resisting all its types minus the share weak to one of them.
-// - catch: wild species that cover a team weakness, clearly outclass the weakest member, or are new to the dex (light).
-// - big fight: the biome's tenth wave — its gym leader, or its wild boss — per foe: 1 when two members hit it SE, 0.5
-//   for one, minus the share weak to it. It already counts as one wave of ten above; this is on top, because it's the
-//   fight that ends a run.
-// score = 50·offense + 25·(defense + 1) + up to 8 for catches ± 10 for the big fight. Ties go to the unrounded score.
+// Mystery Encounter waves are not modelled.
 import { TYPES, effectiveness } from "./01-core.js";
 import { healRevives, poolAnchorWave, trainerOdds, waveKind } from "./03-calendar.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { partyLuck, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
 
+// `generateNonBossBiomeTier` / `generateBossBiomeTier`'s cuts (game-code.md §10).
 const TIER_CUTS = [156, 32, 6, 1, 0];
 const BOSS_CUTS = [20, 6, 1, 0];
-// Pool tiers in the order TIER_CUTS / BOSS_CUTS cut them: a biome's pools by BiomePoolTier, a trainer config's by TrainerPoolTier.
+// In the order `TIER_CUTS` / `BOSS_CUTS` cut them.
 const POOL_TIERS = [BiomePoolTier.COMMON, BiomePoolTier.UNCOMMON, BiomePoolTier.RARE, BiomePoolTier.SUPER_RARE, BiomePoolTier.ULTRA_RARE];
 const BOSS_POOL_TIERS = [BiomePoolTier.BOSS, BiomePoolTier.BOSS_RARE, BiomePoolTier.BOSS_SUPER_RARE, BiomePoolTier.BOSS_ULTRA_RARE];
 const TRAINER_POOL_TIERS = [TrainerPoolTier.COMMON, TrainerPoolTier.UNCOMMON, TrainerPoolTier.RARE, TrainerPoolTier.SUPER_RARE, TrainerPoolTier.ULTRA_RARE];
 const WINDOW = 10;
-// What a tier is worth as a catch: a common one is there to meet, an ultra rare one mostly isn't.
 const CATCH_TIER = [1, 1, 0.6, 0.3, 0.15];
 const TRAINER_TIER = 99; // an encounter from a trainer's party: not a catch
 const BOSS_FIT = 10;
-// `determineEnemySpecies`'s random factor, by EvoLevelThresholdKind (0 STRONG, 1 NORMAL, 2 WILD).
+// `determineEnemySpecies`' random factor, indexed by `EvoLevelThresholdKind` (game-code.md §10).
 const EVO_SPREAD = [1, 1.1, 1.2];
-// Rare destinations worth naming when an option can lead there.
+// 46-encounter's `RARE_BIOMES` is the same set: change both.
 const RARE_ONWARD = new Set([BiomeId.SPACE, BiomeId.FAIRY_CAVE, BiomeId.LABORATORY]);
 
-// The game tables (`04-game-tables.js`), with the cache clear that goes with them: `formsAt` and `trainerParty` answer
-// with nothing while the chunk scan hasn't landed — a missing species registry answers nothing — and cache that
-// nothing, so a read that finds more tables than the last one did drops both caches.
-//
-// The count, not a one-time flag, because the scan no longer lands all at once: it commits the tables as soon as biomes
-// and species are in and fills the rest in place, a chunk at a time (#381), so "the loader fills them once per page" is
-// no longer something this module can rest on. What actually keeps a stale answer off the card is `biomeModel`'s memo
-// key, which counts the same tables — every negative answer that depends on a late table is guarded at its call site
-// today (`tables?.trainers` before any `trainerParty`), so this clear is the belt to that brace, and the thing that
-// stops the next such cache from being a silent one. Tables are only ever added, so the count only grows, and no
-// invalidation crosses the module line.
-// How many of the tables are there — the stand-in for *which* of them, in both places that have to notice one landing:
-// this clear, and the model's own memo key. The tables that are actually there, not the keys: a table the scan found
-// nothing for leaves its name behind.
+// `formsAt` and `trainerParty` cache the nothing they answer before the chunk scan lands, and the scan fills the tables
+// in a chunk at a time (#381): a read that finds more tables than the last drops both caches. `biomeModel`'s memo key
+// counts the same tables. Count the values, not the keys: a table the scan found nothing for leaves its name behind.
 const tablesPresent = t => (t ? Object.values(t).filter(Boolean).length : 0);
 let clearedAt = 0;
 const readTables = () => {
@@ -92,8 +37,8 @@ const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch 
 const nameOf = id => tryDo(() => readTables().biomeName(id), `#${id}`);
 const linkId = l => (Array.isArray(l) ? l[0] : l);
 
-// Option labels → biome ids: by the game's own localized name; failing that, by position among the current biome's
-// links (the options are those links, in order, minus the ones that didn't roll).
+// Option labels → biome ids by the game's own localized name; failing that, by position: the options are the links in
+// order, less those that didn't roll (game-code.md §10).
 const resolveOptions = (s, labels) => {
   const tables = readTables();
   const links = tryDo(() => [...tables.biomes.get(s.arena.biomeId).biomeLinks], []);
@@ -112,17 +57,16 @@ const odds = (pools, tiers, cuts, max, forced = null) => {
   p.forEach((x, i) => {
     if (!x) return;
     let j = i;
-    while (j > 0 && !pools[j].length) j--; // an empty tier drops to the one below
+    while (j > 0 && !pools[j].length) j--;
     if (pools[j].length) out.push({ tier: tiers[j], list: pools[j], p: x });
   });
   return out;
 };
 
-// ---- A spawn's species at `level`, as the game's chance of each form: Map id → p.
+// A spawn's species at `level`, as the game's chance of each form: `Map id → p` (game-code.md §10).
 const formsCache = new Map();
 const formsAt = (id, level, kind) => {
-  // Before the cache lookup, not after: the read is what drops entries answered without tables, so a caller that comes
-  // straight here (`formsFor`) can't be served one.
+  // Before the cache lookup: the read is what drops an answer cached without the tables.
   const reg = readTables()?.species;
   const key = `${id}|${level}|${kind}`;
   if (formsCache.has(key)) return formsCache.get(key);
@@ -131,7 +75,6 @@ const formsAt = (id, level, kind) => {
   const sp0 = speciesById(id);
   if (!sp0) { formsCache.set(key, out); return out; }
   if (typeof reg?.getEvolutions !== "function") {
-    // An older registry without evolution records: the last stage reached by level, as the game's own list gives it.
     let pick = id;
     for (const [eid, lv] of tryDo(() => sp0.getEvolutionLevels(), [])) if (typeof lv === "number" && lv > 1 && lv <= level) pick = eid;
     add(pick, 1);
@@ -166,7 +109,7 @@ const formsAt = (id, level, kind) => {
   return out;
 };
 
-// ---- A trainer type's party, as base species with their chance: [{ id, p }], plus its specialty type.
+// A trainer type's party as base species with their chance, `[{ id, p }]`, plus its specialty type.
 const trainerCache = new Map();
 const rootOfId = (reg, id) => {
   let cur = id;
@@ -178,7 +121,7 @@ const rootOfId = (reg, id) => {
   return cur;
 };
 const trainerParty = type => {
-  const tables = readTables(); // before the lookup, for the reason `formsAt` gives
+  const tables = readTables(); // before the lookup, as in `formsAt`
   if (trainerCache.has(type)) return trainerCache.get(type);
   const cfg = tryDo(() => tables.trainers[type]);
   let value = null;
@@ -202,44 +145,31 @@ const trainerParty = type => {
   return value;
 };
 
-// ---- Which pool a wave spawns from, and when that pool was last built
-// `Arena.updatePoolsForTimeOfDay` rebuilds `pokemonPool` from `getTimeOfDay()`, which reads whatever wave is current
-// when it runs, and it runs twice per block: when the arena is built and as a wave X5 starts. **Which wave that is**
-// is a rule about wave numbers, so it is the run calendar's `poolAnchorWave`; what the time of day *at* that wave
-// comes to is this card's, because it needs the biome (ABYSS is night whatever the wave). Reading the time of day at
-// the wave itself — which both this card and 48-preview did — moves a pool up to four waves early.
 const timeOfDayAt = (s, w, biomeId) => {
   if (biomeId === BiomeId.ABYSS) return TimeOfDay.NIGHT;
   const c = (w + (s?.waveCycleOffset ?? 0)) % 40;
   return c < 15 ? TimeOfDay.DAY : c < 20 ? TimeOfDay.DUSK : c < 35 ? TimeOfDay.NIGHT : TimeOfDay.DAWN;
 };
-/** The time of day whose pool wave `w` spawns from in `biomeId`: the arena's, at its last rebuild. */
+// The time of day of the pool wave `w` spawns from, which was built at `poolAnchorWave(w)`: read at `w` itself, a pool
+// moves up to four waves early (game-code.md §10).
 export const spawnTimeOfDay = (s, w, biomeId) => (w == null ? null : timeOfDayAt(s, poolAnchorWave(w), biomeId));
 
-// A wild boss on a wave that isn't a tenth one: `getEncounterBossSegments` rolls `randSeedInt(100)` against
-// `min(max(ceil((w − 250) / 50), 0) × 2, 30)` when the mode `hasRandomBosses` — Endless and Spliced Endless — so
-// from wave 250 on, 2 % more of every wave is a boss per 50 waves, capped at 30 %. Nothing before 250, and nothing
-// in classic. (A legendary, sub-legendary or mythical species is forced to a boss too, but that is decided *after*
-// the species roll, not before it, so it moves no pool and isn't weighed here.)
+// `getEncounterBossSegments`' random bosses off a tenth wave (game-code.md §10).
 const randomBossChance = (s, w) => (s?.gameMode?.hasRandomBosses
   ? Math.min(Math.max(Math.ceil((w - 250) / 50), 0) * 2, 30) / 100
   : 0);
 
-// ---- What each of the ten waves holds in this biome: [{ w, tod, wild, trainer, boss, gym }], the fixed waves left
-// out. Which wave is which, and how likely a trainer is on it, is the run calendar's (03-calendar.js); what is left
-// here is the biome's own part — the pool's time of day, and whether the tenth wave's trainer is a gym leader this
-// biome can field (`isTrainerBoss`). `boss` is a share, not a flag: a tenth wave always, and past wave 250 in
-// Endless a slice of every other wave.
+// `[{ w, tod, wild, trainer, boss, gym }]` for the waves the biome decides. `boss` is a share, not a flag.
 const wavesIn = (s, biome, wave) => {
   const gm = s.gameMode;
   const bossTrainers = (biome.trainerPool?.[BiomePoolTier.BOSS] ?? []).length > 0;
   const out = [];
   for (let w = wave + 1; w <= wave + WINDOW; w++) {
     const kind = waveKind(s, w);
-    if (kind === "final" || kind === "fixed") continue; // not the biome's: the run's own table holds them
+    if (kind === "final" || kind === "fixed") continue;
     const tod = spawnTimeOfDay(s, w, biome.biomeId);
     const trainer = trainerOdds(s, w, biome);
-    // `isTrainerBoss`: the gym wave outside END unless the run is classic, and in Daily an X0 from 20 to 40.
+    // `isTrainerBoss` (game-code.md §10).
     const gym = !!trainer && bossTrainers && (gm?.isDaily
       ? w > 10 && w < 50 && w % 10 === 0
       : kind === "gym" && (biome.biomeId !== BiomeId.END || !!gm?.isClassic));
@@ -249,9 +179,8 @@ const wavesIn = (s, biome, wave) => {
   return out;
 };
 
-// Weighted encounters: [{ id, tier, w, wild, boss, trainer }] with w summing to 1 over the waves the biome decides;
-// `wild` is the non-boss wild part of w, `boss` the tenth wave's (wild boss or gym leader), `trainer` a trainer's.
-// `id` is the species as it's rolled, before it evolves. Also the trainers met and the tenth wave's foes.
+// `list`: `[{ id, tier, w, wild, boss, trainer }]`, `w` summing to 1 over the waves the biome decides and split into
+// the other three; `id` is the species as rolled, before it evolves.
 const encounters = (s, biome, wave, luck = 0) => {
   const tables = readTables();
   const gm = s.gameMode;
@@ -275,14 +204,10 @@ const encounters = (s, biome, wave, luck = 0) => {
         if (!(sp.legendary || sp.subLegendary || sp.mythical)) return true;
         return difficulty >= (sp.baseTotal >= 660 ? 80 : 55);
       };
-      // `isBossSpecies` asks only the BOSS tier (5) for this pool's time of day, and never an END boss outside
-      // classic. (The source's third term, `isWaveFinal`, can't be reached from here: the run's last wave is the
-      // run's own, not the biome's, and `wavesIn` drops it before this.)
+      // The game also lets an END boss spawn on the final wave, which `wavesIn` has dropped (game-code.md §10).
       const bossPool = (biome.pokemonPool?.[BiomePoolTier.BOSS]?.[TimeOfDay.ALL] ?? []).length + (biome.pokemonPool?.[BiomePoolTier.BOSS]?.[wv.tod] ?? []).length > 0
         && (biome.biomeId !== BiomeId.END || !!gm?.isClassic);
       const forced = gm?.isDaily ? tryDo(() => gm.dailyConfig.forcedWaves.find(f => f.waveIndex === wv.w).tier) : null;
-      // The wave's wild share splits between the two pools: a tenth wave is all boss, an Endless wave past 250 a
-      // slice of one, everything else none.
       const spawn = (share, asBoss) => {
         if (share <= 0) return;
         const tiers = asBoss ? BOSS_POOL_TIERS : POOL_TIERS;
@@ -295,8 +220,7 @@ const encounters = (s, biome, wave, luck = 0) => {
       const bossShare = bossPool ? wv.boss : 0;
       spawn(wv.wild * bossShare, true);
       spawn(wv.wild * (1 - bossShare), false);
-      // The fight that ends a biome, worth ±10 on the score: the tenth wave's own boss, not a wave that merely
-      // might roll one.
+      // Only a tenth wave's sure boss is the big fight, not a wave that merely might roll one.
       if (bossShare >= 1) bigFight = { wave: wv.w, gym: false };
     }
     if (wv.trainer > 0 && tables?.trainers) {
@@ -336,8 +260,6 @@ const judge = (s, id, profile, level, wave, luck) => {
   })).filter(e => e?.types.length);
   if (!spawnList.length) return null;
 
-  // The party read once, by the one profile every card shares (`08-party.js`): `attacks` is the table this file used
-  // to build for itself, and `hitters` / `weakTo` are its two matchup queries. The weights below stay this card's.
   const moves = profile.attacks;
   const hitsSE = (i, types) => moves[i].some(m => effectiveness(m.t, { types }) >= 2);
   const weakTo = (p, types) => types.some(t => profile.weakTo(t).includes(p));
@@ -357,8 +279,6 @@ const judge = (s, id, profile, level, wave, luck) => {
     offense += e.w * (best >= 2 ? 1 : best >= 1 ? 0.5 : 0);
   }
 
-  // The tenth wave: a gym leader by specialty type, else the wild boss by species. Per foe: two hitters 1, one 0.5,
-  // minus the share of us weak to it.
   const fitOf = types => {
     const hitters = party.filter((_, i) => hitsSE(i, types)).length;
     return (hitters >= 2 ? 1 : hitters ? 0.5 : 0) - party.filter(p => weakTo(p, types)).length / party.length;
@@ -390,16 +310,12 @@ const judge = (s, id, profile, level, wave, luck) => {
     }
   }
 
-  // Catches: wild non-boss spawns worth a ball for this party. What makes one worth it is the party profile's call,
-  // the same question the catch card asks of the mon in front of you — so the same species at the same level gets
-  // the same reasons on both cards. A biome candidate is a **species**, with the level this card picks forms at and
-  // no moveset, so its own types stand in for what it would hit. The weights and the wording stay here.
   const dex = s.gameData?.dexData ?? {};
   const catches = new Map();
   for (const e of spawnList) {
     if (e.tier > BiomePoolTier.ULTRA_RARE || !(e.wild > 0)) continue;
     const reasons = partyReasons(profile, { species: e.sp, level, types: e.types });
-    if (reasons.some(r => r.kind === "dupe")) continue; // its line is already on the team
+    if (reasons.some(r => r.kind === "dupe")) continue;
     const covers = reasons.find(r => r.kind === "covers")?.types ?? [];
     const hole = reasons.find(r => r.kind === "hole")?.types ?? [];
     const upgrade = reasons.find(r => r.kind === "upgrade") ?? null;
@@ -418,13 +334,10 @@ const judge = (s, id, profile, level, wave, luck) => {
   const raw = 50 * offense + 25 * (defense + 1) + 8 * opportunity + BOSS_FIT * bossFit;
   const mix = Object.entries(typeShare).sort((a, b) => b[1] - a[1]).slice(0, 3).filter(([, x], i) => i === 0 || x >= 0.15)
     .map(([t, x]) => [t, Math.round(x * 100)]);
-  // The species met most, by name at the party's level (a line in several tiers adds up).
   const met = {};
   for (const e of spawnList) { const n = tryDo(() => e.sp.name, `#${e.id}`); met[n] = (met[n] ?? 0) + e.w; }
   const common = Object.entries(met).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([n, x]) => [n, Math.round(x * 100)]);
 
-  // Reasons, worst news first: who's weak, the gym leader when it's bad news, who resists, who hits it, the gym leader
-  // when it's good news, what's worth catching.
   const names = pred => party.filter((_, i) => pred(i)).map(p => p.name);
   const weakNames = names(i => weak[i] >= 0.35), resistNames = names(i => resist[i] >= 0.4), hitters = names(i => se[i] >= 0.4);
   const reasons = [];
@@ -454,7 +367,7 @@ const judge = (s, id, profile, level, wave, luck) => {
   };
 };
 
-// What separates two options that round to about the same score: the component with the largest weighted gap.
+// The weights are `raw`'s over 100: change both.
 const edgeOver = (a, b) => {
   const parts = [["offense", 0.5 * (a.offense - b.offense)], ["defense", 0.25 * (a.defense - b.defense)],
     ["the big fight", 0.1 * (a.bossFit - b.bossFit)], ["catches", 0.08 * (a.opportunity - b.opportunity)]];
@@ -462,26 +375,19 @@ const edgeOver = (a, b) => {
   return gap > 0 ? name : null;
 };
 
-// `run` is the run read, whose memo keeps the model. The wave, the party's levels and standing are the run key's;
-// what the card reads beyond that — how many of the tables have landed, the options on screen, each member's moveset
-// and the run's challenges — is its key within the run. It counts the tables rather than asking whether there are any,
-// because the scan commits them as soon as biomes and species are in and fills the rest in place, a chunk at a time
-// (#381): the trainer configs and the biome names can land after this card first drew, and a model built without them
-// has to be rebuilt rather than kept.
+// The memo key counts the tables rather than asking for any: the trainer configs and the biome names can land after the
+// card first drew, and a model built without them has to be rebuilt (#381).
 export const biomeModel = (run, h) => {
   const s = run.scene;
   const tables = readTables();
   const labels = h.config.options.map(o => String(o.label ?? ""));
   const everyone = run.facts.party;
-  // Everyone fights in the next biome, because entering an X1 revives the fallen — except where the run calendar
-  // says that heal doesn't revive (Hardcore, or a Limited Support with no heal at all).
   const party = healRevives(s) ? everyone : everyone.filter(p => p.hp > 0);
   const key = JSON.stringify([tablesPresent(tables), labels, party.map(p => [p.id, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
   const value = run.memo("biome", key, () => build(run, tables, labels, everyone, party));
   if (value.kind) return value;
-  // A build that threw is the run read's `{ unavailable }`: the options unjudged, and the reason where the
-  // card would say it is still reading — never a kind-less card, which the panel can't draw.
+  // Never a kind-less card: the panel can't draw one.
   return { kind: "biome", from: null, options: labels.map(label => ({ label, id: null })), pick: -1,
     data: !!tables, trainers: false, fainted: 0, unread: value.unavailable };
 };
@@ -490,8 +396,6 @@ const build = (run, tables, labels, everyone, party) => {
   const wave = run.facts.wave;
   const level = Math.max(1, ...everyone.map(p => p.level ?? 1));
   const luck = partyLuck(everyone, s, gameEvents());
-  // The party judged as a whole, once for every option: the coverage table, the two matchup queries and what a catch
-  // is worth all come off it (`08-party.js`).
   const profile = partyProfile(party);
   const ids = tables ? resolveOptions(s, labels) : labels.map(() => null);
   const options = labels.map((label, i) => ({ label, id: ids[i], ...(ids[i] != null && party.length ? judge(s, ids[i], profile, level, wave, luck) ?? {} : {}) }));
@@ -499,7 +403,6 @@ const build = (run, tables, labels, everyone, party) => {
   const ranked = [...scored].sort((a, b) => b.raw - a.raw || b.bossFit - a.bossFit || b.defense - a.defense);
   const best = ranked[0] ?? null;
   for (const o of scored) o.verdict = o === best ? "pick" : best.score - o.score <= 5 ? "close" : "worse";
-  // A near tie still gets a pick, and says what decided it.
   if (best && ranked[1] && best.score - ranked[1].score <= 2) {
     const edge = edgeOver(best, ranked[1]);
     if (edge) best.reasons.unshift({ good: true, edge: true, text: `edges ${ranked[1].label} on ${edge}` });
@@ -513,8 +416,6 @@ const build = (run, tables, labels, everyone, party) => {
   return value;
 };
 
-// The weighted encounters of one biome as the ten waves after `wave` would see them, and a species' chance of each
-// form at a level. Neither is on any card's path: they are what a test, or a hand check against a live tab, reads.
 // @only tests: spawnsFor, formsFor
 export const spawnsFor = (s, id, wave, luck = 0) => {
   const biome = readTables()?.biomes?.get(id);
