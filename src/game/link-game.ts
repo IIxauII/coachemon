@@ -1,8 +1,6 @@
 /**
- * The game port over a link (#127, extension-distribution.md §12.1). It alone knows what a link's answers mean for the
- * Driver: a `Fault` ends here, reads degrade to their not-readable values, acts say whether the page threw, refused or
- * found the game `moved`, and both reads' discriminators become the Screen (#133). It knows nothing of the transport
- * underneath.
+ * The game port over a link (extension-distribution.md §12.1): a `Fault` ends here, and both reads' discriminators become
+ * the Screen (#133). It knows nothing of the transport underneath.
  */
 import { UiMode, type Button } from "../enums/generated.ts";
 import type { Refused } from "../page/acts.ts";
@@ -24,8 +22,6 @@ export class LinkGame implements GamePort {
     this.#link = link;
     this.#tab = tab;
   }
-
-  // ------------------------------------------------------- game operations
 
   async read(): Promise<PredicateRead> {
     const r = await this.#link.probe({});
@@ -99,8 +95,6 @@ export class LinkGame implements GamePort {
   screenshot(): Promise<string> {
     return this.#link.screenshot();
   }
-
-  // -------------------------------------------------------- tab operations
 
   get pumps(): boolean {
     return this.#tab.pumps;

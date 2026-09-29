@@ -1,11 +1,6 @@
 /**
- * The CDP link (extension-distribution.md §12.1): every store command as one `Runtime.evaluate` of the page handler,
- * stringified with `dispatch`, the locator, `fine` and `disc` as its arguments (§10.5). One source serves this link and
- * the extension until CDP is deleted at the flip. Because the whole command is one evaluate, an act's fingerprint check
- * and the act itself run in the same page turn (§10.2).
- *
- * It is also the tab's CDP side (`Tab`): attach-else-launch, focus emulation, the trusted raw keyboard, and CDP's own
- * exception and console events.
+ * The CDP link and the tab's CDP side (extension-distribution.md §12.1). Every command is one `Runtime.evaluate`, so an
+ * act's fingerprint check and the act itself run in the same page turn (§10.2).
  */
 import { Button } from "../enums/generated.ts";
 import type { Claim, Fault, GameLink, Presence, Tab } from "../game/link.ts";
@@ -20,10 +15,9 @@ import { locate } from "../page/locate.ts";
 import { COMMAND_NAMES, STORE_COMMANDS, type Args, type CommandName } from "../protocol/commands.ts";
 import { isThrown, type CdpSession } from "./session.ts";
 
-/** The part of `CdpSession` the link drives. */
 export type LinkSession = Pick<CdpSession, "attached" | "launchedChrome" | "onException" | "ensure" | "evaluate" | "keepAlive" | "rawKey" | "screenshot" | "consoleTail">;
 
-/** Each button's keyboard equivalent, for the raw fallback (v1-tool-surface.md §6.4). Phaser binds to `window`, so a dispatched key reaches the game (#9). */
+/** The raw keyboard fallback's keys (v1-tool-surface.md §6.4). */
 const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: number]>> = {
   [Button.UP]: ["ArrowUp", "ArrowUp", 38],
   [Button.DOWN]: ["ArrowDown", "ArrowDown", 40],
@@ -35,12 +29,11 @@ const RAW_KEYS: Partial<Record<Button, [key: string, code: string, keyCode: numb
   [Button.MENU]: ["Escape", "Escape", 27],
 };
 
-/** Each command's expression up to its arguments: the functions stringify once, the mode enums serialize with them (#164). */
+/** Each command's expression up to its arguments, the mode enums serialized into it (#164). */
 const PREFIX = Object.fromEntries(
   COMMAND_NAMES.map(name => [name, `(${dispatch})(${locate}, ${fine}, ${disc}, ${COMMAND_HANDLERS[name]}, ${JSON.stringify(name)}, ${JSON.stringify(STORE_COMMANDS[name].kind)}, ${JSON.stringify(PAGE_MODES)}, `]),
 ) as Record<CommandName, string>;
 
-/** With no lock at all — a test, or a second link — nothing is ever contended. */
 const UNCONTENDED: Contention = { contended: false, holder: null };
 
 export class CdpLink implements GameLink, Tab {
@@ -55,7 +48,6 @@ export class CdpLink implements GameLink, Tab {
     this.#lock = lock;
   }
 
-  /** Every command attaches first: attach-else-launch is the session's, and idempotent. */
   async #run<N extends CommandName>(name: N, args: Args<N>): Promise<Result<N> | Fault> {
     await this.#session.ensure();
     const r = await this.#session.evaluate<Result<N>>(`${PREFIX[name]}${JSON.stringify(args)})`);
@@ -80,13 +72,7 @@ export class CdpLink implements GameLink, Tab {
     return this.#session.screenshot();
   }
 
-  // ------------------------------------------------------------------ tab
-
-  /**
-   * Attach-else-launch is this transport's whole reachability: there is no hub, no browser list and no tab count, so
-   * none of the ladder's rungs can be evaluated and a tab that will not attach is simply not there
-   * (extension-distribution.md §12.3).
-   */
+  /** No rung of the ladder can be evaluated here: a tab that will not attach is simply not there (extension-distribution.md §12.3). */
   async presence(): Promise<Presence> {
     let error: string | null = null;
     try {
@@ -102,11 +88,7 @@ export class CdpLink implements GameLink, Tab {
     };
   }
 
-  /**
-   * The pidfile lock is CDP's driver grant, and stays until the flip deletes this link
-   * (extension-distribution.md §7.5, §13.2). Taking it here and not at startup is what makes the role begin at the
-   * first act: a session that only reads never calls this.
-   */
+  /** Taken here, never at startup: the role begins at the first act, and a session that only reads never calls this (extension-distribution.md §7.5). */
   async claim(): Promise<Claim> {
     const c = this.#lock?.take() ?? UNCONTENDED;
     if (!c.contended) return { ok: true };

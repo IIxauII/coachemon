@@ -1,14 +1,3 @@
-/**
- * One long-lived CDP page session against the PokéRogue tab.
- *
- * Attach-else-launch: if the debug port answers and a `pokerogue.net` tab
- * exists, attach to it; if the port answers but no tab does, open one; if the
- * port is dead, launch Chrome with #5's command against the persistent profile.
- * The server never closes the tab or Chrome — the dev watches the game there.
- *
- * Focus emulation is re-applied on every attach (#23): it dies with the CDP
- * session that set it, and without it a hidden page freezes the Phaser loop.
- */
 import { spawn } from "node:child_process";
 import { mkdirSync, openSync } from "node:fs";
 import { homedir } from "node:os";
@@ -38,15 +27,16 @@ export const isThrown = (v: unknown): v is Thrown => typeof v === "object" && v 
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+/** Never closes the tab or Chrome: the dev watches the game there. */
 export class CdpSession {
   #ws: WebSocket | null = null;
   #id = 0;
   #pending = new Map<number, { res: (v: unknown) => void; rej: (e: Error) => void }>();
   #opts: SessionOptions;
   #launched = false;
-  /** Called for every `Runtime.exceptionThrown` the page reports (#16's hang corroboration). */
+  /** Every page exception, for the hang watch (#16). */
   onException: ((t: number) => void) | null = null;
-  /** The page's recent console errors/warnings and uncaught exceptions, for diagnostics. Never read by the game loop. */
+  /** For diagnostics only: nothing decides on it. */
   #console: { t: string; level: string; text: string }[] = [];
 
   constructor(opts: Partial<SessionOptions> = {}) {
@@ -61,7 +51,6 @@ export class CdpSession {
     return this.#launched;
   }
 
-  /** Attach if not attached; attach-else-launch. Idempotent. */
   async ensure(): Promise<void> {
     if (this.attached) return;
     let target = await this.#findTab();
@@ -142,6 +131,7 @@ export class CdpSession {
     this.#ws = ws;
     await this.send("Runtime.enable");
     await this.send("Log.enable");
+    // Dies with the CDP session that set it, and without it a hidden page freezes the Phaser loop (#23).
     await this.send("Emulation.setFocusEmulationEnabled", { enabled: true });
     this.#opts.log(`attached to ${target.url}`);
   }
@@ -212,7 +202,6 @@ export class CdpSession {
     return r.result.value;
   }
 
-  /** Re-apply focus emulation (#23) — cheap, and it silently dies with any prior session. */
   async keepAlive(): Promise<void> {
     await this.send("Emulation.setFocusEmulationEnabled", { enabled: true });
   }
@@ -222,7 +211,7 @@ export class CdpSession {
     return r.data;
   }
 
-  /** Raw keyboard fallback: Phaser binds to `window`, so a dispatched key reaches the game (#9). */
+  /** The raw keyboard fallback (v1-tool-surface.md §6.4). */
   async rawKey(key: string, code: string, keyCode: number): Promise<void> {
     for (const type of ["keyDown", "keyUp"]) {
       await this.send("Input.dispatchKeyEvent", {

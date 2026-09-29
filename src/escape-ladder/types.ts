@@ -1,11 +1,3 @@
-/**
- * Types for the escape ladder: per screen, the ordered rungs that leave it.
- *
- * The table is hand-curated (see docs/adr/0001-escape-ladder-hand-curated-checked-at-pin-bump.md);
- * these types exist so a rung cannot be written without its risk, its
- * provenance, and — when it costs something — what it discards.
- */
-
 /** What a rung costs. */
 export type Risk =
   /** Nothing the run or the profile depends on is lost. */
@@ -18,7 +10,7 @@ export type Risk =
 /** How the claim is known. `live` means observed in a transcript; `source` means read at the pinned ref. */
 export type Provenance = "source" | "live";
 
-/** Buttons a rung may press. `MENU` is deliberately absent: it never reaches a handler (#13). */
+/** Buttons a rung may press. `MENU` is deliberately absent: it never reaches a handler (#13, game-code.md §26). */
 export type RungButton = "ACTION" | "CANCEL" | "SUBMIT";
 
 type Costed =
@@ -44,10 +36,7 @@ export type Rung =
   /** Terminal rung: CDP page reload. Appended by the lookup, never stored per screen. */
   | (RungCommon & { do: "reload" });
 
-/**
- * What CANCEL does on a screen. Replaces the hand-maintained `cancel_effect`
- * table in v1-tool-surface.md §5; `read_menu` derives it from here.
- */
+/** What CANCEL does on a screen: `read_menu`'s `cancel_effect` (v1-tool-surface.md §5). */
 export type CancelEffect =
   /** Leaves the screen without choosing. */
   | "exits"

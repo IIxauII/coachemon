@@ -1,9 +1,6 @@
 /**
- * Parse one TypeScript enum out of PokéRogue source, in any of the three
- * forms the repo uses: `enum X { A, B = 3 }`, `const X = { A: 0 } as const`
- * and `const X = Object.freeze({ A: 0 })`. A value is an integer literal or a
- * bit flag `1 << n`. Auto-increment follows TS rules, so `ISLAND: 40` followed
- * by `LABORATORY` would read 41.
+ * Any of the three forms PokéRogue writes an enum in: `enum X { A, B = 3 }`, `const X = { A: 0 } as const` and
+ * `const X = Object.freeze({ A: 0 })`. A value is an integer literal or a bit flag `1 << n`.
  */
 export function parseEnum(source: string, name: string): [string, number][] {
   const m =

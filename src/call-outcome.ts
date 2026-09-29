@@ -1,17 +1,4 @@
-/**
- * Call outcomes (#126): what status and diagnostic a tool call returns, decided over the whole call.
- *
- * One instance per Driver owns everything that lives across calls and decides a status: the run latch, the stall
- * counts, the hang watch, the stuck detector and the menu-action-in-flight flag. It is fed every settle poll, the
- * call's opening settle, the moment before its first press and how the call ended — settled, out of time or refused —
- * and answers all three the same way. The Driver keeps presentation: payload, notes and hints.
- *
- * Ordering is part of the interface: `waited` → `pressing` (only if anything is pressed) → `end`, exactly one `end`
- * per call. An acting call whose opening settle times out never pressed, so it ends as a `read`.
- *
- * ADR-0002: the module derives the Progress fingerprint from `Ready` reads itself. The fine fingerprint arrives only
- * inside a `SettleResult` and is copied into the diagnostic, never compared.
- */
+/** Decides the Call outcome (CONTEXT.md, `Call outcome`); the Driver only presents it (#126). */
 import { UiMode } from "./enums/generated.ts";
 import type { Diagnostic, Status } from "./envelope.ts";
 import type { PredicateRead, Ready } from "./game/port.ts";
@@ -20,7 +7,6 @@ import { BEYOND_OBSERVED_MS, type SettleResult } from "./settle.ts";
 import { progressFingerprint, StuckDetector, type Choice, type StuckReport } from "./stuck/detector.ts";
 import { HangWatch } from "./stuck/hang.ts";
 
-/** What happened to the run beats what the screen is doing, and both beat the clock. */
 const RANK: Record<Status, number> = { ok: 0, timed_out: 1, stuck: 2, run_over: 3, run_interrupted: 4 };
 
 export function worst(...statuses: Status[]): Status {
@@ -47,11 +33,15 @@ type StallCounts = { resumeCount: number; cumulativeMs: number };
 const NO_RUN: Latch = { sawRun: false, gameOver: false, interrupted: false };
 const NO_STALL: StallCounts = { resumeCount: 0, cumulativeMs: 0 };
 
+/**
+ * Fed every settle poll, and per call: `waited` with its opening settle → `pressing` just before its first press, if
+ * any → `end`, exactly once however the call ended.
+ */
 export class CallOutcomes {
   readonly #detector = new StuckDetector();
   readonly #hang = new HangWatch();
   #latch: Latch = NO_RUN;
-  /** The wait in progress: whether the game has settled since the last call that ran out of time, and its counts. */
+  /** `pending`: the last call ran out of time and the game has not settled since. */
   #wait = { pending: false, ...NO_STALL };
   #menuActionInFlight = false;
 
@@ -61,7 +51,6 @@ export class CallOutcomes {
   /** The counts this call's diagnostic reports: the wait its last settle belongs to. */
   #counts: StallCounts = NO_STALL;
 
-  /** Every settle poll: the run latch and the hang watch. */
   poll(read: PredicateRead, t: number): void {
     if (!read.ready) {
       this.#hang.poll(null);
@@ -71,19 +60,17 @@ export class CallOutcomes {
     if (read.runLive && !this.#latch.sawRun) this.#latch = { ...NO_RUN, sawRun: true };
     if (read.phaseName === "GameOverPhase") this.#latch = { ...this.#latch, gameOver: true };
     if (read.phaseName === "LoginPhase" && this.#latch.sawRun && !this.#latch.gameOver && !this.#menuActionInFlight) {
-      // #11: LoginPhase mid-session with no GameOverPhase and no menu action in flight ⇒ reset(true), the save failed.
+      // A LoginPhase mid-run with no menu action in flight is `reset(true)`: the save failed (#11, game-code.md §26).
       this.#latch = { ...this.#latch, interrupted: true };
     }
     // Back at the title: whatever ended the run has been latched by now.
     if (read.mode === UiMode.TITLE && read.settled) this.#latch = { ...this.#latch, sawRun: false };
   }
 
-  /** The page threw an unhandled rejection: corroborates a save hang. */
   rejection(t: number): void {
     this.#hang.unhandledRejection(t);
   }
 
-  /** The call's opening settle. If the last call ran out of time, this is a resume. */
   waited(s: SettleResult): void {
     this.#opening = s;
     if (this.#wait.pending) {
@@ -97,7 +84,6 @@ export class CallOutcomes {
     this.#detector.recordRead({ fingerprint: progressOf(s.last as Ready), settled: true });
   }
 
-  /** Just before the call's first press. */
   pressing(p: { menuAction: boolean; on: Ready }): void {
     this.#menuActionInFlight = p.menuAction;
     this.#pressedOn = p.on;
@@ -118,7 +104,6 @@ export class CallOutcomes {
     return "none";
   }
 
-  /** Exactly once per call, however it ended. */
   end(e: CallEnd): Outcome {
     if (e.kind === "acting") {
       this.#recordActing(e.pre, e.choice, e.settle);
@@ -126,8 +111,7 @@ export class CallOutcomes {
       // The opening settle came before the press: without a settle after it, the decision waits for the next read.
       this.#recordActing(e.pre ?? this.#pressedOn, e.choice, e.settle === this.#opening ? null : e.settle);
     }
-    // A deliberate choice that takes the game off the title (Continue, Load Game, New Game) is the human's answer to
-    // run_interrupted. A press that leaves it on TITLE, or a call refused there, is not.
+    // Leaving TITLE is the human's answer to run_interrupted; a press that stays on it, or a call refused there, is not.
     const after = e.settle !== null && e.settle !== this.#opening && e.settle.last?.ready ? e.settle.last : null;
     if (this.#latch.interrupted && this.#pressedOn?.mode === UiMode.TITLE && after !== null && after.mode !== UiMode.TITLE) {
       this.#latch = NO_RUN;
@@ -172,7 +156,6 @@ export class CallOutcomes {
       found.push({ status: "run_over", diagnostic: diagnostic("game-over-phase") });
     }
     if (s !== null && s.settled && last !== null) {
-      // Only a settled fingerprint is ever judged stuck.
       const a = this.#detector.assess({
         screen: last.screen,
         fingerprint: progressOf(last),
@@ -220,7 +203,7 @@ export class CallOutcomes {
   }
 }
 
-/** The Progress fingerprint (ADR-0002) of a settled read. */
+/** The Progress fingerprint of a settled read (0002-progress-fingerprint-carries-the-battle-clock.md), never the fine one. */
 function progressOf(r: Ready): string {
   return progressFingerprint({ phaseName: r.phaseName, mode: r.mode, modeChain: r.modeChain, cursor: r.cursor, messageText: r.messageText, wave: r.wave, turn: r.turn, money: r.money });
 }
