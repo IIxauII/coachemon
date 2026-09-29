@@ -2317,7 +2317,10 @@ Side effects: writes `hp` and status counters. No RNG.
       - Poison Heal queues a 1/8 heal (`ab-attrs.ts:4062`).
       - `PostTurnResetStatusAbAttr` (`:4097`): Shed Skin cures at `randSeedInt(10) < 3` (global; `init-abilities.ts:524`), Hydration in rain (`:678`), Healer cures its ally at `randSeedInt(2)` (global; `:918`).
       - Harvest draws from the global RNG (`ab-attrs.ts:4132`). Moody draws from the battle RNG (`:4282`).
-      - Speed Boost (`:4322`), the Hunger Switch form change (`:4364`), Bad Dreams dealing 1/8 at once to sleeping foes (`:4389`), Cud Chew's record, Ball Fetch.
+      - Speed Boost (`:4322`), the Hunger Switch form change (`:4364`), Cud Chew's record, Ball Fetch.
+      - Bad Dreams deals 1/8 at once to sleeping foes (`:4389`). `canApply` needs one sleeping foe without Magic Guard
+        (`:4396`), and `apply` then asks only the holder's Magic Guard (`:4413`), so a sleeper with Magic Guard beside
+        one without it takes the chip.
    6. Even for a mon that switched out:
       - Toxic Orb or Flame Orb: `TurnStatusEffectModifier.apply` → `trySetStatus` (`modifier.ts:1711`). The status lands after step 5, so its chip starts next turn.
       - Mini Black Hole (`modifier.ts:3255`), unless the holder has fainted, steals immediately with battle-RNG picks (§8). This happens before the queued heals resolve.

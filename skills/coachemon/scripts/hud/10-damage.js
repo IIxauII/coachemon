@@ -327,7 +327,7 @@ const opponentsOf = (env, p) => {
 };
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
 // In the game's own phase order (game-code.md §21).
-const endOfTurnSteps =(env, p, { tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
+const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
   const steps = [];
   if (hp <= 0) return steps;
   const max = p.getMaxHp();
@@ -735,9 +735,9 @@ export const approxOutcome = (env, atk, def, pm) => withDmg(fromApprox(env, atk,
 export const approxOutcomes = (env, atk, def) => plainUsable(atk).map(pm => approxOutcome(env, atk, def, pm)).filter(Boolean);
 
 
-// The median use to a KO: what the panel calls "2 hits".
+// The likely KO turn: what the panel calls "2 hits".
 export const koTurn = by => { const k = by.findIndex(x => x >= 0.5); return k < 0 ? 9 : k + 1; };
-// The expected use, 9 at most.
+// The expected KO turn, which scoring compares.
 export const koTurns = by => Math.min(9, 1 + by.slice(0, 8).reduce((t, x) => t + (1 - x), 0));
 
 // All hits of the likeliest hit count at max roll, before any boss-bar clamp.
