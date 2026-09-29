@@ -32,7 +32,7 @@ export function fine(L: Scene, modes: PageModes): string {
     // SUMMARY's move-list row: without it a row press reads as unmoved (#32).
     h && typeof h.moveCursor === "number" ? h.moveCursor : "",
     messageText,
-    // Level-up stats: presses show totals, then close, under an unchanged message (#55, game-code.md §25).
+    // Level-up stats: presses show totals, then close, under an unchanged message (#55, game-code.md §26).
     __try(() => mh.levelUpStatsContainer.visible ? (mh.levelUpStatsIncrContent.visible ? "incr" : "total") : "") ?? "",
     ui.overlayActive === true ? 1 : 0, h && h.active === true ? 1 : 0,
     awaiting(h) ? 1 : 0, typing(h) || typing(mh) ? 1 : 0,

@@ -54,7 +54,7 @@ export type ActingCall = {
   /** `settled: false`: the call returned `timed_out`. */
   after: Sample;
   choice: Choice;
-  /** CANCEL is ACTION under a tutorial (game-code.md §25), so a choice made under one is not a decision. */
+  /** CANCEL is ACTION under a tutorial (game-code.md §26), so a choice made under one is not a decision. */
   tutorialActive: boolean;
 };
 

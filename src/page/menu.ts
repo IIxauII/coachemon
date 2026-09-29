@@ -19,7 +19,7 @@ export type MenuResult =
       options: MenuOption[];
       cursor: number | string | null;
       text: string | null;
-      /** A handler's own message takes ACTION and CANCEL only (#44, game-code.md §25). */
+      /** A handler's own message takes ACTION and CANCEL only (#44, game-code.md §26). */
       messagePending: boolean;
       extra: Record<string, unknown>;
       disc: Discriminators;
@@ -133,7 +133,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.family = "party";
       out.extra.optionsScroll = h.optionsScroll === true;
       if (h.awaitingActionInput === true && h.onActionInput != null) {
-        // The handler's own message takes ACTION and CANCEL only; its text is on `h.message` (#44, game-code.md §25).
+        // The handler's own message takes ACTION and CANCEL only; its text is on `h.message` (#44, game-code.md §26).
         out.options = [];
         out.text = __try(() => __txt(h.message));
         out.messagePending = true;
