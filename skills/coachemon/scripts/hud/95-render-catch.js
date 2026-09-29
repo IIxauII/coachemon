@@ -1,22 +1,11 @@
-// Catch section of the battle panel (wild battles). Loads after 90-render: only call it from a draw, never at load
-// time. Takes the `catchAdvice` view, or a battle model carrying it as `catch`.
-// Skips aren't drawn: no line means nothing worth a ball. One line per target —
-// `★ catch: [ball] Great 78% — new species, covers Ground weakness` — then the odds of every ball we hold and the reasons.
 import { catchTargets } from "./45-catch.js";
 import { dim, h, ICON, img, ink, line, mon } from "./90-render.js";
 
 export const drawCatch = m => {
   const c = m?.targets ? m : m?.catch;
   if (!c?.targets?.length) return [];
-  // The verdict is the mark alone now: a catch is the pick, a maybe is the close call (#349), and how good the
-  // throw is was the one thing the ink beside them was saying twice. Catching is a decision the player is making
-  // right now, so every row here is **ours** — the ink the group's own frame wears.
   const VERDICT = { catch: "★", maybe: "≈" };
-  // A reason is *why* to catch, not how good the catch is, so the three kinds are **words** in the row and the
-  // gutter stays neutral. One ink across the three, because they differ in kind and the law's question is
-  // direction: three inks for three kinds is the spend the law took away.
   const REASON_KIND = { account: "account", team: "team", escape: "escape" };
-  // Ball sprites live in the `items` atlas (may not be loaded yet); the name is always spelled out: "Great", "Ultra".
   const ball = x => [img("items", x.key, x.ball, ICON.mark, null),
     h("span", { marginRight: "3px" }, x.ball.replace(/ Ball$/, ""))];
   const pct = p => `${Math.round(p * 100)}%`;
