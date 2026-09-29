@@ -29,8 +29,8 @@ const rewardRules = (s, wave) => {
 const DOUBLE_HORIZON = 10;
 const DOUBLE_ABILITIES = ["Illuminate", "Arena Trap", "No Guard", "Commander"];
 const GRUNT_DOUBLE = 1 / 3;
-// The expected share of double battles over the next `n` waves (game-code.md §16), a grunt wave counted at its
-// unseeded 1/3 (§12).
+// The expected share of double battles over the next `n` waves (game-code.md §16): a fixed battle at its config's
+// `double`, a grunt wave at its unseeded 1/3 (§12).
 export const doubleOdds = (s, from, n = DOUBLE_HORIZON) => {
   const gm = s?.gameMode;
   const lures = (s?.modifiers ?? []).filter(m => m?.constructor?.name === "DoubleBattleChanceBoosterModifier")
@@ -113,8 +113,8 @@ const eternatusCard = (s, model, party) => {
   return { foe: foe && { name: foe.name, level: foe.level, types: foe.types, segments: foe.segments, moves: foe.moves }, facts };
 };
 
-// Memoised: the schedule walks thirty waves through `isFixedBattle`, which builds a config and runs the challenge
-// hooks each time (game-code.md §12).
+// Memoised: the schedule calls `isFixedBattle` for every wave it walks, and each call builds a config and runs the
+// challenge hooks (game-code.md §12).
 export const aheadModel = run => {
   const s = run.scene;
   const wave = run.facts.wave;
@@ -155,7 +155,7 @@ const build = (run, wave) => {
   };
 };
 
-// The next big fight's foes, which a learned move is judged against (#122, game-code.md §16).
+// The next big fight's foes, which a learned move is judged against (#122).
 export const learnRoster = model => {
   if (model?.unavailable) return { unavailable: model.unavailable };
   const next = model?.next;

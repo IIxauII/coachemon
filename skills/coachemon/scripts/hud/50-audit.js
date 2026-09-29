@@ -141,7 +141,7 @@ const onStat = (p, mv) => {
 const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[mv.type], foe, mv) >= 2 && onStat(p, mv))
   .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
 
-// Gale Wings alone makes an attack faster (game-code.md §17).
+// Gale Wings only: Triage's draining attacks move first too and aren't counted (game-code.md §17).
 const PRIORITY_ABILITIES = new Set(["Gale Wings"]);
 const speedCheck = (party, foes, wave) => {
   const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD - 1] ?? 0) > (a?.stats?.[Stat.SPD - 1] ?? -1) ? f : a), null);

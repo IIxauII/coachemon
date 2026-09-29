@@ -14,7 +14,7 @@ const weakest = (...cs) => RANK[Math.max(...cs.filter(Boolean).map(c => RANK.ind
 const NEEDED = ["executeWithSeedOffset", "isWaveMysteryEncounter", "generateNewBattleTrainer", "checkIsDouble",
   "getEncounterBossSegments", "addEnemyPokemon", "getMysteryEncounter"];
 // The scene's wrapper first: the arena's method called with the scene's arguments is a different draw
-// (game-code.md §11).
+// (game-code.md §11). Checked by feature rather than listed in `NEEDED`, which would drop the arena fallback.
 const wildSpecies = (s, w, level, party) => (typeof s.randomSpecies === "function"
   ? s.randomSpecies(w, level, true)
   : s.arena.randomSpecies(w, level, 0, partyLuck(party, s, gameEvents())));
@@ -36,8 +36,8 @@ const quiet = fn => {
   console.log = console.warn = console.info = () => {};
   try { return fn(); } finally { Object.assign(console, { log, warn, info }); }
 };
-// `genPartyMember` reads the wave, the levels and the party so far off `currentBattle`, and the `EnemyPokemon`
-// constructor the wave and the party's length (game-code.md §11).
+// The replay's calls read the battle off `currentBattle` (game-code.md §11). `fn` must be synchronous: the live
+// battle is back the moment it returns.
 const withBattle = (s, battle, fn) => {
   const live = s.currentBattle;
   s.currentBattle = battle;
@@ -56,7 +56,6 @@ const foeData = (p, moves) => {
     ability: tryDo(() => p.getAbility()?.name),
     passive: p.hasPassive?.() ? tryDo(() => p.getPassiveAbility()?.name) : null,
     hp: tryDo(() => p.getMaxHp()),
-    // Atk, Def, SpA, SpD, Spe: no HP.
     stats: tryDo(() => [Stat.ATK, Stat.DEF, Stat.SPATK, Stat.SPDEF, Stat.SPD].map(i => p.getStat(i))),
     segments: p.bossSegments ?? 0,
     shiny: !!p.shiny,
@@ -126,6 +125,8 @@ const replay = (s, w, playerParty) => {
             p = trainer.genPartyMember(e);
           } else {
             let species = wildSpecies(s, w, level, playerParty);
+            // The Golden Bug Net's draw (game-code.md §11): its roll only names a note, but skipping it desyncs the
+            // stream.
             if (hasBugNet(s) && !gm.isBoss(w) && s.arena?.biomeId !== BiomeId.END && rnd(10) === 0) {
               notes.push("Golden Bug Net can swap this spawn");
             }
