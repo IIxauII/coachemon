@@ -1,9 +1,5 @@
-// Rewards-screen card model.
-// Rewards screen (UiMode 6). Needs come from the party; items are judged by their game class and fields
-// (restorePoints / restorePercent, moveId, pokeballType), by who in the party the game itself would let use them
-// (PokemonModifierType.selectFilter: null = usable — TM compatibility, evolution/form-change items, held-item stack
-// limits), and only then by rarity tier. Held items, mints, EXP items, candy, vitamins and evolution items are judged
-// on the member they'd go to by 51-items.js; nothing here depends on remembering what an item does.
+// The rewards card's model: what to take, what to buy, and whether to reroll. A reward is judged by who the game's own
+// select filter lets use it, then by its tier; 51-items.js judges the ones that go to one member (game-code.md §15).
 import { TIER_NAMES, TYPES, iconOf } from "./01-core.js";
 import { waveKind } from "./03-calendar.js";
 import { learnAdvice, learnMoveById } from "./40-learn.js";
@@ -19,16 +15,13 @@ const isAllPp = t => isA(t, "PokemonAllMovePpRestoreModifierType");
 const healOn = (t, p) => Math.max(t.restorePoints ?? 0, Math.floor((t.restorePercent ?? 0) * p.getMaxHp() / 100));
 const pct = p => Math.round(p.hp / p.getMaxHp() * 100);
 
-// Who in the party can use a reward, by the game's own select filter (null = usable). null when it can't be told
-// (no filter, or the filter throws): callers treat that as unknown, not as "nobody".
+// null when the filter can't tell (there is none, or it throws): unknown, not nobody.
 const shopUsers = (t, party) => {
   if (typeof t.selectFilter !== "function") return null;
   try { return party.filter(p => t.selectFilter(p) == null); } catch { return null; }
 };
-// Who can learn a TM: the game's select filter (TmModifierType's is `isTmCompatible(moveId, true)` — species and
-// fusion TM lists, minus moves already known); without one, the same check called directly. Members who already know
-// the move are dropped either way. null when it can't be told.
 const knowsMove = (p, id) => (p.moveset ?? []).some(m => m?.moveId === id);
+// The TM's select filter, else the `isTmCompatible` it wraps (game-code.md §16). null when neither can tell.
 const tmLearners = (t, party) => {
   let users = shopUsers(t, party);
   if (!users && party.length && party.every(p => typeof p.isTmCompatible === "function")) {
@@ -36,25 +29,8 @@ const tmLearners = (t, party) => {
   }
   return users && users.filter(p => !knowsMove(p, t.moveId));
 };
-// Who could get the move from the move relearner instead of this TM — and never for free, because the relearner is
-// gated entirely behind the Memory Mushroom (`RememberMoveModifierType`), a reward slot of its own. Asked of the
-// same list 50-audit's relearn finding reads, `getLearnableLevelMoves()`, one move at a time.
-//
-// The TM pool is the mirror of that list: `TmModifierTypeGenerator` draws per member from
-// `getCompatibleTms(true, true, true)`, which drops the moves the member knows, the ones its own level-up list holds
-// *at or below its current level*, and the TMs it has already used — and those are the sources the relearn list is
-// fed from. So a member the TM could not have been drawn for is one of these, and **none of the three is a move it
-// still picks up by playing on**:
-//   - `excludeLevelUp` asks `getLevelMoves(undefined, true, false, true)`, and `filterAndSortLevelMoves` opens with
-//     `!(level > pokemon.level)` — a move the member has yet to reach is never dropped, so this only ever removes
-//     moves at a level already behind it, which level-up never offers again;
-//   - a level-0 move among them is an evolution move of the species it *already is* — the pool reads the current
-//     form's list, so an evolution still ahead was never in it — and `EvolutionPhase.postEvolve` grants those from
-//     the **evolved** form's list as it evolves, so the member was either offered it back then or never at all;
-//   - `excludeUsedTMs` reads `usedTMs`, appended when a TM is taught and never removed, so it outlives the move
-//     being overwritten.
-// Hence a cheaper *route*, not a reason to skip the TM: they stay in the scoring as ordinary payers, and the card
-// names the route wherever it isn't already telling the player to skip the reward.
+// Who a Memory Mushroom could teach the move instead: a second route, never a reason to skip the TM, since the
+// relearner is reachable only through the Mushroom, a reward slot of its own (game-code.md §16).
 const tmRelearners = (t, users) => users.filter(p => {
   if (typeof p.getLearnableLevelMoves !== "function") return false;
   try {
@@ -62,20 +38,13 @@ const tmRelearners = (t, users) => users.filter(p => {
     return Array.isArray(ids) && ids.some(x => (Array.isArray(x) ? x[1] : x) === t.moveId);
   } catch { return false; }
 });
-// A fainted member can still be taught a TM: the party screen's TM mode offers TEACH whoever the cursor is on, and
-// the TM pool itself is drawn from the whole party. Only the Hardcore challenge takes it away: a fainted member there
-// goes through `PartyUiHandler.updateOptionsHardcore`, whose switch has no TM case at all, so it is offered nothing
-// but Cancel and the scroll options — not even the Release its other modes push.
-// The test is `GameMode.hasChallenge`'s own (`src/game-mode.ts:98-100`): a challenge counts when its value is
-// anything but 0, not when it is positive.
+// Only Hardcore keeps a fainted member from being taught a TM, and a challenge is on at any value but 0, not only a
+// positive one (game-code.md §16).
 const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.HARDCORE && c.value !== 0);
 
-// TM advice: the learn decision (learnAdvice, the learn card's own) for every member who can learn the move, and the
-// best recipient. `take` true with the member gaining the most effective power (or, for a setup move, the member it
-// suits), false when nobody gains (`closest` is the nearest miss), null when nobody's card can score it.
-// Status moves are scored on the same scale as attacks now (#70), so most of them land in the first branch — the
-// `setup` field rides along on the recipient either way, because "setup TM for Comfey (+1 SpA/SpD)" says more than
-// "over Tackle".
+// `take`: true with the best recipient; false when nobody gains (`closest` is the nearest miss); null when a member's
+// learn card can't score the move, which leaves the call to the player — `best` is that member, or null for a status
+// move no member's card can score.
 // @only tests: tmAdvice
 export const tmAdvice = (mv, users, ctx) => {
   const all = users.map(p => ({ p, a: learnAdvice(p, mv, ctx) }));
@@ -86,7 +55,6 @@ export const tmAdvice = (mv, users, ctx) => {
   const setup = all.filter(x => x.a.setup).sort((a, b) => b.a.setup.value - a.a.setup.value)[0];
   if (setup?.a.setup.fits) return { take: true, best: { ...recipient(setup), gain: setup.a.setup.value } };
   if (mv.category === MoveCategory.STATUS && all.every(x => x.a.learn === null)) return { take: null, best: null };
-  // Nobody's card could score it: which slot to drop is the user's call.
   const open = all.find(x => x.a.learn === null);
   if (open) return { take: null, best: recipient(open) };
   const closest = all.filter(x => x.a.learn === false).sort((a, b) => b.a.gain - a.a.gain)[0];
@@ -97,25 +65,17 @@ const shopTier = t => {
   if (t.tier != null) return t.tier;
   try { return t.getOrInferTier?.() ?? null; } catch { return null; }
 };
-// Forms that need the key item: mega forms for the Mega Bracelet, gigantamax for the Dynamax Band.
 const hasFormKey = (p, re) => [p.species, p.fusionSpecies].some(sp => (sp?.forms ?? []).some(f => re.test(f?.formKey ?? "")));
 
-// `run` is the run read: the look-ahead, the audit and the reroll preview are all read through it.
 export const rewardsModel = (run, h) => {
   const s = run.scene;
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
-  // The reward before a big fight is the last chance to patch the team up. What counts as one is the run calendar's
-  // answer for the next wave — the fixed battles and the gym waves as well as every tenth wave, and its own game-less
-  // fallback when the live build hides the game mode. `gauntlet` is the Elite Four case: more than one big fight
-  // before the next full heal, so the whole party has to last, not just the lead.
   const wave = s.currentBattle?.waveIndex ?? 0;
   const ahead = aheadModel(run);
   const bossNext = waveKind(s, wave + 1) != null;
   const gauntlet = (ahead?.fightsBeforeHeal ?? 0) >= 2;
   const hurtBelow = gauntlet ? 90 : bossNext ? 80 : 60;
-  // Low PP: a damaging move nearly out (≤ a quarter of its PP and ≤ 5 left). Unused status moves and a few PP spent
-  // don't count — the game's own Ether weight asks for over half used and ≤ 5 left.
   const lowOn = m => {
     try { if (m.getMove?.()?.category === MoveCategory.STATUS) return false; } catch {}
     const max = m.getMovePp(), left = max - m.ppUsed;
@@ -128,10 +88,9 @@ export const rewardsModel = (run, h) => {
     lowPp: party.filter(p => p.hp > 0).map(p => ({ p, moves: p.moveset.filter(Boolean).filter(lowOn) })).filter(x => x.moves.length),
   };
 
-  // Shop: buy for the worst needs first while money lasts, skipping the need the free reward covers ([kind, pokémon]).
-  // Buying must happen before taking the free reward.
   const shop = (h.shopOptionsRows || []).flat().map(o => ({ t: o.modifierTypeOption.type, cost: o.modifierTypeOption.cost }));
   const byCost = pred => shop.filter(i => pred(i.t)).sort((a, b) => a.cost - b.cost);
+  // `covered`: the `[kind, member]` need the free reward takes care of, which is then not bought for.
   const planBuys = covered => {
     let money = s.money;
     const buys = [];
@@ -148,7 +107,6 @@ export const rewardsModel = (run, h) => {
       if (skip("hurt", p)) continue;
       const missing = p.getMaxHp() - p.hp;
       const heals = byCost(isHeal);
-      // Cheapest that tops it up; failing that, the biggest heal affordable.
       const enough = heals.filter(i => healOn(i.t, p) >= missing * 0.8);
       buy(enough.length ? enough : heals.sort((a, b) => healOn(b.t, p) - healOn(a.t, p)), p, "hurt", `${pct(p)}% HP`);
     }
@@ -156,7 +114,6 @@ export const rewardsModel = (run, h) => {
       if (skip("lowPp", p)) continue;
       const m = moves[0];
       const missing = m.ppUsed;
-      // Cheapest that restores it all; failing that, any single-move restore we can afford.
       const single = byCost(isPp);
       const list = moves.length >= 2 ? byCost(isAllPp)
         : [...single.filter(i => i.t.restorePoints === -1 || i.t.restorePoints >= missing), ...single];
@@ -167,10 +124,8 @@ export const rewardsModel = (run, h) => {
   const baseline = planBuys(null);
   const owned = name => (s.modifiers ?? []).some(m => m?.constructor?.name === name);
 
-  // Free rewards: what the item does for this party now, then rarity tier as a tiebreak for everything else.
   const balls = s.pokeballCounts ?? {};
   const rctx = rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1) });
-  // One reward judged for this party: the options on screen, and the ones a reroll would bring.
   const judge = t => {
     const tier = shopTier(t);
     let v = (tier ?? 0) * 10;
@@ -178,14 +133,8 @@ export const rewardsModel = (run, h) => {
     let covers = null;
     const extra = {};
     const users = shopUsers(t, alive);
-    // A reward that covers a need: if we'd buy for that need anyway, it's worth the money it saves (take it free, buy
-    // one fewer); if we couldn't buy for it, it's worth the need itself. A heal only stands in for a purchase that
-    // heals no more than it does, and a heal far short of the damage is worth little.
     const need = (list, kind, bonus, text, none) => {
       if (!list.length) {
-        // Nobody needs it now — but a spare is worth holding when a big fight is next. Through a gauntlet it is
-        // worth what it is: a Max Revive carried into the Elite Four beats a thirty-fifth Great Ball, a Potion
-        // doesn't, so the tier carries the weight rather than a flat number.
         if (gauntlet) { v = 4 + (tier ?? 0) * 4; why = `${none} · spare for the gauntlet`; }
         else if (bossNext) { v = 2; why = `${none} · spare for the boss`; }
         else { v = -5; why = none; }
@@ -216,7 +165,6 @@ export const rewardsModel = (run, h) => {
     else if (isA(t, "PokemonStatusHealModifierType")) need(needs.status, "status", 8, p => `cures ${p.name}`, "no status");
     else if (isPp(t) || isAllPp(t)) need(needs.lowPp, "lowPp", 6, x => `PP for ${x.p.name}`, "PP fine");
     else if (isA(t, "PokemonPpUpModifierType")) {
-      // Permanent extra PP on one move.
       if (users && !users.length) { v = -3; why = "every move's PP is maxed"; }
       else { v = (t.upPoints ?? 1) >= 3 ? 10 : 8; why = "more PP on a move (permanent)"; }
     } else if (isA(t, "AddVoucherModifierType")) {
@@ -226,7 +174,6 @@ export const rewardsModel = (run, h) => {
       if (t.pokeballType === PokeballType.MASTER_BALL) { v = Math.max(v, 20); why = `Master Ball — catches anything · you have ${n}`; }
       else { v += n >= 10 ? -4 : n >= 5 ? 1 : 4; why = `you have ${n}`; }
     } else if (isA(t, "TempStatStageBoosterModifierType") || /LURE/.test(t.id ?? "")) {
-      // Tier says nothing here: a few battles of a stat stage or more doubles never beats covering a real need.
       v = Math.min(v, 6) - 3; why = /LURE/.test(t.id ?? "") ? "more double battles for a while" : "only lasts a few battles";
     } else if (isA(t, "TmModifierType")) {
       const mv = learnMoveById(party, t.moveId);
@@ -236,27 +183,21 @@ export const rewardsModel = (run, h) => {
       if (!users || !mv) { v = 5; why = "TM — can't check who learns it"; extra.tm = null; }
       else if (!users.length) { v = -6; why = "skip · nobody can learn it"; extra.users = []; extra.tm = "skip"; }
       else {
-        // A Memory Mushroom would teach the same move to these members: a second route to it, never a reason to skip
-        // the TM, since the Mushroom is a reward slot of its own. Named where the card is recommending the reward —
-        // the recipient's own row (96-render-rewards.js) when there is a best, and here when there isn't; the two
-        // `skip` branches below leave it out, because a move nobody gains from is not one to spend a Mushroom on.
+        // Only the no-recipient `maybe` names this in `why`: 96-render-rewards.js names it on a recipient's row, and a
+        // skipped TM is no move to spend a Mushroom on.
         const relearn = tmRelearners(t, users);
         const relearnNote = relearn.length === users.length
           ? ` · ${relearn.length > 1 ? "all" : relearn[0].name} can relearn it (Memory Mushroom)` : "";
-        // The learn card's own decision on every member that can learn it: best recipient wins. A TM is kept for the
-        // run, so a spread or ally move is judged by the share of double battles ahead, not by the wave just won.
-        // Disruption and inflicted status are weighed against the next big fight's roster, as on the learn card.
+        // Kept for the run, so judged against the doubles and the roster ahead (#122), not this wave.
         const advice = tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party, roster: learnRoster(ahead) });
         const b = advice.best;
         extra.users = users.map(p => p.name);
-        // Carried whatever the verdict, like `users` beside it: the model is read by the watcher and the journal as
-        // well as by the card, and "who could relearn this" is true of the offer, not of the advice given on it.
+        // Whatever the verdict: the watcher and the journal read the offer, not only the advice on it.
         if (relearn.length) extra.relearn = relearn.map(p => p.name);
         extra.tm = advice.take ? "take" : advice.take === false ? "skip" : "maybe";
         if (b) extra.best = { icon: b.icon, name: b.name, forget: b.forget, gain: b.gain, ...(b.setup ? { setup: b.setup } : {}), ...(b.fainted ? { fainted: true } : {}) };
         const to = b && `${b.name}${b.fainted ? " (fainted)" : ""}`;
         if (advice.take && b.setup) {
-          // Setup moves: the member it suits best (boosts the stat it attacks with, no setup move yet).
           v = 10 + Math.min(10, Math.round(b.gain / 10));
           why = `setup TM for ${to} (${b.setup})${b.forget ? ` over ${b.forget}` : ""}`;
         } else if (advice.take) {
@@ -272,7 +213,7 @@ export const rewardsModel = (run, h) => {
         }
       }
     } else if (isA(t, "EvolutionItemModifierType") || isA(t, "FormChangeItemModifierType")) {
-      // 51-items.js takes evolution items whose users can be told; what's left is unknown, or a form change.
+      // An evolution item gets here only when the filter can't tell who: 51-items.js judges the rest.
       const evo = isA(t, "EvolutionItemModifierType");
       if (users) extra.users = users.map(p => p.name);
       if (users?.length) { v = evo ? 25 : 15; why = `${evo ? "evolves" : "changes form of"} ${users[0].name}`; }
@@ -288,7 +229,7 @@ export const rewardsModel = (run, h) => {
     } else if (isA(t, "PokemonHeldItemModifierType")) {
       if (users) extra.users = users.map(p => p.name);
       if (users && !users.length) { v -= 8; why = "everyone's at max stack"; }
-      else { v += 3; why = "held item"; } // one 51-items.js has no rule for
+      else { v += 3; why = "held item"; }
     }
     return {
       name: t.name, icon: t.iconImage, v, why, covers,
@@ -302,10 +243,7 @@ export const rewardsModel = (run, h) => {
   for (const f of free) delete f.covers; // holds pokémon objects; the model must stay JSON-safe for the signature
   for (const b of buys) { delete b.pokemon; delete b.kind; delete b.t; }
 
-  // Rerolling. With the reroll preview (50-reroll.js) the card knows what the next reroll brings, so the advice is a
-  // comparison: the best offer after it against the best offer now, on the same scale. Without it, the old hint: the
-  // cost doubles every time (`2 ** rerollCount`), so a weak screen is worth one look, not a habit. A reroll is an
-  // ordinary roll even after a fixed battle pinned this screen's tiers — the reroll drops the wave's reward settings.
+  // `pinned` is this screen's alone: a reroll drops the wave's reward settings (game-code.md §19).
   const pinned = ahead?.thisWave ?? null;
   const preview = rerollPreview(run);
   const rerollAhead = preview?.rolls?.length ? rerollAdvice(preview, judge, pick >= 0 ? free[pick] : null, s.money, money) : null;
@@ -314,18 +252,12 @@ export const rewardsModel = (run, h) => {
   const luck = ahead?.luck
     ? { ...ahead.luck, upgrades: !pinned || pinned.luckUpgrades }
     : null;
-  // How many shop items the money covers at all: often none early on, when the shop is irrelevant.
   const affordable = shop.filter(i => i.cost <= s.money).length;
   return { kind: "rewards", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
     affordable, ahead, audit: teamAudit(run, ahead) };
 };
 
-// How much better the best offer after a reroll has to be than the best offer now, on the card's scale (about 10 a
-// rarity tier), before the reroll is worth its money. A first cut.
 const REROLL_GAIN = 5;
-// The reroll preview judged: per roll (the lock as it stands, then toggled), its offers, its best, and a verdict —
-// `reroll` when it beats the screen by REROLL_GAIN and the money is there after the planned buys, `instead of buys`
-// when it only fits by skipping them, `keep` when it doesn't beat the screen, `short` when it can't be paid for.
 const rerollAdvice = (preview, judge, now, money, afterBuys) => {
   const rolls = preview.rolls.map(r => {
     const offers = r.types.map((t, i) => {
@@ -341,7 +273,6 @@ const rerollAdvice = (preview, judge, now, money, afterBuys) => {
   return { n: preview.n, canLock: preview.canLock, locked: preview.locked, missed: preview.missed, rolls, byLock: preview.byLock };
 };
 
-// `take Leftovers → Garchomp · buy Super Potion · reroll $500 → …`, for the watcher and the battle read.
 export const rewardsSummary = m => {
   const p = m.pick >= 0 ? m.free[m.pick] : null;
   const take = p ? `take ${p.name}${p.best ? ` → ${p.best.name}${p.best.forget ? ` (forget ${p.best.forget})` : ""}` : p.holder ? ` → ${p.holder.name}` : ""}` : null;

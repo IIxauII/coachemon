@@ -1,13 +1,5 @@
-// Which card the panel is showing, and what that card says in plain text. One module decides: it detects the screen,
-// builds that card's model, hangs the wave, the next-wave preview and the look-ahead on it, and sets the battle
-// verdict. 90-render and the renderers above it draw what they are handed and decide nothing.
-//
-// A **Card** is the model its builder returns plus `kind`, `wave`, and — on a battle card — `verdict`
-// (easy / trainer / danger / catch / fight, most specific first: what the watcher and Claude's brief key off).
-//
-// `cardSummary` is the plain-text read of a card (`window.__coachHud.summary()`, which probe.js passes through whole
-// to the watcher and to Claude's battle read). Pure and lazy: a draw never calls it. Each card's own wording lives
-// beside its model builder, so a summary change lands in the file that owns the model it reads.
+// Which card the panel shows, and what it says in plain text: this module detects the screen, builds the card and sets
+// the battle verdict, and the renderers decide nothing. Each card's own wording lives beside its model builder.
 import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-screens.js";
 import { partyProfile } from "./08-party.js";
 import { readTurn } from "./25-turn.js";
@@ -28,36 +20,20 @@ import { starterScreen, starterModel, startersSummary } from "./51-starters.js";
 export const hitsText = n => `${n} hit${n === 1 ? "" : "s"}`;
 // A spread move KOing the two foes on different turns carries `koEach` instead of one `ko`: the slower one counts.
 export const slowestKo = sl => (sl.koEach?.length ? Math.max(...sl.koEach) : sl.ko);
-// A slot with no move to recommend. By here the search has looked for a status play and a switch and found neither,
-// so what is lost is the turn, not the member — and where a restriction took its moves away, that is the news. One
-// sentence for both surfaces that say it: the panel's ⚔ line and the card the coach reads.
 export const deadEndText = sl => (sl.stopped?.length ? `nothing it can use — ${sl.stopped.join(" · ")}` : "nothing it can do");
 
-// What the living party can hit with and what hits it, off one profile (`08-party.js`), so the rows and the cards
-// that score matchups read one moveset the same way. `moveTypes`: damaging move types, which is what keeps the foe
-// rows from listing a weakness nobody can hit. `weak`: the attacking types two or more of us are weak to, with how
-// many of us each one hits — the foes line falls back to it when nothing threatens a KO (#349).
+// `weak`: `[type, how many of us it hits]`, for each attacking type two or more of us are weak to.
 const partyTypes = party => {
   const profile = partyProfile(party);
   return { moveTypes: profile.ourTypes, weak: profile.weakTypes.map(t => [t, profile.weakTo(t).length]) };
 };
 
-// The battle card: the planner's field model, the whole-fight plan (trainer battles) and the catch advice (wild), put
-// together here rather than inside the planner. All three read one **turn** (`25-turn.js`), which is the refresh's
-// single sandbox and its single set of answers — every damage number post-Tera, every AI number pre-Tera (game-code.md §7).
-//
-// The order is the authority decided in #113: the fight plan's tables and searches are built first, the ⚔ line reads
-// them to price what a turn costs the rest of the fight, and the plan is then rendered **pinned to the turn the ⚔
-// line chose** — so its step 1 is that action by construction and the panel never shows two answers to one turn.
-//
-// One turn in, one card out: everything the battle card says about this moment. Exported so a scenario can hand it a
-// turn built from tables (`test/fake-turn.mjs`) and get the card the panel would draw, with no scene in sight.
+// The fight plan is built first, the ⚔ line reads it, and the plan is then pinned to the turn the ⚔ line chose: its
+// step 1 is that action by construction, and the panel never shows two answers to one turn (#113).
 // @only tests: composeBattleCard
 export const composeBattleCard = (turn, account) => {
   const { trainer, double, party } = turn.facts;
-  // The exact enemy move is load-bearing (#183): where the game's own call can't be made, the battle card, the fight
-  // plan and the catch advice stop **together** and print the reason, rather than one of them quietly falling back
-  // to an estimate. The planner owns the gate; this is only the order — the plan isn't built to be thrown away.
+  // Without the enemy's exact move, the card, the fight plan and the catch advice all stop together and say why (#183).
   const gate = turn.exact?.() ?? { ok: true };
   if (!gate.ok) {
     const { pin: _pin, ...shell } = battleModel(turn);
@@ -80,12 +56,8 @@ export const composeBattleCard = (turn, account) => {
   return card;
 };
 
-// ---- The hold
-// The panel refreshes every second and a turn's answers cost real work, so a card built from a live turn is kept
-// until the turn itself moves on: a new wave, a new turn, or an enemy switch. **Not HP** — HP runs down through the
-// turn's animations, and a hold keyed on it would collapse on the first hit and rebuild the card from a scene that
-// is halfway through resolving. An approximate card is never kept, and never replaces a live one. This is the one
-// hold in the engine: 30-planner, 35-team-plan and 45-catch each used to keep their own, on keys that disagreed.
+// Kept until the turn moves on, and never keyed on HP: HP runs down through the turn's animations, so an HP key would
+// rebuild the card from a scene halfway through resolving. Only a live turn's card is kept.
 let held = { key: null, card: null };
 const battleCard = (s, account) => readTurn(s, turn => {
   const { wave, turn: t, enemySwitchCounter, party, foes } = turn.facts;
@@ -98,18 +70,12 @@ const battleCard = (s, account) => readTurn(s, turn => {
   return card;
 });
 
-// ---- The battle verdict
-// Danger the panel flags on our side: the 💀 / ⚠ tags on field slots and on mons a switch takes out. `after`: a ⚠ that
-// is a likely KO once the mon has acted.
+// Our side's 💀 / ⚠ tags. `after`: a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
   .filter(([name, t]) => name && t).map(([name, t]) => ({ mon: name, level: t.level, from: t.from, move: t.move, after: !!t.after }));
-// The ones worth saying out loud: a likely KO this turn, or one that lands once the mon has acted. One predicate, so
-// the foes line and the structured read can never disagree about what counts as danger.
 const dangerList = m => dangerTags(m).filter(d => d.level === "ko" || d.after);
 const catchWorthIt = m => !!m.catch?.targets?.some(t => t.verdict !== "skip");
 const planLost = m => !!m.teamPlan && m.teamPlan.result !== "win";
-// An easy wave: a wild fight with nothing to decide. No boss, no danger tag, no switch (nor a missing one), every
-// slot KOs in 1–2 hits, and no catch worth a ball. Anything else expands the panel on its own.
 const easyWave = m => {
   const f = m.field;
   if (m.kind !== "battle" || m.trainer || !f || f.freeSwitch || m.enemySwitches?.length || m.rows.some(r => r.boss)) return false;
@@ -120,10 +86,8 @@ const verdictOf = m => (easyWave(m) ? "easy" : m.trainer ? "trainer"
   : dangerTags(m).length || m.rows.some(r => r.boss) || m.field?.noSafeSwitch ? "danger"
   : catchWorthIt(m) ? "catch" : "fight");
 
-// ---- Reading the screen
-// The card on show, or null when there is nothing to coach (mid-reload, the title screen, a wave with no field).
-// `account`: the run's own data, read once a refresh by 98-tick (dex, starter table, party, the event's shiny
-// multiplier). The catch card and the Mystery Encounter card weigh a mon by it, and neither is turn state.
+// `account`: the run's own data, read once a refresh by 98-tick, which only the catch and Mystery Encounter cards weigh
+// a mon by.
 export const readCard = (s, account) => {
   if (!s?.ui) return null;
   const handler = s.ui.getHandler();
@@ -134,8 +98,7 @@ export const readCard = (s, account) => {
   if (starters) {
     card = starterModel(s, starters);
   } else if (learn) {
-    // The same next-big-fight roster the rewards card judges a TM against, so the two cards weigh a move alike. A
-    // look-ahead the run read couldn't build reaches the card as its reason, not as a swallowed throw.
+    // The roster the rewards card judges a TM against, so the two cards weigh a move alike.
     card = readRun(s, run => learnModel({ ...learn, roster: learnRoster(aheadModel(run)) }));
   } else if (spliceScreen(s, handler)) {
     card = fusionModel(s, handler);
@@ -158,42 +121,30 @@ export const readCard = (s, account) => {
     // After the turn read has closed: the two reads are sequential, never nested (26-run).
     readRun(s, run => {
       card.preview = previewNext(run);
-      // The rewards card builds its own (it spends against it); every other card just draws it.
+      // The rewards card has already built its own.
       card.ahead ??= aheadModel(run);
     });
   }
   return card;
 };
 
-// ---- The summary
 const slotText = sl => `${sl.name} ${sl.move ?? deadEndText(sl)}${sl.target === "both" ? " → both" : sl.target ? ` → ${sl.target.name}` : ""}${sl.then ? `, then ${sl.then}` : ""}${slowestKo(sl) > 0 && slowestKo(sl) <= 3 ? ` · ${hitsText(slowestKo(sl))}` : ""}`;
 
-// The battle's field line: what to do this turn, one clause per field slot — or, where the enemy's move couldn't be
-// made, why there is no advice at all. The act group's summary is this string **verbatim** (#349), so the strip,
-// the watch line and the structured read are one string and cannot disagree.
+// The act group's summary is this string verbatim, so the strip, the watch line and the structured read agree (#349).
 export const actSummary = card => (card.unavailable ? `no advice — ${card.unavailable}`
   : card.field ? card.field.slots.map(slotText).join(" ; ") : null);
 
-// The foes group's line (#349): what threatens a KO this turn — `💀 Charizard ← Butterfree Gust`, `⚠` once the mon
-// has acted — and, with nothing threatening one, what the party itself is weak to. Both are fields the coach has
-// already computed; this only joins them, which is what keeps it presentation.
-// A mon the turn both attacks with and switches out carries its threat on two rows, so the same entry reaches this
-// twice; a line that says one thing twice is worse than one that says it once, so identical clauses collapse.
+// A mon the turn both attacks with and switches out carries its threat on two rows, so identical clauses collapse.
 export const foesSummary = card => {
   const danger = dangerList(card).map(d => `${d.level === "ko" ? "💀" : "⚠"} ${d.mon} ← ${d.from} ${d.move}`);
   if (danger.length) return [...new Set(danger)].join(" · ");
-  // "we're weak to", not "weak to": the group is called Foes and a row below it reads `foes weak to:`, which is the
-  // other direction entirely. The one word is what keeps the two from reading as each other.
+  // "we're": a row below reads `foes weak to:`, which is the other direction entirely.
   return card.weak?.length ? `we're weak to ${card.weak.map(([t, n]) => `${t} ×${n}`).join(" · ")}` : null;
 };
 
-// The road group's line (#349): the preview string, then the look-ahead string, joined with ` · ` and skipping
-// whichever is absent. Two cards draw a road — the battle card and the rewards card — so the join lives beside the
-// other group summaries rather than once in each renderer, where the two could drift apart.
 export const roadSummary = (preview, ahead) =>
   [previewSummary(preview), aheadSummary(ahead)].filter(Boolean).join(" · ") || null;
 
-// The fight plan in one line: its verdict, the win condition, then what it warns about (a likely loss says why).
 export const planSummary = tp => {
   if (!tp) return null;
   if (tp.summary) return tp.summary;
@@ -205,8 +156,8 @@ export const planSummary = tp => {
   ].filter(Boolean).join(" · ");
 };
 
-// One declared shape: every key is present on every card, `null` when it isn't this one, and `kind` says which card
-// it is. A contract test holds each kind to exactly these keys, so probe.js can pass the whole thing through.
+// Every summary carries every key, empty where it isn't that card's: a contract test holds each kind to exactly these,
+// so probe.js can pass the whole thing through.
 const EMPTY = {
   kind: null, wave: null, verdict: null, field: null, danger: [], plan: null,
   learn: null, rewards: null, encounter: null, biome: null, fusion: null, starters: null,
@@ -214,14 +165,8 @@ const EMPTY = {
 };
 export const summaryKeys = () => Object.keys(EMPTY);
 
-// ---- The card event (extension-distribution.md §11.1)
-// What the panel pushes whenever the card it shows changes: the kind the stream uses, the key it is deduplicated on,
-// the wave and the leading call. The watcher's old per-kind keys move here, so the stream and the card agree by
-// construction. `starters` and `fusion` have no event kind of their own: they are read, never streamed.
-//
-// The call is read back out of the summary the panel already wrote (§11.1: "the leading call of the matching field of
-// cardSummary() as the HUD already writes it"), so each card's wording stays in the file that owns its model — at the
-// cost of knowing how that file joins its clauses. `SEP` is that join.
+// The card event reads its call back out of `cardSummary` (extension-distribution.md §11.1), so it has to know how
+// each card's summary joins its clauses: `SEP` is that join.
 const SEP = " · ";
 const leading = s => (typeof s === "string" && s ? s.split(SEP)[0] : null);
 // `Swamp 72 pick — …`: the option the card picked, not the first one it listed.
@@ -235,9 +180,8 @@ const encounterCall = s => {
   return head ? head.split(" — ")[0] : null;
 };
 
-// One row per card kind: the name it streams under (the panel's `rewards` goes out as `reward`), the key it is
-// deduplicated on, and where its call comes from. Every kind the panel can show has a row; a row without `event` is
-// read-only. A battle is keyed on the wave alone, because its foes drop out of the list as they faint.
+// Every kind the panel can show has a row, and one without `event` is never streamed. A battle keys on the wave alone:
+// its foes drop out of the list as they faint.
 const wave = card => `${card.wave ?? null}`;
 const KINDS = {
   battle: { event: "battle", key: wave, call: s => s.verdict },
@@ -253,13 +197,9 @@ const KINDS = {
   fusion: { event: null, key: wave, call: s => leading(s.fusion) },
 };
 
-// **The kinds that stream, derived from the table above and never spelled a second time** (extension-distribution.md §11.1): the name a kind
-// goes out under, for every kind that has one. Named for the card event rather than for the card, because it is not
-// the card kinds — `starters` and `fusion` are cards the panel draws and never streams. 99-start gates `stream()` on
-// it and the relay keeps its own copy (`extension/src/relay/channel.ts`), pinned to this one by `cardtest.mjs`: the
-// panel's `rewards` goes out as `reward`, and a one-character drift on that rename would drop every shop card off
-// the wire in silence — `stream()` would simply return. Deriving is what makes the rename safe, since the list moves
-// with it (#388).
+// Derived, never spelled a second time (extension-distribution.md §11.1). 99-start gates `stream()` on it, and the
+// relay keeps its own copy (`extension/src/relay/channel.ts`), pinned to this one by `cardtest.mjs`: a drift on the
+// `rewards` → `reward` rename would drop every shop card off the wire in silence (#388).
 export const EVENT_KINDS = Object.values(KINDS).map(k => k.event).filter(Boolean);
 
 export const cardEvent = card => {
@@ -270,8 +210,7 @@ export const cardEvent = card => {
   return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s) : null };
 };
 
-// `danger`: a likely KO of one of our mons this turn — `level` "ko" before it acts (the 💀 tags), "after" once it has
-// acted; `saveFor` names the foe the fight plan keeps that mon for. `plan`: the fight plan's line (trainer battles).
+// Pure, and never called by a draw.
 export const cardSummary = card => {
   if (!card) return null;
   const base = { ...EMPTY, kind: card.kind, wave: card.wave ?? null,
@@ -282,7 +221,6 @@ export const cardSummary = card => {
   if (card.kind === "encounter") return { ...base, encounter: encounterSummary(card) };
   if (card.kind === "learn") return { ...base, learn: learnSummary(card) };
   if (card.kind === "rewards") return { ...base, rewards: rewardsSummary(card) };
-  // Nothing the enemy model feeds is being claimed, so the read says that and why, and claims nothing else.
   if (card.unavailable) return { ...base, verdict: "unavailable", field: actSummary(card) };
   // The foe the fight plan is keeping that mon for: the win condition's answers, or the foes only it beats (#170).
   const saveFor = name => {
