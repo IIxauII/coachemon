@@ -53,7 +53,7 @@ const defenceOf = types => TYPES.reduce((t, atk) => t - Math.log2(Math.max(0.25,
 
 const attacksOf = p => (p.moveset ?? []).filter(Boolean).map(pm => tryDo(() => pm.getMove())).filter(mv => mv && mv.category !== MoveCategory.STATUS && mv.power !== 0);
 
-// `a` is the base, picked first (CONTEXT.md, `Fusion`). `ctx`: `{ party, powers, carryPower, refill, spliced, held }`.
+// `a` is the base (CONTEXT.md, `Fusion`). `ctx`: `{ party, powers, carryPower, refill, spliced, held }`.
 // `value` is the party's value after against before, in percent of the carry's power.
 export const fusionOf = (a, b, ctx) => {
   const ha = halfOf(a), hb = halfOf(b);
@@ -73,7 +73,7 @@ export const fusionOf = (a, b, ctx) => {
   }
   const ability = abilityValue(nameB) - abilityValue(nameA);
 
-  // Alive when either half is: HP becomes the halves' mean share (game-code.md §24).
+  // HP becomes the halves' mean share (game-code.md §24).
   const raw = powerOf(statsAt(fusedBase, a), nameB) * (a.hp > 0 || b.hp > 0 ? 1 : FAINTED_SHARE);
   const fused = raw * Math.max(0.2, 1 + (typing + ability) / 100);
   const pa = ctx.powers.get(a), pb = ctx.powers.get(b);

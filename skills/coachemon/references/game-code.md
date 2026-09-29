@@ -494,7 +494,7 @@ Poison type, the user's `IGNORE_ACCURACY` tag when its last Lock-On or Mind Read
 
 **Priority**: `move.getPriority(user, simulated = true)` (`move.ts:1191`) = base priority + `IncrementMovePriorityAttr` (Grassy Glide) +
 `ChangeMovePriorityAbAttr` (`ab-attrs.ts:3590`): Prankster status moves +1 (`src/data/abilities/init-abilities.ts:1082`),
-Gale Wings Flying moves at full HP +1 (`:1204`), Triage heals +3 (`:1410`). Pure. Gale Wings calls `getMoveType`, which needs the sandbox when the type can change (§4).
+Gale Wings Flying moves at full HP +1 (`:1204`), Triage +3 on `triageMove()` moves, draining attacks included (`:1410`). Pure. Gale Wings calls `getMoveType`, which needs the sandbox when the type can change (§4).
 Bracket: `move.getPriorityModifier(user, true)` (`move.ts:1199`) returns FIRST when the user has a `BYPASS_SPEED` tag.
 It returns LAST through `ChangeMovePriorityInBracketAbAttr` (`ab-attrs.ts:3614`): Stall on any move (`init-abilities.ts:720`),
 Mycelium Might on status moves (`:2097`). Otherwise NORMAL. Pure.
@@ -1855,8 +1855,7 @@ simulated: `move.priority`, then `IncrementMovePriorityAttr`, then `ChangeMovePr
 moves, Gale Wings +1 on Flying moves at full HP, Triage +3 on moves flagged `triageMove()`
 (`src/data/abilities/init-abilities.ts:1083`, `:1204`, `:1411`). That flag is on draining attacks as well as heals —
 Absorb and Mega Drain carry it (`src/data/moves/move.ts:9672`–`9677`) — so Gale Wings and Triage both make an attack
-faster. On every pop the
-move queue runs `sortInSpeedOrder` (`src/utils/speed-order.ts:21`) — groups shuffled in a fork at
+faster. On every pop the move queue runs `sortInSpeedOrder` (`src/utils/speed-order.ts:21`) — groups shuffled in a fork at
 `turn * 1000 + groups` on the wave seed (`:35`), stable-sorted by `getEffectiveStat(SPD)` descending, reversed under
 Trick Room (`:79`) — then sorts by timing modifier, `getPriority` and the in-bracket modifier (Quick Claw)
 (`src/queues/move-phase-priority-queue.ts:23`, `:73`). The audit compares raw `getStat(SPD)` on both sides — stages,

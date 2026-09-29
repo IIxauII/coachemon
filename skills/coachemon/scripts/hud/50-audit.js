@@ -1,5 +1,5 @@
-// How the party is built, judged between waves (CONTEXT.md, `Team audit`; game-code.md §17). A finding is
-// `{ kind, level, text, mon? }`: `level` "high" for what loses fights, "low" for what only costs tempo.
+// A finding (CONTEXT.md, `Team audit`; game-code.md §17) is `{ kind, level, text, mon? }`: `level` "high" for what
+// loses fights, "low" for what only costs tempo.
 import { TYPES, abilitiesOf, effectiveness, typesOf, vs } from "./01-core.js";
 import { isDamaging, isFixed, learnAdvice, learnMoveById, slotScores } from "./40-learn.js";
 import { doubleOdds } from "./49-ahead.js";
@@ -141,7 +141,7 @@ const onStat = (p, mv) => {
 const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[mv.type], foe, mv) >= 2 && onStat(p, mv))
   .map(mv => ({ name: nameOf(mv), acc: mv.accuracy > 0 ? mv.accuracy : 100 }));
 
-// Gale Wings only: Triage's draining attacks move first too and aren't counted (game-code.md §17).
+// Gale Wings only: Triage's draining attacks move first too (game-code.md §17) and aren't counted yet (#474).
 const PRIORITY_ABILITIES = new Set(["Gale Wings"]);
 const speedCheck = (party, foes, wave) => {
   const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD - 1] ?? 0) > (a?.stats?.[Stat.SPD - 1] ?? -1) ? f : a), null);
