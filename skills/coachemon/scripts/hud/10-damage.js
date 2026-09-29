@@ -205,8 +205,8 @@ const applyHit = (f, d) => {
   return { hp: Math.max(0, end.hp), ko: end.hp <= 0 };
 };
 
-// `bar` is 0 on the last bar and for a non-boss. `tok`: 1 while the enemy endure token is up this use — saving every
-// lethal hit of it, where the game's saves one (game-code.md §3) — and 2 once it is spent for the wave.
+// `bar` is 0 on the last bar and for a non-boss. `tok`: 1 while the enemy endure token is up this use, saving more
+// than the game's does (`landHit`), and 2 once it is spent for the wave.
 export const stateOf = (facts, hp = facts.hp, bar = null) => ({ hp, bar: bar ?? facts.idx, revived: false, tok: 0, facts });
 // No luck: no Focus Band, endure token or Reviver Seed. A state without `facts` has no bars.
 export const hitOn = (state, dmg) => {
@@ -237,10 +237,10 @@ const KO_USES = 9;
 const KO_LEVELS = 4;
 // `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`; `use` is `useOf`'s.
 // `scale(i, broken)`: the damage factor on use i (0-based) with `broken` bars gone; `act(i)`: the chance use i happens
-// at all. `turnEnd`: the signed HP change after each use survived, or a function of the use count. `cat`: a wild
-// boss's defence rises as its bars break. `firstKo`: this turn's exact odds for use 1, when the caller has them.
-// `start`: branches from an earlier turn, p summing to 1. `after1`: the branches standing after use 1, p summing to 1.
-// `perChunk`: the uses each bar takes before it more likely than not breaks.
+// at all. `turnEnd`: the signed HP change after each use survived, or a function of the use count. `cat` ("physical"
+// or "special"): a wild boss's defence rises as its bars break. `firstKo`: this turn's exact odds for use 1, when the
+// caller has them. `start`: branches from an earlier turn, p summing to 1. `after1`: the branches standing after use
+// 1, p summing to 1. `perChunk`: the uses each bar takes before it more likely than not breaks.
 export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null } = {}) => {
   const f = rec.facts;
   const init = stateOf(f, hp ?? f.hp, bar);
@@ -315,7 +315,6 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   return { by, after1, perChunk };
 };
 
-// Turn end in the game's own phase order, which decides survival, and what it leaves out (game-code.md §21).
 const abAttrs = (p, name) => (ability(p, name)
   ? [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null].flatMap(a => a?.getAttrs?.(name) ?? []) : []);
 const frac = (max, n) => Math.max(1, Math.floor(max / n));
@@ -327,7 +326,8 @@ const opponentsOf = (env, p) => {
   try { return (env?.field ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
 };
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
-const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
+// In the game's own phase order (game-code.md §21).
+const endOfTurnSteps =(env, p, { tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
   const steps = [];
   if (hp <= 0) return steps;
   const max = p.getMaxHp();
@@ -385,7 +385,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     else if (isA(t, "NightmareTag") || isA(t, "CursedTag")) chip(frac(max, 4));
     else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 8 : 16));
   }
-  // The seeder's payout reads the seeded mon's HP as it stands, not after its own chip this turn (game-code.md §21).
+  // The seeder's payout reads the seeded mon's HP as it stands, so a seed that this turn's chip would fell first
+  // still pays here.
   const mine = (() => { try { return p.getBattlerIndex?.(); } catch { return undefined; } })();
   if (mine != null) for (const q of opponentsOf(env, p)) {
     if (ability(q, "BlockNonDirectDamageAbAttr") || !(q.hp > 0)) continue;
@@ -402,8 +403,9 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   }
   if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) queued(frac(max, 8));
   const asleep = p.status?.effect === StatusEffect.SLEEP || (() => { try { return !!p.hasAbility?.(AbilityId.COMATOSE); } catch { return false; } })();
-  // Bad Dreams asks the sleeper's Magic Guard as well as the holder's, which only a double tells apart
-  // (game-code.md §21).
+  // Asks the sleeper's Magic Guard as well as the holder's, where the game's `apply` asks only the holder's
+  // (game-code.md §21): in a double, a Magic Guard sleeper beside one without it takes the chip in game and is
+  // spared here.
   const badDreams = q => ability(q, "PostTurnHurtIfSleepingAbAttr") && !ability(q, "BlockNonDirectDamageAbAttr");
   if (asleep && !guard && opponentsOf(env, p).some(badDreams)) chip(frac(max, 8));
   return steps;
@@ -735,7 +737,7 @@ export const approxOutcomes = (env, atk, def) => plainUsable(atk).map(pm => appr
 
 // The median use to a KO: what the panel calls "2 hits".
 export const koTurn = by => { const k = by.findIndex(x => x >= 0.5); return k < 0 ? 9 : k + 1; };
-// The expected use, 9 at most: a sure 5HKO beats one that is a coin flip on the 5th.
+// The expected use, 9 at most.
 export const koTurns = by => Math.min(9, 1 + by.slice(0, 8).reduce((t, x) => t + (1 - x), 0));
 
 // All hits of the likeliest hit count at max roll, before any boss-bar clamp.

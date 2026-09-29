@@ -311,6 +311,7 @@ export const sceneExactMoves = (env, foes, ranges = []) => {
   const calls = foes.map(e => [e, protoNextMove(e)]);
   if (calls.some(([, f]) => typeof f !== "function")) return { ok: false, reason: EXACT_PAST_PIN };
   const saved = foes.map(e => { const arr = e.summonData?.moveQueue; return [e, arr, arr ? [...arr] : null]; });
+  // `getNextMove` can clear the queue by assigning a new array (game-code.md §6), so the old array goes back too.
   const restore = () => { for (const [e, arr, items] of saved) if (arr) { arr.splice(0, arr.length, ...items); e.summonData.moveQueue = arr; } };
   const before = sandboxBreachCount();
   let rows;
@@ -357,10 +358,9 @@ export const sceneDistribution = (env, e) => keepTurnData(env.field, () => force
 export const skipsTurn = (env, e) => !!env.mysteryEncounter?.skipEnemyBattleTurns
   || !!(env.double && e.getAlly?.()?.getTag?.("COMMANDED") && [e.getAbility?.(), e.hasPassive?.() && e.getPassiveAbility?.()].some(a => a?.id === AbilityId.COMMANDER));
 
-// `EnemyCommandPhase`'s switch check (game-code.md §7). Both slots can name the same party index (#285): after a Roar
-// into a `doubleOnly` trainer's double they score one bench, and slot 1's switch then brings back the mon slot 0 just
-// withdrew. So the index is asked of the live party and the arrival read off a replay of the game's swap; `back`
-// marks such a return.
+// `EnemyCommandPhase`'s switch check (game-code.md §7). Both slots can name the same party index, and slot 1 then
+// brings back the mon slot 0 withdrew (#285): so the index is asked of the live party and the arrival read off a
+// replay of the game's swap. `back` marks such a return.
 export const sceneSwitches = (env, active) => {
   const tr = env.trainer;
   const out = new Map();

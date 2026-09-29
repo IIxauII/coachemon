@@ -603,7 +603,7 @@ Payback's power, doubled when our command is a ball (`src/data/moves/move.ts:107
 damage call.
 
 **`EnemyPokemon.getNextMove`** (`src/field/pokemon.ts:6560`). It draws battle RNG (below), writes
-`summonData.moveQueue` (splices or clears it), and logs to the console. The scoring calls it makes have their own
+`summonData.moveQueue` (splices it, or clears it by assigning a new array, `:6576`), and logs to the console. The scoring calls it makes have their own
 side effects (see the end of this section).
 1. **Move queue** (`:6563-6576`). It returns the first queued move that is virtual (`isVirtual(useMode)`) or usable
    from the moveset (`isUsable(this, isIgnorePP(useMode), true)`), dropping the entries before it. Otherwise it clears
@@ -776,10 +776,11 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
   calls `resetSummonData()` on it (`:134`, stat stages back to 0; Baton Pass restores them later, `:247-248`) and swaps
   the two party entries (`:190-191`). In a double, `Trainer.genPartyMember` tags even party indices `TRAINER` and
   odd ones `TRAINER_PARTNER` whenever `isDouble()` (`doubleOnly` single trainers included, `src/field/trainer.ts:432`),
-  and each slot scores only its own tag's bench. `ForceSwitchOutAttr` filters by that tag only for an `isPartner()`
+  and each slot scores only its own tag's bench (`src/field/trainer.ts:552-560`). `ForceSwitchOutAttr` filters by that tag only for an `isPartner()`
   trainer (`src/data/moves/move.ts:7458-7466`), so a Roar into a `doubleOnly` trainer's double can leave both slots
-  holding one tag. Both then score the same bench and break ties at the same seed offset, so they name the same
-  index, and slot 1's switch, which runs second, finds slot 0's withdrawn mon in that entry and sends it straight back.
+  holding one tag. Both then score the same bench and break ties at the same seed offset
+  (`src/field/trainer.ts:615-617`), so they name the same index, and slot 1's switch, which runs second, finds slot
+  0's withdrawn mon in that entry and sends it straight back.
 - **`skipTurn`.** It is set for a Commander Tatsugiri inside Dondozo, and for
   `mysteryEncounter.skipEnemyBattleTurns` (`src/phases/enemy-command-phase.ts:27,41-47`). The command is still
   written, and the counter still moves, but `TurnStartPhase` drops skipped commands

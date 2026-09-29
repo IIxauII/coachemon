@@ -106,7 +106,7 @@ const modeFlags = (s, live, wave) => {
     freshStart: call(() => mode.isFullFreshStartChallenge(), has(Challenges.FRESH_START, 1)),
     limitedCatch: has(Challenges.LIMITED_CATCH),
     noCriticalCatch: call(() => mode.isFreshStartChallenge(), has(Challenges.FRESH_START)),
-    // True for every challenge run, zero-valued challenges included (game-code.md §20).
+    // Zero-valued challenges count (game-code.md §20).
     anyChallenges: call(() => mode.hasAnyChallenges(), (mode.challenges ?? []).length > 0),
     finalBoss: call(() => mode.isBattleClassicFinalBoss(wave), !!mode.isClassic && lastWave()),
     endlessMinorBoss: call(() => mode.isEndlessMinorBoss(wave), !!mode.isEndless && lastWave()),
@@ -342,7 +342,7 @@ const predictedTeras = (env, turn) => {
   return turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false));
 };
 
-// `fn`'s value is returned; the turn is dead afterwards.
+// The turn is dead once `fn` returns.
 export const readTurn = (s, fn) => {
   openRead("turn"); // refuses while a turn or a run read is open: sequential, never nested
   try {
