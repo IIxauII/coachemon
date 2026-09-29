@@ -1,22 +1,3 @@
-// Mystery Encounter card: on the encounter's option screen (UiMode 45) the HUD reads each option — label, whether it can
-// be picked, who qualifies, what it costs — and, for the encounters it knows, what the option really does and a
-// take / ok / avoid call. Seed forks are mocked with scripted draws per offset, so the tests pin which fork each roll
-// is read from (pre-option ×1, option ×500, post-option ×2000) and that every fork's sow is put back.
-// Covers, common tier: the chest's trap and prize rolls and its odds without a seed offset, the store's exact item rolls
-// and the low-on-balls switch, Fight or Flight with and without a thief, Fiery Fallout's burn target, Berries Abound
-// faster and slower, Part-Timer pay, the vitamin dealer's new nature and money reserve, Teleporting Hijinks'
-// destination, Uncommon Breed's catch value, a GTS upgrade, Lost at Sea's guide, The Strong Stuff's losers.
-// Great tier: Mysterious Challengers' three trainer fights by level and team size, Slumbering Snorlax's thief
-// against a beaten party's nap, Safari Zone's fee, Delibird-y's charms and the Shell Bell a maxed one degrades to,
-// Absolute Avarice's berry count, Dancing Lessons read off the live Oricorio, Bug-Type Superfan's four tutor draws and
-// its bug-count prize, and Fun and Games' prize ladder.
-// Ultra and rogue tiers: Training Session's mirror bars, the salesman's offer, Trash to Treasure, Clowning Around's
-// ability and type shuffle, the breeder's egg maths, Dark Deal's taken member, A Trainer's Test, Weird Dream's
-// transformed team and the Winstrate run of five.
-// Safari Zone's minigame turn: the override menu the continuous encounter re-opens the screen with, its catch and
-// flee odds, and which of ball / bait / mud the played-out odds pick.
-// Also: an encounter it doesn't know, a secondary menu, and the summary line.
-// Prints the rendered card, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
@@ -24,10 +5,10 @@ import { wholeCard } from "./panel.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
 
-// ---- Pokémon mocks. stats: [hp, atk, def, spa, spd, spe].
 const species = (id, name, types, bst, extra = {}) => ({ speciesId: id, name, type1: TY.indexOf(types[0]), type2: types[1] ? TY.indexOf(types[1]) : null,
   baseTotal: bst, getEvolutionLevels: () => [], getRootSpeciesId: () => id, getName: () => name, getIconAtlasKey: () => "k", getIconId: () => String(id), ...extra });
 let nextId = 1;
+// `stats`: [hp, atk, def, spa, spd, spe].
 const pk = (name, types, level, { stats = [100, 80, 80, 80, 80, 80], hp, bst = 500, moves = [], nature = 0, status = 0, ability = "x", id, ivs, held = [] } = {}) => {
   const sp = species(id ?? 100 + nextId, name, types, bst);
   const p = {
@@ -47,10 +28,9 @@ const team = () => [
   pk("Jolteon", ["Electric"], 36, { stats: [100, 65, 60, 110, 95, 130], bst: 525, ability: "Volt Absorb", moves: [["Thunderbolt", "Electric", 90, "S"]] }),
 ];
 
-// The same three at a level the wave would actually have them at, for the encounters that price a fight.
 const teamAt = level => team().map(p => Object.assign(p, { level }));
 
-// ---- Requirement mocks: the game's classes by name, `queryParty` a filter.
+// A requirement is recognised by its class name, so a mock one is an instance of a class with that name.
 const named = name => { const C = function () {}; Object.defineProperty(C, "name", { value: name }); return C; };
 const make = (name, fields) => Object.assign(new (named(name))(), fields);
 const money$ = (mult) => make("MoneyRequirement", { requiredMoney: 0, scalingMultiplier: mult });
@@ -76,7 +56,8 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
   const forks = [];
   const me = { encounterType: type, encounterTier: tier, options, misc, catchAllowed, enemyPartyConfigs: configs, dialogueTokens: tokens,
     ...(seedOffset == null ? {} : { getSeedOffset: () => seedOffset }) };
-  // What displayEncounterOptions leaves behind: the requirement answers and the first qualifier as primaryPokemon.
+  // What `displayEncounterOptions` leaves behind: the requirement answers and the first qualifier as `primaryPokemon`
+  // (game-code.md §13).
   const meets = menu.map(o => {
     let q = party;
     for (const r of o.primaryPokemonRequirements) q = q.filter(p => r.queryParty(party).includes(p));
@@ -88,18 +69,16 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
   const rnd = { _s: "!rnd,live", _q: null, _i: 0,
     state(v) { if (v !== undefined) { this._s = v; this._q = null; } return this._s; },
     integerInRange(min, max) { const q = this._q ?? []; const x = q[this._i++] ?? 0; return min + (x % (max - min + 1)); },
-    // The real `shuffle` is Fisher-Yates off the same stream; the double leaves the order alone and draws nothing, so
-    // a scripted index reads the band in the order the starter table gave it. What the *real* shuffle does to the
-    // draw is the oracle's question, not a mock's.
+    // The real `shuffle` draws off the same stream; this one draws nothing and keeps the order, so a scripted index
+    // reads the band in the starter table's order.
     shuffle(items) { return items; },
     pick(items) { return items[this.integerInRange(0, items.length - 1)]; } };
   const scene = {
     phaseManager: { getCurrentPhase: () => ({ phaseName: "MysteryEncounterPhase" }), pushPhase() {}, unshiftNew() {}, queueMessage() {} },
     currentBattle: { waveIndex: wave, mysteryEncounter: me, enemyLevels: [wave + 2], getLevelForWave: () => wave + 2 },
     arena: { biomeId: biome },
-    // `addEnemyPokemon`, the constructor `44-safari.js` replays each safari mon with. The real one rolls shiny inside
-    // the constructor; this double doesn't, so a unit test pins the two *rerolls* and leaves the constructor's own
-    // roll to the oracle.
+    // The real one rolls shiny inside the constructor (game-code.md §13); this double doesn't, so only the two rerolls
+    // are pinned here.
     addEnemyPokemon: (sp, level) => {
       const p = pk(sp.name, [TY[sp.type1]], level, { id: sp.speciesId, bst: sp.baseTotal });
       Object.assign(p, { species: sp, abilityIndex: 0, shiny: false, variant: 0, isShiny: () => p.shiny, destroy() {},
@@ -126,8 +105,8 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  // The chunk scan finds nothing under node, so a test that needs the game's tables hands over what it would have
-  // found and draws the card again. Without them the cards that read tables degrade, which is its own coverage.
+  // The chunk scan finds nothing under node: `tables` stands in for what it would have found, and the card is drawn
+  // again.
   if (tables) {
     globalThis.__hud["04-game-tables"].setGameTables(tables);
     globalThis.__hud["98-tick"].tick();
@@ -149,7 +128,7 @@ const show = (title, args) => {
 };
 const verdicts = m => m.options.map(o => o.verdict);
 
-// ---- 1. Mysterious Chest: the trap roll is the pre-option fork's first draw (offset ×1).
+// ---- Mysterious Chest: the trap roll is the pre-option fork's first draw (offset ×1).
 const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [option(), option()], ...extra });
 {
   const { forks, model } = show("chest, prize", chest({ draws: { 30512: [50] } }));
@@ -176,7 +155,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.equal(blind.pick, -1, "no seed, no call on a gamble");
 }
 
-// ---- 2. Department Store Sale: each option's rolls come from the option fork (offset ×500), re-sown per option.
+// ---- Department Store Sale: each option's rolls come from the option fork (offset ×500), re-sown per option.
 {
   const store = extra => ({ type: 6, labels: ["TMs", "Vitamins", "X Items", "Poké Balls"], options: [option(), option(), option(), option()],
     draws: { [30512 * 500]: [60, 11, 4, 42, 3] }, ...extra });
@@ -193,7 +172,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.equal(mount(store({ balls: [3, 1, 0, 0, 0] })).model().pick, 3, "low on good balls: the ball packs");
 }
 
-// ---- 3. Fight or Flight: a thief takes the item for free; without one, a boss far over our level means leave.
+// ---- Fight or Flight: a thief takes the item for free; without one, a boss far over our level means leave.
 {
   const fof = (party, level) => ({ type: 3, labels: ["Battle", "Steal", "Leave"],
     options: [option(), option({ mode: 3, primary: [moveReq(["THIEF"])] }), option()],
@@ -210,7 +189,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(easy), ["take", "off", "ok"], "our level and Garchomp hits it SE: fight");
 }
 
-// ---- 4. Fiery Fallout: who the search burns is the option fork's first draw over the burnable non-Fire mons.
+// ---- Fiery Fallout: who the search burns is the option fork's first draw over the burnable non-Fire mons.
 {
   const party = [...team(), pk("Arcanine", ["Fire"], 37)];
   party[1].status = { effect: 1 }; // Lapras is poisoned: not burnable
@@ -226,7 +205,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.equal(noFire.options[2].verdict, "off");
 }
 
-// ---- 5. Berries Abound: faster than 1.1× the boss's Speed grabs berries without a fight.
+// ---- Berries Abound: at 1.1× the boss's Speed or more, berries without a fight.
 {
   const berries = (spe) => ({ type: 19, labels: ["Battle", "Race", "Leave"], options: [option(), option(), option()],
     configs: [{ pokemonConfigs: [{ species: species(20, "Ursaring", ["Normal"], 500), level: 34, isBoss: true }] }],
@@ -240,21 +219,22 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(slow), ["take", "avoid", "ok"]);
 }
 
-// ---- 6. Part-Timer: pay from the game's formula (× Amulet Coin), the best earner named.
+// ---- Part-Timer: pay from the game's formula (× Amulet Coin), the best earner named.
 {
   const coin = new (named("MoneyMultiplierModifier"))(); coin.getStackCount = () => 1;
   const m = show("part-timer", { type: 21, labels: ["Deliver", "Warehouse", "Sell"], options: [option(), option(), option({ mode: 3, primary: [moveReq(["CHARM"])] })], modifiers: [coin] }).model();
-  // Jolteon L36: baseline Spe floor(196·0.36)+5 = 75; 130/75 → ×2.5·1.733 = 4.33, capped at 4. Wave 30 money ×4 = 1480, +20%.
+  // Jolteon L36: baseline Spe floor(196·0.36)+5 = 75; 130/75 → ×2.5·1.733 = 4.33, capped at 4.
+  // Wave 30 money ×4 = 1480, +20%.
   assert.equal(m.options[0].outcome, `Jolteon earns $${(waveMoney(30, 4) + Math.floor(waveMoney(30, 4) * 0.2)).toLocaleString("en-US")} (Speed); its moves drop to 2 PP`);
   assert.equal(m.pick, 0);
   assert.equal(m.options[2].verdict, "off");
 }
 
-// ---- 7. Shady Vitamin Dealer: the cheap deal's new nature is the post-option fork's first draw that differs.
+// ---- Shady Vitamin Dealer: the cheap deal's new nature is the post-option fork's first draw that differs.
 {
   const dealer = extra => ({ type: 7, labels: ["Cheap", "Pricey", "Leave"], options: [option({ mode: 1, requirements: [money$(1.5)] }), option({ mode: 1, requirements: [money$(5)] }), option()],
     draws: { [30512 * 2000]: [3, 15] }, ...extra });
-  // Garchomp is Adamant (3): the first draw repeats it, the second is Modest (+SpA −Atk) — bad for a physical attacker.
+  // Garchomp is Adamant (3): the first draw repeats it, the second is Modest (+SpA −Atk).
   const { forks, model } = show("vitamin dealer, rich", dealer({ money: 20000 }));
   assert.ok(forks.includes(30512 * 2000), `post-option fork: ${forks}`);
   const m = model();
@@ -266,7 +246,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.equal(mount(dealer({ money: 100 })).model().options[1].verdict, "off");
 }
 
-// ---- 8. Teleporting Hijinks: the destination is the option fork's first draw over the candidates minus this biome.
+// ---- Teleporting Hijinks: the destination is the option fork's first draw over the candidates minus this biome.
 {
   const tele = extra => ({ type: 25, wave: 32, labels: ["Pay", "Machine", "Inspect"], seedOffset: 32512,
     options: [option({ mode: 1, requirements: [money$(1.75)] }), option({ mode: 3, primary: [typeReq(["Steel", "Electric"])] }), option()],
@@ -282,7 +262,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(plain), ["ok", "ok", "take"]);
 }
 
-// ---- 9. Uncommon Breed: a new species is worth charming; one already on the team isn't worth berries.
+// ---- Uncommon Breed: a new species is worth charming; one already on the team isn't worth berries.
 {
   const breed = (dex, berries = true, party = team()) => ({ type: 28, labels: ["Battle", "Berries", "Charm"],
     options: [option(), option({ mode: 3, requirements: [make("PersistentModifierRequirement", {})], met: berries }), option({ mode: 3, primary: [moveReq(["ATTRACT"])] })],
@@ -296,7 +276,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(seen), ["take", "off", "ok"]);
 }
 
-// ---- 10. GTS: the best offer for a mon that isn't the carry, by final BST.
+// ---- GTS: the best offer for a mon that isn't the carry, by final BST.
 {
   const party = team();
   const offers = new Map(party.map(p => [p.id, [{ species: species(1, "Rattata", ["Normal"], 253) }, { species: species(2, p === party[0] ? "Mewtwo" : "Salamence", ["Dragon", "Flying"], p === party[0] ? 680 : 600) }]]));
@@ -306,7 +286,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.equal(m.options[0].verdict, "ok", "+75 isn't an upgrade; the carry's Mewtwo offer isn't considered");
 }
 
-// ---- 11. Lost at Sea: a Surf learner guides for free; the storm option chips everyone.
+// ---- Lost at Sea: a Surf learner guides for free; the storm option chips everyone.
 {
   const party = team();
   party[2].hp = 30;
@@ -317,7 +297,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(m.options[2].outcome, /Jolteon ends low$/);
 }
 
-// ---- 12. The Strong Stuff: the two highest-BST mons lose stats.
+// ---- The Strong Stuff: the two highest-BST mons lose stats.
 {
   const m = show("strong stuff", { type: 12, labels: ["Drink", "Battle"], options: [option(), option()],
     configs: [{ levelAdditiveModifier: 1, pokemonConfigs: [{ species: species(213, "Shuckle", ["Bug", "Rock"], 505), isBoss: true, bossSegments: 5 }] }] }).model();
@@ -325,7 +305,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(m), ["avoid", "take"]);
 }
 
-// ---- 13. An encounter the card doesn't know: options, requirements and costs only, no calls.
+// ---- An encounter the card doesn't know: options, requirements and costs only, no calls.
 {
   const m = show("field trip (not judged)", { type: 8, tier: 66, labels: ["Deal", "Refuse"], options: [option({ mode: 1, requirements: [money$(2)], primary: [typeReq(["Dragon", "Water"])] }), option()] }).model();
   assert.equal(m.known, false);
@@ -339,7 +319,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.equal(sub.known, false);
   assert.deepEqual(sub.options.map(o => o.label), ["A", "B", "C"]);
 }
-// ---- 14. Training Session: the prize with someone to spend it on wins, and the mirror's bars grow with the wave.
+// ---- Training Session: the prize with someone to spend it on wins, and the mirror's bars grow with the wave.
 {
   const training = (party, wave = 60) => ({ type: 5, tier: 19, wave, labels: ["Light", "Medium", "Heavy", "Leave"],
     options: [option(), option(), option(), option()], party });
@@ -359,7 +339,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(fine), ["ok", "ok", "ok", "take"]);
 }
 
-// ---- 15. The Pokémon Salesman: a level-5 mon is an unlock buy, judged on the catch card's account reasons.
+// ---- The Pokémon Salesman: a level-5 mon is an unlock buy, judged on the catch card's account reasons.
 {
   const sale = (dex, money = 50000) => ({ type: 13, tier: 19, money, labels: ["Buy", "Leave"],
     options: [option({ mode: 1, requirements: [money$(4)] }), option()],
@@ -377,7 +357,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(broke), ["ok", "take"]);
 }
 
-// ---- 16. Trash to Treasure: the dig's two items land on the first member not already capped.
+// ---- Trash to Treasure: the dig's two items land on the first member not already capped.
 {
   const full = m => ({ constructor: { name: m }, getStackCount: () => 4, getMaxStackCount: () => 4 });
   const party = [pk("Garchomp", ["Dragon", "Ground"], 125, { stats: [150, 130, 95, 80, 85, 102], bst: 600, held: [full("TurnHealModifier")], moves: [["Earthquake", "Ground", 100, "P"]] }),
@@ -390,7 +370,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(m.options[1].why, /60 waves of shopping left/);
 }
 
-// ---- 17. Clowning Around: the ability and Blacephalon's types are read, the type shuffle is replayed.
+// ---- Clowning Around: the ability and Blacephalon's types are read, the type shuffle is replayed.
 {
   const party = [pk("Garchomp", ["Dragon", "Ground"], 90, { stats: [150, 130, 95, 80, 85, 102], bst: 600, moves: [["Earthquake", "Ground", 100, "P"]] }),
     pk("Lapras", ["Water", "Ice"], 88, { stats: [170, 85, 80, 85, 95, 60], bst: 535, moves: [["Body Slam", "Normal", 85, "P"], ["Surf", "Water", 90, "S"]] })];
@@ -405,13 +385,13 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(m.options[0].outcome, /Fire \/ Electric, Prankster/);
   assert.match(m.options[0].why, /Prankster is worth keeping/);
   // Garchomp attacks only on its own types, so its new one is the fork's `randSeedInt(18)`; Lapras has an off-type
-  // Normal move, which the game prefers and which hands it STAB it didn't have.
+  // Normal move, which the game prefers (game-code.md §13), and which hands it STAB it didn't have.
   assert.equal(m.options[2].outcome, "every member's 2nd type is redrawn: Garchomp → Bug, Lapras → Normal");
   assert.equal(m.options[2].exact, true);
   assert.match(m.options[2].why, /1 member gains STAB/);
 }
 
-// ---- 18. The Expert Pokémon Breeder: the most eggs wins, and losing costs only friendship.
+// ---- The Expert Pokémon Breeder: the most eggs wins, and losing costs only friendship.
 {
   const bench = pk("Magikarp", ["Water"], 78, { bst: 200 });
   const m = show("expert breeder", { type: 30, tier: 19, wave: 80, labels: ["Magikarp", "Lapras", "Jolteon"],
@@ -426,7 +406,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(m.options[0].why, /lose and the party comes back/);
 }
 
-// ---- 19. Dark Deal: which member it takes is the pre-option fork's draw, the legendary's tier the option fork's.
+// ---- Dark Deal: which member it takes is the pre-option fork's draw, the boss's tier the option fork's.
 {
   const deal = draws => ({ type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option(), option()], draws });
   const { forks, model } = show("dark deal, it takes the weakest", deal({ 30512: [2], [30512 * 500]: [70] }));
@@ -441,7 +421,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(carry.options[0].outcome, /Garchomp is taken for good → .*starter tier 9–10/);
 }
 
-// ---- 20. A Trainer's Test: an Elite Four party for an Epic egg, or a full heal for declining.
+// ---- A Trainer's Test: an Elite Four party for an Epic egg, or a full heal for declining.
 {
   const test = (party, level = 1) => ({ type: 17, tier: 3, wave: 60, labels: ["Accept", "Decline"], options: [option(), option()], party,
     configs: [{ levelAdditiveModifier: level, trainerConfig: { name: "Cheryl", partyTemplates: [{ size: 6 }] } }] });
@@ -457,7 +437,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(beaten.options[1].why, /the heal is worth more/);
 }
 
-// ---- 21. Weird Dream: `onInit` has already rolled the team, so the swap is named, and refusing costs levels.
+// ---- Weird Dream: `onInit` has already rolled the team, so the swap is named, and refusing costs levels.
 {
   const party = teamAt(90);
   const to = (id, name, types, bst) => species(id, name, types, bst, { getBaseStatTotal: () => bst });
@@ -474,10 +454,10 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(m.options[2].outcome, /^every member loses 10% of its level \(your L90 drops 9\)/);
 }
 
-// ---- 22. The Winstrate Challenge: five battles with no healing between, or a heal and a Rarer Candy.
+// ---- The Winstrate Challenge: five battles with no healing between, or a heal and a Rarer Candy.
 {
   const mons = n => ({ trainerType: 1, pokemonConfigs: Array.from({ length: n }, (_, i) => ({ species: species(300 + i, `W${i}`, ["Normal"], 400) })) });
-  // Pushed back to front: Vito's five are config 0, Victor's two are popped first.
+  // Pushed back to front: Vito's five are config 0, Victor's two are popped first (game-code.md §13).
   const configs = [mons(5), mons(1), mons(3), mons(2), mons(2)];
   const m = show("winstrate, three left standing", { type: 24, tier: 3, wave: 120, labels: ["Accept", "Refuse"],
     options: [option(), option()], configs, party: teamAt(120) }).model();
@@ -490,23 +470,18 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(deep), ["take", "ok"]);
 }
 
-// ---- Great tier
-
-// MysteryEncounterTier.GREAT, the weight these eight are drawn at.
+// MysteryEncounterTier.GREAT
 const GREAT = 40;
 
-// A trainer-battle config: no species to read, only who it is, the party template it was handed and the level bump
-// `initBattleWithEnemyConfig` adds on top of the wave's own levels.
 const trainerCfg = (name, levelAdditiveModifier, size = null) =>
   ({ trainerConfig: { name, ...(size == null ? {} : { partyTemplates: [{ size }] }) }, levelAdditiveModifier });
-// A player modifier by class name, for the rewards that degrade at max stacks.
 const stacked = (name, stackCount, max) => make(name, { getStackCount: () => stackCount, getMaxStackCount: () => max });
 
-// ---- 14. Mysterious Challengers: the richest of three trainer fights that isn't hard.
+// ---- Mysterious Challengers: the richest of three trainer fights that isn't hard.
 {
-  // The encounter hands the last two their templates — 1 STRONGER + min(ceil(wave / 20), 5) AVERAGE, then ELITE_FOUR
-  // (6) — and the card reads both sizes off the config, so the fixture carries the sizes the game would have built.
-  // The first keeps the biome trainer's own, so the fixture gives it one the card must NOT read as the fight's size.
+  // The last two carry the templates the encounter sets: 1 STRONGER + min(ceil(wave / 20), 5) AVERAGE, then
+  // ELITE_FOUR (6). A hard trainer with a `partyTemplateFunc` fights on that instead (game-code.md §13). The first
+  // keeps the biome trainer's own, so its size here is one the card must not read as the fight's.
   const challengers = ({ wave = 30, ...extra } = {}) => ({ type: 0, tier: GREAT, wave, party: teamAt(wave + 2),
     labels: ["Normal", "Hard", "Brutal"], options: [option(), option(), option()],
     configs: [trainerCfg("Youngster Joey", 0, 2), trainerCfg("Ace Trainer May", 1, 1 + Math.min(Math.ceil(wave / 20), 5)),
@@ -518,22 +493,21 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.match(m.options[2].outcome, /^fight Leader Brock with an Elite Four team → 2 Rogue/);
   assert.equal(m.tier, "great");
   assert.equal(m.options[1].why, "3 mons at ~L35 vs your L32, 3 of yours fit to fight");
-  // `Trainer.getPartyTemplate` picks by a func, else a drawn index, so the biome trainer's own size is not claimed.
+  // The biome trainer's own template is a func or a drawn index, so its size is not claimed (game-code.md §13).
   assert.equal(m.options[0].why, "their own team at ~L32 vs your L32, 3 of yours fit to fight");
   assert.doesNotMatch(m.options[0].why, /\d mons?/, "the config's partyTemplates[0] is not the fight's team size");
   assert.deepEqual(verdicts(m), ["ok", "take", "avoid"], "the gym leader's +5 levels is hard, the tougher trainer isn't");
   // Late enough and the built teams outgrow you, so the mildest fight is the call.
   const late = mount(challengers({ wave: 100, seedOffset: 100512 })).model();
   assert.deepEqual(verdicts(late), ["take", "avoid", "avoid"]);
-  // A config with no trainerConfig at all still reads, just without a name — and reading nothing is not a reason to
-  // send you at the gym leader.
+  // A config with no trainerConfig at all still reads, just without a name.
   const bare = mount(challengers({ configs: [] })).model();
   assert.match(bare.options[0].outcome, /^fight a trainer →/);
   assert.equal(bare.options[0].why, null);
   assert.deepEqual(verdicts(bare), ["take", "ok", "ok"], "nothing readable → the mildest fight, not the brutal one");
 }
 
-// ---- 15. Slumbering Snorlax: the thief takes the Leftovers for free; a beaten party naps instead.
+// ---- Slumbering Snorlax: the thief takes the Leftovers for free; a beaten party naps instead.
 {
   const snorlax = extra => ({ type: 4, tier: GREAT, labels: ["Battle", "Rest", "Steal"], catchAllowed: true,
     options: [option(), option(), option({ mode: 3, primary: [moveReq(["THIEF"])] })],
@@ -557,7 +531,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.match(beaten.options[1].outcome, /no reward, no shop$/);
 }
 
-// ---- 16. Safari Zone: three catch attempts, if the money can spare it.
+// ---- Safari Zone: three catch attempts, if the money can spare it.
 {
   const safari = extra => ({ type: 9, tier: GREAT, labels: ["Pay", "Leave"], options: [option({ mode: 1, requirements: [money$(2)] }), option()], ...extra });
   const m = show("safari zone", safari()).model();
@@ -568,17 +542,13 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   // Affordable but it would eat the reserve: leaving is the call, and the option stays on.
   const tight = mount(safari({ money: waveMoney(30, 2) + 100 })).model();
   assert.deepEqual(verdicts(tight), ["ok", "take"]);
-  // Nothing was handed over for the chunk scan to have found, so the three mons can't be replayed: the fee falls back
-  // to what it buys in general, says so once, and is not marked as a seed read.
+  // No tables were handed over, so the three mons can't be replayed.
   assert.equal(m.options[0].exact, false);
   assert.ok(m.notes.some(n => n === "can't name the three mons: the game's starter table hasn't been read yet"),
     `the degrade says why: ${JSON.stringify(m.notes)}`);
 }
 
-// ---- 16c. Safari Zone's fee, with the three mons it buys named: `44-safari.js` replays each out of its own fork at
-// `waveIndex × 1000 × remaining` (3, 2, 1), draws the species off the starter table and then the doubled shiny and
-// hidden-ability rolls. The mock shuffle leaves the band in table order, so a scripted index picks a known mon; what
-// the real shuffle and the constructor's own shiny roll do is the encounter oracle's question, not a mock's.
+// ---- Safari Zone's fee names the three mons it buys, each replayed out of its own fork (game-code.md §13).
 {
   // Band `[0, 5]`: Larvitar is cost 6 and out of it, Mewtwo is legendary and never in the pool at all, so the three
   // draws are over exactly [Rattata, Pidgey, Caterpie].
@@ -590,8 +560,8 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
     species: { getAllStarters: () => STARTERS, getAllSpecies: () => STARTERS,
       getStarterCost: id => STARTERS.find(s => s.speciesId === id)?.starterCost ?? 0,
       getSpecies: id => STARTERS.find(s => s.speciesId === id) },
-    // No timed event, so `getAllValidEventEncounters` is empty and the event branch short-circuits before its
-    // `randSeedInt(100)` — the species index is the first draw in every fork.
+    // No timed event, so the event branch short-circuits before its `randSeedInt(100)` (game-code.md §13); with this
+    // mock's `getLevelForWave` drawing nothing, the species index is each fork's first draw.
     events: { getAllValidEventEncounters: () => [], getShinyCatchMultiplier: () => 2 },
   };
   // Per fork: the species index, then the extra shiny roll (a threshold of 64 out of 65536). Pidgey's 10 is under it.
@@ -607,12 +577,11 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.match(m.options[0].outcome, /each turn judged as it comes/, "the bait-and-mud call still belongs to the turn");
   assert.equal(m.options[0].exact, true, "the three come out of a seed fork, so the option is a seed read");
   assert.deepEqual(m.notes.filter(n => n.startsWith("can't name")), [], "nothing to degrade about");
-  // Three mons new to the dex are three worth a ball, so the fee is the call and it says which of them earns it.
   assert.deepEqual(verdicts(m), ["take", "ok"]);
   assert.match(m.options[0].why, /of the three are worth a ball/);
 
-  // The same replay on a minigame turn: the run option is priced against what comes after it. `left` is the count
-  // *after* the mon on screen, so at 2 the next fork is the one at `remaining === 2` — the shiny Pidgey.
+  // On a minigame turn the run option is priced against what comes next. `left` counts the mons *after* this one, so
+  // at 2 the next fork is the one at `remaining === 2`: the shiny Pidgey.
   const nidorina = { ...pk("Nidorina", ["Poison"], 32, { id: 30, bst: 365 }),
     species: species(30, "Nidorina", ["Poison"], 365, { catchRate: 45 }), shiny: false, abilityIndex: 0, variant: 0, formIndex: 0 };
   const turn = mount({ type: 9, tier: GREAT, labels: ["Throw a ball", "Throw bait", "Throw mud", "Flee"], wave: 30,
@@ -620,16 +589,12 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
     menu: [option(), option(), option(), option()],
     misc: { pokemon: nidorina, safariPokemonRemaining: 2, catchStage: 0, fleeStage: 0 } }).model();
   assert.equal(turn.options[3].outcome, "let it go — Pidgey shiny L32 is next, 2 mons left after this one");
-  // Three mons new to the dex, so the one behind this turn is worth a ball — which is what makes running a real call.
   assert.deepEqual(turn.minigame.next, { name: "Pidgey", shiny: true, level: 32, wanted: true });
 }
 
-// ---- 16b. Safari Zone's minigame: the override menu, judged per turn on odds the source spells out.
-// The numbers below are hand-derived from `safari-zone-encounter.ts` at the pin, not from the HUD:
-//   catch = round(catchRate × 1.5 × stageMod)^, three shakes of round(1048560 / ⁴√(16711680 / catch)) / 65536;
-//   flee  = ceil(((255² − catchRate²) / 255 / 2) × stageMod) out of the 256 rolls of `randSeedInt(256)`.
-// At catch rate 45 and both stages at 0 that is 37% to catch and 48% to bolt; +2 catch is 62%, −1 is 27%;
-// +1 flee is 73%, −2 is 24%.
+// ---- Safari Zone's minigame: the override menu, judged per turn on the source's own odds.
+// Hand-derived from game-code.md §13, not from the HUD: at catch rate 45 and both stages at 0, 37% to catch and 48% to
+// bolt; +2 catch is 62%, −1 is 27%; +1 flee is 73%, −2 is 24%.
 {
   const wild = (catchRate, extra = {}) => ({ ...pk("Nidorina", ["Poison"], 32, { id: 30, bst: 365 }),
     species: species(30, "Nidorina", ["Poison"], 365, { catchRate }), shiny: false, abilityIndex: 0, variant: 0, formIndex: 0, ...extra });
@@ -648,12 +613,10 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(m.options[1].outcome, "catch +2 → 62%, and 4 times in 5 flee +1 → 73%; then it rolls to bolt");
   assert.equal(m.options[2].outcome, "flee −2 → 24%, and 4 times in 5 catch −1 → 27%; then it rolls to bolt");
   assert.equal(m.options[3].outcome, "let it go — 2 mons left after this one");
-  // Bait buys +2 catch but pays +1 flee on the same turn, and at this catch rate the extra bolt chance costs more
-  // than the catch stage buys: throwing until it is settled is the play.
+  // At this catch rate bait's +1 flee costs more than its +2 catch buys, so throwing is the play.
   assert.deepEqual(verdicts(m), ["take", "ok", "ok", "avoid"]);
   assert.match(m.options[0].why, /lands it 55% of the time from here/);
-  // `next` is null here because the game's starter table was never handed over, so the three mons can't be replayed:
-  // the turn is judged exactly all the same, and only the run option's extra line is missing. 16c drives the replay.
+  // `next` is null: no starter table was handed over, so the three mons can't be replayed.
   assert.deepEqual(m.minigame, { mon: "Nidorina", shiny: false, left: 2, catchStage: 0, fleeStage: 0, catchRate: 45,
     catch: m.minigame.catch, flee: m.minigame.flee, wanted: true, best: "ball", value: m.minigame.value, next: null });
   assert.equal(Math.round(m.minigame.catch * 100), 37);
@@ -662,8 +625,8 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(globalThis.__coachHud.summary().encounter,
     "Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee");
 
-  // A mon that barely catches at all: mud is worth the turn, because lowering the flee stage buys more throws than
-  // the catch stage buys chance — 13% played out against the ball's 10%.
+  // A mon that barely catches: mud's lower flee stage buys more throws than the catch stage costs — 13% played out
+  // against the ball's 10%.
   const hard = mount(turn({ catchRate: 3 })).model();
   assert.deepEqual(verdicts(hard), ["ok", "ok", "take", "avoid"]);
   assert.match(hard.options[2].why, /mudding first lands it 13% of the time from here/);
@@ -674,8 +637,8 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(easy.options[0].outcome, "100% to catch it now — it cannot miss, so it never gets its roll to bolt");
   assert.deepEqual(verdicts(easy), ["take", "ok", "ok", "avoid"]);
 
-  // The common Safari draw: 190 × 1.5 = 285 is already certain while the flee rate — read off the *species* rate, so
-  // untouched by the multiplier — is a live 22%. The turn never reaches a flee roll, so the row must not narrate one.
+  // 190 × 1.5 = 285 is certain, while the flee rate, read off the species rate, is a live 22%: the turn never reaches
+  // a flee roll, so the row must not narrate one.
   const sure = mount(turn({ catchRate: 190 })).model();
   assert.equal(sure.minigame.catch, 1);
   assert.equal(Math.round(sure.minigame.flee * 100), 22);
@@ -703,7 +666,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.deepEqual(verdicts(blind), [null, null, null, null]);
 }
 
-// ---- 17. Delibird-y: the Amulet Coin unless it's maxed, and a maxed charm degrades to a Shell Bell.
+// ---- Delibird-y: the Amulet Coin unless it's maxed, and a maxed charm degrades to a Shell Bell.
 {
   const delibirdy = extra => ({ type: 15, tier: GREAT, labels: ["Money", "Food", "Item"],
     options: [option({ mode: 1, requirements: [money$(2)] }), option({ mode: 1, primary: [moveReq(["BERRY"])] }), option({ mode: 1, primary: [moveReq(["ITEM"])] })], ...extra });
@@ -721,7 +684,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.match(empty.options[1].why, /^needs a mon holding a berry or a Reviver Seed$/);
 }
 
-// ---- 18. Absolute Avarice: 2/5 of each holder's own berries come back, rounded down.
+// ---- Absolute Avarice: 2/5 of each holder's own berries come back, rounded down.
 {
   const berryMap = new Map([[1, [{ stackCount: 4 }]], [2, [{ stackCount: 2 }, { stackCount: 1 }]]]);
   const avarice = extra => ({ type: 16, tier: GREAT, labels: ["Battle", "Beg", "Let it eat"], options: [option(), option(), option()],
@@ -734,11 +697,9 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.ok(m.options[1].exact);
   assert.match(m.options[2].outcome, /^let it eat: Greedent joins at L38 /);
   assert.deepEqual(verdicts(m), ["take", "ok", "ok"]);
-  // Past wave 50 the boss takes Speed too.
+  // From wave 50 the boss takes Speed too.
   assert.match(mount(avarice({ wave: 60, seedOffset: 60512 })).model().options[0].outcome, /\+1 SpD\/Spe/);
-  // The seed goes to every member of the WHOLE party without one — `party.forEach`, fainted included, skipping
-  // whoever already holds a Reviver Seed — and the recruit level is the whole party's best, fainted included too
-  // (`getHighestLevelPlayerPokemon(false, true)`).
+  // The seeds and the recruit level both count fainted members (game-code.md §13).
   const downed = pk("Dragonite", ["Dragon", "Flying"], 50, { hp: 0 });
   const holder = pk("Snorlax", ["Normal"], 30, { held: [make("PokemonInstantReviveModifier", {})] });
   const mixed = mount(avarice({ party: [...team(), downed, holder] })).model();
@@ -750,7 +711,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(blind.options[1].why, "you get nothing back");
 }
 
-// ---- 19. Dancing Lessons: a dancer recruits the Oricorio; without one, the dance is still free.
+// ---- Dancing Lessons: a dancer recruits the Oricorio; without one, the dance is still free.
 {
   const oricorio = pk("Oricorio", ["Fire", "Flying"], 34, { id: 741, bst: 476 });
   oricorio.shiny = false;
@@ -772,7 +733,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.deepEqual(verdicts(known), ["ok", "take", "off"]);
 }
 
-// ---- 20. Bug-Type Superfan: the four tutor moves are the option fork's first four draws, one per pool.
+// ---- Bug-Type Superfan: the four tutor moves are the option fork's first four draws, one per pool.
 {
   const superfan = (party, extra = {}) => ({ type: 26, tier: GREAT, labels: ["Battle", "Show", "Give"],
     options: [option(), option({ mode: 1, primary: [typeReq(["Bug"])] }), option({ mode: 1, primary: [moveReq(["CLAW"])] })],
@@ -800,7 +761,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(blind.options[0].exact, false);
 }
 
-// ---- 21. Fun and Games: the prize ladder, and that a KO loses and charges the fee twice.
+// ---- Fun and Games: the prize ladder, and that a KO loses and charges the fee twice.
 {
   const funAndGames = extra => ({ type: 27, tier: GREAT, labels: ["Play", "Leave"], options: [option({ mode: 1, requirements: [money$(1.5)] }), option()], ...extra });
   const m = show("fun and games", funAndGames()).model();

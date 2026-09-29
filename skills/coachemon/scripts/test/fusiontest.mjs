@@ -1,8 +1,3 @@
-// Fusion advisor: on the party screen a DNA Splicer opens, the best fusions in pick order (base first), the partners
-// for a first pick already made (and a better fusion elsewhere), the select filter (Hardcore's fainted rule), a small
-// party where no fusion is worth the member it spends, Spliced Endless's halved base stats, and an ability that doesn't work fused.
-// On the rewards screen, the Splicer is worth its best fusion, not its rarity tier. Prints the rendered cards and
-// summaries, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
@@ -13,7 +8,6 @@ class FusePokemonModifierType extends PokemonModifierType {}
 class PokemonHpRestoreModifierType extends PokemonModifierType {}
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
-// Test fixtures, not game data. Moves: [name, type, power, category].
 const MOVES = {};
 let nextMove = 1;
 const move = (name, type, power, category) => { const id = nextMove++; MOVES[id] = { id, name, type: TY.indexOf(type), power, category, attrs: [] }; return id; };
@@ -30,7 +24,6 @@ class PokemonMove {
   getName() { return MOVES[this.moveId].name; }
 }
 let monId = 0;
-// [name, types, base stats, ability, moves]
 const mon = (name, types, base, ability, moves, f = {}) => {
   const species = { speciesId: 1000 + monId, name, baseStats: base, baseTotal: base.reduce((a, b) => a + b, 0), type1: TY.indexOf(types[0]),
     type2: types[1] ? TY.indexOf(types[1]) : null, getEvolutionLevels: () => f.evolutions ?? [] };
@@ -61,7 +54,7 @@ const splicers = () => Object.assign(new FusePokemonModifierType(), { name: "DNA
   selectFilter: p => (p.fusionSpecies ? "no effect" : null) });
 const potion = () => Object.assign(new PokemonHpRestoreModifierType(), { name: "Potion", iconImage: "potion", tier: 0, restorePoints: 20, restorePercent: 10 });
 
-// `screen`: "party" (the Splicer's party screen, `partyUiMode` 9 SPLICE unless given) or "rewards".
+// `screen`: "party" or "rewards". `partyUiMode` 9 is SPLICE.
 const mount = ({ screen = "party", members = party(), picked = null, partyUiMode = 9, hardcore = false, spliced = false, free = [] }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
@@ -98,7 +91,7 @@ const show = (label, opts) => {
   return m;
 };
 
-// ---- 1. The Splicer's party screen, nothing picked: the best fusions in pick order.
+// ---- The Splicer's party screen, nothing picked: the best fusions in pick order.
 let best;
 {
   const m = show("full party", {});
@@ -110,7 +103,7 @@ let best;
   for (let i = 1; i < m.rows.length; i++) assert.ok(m.rows[i - 1].value >= m.rows[i].value, "best first");
 }
 
-// ---- 2. Magikarp was picked first: only fusions onto it, and the card says to back out for the better one.
+// ---- Magikarp was picked first: only fusions onto it, and the card says to back out for the better one.
 {
   const m = show("Magikarp picked first", { picked: 3 });
   assert.ok(m.rows.every(r => r.base.name === "Magikarp"));
@@ -118,7 +111,7 @@ let best;
   assert.ok(m.better && m.better.base.name === best.base.name, "a better fusion elsewhere");
 }
 
-// ---- 3. Hardcore: a fainted Salamence can't be picked either way.
+// ---- Hardcore: a fainted Salamence can't be picked either way.
 {
   const members = party();
   members[1].hp = 0;
@@ -126,20 +119,20 @@ let best;
   assert.ok(m.rows.every(r => r.base.name !== "Salamence" && r.other.name !== "Salamence"));
 }
 
-// ---- 4. Two members: fusing leaves one, so nothing is worth it and the call is to back out.
+// ---- Two members: fusing leaves one, so nothing is worth it and the call is to back out.
 {
   const m = show("two members", { members: party().filter(p => ["Garchomp", "Magikarp"].includes(p.name)) });
   assert.ok(m.rows.length && m.rows.every(r => !r.fuse), "no fusion clears the bar");
 }
 
-// ---- 5. Spliced Endless: every unfused mon runs on half its base stats, so the best fusion is worth far more.
+// ---- Spliced Endless: every unfused mon runs on half its base stats, so the best fusion is worth far more.
 {
   const m = show("Spliced Endless", { spliced: true });
   assert.equal(m.spliced, true);
   assert.ok(m.rows[0].value > best.value + 20, `${m.rows[0].value} vs ${best.value}`);
 }
 
-// ---- 6. Mimikyu's Disguise doesn't work fused: the fusion taking it in says so.
+// ---- Mimikyu's Disguise doesn't work fused: the fusion taking it in says so.
 {
   const members = party().filter(p => ["Snorlax", "Mimikyu", "Salamence", "Azumarill"].includes(p.name));
   const m = mount({ members, picked: 0 }).model;
@@ -152,14 +145,14 @@ let best;
   console.log(`== Snorlax ← Mimikyu\n${f.why.map(r => r.text).join(" · ")}`);
 }
 
-// ---- 7. Another party screen (a plain check) draws no fusion card.
+// ---- Another party screen (a plain check) draws no fusion card.
 {
   const { model } = mount({ partyUiMode: 11 });
   assert.notEqual(model?.kind, "fusion");
   console.log(`== party screen, not splicing\nkind ${model?.kind ?? null}`);
 }
 
-// ---- 8. The rewards screen: the Splicer is taken for its best fusion, and passed over when none is worth a slot.
+// ---- The rewards screen: the Splicer is taken for its best fusion, and passed over when none is worth a slot.
 {
   const m = show("rewards, full party", { screen: "rewards", free: [potion(), splicers()] });
   const sp = m.free.find(f => f.name === "DNA Splicers");

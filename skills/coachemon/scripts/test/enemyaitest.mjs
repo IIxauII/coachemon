@@ -1,10 +1,3 @@
-// Enemy AI prediction (hud/20-enemy-ai.js) against mocked game objects: move distribution for each AI type,
-// KO filter, Encore, move queue, Struggle, target weighting, Protect branches, doubles switch sequencing, and that
-// nothing touches the RNG or runs outside the command phase.
-//
-// Every question goes through a **turn read** (`hud/25-turn.js`), which is the only thing that opens a sandbox,
-// settles a predicted Tera and keys the answers — the same door the panel uses. The scenarios below are therefore
-// also the test of that adapter: one sandbox per read, restored afterwards, AI answers asked pre-Tera.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { GAME_PROTO } from "./game-proto.mjs";
@@ -14,7 +7,7 @@ const src = bundle("hud", { expose: true });
 const calls = { game: 0 };
 const spy = (name, fn) => (...a) => { calls.game++; calls[name] = (calls[name] ?? 0) + 1; return fn(...a); };
 
-// moves: { id, name, type, category, moveTarget, user, target (number or battlerIndex => number), attrs, cond, dmg, usable }
+// `user` and `target` are the move's benefit scores; `target` is a number or `battlerIndex => number`.
 const mkMove = m => {
   const mv = {
     id: m.id, name: m.name, type: m.type ?? 0, category: m.category ?? 0, moveTarget: m.moveTarget ?? 3, power: m.power ?? 80,
@@ -50,7 +43,6 @@ const mkMon = ({ id, player, fieldIndex, hp = 100, types = [], moves = [], aiTyp
   return p;
 };
 
-// Fresh HUD module state and a scene per case.
 const setup = ({ player, enemy, double = false, phase = "CommandPhase", trainer = null, counter = 0, battle = {} }) => {
   const field = [player[0], double ? player[1] : undefined, enemy[0], double ? enemy[1] : undefined];
   const sideOf = p => (p.isPlayer() ? player : enemy);
@@ -71,7 +63,6 @@ const setup = ({ player, enemy, double = false, phase = "CommandPhase", trainer 
   };
   globalThis.window = globalThis;
   globalThis.Phaser = { Math: { RND: rnd } };
-  // The panel starts too, with nothing to show: the page has no game canvas.
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: () => ({ style: {}, addEventListener() {}, remove() {} }) };
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   eval(src);
@@ -91,9 +82,8 @@ const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} ≠ 
 const pOf = (dist, name) => dist.find(r => r.name === name)?.p ?? 0;
 const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
 
-// Replay against a mon of ours that isn't on the field (next turn's pick after a switch): the KO filter reads its HP,
-// and a setup move is scored on the foe itself as the game does. A 10 into the bench mon, D (Dance, on the user) 30:
-// SMART advances round(10/30·50) % = 17 % from D.
+// ---- Replay against a benched mon of ours: the KO filter reads its HP, and a setup move is scored on the foe itself.
+// A 10 into the bench mon, D (Dance, on the user) 30: SMART advances round(10/30·50) % = 17 % from D.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
     { id: 1, name: "A", target: -10 }, { id: 4, name: "D", category: 2, moveTarget: 0, user: 30 }] });
@@ -104,15 +94,13 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   near(pOf(dist, "D"), 0.83, "setup first");
   near(pOf(dist, "A"), 0.17, "attack after");
   assert.equal(bench.lastDamageCall.move.id, 1, "KO filter asks the bench mon's damage");
-  // A hit that KOs the bench mon's HP (or the HP it'll have then) is the only pick.
   near(pOf(ai.replay(e, bench, { hp: 50 }), "A"), 1, "KO filter at the given HP");
   assert.equal(scene.currentBattle.battleSeedState, seed, "no RNG drawn");
   assert.doesNotThrow(() => JSON.stringify(dist));
 }
 
-// A queued move called by another move is used whether or not it is in the moveset, and skips every usability check
-// — `getNextMove`'s `isVirtual(useMode)` (MoveUseMode.INDIRECT is 3). The replay used to drop such a move and score
-// the moveset instead; `enemyMoveDistribution` already read it this way (#178.8).
+// ---- A virtual queued move (`useMode` 3 is INDIRECT) is used whether or not it is in the moveset (game-code.md §6).
+// The replay used to drop such a move and score the moveset instead (#178).
 {
   const moves = [{ id: 1, name: "A", target: -10 }, { id: 4, name: "D", category: 2, moveTarget: 0, user: 30 }];
   const bench = mkMon({ id: "bench", player: true, fieldIndex: null, hp: 100 });
@@ -120,18 +108,16 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   let ai = setup({ player: [foe(), bench], enemy: [called] });
   assert.deepEqual(ai.replay(called, bench).map(r => [r.name, r.p, r.id, r.slot]), [["#99", 1, 99, null]],
     "a virtual move outside the moveset is the whole answer");
-  // One that *is* in the moveset keeps its name and slot.
   const own = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 1, useMode: 3, targets: [0] }] });
   ai = setup({ player: [foe(), bench], enemy: [own] });
   assert.deepEqual(ai.replay(own, bench).map(r => [r.name, r.p, r.slot]), [["A", 1, 0]]);
-  // An unusable move queued normally is still skipped.
   const normal = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 99, useMode: 1, targets: [0] }] });
   ai = setup({ player: [foe(), bench], enemy: [normal] });
   assert.ok(ai.replay(normal, bench).every(r => r.name !== "#99"), "a normal queued move must be in the moveset");
 }
 
-// The replay's KO filter hides the target's ally's ability only until it has been revealed this wave, as `getNextMove`
-// does — it used to hide it always (#178.8).
+// ---- The replay's KO filter hides the target's ally's ability only until it has been revealed this wave.
+// It used to hide it always (#178).
 {
   const moves = [{ id: 1, name: "A", target: -10 }, { id: 2, name: "B", target: -5 }];
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves });
@@ -147,7 +133,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.equal(target2.lastDamageCall.ignoreAllyAbility, true, "an unrevealed one is still hidden");
 }
 
-// SMART: A 10×2 eff×1.5 STAB = 30, B 20, C 10, D 5 (status: no multipliers). Advance 33%, 25%, 25%.
+// ---- SMART: A 10×2 eff×1.5 STAB = 30, B 20, C 10, D 5 (status: no multipliers). Advance 33%, 25%, 25%.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, types: [9], moves: [
     { id: 3, name: "C", target: -10 }, { id: 1, name: "A", type: 9, target: -10 }, { id: 4, name: "D", category: 2, user: 5 }, { id: 2, name: "B", target: -20 }] });
@@ -163,13 +149,12 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.deepEqual(dist[0].targets, [0]);
   assert.equal(dist[0].slot, 1);
   assert.doesNotThrow(() => JSON.stringify(dist));
-  // Memoised on the turn: asking the same turn twice makes no further game calls.
   const twice = ai.ask(t => { const a = t.enemyAction(e).moves; const before = calls.game; return [a, t.enemyAction(e).moves, calls.game - before]; });
   assert.equal(twice[0], twice[1], "one answer per turn");
   assert.equal(twice[2], 0, "and no second round of game calls");
 }
 
-// Ties keep moveset order: 10/10/10 → 50%, 25%, 25% in moveset order.
+// ---- Ties keep moveset order: 10/10/10 → 50%, 25%, 25% in moveset order.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
     { id: 1, name: "X", target: -10 }, { id: 2, name: "Y", target: -10 }, { id: 3, name: "Z", target: -10 }] });
@@ -178,7 +163,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   near(pOf(dist, "X"), 0.5, "tie X"); near(pOf(dist, "Y"), 0.25, "tie Y"); near(pOf(dist, "Z"), 0.25, "tie Z");
 }
 
-// KO filter: B and C reach the foe's 100 HP (max roll, ability ignored while unrevealed) → pool {B 20, C 10}.
+// ---- KO filter: B and C reach the foe's 100 HP (max roll, ability ignored while unrevealed) → pool {B 20, C 10}.
 {
   const me = foe({ hp: 100, eff: { 1: 2 } });
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, types: [9], moves: [
@@ -194,7 +179,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.equal(me.lastDamageCall.isCritical, false);
 }
 
-// SMART_RANDOM: advance 3/8 regardless of scores.
+// ---- SMART_RANDOM: advance 3/8 regardless of scores.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, aiType: 1, moves: [
     { id: 1, name: "A", target: -30 }, { id: 2, name: "B", target: -20 }, { id: 3, name: "C", target: -1 }] });
@@ -203,14 +188,14 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   near(pOf(dist, "A"), 5 / 8, "SR A"); near(pOf(dist, "B"), 3 / 8 * 5 / 8, "SR B"); near(pOf(dist, "C"), 9 / 64, "SR C");
 }
 
-// RANDOM: uniform.
+// ---- RANDOM: uniform.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, aiType: 0, moves: [{ id: 1, name: "A", target: -30 }, { id: 2, name: "B" }, { id: 3, name: "C" }, { id: 4, name: "D" }] });
   const ai = setup({ player: [foe()], enemy: [e] });
   for (const n of "ABCD") near(pOf(ai.dist(e), n), 0.25, `RANDOM ${n}`);
 }
 
-// Encore forces the encored move; a usable queued move wins over everything; nothing usable → Struggle.
+// ---- Encore forces the encored move; a usable queued move wins over everything; nothing usable → Struggle.
 {
   const moves = [{ id: 1, name: "A", target: -30 }, { id: 2, name: "B", target: -1 }];
   let e = mkMon({ id: "e", player: false, fieldIndex: 0, moves, tags: { ENCORE: { moveId: 2 } } });
@@ -226,7 +211,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.deepEqual(ai.dist(e).map(r => [r.name, r.p, r.slot, r.targets]), [["Struggle", 1, -1, [0]]]);
 }
 
-// Consecutive Protect: the condition passes only when randBattleSeedInt(9) is 0 → branch 1/9 (score 10) vs −20.
+// ---- Consecutive Protect: the condition passes only when randSeedInt(9) is 0 → branch 1/9 (score 10) vs −20.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
     { id: 1, name: "A", target: -20 }, { id: 182, name: "Protect", category: 2, moveTarget: 0, user: 10, attrs: ["ProtectAttr"], cond: s => s.currentBattle.randSeedInt(9) === 0 }] });
@@ -238,8 +223,9 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.ok(!Object.prototype.hasOwnProperty.call(scene.currentBattle, "randSeedInt") || scene.currentBattle.randSeedInt.length === 1, "randSeedInt restored");
 }
 
-// Doubles target weighting: benefit 10 / 4 into our slots, −5 into the ally → weights 16, 10 (ally cut) → 16/26, 10/26;
-// fractional 10.5 → weights 16.5, 10 → floor(U·26.5) < 17 picks slot 0: 17/26.5.
+// ---- Doubles target weighting, a fractional benefit included.
+// Benefit 10 / 4 into our slots, −5 into the ally → weights 16, 10 (ally cut) → 16/26, 10/26; fractional 10.5 →
+// weights 16.5, 10 → floor(U·26.5) < 17 picks slot 0: 17/26.5.
 for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
   const player = [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })];
   const ally = mkMon({ id: "ally", player: false, fieldIndex: 1, moves: [{ id: 9, name: "Z" }] });
@@ -251,7 +237,7 @@ for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
   near(row.targetDist[1].p, 1 - p0, `target weight ${top} (other)`);
 }
 
-// The sandbox leaves the global RNG alone even when scoring draws from it (Present).
+// ---- The sandbox leaves the global RNG alone even when scoring draws from it (Present).
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 217, name: "Present", target: -10 }, { id: 2, name: "B", target: -5 }] });
   e.moveset[0].getMove().getTargetBenefitScore = () => { Phaser.Math.RND.integerInRange(0, 9); return -10; };
@@ -261,7 +247,7 @@ for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
   assert.equal(ai.sandboxBreaches(), 0);
 }
 
-// Outside the command phase nothing calls game code: the rough fallback (or the turn's cached prediction) is used.
+// ---- Outside the command phase nothing calls game code: the rough fallback, or the turn's cached prediction.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -30 }, { id: 2, name: "B" }] });
   const ai = setup({ player: [foe()], enemy: [e], phase: "TurnStartPhase", trainer: { getPartyMemberMatchupScores: spy("scores", () => [[1, 9]]), config: {} } });
@@ -273,8 +259,9 @@ for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
   assert.deepEqual([action.switchTo, action.skip], [null, false], "still a move, from the approximation");
 }
 
-// Doubles switch sequencing. Counter 1 → slot 0 (w 0.9: 10·0.9 ≥ 1·3) switches, counter becomes 2 → slot 1
-// (w 0.684: 4·0.684 < 1.1·3) stays. If slot 0 stays instead (counter → 0, w 1), slot 1 (4 ≥ 3.3) switches.
+// ---- Doubles switch sequencing: slot 0's switch moves the counter slot 1 is judged by.
+// Counter 1 → slot 0 (w 0.9: 10·0.9 ≥ 1·3) switches, counter becomes 2 → slot 1 (w 0.684: 4·0.684 < 1.1·3) stays.
+// If slot 0 stays instead (counter → 0, w 1), slot 1 (4 ≥ 3.3) switches.
 for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   const player = [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })];
   const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0 });
@@ -297,7 +284,7 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   else { assert.equal(a0.switchTo, null); assert.equal(a0.tera, true); }
 }
 
-// Commander: a Tatsugiri whose ally is Commanded takes no action (its switch would be skipped too).
+// ---- Commander: a Tatsugiri whose ally is Commanded takes no action (its switch would be skipped too).
 {
   const player = [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })];
   const tatsu = mkMon({ id: "tatsu", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }] });
@@ -309,8 +296,7 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   assert.deepEqual([act.switchTo, act.skip, act.moves], [null, true, []]);
 }
 
-// Predicted Tera: the flag is on for the caller's work and off again afterwards, and every prediction is still
-// computed pre-Tera (the AI commands before TeraPhase runs).
+// ---- Predicted Tera: the flag is on for the caller's work and off afterwards, and every prediction is made pre-Tera.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }, { id: 2, name: "B" }] });
   e.getTeraType = () => 8; // Steel
@@ -326,8 +312,6 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   e.getMoveType = mv => (seenAi.push(!!e.isTerastallized), mv.type);
   e.getMatchupScore = () => (seenSwitch.push(!!e.isTerastallized), 1);
   const inside = ai.ask(t => {
-    // The turn has already asked the AI what `e` does — that is how it knows `e` Terastallizes — and sets the flag
-    // for everything the caller then asks. No caller wraps anything.
     assert.equal(e.isTerastallized, true, "flag on for the caller's work");
     assert.equal(e.summonData.addedType, null, "TeraPhase clears an added type");
     assert.equal(t.mon(e).tera, "Steel");
@@ -343,13 +327,9 @@ for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
   assert.equal(ai.teraOf(bench), null, "a foe the trainer isn't Terastallizing carries no Tera type");
 }
 
-// ---- The enemy's exact move (#158 measured it, #183 plans on it)
-// The game's own `getNextMove` is called off the prototype, once per foe, in field order, inside one sandbox; the
-// move queue goes back; the battle stream goes back; and a failure is a reason, never the distribution.
 const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
 
-// One foe: the call answers, and the row is one outcome at p 1 with the game's own target — no `% likely` left to
-// show. The distribution is still there beside it, for later turns and as the call's oracle.
+// ---- The exact move is one outcome at p 1 with the game's own target, and the distribution stays beside it.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }, { id: 2, name: "B", target: -30 }] });
   const me = foe();
@@ -362,8 +342,8 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.ok(ai.dist(e).length > 1, "the distribution is untouched and still has every outcome");
 }
 
-// A queued move comes back as the game returns it, and the queue is put back exactly as it was — `getNextMove`
-// splices the entries before its pick and can clear the array outright.
+// ---- A queued move comes back as the game returns it, and the queue is put back exactly as it was.
+// `getNextMove` splices the entries before its pick and can clear the array outright (game-code.md §6).
 {
   const queue = [{ move: 9, targets: [0], useMode: 3 }, { move: 1, targets: [0], useMode: 0 }];
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, queue, moves: [{ id: 1, name: "A" }] });
@@ -383,8 +363,7 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.deepEqual(e.summonData.moveQueue, entries, "with the same entries");
 }
 
-// Doubles: both foes are asked in field order inside **one** sandbox, so slot 1's call sees slot 0's draws — and the
-// battle stream is where it was when the caller is done, so the game's own call starts where the prediction did.
+// ---- Doubles: both foes are asked in field order inside one sandbox, and the battle stream ends where it started.
 {
   const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
   const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
@@ -402,9 +381,8 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.equal(scene.currentBattle.battleSeedState, before, "and the stream is back where it started");
 }
 
-// A foe the trainer switches out never reaches `getNextMove` (game-code.md §7), so it isn't asked — its draws are not spent
-// before the slot that does move. The two benches are disjoint by party-index parity (#285), so the mock answers per
-// `trainerSlot`: slot 0's tag has a bench worth switching to, slot 1's has none.
+// ---- A foe the trainer switches out never reaches `getNextMove`, so it isn't asked (game-code.md §7).
+// The two benches are disjoint by party-index parity (§7), so the mock answers per `trainerSlot`.
 {
   const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
   const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
@@ -421,10 +399,8 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.deepEqual(asked, ["e1"], "only the slot that isn't switching is asked");
 }
 
-// A force-switch into a `doubleOnly` trainer's double puts a wrong-tagged mon on the field, so both slots score the
-// **same** bench, and `getNextSummonIndex` — drawn at the turn's own seed offset — hands them the same party index
-// (#285). The game writes both commands and resolves both in field order, so slot 1's send-in is read off the party
-// slot 0 has already swapped: the mon slot 0 just withdrew, walking straight back in on the other slot.
+// ---- Both slots switching to one party index: slot 1 sends back in the mon slot 0 just withdrew (#285).
+// The game resolves both commands in field order, so slot 1's send-in is read off the party slot 0 already swapped.
 {
   const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
   const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
@@ -442,8 +418,7 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.deepEqual(asked, [], "both slots switch, so neither is asked for a move");
 }
 
-// Our own random-target command draws first (#158's one exception), so the prediction is made for **that** command
-// and says so: `replay`, not `exact`.
+// ---- Our own random-target command draws first (#158), so the prediction is `replay`, not `exact`.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
   const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 1, name: "A" }] });
@@ -458,8 +433,7 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.ok(at.e.length > plainAt.length, "our command's draw was made before the call");
 }
 
-// The hard fail (#183), one reason each. Nothing falls back to the distribution: the action carries no moves at all,
-// and the gate says why.
+// ---- The hard fail (#183): one reason each, and nothing falls back to the distribution.
 {
   const build = () => {
     const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
@@ -476,7 +450,7 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.equal(aiThrew.ask(t => t.exact()).reason, "the enemy AI call threw");
 
   const [breach, aiBreach] = build();
-  // A call that moves the battle stream in a way the sandbox can't put back is a breach, not a number to use.
+  // Moves the battle stream in a way the sandbox can't put back.
   nextMoveOf(breach, function () {
     Object.defineProperty(scene.currentBattle, "battleSeedState", { get: () => "moved", set() {}, configurable: true });
     return { move: 1, targets: [0], useMode: 0 };
@@ -484,8 +458,7 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.equal(aiBreach.ask(t => t.exact()).reason, "the enemy AI call breached its sandbox");
 }
 
-// Not every prompt has an exact answer to have: at the free "will you switch?" prompt the enemy has not decided and
-// will decide against a field we are still choosing. The gate is happy and the row is the distribution, `estimate`.
+// ---- At the free "will you switch?" prompt there is no exact move to have: the gate is happy, the row an `estimate`.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: -10 }, { id: 2, name: "B", target: -30 }] });
   const ai = setup({ player: [foe()], enemy: [e], phase: "CheckSwitchPhase" });
