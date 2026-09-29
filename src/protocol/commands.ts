@@ -1,10 +1,6 @@
 /**
- * The store command table (extension-distribution.md §10.1): the closed set of commands anything may send into a game
- * tab. The hub refuses a name not in it; a store build of the extension registers exactly these handlers. Plain data, no
+ * The closed set of commands anything may send into a game tab (extension-distribution.md §10.1). Plain data, no
  * imports.
- *
- * Every act carries `fine`, the fine fingerprint of the read it was decided on: the page refuses `moved` rather than act
- * on a game that has since changed (§10.2).
  */
 
 export type Field =
@@ -19,7 +15,6 @@ const bool = { type: "boolean", optional: true } as const;
 const num = { type: "number" } as const;
 const fine = { type: "string" } as const;
 
-/** The keys the `key` command can send: today's raw-keyboard buttons (extension-distribution.md §10.4). */
 export const KEY_BUTTONS = ["UP", "DOWN", "LEFT", "RIGHT", "ACTION", "CANCEL", "SUBMIT", "MENU"] as const;
 
 export const SNAPSHOT_DETAILS = ["lean", "party", "items", "full"] as const;
@@ -68,5 +63,4 @@ export const STORE_COMMANDS: { readonly [N in CommandName]: CommandSpec } = free
 
 export const COMMAND_NAMES = Object.freeze(Object.keys(STORE_COMMANDS) as CommandName[]);
 
-// The dev-only names live in `dev-commands.ts`, so a store build of the extension — which imports this module — never
-// carries them (extension-distribution.md §5.5, §10.6).
+// Dev-only names go in `dev-commands.ts`: a store build imports this module (extension-distribution.md §5.5).

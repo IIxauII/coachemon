@@ -1,6 +1,5 @@
 import type { Located } from "./locate.ts";
 
-/** One unlocked species, as the coach reads it before a run: dex progress plus what it costs on today's grid. */
 export type OwnedStarter = {
   id: number;
   /** `null` off the starter grid, where no container carries a cost. */
@@ -25,9 +24,8 @@ export type StartersResult = {
 };
 
 /**
- * Starter-select facts `start_run` needs before it presses anything, and every unlocked species for `read_starters`
- * (extension-distribution.md §11.4): `owned` is what `probe.js` read off `gameData`, so it answers off the grid too.
- * The filter bar is its own Screen, refused before this read. Self-contained (§10.5).
+ * `owned` answers off the grid too (extension-distribution.md §11.4). The filter bar is its own Screen, refused before
+ * this read. Self-contained (§10.5).
  */
 export function starters(L: Located, _args: Record<string, never>): StartersResult {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };

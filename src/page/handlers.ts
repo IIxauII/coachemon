@@ -1,7 +1,4 @@
-/**
- * The page's dispatch table: one handler per store command (extension-distribution.md §10.1). The extension
- * registers exactly these in a store build; the CDP link stringifies them one at a time (§10.5).
- */
+/** The extension registers exactly these in a store build (extension-distribution.md §10.1). */
 import type { CommandName } from "../protocol/commands.ts";
 import { cursorLearn, cursorOption, cursorShop, cursorStarter, key, modal, press } from "./acts.ts";
 import { card } from "./card.ts";
@@ -25,5 +22,4 @@ export const COMMAND_HANDLERS = Object.freeze({
   modal,
 } satisfies Record<CommandName, (L: any, args: any) => unknown>);
 
-/** What a command's handler answers. */
 export type Result<N extends CommandName> = ReturnType<(typeof COMMAND_HANDLERS)[N]>;

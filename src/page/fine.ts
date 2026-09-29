@@ -2,9 +2,8 @@ import type { Page, Scene } from "./locate.ts";
 import type { PageModes } from "./modes.ts";
 
 /**
- * The fine fingerprint: the settle loop's "has the game stopped moving" (#14: within-press, timing axis). `probe`
- * reports it, and every act recomputes it in the same page turn before acting (extension-distribution.md §10.2).
- * Self-contained (§10.5).
+ * The settle loop's fingerprint, not the progress fingerprint (CONTEXT.md, `Progress fingerprint`): every act
+ * recomputes it in the same page turn before acting (extension-distribution.md §10.2). Self-contained (§10.5).
  */
 export function fine(L: Scene, modes: PageModes): string {
   const __try = (f: () => Page) => { try { return f(); } catch (e) { return null; } };
@@ -33,7 +32,7 @@ export function fine(L: Scene, modes: PageModes): string {
     // SUMMARY's move-list row: without it a row press reads as unmoved (#32).
     h && typeof h.moveCursor === "number" ? h.moveCursor : "",
     messageText,
-    // The level-up stats window: its presses swap increments for totals, then close it, under an unchanged message (#55).
+    // Level-up stats: presses show totals, then close, under an unchanged message (#55, game-code.md §25).
     __try(() => mh.levelUpStatsContainer.visible ? (mh.levelUpStatsIncrContent.visible ? "incr" : "total") : "") ?? "",
     ui.overlayActive === true ? 1 : 0, h && h.active === true ? 1 : 0,
     awaiting(h) ? 1 : 0, typing(h) || typing(mh) ? 1 : 0,

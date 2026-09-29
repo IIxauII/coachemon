@@ -1,11 +1,10 @@
 /**
- * The act handlers (extension-distribution.md §10.1). `dispatch` has already checked `fine` against this page turn's
- * fingerprint (§10.2), so each runs on the game the act was decided on. A cursor act reads the fingerprint back after
- * moving, for the next act to expect. Each is self-contained (§10.5).
+ * `dispatch` has already matched `args.fine` to this page turn (extension-distribution.md §10.2). Self-contained
+ * (§10.5).
  */
 import type { Located } from "./locate.ts";
 
-/** An act that did nothing: the page refused it, or the game had `moved` off the act's fingerprint, now `fine`. */
+/** `fine` comes back only with `moved`: the fingerprint the game is on now. */
 export type Refused = { ok: false; why: string; fine?: string };
 
 export type PressResult = { ok: true; mode: number } | Refused;
@@ -16,16 +15,15 @@ export type CursorStarterResult = { ok: true; cursor: number; scrollCursor: numb
 export type CursorLearnResult = { ok: true; moveCursor: number; fine: string } | Refused;
 export type ModalResult = { ok: true; mode: number } | Refused;
 
-/** Deliver one button through the game's own input path. The return value is deliberately not read (#7 Principle 4). */
+/** `processInput`'s return value is never read (v1-tool-surface.md §1). */
 export function press(L: Located, args: { button: number; fine: string }): PressResult {
   L.ui.processInput(args.button);
   return { ok: true, mode: L.ui.mode };
 }
 
 /**
- * A button as an untrusted `keydown` then `keyup` on `window` (extension-distribution.md §10.4). `keyCode` is set in
- * the constructor and pinned as well; Phaser never checks `isTrusted`. The two events alternate `type`, so Phaser's
- * duplicate-event bailout keeps both, and a `keydown` never goes out without its `keyup`.
+ * `keyCode` is pinned as well as set, and a `keydown` never goes out without its `keyup` (extension-distribution.md
+ * §10.4).
  */
 export function key(_L: Located, args: { button: string; fine: string }): KeyResult {
   const KEYS: Record<string, [string, string, number]> = {
@@ -50,14 +48,14 @@ export function key(_L: Located, args: { button: string; fine: string }): KeyRes
   return { ok: true };
 }
 
-/** Option-select family: position the cursor over the unskipped list, then read back what the handler thinks. */
+/** `index` counts unskipped options only (extension-distribution.md §10.1). */
 export function cursorOption(L: Located, args: { index: number; fine: string }): CursorOptionResult {
   const h = L.ui.handlers[L.ui.mode];
   h.setCursor(args.index);
   return { ok: true, fullCursor: h.fullCursor, cursor: h.cursor, fine: L.fine() };
 }
 
-/** Shop: `setRowCursor` then `setCursor`; order is load-bearing (v1-tool-surface.md §7). */
+/** `setRowCursor` before `setCursor`: the order is load-bearing (v1-tool-surface.md §7). */
 export function cursorShop(L: Located, args: { row: number; col: number; fine: string }): CursorShopResult {
   const h = L.ui.handlers[L.m.MODIFIER_SELECT];
   h.setRowCursor(args.row);
@@ -66,8 +64,8 @@ export function cursorShop(L: Located, args: { row: number; col: number; fine: s
 }
 
 /**
- * Starter grid: keep the window in sync first (`setCursor` never calls `updateScroll`, #8), then `setCursor`. Refuses in
- * filter mode, where `setCursor(n)` writes `filterBarCursor` instead.
+ * `setCursor` places the cursor against `scrollCursor`, so that is set first (#8, game-code.md §23); in filter mode it
+ * writes `filterBarCursor` instead (v1-tool-surface.md §6.5).
  */
 export function cursorStarter(L: Located, args: { index: number; fine: string }): CursorStarterResult {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
@@ -84,10 +82,7 @@ export function cursorStarter(L: Located, args: { index: number; fine: string })
   return { ok: true, cursor: h.cursor, scrollCursor: h.scrollCursor, species: __try(() => h.filteredStarterContainers[h.cursor].species.name), fine: L.fine() };
 }
 
-/**
- * Learn-move rows: `setCursor` writes `moveCursor` only while `moveSelect` is on; off it, the same call would turn the
- * page, so it refuses instead.
- */
+/** Off `moveSelect`, `setCursor` turns the page instead of moving the row (v1-tool-surface.md §7). */
 export function cursorLearn(L: Located, args: { row: number; fine: string }): CursorLearnResult {
   const h = L.ui.handlers[L.m.SUMMARY];
   if (h.moveSelect !== true) return { ok: false, why: "move-select-off" };
@@ -95,7 +90,7 @@ export function cursorLearn(L: Located, args: { row: number; fine: string }): Cu
   return { ok: true, moveCursor: h.moveCursor, fine: L.fine() };
 }
 
-/** Modal family: the handler's own button action, mouse-only by construction (#13). */
+/** A modal's buttons are mouse-only, so this calls the button's own action (#13, v1-tool-surface.md §2). */
 export function modal(L: Located, args: { index: number; fine: string }): ModalResult {
   const h = L.ui.handlers[L.ui.mode];
   const fn = h.config && Array.isArray(h.config.buttonActions) ? h.config.buttonActions[args.index] : null;
