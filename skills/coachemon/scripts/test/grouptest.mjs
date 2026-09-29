@@ -1,4 +1,4 @@
-// The card's content pinned as its group list: cards are built from tables, and nothing here asserts a node (#349).
+// Cards are built from tables, and nothing here asserts a node (#349).
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { GROUP_IDS as RELAY_GROUP_IDS, cardBody } from "../../../../extension/src/relay/channel.ts";
@@ -48,7 +48,6 @@ const streams = ev => EVENT_KINDS.includes(ev.kind)
 // coverage rather than fail (#388).
 const gated = new Set();
 
-// The renderer is named at the call site: the kind → draw dispatch is 98-tick's alone (#388).
 const show = (label, card, draw = drawBattle) => {
   const drawn = draw(card);
   const groups = flatGroups(drawn);
@@ -121,7 +120,7 @@ const catchAdvice = {
   ],
 };
 
-// ---- Wild: act · foes · catch · road, and a threat turn that wants a switch
+// ---- A wild wave with everything to say: act · foes · catch · road
 {
   const card = battle({
     verdict: "danger",
@@ -167,7 +166,7 @@ const catchAdvice = {
   assert.ok(text.includes("\nCatch\n≈ Zubat maybe:"), text);
 }
 
-// ---- Trainer: act · foes · plan · road, six foes and a fight plan
+// ---- A trainer battle has a plan and no catch: act · foes · plan · road
 {
   const chomp = { icon: null, name: "Garchomp" };
   const card = battle({
@@ -279,7 +278,6 @@ const learn = (over = {}) => ({
   assert.equal(groups[2].summary, "1 issue: nothing hits Ground");
 }
 
-// Starters and fusion never stream, so this golden is the only place their groups are pinned.
 
 // ---- Encounter: the judged options are `options`, and the card's own footnotes are `notes`.
 const encounter = (over = {}) => ({
@@ -328,7 +326,7 @@ const starters = (over = {}) => ({
   assert.ok(text.includes("\nProposals\n★ best"), text);
 }
 
-// ---- Starters with nothing to add: an ordinary card with exactly one `act` group, and the shell never knows (#349).
+// ---- Nothing to add is an ordinary card with exactly one `act` group, and the shell never knows (#349).
 {
   const { groups } = show("starters · nothing to add", starters({ picks: [], full: true, room: 0, viewing: null }), drawStarters);
   assert.deepEqual(groups.map(g => g.id), ["act"]);

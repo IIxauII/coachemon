@@ -105,6 +105,7 @@ export const fakeTurn = ({
     // `exact`: the gate (#183). `{ ok: false, reason }` is what the panel sees on a build past the pin.
     exact: () => exact,
     exactMoves: () => exact,
+    // `ranges`: the draws our own command makes before the enemy decides; any at all make the pick `replay`.
     enemyAction: (foe, { ranges = [] } = {}) => memo(`action:${ranges.join(",")}`, foe, () => {
       const to = live ? switchTo(foe) : null;
       if (to) return { moves: [], switchTo: to, tera: false, skip: false, exact: false, confidence: null };

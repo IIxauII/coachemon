@@ -83,8 +83,8 @@ const pOf = (dist, name) => dist.find(r => r.name === name)?.p ?? 0;
 const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
 
 // ---- Replay against a benched mon of ours: the KO filter reads its HP, and a setup move is scored on the foe itself.
-// A 10 into the bench mon, D (Dance, on the user) 30: SMART advances round(10/30·50) % = 17 % from D.
 {
+  // A 10 into the bench mon, D (Dance, on the user) 30: SMART advances round(10/30·50) % = 17 % from D.
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
     { id: 1, name: "A", target: -10 }, { id: 4, name: "D", category: 2, moveTarget: 0, user: 30 }] });
   const bench = mkMon({ id: "bench", player: true, fieldIndex: null, hp: 100, dmg: { e: { 1: 60 } } });
@@ -100,8 +100,8 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
 }
 
 // ---- A virtual queued move (`useMode` 3 is INDIRECT) is used whether or not it is in the moveset (game-code.md §6).
-// The replay used to drop such a move and score the moveset instead (#178).
 {
+  // The replay used to drop such a move and score the moveset instead (#178).
   const moves = [{ id: 1, name: "A", target: -10 }, { id: 4, name: "D", category: 2, moveTarget: 0, user: 30 }];
   const bench = mkMon({ id: "bench", player: true, fieldIndex: null, hp: 100 });
   const called = mkMon({ id: "e", player: false, fieldIndex: 0, moves, queue: [{ move: 99, useMode: 3, targets: [0] }] });
@@ -117,8 +117,8 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
 }
 
 // ---- The replay's KO filter hides the target's ally's ability only until it has been revealed this wave.
-// It used to hide it always (#178).
 {
+  // It used to hide it always (#178).
   const moves = [{ id: 1, name: "A", target: -10 }, { id: 2, name: "B", target: -5 }];
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves });
   const target = mkMon({ id: "me", player: true, fieldIndex: 0 });
@@ -211,7 +211,7 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
   assert.deepEqual(ai.dist(e).map(r => [r.name, r.p, r.slot, r.targets]), [["Struggle", 1, -1, [0]]]);
 }
 
-// ---- Consecutive Protect: the condition passes only when randSeedInt(9) is 0 → branch 1/9 (score 10) vs −20.
+// ---- Consecutive Protect: the condition passes only when randBattleSeedInt(9) is 0 → branch 1/9 (score 10) vs −20.
 {
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [
     { id: 1, name: "A", target: -20 }, { id: 182, name: "Protect", category: 2, moveTarget: 0, user: 10, attrs: ["ProtectAttr"], cond: s => s.currentBattle.randSeedInt(9) === 0 }] });
@@ -224,9 +224,9 @@ const foe = (o = {}) => mkMon({ id: "me", player: true, fieldIndex: 0, ...o });
 }
 
 // ---- Doubles target weighting, a fractional benefit included.
-// Benefit 10 / 4 into our slots, −5 into the ally → weights 16, 10 (ally cut) → 16/26, 10/26; fractional 10.5 →
-// weights 16.5, 10 → floor(U·26.5) < 17 picks slot 0: 17/26.5.
 for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
+  // Benefit 10 / 4 into our slots, −5 into the ally → weights 16, 10 (ally cut) → 16/26, 10/26; fractional 10.5 →
+  // weights 16.5, 10 → floor(U·26.5) < 17 picks slot 0: 17/26.5.
   const player = [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })];
   const ally = mkMon({ id: "ally", player: false, fieldIndex: 1, moves: [{ id: 9, name: "Z" }] });
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A", target: bi => ({ 0: top, 1: -4, 3: -5 })[bi] }] });
@@ -260,9 +260,9 @@ for (const [top, p0] of [[-10, 16 / 26], [-10.5, 17 / 26.5]]) {
 }
 
 // ---- Doubles switch sequencing: slot 0's switch moves the counter slot 1 is judged by.
-// Counter 1 → slot 0 (w 0.9: 10·0.9 ≥ 1·3) switches, counter becomes 2 → slot 1 (w 0.684: 4·0.684 < 1.1·3) stays.
-// If slot 0 stays instead (counter → 0, w 1), slot 1 (4 ≥ 3.3) switches.
 for (const [slot0Best, expect] of [[10, ["e0"]], [1, ["e1"]]]) {
+  // Counter 1 → slot 0 (w 0.9: 10·0.9 ≥ 1·3) switches, counter becomes 2 → slot 1 (w 0.684: 4·0.684 < 1.1·3) stays.
+  // If slot 0 stays instead (counter → 0, w 1), slot 1 (4 ≥ 3.3) switches.
   const player = [foe(), mkMon({ id: "me2", player: true, fieldIndex: 1 })];
   const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0 });
   const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1 });
@@ -343,8 +343,8 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
 }
 
 // ---- A queued move comes back as the game returns it, and the queue is put back exactly as it was.
-// `getNextMove` splices the entries before its pick and can clear the array outright (game-code.md §6).
 {
+  // `getNextMove` splices the entries before its pick and can clear the array outright (game-code.md §6).
   const queue = [{ move: 9, targets: [0], useMode: 3 }, { move: 1, targets: [0], useMode: 0 }];
   const e = mkMon({ id: "e", player: false, fieldIndex: 0, queue, moves: [{ id: 1, name: "A" }] });
   const ai = setup({ player: [foe()], enemy: [e] });
@@ -382,8 +382,8 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
 }
 
 // ---- A foe the trainer switches out never reaches `getNextMove`, so it isn't asked (game-code.md §7).
-// The two benches are disjoint by party-index parity (§7), so the mock answers per `trainerSlot`.
 {
+  // The two benches are disjoint by party-index parity (§7), so the mock answers per `trainerSlot`.
   const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
   const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
   e0.trainerSlot = 1; e1.trainerSlot = 2;
@@ -400,8 +400,8 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
 }
 
 // ---- Both slots switching to one party index: slot 1 sends back in the mon slot 0 just withdrew (#285).
-// The game resolves both commands in field order, so slot 1's send-in is read off the party slot 0 already swapped.
 {
+  // The game resolves both commands in field order, so slot 1's send-in is read off the party slot 0 already swapped.
   const e0 = mkMon({ id: "e0", player: false, fieldIndex: 0, moves: [{ id: 1, name: "A" }] });
   const e1 = mkMon({ id: "e1", player: false, fieldIndex: 1, moves: [{ id: 2, name: "B" }] });
   const bench = mkMon({ id: "b", player: false, fieldIndex: null, moves: [{ id: 1, name: "A" }] });
@@ -450,7 +450,6 @@ const nextMoveOf = (e, fn) => Object.setPrototypeOf(e, { getNextMove: fn });
   assert.equal(aiThrew.ask(t => t.exact()).reason, "the enemy AI call threw");
 
   const [breach, aiBreach] = build();
-  // Moves the battle stream in a way the sandbox can't put back.
   nextMoveOf(breach, function () {
     Object.defineProperty(scene.currentBattle, "battleSeedState", { get: () => "moved", set() {}, configurable: true });
     return { move: 1, targets: [0], useMode: 0 };

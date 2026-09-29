@@ -593,9 +593,9 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
 }
 
 // ---- Safari Zone's minigame: the override menu, judged per turn on the source's own odds.
-// Hand-derived from game-code.md §13, not from the HUD: at catch rate 45 and both stages at 0, 37% to catch and 48% to
-// bolt; +2 catch is 62%, −1 is 27%; +1 flee is 73%, −2 is 24%.
 {
+  // Hand-derived from game-code.md §13, not from the HUD: at catch rate 45 and both stages at 0, 37% to catch and 48%
+  // to bolt; +2 catch is 62%, −1 is 27%; +1 flee is 73%, −2 is 24%.
   const wild = (catchRate, extra = {}) => ({ ...pk("Nidorina", ["Poison"], 32, { id: 30, bst: 365 }),
     species: species(30, "Nidorina", ["Poison"], 365, { catchRate }), shiny: false, abilityIndex: 0, variant: 0, formIndex: 0, ...extra });
   // The encounter's own two options are still on `me.options`; the menu on screen is none of them.

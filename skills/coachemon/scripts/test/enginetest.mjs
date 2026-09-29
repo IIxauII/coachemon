@@ -181,8 +181,8 @@ const log = (...a) => console.log(...a);
 }
 
 // ---- Charge and recharge turns count: Hyper Beam's 3HKO takes 5 turns, as long as Body Slam's, which is the pick.
-// Body Slam's 68–80 rolls (a crit 1 in 24) 4HKO the 300 HP Golem only 37 % of the time, so it takes 5.
 {
+  // Body Slam's 68–80 rolls (a crit 1 in 24) 4HKO the 300 HP Golem only 37 % of the time, so it takes 5.
   const hyperBeam = move(63, "Hyper Beam", 150, { cat: 1, attrs: [new RechargeAttr()] });
   const bodySlam = move(34, "Body Slam", 85);
   const golem = mon("Golem", { player: false, hp: 300, spe: 40, moves: [move(89, "Rock Throw", 10)] });

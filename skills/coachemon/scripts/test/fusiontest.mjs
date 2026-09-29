@@ -103,7 +103,7 @@ let best;
   for (let i = 1; i < m.rows.length; i++) assert.ok(m.rows[i - 1].value >= m.rows[i].value, "best first");
 }
 
-// ---- Magikarp was picked first: only fusions onto it, and the card says to back out for the better one.
+// ---- A first pick made: only fusions onto it, and the card says to back out for a better one elsewhere.
 {
   const m = show("Magikarp picked first", { picked: 3 });
   assert.ok(m.rows.every(r => r.base.name === "Magikarp"));
@@ -111,7 +111,7 @@ let best;
   assert.ok(m.better && m.better.base.name === best.base.name, "a better fusion elsewhere");
 }
 
-// ---- Hardcore: a fainted Salamence can't be picked either way.
+// ---- Hardcore's filter keeps a fainted member out of both picks.
 {
   const members = party();
   members[1].hp = 0;
@@ -119,13 +119,13 @@ let best;
   assert.ok(m.rows.every(r => r.base.name !== "Salamence" && r.other.name !== "Salamence"));
 }
 
-// ---- Two members: fusing leaves one, so nothing is worth it and the call is to back out.
+// ---- Fusing a party of two leaves one, so no fusion is worth it and the call is to back out.
 {
   const m = show("two members", { members: party().filter(p => ["Garchomp", "Magikarp"].includes(p.name)) });
   assert.ok(m.rows.length && m.rows.every(r => !r.fuse), "no fusion clears the bar");
 }
 
-// ---- Spliced Endless: every unfused mon runs on half its base stats, so the best fusion is worth far more.
+// ---- Halved unfused base stats make the best fusion worth far more (game-code.md §24).
 {
   const m = show("Spliced Endless", { spliced: true });
   assert.equal(m.spliced, true);
