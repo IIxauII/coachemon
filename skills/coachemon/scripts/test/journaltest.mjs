@@ -1,15 +1,6 @@
-// Mystery Encounter journal against a mock scene shaped like the pinned source: the encounter opens (the game pushes
-// its own `SeenEncounterData`), the coach's card arrives, the player picks (the game writes `selectedOption` into
-// that record), a fight the encounter started plays out, and the wave moves on. Covers: one entry per encounter, the
-// card captured as shown, the pick read off the game's record rather than guessed, a step appended only when the run
-// actually moved, the `MAX_STEPS` cap, the store surviving a reload, a panel injected mid-encounter carrying on
-// with the entry already there, the entry cap, a store that refuses to write,
-// and that a throw inside the journal never reaches the caller. Prints the journal and the tally, so run.mjs keeps a
-// golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
-// ---- A localStorage that behaves: a real store, optionally full or refusing.
 const makeStore = ({ refuse = false, quota = Infinity } = {}) => {
   const map = new Map();
   return {
@@ -24,8 +15,6 @@ const makeStore = ({ refuse = false, quota = Infinity } = {}) => {
   };
 };
 
-// ---- The mock scene. Only what the journal reads: properties, the two party accessors, and the game's own
-// `encounteredEvents`, which is where the pick lands.
 const mon = (id, speciesId, name, level, hp, max, status = 0) => ({
   id, species: { speciesId }, name, level, hp, getMaxHp: () => max, status: status ? { effect: status } : null,
 });
@@ -44,8 +33,7 @@ const scene = () => ({
   getEnemyParty() { return this.enemy; },
 });
 
-// The game as it opens an encounter: `MysteryEncounterPhase.start` pushes the record, `handleOptionSelect` writes the
-// index into it.
+// The record the game pushes as the encounter opens, and the index it writes into it on a pick (game-code.md §13).
 const openEncounter = (s, wave, type, tier) => {
   s.currentBattle = { waveIndex: wave, turn: 0, battleType: 3, double: false, mysteryEncounter: { encounterType: type, encounterTier: tier } };
   s.mysteryEncounterSaveData.encounteredEvents.push({ type, tier, waveIndex: wave, selectedOption: -1 });
@@ -59,13 +47,12 @@ const card = (wave, name) => ({
   pick: 0, notes: [],
 });
 
-// `at` is a wall clock, so the golden reads it as a fixed stamp; every other field is the journal's own.
 const clean = entries => entries.map(e => ({ ...e, at: e.at && /^\d{4}-/.test(e.at) ? "<timestamp>" : e.at }));
 
 let store = makeStore();
 globalThis.window = globalThis;
 delete globalThis.__coachHud;
-// No scene behind the pool, so the panel's own first tick finds nothing to coach and journals nothing.
+// No scene behind the pool, so the panel's own tick journals nothing of its own.
 globalThis.Phaser = { Math: { RND: {} }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => null } } } }] } } } };
 const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
 globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node,
@@ -74,8 +61,7 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 Object.defineProperty(globalThis, "localStorage", { get: () => store, configurable: true });
 
-// Each instance is its own panel session: whether the store can be written to is decided once per session, so the
-// refusing-store case needs a fresh one rather than a swapped store.
+// The store is probed once per panel session, so a refusing store needs a fresh `instance()`, not a swapped `store`.
 const src = bundle("hud", { expose: true });
 const instance = () => { new Function(src)(); return globalThis.__hud["55-journal"]; };
 const { journalCheck, journalEntries, journalStats, journalClear } = instance();
@@ -87,28 +73,26 @@ const show = (title, value) => out.push(`---- ${title}\n${JSON.stringify(value, 
 {
   journalClear();
   const s = scene();
-  // Wave before the encounter: nothing to journal.
   s.currentBattle = { waveIndex: 10, turn: 1, battleType: 0, double: false };
   journalCheck(s, { kind: "battle", wave: 10 });
   assert.equal(journalEntries().length, 0, "a wave with no encounter leaves no entry");
 
   openEncounter(s, 11, 1, 0);
-  journalCheck(s, null); // the option screen is up, the card has not been read yet
+  journalCheck(s, null);
   assert.equal(journalEntries().length, 1, "the entry opens with the encounter");
   assert.equal(journalEntries()[0].card, null);
 
-  journalCheck(s, card(11, "Mysterious Chest")); // the card arrives
-  journalCheck(s, card(11, "Mysterious Chest")); // an unchanged tick writes no step
+  journalCheck(s, card(11, "Mysterious Chest"));
+  journalCheck(s, card(11, "Mysterious Chest"));
   assert.equal(journalEntries()[0].steps.length, 1, "an unchanged run appends nothing");
   assert.equal(journalEntries()[0].picked, null, "no pick while the game's record says −1");
 
   pick(s, 0);
-  s.party[0].hp = 12; // the chest was trapped
+  s.party[0].hp = 12;
   journalCheck(s, card(11, "Mysterious Chest"));
   assert.equal(journalEntries()[0].picked, 0);
   assert.equal(journalEntries()[0].pickedLabel, "Open it");
 
-  // The fight the encounter started, on the same wave: `mysteryEncounter` stays, so the trace runs on.
   s.enemy = [mon(9, 143, "Snorlax", 22, 140, 140)];
   s.currentBattle.turn = 1;
   journalCheck(s, { kind: "battle", wave: 11 });
@@ -116,7 +100,6 @@ const show = (title, value) => out.push(`---- ${title}\n${JSON.stringify(value, 
   s.currentBattle.turn = 2;
   journalCheck(s, { kind: "battle", wave: 11 });
 
-  // The wave moves on: the encounter closes.
   s.enemy = [];
   s.currentBattle = { waveIndex: 12, turn: 0, battleType: 0, double: false };
   journalCheck(s, { kind: "battle", wave: 12 });
@@ -156,7 +139,6 @@ const show = (title, value) => out.push(`---- ${title}\n${JSON.stringify(value, 
   journalCheck(s, null);
   assert.equal(journalEntries().length, 1);
 
-  // A reload: a fresh panel session over the same store, mid-encounter.
   const reloaded = instance();
   s.money = 1500;
   reloaded.journalCheck(s, card(40, "Dark Deal"));
@@ -168,7 +150,7 @@ const show = (title, value) => out.push(`---- ${title}\n${JSON.stringify(value, 
   out.push(`---- reload mid-encounter\nentries ${j.length}, picked ${j[0].picked}, steps ${j[0].steps.length}`);
 }
 
-// ---- The step cap. A long fight leaves the first MAX_STEPS steps and says it was cut.
+// ---- A long fight keeps the first MAX_STEPS steps and says it was cut.
 {
   journalClear();
   const s = scene();

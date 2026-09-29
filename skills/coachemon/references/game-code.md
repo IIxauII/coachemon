@@ -537,6 +537,16 @@ Reverse the speed order under Trick Room. It is safe to call without the sandbox
 Break ties with `sortInSpeedOrder`. Quick Claw puts the holder in the FIRST bracket with probability 0.1·stack; Quick Draw does so with 0.3, on attacks only.
 The HUD's version is `actionOrder` in `30-planner.js`.
 
+**A target that leaves the field before a move resolves.** In a double, `FaintPhase` calls
+`globalScene.redirectPokemonMoves(pokemon, allyPokemon)` when the fainted mon has a field ally
+(`src/phases/faint-phase.ts:197-201`); a forced switch-out calls it too (`src/data/moves/move.ts:7440`,
+`src/data/abilities/ab-attrs.ts:5765`). `MovePhasePriorityQueue.redirectMoves`
+(`src/queues/move-phase-priority-queue.ts:49-71`) rewrites `targets[0]` of each still-queued `MovePhase` to the ally's
+battler index, and nothing else: the move is the one chosen for the fainted mon. It applies only to a single-target
+move (`:60`) aimed at the removed mon (`:61`) by one of its opponents (`:62`), and only while the ally is active
+(`:56`). Those phases were built from this turn's commands (`src/phases/turn-start-phase.ts:153-159`), and
+`turnCommands` is cleared when the turn ends (`src/battle.ts:171-176`), so the redirect never reaches a later turn.
+
 **Move conditions, restrictions, miss effects and recoil.** A `Move` keeps its conditions in three private lists, `conditions`
 (`src/data/moves/move.ts:182`), `conditionsSeq2` (`:186`) and `conditionsSeq3` (`:223`), chosen by
 `condition(c, checkSequence)` (`:504-521`). Fake Out, First Impression and Mat Block each put a fresh

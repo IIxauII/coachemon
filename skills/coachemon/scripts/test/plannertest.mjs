@@ -1,21 +1,12 @@
-// Planner scenarios with explicit assertions. Usage: node test/plannertest.mjs
-//
-// The planner reads the live battle through one **turn** (`hud/25-turn.js`) and nothing else, so a scenario here is
-// a turn built from tables: what each move does (`__stub.outcome`), what the enemy AI picks (`dist`), what the
-// trainer switches to (`switches`), what a turn end costs (`heal`), what the game's own move scoring makes of a move
-// of ours (`benefit`). `test/fake-turn.mjs` turns those into a turn, `60-card` composes the card from it, and the
-// panel's own renderer draws it — the same path the page takes, with the scene left out.
-//
-// The "fallback" scenario builds an approximate turn instead (`live: false`), where the planner must still render a
-// plan from nothing but the type chart.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { fakeTurn } from "./fake-turn.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-// The tables a scenario sets, as the turn asks for them. `__stub` is rebound per scenario, so every op reads it at
-// call time rather than closing over it.
+// The tables a scenario sets: `outcome` what each move does, `dist` the enemy AI's pick, `switches` the trainer's
+// switch-in, `heal` a turn end's cost, `benefit` the game's own score for a move of ours. `__stub` is rebound per
+// scenario, so every op reads it at call time rather than closing over it.
 const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex, turnCommands, exact }) => {
   const active = () => {
     const out = foes.filter(f => f.isOnField?.());
@@ -28,24 +19,22 @@ const stubTurn = ({ party, foes, live, double, trainer, arena, phase, fieldIndex
     trickRoom: !!arena?.getTag?.("TRICK_ROOM"),
     command: cmd && !cmd.skip ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] } : null,
     outcome: (atk, def, pm, opts) => globalThis.__stub.outcome(atk, def, pm, opts),
-    // A status move's own record: what the game would say about aiming it at `def`.
     statusMoves: (atk, def) => atk.moveset.filter(pm => pm.getMove().category === 2).map(pm => ({
       pm, name: pm.getName(), type: TY[pm.getMove().type], cat: "status", acc: pm.getMove().accuracy > 0 ? pm.getMove().accuracy / 100 : 1,
       e: 1, priority: pm.getMove().priority ?? 0, bypassProtect: false, bounce: false, blocked: null,
     })),
-    // What a restriction took off this mon's move list, the way the scene adapter reads it off the tags.
+    // What a restriction took off this mon's move list.
     stopped: (atk, def) => globalThis.__stub.stopped?.(atk, def) ?? [],
     heal: (p, opts) => globalThis.__stub.heal?.(p, opts) ?? 0,
     moves: e => globalThis.__stub.dist(e),
     switchTo: f => globalThis.__stub.switches(active()).get(f)?.to ?? null,
     replay: (e, target) => globalThis.__stub.replay?.(e, target) ?? null,
     benefit: (atk, def, mv) => globalThis.__stub.benefit?.(atk, mv, def) ?? 0,
-    // The trainer's send-in score, the way the scene adapter asks the game for it.
+    // The trainer's send-in score.
     sendIn: (f, me) => f.getMatchupScore?.(me) ?? null,
   });
 };
-// The planner's pieces, from expose mode. They take the turn where they used to take the scene, so a scenario hands
-// them the one it built; `koCurve` takes the turn's per-mon record, so it is wrapped to look that up.
+// `koCurve` takes the turn's per-mon record, so it is wrapped to look that up.
 const plannerApi = turn => ({
   ...globalThis.__hud["30-planner"],
   koCurve: (target, use, opts) => globalThis.__hud["10-damage"].koCurve(turn.mon(target), use, opts),
@@ -55,8 +44,7 @@ const plannerApi = turn => ({
 // moves: [name, type, power, cat, priority = 0, { target = 3, attrs = [], id }]; an attr is a class name, or
 // [name, fields] for one that carries its constructor arguments.
 const attr = a => (Array.isArray(a) ? Object.assign(new ({ [a[0]]: class {} })[a[0]](), a[1]) : new ({ [a]: class {} })[a]());
-// `getTypes` follows `summonData` the way the game's does (Pokemon.getTypes / getBaseTypes): written-on types replace
-// the species' own, and an added type (Forest's Curse) goes on top — so a hypothesis the planner writes is visible here.
+// `getTypes` follows `summonData` as the game's does (game-code.md §14), so a hypothesis the planner writes shows here.
 const monTypes = (sd, types) => () => {
   const base = sd.types?.length ? [...sd.types] : types.map(t => TY.indexOf(t));
   return sd.addedType != null && !base.includes(sd.addedType) ? [...base, sd.addedType] : base;
@@ -70,8 +58,7 @@ const mon = (name, lv, types, [hp, atk, def, spa, spd, spe], moves, field, curHp
   ...extra,
 });
 
-// Per-hit max damage, accuracy and effectiveness for the pairs the scenario uses: "attacker>move>defender".
-// Triple Axel is 3 hits, each checking accuracy (Wide Lens folded in).
+// "attacker>move>defender": [per-hit max damage, accuracy, effectiveness]. Triple Axel's 0.95 has Wide Lens folded in.
 const TABLE = {
   "Morpeko>Aura Wheel>Gyarados": [[300], 1, 4], "Morpeko>Aura Wheel>Weavile": [[90], 1, 1],
   "Scrafty>High Jump Kick>Gyarados": [[60], 0.9, 0.5], "Scrafty>High Jump Kick>Weavile": [[400], 0.9, 4],
@@ -82,8 +69,7 @@ const TABLE = {
   "Lycanroc>Stone Edge>Charizard": [[500], 0.8, 4], "Lycanroc>Stone Edge>Blastoise": [[150], 0.8, 1],
   "Weavile>Knock Off>Morpeko": [[60], 1, 0.5], "Weavile>Knock Off>Scrafty": [[40], 1, 0.25], "Weavile>Knock Off>Metagross": [[140], 1, 2],
 };
-// The move traits the planner reads (07-move-traits' shape), faked alongside the numbers: a scenario that needs one
-// sets it on the record it hands back.
+// 07-move-traits' shape; a scenario that needs a trait sets it on the record it hands back.
 const TRAITS = {
   charge: false, semiCharge: false, recharge: false, interrupt: false, needsAttack: false, once: false, lock: false,
   noRepeat: false, recoil: null, halfSac: false, crash: false, selfKo: null, drops: {}, removesType: false,
@@ -93,7 +79,7 @@ const outcome = (atk, def, pm, { crit = false } = {}) => {
   const row = TABLE[`${atk.name}>${pm.getName()}>${def.name}`];
   if (!row) return null;
   const [per, acc, e] = row;
-  // Stat stages on the attacking and defending stat, and burn halving a physical hit, as the game's damage call has them.
+  // Stat stages and burn, as the game's damage call has them (game-code.md §1).
   const phys = pm.getMove().category === 0;
   const stg = (p, i) => { const x = p.summonData?.statStages?.[i - 1] ?? 0; return x >= 0 ? (2 + x) / 2 : 2 / (2 - x); };
   const mult = (crit ? 1.5 : 1) * stg(atk, phys ? 1 : 3) / stg(def, phys ? 2 : 4) * (phys && atk.status?.effect === 6 ? 0.5 : 1);
@@ -141,9 +127,7 @@ const cyrus = withMetagross => {
   return { party, foes };
 };
 
-// Builds this scenario's turn, composes the battle card from it and draws it, returning the rendered lines
-// (`field`: everything above the foe rows). `fieldIndex`: whose command phase it is; `turnCommands`: commands
-// already chosen this turn.
+// `fieldIndex`: whose command phase it is; `turnCommands`: the commands already chosen this turn.
 const render = ({ party, foes, live, arena, dist, switches, double = false, phase, fieldIndex = 0, turnCommands = [], stubOutcome = outcome, benefit = null, heal = null, stopped = null, exact = { ok: true } }) => {
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const onField = () => party.filter(p => p.isOnField());
@@ -156,7 +140,6 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   };
   const trainer = { getName: () => "Cyrus", config: { isBoss: true }, isDouble: () => false,
     getPartyMemberMatchupScores: () => [[1, 5]], getSortedPartyMemberMatchupScores: x => x, getNextSummonIndex: () => 1 };
-  // The panel's own globals: the renderers build DOM nodes and read the view mode.
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() {} }, createElement: node };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [] } } } };
@@ -167,15 +150,13 @@ const render = ({ party, foes, live, arena, dist, switches, double = false, phas
   globalThis.__planner = plannerApi(turn);
   const card = { ...globalThis.__hud["60-card"].composeBattleCard(turn, null), wave: 200 };
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") + (n.title ? ` {${n.title}}` : "") : "");
-  // A renderer's product is a list of **group**s now (#349); what this test is about is the rows the planner puts
-  // in them, so it reads the rows and leaves the summaries to the group golden. `txt` keeps a node's tooltip, which
-  // the card's plain text drops, and several assertions below are on the tooltip.
+  // Rows only, and `txt` keeps a node's tooltip as `{title}`: the card's plain text drops it, and several assertions
+  // read it.
   const rowsOf = g => g.rows.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean);
   const groups = globalThis.__hud["96-render-battle"].drawBattle(card);
   const lines = groups.flatMap(rowsOf);
-  // `field`: the act group's own rows, which since #356 are the supporting lines and nothing else — the card's
-  // identity line has left them for the strip's caption, and the call for the strip itself.
-  // `scene` is the turn now: what the planner is handed, and what a scenario tweaks.
+  // `field`: the act group's rows, the supporting lines only — not the strip's caption or its call (#356). `scene` is
+  // the turn: what the planner is handed, and what a scenario tweaks.
   return { lines, field: rowsOf(groups.find(g => g.id === "act")), groups, card, scene: turn };
 };
 // The Cyrus mistake: Scrafty sent in "→ High Jump Kick" as if the move happened this turn.
@@ -185,7 +166,7 @@ const assertNoImmediateScrafty = field => {
   assert.ok(!field.some(l => /High Jump Kick/.test(l) && !/^next:/.test(l) && !/^↺/.test(l)), `High Jump Kick shown as an immediate action:\n${field.join("\n")}`);
 };
 
-// ---- 1. Cyrus-like, live: Gyarados switches to a boss Weavile that outspeeds and KOs Scrafty with Triple Axel.
+// ---- Cyrus-like, live: Gyarados switches to a boss Weavile that outspeeds and KOs Scrafty with Triple Axel.
 {
   const { party, foes } = cyrus(true);
   const { lines, field } = render({ party, foes, live: true });
@@ -203,7 +184,7 @@ const assertNoImmediateScrafty = field => {
   assert.ok(lines.some(l => /^↺ if it stays: Morpeko/.test(l)), "plan for Gyarados staying is kept, dim");
 }
 
-// ---- 2. Same, without a safe answer on the bench: stay, flagged 💀 for next turn.
+// ---- Cyrus with no safe answer on the bench: stay, flagged 💀 for next turn.
 {
   const { party, foes } = cyrus(false);
   const { lines, field } = render({ party, foes, live: true });
@@ -215,7 +196,7 @@ const assertNoImmediateScrafty = field => {
   assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
 }
 
-// ---- 3. The planner's building blocks, on scenario 1's scene.
+// ---- The planner's building blocks, on the Cyrus scene.
 {
   const { party, foes } = cyrus(true);
   const { scene: s } = render({ party, foes, live: true });
@@ -231,8 +212,7 @@ const assertNoImmediateScrafty = field => {
   assert.ok(Math.abs(actionOrder(s, claw, plain, weavile, plain) - 0.1) < 1e-9, "Quick Claw: 10 % to go first");
   assert.equal(actionOrder({ ...s, facts: { ...s.facts, trickRoom: true } }, weavile, plain, scrafty, plain), 0, "Trick Room reverses speed");
 
-  // The BYPASS_SPEED tag is read before any ability bracket, so Quick Claw puts its holder first whatever the bracket
-  // would have said; Mycelium Might stops the tag going on at all, but only for a status move (#178.6).
+  // Quick Claw against its bracket, and Mycelium Might on a status move (game-code.md §5, #178).
   // MovePriorityInBracket: LAST 0, NORMAL 1, FIRST 2. MoveCategory.STATUS is 2.
   const clawItem = () => new (class BypassSpeedChanceModifier { getStackCount() { return 1; } })();
   const stall = { priority: 0, getPriorityModifier: () => 0 };
@@ -242,9 +222,8 @@ const assertNoImmediateScrafty = field => {
   assert.equal(actionOrder(s, mycelium, { priority: 0, category: 2 }, weavile, plain), 0, "Mycelium Might blocks the bypass on a status move");
   assert.ok(Math.abs(actionOrder(s, mycelium, plain, weavile, plain) - 0.1) < 1e-9, "\u2026but not on an attack");
 
-  // A speed tie on the turn the game is waiting on is settled by that turn's own shuffle, not a coin flip (#178.5).
-  // Reading the shuffle is the turn's (`turn.speedTie`, tested against a fake scene in damagetest); what the planner
-  // owns is when to ask for it — only for this turn, and only while the turn has an answer.
+  // A speed tie this turn is settled by the turn's own shuffle (`turn.speedTie`, #178); the planner asks only for this
+  // turn, and only while the turn has an answer.
   {
     const ours = { ...morpeko, isPlayer: () => true };
     const theirs = { ...morpeko, id: "twin", isPlayer: () => false };
@@ -272,18 +251,16 @@ const assertNoImmediateScrafty = field => {
   // One HP above the bar boundary: Aura Wheel (77–90) breaks the bar for 1 HP, then needs two more for the last 150.
   const edge = { ...weavile, id: "Weavile at the boundary", hp: 151 };
   assert.equal(exchange(s, morpeko, morpeko.moveset[0], edge).turnsWe, 3, "a clamped first hit doesn't set the pace for later bars");
-  // Turn-end heals come every turn the target survives, and never past max HP (Pokemon.heal). Meteor Mash lands for
-  // 64.3 on average, 57.9 a use with its 10 % misses, into a Gyarados healing 30: 250 HP falls 27.9 a turn on the mean,
-  // but a miss at full HP heals nothing, so the 8th use finishes it only 49.96 % of the time and the likely turn is the
-  // 9th (8.0 expected). Waterfall (55.1) into a Metagross healing 10: 240 / 45.1 → 6 turns. Healing once would say 5 and 5.
+  // Turn-end heals come every turn the target survives, capped at max HP. Meteor Mash (57.9 a use, misses counted)
+  // into a Gyarados healing 30: a miss at full HP heals nothing, so the 8th use finishes it only 49.96 % of the time
+  // and the likely turn is the 9th (8.0 expected). Waterfall (55.1) into a Metagross healing 10: 240 / 45.1 → 6.
   globalThis.__stub.heal = p => ({ Gyarados: 30, Metagross: 10 })[p.name] ?? 0;
   const [, , metagross] = party;
   const healing = exchange(s, { ...metagross, id: "healing Metagross" }, metagross.moveset[0], { ...gyarados, id: "healing Gyarados" });
   delete globalThis.__stub.heal;
   assert.deepEqual([healing.turnsWe, healing.turnsThey], [9, 6], "heals land every turn on both sides");
   assert.ok(Math.abs(healing.eTurnsWe - 8) < 0.05, `expected turns (${healing.eTurnsWe})`);
-  // Meteor Mash and 61 chip a turn into 250 HP: two turns do it only 47.8 % of the time (the rolls and a 10 % miss
-  // decide), three 98 %. The mean (64.3 + 61 a turn) would call it a sure two.
+  // Meteor Mash and 61 chip a turn into 250 HP: two turns do it only 47.8 % of the time, three 98 %.
   globalThis.__stub.heal = p => (p.name === "Gyarados" ? -61 : 0);
   assert.equal(exchange(s, { ...metagross, id: "Metagross vs chip" }, metagross.moveset[0], { ...gyarados, id: "poisoned Gyarados" }).turnsWe, 3, "chip shortens the exchange");
   // Hit plus chip finishing it this turn isn't held to two turns: Meteor Mash (64.3) and 40 chip into 100 HP.
@@ -291,14 +268,13 @@ const assertNoImmediateScrafty = field => {
   assert.equal(exchange(s, { ...metagross, id: "Metagross vs low chip" }, metagross.moveset[0], { ...gyarados, id: "Gyarados at 100", hp: 100 }).turnsWe, 1, "our hit and its chip");
   // …on our side too: Waterfall can't KO Morpeko at 90 alone, but with 20 poison chip it goes down this turn.
   assert.equal(exchange(s, { ...morpeko, id: "poisoned Morpeko" }, morpeko.moveset[0], { ...gyarados, id: "Gyarados vs poison" }, { hp: 90 }).turnsThey, 1, "its hit and our chip");
-  // Shell Bell: our heal is asked with the damage we deal.
   const asked = [];
   globalThis.__stub.heal = (p, o) => { asked.push([p.name, Math.round(o?.dealt ?? 0)]); return 0; };
   exchange(s, { ...metagross, id: "Metagross with a bell" }, metagross.moveset[0], { ...gyarados, id: "Gyarados vs bell" });
   delete globalThis.__stub.heal;
   assert.ok(asked.some(([n, d]) => n === "Metagross" && d > 50), `our turn-end HP is asked with the damage dealt (${JSON.stringify(asked)})`);
-  // Reviver Seed: Aura Wheel's KO brings Gyarados back at 125, so it takes a second turn. The outcome says so this turn
-  // (`revive`, no pKo); the KO pacing core reads the held seed for the turns after.
+  // Reviver Seed: the outcome says so this turn (`revive`, no pKo); the KO pacing reads the held seed for the turns
+  // after.
   const seededOutcome = globalThis.__stub.outcome;
   const seed = new (class PokemonInstantReviveModifier { getStackCount() { return 1; } })();
   const seeded = (x, id) => ({ ...x, id, getHeldItems: () => [seed] });
@@ -317,8 +293,8 @@ const assertNoImmediateScrafty = field => {
   const hjk = x => exchange(s, scrafty, scrafty.moveset[0], x).turnsWe;
   assert.equal(hjk({ ...gyarados, id: "Gyarados no rock" }), 5);
   assert.equal(hjk({ ...gyarados, id: "Gyarados with rock", getHeldItems: () => [rock] }), 7, "flinches cost turns");
-  // A wild boss gains a stat stage per bar broken, weighted by its stats: a Def-heavy Weavile's second bar takes
-  // Aura Wheel (83 a use) 3 turns instead of 2. A trainer's boss doesn't.
+  // A wild boss gains a stat stage per bar broken and a trainer's doesn't (game-code.md §3): a Def-heavy Weavile's
+  // second bar takes Aura Wheel (83 a use) 3 turns instead of 2.
   const bulky = { getStat: i => [300, 10, 1000, 10, 10, 10][i] };
   assert.equal(exchange(s, morpeko, morpeko.moveset[0], { ...weavile, ...bulky, id: "trainer Weavile", hasTrainer: () => true }).turnsWe, 4);
   assert.equal(exchange(s, morpeko, morpeko.moveset[0], { ...weavile, ...bulky, id: "wild Weavile", hasTrainer: () => false }).turnsWe, 5, "bar-break boosts slow later bars");
@@ -333,10 +309,9 @@ const assertNoImmediateScrafty = field => {
   // The boost only comes once the bar breaks (our 3rd hit): at 80 HP, Metagross falls to the 3rd unboosted Body Slam.
   assert.equal(exchange(s, { ...metagross, id: "Metagross at 80 vs wild" }, metagross.moveset[0], ursaring("wild Ursaring vs 80", false), { hp: 80 }).turnsThey, 3,
     "no boost before the bar breaks");
-  // Sleep tokens (2.5 % a stack a landed hit): asleep 1–2 attempts (⅓ / ⅔). Metagross moves first, so a Body Slam's
-  // sleep costs from the next turn: acting 1, .9, .84, .86, .87, .89… Meteor Mash needs six landed uses for the two
-  // 200 HP bars, and all of the first six get through 50.4 % of the time — just more likely than not, so 6 turns; by
-  // the 7th, 83.7 %. Taken on the mean it read 7.
+  // Sleep tokens: asleep 1–2 attempts, ⅓ / ⅔ (game-code.md §8). Metagross moves first, so a Body Slam's sleep costs
+  // from the next turn: acting 1, .9, .84, .86, .87, .89… Six landed Meteor Mashes take the two 200 HP bars, and all
+  // of the first six get through 50.4 % of the time, so 6 turns; by the 7th, 83.7 %.
   const { tokenActs, koCurve } = globalThis.__planner;
   const mashRolls = Array.from({ length: 16 }, (_, r) => ({ d: Math.floor(80 * (85 + r) / 100), p: 1 / 16 }));
   const tokenCurve = id => {
@@ -348,7 +323,7 @@ const assertNoImmediateScrafty = field => {
   assert.deepEqual(tokenCurve("sleep").slice(4, 7), [0, 0.504, 0.837], "each attempt is one KO-or-not branch, not a share of a hit");
   assert.equal(slam(ursaring("trainer Ursaring vs sleep", true)).turnsWe, 6, "sleep tokens cost our turns");
   // Freeze at 10 stacks (25 % a hit): ¾ then 9/16 of the next two attempts lost, acting 1, .81, .72, .79, .84, .88,
-  // .91: six of the first seven land 71.9 % of the time, so 7 turns (the mean said 8).
+  // .91: six of the first seven land 71.9 % of the time, so 7 turns.
   s.facts.enemyModifiers = [new (class EnemyAttackStatusEffectChanceModifier { effect = 5; chance = 0.025; getStackCount() { return 10; } })()];
   assert.deepEqual(tokenCurve("freeze").slice(5, 7), [0.342, 0.719]);
   assert.equal(slam(ursaring("trainer Ursaring vs freeze", true)).turnsWe, 7, "freeze tokens cost our turns");
@@ -399,7 +374,7 @@ const assertNoImmediateScrafty = field => {
   console.log("== building blocks ok");
 }
 
-// ---- 4. Fallback: the real modules outside the CommandPhase still render a plan, without the turn-split bug.
+// ---- Fallback: the real modules outside the CommandPhase still render a plan, without the turn-split bug.
 {
   const { party, foes } = cyrus(true);
   const { lines, field } = render({ party, foes, live: false });
@@ -408,8 +383,7 @@ const assertNoImmediateScrafty = field => {
   assert.ok(field.some(l => /⚔ Morpeko/.test(l)), "a plan renders");
 }
 
-// ---- 5. A switch-in must get to act: Blastoise survives Stone Edge coming in, but the faster Lycanroc KOs it next
-// turn before Wave Crash. Scored on trades alone the switch looks better than staying; it must be rejected.
+// ---- A switch-in must get to act: Blastoise survives Stone Edge coming in, then falls to the faster Lycanroc.
 {
   const party = [
     mon("Charizard", 66, ["Fire", "Flying"], [190, 125, 118, 160, 128, 120], [["Flamethrower", "Fire", 90, "S"]], true, 120),
@@ -424,7 +398,7 @@ const assertNoImmediateScrafty = field => {
   assert.ok(field.some(l => /no safe switch/.test(l)), "says there is no safe switch-in");
 }
 
-// ---- 5b. A foe's item thief is named on the slot that holds something to lose.
+// ---- A foe's item thief is named on the slot that holds something to lose.
 {
   const item = (name, props = {}) => Object.assign(new ({ [name]: class { isTransferable = true; getStackCount() { return 1; } } })[name](), props);
   const lycanroc = held => [mon("Lycanroc", 70, ["Rock"], [200, 190, 100, 80, 90, 140], [["Stone Edge", "Rock", 100, "P"]], true, undefined, { getHeldItems: () => held })];
@@ -439,10 +413,9 @@ const assertNoImmediateScrafty = field => {
   console.log("== item thief note ok");
 }
 
-// ---- 5c. Depth 2: Fake Out first. Ambipom is faster; Slowbro's Psychic (136–160) 2HKOs its 250 HP. Return
-// (136–160) needs three hits for 320 HP, so trading Returns loses on turn 2. Fake Out (51–60, priority, a sure flinch
-// on the first turn out) takes turn 1 for free, and two Returns on top of it are enough: Ambipom's last hit lands
-// on turn 3 before Slowbro's second Psychic.
+// ---- Depth 2: Fake Out first buys the turn that trading Returns loses.
+// Ambipom is faster; Slowbro's Psychic (136–160) 2HKOs its 250 HP, and Return (136–160) needs three for 320 HP. Fake
+// Out (51–60, a sure flinch) takes turn 1 free, and two Returns on top land before the second Psychic.
 Object.assign(TABLE, { "Ambipom>Fake Out>Slowbro": [[60], 1, 1], "Ambipom>Return>Slowbro": [[160], 1, 1], "Slowbro>Psychic>Ambipom": [[160], 1, 1] });
 {
   const party = [mon("Ambipom", 70, ["Normal"], [250, 180, 120, 60, 120, 200], [["Fake Out", "Normal", 40, "P", 3], ["Return", "Normal", 102, "P"]], true)];
@@ -453,11 +426,10 @@ Object.assign(TABLE, { "Ambipom>Fake Out>Slowbro": [[60], 1, 1], "Ambipom>Return
   const withFakeOut = at(fakeOut);
   console.log(`== depth 2: Fake Out then Return (live)\n${withFakeOut}`);
   assert.match(withFakeOut, /Fake Out → Slowbro .*then Return/, `Fake Out first, Return after:\n${withFakeOut}`);
-  // Without the first-turn flinch, Fake Out is just a weak hit: repeat Return.
   assert.match(at(outcome), /Return → Slowbro/, "no flinch, no Fake Out");
 }
 
-// ---- 5d. Consistency: two equal moves, and the one Garchomp used last turn keeps the edge rather than the first listed.
+// ---- Consistency: two equal moves, and the one Garchomp used last turn keeps the edge rather than the first listed.
 Object.assign(TABLE, { "Garchomp>Dragon Claw>Snorlax": [[70], 1, 1], "Garchomp>Stone Edge>Snorlax": [[70], 1, 1], "Snorlax>Body Slam>Garchomp": [[40], 1, 1] });
 {
   const foes = [mon("Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]], true)];
@@ -471,13 +443,13 @@ Object.assign(TABLE, { "Garchomp>Dragon Claw>Snorlax": [[70], 1, 1], "Garchomp>S
   assert.match(kept, /Dragon Claw → Snorlax/, `keeps last turn's near-equal move:\n${kept}`);
 }
 
-// ---- 5e–5k. Status moves as this turn's action (#74), each against its own one-on-one.
+// ---- Status moves as this turn's action (#74), each against its own one-on-one.
 const oneOnOne = ({ party, foes, dist, stub = outcome, stopped = null, switches = () => new Map() }) => render({ party, foes, live: true, dist, switches, stubOutcome: stub, stopped });
 const lineOf = (field, name) => field.find(l => new RegExp(`^⚔ ${name}`).test(l)) ?? "";
 const only = move => () => [{ name: move, type: "Normal", p: 1, score: 10, targets: [0] }];
 const SWORDS_DANCE = ["Swords Dance", "Normal", 0, "X", 0, { target: 0, id: 14, attrs: [["StatStageChangeAttr", { stats: [1], stages: 2, selfTarget: true }]] }];
 
-// 5e. Swords Dance: Leaf Blade (77–90) needs six hits on Snorlax's 450 HP; at +2 (153–180) three, so a turn of setup
+// Swords Dance: Leaf Blade (77–90) needs six hits on Snorlax's 450 HP; at +2 (153–180) three, so a turn of setup
 // and three hits beat six, against a Body Slam that barely scratches Gallade.
 Object.assign(TABLE, { "Gallade>Leaf Blade>Snorlax": [[90], 1, 1], "Snorlax>Body Slam>Gallade": [[40], 1, 1] });
 {
@@ -487,14 +459,14 @@ Object.assign(TABLE, { "Gallade>Leaf Blade>Snorlax": [[90], 1, 1], "Snorlax>Body
   console.log(`== setup: Swords Dance then Leaf Blade (live)\n${setupLine}`);
   assert.match(setupLine, /Swords Dance .*\+2 Atk .*then Leaf Blade/, `set up, then attack:\n${setupLine}`);
   assert.ok(!/→/.test(setupLine), "a move on the user aims at nobody");
-  // A Leaf Blade that already 2HKOs (213–250 into 400) gains nothing from a turn of setup.
+  // 213–250 into 400: already a 2HKO.
   TABLE["Gallade>Leaf Blade>Snorlax"] = [[250], 1, 1];
   assert.match(lineOf(oneOnOne({ party: gallade(), foes: snorlax(400), dist: only("Body Slam") }).field, "Gallade"), /Leaf Blade → Snorlax/, "no setup when the hit already 2HKOs");
 }
 
-// 5f. Spore: Breloom is faster and 2HKOs Machamp, whose Close Combat 1HKOs it — trading hits loses on turn 1. Spore
-// lands before Machamp moves and cancels that attempt; the next is lost 2 times in 3 (sleep lasts 2 or 3 turns), so
-// two Seed Bombs usually land first.
+// Spore: Breloom is faster and 2HKOs Machamp, whose Close Combat 1HKOs it — trading hits loses on turn 1. Spore
+// lands before Machamp moves and cancels that attempt; the next is lost 2 times in 3 (game-code.md §8), so two Seed
+// Bombs usually land first.
 Object.assign(TABLE, { "Breloom>Seed Bomb>Machamp": [[200], 1, 1], "Machamp>Close Combat>Breloom": [[400], 1, 1] });
 {
   const party = [mon("Breloom", 80, ["Grass", "Fighting"], [250, 200, 110, 60, 90, 100],
@@ -503,12 +475,11 @@ Object.assign(TABLE, { "Breloom>Seed Bomb>Machamp": [[200], 1, 1], "Machamp>Clos
   const line = lineOf(oneOnOne({ party, foes, dist: only("Close Combat") }).field, "Breloom");
   console.log(`== status: Spore first (live)\n${line}`);
   assert.match(line, /Spore → Machamp .*sleep .*then Seed Bomb/, `Spore, then attack:\n${line}`);
-  // Already asleep: nothing to add.
   const asleep = [mon("Machamp", 80, ["Fighting"], [300, 200, 110, 60, 110, 50], [["Close Combat", "Fighting", 120, "P"]], true, undefined, { status: { effect: 4, sleepTurnsRemaining: 2 } })];
   assert.match(lineOf(oneOnOne({ party, foes: asleep, dist: only("Close Combat") }).field, "Breloom"), /Seed Bomb → Machamp/, "no Spore into a sleeping foe");
 }
 
-// 5g. Recovery: Slowbro at half HP (200/400) needs three Scalds; the faster Gengar's Shadow Ball (68–80) takes it down
+// Recovery: Slowbro at half HP (200/400) needs three Scalds; the faster Gengar's Shadow Ball (68–80) takes it down
 // in three. Slack Off first puts Gengar's count at five, and the three Scalds land in time.
 Object.assign(TABLE, { "Slowbro>Scald>Gengar": [[100], 1, 1], "Gengar>Shadow Ball>Slowbro": [[80], 1, 1] });
 {
@@ -520,7 +491,7 @@ Object.assign(TABLE, { "Slowbro>Scald>Gengar": [[100], 1, 1], "Gengar>Shadow Bal
   assert.match(line, /Slack Off .*heal 50% .*then Scald/, `heal, then attack:\n${line}`);
 }
 
-// 5h. Stealth Rock: Skarmory can't dent Chansey either way, and the trainer still has four mons weak to Rock to come.
+// Stealth Rock: Skarmory can't dent Chansey either way, and the trainer still has four mons weak to Rock to come.
 Object.assign(TABLE, { "Skarmory>Drill Peck>Chansey": [[60], 1, 1], "Chansey>Seismic Toss>Skarmory": [[30], 1, 1] });
 {
   const rock = ["Stealth Rock", "Rock", 0, "X", 0, { target: 16, id: 446, attrs: [["AddArenaTrapTagAttr", { tagType: "STEALTH_ROCK" }]] }];
@@ -530,11 +501,10 @@ Object.assign(TABLE, { "Skarmory>Drill Peck>Chansey": [[60], 1, 1], "Chansey>Sei
   const line = lineOf(oneOnOne({ party, foes: [chansey, ...bench], dist: e => (e === chansey ? only("Seismic Toss")() : []) }).field, "Skarmory");
   console.log(`== hazard: Stealth Rock (live)\n${line}`);
   assert.match(line, /Stealth Rock .*4 to come .*then Drill Peck/, `hazard first:\n${line}`);
-  // With nobody left to come it's worth nothing.
   assert.match(lineOf(oneOnOne({ party, foes: [chansey], dist: only("Seismic Toss") }).field, "Skarmory"), /Drill Peck → Chansey/, "no hazard with no bench");
 }
 
-// 5i. A foe likely to Protect blocks this turn's hit: Garchomp's sure 1HKO on Snorlax is a coin flip into a 50 % Protect.
+// A foe likely to Protect blocks this turn's hit: Garchomp's sure 1HKO on Snorlax is a coin flip into a 50 % Protect.
 Object.assign(TABLE, { "Garchomp>Earthquake>Snorlax": [[800], 1, 1] });
 {
   const party = [mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Earthquake", "Ground", 100, "P"]], true)];
@@ -551,7 +521,7 @@ Object.assign(TABLE, { "Garchomp>Earthquake>Snorlax": [[800], 1, 1] });
   assert.ok(open > 0.99 && Math.abs(guarded - open / 2) < 1e-6, `Protect halves this turn's KO: ${open} → ${guarded}`);
 }
 
-// 5j. A foe setting up: Snorlax picks Swords Dance half the time (+1 Atk a turn expected), so its later Body Slams hit
+// A foe setting up: Snorlax picks Swords Dance half the time (+1 Atk a turn expected), so its later Body Slams hit
 // harder and Gallade falls sooner than to a foe that wastes the same turns on Splash.
 {
   TABLE["Snorlax>Body Slam>Gallade"] = [[90], 1, 1];
@@ -570,10 +540,9 @@ Object.assign(TABLE, { "Garchomp>Earthquake>Snorlax": [[800], 1, 1] });
   assert.ok(dancing.x.eTurnsThey < splashing.x.eTurnsThey - 0.5, "setup speeds up its KO");
 }
 
-// 5l. A typing written onto the foe (#171, the Guzma w165 Golisopod): Soak makes Bug/Steel Golisopod pure Water.
-// Energy Ball goes from 0.25× (25 a hit into 400 HP: sixteen turns) to 2× (200: two), and Golisopod's Iron Head
-// loses its STAB (150 → 100 into Primarina's 400). Damage here follows the *live* typing, so the written-on types are
-// what move the numbers — the same path the game's own damage call takes.
+// A typing written onto the foe (#171): Soak makes Bug/Steel Golisopod pure Water. Energy Ball goes from 0.25× (25 a
+// hit into 400 HP: sixteen turns) to 2× (200: two), and Iron Head loses its STAB (150 → 100 into Primarina's 400).
+// `typed` prices from the *live* typing, so the written-on types are what move the numbers.
 {
   const EFF = { Grass: { Bug: 0.5, Steel: 0.5, Water: 2, Fairy: 1 }, Steel: { Water: 0.5, Fairy: 2, Bug: 1, Steel: 0.5 } };
   const typed = (atk, def, pm, opts) => {
@@ -593,22 +562,16 @@ Object.assign(TABLE, { "Garchomp>Earthquake>Snorlax": [[800], 1, 1] });
   const line = lineOf(oneOnOne({ party: primarina(), foes: golisopod(), dist: ironHead, stub: typed }).field, "Primarina");
   console.log(`== types: Soak first (live)\n${line}`);
   assert.match(line, /Soak → Golisopod .*pure Water .*then Energy Ball/, `Soak, then attack:\n${line}`);
-  // Nothing to rewrite: a Terastallized foe keeps its Tera type, so the game's own condition rules the move out.
+  // A Terastallized foe: `ChangeTypeAttr.getCondition` fails (game-code.md §14).
   const tera = lineOf(oneOnOne({ party: primarina(), foes: golisopod({ isTerastallized: true }), dist: ironHead, stub: typed }).field, "Primarina");
   console.log(`== types: no Soak into a Terastallized foe\n${tera}`);
   assert.match(tera, /Energy Ball → Golisopod/, `no Soak into a Tera foe:\n${tera}`);
-  // Already pure Water: the move would change nothing.
   const water = lineOf(oneOnOne({ party: primarina(), foes: [mon("Golisopod", 80, ["Water"], [400, 180, 160, 70, 100, 70], [["Iron Head", "Steel", 80, "P"]], true)], dist: ironHead, stub: typed }).field, "Primarina");
   assert.match(water, /Energy Ball → Golisopod/, `no Soak into a pure-Water foe:\n${water}`);
 }
 
-// 5m. A slot with nothing that damages (#263): Cacnea's Needle Arm is priced at nothing into Machamp — the shape an
-// immunity, a Wonder Guard or a type wall leaves — so the pool the turn line usually picks from is empty. That used
-// to end the line, because a status play was scored from the attack it set up and there was no attack to set up.
-// Spore is now scored on the turns it buys instead, and the line recommends it. With no play and no bench either,
-// the turn is genuinely lost and the line says so; where a restriction is what emptied the pool, it names it.
-// A zero row, not a missing one: a move the table doesn't price falls back to the type chart, where an immunity is a
-// priced move worth nothing.
+// A slot with nothing that damages: a status play scored from the attack it set up had no attack to set up, and the
+// line ended there (#263). A zero row, not a missing one: a move the table doesn't price falls back to the type chart.
 Object.assign(TABLE, { "Machamp>Close Combat>Cacnea": [[400], 1, 1], "Cacnea>Needle Arm>Machamp": [[0], 1, 0] });
 {
   const cacnea = moves => [mon("Cacnea", 80, ["Grass"], [250, 180, 100, 90, 100, 60], moves, true)];
@@ -620,19 +583,16 @@ Object.assign(TABLE, { "Machamp>Close Combat>Cacnea": [[400], 1, 1], "Cacnea>Nee
   console.log(`== dead end: the status play instead (live)\n${play}`);
   assert.match(play, /Spore → Machamp .*sleep/, `a slot with no damage falls through to the status play:\n${play}`);
   assert.ok(!/nothing it can/.test(play), `the fall-through is a recommendation, not a dead end:\n${play}`);
-  // Nothing to attack with and nothing to play: the turn is lost, and the line says that rather than calling the
-  // member empty.
   const lost = at([NEEDLE_ARM]);
   console.log(`== dead end: nothing it can do (live)\n${lost}`);
   assert.match(lost, /nothing it can do/, `the genuine dead end reads plainly:\n${lost}`);
   assert.ok(!/no damaging move/.test(lost), "the old wording is gone");
-  // The same turn, with Encore the reason there is nothing left to pick.
   const stopped = at([NEEDLE_ARM], () => ["Encore"]);
   console.log(`== dead end: nothing it can use — Encore (live)\n${stopped}`);
   assert.match(stopped, /nothing it can use — Encore/, `a restriction that emptied the pool is named:\n${stopped}`);
 }
 
-// ---- 6–8. Doubles: where both slots aim is one decision.
+// ---- Doubles: where both slots aim is one decision.
 // Our Garchomp and Lucario are both faster than the foes. Each hits Hydreigon for 60 %: alone neither KOs it, together
 // they do, before it fires a Dark Pulse for 70 % into either of us. Snorlax is bulky and hits softly.
 Object.assign(TABLE, {
@@ -642,7 +602,7 @@ Object.assign(TABLE, {
   "Hydreigon>Dark Pulse>Garchomp": [[190], 1, 1], "Hydreigon>Dark Pulse>Lucario": [[150], 1, 0.5],
   "Snorlax>Body Slam>Garchomp": [[40], 1, 1], "Snorlax>Body Slam>Lucario": [[30], 1, 0.5],
   "Ferrothorn>Gyro Ball>Garchomp": [[50], 1, 1], "Ferrothorn>Gyro Ball>Lucario": [[25], 1, 0.5],
-  // Scenario 7: Weezing and Toxapex each fall to one of ours, and only to that one.
+  // The split field: Weezing and Toxapex each fall to one of ours, and only to that one.
   "Garchomp>Dragon Claw>Weezing": [[400], 1, 1], "Lucario>Aura Sphere>Weezing": [[150], 1, 1],
   "Garchomp>Dragon Claw>Toxapex": [[150], 1, 1], "Lucario>Aura Sphere>Toxapex": [[400], 1, 1],
   "Weezing>Sludge Bomb>Garchomp": [[120], 1, 1], "Weezing>Sludge Bomb>Lucario": [[60], 1, 0.5],
@@ -656,7 +616,7 @@ const foeAt = (idx, ...args) => mon(...args, true, undefined, { getBattlerIndex:
 const aimAtBoth = e => [{ name: e.moveset[0].getName(), type: TY[e.moveset[0].getMove().type], p: 1, score: 10, targets: [0, 1] }];
 const slotLines = field => field.filter(l => /^⚔/.test(l));
 
-// 6. Focus: two 60 % hits on the dangerous Hydreigon KO it before it moves.
+// Focus: two 60 % hits on the dangerous Hydreigon KO it before it moves.
 {
   const foes = [
     foeAt(2, "Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 90], [["Dark Pulse", "Dark", 80, "S"]]),
@@ -670,7 +630,7 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   assert.ok(field.some(l => /^· focus Hydreigon : KO before it moves/.test(l)), "focus is explained");
 }
 
-// 7. Split: each foe falls to one of our slots, so aiming at both KOs both.
+// Split: each foe falls to one of our slots, so aiming at both KOs both.
 {
   const foes = [
     foeAt(2, "Weezing", 80, ["Poison"], [300, 100, 150, 120, 110, 60], [["Sludge Bomb", "Poison", 90, "S"]]),
@@ -684,7 +644,7 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   assert.ok(!field.some(l => /^· focus/.test(l)), "no focus");
 }
 
-// 8. Scenario 6, but Hydreigon is predicted to switch out to Ferrothorn: focusing the leaving mon is pointless.
+// The focus field, but Hydreigon is predicted to switch out to Ferrothorn: focusing the leaving mon is pointless.
 {
   const foes = [
     foeAt(2, "Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 90], [["Dark Pulse", "Dark", 80, "S"]]),
@@ -700,7 +660,7 @@ const slotLines = field => field.filter(l => /^⚔/.test(l));
   assert.ok(!field.some(l => /^· focus Hydreigon/.test(l)), "no focus on the leaving Hydreigon");
 }
 
-// 8b. A status play in a double (#262). Machamp outspeeds and 1HKOs Breloom, and neither of ours dents it this turn;
+// A status play in a double (#262). Machamp outspeeds and 1HKOs Breloom, and neither of ours dents it this turn;
 // Munchlax falls to one Dragon Claw. Spore is priced on the whole field at once — the sleep is written before
 // Salamence's slot is scored — so Breloom spends its turn on it and Salamence takes the foe it can actually finish.
 Object.assign(TABLE, {
@@ -723,31 +683,22 @@ const sporeFoes = (sleeping = false) => [
   const { lines, field } = render({ party: sporeParty(), foes: sporeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles: a status play (live)\n${lines.join("\n")}`);
   assert.match(lineOf(field, "Breloom"), /Spore → Machamp .*sleep/, `Spore is the double's turn line:\n${field.join("\n")}`);
-  // Bounded to this turn: a double's status play names no follow-up, because there is no depth 2 to name one.
   assert.ok(!/then /.test(lineOf(field, "Breloom")), `no depth 2 in a double:\n${field.join("\n")}`);
-  // Only that the partner still aims where it can finish something — that it is *scored* on the state Spore makes
-  // is 8d's claim, which this field cannot show (Munchlax is Salamence's target either way here).
+  // Munchlax is Salamence's target with or without Spore, so this field cannot show the partner scored on the sleep.
   assert.match(lineOf(field, "Salamence"), /→ Munchlax/, `the partner keeps the foe it can finish:\n${field.join("\n")}`);
 }
 
-// 8c. The same field with Machamp already asleep: there is nothing for Spore to add, so Breloom attacks.
+// The same field with Machamp already asleep: there is nothing for Spore to add, so Breloom attacks.
 {
   const { field } = render({ party: sporeParty(), foes: sporeFoes(true), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles: nothing for a status play to add (live)\n${field.join("\n")}`);
   assert.match(lineOf(field, "Breloom"), /Seed Bomb →/, `no Spore into a sleeping foe:\n${field.join("\n")}`);
 }
 
-// 8d. Machamp outspeeds Salamence and 1HKOs it; Munchlax cannot hurt anyone. Dragon Claw is the better move into
+// Machamp outspeeds Salamence and 1HKOs it; Munchlax cannot hurt anyone. Dragon Claw is the better move into
 // Machamp (200, two hits) than into Munchlax (110, three), and Salamence takes Machamp — with or without Spore on
-// the field.
-//
-// This block used to pin a contrast here: without Spore the partner went to Munchlax instead, and Spore moving
-// before Machamp was what sent it back to Machamp. That contrast was the bug #320 removed. Machamp killed Salamence
-// whether or not Salamence aimed at it, so "it kills me first" was never a reason to aim elsewhere, and the arms now
-// agree. What #262 claims is still pinned either side of it: 8b, that the play is priced across the whole field with
-// the sleep written before the partner's slot is scored, and 8c, that there is nothing for it to add on a field where
-// the foe is already asleep. A field where the hypothesis genuinely moves the partner's *target* is worth building
-// (the removal price does move with it — a silenced foe is worth less to remove) but this field is not one.
+// the field. Without Spore it used to aim at Munchlax, as if "it kills me first" were a reason to aim elsewhere,
+// though Machamp killed it either way (#320).
 Object.assign(TABLE, {
   "Breloom>Seed Bomb>Machamp": [[60], 1, 1], "Breloom>Seed Bomb>Munchlax": [[60], 1, 1],
   "Salamence>Dragon Claw>Machamp": [[200], 1, 1], "Salamence>Dragon Claw>Munchlax": [[110], 1, 1],
@@ -771,11 +722,9 @@ Object.assign(TABLE, {
   assert.match(with_, /→ Machamp/, `and keeps it once Spore is on the field, the arms agreeing:\n${with_}`);
 }
 
-// 8e. The spare hit (#236). Garchomp is faster and alone fells a weakened Hydreigon, so Lucario's hit resolves into
-// a foe that is already gone — the game redirects it onto Snorlax (`FaintPhase` -> `redirectPokemonMoves`) carrying
-// **the move Lucario chose for Hydreigon**. So the pair is priced on where the hit really lands, and the two
-// directions fall out of one rule: spread when the slot has a better move for the other foe than the redirect would
-// carry, focus when it doesn't, because focusing also insures the KO for free.
+// The spare hit (#236): Garchomp is faster and alone fells a weakened Hydreigon, so the game redirects Lucario's hit
+// onto Snorlax, carrying **the move Lucario chose for Hydreigon** (game-code.md §5). Spread when the slot has a better
+// move for Snorlax than the redirect would carry; focus when it doesn't, which also insures the KO.
 Object.assign(TABLE, {
   "Lucario>Close Combat>Hydreigon": [[60], 1, 1], "Lucario>Close Combat>Snorlax": [[300], 1, 2],
 });
@@ -784,8 +733,7 @@ const dyingHydreigon = () => [
   mon("Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 90], [["Dark Pulse", "Dark", 80, "S"]], true, 60, { getBattlerIndex: () => 2 }),
   foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
 ];
-// Spread: Aura Sphere is Lucario's answer to Hydreigon but barely dents Snorlax, and Close Combat halves it. The
-// redirect would carry the wrong move, so Lucario is better off aiming at Snorlax itself and picking the right one.
+// Spread: Aura Sphere barely dents Snorlax and Close Combat halves it, so the redirect would carry the wrong move.
 {
   const party = [
     doublesParty()[0],
@@ -797,9 +745,7 @@ const dyingHydreigon = () => [
   assert.match(slots.find(l => /Garchomp/.test(l)) ?? "", /→ Hydreigon/, `Garchomp fells Hydreigon:\n${field.join("\n")}`);
   assert.match(slots.find(l => /Lucario/.test(l)) ?? "", /Close Combat → Snorlax/, `Lucario takes Snorlax with the move that suits it:\n${field.join("\n")}`);
 }
-// Focus: with only Aura Sphere to give, Lucario puts the same hit on Snorlax whether it aims there or is redirected
-// there — so it aims at Hydreigon, where the hit is also insurance if Garchomp's KO doesn't land. The row says where
-// the hit will actually go rather than calling it wasted.
+// Focus: with only Aura Sphere, the hit lands on Snorlax either way, so Lucario aims at Hydreigon as insurance.
 {
   const { lines, field } = render({ party: doublesParty(), foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles spare hit: focus, the redirect carries the same move (live)\n${lines.join("\n")}`);
@@ -809,31 +755,22 @@ const dyingHydreigon = () => [
   assert.ok(field.some(l => /spare hit — goes to Snorlax if Hydreigon falls first/.test(l)), `the spare hit says where it lands:\n${field.join("\n")}`);
 }
 
-// 8g. The certainty axis (#283). The same field and the same movepool as 8e — Lucario still holds Close Combat, the
-// move that suits Snorlax — but Garchomp's Dragon Claw is no longer sure to land, so Hydreigon is no longer sure to
-// fall. The redirect only forces the carried move for the turn it lands in; from the next one the slot picks freely,
-// so carrying the wrong move costs a turn rather than the fight. Priced that way, the odds the partner's KO misses
-// can carry the pick: Lucario aims at Hydreigon, where its hit is the insurance that fells it if Dragon Claw misses.
+// The certainty axis (#283): the spread field, but Dragon Claw is no longer sure to land. The redirect forces the
+// carried move for its own turn only (game-code.md §5), so the wrong move costs a turn, not the fight, and a doubtful
+// KO is worth insuring.
 {
-  // This is the one block that rewrites a row an earlier one set rather than adding its own, so it puts 8e's value
-  // back at the end. Every later use assigns the row first, so nothing reads the restored value today — it keeps the
-  // seven rewrites below from leaking if a block that doesn't is ever added after this one.
+  // The one block that rewrites a row an earlier one set, so it restores it at the end: nothing later reads the row
+  // before assigning it today, but a block added after this one might.
   const sure = TABLE["Garchomp>Dragon Claw>Hydreigon"];
   const party = () => [
     doublesParty()[0],
     mon("Lucario", 80, ["Fighting", "Steel"], [240, 150, 110, 180, 110, 120], [["Aura Sphere", "Fighting", 80, "S"], CLOSE_COMBAT], true, undefined, { getBattlerIndex: () => 1 }),
   ];
-  // Only the middle element of the row — the accuracy — moves; the damage and the effectiveness are 8e's.
   const at = acc => {
     Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": [[180], acc, 2] });
     return render({ party: party(), foes: dyingHydreigon(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   };
   // A threshold, not a knife edge: the pick holds its direction either side of the ~0.575 where it turns over.
-  //
-  // That turnover was ~0.65 until #320. Part of the old one was the bug that ticket removed: aiming at the *dying*
-  // Hydreigon meant racing a nearly-dead foe, which read as a cheap exchange and paid for focusing — while Snorlax's
-  // damage arrived whichever foe Lucario aimed at. Both candidates now race the field's worst duel, so that part is
-  // gone and what is left is the insurance itself. #283's case, a 50 % KO, focuses exactly as it did.
   for (const acc of [0.9, 0.8, 0.7, 0.65, 0.6]) {
     assert.match(slotLines(at(acc).field).find(l => /Lucario/.test(l)) ?? "", /Close Combat → Snorlax/, `a near-sure KO still spreads at ${acc}`);
   }
@@ -848,23 +785,9 @@ const dyingHydreigon = () => [
   Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": sure });
 }
 
-// 8h. Two killable foes of sharply different danger (#316, the field #307's sweep could not see). #307 swept
-// `joint`'s per-foe removal price from 1.0 to 4.0 and moved no golden, and concluded a foe's removal is priced flat
-// while the turns side carries the pick. This is the field built to test that: both foes outspeed both of ours, so
-// neither can be removed before it acts and `pBefore * danger` — the one term that knows one of them hits six times
-// harder — is ~0 for both. Everything else is symmetric: same typing, same HP, same damage from either of our moves,
-// and neither falls to one hit, so the pair must choose a foe to focus.
-//
-// The pick is the **removal price** (#320): a foe is worth removing in proportion to the danger it carried, so the
-// pair focuses Porygon-Z. It did not always — this block was written to pin the misadvice, where a target was priced
-// by the 1-on-1 exchange with that target alone (`pWeKoFirst - pTheyKoFirst`, and `edge` at depth 2) and the other
-// foe's hits were nowhere in it, so the foe about to KO our mon made *aiming at it* read as a losing trade. The race
-// is now run against the field's worst duel wherever the mon aims, so that reason is gone, and what is left to decide
-// with is what removing each foe is worth.
-//
-// The sweep below replaces the lethality threshold this block used to pin (136 a turn focused, 150 abandoned). There
-// is no turnover left to pin: the pick follows the threat continuously, and crosses exactly where Porygon-Z's damage
-// passes Dunsparce's — which is where the more dangerous foe changes.
+// Two killable foes of sharply different danger (#316). Both outspeed both of ours, so `pBefore * danger` is ~0 for
+// each; everything else is symmetric and neither falls to one hit, so the **removal price** alone picks (#320). A
+// target priced by the 1-on-1 exchange with it alone made the foe about to KO our mon a losing trade to aim at (#320).
 Object.assign(TABLE, {
   "Garchomp>Dragon Claw>Porygon-Z": [[180], 1, 1], "Lucario>Aura Sphere>Porygon-Z": [[180], 1, 2],
   "Garchomp>Dragon Claw>Dunsparce": [[180], 1, 1], "Lucario>Aura Sphere>Dunsparce": [[180], 1, 2],
@@ -878,20 +801,15 @@ Object.assign(TABLE, {
   const at = foes => render({ party: doublesParty(), foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   const focusOf = field => slotLines(field).map(l => (/Porygon-Z/.test(l) ? "Porygon-Z" : /Dunsparce/.test(l) ? "Dunsparce" : "?")).join("+");
 
-  // Both slots spend the turn on the foe taking 70 % of Garchomp and KO'ing it next turn, rather than the one taking
-  // 11 %. Neither foe can be removed before it acts, so this is the removal price deciding on its own.
   const { lines, field } = at([pz(2), du(3)]);
   console.log(`== doubles: two killable foes, one far more dangerous (live)\n${lines.join("\n")}`);
   assert.equal(focusOf(field), "Porygon-Z+Porygon-Z", `the pair focuses the dangerous foe:\n${field.join("\n")}`);
   assert.ok(field.some(l => /^· focus Porygon-Z/.test(l)), "and says so on the · row");
 
-  // Not slot order: swapping the two foes' positions keeps the same pick.
   assert.equal(focusOf(at([du(2), pz(3)]).field), "Porygon-Z+Porygon-Z", "the pick follows the foe, not the field position");
 
-  // Monotone in threat, with no turnover to pin. Dunsparce takes 30 a turn, so below that it is the foe worth
-  // removing and the pair says so; above it Porygon-Z is, at every damage up to a clean 1HKO on Garchomp (270 HP).
-  // A lethality threshold here would be the bug back: what decides is which foe is the bigger threat, not whether
-  // the bigger one has crossed into killing us.
+  // Monotone in threat: the pick crosses where Porygon-Z's damage passes Dunsparce's 30 a turn. A lethality threshold
+  // here would be the bug back (#320).
   const lethal = TABLE["Porygon-Z>Tri Attack>Garchomp"];
   const pzDmg = d => Object.assign(TABLE, { "Porygon-Z>Tri Attack>Garchomp": [[d], 1, 1], "Porygon-Z>Tri Attack>Lucario": [[Math.round(d * 0.9)], 1, 1] });
   for (const d of [10, 25, 29]) {
@@ -904,30 +822,27 @@ Object.assign(TABLE, {
   }
   Object.assign(TABLE, { "Porygon-Z>Tri Attack>Garchomp": lethal, "Porygon-Z>Tri Attack>Lucario": [[170], 1, 1] });
 
-  // The price limits itself: it is multiplied by the KO's odds, so a dangerous foe the pair cannot remove this turn
-  // earns nothing from it and the killable foe is taken instead. No guard does this — `pKo` being 0 does.
+  // The price is multiplied by the KO's odds, so a foe the pair cannot remove this turn earns nothing from it. No guard
+  // does this — `pKo` being 0 does.
   Object.assign(TABLE, { "Garchomp>Dragon Claw>Porygon-Z": [[90], 1, 1], "Lucario>Aura Sphere>Porygon-Z": [[90], 1, 2] });
   const unkillable = foeAt(2, "Porygon-Z", 80, ["Normal"], [600, 100, 110, 180, 110, 150], [["Tri Attack", "Normal", 80, "S"]]);
   assert.equal(focusOf(at([unkillable, du(3)]).field), "Dunsparce+Dunsparce", "a dangerous foe that cannot be removed is not chased");
   Object.assign(TABLE, { "Garchomp>Dragon Claw>Porygon-Z": [[180], 1, 1], "Lucario>Aura Sphere>Porygon-Z": [[180], 1, 2] });
 
-  // The same asymmetry with each foe aiming at one of ours rather than either, so no two-slot damage split scales
-  // anything down. The misadvice was larger here than on the field above, and this is where the removal price alone
-  // would have left the two targets level: pinned so a change that re-introduces a tie is caught.
+  // Single-target foes, so no two-slot damage split scales anything down: the field where a tie would come back.
   const aimAtOne = () => [{ name: "Tri Attack", type: "Normal", p: 1, score: 10, targets: [0] }];
   const solo = (idx, name, spa) => foeAt(idx, name, 80, ["Normal"], [300, 100, 110, spa, 110, 150], [[name === "Porygon-Z" ? "Tri Attack" : "Body Slam", "Normal", 80, "S"]]);
   const single = render({ party: doublesParty(), foes: [solo(2, "Porygon-Z", 180), solo(3, "Dunsparce", 60)], live: true, double: true, dist: aimAtOne, switches: () => new Map() });
   assert.equal(focusOf(single.field), "Porygon-Z+Porygon-Z", `single-target foes: the dangerous one is still focused:\n${single.field.join("\n")}`);
 
-  // The same field with the foes slower, kept from when it was this block's control: `pBefore` is 1, so the pair also
-  // gets there first, and the · row names that rather than the removal itself.
+  // Outsped foes: `pBefore` is 1, so the · row names the KO before it moves rather than the removal.
   const slow = at([pz(2, 40), du(3, 40)]);
   console.log(`== doubles: the same two foes, now outsped (live)\n${slow.lines.join("\n")}`);
   assert.equal(focusOf(slow.field), "Porygon-Z+Porygon-Z", `outspeeding them, the dangerous foe is focused:\n${slow.field.join("\n")}`);
   assert.ok(slow.field.some(l => /^· focus Porygon-Z : KO before it moves/.test(l)), "and the · row names why it is worth more");
 }
 
-// ---- 9–11. Free switch: the game asks "Will you switch Pokémon?" before the first turn (CheckSwitchPhase).
+// ---- Free switch: the CheckSwitchPhase offer before the first turn (game-code.md §9).
 // Ninetales is on the field and loses to the faster Rhyperior. Swampert beats it — but as a normal switch it would
 // eat a Stone Edge coming in (≥ 25 % KO), so in the command phase it's rejected. Offered free, it's the answer.
 Object.assign(TABLE, {
@@ -948,7 +863,7 @@ const stoneEdge = () => [{ name: "Stone Edge", type: "Rock", p: 1, score: 10, ta
 // The stub predicts Rhyperior switching to Tyranitar; during a free switch the enemy hasn't decided anything yet.
 const rhyperiorSwitches = foes => active => new Map(active.includes(foes[0]) ? [[foes[0], { to: foes[1], ratio: 1 }]] : []);
 
-// 9. Command phase: the switch-in would be KO'd coming in, so it isn't recommended.
+// Command phase: the switch-in would be KO'd coming in, so it isn't recommended.
 {
   const { party, foes } = freeSwitchCase(false);
   const { lines, field } = render({ party, foes, live: true, dist: stoneEdge, switches: () => new Map() });
@@ -957,7 +872,7 @@ const rhyperiorSwitches = foes => active => new Map(active.includes(foes[0]) ? [
   assert.ok(!field.some(l => /⇄.*Swampert in(?! · optional)/.test(l)), `Swampert would be KO'd coming in:\n${field.join("\n")}`);
 }
 
-// 10. CheckSwitchPhase: Swampert comes in without a hit and no turn lost.
+// CheckSwitchPhase: Swampert comes in without a hit and no turn lost.
 {
   const { party, foes } = freeSwitchCase(false);
   const { lines, field } = render({ party, foes, live: true, phase: "CheckSwitchPhase", dist: stoneEdge, switches: rhyperiorSwitches(foes) });
@@ -968,7 +883,7 @@ const rhyperiorSwitches = foes => active => new Map(active.includes(foes[0]) ? [
   assert.ok(!field.some(l => /switches — moves aimed at it/.test(l)), "no enemy switch predicted before the enemy has seen our field");
 }
 
-// 11. CheckSwitchPhase with the best mon already out: stay.
+// CheckSwitchPhase with the best mon already out: stay.
 {
   const { party, foes } = freeSwitchCase(true);
   const { lines, field } = render({ party, foes, live: true, phase: "CheckSwitchPhase", dist: stoneEdge, switches: () => new Map() });
@@ -978,9 +893,8 @@ const rhyperiorSwitches = foes => active => new Map(active.includes(foes[0]) ? [
   assert.ok(!field.some(l => /Ninetales/.test(l)), "no switch suggested");
 }
 
-// ---- 12–14. Spread moves that hit every other pokémon land on our partner too (Earthquake: MoveTarget 4).
-// Both foes are weak to Ground: Earthquake takes both, Dragon Claw only one. Earthquake into Lucario either KOs it
-// (12, 14) or only scratches it (13).
+// ---- Spread moves that hit every other pokémon land on our partner too (Earthquake: MoveTarget 4).
+// Both foes are weak to Ground: Earthquake takes both, Dragon Claw only one.
 const EQ = { target: 4 };
 Object.assign(TABLE, {
   "Garchomp>Earthquake>Heatran": [[400], 1, 4], "Garchomp>Earthquake>Magnezone": [[400], 1, 4],
@@ -1001,7 +915,7 @@ const quakeFoes = () => [
   foeAt(3, "Magnezone", 80, ["Electric", "Steel"], [300, 70, 130, 130, 90, 60], [["Flash Cannon", "Steel", 80, "S"]]),
 ];
 
-// 12. Earthquake would KO our Lucario: not worth two foes.
+// Earthquake would KO our Lucario: not worth two foes.
 {
   const { lines, field } = render({ party: quakeParty(300), foes: quakeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles spread move KOs our partner (live)\n${lines.join("\n")}`);
@@ -1009,14 +923,14 @@ const quakeFoes = () => [
   assert.ok(chomp && !/Earthquake/.test(chomp), `no Earthquake into our own Lucario:\n${field.join("\n")}`);
 }
 
-// 13. Earthquake only scratches Lucario: still the play, and the slot says what it costs.
+// Earthquake only scratches Lucario: still the play, and the slot says what it costs.
 {
   const { lines, field } = render({ party: quakeParty(60), foes: quakeFoes(), live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
   console.log(`== doubles spread move scratches our partner (live)\n${lines.join("\n")}`);
   assert.match(slotLines(field).find(l => /^⚔ Garchomp/.test(l)) ?? "", /Earthquake → both .*hits Lucario \d+%/, `Earthquake, with its cost to Lucario:\n${field.join("\n")}`);
 }
 
-// 14. One foe left, both our slots still up: Earthquake still hits Lucario.
+// One foe left, both our slots still up: Earthquake still hits Lucario.
 {
   const [heatran] = quakeFoes();
   const { lines, field } = render({ party: quakeParty(300), foes: [heatran], live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
@@ -1025,7 +939,7 @@ const quakeFoes = () => [
   assert.match(chomp ?? "", /Dragon Claw → Heatran/, `Dragon Claw rather than Earthquake through Lucario:\n${field.join("\n")}`);
 }
 
-// ---- 15. Overkill: Heat Wave already KOs both foes, so Venusaur's hit is spare — no recoil move for nothing.
+// ---- Overkill: Heat Wave already KOs both foes, so Venusaur's hit is spare — no recoil move for nothing.
 Object.assign(TABLE, {
   "Charizard>Heat Wave>Rattata": [[200], 1, 1], "Charizard>Heat Wave>Pidgey": [[200], 1, 1],
   "Venusaur>Double-Edge>Rattata": [[250], 1, 1], "Venusaur>Double-Edge>Pidgey": [[250], 1, 1],
@@ -1053,12 +967,12 @@ Object.assign(TABLE, {
   assert.match(venu, /spare hit/, "the slot says its hit isn't needed");
 }
 
-// ---- 16–17. Slot 1's command phase: slot 0's command is locked in `turnCommands[0]`.
+// ---- Slot 1's command phase: slot 0's command is locked in `turnCommands[0]`.
 const hydreigonSnorlax = () => [
   foeAt(2, "Hydreigon", 80, ["Dark", "Dragon"], [300, 120, 110, 160, 110, 90], [["Dark Pulse", "Dark", 80, "S"]]),
   foeAt(3, "Snorlax", 80, ["Normal"], [460, 150, 110, 80, 150, 40], [["Body Slam", "Normal", 85, "P"]]),
 ];
-// 16. Scenario 6's field, but Garchomp already chose Dragon Claw into Snorlax: keep it, plan Lucario around it.
+// The focus field, but Garchomp already chose Dragon Claw into Snorlax: keep it, plan Lucario around it.
 {
   // A target picked in SelectTargetPhase sits on the command itself, not on `move.targets`.
   const turnCommands = [{ command: 0, cursor: 0, move: { move: 337, targets: [], useMode: 0 }, targets: [3] }];
@@ -1069,12 +983,12 @@ const hydreigonSnorlax = () => [
   assert.match(slots.find(l => /^⚔ Lucario/.test(l)) ?? "", /Aura Sphere → Hydreigon/, "slot 1 is planned around it");
 }
 
-// 16b. Slot 0 is locked into a spread move the foe standing in front of it can't be touched by (no Boomburst row for
+// Slot 0 is locked into a spread move the foe standing in front of it can't be touched by (no Boomburst row for
 // Hydreigon). The locked path resolves a spread move per foe like any other, so the line still says what the game
 // will do to Snorlax instead of falling to the bare "locked in" that aims nowhere (#261).
 {
-  // No `Garchomp>Boomburst>Hydreigon` row, so Boomburst is filtered out of that pool; Dragon Claw keeps the pool
-  // non-empty, which is what stops `fake-turn` falling back to approximated outcomes and handing Boomburst back.
+  // With no Boomburst row into Hydreigon, Dragon Claw keeps Garchomp's pool against it non-empty — or `fake-turn`
+  // falls back to approximated outcomes and hands Boomburst back.
   Object.assign(TABLE, { "Garchomp>Boomburst>Snorlax": [[400], 1, 1] });
   const party = [
     mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Boomburst", "Normal", 140, "S", 0, { target: 6 }], ["Dragon Claw", "Dragon", 80, "P"]], true, undefined, { getBattlerIndex: () => 0 }),
@@ -1088,7 +1002,7 @@ const hydreigonSnorlax = () => [
   assert.match(g, /both/, `it still aims at both, not nowhere:\n${field.join("\n")}`);
 }
 
-// 17. Garchomp is switching out to Metagross: the plan takes that as given.
+// Garchomp is switching out to Metagross: the plan takes that as given.
 {
   Object.assign(TABLE, { "Metagross>Meteor Mash>Hydreigon": [[200], 1, 2], "Metagross>Meteor Mash>Snorlax": [[90], 1, 1],
     "Hydreigon>Dark Pulse>Metagross": [[60], 1, 1], "Snorlax>Body Slam>Metagross": [[30], 1, 0.5] });
@@ -1099,8 +1013,8 @@ const hydreigonSnorlax = () => [
   assert.ok(!field.some(l => /⚔ Garchomp/.test(l)), "Garchomp isn't planned to act");
 }
 
-// ---- 18–19. Support moves.
-// 18. Protect: Hydreigon outspeeds and KOs Lucario, whose hit barely matters, but the faster Garchomp KOs Hydreigon first.
+// ---- Support moves.
+// Protect: Hydreigon outspeeds and KOs Lucario, whose hit barely matters, but the faster Garchomp KOs Hydreigon first.
 {
   Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": [[400], 1, 2], "Hydreigon>Dark Pulse>Lucario": [[300], 1, 1], "Lucario>Aura Sphere>Snorlax": [[30], 1, 2] });
   const party = [
@@ -1116,7 +1030,7 @@ const hydreigonSnorlax = () => [
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon/);
 }
 
-// 19. Helping Hand: Dragon Claw alone leaves Hydreigon standing, ×1.5 KOs it; Clefable's own hit adds nothing.
+// Helping Hand: Dragon Claw alone leaves Hydreigon standing, ×1.5 KOs it; Clefable's own hit adds nothing.
 {
   Object.assign(TABLE, {
     "Garchomp>Dragon Claw>Hydreigon": [[250], 1, 2],
@@ -1134,7 +1048,7 @@ const hydreigonSnorlax = () => [
   assert.match(slots.find(l => /^⚔ Garchomp/.test(l)) ?? "", /Dragon Claw → Hydreigon 1 hit .*with Helping Hand/);
 }
 
-// ---- 20. Drain (#90, the Guzma w165 Golisopod): a drain move wins back half of what it deals every turn.
+// ---- Drain (#90): a drain move wins back half of what it deals every turn.
 // Meteor Mash (85–100) into a 300 HP Golisopod is a 4HKO. Its Leech Life lands ~55 on Metagross and heals ~28 of it
 // a turn, so the fourth Mash falls short: 5. A full-HP foe can't heal past its max.
 Object.assign(TABLE, {
@@ -1172,9 +1086,8 @@ Object.assign(TABLE, {
   globalThis.__stub.outcome = outcome;
 }
 
-// ---- 21. On-KO boosts (#90, Guzma's Buzzwole): a foe with Beast Boost gets stronger for every KO we feed it.
-// Read off the ability: Beast Boost's changes are a function of the holder (its highest stat), Soul-Heart counts
-// every faint.
+// ---- On-KO boosts (#90): a foe with Beast Boost gets stronger for every KO we feed it.
+// Read off the ability (game-code.md §18).
 {
   const { koBoost } = globalThis.__planner;
   const ability = (name, attr, x) => ({
@@ -1202,8 +1115,8 @@ Object.assign(TABLE, {
 
   // A close call it tips: Mamoswine (150 HP, a speed tie) needs three Earthquakes (136–160) to Buzzwole's two Lunges,
   // while Crobat resists Lunge (~6 % coming in) but chips slowly with Wing Attack. Without the boost staying edges it
-  // and the switch is only optional; the KO staying would feed Buzzwole tips it to Crobat — the Guzma turn 20 pivot —
-  // and the switch line says why it's cheap.
+  // and the switch is only optional; the KO staying would feed Buzzwole tips it to Crobat, and the switch line says
+  // why it's cheap.
   Object.assign(TABLE, { "Buzzwole>Lunge>Crobat": [[20], 1, 0.25], "Crobat>Wing Attack>Buzzwole": [[45], 1, 4], "Mamoswine>Earthquake>Buzzwole": [[160], 1, 1] });
   const tied = mon("Mamoswine", 80, ["Ice", "Ground"], [300, 200, 100, 70, 80, 150], [["Earthquake", "Ground", 100, "P"]], true, 150);
   const crobat = mon("Crobat", 80, ["Poison", "Flying"], [300, 150, 110, 80, 150, 250], [["Wing Attack", "Flying", 60, "P"]], false);
@@ -1214,9 +1127,7 @@ Object.assign(TABLE, {
   assert.ok(plain.some(l => /^⚔ Mamoswine/.test(l)) && plain.some(l => /Crobat in · optional/.test(l)), `stay without the boost:\n${plain.join("\n")}`);
 }
 
-// ---- 22. The summary the watcher and the battle read get (#90): a likely KO after our mon acts is a second
-// danger level, naming the foe the fight plan saves that mon for, and the fight plan's verdict comes along — Guzma's
-// turn 1, where Mamoswine acts once and then falls to Iron Head.
+// ---- The summary's second danger level: a likely KO after our mon acts, naming what it is saved for (#90).
 {
   const { cardSummary } = globalThis.__planner;
   const threat = (level, after) => ({ level, after, from: "Mega Golisopod", move: "Iron Head" });
@@ -1233,24 +1144,22 @@ Object.assign(TABLE, {
   console.log(`== summary\n${JSON.stringify({ danger: sum.danger, plan: sum.plan })}`);
   assert.deepEqual(sum.danger, [{ mon: "Mamoswine", from: "Mega Golisopod", move: "Iron Head", level: "after", saveFor: "Xurkitree" }]);
   assert.equal(sum.plan, "likely lost · 💀 Buzzwole KOs 3/6 · nobody KOs Buzzwole 1-on-1 — maximise damage before it comes in, chip it with Crobat · Mamoswine goes down before Buzzwole comes in");
-  // A plain ⚠ (a real KO chance, not a likely KO) stays off the list.
   assert.deepEqual(cardSummary({ ...m, field: { ...m.field, slots: [{ ...m.field.slots[0], threat: threat("risk", false) }] } }).danger, []);
-  // `saveFor` also reads the foes only this mon beats (#170), which the win condition's reserve never covered.
+  // `saveFor` also reads the foes only this mon beats (#170).
   const only = { ...m, teamPlan: { ...m.teamPlan, reserve: [], only: [{ name: "Mamoswine", for: [{ name: "Xurkitree" }, { name: "Buzzwole" }] }] } };
   assert.equal(cardSummary(only).danger[0].saveFor, "Xurkitree, Buzzwole");
 }
 
-// ---- 23–25. Guzma w165 (#170, the worked example in #90), on the real rosters from that ticket's state dump, cut
-// down to the three of ours and the three foes the decisions turn on and given one move each. Mamoswine is the only
-// answer to Xurkitree (faster, immune to Discharge, Ground hits it ×2) and the only one that beats Buzzwole; both are
-// still on the bench, so the fight plan holds Mamoswine back and the ⚔ line has to price spending it.
+// ---- Guzma w165 (#170): the ⚔ line prices spending the one mon the fight plan holds back.
+// Mamoswine is the only answer to Xurkitree (faster, immune to Discharge, Ground hits it ×2) and the only one that
+// beats Buzzwole, both still on the bench.
 Object.assign(TABLE, {
   "Mamoswine>Precipice Blades>Mega Golisopod": [[180], 1, 1], "Mamoswine>Precipice Blades>Xurkitree": [[500], 1, 2],
   "Mamoswine>Precipice Blades>Buzzwole": [[200], 1, 1],
   "Golduck>Surf>Mega Golisopod": [[150], 1, 1], "Golduck>Surf>Xurkitree": [[100], 1, 1], "Golduck>Surf>Buzzwole": [[130], 1, 1],
   "Metagross>Meteor Mash>Mega Golisopod": [[110], 1, 0.5], "Metagross>Meteor Mash>Xurkitree": [[120], 1, 1],
   "Metagross>Meteor Mash>Buzzwole": [[100], 1, 1],
-  // Iron Head is ×2 into Mamoswine's Ice half and takes it in one, which is why turn 1 cost the run.
+  // Iron Head is ×2 into Mamoswine's Ice half and takes it in one.
   "Mega Golisopod>Iron Head>Mamoswine": [[600], 1, 2], "Mega Golisopod>Iron Head>Golduck": [[190], 1, 1],
   "Mega Golisopod>Iron Head>Metagross": [[120], 1, 0.5],
   // Discharge has no entry into Mamoswine: Ground is immune, so nothing else on the team answers Xurkitree.
@@ -1273,21 +1182,18 @@ Object.assign(TABLE, {
   const ironHead = () => [{ name: "Iron Head", type: "Steel", p: 1, score: 10, targets: [0] }];
   const at = opts => render({ ...guzma(opts), live: true, dist: ironHead, switches: () => new Map() });
 
-  // 23. #170 — turn 1: Mamoswine is on the field against Mega Golisopod. Its Precipice Blades is neutral and needs
-  // three hits through two boss bars; Iron Head is ×2 and takes it in one, right after it acts. Spending it here is
-  // spending the only Xurkitree answer, so the ⚔ line puts Golduck in and the plan says what is kept for what.
+  // Turn 1: Precipice Blades needs three hits through Mega Golisopod's two boss bars, and Iron Head takes Mamoswine
+  // in one right after it acts — spending the only Xurkitree answer.
   {
     const { lines, field } = at({ field: "Mamoswine" });
     console.log(`== guzma w165 turn 1 (live)\n${lines.join("\n")}`);
     assert.ok(!field.some(l => /^⚔ Mamoswine/.test(l)), `turn 1 must not spend Mamoswine on Golisopod:\n${field.join("\n")}`);
-    // Metagross, not Golduck: Iron Head is ×0.5 into it, so it is the cheapest mon to put in front of Golisopod —
-    // the same pivot the coaching session made two turns later.
+    // Metagross, not Golduck: Iron Head is ×0.5 into it.
     assert.match(field.find(l => /^now: ⇄/.test(l)) ?? "", /Mamoswine .*out › Metagross in · takes ~\d+% · resists Iron Head/, `something else comes in:\n${field.join("\n")}`);
     assert.ok(lines.some(l => /^🔒 Mamoswine only answer to Xurkitree/.test(l)), `the plan names what Mamoswine is for:\n${lines.join("\n")}`);
   }
 
-  // 24. The same turn with the later foes gone: nothing is being saved, so the ⚔ line stays with Mamoswine. The
-  // switch in 23 is the fight plan's doing and nothing else's.
+  // Turn 1 with the later foes gone: nothing is being saved, so the switch above is the fight plan's doing alone.
   {
     const { party, foes } = guzma({ field: "Mamoswine" });
     const { field } = render({ party, foes: [foes[0]], live: true, dist: ironHead, switches: () => new Map() });
@@ -1295,9 +1201,8 @@ Object.assign(TABLE, {
     assert.match(lineOf(field, "Mamoswine"), /Precipice Blades → Mega Golisopod/, `with nothing to save it for, Mamoswine attacks:\n${field.join("\n")}`);
   }
 
-  // 25. #170 — turn 3: Golduck is on 23 HP and poisoned in front of Golisopod, which takes it this turn anyway. A
-  // switch would pay an entry hit to save a mon that is going down regardless and throw away its last attack, while
-  // a faint brings the next mon in for nothing — so the ⚔ line stays and attacks and names the free entry.
+  // Turn 3: Golduck, on 23 HP and poisoned, goes down this turn anyway, so a switch pays an entry hit for what a faint
+  // brings in free.
   {
     const poison = p => (p.name === "Golduck" ? -27 : 0);
     const { party, foes } = guzma({ field: "Golduck", golduckHp: 23 });
@@ -1310,9 +1215,8 @@ Object.assign(TABLE, {
 }
 
 // ---- The enemy's exact move on the ↯ row, and the one case that rides on our own draw (#183)
-// Depth 1 is played on the game's own answer, so the row names the move as fact: no `% likely` on it. In a double a
-// `RANDOM_NEAR_ENEMY` command of ours draws its target before `EnemyCommandPhase`, so the prediction is the one for
-// **that** command, and the row says so with `~` — `replay` confidence, the preview's existing mark.
+// A `RANDOM_NEAR_ENEMY` command of ours draws its target first (game-code.md §6), so the prediction is for that draw:
+// `replay` confidence, marked `~`.
 {
   const build = ourTarget => {
     const party = [
@@ -1323,15 +1227,13 @@ Object.assign(TABLE, {
       mon("Gyarados", 82, ["Water", "Flying"], [250, 170, 110, 80, 130, 150], [["Waterfall", "Water", 80, "P"]], true),
       mon("Weavile", 84, ["Dark", "Ice"], [300, 250, 100, 60, 110, 299], [["Triple Axel", "Ice", 20, "P"]], true),
     ];
-    // Both sides see the other side's field, the way the game's own `getOpponents` does — which is what tells the
-    // planner there are two near enemies for a random target to be drawn between.
+    // Our side sees both foes, which is what gives a random target two near enemies to be drawn between.
     for (const p of party) p.getOpponents = () => foes;
     const exactRow = (name, type) => [{ name, type, p: 1, score: null, exact: true, targets: [0], targetDist: [{ battlerIndex: 0, p: 1 }] }];
     return render({ party, foes, live: true, double: true, switches: () => new Map(),
       dist: e => (e.name === "Gyarados" ? exactRow("Waterfall", "Water") : exactRow("Triple Axel", "Ice")) });
   };
 
-  // A plain command of ours draws nothing, so the foe's move is exact.
   const plain = build(3);
   const gyaradosRow = plain.card.rows.find(r => r.name === "Gyarados");
   assert.equal(gyaradosRow.likely.confidence, "exact", "a command that draws nothing leaves the answer exact");
@@ -1339,7 +1241,6 @@ Object.assign(TABLE, {
   const plainLine = plain.lines.find(l => l.startsWith("↯")) ?? plain.lines.find(l => l.includes("Waterfall")) ?? "";
   assert.ok(!plainLine.includes("~"), `nothing to mark on an exact row:\n${plain.lines.join("\n")}`);
 
-  // The same turn with Aura Wheel aimed at a random near enemy: our own draw comes first, so the row is `~`.
   const drawn = build(7);
   const drawnRow = drawn.card.rows.find(r => r.name === "Gyarados");
   assert.equal(drawnRow.likely.confidence, "replay", "our random-target command draws before the enemy decides");
@@ -1347,9 +1248,7 @@ Object.assign(TABLE, {
   assert.ok(drawn.lines.some(l => l.includes("Waterfall") && l.includes("~")), `the row carries the mark:\n${drawn.lines.join("\n")}`);
 }
 
-// ---- The one gate (#183)
-// The exact call is load-bearing: with no answer to be had, the battle card, the fight plan and the catch advice
-// stop together and the card says why, rather than one of them quietly advising from the distribution.
+// ---- The one gate: with no exact enemy answer, the card, the fight plan and the catch advice stop together (#183)
 {
   const party = [mon("Morpeko", 80, ["Electric", "Dark"], [220, 150, 90, 120, 100, 170], [["Aura Wheel", "Electric", 110, "P"]], true, 180)];
   const foes = [mon("Gyarados", 82, ["Water", "Flying"], [250, 170, 110, 80, 130, 150], [["Waterfall", "Water", 80, "P"]], true)];
@@ -1359,8 +1258,6 @@ Object.assign(TABLE, {
   assert.deepEqual(out.card.rows, [], "and no foe rows");
   assert.equal(out.card.teamPlan, null);
   assert.equal(out.card.catch, null);
-  // An ordinary card with exactly one `act` group, whose summary carries it: the inline ⚠ row that used to say it is
-  // gone, because the summary says it (#349).
   assert.deepEqual(out.groups.map(g => g.id), ["act"], "one group, and it is act");
   assert.equal(out.groups[0].summary, "no advice — the enemy AI call threw");
   assert.deepEqual(out.lines.filter(l => l.startsWith("⚠")), [], out.lines.join("\n"));

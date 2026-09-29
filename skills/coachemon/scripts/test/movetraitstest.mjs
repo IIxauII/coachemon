@@ -1,14 +1,9 @@
-// Move traits (07-move-traits): one row per trait kind read off a move's attributes, the user modifiers that change
-// them (Magic Guard, Rock Head, Skill Link, Parental Bond, Multi-Lens), the guaranteed-chance gate, `charge.skip`
-// and the `costNotes` wording every card shares. Nothing here touches battle state — that is the point of the
-// module, so the scene is a stub and no game call is made.
-// Usage: node test/movetraitstest.mjs
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { MoveTarget, MultiHitType, MoveFlags, StatusEffect, Stat, SpeciesId, MoveId } from "../../../../src/enums/generated.ts";
 
 // The HUD matches an attribute through its prototype chain, so a stand-in carries its parent where the game
-// subclasses (a WeatherInstantChargeAttr *is* an InstantChargeAttr).
+// subclasses.
 const PARENTS = { WeatherInstantChargeAttr: "InstantChargeAttr", BoostHealAttr: "HealAttr", PlantHealAttr: "HealAttr", LeechSeedAttr: "AddBattlerTagAttr", ProtectAttr: "AddBattlerTagAttr" };
 const classFor = name => {
   const parent = PARENTS[name] ? classFor(PARENTS[name]) : null;
@@ -31,7 +26,6 @@ const mon = ({ id = "user", abilities = [], items = [], species = 1, formIndex =
 });
 const lens = n => Object.assign(new (classFor("PokemonMultiHitModifier"))(), { getStackCount: () => n });
 
-// The module is bundled with the rest of the HUD, so eval needs the page globals the panel touches on load.
 globalThis.window = globalThis;
 globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [] } } } };
 const node = () => { const n = { style: {}, dataset: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren() {} }; return n; };
@@ -67,7 +61,7 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.equal(moveTraits(move({ id: MoveId.SUCKER_PUNCH })).needsAttack, true, "Sucker Punch reads the target's command");
   assert.equal(moveTraits(move({ id: MoveId.THUNDERCLAP })).needsAttack, true);
   assert.equal(moveTraits(move({ id: MoveId.TACKLE })).needsAttack, false);
-  // The game hangs FirstMoveCondition off any of the three condition lists.
+  // The game puts FirstMoveCondition in `conditionsSeq3` (game-code.md §5); the HUD reads all three lists.
   const fakeOut = move({ name: "Fake Out", conditions: ["FirstMoveCondition"] });
   const seq3 = move({ name: "First Impression" });
   seq3.conditionsSeq3 = [attr("FirstMoveCondition")];
@@ -130,18 +124,18 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.equal(moveTraits(axel, mon({ abilities: ["MaxMultiHitAbAttr"] })).hits.checkAll, false, "Skill Link skips the per-hit checks");
   assert.equal(moveTraits(move({ attrs: [["MultiHitAttr", { multiHitType: MultiHitType.TEN }]] }), mon()).hits.mean, 10);
 
-  // Beat Up counts the user plus every party member with no status, the way the game does — a fainted member too.
+  // Beat Up's count (game-code.md §2).
   const party = [mon({ id: "user" }), mon({ id: "fine" }), mon({ id: "poisoned", status: { effect: StatusEffect.POISON } }), mon({ id: "fainted", status: { effect: StatusEffect.FAINT } })];
   const beatUp = move({ name: "Beat Up", attrs: [["MultiHitAttr", { multiHitType: MultiHitType.BEAT_UP }]] });
   assert.equal(moveTraits(beatUp, party[0], { party }).hits.mean, 2, "the user and the one healthy member");
 
-  // Extra strikes: Parental Bond adds one, each Multi-Lens stack one, and neither touches a multi-hit move.
+  // Extra strikes (game-code.md §2).
   const tackle = move({ name: "Tackle" });
   assert.equal(moveTraits(tackle, mon({ abilities: ["AddSecondStrikeAbAttr"] })).hits.mean, 2);
   assert.equal(moveTraits(tackle, mon({ items: [lens(2)] })).hits.mean, 3);
   assert.equal(moveTraits(twoToFive, mon({ items: [lens(2)] })).hits.mean, 3.1, "a multi-hit move takes no lens strikes");
-  // Ash-Greninja's Water Shuriken is three hits, not two to five. The game checks BATTLE_BOND_GRENINJA's form 1, a
-  // separate species from plain Greninja — whose own form 2 is somebody else's, and takes no extra strikes (#178.2).
+  // Water Shuriken is three hits on BATTLE_BOND_GRENINJA's form 1 only, a separate species from plain Greninja, whose
+  // own form 2 is two to five (game-code.md §2, #178).
   const shuriken = move({ name: "Water Shuriken", attrs: [["MultiHitAttr", { multiHitType: MultiHitType.TWO_TO_FIVE }], "ChangeMultiHitTypeAttr"] });
   assert.equal(moveTraits(shuriken, mon({ species: SpeciesId.BATTLE_BOND_GRENINJA, formIndex: 1 })).hits.mean, 3);
   assert.equal(moveTraits(shuriken, mon({ species: SpeciesId.BATTLE_BOND_GRENINJA, formIndex: 0 })).hits.mean, 3.1, "the un-bonded form is two to five");
@@ -156,13 +150,12 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.deepEqual(moveTraits(willowisp).inflicts.map(x => [x.effect, x.self, x.side]), [[StatusEffect.BURN, false, false]]);
   assert.equal(moveTraits(rest).inflicts[0].self, true);
 
-  // Howl's attr carries no `selfTarget`: only the move's target says it is aimed at our own side. An ally-only move
-  // is on that side too, but it is the partner's stats that move — the flags keep the two apart.
+  // Howl's attr carries no `selfTarget`: only the move's target puts it on our side. An ally-only move is on that side
+  // too, but moves the partner's stats.
   const howl = move({ name: "Howl", target: MoveTarget.USER_AND_ALLIES, attrs: [["StatStageChangeAttr", { stats: [Stat.ATK], stages: 1 }]] });
   const decorate = move({ name: "Decorate", target: MoveTarget.NEAR_ALLY, attrs: [["StatStageChangeAttr", { stats: [Stat.ATK, Stat.SPATK], stages: 2 }]] });
   assert.deepEqual(moveTraits(howl).stages.map(x => [x.self, x.side, x.ally]), [[false, true, false]]);
   assert.deepEqual(moveTraits(decorate).stages.map(x => [x.self, x.side, x.ally]), [[false, true, true]]);
-  // Belly Drum's stages are a function of the user, and its HP cost is its own trait.
   const bellyDrum = move({ name: "Belly Drum", target: MoveTarget.USER, attrs: [["StatStageChangeAttr", { stats: [Stat.ATK], selfTarget: true, getLevels: () => 6 }], ["CutHpStatStageBoostAttr", { cutRatio: 2 }]] });
   assert.equal(moveTraits(bellyDrum, mon()).stages[0].stages, 6, "getLevels answers for the user");
   assert.deepEqual(moveTraits(bellyDrum, mon()).cutHp, { ratio: 2 });
@@ -178,15 +171,13 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.equal(moveTraits(move({ name: "Protect", target: MoveTarget.USER, attrs: ["ProtectAttr"] })).protect, true);
   assert.equal(moveTraits(move({ name: "Iron Head", attrs: ["FlinchAttr"] })).flinches, true);
 
-  // A subclass counts as its parent, and `cls` keeps them apart for a caller whose table is keyed by the concrete
-  // class: Leech Seed is a battler tag, but it is valued as Leech Seed, not as a bare tag.
+  // A subclass counts as its parent; `cls` keeps the concrete class for a caller whose table is keyed by it.
   const leechSeed = move({ name: "Leech Seed", attrs: [["LeechSeedAttr", { tagType: "SEEDED" }]] });
   assert.deepEqual(moveTraits(leechSeed).tags.map(x => [x.tag, x.cls]), [["SEEDED", "LeechSeedAttr"]]);
   assert.ok(moveTraits(leechSeed).attrNames.has("LeechSeedAttr") && !moveTraits(leechSeed).attrNames.has("AddBattlerTagAttr"), "attrNames holds the concrete class only");
 
-  // Typing written onto the target: Soak replaces its types with one, Trick-or-Treat adds a third. Whether the move
-  // would do anything (a Tera target, Multitype, a typing it already has) is the caller's, live: that is the
-  // attribute's condition, not its data.
+  // Data only: whether the move would do anything is the attribute's condition (game-code.md §14), the caller's to
+  // ask live.
   const soak = move({ name: "Soak", attrs: [["ChangeTypeAttr", { type: 10 }]] });
   const trickOrTreat = move({ name: "Trick-or-Treat", attrs: [["AddTypeAttr", { type: 7 }]] });
   assert.deepEqual(moveTraits(soak).typeChange, { kind: "set", type: 10 });
@@ -223,7 +214,6 @@ const counts = t => t.hits.dist.map(x => `${x.n}@${x.p}`).join(" ");
   assert.deepEqual(say(move({ attrs: ["MissEffectAttr"] })), ["−50% HP if it misses"]);
   assert.deepEqual(say(move({ attrs: ["SacrificialAttr"] })), ["user faints"]);
   assert.deepEqual(say(move({ attrs: ["RemoveTypeAttr"] }), null, { type: "Fire" }), ["loses its Fire type"]);
-  // Stats that fall by the same amount are named together; a guaranteed boost is no cost at all.
   assert.deepEqual(say(move({ attrs: [["StatStageChangeAttr", { stats: [Stat.DEF, Stat.SPDEF], stages: -1, selfTarget: true }]] })), ["−1 Def/SpD after use"]);
   assert.deepEqual(say(move({ attrs: [["StatStageChangeAttr", { stats: [Stat.SPATK], stages: -2, selfTarget: true }]] })), ["−2 SpA after use"]);
   assert.deepEqual(say(move({ chance: 100, attrs: [["StatStageChangeAttr", { stats: [Stat.SPD], stages: 1, selfTarget: true }]] })), []);
