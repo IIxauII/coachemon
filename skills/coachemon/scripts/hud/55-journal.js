@@ -40,8 +40,8 @@ const save = () => {
 const mon = p => [p.id ?? null, p.species?.speciesId ?? null, p.name ?? null, p.level ?? null,
   p.hp ?? null, tryDo(() => p.getMaxHp()), p.status?.effect ?? 0];
 
-// Properties and the two party accessors only, so the journal spends a tick no game code; the UI mode comes off the
-// DOM for the same reason.
+// Properties and plain getters only (the two parties, `getMaxHp`), nothing that draws or whose body could drift; the
+// UI mode comes off the DOM for the same reason.
 const step = s => {
   const b = s.currentBattle;
   const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];

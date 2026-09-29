@@ -42,8 +42,9 @@ const tmRelearners = (t, users) => users.filter(p => {
 // positive one (game-code.md §16).
 const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.HARDCORE && c.value !== 0);
 
-// `take`: true with the best recipient, false when nobody gains (`closest` is the nearest miss), null when no member's
-// learn card can score the move.
+// `take`: true with the best recipient; false when nobody gains (`closest` is the nearest miss); null when a member's
+// learn card can't score the move, which leaves the call to the player — `best` is that member, or null for a status
+// move no member's card can score.
 // @only tests: tmAdvice
 export const tmAdvice = (mv, users, ctx) => {
   const all = users.map(p => ({ p, a: learnAdvice(p, mv, ctx) }));
@@ -187,7 +188,7 @@ export const rewardsModel = (run, h) => {
         const relearn = tmRelearners(t, users);
         const relearnNote = relearn.length === users.length
           ? ` · ${relearn.length > 1 ? "all" : relearn[0].name} can relearn it (Memory Mushroom)` : "";
-        // Kept for the run, so judged against the doubles and the roster ahead, not this wave (game-code.md §16).
+        // Kept for the run, so judged against the doubles and the roster ahead (#122), not this wave.
         const advice = tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party, roster: learnRoster(ahead) });
         const b = advice.best;
         extra.users = users.map(p => p.name);

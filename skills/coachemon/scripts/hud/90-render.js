@@ -49,8 +49,8 @@ const REF_W = SHARE * 1920;
 // would ship into the style attribute.
 const pxRound = n => `${Math.round(n * 100) / 100}px`;
 export const PANEL_W = `clamp(${pxRound(0.5 * REF_W)}, calc(${SHARE} * ${GAME_W}), ${pxRound(1.5 * REF_W)})`;
-// The game's message window starts `11/15 ÷ (16/9) = 0.4125 × game-w` down (game-code.md §25). It bounds the pane,
-// not the panel.
+// The game's message window starts `11/15 ÷ (16/9) = 0.4125 × game-w` down (game-code.md §25), so 0.40 stays above
+// it. It bounds the pane, not the panel.
 const INSET = "8px";
 const MAX_H = `calc(0.40 * ${GAME_W} - ${INSET})`;
 
@@ -234,10 +234,9 @@ export const drawer = groups => {
     h("div", { ...PANE, border: `1px solid ${frameInk(open.id)}` }, ...pane(open))];
 };
 
-// **This layer never dispatches on a kind**: which draw goes with which kind is 98-tick's one table. A second copy
-// here, for the tests alone, let the panel change under a suite still drawing the old shape (#388).
-
-// What goes on the wire.
+// What goes on the wire. **The plain text never dispatches on a kind**: which draw goes with which kind is 98-tick's
+// one table. A second copy here, for the tests alone, let the panel change under a suite still drawing the old shape
+// (#388).
 export const flatGroups = groups => inOrder(groups)
   .map(g => ({ id: g.id, label: g.label, summary: g.summary, rows: g.rows.map(rowText).map(clean).filter(Boolean) }));
 
@@ -306,7 +305,8 @@ export const caption = (emoji, title, ...rest) => h("div",
 const VERDICT = { easy: "#78c850", trainer: "#f8b050", danger: "#e13d3d", catch: "#40c8f8", fight: "#f8b050" };
 const dot = ink => h("span", { width: rung(1), height: rung(1), flex: "none", borderRadius: "50%", background: ink });
 
-// `unavailable` has no ink, so it draws no dot and no word: its call already says why.
+// **A card with no verdict ink draws no dot and no word** — every card but a battle's, and an `unavailable` battle,
+// whose call already says why.
 export const strip = (card, captionNode, groups) => {
   const ink = VERDICT[card?.verdict];
   const head = reserveForControl(h("div", { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "4px" },

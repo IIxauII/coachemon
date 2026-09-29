@@ -411,7 +411,7 @@ One hit deals at most `hp − segSize·idx` (down to the current boundary). The 
 
 **Berries do not trigger on hit.** `BerryModifier` is applied only in `BerryPhase.eatBerries` (`src/phases/berry-phase.ts:33-82`), a turn-end phase that runs after `WeatherEffectPhase` and before `CheckStatusEffectPhase` (status chip) and `TurnEndPhase` (`src/phase-manager.ts:227-233`). The only other ways to eat one are Bug Bite / Pluck / Stuff Cheeks / Teatime (`EatBerryAttr`, `move.ts:3371`) and Cud Chew / Harvest. An opposing Unnerve (`PreventBerryUseAbAttr`) skips the phase for that mon (`berry-phase.ts:43-52`). Predicates (`getBerryPredicate`, `src/data/berry.ts:23-65`, pure):
 - Sitrus: `getHpRatio() < 0.5`, with the ratio rounded to 0.01 (`pokemon.ts:1691-1693`), so 49.5 % doesn't trigger it. Enigma: any `turnData.attacksReceived` this turn with result SUPER_EFFECTIVE or EXTREMELY_EFFECTIVE. Both heal `toDmgValue(maxHp / 4)`, ×2 with Ripen (`DoubleBerryEffectAbAttr`), via `PokemonHealPhase` (`berry.ts:73-89`). They are separate modifiers, so both can fire in the same phase.
-- Liechi–Salac: HP ratio below 0.25 (or Gluttony's `ReduceBerryUseThresholdAbAttr` value) and stat stage < 6. Lansat and Starf build the holder but compare against a literal 0.25 (`:46-57`), so Gluttony doesn't reach them. Leppa: any move at 0 PP.
+- Liechi–Salac raise Atk, Def, SpA, SpD and Spe in that order: the game takes the stat as `berryType − BerryType.ENIGMA` (`:42`, `:108`), because `BerryType` lists them in `Stat`'s order. They trigger at an HP ratio below 0.25 (or Gluttony's `ReduceBerryUseThresholdAbAttr` value) and stat stage < 6. Lansat and Starf build the holder but compare against a literal 0.25 (`:46-57`), so Gluttony doesn't reach them. Leppa: any move at 0 PP.
 - Each trigger eats one (`consumed`, `modifier.ts:1832-1846`) unless Berry Pouch saves it (`PreserveBerryModifier`: `randBattleSeedInt(10) < 3·stack`, `:1881-1882`). Max stacks: Sitrus / Lum / Enigma / Leppa 2, others 3 (`:1848-1853`).
 
 ---
@@ -1733,9 +1733,9 @@ SpD]`, neutral on the diagonal. There is **no Ability Capsule** at this tag; the
 1/64 … 1/8, 4 stacks).
 
 **EXP and the level cap.** `getMaxExpLevel(ignoreLevelCap)` (`src/battle-scene.ts:2310`) — pure: `w =
-getWaveForDifficulty(ceil(wave / 10) × 10)` (the rounded wave itself outside Daily; in Daily that wave
-`+ 30 + floor(wave / 5)`, `src/game-mode.ts:192-198`, so wave 30 caps at 52 there and 24 in classic), cap `ceil((1 + w/2 + (w/25)²) × 1.2 / 2) ×
-2 + 2` (wave 10 → 10, 20 → 16, 50 → 38, 200 → 200); with `ignoreLevelCap`, `MAX_SAFE_INTEGER`. `applyPartyExp`
+getWaveForDifficulty(r)` for the rounded wave `r = ceil(wave / 10) × 10`, which is `r` itself outside Daily and
+`r + 30 + floor(r / 5)` in Daily (`src/game-mode.ts:192-198`), so wave 30 caps at 52 there and 24 in classic; cap
+`ceil((1 + w/2 + (w/25)²) × 1.2 / 2) × 2 + 2` (wave 10 → 10, 20 → 16, 50 → 38, 200 → 200); with `ignoreLevelCap`, `MAX_SAFE_INTEGER`. `applyPartyExp`
 (`:3332`, §17) shares EXP only among members **below** the cap — a member at it gets nothing and its share is not
 passed on — and `PlayerPokemon.addExp` (`src/field/pokemon.ts:6329`, writes `exp` / `level`) stops at it. Exp Share
 gives the bench `0.2 × stacks` of a participant's share; EXP Charms multiply every member's share in `ExpPhase`.
@@ -2614,12 +2614,10 @@ or by switching tabs (`:286-290`, `src/ui/settings/navigation-menu.ts:79`), runs
 
 Read at the pinned tag (`v1.12.0.11`), for the panel's footprint (`90-render.js`).
 
-**The canvas.** The game is 1920×1080 under `Phaser.Scale.FIT` (`src/main.ts:24-31`), no `autoCenter`, no zoom. Its
-parent `#app` is stretched to the page by Phaser's default `expandParent`, so the drawn width is `min(page width,
-16/9 × 100vh)`; `#app`'s own flex CSS centres it (`index.css:35-39`).
+**The canvas.** The game is 1920×1080 under `Phaser.Scale.FIT` (`src/main.ts:24-31`), with no zoom. Its parent `#app`
+is stretched to the page by Phaser's default `expandParent`, so the drawn width is `min(page width, 16/9 × 100vh)`.
 
 **The message window.** The UI works in a 320×180 space scaled ×6 (`src/scene-base.ts:16-19`,
 `src/battle-scene.ts:496-499`), with the `UI` container anchored at its bottom edge (`src/ui/ui.ts:131`). The battle
-message window is a 320×48 `bg` frame at origin `(0, 1)` there (`src/ui/handlers/battle-message-ui-handler.ts:37-40`),
-as are the command and move windows (`:42`, `:52`, `:56`): the bottom 48 of 180, so its top edge is at 11/15 of the
-height (canvas y 792). The speaker's name box, when shown, rises above it to scaled y 125 (`:63`, `:76`).
+message window is a 320×48 `bg` frame at origin `(0, 1)` there (`src/ui/handlers/battle-message-ui-handler.ts:37-40`):
+the bottom 48 of 180, so its top edge is at 11/15 of the height (canvas y 792).

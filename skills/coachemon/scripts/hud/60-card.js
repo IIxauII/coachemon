@@ -156,7 +156,7 @@ export const planSummary = tp => {
   ].filter(Boolean).join(" · ");
 };
 
-// Every summary carries every key, null where it isn't that card's: a contract test holds each kind to exactly these,
+// Every summary carries every key, empty where it isn't that card's: a contract test holds each kind to exactly these,
 // so probe.js can pass the whole thing through.
 const EMPTY = {
   kind: null, wave: null, verdict: null, field: null, danger: [], plan: null,

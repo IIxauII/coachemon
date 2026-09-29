@@ -1,6 +1,5 @@
 // What a held item, mint, EXP item, candy, vitamin or evolution item is worth to *this* party, judged on the member
-// it would go to and on the rewards card's scale of 10 a tier (game-code.md §15). `rewardValue` answers null for any
-// other reward, which 52-shop.js then judges itself.
+// it would go to and on the rewards card's scale of 10 a tier. What each item does is the game's (game-code.md §15).
 import { TYPES, abilitiesOf, hasAttr, iconOf, natureOf, typesOf } from "./01-core.js";
 import { splicerReward } from "./49-fusion.js";
 import { relearnBest } from "./50-audit.js";
@@ -153,12 +152,14 @@ const berry = (t, p, c) => {
   if (b === BerryType.LUM) return [4, `${p.name} · Lum cures a status once`];
   if (b === BerryType.LEPPA) return [2 + (attacks(p).some(mv => (mv.pp ?? 20) <= 10) ? 2 : 0), `${p.name} · Leppa refills a move at 0 PP`];
   if (b >= BerryType.LIECHI && b <= BerryType.SALAC) {
+    // `BerryType` lists Liechi…Salac in `Stat`'s order, Atk…Spe (game-code.md §3).
     const stat = b - BerryType.LIECHI + Stat.ATK;
     return [(stat === mainStat(p) || stat === Stat.SPD ? 4 : 1) + (has(p, ["Gluttony", "Ripen"]) ? 2 : 0), `${p.name} · +1 ${STAT_SHORT[stat]} in a pinch`];
   }
   return [2, `${p.name} · ${name} in a pinch`];
 };
 
+// null for any other reward, which 52-shop.js then judges itself.
 export const rewardValue = (t, ctx, users) => {
   const id = t.id ?? "";
   const pool = users ?? ctx.alive;
