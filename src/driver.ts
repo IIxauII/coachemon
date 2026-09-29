@@ -37,8 +37,8 @@ type Call = CallContext & {
   deadline: number;
   last: SettleResult | null;
   /**
-   * The latest game the call has seen, from its settles and its own cursor moves: every act is sent on it
-   * (extension-distribution.md §10.2).
+   * The fine fingerprint of the latest game the call has seen, from its settles and its own cursor moves: every act is
+   * sent on it (extension-distribution.md §10.2).
    */
   fine: string;
   /** What the call will press on, set once every check before the first press has passed. */
@@ -167,6 +167,7 @@ export class Driver {
           kind: shown.kind, key: shown.key, card_wave: shown.wave, verdict: shown.verdict, groups: shown.groups, text: shown.text, summary: shown.summary,
           ...(card.ok ? {} : { card_error: card.why }),
         },
+        // A failed page read is reported, never explained; `no-hud` is the one the player can act on themselves.
         next: card.ok ? undefined : NO_CARD_NEXT,
       };
     });
@@ -583,7 +584,7 @@ export class Driver {
 
   /**
    * Outside the call, before the deadline is set: nothing has been asked of the game, so there is no call for
-   * `CallOutcomes` to end (extension-distribution.md §12.2). The grant is taken inside the call.
+   * `CallOutcomes` to end. The grant is taken inside the call.
    */
   async #reachable(tool: keyof typeof TOOL_COMMANDS): Promise<void> {
     const { reach } = await this.#game.presence(TOOL_COMMANDS[tool]);
@@ -814,7 +815,7 @@ export class Driver {
       ladder_note: ladder.status === "ladder" ? undefined : ladder.message,
       tutorial_active: ready.tutorialActive,
       phase: ready.phaseName,
-      // read_menu's `extra` has always carried the pending message.
+      // read_menu's `extra` keeps carrying the pending message.
       extra: menu.messagePending ? { ...menu.extra, messagePending: true } : menu.extra,
     };
   }

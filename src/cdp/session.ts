@@ -1,4 +1,4 @@
-/** One long-lived CDP page session against the PokéRogue tab. It never closes the tab or Chrome: the dev watches the game there. */
+/** It never closes the tab or Chrome: the dev watches the game there. */
 import { spawn } from "node:child_process";
 import { mkdirSync, openSync } from "node:fs";
 import { homedir } from "node:os";

@@ -1,4 +1,4 @@
-/** A call's status and diagnostic, decided over the whole call (CONTEXT.md, `Call outcome`). The Driver only presents it (#126). */
+/** Decides the Call outcome (CONTEXT.md); the Driver only presents it (#126). */
 import { UiMode } from "./enums/generated.ts";
 import type { Diagnostic, Status } from "./envelope.ts";
 import type { PredicateRead, Ready } from "./game/port.ts";
@@ -60,9 +60,10 @@ export class CallOutcomes {
     if (read.runLive && !this.#latch.sawRun) this.#latch = { ...NO_RUN, sawRun: true };
     if (read.phaseName === "GameOverPhase") this.#latch = { ...this.#latch, gameOver: true };
     if (read.phaseName === "LoginPhase" && this.#latch.sawRun && !this.#latch.gameOver && !this.#menuActionInFlight) {
-      // A LoginPhase mid-run with no menu action in flight is `reset(true)`: the save failed (#11, v1-tool-surface.md §3).
+      // A LoginPhase mid-run with no menu action in flight is `reset(true)`: the save failed (#11, game-code.md §25).
       this.#latch = { ...this.#latch, interrupted: true };
     }
+    // Back at the title: whatever ended the run has been latched by now.
     if (read.mode === UiMode.TITLE && read.settled) this.#latch = { ...this.#latch, sawRun: false };
   }
 

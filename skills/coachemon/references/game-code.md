@@ -2428,7 +2428,7 @@ failing those it pops the last starter added, and only on an empty party calls `
 `confirmExit` text, then `CONFIRM`. Yes's callback sets `STARTER_SELECT` again at once (`:4484`; `CONFIRM` is a
 no-transition mode, `src/ui/ui.ts:83-84`), then outside challenge mode goes to the title
 (`phaseManager.toTitleScreen()`, `src/phase-manager.ts:258-265`), whose `TitlePhase.start` awaits `checkLastSaveSlot`
-before it shows `TITLE` (`src/phases/title-phase.ts:36-50`). A settled read between the two is still `STARTER_SELECT`.
+before it shows `TITLE` (`src/phases/title-phase.ts:36-50`); the mode stays `STARTER_SELECT` until then.
 
 ## 24. DNA Splicers: who can be fused, pick order, and what a fusion is
 
@@ -2506,9 +2506,10 @@ History, Settings: Continue only when `checkLastSaveSlot` finds a session to loa
 
 **Save slot.** In SAVE mode (`src/ui/handlers/save-slot-select-ui-handler.ts:224-260`), ACTION on a slot with `hasData`
 shows `overwriteData`, then a `CONFIRM` whose input is blocked for its delay (2000 ms outside beta and dev,
-`src/ui/handlers/base-option-select-ui-handler.ts:182-207`); Yes deletes that session, then starts the run. On a free
-slot ACTION starts the run at once, and on one still loading (`hasData` undefined) it does nothing. So on a free slot
-the first `CONFIRM` of the run is `CheckSwitchPhase`'s, not an overwrite.
+`src/ui/handlers/base-option-select-ui-handler.ts:182-207`); Yes deletes that session, then starts the run, or calls
+`globalScene.reset(true)` when the delete fails (`save-slot-select-ui-handler.ts:236-238`). On a free slot ACTION starts
+the run at once, and on one still loading (`hasData` undefined) it does nothing. So on a free slot the first `CONFIRM`
+of the run is `CheckSwitchPhase`'s (§9), not an overwrite.
 
 **Message prompts.** `BattleMessageUiHandler` clears `onActionInput` synchronously before calling it, on ACTION and
 CANCEL alike (`src/ui/handlers/battle-message-ui-handler.ts:158-168`). `awaitingActionInput` is never reset there or in
@@ -2522,7 +2523,7 @@ text is still typing (`src/ui/handlers/party-ui-handler.ts:912-929`).
 
 **Tutorials.** With `tutorialActive` on the current `AwaitableUiHandler`, `UI.processInput` hands input only to
 `processTutorialInput`, which answers ACTION and CANCEL alike and refuses the rest (`src/ui/ui.ts:261-273`,
-`src/ui/handlers/awaitable-ui-handler.ts:20-31`). An active overlay short-circuits both first.
+`src/ui/handlers/awaitable-ui-handler.ts:20-31`); an active overlay short-circuits both first (`ui.ts:261-273`).
 
 **MENU never reaches a handler.** A MENU key-down goes only to `UiInputs.buttonMenu` (`src/ui-inputs.ts:182-208`);
 nothing calls `ui.processInput(Button.MENU)`. It does nothing under `disableMenu`, opens the MENU overlay on TITLE,
@@ -2536,4 +2537,17 @@ mode's `show()` nor any pending callback. `CONFIRM` and `OPTION_SELECT` drop the
 (`src/ui/handlers/base-option-select-ui-handler.ts:397-404`), `SAVE_SLOT` drops its callback
 (`src/ui/handlers/save-slot-select-ui-handler.ts:459-466`) and `PARTY` never calls its own
 (`src/ui/handlers/party-ui-handler.ts:1880-1886`), so a phase waiting on any of them hangs. The Pokédex and game-stats
-handlers do call their `exitCallback` on `clear()`.
+handlers do call their `exitCallback` on `clear()` (`src/ui/handlers/pokedex-ui-handler.ts:2497-2501`,
+`src/ui/handlers/game-stats-ui-handler.ts:547-550`).
+
+**`globalScene.reset(true)`** (`src/battle-scene.ts:1131-1256`) wipes the run in memory, destroys the UI and the scene,
+and calls `launchBattle()`, which ends in `phaseManager.toTitleScreen(true)` (`:648-649`): the queue cleared, then
+`LoginPhase` and `TitlePhase` (`src/phase-manager.ts:258-265`), with no `GameOverPhase` on the way. A failed per-wave
+save takes this path: `EncounterPhase` calls it when `gameData.saveAll` resolves false (`src/phases/encounter-phase.ts:299-305`,
+`src/system/game-data.ts:1315-1395`).
+
+**Settings.** Six settings carry `requireReload` (`src/system/settings/settings.ts`: Language `:438`, UI theme `:455`,
+candy upgrade display `:549`, time-of-day widget `:578`, sprite set `:611`, battle music `:732`). Changing one only
+saves it and flags the handler (`src/ui/settings/base-settings-ui-handler.ts:421-425`); leaving the screen, by CANCEL
+or by switching tabs (`:286-290`, `src/ui/settings/navigation-menu.ts:79`), runs its `clear()`, which then calls
+`globalScene.reset(true, false, true)` (`:493-504`) and tears down a live run.
