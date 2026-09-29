@@ -1,4 +1,4 @@
-/** The hub process (extension-distribution.md §7.2). */
+/** (extension-distribution.md §7.2) */
 import { startHub } from "./hub.ts";
 import { PLUGIN_VERSION } from "../plugin-version.ts";
 import { STORE_PORT } from "../protocol/version.ts";

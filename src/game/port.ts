@@ -118,7 +118,6 @@ export type CardRead = Extract<CardResult, { ok: true }>;
 
 export type { MenuOption, SnapshotDetail, ConsoleLine };
 
-/** `Tab` is the CDP side, which the flip deletes (extension-distribution.md §13.2). */
 export interface GamePort extends Tab {
   /** A throw → `{ ready: false, why }`. */
   read(): Promise<PredicateRead>;

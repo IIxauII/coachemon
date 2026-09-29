@@ -70,7 +70,7 @@ export function deadSpawn(stderr = "no hub here"): HubProcess {
 
 export class Peer<In, Out> {
   readonly ws: WebSocket;
-  /** Exactly the frames no test has taken. */
+  /** Exactly the frames no test asked for. */
   readonly seen: In[] = [];
   #waiting: { match: (f: In) => boolean; resolve: (f: In) => void }[] = [];
   #standing: { match: (f: In) => boolean; reply: (f: In) => Out }[] = [];

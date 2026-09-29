@@ -64,11 +64,13 @@ export function planSelect(menu: MenuRead, target: MenuOption): Plan {
       if (j < 0) throw new Refusal("option_skipped", `option ${target.label} is not selectable right now`, { options: menu.options.map(o => o.label) });
       return plan({ kind: "set", to: { family: "option_select", index: j }, miss: "walk", walk: { to: j, rule: "list" } });
     }
-    // §7 COMMAND. BALL is refused by its position, 1, never by its localised label (#56).
+    // v1-tool-surface.md §7 COMMAND. BALL is refused by its position, 1 (game-code.md §25), never by its localised
+    // label (#56).
     case "command":
       if (i === 1 && menu.extra.catchable === false) throw cannotCatch(menu, target);
       return plan(walk("grid2x2"));
-    // §7 FIGHT. MYSTERY_ENCOUNTER has no row, and only its four-option layout is FIGHT's grid (game-code.md §13).
+    // v1-tool-surface.md §7 FIGHT. MYSTERY_ENCOUNTER has no row, and only its four-option layout is FIGHT's grid
+    // (game-code.md §13).
     case "fight":
     case "mystery_encounter":
       return plan(walk("grid2x2"));
@@ -76,30 +78,31 @@ export function planSelect(menu: MenuRead, target: MenuOption): Plan {
     case "ball":
       if ("ballType" in target && menu.extra.catchable === false) throw cannotCatch(menu, target);
       return plan(walk("list"));
-    // §7 TARGET_SELECT. A multi-target move takes no cursor: ACTION sends every target (#33).
+    // v1-tool-surface.md §7 TARGET_SELECT. A multi-target move takes no cursor (#33, game-code.md §25).
     case "target_select":
       if (menu.extra.isMultipleTargets) return plan({ kind: "none" }, { targets: "all" });
       return plan(walk("battler_grid"));
-    // §7 MODIFIER_SELECT.
+    // v1-tool-surface.md §7 MODIFIER_SELECT.
     case "modifier_select":
       return plan({ kind: "set", to: { family: "modifier_select", row: Number(target.row), col: Number(target.col) }, miss: "refuse", cursor: "shop cursor" });
-    // §7 STARTER_SELECT grid.
+    // v1-tool-surface.md §7 STARTER_SELECT grid.
     case "starter_select":
       return plan({ kind: "set", to: { family: "starter_select", index: i }, miss: "refuse", cursor: "grid cursor" });
-    // §7 SUMMARY/LEARN_MOVE.
+    // v1-tool-surface.md §7 SUMMARY/LEARN_MOVE.
     case "learn_move":
       return plan({ kind: "set", to: { family: "learn_move", row: i }, miss: "walk", walk: { to: i, rule: "list" } });
-    // §7 PARTY; the slot phase's DOWN-cycle is §10.
+    // v1-tool-surface.md §7 PARTY; the slot phase's DOWN-cycle is §10.
     case "party":
       return plan(walk(menu.extra.optionsMode ? "list" : "down_cycle"));
-    // §7 SAVE_SLOT. MENU has no row.
+    // v1-tool-surface.md §7 SAVE_SLOT. MENU has no row.
     case "save_slot":
     case "menu":
       return plan(walk("list"));
-    // Modals have no §7 row.
+    // Modals have no v1-tool-surface.md §7 row and no cursor: the commit is `page/acts.ts`'s `modal`.
     case "modal":
       return { reach: { kind: "none" }, commit: { kind: "modal_button", index: i }, choice: { kind: "modal_button", index: i }, extra: {} };
-    // §7 SUMMARY, and anything unmodelled. `selectOption` refuses an empty menu before planning, so this is defensive.
+    // v1-tool-surface.md §7 SUMMARY, and anything unmodelled. `selectOption` refuses an empty menu before planning, so
+    // this is defensive.
     case "acknowledge":
     case "paged_viewer":
     case "unmapped":

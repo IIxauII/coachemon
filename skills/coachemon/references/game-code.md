@@ -2438,7 +2438,7 @@ sits off the grid: LEFT from FIGHT or POKEMON reaches it when `canTera()` (`:174
 
 **The target cursor.** `TargetSelectUiHandler.processInput` (`src/ui/handlers/target-select-ui-handler.ts:90`) moves a
 `BattlerIndex` — PLAYER 0, PLAYER_2 1, ENEMY 2, ENEMY_2 3 (`src/enums/battler-index.ts:5`) — and only ever lands on a
-member of `targets` (`:48`). UP goes to the first entry of `targets` at or above `ENEMY`, DOWN to the first below it
+member of `targets` (`:49`). UP goes to the first entry of `targets` at or above `ENEMY`, DOWN to the first below it
 (`:110-119`), and LEFT/RIGHT step ±1 within 0↔1 or 2↔3 (`:120-129`). Nothing wraps. When `getMoveTargets` says
 `multiple` (`src/data/moves/move-utils.ts:85,92,108,113`) — side- and field-targeting moves as well as damaging spread
 moves — no direction moves it and ACTION sends every target (`:96`, `:106-107`). CANCEL answers `[]` (`:97`).

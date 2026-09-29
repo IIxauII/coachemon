@@ -19,7 +19,7 @@ const EXTENSION_SCHEMES = new Set(["chrome-extension:", "moz-extension:", "safar
 
 export type ConnKind = "client" | "browser";
 
-/** extension-distribution.md §7.4. The extension's id goes unchecked because no browser keeps it stable (§2.1). */
+/** The extension's id goes unchecked because no browser keeps it stable (extension-distribution.md §7.4, §2.1). */
 export function authorize(headers: IncomingHttpHeaders, port: number): ConnKind | null {
   if (headers.host !== `127.0.0.1:${port}`) return null;
   const origin = headers.origin;

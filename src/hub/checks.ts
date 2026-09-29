@@ -4,7 +4,7 @@
  */
 import type { HubState, TabInfo } from "../protocol/wire.ts";
 
-/** extension-distribution.md §2 */
+/** (extension-distribution.md §2) */
 export const ENGINES = ["chrome", "firefox", "safari", "orion"] as const;
 
 /** The transport pass bar (extension-distribution.md §2). */
@@ -71,7 +71,7 @@ export async function runChecks(d: CheckDeps, o: CheckOptions = {}): Promise<Run
   const ext = state.extensions.find(e => e.conn === ready[0]!.conn);
   if (ext === undefined) return { reached: false, why: "the counted tab's extension is not in the hub's state" };
 
-  // Either flavour: §16's Orion premise is about the store zip, so refusing a store build refuses the one run that
+  // Either flavour: extension-distribution.md §16's Orion premise is about the store zip, so refusing a store build refuses the one run that
   // matters.
   c.say(`checking ${o.engine ?? ext.target} — ${ext.target} ${ext.flavour} ${ext.version} on 127.0.0.1:${d.port}`);
   const checks = [await relay(c), await keepalive(c, idleMs, barMs)];
@@ -89,7 +89,7 @@ export async function runChecks(d: CheckDeps, o: CheckOptions = {}): Promise<Run
   };
 }
 
-/** Any answer passes, an unbooted game's `ready: false` included (extension-distribution.md §9.2). */
+/** Any answer from the page passes, an unbooted game's `ready: false` included (extension-distribution.md §9.2). */
 async function relay(d: Ctx): Promise<CheckResult> {
   const t0 = d.now();
   const a = await d.send("probe", {});

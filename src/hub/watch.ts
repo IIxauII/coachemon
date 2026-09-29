@@ -1,4 +1,4 @@
-/** The watch CLI's engine (extension-distribution.md §11.2). */
+/** (extension-distribution.md §11.2) */
 import { HubClient, type ClientOptions } from "./client.ts";
 import { reach, tabsLine } from "./ladder.ts";
 import type { ClientEvent, Notice } from "../protocol/wire.ts";
