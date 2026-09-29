@@ -30,7 +30,7 @@ const sprite = (key, frame) => {
 
 const SKIN = { fill: "#362d3e", body: "#f8f8f8", rule: "#f8b050", shadow: "#181818" };
 
-// The canvas's drawn width (game-code.md §25). Inlined into every length rather than set as a CSS custom property:
+// The canvas's drawn width (game-code.md §27). Inlined into every length rather than set as a CSS custom property:
 // the only API that sets one on an element is the one the no-motion guard bans, and it scans comments too.
 const GAME_W = "min(100vw, 177.78vh)";
 // `round(game-w / 240, 8px)` is the same number as `8 × round(game-w / 1920)`, which is what CSS can say without
@@ -49,7 +49,7 @@ const REF_W = SHARE * 1920;
 // would ship into the style attribute.
 const pxRound = n => `${Math.round(n * 100) / 100}px`;
 export const PANEL_W = `clamp(${pxRound(0.5 * REF_W)}, calc(${SHARE} * ${GAME_W}), ${pxRound(1.5 * REF_W)})`;
-// The game's message window starts `11/15 ÷ (16/9) = 0.4125 × game-w` down (game-code.md §25), so 0.40 stays above
+// The game's message window starts `11/15 ÷ (16/9) = 0.4125 × game-w` down (game-code.md §27), so 0.40 stays above
 // it. It bounds the pane, not the panel.
 const INSET = "8px";
 const MAX_H = `calc(0.40 * ${GAME_W} - ${INSET})`;
