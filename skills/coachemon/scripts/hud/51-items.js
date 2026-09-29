@@ -61,6 +61,7 @@ export const rewardContext = (s, alive, { bossNext = false, gauntlet = false, do
   // game-less-backed
   const capOf = () => {
     const w = Math.ceil((wave || 1) / 10) * 10;
+    // The difficulty wave `getMaxExpLevel` caps by (game-code.md §15).
     const d = s.gameMode?.isDaily ? w + 30 + Math.floor(w / 5) : w;
     return Math.ceil((1 + d / 2 + (d / 25) ** 2) * 1.2 / 2) * 2 + 2;
   };
@@ -77,7 +78,7 @@ export const rewardContext = (s, alive, { bossNext = false, gauntlet = false, do
     bulkShare: p => bulk(p) / maxBulk, speedShare: p => statOf(p, Stat.SPD) / maxSpeed };
 };
 
-// `fit(p)` → `[value, reason]`, or null where the item does nothing for `p`.
+// `fit(p)` → `[value, reason]`, or a falsy value where the item does nothing for `p`.
 const bestHolder = (users, ctx, fit) => {
   let best = null;
   for (const p of users) {
@@ -159,7 +160,7 @@ const berry = (t, p, c) => {
   return [2, `${p.name} · ${name} in a pinch`];
 };
 
-// null for any other reward, which 52-shop.js then judges itself.
+// null for a reward this file doesn't judge, which 52-shop.js then judges itself.
 export const rewardValue = (t, ctx, users) => {
   const id = t.id ?? "";
   const pool = users ?? ctx.alive;

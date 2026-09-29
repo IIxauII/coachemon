@@ -187,7 +187,6 @@ const VIEWS = ["drawer", "strip"];
 const OLD_KEY = "coach-hud-view";
 const MIGRATE = { full: ["drawer", false], mini: ["strip", false], closed: ["drawer", true] };
 
-// The defaults are the first-run state: the drawer, open on `act`.
 let view = "drawer";
 let dismissed = false;
 // By group id and not by position, so it survives the card changing under it; the fallback to `act` is written back.
@@ -215,7 +214,6 @@ const load = () => {
 };
 load();
 
-// The state is the view, or the `closed` a dismissal covers it with.
 export const panelState = () => (dismissed ? "closed" : view);
 export const openGroup = () => openId;
 // **A state change redraws and a group move does not**: a group also moves *during* a draw, so the tab asks for its
