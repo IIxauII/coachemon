@@ -1,29 +1,16 @@
-// Damage: what each move does to a target this turn, and how the target's HP holds up over repeated uses (KO pacing).
-// The numbers come from the game's own damage code (Pokemon.getAttackDamage, simulated), so held items, abilities,
-// stat stages, weather, screens and form-dependent types are the game's. Everything the simulated call leaves out is
-// modelled here from the coach spec (game-code.md): the damage roll, crits, accuracy, multi-hit counts, boss HP
-// segments, Sturdy / Focus Band / endure survival and turn-end HP changes (weather and status chip, berries,
-// Leftovers and other heals). Against mocks, and before the game waits on a decision, the `approx*` path stands in.
-//
-// **This file calls game code; it never decides when that is allowed.** `25-turn.js` is the only importer of the
-// `scene*` exports (the `@only` lines below): it opens the one sandbox, predicts Tera, applies a hypothesis and keys
-// every cache. What is left — the KO pacing math, the outcome-record readers, the approximation — is pure, and any
-// file may import it. `env` is the scene state a scene call needs, read once by the turn (25-turn's `sceneEnv`).
+// Calls game code but never decides when that is allowed: 25-turn opens the one sandbox, predicts Tera and keys every
+// answer before a `scene*` export runs, and `env` is its `sceneEnv`. Every other export is pure.
 import { SPREAD_TARGETS, TYPES, abilitiesOf, effectiveness, forcedRng, gameVersionOf, keepTurnData, squeezeDist, stage, stat, typesOf, versionAtLeast } from "./01-core.js";
 import { costNotes, moveTraits } from "./07-move-traits.js";
 
-// Per-turn damage discount for moves that often don't land when chosen: Focus Punch fails if the user is hit
-// first, charging and recharging moves spend a second turn, negative priority moves go last. The kinds come from
-// 07-move-traits; the numbers are this module's — a per-turn damage discount, not the learn card's move value.
 const reliability = (mv, t = moveTraits(mv)) => {
   if (t.interrupt) return 0.4;
   if (t.charge || t.recharge) return 0.5;
   return mv.priority < 0 ? 0.8 : 1;
 };
-// Only used by the approximation: enemy damage estimated without rolls, crits or items gets a safety margin.
 const FOE_MARGIN = 1.15;
 
-// Class names survive minification; subclasses count (FixedDamageAttr covers Super Fang, Seismic Toss…).
+// Subclasses count. Class names survive minification (game-code.md §22).
 const isA = (x, name) => {
     for (let c = x?.constructor; c?.name; c = Object.getPrototypeOf(c)) if (c.name === name) return true;
     return false;
@@ -33,33 +20,24 @@ const isA = (x, name) => {
   const ability = (p, attr) => { try { return !!p.hasAbilityWithAttr?.(attr); } catch { return false; } };
   const items = p => { try { return p.getHeldItems?.() ?? []; } catch { return []; } };
   const stack = (p, name) => items(p).filter(m => m.constructor.name === name).reduce((t, m) => t + (m.getStackCount?.() ?? m.stackCount ?? 1), 0);
-// Whether a move can be picked and would work this turn: restrictions checked for selection (Disable, Taunt,
-// Encore, Torment, Imprison…) and the move's own conditions (Fake Out / First Impression after the first turn, Dream
-// Eater on an awake target, Belch, Steel Roller…). Conditions can draw from the battle RNG, so they run with it
-// forced, like the enemy AI's. One gate, two readers: `sceneUsable` keeps what passes it, `sceneStopped` names what
-// didn't, so the pool and the reason it shrank can never disagree.
+// One gate for `sceneUsable` and `sceneStopped`, so the pool and the reason it shrank can never disagree. A condition
+// can draw battle RNG, hence `forcedRng` (game-code.md §6).
 const selectable = (env, p, def, pm) => {
   if (typeof pm.isUsable === "function") {
     const r = pm.isUsable(p, false, true);
     if (!(Array.isArray(r) ? r[0] : r)) return false;
   }
   const mv = pm.getMove();
-  // A move that reads the target's chosen command (Sucker Punch, Thunderclap) has no condition to check yet:
-  // `needsAttack` is left to the planner.
+  // A `needsAttack` move's condition reads a command the target hasn't chosen yet: the planner judges it.
   if (typeof mv.applyConditions !== "function" || moveTraits(mv).needsAttack) return true;
   try { return !!forcedRng(env.s, () => mv.applyConditions(p, def, -1)); } catch { return true; }
 };
-// Damaging moves with PP left; with `def`, only the ones `selectable` keeps. `status`: the status moves instead.
+// `status`: the status moves instead of the damaging ones.
 // @only 25-turn, tests: sceneUsable
 export const sceneUsable = (env, p, def = null, status = false) => {
   const base = plainUsable(p, status);
   return def ? base.filter(pm => selectable(env, p, def, pm)) : base;
 };
-// What took a move away from this mon, named. `isMoveSelectable` refuses on the first `MoveRestrictionBattlerTag`
-// whose `isMoveRestricted` bites, so the same tags answer here — read by class, like every other tag (`tagsOf`).
-// Gorilla Tactics rides along, because the game models that lock as a restriction tag; a Choice item's lock is a
-// held-item read the HUD doesn't make and stays out. A move dropped with no tag behind it is out too: that is the
-// move's own condition, which says something about this turn rather than about something done to us.
 const RESTRICTIONS = {
   DisabledTag: "Disable", TauntTag: "Taunt", EncoreTag: "Encore", TormentTag: "Torment", ImprisonTag: "Imprison",
   ThroatChoppedTag: "Throat Chop", HealBlockTag: "Heal Block", GorillaTacticsTag: "Gorilla Tactics",
@@ -67,31 +45,24 @@ const RESTRICTIONS = {
 const restrictionOn = (p, pm) => {
   for (const t of tagsOf(p)) {
     const name = Object.keys(RESTRICTIONS).find(k => isA(t, k));
-    // A tag that throws on the question isn't the one that answered it.
     try { if (name && t.isMoveRestricted(pm.moveId, p)) return RESTRICTIONS[name]; } catch { /* next tag */ }
   }
   return null;
 };
-// The restrictions that cost `p` at least one move this turn, damaging or status, in tag order and without repeats.
-// Empty where the pool shrank for any other reason, or didn't shrink at all.
+// Only restrictions are named: a move its own condition dropped leaves no entry.
 // @only 25-turn, tests: sceneStopped
 export const sceneStopped = (env, p, def) => [...new Set([...plainUsable(p), ...plainUsable(p, true)]
   .filter(pm => !selectable(env, p, def, pm))
   .map(pm => restrictionOn(p, pm))
   .filter(Boolean))];
-// What the approximation reads instead: no game call, so no conditions.
 const plainUsable = (p, status = false) => p.moveset.filter(Boolean)
   .filter(pm => (pm.getMove().category === MoveCategory.STATUS) === status && pm.getMovePp() - pm.ppUsed > 0);
-// The move's traits (07-move-traits), with the charging turn judged against this moment: a charging move whose
-// instant-charge condition holds now (Solar Beam in sun) costs no turn and hides nowhere. `live` false — the
-// approximation — leaves the condition unjudged, as it has nothing to judge it with.
 const traitsNow = (env, atk, mv, live, def = null) => {
   const t = moveTraits(mv, atk, { party: env?.party?.(atk) ?? null, target: def });
   return live && t.charge && t.charge.now(atk) ? { ...t, charge: false, semiCharge: false } : t;
 };
 
-// ---- Boss segments and survival (game-code.md §3, §8). Pure math on read fields.
-// calculateBossSegmentDamage (utils/damage, exported; EnemyPokemon.damage calls it), verbatim.
+// `calculateBossSegmentDamage`, verbatim (game-code.md §3).
 const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
   const a = idx ?? Math.ceil(hp / segSize) - 1;
   if (a <= 0) return [dmg, 1];
@@ -102,19 +73,11 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
   const c = Math.min(Math.max(Math.floor(Math.log2(excess / segSize)), 0), a - minIdx);
   return [Math.max(Math.floor(hp - floorHp + segSize * c), 1), a - c];
 };
-// Sturdy against a fixed-damage move (game-code.md §1). `getAttackDamage` returns from its `FixedDamageAttr` branch
-// before the `PreDefendFullHpEndureAbAttr` step, so at our pin Seismic Toss, Night Shade, Super Fang, Psywave and
-// Final Gambit take a full-HP Sturdy mon down. Upstream's #7620 ("Sturdy now applies to moves that deal fixed
-// damage") moves the branch and is on the game's master, unreleased. So this is the live build's call, not ours:
-// set the constant to the first game version that ships the fix and every older build keeps the old rule. While it
-// is null no released build has it. `scripts/hud-deps.ts` names this on `Pokemon.getAttackDamage`, so a pin bump
-// whose hash moved asks the question again.
+// The first game version whose Sturdy stops fixed damage (game-code.md §1), or null while no release has it.
+// `scripts/hud-deps.ts` watches Pokemon.getAttackDamage, so a pin bump that moves it asks again.
 const STURDY_VS_FIXED_FROM = null;
 const fixedIgnoresSturdy = env => !STURDY_VS_FIXED_FROM || !versionAtLeast(gameVersionOf(env.s), STURDY_VS_FIXED_FROM);
 
-// What decides how a hit resolves on `t`, read once per turn (`turn.mon(p).facts`). `ignoreAbility`: Mold Breaker,
-// or the AI not knowing the ability. The only scene state in it is the wave's enemy endure token and whether this is
-// the classic final boss, both of which `env` carries.
 // @only 25-turn, tests: targetFacts
 export const targetFacts = (env, t, ignoreAbility = false) => {
   const maxHp = t.getMaxHp();
@@ -128,13 +91,11 @@ export const targetFacts = (env, t, ignoreAbility = false) => {
     sturdy: !ignoreAbility && maxHp > 1 && ability(t, "PreDefendFullHpEndureAbAttr"),
     pFocus: Math.min(1, 0.1 * stack(t, "SurviveDamageModifier")),
     pEndure: endure ? Math.min(1, (endure.chance ?? 2) * (endure.getStackCount?.() ?? 1) / 100) : 0,
-    // Reviver Seed (FaintPhase): a faint brings it straight back at half HP, so no KO.
+    // Reviver Seed (game-code.md §8).
     revive: stack(t, "PokemonInstantReviveModifier") ? Math.max(1, Math.floor(maxHp / 2)) : 0,
   };
 };
-// A landed hit of `d` at `hp` on boss bar `bar`, as EnemyPokemon.damage takes it before any survival: the bar rule
-// clamps it (a hit past a bar by 2^k bars' worth breaks k more at once), then the classic final boss's first form
-// stops at 1 HP on its last bar. [damage, bar after]. OHKO results skip segments.
+// `EnemyPokemon.damage` before any survival (game-code.md §3): [damage, bar after].
 const barStep = (f, hp, bar, d, ohko = false) => {
   let after = bar;
   if (f.boss && !ohko) {
@@ -145,18 +106,16 @@ const barStep = (f, hp, bar, d, ohko = false) => {
   if (f.finalBoss && bar < 1) d = Math.min(d, hp - 1);
   return [d, after];
 };
-// One landed hit of `d` on state {hp, idx, tok} as EnemyPokemon.damage / Pokemon.damage resolve it:
-// [[state, probability], ...]. `tok`: the enemy endure token is up, so every later lethal hit this turn leaves 1 HP.
+// [[state, p], …]. `tok`: the enemy endure token is up. Once up it saves every later lethal hit this turn here, where
+// the game's saves one (game-code.md §3).
 const landHit = (f, st, d, ohko) => {
   let idx;
-  // MoveEffectPhase rolls the enemy's endure token on the damage as it stands (`initialDmg >= target.hp`) and only
-  // then hands it to `damageAndUpdate`, where the bar rule clamps it. So a boss can spend the token on a hit its
-  // own segment boundary was going to stop, and hold it for the rest of the turn (game-code.md §3, §8).
+  // The token rolls on the damage before the bar clamps it, hence `raw` (game-code.md §3).
   const raw = d;
   [d, idx] = barStep(f, st.hp, st.idx, d, ohko);
   const left = st.hp - d;
   if (raw < st.hp) return [[{ hp: left, idx, tok: st.tok }, 1]];
-  // Sturdy sits inside `getAttackDamage`, before that roll, so a full-HP Sturdy hit never reaches the token either.
+  // Sturdy answers before the token can (game-code.md §3).
   if (st.tok || (f.sturdy && st.hp >= f.maxHp)) return [[{ hp: Math.max(1, left), idx, tok: st.tok }, 1]];
   if (left > 0) return [
     [{ hp: left, idx, tok: true }, f.pEndure],
@@ -168,9 +127,8 @@ const landHit = (f, st, d, ohko) => {
     [{ hp: 0, idx, tok: false }, (1 - f.pEndure) * (1 - f.pFocus)],
   ].filter(([, p]) => p > 0);
 };
-// Distribution of the target's end state over the whole move. `perHit[k]`: Map damage → probability for hit k;
-// `dist`: [{n, p}] hit counts; `acc`: chance each rolled hit lands; `checkAll`: every hit rolls (else only the
-// first). A miss or a faint ends the move; earlier hits stay.
+// `perHit[k]`: Map damage → p for hit k; `dist`: [{ n, p }] hit counts; `checkAll`: every hit rolls, else only the
+// first. A miss or a faint ends the move (game-code.md §2).
 const resolve = (f, perHit, dist, acc, checkAll, ohko = false) => {
   const add = (m, st, p) => {
     if (!(p > 0)) return;
@@ -197,10 +155,8 @@ const resolve = (f, perHit, dist, acc, checkAll, ohko = false) => {
   return [...done.values()];
 };
 
-// Damage over one use of a move, before the target's HP or a boss bar cuts it: [{ d, p, n }] with a miss at 0, from
-// the per-hit Maps, the hit counts and accuracy as `resolve` reads them; `n` is the hits it lands in (a mean where
-// points were merged), which `koCurve` clamps at a boss bar one by one. Held to USE_POINTS points (`squeezeDist`):
-// later turns of a fight are played from it one KO-or-survive branch at a time.
+// One use's damage before the target's HP or a boss bar cuts it: [{ d, p, n }], a miss at 0, where `n` is the hits it
+// lands in — a mean where points merged.
 const USE_POINTS = 12;
 const useDist = (perHit, dist, acc, checkAll) => {
   const atLeast = n => dist.filter(x => x.n >= n).reduce((t, x) => t + x.p, 0);
@@ -224,13 +180,7 @@ const useDist = (perHit, dist, acc, checkAll) => {
   for (const x of live) add(done, x.d, x.p, x.n);
   return squeezeDist([...done.values()], USE_POINTS);
 };
-// Drain (Giga Drain, Leech Life, Draining Kiss): the share of the damage a hit deals that heals its user, signed.
-// HitHealAttr queues a PokemonHealPhase for floor(damage dealt × healRatio) after each hit; there a Heal Block stops
-// it and a player's Healing Charm raises it (×(1 + 0.1·stack)). A target with Liquid Ooze (ReverseDrainAbAttr) turns
-// the heal into that much damage to the user instead, unless the user has Magic Guard. Strength Sap heals by a stat,
-// not by damage, and is a status move: not counted.
-// Healing Charm on the healed mon's own side: `× (1 + 0.1·stack)` on every queued heal, and on a negative one too
-// (`PokemonHealPhase.end` scales before it checks the sign), so it also deepens what Liquid Ooze takes back.
+// Drain and Healing Charm (game-code.md §18): the charm scales a negative heal too, deepening what Liquid Ooze takes.
 const healingCharm = (env, p) => ((p?.isPlayer?.() === false ? env?.enemyModifiers : env?.modifiers) ?? [])
   .filter(m => m.constructor?.name === "HealingBoosterModifier")
   .reduce((t, m) => t * (1 + ((m.multiplier ?? 1.1) - 1) * (m.getStackCount?.() ?? 1)), 1);
@@ -242,8 +192,7 @@ const drainRatio = (env, atk, def, t) => {
   if (atk.getTag?.("HEAL_BLOCK")) return 0;
   return ratio * charm;
 };
-// Chance a landed use of `move` flinches `def` (Fake Out, Iron Head): the move's effect chance as the game reads it
-// (Serene Grace, Shield Dust), none through Inner Focus. It only matters if the user moves first (the planner's call).
+// Per landed use, whatever the order: whether the user moves first is the planner's call.
 const flinchChance = (atk, def, move, ignoreAbility) => {
   const fl = attrs(move, "FlinchAttr")[0];
   if (!fl || (!ignoreAbility && abilitiesOf(def).includes("Inner Focus"))) return 0;
@@ -251,32 +200,24 @@ const flinchChance = (atk, def, move, ignoreAbility) => {
   return c < 0 ? 1 : Math.min(1, c / 100);
 };
 
-// One hit of `d` on a target with facts `f` and no luck (Sturdy counts, Focus Band and the endure token don't):
-// { hp, ko }.
 const applyHit = (f, d) => {
   const [end] = resolve({ ...f, pFocus: 0, pEndure: 0 }, [new Map([[Math.max(0, Math.floor(d)), 1]])], [{ n: 1, p: 1 }], 1, false);
   return { hp: Math.max(0, end.hp), ko: end.hp <= 0 };
 };
 
-// ---- KO pacing: how a target's HP holds up over repeated uses of a move — the chance it is down by each use, with
-// its boss bars, a Reviver Seed's second life, Focus Band and the enemy endure token behind it. Callers bring what
-// only they know (turn order, the AI's move mix, lost turns, stat changes over the fight) as `scale` and `act`.
-// A target's standing (`stateOf`): `hp`; its boss `bar` (bossSegmentIndex, 0 on the last or for a non-boss); whether
-// its Reviver Seed has been used (`revived`) and the enemy endure token (`tok`: 1 up this use, 2 spent for the wave);
-// and `facts`, what decides a hit on it (read once).
+// `bar` is 0 on the last bar and for a non-boss. `tok`: 1 while the enemy endure token is up this use, saving more
+// than the game's does (`landHit`), and 2 once it is spent for the wave.
 export const stateOf = (facts, hp = facts.hp, bar = null) => ({ hp, bar: bar ?? facts.idx, revived: false, tok: 0, facts });
-// One landed hit of `dmg` on `state`, with no luck (no Focus Band, endure token or Reviver Seed): the state after it,
-// HP at least 0. The boss bar rule is the game's, per hit. A state without `facts` just loses the HP.
+// No luck: no Focus Band, endure token or Reviver Seed. A state without `facts` has no bars.
 export const hitOn = (state, dmg) => {
   const [d, bar] = state.facts ? barStep(state.facts, state.hp, state.bar, Math.max(0, dmg)) : [Math.max(0, dmg), state.bar];
   return { ...state, hp: Math.max(0, state.hp - d), bar };
 };
-// A branch of a curve: a state (without its facts) with its probability `p`; `stop`: its use has ended (a revive).
+// `stop`: the branch's use has ended (a revive).
 const branch = (hp, bar, revived, tok, p, stop = false) => ({ hp, bar, revived, tok, p, stop });
-// Lands a hit of `d` on branch `b` of a target with facts `f` and pushes what stands onto `out`; returns the probability
-// that goes down. A lethal hit meets the endure token (once a wave, then every lethal hit of that use leaves 1 HP),
-// Focus Band (each time) and a Reviver Seed (back at half HP, ending the use); without `luck` (status chip:
-// PostTurnStatusEffectPhase prevents enduring) only the seed.
+// Pushes what stands onto `out` and returns the probability that goes down. `luck` false (turn-end chip) skips the
+// endure token and Focus Band but not the Reviver Seed, which the game refuses after an indirect KO
+// (game-code.md §21).
 const land = (f, b, d, out, luck = true) => {
   const [dealt, bar] = barStep(f, b.hp, b.bar, Math.max(0, d));
   if (b.hp - dealt > 0) { out.push(branch(b.hp - dealt, bar, b.revived, b.tok, b.p)); return 0; }
@@ -294,19 +235,12 @@ const land = (f, b, d, out, luck = true) => {
 };
 const KO_USES = 9;
 const KO_LEVELS = 4;
-// P(the target is down by the end of use n), `by[n - 1]` for n = 1..9. Each use splits every standing branch by the
-// damage points of `use` ([{ d, p, n }], `useOf`), landing its `n` hits one at a time on the game's bar rule, scaled by
-// `scale(i, broken)` on the i-th use (0-based; `broken`: bars broken since the start) and made with chance `act(i)`
-// (a lost turn deals nothing); the standing ones are merged back to a few HP levels per bar. `turnEnd`: the target's
-// HP change after each use it survives (heal +, capped at max HP; chip −, which a bar also stops and which can finish
-// it; a function of the use count when it changes over the fight). `cat` ("physical" / "special"): a wild boss's
-// Def / SpD rises as its bars break (`barBreakFactors`). `firstKo`: this turn's exact KO odds for use 1 (Sturdy, the
-// roll against the real HP), when the caller has them; the HP left still comes from the distribution. `hp`, `bar`:
-// where it starts, if not where it stands; `start`: the branches to begin from ([{ hp, bar, revived, tok, p }], p
-// summing to 1) when an earlier turn has already been played.
-// `after1`: the branches standing after use 1 and its turn end, p summing to 1 (none if it can't stand). `perChunk`:
-// the uses each bar takes before it breaks more likely than not, the last one's until the KO.
-// `rec` is the target's turn record (`turn.mon(p)`): its `facts` and, for `cat`, its bar-break factors.
+// `by[n − 1]`: P(the target is down by the end of use n). `rec` is `turn.mon(target)`; `use` is `useOf`'s.
+// `scale(i, broken)`: the damage factor on use i (0-based) with `broken` bars gone; `act(i)`: the chance use i happens
+// at all. `turnEnd`: the signed HP change after each use survived, or a function of the use count. `cat` ("physical"
+// or "special"): a wild boss's defence rises as its bars break. `firstKo`: this turn's exact odds for use 1, when the
+// caller has them. `start`: branches from an earlier turn, p summing to 1. `after1`: the branches standing after use
+// 1, p summing to 1. `perChunk`: the uses each bar takes before it more likely than not breaks.
 export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 1, act = () => 1, turnEnd = 0, firstKo = null, cat = null } = {}) => {
   const f = rec.facts;
   const init = stateOf(f, hp ?? f.hp, bar);
@@ -321,7 +255,6 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   let down = 0, after1 = [];
   for (let i = 0; i < KO_USES; i++) {
     const a = Math.max(0, Math.min(1, act(i)));
-    // The damage factor on this use, by bars broken so far.
     const factors = [];
     const factor = broken => (factors[broken] ??= scale(i, broken) * (guard ? guard[Math.min(broken, bars - 1)] : 1));
     const hit = [];
@@ -351,8 +284,6 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
       fell = k;
     }
     down += fell;
-    // Turn end on each branch, then at most KO_LEVELS branches per bar (and seed and token state), the closest HPs
-    // averaged: a hit or two left apart stay apart, rolls a few HP apart don't.
     const h = typeof turnEnd === "function" ? turnEnd(i + 1) : turnEnd;
     const groups = new Map();
     for (let b of hit) {
@@ -384,41 +315,18 @@ export const koCurve = (rec, use, { hp, bar = null, start = null, scale = () => 
   return { by, after1, perChunk };
 };
 
-// ---- Turn end (game-code.md §21). The HP a pokémon gains (+) or loses (−) between this turn's moves and the next command,
-// in the game's own phase order (`turnEndPhases`, `src/phase-manager.ts:228`): the moves' own Shell Bell, then
-// WeatherEffectPhase (the chip, then the weather abilities), BerryPhase, CheckStatusEffectPhase /
-// PostTurnStatusEffectPhase (the status chip), and TurnEndPhase (TURN_END tags, Leftovers, terrain, the enemy's
-// tokens, the turn-end abilities). A heal a phase queues resolves as soon as that phase returns, so each phase's
-// heals land before the next phase reads the HP — and that order decides survival: the weather chip lands before
-// Sitrus reads the HP, and Sitrus lands before the status chip, so a mon the old chip-first order buried walks away.
-// `endOfTurnSteps` is that order as a list, `endOfTurnHp` folds it into one signed number on a mon with no bars.
-// A step is `{ d, cap }`: `d < 0` is damage, `d > 0` a heal that stops at `cap` (max HP, or max − 1 for the enemy
-// token's `preventFullHeal`) and never lowers HP. Chip can faint it, and a fainted mon heals nothing. `hp`: the HP
-// it will have by then, if not its current HP; `tookSuperEffective`: Enigma; `dealt`: what it dealt (Shell Bell).
-//
-// Deliberately left out, each either rare at a command prompt or not a HP number: PositionalTagPhase (Future Sight,
-// Wish), Perish Song's count and Yawn's sleep (a faint or a status, not a change in HP), Cheek Pouch and Cud Chew,
-// the stat berries and Lum, the Shed Skin / Hydration / Healer cures, Harvest and Moody, and the enemy's 2.5 %
-// status cure. One more is left out of the KO curve alone: the weather chip's `ignoreSegments`. `koCurve` takes a
-// single net turn-end number per use (`turnEndCourse` builds it from expectations over statuses and steals), so the
-// whole of it meets the bar rule; a max/16 chip is smaller than any bar, so the most that costs is the HP between a
-// bar boundary and the chip's far side, once a turn.
-// Reads fields and item/ability attributes only.
 const abAttrs = (p, name) => (ability(p, name)
   ? [p.getAbility?.(), p.hasPassive?.() ? p.getPassiveAbility?.() : null].flatMap(a => a?.getAttrs?.(name) ?? []) : []);
 const frac = (max, n) => Math.max(1, Math.floor(max / n));
 const WEATHER_SPARED = { [WeatherType.SANDSTORM]: [PokemonType.GROUND, PokemonType.ROCK, PokemonType.STEEL], [WeatherType.HAIL]: [PokemonType.ICE] };
 const ORB_SPARED = { [StatusEffect.POISON]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.TOXIC]: [PokemonType.POISON, PokemonType.STEEL], [StatusEffect.BURN]: [PokemonType.FIRE] };
 const SALT_DOUBLED = [PokemonType.WATER, PokemonType.STEEL];
-// The mons on the other side, for Unnerve, Bad Dreams and a Leech Seed's seeder. `getOpponents` is the game's own
-// read; without it (mocks, a replayed preview mon) the field does.
 const opponentsOf = (env, p) => {
   try { const o = p.getOpponents?.(); if (Array.isArray(o)) return o.filter(Boolean); } catch {}
   try { return (env?.field ?? []).filter(q => q && q !== p && q.isPlayer?.() !== p.isPlayer?.()); } catch { return []; }
 };
-// The tags that lapse at TURN_END are read by class, not by `getTag` name: class names survive minification, the
-// `BattlerTagType` members behind them are inlined numbers by then.
 const tagsOf = p => { try { return p.summonData?.tags ?? []; } catch { return []; } };
+// In the game's own phase order (game-code.md §21).
 const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt = 0 } = {}) => {
   const steps = [];
   if (hp <= 0) return steps;
@@ -428,10 +336,6 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
   const w = env?.weather ?? WeatherType.NONE;
   const weather = w && !(env?.field ?? []).some(q => q && ability(q, "SuppressWeatherEffectAbAttr")) ? w : WeatherType.NONE;
   const inWeather = a => (a.weatherTypes ?? []).includes(weather);
-  // Every turn-end heal is queued as a `PokemonHealPhase`: Heal Block cancels a positive one outright, and the
-  // healed mon's side scales it by Healing Charm and floors it, before any cap. The running HP is this module's
-  // reading of where the mon stands at each step, which is what the berry predicate and the below-full-HP
-  // conditions are asked at.
   const blocked = !!p.getTag?.("HEAL_BLOCK");
   const charm = healingCharm(env, p);
   let cur = hp;
@@ -446,25 +350,18 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     steps.push({ d: v, cap });
     cur = Math.min(cap, cur + v);
   };
-  // A negative heal (Liquid Ooze on a Leech Seed) is dealt as indirect damage; Heal Block doesn't stop it, and
-  // Healing Charm scales it just the same.
+  // Heal Block doesn't stop a negative heal (game-code.md §18).
   const reverse = n => chip(Math.floor(n * charm));
 
-  // 0. The moves' own Shell Bell (`MoveEffectPhase.end`), which lands before any turn-end phase.
   if (dealt > 0) queued(frac(dealt, 8) * stack(p, "HitHealModifier"));
 
-  // 1. WeatherEffectPhase. Sand and hail take max/16 (the game lets that one past a boss bar; see above), then the
-  // weather abilities deal at once (Dry Skin, Solar Power in sun) or queue a heal below full HP (Rain Dish, Ice
-  // Body, Dry Skin in rain).
   if (WEATHER_SPARED[weather] && !guard && !types.some(t => WEATHER_SPARED[weather].includes(t))
     && !abAttrs(p, "BlockWeatherDamageAttr").some(a => !a.weatherTypes?.length || inWeather(a))
     && !p.getTag?.("UNDERGROUND") && !p.getTag?.("UNDERWATER")) chip(frac(max, 16));
   if (!guard) for (const a of abAttrs(p, "PostWeatherLapseDamageAbAttr")) if (inWeather(a)) chip(frac(max, 16 / (a.damageFactor ?? 2)));
   for (const a of abAttrs(p, "PostWeatherLapseHealAbAttr")) if (inWeather(a)) queued(frac(max, 16 / (a.healFactor ?? 1)));
 
-  // 2. BerryPhase, which reads the HP here — after the weather chip and the heals it queued, before the status chip.
-  // `getBerryPredicate` asks `getHpRatio()`, rounded to a whole percent, so Sitrus wants hp/max < 0.495, not < 0.5.
-  // An opposing Unnerve (`PreventBerryUseAbAttr`) skips the mon's berries altogether.
+  // `getHpRatio` rounds to a whole percent, so Sitrus wants hp/max < 0.495 (game-code.md §21).
   if (cur > 0 && !opponentsOf(env, p).some(q => ability(q, "PreventBerryUseAbAttr"))) {
     const quarter = Math.max(1, Math.floor(max / 4)) * (ability(p, "DoubleBerryEffectAbAttr") ? 2 : 1);
     const berry = t => items(p).some(m => m.constructor.name === "BerryModifier" && m.berryType === t);
@@ -472,9 +369,7 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     if (berry(BerryType.ENIGMA) && tookSuperEffective) queued(quarter);
   }
 
-  // 3. CheckStatusEffectPhase / PostTurnStatusEffectPhase. Toxic and Flame Orb put their status on at the end of
-  // this turn: counted as if already on, a turn early. The chip goes through `damage(dmg, false, true)`, so a boss
-  // bar stops it and nothing endures it.
+  // A status orb is counted a turn early: in game its status lands after this chip (game-code.md §21).
   const orb = p.status?.effect ? null : items(p).find(m => m.constructor.name === "TurnStatusEffectModifier" && !types.some(t => ORB_SPARED[m.effect]?.includes(t)));
   const effect = p.status?.effect || orb?.effect || 0;
   if ([StatusEffect.POISON, StatusEffect.TOXIC, StatusEffect.BURN].includes(effect) && !guard && !abAttrs(p, "BlockStatusDamageAbAttr").some(a => (a.effects ?? []).includes(effect))) {
@@ -483,8 +378,6 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     chip(d);
   }
 
-  // 4. TurnEndPhase, in its own order. The TURN_END tags first: Magic Guard cancels each of their chips (and, for
-  // Leech Seed, the heal that rides on it), Ingrain and Aqua Ring heal below full HP.
   for (const t of tagsOf(p)) {
     if (isA(t, "IngrainTag") || isA(t, "AquaRingTag")) { queued(frac(max, 16)); continue; }
     if (guard) continue;
@@ -492,10 +385,8 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     else if (isA(t, "NightmareTag") || isA(t, "CursedTag")) chip(frac(max, 4));
     else if (isA(t, "SaltCuredTag")) chip(frac(max, types.some(x => SALT_DOUBLED.includes(x)) ? 8 : 16));
   }
-  // The other side of a Leech Seed: the seeder takes what the seed took, turned into damage by Liquid Ooze on the
-  // seeded mon. The seed names its source by battler index. The seeded mon's HP is read as it stands, not as this
-  // same turn's earlier chip would leave it, so a seed the game's own weather or status chip fells the mon before
-  // still pays out here — a mon's own turn end is one number, and the two mons' are not played against each other.
+  // The seeder's payout reads the seeded mon's HP as it stands, so a seed that this turn's chip would fell first
+  // still pays here.
   const mine = (() => { try { return p.getBattlerIndex?.(); } catch { return undefined; } })();
   if (mine != null) for (const q of opponentsOf(env, p)) {
     if (ability(q, "BlockNonDirectDamageAbAttr") || !(q.hp > 0)) continue;
@@ -503,8 +394,6 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
     const taken = Math.min(frac(q.getMaxHp(), 8), q.hp);
     if (ability(q, "ReverseDrainAbAttr")) reverse(taken); else queued(taken);
   }
-  // Leftovers, Grassy Terrain, then the enemy's own tokens — the token's heal is the one with `preventFullHeal`,
-  // so it stops a HP short of full.
   queued(frac(max, 16) * stack(p, "TurnHealModifier"));
   if (env?.terrain === TerrainType.GRASSY && (p.isGrounded?.() ?? !types.includes(PokemonType.FLYING))) queued(frac(max, 16));
   if (p.isPlayer?.() === false) {
@@ -512,18 +401,15 @@ const endOfTurnSteps = (env, p, { tookSuperEffective = false, hp = p.hp, dealt =
       queued(Math.max(Math.floor(max / (100 / (m.healPercent ?? 2))) * (m.getStackCount?.() ?? 1), 1), max - 1);
     }
   }
-  // The turn-end abilities: Poison Heal's 1/8, and an opposing Bad Dreams on a sleeping mon. Which Magic Guard
-  // stops it is split in the game's own code — `canApply` asks the sleeper's, `apply` asks the *holder's*
-  // (`ab-attrs.ts:4394`, `:4413`) — so a Magic Guard holder deals none of it, to anyone. In singles the two
-  // readings agree; in doubles they part, and a sleeper with Magic Guard standing beside one without it still
-  // takes the chip in game. That half is left out: this asks the sleeper's, like `canApply`.
   if (abAttrs(p, "PostTurnStatusHealAbAttr").some(a => (a.effects ?? []).includes(effect))) queued(frac(max, 8));
   const asleep = p.status?.effect === StatusEffect.SLEEP || (() => { try { return !!p.hasAbility?.(AbilityId.COMATOSE); } catch { return false; } })();
+  // Asks the sleeper's Magic Guard as well as the holder's, where the game's `apply` asks only the holder's
+  // (game-code.md §21): in a double, a Magic Guard sleeper beside one without it takes the chip in game and is
+  // spared here.
   const badDreams = q => ability(q, "PostTurnHurtIfSleepingAbAttr") && !ability(q, "BlockNonDirectDamageAbAttr");
   if (asleep && !guard && opponentsOf(env, p).some(badDreams)) chip(frac(max, 8));
   return steps;
 };
-// The steps folded onto one HP, with no boss bars in the way: what the mon stands at when the next command comes.
 const applyTurnEnd = (steps, hp, max) => {
   let cur = hp;
   for (const st of steps) {
@@ -532,6 +418,8 @@ const applyTurnEnd = (steps, hp, max) => {
   }
   return cur;
 };
+// Signed, with no boss bars in the way. `hp`: the HP it will have by then; `tookSuperEffective`: Enigma; `dealt`:
+// this turn's damage dealt, for Shell Bell. Reads fields and item and ability attributes only.
 // @only 25-turn, tests: sceneTurnEndHp
 export const sceneTurnEndHp = (env, p, opts = {}) => {
   const hp = opts.hp ?? p.hp;
@@ -539,44 +427,31 @@ export const sceneTurnEndHp = (env, p, opts = {}) => {
   return applyTurnEnd(endOfTurnSteps(env, p, opts), hp, p.getMaxHp()) - hp;
 };
 
-// ---- Game path (game-code.md §1, §2, §4, §5)
 const RESULT_MULT = { [HitResult.EFFECTIVE]: 1, [HitResult.EXTREMELY_EFFECTIVE]: 4, [HitResult.SUPER_EFFECTIVE]: 2, [HitResult.NOT_VERY_EFFECTIVE]: 0.5,
   [HitResult.MOSTLY_INEFFECTIVE]: 0.25, [HitResult.ONE_HIT_KO]: 1, [HitResult.NO_EFFECT]: 0, [HitResult.IMMUNE]: 0 };
-// The random roll is 85..100 %, uniform over 16 values; the simulated call returns the 100 % one.
+// The damage roll (game-code.md §1).
 const addRolls = (m, max, p) => {
   for (let r = 85; r <= 100; r++) {
     const d = max > 0 ? Math.max(1, Math.floor(max * r / 100)) : 0;
     m.set(d, (m.get(d) ?? 0) + p / 16);
   }
 };
-// Present draws its power from Phaser's RNG: pin the draw to get each power's damage.
+// Present's power draws from Phaser's RND (game-code.md §4): pin the draw to price each power.
 const withSeed = (seed, fn) => {
   const R = Phaser.Math.RND, own = Object.prototype.hasOwnProperty.call(R, "integerInRange"), orig = R.integerInRange;
   R.integerInRange = min => min + seed;
   try { return fn(); } finally { if (own) R.integerInRange = orig; else delete R.integerInRange; }
 };
-// Present draws `randSeedInt(firstHit ? 100 : 80)` and branches ≤ 40 / 41–70 / 71–80 / else heal (PresentPowerAttr).
-// Only the first strike's draw reaches 81, so only it can heal — a quarter of the target's max HP, which also
-// disables the move's remaining strikes. Not modelled: the heal is carried as a zero-damage outcome rather than a
-// gain, and the strikes it would cancel are still played out, which only a Present under Multi-Lens ever notices.
-// `withSeed` pins the draw, so a row is [seed, chance]: 41 / 30 / 10 % over 40 / 80 / 120 power with a 19 % heal on
-// the first strike, 41 / 30 / 9 of 80 on each later one.
+// Rows are [seed, chance] for `withSeed` (game-code.md §4). The heal is carried as zero damage, and the strikes it
+// would cancel still play out.
 const PRESENT = k => (k === 0
   ? [[0, 41 / 100], [50, 30 / 100], [75, 10 / 100]]
   : [[0, 41 / 80], [50, 30 / 80], [75, 9 / 80]]);
 const PRESENT_HEAL = 19 / 100;
-// Multi-Lens' share of strike `k` of `hits` (PokemonMultiHitModifier.applyDamageModifier): the first strike keeps
-// 1 − 0.25 per lens, every later one a quarter, except the strike Parental Bond added, which is whole. `n` is the
-// lens count 07-move-traits already checked against `canBeMultiStrikeEnhanced`.
+// Multi-Lens' share of strike `k` (game-code.md §2). `n` is the lens count 07-move-traits already checked.
 const lensShare = (n, k) => (!n ? 1 : k === 0 ? 1 - 0.25 * n : k === n + 1 ? 1 : 0.25);
 
-// The game's own damage at roll `r` (game-code.md §1). A simulated call pins the roll at 1 and hands back the finished
-// number, so `addRolls` spreads what the post-roll steps have already been applied to. Multipliers barely notice
-// that — they commute with the roll to within a HP of rounding — but `ModifiedDamageAttr` is a *cap*: False Swipe's
-// `min(damage, hp − 1)` lands on every roll alike, and spreading it invents a range the game never produces. For
-// those moves each roll is asked of the game instead, by multiplying the STAB factor: it sits beside the roll in
-// the same product under one `toDmgValue`, and reads nothing off the mon, so scaling it scales exactly what the
-// roll would and the real post steps and caps then run on the result.
+// The game's own damage at roll `r`, asked by scaling STAB, which shares the roll's product (game-code.md §1).
 const atRoll = (def, r, fn) => {
   if (r >= 1 || typeof def.calculateStabMultiplier !== "function") return fn();
   const own = Object.prototype.hasOwnProperty.call(def, "calculateStabMultiplier"), orig = def.calculateStabMultiplier;
@@ -584,17 +459,14 @@ const atRoll = (def, r, fn) => {
   try { return fn(); } finally { if (own) def.calculateStabMultiplier = orig; else delete def.calculateStabMultiplier; }
 };
 
-// Lock-On / Mind Reader's IGNORE_ACCURACY tag covers only the mon they were aimed at: `checkBypassAccAndInvuln`
-// reads the user's last one of those moves and asks whether *this* target was among its targets (game-code.md §5). In a single
-// battle that is always the mon in front; in a double the other foe still rolls. Without a move history to read
-// (mocks) the tag stands on its own, as it did before.
+// Only the last Lock-On or Mind Reader's target (game-code.md §5); without a move history (mocks), any target.
 const lockedOn = (atk, def) => {
   if (!atk.getTag?.("IGNORE_ACCURACY")) return false;
   if (typeof atk.getLastXMoves !== "function") return true;
   const aimed = (atk.getLastXMoves(-1) ?? []).find(m => m.move === MoveId.LOCK_ON || m.move === MoveId.MIND_READER);
   return !!aimed?.targets?.includes(def.getBattlerIndex?.());
 };
-// Accuracy (game-code.md §5): P(hit) = min(ceil(acc × multiplier), 100) %; later hits only roll for CHECK_ALL_HITS moves.
+// One strike's hit chance (game-code.md §5).
 const accuracy = (atk, def, move, ohko = false) => {
   if (move.moveTarget === MoveTarget.USER) return 1;
   if (ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr") || lockedOn(atk, def)
@@ -604,8 +476,7 @@ const accuracy = (atk, def, move, ohko = false) => {
   const mult = atk.getAccuracyMultiplier?.(def, move) ?? 1;
   return Math.max(0, Math.min(100, Math.ceil(w * mult - 1e-9))) / 100;
 };
-// Primordial sun and rain stop a Water or Fire move before it runs, and Psychic Terrain a priority move into a
-// grounded target (MovePhase, both checked before the damage step, so the simulated call never sees them).
+// `MovePhase` cancels these before the damage step, so the simulated call never sees them (game-code.md §14).
 const cancelledBy = (env, atk, def, move) => {
   try {
     if (env.s.arena?.isMoveWeatherCancelled?.(atk, move)) return "weather";
@@ -613,7 +484,6 @@ const cancelledBy = (env, atk, def, move) => {
   } catch {}
   return null;
 };
-// Protect-type moves block it unless it ignores them (Feint, Unseen Fist on contact).
 const bypassesProtect = (atk, def, move) => {
   try { return typeof move.doesFlagEffectApply === "function" ? !!move.doesFlagEffectApply({ flag: MoveFlags.IGNORE_PROTECT, user: atk, target: def }) : hasFlag(move, MoveFlags.IGNORE_PROTECT); } catch { return false; }
 };
@@ -624,7 +494,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   const aiBlind = !!opts.aiView && !def.waveData?.abilityRevealed;
   const ignoreAbility = aiBlind || ability(atk, "MoveAbilityBypassAbAttr") || hasFlag(move, MoveFlags.IGNORE_ABILITIES);
   const ignoreAllyAbility = !!opts.aiView && !def.getAlly?.()?.waveData?.abilityRevealed;
-  // A cached Tera Shell result from an earlier call would leak into this move; the sandbox restores it.
+  // A cached Tera Shell result would leak into this move (game-code.md §1); the sandbox restores it.
   if (def.turnData) def.turnData.moveEffectiveness = null;
 
   const type = TYPES[atk.getMoveType(move)] ?? "Normal";
@@ -634,14 +504,12 @@ const fromGame = (env, atk, def, pm, opts) => {
   const others = (env.field ?? []).filter(p => p && p !== atk && p.hp > 0 && (p.isOnField?.() ?? true));
   const spreadApplied = spread && (move.moveTarget === MoveTarget.ALL_OTHERS || move.moveTarget === MoveTarget.ALL_NEAR_OTHERS ? others : others.filter(p => p.isPlayer?.() !== atk.isPlayer?.())).length > 1;
 
-  // Hit counts (game-code.md §2) come from the traits: MultiHitAttr type, Skill Link, Beat Up, Parental Bond / Multi-Lens strikes.
   const t = traitsNow(env, atk, move, true, def);
   const dist = t.hits.dist;
   const hitsMax = Math.max(...dist.map(x => x.n));
 
-  // One hit at the max roll. Multi-hit power steps and Parental Bond / Multi-Lens factors read the user's
-  // turnData, which is fresh (hitCount 0) at the command phase, so set it the way MoveEffectPhase does. The 2–5
-  // hit moves reuse the longest count's per-hit numbers: nothing that reads hitCount applies to them.
+  // `turnData` is fresh at the prompt, so it is set the way `MoveEffectPhase` would (game-code.md §1). A 2–5 hit
+  // move reuses the longest count's numbers: nothing that reads `hitCount` applies to it (§2).
   const call = (k, isCritical) => {
     if (atk.turnData) { atk.turnData.hitCount = hitsMax; atk.turnData.hitsLeft = hitsMax - k; }
     return def.getAttackDamage({ source: atk, move, ignoreAbility, ignoreSourceAbility: false, ignoreAllyAbility, ignoreSourceAllyAbility: false, isCritical, simulated: true });
@@ -667,12 +535,8 @@ const fromGame = (env, atk, def, pm, opts) => {
     return [1 / 24, 1 / 8, 1 / 2, 1][Math.max(0, Math.min(3, def.getCritStage?.(atk, move) ?? 0))];
   })();
 
-  // A move whose damage is capped rather than scaled after the roll (False Swipe, Hold Back): every roll is asked
-  // of the game, instead of spreading the capped max over 85–100 %.
   const capped = attrs(move, "ModifiedDamageAttr").length > 0;
 
-  // Damage outcomes per hit index: Map damage → probability, plus the non-crit max roll for the worst case, and the
-  // lowest roll where the spread isn't the plain 85 % of it.
   const maxes = [];
   const lows = [];
   const perHit = [];
@@ -683,8 +547,7 @@ const fromGame = (env, atk, def, pm, opts) => {
       maxes.push(blocked ? 0 : def.hp);
       m.set(maxes[k], 1);
     } else if (psywave) {
-      // `toDmgValue(level × 0.50–1.50)` off the battle stream (RandomLevelDamageAttr), then — as for every
-      // fixed-damage move — floored again after Multi-Lens' share of this strike (`getAttackDamage`).
+      // Psywave (game-code.md §0).
       const lens = lensShare(t.hits.lenses, k);
       const fix = r => Math.max(1, Math.floor(Math.max(1, Math.floor(atk.level * (r * 0.01))) * lens));
       for (let r = 50; r <= 150; r++) { const d = fix(r); m.set(d, (m.get(d) ?? 0) + 1 / 101); }
@@ -699,8 +562,6 @@ const fromGame = (env, atk, def, pm, opts) => {
           const one = () => atRoll(def, r, () => (seed === null && !k && !isCritical && r === 1 ? first : call(k, isCritical))).damage;
           return seed === null ? one() : withSeed(seed, one);
         };
-        // The max roll is what the record reports; the spread under it is the game's own 16 rolls when a cap
-        // applies to each of them, and that number's 85–100 % otherwise.
         const spread = (isCritical, p) => {
           const d = run(isCritical, 1);
           if (!capped) { addRolls(m, d, p); return d; }
@@ -721,35 +582,29 @@ const fromGame = (env, atk, def, pm, opts) => {
   }
   const acc = accuracy(atk, def, move, ohko);
   const checkAll = t.hits.checkAll;
-  // Before Disguise takes this turn's first hit: a later use meets no disguise.
+  // Taken before Disguise zeroes the first hit: a later use meets no disguise.
   const use = useDist(perHit, dist, acc, checkAll);
-  // Disguise / Ice Face take the first hit (the simulated call doesn't zero it).
+  // The simulated call ignores Disguise and Ice Face (game-code.md §1).
   const disguise = !ignoreAbility && !!def.getAbility?.()?.getAttrs?.("FormBlockDamageAbAttr")?.some(a => a.formIndex === def.formIndex);
   if (disguise) { perHit[0] = new Map([[0, 1]]); maxes[0] = 0; }
 
-  // Sturdy doesn't reach a fixed-damage hit on this build (game-code.md §1), so the target's facts lose it for this move only.
   const facts = targetFacts(env, def, ignoreAbility);
   const f = fixed && facts.sturdy && fixedIgnoresSturdy(env) ? { ...facts, sturdy: false } : facts;
   const ends = resolve(f, perHit, dist, acc, checkAll, ohko);
   const expected = f.hp - ends.reduce((t, x) => t + x.p * Math.max(0, x.hp), 0);
   const pKo = f.revive ? 0 : ends.filter(x => x.hp <= 0).reduce((t, x) => t + x.p, 0);
-  // Expected damage per use before the target's HP or a boss bar's boundary cuts it: what later turns deal.
+  // Expected damage a use before the target's HP or a bar cuts it: what later turns deal.
   const uncapped = perHit.reduce((t, m, k) => t + (k === 0 || checkAll ? acc ** (k + 1) : acc)
     * dist.filter(x => x.n > k).reduce((u, x) => u + x.p, 0) * [...m].reduce((u, [d, p]) => u + d * p, 0), 0);
   const [worst] = resolve({ ...f, pFocus: 0, pEndure: 0 }, maxes.map(d => new Map([[d, 1]])), [{ n: hitsMax, p: 1 }], 1, false, ohko);
 
-  // A target mid-Dig / Fly / Dive / Shadow Force is only hit if it moves first and comes out (game-code.md §5), unless the
-  // move reaches it there (Earthquake into Dig) or accuracy is bypassed. The planner knows the order.
+  // Whether the order lets it land is the planner's (game-code.md §5).
   const semiTag = (def.summonData?.tags ?? []).find(t => isA(t, "SemiInvulnerableTag"));
   const semi = !!semiTag && move.moveTarget !== MoveTarget.USER && !(ability(atk, "AlwaysHitAbAttr") || ability(def, "AlwaysHitAbAttr")
     || lockedOn(atk, def) || attrs(move, "HitsTagAttr").some(h => h.tagType === semiTag.tagType));
   const notes = [];
 
-  // What the move costs its user per use, in HP (`self`): the target's contact-chip ability (Rough Skin / Iron
-  // Barbs, 1/8 max HP) for each landed contact hit, recoil (a share of the damage dealt, or of max HP), Steel
-  // Beam's half, and a crash on a miss. Which of these apply is the traits'; what they come to here is this
-  // matchup's, so `costs` is `costNotes` with those amounts — the wording the learn card's drawbacks use too.
-  // Hits are counted as if the target doesn't faint before the last one.
+  // `self`: the HP a use costs its user, with hits counted as if the target never faints before the last.
   const maxHp = atk.getMaxHp?.() ?? 0;
   let self = 0;
   const landed = checkAll
@@ -772,7 +627,6 @@ const fromGame = (env, atk, def, pm, opts) => {
   }
   if (t.halfSac && maxHp) self += Math.max(1, Math.floor(maxHp / 2));
   if (t.crash && maxHp && acc < 1) self += Math.max(1, Math.floor(maxHp / 2)) * (1 - acc);
-  // Explosion / Self-Destruct faint the user regardless; Final Gambit only when it hits.
   const selfKo = t.selfKo === "onHit" ? acc : t.selfKo === "always" ? 1 : 0;
   const costs = [...fromTarget, ...costNotes(t, { recoil: recoilShare, type })];
   const drain = drainRatio(env, atk, def, t);
@@ -796,9 +650,7 @@ const fromGame = (env, atk, def, pm, opts) => {
   };
 };
 
-// ---- Approximation, for when game calls aren't allowed
 const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric" };
-// Rough max-roll damage of one move, or null when it isn't a damaging move with power.
 const approx = (a, d, pm) => {
   const mv = pm.getMove();
   if (mv.category === MoveCategory.STATUS || !(mv.power > 0) || pm.getMovePp() - pm.ppUsed <= 0) return null;
@@ -816,7 +668,7 @@ const approx = (a, d, pm) => {
   const e = effectiveness(type, d, mv);
   const stab = typesOf(a).includes(type) ? (ab.includes("Adaptability") ? 2 : 1.5) : 1;
   let dmg = base * stab * e;
-  if (phys && ab.includes("Tough Claws")) dmg *= 1.3; // most physical moves make contact
+  if (phys && ab.includes("Tough Claws")) dmg *= 1.3;
   if (ab.includes("Sheer Force")) dmg *= 1.3;
   if (ab.includes("Strong Jaw") && /bite|crunch|fang|jaw/i.test(pm.getName())) dmg *= 1.5;
   return { name: pm.getName(), type, cat: phys ? "physical" : "special", e, dmg, spread: SPREAD_TARGETS.includes(mv.moveTarget), priority: mv.priority ?? 0 };
@@ -844,13 +696,8 @@ const fromApprox = (env, atk, def, pm) => {
   };
 };
 
-// ---- What the turn asks for
-// No sandbox, no cache and no "is this allowed" check: 25-turn has opened the one sandbox, settled Tera and keyed
-// the answers before any of these run. A game call that throws falls back to the approximation for that move alone.
-//
-// `dmg` on every record is what the rows and the plan compare moves by: our expected damage discounted for moves
-// that may not land, a foe's max roll with a safety margin. The game already applies the ¾ spread factor when a
-// spread move has two targets; the planner applies it itself, so it is taken back out here.
+// `dmg` is what moves are compared by. The game applies the ¾ spread factor and the planner applies its own, so the
+// game's comes back out here.
 const withDmg = (o, mv, foe) => o && {
   ...o,
   dmg: o.live === false
@@ -869,10 +716,8 @@ export const sceneOutcome = (env, atk, def, pm, opts = {}) => {
   }
 };
 export const sceneOutcomes = (env, atk, def) => sceneUsable(env, atk, def).map(pm => sceneOutcome(env, atk, def, pm)).filter(Boolean);
-// `atk`'s status moves that can be picked and would work into `def` this turn:
-// [{ pm, name, type, acc, e, priority, bypassProtect, bounce, blocked }]. `e`: 0 when the target is immune — a type
-// the move respects (Thunder Wave into Ground), a powder move into Grass, an ability (Good as Gold), a Substitute;
-// `bounce`: Magic Bounce sends it back. Accuracy and immunity only mean anything for a move aimed at `def`.
+// `e` 0: `def` is immune (game-code.md §14); `bounce`: Magic Bounce. `acc` and `e` mean nothing for a move not aimed
+// at `def`.
 export const sceneStatusMoves = (env, atk, def) => keepTurnData([atk, def], () => sceneUsable(env, atk, def, true).map(pm => {
   const move = pm.getMove();
   try {
@@ -886,16 +731,13 @@ export const sceneStatusMoves = (env, atk, def) => keepTurnData([atk, def], () =
   } catch { return null; }
 }).filter(Boolean));
 
-// The same questions with no game call behind them, for the approximate turn and for mocks.
 export const approxOutcome = (env, atk, def, pm) => withDmg(fromApprox(env, atk, def, pm), pm.getMove(), env.isEnemy(atk));
 export const approxOutcomes = (env, atk, def) => plainUsable(atk).map(pm => approxOutcome(env, atk, def, pm)).filter(Boolean);
 
 
-// ---- KO pacing, the parts that read no target
-// The use a curve's target is more likely down than not by: what the panel calls "2 hits".
+// The likely KO turn: what the panel calls "2 hits".
 export const koTurn = by => { const k = by.findIndex(x => x >= 0.5); return k < 0 ? 9 : k + 1; };
-// The use it's expected to fall to, 9 at most: what scoring compares, so a sure 5HKO beats a 5HKO that is a coin
-// flip on the 5th.
+// The expected KO turn.
 export const koTurns = by => Math.min(9, 1 + by.slice(0, 8).reduce((t, x) => t + (1 - x), 0));
 
 // All hits of the likeliest hit count at max roll, before any boss-bar clamp.
@@ -903,9 +745,7 @@ export const rawMax = o => {
   const n = o.dist?.length ? o.dist.reduce((b, d) => (d.p > b.p ? d : b)).n : 1;
   return o.perHit?.length ? o.perHit.slice(0, n).reduce((t, h) => t + (h.max ?? 0), 0) : o.max;
 };
-// The damage over one use of an outcome record, as `koCurve` takes it: its own `use`, or — for a record without one
-// (an approximation, a `hits` record) — the 16 rolls of the likeliest hit count's max damage, missing with the record's
-// accuracy, and centred on the record's own mean a use (an approximation's `max` is often that mean already).
+// A record's own `use`, or for one without (an approximation), 16 rolls of `rawMax` rescaled to the record's mean.
 export const useOf = o => {
   if (o?.use?.length) return o.use;
   const max = o ? rawMax(o) || o.max || o.dmg || 0 : 0;
@@ -917,9 +757,8 @@ export const useOf = o => {
   const k = mean > 0 ? mean / pts.reduce((t, x) => t + x.d * x.p, 0) : 1;
   return squeezeDist([...(acc < 1 ? [{ d: 0, p: 1 - acc, n: 0 }] : []), ...pts.map(x => ({ d: x.d * k, p: x.p, n }))], 12);
 };
-// P(an outcome record KOs its target at `hp` instead of the HP it was worked out for (`targetHp`), after an incoming
-// hit): below the max roll the chance grows with how deep into the 85–100 % roll range the HP sits. A record not
-// from game code (`live === false`) is all or nothing, like the rest of the approximation.
+// A record's KO odds at another HP than its `targetHp`: linear across the roll range, all or nothing for an
+// approximation.
 export const koChanceAt = (o, hp) => {
   if (!o) return 0;
   if (hp <= 0) return 1;
@@ -929,11 +768,8 @@ export const koChanceAt = (o, hp) => {
   return o.live === false ? 1 : Math.max(o.pKo ?? 0, (o.acc ?? 1) * Math.min(1, (o.max - hp) / (0.15 * o.max) + 1 / 16));
 };
 
-// A wild boss gains stat stages each time a bar breaks (EnemyPokemon.handleBossSegmentCleared): +1 to a random stat
-// not yet at +6, weighted by its stats; +2 for the last bar of a 3+ bar boss and for the last two of a 5+ bar one.
-// Returns the damage factor on each bar from now (1 for the current one) from the expected rise of `st` (1 Atk,
-// 2 Def, 3 SpA, 4 SpD): what hits into it lose for a defence (`koCurve`), what its own hits gain for an attack
-// (`offence`, the planner's). A trainer's boss gets none.
+// The damage factor on each bar from now, 1 for the current one, from the expected rise of `st` as a wild boss's bars
+// break (game-code.md §3). `offence`: what its own hits gain, not what hits into it lose.
 export const barBreakFactors = (foe, st, bars, offence = false, trainer = false) => {
   const out = [1];
   if (bars <= 1 || (foe.hasTrainer?.() ?? !!trainer)) return Array(Math.max(1, bars)).fill(1);
