@@ -1,7 +1,5 @@
-// Runs every HUD scenario script against mocked game state and compares its rendered panel text with
-// test/golden/<name>.txt. `--update` rewrites the golden files; review the diff — it is the behaviour change.
-// A golden that is absent is a failure, not a pass: a new scenario's first run says to pass `--update` once.
-// Usage: node test/run.mjs [--update]
+// Every `*test.mjs` here is also a golden test: its stdout must equal `golden/<name>.txt`. `--update` rewrites the
+// goldens, and their diff is the behaviour change to review.
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";

@@ -1,6 +1,3 @@
-// The run read on its own: its key moves exactly when an input a reader keys on moves, its memo outlives the
-// callback and answers the same thing for the same run, a build that throws is an `unavailable` with a reason, a run
-// used after its callback is dead, and a run read never nests with a turn read.
 import assert from "node:assert";
 import { bundle } from "../hud-bundle.mjs";
 
@@ -17,7 +14,6 @@ const { readRun } = globalThis.__hud["26-run"];
 const { readTurn } = globalThis.__hud["25-turn"];
 
 const mon = (id, over = {}) => ({ id, species: { speciesId: id }, level: 10, luck: 0, hp: 30, ...over });
-// A scene with every field the run key reads, and a phase queue so the sandbox has something to mute.
 const scene = (over = {}) => ({
   seed: "seed-1", currentBattle: { waveIndex: 12 }, arena: { biomeId: 3 }, waveCycleOffset: 0, offsetGym: 0,
   modifiers: [], mysteryEncounterSaveData: { encounteredEvents: [], encounterSpawnChance: 3 },
@@ -27,7 +23,7 @@ const scene = (over = {}) => ({
 });
 const keyOf = s => readRun(s, run => run.key);
 
-// ---- 1. The key: one per run state, and every keyed input moves it.
+// ---- The key: one per run state, and every keyed input moves it.
 {
   const base = keyOf(scene());
   assert.equal(keyOf(scene()), base, "the same run state is the same key");
@@ -47,13 +43,12 @@ const keyOf = s => readRun(s, run => run.key);
     spawnChance: scene({ mysteryEncounterSaveData: { encounteredEvents: [], encounterSpawnChance: 4 } }),
   };
   for (const [what, s] of Object.entries(moved)) assert.notEqual(keyOf(s), base, `${what} moves the key`);
-  // What a reader keys on *inside* a run key does not move it: a hit taken, money spent.
   assert.equal(keyOf(scene({ getPlayerParty: () => [mon(1), mon(2, { hp: 1 })] })), base, "HP short of a faint does not move the key");
   assert.equal(keyOf(scene({ money: 999 })), base, "money does not move the key");
   console.log(`moved by ${Object.keys(moved).join(", ")}`);
 }
 
-// ---- 2. The memo: built once per run key, shared across refreshes and across readers, dropped when the key moves.
+// ---- The memo: built once per run key, shared across refreshes and across readers, dropped when the key moves.
 {
   let builds = 0;
   const ask = (s, k = 13) => readRun(s, run => run.memo("preview", k, () => ({ built: ++builds, wave: k })));
@@ -72,7 +67,7 @@ const keyOf = s => readRun(s, run => run.key);
   console.log(`builds ${builds}`);
 }
 
-// ---- 3. Unavailable: a build that throws is an answer with a reason, kept like any other.
+// ---- Unavailable: a build that throws is an answer with a reason, kept like any other.
 {
   let tries = 0;
   const ask = () => readRun(scene(), run => run.memo("reroll", 1, () => { tries++; throw new Error("no reward phase"); }));
@@ -83,7 +78,7 @@ const keyOf = s => readRun(s, run => run.key);
   console.log(`unavailable ${v.unavailable}`);
 }
 
-// ---- 4. Facts, the scene handle, and the sandbox around the callback.
+// ---- The callback sees the facts and the scene, inside a sandbox that puts the stream back.
 {
   const s = scene();
   const seen = readRun(s, run => ({ scene: run.scene === s, wave: run.facts.wave, party: run.facts.party.length, muted: typeof s.phaseManager.pushPhase }));
@@ -94,7 +89,7 @@ const keyOf = s => readRun(s, run => run.key);
   assert.equal(readRun(null, run => run.facts.wave), 0, "no scene: facts default, no sandbox");
 }
 
-// ---- 5. Dead after the callback; never nested with a turn read, in either order.
+// ---- Dead after the callback; never nested with a turn read, in either order.
 {
   let run;
   readRun(scene(), r => { run = r; });

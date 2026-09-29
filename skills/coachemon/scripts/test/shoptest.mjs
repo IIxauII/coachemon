@@ -1,9 +1,3 @@
-// Rewards card: buys for current needs, and the free reward judged by what it does for this party — permanent
-// upgrades (Rare Candy, PP Up) over heals nobody needs, TMs scored with the learn scorer on members the game says can
-// learn them, setup TMs for the member they suit, key/evolution items only when someone can use them, held items
-// against their stack limit, and heals weighed up before a boss wave. Held items, mints, vitamins, EXP items and candy
-// go to the member they do the most for, against the level cap and the carry. Prints the rendered card (golden) and asserts
-// the picks.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
@@ -31,14 +25,11 @@ class SpeciesStatBoosterModifierType extends PokemonHeldItemModifierType {}
 class ExpBoosterModifierType extends ModifierType {}
 class DoubleBattleChanceBoosterModifier {}
 class LockModifierTiersModifier {}
-// The reward phase as the reroll preview reads it: its reroll count, the options on screen, its cost rule and count.
 class SelectModifierPhase {
   constructor(rerollCount = 0, modifierTiers) { this.phaseName = "SelectModifierPhase"; this.rerollCount = rerollCount; this.modifierTiers = modifierTiers; }
   getRerollCost(lock) { return this.noReroll ? -1 : lock ? 700 : 250 * 2 ** this.rerollCount; }
   getModifierCount() { return 3; }
 }
-// The game's two reward functions, drawing from the mocked stream: `regenerate` draws once (a generator), each option
-// draws once and takes the pool entry at draw + reroll count (+ 2 when tiers are locked). Every call is logged.
 const draw = () => { const n = Number(Phaser.Math.RND._s.split(",")[1]); Phaser.Math.RND._s = `!rnd,${n + 1}`; return n; };
 const mockRewardFns = (pool, log) => {
   let n = 0;
@@ -65,7 +56,6 @@ const shopRows = [[
   opt(mk(PokemonHpRestoreModifierType, { name: "Hyper Potion", iconImage: "hyper_potion", restorePoints: 200, restorePercent: 50 }), 1064),
 ]];
 
-// Moves by id, for PokemonMove and TMs: [name, type, power, category, accuracy, attrs]
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const MOVES = {};
 let nextId = 1;
@@ -90,8 +80,8 @@ const M = {
   bite: move("Bite", "Dark", 60, 0), bodySlam: move("Body Slam", "Normal", 85, 0), crunch: move("Crunch", "Dark", 80, 0),
   confusion: move("Confusion", "Psychic", 50, 1), psybeam: move("Psybeam", "Psychic", 65, 1), thunderShock: move("Thunder Shock", "Electric", 40, 1),
   nuzzle: move("Nuzzle", "Electric", 20, 0), quickAttack: move("Quick Attack", "Normal", 40, 0), hyperVoice: move("Hyper Voice", "Normal", 90, 1),
-  // A status move with no attr the learn card recognises: its advice is `your call`, which is the one branch that
-  // reaches the model's own relearn note rather than the recipient row's.
+  // No attr the learn card recognises, so its advice is `your call`: the one branch that reaches the model's own
+  // relearn note.
   screech: move("Screech", "Normal", -1, 2),
 };
 MOVES[M.hyperVoice].moveTarget = 6; // ALL_NEAR_ENEMIES: a spread move
@@ -125,9 +115,7 @@ const scenarios = {
     free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), mk(BerryModifierType, { name: "Leppa Berry", iconImage: "leppa_berry", tier: 0, berryType: 10 }), mk(TempStatStageBoosterModifierType, { name: "X Accuracy", iconImage: "x_accuracy", tier: 0 }), mk(AddVoucherModifierType, { name: "1× Egg Voucher", iconImage: "coupon", tier: 1 })] },
   healthy: { money: 15256, party: [pk("Charizard", 186, 186, 0, [[M.heatWave, 0, 10]])],
     free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 }), mk(PokemonHpRestoreModifierType, { name: "Potion", iconImage: "potion", tier: 0, restorePoints: 20, restorePercent: 10 })] },
-  // Live, wave 13: a fresh team, $1824. Rare Candy (Common) is a permanent level; Max Ether (Great) fixes nothing.
-  // The level cap at wave 13 is 16: Charizard, the carry, is at it and EXP can't level it, while Morpeko will get
-  // there from battles anyway — so the candy (which ignores the cap) goes to Charizard.
+  // Charizard, the carry, sits at the Lv 16 cap, which EXP can't pass and the candy ignores (game-code.md §15).
   "wave 13 rare candy": { wave: 13, money: 1824, balls: 12, party: [pk("Charizard", 186, 186, 0, [[M.heatWave, 0, 10], [M.airSlash, 0, 15]], { level: 16, types: ["Fire", "Flying"], atk: 110, spa: 150 }),
       pk("Morpeko", 120, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25]], { level: 14, types: ["Electric", "Dark"] })],
     free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), rareCandy(),
@@ -151,8 +139,7 @@ const scenarios = {
       assert.ok(m.free[0].v > 12, "an evolution is worth more than a plain level");
       assert.match(m.free[1].why, /1 at the Lv 16 cap/, "Charizard is past the cap");
     } },
-  // Held items stop scoring the same: each goes to the member it does the most for. Leftovers to the bulky Snorlax
-  // (which already holds one), Quick Claw to the slow one, King's Rock to the fast one.
+  // Each held item goes to the member it does the most for.
   "held items by holder": { wave: 42, money: 100, party: [snorlax(), jolteon()],
     modifiers: [{ pokemonId: 0, type: { id: "LEFTOVERS" }, getStackCount: () => 1 }],
     free: [held("LEFTOVERS", "Leftovers", 3), held("QUICK_CLAW", "Quick Claw", 2), held("KINGS_ROCK", "King's Rock", 3)],
@@ -167,8 +154,8 @@ const scenarios = {
       assert.equal(new Set(m.free.map(f => f.v)).size, 3, `three different values: ${m.free.map(f => f.v)}`);
       assert.ok(lo.v < 30, "no longer the Rogue tier's 30 + 3");
     } },
-  // A status orb is for a member that wants the status (the game's own pool rule): Guts Machamp takes the Flame Orb.
-  // With nobody who can use it, it hurts whoever holds it.
+  // A status orb is for a member that wants the status (game-code.md §15); with nobody who can use it, it hurts whoever
+  // holds it.
   "status orb": { wave: 42, money: 100, party: [snorlax(), pk("Machamp", 180, 180, 0, [[M.brickBreak, 0, 15]], { types: ["Fighting"], ability: "Guts", atk: 140, spa: 60, level: 44 })],
     free: [held("FLAME_ORB", "Flame Orb", 2), held("TOXIC_ORB", "Toxic Orb", 2)],
     expect: m => { assert.equal(m.free[0].holder.name, "Machamp"); assert.match(m.free[0].why, /Guts/); assert.ok(m.free[0].v > 10); } },
@@ -186,7 +173,7 @@ const scenarios = {
       assert.ok(adamant.v >= 15);
       assert.ok(modest.v < 0, modest.why);
     } },
-  // EXP items count the members still under the level cap (38 at wave 42): at the cap, EXP is lost.
+  // EXP items count the members still under the level cap, Lv 38 at wave 42 (game-code.md §15).
   "exp at the cap": { wave: 42, money: 100, party: [snorlax(), jolteon()],
     free: [mk(ModifierType, { name: "EXP. All", iconImage: "exp_share", tier: 2, id: "EXP_SHARE" }), mk(ExpBoosterModifierType, { name: "EXP. Charm", iconImage: "exp_charm", tier: 2, id: "EXP_CHARM", boostPercent: 25 })],
     expect: m => {
@@ -214,14 +201,14 @@ const scenarios = {
       assert.match(m.free[1].why, /×2 Atk\/SpA/);
       assert.ok(m.free[2].v < 0, "no Cubone line");
     } },
-  // Live, wave 14: TM Round, PP Up, Potion with a healthy party and strong moves: PP Up, and a reroll is worth a look.
+  // A healthy party with strong moves takes the PP Up, and a reroll is worth a look.
   "wave 14 pp up": { wave: 14, money: 1824, reroll: 500, party: [
       pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.magicalLeaf, 0, 20], [M.calmMind, 0, 20], [M.bodySlam, 0, 15]], { types: ["Fairy"], atk: 50, spa: 90 }),
       pk("Snorlax", 200, 200, 0, [[M.bodySlam, 0, 15], [M.crunch, 0, 15], [M.brickBreak, 0, 15], [M.aquaTail, 0, 10]], { atk: 130, spa: 60 })],
     free: [tm(M.round, ["Comfey", "Snorlax"], 0), mk(PokemonPpUpModifierType, { name: "PP Up", iconImage: "pp_up", tier: 1, upPoints: 1, selectFilter: () => null }),
       mk(PokemonHpRestoreModifierType, { name: "Potion", iconImage: "potion", tier: 0, restorePoints: 20, restorePercent: 10 })],
     expect: m => { assert.equal(m.free[m.pick].name, "PP Up"); assert.ok(m.reroll, "weak options, money covers a reroll"); assert.equal(m.free[0].class, "TmModifierType"); assert.equal(m.free[0].moveId, M.round); } },
-  // Live, wave 15: Calm Mind is a setup move Comfey (special attacker, no setup yet) can learn.
+  // Calm Mind is a setup move for Comfey, a special attacker with none yet.
   "wave 15 calm mind": { wave: 15, money: 900, party: [
       pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.magicalLeaf, 0, 20], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90 }),
       pk("Morpeko", 120, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25]], { types: ["Electric", "Dark"], atk: 95, spa: 70 })],
@@ -244,8 +231,8 @@ const scenarios = {
       assert.match(m.free[1].why, /can't check/);
       assert.equal(m.affordable, 1, "$400 buys one potion");
     } },
-  // Live, wave 18, $1622: Ether, X Sp. Atk, Potion. Two members low on PP, one hurt: take the Ether free and buy one
-  // Ether fewer. A status move run dry and a few PP spent aren't "low PP".
+  // Two members low on PP: take the Ether free and buy one Ether fewer. A status move run dry and a few PP spent
+  // aren't "low PP".
   "wave 18 free ether": { wave: 18, money: 1622, party: [
       pk("Comfey", 55, 110, 0, [[M.drainingKiss, 2, 10], [M.calmMind, 20, 20]], { types: ["Fairy"] }),
       pk("Morpeko", 120, 120, 0, [[M.spark, 17, 20], [M.bite, 0, 25]], { types: ["Electric", "Dark"] }),
@@ -258,7 +245,7 @@ const scenarios = {
       assert.ok(!m.buys.some(b => b.targetName === "Comfey" && !b.why.includes("HP")), "Calm Mind (status) and Draining Kiss 8/10 aren't low PP");
       assert.ok(m.buys.some(b => b.targetName === "Comfey" && b.why.includes("HP")), "Comfey's HP is still bought for");
     } },
-  // Live, wave 23, $1474: Super Lure, 5× Poké Ball, Ether. A lure's tier mustn't outrank a free Ether the party needs.
+  // A lure's tier mustn't outrank a free Ether the party needs.
   "wave 23 lure vs ether": { wave: 23, money: 1474, party: [
       pk("Morpeko", 120, 120, 0, [[M.spark, 17, 20], [M.bite, 0, 25]], { types: ["Electric", "Dark"] }),
       pk("Snorlax", 200, 200, 0, [[M.bodySlam, 14, 15], [M.crunch, 3, 15]])],
@@ -269,8 +256,7 @@ const scenarios = {
       assert.equal(m.free[m.pick].name, "Ether");
       assert.ok(m.buys.filter(b => b.name === "Ether").length <= 1, `at most one Ether bought: ${m.buys.map(b => b.name)}`);
     } },
-  // TM advice, take: two members can learn TM Crunch. Snorlax (physical, Tackle to spare) gains more than Comfey (weak
-  // Atk), so it's the recipient — and the recipient and slot are exactly what the learn card would say for it.
+  // A TM's recipient and slot are exactly what the learn card would say for it.
   "tm best of two": { wave: 24, money: 200, party: [
       pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.magicalLeaf, 0, 20], [M.calmMind, 0, 20], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90 }),
       pk("Snorlax", 200, 200, 0, [[M.bodySlam, 0, 15], [M.brickBreak, 0, 15], [M.aquaTail, 0, 10], [M.tackle, 0, 35]], { atk: 130, spa: 60 })],
@@ -286,8 +272,7 @@ const scenarios = {
       assert.equal(cr.best.gain, a.gain, "same gain as the learn decision");
       assert.ok(api.learnAdvice(sc.party[0], MOVES[M.crunch], { double: false, party: sc.party }).gain < a.gain);
     } },
-  // TM advice, skip: TM Tackle is no upgrade for anyone who can learn it, and a mon that already knows it is left out.
-  // It's flagged skip and ranks below Poké Balls we're short of.
+  // A TM that upgrades nobody is a skip, and ranks below Poké Balls we're short of.
   "tm skip": { wave: 25, money: 200, balls: 3, party: [
       pk("Snorlax", 200, 200, 0, [[M.bodySlam, 0, 15], [M.crunch, 0, 15], [M.brickBreak, 0, 15], [M.aquaTail, 0, 10]], { atk: 130, spa: 60 }),
       pk("Comfey", 110, 110, 0, [[M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90 })],
@@ -300,7 +285,7 @@ const scenarios = {
       assert.match(t.why, /^skip · no upgrade for Snorlax · Snorlax keeps /);
       assert.equal(t.best, undefined);
     } },
-  // No select filter on the type: compatibility comes from the member's own isTmCompatible. Nobody compatible: skip.
+  // No select filter on the type: compatibility comes from the member's own isTmCompatible.
   "tm compatibility fallback": { wave: 26, money: 200, party: [
       Object.assign(pk("Morpeko", 120, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25], [M.tackle, 0, 35]], { types: ["Electric", "Dark"], atk: 95, spa: 70 }), { isTmCompatible: id => id === M.fireFang }),
       // Ignores excludeKnown: the coach still drops a member that already knows the move.
@@ -311,14 +296,12 @@ const scenarios = {
       assert.equal(m.free[0].tm, "take");
       assert.deepEqual(m.free[0].users, ["Morpeko"]);
       assert.equal(m.free[0].best.forget, null, "free slot");
-      // Arcanine's mock says yes to everything: Psybeam goes to it (no Morpeko).
       assert.deepEqual(m.free[1].users, ["Arcanine"]);
     } },
   "tm nobody": { wave: 27, money: 200, party: [charizard()],
     free: [tm(M.nuzzle, [], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
     expect: m => { assert.equal(m.free[0].tm, "skip"); assert.equal(m.pick, 1); assert.match(m.free[0].why, /nobody can learn it/); } },
-  // A fainted member can still be taught a TM (only Hardcore takes that away): Morpeko is down, and is the only one
-  // who can learn Fire Fang.
+  // A fainted member can still be taught a TM outside Hardcore (game-code.md §16).
   "tm fainted recipient": { wave: 22, money: 400, party: [charizard(), pk("Morpeko", 0, 120, 0, [[M.spark, 0, 20], [M.bite, 0, 25], [M.tackle, 0, 35], [M.quickAttack, 0, 30]], { types: ["Electric", "Dark"], atk: 95, spa: 70 })],
     free: [tm(M.fireFang, ["Morpeko"], 1), mk(AddPokeballModifierType, { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 })],
     expect: m => {
@@ -331,13 +314,12 @@ const scenarios = {
   "tm fainted hardcore": { wave: 22, money: 400, challenges: [{ id: 9, value: 1 }], party: [charizard(), pk("Morpeko", 0, 120, 0, [[M.spark, 0, 20], [M.tackle, 0, 35]], { types: ["Electric", "Dark"], atk: 95, spa: 70 })],
     free: [tm(M.fireFang, ["Morpeko"], 1)],
     expect: m => { assert.equal(m.free[0].tm, "skip"); assert.match(m.free[0].why, /nobody can learn it/); } },
-  // A challenge is on when its value is anything but 0, which is `GameMode.hasChallenge`'s own test: a negative
-  // value is still Hardcore, and the fainted member is still offered nothing.
+  // A negative challenge value is still Hardcore (game-code.md §16).
   "tm fainted hardcore negative value": { wave: 22, money: 400, challenges: [{ id: 9, value: -1 }], party: [charizard(), pk("Morpeko", 0, 120, 0, [[M.spark, 0, 20], [M.tackle, 0, 35]], { types: ["Electric", "Dark"], atk: 95, spa: 70 })],
     free: [tm(M.fireFang, ["Morpeko"], 1)],
     expect: m => { assert.equal(m.free[0].tm, "skip"); assert.match(m.free[0].why, /nobody can learn it/); } },
-  // A spread TM is kept for the run, so its bonus follows the game's double-battle odds over the next ten waves, not
-  // the wave just won: 1/8 a wave (1/32 on wave 30) with no lure, 1/2 (1/8) while a Lure's ten battles last.
+  // A spread TM's bonus follows the double-battle odds over the next ten waves, not the wave just won
+  // (game-code.md §16).
   "tm spread by doubles ahead": { wave: 22, money: 400, double: true, party: [pk("Charizard", 186, 186, 0, [[M.airSlash, 0, 15], [M.tackle, 0, 35]], { types: ["Fire", "Flying"], atk: 110, spa: 150 })],
     free: [tm(M.hyperVoice, ["Charizard"], 1)],
     expect: (m, api, sc, scene) => {
@@ -383,8 +365,8 @@ const scenarios = {
     free: [mk(PokemonHpRestoreModifierType, { name: "Super Potion", iconImage: "super_potion", tier: 0, restorePoints: 50, restorePercent: 25 }), mk(PokemonReviveModifierType, { name: "Revive", iconImage: "revive", tier: 1, restorePoints: 0, restorePercent: 50 }),
       mk(TempStatStageBoosterModifierType, { name: "X Attack", iconImage: "x_attack", tier: 0 })],
     expect: m => { assert.ok(m.bossNext); assert.equal(m.free[m.pick].name, "Super Potion"); assert.match(m.free[1].why, /spare for the boss/); } },
-  // Wave 181, with the game mode wired up: the Elite Four starts next wave and the run doesn't heal again until 191,
-  // so the whole party has to last. A revive nobody needs yet is worth holding, and the hurt threshold rises.
+  // Waves 181–190 hold five fights and no heal (game-code.md §12): a spare revive is worth holding, and the hurt
+  // threshold rises.
   "elite four gauntlet": { wave: 181, money: 3000, mode: "classic", party: [charizard(), pk("Blastoise", 160, 187, 0, [[M.aquaTail, 0, 10]])],
     free: [mk(PokemonReviveModifierType, { name: "Max Revive", iconImage: "max_revive", tier: 2, restorePoints: 0, restorePercent: 100 }),
       mk(TempStatStageBoosterModifierType, { name: "X Attack", iconImage: "x_attack", tier: 0 }),
@@ -423,9 +405,8 @@ const scenarios = {
       assert.equal(m.free[m.pick].name, "Max Revive");
       assert.ok(m.ahead.eternatus, "the checklist is up with two shops left");
     } },
-  // Reroll preview: a weak screen (Poké Balls we have plenty of, an X item, a Potion nobody needs). The next reroll,
-  // read off the stream, is worth its $250. With a Lock Capsule the locked roll is read too, from the same stream
-  // position. The stream, the threshold tables and the console are left as they were.
+  // A weak screen: the next reroll, read off the stream, is worth its $250; with a Lock Capsule the locked roll is read
+  // too.
   "reroll preview": { wave: 14, money: 3000, party: [snorlax(), jolteon()], modifiers: [new LockModifierTiersModifier()],
     free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }), mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 }),
       mk(PokemonHpRestoreModifierType, { name: "Potion", iconImage: "potion", tier: 0, restorePoints: 20, restorePercent: 10 })],
@@ -451,15 +432,14 @@ const scenarios = {
       assert.equal(log.length, before, "an unchanged screen is served from the cache");
       assert.match(api.cardSummary(m).rewards, /reroll \$250 → .* \(reroll\) \[~\]/);
 
-      // The player rerolls: the new phase shows exactly the previewed offers — a hit.
+      // A reroll that shows the previewed offers is a hit.
       const rolled = sc.pool.filter(t => plain.offers.some(f => f.name === t.name));
       const next = new SelectModifierPhase(1, [0, 0, 0]);
       next.typeOptions = plain.offers.map(f => ({ type: rolled.find(t => t.name === f.name) }));
       scene.phase = next;
       api.rerollCheck(scene);
       assert.deepEqual([api.rerollStats().hit, api.rerollStats().miss], [1, 0]);
-      // Read again on the new screen and arm it, as the tick does; then a reroll that comes out different — a miss,
-      // marked `!` from then on.
+      // One that comes out different is a miss, marked `!` from then on.
       Phaser.Math.RND._s = "!rnd,7";
       const m2 = api.rewardsModel(scene, scene.ui.getHandler());
       assert.equal(m2.rerollAhead.missed, false);
@@ -494,9 +474,7 @@ const scenarios = {
       assert.equal(roll.verdict, "instead of buys");
       assert.equal(roll.offers[roll.best].name, "Master Ball");
     } },
-  // Grip Claw rolls after any attacking move, contact or not (`MoveEffectPhase.applyOnTargetEffects` asks only
-  // `move.is("AttackMove")`): a special attacker earns it as much as a physical one, and only a mon with no attack
-  // at all is left out.
+  // Grip Claw rolls after any attack, contact or not (game-code.md §15).
   "grip claw off contact": { wave: 42, money: 100, party: [jolteon(), pk("Wobbuffet", 190, 190, 0, [[M.calmMind, 0, 20]], { level: 40 })],
     free: [held("GRIP_CLAW", "Grip Claw", 2)],
     expect: (m, api, sc, scene) => {
@@ -505,9 +483,8 @@ const scenarios = {
       assert.match(gc.why, /^Jolteon · 10% to steal an item when it attacks$/);
       assert.deepEqual(gc.users, ["Jolteon", "Wobbuffet"]);
       assert.ok(gc.v >= 9, `worth a full roll, not a contact share: ${gc.v}`);
-      // Every entry in the table answers with a `[value, reason]` tuple or a plain falsy value — never with whatever
-      // its own guard returned. Wobbuffet has no attacking move, which is the guard the seven `attacks(p).length`
-      // entries share, and `length` is a number: 0 read like a value where none was meant.
+      // Wobbuffet trips the `attacks(p).length` guard: an entry that returns its guard answers 0, which reads as a
+      // value.
       const ctx = api.rewardContext(scene, sc.party);
       const wobbuffet = sc.party[1];
       for (const [id, fn] of Object.entries(api.HELD)) {
@@ -515,20 +492,16 @@ const scenarios = {
         assert.ok(r === false || r == null || Array.isArray(r), `${id} answered ${JSON.stringify(r)} (${typeof r})`);
       }
     } },
-  // The level cap runs the rounded wave through `getWaveForDifficulty` first, which a Daily run pushes 30 waves and a
-  // fifth of itself ahead: wave 30 caps at Lv 52 there, at Lv 24 in a classic run. Only the fallback is exercised
-  // here — the mocked scene has no `getMaxExpLevel`.
+  // Daily's level cap reads its wave 30 and a fifth ahead (game-code.md §15). Only the fallback runs: the mocked scene
+  // has no `getMaxExpLevel`.
   "daily level cap": { wave: 30, money: 100, daily: true, party: [snorlax({ level: 40 }), jolteon({ level: 38 })],
     free: [mk(ExpBoosterModifierType, { name: "EXP. Charm", iconImage: "exp_charm", tier: 2, id: "EXP_CHARM", boostPercent: 25 })],
     expect: m => { assert.match(m.free[0].why, /^more EXP · 2 under the Lv 52 cap$/); assert.ok(m.free[0].v > 1); } },
   "classic level cap": { wave: 30, money: 100, party: [snorlax({ level: 40 }), jolteon({ level: 38 })],
     free: [mk(ExpBoosterModifierType, { name: "EXP. Charm", iconImage: "exp_charm", tier: 2, id: "EXP_CHARM", boostPercent: 25 })],
     expect: m => { assert.equal(m.free[0].why, "whole party at the Lv 24 cap"); } },
-  // The offer is drawn from `getCompatibleTms(true, true, true)`, which drops each member's known moves, its level-up
-  // and relearn moves *at or below its current level*, and the TMs it has already used (#249). A member the TM could
-  // not have been drawn for gets the move for free from none of those: all three cases leave it reachable only
-  // through the move relearner, behind a Memory Mushroom. So the member stays in the scoring, and the card names the
-  // Mushroom as the other route instead of calling the reward free.
+  // A member the TM pool excludes gets the move back only through a Memory Mushroom (game-code.md §16, #249): it stays
+  // in the scoring, and the card names the Mushroom instead of calling the reward free.
   // Case 1: a level-0 evolution move of the species Comfey already is — learned when it evolved, never again.
   "tm the evolution move already passed": { wave: 27, money: 200, party: [pk("Comfey", 110, 110, 0, [[M.drainingKiss, 0, 10], [M.tackle, 0, 35]], { types: ["Fairy"], atk: 50, spa: 90, relearn: [[0, M.magicalLeaf, 2]] })],
     free: [tm(M.magicalLeaf, ["Comfey"], 1), mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
@@ -546,8 +519,7 @@ const scenarios = {
       assert.deepEqual(f.relearn, ["Comfey"]);
       assert.ok(f.v > -4, `not priced as a free learn: ${f.v}`);
     } },
-  // Case 3: the TM was taught once already. `usedTMs` keeps it off the draw pool for good, even though the move was
-  // overwritten since — getting it back needs this TM again, or a Memory Mushroom.
+  // Case 3: the TM was taught once already, and `usedTMs` keeps it off the pool for good.
   "tm already used once": { wave: 27, money: 200, party: [pk("Snorlax", 250, 250, 0, [[M.tackle, 0, 35]], { atk: 130, spa: 60, level: 45, relearn: [[null, M.crunch, 3]] })],
     free: [tm(M.crunch, ["Snorlax"], 1)],
     expect: m => {
@@ -600,13 +572,12 @@ const scenarios = {
     free: [mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 })],
     rewardPool: () => [held("LEFTOVERS", "Leftovers", 3)],
     expect: m => { assert.equal(m.rerollAhead, null); assert.equal(m.reroll, null); } },
-  // The reward functions aren't found in the live build (yet): the old hint stands in.
+  // Without the reward functions the reroll hint stands in.
   "reroll preview unavailable": { wave: 14, money: 3000, reroll: 250, phase: true, party: [snorlax()],
     free: [mk(TempStatStageBoosterModifierType, { name: "X Defense", iconImage: "x_defense", tier: 0 })],
     expect: m => { assert.equal(m.rerollAhead, null); assert.match(m.reroll, /reroll for \$250/); } },
 };
-// The classic calendar, only as much of it as the rewards card reads. Waves 182–190 are the Elite Four and the
-// champion; the run heals entering every X1.
+// The classic fixed-battle calendar (game-code.md §12), only as much of it as the rewards card reads.
 const E4_WAVES = new Set([5, 8, 25, 35, 55, 62, 64, 66, 95, 112, 114, 115, 145, 164, 165, 182, 184, 186, 188, 190, 195]);
 const classicMode = () => ({
   isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0,
@@ -617,11 +588,9 @@ for (const [label, sc] of Object.entries(scenarios)) {
   globalThis.window = globalThis; delete globalThis.__coachHud;
   sc.setup?.(sc);
   const handler = { options: sc.free.map(t => opt(t)), shopOptionsRows: shopRows, rerollCost: sc.reroll ?? 2250 };
-  // Most scenarios leave `gameMode` off: the card has to fall back to the tenth-wave rule when the live build hides
-  // it. The ones that set `mode` get the classic calendar, which is what the look-ahead reads.
+  // Most scenarios leave `gameMode` off, so the card falls back to the tenth-wave rule.
   const scene = { money: sc.money, pokeballCounts: { 0: sc.balls ?? 34, 1: sc.balls ?? 34, 2: sc.balls ?? 34 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave ?? 0, double: !!sc.double }, ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => sc.party, getEnemyParty: () => [],
     ...(sc.mode ? { gameMode: classicMode() } : sc.daily ? { gameMode: { isDaily: true } } : sc.challenges ? { gameMode: { challenges: sc.challenges } } : {}) };
-  // The reroll scenarios put the reward phase on the phase queue; the others leave it off, as a read from an older HUD did.
   if (sc.rewardPool || sc.phase) {
     scene.phase = Object.assign(new SelectModifierPhase(0), { typeOptions: sc.free.map(t => ({ type: t })), noReroll: !!sc.noReroll });
     scene.phaseManager = { getCurrentPhase: () => scene.phase };
@@ -638,12 +607,11 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const hud = globalThis.__hud;
   const { rerollArm, rerollCheck, rerollStats } = hud["50-reroll"];
   const { cardSummary } = hud["60-card"], { tick } = hud["98-tick"];
-  // The rewards card is read through the run read, as the panel reads it: each call here opens one.
   const rewardsModel = (s, h) => hud["26-run"].readRun(s, run => hud["52-shop"].rewardsModel(run, h));
   globalThis.__sm = rewardsModel;
   globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollArm, rerollCheck, rerollStats, cardSummary,
     setRewardFns: hud["04-game-tables"].setRewardFns, tick, HELD: hud["51-items"].HELD, rewardContext: hud["51-items"].rewardContext };
-  // The chunk scan finds nothing under node: hand the reroll preview its functions, and draw the card again.
+  // Under node the chunk scan finds no reward functions: hand them over and draw again.
   if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
   console.log(`== ${label}\n` + wholeCard(el).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));

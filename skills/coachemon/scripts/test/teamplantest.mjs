@@ -1,7 +1,4 @@
-// Whole-fight team plan against a Cyrus-like trainer: our four (Morpeko full, Scrafty 52%, Blastoise 50%,
-// Venusaur 29%) against six, the last a boss Weavile that outspeeds and KOs everyone. Asserts the plan names
-// Weavile as the win condition, saves Scrafty/Blastoise for it, sacrifices Venusaur for a free switch-in and says
-// the fight is likely lost. Prints the rendered section, so run.mjs also keeps a golden of it.
+// The boss Weavile outspeeds and KOs all four of ours.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { onGame } from "./game-proto.mjs";
@@ -29,9 +26,8 @@ const foes = [
   mon("Gyarados", 100, ["Water","Flying"], "Moxie", [330,260,210,160,230,200], [["Waterfall","Water",80,"P"],["Crunch","Dark",80,"P"]], false),
   mon("Houndoom", 100, ["Dark","Fire"], "Flash Fire", [290,190,170,260,190,230], [["Flamethrower","Fire",90,"S"],["Dark Pulse","Dark",80,"S"]], false),
   mon("Magnezone", 100, ["Electric","Steel"], "Sturdy", [280,160,270,290,210,140], [["Thunderbolt","Electric",90,"S"],["Flash Cannon","Steel",80,"S"]], false),
-  // Triple Axel's 20/40/60 hits, summed: the approximate damage model counts one hit per move. Brick Break is never
-  // its best hit, but it makes Weavile the trainer's clear send-in against Morpeko (its moves average ×1.75 into it);
-  // on the matchup score alone Houndoom would tie it, and the game breaks a tie at random.
+  // Triple Axel's power is its three hits summed: the approximate model counts one hit per move. Brick Break is never
+  // its best hit, but without it Houndoom ties Weavile's matchup score and a roll picks the send-in (game-code.md §7).
   mon("Weavile", 110, ["Dark","Ice"], "Pressure", [560,330,190,110,210,320], [["Triple Axel","Ice",120,"P"],["Brick Break","Fighting",75,"P"]], false, undefined, 2),
 ];
 
@@ -52,7 +48,6 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   eval(bundle("hud", { expose: true }));
   const { teamPlan, tpHealProfile, tpSendScore, tpFight, tpTables } = globalThis.__hud["35-team-plan"];
   const { readTurn } = globalThis.__hud["25-turn"];
-  // Every read of the live battle goes through one turn (hud/25-turn.js), so the test opens one the way the card does.
   globalThis.__tp = { readTurn, teamPlan, drawTeamPlan: globalThis.__hud["95-render-team"].drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables };
   const plan = readTurn(scene, turn => teamPlan(turn));
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
@@ -84,13 +79,11 @@ assert.ok(reserved.includes(plan.steps[sac + 1].send.name), "and the free switch
 assert.notEqual(plan.result, "win");
 assert.ok(plan.warnings.some(w => /^likely lost/.test(w) && w.includes("Weavile")), "warns the fight is likely lost to Weavile");
 
-// Built fresh from one turn read, and cheap enough to be: the card's own hold (60-card) is what keeps it between
-// refreshes now, so the same turn read twice gives the same plan.
 assert.deepEqual(globalThis.__tp.readTurn(scene, turn => globalThis.__tp.teamPlan(turn)), plan, "the same turn gives the same plan");
 assert.ok(ms < 500, `cheap enough to run every turn (${ms.toFixed(0)} ms incl. bundling)`);
 
-// During the command phase it goes through the sandbox and the game-code paths; with those missing on the mocks it
-// must fall back to the same approximation, not throw.
+// In the command phase the game-code paths are missing on the mocks: the plan falls back to the approximation, not
+// a throw.
 const live = run("CommandPhase").plan;
 assert.equal(live.win?.name, "Weavile");
 assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", "sandbox restored the RNG");
@@ -116,21 +109,17 @@ assert.equal(plan.approxDoubles, false);
   const double = run(null, { party: ours, foes: youngster, double: true }).plan;
   assert.ok(double.approxDoubles, "doubles are flagged as approximated");
   assert.ok(double.compact);
-  // Both of ours stand on the field, so neither pays to act: the plan used to count one of them as `cur` and read
-  // the other as a switch, which put "⇄ switch in X" on screen for a mon already out (#113 bucket 7, the biggest
-  // cause of ⚔/♟ disagreement on real waves).
-  // (Charizard sweeps both foes here, so only it takes an exchange — the point is that neither of ours is charged
-  // for standing where it already stands.)
+  // Counting one field mon as `cur` read the other as a switch, and put "⇄ switch in X" on screen for a mon already
+  // out (#113).
   assert.deepEqual(double.steps.map(x => x.entry), double.steps.map(() => "stay"), `no step pays to switch in a mon already out: ${JSON.stringify(double.steps)}`);
 }
-// Turn-end chip carries into the fight as a negative per-turn change: a sandstorm takes 1/16 a turn.
+// Turn-end chip carries into the fight as a negative per-turn change.
 {
   const { scene: s } = run(null);
   const zard = mon("Charizard", 30, ["Fire","Flying"], "Blaze", [96,60,55,80,60,75], [["Flamethrower","Fire",90,"S"]], true);
   s.arena = { weather: { weatherType: 3 } };
   assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, zard)), { base: -6, sitrus: 0, enigma: 0 }, "sandstorm chip in the profile");
-  // With a Sitrus on it the berry still reaches the profile, and it is read at the HP *after* the chip (game-code.md §21): the
-  // probe stands at 38/96, the chip takes it to 32, and a quarter of max comes back.
+  // A Sitrus is read at the HP after the chip (game-code.md §21): 38/96, chipped to 32, heals a quarter of max.
   const held = Object.assign(new ({ BerryModifier: class { berryType = 0; getStackCount() { return 1; } } }).BerryModifier(), {});
   assert.deepEqual(globalThis.__tp.readTurn(s, turn => globalThis.__tp.tpHealProfile(turn, Object.assign(zard, { getHeldItems: () => [held] }))), { base: -6, sitrus: 24, enigma: 0 }, "Sitrus after the chip");
 }
@@ -154,8 +143,8 @@ assert.equal(plan.approxDoubles, false);
   const slept = step({ party: [blastoise()], foes: [snorlax()], enemyModifiers: [token(4)] });
   assert.ok(slept.hp < clean.hp, `sleep tokens cost us turns, so Snorlax gets more hits in (${clean.hp}% → ${slept.hp}%)`);
 }
-// The trainer's send-in at the HP the plan has reached: min(1, its HP ratio + 1 − ours), ×0.5 for a bench mon at
-// 20–40 % that doesn't outspeed. A worn-down Morpeko makes a 30 % bench mon a better send-in than a healthy one does.
+// The trainer's send-in is scored at the HP the plan has reached: a worn-down Morpeko makes a 30 % bench mon a better
+// send-in than a healthy one does.
 {
   const { tpSendScore } = globalThis.__tp;
   const T = { send: [[{ base: 3, outspeed: false }], [{ base: 3, outspeed: true }]], foeMax: [100, 100], ourMax: [200] };
@@ -169,14 +158,12 @@ assert.equal(plan.approxDoubles, false);
   const T = { ours: [[{ dmg: 100, use: rolls }]], theirs: [[{ dmg: 100, e: 1, use: rolls }]], first: [[0.5]], ourMax: [200], foeMax: [200], ourHeal: [null], foeHeal: [null] };
   const r = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
   console.log(`== mirror at a speed tie\nwin ${r.pWin.toFixed(3)} · loss ${r.pLoss.toFixed(3)}`);
-  // Two turns: each side's two hits KO when at least one of them rolls high (¾); on the turn both would, the tie.
   assert.ok(Math.abs(r.pWin - r.pLoss) < 1e-9 && Math.abs(r.pWin + r.pLoss - 1) < 1e-9, `symmetric (${r.pWin}, ${r.pLoss})`);
   T.first = [[0]];
   const faster = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
   assert.ok(faster.pWin > 0.8 && faster.pWin < 1, `outspeeding wins most, not all: ${faster.pWin}`);
 }
-// Drain (#90): the foe's Leech Life wins back half of each hit it lands. 100 a turn into its 300 HP is three turns;
-// healing 30 of its 60 a turn, it stands through the third (300 → 230 → 160 → 90) and takes a fourth.
+// Drain (#90): the foe heals 30 of each 60 it lands, so our 100 a turn needs a fourth turn (300 → 230 → 160 → 90).
 {
   const { tpFight } = globalThis.__tp;
   const T = drain => ({ ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 60, e: 1, drain }]], first: [[0]], ourMax: [400], foeMax: [300], ourHeal: [null], foeHeal: [null] });
@@ -184,18 +171,15 @@ assert.equal(plan.approxDoubles, false);
   const [plain, drained] = [0, 0.5].map(d => tpFight(T(d), st(), 0, 0, "free"));
   console.log(`== drain\n${plain.turns} → ${drained.turns} turns`);
   assert.deepEqual([plain.turns, drained.turns], [3, 4], "the foe's drain costs us a turn");
-  // …and ours: moving first, our three hits win back 50 each against its two of 60 — 200 ends on 230 — and never past
-  // our max: from 390 the first 50 tops out at 400, so it ends on 380, not 420.
+  // Ours: three hits win back 50 each against its two of 60 (200 → 230), never past max (390 → 380, not 420).
   const ours = { ...T(0), ours: [[{ dmg: 100, drain: 0.5 }]] };
   assert.equal(tpFight(ours, { ...st(), oh: [200] }, 0, 0, "free").mh, 230, "our drain heals on every hit");
   assert.equal(tpFight(ours, { ...st(), oh: [390] }, 0, 0, "free").mh, 380, "never past max");
-  // …and what a use costs its user goes the other way (#235). We move first, so three hits take the 300 HP foe and it
-  // answers twice: 400 − 2×60 = 280 for a cost-free move, and 60 less for one that spends 20 on each of its 3 uses.
+  // Recoil (#235): 400 − 2×60 = 280 for a cost-free move, and 3 × 20 less for one that spends 20 a use.
   const recoil = self => tpFight({ ...T(0), ours: [[{ dmg: 100, self }]] }, st(), 0, 0, "free").mh;
   assert.deepEqual([recoil(0), recoil(20)], [280, 220], "recoil is spent on every landed use");
 }
-// On-KO boosts (#90): each KO Buzzwole's Beast Boost scores raises its Atk a stage, so the mon after a fallen one takes
-// its hits at ×1.5, then ×2.
+// On-KO boosts (#90, game-code.md §18): each KO Buzzwole's Beast Boost scores raises its Atk a stage.
 {
   const { tpTables, tpFight } = globalThis.__tp;
   const { scene: s } = run(null);
@@ -204,8 +188,7 @@ assert.equal(plan.approxDoubles, false);
     getAbility: () => ({ name: "Beast Boost", getAttrs: a => (a === "PostVictoryStatStageChangeAbAttr" ? [{ changes: () => [{ stat: 1, stages: 1 }] }] : []) }),
   };
   const buzzwole = extra => Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Beast Boost", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"]], true), extra);
-  // Faster, and Hydro Pump (179–210 over the rolls) 2HKOs only on high rolls: Blastoise takes about two
-  // Lunges, however many KOs Buzzwole has had.
+  // Blastoise is faster and 2HKOs only on high rolls, so it takes about two Lunges however many KOs Buzzwole has had.
   const blastoise = mon("Blastoise", 100, ["Water"], "Torrent", [400,150,300,150,300,250], [["Hydro Pump","Water",110,"S"]], false);
   const hitsOn = (foe, fk) => {
     const T = globalThis.__tp.readTurn(s, turn => tpTables(turn, [blastoise], [foe], false));
@@ -216,9 +199,7 @@ assert.equal(plan.approxDoubles, false);
   console.log(`== beast boost\nBlastoise loses ${boosted.map(Math.round).join(" / ")} HP after 0 / 1 / 2 KOs (no ability: ${plainHits.map(Math.round).join(" / ")})`);
   assert.ok(plainHits.every(x => x === plainHits[0]), "no ability, no change");
   assert.ok(boosted[0] === plainHits[0] && boosted[1] > boosted[0] && boosted[2] > boosted[1], "each KO fed makes its hits hurt more");
-  // The plan says so on the step that feeds it. A worn Pidgey is out, faster, and Brave Bird takes more than half off
-  // Buzzwole before Thunder Punch KOs it; Blastoise then comes in free and mostly finishes it before it moves. Switching
-  // Blastoise in instead would cost it three quarters of its HP.
+  // The plan names the step that feeds it: a worn Pidgey chips Buzzwole past half, so Blastoise comes in free.
   const fodder = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,450,30,30,30,300], [["Brave Bird","Flying",120,"P"]], true, 10);
   const puncher = Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Beast Boost", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"],["Thunder Punch","Electric",75,"P"]], true), beastBoost);
   const plan = run(null, { party: [fodder, blastoise], foes: [puncher] }).plan;
