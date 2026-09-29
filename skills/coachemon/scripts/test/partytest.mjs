@@ -1,16 +1,8 @@
-// The party profile (`hud/08-party.js`): the party judged as a whole, and whether a newcomer is worth it. Checked
-// against one shared team (`test/fixtures/party.mjs`) rather than through a card, because nothing in a profile depends
-// on a scene, a battle or a screen — that is the point of the module. Covers the coverage table and the two readings
-// that used to differ between cards (variable power counts, fixed damage doesn't), the shared weaknesses, the holes,
-// the weakest member, the two matchup queries, `partyReasons` with and without `replacing`, and that the biome card
-// and the catch card get the same reasons for the same species at the same level. Prints the tables, so run.mjs keeps
-// a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { party, mon, species, SPECIES, ATTRS, TY } from "./fixtures/party.mjs";
 
-// ---- Mount the HUD once with a bare scene and no `ui`, so its tick draws nothing. Every case below then builds its
-// own party and hands it straight to the module, which is all a profile reads.
+// A bare scene with no `ui`, so the HUD's own tick draws nothing.
 globalThis.window = globalThis;
 globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } },
   Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => ({ gameMode: {} }) } } } }] } } } };
@@ -28,7 +20,7 @@ const flat = r => (r.kind === "upgrade" ? `upgrade ${r.final}${r.estimated ? "~"
   : r.kind === "dupe" ? "dupe" : `${r.kind} ${r.types.join("/")}`);
 const flatten = rs => rs.map(flat);
 
-// ---- 1. The coverage table. One reading for every card, and the two rules the cards used to disagree on.
+// ---- The coverage table: STAB, and variable power counting where fixed damage doesn't.
 {
   const team = party();
   const profile = partyProfile(team);
@@ -38,9 +30,6 @@ const flatten = rs => rs.map(flat);
   assert.deepEqual(profile.attacks[0], [{ t: "Ground", stab: 1.5 }, { t: "Dragon", stab: 1.5 }], "STAB is the mon's own types");
   assert.deepEqual(profile.attacks[3], [{ t: "Normal", stab: 1 }], "Magikarp's Tackle is off-type");
 
-  // A move the game prices from the situation (`power === -1`) is coverage of its type; one that sets damage outright
-  // ignores the type chart, so it is coverage of nothing. The catch, biome and look-ahead cards read the first as no
-  // coverage at all before this module existed; the learn card already had both right.
   const odd = mon(SPECIES.sudowoodo, 40, [
     ["Gyro Ball", "Steel", -1, "P", [new ATTRS.GyroBallPowerAttr()]],
     ["Seismic Toss", "Fighting", -1, "P", [new ATTRS.FixedDamageAttr()]],
@@ -50,7 +39,7 @@ const flatten = rs => rs.map(flat);
   assert.deepEqual(damagingTypes(odd), ["Steel"], "variable power counts, fixed damage and status don't");
 }
 
-// ---- 2. What the team is weak to, and what it can't hit.
+// ---- What the team is weak to, and what it can't hit.
 {
   const profile = partyProfile(party());
   console.log("== weaknesses and holes");
@@ -63,7 +52,7 @@ const flatten = rs => rs.map(flat);
   assert.ok(!profile.holes.includes("Ghost"), "Snorlax's Crunch hits Ghost");
 }
 
-// ---- 3. The weakest member: the lowest final BST, not the lowest BST now, and the lower level breaking a tie.
+// ---- The weakest member: the lowest final BST, not the lowest BST now, and the lower level breaking a tie.
 {
   const profile = partyProfile(party());
   console.log("== weakest");
@@ -71,13 +60,11 @@ const flatten = rs => rs.map(flat);
   assert.equal(profile.weakest.mon.name, "Magikarp");
   assert.equal(profile.weakest.final, 400, "one stage left: max(200×1.3, 200+110, 400)");
   assert.equal(profile.weakest.estimated, true, "the game only says a line has an evolution, not what it grows into");
-  // Two members on the same final BST: the lower level is the one to replace.
   const twins = [mon(SPECIES.lapras, 40, [["Surf", "Water", 90, "S"]]), mon(SPECIES.lapras, 30, [["Surf", "Water", 90, "S"]])];
   assert.equal(partyProfile(twins).weakest.level, 30, "a tie on final BST goes to the lower level");
 }
 
-// ---- 4. The two matchup queries, which is how every card asks about a foe. A foe is a plain defender: the replay
-// hands over `{ types, ability, passive }` and a mon on the field answers the game's own methods; both read the same.
+// ---- The two matchup queries: who hits a foe, and who is weak to a type.
 {
   const profile = partyProfile(party());
   const foe = { name: "Magnezone", types: ["Electric", "Steel"], ability: "Sturdy", passive: null };
@@ -86,12 +73,11 @@ const flatten = rs => rs.map(flat);
   row("weak to Electric", profile.weakTo("Electric").map(p => p.name));
   assert.deepEqual(profile.hitters(foe).map(p => p.name), ["Garchomp"], "Earthquake; Steel/Electric resists the rest");
   assert.deepEqual(profile.weakTo("Electric").map(p => p.name), ["Lapras", "Magikarp"], "Garchomp is Ground: immune, not weak");
-  // An ability immunity is the defender's, wherever it is read from.
   const levitator = { types: ["Steel"], abilities: ["Levitate"] };
   assert.deepEqual(profile.hitters(levitator).map(p => p.name), [], "Levitate takes Earthquake away, and nothing else hits Steel");
 }
 
-// ---- 5. `partyReasons`: reasons with no weights, against the weakest member by default.
+// ---- `partyReasons`: reasons with no weights, against the weakest member by default.
 {
   const team = party();
   const profile = partyProfile(team);
@@ -101,39 +87,34 @@ const flatten = rs => rs.map(flat);
   assert.deepEqual(flatten(partyReasons(profile, lucario)),
     ["covers Grass", "hole Normal/Ice/Dark/Fairy", "upgrade 525 over Magikarp 400~"]);
 
-  // `replacing`: judged against the member it would actually replace. Snorlax is no upgrade to make.
+  // `replacing`: judged against the member it would actually replace.
   row("vs Snorlax", flatten(partyReasons(profile, lucario, { replacing: team[1] })));
   assert.deepEqual(flatten(partyReasons(profile, lucario, { replacing: team[1] })), ["covers Grass", "hole Normal/Ice/Dark/Fairy"]);
 
-  // Too far below the member it would replace to be worth catching up: the level gap, which the biome card gains here.
   row("Lucario L20", flatten(partyReasons(profile, { ...lucario, level: 20 })));
   assert.ok(!partyReasons(profile, { ...lucario, level: 20 }).some(r => r.kind === "upgrade"), "15 levels behind Magikarp is no upgrade");
   assert.ok(partyReasons(profile, { ...lucario, level: 25 }).some(r => r.kind === "upgrade"), "10 behind still counts");
 
-  // The 400 floor: a stronger line than Magikarp's, but not a real mon. Sudowoodo is 410 final, +10 over the floor and
-  // only +10 over Magikarp's line.
+  // Sudowoodo's 410 final clears the 400 floor but is only +10 over Magikarp's line.
   row("Sudowoodo", flatten(partyReasons(profile, { species: SPECIES.sudowoodo, level: 40, types: typesOfSpecies(SPECIES.sudowoodo) })));
   assert.ok(!partyReasons(profile, { species: SPECIES.sudowoodo, level: 40, types: ["Rock"] }).some(r => r.kind === "upgrade"),
     "410 is over the floor but not 100 over the line it would replace");
 
-  // Its line is already on the team, which is the one reason that stands on its own: the cards read it and stop.
+  // A dupe is the one reason that stands on its own: the cards read it and stop.
   row("Gyarados", flatten(partyReasons(profile, { species: SPECIES.gyarados, level: 45, types: typesOfSpecies(SPECIES.gyarados) })));
   assert.ok(partyReasons(profile, { species: SPECIES.gyarados, level: 45, types: ["Water", "Flying"] }).some(r => r.kind === "dupe"),
     "Gyarados's root is the Magikarp on the team");
-  // A hole reason wants a team to have holes in: two members are not a team.
   assert.deepEqual(flatten(partyReasons(partyProfile(team.slice(0, 2)), lucario)).filter(r => r.startsWith("hole")), [],
     "no holes named for a party of two");
 }
 
-// ---- 6. The biome card and the catch card, on one species at one level. Each builds its candidate its own way — the
-// biome card knows a species and picks the level itself, the catch card holds the mon in front of you — and the rules
-// they then apply are this module's, so the two cannot give different reasons.
+// ---- The biome card and the catch card give one species at one level the same reasons.
 {
   const profile = partyProfile(party());
   const level = 45;
-  // As 47-biome builds it: a species, the level the card picks forms at, no moveset.
+  // As 47-biome builds it.
   const fromBiome = { species: SPECIES.lucario, level, types: typesOfSpecies(SPECIES.lucario) };
-  // As 45-catch builds it: the wild mon, with the moves it actually knows.
+  // As 45-catch builds it.
   const wild = mon(SPECIES.lucario, level, [["Close Combat", "Fighting", 120, "P"], ["Flash Cannon", "Steel", 80, "S"]]);
   const fromCatch = { species: wild.species, fusion: null, level: wild.level, types: ["Fighting", "Steel"],
     abilities: ["Pressure"], moveTypes: damagingTypes(wild) };
@@ -144,7 +125,7 @@ const flatten = rs => rs.map(flat);
     "same species, same level, same reasons");
 }
 
-// ---- 7. Luck and a fused line's strength, the two facts about a party the cards used to keep their own copies of.
+// ---- Party luck follows the game's own terms, and a fusion is judged by the pair.
 {
   const team = party();
   console.log("== luck and fusions");
@@ -164,12 +145,9 @@ const flatten = rs => rs.map(flat);
   assert.equal(partyLuck(team, daily), 11, "in Daily the luck is a roll of the run seed's, not the party's 6");
   assert.deepEqual(forked, [0, "kAbC12"], "in a fork at offset 0 on the run seed, so it costs the stream nothing");
   assert.deepEqual(drew, [0, 14], "randSeedInt(15)");
-  // An event seed's config can pin it, and only a value in 0–14 counts.
   assert.equal(partyLuck(team, { ...daily, gameMode: { isDaily: true, dailyConfig: { luck: 3 } } }), 3, "the event seed's own luck");
   assert.equal(partyLuck(team, { ...daily, gameMode: { isDaily: true, dailyConfig: { luck: 99 } } }), 11, "out of range is no pin");
   assert.equal(partyLuck(team, { gameMode: { isDaily: true } }), 6, "with no scene to fork on, the party's sum is all there is");
-  // Outside Daily, the timed event adds two terms nothing on the party shows: +1 for each boosted species, then a
-  // flat boost on top of the clamp.
   const event = { getEventLuckBoostedSpecies: () => [team[0].species.speciesId], getEventLuckBoost: () => 2 };
   row("event luck", String(partyLuck(team, null, event)));
   assert.equal(partyLuck(team, null, event), 6 + 1 + 2, "a boosted species is +1, and the event's boost is on top");
@@ -177,7 +155,6 @@ const flatten = rs => rs.map(flat);
   assert.equal(partyLuck(team), 6, "without the event manager it is the floor it always was");
   delete rnd.integerInRange;
 
-  // A fusion is judged by the pair: per-stat averages aren't readable from a BST alone, so two final forms average.
   const fused = finalBstOf({ species: SPECIES.snorlax, fusion: SPECIES.lapras });
   row("Snorlax←Lapras", [`final ${fused.final}`, fused.estimated ? "estimated" : "exact"]);
   assert.deepEqual(fused, { bst: 538, final: 538, estimated: false }, "both halves are final forms: their averaged BST stands");
@@ -185,12 +162,10 @@ const flatten = rs => rs.map(flat);
   row("Magikarp←Snorlax", [`final ${growing.final}~`]);
   assert.equal(growing.estimated, true, "one half still grows, so the pair's number is an estimate");
   assert.equal(growing.final, Math.ceil((400 + 540) / 2));
-  // A bare species, which is all a biome spawn or a trade offer is.
   assert.deepEqual(finalBstOf({ species: SPECIES.lapras }), { bst: 535, final: 535, estimated: false });
 
-  // `calculateBaseStats` starts from the *form*'s stats, so a mon standing in an alternate form is worth that form's
-  // total, not the species entry's. Deoxys-like: the species row is the Normal form, form 1 is the Attack form.
-  // Form 0 is given a row of its own here, so "the species' own row" is a different number from "form 0's row".
+  // `calculateBaseStats` starts from the form's stats (game-code.md §20). Form 0 gets a row of its own here, so the
+  // species' own row and form 0's are different numbers.
   const deoxys = { speciesId: 386, baseTotal: 600, baseStats: [50, 150, 50, 150, 50, 150], getEvolutionLevels: () => [],
     forms: [{ baseTotal: 590, baseStats: [50, 145, 50, 145, 50, 150] }, { baseTotal: 700, baseStats: [50, 180, 20, 180, 20, 250] }] };
   assert.equal(finalBstOf({ species: deoxys }).bst, 600, "no mon, no form index: the species' own row, not form 0's");
@@ -198,8 +173,7 @@ const flatten = rs => rs.map(flat);
   assert.equal(finalBstOf({ species: deoxys, formIndex: 1 }).bst, 700, "the form the mon is standing in");
   row("Deoxys form 1", [`final ${finalBstOf({ species: deoxys, formIndex: 1 }).final}`]);
 
-  // A live mon answers for itself: Flip Stat, Shuckle Juice, Old Gateau, Spliced Endless halving and vitamins are all
-  // already in `calculateBaseStats`, so its sum wins over any species row.
+  // A live mon's own `calculateBaseStats` wins over any species row (game-code.md §20).
   const vitamined = { species: deoxys, formIndex: 1, calculateBaseStats: () => [60, 190, 30, 190, 30, 260] };
   assert.equal(finalBstOf(vitamined).bst, 760, "vitamins and the rest come through the game's own call");
   const spliced = { species: deoxys, formIndex: 1, calculateBaseStats: () => [25, 90, 10, 90, 10, 125] };
@@ -207,8 +181,8 @@ const flatten = rs => rs.map(flat);
   const broken = { species: deoxys, formIndex: 1, calculateBaseStats: () => { throw new Error("hidden in this build"); } };
   assert.equal(finalBstOf(broken).bst, 700, "a build that hides the method falls back to the form");
 
-  // The game's own call is cached against the mon and the stats it produced: `applyModifiers` inside it logs
-  // "Applied …" per modifier, and a party carrying vitamins would print on every HUD tick. Nothing else changes.
+  // Cached against the mon and its `stats`: the call logs once per modifier (game-code.md §20), and uncached a party
+  // carrying vitamins would print on every HUD tick.
   let calls = 0;
   const vitaminCache = { species: deoxys, formIndex: 1, level: 50, stats: [1, 1, 1, 1, 1, 1],
     calculateBaseStats: () => { calls++; return [60, 190, 30, 190, 30, 260]; } };
@@ -218,7 +192,6 @@ const flatten = rs => rs.map(flat);
   vitaminCache.stats = [2, 1, 1, 1, 1, 1];
   assert.equal(finalBstOf(vitaminCache).bst, 760);
   assert.equal(calls, 2, "a modifier that moves the mon's stats moves its base stats too: ask again");
-  // Keyed on the mon itself, so a second mon of the same species and level is its own entry.
   const twin = { species: deoxys, formIndex: 1, level: 50, stats: [1, 1, 1, 1, 1, 1],
     calculateBaseStats: () => [10, 10, 10, 10, 10, 10] };
   assert.equal(finalBstOf(twin).bst, 60, "the cache is keyed on the mon, not on its species");
@@ -231,7 +204,7 @@ const flatten = rs => rs.map(flat);
   assert.equal(pair.final, Math.ceil((400 + 700) / 2), "Magikarp's line grows; the Attack form is already final");
 }
 
-// ---- 8. Nothing to judge: an empty party has no reasons to give, and no card should crash asking.
+// ---- Nothing to judge: an empty party has no reasons to give, and no card should crash asking.
 {
   const empty = partyProfile([]);
   assert.deepEqual(empty.weakTypes, []);
@@ -242,8 +215,7 @@ const flatten = rs => rs.map(flat);
   console.log("== empty party ok");
 }
 
-// A profile carries live mons and two queries, so it is deliberately not JSON-safe; what the cards put on a model is
-// their own shape. Only the numbers and names above cross that line.
+// A profile carries live mons and two queries, so it is deliberately not JSON-safe.
 assert.equal(typeof partyProfile(party()).hitters, "function");
 assert.equal(TY.length, 18);
 assert.equal(species(1, "Bulbasaur", ["Grass", "Poison"], 318).baseTotal, 318);

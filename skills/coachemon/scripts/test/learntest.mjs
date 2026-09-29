@@ -1,14 +1,10 @@
-// Learn-move card: effective power per move (multi-hit, stand-in power for level/HP/weight-based moves, Technician,
-// drawbacks such as recoil, HP costs, lock-in, recharge and self stat drops), type-chart coverage for the mon and
-// the team, and the learn / forget / skip verdict. Prints the rendered card, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-// An attr: "Name" or ["Name", { fields }] — the game's attr instances, identified by constructor name. The HUD
-// matches through the prototype chain (a subclass counts), so the classes the game subclasses carry their parent
-// here too, or a WeatherInstantChargeAttr wouldn't read as an instant charge.
+// An attr: "Name" or ["Name", { fields }]. The HUD matches through the prototype chain, so a class the game
+// subclasses carries its parent here, or a WeatherInstantChargeAttr wouldn't read as an instant charge.
 const PARENTS = {
   WeatherInstantChargeAttr: "InstantChargeAttr",
   BoostHealAttr: "HealAttr", WeatherHealAttr: "HealAttr", PlantHealAttr: "HealAttr", SandHealAttr: "HealAttr",
@@ -27,8 +23,7 @@ const mv = ([n, t, p, c, a = 100, attrs = [], charge = false, target = 3, extra 
   restrictions: extra.restrictions ?? [], conditions: (extra.conditions ?? []).map(attr), flags: extra.flags ?? 0,
   hasFlag(f) { return (this.flags & f) !== 0; }, ...extra.fields,
 });
-// The ability attributes 07-move-traits asks for, by the ability names these scenarios use: it reads abilities by
-// attribute, as the game does, not by name.
+// 07-move-traits reads these abilities by attribute, not by name.
 const AB_ATTRS = { "Skill Link": ["MaxMultiHitAbAttr"], "Magic Guard": ["BlockNonDirectDamageAbAttr"], "Rock Head": ["BlockRecoilDamageAttr"], "Parental Bond": ["AddSecondStrikeAbAttr"] };
 const mon = (name, types, atk, spa, moves, extra = {}) => ({
   name, level: 64, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: extra.ability ?? "x" }),
@@ -53,11 +48,8 @@ const run = (pk, newMove, { double = false, party = [pk], roster = null } = {}) 
   const model = learnModel({ ...learnState(scene), roster });
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(model))), JSON.stringify(model), "learn model is JSON-safe");
   const txt = n => typeof n === "string" ? n : n.children.map(txt).join(" ");
-  // The card as the shell draws it, less the panel's own controls — the caret and the × sit together in the panel's
-  // corner, so they are one child (#358). Dropped by the × its cluster holds rather than by position, so a shell that
-  // reorders its chrome doesn't silently eat a row; the wrapper itself stays unnamed, because a title on it would put
-  // a tooltip over the panel's corner. What leads what is left is the **strip**: the card's identity line as the
-  // caption, and beside it the call the card came to (#356).
+  // Less the panel's corner controls: the caret and the × are one child (#358), dropped by the × it holds rather than
+  // by position, so a shell that reorders its chrome can't silently eat a row.
   const rest = wholeCard(el).filter(k => ![...(k.children ?? [])].some(c => c.title === "Close"));
   return { model, text: rest.map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") };
 };
@@ -106,7 +98,7 @@ for (const [label, pk, newMove, double] of cases) {
   const t = run(tech, ["Double Hit","Normal",35,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 0 }]]]);
   assert.ok(t.model.move.notes.includes("Technician"), "Technician boosts 35-power hits");
   const axel = run(mon("Weavile", ["Dark","Ice"], 120, 45, [["Tackle","Normal",40,"P"]]), ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
-  // .9·20 + .81·40 + .729·60 = 94.14 → × STAB 1.5 × coverage.
+  // .9 + .81 + .729: each hit lands only if every one before it did.
   assert.equal(axel.model.move.hits, 2.4, "hits stop at the first miss");
 }
 
@@ -137,8 +129,8 @@ for (const [label, pk, newMove, double] of cases) {
   show("Dragonite ← Outrage", o);
   assert.ok(o.model.move.drawbacks.includes("locks 2–3 turns, then confused"));
   assert.ok(!o.model.move.drawbacks.some(d => /misses/.test(d)), "Outrage's miss effect isn't crash damage");
-  // Outrage does clear Dragon Claw here, but only because randbats runs it on Dragonite: the moveset-prior
-  // section below pins that down by scoring the same moveset on a species randbats has never heard of.
+  // Only because randbats runs Outrage on Dragonite: the moveset prior below scores the same set on a species
+  // randbats has never heard of.
   const claw = byName(o.model, "Dragon Claw");
   assert.ok(claw.replacement > claw.value, `Outrage outscores Dragon Claw (${claw.replacement} vs ${claw.value})`);
 
@@ -157,23 +149,21 @@ for (const [label, pk, newMove, double] of cases) {
   assert.deepEqual(byName(k.model, "Close Combat").drawbacks, ["−1 Def/SpD after use"]);
 }
 
-// ---- Live, wave 22: Emolga (Atk 26 / SpA 26) wants Spark. Charge is the slot that goes — a +1 SpD on a mon that
-// attacks with neither defence is worth less than a second Electric attack; Quick Attack and Icicle Crash stay.
+// ---- Charge's +1 SpD, on a mon that attacks with neither defence, is the slot Spark takes.
 {
   const emolga = mon("Emolga", ["Electric","Flying"], 26, 26, [["Thunder Shock","Electric",40,"S"],["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }],
     ["Icicle Crash","Ice",85,"P",90],["Charge","Electric",-1,"X",-1,[["StatStageChangeAttr",{ stats: [4], stages: 1, selfTarget: true }]]]]);
   const r = run(emolga, ["Spark","Electric",65,"P"]);
   show("Emolga ← Spark", r);
   assert.equal(r.model.moves[r.model.forget]?.name, "Charge");
-  // The shared advice (also behind TM advice) says the same as the card: learn, over Charge, same gain.
   const a = globalThis.__lm.learnAdvice(emolga, mv(["Spark","Electric",65,"P"]), { party: [emolga] });
   assert.deepEqual([a.learn, a.slot, a.forget, a.gain, a.reason], [true, r.model.forget, "Charge", r.model.gain, "over Charge"]);
-  // A skip names the slot it lost to but replaces nothing. Four real attacks, so there is no dead slot to take.
+  // Four real attacks, no dead slot: a skip names the slot it lost to (`against`) but replaces nothing.
   const armed = mon("Emolga", ["Electric","Flying"], 26, 26, [["Thunder Shock","Electric",40,"S"],["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }],
     ["Icicle Crash","Ice",85,"P",90],["Air Slash","Flying",75,"S",95]]);
   const skip = globalThis.__lm.learnAdvice(armed, mv(["Tackle","Normal",40,"P"]), { party: [armed] });
   assert.deepEqual([skip.learn, skip.slot, skip.forget, skip.against != null], [false, -1, null, true]);
-  // A foe's −1 Atk is scored now, and it loses to every attack in the moveset: a skip, not a shrug.
+  // A foe's −1 Atk is scored, and loses to every attack: a skip, not the user's call.
   const growl = globalThis.__lm.learnAdvice(armed, mv(["Growl","Normal",-1,"X",100,[["StatStageChangeAttr", { stats: [1], stages: -1 }]],false,6]), { party: [armed] });
   assert.deepEqual([growl.learn, growl.kind], [false, "skip"]);
 }
@@ -192,8 +182,6 @@ for (const [label, pk, newMove, double] of cases) {
   assert.ok(byName(u.model, "Foul Play").notes.includes("only Dark move on team"));
 }
 // ---- Status moves are scored, so a dead one is the slot to forget (#70)
-// Every case below is a real prompt from the wave 10–35 coaching session on the issue, where the card proposed
-// dropping an attack while a zero-value status move sat in the moveset.
 const statChange = (stats, stages, self) => ["StatStageChangeAttr", { stats, stages, ...(self ? { selfTarget: true } : {}) }];
 const HOWL = ["Howl","Normal",-1,"X",-1,[statChange([1], 1)],false,13];      // USER_AND_ALLIES, and the attr carries no selfTarget
 const GROWL = ["Growl","Normal",-1,"X",100,[statChange([1], -1)],false,6];   // ALL_NEAR_ENEMIES
@@ -203,8 +191,6 @@ const HELPING_HAND = ["Helping Hand","Normal",-1,"X",-1,[["AddBattlerTagAttr",{ 
 const SING = ["Sing","Normal",55,"X",55,[["StatusEffectAttr",{ effect: 4 }]]];
 const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT" }]]];
 {
-  // Wave 33: the TM offers Nasty Plot. The card used to propose dropping Snarl — a scored STAB special move on the
-  // mon's better stat — because Howl, +1 Atk on a special attacker, had no number at all.
   const houndoom = mon("Houndoom", ["Dark","Fire"], 120, 160, [["Crunch","Dark",80,"P"], HOWL, ["Snarl","Dark",55,"S",95], ["Incinerate","Fire",60,"S"]]);
   const r = run(houndoom, NASTY_PLOT);
   show("Houndoom ← Nasty Plot (TM)", r);
@@ -212,7 +198,6 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(byName(r.model, "Howl").value < byName(r.model, "Snarl").value, "Howl is worth less than a STAB special move");
   assert.ok(r.model.move.value > 0 && r.model.move.notes.some(n => /\+2 SpA/.test(n)), `Nasty Plot is scored: ${r.model.move.notes}`);
 
-  // Wave 34: Roost on the main attacker, with revives at $1100. Half its max HP back beats another Growl.
   const fletchinder = mon("Fletchinder", ["Fire","Flying"], 130, 62, [["Acrobatics","Flying",55,"P"], GROWL, ["Flame Charge","Fire",50,"P"], ["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }]]);
   const roost = run(fletchinder, ROOST);
   show("Fletchinder ← Roost", roost);
@@ -221,7 +206,6 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(roost.model.move.notes.includes("heal 50%"));
   assert.ok(byName(roost.model, "Growl").value <= 10, `a foe's −1 Atk is worth little (${byName(roost.model, "Growl").value})`);
 
-  // Wave 25/28: Helping Hand only ever targets an ally, so in a single battle it does nothing at all.
   const minccino = mon("Minccino", ["Normal"], 110, 60, [["Pound","Normal",40,"P"],["Baby-Doll Eyes","Fairy",-1,"X",100,[statChange([1], -1)]], HELPING_HAND, SING]);
   const hh = run(minccino, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]);
   show("Minccino ← Triple Axel", hh);
@@ -230,14 +214,12 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.equal(hh.model.moves[hh.model.forget]?.name, "Helping Hand", "the dead slot goes before Pound");
   const dbl = run(minccino, ["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }], { double: true });
   assert.ok(byName(dbl.model, "Helping Hand").value > 0, "in a double battle it is worth something again");
-  // A TM on the rewards card is judged over the battles ahead: at a quarter doubles, a quarter of that.
+  // `double` as a share: a TM on the rewards card is judged over the battles ahead, here a quarter of them doubles.
   const quarter = globalThis.__lm.learnAdvice(minccino, mv(["Triple Axel","Ice",20,"P",90,[["MultiHitAttr",{ intrinsicMultiHitType: 2 }],"MultiHitPowerIncrementAttr"],false,3,{ flags: 65536 }]), { double: 0.25 });
   const hhQuarter = quarter.plan.moves.find(x => x.name === "Helping Hand");
   assert.ok(Math.abs(hhQuarter.value - byName(dbl.model, "Helping Hand").value / 4) <= 1, `a quarter of its doubles worth (${hhQuarter.value})`);
   assert.ok(hhQuarter.notes.includes("25% doubles ahead"));
 
-  // Sleep is the strongest thing a status move does, discounted by Sing's 55% accuracy. On Minccino it is worth
-  // less again, for the reason the old card couldn't state: three of its four slots are already status moves.
   const clean = run(mon("Jigglypuff", ["Normal","Fairy"], 70, 65, [["Body Slam","Normal",85,"P"],["Dazzling Gleam","Fairy",80,"S"],["Play Rough","Fairy",90,"P",90]]), SING);
   const sing = clean.model.move;
   assert.ok(sing.value >= 30 && sing.value <= 45, `Sing ≈ sleep × 55% accuracy (${sing.value})`);
@@ -247,7 +229,6 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const taunted = run(mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"]]), TAUNT);
   assert.ok(taunted.model.move.value > 0 && taunted.model.move.notes.includes("taunt"), `Taunt is scored: ${taunted.model.move.notes}`);
 
-  // Nothing here recognises a move with no attributes at all: no invented number, and it stays off the forget list.
   const unknown = run(mon("Smeargle", ["Normal"], 60, 60, [["Tackle","Normal",40,"P"],["Swift","Normal",60,"S"],["Quick Attack","Normal",40,"P"],["Sketch","Normal",-1,"X",-1]]), ["Pound","Normal",40,"P"]);
   assert.equal(byName(unknown.model, "Sketch").value, null);
   const call = globalThis.__lm.learnAdvice(mon("Smeargle", ["Normal"], 60, 60, [["Tackle","Normal",40,"P"],["Swift","Normal",60,"S"],["Quick Attack","Normal",40,"P"],["Pound","Normal",40,"P"]]), mv(["Sketch","Normal",-1,"X",-1]));
@@ -256,17 +237,14 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 
 // ---- The moveset prior (05-randbats.js): a nudge and a note, never a veto
 {
-  // Houndour is not fully evolved, so randbats has no sets for it — Houndoom's stand in, and count for less.
+  // Randbats has no sets for the unevolved Houndour, so Houndoom's stand in, and count for less.
   const houndour = mon("Houndour", ["Dark","Fire"], 60, 80, [["Bite","Dark",60,"P"], HOWL, ["Leer","Normal",-1,"X",100,[statChange([2], -1)]], ["Incinerate","Fire",60,"S"]]);
   const r = run(houndour, NASTY_PLOT);
   show("Houndour ← Nasty Plot", r);
   const note = r.model.move.notes.find(n => n.startsWith("set move"));
   assert.match(note ?? "", /^set move \(.*, evolved\)$/, `the prior stands in for the evolution: ${r.model.move.notes}`);
-  // Both dead slots are below every attack, and the weaker of the two goes.
   assert.ok(["Howl", "Leer"].includes(r.model.moves[r.model.forget]?.name), `forgets a dead status slot, not an attack (${r.model.moves[r.model.forget]?.name})`);
 
-  // A species randbats has never heard of gets no note and no nudge — and then Outrage's lock-in keeps it a skip,
-  // which is what tips Dragonite the other way above.
   const moves = [["Dragon Claw","Dragon",80,"P"],["Extreme Speed","Normal",80,"P",100,[],false,3,{ fields: { priority: 2 } }],["Fire Punch","Fire",75,"P"],["Thunder Punch","Electric",75,"P"]];
   const outrage = ["Outrage","Dragon",120,"P",100,["FrenzyAttr",["MissEffectAttr",{}],["NoEffectAttr",{}]],false,7];
   const known = run(mon("Dragonite", ["Dragon","Flying"], 134, 100, moves), outrage);
@@ -280,7 +258,6 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 
 // ---- Which stat the mon attacks with, and which type the move lands as
 {
-  // Huge Power doubles Atk outright: Azumarill is a physical attacker with a 50-something raw Atk stat.
   const azu = mon("Azumarill", ["Water","Fairy"], 90, 110, [["Aqua Jet","Water",40,"P",100,[],false,3,{ fields: { priority: 1 } }],["Play Rough","Fairy",90,"P",90],["Ice Beam","Ice",90,"S"],["Surf","Water",90,"S",100,[],false,4]], { ability: "Huge Power" });
   const r = run(azu, ["Liquidation","Water",85,"P",100]);
   show("Azumarill (Huge Power) ← Liquidation", r);
@@ -289,7 +266,6 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   const plain = run(mon("Marillish", ["Water","Fairy"], 90, 110, [["Aqua Jet","Water",40,"P",100,[],false,3,{ fields: { priority: 1 } }],["Play Rough","Fairy",90,"P",90],["Ice Beam","Ice",90,"S"],["Surf","Water",90,"S",100,[],false,4]]), ["Liquidation","Water",85,"P",100]);
   assert.ok(plain.model.move.notes.includes("weak Atk"), "without the ability the same stats are a weak fit");
 
-  // Pixilate turns a Normal move Fairy — a different type, different STAB, different coverage.
   const sylveon = mon("Sylveon", ["Fairy"], 65, 130, [["Shadow Ball","Ghost",80,"S"],["Psyshock","Psychic",80,"S"],["Mystical Fire","Fire",75,"S"]], { ability: "Pixilate" });
   const p = run(sylveon, ["Hyper Voice","Normal",90,"S",100,[],false,2]);
   show("Sylveon (Pixilate) ← Hyper Voice", p);
@@ -297,17 +273,16 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(p.model.move.stab && p.model.move.notes.includes("Pixilate"));
   assert.equal(p.model.move.power, Math.round(90 * 1.2));
 
-  // Adaptability is a 2× STAB, not 1.5×.
+  // Adaptability's 2× STAB over the plain 1.5×: 1.33.
   const scoreOf = ability => run(mon("Porygon-Z", ["Normal"], 80, 135, [["Thunderbolt","Electric",90,"S"],["Ice Beam","Ice",90,"S"],["Shadow Ball","Ghost",80,"S"]], { ability }), ["Tri Attack","Normal",80,"S"]).model.move.value;
   assert.ok(scoreOf("Adaptability") / scoreOf("Download") > 1.3, "Adaptability is worth a third more than plain STAB");
 
-  // Weather Ball's type follows the weather, which the card can't see: no STAB claim, no coverage claim.
+  // Weather Ball's type follows the weather, which the card can't see.
   const w = run(mon("Castform", ["Normal"], 70, 70, [["Thunder","Electric",110,"S",70],["Ice Beam","Ice",90,"S"],["Sunny Day","Fire",-1,"X",-1,[["WeatherChangeAttr",{}]]]]), ["Weather Ball","Normal",50,"S",100,["WeatherBallTypeAttr"]]);
   assert.ok(w.model.move.notes.includes("type varies"));
   assert.deepEqual(w.model.move.se, [], "no super-effective claim for a type it can't pin down");
   assert.ok(!w.model.move.stab);
 
-  // Solar Beam's charge turn is real without a sun setter, and mostly skipped with one in the party.
   const venu = types => mon("Venusaur", ["Grass","Poison"], 100, 142, [["Sludge Bomb","Poison",90,"S"],["Giga Drain","Grass",75,"S"],["Sleep Powder","Grass",-1,"X",75,[["StatusEffectAttr",{ effect: 4 }]]]], types);
   const solar = ["Solar Beam","Grass",120,"S",100,[],true,3,{ chargeAttrs: ["WeatherInstantChargeAttr"] }];
   const dry = run(venu({}), solar);
@@ -332,13 +307,11 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(quick > 1 && quick < espeed, `priority is worth more on a move that can finish something (${quick} vs ${espeed})`);
 }
 // ---- The roster a status move will face (#122)
-// Both cards hand in the next big fight's foes as the preview has them. Disruption is worth what it takes away from
-// that roster, an inflicted status what it can land on; with no roster both stay as they were.
+// `roster`: the next big fight's foes, as the preview has them.
 {
   const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null, segments: extra.segments ?? 0,
     statusMoves: extra.statusMoves ?? [], healMoves: extra.healMoves ?? [] });
   const at30 = (...foes) => ({ wave: 30, exact: true, foes });
-  // Wave 30 on #70: Whitney's Miltank drinks milk behind two health bars.
   const whitney = at30(foe("Clefairy", ["Fairy"]), foe("Miltank", ["Normal"], { segments: 2, statusMoves: ["Milk Drink"], healMoves: ["Milk Drink"] }));
   const brutes = at30(foe("Machoke", ["Fighting"]), foe("Graveler", ["Rock","Ground"]));
   const sableye = ability => mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"]], { ability });
@@ -352,13 +325,12 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(attackers.value < blind.value * 0.5 && attackers.notes.includes("nothing to stop at W30"), `Taunt into plain attackers (${attackers.value})`);
   const unsure = judge(TAUNT, { ...whitney, exact: false });
   assert.ok(unsure.value > blind.value && unsure.value < healer.value, "a roster the preview isn't sure of moves the score half as far");
-  // Oblivious stops Taunt and nothing else; Heal Block still reaches the milk.
   const HEAL_BLOCK = ["Heal Block","Psychic",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "HEAL_BLOCK" }]],false,6,{ flags: 262144 }];
   const oblivious = at30(foe("Miltank", ["Normal"], { ability: "Oblivious", segments: 2, statusMoves: ["Milk Drink"], healMoves: ["Milk Drink"] }));
   assert.ok(judge(TAUNT, oblivious).notes.includes("nothing to stop at W30"));
   assert.ok(judge(HEAL_BLOCK, oblivious).notes.includes("vs Miltank's Milk Drink at W30"));
 
-  // Will-O-Wisp: a Fire type can't be burned, and Flash Fire takes the move itself.
+  // Who a status move can land on (game-code.md §16). Flags: 262144 reflectable, 2048 powder.
   const WISP = ["Will-O-Wisp","Fire",-1,"X",85,[["StatusEffectAttr",{ effect: 6 }]],false,3,{ flags: 262144 }];
   const wispBlind = judge(WISP, null);
   const half = judge(WISP, at30(foe("Arcanine", ["Fire"]), foe("Machoke", ["Fighting"])));
@@ -367,13 +339,11 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(none.notes.includes("can't land at W30") && none.value <= Math.round(wispBlind.value * 0.3) + 1, `${none.value} vs ${wispBlind.value}`);
   assert.equal(judge(WISP, brutes).value, wispBlind.value, "a roster that can take it all changes nothing");
 
-  // Thunder Wave alone respects type immunity; Magic Bounce sends any of these back, unless Mold Breaker ignores it.
   const TWAVE = ["Thunder Wave","Electric",-1,"X",90,[["StatusEffectAttr",{ effect: 3 }],"RespectAttackTypeImmunityAttr"],false,3,{ flags: 262144 }];
   assert.ok(judge(TWAVE, brutes).notes.includes("lands on 1 of 2 at W30"), "Graveler is Ground");
   const bouncer = at30(foe("Espeon", ["Psychic"], { ability: "Magic Bounce" }));
   assert.ok(judge(TWAVE, bouncer).notes.includes("can't land at W30"));
   assert.ok(!judge(TWAVE, bouncer, "Mold Breaker").notes.some(n => /W30/.test(n)), "Mold Breaker ignores Magic Bounce");
-  // Powder moves fail on Grass types.
   const SPORE = ["Spore","Grass",-1,"X",100,[["StatusEffectAttr",{ effect: 4 }]],false,3,{ flags: 262144 | 2048 }];
   assert.ok(judge(SPORE, at30(foe("Venusaur", ["Grass","Poison"]), foe("Snorlax", ["Normal"]))).notes.includes("lands on 1 of 2 at W30"));
 
@@ -382,16 +352,12 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.deepEqual([hb(["Milk Drink","Normal",-1,"X",-1,[["HealAttr",{ healRatio: 0.5 }]]]), hb(["Giga Drain","Grass",75,"S",100,[["HitHealAttr",{}]]]),
     hb(["Rest","Psychic",-1,"X",-1,["RestAttr"]]), hb(["Refresh","Normal",-1,"X",-1,["HealStatusEffectAttr"]])], [true, true, true, false]);
 
-  // The learn card and the rewards card's TM advice read the same roster through the same decision.
   const tm = globalThis.__lm.tmAdvice(mv(TAUNT), [sableye()], { roster: whitney });
   assert.equal(tm.best?.gain, globalThis.__lm.learnAdvice(sableye(), mv(TAUNT), { roster: whitney }).gain, "the TM card and the learn card agree");
   assert.ok(run(sableye(), TAUNT, { roster: whitney }).model.move.notes.includes("vs Miltank's Milk Drink at W30"), "the learn card model carries the roster");
 }
 // ---- A typing written onto the foe (#233)
-// Soak and Magic Powder make the target one type; Forest's Curse and Trick-or-Treat add a third. The battle plan
-// prices one against the foe in front of us; here it is judged against the roster ahead and the party's own coverage:
-// what it opens, and (a `set` only) the STAB it takes away. Blind of a roster both keep a flat value, which is what
-// keeps the team audit's dead-slot check off them.
+// Judged against the roster ahead: what it opens, and (a `set` only) the STAB it takes away.
 {
   const foe = (name, types, extra = {}) => ({ name, types, ability: extra.ability ?? null, passive: null,
     segments: extra.segments ?? 0, attackTypes: extra.attackTypes ?? types, statusMoves: [], healMoves: [] });
@@ -409,28 +375,25 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(blind.notes.includes("pure Water"), `named the way the ⚔ line names it: ${blind.notes}`);
   assert.ok(helps.value > blind.value * 1.5, `Soak into a roster it opens (${helps.value} vs ${blind.value})`);
   assert.ok(helps.notes.includes("vs Skarmory at W40"), `named by the foe it pays against: ${helps.notes}`);
-  // A foe already that one type: `ChangeTypeAttr.getCondition` refuses, so the move does nothing there.
+  // Already pure Water: `ChangeTypeAttr.getCondition` fails (game-code.md §14).
   const pool = at40(foe("Vaporeon", ["Water"], { attackTypes: ["Water","Ice"] }));
   const dead = judge(ludicolo, SOAK, pool);
   assert.ok(dead.value < blind.value * 0.5 && dead.notes.includes("no opening at W40"), `${dead.value}: ${dead.notes}`);
   // Aggron: Scald already hits it ×2, so the rewrite opens nothing — but it still takes both its STABs away.
   const strip = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"])));
   assert.ok(strip.value > blind.value && strip.value < helps.value, `STAB alone (${strip.value} vs ${blind.value}/${helps.value})`);
-  // The STAB is a share of its *attacks*, one entry per move, and not of its coverage (#266): an Aggron with three
-  // Steel moves beside one Ground loses three quarters of them to pure Water, where the distinct types alone read
-  // that as half.
+  // The STAB is a share of its *attacks*, one entry per move, not of its distinct types (#266): three Steel moves
+  // beside one Ground lose three quarters to pure Water, not half.
   const many = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attackTypes: ["Steel","Steel","Steel","Ground"] })));
   const byType = judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attackTypes: ["Steel","Ground"] })));
   assert.ok(many.value > byType.value, `three Steel moves are more STAB than one (${many.value} vs ${byType.value})`);
   assert.ok(many.value < strip.value, `and still less than a foe whose every attack is STAB (${many.value} vs ${strip.value})`);
-  // And it is arithmetic, not an ordering: Aggron's opening is nil (Scald already hits it ×2), so what is left is the
-  // share alone. A quarter more of its attacks losing STAB is worth the same step each time, and the same *ratio* of
-  // Steel to Ground scores the same however many moves it is spread over — which is what makes it a share of its
-  // moveset rather than a count of its moves.
+  // Aggron's opening is nil, so the share is all that moves: each quarter of its attacks losing STAB is one even step,
+  // and the same ratio scores the same over any number of moves.
   const stab = (...attackTypes) => judge(ludicolo, SOAK, at40(foe("Aggron", ["Steel","Rock"], { attackTypes }))).value;
   const G = "Ground", S = "Steel";
   const q = [stab(G, G, G, G), stab(S, G, G, G), stab(S, S, G, G), stab(S, S, S, G), stab(S, S, S, S)];
-  // The card rounds, so the ladder is even to within that: each rung sits a quarter of the way up, ±1.
+  // ±1: the card rounds.
   q.forEach((v, i) => assert.ok(Math.abs(v - q[0] - (i / 4) * (q[4] - q[0])) <= 1, `rung ${i} of ${q}`));
   assert.ok(q[4] > q[0], `and it climbs: ${q}`);
   assert.equal(q[3], many.value, "three quarters is three quarters");
@@ -440,42 +403,36 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
 
   const unsure = judge(ludicolo, SOAK, { ...skarm, exact: false });
   assert.ok(unsure.value > blind.value && unsure.value < helps.value, "a roster the preview isn't sure of moves the score half as far");
-  // Good as Gold takes a status move outright, so only half this roster is rewritable.
+  // Good as Gold blocks the move (game-code.md §14), so only half this roster is rewritable.
   const half = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"]), foe("Gholdengo", ["Steel","Ghost"], { ability: "Good as Gold" })));
   assert.ok(half.value < helps.value && half.notes.includes("vs Skarmory at W40"), `${half.value}: ${half.notes}`);
-  // `ChangeTypeAttr.getCondition` is refused by Multitype and RKS System, the same two the battle plan refuses.
   for (const ab of ["Multitype", "RKS System"]) {
     assert.ok(judge(ludicolo, SOAK, at40(foe("Arceus", ["Normal"], { ability: ab }))).notes.includes("no opening at W40"), ab);
   }
-  // The opening is judged against the coverage that would face the foe — the party, plus the slots the move sits
-  // beside — not the moveset as it stands. Ludicolo's ×2 into pure Water is Energy Ball's, so Soak is worth much less
-  // in Energy Ball's own slot than in Scald's: a rewrite must not be sold on the coverage it replaces.
+  // The opening is judged against the coverage left beside the slot, not the moveset as it stands: the ×2 into pure
+  // Water is Energy Ball's, so Soak in Energy Ball's slot must not be sold on the coverage it replaces.
   const plan = globalThis.__lm.learnAdvice(ludicolo, mv(SOAK), { roster: skarm }).plan;
   const slot = n => plan.moves.find(m => m.name === n).replacement;
   assert.ok(slot("Energy Ball") < slot("Scald") * 0.7, `Soak over Energy Ball ${slot("Energy Ball")} vs over Scald ${slot("Scald")}`);
 
-  // Health bars: the same rewrite pays more when what it opens is the boss and not the grunt beside it.
   const boss = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"], { segments: 5 }), foe("Vaporeon", ["Water"])));
   const grunt = judge(ludicolo, SOAK, at40(foe("Skarmory", ["Steel","Flying"]), foe("Vaporeon", ["Water"], { segments: 5 })));
   assert.ok(boss.value > grunt.value * 1.5, `a boss-weighted opening (${boss.value} vs ${grunt.value})`);
 
-  // An added type only multiplies: Trick-or-Treat turns Machamp into a Knock Off / Shadow Sneak target …
+  // An added type only multiplies: Ghost on Machamp opens it to Knock Off and Shadow Sneak …
   const sable = mon("Sableye", ["Dark","Ghost"], 75, 65, [["Knock Off","Dark",65,"P"],["Shadow Sneak","Ghost",40,"P"],["Fake Out","Normal",40,"P"],["Night Shade","Ghost",-1,"S",100,["LevelDamageAttr"]]]);
   const addBlind = judge(sable, TREAT, null);
   const added = judge(sable, TREAT, at40(foe("Machamp", ["Fighting"])));
   assert.ok(addBlind.notes.includes("+Ghost") && added.value > addBlind.value, `${added.value} vs ${addBlind.value}`);
-  // Multitype and RKS System refuse a `set`, not an `add`: `AddTypeAttr.getCondition` asks only about Terastallization
-  // and a typing the target already has.
+  // Multitype refuses a `set`, not an `add` (game-code.md §14).
   assert.ok(!judge(sable, TREAT, at40(foe("Arceus", ["Normal"], { ability: "Multitype" }))).notes.includes("no opening at W40"));
-  // … and it can take one away: a Hitmonlee whose one answer is Fighting is worse off for it, which is worth 0 here
-  // rather than a negative — nobody has to use the move.
+  // … and take one away: Hitmonlee's one answer is Fighting, which scores 0 rather than a negative — nobody has to
+  // use the move.
   const kicker = mon("Hitmonlee", ["Fighting"], 120, 35, [["Close Combat","Fighting",120,"P"],["Mega Kick","Normal",120,"P",75],["Rock Slide","Rock",75,"P",90],["Feint","Normal",30,"P"]]);
   const worse = judge(kicker, TREAT, at40(foe("Snorlax", ["Normal"])));
   assert.ok(worse.value < addBlind.value * 0.5 && worse.notes.includes("no opening at W40"), `${worse.value}: ${worse.notes}`);
 
-  // The crowded-moveset penalty is about the company a move keeps, not the move, so it is kept off `alone` — which is
-  // what the audit's dead-slot bar reads. A Gourgeist's Trick-or-Treat beside Will-O-Wisp and Leech Seed is cut to 11
-  // as a score, and is still not a dead slot.
+  // The crowded-moveset penalty is kept off `alone`, which is what the audit's dead-slot bar reads.
   const WISP = ["Will-O-Wisp","Fire",-1,"X",85,[["StatusEffectAttr",{ effect: 6 }]],false,3,{ flags: 262144 }];
   const SEED = ["Leech Seed","Grass",-1,"X",90,[["LeechSeedAttr",{ tagType: "SEEDED" }]],false,3,{ flags: 262144 }];
   const gourgeist = mon("Gourgeist", ["Ghost","Grass"], 100, 60, [["Shadow Ball","Ghost",80,"S"], WISP, SEED, TREAT]);
@@ -483,14 +440,13 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(crowded.value < 20 && crowded.alone >= 20, `crowded ${crowded.value}, on its own ${crowded.alone}`);
   assert.ok(crowded.notes.includes("3 status moves"), `the crowding is still named: ${crowded.notes}`);
 
-  // The verdict is a real one now, not "your call" — and blind of a roster the score clears the audit's dead-slot bar
-  // (50-audit's WEAK_STATUS, 20), so a slot the run wants kept is no longer offered up as dead weight.
+  // Blind of a roster the score still clears the audit's dead-slot bar (50-audit's WEAK_STATUS, 20).
   const advice = globalThis.__lm.learnAdvice(ludicolo, mv(SOAK), { roster: skarm });
   assert.notEqual(advice.kind, "status");
   assert.ok(advice.learn !== null, `a type-changing move gets a verdict: ${advice.reason}`);
   assert.ok(blind.value >= 20 && addBlind.value >= 20, `${blind.value} / ${addBlind.value} clear the dead-slot bar`);
   assert.ok(run(ludicolo, SOAK, { roster: skarm }).model.move.notes.includes("vs Skarmory at W40"), "the learn card model carries the roster");
-  // The card below is the HUD's own tick, which has no look-ahead in this fake scene: the blind value, and a verdict.
+  // The HUD's own tick has no look-ahead in this fake scene, so the card prints the blind value.
   show("Ludicolo ← Soak (Skarmory ahead)", run(ludicolo, SOAK, { roster: skarm }));
 }
 console.log("ok");
