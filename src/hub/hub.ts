@@ -1,12 +1,6 @@
 /**
- * The hub (extension-distribution.md §7): one detached process per machine owns the `127.0.0.1` listener. Every MCP
- * server and watch CLI is a client; every browser's extension is a browser connection. It routes a command from one
- * client to the one counted tab, counts tabs across every browser, holds the driver grant and fans out events.
- *
- * It knows nothing about the game and caches nothing: no queue, no retry, no result inspection. A command that cannot
- * be routed is refused at once with a hub code (§7.6), never held.
- *
- * `src/hub/main.ts` is the process around this; a test drives it on a port of its own with a fake extension client.
+ * The hub (extension-distribution.md §7). It knows nothing about the game and caches nothing: a command that cannot be
+ * routed is refused at once with a hub code (§7.6), never held.
  */
 import { createServer, type IncomingHttpHeaders, type Server } from "node:http";
 import type { Duplex } from "node:stream";
@@ -16,24 +10,16 @@ import { DEV_COMMAND_NAMES, type DevCommandName } from "../protocol/dev-commands
 import { PRODUCT, PROTOCOL } from "../protocol/version.ts";
 import type { ClientReply, ExtensionHello, FromClient, FromExtension, HubCode, TabInfo, ToClient, ToExtension } from "../protocol/wire.ts";
 
-/** No reply from the extension within this long and the client hears `timeout` instead (extension-distribution.md §7.6). */
 export const COMMAND_TIMEOUT_MS = 5_000;
-/** No clients and no counted tabs for this long and the hub exits (extension-distribution.md §7.2). */
 export const IDLE_EXIT_MS = 10 * 60_000;
 
-/** The ceiling on how often the idle check runs; the exit is never precise, and nothing depends on it being so. */
 const IDLE_TICK_MS = 15_000;
 
-/** An `Origin` from one of these is a browser; absent is a local client; anything else is 403 (extension-distribution.md §7.4). */
 const EXTENSION_SCHEMES = new Set(["chrome-extension:", "moz-extension:", "safari-web-extension:"]);
 
 export type ConnKind = "client" | "browser";
 
-/**
- * Who may open a socket (extension-distribution.md §7.4). `Host` must be the loopback address and the port we
- * actually bound, which is what defeats DNS rebinding; the extension's id is never checked, because no browser
- * keeps it stable (§2.1).
- */
+/** The extension's id goes unchecked because no browser keeps it stable (extension-distribution.md §7.4, §2.1). */
 export function authorize(headers: IncomingHttpHeaders, port: number): ConnKind | null {
   if (headers.host !== `127.0.0.1:${port}`) return null;
   const origin = headers.origin;
@@ -66,13 +52,13 @@ type Pending = { client: Client; id: number; browser: Browser; timer: NodeJS.Tim
 export type HubOptions = {
   /** `0` binds a free port, which the hub then treats as its own for the `Host` check. */
   port: number;
-  /** This plugin copy's version, for the handshake's skew comparison (extension-distribution.md §7.3). */
+  /** This plugin copy's version (extension-distribution.md §7.3). */
   version: string;
   idleMs?: number;
   timeoutMs?: number;
-  /** No clients and no counted tabs for `idleMs`: the process around the hub exits (extension-distribution.md §7.2). */
+  /** No clients and no counted tabs for `idleMs` (extension-distribution.md §7.2). */
   onIdle?: () => void;
-  /** A newer client retired this hub: every connection is closed and the process exits (extension-distribution.md §7.3). */
+  /** A newer client retired this hub; every connection is already closed (extension-distribution.md §7.3). */
   onRetire?: () => void;
 };
 
@@ -91,7 +77,7 @@ export class Hub {
   #conns = 0;
   #commands = 0;
   #driver: Client | null = null;
-  /** Whether subscribers have been told the tab count left one: one notice per transition, not one per event (extension-distribution.md §7.5). */
+  /** Subscribers have been told the tab count left one (extension-distribution.md §7.5). */
   #noticed = false;
   #idleSince: number;
   #idleTimer: NodeJS.Timeout | null = null;
@@ -113,7 +99,7 @@ export class Hub {
     return this.#port;
   }
 
-  /** Rejects with the listen error, `EADDRINUSE` included: another hub already owns the port (extension-distribution.md §7.2). */
+  /** Rejects with the listen error, `EADDRINUSE` included (extension-distribution.md §7.2). */
   listen(port: number): Promise<number> {
     return new Promise((resolve, reject) => {
       this.#server.once("error", reject);
@@ -136,8 +122,6 @@ export class Hub {
     this.#wss.close();
     this.#server.close();
   }
-
-  // ------------------------------------------------------------ connections
 
   #upgrade(headers: IncomingHttpHeaders, socket: Duplex, head: Buffer): void {
     const kind = authorize(headers, this.#port);
@@ -162,7 +146,6 @@ export class Hub {
     });
     ws.on("close", () => {
       this.#browsers.delete(b);
-      // Every command in flight to this browser's tab loses its tab with the socket.
       for (const [hubId, p] of [...this.#pending]) if (p.browser === b) this.#refusePending(hubId, "no-tab", "The tab's browser disconnected before it answered.");
       this.#afterTabs();
     });
@@ -183,8 +166,6 @@ export class Hub {
       if (this.#clients.size === 0) this.#idleSince = Date.now();
     });
   }
-
-  // ------------------------------------------------------------- from a browser
 
   #fromBrowser(b: Browser, f: FromExtension): void {
     switch (f.t) {
@@ -222,8 +203,6 @@ export class Hub {
     }
   }
 
-  // -------------------------------------------------------------- from a client
-
   #fromClient(c: Client, f: FromClient): void {
     switch (f.t) {
       case "hello":
@@ -231,7 +210,6 @@ export class Hub {
         send(c.ws, { t: "welcome", product: PRODUCT, protocol: PROTOCOL, version: this.#version });
         return;
       case "retire":
-        // A newer plugin copy is taking over: every connection goes, then the process around us (extension-distribution.md §7.3).
         this.close();
         this.#onRetire();
         return;
@@ -252,13 +230,12 @@ export class Hub {
         this.#route(c, f.id, f.name, f.args ?? {});
         return;
       case "dev-reload":
-        // The dev loop, not a command: fanned out to every dev build, needing no tab and answering nothing (extension-distribution.md §5.4).
+        // Not a command: it needs no tab and answers nothing (extension-distribution.md §5.4).
         for (const b of this.#browsers) if (b.hello?.flavour === "dev") send(b.ws, { t: "dev-reload" });
         return;
     }
   }
 
-  /** The grant, per client connection: taken while free, kept while held, refused to anyone else (extension-distribution.md §7.5). */
   #claim(c: Client): boolean {
     if (this.#driver === null) this.#driver = c;
     return this.#driver === c;
@@ -277,8 +254,6 @@ export class Hub {
     };
   }
 
-  // ------------------------------------------------------------------ routing
-
   #route(c: Client, id: number, name: string, args: Record<string, unknown>): void {
     const refuse = (code: HubCode, message: string, tabs?: TabInfo[]) => send(c.ws, { t: "reply", id, ok: false, code, message, ...(tabs ? { tabs } : {}) } satisfies ClientReply);
     const store = Object.hasOwn(STORE_COMMANDS, name) ? STORE_COMMANDS[name as keyof typeof STORE_COMMANDS] : null;
@@ -294,7 +269,6 @@ export class Hub {
     if (hello.protocol !== PROTOCOL && hello.protocol !== PROTOCOL - 1) {
       return refuse("protocol", `Coachemon in ${hello.target} speaks protocol ${hello.protocol}; this hub speaks ${PROTOCOL}.`);
     }
-    // A dev command only ever reaches a dev build, which pairs with a server from the same checkout (extension-distribution.md §10.6).
     if (dev && hello.flavour !== "dev") return refuse("unknown-command", `${name} needs a dev build of Coachemon.`);
     if (!hello.commands.includes(name)) return refuse("missing-command", `Coachemon in ${hello.target} does not have the ${name} command.`);
 
@@ -325,9 +299,6 @@ export class Hub {
     this.#pending.delete(hubId);
   }
 
-  // --------------------------------------------------------------------- tabs
-
-  /** Every tab every browser that said hello has reported, whatever its state: what `state` shows, so the ladder can read it. */
   #known(): { browser: Browser; hello: ExtensionHello; info: TabInfo }[] {
     return [...this.#browsers].flatMap(b =>
       b.hello === null ? [] : [...b.tabs.values()].map(t => ({ browser: b, hello: b.hello as ExtensionHello, info: { conn: b.conn, tab: t.tab, target: (b.hello as ExtensionHello).target, title: t.title, state: t.state } })),
@@ -338,12 +309,10 @@ export class Hub {
     return this.#known().map(t => t.info);
   }
 
-  /** A tab counts once its relay announced the page handlers ready and its browser has consent (extension-distribution.md §7.5, §8.4). */
   #counted(): { browser: Browser; info: TabInfo }[] {
     return this.#known().filter(t => t.info.state === "ready" && t.browser.consent);
   }
 
-  /** One `tabs` notice on leaving a single tab, one `resume` on returning to it (extension-distribution.md §7.5). */
   #afterTabs(): void {
     const counted = this.#counted();
     if (counted.length === 0) this.#idleSince = Date.now();
@@ -381,7 +350,7 @@ function send(ws: WebSocket, frame: ToClient | ToExtension): void {
   if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(frame));
 }
 
-/** A frame that is not JSON, or not an object with a `t`, is dropped: the hub answers nothing to nonsense. */
+/** The hub answers nothing to nonsense. */
 function parse<T>(raw: unknown): T | null {
   try {
     const v = JSON.parse(String(raw)) as { t?: unknown };

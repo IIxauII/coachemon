@@ -1,58 +1,42 @@
-/**
- * The hub's Node client (extension-distribution.md §7.2): what an MCP server or the watch CLI talks to the hub
- * through. It dials the loopback port, spawns the hub when nothing answers, proves the hub is ours by the product
- * marker, settles version skew, and then carries one request at a time per id.
- *
- * It uses `ws` rather than the global `WebSocket` so the upgrade carries no `Origin`, which is what tells the hub a
- * local client from a browser (§7.4). Nothing here knows about the game: `src/hub/link.ts` turns these frames into
- * commands.
- */
+/** The hub's Node client (extension-distribution.md §7.2). Nothing here knows about the game. */
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+// Not the global `WebSocket`: `ws` sends no `Origin`, which is how the hub tells a local client from a browser
+// (extension-distribution.md §7.4).
 import { WebSocket } from "ws";
 import { reach, type HubTrouble } from "./ladder.ts";
 import { PRODUCT } from "../protocol/version.ts";
 import type { Claimed, ClientReply, ClientRole, FromClient, HubState, ToClient, Welcome } from "../protocol/wire.ts";
 
-/** How long a spawned hub has to answer before we call it a hub that would not start (extension-distribution.md §7.2). */
 const SPAWN_BUDGET_MS = 3_000;
 const SPAWN_POLL_MS = 100;
-/** How long a connected port has to prove itself with a product-marked `welcome` (extension-distribution.md §7.2). */
 const WELCOME_MS = 1_000;
 
-/**
- * A hub being started (extension-distribution.md §7.2). The client dials the port while this runs, so the child comes
- * up and the retries happen together; `release` is what ends the stderr pipe and `unref()`s the child, once connected
- * or once it exits.
- */
 export type HubProcess = {
   pid: number | null;
-  /** What the child has said on stderr so far: rung 2's line, when it never comes up. */
+  /** What the child has said on stderr so far. */
   stderr: () => string;
-  /** The child's exit code, once it exits. A hub that stays up never settles this. */
+  /** A hub that stays up never settles this. */
   exited: Promise<number | null>;
   release: () => void;
 };
 
 export type ClientOptions = {
   port: number;
-  /** This plugin copy's version, for the skew comparison (extension-distribution.md §7.3). */
+  /** This plugin copy's version (extension-distribution.md §7.3). */
   version: string;
   role?: ClientRole;
   /** Fired for every event and notice once subscribed. */
   onEvent?: (frame: Extract<ToClient, { t: "event" } | { t: "notice" }>) => void;
-  /** Test seam: what starting a hub on the port does. The default spawns `src/hub/main.ts` detached (extension-distribution.md §7.2). */
+  /** Test seam. */
   spawnHub?: (port: number) => HubProcess;
-  /** Test seam: who holds the port when it answers but is not a hub (rung 1). */
+  /** Test seam. */
   portHolder?: (port: number) => { process: string | null; pid: number | null };
 };
 
-/**
- * What one command came to. `unreachable` is this client's own: the hub's codes all describe a hub that answered, and
- * "there was no hub to ask" is not one of them (extension-distribution.md §7.6).
- */
+/** `unreachable` is this client's own, never the hub's (extension-distribution.md §7.6). */
 export type CommandAnswer = ClientReply | { t: "reply"; id: number; ok: false; code: "unreachable"; message: string };
 
 export class HubClient {
@@ -63,7 +47,7 @@ export class HubClient {
   #pending = new Map<number, (r: CommandAnswer) => void>();
   #waiting: { match: (f: ToClient) => boolean; resolve: (f: ToClient) => void; timer: NodeJS.Timeout }[] = [];
   #subscribed = false;
-  /** A hub is retired at most once per client: the replacement is ours, and a second round would be a loop (extension-distribution.md §7.3). */
+  /** At most once per client: the replacement is ours, and a second round would be a loop. */
   #retired = false;
 
   constructor(o: ClientOptions) {
@@ -74,7 +58,6 @@ export class HubClient {
     return this.#ws !== null && this.#ws.readyState === WebSocket.OPEN;
   }
 
-  /** Connects if the socket is not up. Null when the hub is ours to use; otherwise what stands in the way. */
   ready(): Promise<HubTrouble | null> {
     if (this.connected) return Promise.resolve(null);
     this.#connecting ??= this.#connect().finally(() => {
@@ -89,7 +72,7 @@ export class HubClient {
     return this.#await<HubState>(f => f.t === "state");
   }
 
-  /** Takes the driver grant for this connection. `false` is `contended`: another session is driving (extension-distribution.md §7.5). */
+  /** The driver grant, for this connection only (extension-distribution.md §7.5). */
   async claim(): Promise<boolean> {
     if ((await this.ready()) !== null) return false;
     this.#send({ t: "claim" });
@@ -97,25 +80,20 @@ export class HubClient {
     return c !== null && c.ok;
   }
 
-  /** Fans the hub's `card` and `coach-error` events, and its `tabs` / `resume` notices, into `onEvent` (extension-distribution.md §7.5). */
+  /** Outlives a reconnect: the handshake subscribes again. */
   async subscribe(): Promise<void> {
     if ((await this.ready()) !== null) return;
     this.#subscribed = true;
     this.#send({ t: "subscribe" });
   }
 
-  /**
-   * The dev loop's reload (extension-distribution.md §5.4): every connected dev build restarts itself. Nothing
-   * answers it — the extensions it reaches are about to go — so this resolves once the frame is away, or says why
-   * there was no hub to send it to.
-   */
+  /** The dev loop's reload (extension-distribution.md §5.4). Nothing answers it, so this resolves once the frame is away. */
   async devReload(): Promise<HubTrouble | null> {
     const trouble = await this.ready();
     if (trouble === null) this.#send({ t: "dev-reload" });
     return trouble;
   }
 
-  /** One command, answered by the hub itself or by the tab it routed to. A hub we cannot reach refuses `no-tab`. */
   async send(name: string, args: Record<string, unknown>): Promise<CommandAnswer> {
     const id = ++this.#ids;
     const trouble = await this.ready();
@@ -131,8 +109,6 @@ export class HubClient {
     this.#ws = null;
   }
 
-  // ------------------------------------------------------------- connection
-
   async #connect(): Promise<HubTrouble | null> {
     const port = this.#o.port;
     let ws = await dial(port).catch((e: NodeJS.ErrnoException) => e);
@@ -140,7 +116,6 @@ export class HubClient {
       // Something answers but will not talk to us: a foreign process holds the port (extension-distribution.md §7.2, rung 1).
       if (ws.code !== "ECONNREFUSED") return this.#foreign();
       const child = (this.#o.spawnHub ?? spawnHub)(port);
-      // The dialling and the child's own start run together: the retries are what notice it came up (extension-distribution.md §7.2).
       let exit: number | null | undefined;
       void child.exited.then(code => {
         exit = code;
@@ -152,7 +127,6 @@ export class HubClient {
     return this.#handshake(ws);
   }
 
-  /** Retries the connection every 100 ms while a spawned hub comes up, and gives up early once it has died (extension-distribution.md §7.2). */
   async #waitForHub(port: number, died: () => boolean): Promise<WebSocket | Error> {
     const until = Date.now() + SPAWN_BUDGET_MS;
     let last: Error = new Error("the hub did not answer");
@@ -183,7 +157,7 @@ export class HubClient {
       this.close();
       return { kind: "skew-hub-newer" };
     }
-    // We are the newer copy: retire the old hub, unless someone is driving on it (extension-distribution.md §7.3).
+    // We are the newer copy (extension-distribution.md §7.3).
     this.#send({ t: "state" });
     const state = await this.#await<HubState>(f => f.t === "state");
     if (state?.driver === "other" || this.#retired) {
@@ -198,7 +172,6 @@ export class HubClient {
     return this.#connect();
   }
 
-  /** Waits for the retired hub to release the port, so the next connection is to the hub we start ourselves (extension-distribution.md §7.3). */
   async #awaitPortFree(): Promise<void> {
     const until = Date.now() + SPAWN_BUDGET_MS;
     while (Date.now() < until) {
@@ -262,7 +235,6 @@ export class HubClient {
     if (this.#ws?.readyState === WebSocket.OPEN) this.#ws.send(JSON.stringify(frame));
   }
 
-  /** The next frame matching `match`, or null when none arrives in time: a silent hub is never waited on forever. */
   #await<T extends ToClient>(match: (f: ToClient) => boolean, ms = WELCOME_MS): Promise<T | null> {
     return new Promise<T | null>(resolve => {
       const w = {
@@ -278,7 +250,7 @@ export class HubClient {
   }
 }
 
-/** One dial. Rejects with the socket error (`ECONNREFUSED` when nothing listens) or the HTTP status when it is refused. */
+/** Rejects with the socket error, `ECONNREFUSED` when nothing listens, or with the HTTP status when refused. */
 function dial(port: number): Promise<WebSocket> {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(`ws://127.0.0.1:${port}/`, { perMessageDeflate: false });
@@ -299,7 +271,6 @@ function dial(port: number): Promise<WebSocket> {
   });
 }
 
-/** Spawns the hub from this same plugin copy, detached, and reads its stderr only while it might still fail (extension-distribution.md §7.2). */
 export function spawnHub(port: number): HubProcess {
   const entry = path.join(path.dirname(fileURLToPath(import.meta.url)), "main.ts");
   let stderr = "";
@@ -318,7 +289,7 @@ export function spawnHub(port: number): HubProcess {
     pid: child.pid ?? null,
     stderr: () => stderr,
     exited,
-    // Nothing is written to disk and nothing is waited on: the hub outlives whoever started it.
+    // The hub outlives whoever started it.
     release: () => {
       child.stderr?.destroy();
       child.unref();
@@ -326,7 +297,7 @@ export function spawnHub(port: number): HubProcess {
   };
 }
 
-/** Who holds the port, for rung 1. `lsof` is not everywhere, and the line works without it (extension-distribution.md §12.3). */
+/** `lsof` is not everywhere, and rung 1's line works without it (extension-distribution.md §12.3). */
 function portHolder(port: number): { process: string | null; pid: number | null } {
   try {
     const out = execFileSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
@@ -338,12 +309,10 @@ function portHolder(port: number): { process: string | null; pid: number | null 
   }
 }
 
-/** What a command says when there is no hub to send it to: the ladder's own line, so both sides say one thing (extension-distribution.md §12.3). */
 function troubleMessage(t: HubTrouble): string {
   return reach({ trouble: t, extensions: [], tabs: [] })?.line ?? "The Coachemon hub is not reachable.";
 }
 
-/** Plugin versions, compared as the three numbers semantic-release writes; anything unparsable sorts as 0. */
 export function compare(a: string, b: string): number {
   const parts = (v: string) => v.split(/[.+-]/).slice(0, 3).map(n => (Number.isInteger(Number(n)) ? Number(n) : 0));
   const [x, y] = [parts(a), parts(b)];

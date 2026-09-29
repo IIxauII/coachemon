@@ -1,11 +1,5 @@
-/**
- * Label matching for `select_option` (v1-tool-surface.md §6.3): normalise
- * both sides, then match exactly. No fuzzy matching — on a screen where
- * `Apply` and `Cancel` are one keystroke apart and one of them can end a
- * run, a confident wrong match is the worst available failure.
- */
+/** Label matching for `select_option`: exact after normalising, never fuzzy (v1-tool-surface.md §6.3). */
 
-/** Strip BBCode (`[shadow]Apply[/shadow]` is real, #6), trim, collapse whitespace, case-fold. */
 export function normalizeLabel(label: string | null | undefined): string {
   return (label ?? "")
     .replace(/\[\/?[^\]]*\]/g, "")
@@ -18,9 +12,7 @@ export type Match<T> = { kind: "one"; option: T } | { kind: "none" } | { kind: "
 
 export type Labelled = { label: string | null; name?: string | null };
 
-/**
- * Whether `label` names `option`: its label, or its `name` where the label decorates one (`Great Ball ×9`, #46).
- */
+/** (CONTEXT.md `Option`) */
 export function optionAnswersTo(option: Labelled, label: string): boolean {
   const wanted = normalizeLabel(label);
   return [option.label, option.name].some(l => typeof l === "string" && normalizeLabel(l) === wanted);

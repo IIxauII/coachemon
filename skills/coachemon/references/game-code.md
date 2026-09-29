@@ -42,6 +42,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Team audit | §17 |
 | Starter select | §23 |
 | DNA Splicers and fusion | §24 |
+| Menu cursors | §13 the encounter's options, §25 the command grid and the target cursor |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -1328,7 +1329,11 @@ offset with `updateSeedOffset()` (`src/data/mystery-encounters/mystery-encounter
 `MysteryEncounterUiHandler.displayEncounterOptions` (`src/ui/handlers/mystery-encounter-ui-handler.ts:350`) calls
 `option.meetsRequirements()` once per option and keeps the answers in `optionsMeetsReqs` (`:400`); the labels are text
 objects in `optionsContainer`, "view party" last. `processInput` (`:126`) refuses an unmet option only in optionMode
-`DISABLED_OR_DEFAULT` (1) or `DISABLED_OR_SPECIAL` (3) (`:152`).
+`DISABLED_OR_DEFAULT` (1) or `DISABLED_OR_SPECIAL` (3) (`:152`). Only four options form FIGHT's 2×2 grid
+(`handleFourOptionMoveInput`, `:258`; dispatch `:168-180`, FIGHT's own at `src/ui/handlers/fight-ui-handler.ts:179-198`).
+Three put DOWN from 0 or 1 on 2 (`:221`), and two, or any other count, are one row (`:192-215`). "View party"
+(`viewPartyIndex`, the last index, `:327`) sits above the rows at the top right (`:469-477`): UP from the top row, and
+RIGHT from 1 on the four-option grid, reach it, and DOWN or LEFT leave it for 1 (`:262-289`). Nothing wraps.
 
 **Requirements are not reads.** `MysteryEncounterOption.meetsRequirements`
 (`src/data/mystery-encounters/mystery-encounter-option.ts:90`) writes `primaryPokemon` / `secondaryPokemon`. Without
@@ -2464,3 +2469,19 @@ other half's, one at a time (`:2771-2793`). Shiny if either half, luck summed (`
 
 **Unsplice** (`party-ui-handler.ts:353-395`, `pokemon.ts:3079-3091`): free, in SPLICE mode or on the party check screen
 during the reward phase; the second half is gone for good, its moves and items stay with the base.
+
+## 25. Menu cursors: the command grid and the target cursor
+
+Read from the pinned source.
+
+**The command menu.** `Command` is FIGHT 0, BALL 1, POKEMON 2, RUN 3, TERA 4 (`src/enums/command.ts:1`), laid out 2×2
+(`src/ui/handlers/command-ui-handler.ts:56-65`). UP/DOWN move ±2 and LEFT/RIGHT ±1, never wrapping (`:161-186`). TERA
+sits off the grid: LEFT from FIGHT or POKEMON reaches it when `canTera()` (`:174-176`), RIGHT returns to FIGHT
+(`:182-184`), and `show` moves a cursor left on POKEMON back to FIGHT (`:102-103`).
+
+**The target cursor.** `TargetSelectUiHandler.processInput` (`src/ui/handlers/target-select-ui-handler.ts:90`) moves a
+`BattlerIndex` — PLAYER 0, PLAYER_2 1, ENEMY 2, ENEMY_2 3 (`src/enums/battler-index.ts:5`) — and only ever lands on a
+member of `targets` (`:49`). UP goes to the first entry of `targets` at or above `ENEMY`, DOWN to the first below it
+(`:110-119`), and LEFT/RIGHT step ±1 within 0↔1 or 2↔3 (`:120-129`). Nothing wraps. When `getMoveTargets` says
+`multiple` (`src/data/moves/move-utils.ts:85,92,108,113`) — side- and field-targeting moves as well as damaging spread
+moves — no direction moves it and ACTION sends every target (`:96`, `:106-107`). CANCEL answers `[]` (`:97`).

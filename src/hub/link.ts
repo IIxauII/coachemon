@@ -1,11 +1,6 @@
 /**
- * The hub link (extension-distribution.md §12.1): the same `GameLink` the CDP link implements, carried as hub frames
- * instead of `Runtime.evaluate`. One command per method, one frame each; every refusal the hub or the relay answers
- * becomes a `Fault`, so `LinkGame` above it cannot tell the transports apart.
- *
- * What it adds over the CDP link is what the hub knows and CDP never did: whether a tab is reachable at all and why not
- * (§12.3), the driver grant (§7.5), and the pump — a server holding the grant sets `pump: true` on every probe, which
- * is what keeps a hidden tab's game loop moving for its settles (§10.3).
+ * The hub's `GameLink` (extension-distribution.md §12.1). A command the hub or the relay refuses comes back as a
+ * `Fault`, never a throw (`screenshot` aside), so `LinkGame` cannot tell the transports apart.
  */
 import { HubClient, type ClientOptions } from "./client.ts";
 import { reach } from "./ladder.ts";
@@ -19,10 +14,9 @@ import { KEY_BUTTONS, type Args, type CommandName } from "../protocol/commands.t
 import { DEV_PORT, STORE_PORT } from "../protocol/version.ts";
 import type { ExtensionInfo, TabInfo } from "../protocol/wire.ts";
 
-/** What `screenshot` says against a store build, which has no dev table (extension-distribution.md §12.2). */
 const NO_SCREENSHOT = "screenshot needs a dev build of Coachemon. Use read_menu or get_state to see the screen.";
 
-/** Each raw-keyboard button's name in the `key` command (extension-distribution.md §10.4); the rest have no keyboard equivalent. */
+/** The rest have no keyboard equivalent (extension-distribution.md §10.4). */
 const KEY_NAMES: Partial<Record<Button, (typeof KEY_BUTTONS)[number]>> = {
   [Button.UP]: "UP",
   [Button.DOWN]: "DOWN",
@@ -34,21 +28,15 @@ const KEY_NAMES: Partial<Record<Button, (typeof KEY_BUTTONS)[number]>> = {
   [Button.MENU]: "MENU",
 };
 
-/** 47147, or the dev hub's 47148 from a checkout with `COACHEMON_DEV=1`, so a dev build never double-counts a tab (extension-distribution.md §7.2). */
 export const hubPort = (env: NodeJS.ProcessEnv = process.env): number => (env.COACHEMON_DEV === "1" ? DEV_PORT : STORE_PORT);
 
-/**
- * Whether this process talks to the hub at all. The transport is CDP until the flip deletes the choice, and only the
- * dev opts in (extension-distribution.md §12.1, §13.1). One answer, so the server and the scripts around it can
- * never disagree about it.
- */
+/** The one reading of the opt-in (extension-distribution.md §12.1), so the server and its scripts never disagree. */
 export const usesHub = (env: NodeJS.ProcessEnv = process.env): boolean => env.COACHEMON_TRANSPORT === "hub";
 
 export class HubLink implements GameLink, Tab {
   /** The hub's settles pump, so nothing here refuses a frozen loop (extension-distribution.md §10.3). */
   readonly pumps = true;
   readonly #client: HubClient;
-  /** What the connected extension registered; every tool reads it before deciding it can run (extension-distribution.md §8.5). */
   #commands = new Set<CommandName>();
   #driving = false;
   #errorAt: number | null = null;
@@ -68,18 +56,16 @@ export class HubLink implements GameLink, Tab {
     this.#client.close();
   }
 
-  // ------------------------------------------------------------- commands
-
   async #run<N extends CommandName>(name: N, args: Args<N>): Promise<Result<N> | Fault> {
     const r = await this.#client.send(name, args as Record<string, unknown>);
     if (r.ok) return r.result as Result<N>;
-    // The grant went with a dropped socket, or to someone else: stop pumping rather than refuse every probe (extension-distribution.md §7.5).
+    // The grant is gone: stop pumping, or every probe after it refuses `not-driver` (extension-distribution.md §7.5).
     if (r.code === "not-driver" || r.code === "contended") this.#driving = false;
     return { fault: r.code, message: r.message };
   }
 
   async probe(args: ProbeArgs): Promise<ProbeResult | Fault> {
-    // Only the driver may pump, and it pumps every poll, reads included (extension-distribution.md §10.3).
+    // The driver pumps every poll, reads included (extension-distribution.md §10.3).
     const r = await this.#run("probe", this.#driving ? { ...args, pump: true } : args);
     if (!("fault" in r)) this.#noteError(r);
     return r;
@@ -98,12 +84,9 @@ export class HubLink implements GameLink, Tab {
   modal(args: Args<"modal">) { return this.#run("modal", args); }
 
   /**
-   * The dev table's `screenshot`; a store build never registered it, and says so rather than failing obscurely
-   * (extension-distribution.md §12.2).
-   *
-   * A capture is larger than the 1 MB frame cap, so the extension holds it and answers one part per call (§10.6). The
-   * first call takes the capture and says how many parts it has; the rest name that capture, so a second `screenshot`
-   * in flight can never splice two images together.
+   * A store build never registered it (extension-distribution.md §12.2). A capture is over the frame cap, so it comes
+   * one part per call (§10.6), and every part after the first names its capture: a second `screenshot` in flight would
+   * otherwise splice two images together.
    */
   async screenshot(): Promise<string> {
     const first = await this.#capture(0, null);
@@ -122,9 +105,6 @@ export class HubLink implements GameLink, Tab {
     return { id: v.id, parts: v.parts, png: v.png };
   }
 
-  // ------------------------------------------------------------------ tab
-
-  /** What stands between this call and the game, and what `status` says about the transport (extension-distribution.md §12.3). */
   async presence(needs?: readonly CommandName[]): Promise<Presence> {
     const trouble = await this.#client.ready();
     const state = trouble === null ? await this.#client.state() : null;
@@ -142,7 +122,7 @@ export class HubLink implements GameLink, Tab {
     };
   }
 
-  /** The grant, taken when an acting call starts (extension-distribution.md §7.5). It is also what turns this link's probes into pumping probes. */
+  /** Also what turns this link's probes into pumping ones (extension-distribution.md §7.5). */
   async claim(): Promise<Claim> {
     this.#driving = await this.#client.claim();
     return this.#driving
@@ -160,7 +140,6 @@ export class HubLink implements GameLink, Tab {
     return !("fault" in r) && r.ok === true;
   }
 
-  /** The page's own recent errors and warnings, asked for only when a result is not `ok` (extension-distribution.md §12.4). */
   async tail(): Promise<ConsoleLine[]> {
     const r = await this.probe({ tail: true });
     return "fault" in r ? [] : (r.console ?? []);
@@ -170,7 +149,6 @@ export class HubLink implements GameLink, Tab {
     this.#rejection = cb;
   }
 
-  /** Every probe carries the page's latest uncaught error; a newer one is the hang watch's corroboration (extension-distribution.md §12.4). */
   #noteError(p: ProbeResult): void {
     if (typeof p.errorAt !== "number" || p.errorAt === this.#errorAt) return;
     this.#errorAt = p.errorAt;
@@ -178,10 +156,7 @@ export class HubLink implements GameLink, Tab {
   }
 }
 
-/**
- * The commands of the extension a command would actually be routed to: the one holding the single counted tab
- * (extension-distribution.md §7.5). With no such tab there is nothing to route to, and nothing to promise.
- */
+/** (extension-distribution.md §7.5) */
 function routable(extensions: readonly ExtensionInfo[], tabs: readonly TabInfo[]): Set<CommandName> {
   const ready = tabs.filter(t => t.state === "ready");
   if (ready.length !== 1) return new Set();
