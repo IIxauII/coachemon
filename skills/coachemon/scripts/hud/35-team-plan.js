@@ -441,6 +441,8 @@ const tpModel = (T, double, party, foes, facing) => {
     if (win < 0 || kills[fi] > kills[win] || (kills[fi] === kills[win] && hurt(fi) < hurt(win))) win = fi;
   });
 
+  // Per foe, each of ours that answers it one-on-one from a free switch: `per` is one hit's share of the foe's HP,
+  // `beats` wins outright, `acts` lands something before falling.
   const matrix = foes.map((f, fi) => tpAlive(start.oh)
     .map(mi => {
       const r = tpFight(T, start, mi, fi, "free");
@@ -510,7 +512,7 @@ export const teamPlanner = turn => {
   const party = turn.facts.party.filter(p => p && p.hp > 0);
   const foes = turn.facts.foes.filter(f => f && f.hp > 0);
   if (!trainer || !party.length || !foes.length) return null;
-  // Every game read happens in `tpTables`: the searches read only the tables.
+  // The searches read only the tables `tpTables` builds, never the live game.
   return tpModel(tpTables(turn, party, foes, double), double, party, foes, tpFacing(turn, foes));
 };
 

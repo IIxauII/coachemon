@@ -15,7 +15,7 @@ const attrsOf = (mv, name) => (mv.attrs || []).filter(a => a.constructor?.name =
 export const isDamaging = mv => !!mv && mv.category !== MoveCategory.STATUS && (mv.power > 0 || mv.power === -1);
 const unimplemented = mv => / \(N\)$/.test(mv.name ?? "");
 
-// `getBaseDamage` inverted, `(2L/5+2)·P·A/D/50+2` with even Atk and Def and no STAB (game-code.md §1).
+// The base power that deals about as much at this level, with even Atk and Def and no STAB (game-code.md §1).
 const fixedPower = (dmg, level) => Math.round(Math.max(0, dmg) * 50 / (2 * (level || 50) / 5 + 2));
 // `[attr, power(pk, mv, attr, party), note, fixed?]` for a power −1 move; `fixed` damage ignores STAB and the type
 // chart. 08-party's `FIXED_DAMAGE_ATTRS` is the `fixed` rows: change both.
@@ -265,9 +265,9 @@ const typeGain = (pk, mv, change, name, foe, ours) => {
   const after = bestHit(set ? [name] : [...types, name], foe, ours);
   const open = after > before ? Math.min(1, Math.log2(after / before) / TYPE_STEPS) : 0;
   if (!set) return open;
-  // `attackTypes` holds one entry per damaging move, so three Steel moves beside one Ground lose three quarters of
-  // their STAB, not half (#266). `foeData` always fills it in, so an empty one is an answer — no damaging move, no
-  // STAB to lose — rather than a silence.
+  // `attackTypes` holds one entry per damaging move, so a foe with three Steel moves beside one Ground loses the
+  // STAB on three quarters of its attacks, not half (#266). `foeData` always fills it in, so an empty one is an
+  // answer — no damaging move, no STAB to lose — rather than a silence.
   const attacks = foe.attackTypes ?? [];
   const stab = attacks.length ? attacks.filter(t => types.includes(t) && t !== name).length / attacks.length : 0;
   return Math.min(1, open + TYPE_STAB * stab);
@@ -358,7 +358,7 @@ const statusScore = (pk, mv, others, double, ctx) => {
   return { value: Math.round(value * crowd), alone, notes: [...why, ...notes], status: true, why: why.join(" · "), se: [], neutral: [], teamSe: [], drawbacks: [] };
 };
 
-// The type a move lands as (game-code.md §4).
+// game-code.md §4.
 const ATE = { Refrigerate: "Ice", Pixilate: "Fairy", Aerilate: "Flying", Galvanize: "Electric", Dragonize: "Dragon" };
 // Tera Blast is absent on purpose: it is Normal until the mon terastallizes (game-code.md §4).
 const VARIABLE_TYPE = ["FormChangeItemTypeAttr", "TechnoBlastTypeAttr", "AuraWheelTypeAttr", "RagingBullTypeAttr",
@@ -406,7 +406,7 @@ const moveScore = (pk, mv, others, double, ctx = {}) => {
   const mh = multiHit(tr, acc);
   if (mh.hits > 1) notes.push(`${mh.hits} hits`);
   const fit = fixed ? 1 : (mv.category === MoveCategory.PHYSICAL ? atk : spa) / Math.max(atk, spa);
-  // A type the card can't pin down claims no STAB and no coverage.
+  // A type the card can't pin down is scored like fixed damage: no STAB, no coverage.
   const blind = fixed || !!et.variable;
   const stab = !blind && typesOf(pk).includes(type) ? (ability.includes("Adaptability") ? 2 : 1.5) : 1;
   let value = power * mh.factor * stab * fit;
