@@ -147,7 +147,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(healRevives(hard), false, "…it just doesn't revive");
 }
 
-// ---- Trainer odds over a biome's ten waves (game-code.md §10)
+// ---- Trainer odds roll with a two-wave look-back and stop beside a gym or fixed battle (game-code.md §10)
 {
   const s = scene("classic"), biome = { trainerChance: 8 };
   const odds = w => trainerOdds(s, w, biome);

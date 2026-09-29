@@ -285,10 +285,11 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   console.log(`== far fight ${JSON.stringify({ wave: far.next.wave, kind: far.next.kind, foes: far.next.foes, readiness: far.readiness })}`);
 }
 
-// ---- Double-battle odds ahead: boss waves, doubling abilities and the unseeded grunt waves (game-code.md §16)
+// ---- Double-battle odds ahead follow the game's chance, its abilities and the grunts' unseeded roll (game-code.md §16)
 {
   const { scene, ah } = mount({ wave: 40, party: team() });
   assert.equal(ah.doubleOdds(scene, 41, 4), 1 / 8, "the flat chance on an ordinary wave");
+  // 1/32 on an X0 (game-code.md §16).
   assert.equal(ah.doubleOdds(scene, 47, 4), (1 / 8 + 1 / 8 + 1 / 8 + 1 / 32) / 4);
   // `DoubleBattleChanceAbAttr` is four abilities, not two (game-code.md §16).
   const durant = pk("Durant", 18, ["Bug", "Steel"], ["Tackle"]);
@@ -299,7 +300,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   dondozo.getAbility = () => ({ name: "Commander" });
   const { scene: sc, ah: ahc } = mount({ wave: 40, party: [dondozo, ...team()] });
   assert.equal(ahc.doubleOdds(sc, 41, 4), 1 / 2, "and so does Commander");
-  // A fixed battle counts as single, except a grunt wave's unseeded `randInt(3)` (game-code.md §16).
+  // A grunt wave's double is an unseeded `randInt(3)` (game-code.md §16).
   console.log(`== doubles ahead  41–44 ${ah.doubleOdds(scene, 41, 4)}  grunt 35 ${ah.doubleOdds(scene, 35, 1)}`
     + `  admin 66 ${ah.doubleOdds(scene, 66, 1)}  rival 25 ${ah.doubleOdds(scene, 25, 1)}`);
   assert.equal(ah.doubleOdds(scene, 35, 1), 1 / 3, "an evil-team grunt is a double one time in three");

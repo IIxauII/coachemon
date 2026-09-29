@@ -150,7 +150,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.ok(lowTa.pKo > 0 && lowTa.pKo < 0.729, `Triple Axel pKo ${lowTa.pKo}`);
 }
 
-// ---- 2–5 hits, Skill Link and Parental Bond (game-code.md §2)
+// ---- A 2–5-hit move rolls its count, Skill Link maxes it and Parental Bond adds a quarter strike (game-code.md §2)
 {
   const bullet = move(2, "Bullet Seed", 11, 25, { attrs: [new MultiHitAttr(1)] });
   const def = mon("target");
@@ -188,7 +188,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.equal(hitOn(stateOf(mon("plain", { hp: 200 })), 250).hp, 0);
 }
 
-// ---- Sturdy at full HP, Focus Band and Mold Breaker
+// ---- Sturdy saves only at full HP and never past Mold Breaker, and Focus Band saves one time in ten
 {
   const atk = mon("a");
   const nuke = pmOf(move(6, "Nuke", 0, 300));
@@ -308,7 +308,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   JSON.stringify(mine);
 }
 
-// ---- Present, Psywave, fixed damage, OHKO and Disguise; a 10-hit move into a big boss stays cheap
+// ---- Present, Psywave, fixed damage, OHKO and Disguise are read off the game's own branches, and 10 hits stay cheap
 {
   class PresentPowerAttr {}
   class RandomLevelDamageAttr {}
@@ -411,7 +411,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(p, { s: scene, hp: 0 }), 0);
 }
 
-// ---- Turn-end chip and heals, in the game's order (game-code.md §21)
+// ---- Turn-end chip and heals land in the game's order and amounts (game-code.md §21)
 {
   const at = (weatherType = 0, terrainType = 0, extra = {}) => ({ ...scene, arena: { tags: [], weather: weatherType ? { weatherType } : null, terrain: terrainType ? { terrainType } : null }, ...extra });
   const [SUN, RAIN, SAND, HAIL] = [1, 2, 3, 4];
@@ -515,7 +515,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(moveOutcome(scene, atk, enemies[0], pmOf(bigHit), { crit: false }).revive, 0);
 }
 
-// ---- Primordial weather and Psychic Terrain stop a move before the damage step (game-code.md §5)
+// ---- Primordial weather and Psychic Terrain stop a move before the damage step (game-code.md §14)
 {
   const atk = mon("a", { moves: [bigHit] }), def = mon("target");
   for (const [check, why] of [["isMoveWeatherCancelled", "weather"], ["isMoveTerrainCancelled", "terrain"]]) {
@@ -604,7 +604,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(drainOf(mon("venusaur"), mon("target"), { ...sap, category: 1, power: 10 }).drain, 0, "a heal by a stat isn't a drain");
 }
 
-// ---- KO pacing through HP, bars, heals, chip and saves
+// ---- The KO curve plays each use through the target's HP, bars, heals, chip and saves
 {
   const round = by => by.map(x => Math.round(x * 1000) / 1000);
   const sure = (d, n) => [{ d, p: 1, ...(n ? { n } : {}) }];
@@ -635,7 +635,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     assert.deepEqual(by.slice(0, want.length), want, `${what}: ${by}`);
     assert.equal(by[want.length - 1], 1, `${what}: down by then`);
   }
-  // Three hits of 50 take the 3-bar boss 250 → 100, each breaking a bar exactly; one hit of 150 stops at 200.
+  // Three hits of 50 take the 3-bar boss 250 → 100; one hit of 150 stops at the bar, on 200.
   const b = boss3(250);
   const three = [50, 50, 50].reduce(hitOn, stateOf(b));
   assert.deepEqual([three.hp, three.bar], [100, 0]);
@@ -712,8 +712,8 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
 }
 
 // ---- A fixed-damage hit goes through a full-HP Sturdy and a rolled hit doesn't (game-code.md §1)
-// Upstream #7620 flips this, and the version constant flips with it.
 {
+  // Upstream PR 7620 flips this, and the version constant flips with it.
   class FixedDamageAttr {}
   const atk = mon("tosser");
   const pineco = mon("pineco", { hp: 40, abilities: ["PreDefendFullHpEndureAbAttr"] });

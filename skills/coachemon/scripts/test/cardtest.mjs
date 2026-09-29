@@ -28,7 +28,7 @@ const battle = (over = {}) => ({
 });
 const verdictOf = m => cardSummary(m).verdict;
 
-// ---- The verdict, most specific first
+// ---- The verdict takes the most specific call that applies
 {
   assert.equal(verdictOf(battle()), "easy");
   assert.equal(verdictOf(battle({ field: { ...battle().field, slots: [slot({ ko: 2 })] } })), "easy");
@@ -47,7 +47,7 @@ const verdictOf = m => cardSummary(m).verdict;
   console.log("verdicts ok");
 }
 
-// ---- The battle summary: the ⚔ line, the KO-level danger and the plan
+// ---- The battle summary carries the ⚔ line, the KO-level danger and the plan
 {
   const m = battle({
     trainer: true,
@@ -58,7 +58,6 @@ const verdictOf = m => cardSummary(m).verdict;
       reserve: [{ name: "Pidgey", for: { name: "Butterfree" } }], win: { name: "Charizard", kills: 2, of: 3 } },
   });
   const s = cardSummary(m);
-  // `trainer` outranks `danger`.
   assert.equal(s.verdict, "trainer");
   assert.equal(s.field, "Charizard Ember → Rattata · 2 hits ; Venusaur Vine Whip → both · 3 hits");
   assert.deepEqual(s.danger, [
@@ -103,7 +102,7 @@ const verdictOf = m => cardSummary(m).verdict;
   }
 }
 
-// ---- The card event: the kind the stream uses, the key it deduplicates on, and the leading call (extension-distribution.md §11.1)
+// ---- A card event carries the stream's kind, the key it deduplicates on and the leading call (extension-distribution.md §11.1)
 {
   const { cardEvent } = globalThis.__hud["60-card"];
   assert.deepEqual(cardEvent(battle()), { kind: "battle", key: "12", wave: 12, verdict: "easy" });

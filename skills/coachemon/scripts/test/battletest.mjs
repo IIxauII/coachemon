@@ -108,7 +108,7 @@ const scenarios = {
     mon("Scrafty", 64, ["Dark","Fighting"], "Shed Skin", [163,152,172,63,165,80], [["Brick Break","Fighting",75,"P"]], true)],
     foes: [mon("Granbull", 30, ["Fairy"], "Intimidate", [120,90,75,40,60,45], [["Tackle","Normal",40,"P"]], true)] },
   // Both slots of a doubles trainer name the same bench index, so slot 1 sends back the mon slot 0 withdrew — a
-  // return, with its own wording (#285).
+  // return, with its own wording (#285). Arcanine's +6 Atk is what shows the return's stages in the golden.
   doubleReturn: { double: true, trainer: { isBoss: false }, bench: [2], summonIndex: 2, party: [
     mon("Blastoise", 80, ["Water"], "Torrent", [250,130,170,140,180,130], [["Wave Crash","Water",120,"P"],["Flash Cannon","Steel",80,"S"]], true),
     mon("Venusaur", 80, ["Grass","Poison"], "Overgrow", [260,140,140,160,160,120], [["Power Whip","Grass",120,"P"],["Sludge Bomb","Poison",90,"S"]], true)],

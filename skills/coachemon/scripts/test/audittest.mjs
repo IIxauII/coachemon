@@ -1,4 +1,3 @@
-// Both parties are the real runs #89 came from, as they stood before Whitney and before Guzma.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 

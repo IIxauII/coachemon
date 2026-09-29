@@ -180,7 +180,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   const late = at(60);
   assert.ok(w(late, 40) > 0 && w(late, 40) < 0.005, `ultra rare is a trace: ${w(late, 40)}`);
   // Ekans shares 356/512 with two others; Mudkip gets 26/512 plus the empty super/ultra rare tiers that drop to it.
-  const day1 = at(0); // waves 1–10 are all day: no dusk Croagunk in the common tier
+  const day1 = at(0); // waves 1–10 are all day: no dusk or night Croagunk in the common tier
   near(w(day1, 3, "wild") / w(day1, 8, "wild"), (356 / 3) / 32, "tier odds split evenly within a tier, empty tiers drop down");
   near(w(early, 11, "boss"), 0.1, "the lone boss species is the boss wave's tenth");
   assert.equal(early.find(e => e.id === 11).wild, 0);
@@ -199,7 +199,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(!withArbok.reasons.some(r => r.catch && /Arbok/.test(r.text)), JSON.stringify(withArbok.reasons));
 }
 
-// ---- Trainer shares over a biome's ten waves, with their look-back and the block by a gym (game-code.md §10)
+// ---- Trainer shares take the look-back and the gym block, and the gym leader is the big fight (game-code.md §10)
 {
   const { scene } = mount({ wave: 30 });
   const share = (wave, part) => globalThis.__bm.spawnsFor(scene, 7, wave)[part];
