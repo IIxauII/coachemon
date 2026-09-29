@@ -1,33 +1,5 @@
-// Starter picker: on the starter grid at the start of a run, which starters this account should take within the point
-// budget. It proposes whole teams from what is unlocked, each pick with a short reason.
-//
-// ---- How the game decides (read from the pinned source, v1.12.0.11; game-code.md §23)
-// - The grid is StarterSelectUiHandler, UiMode.STARTER_SELECT. Its pop-ups (add, moves, nature, start) change the UI
-//   mode, so the handler is read from `ui.handlers[STARTER_SELECT]`; `starterSelectCallback` is set only while a team
-//   is being chosen for a run (SelectStarterPhase). Daily runs never show the grid.
-// - `validStarterContainers`: every starter the active challenges allow, the species itself or one of its evolutions
-//   (the soft check). Uncaught species are in it too: `dexData[id].caughtAttr` tells them apart.
-// - Budget: `getValueLimit()`, 10 (15 in Endless) minus Lower Starter Points. A species costs
-//   `gameData.getSpeciesStarterValue(id)`: its base cost less its candy reductions, back to base under Fresh Start.
-//   At most 6 starters, no duplicates.
-// - The team being built: `starterSpecies` with a parallel `starters` (`abilityIndex`, `passive` when enabled, …).
-// - A team can start once one member passes the strict challenge check (the species itself, not an evolution):
-//   `isPartyValid`, which loops each active challenge's `applyStarterChoice(species, holder, props)`.
-// - `getSpeciesData(id)` hands back copies of the dex and starter entries with the challenges applied: Fresh Start
-//   clears egg moves, passives, hidden abilities and cost reductions, caps IVs at 15, drops shinies.
-// - The run starts at level 5 (`getStartingLevel`, 20 only in Daily). Each starter adds luck by the best shiny tier ever
-//   caught for it (`getDexAttrLuck`: variant 3 → 3, variant 2 → 2, shiny → 1), none under Fresh Start. Pokérus
-//   starters (`pokerusSpecies`) earn 1.5× EXP.
-// Every call here is a pure read (no RNG, no phase queue), so no `sandbox`.
-//
-// ---- Scoring (first cuts, all of them)
-// A starter's value: its line's strongest final form (exact from the species registry the chunk scan finds, else the
-// catch card's estimate), what it has at level 5, how soon it evolves, and the account's unlocks for it: passive,
-// hidden ability, egg moves (the fourth is the rare one), IVs, Pokérus and luck.
-// A team's score: its members' values, sorted, at falling weights (a sixth mon shares the EXP and the turns); plus the
-// defending types its final forms' STAB hits super-effectively; minus attacking types two members are weak to that
-// nobody resists (not under a single-type challenge, where everyone shares them); minus a team with no carry: nobody
-// built to attack (by the moveset prior's roles, else base stats) with a final form of 480+.
+// Which starters this account should take within the point budget: whole teams from what it has unlocked, each pick
+// with its reasons. Every game call here is a pure read, so none runs in `sandbox` (game-code.md §23).
 import { TYPES, vs } from "./01-core.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
@@ -45,13 +17,12 @@ const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch 
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const big = x => { try { return BigInt(x ?? 0); } catch { return 0n; } };
 
-// The grid's handler while a team is being chosen for a run, else null.
+// The grid's handler while a team is being chosen for a run (game-code.md §23).
 export const starterScreen = s => {
   const h = s?.ui?.handlers?.[UiMode.STARTER_SELECT];
   return h?.starterSelectCallback && s.phaseManager?.getCurrentPhase?.()?.phaseName === "SelectStarterPhase" ? h : null;
 };
 
-// ---- The moveset prior's roles for a line: its own sets, its forms', or the ones it grows into.
 const rbId = name => String(name ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 const rbAt = (table, id) => (table && Object.prototype.hasOwnProperty.call(table, id) ? table[id] : null);
 const rolesOf = names => {
@@ -66,8 +37,7 @@ const rolesOf = names => {
 
 const typeNames = sp => [sp?.type1, sp?.type2].map(t => TYPES[t]).filter((t, i, a) => t && a.indexOf(t) === i);
 
-// The line's strongest final form and how its first evolution comes: from the registry when the chunk scan has found
-// it, else the catch card's estimate from the evolution levels alone.
+// The line's strongest final form, and how it first evolves.
 const lineOf = (sp, reg) => {
   const evos = tryDo(() => sp.getEvolutionLevels(), []);
   const own = { final: sp.baseTotal ?? 0, finalSp: sp, estimated: false };
@@ -82,7 +52,6 @@ const lineOf = (sp, reg) => {
     const est = finalBstOf({ species: sp });
     best = { final: est.final, finalSp: null, estimated: est.estimated };
   }
-  // How it first evolves: the lowest level among its direct evolutions, or an item or condition when all need one.
   let evo = null;
   if (evos.length) {
     const direct = reg ? tryDo(() => reg.getEvolutions(sp.speciesId), []) : [];
@@ -93,8 +62,8 @@ const lineOf = (sp, reg) => {
   return { ...best, evo };
 };
 
-// What one starter is worth to a run, with its reasons ({ w, text }), the heaviest first. `starter`: the grid's own
-// choices for a species already in the team (its ability and whether its passive is on).
+// `starter`: the grid's own entry for a species already on the team, whose ability and passive then count as chosen
+// rather than as unlocked.
 const speciesValue = (s, h, sp, ctx, starter = null) => {
   const id = sp.speciesId;
   const { dexEntry: dex, starterDataEntry: st } = tryDo(() => h.getSpeciesData(id), null)
@@ -113,7 +82,6 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   const passiveOn = starter ? !!starter.passive : ((st.passiveAttr ?? 0) & Passive.UNLOCKED) !== 0;
   const passiveName = () => abilityName(tryDo(() => sp.getPassiveAbility(starter?.formIndex ?? 0)));
   if (passiveOn) why.push({ w: 8, text: passiveName() ? `passive ${passiveName()}` : "passive" });
-  // Picked with an unlocked passive switched off: worth saying while the grid can still turn it on.
   else if (starter && ((st.passiveAttr ?? 0) & Passive.UNLOCKED)) why.push({ w: -3, text: `${passiveName() ?? "passive"} is off` });
   const hiddenOn = starter ? starter.abilityIndex === 2 : ((st.abilityAttr ?? 0) & AbilityAttr.ABILITY_HIDDEN) !== 0;
   if (hiddenOn && sp.abilityHidden) {
@@ -131,7 +99,7 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   const ivs = Array.isArray(dex.ivs) ? dex.ivs.reduce((t, x) => t + (x ?? 0), 0) : 0;
   why.push({ w: 8 * ivs / 186, text: `IVs ${ivs}/186`, quiet: ivs < 120 });
   if (ctx.pokerus.has(id)) why.push({ w: 2, text: "Pokérus 1.5× EXP" });
-  // getDexAttrLuck: VARIANT_3 64n, VARIANT_2 32n, SHINY 2n.
+  // `getDexAttrLuck` (game-code.md §23).
   const caught = big(dex.caughtAttr);
   const luck = ctx.fresh ? 0 : caught & 64n ? 3 : caught & 32n ? 2 : caught & 2n ? 1 : 0;
   if (luck) why.push({ w: 1.5 * luck, text: `luck +${luck}` });
@@ -146,7 +114,6 @@ const speciesValue = (s, h, sp, ctx, starter = null) => {
   return { id, sp, name: sp.name, value, final: line.final, role, roles, types: typeNames(finalSp), why };
 };
 
-// ---- Teams
 const effectiveness = (atk, types, inverse) => types.reduce((m, d) => {
   const x = vs(atk, d);
   return m * (inverse ? (x === 0 || x === 0.5 ? 2 : x === 2 ? 0.5 : 1) : x);
@@ -166,8 +133,8 @@ const teamScore = (members, ctx) => {
   return { score, covers, weak, noCarry: !carry && members.length > 0 };
 };
 
-// The best teams that add from `cands` to `fixed` within `room` points: a beam over combinations, largest value first.
-// `valid(members)`: a team the game would let start. Returns the best valid team overall and per size.
+// `valid(members)`: a team the game would let start (game-code.md §23). An invalid team still grows in the beam, since
+// one more member can make it valid.
 const search = (fixed, cands, room, ctx, valid) => {
   const bySize = new Map();
   let best = null;
@@ -198,11 +165,8 @@ const search = (fixed, cands, room, ctx, valid) => {
   return { best, bySize };
 };
 
-// ---- The card
 let cache = { key: null, value: null };
 
-// The starter card's model: up to three proposals (the best team, the best without its lead pick, and a trio or a
-// fuller team), and the species the cursor is on.
 export const starterModel = (s, h) => {
   const tables = tryDo(() => gameTables());
   const challenges = (s.gameMode?.challenges ?? []).filter(c => c && c.value);
@@ -210,15 +174,13 @@ export const starterModel = (s, h) => {
   const limit = tryDo(() => h.getValueLimit(), 10);
   const chosen = (h.starterSpecies ?? []).filter(Boolean);
   const containers = h.validStarterContainers ?? h.starterContainers ?? [];
-  // Candy spent on the grid (a passive, a cost reduction) changes a value without changing the team.
+  // Candy spent on the grid changes a value without changing the team, so it keys the cache too.
   let unlocks = 0;
   for (const st of Object.values(s.gameData?.starterData ?? {})) {
     unlocks += (st?.valueReduction ?? 0) + 3 * (st?.passiveAttr ?? 0) + 11 * (st?.eggMoves ?? 0) + 37 * (st?.abilityAttr ?? 0);
   }
   const key = JSON.stringify([limit, unlocks, chosen.map((sp, i) => [sp.speciesId, h.starters?.[i]?.passive, h.starters?.[i]?.abilityIndex]),
-    // Every table the card reads is its own maybe: the scan commits what it has and fills the rest in place, a chunk at
-    // a time (#381), so each one that lands has to be able to rebuild the card. `moves` rides in the same chunk as the
-    // other two today, which is the only reason leaving it out was never wrong.
+    // The scan fills the tables in place a chunk at a time (#381), so each one that lands has to rebuild the card.
     containers.length, !!tables, !!tables?.abilities, !!tables?.eggMoves, !!tables?.moves, challenges.map(c => [c.id, c.value])]);
   if (cache.key !== key) cache = { key, value: build(s, h, { tables, challenges, has, limit, chosen, containers }) };
   const m = cache.value;
@@ -240,7 +202,7 @@ const build = (s, h, { tables, challenges, has, limit, chosen, containers }) => 
   };
   const iconById = new Map((h.starterContainers ?? containers).map(c => [c.species?.speciesId, iconOfContainer(c)]));
   const costOf = (sp, c) => tryDo(() => s.gameData.getSpeciesStarterValue(sp.speciesId), c?.cost ?? 1);
-  // The strict check a team needs one member to pass (challenge runs only).
+  // The strict challenge check, which one member of a team must pass (game-code.md §23).
   const strictCache = new Map();
   const strict = sp => {
     if (!challenges.length) return true;
@@ -316,7 +278,6 @@ const build = (s, h, { tables, challenges, has, limit, chosen, containers }) => 
   return { card, values, proposals };
 };
 
-// The species under the cursor: its value, rank among what's caught and whether a proposal takes it.
 const viewed = (h, m) => {
   const sp = h.lastSpecies;
   if (!sp) return null;
@@ -328,12 +289,9 @@ const viewed = (h, m) => {
     why: v.why.filter(r => Math.abs(r.w) >= 1.5).slice(0, 3).map(r => (r.w < 0 ? `but ${r.text}` : r.text)) };
 };
 
-// ---- How the card and its one-line summary word a proposal.
 export const ptsText = x => `${Math.round(x * 100) / 100}`;
 
-// `best: Gible (carry) + Magikarp + Pikachu · 10/10 pts; without Gible: …`, for the watcher and the battle read.
-// With nothing to propose it says so rather than saying nothing: it is the card's `act` summary, and `act` is the
-// one group that is never empty (#349). The card drew this line itself until the summary took it over.
+// Never empty: it is the card's `act` summary, and `act` is the one group that is never empty (#349).
 export const startersSummary = m =>
   m.picks.map(t => `${t.label}: ${t.members.map(x => `${x.name}${x.role === "carry" ? " (carry)" : ""}`).join(" + ")} · ${ptsText(t.cost)}/${m.limit} pts${t.weak.length ? ` · weak ${t.weak.join("/")}` : ""}`).join("; ")
   || (m.full || m.room <= 0 ? "nothing to add" : "no caught starter fits");

@@ -44,6 +44,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | DNA Splicers and fusion | §24 |
 | Menu cursors | §13 the encounter's options, §25 the command grid and the target cursor |
 | The screens the MCP driver walks | §26 |
+| The canvas and its message window | §27 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -1536,6 +1537,13 @@ unset, so a follow-up option menu never overwrites it, and only when the record'
 in play (`:83`). It is part of the save, so it survives a reload. `55-journal.js` reads the pick there rather than
 watching the input.
 
+**The encounter lasts the wave.** `currentBattle.mysteryEncounter` is set once, by `EncounterPhase`
+(`src/phases/encounter-phase.ts:71-75`), and never reassigned or cleared; only its fields change. It stays through
+every fight the encounter starts (`initBattleWithEnemyConfig` reuses the Battle,
+`src/data/mystery-encounters/utils/encounter-phase-utils.ts:137`) and through its reward phases, until the
+`NewBattlePhase` that `PostMysteryEncounterPhase` queues (`src/phases/mystery-encounter-phases.ts:606`) replaces the
+Battle.
+
 **Measured, in part**: `npm run oracle:encounter` runs the card against the real game headless on upstream's own vitest
 harness in the pinned clone, so the seed-fixed claims it covers are checked against what the game then did rather than against a
 mock — the teleport destination, the part-timer's pay, both chest branches, all four store shops, the fallout's burn
@@ -1725,8 +1733,8 @@ SpD]`, neutral on the diagonal. There is **no Ability Capsule** at this tag; the
 1/64 … 1/8, 4 stacks).
 
 **EXP and the level cap.** `getMaxExpLevel(ignoreLevelCap)` (`src/battle-scene.ts:2310`) — pure: `w =
-getWaveForDifficulty(ceil(wave / 10) × 10)` (the wave itself outside Daily; in Daily `w + 30 + floor(w / 5)`,
-`src/game-mode.ts:195`), cap `ceil((1 + w/2 + (w/25)²) × 1.2 / 2) ×
+getWaveForDifficulty(ceil(wave / 10) × 10)` (the rounded wave itself outside Daily; in Daily that wave
+`+ 30 + floor(wave / 5)`, `src/game-mode.ts:192-198`, so wave 30 caps at 52 there and 24 in classic), cap `ceil((1 + w/2 + (w/25)²) × 1.2 / 2) ×
 2 + 2` (wave 10 → 10, 20 → 16, 50 → 38, 200 → 200); with `ignoreLevelCap`, `MAX_SAFE_INTEGER`. `applyPartyExp`
 (`:3332`, §17) shares EXP only among members **below** the cap — a member at it gets nothing and its share is not
 passed on — and `PlayerPokemon.addExp` (`src/field/pokemon.ts:6329`, writes `exp` / `level`) stops at it. Exp Share
@@ -2601,3 +2609,17 @@ candy upgrade display `:549`, time-of-day widget `:578`, sprite set `:611`, batt
 saves it and flags the handler (`src/ui/settings/base-settings-ui-handler.ts:421-425`); leaving the screen, by CANCEL
 or by switching tabs (`:286-290`, `src/ui/settings/navigation-menu.ts:79`), runs its `clear()`, which then calls
 `globalScene.reset(true, false, true)` (`base-settings-ui-handler.ts:493-504`) and tears down a live run.
+
+## 27. The canvas and its message window
+
+Read at the pinned tag (`v1.12.0.11`), for the panel's footprint (`90-render.js`).
+
+**The canvas.** The game is 1920×1080 under `Phaser.Scale.FIT` (`src/main.ts:24-31`), no `autoCenter`, no zoom. Its
+parent `#app` is stretched to the page by Phaser's default `expandParent`, so the drawn width is `min(page width,
+16/9 × 100vh)`; `#app`'s own flex CSS centres it (`index.css:35-39`).
+
+**The message window.** The UI works in a 320×180 space scaled ×6 (`src/scene-base.ts:16-19`,
+`src/battle-scene.ts:496-499`), with the `UI` container anchored at its bottom edge (`src/ui/ui.ts:131`). The battle
+message window is a 320×48 `bg` frame at origin `(0, 1)` there (`src/ui/handlers/battle-message-ui-handler.ts:37-40`),
+as are the command and move windows (`:42`, `:52`, `:56`): the bottom 48 of 180, so its top edge is at 11/15 of the
+height (canvas y 792). The speaker's name box, when shown, rises above it to scaled y 125 (`:63`, `:76`).
