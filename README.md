@@ -37,12 +37,6 @@ Requires Node ≥ 23.6 and Chrome. Then, with PokéRogue open, just ask Claude w
 
 The same plugin also ships a `play-pokerogue` skill that lets Claude drive the game itself — button presses and all. It's a fun demo of the text-first control loop (structured state in, button presses out, no screenshots), but it's a gimmick, not the point of the project. The overlay above is.
 
-## Non-goals
-
-- Reimplementing game rules — the game is the source of truth.
-- Multiplayer, ranking, or account farming. One account, playing as a player would.
-- Playing *well* autonomously. The coach exists to help humans play better.
-
 ## License
 
 Free software under [AGPL-3.0-only](LICENSE). Unofficial — not affiliated with Pagefault Games, Nintendo or The Pokémon Company.
