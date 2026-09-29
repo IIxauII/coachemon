@@ -2366,7 +2366,7 @@ Hydration / Healer cures, Harvest and Moody, and the enemy's 2.5 % status cure. 
 mon's turn end at a time**, not the field's: a Leech Seed's payout to the seeder is read off the seeded mon's HP as it
 stands, so a seed that this same turn's weather or status chip would fell the mon before it ever lapsed still pays; and
 Bad Dreams asks the *sleeper's* Magic Guard, like `canApply`, where `apply` asks the **holder's**
-(`ab-attrs.ts:4394`, `:4413`) — the holder's is modelled, so a Magic Guard holder deals none, but in doubles a sleeper
+(`ab-attrs.ts:4396`, `:4413`) — the holder's is modelled, so a Magic Guard holder deals none, but in doubles a sleeper
 with Magic Guard beside one without it takes the chip in game and is spared here. One more is left out of the KO curve
 alone: the weather chip's `ignoreSegments`. `koCurve` takes one net turn-end number per use — `turnEndCourse` builds it
 from expectations over statuses and item steals, so there is no per-part signal left to carry — and the whole of it

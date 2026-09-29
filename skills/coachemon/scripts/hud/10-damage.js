@@ -737,7 +737,7 @@ export const approxOutcomes = (env, atk, def) => plainUsable(atk).map(pm => appr
 
 // The likely KO turn: what the panel calls "2 hits".
 export const koTurn = by => { const k = by.findIndex(x => x >= 0.5); return k < 0 ? 9 : k + 1; };
-// The expected KO turn, which scoring compares.
+// The expected KO turn.
 export const koTurns = by => Math.min(9, 1 + by.slice(0, 8).reduce((t, x) => t + (1 - x), 0));
 
 // All hits of the likeliest hit count at max roll, before any boss-bar clamp.
