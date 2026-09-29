@@ -1,15 +1,6 @@
 /**
- * CDP's driver grant. #6 had three sessions interleaving presses on one live
- * save; this lock makes the second one say so instead of pressing.
- *
- * A process becomes the driver the first time it acts, not when it starts
- * (CONTEXT: Driver), so the lock is taken by `take()` from the first acting
- * call. A session that only reads never calls it and never locks anyone out;
- * `contention()` answers who holds the tab without taking it.
- *
- * The lock is a JSON file carrying the holder's pid. A live pid other than our
- * own means contended; a dead pid is taken over. It is advisory: it protects
- * the dev from their own parallel sessions, not from a hostile process.
+ * CDP's driver grant (CONTEXT.md, `Driver`): a pidfile whose dead holder is taken over. Advisory — it keeps the dev's own
+ * parallel sessions from interleaving presses on one save (#6), not a hostile process.
  */
 import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -34,7 +25,6 @@ function alive(pid: number): boolean {
   }
 }
 
-/** Whoever the file names, if they are alive and are not us. Absent, unreadable or ours: nobody. */
 function holder(file: string): Contention {
   try {
     const { pid } = JSON.parse(readFileSync(file, "utf8")) as { pid: number };
@@ -68,7 +58,7 @@ export function driverLock(home: string): DriverLock {
   const file = path.join(home, "driver.lock");
   let held = false;
   return {
-    /** Re-read every time: the holder may have exited, or a second driver may have appeared, since the last look. */
+    /** Re-read every time: the holder may have exited, or another appeared, since the last look. */
     contention: () => holder(file),
     take() {
       const c = holder(file);

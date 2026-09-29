@@ -1,9 +1,4 @@
-/**
- * The result envelope (v1-tool-surface.md §3, #14): every tool result carries
- * a status and the `{wave, screen}` header; anything but `ok` carries a fixed
- * diagnostic. Which status a call returns, and the precedence between them, is
- * `call-outcome.ts`'s to decide (#126).
- */
+/** The result envelope (v1-tool-surface.md §3). Which status a call returns is `call-outcome.ts`'s to decide. */
 import type { StuckReport } from "./stuck/detector.ts";
 
 export type Status = "ok" | "timed_out" | "stuck" | "run_over" | "run_interrupted";
@@ -16,7 +11,7 @@ export type Diagnostic = {
   elapsed_ms: number;
   /** Time since the fingerprint last changed; not the same as `elapsed_ms`. */
   stall_ms?: number;
-  /** Whether the press landed at all — the bit #6's timeouts were missing. */
+  /** Whether the press landed at all (#6). */
   fp_moved?: boolean | null;
   mode_from_dom?: string | null;
   resume_count?: number;

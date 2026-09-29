@@ -43,6 +43,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Starter select | §23 |
 | DNA Splicers and fusion | §24 |
 | Menu cursors | §13 the encounter's options, §25 the command grid and the target cursor |
+| The screens the MCP driver walks | §26 |
 | HUD API built on the above | Recommended API for the HUD |
 
 ---
@@ -2421,6 +2422,14 @@ Fresh Start uses (ability index `% 2`, passive off, egg moves replaced by level 
 non-shiny form is picked (`src/phases/select-starter-phase.ts:80-82`) — capped at 14 for the party, none under Fresh
 Start (`src/data/challenge.ts:928`).
 
+**Leaving.** CANCEL on the grid (`src/ui/handlers/starter-select-ui-handler.ts:1639-1664`) closes an open filter
+dropdown, resets a filter column off its default, or leaves stats mode, the first two only with the filter bar active;
+failing those it pops the last starter added, and only on an empty party calls `tryExit` (`:4473-4503`): the
+`confirmExit` text, then `CONFIRM`. Yes's callback sets `STARTER_SELECT` again at once (`:4484`; `CONFIRM` is a
+no-transition mode, `src/ui/ui.ts:83-84`), then outside challenge mode goes to the title
+(`phaseManager.toTitleScreen()`, `src/phase-manager.ts:258-265`), whose `TitlePhase.start` awaits `checkLastSaveSlot`
+before it shows `TITLE` (`src/phases/title-phase.ts:36-50`). A settled read between the two is still `STARTER_SELECT`.
+
 ## 24. DNA Splicers: who can be fused, pick order, and what a fusion is
 
 Read at the pinned tag (`v1.12.0.11`). The fusion advisor (`49-fusion.js`) re-implements everything below from species
@@ -2485,3 +2494,46 @@ member of `targets` (`:49`). UP goes to the first entry of `targets` at or above
 (`:110-119`), and LEFT/RIGHT step ±1 within 0↔1 or 2↔3 (`:120-129`). Nothing wraps. When `getMoveTargets` says
 `multiple` (`src/data/moves/move-utils.ts:85,92,108,113`) — side- and field-targeting moves as well as damaging spread
 moves — no direction moves it and ACTION sends every target (`:96`, `:106-107`). CANCEL answers `[]` (`:97`).
+
+## 26. The screens the MCP driver walks: title, save slot, and who answers a prompt
+
+Read at the pinned tag (`v1.12.0.11`) for the MCP driver (`src/driver.ts`), not the HUD; nothing here is called from the
+page. §9 has the switch prompt, §23 the starter grid.
+
+**Title.** `TitlePhase` (`src/phases/title-phase.ts:82-198`) offers, in order, [Continue,] New Game, Load Game, Run
+History, Settings: Continue only when `checkLastSaveSlot` finds a session to load. New Game opens a game-mode
+`OPTION_SELECT` (`:104-157`): Classic, Daily Run, then Challenge and the Endless modes as unlocked, then Cancel.
+
+**Save slot.** In SAVE mode (`src/ui/handlers/save-slot-select-ui-handler.ts:224-260`), ACTION on a slot with `hasData`
+shows `overwriteData`, then a `CONFIRM` whose input is blocked for its delay (2000 ms outside beta and dev,
+`src/ui/handlers/base-option-select-ui-handler.ts:182-207`); Yes deletes that session, then starts the run. On a free
+slot ACTION starts the run at once, and on one still loading (`hasData` undefined) it does nothing. So on a free slot
+the first `CONFIRM` of the run is `CheckSwitchPhase`'s, not an overwrite.
+
+**Message prompts.** `BattleMessageUiHandler` clears `onActionInput` synchronously before calling it, on ACTION and
+CANCEL alike (`src/ui/handlers/battle-message-ui-handler.ts:158-168`). `awaitingActionInput` is never reset there or in
+`MessageUiHandler` (`src/ui/handlers/message-ui-handler.ts:131-146`), so only `onActionInput` says a prompt is waiting.
+The callback may arm a new prompt within the same press, and a prompt that a later `showText` replaced before it was
+answered stays armed (`:200-256`).
+
+**A party screen's own message.** While `PartyUiHandler` awaits input on it, ACTION and CANCEL take the same path: clear
+`onActionInput`, call it, clear `awaitingActionInput`. Every other button returns false, as does every button while the
+text is still typing (`src/ui/handlers/party-ui-handler.ts:912-929`).
+
+**Tutorials.** With `tutorialActive` on the current `AwaitableUiHandler`, `UI.processInput` hands input only to
+`processTutorialInput`, which answers ACTION and CANCEL alike and refuses the rest (`src/ui/ui.ts:261-273`,
+`src/ui/handlers/awaitable-ui-handler.ts:20-31`). An active overlay short-circuits both first.
+
+**MENU never reaches a handler.** A MENU key-down goes only to `UiInputs.buttonMenu` (`src/ui-inputs.ts:182-208`);
+nothing calls `ui.processInput(Button.MENU)`. It does nothing under `disableMenu`, opens the MENU overlay on TITLE,
+COMMAND, MODIFIER_SELECT, MYSTERY_ENCOUNTER and a MESSAGE with a finished pending prompt, and leaves MENU by
+`revertMode`. On STARTER_SELECT and POKEDEX_PAGE it is `buttonTouch` (`:141-147`): SUBMIT, then ACTION if SUBMIT
+returned false, so on the grid a valid party is offered the start `CONFIRM`. Every other mode ignores it.
+
+**`ui.revertMode()`** (`src/ui/ui.ts:600-630`) does nothing when the mode was entered by `setMode` (an empty
+`modeChain`). Over an overlay it calls the handler's `clear()` and pops back to the previous mode, calling neither that
+mode's `show()` nor any pending callback. `CONFIRM` and `OPTION_SELECT` drop their yes/no handlers unrun
+(`src/ui/handlers/base-option-select-ui-handler.ts:397-404`), `SAVE_SLOT` drops its callback
+(`src/ui/handlers/save-slot-select-ui-handler.ts:459-466`) and `PARTY` never calls its own
+(`src/ui/handlers/party-ui-handler.ts:1880-1886`), so a phase waiting on any of them hangs. The Pokédex and game-stats
+handlers do call their `exitCallback` on `clear()`.

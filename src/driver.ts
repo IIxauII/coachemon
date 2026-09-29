@@ -1,14 +1,6 @@
 /**
- * The driver: everything a tool does between the MCP request and the game.
- *
- * Every call settles before it reads (#7 Principle 1). Acting calls press,
- * settle, auto-advance `MESSAGE(0)` and return the lean snapshot. Reading calls
- * settle like an acting call minus the press, which is what makes a timed-out
- * wait resumable (#14). What status a call returns is `CallOutcomes`' to decide
- * (#126): every call opens with a settle, says so before its first press, and
- * ends exactly once, refusals included. The driver only presents it.
- * No call ever judges a press by `processInput`'s return value (Principle 4),
- * and no call ever retries a press on its own (#13, #14).
+ * Everything a tool does between the MCP request and the game, under v1-tool-surface.md §1's principles. A reading call
+ * settles like an acting call minus the press, which is what makes a timed-out wait resumable (#14).
  */
 import { CallOutcomes, type CallEnd, type Outcome } from "./call-outcome.ts";
 import { driverLock } from "./cdp/lock.ts";
@@ -29,37 +21,28 @@ import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 import { CALL_BUDGET_MS, settle, type SettleResult } from "./settle.ts";
 import type { Choice } from "./stuck/detector.ts";
 
-/** Auto-advance press cap (v1-tool-surface.md §6.8). Set here, as configuration: #13 never fixed a number. Twelve is the stuck window. */
 export const AUTO_ADVANCE_CAP = 12;
-/** Bound on cursor-walk presses inside one `select_option`. The longest measured walk is a 6-slot party list. */
 const NAV_CAP = 24;
-/** What a result says when a handler's own message box waits for ACTION (#44). */
 const DISMISS_MESSAGE = "press(ACTION) dismisses the message";
 
 export type CallContext = {
   signal?: AbortSignal;
-  /** Progress notifications while a settle stalls; the server wires it to the MCP progress token when one is present. */
+  /** Progress notifications while a settle stalls. */
   progress?: (message: string) => void;
-  /**
-   * When the call must return, on the driver's clock. Every settle in the call shares it: pre-read, cursor walk, commit
-   * and auto-advance together stay inside one `CALL_BUDGET_MS` (#34). The driver sets it on entry.
-   */
+  /** When the call must return, on the driver's clock: every settle in the call shares one `CALL_BUDGET_MS` (#34). */
   deadline?: number;
 };
 
-/** One call in flight: its deadline, and what its `end` needs if it throws. */
 type Call = CallContext & {
   deadline: number;
-  /** The call's latest settle. */
   last: SettleResult | null;
   /**
-   * The fine fingerprint of the latest game the call has seen, from its settles and its own cursor moves. Every act is
-   * sent on it, and the page refuses one the game has moved off (extension-distribution.md §10.2).
+   * The latest game the call has seen, from its settles and its own cursor moves: every act is sent on it
+   * (extension-distribution.md §10.2).
    */
   fine: string;
   /** What the call will press on, set once every check before the first press has passed. */
   intent: { pre: Ready; choice: Choice; menuAction: boolean } | null;
-  /** Whether anything has been sent to the game yet. */
   pressed: boolean;
   ended: boolean;
 };
@@ -75,25 +58,23 @@ class SetupTimedOut extends Error {
   }
 }
 
-/** The driver's clock: real by default, fake in tests. */
 export type Clock = { now: () => number; sleep: (ms: number) => Promise<void> };
 
 const REAL_CLOCK: Clock = { now: Date.now, sleep: ms => new Promise(r => setTimeout(r, ms)) };
 
 const ARROWS = new Set(["UP", "DOWN", "LEFT", "RIGHT"]);
 
-/** The starter grid with its filter bar active, where the server never acts (v1-tool-surface.md §6.5). */
+/** Where the server never acts (v1-tool-surface.md §6.5). */
 const FILTER_BAR_SCREEN = "STARTER_SELECT/FILTER";
 
-/** What `read_card` shows when the tab has no coach panel on it: a card of nothing, with `card_error` saying why (extension-distribution.md §11.4). */
+/** A card of nothing, beside a `card_error` (extension-distribution.md §11.4). */
 const NO_CARD = { kind: null, key: null, wave: null, verdict: null, groups: null, text: null, summary: null } as const;
 
 const NO_CARD_NEXT = "The coach panel is not running on this tab, so there is no card to read. The panel ships with Coachemon and its own header reopens it; get_state and read_menu read the game without it.";
 
 /**
- * What each tool sends into the tab, so a tool whose commands the installed extension never registered refuses alone
- * and every other one keeps working (extension-distribution.md §8.5). The cursor commands are not here: a family
- * without its setter is walked with presses instead, which the link's refusal already falls back to.
+ * What each tool sends into the tab, so a tool whose commands the extension never registered refuses alone
+ * (extension-distribution.md §8.5). The cursor commands stay out: a family without its setter is walked with presses.
  */
 const TOOL_COMMANDS = {
   get_state: ["probe", "menu", "snapshot"],
@@ -103,8 +84,7 @@ const TOOL_COMMANDS = {
   press: ["probe", "press"],
   select_option: ["probe", "menu", "press"],
   start_run: ["probe", "menu", "starters", "press"],
-  // `screenshot` is not in the store table at all: an unreachable game still refuses by rung, and a store build then
-  // says the picture needs a dev build (extension-distribution.md §10.6, §12.2).
+  // Not a store command, yet an unreachable game still refuses it by rung (extension-distribution.md §10.6, §12.2).
   screenshot: [],
 } as const satisfies Record<string, readonly CommandName[]>;
 
@@ -122,12 +102,7 @@ export class Driver {
     game.onRejection(t => this.#outcomes.rejection(t));
   }
 
-  /**
-   * The transport is CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub, which only the dev sets until the flip
-   * deletes both the variable and the CDP link (extension-distribution.md §12.1). The pidfile lock rides with CDP and
-   * goes with it. Creating it takes nothing: the lock is only taken when the link first claims the tab, so a server that
-   * only reads never holds it.
-   */
+  /** CDP unless `COACHEMON_TRANSPORT=hub` opts into the hub (extension-distribution.md §12.1). */
   static create(home: string = DEFAULTS.home): Driver {
     if (usesHub()) {
       const hub = new HubLink({ port: hubPort(), version: PLUGIN_VERSION });
@@ -136,8 +111,6 @@ export class Driver {
     const link = new CdpLink(new CdpSession({ home }), driverLock(home));
     return new Driver(new LinkGame(link, link));
   }
-
-  // ------------------------------------------------------------------ tools
 
   /** The only tool that answers when the game is out of reach: it reports the failing rung instead of refusing (extension-distribution.md §12.3). */
   async status(): Promise<Record<string, unknown>> {
@@ -181,10 +154,8 @@ export class Driver {
   }
 
   /**
-   * The card the coach panel is showing (extension-distribution.md §11.4): read-only, no grant, settled like every
-   * other read. It is the same payload the HUD's `card` events carry, so a subscriber that has just joined reads the
-   * event it missed (§11.1). The envelope's `wave` is the settled game's and `card_wave` the one the card is about:
-   * they differ only while the panel is a refresh behind the game.
+   * The card the coach panel is showing (extension-distribution.md §11.4). `wave` is the settled game's and `card_wave`
+   * the card's: they differ while the panel is a refresh behind the game.
    */
   readCard(ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#read("read_card", ctx, async () => {
@@ -196,13 +167,12 @@ export class Driver {
           kind: shown.kind, key: shown.key, card_wave: shown.wave, verdict: shown.verdict, groups: shown.groups, text: shown.text, summary: shown.summary,
           ...(card.ok ? {} : { card_error: card.why }),
         },
-        // A failed page read is reported, never explained; `no-hud` is the one the player can act on themselves.
         next: card.ok ? undefined : NO_CARD_NEXT,
       };
     });
   }
 
-  /** Every starter this account has unlocked, and the grid `start_run` picks from when it is open (extension-distribution.md §11.4). Read-only. */
+  /** Every unlocked starter, and the grid `start_run` picks from when it is open (extension-distribution.md §11.4). */
   readStarters(ctx: CallContext): Promise<Record<string, unknown>> {
     return this.#read("read_starters", ctx, async () => {
       const read = await this.#game.starters();
@@ -219,9 +189,8 @@ export class Driver {
   }
 
   /**
-   * Every reading tool, which is every tool that presses nothing: reachable, settle, read, and answer in the settled
-   * envelope. `body` does the reads in its own order and hands back the menu read it ended on, because the Screen a
-   * read-only call reports is that one — newer than the settle's, and never a refusal (#133).
+   * `body` hands back the menu read it ended on: a reading call's Screen is that one, newer than the settle's, and never
+   * a refusal (#133).
    */
   #read(
     tool: keyof typeof TOOL_COMMANDS,
@@ -253,7 +222,6 @@ export class Driver {
       await this.#guard(ready);
       const choice: Choice = { kind: "button", button: buttonName };
       this.#intend(call, ready, choice, MENU_MODES.has(ready.mode));
-      // Only a direction moves a cursor without moving the screen, so only a direction pays for the extra menu read.
       const cursorBefore = ARROWS.has(buttonName) ? await this.#menuCursor() : null;
 
       let s = await this.#pressAndSettle(button, ready.fine, call);
@@ -265,7 +233,7 @@ export class Driver {
         const cursorAfter = await this.#menuCursor();
         landedUnseen = cursorAfter !== null && cursorAfter !== cursorBefore;
       }
-      // v1-tool-surface.md §6.4: retry once through the raw keyboard, never through processInput again.
+      // Once, through the raw keyboard, never through processInput again (v1-tool-surface.md §6.4).
       if (unmoved && !landedUnseen) {
         rawFallback = await this.#game.rawKey(button, ready.fine);
         if (rawFallback) s = await this.#settle(ready.fine, call);
@@ -303,8 +271,7 @@ export class Driver {
       }
       let target: MenuOption;
       if (index !== undefined) {
-        // The option's `i` as read_menu returned it this call — the way past a duplicated label (soak #25: "Revive" as
-        // both a free reward and a shop item). Still a value read this call, never a remembered position.
+        // `i` as read_menu returned it this call, never a remembered position: the way past a duplicated label (#25).
         const hit = menu.options.find(o => String(o.i) === String(index));
         if (!hit) throw new Refusal("no_match", `No option at index ${JSON.stringify(index)} on ${screen}.`, { ...echo, indices: menu.options.map(o => o.i) });
         if (label !== undefined && !optionAnswersTo(hit, label)) {
@@ -363,7 +330,7 @@ export class Driver {
     });
   }
 
-  /** Everything `start_run` presses, from TITLE to the first decision of the run. A step that runs out of time throws `SetupTimedOut`. */
+  /** A step that runs out of time throws `SetupTimedOut`. */
   async #startRunFromTitle(call: Call, ready: Ready, choice: Choice, species: string[], slot: number | undefined, overwrite: boolean, log: string[]): Promise<Record<string, unknown>> {
     let presses = 0;
     const expect = async (s: SettleResult, screen: string, step: string): Promise<Ready> => {
@@ -377,16 +344,12 @@ export class Driver {
       }
       return r;
     };
-    /** Reach and commit `target` on `m`, as `select_option` would. A walk that runs out of time stops the setup at `step`. */
     const select = async (m: MenuRead, target: MenuOption, preFp: string, step: string, landed?: (species: string | undefined) => void): Promise<SettleResult> => {
       const r = await this.#execute(m, target, planSelect(m, target), preFp, call, landed);
       if (!r.committed) throw new SetupTimedOut(r.settle, step);
       return r.settle;
     };
-    /**
-     * A party refused on the grid, before any starter is added: CANCEL on the empty grid asks to return to the title and
-     * Yes goes there (#41), so the corrected start_run needs no manual steps. If that fails, say how to finish by hand.
-     */
+    /** Only before any starter is added: CANCEL on the empty grid asks to return to the title (#41, game-code.md §23). */
     const refuseFromGrid = async (code: string, message: string, detail: Record<string, unknown>): Promise<never> => {
       try {
         const confirm = await expect(await this.#pressAndSettle(Button.CANCEL, cur.fine, call), "CONFIRM", "back out");
@@ -395,7 +358,7 @@ export class Driver {
         if (yes.kind !== "one") throw new Refusal("start_run_unexpected_screen", `no single Yes on the return-to-title confirm: ${m.options.map(o => o.label).join(" | ")}`);
         log.push(`back out: ${m.options.map(o => o.label).join(" | ")} → Yes`);
         let back = await select(m, yes.option, confirm.fine, "back out");
-        // Yes sets STARTER_SELECT again before the title phase shows TITLE (StarterSelectUiHandler.tryExit): wait past it.
+        // Yes sets STARTER_SELECT again before TITLE shows (game-code.md §23): wait past it.
         if (back.settled && (back.last as Ready).mode === UiMode.STARTER_SELECT) back = await this.#settle((back.last as Ready).fine, call);
         await expect(back, "TITLE", "back out");
       } catch (e) {
@@ -413,7 +376,7 @@ export class Driver {
       throw new Refusal(code, `${message} Backed out to TITLE; call start_run again with a corrected party.`, { ...detail, screen: "TITLE", log });
     };
 
-    // 1. TITLE → game-mode select. New Game is the first option unless Continue is offered (source order: [Continue,] New Game, Load Game, Daily Run, Settings).
+    // New Game is the first title option unless Continue is offered, and Classic the first mode (game-code.md §25).
     let menu = await this.#game.menu();
     refuseMovedScreen(ready, menu);
     const newGameIndex = menu.options.length >= 5 ? 1 : 0;
@@ -421,14 +384,12 @@ export class Driver {
     let s = await select(menu, menu.options[newGameIndex], ready.fine, "title");
     presses++;
     let cur = await expect(s, "OPTION_SELECT", "title");
-    // 2. Game mode: Classic is index 0.
     menu = await this.#game.menu();
     log.push(`game mode: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
     s = await select(menu, menu.options[0], cur.fine, "game mode");
     presses++;
     cur = await expect(s, "STARTER_SELECT", "game mode");
 
-    // 3. Starters, by name, resolved against the live filtered grid.
     const info = await this.#game.starters();
     if (!info.ok) throw new Refusal("starter_unreadable", info.why);
     const picks: typeof info.grid = [];
@@ -446,7 +407,6 @@ export class Driver {
     for (const pick of picks) {
       menu = await this.#game.menu();
       refuseMovedScreen(cur, menu);
-      // The species under the cursor is checked before ACTION opens its menu.
       const onPick = (species: string | undefined) => {
         if (species && normalizeLabel(species) !== normalizeLabel(pick.name ?? "")) {
           throw new Refusal("starter_cursor", `grid cursor landed on ${species}, not ${pick.name}`, { log });
@@ -473,7 +433,6 @@ export class Driver {
     }
     log.push(`party: ${after.party.join(", ")} valid=${after.partyValid}`);
 
-    // 4. SUBMIT → CONFIRM [Yes, No] → SAVE_SLOT.
     s = await this.#pressAndSettle(Button.SUBMIT, cur.fine, call);
     presses++;
     cur = await expect(s, "CONFIRM", "submit");
@@ -483,9 +442,7 @@ export class Driver {
     presses++;
     cur = await expect(s, "SAVE_SLOT/SAVE", "confirm");
 
-    // 5. Slot: only the screen knows. A logged-in account's slots live server-side, so localStorage cannot pre-check
-    // them (measured: every key absent while slot 0 held a run). Refusing here leaves the setup on SAVE_SLOT/SAVE,
-    // where select_option("Slot N") continues it and CANCEL abandons it without touching any save.
+    // Only the slot screen knows a slot's state, and a refusal here leaves the setup on it (v1-tool-surface.md §10).
     menu = await this.#game.menu();
     const { free, occupied, chosen: slotOpt } = planSlot(menu.options, slot);
     const leftOn = { screen: "SAVE_SLOT/SAVE", free, occupied, slots: menu.options, log, next: 'select_option("Slot N") to continue, or press(CANCEL) to abandon this setup (no save is touched)' };
@@ -500,15 +457,13 @@ export class Driver {
     }
     s = await select(menu, slotOpt, cur.fine, "save slot");
     presses++;
-    // Only an occupied slot asks to overwrite; ACTION on a free one starts the run at once, and the first CONFIRM after
-    // that is CheckSwitchPhase's "Will you switch Pokémon?" (#30). Here overwrite is true: occupied without it refused above.
+    // Only an occupied slot asks to overwrite: on a free one the next CONFIRM is the run's switch prompt (#30, game-code.md §25).
     if (slotOpt.hasData === true) {
       if (!s.settled) throw new SetupTimedOut(s, "save slot");
       const r = s.last as Ready;
       if (!isOverwriteConfirm(r)) {
         throw new Refusal("start_run_unexpected_screen", `start_run expected the overwrite confirm after choosing ${chosenLabel} but saw ${r.screen} (phase ${r.phaseName}). Nothing was answered.`, { step: "save slot", screen: r.screen, log });
       }
-      // Yes deletes the session in that slot, then starts the run.
       menu = await this.#game.menu();
       log.push(`overwrite confirm: ${menu.options.map(o => o.label).join(" | ")} → index 0`);
       s = await select(menu, menu.options[0], r.fine, "overwrite confirm");
@@ -530,8 +485,6 @@ export class Driver {
     await this.#reachable("screenshot");
     return this.#game.screenshot();
   }
-
-  // ------------------------------------------------------------------ calls
 
   /** One tool call: one deadline for everything it waits on (#34), and exactly one `end`, a thrown call included. */
   async #call(ctx: CallContext, body: (call: Call) => Promise<Record<string, unknown>>): Promise<Record<string, unknown>> {
@@ -564,8 +517,6 @@ export class Driver {
     this.#outcomes.pressing({ menuAction: call.intent.menuAction, on: call.intent.pre });
   }
 
-  // ---------------------------------------------------------------- settle
-
   async #settle(preFp: string | null, call: Call): Promise<SettleResult> {
     const s = await settle(
       {
@@ -584,7 +535,6 @@ export class Driver {
     return s;
   }
 
-  /** The call's opening settle. A call that presses nothing settles like an acting call minus the press; if the last call timed out, this is a resume. */
   async #settleRead(call: Call): Promise<SettleResult> {
     const s = await this.#settle(null, call);
     this.#outcomes.waited(s);
@@ -631,15 +581,9 @@ export class Driver {
     throw new Refusal("game_moved", `The game changed after the read ${what} was decided on, so ${what} was not sent. It is now on ${screen}: read_menu, then decide again.`, { screen });
   }
 
-  // --------------------------------------------------------------- guards
-
   /**
-   * Every tool's first move: can a command reach the game at all, and does the connected extension have what this tool
-   * needs (extension-distribution.md §12.2)? The refusal is the ladder's line, with its rung, so the agent reads the
-   * same words `status` gives.
-   *
-   * It sits outside the call, before the deadline is set: nothing has been asked of the game, so there is no call for
-   * `CallOutcomes` to end. The grant is taken inside the call, where a refusal does end one.
+   * Outside the call, before the deadline is set: nothing has been asked of the game, so there is no call for
+   * `CallOutcomes` to end (extension-distribution.md §12.2). The grant is taken inside the call.
    */
   async #reachable(tool: keyof typeof TOOL_COMMANDS): Promise<void> {
     const { reach } = await this.#game.presence(TOOL_COMMANDS[tool]);
@@ -659,7 +603,7 @@ export class Driver {
     if (screen === FILTER_BAR_SCREEN) throw new Refusal("filter_bar", "The starter filter bar is active; setCursor would write filterBarCursor and CANCEL resets persisted filters. Leave it by hand.", { screen });
     // A transport whose settles pump has no frozen loop to refuse: the driver's own polls keep it turning (extension-distribution.md §10.3).
     if (this.#game.pumps) return;
-    // #23: re-apply focus emulation, then refuse if the loop is still frozen. Never bringToFront.
+    // Never bringToFront (#23).
     await this.#game.keepAlive();
     const a = await this.#game.frame();
     await this.#clock.sleep(150);
@@ -669,8 +613,6 @@ export class Driver {
     }
   }
 
-  // ------------------------------------------------------------- movement
-
   /** The menu reader's cursor, or `null` when the read failed or the screen has none: never mistaken for a move. */
   async #menuCursor(): Promise<number | string | null> {
     const m = await this.#game.menu();
@@ -678,9 +620,8 @@ export class Driver {
   }
 
   /**
-   * Carry out a plan on `menu`: reach `target` the way its family does, then commit. The committed settle, or the
-   * unsettled result with `committed: false` when a walk ran out of the call's deadline first. `landed` sees the species
-   * under a cursor `setCursor` put there, before the commit.
+   * `committed: false` is a walk that ran out of the call's deadline first, with its unsettled result. `landed` sees the
+   * species under a cursor `setCursor` put there, before the commit.
    */
   async #execute(menu: MenuRead, target: MenuOption, plan: Plan, preFp: string, call: Call, landed?: (species: string | undefined) => void): Promise<{ settle: SettleResult; committed: boolean }> {
     const { reach, commit } = plan;
@@ -702,12 +643,9 @@ export class Driver {
   }
 
   /**
-   * Press the rule's step until the cursor reads `to`, each press settled against the call's deadline. `null` once it
-   * is there; the unsettled result if the deadline ran out first. A settled press that leaves the cursor where it was
-   * refuses at once: the same press again does the same (#34). So does a step that reads another Screen than `from`,
-   * the menu the walk was planned on: nothing is committed there. A press the game moved ahead of
-   * (extension-distribution.md §10.2) was never sent: the walk settles and steps again from wherever the cursor now
-   * is.
+   * `null` once the cursor reads `to`; the unsettled result if the deadline ran out first. A settled press that leaves
+   * the cursor where it was refuses at once, since the same press again does the same (#34). A press the game moved
+   * ahead of was never sent (extension-distribution.md §10.2): the walk steps again from wherever the cursor now is.
    */
   async #walk(from: MenuRead, { to, rule }: Walk, call: Call): Promise<SettleResult | null> {
     let prev: number | null = null;
@@ -732,15 +670,13 @@ export class Driver {
     throw new Refusal("cursor_unreachable", `cursor did not reach ${to} within ${NAV_CAP} presses`, { target: to, presses: sent });
   }
 
-  // --------------------------------------------------------- auto-advance
-
   async #autoAdvance(first: SettleResult, call: Call): Promise<{ settle: SettleResult; messages: string[]; presses: number; capped: boolean }> {
     const messages: string[] = [];
     let s = first;
     let presses = 0;
     while (s.settled) {
       const r = s.last as Ready;
-      // Only MESSAGE(0) with a live prompt; CONFIRM is never advanced — ACTION is consent (#8).
+      // ACTION is consent: only a live MESSAGE prompt is advanced (#8, v1-tool-surface.md §6.8).
       if (r.mode !== UiMode.MESSAGE || !(r.awaitingActionInput && r.onActionInput)) break;
       if (presses >= AUTO_ADVANCE_CAP) return { settle: s, messages, presses, capped: true };
       // A message that went away before its ACTION arrived was never answered (extension-distribution.md §10.2): settle, and look again.
@@ -754,8 +690,6 @@ export class Driver {
     }
     return { settle: s, messages, presses, capped: false };
   }
-
-  // ------------------------------------------------------------ results
 
   async #finishActing(
     call: Call,
@@ -783,8 +717,7 @@ export class Driver {
         ...(snap.ok ? this.#cleanSnapshot(snap.snapshot) : { snapshot_error: snap.why }),
         menu: this.#menuSummary(afterRead, menu),
       },
-      // The cap stopped a long chain with a live MESSAGE still up: progress, not stuck (v1-tool-surface.md §6.8,
-      // #45). A MESSAGE that really repeats trips the detector across calls.
+      // Capped is progress, not stuck (#45, v1-tool-surface.md §10).
       adv.capped ? `press("ACTION"): auto-advance stopped after ${AUTO_ADVANCE_CAP} messages with more to read` : undefined,
     );
   }
@@ -816,8 +749,8 @@ export class Driver {
   async #timedOutResult(s: SettleResult, outcome: Outcome, what: string): Promise<Record<string, unknown>> {
     const last = s.last && s.last.ready ? s.last : null;
     const alert = last?.mode === UiMode.ALERT_MODAL ? last.messageText : null;
-    // The budget ran out with the game idle on a message that takes ACTION (#55): waiting on it would never end.
-    // Not a doubled press: processInput clears onActionInput synchronously, so a live one is a fresh prompt.
+    // Idle on a message that takes ACTION, waiting would never end (#55). A live `onActionInput` is a prompt no press
+    // has answered, so this is never a doubled press (game-code.md §25).
     const pending = alert === null && last !== null && last.settled && last.mode === UiMode.MESSAGE && last.awaitingActionInput && last.onActionInput;
     return {
       status: outcome.status,
@@ -842,9 +775,6 @@ export class Driver {
     return {
       ...clean,
       biome: typeof biome === "number" ? { int: biome, name: NAMES.BiomeId[biome] ?? null } : null,
-      // The page reads the game's enums as the integers they are; naming them is the server's job, and the coach's
-      // fields are named on both sides of the field, as `probe.js` named them for the coach skill
-      // (extension-distribution.md §11.4).
       party: named(party),
       enemy: named(enemy),
     };
@@ -878,23 +808,19 @@ export class Driver {
       cursor: menu.cursor,
       text: menu.text,
       ...this.#pendingMessage(menu),
-      // While a handler's own message waits, CANCEL dismisses it exactly as ACTION does (PartyUiHandler.processInput).
+      // While a party screen's own message waits, CANCEL answers it exactly as ACTION does (game-code.md §25).
       cancel_effect: menu.messagePending ? "consents" : ladder.status === "ladder" ? ladder.cancelEffect : "unknown",
       screen_class: ladder.status === "ladder" ? ladder.class : null,
       ladder_note: ladder.status === "ladder" ? undefined : ladder.message,
       tutorial_active: ready.tutorialActive,
       phase: ready.phaseName,
-      // The reader's `extra` as read_menu has always shown it, the pending message included.
+      // read_menu's `extra` has always carried the pending message.
       extra: menu.messagePending ? { ...menu.extra, messagePending: true } : menu.extra,
     };
   }
 }
 
-/**
- * A side of the field with its enums named: the status, the types and each move's type and category, as `probe.js`
- * named them (extension-distribution.md §11.4). A number with no name in the pinned tables stays the number, and a
- * field the detail did not ask for stays away.
- */
+/** A number the pinned tables cannot name stays the number (extension-distribution.md §11.4). */
 function named(side: unknown): unknown {
   if (!Array.isArray(side)) return side;
   const name = (table: Record<number, string>, v: unknown) => (typeof v === "number" ? table[v] ?? v : v);

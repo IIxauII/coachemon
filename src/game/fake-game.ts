@@ -1,14 +1,6 @@
 /**
- * The in-memory game adapter (#127), for tests only. A test scripts one screen model: its closures hold the state and
- * answer the game operations. The fake brings the rest a Driver needs: a fake clock, a lock and a frame counter.
- *
- * What a screen reacts to is strict: `read`, `menu`, `starters`, `card` and every act (`press`, `setCursor`, `modalButton`,
- * `rawKey`) throw `unexpected <op>` when the screen does not script them, failing the test instead of passing it through
- * a fallback. The rest have benign defaults: an advancing frame, an empty snapshot, an attached tab.
- *
- * With `guardFine` the fake checks acts the way the page does (extension-distribution.md §10.2): an act whose fingerprint
- * is not the screen's current one refuses `moved` without reaching the screen, and a cursor act answers the fingerprint it
- * left.
+ * The in-memory game port, for tests only (#127). `read`, `menu`, `starters`, `card` and every act throw `unexpected <op>`
+ * where the screen does not script them; the rest have benign defaults.
  */
 import type { Clock } from "../driver.ts";
 import type { Button } from "../enums/generated.ts";
@@ -37,7 +29,7 @@ export type FakeScreen = {
   pumps?: boolean;
   /** Nothing can reach the game: every tool refuses with this rung's line before it reads anything (extension-distribution.md §12.3). */
   unreachable?: Reach;
-  /** Acts refuse `moved` off the screen's current fingerprint, as the page does. */
+  /** Acts refuse `moved` off the screen's current fingerprint, and a cursor act answers the one it left, as the page does (extension-distribution.md §10.2). */
   guardFine?: boolean;
 };
 

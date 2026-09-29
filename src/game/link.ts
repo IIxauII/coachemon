@@ -1,10 +1,6 @@
 /**
- * The transport seam (extension-distribution.md §12.1): how the server reaches a game tab. A `GameLink` has one method
- * per store command (§10.1), each answering what the page handler answered, or a `Fault` when the command never got an
- * answer from the page. `src/cdp/link.ts` is the CDP link; the hub link joins it behind the same interface.
- *
- * The link knows nothing about Screens, settling or refusals: `LinkGame` turns its answers into the game port the Driver
- * uses (#127).
+ * The transport seam (extension-distribution.md §12.1). A link knows nothing about Screens, settling or refusals:
+ * `LinkGame` turns its answers into the Driver's game port (#127).
  */
 import type { Button } from "../enums/generated.ts";
 import type { CursorLearnResult, CursorOptionResult, CursorShopResult, CursorStarterResult, KeyResult, ModalResult, PressResult } from "../page/acts.ts";
@@ -48,11 +44,7 @@ export interface GameLink {
   screenshot(): Promise<string>;
 }
 
-/**
- * What a transport does outside the command table: whether the game can be reached at all, who may act on it, the raw
- * keyboard, and the page's own errors. The CDP side of each is a tab it attaches to; the hub side is the ladder, the
- * driver grant and the `key` command (extension-distribution.md §12.1, §12.3).
- */
+/** What a transport does outside the command table (extension-distribution.md §12.1, §12.3). */
 export interface Tab {
   /**
    * Whether a command can reach a game tab right now, and what `status` says about the transport. `needs` are the

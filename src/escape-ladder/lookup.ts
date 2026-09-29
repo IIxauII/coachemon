@@ -18,7 +18,7 @@ export type LadderQuery = {
   screen: string;
   /** `game.config.gameVersion` read live. */
   liveVersion: string;
-  /** `tutorialActive` on the current handler: CANCEL behaves as ACTION under a tutorial. */
+  /** `tutorialActive` on the current handler: CANCEL behaves as ACTION under a tutorial (game-code.md §25). */
   tutorialActive: boolean;
 };
 

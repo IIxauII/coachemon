@@ -1,29 +1,18 @@
 /**
- * The escape ladder: for every screen, the ordered rungs that leave it.
+ * HAND-CURATED at the pinned ref in `reviewed.json`, every claim not tagged `live`: never generate this file
+ * (0001-escape-ladder-hand-curated-checked-at-pin-bump.md). `npm run drift:check` refuses a pin bump until each entry
+ * whose `deps` moved is re-read.
  *
- * HAND-CURATED. Every claim was read at the pinned ref in `reviewed.json`
- * (PokéRogue v1.12.0.11 / e4e9b53) unless tagged `live`. Do not generate this
- * file: the classification is judgement over deep if/else chains gated on
- * runtime flags, and a classifier that gets `popStarter` wrong eats the team.
- * What is automated is the check — `npm run drift:check` hashes every `deps`
- * method and refuses a pin bump until each moved entry is re-read.
- *
- * Keys are the v1 tool surface's composite screen ids. Lookup falls back
- * `MODE/DISCRIMINATOR:options` → `MODE:options` → `MODE/DISCRIMINATOR` → `MODE`.
- *
- * Rungs are ordered safest first. The terminal reload is appended by the
- * lookup and is not listed here. Rules every entry obeys (#13):
- *   - no rung presses `MENU` — it never reaches a handler, and from
- *     STARTER_SELECT / POKEDEX_PAGE it is re-routed to a confirm;
- *   - no rung calls `ui.revertMode()` — it clears the handler without invoking
- *     the pending continuation and manufactures a hung phase;
- *   - no rung enters Settings — six settings reset the run on leaving.
+ * Rungs are ordered safest first. Rules every entry obeys (#13):
+ *   - no rung presses `MENU` — it never reaches a handler, and on STARTER_SELECT / POKEDEX_PAGE it presses SUBMIT
+ *     (game-code.md §25);
+ *   - no rung calls `ui.revertMode()` — it drops the pending continuation unrun and hangs the phase waiting on it (§25);
+ *   - no rung enters Settings — six settings reset the run on leaving (v1-tool-surface.md §6.5).
  */
 import type { Entry, Rung } from "./types.ts";
 
 const H = "src/ui/handlers";
 
-/** Must-answer screens: pick an option not yet tried on this fingerprint. */
 const pickUntried = (discards: string): Rung => ({
   do: "select_untried_option",
   risk: "lossy",
@@ -40,7 +29,6 @@ const cancelExits = (effect: string, provenance: "source" | "live" = "source"): 
   provenance,
 });
 
-/** Form modals: `SUBMIT` fires `submitAction`; every other button returns false. Mouse buttons are `config.buttonActions[i]`. */
 const formModal = (mode: number, handler: string, file: `${string}.ts`, cancelIndex: number | null, onRunPath = false): Entry => ({
   mode,
   handler,
@@ -84,7 +72,6 @@ const PARTY_DEPS = [
   `${H}/party-ui-handler.ts#PartyUiHandler.allowCancel`,
 ] as const;
 
-/** PARTY opened by the shop for a targeted reward: the callback resets MODIFIER_SELECT. */
 const partyFromShop = (mode: number, provenance: "source" | "live"): Entry => ({
   mode,
   handler: "PartyUiHandler",
