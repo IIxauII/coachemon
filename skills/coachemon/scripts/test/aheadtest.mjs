@@ -1,13 +1,6 @@
-// Look-ahead to the next big fight, against a mock game mode built to the pinned source's shape: the classic fixed
-// battle table, the gym rule, every tenth wave a boss, wave 200 final. Covers the calendar itself, the no-heal
-// stretch the Elite Four sits in, the readiness verdict against a roster the preview names, party luck and the tier
-// upgrade it buys, the waves whose rewards are pinned so luck and a reroll can't move them, and the Eternatus
-// checklist. Prints the models and the card, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
-// ---- The mock. The RNG is only here so the preview's replay has something to draw from; every claim this test
-// makes about the schedule is arithmetic on the wave index, which is the point of the feature.
 const hash = str => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0; return h >>> 0; };
 const RND = {
   _n: 1,
@@ -30,7 +23,7 @@ const MOVES = {
   Earthquake: ["Ground", 0, 100], "Dragon Claw": ["Dragon", 0, 80], Surf: ["Water", 1, 90],
   Eternabeam: ["Dragon", 1, 160], "Cosmic Power": ["Psychic", 2, -1], Tackle: ["Normal", 0, 40],
   "Ice Beam": ["Ice", 1, 90],
-  // A move the game prices from the situation: an attack like any other, and the case #266 was about.
+  // Power −1 is a move the game prices from the situation.
   "Gyro Ball": ["Steel", 0, -1],
 };
 const gameMove = name => ({ name, type: TY.indexOf(MOVES[name][0]), category: MOVES[name][1], power: MOVES[name][2] });
@@ -42,7 +35,6 @@ const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => ({
   destroy() { destroyed++; },
 });
 
-// A player mon: `pk("Milotic", 90, ["Water"], ["Surf"])`.
 let nextId = 1;
 const pk = (name, level, types, moves, luck = 1) => ({
   id: nextId++, name, level, hp: 100, luck,
@@ -52,8 +44,7 @@ const pk = (name, level, types, moves, luck = 1) => ({
   moveset: moves.map(n => ({ moveId: n, getName: () => n, getMove: () => gameMove(n) })),
 });
 
-// The classic fixed-battle table, by the waves `ClassicFixedBossWaves` names. `rewards` is the config's
-// `customModifierRewardSettings`, which pins the tiers and switches luck upgrades off.
+// The classic fixed-battle table and its pinned rewards (game-code.md §12).
 const RIVAL = { 8: "Rival", 25: "Rival 2", 55: "Rival 3", 95: "Rival 4", 145: "Rival 5", 195: "Rival 6" };
 const EVIL = { 35: "Grunt", 62: "Grunt", 64: "Grunt", 66: "Admin", 112: "Grunt", 114: "Admin", 115: "Boss", 164: "Admin", 165: "Boss" };
 const E4 = { 182: "Lorelei", 184: "Bruno", 186: "Agatha", 188: "Lance", 190: "Cynthia" };
@@ -100,13 +91,12 @@ const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildS
       isWaveFinal: w => w === 200,
       isBoss: w => w % 10 === 0,
       isFixedBattle: w => FIXED_NAMES[w] != null,
-      // No config in the game's own table calls `setDouble`, so `double` is `undefined` on every fixed battle and
-      // `checkIsDouble` falls through to the trainer's variant.
+      // No classic config calls `setDouble`, so `double` stays unset (game-code.md §16).
       getFixedBattle: w => (FIXED_NAMES[w] == null ? undefined : {
         battleType: 1, seedOffsetWaveIndex: 0, customModifierRewardSettings: REWARDS[w],
         getTrainer: () => makeTrainer(scene, FIXED_NAMES[w], 2, roster, foeMoves),
       }),
-      // `GameMode.isWaveTrainer`: the gym rule, which returns before the chance roll — and never on the final wave.
+      // `isWaveTrainer`'s gym rule alone, without its roll (game-code.md §12).
       isWaveTrainer: w => w % 30 === (offsetGym ? 0 : 20) && w !== 200,
     },
     executeWithSeedOffset(fn, offset, seedOverride) {
@@ -133,7 +123,6 @@ const makeScene = ({ wave, party = [], roster = [1, 2], offsetGym = false, wildS
   return scene;
 };
 
-// ---- Mount the HUD with no `ui` on the scene, so its own tick draws nothing and the test drives the module.
 const mount = opts => {
   globalThis.window = globalThis;
   delete globalThis.__coachHud;
@@ -147,38 +136,32 @@ const mount = opts => {
   eval(bundle("hud", { expose: true }));
   const { aheadModel, partyLuck, learnRoster, doubleOdds } = globalThis.__hud["49-ahead"];
   const { drawAhead } = globalThis.__hud["95-render-ahead"], { aheadSummary } = globalThis.__hud["49-ahead"];
-  // The look-ahead is read through the run read, as the card reads it: each call here opens one.
   const { readRun } = globalThis.__hud["26-run"];
   return { scene, ah: { aheadModel: s => readRun(s, aheadModel), partyLuck, drawAhead, aheadSummary, learnRoster, doubleOdds } };
 };
 
-// Ice Beam answers the rival's Garchomp (Dragon/Ground), Earthquake its Lucario (Fighting/Steel).
 const team = () => [pk("Milotic", 18, ["Water"], ["Surf", "Ice Beam"]), pk("Lucario", 18, ["Fighting", "Steel"], ["Earthquake"])];
 const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
 const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
 
-// ---- 1. The calendar: four arithmetic rules, in precedence order, and no RNG anywhere in it.
+// ---- The schedule follows the calendar's precedence and the run's gym offset
 {
   const { scene, ah } = mount({ wave: 1, party: team() });
   const m = ah.aheadModel(scene);
   console.log(`== schedule from wave 1 ${JSON.stringify(m.schedule)}`);
   assert.deepEqual(m.schedule.map(f => [f.wave, f.kind]), [[5, "fixed"], [8, "fixed"], [10, "boss"], [20, "gym"]]);
-  // 190 is the champion *and* a tenth wave: the fixed battle wins, and 200 ends the list.
   const { scene: s2, ah: ah2 } = mount({ wave: 186, party: team() });
   const m2 = ah2.aheadModel(s2);
   console.log(`== schedule from wave 186 ${JSON.stringify(m2.schedule)}`);
   assert.deepEqual(m2.schedule.map(f => [f.wave, f.kind]), [[188, "fixed"], [190, "fixed"], [195, "fixed"], [200, "final"]]);
-  // What a move learned now is judged against (#122): the named fight's foes, with what a disrupting move takes away.
   const roster = ah2.learnRoster(m2);
   assert.deepEqual([roster.wave, roster.exact, roster.foes.map(f => f.name)], [188, true, ["Garchomp", "Lucario"]]);
   assert.deepEqual([roster.foes[0].statusMoves, roster.foes[0].healMoves], [[], []]);
-  // The gym rule follows the run's own gym offset.
   const { scene: s3, ah: ah3 } = mount({ wave: 11, party: team(), offsetGym: true });
   assert.equal(ah3.aheadModel(s3).schedule.find(f => f.kind === "gym").wave, 30);
 }
 
-// ---- 2. The no-heal stretch. The run heals entering every X1, so 181–190 holds the whole Elite Four with no heal
-// in it — which is what the rewards card spends against.
+// ---- The Elite Four sits in a stretch with no heal, and Limited Support 1 has no heal at all
 {
   for (const wave of [17, 180, 181, 185]) {
     const { scene, ah } = mount({ wave, party: team() });
@@ -191,7 +174,6 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(m.fightsBeforeHeal, 5, "four Elite Four fights and the champion");
   const { scene: s2, ah: ah2 } = mount({ wave: 17, party: team() });
   assert.equal(ah2.aheadModel(s2).fightsBeforeHeal, 1, "an ordinary boss wave is one fight, then a heal");
-  // Limited Support 1 has no X1 heal at all, so there is no heal ahead to name and every fight is on one tank of HP.
   const { scene: s3, ah: ah3 } = mount({ wave: 17, party: team(), challenges: [{ id: 8, value: 1 }] });
   const m3 = ah3.aheadModel(s3);
   console.log(`== limited support 1: heal ${JSON.stringify(m3.heal)} · ${m3.fightsBeforeHeal} fights before it`);
@@ -200,9 +182,8 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.match(ah3.aheadSummary(m3), /no full heal left before the final wave/);
 }
 
-// ---- 3. Readiness against the roster the preview names, and the card.
+// ---- Readiness is judged against the roster the preview names
 {
-  // Wave 25's rival is Garchomp and Lucario. A Water/Fighting-Steel pair answers both and outlevels them.
   const { scene, ah } = mount({ wave: 24, party: team() });
   const m = ah.aheadModel(scene);
   console.log(`== ready ${JSON.stringify({ who: m.next.trainer, exact: m.next.exact, verdict: m.readiness.verdict, notes: m.readiness.notes.map(n => n.text) })}`);
@@ -212,7 +193,6 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(m.readiness.verdict, "ready");
   console.log(`== card\n${card(ah, m)}`);
 
-  // The same fight with a party that can't touch a Dragon/Ground and is under-levelled.
   const weak = [pk("Pidgeot", 8, ["Normal", "Flying"], ["Tackle"]), pk("Pidgey", 7, ["Normal", "Flying"], ["Tackle"])];
   const { scene: s2, ah: ah2 } = mount({ wave: 24, party: weak });
   const m2 = ah2.aheadModel(s2);
@@ -223,12 +203,9 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   console.log(`== card\n${card(ah2, m2)}`);
   console.log(`summary ${JSON.stringify(ah2.aheadSummary(m2))}`);
 
-  // What they swing back with is the preview's `attackTypes`, and those are read by 08-party's coverage rule (#266):
-  // a rival whose only attack is Gyro Ball is a Steel attacker, however the game works its power out. Before the
-  // widening the preview dropped it, the foes' own types (Dragon/Ground, Fighting/Steel) stood in, and an Ice party
-  // was told it was walking into Dragon rather than into the Steel that is actually aimed at it.
+  // The preview dropped a variable-power move, the foes' own types stood in, and an Ice party facing Gyro Ball was
+  // warned of Dragon rather than the Steel aimed at it (#266).
   const icy = [pk("Glaceon", 60, ["Ice"], ["Ice Beam"]), pk("Vanilluxe", 60, ["Ice"], ["Ice Beam"])];
-  // Garchomp and Milotic: nothing Steel in the roster's own typing, so the threat can only come from the moveset.
   const { scene: s4, ah: ah4 } = mount({ wave: 24, party: icy, roster: [1, 3], foeMoves: ["Gyro Ball"] });
   const m4 = ah4.aheadModel(s4);
   assert.ok(!m4.next.foes.some(f => f.types.includes("Steel")), `the typing offers no Steel: ${JSON.stringify(m4.next.foes.map(f => f.types))}`);
@@ -237,8 +214,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   console.log(`== variable power ${JSON.stringify({ threats: m4.readiness.threats, verdict: m4.readiness.verdict })}`);
 }
 
-// ---- 4. Luck: the sum of the party's, and the tier-upgrade chance it buys. A wave whose rewards are pinned says
-// luck can't move them.
+// ---- Party luck buys a tier-upgrade chance, which a wave with pinned rewards denies
 {
   const { scene, ah } = mount({ wave: 24, party: [pk("Milotic", 90, ["Water"], ["Surf"], 7), pk("Lucario", 88, ["Fighting"], ["Earthquake"], 7)] });
   const m = ah.aheadModel(scene);
@@ -248,7 +224,6 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(m.luck.upgradePct, 14.3, "4 / floor(512 / 18)");
   const { scene: s0, ah: ah0 } = mount({ wave: 24, party: [pk("Milotic", 90, ["Water"], ["Surf"], 0)] });
   assert.equal(ah0.aheadModel(s0).luck.upgradePct, 3.1, "4 / 128 at luck 0");
-  // The rewards for the wave just cleared: wave 25's rival pins its tiers and switches luck upgrades off.
   const { scene: s25, ah: ah25 } = mount({ wave: 25, party: team() });
   const m25 = ah25.aheadModel(s25);
   console.log(`== pinned rewards after wave 25 ${JSON.stringify(m25.thisWave)}`);
@@ -256,7 +231,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(ah25.aheadModel(makeScene({ wave: 24, party: team() })).thisWave, null, "an ordinary wave pins nothing");
 }
 
-// ---- 5. Eternatus. Everything here is read from the source, not rolled, so it holds for every run.
+// ---- The Eternatus checklist is up from wave 190, and reads its roster only near 200
 {
   const packed = pk("Milotic", 100, ["Water"], ["Surf"]);
   const { scene, ah } = mount({ wave: 198, party: [packed, pk("Lucario", 100, ["Fighting", "Steel"], ["Earthquake"])],
@@ -272,22 +247,19 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.ok(facts.some(f => /carries 5 held items/.test(f)), "the Mini Black Hole eats the stacked mon first");
   assert.equal(m.eternatus.foe?.name, "Eternatus");
   assert.equal(m.next.bars, 3, "four health bars");
-  // A party too thin for the double phase 2 turns into is told so.
   const { scene: s1, ah: ah1 } = mount({ wave: 198, party: [pk("Milotic", 100, ["Water"], ["Surf"])], wildSpecies: 4 });
   assert.ok(ah1.aheadModel(s1).eternatus.facts.some(f => /double battle/.test(f.text)), "a one-mon party is warned");
   console.log(`== card\n${card(ah, m)}`);
-  // Up ten waves out, so there are still shops left to act on it — but the roster only once 200 is near.
   const { scene: s190, ah: ah190 } = mount({ wave: 190, party: team(), wildSpecies: 4 });
   const m190 = ah190.aheadModel(s190);
   assert.ok(m190.eternatus, "up from wave 190, with two shops left");
   assert.equal(m190.eternatus.foe, null, "ten waves out, no roster is read");
   assert.equal(m190.next.wave, 195, "the rival is still the next fight");
-  // Far from the end, none of it is on the card.
   const { scene: s2, ah: ah2 } = mount({ wave: 100, party: team() });
   assert.equal(ah2.aheadModel(s2).eternatus, null);
 }
 
-// ---- 6. No game mode (an older build, or the shop's own mock): the model stands down rather than guessing.
+// ---- With no game mode the model stands down rather than guessing
 {
   const { scene, ah } = mount({ wave: 24, party: team() });
   delete scene.gameMode.isFixedBattle;
@@ -296,8 +268,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(ah.aheadSummary(null), null);
 }
 
-// ---- 7. The calendar holds at any distance; the roster is only read once the fight is close enough that the
-// inputs it feeds on won't have moved by then.
+// ---- The calendar names a fight at any distance, and the roster is read only once it is near
 {
   const { scene, ah } = mount({ wave: 1, party: team() });
   const m = ah.aheadModel(scene);
@@ -314,16 +285,12 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   console.log(`== far fight ${JSON.stringify({ wave: far.next.wave, kind: far.next.kind, foes: far.next.foes, readiness: far.readiness })}`);
 }
 
-// ---- 9. The double battles a TM is judged against (game-code.md §16): what shortens the odds, and the one wave whose double no
-// seed decides.
+// ---- Double-battle odds ahead: boss waves, doubling abilities and the unseeded grunt waves (game-code.md §16)
 {
   const { scene, ah } = mount({ wave: 40, party: team() });
-  // Waves 41–44: ordinary waves at the flat 1/8, no fixed battle and no X0 among them.
   assert.equal(ah.doubleOdds(scene, 41, 4), 1 / 8, "the flat chance on an ordinary wave");
-  // An X0 is 32, not 8 — a boss wave is four times less likely to be a double.
   assert.equal(ah.doubleOdds(scene, 47, 4), (1 / 8 + 1 / 8 + 1 / 8 + 1 / 32) / 4);
-  // `DoubleBattleChanceAbAttr` is four abilities, not two: No Guard and Commander carry it as well as Illuminate
-  // and Arena Trap, and each divides the chance by 4.
+  // `DoubleBattleChanceAbAttr` is four abilities, not two (game-code.md §16).
   const durant = pk("Durant", 18, ["Bug", "Steel"], ["Tackle"]);
   durant.getAbility = () => ({ name: "No Guard" });
   const { scene: sng, ah: ahng } = mount({ wave: 40, party: [durant, ...team()] });
@@ -332,9 +299,7 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   dondozo.getAbility = () => ({ name: "Commander" });
   const { scene: sc, ah: ahc } = mount({ wave: 40, party: [dondozo, ...team()] });
   assert.equal(ahc.doubleOdds(sc, 41, 4), 1 / 2, "and so does Commander");
-  // A fixed battle pins nothing, so it counts as single — except the four evil-team **grunt** waves, where
-  // `getRandomTrainerFunc` rolls `randInt(3) === 0` on `Math.random`. Unseeded: no preview can read it, and the flat
-  // 1/3 is the honest number.
+  // A fixed battle counts as single, except a grunt wave's unseeded `randInt(3)` (game-code.md §16).
   console.log(`== doubles ahead  41–44 ${ah.doubleOdds(scene, 41, 4)}  grunt 35 ${ah.doubleOdds(scene, 35, 1)}`
     + `  admin 66 ${ah.doubleOdds(scene, 66, 1)}  rival 25 ${ah.doubleOdds(scene, 25, 1)}`);
   assert.equal(ah.doubleOdds(scene, 35, 1), 1 / 3, "an evil-team grunt is a double one time in three");

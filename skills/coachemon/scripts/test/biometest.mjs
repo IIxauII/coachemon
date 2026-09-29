@@ -1,12 +1,4 @@
-// Biome choice card: on SelectBiomePhase's option screen the HUD ranks the offered biomes for the party — wild and
-// trainer encounters over the ten waves the biome covers (tier odds, time of day, luck, trainer odds, the gym leader or
-// wild boss on the tenth wave), how the party's moves hit them and how they hit the party, catches that fill a gap.
-// Game tables are mocked with small invented pools and trainers (not the game's), injected the way loadGameTables would
-// find them. Covers: the pick and its reasons, the rendered card in both views and the summary line, the card before
-// the tables load, option labels resolved by link order when names don't match, tier and time-of-day weighting,
-// legend-like species kept out of early waves, the trainer odds and their block near a gym, the gym leader as the big
-// fight, wild evolutions and forced prevolutions by the game's level thresholds, luck and a Daily forced tier, who
-// counts when fainted, and a near tie that names what decided it. Prints the rendered card, so run.mjs keeps a golden.
+// The pools and trainers are invented, not the game's: shaped like its tables, small enough to count by hand.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
@@ -14,7 +6,7 @@ import { wholeCard } from "./panel.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
 
-// ---- Species registry mock: id → [name, types, bst, direct evolutions [[id, level, evoLevelThreshold?]], legendary]
+// id → [name, types, bst, direct evolutions [[id, level, evoLevelThreshold?]], legendary]
 const SPECIES = {
   1: ["Wooper", ["Water","Ground"], 210, [[2, 20]]], 2: ["Quagsire", ["Water","Ground"], 430],
   3: ["Ekans", ["Poison"], 288, [[4, 22]]], 4: ["Arbok", ["Poison"], 448],
@@ -24,7 +16,7 @@ const SPECIES = {
   11: ["Toxapex", ["Poison","Water"], 495],
   20: ["Machop", ["Fighting"], 305, [[21, 28]]], 21: ["Machoke", ["Fighting"], 405],
   22: ["Magnemite", ["Electric","Steel"], 325, [[23, 30]]], 23: ["Magneton", ["Electric","Steel"], 465],
-  // Gurdurr → Conkeldurr is a trade evolution: level 1, delayed by per-kind thresholds (strong, normal, wild).
+  // Gurdurr → Conkeldurr trades: level 1, delayed by thresholds [strong, normal, wild] (game-code.md §10).
   24: ["Timburr", ["Fighting"], 305, [[25, 25]]], 25: ["Gurdurr", ["Fighting"], 405, [[28, 1, [40, 45, 50]]]],
   26: ["Drilbur", ["Ground"], 328, [[27, 31]]], 27: ["Excadrill", ["Ground","Steel"], 508],
   28: ["Conkeldurr", ["Fighting"], 505],
@@ -60,7 +52,7 @@ const registry = {
   hasPrevolution: id => parentOf(id) != null, getPrevolution: id => parentOf(id),
 };
 
-// ---- Trainer configs: a filter trainer, a pool trainer (a nested entry the game rerolls past), two gym leaders.
+// Black Belt's nested pool entry is one the game rerolls past (game-code.md §10).
 const ofType = t => sp => sp.isOfType(TY.indexOf(t));
 const TRAINERS = {
   100: { trainerType: 100, name: "Parasol Lady", partyTemplates: [], speciesFilter: ofType("Water") },
@@ -69,7 +61,7 @@ const TRAINERS = {
   201: { trainerType: 201, name: "Brock", partyTemplates: [], isBoss: true, specialtyType: TY.indexOf("Rock"), speciesFilter: ofType("Rock") },
 };
 
-// ---- Biomes: pool[tier][timeOfDay], -1 = all day; trainerPool[tier]. Invented pools shaped like the game's.
+// pool[tier][timeOfDay], −1 all day; trainerPool[tier].
 const tiers = (spec, t = {}) => Object.fromEntries([0,1,2,3,4,5,6,7,8].map(i => [i, { [-1]: spec[i] ?? [], 0: [], 1: [], 2: [], 3: [], ...(t[i] ?? {}) }]));
 const trainers = spec => Object.fromEntries([0,1,2,3,4,5,6,7,8].map(i => [i, spec[i] ?? []]));
 const swampPool = tiers({ 0: [1, 3, 7], 1: [5], 2: [8], 4: [40], 5: [11] }, { 0: { 2: [5], 3: [5] } });
@@ -78,13 +70,12 @@ const BIOMES = new Map([
   [7, { biomeId: 7, pokemonPool: swampPool, trainerPool: trainers({ 0: [100], 1: [101], 5: [200] }), trainerChance: 8, biomeLinks: [19, 3] }],
   [26, { biomeId: 26, pokemonPool: tiers({ 0: [20, 22], 1: [24, 26], 5: [28] }), trainerPool: trainers({ 0: [101], 5: [201] }), trainerChance: 6, biomeLinks: [[41, 3], 21] }],
   [30, { biomeId: 30, pokemonPool: tiers({ 0: [30, 31] }), trainerPool: trainers({}), trainerChance: 4, biomeLinks: [3] }],
-  // The Swamp with one more rare species: nearly the same card.
+  // The Swamp with one more rare species: a near tie with it.
   [33, { biomeId: 33, pokemonPool: { ...swampPool, 2: { ...swampPool[2], [-1]: [8, 60] } }, trainerPool: trainers({ 0: [100], 1: [101], 5: [200] }), trainerChance: 8, biomeLinks: [3] }],
 ]);
 const NAMES = { 3: "Tall Grass", 7: "Swamp", 19: "Graveyard", 21: "Factory", 26: "Construction Site", 30: "Slum", 33: "Marsh", 41: "Laboratory" };
 const tables = (over = {}) => ({ biomes: BIOMES, species: registry, trainers: TRAINERS, biomeName: id => NAMES[id] ?? `biome${id}`, ...over });
 
-// ---- Party
 const pk = (id, lv, moves, { hp = 100, luck = 0 } = {}) => {
   const sp = species(id);
   return { id: `p${id}`, name: sp.name, level: lv, hp, getMaxHp: () => 100, species: sp,
@@ -105,7 +96,7 @@ const lines = el => wholeCard(el)
   .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
 
-// Mounts the HUD on a biome-choice scene. `tables`: what loadGameTables would have found (null: not loaded yet).
+// `t`: what loadGameTables would have found; null is not loaded yet.
 const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave = 30, from = 3, offset = 0, t = tables(), dex = {}, gameMode } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
@@ -122,7 +113,7 @@ const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave =
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  // The chunk scan finds nothing under node: hand over what it would have found, and draw the card again.
+  // The chunk scan finds nothing under node, so hand over what it would have found and tick again.
   const { setGameTables } = globalThis.__hud["04-game-tables"];
   const { spawnsFor, formsFor, spawnTimeOfDay } = globalThis.__hud["47-biome"];
   setGameTables(t);
@@ -134,7 +125,7 @@ const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave =
 const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.stringify(x))), JSON.stringify(x), `${label}: JSON-safe`);
 const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${label}: ${a} vs ${b}`);
 
-// ---- 1. Garchomp / Snorlax / Lapras: Swamp (Water/Ground/Poison) over Construction Site (Fighting/Steel, Snorlax weak).
+// ---- Swamp is the pick over Construction Site, whose Fighting types Snorlax is weak to
 {
   const { el } = mount();
   console.log(`== swamp vs construction site\n${lines(el)}`);
@@ -152,9 +143,6 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(site.reasons.some(r => !r.good && /Snorlax.* weak/.test(r.text)), `Snorlax weak to Construction Site: ${JSON.stringify(site.reasons)}`);
   assert.ok(swamp.reasons.some(r => r.good && /hit SE/.test(r.text)), "several mons hit Swamp SE");
   assert.ok(site.onward.some(x => x.name === "Laboratory" && x.rare && x.chance === 3), "onward links name a rare biome and its chance");
-  // Croagunk is new and, as Toxicroak at the party's level, resists the Fighting the team is weak to *and* brings the
-  // Fighting nothing on the team hits with — a team hole the biome card reads off the party profile, the way the catch
-  // card always has. Arbok (`covers Fighting`, `new`) only does the first, so it no longer leads.
   assert.equal(swamp.catch?.name, "Toxicroak", "the catch is taken at the party's level");
   assert.deepEqual(swamp.catch.tags, ["covers Fighting", "hits Normal/Ice", "new"]);
   assert.deepEqual(swamp.trainers, { pct: 8, names: ["Parasol Lady", "Black Belt"] }, "the trainers met, by share");
@@ -163,7 +151,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.equal(globalThis.__coachHud.summary().biome.split(" · ")[0].startsWith("Swamp"), true);
 }
 
-// ---- 2. Tables not found yet: the card lists the options and says it's still reading; no pick, no summary verdict.
+// ---- Before the tables load, the card lists the options and judges none
 {
   const { el } = mount({ t: null });
   console.log(`== no tables\n${lines(el)}`);
@@ -173,7 +161,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.equal(globalThis.__coachHud.summary().biome, "Swamp · Construction Site");
 }
 
-// ---- 3. Localized labels the name lookup can't match: resolved by position among the current biome's links.
+// ---- Labels the name lookup can't match resolve by link order, where the order is unambiguous
 {
   const m = mount({ labels: ["Sumpf", "Baustelle", "Slum"], t: tables({ biomeName: undefined }) }).model();
   assert.deepEqual(m.options.map(o => o.id), [7, 26, 30], "three labels, three links: matched in order");
@@ -181,8 +169,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(two.options.every(o => o.id == null && o.score == null), "a rolled-out link makes order ambiguous: no guess");
 }
 
-// ---- 4. Weighting: tier odds (common ≫ rare ≫ ultra rare), each wave once, legend-like species kept out before wave 55,
-// Croagunk's extra dusk/night entry only counted when the waves reach dusk, and luck lowering the roll's ceiling.
+// ---- Spawn weights follow tier odds, time of day, the legend gate and luck (game-code.md §10)
 {
   const { scene } = mount({ wave: 30 });
   const at = (wave, offset = 0, luck = 0) => { scene.waveCycleOffset = offset; return globalThis.__bm.spawnsFor(scene, 7, wave, luck).list; };
@@ -193,7 +180,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   const late = at(60);
   assert.ok(w(late, 40) > 0 && w(late, 40) < 0.005, `ultra rare is a trace: ${w(late, 40)}`);
   // Ekans shares 356/512 with two others; Mudkip gets 26/512 plus the empty super/ultra rare tiers that drop to it.
-  const day1 = at(0); // waves 1–10: all day, so no night-only entries in the common tier
+  const day1 = at(0); // waves 1–10 are all day: no dusk Croagunk in the common tier
   near(w(day1, 3, "wild") / w(day1, 8, "wild"), (356 / 3) / 32, "tier odds split evenly within a tier, empty tiers drop down");
   near(w(early, 11, "boss"), 0.1, "the lone boss species is the boss wave's tenth");
   assert.equal(early.find(e => e.id === 11).wild, 0);
@@ -202,11 +189,9 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   near(w(at(30, 0, 14), 8, "wild") / w(early, 8, "wild"), 512 / 484, "luck 14 takes 28 off the 512 ceiling, all from the common tier");
 }
 
-// ---- 5. A caught species isn't "new", and a team member's line isn't a catch at all.
+// ---- A caught species isn't "new", and a team member's line isn't a catch at all
 {
-  // The Croagunk line and Arbok all caught: none of them is "new" any more, so the lead falls to a mon that still is
-  // — Gulpin, which covers the Fighting weakness. The Croagunk line keeps its two team reasons and drops behind it on
-  // the half point "new" is worth. Both its forms are marked, because the card reads the species met after evolving.
+  // Both Croagunk forms are marked: the card reads the species met after evolving.
   const caught = mount({ dex: { 4: { caughtAttr: 1n }, 5: { caughtAttr: 1n }, 6: { caughtAttr: 1n } } }).model().options[0];
   assert.equal(caught.catch?.name, "Gulpin");
   assert.deepEqual(caught.catch.tags, ["covers Fighting", "new"]);
@@ -214,28 +199,25 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(!withArbok.reasons.some(r => r.catch && /Arbok/.test(r.text)), JSON.stringify(withArbok.reasons));
 }
 
-// ---- 6. Trainer waves: X2–X9 roll 1 in trainerChance, less the chance either of the two waves before already hit, and
-// not at all within two waves of a gym. The gym wave itself is always a trainer: the biome's gym leader.
+// ---- Trainer shares over a biome's ten waves, with their look-back and the block by a gym (game-code.md §10)
 {
   const { scene } = mount({ wave: 30 });
   const share = (wave, part) => globalThis.__bm.spawnsFor(scene, 7, wave)[part];
   const sum = (list, part) => list.reduce((t, e) => t + e[part], 0);
   // Waves 32, 33, then 34–39 with two waves of look-back: 1/8 + 7/64 + 6·49/512.
   near(sum(share(30, "list"), "trainer"), (64 + 56 + 6 * 49) / 512 / 10, "trainer share over waves 31–40");
-  // Waves 41–50: 48 and 49 sit within two of the gym at 50, which is a trainer for sure.
+  // Waves 42–47 roll; 48 and 49 sit within two of the gym at 50.
   const gymWaves = globalThis.__bm.spawnsFor(scene, 7, 40);
   near(sum(gymWaves.list, "trainer"), (64 + 56 + 4 * 49) / 512 / 10, "no trainer rolls next to the gym");
   near(sum(gymWaves.list, "boss"), 0.1, "the gym leader's party is the tenth wave");
   assert.deepEqual(gymWaves.leaders.map(l => [l.name, l.specialty]), [["Janine", "Poison"]]);
   assert.deepEqual(gymWaves.bigFight, { wave: 50, gym: true });
-  // A trainer's party: the pool trainer's nested entry is skipped, the filter trainer's species are taken to their base form.
   const parasol = gymWaves.trainers.find(t => t.name === "Parasol Lady");
   assert.deepEqual(parasol.species.map(x => x.id).sort((a, b) => a - b), [1, 8, 11, 52]);
   assert.deepEqual(gymWaves.trainers.find(t => t.name === "Black Belt").species.map(x => x.id), [20, 24, 5]);
 }
 
-// ---- 7. The gym leader ahead as a reason and in the score: Janine's Poison meets two SE hitters and no weakness;
-// Brock's Rock meets two hitters but Lapras is weak.
+// ---- The gym leader ahead is a reason and part of the score
 {
   const { el } = mount({ wave: 40 });
   console.log(`== gym at wave 50\n${lines(el)}`);
@@ -244,14 +226,12 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(site.reasons.some(r => r.gym && r.good && r.text === "W50 gym Rock (Brock): 2 hit SE, Lapras weak"), JSON.stringify(site.reasons));
   assert.equal(swamp.bossFit, 100);
   assert.equal(site.bossFit, 75);
-  // Without the trainer configs the trainer waves drop out of the weighting, and there is no gym to judge.
   const blind = mount({ wave: 40, t: tables({ trainers: undefined }) }).model().options[0];
   assert.equal(blind.fight, null);
   assert.equal(blind.trainers, null);
   assert.ok(blind.score > 0);
-  // And they can land *after* a card has drawn without them: the scan commits the tables as soon as biomes and species
-  // are in, then fills the rest of them in place, a chunk at a time (#381). The model the run read memoised was built
-  // without them, so what has to notice is its key — it counts the tables rather than asking whether there are any.
+  // The scan commits the tables once biomes and species are in and fills the rest in place, so the memo's key
+  // counts the tables rather than asking whether there are any (#381).
   const want = mount({ wave: 40 }).model().options[0].trainers;
   const late = tables({ trainers: undefined });
   const landing = mount({ wave: 40, t: late });
@@ -263,8 +243,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.deepEqual(landing.model().options[0].trainers, want, "the trainers that landed after the card drew");
 }
 
-// ---- 8. Wild evolutions by the game's thresholds: an even chance per level across [t, round(1.2·t)], a delayed trade
-// evolution, and a forced prevolution for a boss below its own threshold.
+// ---- Wild forms follow the game's evolution thresholds (game-code.md §10)
 {
   mount();
   const f = globalThis.__bm.formsFor;
@@ -276,19 +255,18 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.deepEqual(f(28, 46, 1), { 28: 1 }, "…and itself at 46");
 }
 
-// ---- 9. A Daily event seed's forced tier: wave 31's first spawn comes from the rare tier.
+// ---- A Daily event seed's forced tier replaces the roll for its wave
 {
   const daily = forcedWaves => ({ isDaily: true, dailyConfig: forcedWaves ? { forcedWaves } : undefined, getWaveForDifficulty: w => w + 30, challenges: [] });
   const { scene } = mount({ gameMode: daily() });
   const mudkip = () => globalThis.__bm.spawnsFor(scene, 7, 30).list.find(e => e.id === 8).wild;
   const plain = mudkip();
   scene.gameMode = daily([{ waveIndex: 31, tier: 2 }]);
-  // Daily: wave 35 and 40 are trainers (40 the gym leader), so eight wild waves. Wave 31 counts as difficulty 61, so
-  // Azelf is legal and the ultra rare roll no longer drops to Mudkip: 31/512 of it goes to certain.
+  // Wave 31 is difficulty 61, so Azelf is legal and Mudkip's share of the wave was 31/512 before the tier was forced.
   near(mudkip() - plain, (1 - 31 / 512) / 10, "one wave's rare share becomes 1");
 }
 
-// ---- 10. The fainted: back for the next biome (the X1 heal revives), out under Hardcore.
+// ---- The fainted are back for the next biome, and out under Hardcore
 {
   const party = team({ lax: { hp: 0 } });
   const normal = mount({ party }).model();
@@ -301,7 +279,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(!hard.options[1].reasons.some(r => /Snorlax/.test(r.text)), JSON.stringify(hard.options[1].reasons));
 }
 
-// ---- 11. A near tie gets a pick anyway, by the unrounded score, and says what decided it.
+// ---- A near tie gets a pick anyway, by the unrounded score, and says what decided it
 {
   const { el } = mount({ labels: ["Swamp", "Marsh"] });
   console.log(`== swamp vs marsh\n${lines(el)}`);
@@ -312,11 +290,10 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.equal(other.verdict, "close");
   assert.ok(best.reasons[0].edge && best.reasons[0].text.startsWith(`edges ${other.label} on `), JSON.stringify(best.reasons));
 }
-// ---- 12. Which pool a wave spawns from: the arena rebuilds it when it is built (the X0 the biome is chosen on) and
-// as an X5 starts, and nowhere else — so the time of day at the wave itself is the wrong question.
+// ---- A wave spawns from the pool built at its X0 or X5, not at its own time of day (game-code.md §10)
 {
   const { scene } = mount({ offset: 3 });
-  const tod = ["dawn", "day", "dusk", "night"]; // TimeOfDay: DAWN 0, DAY 1, DUSK 2, NIGHT 3
+  const tod = ["dawn", "day", "dusk", "night"];
   const at = w => tod[globalThis.__bm.spawnTimeOfDay(scene, w, 7)];
   console.log("== spawn pool time of day, waveCycleOffset 3");
   console.log([11, 12, 14, 15, 17, 19, 20].map(w => `${w}:${at(w)}`).join("  "));
@@ -330,8 +307,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.equal(tod[globalThis.__bm.spawnTimeOfDay(scene, 12, 24)], "night", "ABYSS (24) is night whatever the wave");
 }
 
-// ---- 13. Endless past wave 250: `getEncounterBossSegments` rolls a boss on any wave, so a share of every wave
-// spawns from the boss pool rather than only the tenth.
+// ---- Past Endless wave 250 every wave has a boss share, not only the tenth (game-code.md §10)
 {
   const endless = { isEndless: true, hasRandomBosses: true, isWaveFinal: w => w % 250 === 0, isBoss: w => w % 10 === 0,
     isFixedBattle: () => false, getWaveForDifficulty: w => w, challenges: [] };
@@ -350,8 +326,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(late > plain);
 }
 
-// ---- 5. A build that throws: the run read's `{ unavailable }` is drawn as an unjudged card that says why — the
-// panel keeps going, rather than dying on a card with no kind (a DRAW it can't find).
+// ---- A build that throws draws an unjudged card that says why, rather than killing the panel
 {
   const broken = team();
   broken[0].getTypes = () => { throw new Error("no types"); };

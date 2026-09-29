@@ -1,28 +1,17 @@
-// The run calendar (`hud/03-calendar.js`): what a run's wave numbers alone decide, checked as tables rather than as a
-// card. Nothing here draws, so a mock game mode is only the pinned source's own rules written out — the classic fixed
-// battle table, the gym rule, every tenth wave a boss, and each mode's last wave. Covers `waveKind`'s precedence in
-// classic, Daily, Endless and with `offsetGym`; the schedule `bigFightsAhead` walks; the heal and who it revives under
-// Limited Support and Hardcore; the trainer odds over a biome's ten waves; and the game-less fallbacks a build that
-// hides its `gameMode` falls back to. Prints the tables, so run.mjs keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 
-// ---- Mock game modes, shaped like `GameMode`'s own methods (game-code.md §12).
-// The classic table, by the waves `ClassicFixedBossWaves` names: the youngster, the rivals, the evil team, the Elite
-// Four and the champion.
+// Shaped like `GameMode`'s own methods, the classic fixed-battle table included (game-code.md §12).
 const CLASSIC_FIXED = new Set([5, 8, 25, 35, 55, 62, 64, 66, 95, 112, 114, 115, 145, 164, 165, 182, 184, 186, 188, 190, 195]);
 const MODES = {
   classic: { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0, isFixedBattle: w => CLASSIC_FIXED.has(w) },
   daily: { isDaily: true, isWaveFinal: w => w === 50, isBoss: w => w % 10 === 0, isFixedBattle: () => false },
   endless: { isEndless: true, isWaveFinal: w => w % 250 === 0, isBoss: w => w % 10 === 0, isFixedBattle: () => false },
 };
-// Challenge ids, as `Challenges` numbers them: Limited Support 8, Hardcore 9.
 const LIMITED_SUPPORT = 8, HARDCORE = 9;
 const scene = (mode = "classic", { offsetGym = false, challenges = [], only } = {}) =>
   ({ offsetGym, gameMode: { ...(only ?? MODES[mode]), challenges } });
 
-// ---- Mount the HUD once with a bare scene and no `ui`, so its tick draws nothing; every case below then hands the
-// calendar a plain scene object of its own, which is all the module reads.
 globalThis.window = globalThis;
 globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } },
   Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => ({ gameMode: {} }) } } } }] } } } };
@@ -38,7 +27,7 @@ const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, trainerOdds
 const row = (label, cells) => console.log(`${label.padEnd(26)}${cells.join("  ")}`);
 const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
 
-// ---- 1. Classic: the four rules in precedence order. A wave can match several, and the first one wins.
+// ---- In classic, a wave that matches several rules takes the first in precedence
 {
   const s = scene("classic");
   console.log("== waveKind, classic");
@@ -51,12 +40,12 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(waveKind(s, 50), "gym");
   assert.equal(waveKind(s, 190), "fixed", "the champion is also a tenth wave: the table outranks both");
   assert.equal(waveKind(s, 200), "final", "200 is the final wave, a gym wave by the modulo and a tenth wave");
-  // Membership, not precedence: 20 is still a boss wave, which is what the double-battle chance asks.
+  // Membership, not precedence: 20 is still a boss wave to the double-battle chance.
   assert.equal(isBossWave(s, 20), true);
   assert.equal(isBossWave(s, 21), false);
 }
 
-// ---- 2. `offsetGym` moves the gym rule to the X0 waves, and nowhere else.
+// ---- `offsetGym` moves the gym rule to the X0 waves, and nowhere else
 {
   const s = scene("classic", { offsetGym: true });
   console.log("== waveKind, offsetGym");
@@ -66,7 +55,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(waveKind(s, 60), "gym");
 }
 
-// ---- 3. Daily and Endless: each mode's own last wave, and the rules that carry over.
+// ---- Daily and Endless each end on their own last wave, and keep the rules that carry over
 {
   const d = scene("daily"), e = scene("endless");
   console.log("== waveKind, daily / endless");
@@ -76,8 +65,6 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(waveKind(d, 20), "gym");
   assert.equal(waveKind(e, 250), "final", "Endless ends every 250th wave");
   assert.equal(waveKind(e, 210), "boss", "210 is only a tenth wave");
-  // The gym rule lives inside `isWaveTrainer`, and `handleNonFixedBattle` never asks it without trainers: Endless
-  // has no gym leader on 20 or 200, however the modulo falls.
   assert.equal(waveKind(e, 20), "boss", "Endless has no trainers, so no gym wave — only a tenth wave");
   assert.equal(waveKind(e, 200), "boss");
   assert.equal(hasTrainers(e), false, "Endless and Spliced Endless have no trainer battles at all");
@@ -87,8 +74,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(trainerOdds(e, 20, { trainerChance: 8 }), 0);
 }
 
-// ---- 3b. Whether a wave's kind costs a draw (`kindIsRolled`): what the preview's `type` confidence turns on. Every
-// path `isWaveTrainer` returns on before its `1/trainerChance` roll is a rule, and holds from any point in the run.
+// ---- A wave's kind costs a draw only where `isWaveTrainer` reaches its roll
 {
   const s = scene("classic"), rolled = w => kindIsRolled({ ...s, arena: { trainerChance: 8 } }, w);
   console.log("== kind rolled, classic");
@@ -107,25 +93,21 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(kindIsRolled({ ...scene("endless"), arena: { trainerChance: 8 } }, 42), false, "Endless never asks");
 }
 
-// ---- 3c. The other two things a wave number alone decides, which the cards used to work out for themselves.
+// ---- The grunt waves and the pool anchor are decided by the wave number alone
 {
-  // The four fixed waves whose double comes off `randInt(3)` on `Math.random`: the grunts, and not the admins or
-  // bosses of the same group.
   console.log(`== grunt waves ${[35, 62, 64, 112].filter(isGruntWave).join(", ")}`);
   assert.deepEqual([35, 62, 64, 112].filter(isGruntWave), [35, 62, 64, 112]);
   assert.deepEqual([5, 8, 25, 66, 114, 115, 164, 165, 190].filter(isGruntWave), [], "no admin, boss, rival or youngster");
-  // The wave whose time of day the arena's pool was built at: the X0 that opens the block, then the X5 inside it.
   row("pool anchor 9–21", [9, 10, 11, 14, 15, 19, 20, 21].map(w => `${w}:${poolAnchorWave(w)}`));
   assert.deepEqual([11, 12, 13, 14].map(poolAnchorWave), [10, 10, 10, 10], "X1–X4 spawn from the pool the X0 built");
   assert.deepEqual([15, 16, 19, 20].map(poolAnchorWave), [15, 15, 15, 15], "X5–X9 and the closing X0 from X5's");
   assert.equal(poolAnchorWave(1), 0, "wave 1 reads the arena the title screen built, at waveIndex 0");
-  // A new biome is a new arena, so the pool the preview holds isn't the one the wave ahead draws from.
   assert.equal(arenaRebuiltBetween(20, 21), true, "the X0 → X1 step is a biome switch");
   assert.equal(arenaRebuiltBetween(14, 15), false, "the X5 rebuild is the same arena, same biome");
   assert.equal(arenaRebuiltBetween(12, 13), false);
 }
 
-// ---- 4. The schedule: every big fight ahead, in wave order, stopping at the run's last wave.
+// ---- The schedule is every big fight ahead in wave order, up to the run's last wave
 {
   const s = scene("classic");
   const at = (from, n) => bigFightsAhead(s, from, n).map(f => [f.wave, f.kind]);
@@ -139,8 +121,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.deepEqual(bigFightsAhead(null, 1, 30), []);
 }
 
-// ---- 5. Heals. A classic run heals entering every X1 up to the final wave; Limited Support 1 and 3 have no heal at
-// all, and Hardcore keeps the heal but leaves the fainted where they are.
+// ---- Heals come at every X1, never under Limited Support 1 or 3, and revive no one under Hardcore
 {
   const s = scene("classic");
   console.log("== heals, classic");
@@ -166,8 +147,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(healRevives(hard), false, "…it just doesn't revive");
 }
 
-// ---- 6. Trainer odds over the ten waves a biome choice covers: the certainties, the 1/trainerChance roll, its
-// look-back and the block around a gym or fixed battle.
+// ---- Trainer odds over a biome's ten waves (game-code.md §10)
 {
   const s = scene("classic"), biome = { trainerChance: 8 };
   const odds = w => trainerOdds(s, w, biome);
@@ -181,14 +161,11 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(odds(49), 0);
   assert.equal(odds(50), 1, "the gym wave is a trainer by the calendar, with no roll at all");
   assert.equal(odds(40), 0, "an X0 is the wild boss");
-  // A fixed battle blocks its neighbours the same way, and is nobody's trainer roll itself.
   assert.equal(odds(23), 0, "wave 25's rival blocks 23");
   assert.equal(odds(25), 0, "and is not the biome's at all");
   assert.equal(odds(22), 1 / 8, "three waves out is clear again");
-  // The biome has to say how likely a trainer is at all.
   assert.equal(trainerOdds(s, 42, { trainerChance: 0 }), 0);
   assert.equal(trainerOdds(s, 42, null), 0);
-  // Daily replaces the roll with certainties: X5, and X0 past wave 10.
   const d = scene("daily");
   console.log("== trainer odds, daily");
   row("waves 11–20", [11, 15, 16, 20].map(w => `${w}:${trainerOdds(d, w, biome)}`));
@@ -196,8 +173,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(trainerOdds(d, 16, biome), 0, "no roll in Daily: the calendar names its trainer waves outright");
 }
 
-// ---- 7. Game-less fallbacks. This is the only file allowed them, so a build that hides `gameMode`'s methods still
-// gets one reading of the run rather than each card guessing its own.
+// ---- The game-less fallbacks answer for a build that hides `gameMode`'s methods
 {
   const bare = { gameMode: { isClassic: true } };
   console.log("== game-less fallbacks");
@@ -208,7 +184,6 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   assert.equal(waveKind({ gameMode: { isDaily: true } }, 50), "final", "the Daily run ends at 50");
   assert.equal(waveKind({ gameMode: { isEndless: true } }, 250), "final", "Endless every 250th");
   assert.equal(waveKind({ gameMode: { isEndless: true } }, 210), "boss");
-  // With no game mode at all there is no run to read: the gym and tenth-wave rules are all that is left.
   assert.equal(waveKind({}, 210), "boss", "a tenth wave; which mode's last wave the run has, nobody said");
   assert.equal(waveKind({}, 20), "gym");
   assert.equal(waveKind({}, 1), null);
