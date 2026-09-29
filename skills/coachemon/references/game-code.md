@@ -383,7 +383,7 @@ if (this.isBoss() && !ignoreSegments)
 if (globalScene.currentBattle.isClassicFinalBoss && this.formIndex === 0 && this.bossSegmentIndex < 1)
   damage = Math.min(damage, this.hp - 1);
 ```
-Then comes `super.damage` (below). With `ignoreSegments`, the index is recomputed afterwards as `ceil(hp / segmentSize)`. `handleBossSegmentCleared` runs if the index dropped. — writes `hp` and `bossSegmentIndex`; queues phases; a wild boss's clear draws global RNG. `isBoss()` is `!!bossSegments` (`:6901`). `getMinimumSegmentIndex` (private, `:6956-6962`) is 1 for the classic final boss at form 0, else 0.
+Then comes `super.damage` (below). With `ignoreSegments`, the index is recomputed afterwards as `ceil(hp / segmentSize)`. `handleBossSegmentCleared` runs if the index dropped. — writes `hp` and `bossSegmentIndex`; queues phases; a wild boss's clear draws global RNG. `isBoss()` is `!!bossSegments` (`:6901`). `getMinimumSegmentIndex` (private, `:6956-6962`) is 1 for the classic final boss at form 0, else 0. `setBoss` starts `bossSegmentIndex` at `bossSegments − 1` (`:6473`; 0 for a non-boss, `:6466`), so 0 is the last bar.
 
 `calculateBossSegmentDamage` is **exported** from `src/utils/damage.ts:22-66`. Pure:
 ```ts
@@ -2197,6 +2197,13 @@ its three `applyModifiers` calls (`:1622`, `:1624`, `:1638`) reaches `applyModif
 `src/data/balance/rates.ts:10`), raised for wild spawns by the event's `shinyEncounterMultiplier` and by the Shiny Charm
 (`ShinyRateBoosterModifier`, ×2^(1 + stacks)), and for a trainer's mon to the event's trainer shiny chance.
 
+**The ball menu.** `BallUiHandler.setup` (`src/ui/handlers/ball-ui-handler.ts:33-37`) builds one text object in
+`pokeballSelectContainer` (`:49`): `getPokeballName(pb)` for each `pb` from 0 below the key count of
+`globalScene.pokeballCounts`, then the Cancel line. `countsText` (`:54-59`) is `Object.values(pokeballCounts)`, one per line (`:117-120`), refilled on
+`show` (`:67`); the names are built once, in `setup`. The keys are the `PokeballType` values but the Luxury Ball, in enum
+order (`src/battle-scene.ts:1150-1155`), so line *i* of both is key *i*, and Cancel is the cursor after the last ball
+(`ball-ui-handler.ts:79,84`).
+
 `45-catch.js` restates the formula in closed form and the ball rules above.
 
 ---
@@ -2413,6 +2420,11 @@ set callback during `SelectStarterPhase` means a team is being chosen. The Poké
 `src/phases/title-phase.ts:245`). `gameMode` and its challenges are final before the grid opens
 (`src/phases/title-phase.ts:360-365`, `src/ui/handlers/challenges-select-ui-handler.ts:377`).
 
+**The grid cursor.** `setCursor` (`src/ui/handlers/starter-select-ui-handler.ts:3479-3511`) writes `filterBarCursor`
+instead in filter mode. On the grid it clamps to `filteredStarterContainers.length − 1` and places the cursor by
+`calcStarterPosition(cursor, this.scrollCursor)` (`:3491-3492`), so `scrollCursor` must already frame the row. It never
+calls `updateScroll` (`:3393-3477`), which lays the containers out and moves neither the cursor nor `scrollCursor`.
+
 **What is offered.** `starterContainers` holds every starter (`:302`, from `speciesDataRegistry.getAllStarters()`,
 `:801-811`); each container has `species`, `cost` and an `icon` sprite (`src/ui/containers/starter-container.ts:6-17`).
 `validStarterContainers` (`:304`) is the list the active challenges allow, by the **soft** check: the species or any
@@ -2559,7 +2571,11 @@ shows `overwriteData`, then a `CONFIRM` whose input is blocked for its delay (20
 `src/ui/handlers/base-option-select-ui-handler.ts:182-207`); Yes deletes that session, then starts the run, or calls
 `globalScene.reset(true)` when the delete fails (`save-slot-select-ui-handler.ts:238-240`). On a free slot ACTION starts
 the run at once, and on one still loading (`hasData` undefined) it does nothing. So on a free slot the first `CONFIRM`
-of the run is `CheckSwitchPhase`'s (§9), not an overwrite.
+of the run is `CheckSwitchPhase`'s (§9), not an overwrite. The overwrite `CONFIRM` is an overlay
+(`setOverlayMode`, `save-slot-select-ui-handler.ts:233-236`) over a `SAVE_SLOT` that `SelectStarterPhase` opened with a
+plain `setMode` (`src/phases/select-starter-phase.ts:24`): `mode` is `CONFIRM`, the mode chain's top is `SAVE_SLOT`, and
+`SelectStarterPhase` is still current, since it ends in `initBattle` (`select-starter-phase.ts:126`). §9's switch
+question is a `CONFIRM` opened by a plain `setMode`.
 
 **Message prompts.** `BattleMessageUiHandler` clears `onActionInput` synchronously before calling it, on ACTION and
 CANCEL alike (`src/ui/handlers/battle-message-ui-handler.ts:158-168`). `awaitingActionInput` is never reset there or in
@@ -2567,9 +2583,16 @@ CANCEL alike (`src/ui/handlers/battle-message-ui-handler.ts:158-168`). `awaiting
 The callback may arm a new prompt within the same press, and a prompt that a later `showText` replaced before it was
 answered stays armed (`:200-256`).
 
+**The level-up stats window** is `BattleMessageUiHandler`'s (`src/ui/handlers/battle-message-ui-handler.ts:12-15`). It
+opens after the level-up prompt with the increments showing (`levelUpStatsIncrContent`); the first ACTION or CANCEL
+swaps them for the totals, and the next hides `levelUpStatsContainer` (`promptLevelUpStats`, `:202-222`). It never
+writes `message`, so the message text stays as it was. It is skipped when `showLevelUpStats` is off (`:204-205`).
+
 **A party screen's own message.** While `PartyUiHandler` awaits input on it, ACTION and CANCEL take the same path: clear
 `onActionInput`, call it, clear `awaitingActionInput`. Every other button returns false, as does every button while the
-text is still typing (`src/ui/handlers/party-ui-handler.ts:912-929`).
+text is still typing (`src/ui/handlers/party-ui-handler.ts:912-929`). The messages ("It won't
+have any effect.", `:178`) are on the handler's own `message` text (`:235-241`), not the MESSAGE handler's; dismissed,
+the text returns to "Choose a Pokémon" (`:1224-1226`).
 
 **Tutorials.** With `tutorialActive` on the current `AwaitableUiHandler`, `UI.processInput` hands input only to
 `processTutorialInput`, which answers ACTION and CANCEL alike and refuses the rest; an active overlay short-circuits
@@ -2580,6 +2603,11 @@ nothing calls `ui.processInput(Button.MENU)`. It does nothing under `disableMenu
 COMMAND, MODIFIER_SELECT, MYSTERY_ENCOUNTER and a MESSAGE with a finished pending prompt, and leaves MENU by
 `revertMode`. On STARTER_SELECT and POKEDEX_PAGE it is `buttonTouch` (`:141-147`): SUBMIT, then ACTION if SUBMIT
 returned false, so on the grid a valid party is offered the start `CONFIRM`. Every other mode ignores it.
+
+**The mode chain.** `ui.setOverlayMode` (`src/ui/ui.ts:591-593`) pushes the current mode onto `modeChain` (`:543-545`),
+except MESSAGE (0), which the `this.mode &&` test skips. `setMode` never touches the chain, `revertMode` pops it (`:610`),
+and only `resetModeChain` (`:595-597`), called from `TitlePhase.loadSaveSlot` (`src/phases/title-phase.ts:204`), clears
+it. So the entries below its top can be stale.
 
 **`ui.revertMode()`** (`src/ui/ui.ts:600-630`) does nothing when the mode was entered by `setMode` (an empty
 `modeChain`). Over an overlay it calls the handler's `clear()` and pops back to the previous mode, calling neither that

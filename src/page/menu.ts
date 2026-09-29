@@ -4,7 +4,7 @@ import type { Located } from "./locate.ts";
 export type MenuOption = {
   i: number | string;
   label: string | null;
-  /** The plain name a decorated label is built from (`Great Ball` in `Great Ball ×9`); selects the option too. */
+  /** The plain name under a decorated label (CONTEXT.md, `Option`). */
   name?: string | null;
   [k: string]: unknown;
 };
@@ -19,19 +19,16 @@ export type MenuResult =
       options: MenuOption[];
       cursor: number | string | null;
       text: string | null;
-      /** A handler's own message box waits for ACTION and swallows every cursor press (#44). */
+      /** A handler's own message takes ACTION and CANCEL only (#44, game-code.md §26). */
       messagePending: boolean;
       extra: Record<string, unknown>;
       disc: Discriminators;
     }
-  /** No handler for the mode. */
   | { readable: false; why: "no-handler"; mode: number; disc?: undefined };
 
 /**
- * The generic menu reader (#4's families, corrected by #6 and v1-tool-surface.md §7). `config.options` first; scene
- * geometry only where no option array exists. The discriminators come back once, as `disc`: the adapter fills each
- * family's fields from them, so `extra` never copies one. A modal's typed form text never leaves the page
- * (extension-distribution.md §6). Self-contained (§10.5).
+ * The families of v1-tool-surface.md §7. `extra` never copies a discriminator: the adapter reads them off `disc`. A
+ * modal's typed form text never leaves the page (extension-distribution.md §6). Self-contained (§10.5).
  */
 export function menu(L: Located, _args: Record<string, never>): MenuResult {
   const __txt = (o: any) => (o && typeof o.text === "string") ? o.text : null;
@@ -49,12 +46,11 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
   const mh = ui.handlers[m.MESSAGE];
   out.text = __try(() => (mh && mh.message && typeof mh.message.text === "string") ? mh.message.text : null);
   const opt = (i: number | string, label: string | null, more?: Record<string, unknown>): MenuOption => Object.assign({ i, label }, more || {});
-  // A trainer's Pokémon cannot be caught: the thrown ball is wasted (#56).
+  // A trainer battle refuses every ball (#56, game-code.md §20).
   const catchable = () => __try(() => !scene.currentBattle.trainer);
 
   try {
     if (h.config && Array.isArray(h.config.options)) {
-      // TITLE, CONFIRM, OPTION_SELECT, MENU_OPTION_SELECT, AUTO_COMPLETE
       out.family = "option_select";
       out.options = h.config.options.map((o: any, i: number) => opt(i, __strip(o.label), { skip: o.skip === true }));
       out.cursor = typeof h.fullCursor === "number" ? h.fullCursor : h.cursor;
@@ -83,8 +79,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.readable = out.options.length > 0;
     } else if (mode === m.BALL) {
       out.family = "ball";
-      // Two multi-line texts (BallUiHandler.setup, #46): the names, one per ball type then Cancel, and countsText. Counts come
-      // from pokeballCounts, which countsText mirrors in the same key order; the row after the last ball is Cancel.
+      // One text of names, a line per `pokeballCounts` key then Cancel, beside `countsText` (#46, game-code.md §20).
       const names = __kids(h.pokeballSelectContainer).find((k: any) => k !== h.countsText && typeof k.text === "string" && k.text.indexOf("\n") > -1);
       const lines: string[] = names ? names.text.split("\n").map(__strip) : [];
       const counts = Object.entries(scene.pokeballCounts || {});
@@ -109,18 +104,16 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
     } else if (mode === m.MODIFIER_SELECT) {
       out.family = "modifier_select";
       const rows: { row: number; kind: string; items: { col: number; label: string | null; cost?: unknown; desc?: string | null }[] }[] = [];
-      // Row 0 is the button bar, in the handler's own cursor order: reroll, manage items, check team, lock rarities.
-      // Labels come from each container's text object, which the game filled from its i18n keys — never hardcoded.
+      // Row 0's labels are the game's own text, never hardcoded (v1-tool-surface.md §7, §10).
       const btn = (c: any, col: number) => ({ col, label: __strip(__texts(c)[0]) || null, visible: !!(c && c.visible) });
       const buttons = [btn(h.rerollButtonContainer, 0), btn(h.transferButtonContainer, 1), btn(h.checkButtonContainer, 2), btn(h.lockRarityButtonContainer, 3)];
       if (h.continueButtonContainer && h.continueButtonContainer.visible) buttons.push(btn(h.continueButtonContainer, 4));
       rows.push({ row: 0, kind: "buttons", items: buttons.filter(b => b.visible && b.label) });
-      // `desc` is the game's own description of the offer, the one field of `probe.js`'s reward read nothing else carries (extension-distribution.md §11.4).
       const item = (o: any, col: number) => ({ col, label: __try(() => o.modifierTypeOption.type.name), cost: __try(() => o.modifierTypeOption.cost), desc: __try(() => o.modifierTypeOption.type.getDescription()) });
       rows.push({ row: 1, kind: "reward", items: (h.options || []).map(item) });
       const shop = h.shopOptionsRows || [];
       for (let r = 0; r < shop.length; r++) {
-        // Shop rows are indexed backwards: row n >= 2 is shopOptionsRows.at(-(n-1)) (v1-tool-surface.md §7).
+        // Shop rows are indexed backwards (v1-tool-surface.md §7).
         rows.push({ row: 2 + r, kind: "shop", items: (shop[shop.length - 1 - r] || []).map(item) });
       }
       out.extra.rows = rows;
@@ -132,7 +125,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.readable = true;
     } else if (mode === m.SAVE_SLOT) {
       out.family = "save_slot";
-      // hasData is undefined until the slot's server fetch resolves; the handler refuses ACTION on such a slot.
+      // `hasData` is undefined until the slot's server fetch resolves (v1-tool-surface.md §10).
       out.options = (h.sessionSlots || []).map((s: any, i: number) => opt(i, "Slot " + (i + 1), { hasData: s.hasData === true ? true : s.hasData === false ? false : null, wave: __try(() => s.saveData ? s.saveData.waveIndex : null), gameMode: __try(() => s.saveData ? s.saveData.gameMode : null) }));
       out.cursor = (h.cursor || 0) + (h.scrollCursor || 0);
       out.readable = out.options.length > 0;
@@ -140,21 +133,19 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.family = "party";
       out.extra.optionsScroll = h.optionsScroll === true;
       if (h.awaitingActionInput === true && h.onActionInput != null) {
-        // PartyUiHandler's own message box ("It won't have any effect.", #44): processInput swallows every button but
-        // ACTION/CANCEL until it is dismissed, so no option can be reached. Its text lives on h.message, not MESSAGE's.
+        // The handler's own message takes ACTION and CANCEL only; its text is on `h.message` (#44, game-code.md §26).
         out.options = [];
         out.text = __try(() => __txt(h.message));
         out.messagePending = true;
         out.cursor = disc.optionsMode ? h.optionsCursor : h.cursor;
       } else if (disc.optionsMode) {
-        // Sort by y ASCENDING: verb first, Cancel last (#6 corrected #4). Labels are BBCode.
+        // Sorted by `y` ascending; descending selects the wrong option (#6, v1-tool-surface.md §7).
         const kids = __kids(h.optionsContainer).filter((k: any) => typeof k.text === "string");
         kids.sort((a: any, b: any) => a.y - b.y);
         out.options = kids.map((k: any, i: number) => opt(i, __strip(k.text)));
         out.cursor = h.optionsCursor;
       } else {
-        // Slot cursors are 0..n-1; Cancel is the fixed cursor 6, and item-manage modes add the transfer/discard toggle at 7.
-        // DOWN walks 0..n-1 → 6 → 0 (PartyUiHandler.processInput), so the driver navigates this list as a DOWN-cycle.
+        // Cancel is the fixed cursor 6, not `party.length` (v1-tool-surface.md §10).
         const party = __try(() => scene.getPlayerParty()) || [];
         out.options = party.map((p: any, i: number) => opt(i, p.name, { level: p.level, hp: p.hp, maxHp: __try(() => p.getMaxHp()), fainted: __try(() => p.isFainted()), active: __try(() => p.isActive(true)) }));
         out.options.push(opt(6, "Cancel", { synthetic: true }));
@@ -182,8 +173,7 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       if (mode === m.ALERT_MODAL) out.text = __try(() => __txt(h.label)) || out.text;
       out.readable = true;
     } else if (mode === m.SUMMARY && disc.summaryUiMode === sm.LEARN_MOVE) {
-      // SUMMARY/LEARN_MOVE: rows 0..3 are the moveset, row 4 the new move (ACTION there declines, via CANCEL). The row
-      // cursor is moveCursor; cursor is the page. Labels are read live from the moveset and newMove, never the text rows.
+      // The row cursor is `moveCursor`; `cursor` is the page (v1-tool-surface.md §7).
       out.family = "learn_move";
       const pk = h.pokemon;
       const ms = __try(() => pk.getMoveset()) || [];
@@ -196,7 +186,6 @@ export function menu(L: Located, _args: Record<string, never>): MenuResult {
       out.extra.page = h.cursor;
       out.extra.pokemon = __try(() => pk.name);
       out.extra.newMove = __try(() => nm.name);
-      // Off the move list (LEFT to another page) the rows take no cursor: nothing to select until RIGHT returns to it.
       if (h.moveSelect !== true) out.options = [];
       out.readable = true;
     } else if (mode === m.SUMMARY || mode === m.GAME_STATS || mode === m.POKEDEX_PAGE || mode === m.RUN_INFO) {

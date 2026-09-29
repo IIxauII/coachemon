@@ -1,37 +1,25 @@
 /**
- * The settle loop (#3, #6, #14, #19, #23).
- *
- * Polls the predicate every 100 ms until the game reports settled for three
- * consecutive samples *and* the fine fingerprint has left its pre-press value
- * (or the change grace has elapsed — some presses legitimately leave it in
- * place, e.g. three identical level-up messages). There is no fatal clock: a
- * settle budget bounds the tool call, never the run. Past the notice
- * threshold the caller is told to send progress; past the call budget the
- * loop returns `timed_out` with a diagnostic, and the next call that presses
- * nothing resumes the wait.
- *
- * A frozen Phaser loop (hidden page without focus emulation, #19/#23) is read
- * as a frame delta of zero across two polls: busy reason `loop-frozen`,
- * outranking whatever the predicate says.
+ * The settle loop (#3, #6, #14, #19, #23). Its budget bounds a tool call, never the run: `timed_out` is not fatal
+ * (v1-tool-surface.md §3).
  */
 import type { PredicateRead } from "./game/port.ts";
 
 export const POLL_MS = 100;
 export const AGREE = 3;
-/** How long to insist the fingerprint leave its pre-press value before accepting an unmoved settle. */
 export const CHANGE_GRACE_MS = 3_000;
-/** After this much stall the call starts progress notifications; not a return point. */
+/** Starts progress notifications; not a return point. */
 export const NO_PROGRESS_NOTICE_MS = 6_000;
-/** The only return point, for a whole tool call: every settle in one call shares it (#34). Must stay below the client's hard limit and its 120 s auto-background (#20). */
+/**
+ * The only return point, shared by every settle in one tool call (#34). Must stay below the client's hard limit and its
+ * 120 s auto-background (#20).
+ */
 export const CALL_BUDGET_MS = 30_000;
-/** Cumulative stall beyond anything observed on a healthy game; a label, not a verdict (#14). */
+/** Beyond any stall observed on a healthy game; a label, not a verdict (#14). */
 export const BEYOND_OBSERVED_MS = 90_000;
 
 export type SettleDeps = {
   poll: () => Promise<PredicateRead>;
-  /** Every poll, for the hang watch and the phase latch. */
   onPoll?: (read: PredicateRead, t: number) => void;
-  /** Fired once the stall passes the notice threshold, then about once a second. */
   onStall?: (stallMs: number, reason: string) => void;
   signal?: AbortSignal;
   now?: () => number;
@@ -41,9 +29,7 @@ export type SettleDeps = {
 
 export type SettleResult = {
   settled: boolean;
-  /** The last read, ready or not. */
   last: PredicateRead | null;
-  /** Last busy reason seen (or `menu-open`/`awaiting-action` when settled). */
   reason: string;
   elapsedMs: number;
   /** Time since the fine fingerprint last changed. */
@@ -86,7 +72,7 @@ export async function settle(deps: SettleDeps, preFp: string | null): Promise<Se
     const loopFrozen = frozenPolls >= 1;
 
     if (!read.ready) {
-      // #14: locator failure during a settle is a busy reason, never a thrown error (reset(true) re-runs launchBattle).
+      // A locator failure mid-settle is a busy reason, never a throw: `reset(true)` re-runs `launchBattle` (#14).
       agree = 0;
       reason = `scene-unavailable: ${read.why}`;
     } else {

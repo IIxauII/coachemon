@@ -1,13 +1,9 @@
 /**
- * The environment a script's spawned MCP server gets.
- *
- * The MCP SDK's stdio transport passes a safe subset of ours when none is given, and that subset does not include
- * `COACHEMON_TRANSPORT` or `COACHEMON_DEV` — the two that decide which transport the server uses and which hub port it
- * dials (extension-distribution.md §7.2, §12.1). Without them a checkout could never drive a paired dev build of the
- * extension.
+ * Given no `env`, the MCP SDK's stdio transport passes a safe subset that drops `COACHEMON_TRANSPORT` and
+ * `COACHEMON_DEV`, which pick the transport and the hub port (extension-distribution.md §7.2, §12.1).
  */
 
-/** What the SDK would have inherited anyway: a server needs a `PATH` and a `HOME` like any other process. */
+/** The SDK's `DEFAULT_INHERITED_ENV_VARS`, both platforms' lists together. */
 const PASSED = new Set(["HOME", "LOGNAME", "PATH", "SHELL", "TERM", "USER", "APPDATA", "HOMEDRIVE", "HOMEPATH", "LOCALAPPDATA", "PROCESSOR_ARCHITECTURE", "PROGRAMFILES", "SYSTEMDRIVE", "SYSTEMROOT", "TEMP", "USERNAME", "USERPROFILE"]);
 
 export function serverEnv(env: NodeJS.ProcessEnv = process.env): Record<string, string> {

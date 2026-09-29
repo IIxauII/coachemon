@@ -1,7 +1,3 @@
-/**
- * A fake PokéRogue tab for the page handlers' tests: a Phaser `CanvasPool` whose one entry carries a booted game with
- * `scene` as its battle scene, the way `locate()` finds it. Tests only.
- */
 import { disc } from "./disc.ts";
 import { dispatch } from "./dispatch.ts";
 import { COMMAND_HANDLERS } from "./handlers.ts";
@@ -12,7 +8,6 @@ import { STORE_COMMANDS, type Args, type CommandName } from "../protocol/command
 
 type Globals = { Phaser?: unknown; document?: unknown };
 
-/** Install `scene` as the tab's battle scene, with `game` merged into its game, until the test ends. */
 export function onPage(t: { after: (fn: () => void) => void }, scene: Record<string, unknown>, game: Record<string, unknown> = {}): void {
   const g = globalThis as Globals;
   const prev = { Phaser: g.Phaser, document: g.document };
@@ -26,7 +21,6 @@ export function onPage(t: { after: (fn: () => void) => void }, scene: Record<str
   });
 }
 
-/** A tab with no Phaser at all. */
 export function offPage(t: { after: (fn: () => void) => void }): void {
   const g = globalThis as Globals;
   const prev = { Phaser: g.Phaser, document: g.document };
@@ -38,7 +32,6 @@ export function offPage(t: { after: (fn: () => void) => void }): void {
   });
 }
 
-/** Run one command against the installed tab, as a transport would. */
 export function send<N extends CommandName>(name: N, args: Args<N>): any {
   return dispatch(locate, fine, disc, COMMAND_HANDLERS[name], name, STORE_COMMANDS[name].kind, PAGE_MODES, args);
 }

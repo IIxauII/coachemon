@@ -4,7 +4,7 @@ import type { Located, Unlocated } from "./locate.ts";
 
 export type ProbeArgs = { pump?: boolean; tail?: boolean };
 
-/** What every probe carries, located or not. `console` only with `tail: true`. */
+/** `console` only with `tail: true`. */
 type Always = { pumped: boolean; errorAt: number | null; console?: ConsoleLine[] };
 
 export type ProbeResult = Always & (
@@ -35,12 +35,9 @@ export type ProbeResult = Always & (
 );
 
 /**
- * The settle predicate (#3, with #9's and #11's corrections) plus everything the settle loop, the Screen and the
- * progress fingerprint need, in one read. Every field is guarded; a missing path yields null, never a throw.
- *
- * `pump` runs one `game.loop.tick()` first when the loop's frame has not advanced since the previous probe, which is
- * what keeps a hidden tab's frozen loop moving for the driver's settles (extension-distribution.md §10.3). `errorAt`
- * and `tail` come from the page's error recorder, when one is installed. Self-contained (§10.5).
+ * The settle predicate (#3, #9, #11), with everything the settle loop, the Screen and the progress fingerprint need in
+ * the same read. A missing path yields null, never a throw. `pump`: extension-distribution.md §10.3. Self-contained
+ * (§10.5).
  */
 export function probe(L: Located | Unlocated, args: ProbeArgs): ProbeResult {
   const g = globalThis as any;
@@ -82,10 +79,9 @@ export function probe(L: Located | Unlocated, args: ProbeArgs): ProbeResult {
   else if (h.pendingPrompt === true)         { reason = "pending-prompt"; }
   else if (typing(h) || typing(mh))          { reason = "text-animating"; }
   else if (mode === m.LOADING || mode === m.UNAVAILABLE) { reason = "modal-blocking"; }
-  // An alert shown with a closeDelay is unclosable until it elapses; one shown without stays so forever (#15).
-  // Busy, not a screen: a closable alert settles as ALERT_MODAL/CLOSABLE, a permanent one times out with its text.
+  // An unclosable alert is busy, not a screen: a permanent one times out with its text (#15, v1-tool-surface.md §10).
   else if (mode === m.ALERT_MODAL && h.allowClosing !== true) { reason = "alert-unclosable"; }
-  // Save slots resolve from the server one by one; until every hasData is a boolean the screen cannot be acted on.
+  // An unresolved save slot cannot be acted on (v1-tool-surface.md §10).
   else if (mode === m.SAVE_SLOT && Array.isArray(h.sessionSlots) && h.sessionSlots.some((s: any) => typeof s.hasData !== "boolean")) { reason = "slots-loading"; }
   else if (mode === m.MESSAGE || mode === m.EVOLUTION_SCENE || mode === m.MODIFIER_SELECT) {
     settled = awaiting(h); reason = settled ? "awaiting-action" : "resolving";

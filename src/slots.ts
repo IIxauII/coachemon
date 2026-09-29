@@ -1,19 +1,13 @@
-/**
- * Save-slot choice for `start_run` (#29). The `slot` argument is a 0-based
- * index, but everything a refusal tells the caller names slots by the label
- * `select_option` accepts ("Slot 1".."Slot 5"), so the message, the free and
- * occupied lists and the `next` hint cannot disagree about which slot is meant.
- */
+/** `slot` is 0-based, but everything a refusal says names a slot by the label `select_option` accepts (#29). */
 
 import { UiMode } from "./enums/generated.ts";
 
 export type SlotOption = { i: number | string; label: string | null; hasData?: unknown };
 
 export type SlotPlan<T extends SlotOption> = {
-  /** Labels of slots without a saved run (unresolved `hasData` counts as free, as the screen allows it). */
+  /** Unresolved `hasData` counts as free. */
   free: string[];
   occupied: string[];
-  /** The slot to press: `slot` if given, else the lowest free one. Undefined when none qualifies. */
   chosen: T | undefined;
 };
 
@@ -29,9 +23,8 @@ export function planSlot<T extends SlotOption>(options: readonly T[], slot: numb
 }
 
 /**
- * The overwrite prompt, told apart from any other CONFIRM (#30). The save-slot handler opens it as an overlay on
- * SAVE_SLOT while SelectStarterPhase is still running; the wave-1 "Will you switch Pokémon?" CONFIRM that follows a
- * free slot runs under CheckSwitchPhase. The chain can hold stale entries below, so only its top counts.
+ * The switch question after a free slot is a CONFIRM too, under `CheckSwitchPhase`, and the chain can hold stale
+ * entries below its top (#30, game-code.md §26).
  */
 export function isOverwriteConfirm(r: { mode: number; phaseName: string | null; modeChain: readonly number[] }): boolean {
   return r.mode === UiMode.CONFIRM && r.phaseName === "SelectStarterPhase" && r.modeChain.at(-1) === UiMode.SAVE_SLOT;

@@ -1,16 +1,13 @@
-/**
- * The hub's frames (extension-distribution.md §7.6). Every frame is one JSON text message; `t` names
- * it. Types only, no runtime.
- */
+/** The hub's frames (extension-distribution.md §7.6). Types only, no runtime. */
 import type { CommandName } from "./commands.ts";
 
 export type Target = "chrome" | "firefox" | "safari";
 export type Flavour = "store" | "dev";
 
-/** What a relay or the background answers instead of a result (extension-distribution.md §9.7). */
+/** (extension-distribution.md §9.7) */
 export type RelayCode = "no-handler" | "threw" | "too-large" | "wrong-world" | "tab-gone";
 
-/** What the hub answers instead of routing a command (extension-distribution.md §7.6). */
+/** (extension-distribution.md §7.6) */
 export type HubCode = "no-tab" | "tabs" | "unknown-command" | "missing-command" | "protocol" | "contended" | "not-driver" | "timeout";
 
 export type TabState = "ready" | "gone" | "wrong-world";
@@ -18,8 +15,6 @@ export type TabState = "ready" | "gone" | "wrong-world";
 export type Welcome = { t: "welcome"; product: string; protocol: number; version: string };
 
 export type ReplyOk = { t: "reply"; id: number; ok: true; result: unknown };
-
-// ------------------------------------------------------------- browser ↔ hub
 
 export type ExtensionHello = {
   t: "hello";
@@ -41,26 +36,17 @@ export type ExtensionEvent = { t: "event"; tab: number; kind: EventKind; body: R
 
 export type EventKind = "card" | "coach-error";
 
-/**
- * One **group** of a **card**, as everything outside the panel sees it (extension-distribution.md §11.1, #349):
- * nodes cannot cross a wire, so a group leaves the page with its rows already flattened to one string each. Both
- * surfaces that carry a card — the relay's card event and the `card` command's result — are this same shape, so
- * they are declared once here.
- */
+/** A card's group, its rows flattened to one string each (extension-distribution.md §11.1). */
 export type CardGroup = { id: string; label: string; summary: string | null; rows: string[] };
 
 /**
- * The dev loop's reload (extension-distribution.md §5.4). Not a command: it needs no tab, takes no arguments and is
- * never answered, because the extension it reaches is about to restart. The hub fans it out to every `flavour: "dev"`
- * browser and to nothing else, so it can never touch a store build — which is also why the guard bans the string from
- * a store artifact (§5.5).
+ * Never answered: the extension it reaches is about to restart. The hub sends it to `flavour: "dev"` browsers only
+ * (extension-distribution.md §5.4, §5.5).
  */
 export type DevReload = { t: "dev-reload" };
 
 export type FromExtension = ExtensionHello | TabFrame | ConsentFrame | Ping | ExtensionReply | ExtensionEvent;
 export type ToExtension = Welcome | ExtensionCmd | DevReload;
-
-// -------------------------------------------------------------- client ↔ hub
 
 export type ClientRole = "server" | "watch";
 

@@ -4,15 +4,13 @@ export type ConsoleLine = { t: string; level: string; text: string };
 export type Recorder = {
   /** Epoch ms of the latest uncaught page error or unhandled rejection. */
   at: number | null;
-  /** The last 30 page errors and warnings, 300 characters each. */
   lines: ConsoleLine[];
 };
 
 /**
- * Start recording the page's uncaught errors, unhandled rejections and console errors and warnings, for `probe`'s
- * `errorAt` and `tail` (extension-distribution.md §10.1, §12.4). Idempotent: a second call keeps the first recorder.
- * The extension's page script installs it on load; the CDP link does not, because CDP reports the same through its own
- * events. Self-contained.
+ * For `probe`'s `errorAt` and `tail` (extension-distribution.md §12.4). Nothing outside its tests calls it: the
+ * extension's page script never installs it, so under the hub link both read empty. The CDP link reads the same
+ * through CDP's own events.
  */
 export function recordErrors(): void {
   const g = globalThis as any;

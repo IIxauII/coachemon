@@ -1,42 +1,19 @@
 /**
- * The stuck detector: fingerprint repetition across decisions (#13, #16).
- *
- * The game is settled, presses land, and the progress fingerprint keeps coming
- * back to where it has already been. Two verdicts come from here — `dead_end`
- * and `loop` — and the third, `hang`, is a positive signature read off the
- * settle loop instead (see `hang.ts`), because a hung game never settles and so
- * never produces a decision this detector could count.
- *
- * The detector reports; it never presses. Claude walks the escape ladder and
- * the detector tracks which rungs are spent.
+ * `dead_end` and `loop` (CONTEXT.md, `Stuck`; #13, #16). `hang` is read off the settle loop in `hang.ts`: a hung game
+ * never settles, so it never makes a decision this could count. It reports, and never presses.
  */
 import { ladderFor, type LadderReport } from "../escape-ladder/lookup.ts";
 import type { CancelEffect, Rung, ScreenClass } from "../escape-ladder/types.ts";
 
-/**
- * Samples in the window: the current settled read plus the last 11 decisions.
- * #13: a 2-cycle recurs every second decision and hits 5 inside 12.
- */
+/** The current read plus 11 decisions: a 2-cycle hits `THRESHOLD` inside it (#13). */
 export const WINDOW = 12;
-/** Repeats of the current fingerprint that make it stuck. #6's worst legitimate repeat is 3; headroom 2. */
+/** 3, #6's worst legitimate repeat, + 2 headroom. */
 export const THRESHOLD = 5;
 
 /**
- * The progress fingerprint: #13's five fields, then the battle clock, then the money.
- *
- * The five fields are deliberately coarse: adding `optionsCursor` would split a
- * 3-screen cycle into 3 fingerprints needing 15 decisions to trip, which no
- * longer fits the window.
- *
- * `wave` and `turn` are appended because without them every turn's COMMAND
- * prompt is the same fingerprint, and a battle of five turns is a false `loop`
- * (#16's replay: run5 reached 4 on a healthy wave). They cannot split a stuck
- * cycle — nothing a stuck agent does advances the turn — only real progress.
- *
- * `money` is appended because a shop purchase that goes through changes none of
- * the other fields, so repeat purchases read as #6's shop↔party loop (#35). A
- * stuck shop cycle (item picked, party cancelled, or an apply the game refuses)
- * never spends, so it still trips.
+ * #13's five fields are deliberately coarse: `optionsCursor` would split a 3-screen cycle into three fingerprints that
+ * need 15 decisions to trip, past the window. `wave` and `turn` keep a healthy battle's COMMAND prompts apart (#16),
+ * and `money` a run of shop purchases (#35); nothing a stuck agent does advances either.
  */
 export function progressFingerprint(read: {
   phaseName: string | null;
@@ -44,11 +21,8 @@ export function progressFingerprint(read: {
   modeChain: readonly number[];
   cursor: number | null;
   messageText: string | null;
-  /** `currentBattle.waveIndex`, `null` outside a run. */
   wave: number | null;
-  /** `currentBattle.turn`, `null` outside a run. */
   turn: number | null;
-  /** `scene.money`, `null` when unreadable. */
   money: number | null;
 }): string {
   return [
@@ -63,10 +37,9 @@ export function progressFingerprint(read: {
   ].join("|");
 }
 
-/** A fingerprint and whether it was read off a real settle (`false`: sampled off a settle timeout). */
+/** `settled: false`: sampled off a settle timeout. */
 export type Sample = { fingerprint: string; settled: boolean };
 
-/** What an acting call delivered. */
 export type Choice =
   | { kind: "option"; label: string }
   | { kind: "button"; button: string }
@@ -76,25 +49,22 @@ export type Choice =
 
 /** One acting tool call, however many presses it took inside (cursor walk, auto-advance). */
 export type ActingCall = {
-  /** Composite screen id the choice was made on. */
   screen: string;
-  /** Read before the press. */
   before: Sample;
-  /** Read when the call returned. `settled: false` ⇒ the call returned `timed_out`. */
+  /** `settled: false`: the call returned `timed_out`. */
   after: Sample;
   choice: Choice;
-  /** `tutorialActive` when the choice was made: CANCEL is ACTION under a tutorial, so these are not decisions. */
+  /** CANCEL is ACTION under a tutorial (game-code.md §26), so a choice made under one is not a decision. */
   tutorialActive: boolean;
 };
 
 export type AssessContext = {
   screen: string;
   fingerprint: string;
-  /** Only a settled state is ever judged. A state sampled off a timeout is `ok` here, whatever the ring says. */
   settled: boolean;
   liveVersion: string;
   tutorialActive: boolean;
-  /** Option labels read on the current screen (#4), or `null` when unreadable. */
+  /** `null` when unreadable. */
   options: readonly string[] | null;
 };
 
@@ -106,7 +76,7 @@ export type LadderState = {
   class?: ScreenClass;
   cancelEffect?: CancelEffect;
   rungs: readonly RungState[];
-  /** Index of the first unspent rung, or `null` when there are no rungs. Once exhausted, this is the reload. */
+  /** `null` only when there are no rungs; once exhausted, this is the reload. */
   next: number | null;
   /** Every rung before the reload is spent on this fingerprint. Never true for a suppressed or unknown ladder. */
   exhausted: boolean;
@@ -159,8 +129,7 @@ export class StuckDetector {
   }
 
   /**
-   * Every reading call that settles (or times out) without pressing. It never
-   * ticks the window by itself, but a settled read completes a pending
+   * Every reading call that presses nothing. It never ticks the window itself, but a settled read completes a pending
    * timed-out decision exactly once, and spends a `wait` rung.
    */
   recordRead(sample: Sample): void {
@@ -175,12 +144,7 @@ export class StuckDetector {
     this.#reads = this.#reads.filter(r => r.seq >= oldest);
   }
 
-  /**
-   * Occurrences of `fingerprint` in the window, counting a settled read of it
-   * now: the current read plus the fingerprints the last `WINDOW - 1` decisions
-   * were made on. That is the prototype's sampling (`one-wave.mjs:278`), which
-   * is what fired live on run3.
-   */
+  /** Counts a settled read of `fingerprint` now as one. */
   repeatsOf(fingerprint: string): number {
     return this.#ring.filter(d => d.before === fingerprint).length + 1;
   }

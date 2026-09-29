@@ -1,12 +1,4 @@
-/**
- * Composite screen id (v1-tool-surface.md §4): `ui.mode` alone does not
- * identify a screen. `PARTY(8)` is fourteen screens told apart by
- * `partyUiMode`, each with a different meaning and escape; `SAVE_SLOT`,
- * `SUMMARY`, `ALERT_MODAL` and `STARTER_SELECT` carry their own
- * discriminators. The id is what Claude reasons about and the key the
- * escape ladder answers to. Only the game adapter computes it: every read
- * arrives with its Screen.
- */
+/** Composite screen id (v1-tool-surface.md §4). Only the game adapter computes it; every read carries its Screen. */
 import { NAMES, SaveSlotUiMode, SummaryUiMode, UiMode } from "./enums/generated.ts";
 import type { Discriminators } from "./page/disc.ts";
 
@@ -33,7 +25,6 @@ export function screenId(mode: number, d: Discriminators): string {
       return d.summaryUiMode === SummaryUiMode.LEARN_MOVE ? `${name}/LEARN_MOVE` : name;
     case UiMode.ALERT_MODAL:
       return d.alertClosable ? `${name}/CLOSABLE` : name;
-    // The filter bar asks for different input and is left differently: `setCursor` writes `filterBarCursor` there.
     case UiMode.STARTER_SELECT:
       return d.filterMode ? `${name}/FILTER` : name;
     default:
@@ -41,7 +32,7 @@ export function screenId(mode: number, d: Discriminators): string {
   }
 }
 
-/** Six settings modes carry `requireReload`, and the reload fires on leaving Settings (#11). Acting tools refuse here. */
+/** Acting tools refuse here (#11, v1-tool-surface.md §6.5). */
 export function isSettingsMode(mode: number): boolean {
   return mode >= UiMode.SETTINGS && mode <= UiMode.KEYBOARD_BINDING;
 }

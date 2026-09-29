@@ -2,16 +2,7 @@ import type { Discriminators } from "./disc.ts";
 import type { Located, Page, Scene, Unlocated } from "./locate.ts";
 import type { PageModes } from "./modes.ts";
 
-/**
- * Answer one command inside the game tab, in one page turn: locate the scene, refuse an act whose fingerprint the game
- * has left, run the handler (extension-distribution.md §10.1, §10.2). Every transport answers through this: the CDP
- * link stringifies it with its function arguments (§10.5), the extension's page script calls it directly. `modes`
- * carries the generated mode enums in, since a stringified handler cannot import them (#164); they reach every handler
- * as `L.m` and `L.sm`.
- *
- * Off the game every command refuses `{ ok: false, why }` with the locator's reason, except `probe`, which reports
- * `ready: false` itself. Self-contained (§10.5).
- */
+/** Self-contained (extension-distribution.md §10.5). */
 export function dispatch(
   locate: () => Scene | Unlocated,
   fine: (L: Scene, modes: PageModes) => string,

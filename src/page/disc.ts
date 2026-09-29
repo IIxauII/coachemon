@@ -1,6 +1,5 @@
 import type { Page } from "./locate.ts";
 
-/** The Screen's discriminators off the current handler: the adapter turns them into the Screen id (#133). */
 export type Discriminators = {
   partyUiMode: number | null;
   optionsMode: boolean;
@@ -12,8 +11,8 @@ export type Discriminators = {
 };
 
 /**
- * The discriminators off handler `h`, which may be null. One function for `probe` and `menu`, handed to both through
- * `L`, so the two reads cannot read them differently (#133). Self-contained (extension-distribution.md §10.5).
+ * `h` may be null. `probe` and `menu` both read through this, as `L.disc`, so the two cannot disagree (#133).
+ * Self-contained (extension-distribution.md §10.5).
  */
 export function disc(h: Page): Discriminators {
   return {

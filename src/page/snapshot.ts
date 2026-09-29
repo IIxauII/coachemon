@@ -3,18 +3,13 @@ import type { Located } from "./locate.ts";
 export type SnapshotDetail = "lean" | "party" | "items" | "full";
 
 /**
- * `get_state` (v1-tool-surface.md §6.2). Every field inside its own guard; `detail` widens it. Self-contained
- * (extension-distribution.md §10.5).
- *
- * `full` adds the coach's battle fields to every party **and** enemy member — the ones `probe.js` read for the coach
- * skill (§11.4) — so a coach reading through the MCP server sees what `read.sh battle` showed it. Its `stats` are the
- * named `getStat` six; `party`'s stay the raw array they have always been.
+ * `get_state` (v1-tool-surface.md §6.2, extension-distribution.md §11.4). Under `full`, `stats` is the named
+ * `getStat` six; under `party` it stays the raw array. Self-contained (§10.5).
  */
 export function snapshot(L: Located, args: { detail: SnapshotDetail }): Record<string, unknown> {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
   const withParty = args.detail === "party" || args.detail === "full";
   const withItems = args.detail === "items" || args.detail === "full";
-  // The coach's fields ride on `full` alone: they are several game calls per mon, on both sides of the field.
   const withCoach = args.detail === "full";
   const { scene, ui } = L;
   const b = scene.currentBattle || null;
@@ -39,7 +34,7 @@ export function snapshot(L: Located, args: { detail: SnapshotDetail }): Record<s
     statStages: coach ? __try(() => p.summonData.statStages.slice()) : undefined,
     onField: coach ? __try(() => p.isOnField()) : undefined,
     boss: coach ? __try(() => p.isBoss()) : undefined,
-    // HP bars still standing out of the boss's total (bossSegmentIndex counts down to 0 on the last bar).
+    // `bossSegmentIndex` counts down to 0 on the last bar (game-code.md §3).
     bossBars: coach ? __try(() => p.isBoss() && p.bossSegments > 1 ? { left: (p.bossSegmentIndex ?? p.bossSegments - 1) + 1, of: p.bossSegments } : null) : undefined,
     held: coach ? __try(() => p.getHeldItems().map((m: any) => `${m.type.name} x${m.stackCount}`)) : undefined,
   } : null;
@@ -60,8 +55,6 @@ export function snapshot(L: Located, args: { detail: SnapshotDetail }): Record<s
   };
   if (withCoach) out.trainer = __try(() => b && b.trainer ? b.trainer.getName() : null);
   if (withItems) {
-    // The party's own modifiers and the held ones together: `held` says which is which, and a mon's own `held` names
-    // what it is holding (extension-distribution.md §11.4).
     out.items = __try(() => (scene.modifiers || []).map((m: any) => ({
       name: __try(() => m.type.name), type: __try(() => m.type.id || m.type.identifier || null),
       stack: __try(() => m.stackCount), max: __try(() => m.getMaxStackCount ? m.getMaxStackCount() : null),

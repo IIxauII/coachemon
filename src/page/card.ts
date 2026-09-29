@@ -6,18 +6,9 @@ export type CardResult =
   | { ok: false; why: "no-hud" };
 
 /**
- * The card the HUD is showing (extension-distribution.md §10.1, §11.4): `__coachHud.card()` is the very payload its
- * `coachemon:card` events carry — kind, dedupe key, wave, verdict, the card's **groups** and its plain text — and
- * `summary` is `__coachHud.summary()`, the fields `read.sh battle`'s `hud` had. A subscriber's late join reads here
- * and gets the event it missed (§11.1), groups and all, so an agent joining a decision already on screen reads it by
- * group name rather than by parsing lines.
- *
- * `summary` is the liveness gate and is read on its own: the structured read keeps working with no panel drawn, so
- * it never depends on a document existing.
- *
- * Only a page with no panel at all refuses: a panel with nothing to coach, or one whose refresh threw, reads as a card
- * of nulls, since the coach's read is not the place a HUD failure surfaces — `coachemon:coach-error` is.
- * Self-contained (§10.5).
+ * The payload `coachemon:card` carries, for a late join; `summary` is the liveness gate, read on its own
+ * (extension-distribution.md §11.1, §11.4). A panel with nothing to coach, or whose refresh threw, reads as a card of
+ * nulls: a HUD failure surfaces as `coachemon:coach-error`, never here. Self-contained (§10.5).
  */
 export function card(_L: Located, _args: Record<string, never>): CardResult {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };

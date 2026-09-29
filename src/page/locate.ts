@@ -1,12 +1,3 @@
-/**
- * The scene locator (#9): scan Phaser's module-level `CanvasPool` for the entry whose parent carries a live `Game`, take
- * `scene.getScene('battle')`. Never `pool[0]`, never `scenes[0]`, never cached: rediscovered on every command.
- *
- * Every function under `src/page/` runs inside the game tab, stringified by the CDP link or bundled into the extension
- * (extension-distribution.md §10.5). Each is self-contained: no imports at runtime, no module state, nothing from
- * outside but its arguments and the page's globals. Type imports are fine; they are erased. The HUD keeps its own copy
- * of this locator.
- */
 import type { Discriminators } from "./disc.ts";
 import type { PageModes } from "./modes.ts";
 
@@ -18,12 +9,12 @@ export type LocatorWhy = "no-phaser" | "empty-pool" | "no-game-in-pool" | "not-b
 export type Scene = { ready: true; game: Page; scene: Page; ui: Page };
 export type Unlocated = { ready: false; why: LocatorWhy };
 
-/**
- * What every handler is given: the located scene, the generated mode enums (`m`, `sm`), the fine fingerprint of this
- * very page turn, and the discriminators reader.
- */
 export type Located = Scene & PageModes & { fine: () => string; disc: (h: Page) => Discriminators };
 
+/**
+ * Never `pool[0]`, never `scenes[0]`, never cached: rediscovered on every command (#9, v1-tool-surface.md §1). The HUD
+ * keeps its own copy, and a change lands in both (extension-distribution.md §10.5). Self-contained (§10.5).
+ */
 export function locate(): Scene | Unlocated {
   const P = (globalThis as Page).Phaser;
   if (!P || !P.Display || !P.Display.Canvas || !P.Display.Canvas.CanvasPool) return { ready: false, why: "no-phaser" };
