@@ -1,25 +1,10 @@
-// Move traits: everything the coach reads off a move's *attributes*, read once (#128).
-//
-// Before this, 10-damage, the planner and the learn card each walked `mv.attrs` for the same things and drifted
-// apart — two hit models for a 2–5 hitter, Focus/charge/priority constants copied three ways, and the planner
-// picking which cost to show by regex-matching the English text 10-damage had written. This module owns the reads;
-// what a trait is *worth* stays with each caller (10-damage's `reliability`, the learn card's value multipliers,
-// the planner's benefit nudge), because a per-turn damage discount and a card value are not the same currency.
-//
-// Input: the move and its user (abilities, form, held items, and — for Beat Up — its party). **No battle state and
-// no game calls**, so the learn card can use it outside a battle. What depends on the moment stays with callers:
-// whether an instant charge holds now (`charge.now`), accuracy, recoil HP from the damage actually dealt, the
-// flinch chance (Serene Grace, Shield Dust, Inner Focus), Simple / Contrary, the ±6 stage cap, `canSetStatus`, the
-// weather. Methods on the move object itself (`isChargingMove`, `canBeMultiStrikeEnhanced`, `hasFlag`) are move
-// data, not battle state, and are used where the game uses them.
-//
-// Attribute classes are matched through the prototype chain, so a subclass counts (FixedDamageAttr covers Seismic
-// Toss); `attrNames` holds the *concrete* class names instead, for callers whose own tables are keyed that way
-// (the learn card's status values, where a LeechSeedAttr must not also count as a bare AddBattlerTagAttr).
+// What the coach reads off a move's attributes, read once (#128). No battle state, and no game calls beyond methods on
+// the move, its attributes, the user and the user's held items, so it works outside a battle; what a trait is worth
+// stays with each caller.
 
 import { SPREAD_TARGETS } from "./01-core.js";
 
-// Class names survive minification; subclasses count.
+// Subclasses count. Class names survive minification (game-code.md §22).
 const isAttr = (x, name) => {
   for (let c = x?.constructor; c?.name; c = Object.getPrototypeOf(c)) if (c.name === name) return true;
   return false;
@@ -32,28 +17,22 @@ const heldStackOf = (p, name) => {
 };
 const moveFlag = (mv, f) => (typeof mv?.hasFlag === "function" ? mv.hasFlag(f) : !!((mv?.flags ?? 0) & f));
 
-// A move aimed at the user's own side changes stats on that side even when the attribute doesn't say so (Howl
-// carries no `selfTarget`, only this target). Each effect below therefore carries three flags, since callers draw
-// the line differently: `self` is the game's own `selfTarget`, `side` that the move is aimed at the user's side at
-// all, and `ally` that it is aimed at a partner's slot — which the learn card counts as the user's side (there is
-// nobody else to aim at) and the planner does not (it is the partner's stats that move, not ours).
+// `selfTarget` alone misses a move aimed at the user's side, like Howl (game-code.md §14). So each effect carries
+// `self` (the game's `selfTarget`), `side` (aimed at the user's side at all) and `ally` (at a partner's slot), and each
+// caller draws its own line.
 const SELF_SIDE = new Set([MoveTarget.USER, MoveTarget.NEAR_ALLY, MoveTarget.ALLY, MoveTarget.USER_OR_NEAR_ALLY,
   MoveTarget.USER_AND_ALLIES, MoveTarget.USER_SIDE, MoveTarget.PARTY]);
 const ALLY_ONLY = new Set([MoveTarget.NEAR_ALLY, MoveTarget.ALLY]);
 const sideFlags = (mv, a) => ({ self: !!a?.selfTarget, side: SELF_SIDE.has(mv?.moveTarget), ally: ALLY_ONLY.has(mv?.moveTarget) });
-// A stat change counts as guaranteed when the move doesn't roll for it: `chance` −1 (or absent) or 100.
+// A negative `chance` is certain, like 100: every move that doesn't roll passes −1 (game-code.md §5).
 const guaranteedChance = mv => !(mv?.chance > 0 && mv.chance < 100);
-// Sucker Punch and Thunderclap read the target's chosen command, which doesn't exist yet while we choose. (Upper
-// Hand needs a priority move from the target: left out.)
+// These read the target's chosen command, which doesn't exist yet while we choose (game-code.md §6). Upper Hand is
+// left out on purpose: it needs a priority move from the target, not just an attack.
 const COMMAND_CONDITION = [MoveId.SUCKER_PUNCH, MoveId.THUNDERCLAP];
-// Gigaton Hammer / Blood Moon can't be picked twice in a row; the game says so through this restriction's i18n key.
+// Gigaton Hammer and Blood Moon share one restriction, known here by its i18n key (game-code.md §5).
 const NO_REPEAT_KEY = "battle:moveDisabledConsecutive";
 
-// The count distribution of one use, before the target's HP or a boss bar cuts it (game-code.md §2). A bare MultiHitAttr is
-// TWO_TO_FIVE: 7/20, 7/20, 3/20, 3/20 for 2–5 (mean 3.1), or 5 flat with Skill Link. Water Shuriken becomes THREE
-// for Ash-Greninja; Beat Up hits once for the user plus once per party member with no status. Parental Bond and
-// each Multi-Lens stack add a strike to a move that can take one (`target` only refines Parental Bond's spread
-// check, which is why it is optional).
+// One use's hit count, before the target's HP or a boss bar cuts it short (game-code.md §2).
 const hitShape = (mv, user, party, target) => {
   const mh = firstAttr(mv, "MultiHitAttr");
   let type = mh ? mh.multiHitType ?? mh.intrinsicMultiHitType : null;
@@ -69,36 +48,30 @@ const hitShape = (mv, user, party, target) => {
   const lensStrikes = lenses && enhanced(user) ? lenses : 0;
   const extra = (hasAbAttr(user, "AddSecondStrikeAbAttr") && enhanced(user, true, target ?? undefined) ? 1 : 0) + lensStrikes;
   if (extra) dist = dist.map(x => ({ n: x.n + extra, p: x.p }));
-  // Triple Kick / Axel grow by the base power each strike; CHECK_ALL_HITS rolls accuracy for every strike, unless
-  // Skill Link is holding the count at its maximum.
   const grows = attrsNamed(mv, "MultiHitPowerIncrementAttr").length > 0;
-  // `mean` is rounded off the last binary bits so 2–5 reads as 3.1, the number the cards print.
+  // Rounded off the float noise, so 2–5 prints as 3.1.
   const mean = Math.round(dist.reduce((t, x) => t + x.n * x.p, 0) * 1e4) / 1e4;
   return { dist, mean, checkAll: moveFlag(mv, MoveFlags.CHECK_ALL_HITS) && !skillLink, grows, lenses: lensStrikes };
 };
 
-// Everything the coach reads off `mv`'s attributes, for `user`. `party` is only Beat Up's count; `target` only
-// refines Parental Bond's spread check.
+// `party` only counts Beat Up's strikes; `target` only refines Parental Bond's spread check.
 export const moveTraits = (mv, user = null, { party = null, target = null } = {}) => {
-  const guarded = hasAbAttr(user, "BlockNonDirectDamageAbAttr"); // Magic Guard: no recoil, crash or self-inflicted chip
-  // Turns and failure.
+  const guarded = hasAbAttr(user, "BlockNonDirectDamageAbAttr");
   const charging = !!mv?.isChargingMove?.();
   const chargeAttrs = mv?.chargeAttrs ?? [];
-  // The instant-charge condition as data (Solar Beam's sun) plus the closure that judges it against a live user.
   const instant = chargeAttrs.filter(a => isAttr(a, "InstantChargeAttr"));
   const weatherCharge = instant.filter(a => isAttr(a, "WeatherInstantChargeAttr")).flatMap(a => a.weatherTypes ?? []);
   const charge = charging
     ? { skip: instant.length ? { weather: weatherCharge } : null, now: (u = user) => instant.some(a => { try { return !!a.condition?.(u, mv); } catch { return false; } }) }
     : false;
-  // Costs to the user. Recoil is a share of the damage dealt, or — `useHp` (Chloroblast) — of max HP; Rock Head and
-  // Magic Guard stop both unless the attribute is `unblockable` (Struggle).
+  // `useHp`: the ratio is of max HP, not of the damage dealt (game-code.md §5).
   const rec = firstAttr(mv, "RecoilAttr");
   const recoil = rec
     ? { ratio: rec.damageRatio ?? 0.25, useHp: !!rec.useHp, blocked: !rec.unblockable && (guarded || hasAbAttr(user, "BlockRecoilDamageAttr")) }
     : null;
-  // Outrage's MissEffectAttr only ends its lock, so a frenzy move never crashes.
+  // A frenzy move's MissEffectAttr only ends its lock, so it never crashes (game-code.md §5).
   const lock = attrsNamed(mv, "FrenzyAttr").length > 0;
-  // Guaranteed self stat changes, signed: Overheat's −2 SpA, Close Combat's −1 Def/SpD, Flame Charge's +1 Spe.
+  // Guaranteed self stat changes, boosts included.
   const drops = {};
   if (guaranteedChance(mv)) {
     for (const a of attrsNamed(mv, "StatStageChangeAttr")) {
@@ -106,9 +79,7 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
       for (const st of a.stats ?? []) drops[st] = (drops[st] ?? 0) + a.stages;
     }
   }
-  // Status effects, as data. `stages` keeps every stat change (a foe's drops included) with the stages this user
-  // would get — Simple / Contrary and the ±6 cap are the caller's, live. `heal.ratioIn` asks the attribute what it
-  // heals in a weather, so Synthesis and Moonlight are read here rather than by each card.
+  // `stages` is before Simple, Contrary and the ±6 cap, which the caller applies live.
   const stages = attrsNamed(mv, "StatStageChangeAttr").map(a => {
     let n = a.stages ?? 0;
     try { if (typeof a.getLevels === "function") n = a.getLevels(user); } catch {}
@@ -120,7 +91,6 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
   const heal = healAttr
     ? {
       ratio: healAttr.healRatio ?? 0.5, self: healAttr.selfTarget !== false, cls: healAttr.constructor?.name ?? "",
-      // The weather ratio the attribute itself gives (WeatherHealAttr), or a BoostHealAttr's two ratios.
       ratioIn: (w, u = user, t = target) => {
         try {
           if (typeof healAttr.getWeatherHealRatio === "function") return healAttr.getWeatherHealRatio(w);
@@ -132,13 +102,10 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
     : null;
   const trap = firstAttr(mv, "AddArenaTrapTagAttr");
   const cut = firstAttr(mv, "CutHpStatStageBoostAttr");
-  // Drain (Giga Drain, Leech Life): the share of a hit's damage that heals its user. Strength Sap heals by a stat,
-  // not by damage, and carries `healStat`: not drain. Heal Block, Healing Charm and Liquid Ooze are the caller's.
+  // Strength Sap is a `HitHealAttr` too, but heals by a stat and carries `healStat` (game-code.md §18).
   const drainAttr = attrsNamed(mv, "HitHealAttr").find(a => a.healStat == null) ?? null;
-  // Typing written onto the move's target: `set` replaces its types with one (Soak, Magic Powder: `summonData.types`),
-  // `add` puts a third type on top (Forest's Curse, Trick-or-Treat: `summonData.addedType`). The type is the game's
-  // own `PokemonType` index. When the move may do nothing (a Terastallized target, Multitype / RKS System, a typing
-  // the target already has) is the caller's, live — those are the attribute's `getCondition`, not its data.
+  // `type` is a `PokemonType` index. Whether the move does anything is the attribute's `getCondition`, left to the
+  // caller.
   const setType = firstAttr(mv, "ChangeTypeAttr"), addType = firstAttr(mv, "AddTypeAttr");
   const typeChange = setType ? { kind: "set", type: setType.type } : addType ? { kind: "add", type: addType.type } : null;
   return {
@@ -146,12 +113,11 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
     recharge: attrsNamed(mv, "RechargeAttr").length > 0,
     interrupt: attrsNamed(mv, "PreUseInterruptAttr").length > 0,
     needsAttack: COMMAND_CONDITION.includes(mv?.id),
-    // Fake Out / First Impression: the game hangs FirstMoveCondition off any of the three condition lists.
+    // Fake Out and First Impression put `FirstMoveCondition` in `conditionsSeq3`, not `conditions` (game-code.md §5).
     once: [mv?.conditions, mv?.conditionsSeq2, mv?.conditionsSeq3].some(cs => (cs ?? []).some(c => isAttr(c, "FirstMoveCondition"))),
     lock, noRepeat: (mv?.restrictions ?? []).some(r => r?.i18nkey === NO_REPEAT_KEY),
     recoil, halfSac: !guarded && attrsNamed(mv, "HalfSacrificialAttr").length > 0,
     crash: !guarded && !lock && attrsNamed(mv, "MissEffectAttr").length > 0,
-    // Explosion faints its user either way; Final Gambit only when it hits.
     selfKo: attrsNamed(mv, "SacrificialAttrOnHit").length ? "onHit" : attrsNamed(mv, "SacrificialAttr").length ? "always" : null,
     drops, removesType: attrsNamed(mv, "RemoveTypeAttr").length > 0, guarded, typeChange,
     hits: hitShape(mv, user, party, target),
@@ -160,17 +126,16 @@ export const moveTraits = (mv, user = null, { party = null, target = null } = {}
     protect: attrsNamed(mv, "ProtectAttr").length > 0,
     cutHp: cut ? { ratio: cut.cutRatio ?? 2 } : null,
     drain: drainAttr ? { ratio: drainAttr.healRatio ?? 0.5 } : null,
+    // Concrete class names, where `isAttr` counts subclasses: a `LeechSeedAttr` is not also a bare
+    // `AddBattlerTagAttr` here.
     attrNames: new Set((mv?.attrs ?? []).map(a => a?.constructor?.name).filter(Boolean)),
   };
 };
 
 const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe", "Acc", "Eva"];
 const pct = x => `${Math.round(x)}%`;
-// What a move costs its user, one wording per kind, in the order a reader meets them: the turns it spends, the HP
-// it burns, the stats it gives up. `amounts` carries this matchup's numbers when the caller has them — `recoil` as
-// a share of the user's max HP (0–1), `sun` whether the party can skip a weather charge, `type` the move's live
-// type for the one it gives away. Both the ⚔ line's `costs` and the learn card's drawbacks read from here, so the
-// two cards can't word the same cost two ways.
+// `amounts`, where the caller has them: `recoil` as a share of max HP (0–1), `sun` whether the party can skip a weather
+// charge, `type` the move's live type.
 export const costNotes = (t, amounts = {}) => {
   if (!t) return [];
   const out = [];
@@ -194,8 +159,6 @@ export const costNotes = (t, amounts = {}) => {
   if (t.crash) out.push("−50% HP if it misses");
   if (t.selfKo) out.push("user faints");
   if (t.removesType) out.push(`loses its ${amounts.type ?? "own"} type`);
-  // Only the drops: a guaranteed *boost* (Flame Charge's +1 Spe) is in `drops` too, signed, but it is no cost. Stats
-  // that fall by the same amount are named together, the way the move reads: Close Combat's "−1 Def/SpD".
   const drops = Object.entries(t.drops ?? {}).filter(([, n]) => n < 0);
   if (drops.length) {
     const by = new Map();

@@ -1,10 +1,7 @@
-// Which screen the game is on, for the four cards whose detection the probe needs too: learn-move, rewards, biome
-// and Mystery Encounter. One source, so the HUD and `probe.js` can never disagree about what is on screen — the
-// watcher's `--no-hud` mode reads learn and rewards off the probe alone.
-// Reads only: a UI mode, a handler field, the current phase's name. No game functions run here.
+// `probe.js` reads the screen through these too. Reads only: a UI mode, a handler field, the current phase's name.
 
-// Learn-move: the SUMMARY screen (summaryUiMode LEARN_MOVE) holds the new move; before it opens, the
-// "forget a move?" prompt only has LearnMovePhase's moveId, so the move is built from a PokemonMove.
+// Before the summary screen opens, `LearnMovePhase` keeps only the move's id, so the move is built through a moveset
+// entry's own `PokemonMove` class (game-code.md §17).
 export const learnState = s => {
   const h = s.ui.getHandler();
   const double = !!s.currentBattle?.double;
@@ -17,8 +14,7 @@ export const learnState = s => {
   return pk && pm ? { pk, mv: new pm.constructor(phase.moveId).getMove(), double, party } : null;
 };
 
-// The reward screen's handler: free rewards in `options`, shop rows in `shopOptionsRows`. A screen with no options
-// is the shop closing, not a choice.
+// A reward screen with no `options` is the shop closing, not a choice.
 export const rewardsScreen = s => {
   const h = s.ui.getHandler();
   return s.ui.getMode() === UiMode.MODIFIER_SELECT && h?.options?.length ? h : null;
