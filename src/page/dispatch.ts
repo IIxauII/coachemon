@@ -2,10 +2,7 @@ import type { Discriminators } from "./disc.ts";
 import type { Located, Page, Scene, Unlocated } from "./locate.ts";
 import type { PageModes } from "./modes.ts";
 
-/**
- * Every transport answers through this: the CDP link stringified with its function arguments, the extension's page
- * script directly. Self-contained (extension-distribution.md §10.5).
- */
+/** Self-contained (extension-distribution.md §10.5). */
 export function dispatch(
   locate: () => Scene | Unlocated,
   fine: (L: Scene, modes: PageModes) => string,

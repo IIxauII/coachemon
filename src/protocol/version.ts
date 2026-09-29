@@ -9,5 +9,5 @@ export const PRODUCT = "coachemon-hub";
 /** The store hub's loopback port. Hardcoded: the extension cannot read configuration. */
 export const STORE_PORT = 47147;
 
-/** Apart from the store port, so a dev build beside a store install never double-counts a tab (§5.4). */
+/** Apart from the store port, so a dev build beside a store install never double-counts a tab (extension-distribution.md §5.4). */
 export const DEV_PORT = 47148;

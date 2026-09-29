@@ -19,7 +19,7 @@ export type MenuResult =
       options: MenuOption[];
       cursor: number | string | null;
       text: string | null;
-      /** A handler's own message box waits for ACTION and swallows every cursor press (#44). */
+      /** A handler's own message takes ACTION and CANCEL only (#44, game-code.md §25). */
       messagePending: boolean;
       extra: Record<string, unknown>;
       disc: Discriminators;

@@ -32,7 +32,7 @@ export function screenId(mode: number, d: Discriminators): string {
   }
 }
 
-/** Six settings carry `requireReload`, and the reload fires on leaving Settings (#11, v1-tool-surface.md §6.5). */
+/** Acting tools refuse here (#11, v1-tool-surface.md §6.5). */
 export function isSettingsMode(mode: number): boolean {
   return mode >= UiMode.SETTINGS && mode <= UiMode.KEYBOARD_BINDING;
 }

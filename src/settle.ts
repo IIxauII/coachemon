@@ -6,10 +6,6 @@ import type { PredicateRead } from "./game/port.ts";
 
 export const POLL_MS = 100;
 export const AGREE = 3;
-/**
- * Some presses legitimately leave the fine fingerprint in place, as three identical level-up messages do
- * (v1-tool-surface.md §6.8).
- */
 export const CHANGE_GRACE_MS = 3_000;
 /** Starts progress notifications; not a return point. */
 export const NO_PROGRESS_NOTICE_MS = 6_000;

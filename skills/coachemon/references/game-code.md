@@ -2198,8 +2198,8 @@ its three `applyModifiers` calls (`:1622`, `:1624`, `:1638`) reaches `applyModif
 (`ShinyRateBoosterModifier`, ×2^(1 + stacks)), and for a trainer's mon to the event's trainer shiny chance.
 
 **The ball menu.** `BallUiHandler.setup` (`src/ui/handlers/ball-ui-handler.ts:33-37`) builds one text object in
-`pokeballSelectContainer` (`:49`): a line per key of `globalScene.pokeballCounts`, `getPokeballName(pb)` from `pb` 0, then
-the Cancel line. `countsText` (`:54-59`) is `Object.values(pokeballCounts)`, one per line (`:117-120`), refilled on
+`pokeballSelectContainer` (`:49`): `getPokeballName(pb)` for each `pb` from 0 below the key count of
+`globalScene.pokeballCounts`, then the Cancel line. `countsText` (`:54-59`) is `Object.values(pokeballCounts)`, one per line (`:117-120`), refilled on
 `show` (`:67`); the names are built once, in `setup`. The keys are the `PokeballType` values but the Luxury Ball, in enum
 order (`src/battle-scene.ts:1150-1155`), so line *i* of both is key *i*, and Cancel is the cursor after the last ball
 (`ball-ui-handler.ts:79,84`).

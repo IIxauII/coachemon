@@ -36,7 +36,7 @@ function json(value: unknown, isError = false) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value) }], isError };
 }
 
-/** The soak's calls-per-wave count reads this log (#25). */
+/** `scripts/soak-report.ts` reads this log's lines (#25). */
 const LOG = process.env.COACHEMON_LOG;
 const t0 = Date.now();
 function logCall(tool: string, args: unknown, ms: number, result: Record<string, unknown>): void {

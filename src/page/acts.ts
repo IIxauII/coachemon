@@ -15,7 +15,7 @@ export type CursorStarterResult = { ok: true; cursor: number; scrollCursor: numb
 export type CursorLearnResult = { ok: true; moveCursor: number; fine: string } | Refused;
 export type ModalResult = { ok: true; mode: number } | Refused;
 
-/** `processInput`'s return value is never read (v1-tool-surface.md §1). */
+/** Never judge a press by `processInput`'s return value: it lies both ways (v1-tool-surface.md §1). */
 export function press(L: Located, args: { button: number; fine: string }): PressResult {
   L.ui.processInput(args.button);
   return { ok: true, mode: L.ui.mode };
@@ -64,8 +64,8 @@ export function cursorShop(L: Located, args: { row: number; col: number; fine: s
 }
 
 /**
- * `setCursor` places the cursor against `scrollCursor`, so that is set first (#8, game-code.md §23); in filter mode it
- * writes `filterBarCursor` instead (v1-tool-surface.md §6.5).
+ * `setCursor` places the cursor against `scrollCursor`, so that is set first, and in filter mode writes
+ * `filterBarCursor` instead (#8, game-code.md §23).
  */
 export function cursorStarter(L: Located, args: { index: number; fine: string }): CursorStarterResult {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };
@@ -90,7 +90,7 @@ export function cursorLearn(L: Located, args: { row: number; fine: string }): Cu
   return { ok: true, moveCursor: h.moveCursor, fine: L.fine() };
 }
 
-/** A modal's buttons are mouse-only, so this calls the button's own action (#13, v1-tool-surface.md §2). */
+/** A modal's buttons are mouse-only, so this calls the button's own action (#13). */
 export function modal(L: Located, args: { index: number; fine: string }): ModalResult {
   const h = L.ui.handlers[L.ui.mode];
   const fn = h.config && Array.isArray(h.config.buttonActions) ? h.config.buttonActions[args.index] : null;

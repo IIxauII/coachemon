@@ -4,7 +4,7 @@ export type SnapshotDetail = "lean" | "party" | "items" | "full";
 
 /**
  * `get_state` (v1-tool-surface.md §6.2, extension-distribution.md §11.4). Under `full`, `stats` is the named
- * `getStat` six; under `party` it stays the raw array. Self-contained (extension-distribution.md §10.5).
+ * `getStat` six; under `party` it stays the raw array. Self-contained (§10.5).
  */
 export function snapshot(L: Located, args: { detail: SnapshotDetail }): Record<string, unknown> {
   const __try = (f: () => any) => { try { return f(); } catch (e) { return null; } };

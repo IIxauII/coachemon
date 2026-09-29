@@ -23,9 +23,8 @@ export function planSlot<T extends SlotOption>(options: readonly T[], slot: numb
 }
 
 /**
- * The overwrite prompt is a CONFIRM overlaid on SAVE_SLOT during `SelectStarterPhase`; the switch question after a free
- * slot is a CONFIRM too, under `CheckSwitchPhase`. The chain can hold stale entries below its top (#30,
- * game-code.md §25).
+ * The switch question after a free slot is a CONFIRM too, under `CheckSwitchPhase`, and the chain can hold stale
+ * entries below its top (#30, game-code.md §25).
  */
 export function isOverwriteConfirm(r: { mode: number; phaseName: string | null; modeChain: readonly number[] }): boolean {
   return r.mode === UiMode.CONFIRM && r.phaseName === "SelectStarterPhase" && r.modeChain.at(-1) === UiMode.SAVE_SLOT;
