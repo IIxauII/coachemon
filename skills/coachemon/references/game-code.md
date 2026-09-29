@@ -723,7 +723,7 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
   `hpDiffRatio = hpRatio + (1 − oppHpRatio)` on two-decimal HP ratios (`:2740-2746`, rounding at `:1692`): ×1.25 when
   this mon's Speed is `>=` the opponent's effective Speed (`:2683-2685`, `:2756-2757`), else ×0.5 at
   0.2 < hpRatio ≤ 0.4 (`:2758-2760`). An on-field mon at ≤ 0.2 takes a "dying" branch instead (`:2745-2755`), which a
-  bench mon never reaches. So with the opponent at 0 HP the factor is 1 unless the mon is slower and at 21–40 % HP.
+  bench mon never reaches.
 - **`Pokemon.isTrapped`** (`:2398`). It is true when a `COMMANDED` tag's source is active, so a Commanded Dondozo never
   switches. Otherwise it applies `CheckTrappedAbAttr` simulated over `inSpeedOrder`, and checks `TrappedTag` and
   Fairy Lock.

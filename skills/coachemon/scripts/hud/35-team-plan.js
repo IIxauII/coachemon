@@ -19,7 +19,8 @@ const tpFastest = (turn, list, target, turns = o => tpTurns(turn, o, target), dm
   .map(o => ({ o, n: turns(o) }))
   .reduce((b, x) => (!b || x.n < b.n || (x.n === b.n && dmg(x.o) > dmg(b.o)) ? x : b), null)?.o ?? null;
 
-// `dmg` is a use's mean, uncut by the target's HP or bars.
+// `dmg` is a use's mean, uncut by the target's HP or bars. `recharge` covers a move that can't repeat too: both lose
+// the turn after each hit.
 const tpMoveOf = (o, extra) => {
   const use = useOf(o);
   return { name: o.name, type: o.type, cat: o.cat, e: o.e, priority: o.priority ?? 0, dmg: use.reduce((t, x) => t + x.d * x.p, 0), use: tpSpread(use), drain: o.drain ?? 0,
@@ -83,7 +84,7 @@ const tpFoeFirst = (turn, me, f, ours, theirs) => {
 
 // `getMatchupScore` in two halves (game-code.md §7): our HP moves over the plan, so the game is asked with ours at 0
 // and `tpSendScore` puts the HP and Speed factor back. That factor is not always 1 at 0: a slower foe at 21–40 % HP
-// comes back halved already, and `tpSendScore` halves it again.
+// comes back scaled by (1 + its HP ratio) × 0.5 already, and `tpSendScore` halves it again (#464).
 const tpSendBase = (turn, f, me) => {
   const outspeed = (f.isActive?.(true) ? turn.mon(f).speed : f.getStat(Stat.SPD, false)) >= turn.mon(me).speed;
   const v = turn.sendInScore(f, me);
@@ -190,7 +191,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
     ...[st.ox?.[mi], st.od?.[mi], st.og?.[mi], st.fd?.[fi], st.fg?.[fi]].map(x => Math.round((x ?? 0) * 20))].join();
   if (key && T.memo.has(key)) return T.memo.get(key);
   const us = over ?? T.ours[mi][fi], them = T.theirs[fi][mi], foeState = T.foeState?.[fi] ?? { bar: 0 };
-  // Speed boosts from them are not modelled.
+  // On-KO Speed boosts are not modelled.
   const usMul = us && (nUs || nFoe) && T.koMult ? T.koMult(T.party[mi], T.ourKo[mi], nUs, T.foes[fi], T.foeKo[fi], nFoe, us.cat === "special" ? 0 : 1) : 1;
   const themMul = (nUs || nFoe) && T.koMult ? T.koMult(T.foes[fi], T.foeKo[fi], nFoe, T.party[mi], T.ourKo[mi], nUs, them.phys ?? 1) : 1;
   const tok = T.tok?.[mi], robUs = T.fromUs?.[fi]?.[mi], robFoe = T.fromFoe?.[mi]?.[fi];
@@ -209,6 +210,7 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
       b.fg += robFoe?.perHit ?? 0;
     }
     if (us.drain && b.mh >= 1) b.mh = Math.min(T.ourMax[mi], b.mh + (b.fh - st.hp) * us.drain);
+    // Recoil is paid whether or not the hit finished the foe.
     if (us.self) b.mh -= us.self;
     b.fh = st.hp;
     b.fs = st.bar;
@@ -244,7 +246,6 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
     const para = tok?.para ? by(turns - 1) * tok.para : 0;
     const pFoe = Math.max(0, Math.min(1, para * (T.firstPara?.[mi]?.[fi] ?? T.first[mi][fi]) + (1 - para) * T.first[mi][fi]));
     const act = tok ? 1 - attemptsLost(tok.odds, by, turns, pFoe) : 1;
-    // Dig and Fly are semi-invulnerable on the charge turn, so a foe moving after us misses (game-code.md §5).
     const hits = !!us && (us.charge ? turns % 2 === 0 : us.recharge ? turns % 2 === 1 : true);
     const hidden = !!us && !hits && !!us.semiCharge;
     const ours = hits ? [...(act < 1 ? [{ r: 0, p: 1 - act }] : []), ...ourUse.map(x => ({ ...x, p: x.p * act }))] : [{ r: 0, p: 1 }];
@@ -314,7 +315,8 @@ const tpApply = (c, mi, fi, r) => {
 };
 const tpAlive = hps => hps.flatMap((hp, i) => (hp >= 1 ? [i] : []));
 
-// The trainer scores its send-in against our mon on the field (game-code.md §7): in a double, the one that just acted.
+// The trainer scores its send-in against our field (game-code.md §7). In a double the plan, one exchange at a time,
+// takes the mon that just acted to stand for it.
 const tpNextFoe = (T, st) => {
   const alive = tpAlive(st.fh);
   const me = st.act ?? st.cur?.[0];
@@ -448,8 +450,7 @@ const tpModel = (T, double, party, foes, facing) => {
     .sort((a, b) => b.per - a.per));
 
   const answers = win < 0 ? [] : matrix[win].filter(a => a.per >= 0.2).slice(0, 2);
-  // A foe only one of ours beats holds that mon back too: `sweep` needs two KOs to name a win condition, so it never
-  // covers one (#170).
+  // A foe only one of ours beats holds that mon back even when it is not the win condition (#170).
   const only = foes.flatMap((f, fi) => {
     if (fi === win || alive < 3 || f.isOnField?.()) return [];
     const beat = matrix[fi].filter(a => a.beats);

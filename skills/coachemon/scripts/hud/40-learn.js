@@ -245,7 +245,7 @@ const disruptFit = (pk, mv, tag, roster) => {
 // unseen.
 const TYPE_SET = 35, TYPE_ADD = 30;
 const TYPE_FLOOR = 0.35, TYPE_FULL = 2;
-// `TYPE_MIN` floors a foe nothing touches: at 0, a rewrite of any immune foe is worth infinitely much.
+// `TYPE_MIN` floors a foe nothing touches: at 0, any rewrite that opens an immune foe at all scores the full gain.
 const TYPE_STEPS = 2, TYPE_MIN = 0.25, TYPE_STAB = 0.5;
 // Never through `foeAbilities`: Mold Breaker doesn't get past these (game-code.md §14).
 const TYPE_FIXED = ["Multitype", "RKS System"];
@@ -266,8 +266,8 @@ const typeGain = (pk, mv, change, name, foe, ours) => {
   const open = after > before ? Math.min(1, Math.log2(after / before) / TYPE_STEPS) : 0;
   if (!set) return open;
   // `attackTypes` holds one entry per damaging move, so three Steel moves beside one Ground lose three quarters of
-  // their STAB, not half (#266). Nothing stands in for a missing field: a preview that stopped filling it in fails the
-  // goldens rather than quietly zeroing every rewrite's STAB.
+  // their STAB, not half (#266). `foeData` always fills it in, so an empty one is an answer — no damaging move, no
+  // STAB to lose — rather than a silence.
   const attacks = foe.attackTypes ?? [];
   const stab = attacks.length ? attacks.filter(t => types.includes(t) && t !== name).length / attacks.length : 0;
   return Math.min(1, open + TYPE_STAB * stab);
@@ -483,6 +483,7 @@ const scoringContext = (pk, double, party, roster = null) => {
   const profile = partyProfile(mates);
   const teamTypes = new Set(profile.ourTypes);
   // `mateTypes` leaves this mon's own moves out: which of them count depends on the slot being decided (#233).
+  // `ownMoves` stays per-mon on purpose: the prior asks which role this mon is already built as.
   const ctx = { party, teamSe: new Set(profile.ourTypes.flatMap(t => CHART[t]?.[0] ?? [])),
     mateTypes: profile.ourTypes,
     prior: priorSets(pk, double >= 0.5), ownMoves: current.map(moveName), roster };
@@ -534,8 +535,9 @@ const learnPlan = (pk, mv, { double: flag = false, party = [pk], roster = null }
   };
   return { moves, incoming, forget, compare: free ? -1 : compare, kind, gain, team, atk: Math.round(atkOf(pk)), spa: Math.round(spaOf(pk)) };
 };
-// `learn` true, false or null (your call); `slot` the move it replaces, −1 for a free slot or none; `against` the slot
-// it was weighed against, named on a skip too. The learn card and the TM advice both judge through this, so they
+// `learn` true, false or null (your call). `slot` is the move it replaces, −1 for a free slot or none — except on an
+// unscorable status move, where it names the weakest slot without deciding. `against` is the slot it was weighed
+// against, named on a skip too. The learn card and the TM advice both judge through this, so they
 // can't disagree.
 export const learnAdvice = (pk, mv, ctx = {}) => {
   const plan = learnPlan(pk, mv, ctx);

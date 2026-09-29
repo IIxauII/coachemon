@@ -6,7 +6,8 @@ import { gameEvents, gameTables } from "./04-game-tables.js";
 // `NUM_SAFARI_ENCOUNTERS`
 export const SAFARI_MONS = 3;
 const BASE_SHINY_CHANCE = 64, BASE_HIDDEN_ABILITY_RATE = 256;
-// `NON_LEGEND_PARADOX_POKEMON`. None costs 5 or less today, so dropping it changes nothing until a rebalance does.
+// `NON_LEGEND_PARADOX_POKEMON`. Keep it even where it excludes nothing: an upstream rebalance can make it bite, and the
+// drift check watches it (`scripts/hud-deps.ts`).
 const NON_LEGEND_PARADOX = [
   SpeciesId.GREAT_TUSK, SpeciesId.SCREAM_TAIL, SpeciesId.BRUTE_BONNET, SpeciesId.FLUTTER_MANE, SpeciesId.SLITHER_WING,
   SpeciesId.SANDY_SHOCKS, SpeciesId.ROARING_MOON, SpeciesId.WALKING_WAKE, SpeciesId.GOUGING_FIRE,
@@ -46,7 +47,8 @@ const partsOf = s => {
 // cache key: a card built before the scan would hold its degraded line for the rest of the wave.
 export const safariReady = s => !partsOf(s).why;
 
-// `getRandomSpeciesByStarterCost([0, 5], NON_LEGEND_PARADOX_POKEMON, undefined, false, false, false)`
+// `getRandomSpeciesByStarterCost([0, 5], NON_LEGEND_PARADOX_POKEMON, undefined, false, false, false)`. The band
+// widening never runs for `[0, 5]`; it is kept so the replay stays the game's own function.
 const safariSpecies = reg => {
   let min = 0, max = 5;
   const filtered = [];
