@@ -1,5 +1,6 @@
-// What the coach reads off a move's attributes, read once (#128). No battle state, and no game calls beyond the move's
-// and its attributes' own methods, so it works outside a battle; what a trait is worth stays with each caller.
+// What the coach reads off a move's attributes, read once (#128). No battle state, and no game calls beyond methods on
+// the move, its attributes, the user and the user's held items, so it works outside a battle; what a trait is worth
+// stays with each caller.
 
 import { SPREAD_TARGETS } from "./01-core.js";
 
