@@ -2425,7 +2425,7 @@ Start (`src/data/challenge.ts:928`).
 **Leaving.** CANCEL on the grid (`src/ui/handlers/starter-select-ui-handler.ts:1639-1664`) closes an open filter
 dropdown, resets a filter column off its default, or leaves stats mode, the first two only with the filter bar active;
 failing those it pops the last starter added, and only on an empty party calls `tryExit` (`:4473-4503`): the
-`confirmExit` text, then `CONFIRM`. Yes's callback sets `STARTER_SELECT` again at once (`:4484`; `CONFIRM` is a
+`confirmExit` text, then `CONFIRM`. Yes's callback sets `STARTER_SELECT` again at once (`:4486`; `CONFIRM` is a
 no-transition mode, `src/ui/ui.ts:83-84`), then outside challenge mode goes to the title
 (`phaseManager.toTitleScreen()`, `src/phase-manager.ts:258-265`), whose `TitlePhase.start` awaits `checkLastSaveSlot`
 before it shows `TITLE` (`src/phases/title-phase.ts:36-50`); the mode stays `STARTER_SELECT` until then.
@@ -2507,7 +2507,7 @@ History, Settings: Continue only when `checkLastSaveSlot` finds a session to loa
 **Save slot.** In SAVE mode (`src/ui/handlers/save-slot-select-ui-handler.ts:224-260`), ACTION on a slot with `hasData`
 shows `overwriteData`, then a `CONFIRM` whose input is blocked for its delay (2000 ms outside beta and dev,
 `src/ui/handlers/base-option-select-ui-handler.ts:182-207`); Yes deletes that session, then starts the run, or calls
-`globalScene.reset(true)` when the delete fails (`save-slot-select-ui-handler.ts:236-238`). On a free slot ACTION starts
+`globalScene.reset(true)` when the delete fails (`save-slot-select-ui-handler.ts:238-240`). On a free slot ACTION starts
 the run at once, and on one still loading (`hasData` undefined) it does nothing. So on a free slot the first `CONFIRM`
 of the run is `CheckSwitchPhase`'s (§9), not an overwrite.
 
@@ -2543,11 +2543,11 @@ handlers do call their `exitCallback` on `clear()` (`src/ui/handlers/pokedex-ui-
 **`globalScene.reset(true)`** (`src/battle-scene.ts:1131-1256`) wipes the run in memory, destroys the UI and the scene,
 and calls `launchBattle()`, which ends in `phaseManager.toTitleScreen(true)` (`:648-649`): the queue cleared, then
 `LoginPhase` and `TitlePhase` (`src/phase-manager.ts:258-265`), with no `GameOverPhase` on the way. A failed per-wave
-save takes this path: `EncounterPhase` calls it when `gameData.saveAll` resolves false (`src/phases/encounter-phase.ts:299-305`,
-`src/system/game-data.ts:1315-1395`).
+save takes this path: `EncounterPhase` calls it when `gameData.saveAll` resolves false
+(`src/phases/encounter-phase.ts:299-305`, `src/system/game-data.ts:1315-1395`).
 
 **Settings.** Six settings carry `requireReload` (`src/system/settings/settings.ts`: Language `:438`, UI theme `:455`,
 candy upgrade display `:549`, time-of-day widget `:578`, sprite set `:611`, battle music `:732`). Changing one only
 saves it and flags the handler (`src/ui/settings/base-settings-ui-handler.ts:421-425`); leaving the screen, by CANCEL
 or by switching tabs (`:286-290`, `src/ui/settings/navigation-menu.ts:79`), runs its `clear()`, which then calls
-`globalScene.reset(true, false, true)` (`:493-504`) and tears down a live run.
+`globalScene.reset(true, false, true)` (`base-settings-ui-handler.ts:493-504`) and tears down a live run.

@@ -1,4 +1,3 @@
-/** It never closes the tab or Chrome: the dev watches the game there. */
 import { spawn } from "node:child_process";
 import { mkdirSync, openSync } from "node:fs";
 import { homedir } from "node:os";
@@ -28,6 +27,7 @@ export const isThrown = (v: unknown): v is Thrown => typeof v === "object" && v 
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+/** Never closes the tab or Chrome: the dev watches the game there. */
 export class CdpSession {
   #ws: WebSocket | null = null;
   #id = 0;

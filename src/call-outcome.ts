@@ -1,4 +1,4 @@
-/** Decides the Call outcome (CONTEXT.md); the Driver only presents it (#126). */
+/** Decides the Call outcome (CONTEXT.md, `Call outcome`); the Driver only presents it (#126). */
 import { UiMode } from "./enums/generated.ts";
 import type { Diagnostic, Status } from "./envelope.ts";
 import type { PredicateRead, Ready } from "./game/port.ts";
