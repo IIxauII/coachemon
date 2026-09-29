@@ -186,7 +186,11 @@ Call it only inside `sandbox`.
    `getEffectiveStat` (`:1456-1572`) applies, in order:
    - `StatBoosterModifier` items;
    - field `FieldMultiplyStatAbAttr` (the Ruin abilities);
-   - the mon's own `StatMultiplierAbAttr` (Huge Power, Hustle, Marvel Scale);
+   - the mon's own `StatMultiplierAbAttr` (Huge Power, Hustle, Marvel Scale). Gorilla Tactics is not one: after the
+     holder's first executed move other than Struggle, `GorillaTacticsTag` locks it into that move and writes ×1.5
+     into its in-battle Atk, already counting for that first hit, until switching out, returning or fainting resets
+     its summon data (`src/data/battler-tags.ts:469-501`, `src/phases/move-effect-phase.ts:262`,
+     `src/field/pokemon.ts:5147-5153`);
    - the ally's `AllyStatMultiplierAbAttr`;
    - `getStatStageMultiplier` (`:3276-3322`): a crit ignores the attacker's drops and the defender's boosts;
      Unaware's `IgnoreOpponentStatStagesAbAttr` or Chip Away's `IgnoreOpponentStatStagesAttr` zero the stages;
@@ -715,7 +719,11 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
   battle stream is untouched.
 - **`Pokemon.getMatchupScore`** (`src/field/pokemon.ts:2680`) passes `simulated: false` for the opponent's second type
   (`:2695-2699`). Under strong winds that queues a message (`:2620-2628`), so keep it in the sandbox. It also reads
-  `isActive` and effective Speed.
+  `isActive` and effective Speed. It returns `(atkScore + defScore) × min(hpDiffRatio, 1)` (`:2762`), where
+  `hpDiffRatio = hpRatio + (1 − oppHpRatio)` on two-decimal HP ratios (`:2740-2746`, rounding at `:1692`): ×1.25 when
+  this mon's Speed is `>=` the opponent's effective Speed (`:2683-2685`, `:2756-2757`), else ×0.5 at
+  0.2 < hpRatio ≤ 0.4 (`:2758-2760`). An on-field mon at ≤ 0.2 takes a "dying" branch instead (`:2745-2755`), which a
+  bench mon never reaches. So with the opponent at 0 HP the factor is 1 unless the mon is slower and at 21–40 % HP.
 - **`Pokemon.isTrapped`** (`:2398`). It is true when a `COMMANDED` tag's source is active, so a Commanded Dondozo never
   switches. Otherwise it applies `CheckTrappedAbAttr` simulated over `inSpeedOrder`, and checks `TrappedTag` and
   Fairy Lock.
@@ -1408,7 +1416,8 @@ stream nothing), else `getSafariSpeciesSpawn` → `getRandomSpeciesByStarterCost
 undefined, false, false, false)`, whose `randSeedInt(band.length)` is drawn against the **unshuffled** band and read out
 of the shuffled one; then `new EnemyPokemon(…)`, whose constructor rolls shiny; then one extra `trySetShinySeed(64,
 true, 0)` and one `tryRerollHiddenAbilitySeed(256)` — the doubled rolls, the hidden-ability one skipped when the
-constructor already landed `abilityIndex === 2`. `getLevelForWave()` is called **inside** the fork, and it draws: the
+constructor already landed `abilityIndex === 2`. A timed-event pick takes one more of each, every shiny reroll before
+the hidden-ability ones (`encounter-phase-utils.ts:1043-1056`). `getLevelForWave()` is called **inside** the fork, and it draws: the
 three mons can sit at different levels on one wave. `eventChance` is module state (`50`, `+25` per non-event spawn, and
 no further rise once any event spawn has happened, reset by `withOnInit`) and so unreadable from the scene — but it is
 derivable, since `withOnInit` puts mon 1 at 50 and each replayed mon says whether the next starts over. The shiny
@@ -1539,7 +1548,10 @@ Read at the pinned tag. The refs are under `30-planner.js`, `10-damage.js` and `
 - **Typing.** Both moves write one field and nothing else, which is why a hypothesis can stand in for them.
   - `ChangeTypeAttr.apply` sets `target.summonData.types = [type]` (Soak → Water, Magic Powder → Psychic;
     `src/data/moves/move.ts:7836-7838`). Its `getCondition` (`:7850-7858`) fails on a Terastallized target, on
-    Multitype or RKS System, and when the target is already that one type.
+    Multitype or RKS System, and when the target is already that one type. Mold Breaker doesn't get past the two
+    abilities: `hasAbility` drops only an `ignorable()` ability under its ignore (`src/field/pokemon.ts:2263`), and
+    neither is one (`src/data/abilities/init-abilities.ts:835-840`, `:1569-1574`); a fused target has no such
+    protection (`src/field/pokemon.ts:2252`).
   - `AddTypeAttr.apply` sets `target.summonData.addedType` (Forest's Curse → Grass, Trick-or-Treat → Ghost;
     `:7872-7873`). Its `getCondition` (`:7886-7888`) fails on a Terastallized target and on one already of that type.
   - `Pokemon.getTypes` (`src/field/pokemon.ts:1962-1999`) returns `[teraType]` alone when Terastallized — hence both
