@@ -1,7 +1,3 @@
-// Starter card on the starter grid: proposals stay within the point budget and the party cap, keep what is already
-// picked, weigh the account's unlocks (passive, rare egg move, IVs, Pokérus, luck), fall back to estimated final forms
-// without the game's tables, need one strict member under a challenge, and read Fresh Start's stripped data. Prints the
-// rendered card and its summary, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
@@ -49,13 +45,11 @@ for (const [id, name, types, stats, cost, evos = [], passive, hidden] of SPECIES
   };
   byId.set(id, sp);
 }
-// Evolutions by target: [level, needs an item]; `direct` the next stage of each species.
 const evoLevel = {}, direct = {};
 for (const [id, , , , , evos = []] of SPECIES) {
   let from = id;
   for (const [to, level, item] of evos) { evoLevel[to] = [level, !!item]; (direct[from] ??= []).push(to); from = to; }
 }
-// getEvolutionLevels: every descendant, flattened, as [id, level].
 for (const sp of byId.values()) {
   sp.getEvolutionLevels = () => (direct[sp.speciesId] ?? []).flatMap(to => [[to, evoLevel[to][0]], ...byId.get(to).getEvolutionLevels()]);
 }
@@ -72,8 +66,8 @@ const tables = {
 };
 
 const STARTERS = [1, 4, 7, 16, 19, 25, 129, 147, 298, 443, 151];
-// Account: every starter caught; Magikarp has its passive and rare egg move, Rattata near-perfect IVs, Squirtle a
-// variant-3 shiny, Pikachu Pokérus, Gible its passive.
+// Every starter caught but Mew; Magikarp has its passive and rare egg move, Rattata perfect IVs, Squirtle a variant-3
+// shiny, Pikachu Pokérus, Gible its passive.
 const account = () => {
   const dexData = {}, starterData = {};
   for (const id of STARTERS) {
@@ -84,11 +78,11 @@ const account = () => {
   dexData[19].ivs = [31, 31, 31, 31, 31, 31];
   dexData[7].caughtAttr |= 2n | 64n;
   starterData[443] = { ...starterData[443], passiveAttr: 1, abilityAttr: 1 | 4 };
-  delete dexData[151]; // Mew: not caught
+  delete dexData[151];
   return { dexData, starterData };
 };
 
-// `challenges`: gameMode challenges; `fresh`: getSpeciesData strips unlocks the way Fresh Start's STARTER_SELECT_MODIFY does.
+// `fresh`: getSpeciesData strips unlocks as Fresh Start's STARTER_SELECT_MODIFY does (game-code.md §23).
 const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], fresh = false, withTables = true, looking = null, picking = true }) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
@@ -129,8 +123,8 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], fre
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  // The chunk scan finds nothing under node: hand over what the game's tables would have been, then draw again, so
-  // the card is the one a loaded grid shows rather than the estimate the first tick made.
+  // Under node the chunk scan finds no tables: hand them over and draw again, or the card stays the first tick's
+  // estimate.
   if (withTables) {
     globalThis.__hud["04-game-tables"].setGameTables(tables);
     globalThis.__hud["98-tick"].tick();
@@ -162,7 +156,7 @@ const checkBudget = (m, limit, label) => {
   }
 };
 
-// ---- 1. A classic grid, nothing picked yet: three proposals within 10 points, the cursor on Rattata.
+// ---- A classic grid, nothing picked yet: three proposals within 10 points, the cursor on Rattata.
 {
   const m = show("classic, 10 points", { looking: 19 });
   checkBudget(m, 10, "classic");
@@ -173,7 +167,7 @@ const checkBudget = (m, limit, label) => {
   if (karp) assert.ok(karp.why.some(w => /passive Moxie|rare egg move Dragon Dance/.test(w)), "Magikarp's unlocks are named");
 }
 
-// ---- 2. Gible is already on the team: every proposal keeps it and spends the 4 points left.
+// ---- Gible is already on the team: every proposal keeps it and spends the 4 points left.
 {
   const m = show("Gible picked", { chosen: [443] });
   checkBudget(m, 10, "chosen");
@@ -181,15 +175,14 @@ const checkBudget = (m, limit, label) => {
   assert.equal(m.spent, 6);
 }
 
-// ---- 3. The game's tables aren't read yet: finals are estimated, and the card says so.
+// ---- The game's tables aren't read yet: finals are estimated, and the card says so.
 {
   const m = show("no tables", { withTables: false });
   checkBudget(m, 10, "no tables");
   assert.equal(m.data, false);
 }
 
-// ---- 4. Single type (Water), 1 point: Azurill is only valid through Marill, so a team of it alone can't start —
-// Magikarp, the strict Water member, has to be the pick.
+// ---- Single type, 1 point: Azurill is valid only through Marill, so a strict member is picked (game-code.md §23).
 {
   const water = { id: 1, value: 11, applyStarterChoice: (sp, holder) => { if (sp.type1 !== 10 && sp.type2 !== 10) holder.value = false; return true; } };
   const m = show("single type, 1 point", { limit: 1, valid: [7, 129, 298], challenges: [water] });
@@ -198,7 +191,7 @@ const checkBudget = (m, limit, label) => {
   assert.equal(m.mono, true);
 }
 
-// ---- 5. Fresh Start: no passive, egg moves, luck or high IVs reach the reasons.
+// ---- Fresh Start: no passive, egg moves, luck or high IVs reach the reasons.
 {
   const m = show("Fresh Start", { challenges: [{ id: 4, value: 1, applyStarterChoice: () => true }], fresh: true, looking: 129 });
   checkBudget(m, 10, "fresh");
@@ -206,7 +199,7 @@ const checkBudget = (m, limit, label) => {
   assert.ok(!/passive|egg move|luck|IVs 186/.test(why), `Fresh Start strips unlocks: ${why}`);
 }
 
-// ---- 6. The Pokédex (no team being chosen) draws no starter card.
+// ---- The Pokédex (no team being chosen) draws no starter card.
 {
   const { model } = mount({ picking: false });
   assert.notEqual(model?.kind, "starters");

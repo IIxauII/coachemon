@@ -1,5 +1,3 @@
-// The watcher's event inference, replayed from recorded probe snapshots: what a run prints, and the state that keeps
-// each line to once. `watchEvents` is pure, so this needs no browser and no read.sh — only the snapshots.
 import { newWatchState, watchEvents } from "../watch.mjs";
 
 const foe = (name, lv = 12, hp = "40/40") => ({ name, lv, hp, types: ["Normal"], ability: "Run Away", passive: null, moves: [] });
@@ -9,7 +7,7 @@ const party = [{
   moves: [{ name: "Ember", type: "Fire", category: "Special", power: 40, accuracy: 100 }],
 }];
 
-// The summary's declared shape, as probe.js now passes it through whole.
+// A copy of `60-card.js`'s declared summary shape, which nothing checks this against.
 const EMPTY_HUD = { kind: null, wave: null, verdict: null, field: null, danger: [], plan: null, learn: null,
   rewards: null, encounter: null, biome: null, fusion: null, starters: null, next: null, ahead: null, audit: null };
 const snap = (over = {}) => ({ wave: 12, turn: 1, double: false, trainer: null, money: 500, hudActive: true,
@@ -26,7 +24,7 @@ const replay = (label, snaps, opts = {}) => {
   });
 };
 
-// A new battle: one line with the HUD's verdict, and nothing on the polls after it.
+// One line with the HUD's verdict, and nothing on the polls after it.
 replay("new battle", [
   snap({ hud: hud({ verdict: "fight", field: "Charizard Ember → Rattata · 2 hits" }) }),
   snap({ turn: 2, hud: hud({ verdict: "fight", field: "Charizard Ember → Rattata · 1 hit" }) }),
@@ -39,7 +37,7 @@ replay("easy and trainer", [
     hud: hud({ wave: 13, verdict: "trainer", plan: "winnable · 💀 Charizard KOs 2/2" }) }),
 ]);
 
-// The HUD's verdict trails the read: the line is held for three polls, then goes out without one.
+// The line is held for three polls, then goes out without the verdict.
 replay("HUD verdict trails the read", [snap(), snap(), snap(), snap(), snap({ hud: hud({ verdict: "fight" }) })]);
 
 // A 💀 that shows up after the battle line, then the plan turning into a likely loss: once each per wave.

@@ -1684,7 +1684,8 @@ SpD]`, neutral on the diagonal. There is **no Ability Capsule** at this tag; the
 1/64 … 1/8, 4 stacks).
 
 **EXP and the level cap.** `getMaxExpLevel(ignoreLevelCap)` (`src/battle-scene.ts:2310`) — pure: `w =
-getWaveForDifficulty(ceil(wave / 10) × 10)` (the wave itself outside Daily), cap `ceil((1 + w/2 + (w/25)²) × 1.2 / 2) ×
+getWaveForDifficulty(ceil(wave / 10) × 10)` (the wave itself outside Daily; in Daily `w + 30 + floor(w / 5)`,
+`src/game-mode.ts:195`), cap `ceil((1 + w/2 + (w/25)²) × 1.2 / 2) ×
 2 + 2` (wave 10 → 10, 20 → 16, 50 → 38, 200 → 200); with `ignoreLevelCap`, `MAX_SAFE_INTEGER`. `applyPartyExp`
 (`:3332`, §17) shares EXP only among members **below** the cap — a member at it gets nothing and its share is not
 passed on — and `PlayerPokemon.addExp` (`src/field/pokemon.ts:6329`, writes `exp` / `level`) stops at it. Exp Share
