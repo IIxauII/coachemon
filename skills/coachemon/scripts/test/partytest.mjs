@@ -125,7 +125,7 @@ const flatten = rs => rs.map(flat);
     "same species, same level, same reasons");
 }
 
-// ---- Party luck, and a fused line's strength.
+// ---- Party luck follows the game's own terms, and a fusion is judged by the pair.
 {
   const team = party();
   console.log("== luck and fusions");

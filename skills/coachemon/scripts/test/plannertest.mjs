@@ -443,7 +443,7 @@ Object.assign(TABLE, { "Garchomp>Dragon Claw>Snorlax": [[70], 1, 1], "Garchomp>S
   assert.match(kept, /Dragon Claw → Snorlax/, `keeps last turn's near-equal move:\n${kept}`);
 }
 
-// ---- Status moves as this turn's action (#74), each against its own one-on-one.
+// ---- A status move is recommended as this turn's action where it beats attacking (#74).
 const oneOnOne = ({ party, foes, dist, stub = outcome, stopped = null, switches = () => new Map() }) => render({ party, foes, live: true, dist, switches, stubOutcome: stub, stopped });
 const lineOf = (field, name) => field.find(l => new RegExp(`^⚔ ${name}`).test(l)) ?? "";
 const only = move => () => [{ name: move, type: "Normal", p: 1, score: 10, targets: [0] }];
@@ -759,8 +759,8 @@ const dyingHydreigon = () => [
 // carried move for its own turn only (game-code.md §5), so the wrong move costs a turn, not the fight, and a doubtful
 // KO is worth insuring.
 {
-  // The one block that rewrites a row an earlier one set, so it restores it at the end: nothing later reads the row
-  // before assigning it today, but a block added after this one might.
+  // Rewrites a row the spread field set, so it restores it at the end: every later block assigns the row before
+  // reading it today, but one added after this might not.
   const sure = TABLE["Garchomp>Dragon Claw>Hydreigon"];
   const party = () => [
     doublesParty()[0],
@@ -786,8 +786,8 @@ const dyingHydreigon = () => [
 }
 
 // Two killable foes of sharply different danger (#316). Both outspeed both of ours, so `pBefore * danger` is ~0 for
-// each; everything else is symmetric and neither falls to one hit, so the **removal price** alone picks (#320). A
-// target priced by the 1-on-1 exchange with it alone made the foe about to KO our mon a losing trade to aim at (#320).
+// each; everything else is symmetric and neither falls to one hit, so the **removal price** alone picks. A target
+// priced by the 1-on-1 exchange with it alone made the foe about to KO our mon a losing trade to aim at (#320).
 Object.assign(TABLE, {
   "Garchomp>Dragon Claw>Porygon-Z": [[180], 1, 1], "Lucario>Aura Sphere>Porygon-Z": [[180], 1, 2],
   "Garchomp>Dragon Claw>Dunsparce": [[180], 1, 1], "Lucario>Aura Sphere>Dunsparce": [[180], 1, 2],
@@ -1013,7 +1013,6 @@ const hydreigonSnorlax = () => [
   assert.ok(!field.some(l => /⚔ Garchomp/.test(l)), "Garchomp isn't planned to act");
 }
 
-// ---- Support moves.
 // Protect: Hydreigon outspeeds and KOs Lucario, whose hit barely matters, but the faster Garchomp KOs Hydreigon first.
 {
   Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": [[400], 1, 2], "Hydreigon>Dark Pulse>Lucario": [[300], 1, 1], "Lucario>Aura Sphere>Snorlax": [[30], 1, 2] });

@@ -129,7 +129,8 @@ for (const [label, pk, newMove, double] of cases) {
   show("Dragonite ← Outrage", o);
   assert.ok(o.model.move.drawbacks.includes("locks 2–3 turns, then confused"));
   assert.ok(!o.model.move.drawbacks.some(d => /misses/.test(d)), "Outrage's miss effect isn't crash damage");
-  // Only because randbats runs Outrage on Dragonite: the moveset prior below scores the same set without it.
+  // Only because randbats runs Outrage on Dragonite: the moveset prior below scores the same set on a species
+  // randbats has never heard of.
   const claw = byName(o.model, "Dragon Claw");
   assert.ok(claw.replacement > claw.value, `Outrage outscores Dragon Claw (${claw.replacement} vs ${claw.value})`);
 
@@ -155,7 +156,7 @@ for (const [label, pk, newMove, double] of cases) {
   const r = run(emolga, ["Spark","Electric",65,"P"]);
   show("Emolga ← Spark", r);
   assert.equal(r.model.moves[r.model.forget]?.name, "Charge");
-  const a =globalThis.__lm.learnAdvice(emolga, mv(["Spark","Electric",65,"P"]), { party: [emolga] });
+  const a = globalThis.__lm.learnAdvice(emolga, mv(["Spark","Electric",65,"P"]), { party: [emolga] });
   assert.deepEqual([a.learn, a.slot, a.forget, a.gain, a.reason], [true, r.model.forget, "Charge", r.model.gain, "over Charge"]);
   // Four real attacks, no dead slot: a skip names the slot it lost to (`against`) but replaces nothing.
   const armed = mon("Emolga", ["Electric","Flying"], 26, 26, [["Thunder Shock","Electric",40,"S"],["Quick Attack","Normal",40,"P",100,[],false,3,{ fields: { priority: 1 } }],
@@ -329,7 +330,7 @@ const TAUNT = ["Taunt","Dark",-1,"X",100,[["AddBattlerTagAttr",{ tagType: "TAUNT
   assert.ok(judge(TAUNT, oblivious).notes.includes("nothing to stop at W30"));
   assert.ok(judge(HEAL_BLOCK, oblivious).notes.includes("vs Miltank's Milk Drink at W30"));
 
-  // Who a status move can land on (game-code.md §14). Flags: 262144 reflectable, 2048 powder.
+  // Who a status move can land on (game-code.md §16). Flags: 262144 reflectable, 2048 powder.
   const WISP = ["Will-O-Wisp","Fire",-1,"X",85,[["StatusEffectAttr",{ effect: 6 }]],false,3,{ flags: 262144 }];
   const wispBlind = judge(WISP, null);
   const half = judge(WISP, at30(foe("Arcanine", ["Fire"]), foe("Machoke", ["Fighting"])));
