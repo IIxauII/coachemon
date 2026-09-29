@@ -1,19 +1,10 @@
-// Predictions of what the enemy AI does this turn: switch (EnemyCommandPhase) or move (EnemyPokemon.getNextMove).
-// Two readings of the same decision live here, and they answer different questions:
-// - **The exact move** (`sceneExactMoves`): the game's own `getNextMove()` called at the command prompt, which
-//   returns the move and target the enemy will use (game-code.md §6, #158 live). This turn's plan is played on it (#183).
-// - **The distribution** (`sceneDistribution`, `sceneReplayAI`): game-code.md §6 and §7 re-implemented from the pinned source, so
-//   every outcome comes with its chance. There is no fixed draw to reproduce a turn ahead or against a hypothetical
-//   field, so later turns and `aiReplay` stay with it — and it is the exact call's own oracle at a pin bump.
-//
-// **This file calls game code; it never decides when that is allowed.** `25-turn.js` is the only importer of the
-// `scene*` exports (the `@only` lines below): it opens the one sandbox, takes a predicted Tera back off (the AI
-// chose before TeraPhase ran), and keys every answer on the turn. `env` is the scene state these reads need, built
-// once by the turn (25-turn's `sceneEnv`).
+// The enemy's choice read twice: the game's own `getNextMove` for this turn, and a re-implementation that gives every
+// outcome its chance, for later turns and as the exact call's oracle at a pin bump (game-code.md §6, #183). Calls game
+// code but never decides when that is allowed: 25-turn does, and `env` is its `sceneEnv`.
 import { SPREAD_TARGETS, TYPES, forcedRng, hasAttr, keepTurnData, sandbox, sandboxBreachCount, withPick } from "./01-core.js";
 
-// Game-code helpers (only inside the turn's sandbox)
-const NO_CONDITION_CHECK = [MoveId.SUCKER_PUNCH, MoveId.UPPER_HAND, MoveId.THUNDERCLAP]; // the AI ignores their conditions
+// The AI skips their conditions (game-code.md §6).
+const NO_CONDITION_CHECK = [MoveId.SUCKER_PUNCH, MoveId.UPPER_HAND, MoveId.THUNDERCLAP];
 const STRUGGLE = MoveId.STRUGGLE;
 const aiHas = (mv, name) => (mv.hasAttr ? mv.hasAttr(name) : hasAttr(mv, name));
 const isAttackMove = mv => (mv.is ? mv.is("AttackMove") : mv.category !== MoveCategory.STATUS);
@@ -23,8 +14,8 @@ const usableFor = (pm, e, ignorePp = false) => {
 };
 const movesetOf = e => (e.getMoveset?.() ?? e.moveset).filter(Boolean);
 
-// getMoveTargets (move-utils) as outcomes [{ targets: battler indices, multiple, p }]: one per opponent for
-// RANDOM_NEAR_ENEMY, which draws its target, else a single outcome.
+// `getMoveTargets` as outcomes [{ targets, multiple, p }]: one per opponent for `RANDOM_NEAR_ENEMY`, which draws its
+// target (game-code.md §6).
 const aiMoveTargets = (e, mv) => {
   const holder = { value: mv.moveTarget };
   const opponents = e.getOpponents(false);
@@ -49,9 +40,7 @@ const aiMoveTargets = (e, mv) => {
   return [out([], false)];
 };
 
-// getNextTargets as a distribution [{ targets, p }]. Single-target moves weigh candidates by target benefit score
-// (sorted desc, shifted so the lowest is 1, cut below half the top) and draw randBattleSeedInt(total) =
-// floor(U·total) against the cumulative weights: candidate i wins when that integer is in [c(i−1), c(i)).
+// `getNextTargets` as a distribution [{ targets, p }] (game-code.md §6).
 const aiNextTargets = (env, e, mv) => {
   const dist = [];
   const active = env.field;
@@ -77,9 +66,8 @@ const aiNextTargets = (env, e, mv) => {
   return dist;
 };
 
-// Step 7 of getNextMove for one target, as branches [{ score, p }]. A condition that draws (consecutive Protect
-// passes only on a 0) is evaluated with the draw forced both ways and weighted 1/range.
-// `p`: the target when it isn't the mon at field index `bi` (a bench mon the foe would face after a switch).
+// Step 7 of `getNextMove` for one target (game-code.md §6), as branches [{ score, p }]: a condition that draws runs
+// with the draw forced both ways, weighted 1/range. `p`: the target when it isn't the mon at field index `bi`.
 export const aiTargetScore = (env, e, mv, bi, p = env.slots[bi]) => {
   let n = mv.getUserBenefitScore(e, p, mv) + mv.getTargetBenefitScore(e, p, mv) * ((bi < BattlerIndex.ENEMY) === e.isPlayer() ? 1 : -1);
   if (Number.isNaN(n)) n = 0;
@@ -103,8 +91,7 @@ export const aiTargetScore = (env, e, mv, bi, p = env.slots[bi]) => {
   return [{ score: rest(), p: q }, { score: -20, p: 1 - q }];
 };
 
-// A move's options [{ targets, score, p }]: target outcome × condition branches; score = max over its targets
-// (the loop stops at the "attacker" index −1; no targets scores −Infinity like Math.max()).
+// [{ targets, score, p }]: target outcomes × condition branches, scored as step 7 scores a move (game-code.md §6).
 const aiMoveOptions = (env, e, mv) => aiNextTargets(env, e, mv).flatMap(({ targets, p }) => {
   let combos = [{ score: -Infinity, p }];
   for (const bi of targets) {
@@ -115,8 +102,7 @@ const aiMoveOptions = (env, e, mv) => aiNextTargets(env, e, mv).flatMap(({ targe
   return combos.map(c => ({ targets, ...c }));
 });
 
-// Step 5: chance this move passes the KO filter — max-roll, non-crit (unless crit-only/Laser Focus) single-hit
-// damage reaching a foe's HP, with the abilities the AI hasn't seen ignored.
+// The chance this move passes step 5's KO filter (game-code.md §6).
 const aiKoChance = (env, e, pm) => {
   const mv = pm.getMove();
   if (mv.moveTarget === MoveTarget.ATTACKER || mv.category === MoveCategory.STATUS) return 0;
@@ -134,8 +120,7 @@ const aiKoChance = (env, e, pm) => {
   return chance;
 };
 
-// Chance of ending on each index of the score-sorted pool: the AI starts at the top and keeps advancing while
-// its draw says so — SMART_RANDOM with 3/8, SMART with round(next/current·50)% while that ratio is ≥ 0.
+// Step 8: the chance the pick ends on each index of the score-sorted pool (game-code.md §6).
 const aiChain = (aiType, scores) => {
   const out = [];
   let reach = 1;
@@ -151,7 +136,7 @@ const aiChain = (aiType, scores) => {
   return out;
 };
 
-// getNextMove, every outcome with its chance. Returns JSON-safe rows sorted by chance.
+// `getNextMove`, every outcome with its chance (game-code.md §6), as JSON-safe rows.
 const aiDistribution = (env, e) => {
   const moveset = movesetOf(e);
   const rows = new Map();
@@ -178,7 +163,6 @@ const aiDistribution = (env, e) => {
   };
   const whole = (pm, p = 1) => add(row(pm), p, aiNextTargets(env, e, pm.getMove()));
 
-  // 1. A usable queued move (charging, Outrage lock, …) is used again.
   for (const q of e.getMoveQueue()) {
     const pm = moveset.find(m => m.moveId === q.move);
     if (q.useMode >= MoveUseMode.INDIRECT || (pm && usableFor(pm, e, q.useMode >= MoveUseMode.IGNORE_PP))) {
@@ -186,7 +170,6 @@ const aiDistribution = (env, e) => {
       return finish(rows);
     }
   }
-  // 2–3. Usable pool; Struggle, a single move, Encore.
   const pool = moveset.filter(pm => usableFor(pm, e));
   if (!pool.length) {
     const opp = e.getOpponents().map(p => p.getBattlerIndex());
@@ -197,10 +180,8 @@ const aiDistribution = (env, e) => {
   const encore = e.getTag("ENCORE");
   const encored = encore && pool.find(pm => pm.moveId === encore.moveId);
   if (encored) { whole(encored); return finish(rows); }
-  // 4. RANDOM.
   if (e.aiType !== AiType.SMART_RANDOM && e.aiType !== AiType.SMART) { pool.forEach(pm => whole(pm, 1 / pool.length)); return finish(rows); }
 
-  // 5. KO filter: each move passes with some chance; enumerate which pass.
   let outcomes = [{ passing: [], p: 1 }];
   for (const pm of pool) {
     const c = aiKoChance(env, e, pm);
@@ -209,7 +190,6 @@ const aiDistribution = (env, e) => {
       ...(c < 1 ? [{ passing: o.passing, p: o.p * (1 - c) }] : []),
     ]);
   }
-  // 6–8. Each pool's target/condition outcomes, stable sort by score, then the chain.
   const options = new Map();
   const optionsOf = pm => { if (!options.has(pm)) options.set(pm, aiMoveOptions(env, e, pm.getMove())); return options.get(pm); };
   for (const o of outcomes) {
@@ -228,11 +208,8 @@ const aiDistribution = (env, e) => {
   }
   return finish(rows);
 };
-// getNextMove replayed against one target, `target`, which need not be on the field: what the foe picks next turn
-// against a mon of ours that isn't out yet, or against a field one move from now (our boosts after Swords Dance, our
-// HP after its hit). The same steps as `aiDistribution` — a queued move, Struggle, a single move, Encore, RANDOM, the
-// KO filter at max roll, the step-7 scores, the chain — with `target` at our slot 0 (`bi`) for every single-target and
-// spread move alike. `hp`: its HP by then. Rows as `enemyMoveDistribution`'s, without targets. Sandboxed per call.
+// `getNextMove` replayed against `target`, which need not be on the field (game-code.md §6). `hp`: its HP by then.
+// Rows as `sceneDistribution`'s, without targets.
 export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOnField?.() ? target.getBattlerIndex() : BattlerIndex.PLAYER } = {}) =>
   keepTurnData([...env.field, target], () => forcedRng(env.s, () => {
     const moveset = movesetOf(e);
@@ -249,8 +226,6 @@ export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOn
       rows.get(k).p += p;
     };
     const done = () => [...rows.values()].filter(r => r.p > 1e-12).sort((a, b) => b.p - a.p);
-    // `getNextMove` takes a queued move that was called indirectly whether or not it is in the moveset, and skips
-    // every PP and usability check for it (`isVirtual(useMode)`); `aiDistribution` already reads the queue this way.
     for (const q of e.getMoveQueue()) {
       const pm = moveset.find(m => m.moveId === q.move);
       if (q.useMode >= MoveUseMode.INDIRECT) { add(pm ?? null, 1, null, q.move); return done(); }
@@ -262,9 +237,6 @@ export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOn
     const only = pool.length === 1 ? pool[0] : encore && pool.find(pm => pm.moveId === encore.moveId);
     if (only) { add(only, 1); return done(); }
     if (e.aiType !== AiType.SMART_RANDOM && e.aiType !== AiType.SMART) { pool.forEach(pm => add(pm, 1 / pool.length)); return done(); }
-    // The KO filter hides from the AI what it hasn't seen — the target's ability, and its ally's, each only until that
-    // mon's ability has been revealed this wave (`getNextMove`). With no ally there is nothing to hide, and the flag
-    // stands as it did.
     const aiView = { ignoreAbility: !target.waveData?.abilityRevealed, ignoreSourceAbility: false,
       ignoreAllyAbility: !target.getAlly?.()?.waveData?.abilityRevealed, ignoreSourceAllyAbility: false, simulated: true };
     const kos = pool.filter(pm => {
@@ -275,8 +247,7 @@ export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOn
       return target.getAttackDamage({ source: e, move: mv, ...aiView, isCritical: crit }).damage >= hp;
     });
     const movePool = kos.length ? kos : pool;
-    // A move on its own side (setup, a heal) is scored on the foe itself, as the game does; one with no target at all
-    // (an ally move in a single battle, Counter) scores −∞.
+    // An own-side move is scored on the foe itself (game-code.md §6); one with no target at all scores −∞.
     const branchesOf = mv => {
       const outs = aiMoveTargets(e, mv);
       if (outs.every(o => !o.targets.length) || outs.some(o => o.targets.includes(BattlerIndex.ATTACKER))) return [{ score: -Infinity, p: 1 }];
@@ -297,42 +268,22 @@ export const sceneReplayAI = (env, e, target, { hp = target.hp, bi = target.isOn
     return done();
   }));
 
-// Rows out: chance-sorted; targets are battler indices (s.getField()[i]) by chance, targetDist the chance of each
-// given this move; score is the AI's average score for the move.
+// `targetDist`: the chance of each battler index given this move; `score`: the AI's average score for it.
 const finish = rows => [...rows.values()].filter(r => r.p > 1e-12).map(({ tp, scoreW, score, ...r }) => {
   const targetDist = [...tp].map(([battlerIndex, p]) => ({ battlerIndex, p: p / r.p })).sort((a, b) => b.p - a.p);
   return { ...r, score: score == null ? null : Number.isFinite(score / (scoreW || 1)) ? score / (scoreW || 1) : null, targets: targetDist.map(t => t.battlerIndex), targetDist };
 }).sort((a, b) => b.p - a.p);
 
-// ---- The enemy's exact move (game-code.md §6; measured in #158, decided in #183)
-// At the command prompt the battle stream sits where `incrementTurn` re-sowed it, and nothing draws from it between
-// our command and `EnemyCommandPhase` — so the game's own `getNextMove()`, called here, returns **the move and
-// target the enemy will use**, not a sample. 69 of 69 live over waves 1–12, singles and doubles, wild, trainer and
-// boss, with a queued move and picks the distribution gave 4–5 % (#158).
-//
-// The rules the live check settled, each of which this call keeps:
-// - **One sandbox, field order.** Every foe is called inside the same sandbox, in field order, so slot 1's call sees
-//   slot 0's draws exactly as `EnemyCommandPhase` would. The sandbox puts the stream back afterwards, so the game's
-//   real call starts from the stream this prediction started from.
-// - **The move queue is saved and restored.** `getNextMove` splices the queue and can replace it outright
-//   (`pokemon.ts:6570`, `:6576`), so both the contents and the array identity go back.
-// - **Our own draws come first.** A `RANDOM_NEAR_ENEMY` command of ours with two or more opponents draws a target in
-//   our `CommandPhase` (`handleFightCommand` → `getMoveTargets`) *before* the enemy decides, and one such draw flipped
-//   the pick live. `ranges` is those draws, made with the game's own `battle.randSeedInt` in the same sandbox, so the
-//   prediction is the one for **that** candidate command. A prediction made after a draw is only as good as the
-//   command it was made for: that is `replay` confidence, not `exact`.
-// - **Hard fail, no fallback** (#183). A build with no `getNextMove` on the prototype, a call that throws, or a
-//   sandbox breach gives a reason and nothing else. The caller never substitutes the distribution.
+// The enemy's exact move (game-code.md §6, #158): every foe in one sandbox, in field order, so slot 1 sees slot 0's
+// draws. A failure gives a reason and nothing else: the caller never substitutes the distribution (#183).
 export const EXACT_PAST_PIN = "the live build's enemy AI moved past the pin";
 export const EXACT_THREW = "the enemy AI call threw";
 export const EXACT_BREACH = "the enemy AI call breached its sandbox";
 
-// The game's own method, off the prototype rather than the instance: a probe or an extension that wrapped one mon's
-// `getNextMove` would otherwise be asked instead of the game.
+// Off the prototype: a probe or an extension that wrapped one mon's `getNextMove` would be asked instead of the game.
 const protoNextMove = e => { try { return Object.getPrototypeOf(e)?.getNextMove; } catch { return null; } };
 
-// One `TurnMove` as a distribution row, in `finish`'s shape so callers read it like any other: one outcome, p 1, no
-// score (the pick is a fact, not a ranking), and its targets exactly as the game gave them.
+// A `TurnMove` as a row in `finish`'s shape.
 const exactRow = (e, tm) => {
   const moveset = movesetOf(e);
   const pm = moveset.find(m => m.moveId === tm.move) ?? null;
@@ -349,8 +300,8 @@ const exactRow = (e, tm) => {
   };
 };
 
-// `{ ok: true, moves: Map(foe → row) }`, or `{ ok: false, reason }`. `foes`: the active foes, already in field order.
-// `ranges`: the ranges our candidate command draws before the enemy decides, in the order it draws them.
+// `foes`: the active foes, already in field order. `ranges`: what our candidate command draws before the enemy
+// decides, in draw order.
 // @only 25-turn, tests: sceneExactMoves
 export const sceneExactMoves = (env, foes, ranges = []) => {
   const s = env.s;
@@ -375,9 +326,7 @@ export const sceneExactMoves = (env, foes, ranges = []) => {
   return { ok: true, moves: new Map(rows) };
 };
 
-// Without game calls (the approximate turn, or a mock without the functions): the foe's damaging moves ranked by
-// rough damage into their best target, KO moves first, with the SMART chain on those numbers. `outcomesOf(e, foe)`
-// is the turn's own read of what `e` does to `foe` — no game call of this file's own.
+// `outcomesOf(e, foe)` is the turn's own read of what `e` does to `foe`: this file makes no game call for it.
 export const approxDistribution = (e, outcomesOf) => {
   try {
     const best = new Map();
@@ -404,29 +353,18 @@ export const approxDistribution = (e, outcomesOf) => {
 // @only 25-turn, tests: sceneDistribution, sceneReplayAI, sceneSwitches, sceneSendInScore, aiTargetScore
 export const sceneDistribution = (env, e) => keepTurnData(env.field, () => forcedRng(env.s, () => aiDistribution(env, e)));
 
-// Commander: a Tatsugiri inside its Dondozo (and mystery encounters that skip enemy turns) gets its command
-// marked skip, which TurnStartPhase drops — no move and no switch.
+// `skipTurn` (game-code.md §7): no move and no switch.
 export const skipsTurn = (env, e) => !!env.mysteryEncounter?.skipEnemyBattleTurns
   || !!(env.double && e.getAlly?.()?.getTag?.("COMMANDED") && [e.getAbility?.(), e.hasPassive?.() && e.getPassiveAbility?.()].some(a => a?.id === AbilityId.COMMANDER));
 
-// Trainer switch prediction (EnemyCommandPhase): an active mon that isn't trapped or locked into a move switches when
-//   bestBenchScore × (1 − 0.1^(1/enemySwitchCounter)) ≥ avg own matchup score × (boss ? 2 : 3)
-// and sends trainer.getNextSummonIndex(). Slots decide in field order and each decision moves the counter
-// (+1 on a switch, −1 floored at 0 otherwise) before the next slot reads it. Switches resolve before moves, so our
-// attack lands on the switch-in.
-//
-// The two slots can name the **same** party index (#285): a Roar into a `doubleOnly` trainer's double puts a
-// wrong-tagged mon on the field, both slots then score one bench, and `getNextSummonIndex` draws at the turn's own
-// seed offset, so they get the same answer. `EnemyCommandPhase` writes both commands regardless; `TurnStartPhase`
-// resolves them in field order, so by the time slot 1's `SwitchSummonPhase` runs, its party slot holds the mon slot 0
-// just withdrew — and that mon walks straight back in on the other slot. So the index is asked of the **live** party,
-// the way the game asks it, while the mon that *arrives* is read off a local replay of the game's own two-line swap
-// (`switch-summon-phase.ts#switchAndSummon`). `back` marks such a return: it arrives with `resetSummonData()`.
+// `EnemyCommandPhase`'s switch check (game-code.md §7). Both slots can name the same party index (#285): after a Roar
+// into a `doubleOnly` trainer's double they score one bench, and slot 1's switch then brings back the mon slot 0 just
+// withdrew. So the index is asked of the live party and the arrival read off a replay of the game's swap; `back`
+// marks such a return.
 export const sceneSwitches = (env, active) => {
   const tr = env.trainer;
   const out = new Map();
   if (!tr?.getPartyMemberMatchupScores) return out;
-  // `env.foes` is `getEnemyParty()`; the copy is where the predicted swaps are replayed.
   const party = [...env.foes];
   const slots = [...active].sort((x, y) => (x.getFieldIndex?.() ?? 0) - (y.getFieldIndex?.() ?? 0));
   let counter = env.enemySwitchCounter ?? 0;
@@ -444,11 +382,10 @@ export const sceneSwitches = (env, active) => {
             switched = true;
             const i = tr.getNextSummonIndex(e.trainerSlot, scores);
             const to = party[i];
-            // A skipped command is dropped by `TurnStartPhase`, so no phase runs and no swap happens.
+            // A skipped command never runs its swap (game-code.md §7).
             if (to && !skipsTurn(env, e)) {
               out.set(e, { to, ratio: 1, back: !!to.isOnField?.() });
-              // The field slots are the party's first `getBattlerCount()` entries, so an on-field mon's party index
-              // is its field index — the fallback for a scene that doesn't answer `getFieldIndex`.
+              // An on-field mon's party index is its field index (game-code.md §7).
               const fi = e.getFieldIndex?.() ?? env.foes.indexOf(e);
               if (fi >= 0) { party[i] = party[fi]; party[fi] = to; }
             }
@@ -461,10 +398,8 @@ export const sceneSwitches = (env, active) => {
   return out;
 };
 
-// The trainer's send-in score for bench mon `f` against our `me` (Pokemon.getMatchupScore, pinned source): its
-// attack and defence type scores, times min(1, its HP ratio + 1 − ours), ×1.25 when it outspeeds us, else ×0.5 at
-// 20–40 % HP. The whole-fight plan moves our HP over the fight, so the game is asked once with ours at 0 — the HP
-// factor then caps at 1 and the call returns the type scores alone — and the plan puts the HP back itself.
+// Asked with our HP at 0, which leaves the HP factor at 1 unless `f` is slower and at 20–40 % HP (game-code.md §7).
+// The plan puts our HP back itself.
 export const sceneSendInScore = (env, f, me) => {
   const v = f.getMatchupScore(Object.create(me, { hp: { value: 0 } }));
   return Number.isFinite(v) ? v : null;

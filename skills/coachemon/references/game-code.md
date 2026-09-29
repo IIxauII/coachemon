@@ -408,6 +408,7 @@ One hit deals at most `hp − segSize·idx` (down to the current boundary). The 
 **Survival.** `Pokemon.damage` (`pokemon.ts:3863-3901`) checks these only when `!preventEndure && hp − damage <= 0`: the `ENDURING` tag (Endure), else the `STURDY` tag at `hp === maxHp`, else `ENDURE_TOKEN`, each lapsed when used. Failing those, `SurviveDamageModifier` (Focus Band, `src/modifier/modifier.ts:1520-1537`) saves on `randBattleSeedInt(10) < stack`, i.e. 10 % per stack (max 5), leaving 1 HP. Then `hp -= min(damage, hp)`, and a faint queues `FaintPhase` unless `ignoreFaintPhase`. — writes `hp`, lapses tags, draws battle RNG (Focus Band), queues messages/phases. `damageAndUpdate` passes `preventEndure = true` for INDIRECT results (`pokemon.ts:3933`), so none of these save from chip.
 - The STURDY tag is only added by a non-simulated `getAttackDamage`, through `PreDefendFullHpEndureAbAttr` (full HP, maxHp > 1, damage ≥ hp; `ab-attrs.ts:293-307`) at `pokemon.ts:3786-3788`. `FixedDamageAttr` moves (Seismic Toss, Night Shade, Dragon Rage, Super Fang, Final Gambit, Psywave) return earlier (`:3602-3621`), so **at the pin Sturdy doesn't save from them**. OHKO moves return at `:3625-3633`; Sturdy blocks those separately with `BlockOneHitKOAbAttr`.
 - Enemy Endure token (`EnemyEndureChanceModifier.apply`, `modifier.ts:3660-3670`) is rolled in `MoveEffectPhase.applyMoveDamage` whenever the enemy's **pre-clamp** damage ≥ `hp` (`move-effect-phase.ts:677-678`). It needs `!waveData.endured` and `randBattleSeedInt(100) < 2 × stack` (max 10 stacks); on success it adds `ENDURE_TOKEN` and sets `waveData.endured`. A boss hit the clamp would stop anyway can still spend it. — draws battle RNG; writes a tag and `waveData.endured`.
+  The token saves **one** lethal hit. It is an `EnduringTag` with lapse type `AFTER_HIT` (`src/data/battler-tags.ts:3849-3850`): `Pokemon.damage` lapses it as `CUSTOM`, which keeps it (`pokemon.ts:3876-3877`, `battler-tags.ts:2024-2027`), and `MoveEffectPhase` removes it after that hit (`move-effect-phase.ts:846`). The next lethal hit that turn, a later strike of the same move included, KOs.
 
 **Berries do not trigger on hit.** `BerryModifier` is applied only in `BerryPhase.eatBerries` (`src/phases/berry-phase.ts:33-82`), a turn-end phase that runs after `WeatherEffectPhase` and before `CheckStatusEffectPhase` (status chip) and `TurnEndPhase` (`src/phase-manager.ts:227-233`). The only other ways to eat one are Bug Bite / Pluck / Stuff Cheeks / Teatime (`EatBerryAttr`, `move.ts:3371`) and Cud Chew / Harvest. An opposing Unnerve (`PreventBerryUseAbAttr`) skips the phase for that mon (`berry-phase.ts:43-52`). Predicates (`getBerryPredicate`, `src/data/berry.ts:23-65`, pure):
 - Sitrus: `getHpRatio() < 0.5`, with the ratio rounded to 0.01 (`pokemon.ts:1691-1693`), so 49.5 % doesn't trigger it. Enigma: any `turnData.attacksReceived` this turn with result SUPER_EFFECTIVE or EXTREMELY_EFFECTIVE. Both heal `toDmgValue(maxHp / 4)`, ×2 with Ripen (`DoubleBerryEffectAbAttr`), via `PokemonHealPhase` (`berry.ts:73-89`). They are separate modifiers, so both can fire in the same phase.
@@ -756,7 +757,8 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
   `hpDiffRatio = hpRatio + (1 − oppHpRatio)` on two-decimal HP ratios (`:2740-2746`, rounding at `:1692`): ×1.25 when
   this mon's Speed is `>=` the opponent's effective Speed (`:2683-2685`, `:2756-2757`), else ×0.5 at
   0.2 < hpRatio ≤ 0.4 (`:2758-2760`). An on-field mon at ≤ 0.2 takes a "dying" branch instead (`:2745-2755`), which a
-  bench mon never reaches.
+  bench mon never reaches. Off the field, this mon's Speed is the raw `getStat(SPD, false)` (`:2684`), and with the
+  opponent at 0 HP the factor is 1, except for a slower mon at 0.2 < hpRatio ≤ 0.4.
 - **`Pokemon.isTrapped`** (`:2398`). It is true when a `COMMANDED` tag's source is active, so a Commanded Dondozo never
   switches. Otherwise it applies `CheckTrappedAbAttr` simulated over `inSpeedOrder`, and checks `TrappedTag` and
   Fairy Lock.
@@ -768,6 +770,16 @@ The HUD's `predictSwitches` (`20-enemy-ai.js`) follows this rule. The pieces:
   ally's slot (`move.ts:7278-7309`).
 - **Doubles sequencing.** Slot 0 decides first and moves `enemySwitchCounter` (+1 on a switch, −1 floored at 0
   otherwise) before slot 1 reads it.
+- **The switch itself.** The field is the front of the party (`getEnemyField` is `party.slice(0, double ? 2 : 1)`,
+  `src/battle-scene.ts:786-790`), so an on-field mon's party index is its field index (`getFieldIndex`,
+  `src/field/pokemon.ts:7016-7017`). `SwitchSummonPhase` takes `party[slotIndex]` (`src/phases/switch-summon-phase.ts:128`),
+  calls `resetSummonData()` on it (`:134`, stat stages back to 0; Baton Pass restores them later, `:247-248`) and swaps
+  the two party entries (`:190-191`). In a double, `Trainer.genPartyMember` tags even party indices `TRAINER` and
+  odd ones `TRAINER_PARTNER` whenever `isDouble()` (`doubleOnly` single trainers included, `src/field/trainer.ts:432`),
+  and each slot scores only its own tag's bench. `ForceSwitchOutAttr` filters by that tag only for an `isPartner()`
+  trainer (`src/data/moves/move.ts:7458-7466`), so a Roar into a `doubleOnly` trainer's double can leave both slots
+  holding one tag. Both then score the same bench and break ties at the same seed offset, so they name the same
+  index, and slot 1's switch, which runs second, finds slot 0's withdrawn mon in that entry and sends it straight back.
 - **`skipTurn`.** It is set for a Commander Tatsugiri inside Dondozo, and for
   `mysteryEncounter.skipEnemyBattleTurns` (`src/phases/enemy-command-phase.ts:27,41-47`). The command is still
   written, and the counter still moves, but `TurnStartPhase` drops skipped commands
@@ -2126,7 +2138,8 @@ order:
    and the Master Ball too when `hasAnyChallenges()`; any other boss refuses every ball but the Master Ball, and a
    catchable Daily event boss refuses that too. A Wonder Guard boss takes any ball on any bar. `hasAnyChallenges()` is
    `challenges.length > 0` (`src/game-mode.ts:105`), and a challenge-mode run copies every challenge, values and all
-   (`:65`, `:80`), so it holds for any challenge run, whatever each value is.
+   (`:65`, `:80`), so it holds for any challenge run, whatever each value is. `hasChallenge(id)` (`:97`) is the one
+   that checks a value.
 
 **The throw.** `AttemptCapturePhase.start` (`src/phases/attempt-capture-phase.ts:45`) ends at once on a foe with 0 HP,
 before the ball is spent; otherwise it writes `pokeballCounts[type]--` (line 59) and computes (lines 63–73, 88):
