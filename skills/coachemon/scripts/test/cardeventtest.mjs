@@ -1,39 +1,24 @@
-// The card stream, through the script the extension actually ships (extension-distribution.md §11.1): `hudScript(bundle("hud"))` stamped with a
-// build id, run against a mocked page, with every `document` event captured. The relay's own validators judge what
-// came out, so a detail the extension would drop fails here instead of on a live tab (§9.5).
 import assert from "node:assert";
 import { bundle } from "../hud-bundle.mjs";
 import { hudScript, stamp } from "../../../../extension/src/build/artifact.ts";
 import { EVENT, GROUP_IDS, cardBody, coachErrorBody } from "../../../../extension/src/relay/channel.ts";
 
-// The strip is two lines, then an ellipsis — about 115 characters at reference width — and **the leading clause must
-// fit**; what follows the first ` · ` may clip, because it is reasoning and not the call (#349). The clamp only
-// ever eats the end, so what CI can hold is the clause, and this is where it is held: every act summary that reaches
-// the wire is one the strip drew.
+// The strip's two lines at reference width: only the act summary's leading clause must fit (#349).
 const CLAUSE_BUDGET = 115;
 
-/**
- * What every card detail on the wire has to be (#361): the relay's gate, `groups` flattened, and `text` the
- * projection of `groups` in the fixed tab order — each group headed by its label and its summary, `act` by its
- * summary alone, then its rows one per line — so the two cannot disagree by construction.
- */
 const wireOk = card => {
   const body = cardBody(card);
   assert.notEqual(body, null, `the relay refuses this detail: ${JSON.stringify(card)}`);
   const ids = body.groups.map(g => g.id);
   assert.deepEqual(ids, ids.slice().sort((a, b) => GROUP_IDS.indexOf(a) - GROUP_IDS.indexOf(b)), "the groups come in the fixed tab order");
   assert.equal(ids[0], "act", "every card leads with act");
-  // Pre-flattened: nodes cannot cross a wire, so a row is already the one line it reads as.
   for (const g of body.groups) for (const r of g.rows) assert.equal(typeof r, "string", `${g.id} row is not flattened: ${JSON.stringify(r)}`);
-  // The heading law restated by hand rather than imported from the panel: projecting the groups with the panel's own
-  // projection would assert the function equals itself. This is the second opinion, and the golden's text below is
-  // the third — a change to the law has to be made here as well as in `90-render.js`, deliberately.
+  // Restated by hand, not imported from `90-render.js`: a change to the heading law is made in both, deliberately.
   const heading = g => (g.id === "act" ? g.summary : g.summary && g.label ? `${g.label}: ${g.summary}` : g.label || g.summary) || null;
   const projected = body.groups.map(g => [heading(g), ...g.rows].filter(Boolean).join("\n")).filter(Boolean).join("\n");
   assert.equal(body.text, projected, "the text is the projection of the groups and nothing else");
   const call = body.groups[0].summary;
   assert.equal(body.text.split("\n")[0], call, "the first line of the text is the act summary");
-  // The strip's budget, held on the clause alone.
   const clause = call.split(" · ")[0];
   assert.ok(clause.length <= CLAUSE_BUDGET, `the act summary's leading clause is ${clause.length} > ${CLAUSE_BUDGET}: ${clause}`);
   return body;
@@ -46,18 +31,16 @@ const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p,
 const pk = (name, types, atk, spa, moves) => ({ name, level: 30, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })) });
 
 const charmeleon = pk("Charmeleon", ["Fire"], 64, 80, [["Tackle","Normal",40,"P"],["Ember","Fire",40,"S"],["Dragon Breath","Dragon",60,"S"],["Scratch","Normal",40,"P"]]);
-// The learn-move prompt: the card, its key and its call all come off this one screen.
 const learnScene = move => ({
   currentBattle: { waveIndex: 12, double: false },
   ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(move) }) },
   getEnemyParty: () => [], getPlayerParty: () => [charmeleon],
 });
 
-// ---- The page: a DOM that remembers tag names (the text rendering reads them), and a captured event channel.
+// Nodes keep their tag name: the text rendering reads it.
 let scene = learnScene(["Flamethrower","Fire",90,"S"]);
 let el = null, ticker = null;
 const events = [];
-// Every node the panel makes, counted: what proves the card is drawn once per refresh rather than again per read.
 let made = 0;
 const node = tag => {
   made++;
@@ -82,7 +65,6 @@ globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(stamp(hudScript(bundle("hud")), BUILD));
 const tick = () => ticker();
 
-/** Every event of one kind, decoded the way the relay decodes it, with its build id checked as the relay checks it. */
 const seen = name => events.filter(e => e.type === name).map(e => {
   const detail = JSON.parse(e.detail);
   assert.equal(detail.build, BUILD, "every detail carries this build's id");
@@ -100,17 +82,13 @@ const errors = () => seen(EVENT.coachError);
   assert.equal(body.key, "12|Charmeleon|Flamethrower");
   assert.equal(body.wave, 12);
   console.log(`verdict ${body.verdict}`);
-  // The groups as the agent reads them: a decision by name, not by line.
   for (const g of body.groups) console.log(`group ${g.id} | ${g.label} | ${g.summary ?? "—"} | rows ${g.rows.length}`);
   console.log(`text\n${body.text}`);
-  // The text is the card the panel drew.
   assert.ok(body.text.includes("Flamethrower"), body.text);
 
-  // A late joiner reads the very event it missed: `card()` is the `card` command's answer (extension-distribution.md §11.1, §11.4).
+  // `card()` answers the `card` command with the event a late joiner missed (extension-distribution.md §11.4).
   const made0 = made;
   assert.deepEqual(window.__coachHud.card(), { kind: body.kind, key: body.key, wave: body.wave, verdict: body.verdict, groups: body.groups, text: body.text });
-  // **The groups are built once per fire and both projections come off them** (extension-distribution.md §11.1): the read that follows the
-  // refresh draws no card of its own, where the stream used to draw one to say what it said.
   assert.equal(made, made0, `the card read drew ${made - made0} nodes of its own`);
 
   tick();
@@ -121,7 +99,6 @@ const errors = () => seen(EVENT.coachError);
   assert.equal(cards().length, 2, "a new move on offer is a new decision");
   assert.equal(cards()[1].key, "12|Charmeleon|Fire Blast");
 
-  // A refresh with nothing to coach between two looks at the same card is not a second event.
   scene = { currentBattle: null, ui: { getMode: () => 0, getHandler: () => ({}) }, getEnemyParty: () => [], getPlayerParty: () => [] };
   tick();
   scene = learnScene(["Fire Blast","Fire",110,"S"]);
@@ -154,7 +131,6 @@ const errors = () => seen(EVENT.coachError);
   tick();
   const wave = cards().slice(before);
   assert.deepEqual(wave.map(c => [c.kind, c.key, c.verdict]), [["battle", "20", "easy"], ["battle", "20", "danger"]]);
-  // Every card on the wire, not only the first: a battle card carries more groups than a learn card does.
   for (const c of wave) console.log(`groups ${wireOk(c).groups.map(g => g.id).join(" ")}`);
   console.log(`mid-wave ${wave.map(c => c.verdict).join(" → ")}`);
 }
@@ -162,7 +138,6 @@ const errors = () => seen(EVENT.coachError);
 // ---- A failed refresh: one event per distinct message
 {
   const before = cards().length;
-  // The scene goes out from under the panel, the way a page reload takes it.
   globalThis.Phaser.Display.Canvas.CanvasPool.pool[0].parent.game.scene.getScene = () => {
     throw new Error("scene gone");
   };

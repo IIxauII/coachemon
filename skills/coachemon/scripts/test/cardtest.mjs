@@ -1,12 +1,8 @@
-// The card module on its own: the battle verdict and the plain-text summary, asserted on models rather than on drawn
-// nodes. The summary has one declared shape, so a contract test holds every card kind to exactly those keys — that is
-// what probe.js's old hand-kept key list was guarding.
 import assert from "node:assert";
 import { bundle } from "../hud-bundle.mjs";
 import { EVENT_KINDS as RELAY_EVENT_KINDS } from "../../../../extension/src/relay/channel.ts";
 
-// 60-card and the summaries are pure. The bundle still builds the panel element and starts its timer, so stub only
-// enough of the page for that: no DOM mock, and nothing here reads a node.
+// Only enough page for the bundle to build its panel and start its timer: nothing here reads a node.
 globalThis.window = globalThis;
 globalThis.Phaser = { Math: { RND: { state: () => "!rnd,0" } }, Display: { Canvas: { CanvasPool: { pool: [] } } } };
 const node = () => ({ style: {}, addEventListener() {}, append() {}, replaceChildren() {}, remove() {} });
@@ -17,13 +13,8 @@ globalThis.localStorage = { getItem: () => null, setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { EVENT_KINDS, cardSummary, summaryKeys } = globalThis.__hud["60-card"];
 
-// The relay keeps its own copy of the streamed kinds, because the panel is a source the extension bundles rather
-// than imports (`extension/src/relay/channel.ts`). This is what pins the copy to the original, the way
-// `grouptest.mjs` pins the group ids: the panel's `rewards` goes out as `reward`, and a rename of that name in the
-// card table moves the derived list, so the copy has to move with it or the shop stops crossing the gate in
-// silence (#388). Order included: the relay's literal is written in the card table's order, and the whole list is
-// cheaper to keep honest than a set is. Strict, because the file's `assert` is the loose one and `grouptest.mjs:33`,
-// which this mirrors, runs under `node:assert/strict`.
+// The relay keeps its own copy, in the card table's order: a rename the copy misses stops the shop crossing the gate
+// in silence (#388). Strict, because this file's `assert` is the loose one.
 assert.deepStrictEqual([...RELAY_EVENT_KINDS], EVENT_KINDS, "the relay's streamed kinds are the panel's");
 
 const threat = (level, from = "Rattata", move = "Tackle") => ({ level, from, move, type: "Normal", e: 1, pct: 80, pko: 90 });
@@ -37,32 +28,26 @@ const battle = (over = {}) => ({
 });
 const verdictOf = m => cardSummary(m).verdict;
 
-// ---- The verdict, most specific first
+// ---- The verdict takes the most specific call that applies
 {
-  // Nothing to decide: a wild fight every slot wins in one or two hits.
   assert.equal(verdictOf(battle()), "easy");
-  // A second hit is still easy; a third is not.
   assert.equal(verdictOf(battle({ field: { ...battle().field, slots: [slot({ ko: 2 })] } })), "easy");
   assert.equal(verdictOf(battle({ field: { ...battle().field, slots: [slot({ ko: 3 })] } })), "fight");
   // A spread move that KOs the two foes on different turns is judged by the slower one.
   assert.equal(verdictOf(battle({ field: { ...battle().field, slots: [slot({ target: "both", ko: 0, koEach: [1, 3] })] } })), "fight");
   assert.equal(verdictOf(battle({ trainer: true })), "trainer");
-  // A 💀 on a field slot, a boss, or nowhere safe to switch is danger — ahead of a catch.
   assert.equal(verdictOf(battle({ field: { ...battle().field, slots: [slot({ ko: 3, threat: threat("ko") })] } })), "danger");
   assert.equal(verdictOf(battle({ rows: [{ name: "Gyarados", boss: true }] })), "danger");
   assert.equal(verdictOf(battle({ field: { ...battle().field, noSafeSwitch: true } })), "danger");
-  // A catch worth a ball, on a wave that is otherwise a plain fight.
   const worth = { targets: [{ name: "Rattata", verdict: "catch", why: "new species" }] };
   assert.equal(verdictOf(battle({ field: { ...battle().field, slots: [slot({ ko: 3 })] }, catch: worth })), "catch");
-  // …and it beats `easy` too: a wave with a ball worth throwing is a catch wave, whatever else is quiet about it.
   assert.equal(verdictOf(battle({ catch: worth })), "catch");
   assert.equal(verdictOf(battle({ catch: { targets: [{ name: "Rattata", verdict: "skip", why: "already caught" }] }, field: { ...battle().field, slots: [slot({ ko: 3 })] } })), "fight");
-  // A fight plan that is going to be lost is never easy.
   assert.equal(verdictOf(battle({ teamPlan: { result: "lost", steps: [], warnings: [], sacrifice: [], reserve: [] } })), "fight");
   console.log("verdicts ok");
 }
 
-// ---- The battle summary: the ⚔ line, the KO-level danger and the plan
+// ---- The battle summary carries the ⚔ line, the KO-level danger and the plan
 {
   const m = battle({
     trainer: true,
@@ -73,7 +58,6 @@ const verdictOf = m => cardSummary(m).verdict;
       reserve: [{ name: "Pidgey", for: { name: "Butterfree" } }], win: { name: "Charizard", kills: 2, of: 3 } },
   });
   const s = cardSummary(m);
-  // `trainer` outranks `danger`: the precedence is easy, trainer, danger, catch, fight.
   assert.equal(s.verdict, "trainer");
   assert.equal(s.field, "Charizard Ember → Rattata · 2 hits ; Venusaur Vine Whip → both · 3 hits");
   assert.deepEqual(s.danger, [
@@ -103,7 +87,6 @@ const verdictOf = m => cardSummary(m).verdict;
     const s = cardSummary(model);
     assert.deepEqual(Object.keys(s), declared, `${kind} summary keys`);
     assert.equal(s.kind, kind);
-    // Exactly one card field is filled in, and it is this card's own.
     const own = { battle: "verdict", learn: "learn", rewards: "rewards", biome: "biome", encounter: "encounter", starters: "starters", fusion: "fusion" }[kind];
     assert.notEqual(s[own], null, `${kind} fills ${own}`);
     for (const k of ["learn", "rewards", "encounter", "biome", "fusion", "starters"]) {
@@ -119,28 +102,24 @@ const verdictOf = m => cardSummary(m).verdict;
   }
 }
 
-// ---- The card event: the kind the stream uses, the key it deduplicates on, and the leading call (extension-distribution.md §11.1)
+// ---- A card event carries the stream's kind, the key it deduplicates on and the leading call (extension-distribution.md §11.1)
 {
   const { cardEvent } = globalThis.__hud["60-card"];
-  // A battle is keyed on the wave alone and carries the glossary's verdict.
   assert.deepEqual(cardEvent(battle()), { kind: "battle", key: "12", wave: 12, verdict: "easy" });
-  // The panel's `rewards` card goes out as `reward`; a reroll changes the free names, so the key moves with them.
   const rewards = { kind: "rewards", wave: 15, pick: 0, free: [{ name: "Leftovers", holder: { name: "Charizard" } }, { name: "Ether" }], buys: [], rerollAhead: null, audit: null, preview: null, ahead: null };
   assert.deepEqual(cardEvent(rewards), { kind: "reward", key: "15|Leftovers,Ether", wave: 15, verdict: "take Leftovers → Charizard" });
   assert.equal(cardEvent({ ...rewards, free: [{ name: "Ether" }] }).key, "15|Ether");
-  // Learn: wave, pokémon and the move on offer, with the learn call.
   const learn = { kind: "learn", wave: 14, name: "Charmeleon", move: { name: "Flamethrower" }, verdict: "Learn → forget Ember", forget: 1, team: { onlyType: "Dark" } };
   assert.deepEqual(cardEvent(learn), { kind: "learn", key: "14|Charmeleon|Flamethrower", wave: 14, verdict: "Learn → forget Ember" });
-  // Biome: the wave, and the option the card picks — not the first one it lists.
+  // The option the card picks, not the first one it lists.
   const biome = { kind: "biome", wave: 30, options: [{ label: "Construction Site", score: 55, verdict: "keep", reasons: [] }, { label: "Swamp", score: 85, verdict: "pick", reasons: [{ text: "2 mons hit SE" }] }] };
   assert.deepEqual(cardEvent(biome), { kind: "biome", key: "30", wave: 30, verdict: "Swamp" });
-  // An encounter is keyed on its own name, and its call is `take …`, `your call` or `not judged`.
   const encounter = { kind: "encounter", wave: 31, name: "Mysterious Chest", known: true, pick: 0, options: [{ label: "Open it", verdict: "take", outcome: "pick of 3 Ultra items" }, { label: "Leave", verdict: "avoid" }] };
   assert.deepEqual(cardEvent(encounter), { kind: "encounter", key: "31|Mysterious Chest", wave: 31, verdict: "take Open it" });
   assert.equal(cardEvent({ ...encounter, pick: -1, known: false }).verdict, "not judged");
   assert.equal(cardEvent({ ...encounter, pick: -1 }).verdict, "your call");
-  // A continuous encounter asks again on the same wave under the same name, so a minigame turn keys on the mon in
-  // front of you and its two stages — otherwise all three Safari mons would stream as one event.
+  // A continuous encounter asks again on the same wave under the same name: without the minigame in its key, all
+  // three Safari mons would stream as one event.
   const safari = { kind: "encounter", wave: 31, name: "Safari Zone", known: true, pick: 0,
     minigame: { mon: "Nidorina", left: 2, catchStage: 0, fleeStage: 0 },
     options: [{ label: "Throw a ball", verdict: "take", outcome: "37% to catch it now" }, { label: "Flee", verdict: "avoid" }] };

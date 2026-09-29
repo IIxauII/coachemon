@@ -1,12 +1,12 @@
-// Damage module against a mocked slice of the game: getAttackDamage returns the move's power (×1.5 on a crit),
-// reading the user's turnData the way the game's multi-hit attrs do, so the numbers below are exact.
+// The mock's `getAttackDamage` returns the move's power, ×1.5 on a crit, and reads the user's turnData as the game's
+// multi-hit attrs do: the numbers below are exact.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { MoveId, MultiHitType } from "../../../../src/enums/generated.ts";
 import { GAME_PROTO } from "./game-proto.mjs";
 
 class MultiHitAttr { constructor(t) { this.multiHitType = t; } }
-// Applied after the roll and the post-roll multipliers, before the Sturdy step: False Swipe's min(damage, hp − 1).
+// False Swipe's cap (game-code.md §1).
 class ModifiedDamageAttr {}
 class SurviveDamageAttr extends ModifiedDamageAttr {}
 class MultiHitPowerIncrementAttr { constructor(n) { this.maxHits = n; } }
@@ -15,7 +15,6 @@ class PokemonMoveAccuracyBoosterModifier { getStackCount() { return 1; } }
 class BerryModifier { constructor(t) { this.berryType = t; } getStackCount() { return 1; } }
 class TurnHealModifier { getStackCount() { return 1; } }
 const held = (name, props = {}, n = 1) => Object.assign(new ({ [name]: class { getStackCount() { return n; } } })[name](), props);
-// An ability attribute carrying its constructor arguments, as the game stores them.
 const abAttr = (name, props = {}) => Object.assign(new ({ [name]: class {} })[name](), props);
 
 let damageCalls = 0;
@@ -28,8 +27,8 @@ const move = (id, name, type, power, { acc = 100, attrs = [], flags = 0, cat = 0
   },
 });
 const pmOf = (mv, i = 0) => ({ moveId: mv.id ?? i + 1, getMove: () => mv, getName: () => mv.name, getMovePp: () => 10, ppUsed: 0 });
-// `battlerTags`: the instances `summonData.tags` holds, which the turn-end model reads by class; `bi`: the battler
-// index a Leech Seed names its seeder by.
+// `battlerTags`: the instances `summonData.tags` holds, read by class — not `tags`, which only `getTag` sees. `bi`:
+// the battler index a Leech Seed names its seeder by.
 const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = [], player = true, boss = 0, types = [0], formIndex = 0, moves = [], status = null, tags = [], battlerTags = [], bi = 0 } = {}) => {
   const p = Object.assign(Object.create(GAME_PROTO), {
     id, name: id, level: 50, hp, formIndex, getMaxHp: () => maxHp, isPlayer: () => player, isOnField: () => true,
@@ -44,7 +43,7 @@ const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = []
     getMoveCategory: (_, mv) => mv.category,
     getAccuracyMultiplier: () => 1, getCritStage: () => 0,
     getMoveEffectiveness: () => 1,
-    // The damage module reads every roll by scaling this, the factor beside the roll in the game's own product.
+    // The damage module reads each roll by scaling this factor (game-code.md §1).
     calculateStabMultiplier: () => 1,
     getAttackDamage({ source, move: mv, isCritical, simulated }) {
       assert.equal(simulated, true);
@@ -57,7 +56,6 @@ const mon = (id, { hp = 1000, maxHp = hp, abilities = [], attrs = [], items = []
       // Side effects the real call can have: RNG draws and a Tera Shell turnData write.
       Phaser.Math.RND.state("!rnd,dirty");
       this.turnData.moveEffectiveness = 0.5;
-      // One floor over the whole product (the roll rides in on the STAB factor), then the post-roll cap.
       let damage = Math.max(1, Math.floor(power * (isCritical ? 1.5 : 1) * this.calculateStabMultiplier(source, mv, false, true)));
       if (mv.attrs.some(a => a instanceof SurviveDamageAttr)) damage = Math.min(damage, this.hp - 1);
       return { cancelled: false, result: 1, damage };
@@ -92,31 +90,26 @@ const { hitOn, koTurn, koTurns, useOf, koChanceAt } = D;
 const { gameVersionOf, versionAtLeast } = globalThis.__hud["01-core"];
 const { readTurn } = globalThis.__hud["25-turn"];
 
-// 10-damage's game-calling side is `25-turn`'s to drive: it opens the one sandbox, settles Tera and keys the
-// answers. So each question here is asked through a turn read over the scene it is about — `at(...)` builds a scene
-// variant per weather or field, and each gets its own turn. What is left of 10-damage is pure and called directly.
 const ask = (s, fn) => readTurn(s, fn);
 const moveOutcome = (s, ...a) => ask(s, t => t.outcome(...a));
 const moveOutcomes = (s, ...a) => ask(s, t => t.outcomes(...a));
 const statusMoves = (s, ...a) => ask(s, t => t.statusMoves(...a));
 const endOfTurnHp = (p, { s = scene, ...opts } = {}) => ask(s, t => t.turnEndHp(p, opts));
 const hits = (a, d) => ask(scene, t => t.outcomes(a, d));
-// The per-mon record the KO pacing math takes: read once from a turn, then plain data and pure closures.
 const recOf = (p, s = scene) => ask(s, t => t.mon(p));
 const stateOf = (p, hp, bar) => D.stateOf(recOf(p).facts, hp, bar);
 const koCurve = (target, use, opts) => D.koCurve(recOf(target), use, opts);
 
-// Expected damage of one hit whose max roll is `max`: the mean of the 16 rolls 85..100 %.
 const avgRoll = max => { let t = 0; for (let r = 85; r <= 100; r++) t += Math.max(1, Math.floor(max * r / 100)); return t / 16; };
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, `${msg}: ${a} vs ${b}`);
-// Fresh field for each case; the turn number is part of the turn's key.
+// A fresh turn number per case: it is part of the turn's memo key.
 let turn = 1;
 const setup = (atk, def) => { party.length = 0; enemies.length = 0; party.push(atk); enemies.push(def); scene.currentBattle.turn = turn++; };
 
 const tripleAxel = move(813, "Triple Axel", 14, 20, { acc: 90, attrs: [new MultiHitAttr(2), new MultiHitPowerIncrementAttr(3)], flags: 65536 });
 const bigHit = move(1, "Big Hit", 14, 120);
 
-// Triple Axel: hits of 20/40/60, each rolling 90 % accuracy and stopping at the first miss.
+// ---- Triple Axel rolls accuracy per hit and stops at the first miss (game-code.md §2)
 {
   const atk = mon("weavile", { player: false }), def = mon("target");
   setup(atk, def);
@@ -131,14 +124,12 @@ const bigHit = move(1, "Big Hit", 14, 120);
   near(ta.expected, 0.9 * avgRoll(20) + 0.81 * avgRoll(40) + 0.729 * avgRoll(60), "Triple Axel expected");
   near(single.expected, avgRoll(120), "single-hit expected");
   assert.ok(ta.expected < single.expected, "accuracy per hit makes Triple Axel worth less than an equal max single hit");
-  // A boss 1 HP above its bar boundary takes 1 from this use; `uncapped` is what the same use deals on a later bar.
+  // `uncapped` and `use` are what the same use deals uncut by the bar boundary.
   const edge = mon("edge", { hp: 501, maxHp: 1000, boss: 2, player: false });
   setup(atk, edge);
   const clamped = moveOutcome(scene, atk, edge, pmOf(bigHit), { crit: false });
   near(clamped.expected, 1, "clamped at the boundary");
   near(clamped.uncapped, avgRoll(120), "uncapped single hit");
-  // `use`: the whole use's damage, uncut by the boundary — it keeps the uncapped mean, and Triple Axel's first-hit miss
-  // (10 %) sits at 0 on its own; a single-hit move rolls 102–120 with no 0 at all.
   const mean = use => use.reduce((t, x) => t + x.d * x.p, 0);
   near(mean(clamped.use), clamped.uncapped, "use keeps the uncapped mean");
   assert.ok(clamped.use.length <= 12 && !clamped.use.some(x => x.d === 0), `single hit: rolls only (${JSON.stringify(clamped.use)})`);
@@ -148,21 +139,18 @@ const bigHit = move(1, "Big Hit", 14, 120);
   setup(atk, edge);
   near(moveOutcome(scene, atk, edge, pmOf(tripleAxel), { crit: false }).uncapped, ta.expected, "uncapped Triple Axel");
   assert.ok(ta.notes.includes("3 hits"));
-  // Wide Lens: +5 accuracy on every rolled hit.
   const lens = mon("weavile2", { player: false, items: [new PokemonMoveAccuracyBoosterModifier()] });
   setup(lens, def);
   near(moveOutcome(scene, lens, def, pmOf(tripleAxel), { crit: false }).expected, 0.95 * avgRoll(20) + 0.95 ** 2 * avgRoll(40) + 0.95 ** 3 * avgRoll(60), "Wide Lens Triple Axel");
-  // Crits (1/24 per hit) only add damage.
   setup(atk, def);
   assert.ok(moveOutcome(scene, atk, def, pmOf(tripleAxel)).expected > ta.expected);
-  // Triple Axel into 100 HP: needs all three hits at good rolls.
   const low = mon("low", { hp: 115 });
   setup(atk, low);
   const lowTa = moveOutcome(scene, atk, low, pmOf(tripleAxel), { crit: false });
   assert.ok(lowTa.pKo > 0 && lowTa.pKo < 0.729, `Triple Axel pKo ${lowTa.pKo}`);
 }
 
-// 2–5 hits, Skill Link, Parental Bond.
+// ---- A 2–5-hit move rolls its count, Skill Link maxes it and Parental Bond adds a quarter strike (game-code.md §2)
 {
   const bullet = move(2, "Bullet Seed", 11, 25, { attrs: [new MultiHitAttr(1)] });
   const def = mon("target");
@@ -182,7 +170,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.deepEqual(pbo.perHit.map(h => h.max), [100, 25]);
 }
 
-// Boss segments: a 2-bar boss at full HP can't be one-shot below 1.5 × max HP of damage.
+// ---- A boss's bars clamp each hit on its own (game-code.md §3)
 {
   const atk = mon("a");
   const boss = mon("boss", { hp: 200, player: false, boss: 2 });
@@ -194,14 +182,13 @@ const bigHit = move(1, "Big Hit", 14, 120);
   // 320 max: only rolls leaving ≥ 200 excess past the boundary (≥ 300 damage, rolls 94–100) break both bars.
   const big = moveOutcome(scene, atk, boss, pmOf(move(5, "Bigger Nuke", 0, 320)), { crit: false });
   near(big.pKo, 7 / 16, "boss break chance");
-  // Each hit clamps separately; the second continues from the new bar.
   const once = hitOn(stateOf(boss), 150);
   assert.deepEqual([once.hp, once.bar], [100, 0]);
   assert.deepEqual([hitOn(once, 150).hp, hitOn(once, 150).bar], [0, 0]);
   assert.equal(hitOn(stateOf(mon("plain", { hp: 200 })), 250).hp, 0);
 }
 
-// Sturdy at full HP, Focus Band, Mold Breaker.
+// ---- Sturdy saves only at full HP and never past Mold Breaker, and Focus Band saves one time in ten
 {
   const atk = mon("a");
   const nuke = pmOf(move(6, "Nuke", 0, 300));
@@ -221,13 +208,12 @@ const bigHit = move(1, "Big Hit", 14, 120);
   setup(atk, band);
   near(moveOutcome(scene, atk, band, nuke, { crit: false }).pKo, 0.9, "Focus Band");
   assert.equal(hitOn(stateOf(band), 300).hp, 0, "hitOn has no luck");
-  // Over uses, two lethal hits need two Focus Band saves.
   const banded = koCurve(band, [{ d: 300, p: 1 }]).by;
   near(banded[0], 0.9, "Focus Band over a use");
   near(banded[1], 0.99, "Focus Band twice");
 }
 
-// Accuracy scales expected damage; form-dependent type from getMoveType.
+// ---- Accuracy scales expected damage, and `getMoveType` gives a form its type
 {
   const atk = mon("morpeko", { formIndex: 1 }), def = mon("target");
   setup(atk, def);
@@ -239,7 +225,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.equal(moveOutcome(scene, atk, def, pmOf(move(9, "Aura Wheel", 12, 110))).type, "Dark");
 }
 
-// Sandbox: the call leaves RNG, turnData and the phase queue as they were; the cache avoids repeat calls.
+// ---- The sandbox leaves RNG, turnData and the phase queue as they were, and a turn asks the game once
 {
   const atk = mon("a", { player: false }), def = mon("target");
   setup(atk, def);
@@ -252,23 +238,19 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.equal(scene.currentBattle.battleSeedState, "seed");
   assert.deepEqual([JSON.stringify(atk.turnData), JSON.stringify(def.turnData)], turnData);
   assert.equal(Object.prototype.hasOwnProperty.call(scene.phaseManager, "pushPhase"), false);
-  // Memoised on the turn, not in the module: the same turn asked twice makes one set of game calls.
   const twice = ask(scene, t => {
     const a = t.outcome(atk, def, pmOf(tripleAxel));
     const before = damageCalls;
     return [a === t.outcome(atk, def, pmOf(tripleAxel)), damageCalls - before];
   });
   assert.deepEqual(twice, [true, 0], "one answer per turn, asked once");
-  // The refresh opens one sandbox, so its restore waits for the whole turn — but a read that writes the user's
-  // multi-hit turnData puts it back itself, so the next question in the same turn (the enemy AI scoring its moves)
-  // already sees it untouched.
+  // The turn's one sandbox restores only at its end, so a read that writes multi-hit turnData puts it back itself.
   setup(atk, def);
   const during = ask(scene, t => { t.outcome(atk, def, pmOf(tripleAxel)); return JSON.stringify(atk.turnData); });
   assert.equal(during, turnData[0], "multi-hit turnData restored before the next game call");
 }
 
-// The turn is the seam: a hypothesis is written on for the question and taken back off, and a turn that has been
-// handed back is dead rather than reading a scene that has moved on.
+// ---- An assumption holds only while the game is asked, and a handed-back turn is dead
 {
   const atk = mon("a", { player: false }), def = mon("target");
   setup(atk, def);
@@ -276,13 +258,11 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const before = stages();
   const seen = ask(scene, t => {
     const t2 = t.assuming([{ mon: def, stages: { 2: 2 } }]);
-    // The question is answered on the state being assumed…
     const asked = [];
     const orig = def.getAttackDamage;
     def.getAttackDamage = o => { asked.push(stages()); return orig.call(def, o); };
     t2.outcome(atk, def, pmOf(tripleAxel));
     def.getAttackDamage = orig;
-    // …and the real turn is untouched by it, before and after.
     return { asked, after: stages() };
   });
   assert.ok(seen.asked.length && seen.asked.every(s => s !== before), `the assumption is on while the game is asked (${seen.asked})`);
@@ -294,9 +274,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.throws(() => dead.outcomes(atk, def), /after its callback/, "a turn used after its callback throws");
 }
 
-// The speed tie the turn's own shuffle has already drawn (#178.5): the queue is [ours, theirs], a Fisher-Yates draw
-// of 0 swaps it, and Trick Room reverses the sorted pair, swapping it back. Reading it moves no RNG, because
-// `executeWithSeedOffset` restores the stream itself — which is why it is a turn read and not a caller's.
+// ---- A speed tie reads the draw the turn's own shuffle makes (game-code.md §5)
 {
   const ours = mon("ours", { player: true }), theirs = mon("theirs", { player: false });
   setup(ours, theirs);
@@ -316,7 +294,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.equal(ask(tieScene({ executeWithSeedOffset: undefined }), t => t.speedTie(ours, theirs)), null, "nor a scene that can't be asked");
 }
 
-// hits keeps the old record shape, backed by the game path: expected for ours, max for a foe's.
+// ---- `hits` keeps its record shape: expected damage for ours, the max roll for a foe's
 {
   const ours = mon("ours", { moves: [bigHit, move(10, "Growl", 0, 0, { cat: 2 })] });
   const foe = mon("foe", { player: false, moves: [bigHit] });
@@ -330,7 +308,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   JSON.stringify(mine);
 }
 
-// Present (power from Phaser's RNG), Psywave, OHKO, Disguise; a 10-hit move into a big boss stays cheap.
+// ---- Present, Psywave, fixed damage, OHKO and Disguise are read off the game's own branches, and 10 hits stay cheap
 {
   class PresentPowerAttr {}
   class RandomLevelDamageAttr {}
@@ -343,7 +321,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   def.getAttackDamage = function (args) {
     const mv = args.move;
     if (mv.attrs.some(a => a instanceof PresentPowerAttr)) {
-      // PresentPowerAttr's own branch: `randSeedInt(firstHit ? 100 : 80)`, then ≤ 40 / 41–70 / 71–80 / else heal.
+      // `PresentPowerAttr`'s own branch (game-code.md §4).
       const td = args.source.turnData ?? {};
       const first = td.hitCount === td.hitsLeft;
       const seed = Phaser.Math.RND.integerInRange?.(0, (first ? 100 : 80) - 1) ?? 0;
@@ -357,16 +335,13 @@ const bigHit = move(1, "Big Hit", 14, 120);
   const present = moveOutcome(scene, atk, def, pmOf(move(11, "Present", 0, 0, { attrs: [new PresentPowerAttr()] })), { crit: false });
   near(present.expected, 0.41 * avgRoll(40) + 0.3 * avgRoll(80) + 0.1 * avgRoll(120), "Present expected");
   assert.equal(present.max, 120);
-  // The draw is 0–99, so 41 / 30 / 10 % over the three powers and 19 % a heal — not the 40 / 30 / 10 / 20 the
-  // out-of-range seeds used to read as, which left every row at ~1 damage (#178.1).
+  // Out-of-range seeds once read as 40 / 30 / 10 / 20 % and left every row at ~1 damage (#178).
   near(present.use.find(u => u.d === 0)?.p ?? 0, 0.19, "Present heals 19 % of the time");
   assert.ok(present.use.every(u => u.d !== 1), "no row falls back to a powerless 1 damage");
   assert.equal(Object.prototype.hasOwnProperty.call(Phaser.Math.RND, "integerInRange"), false, "RNG pin removed");
   const psy = moveOutcome(scene, atk, def, pmOf(move(12, "Psywave", 13, 1, { attrs: [new PsywaveAttr(), new RandomLevelDamageAttr()] })));
   assert.ok(Math.abs(psy.expected - 50) < 1, `Psywave ~ level: ${psy.expected}`);
-  // Multi-Lens reaches a fixed-damage move too: the game floors `fixed × multiLensMultiplier`, so one lens leaves the
-  // first strike three quarters of the roll and the added strike a quarter of it — 76 → 56 + 18 at the top roll, not
-  // two full 75s (#178.3).
+  // Multi-Lens once added a full strike to a fixed-damage move: two 75s, not 56 + 18 (#178, game-code.md §1).
   const psywave = move(12, "Psywave", 13, 1, { attrs: [new PsywaveAttr(), new RandomLevelDamageAttr()] });
   const lensAtk = mon("lens-a", { items: [held("PokemonMultiHitModifier")] });
   setup(lensAtk, def);
@@ -395,9 +370,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.ok(ms < 50, `10-hit resolve took ${ms} ms`);
 }
 
-// The enemy's endure token is rolled on the hit as it stands, before the boss bar clamps it (#178.4): a 2-bar boss at
-// its bar boundary takes a 250 hit down to 100, and still spends a roll on it. With a 50 % token that is two rolls
-// across a two-strike move rather than one, so the boss goes down a quarter of the time, not half.
+// ---- The endure token rolls on the pre-clamp hit, so a two-strike move faces two rolls (game-code.md §3)
 {
   const atk = mon("a");
   const boss = mon("endureboss", { hp: 200, maxHp: 200, boss: 2, player: false });
@@ -410,7 +383,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
   scene.enemyModifiers.length = 0;
 }
 
-// Lock-On / Mind Reader only cover the mon they were aimed at (#178.7): the other foe in a double still rolls.
+// ---- Lock-On covers only the mon it was aimed at (game-code.md §5)
 {
   const sniper = mon("sniper", { tags: ["IGNORE_ACCURACY"] });
   sniper.getLastXMoves = () => [{ move: MoveId.LOCK_ON, targets: [2] }];
@@ -421,7 +394,6 @@ const bigHit = move(1, "Big Hit", 14, 120);
   assert.equal(moveOutcome(scene, sniper, aimed, pmOf(shaky), { crit: false }).acc, 1, "the locked-on target is a sure hit");
   setup(sniper, other);
   assert.equal(moveOutcome(scene, sniper, other, pmOf(shaky), { crit: false }).acc, 0.5, "the foe it wasn't aimed at rolls");
-  // No move history to read (every other mock here): the tag stands on its own, as it did before.
   const blind = mon("blind", { tags: ["IGNORE_ACCURACY"] });
   setup(blind, other);
   assert.equal(moveOutcome(scene, blind, other, pmOf(shaky), { crit: false }).acc, 1, "no history: the tag stands");
@@ -429,7 +401,7 @@ const bigHit = move(1, "Big Hit", 14, 120);
 
 assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.lastError?.stack}`);
 
-// Turn end: the signed HP change between this turn's moves and the next command.
+// ---- Turn-end HP is the signed change between this turn's moves and the next command
 {
   const p = mon("berry", { hp: 90, maxHp: 200, items: [new BerryModifier(0), new BerryModifier(2), new TurnHealModifier()] });
   assert.equal(endOfTurnHp(p, { s: scene }), 50 + 12);
@@ -438,11 +410,12 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(p, { s: scene, hp: 195 }), 5, "capped at max HP");
   assert.equal(endOfTurnHp(p, { s: scene, hp: 0 }), 0);
 }
+
+// ---- Turn-end chip and heals land in the game's order and amounts (game-code.md §21)
 {
   const at = (weatherType = 0, terrainType = 0, extra = {}) => ({ ...scene, arena: { tags: [], weather: weatherType ? { weatherType } : null, terrain: terrainType ? { terrainType } : null }, ...extra });
   const [SUN, RAIN, SAND, HAIL] = [1, 2, 3, 4];
   const m = (opts = {}) => mon("m", { hp: 100, maxHp: 160, ...opts });
-  // Sandstorm / hail: 1/16, not for the types it spares, Magic Guard, Overcoat-type abilities or a mon underground.
   assert.equal(endOfTurnHp(m(), { s: at(SAND) }), -10, "sandstorm 1/16");
   assert.equal(endOfTurnHp(m({ types: [5] }), { s: at(SAND) }), 0, "Rock ignores sand");
   assert.equal(endOfTurnHp(m({ types: [5] }), { s: at(HAIL) }), -10, "but not hail");
@@ -455,13 +428,11 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ tags: ["UNDERGROUND"] }), { s: at(SAND) }), 0, "mid-Dig");
   const cloudNine = mon("cloud nine", { attrs: [abAttr("SuppressWeatherEffectAbAttr")] });
   assert.equal(endOfTurnHp(m(), { s: at(SAND, 0, { getField: () => [cloudNine] }) }), 0, "Cloud Nine on the field");
-  // Weather abilities: Rain Dish / Ice Body 1/16, Dry Skin 1/8 in rain and −1/8 in sun, Solar Power −1/8.
   const drySkin = [abAttr("PostWeatherLapseHealAbAttr", { healFactor: 2, weatherTypes: [RAIN, 7] }), abAttr("PostWeatherLapseDamageAbAttr", { damageFactor: 2, weatherTypes: [SUN, 8] })];
   assert.equal(endOfTurnHp(m({ attrs: [abAttr("PostWeatherLapseHealAbAttr", { healFactor: 1, weatherTypes: [RAIN, 7] })] }), { s: at(RAIN) }), 10, "Rain Dish");
   assert.equal(endOfTurnHp(m({ attrs: drySkin }), { s: at(RAIN) }), 20, "Dry Skin in rain");
   assert.equal(endOfTurnHp(m({ attrs: drySkin }), { s: at(SUN) }), -20, "Dry Skin in sun");
   assert.equal(endOfTurnHp(m({ attrs: drySkin }), { s: at() }), 0, "Dry Skin without weather");
-  // Status: poison 1/8, toxic n/16 with the counter ticking first, burn 1/16 (Heatproof halves it).
   assert.equal(endOfTurnHp(m({ status: { effect: 1 } }), { s: at() }), -20, "poison");
   assert.equal(endOfTurnHp(m({ status: { effect: 2, toxicTurnCount: 2 } }), { s: at() }), -30, "toxic, third turn");
   assert.equal(endOfTurnHp(m({ status: { effect: 6 } }), { s: at() }), -10, "burn");
@@ -470,53 +441,41 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const poisonHeal = [abAttr("BlockStatusDamageAbAttr", { effects: [1, 2] }), abAttr("PostTurnStatusHealAbAttr", { effects: [1, 2] })];
   assert.equal(endOfTurnHp(m({ status: { effect: 2, toxicTurnCount: 4 }, attrs: poisonHeal }), { s: at() }), 20, "Poison Heal");
   assert.equal(endOfTurnHp(m({ status: { effect: 6 }, attrs: poisonHeal }), { s: at() }), -10, "Poison Heal doesn't cover burn");
-  // Toxic / Flame Orb: the status lands at turn end, so its chip counts as recurring; not on the types it can't affect.
   assert.equal(endOfTurnHp(m({ items: [held("TurnStatusEffectModifier", { effect: 2 })] }), { s: at() }), -10, "Toxic Orb");
   assert.equal(endOfTurnHp(m({ types: [8], items: [held("TurnStatusEffectModifier", { effect: 2 })] }), { s: at() }), 0, "Toxic Orb on Steel");
   assert.equal(endOfTurnHp(m({ items: [held("TurnStatusEffectModifier", { effect: 6 })] }), { s: at() }), -10, "Flame Orb");
-  // The weather chip comes before berries (Sitrus reads the HP after it), and berries come before the status chip.
   const sitrus = [new BerryModifier(0), new TurnHealModifier()];
   assert.equal(endOfTurnHp(m({ hp: 90, items: sitrus }), { s: at(SAND) }), -10 + 10, "80/160 isn't below half");
   assert.equal(endOfTurnHp(m({ hp: 85, items: sitrus }), { s: at(SAND) }), -10 + 40 + 10, "75/160 is");
-  // game-code.md §21's order decides survival here: Sitrus eats at 5/160, and the poison chip then lands on 45, not on 5.
+  // Sitrus eats before the poison chip lands (game-code.md §21).
   assert.equal(endOfTurnHp(m({ hp: 5, items: sitrus, status: { effect: 1 } }), { s: at() }), 40 - 20 + 10, "Sitrus beats the poison chip");
-  // A chip big enough to get there first still faints it, and a fainted mon heals nothing.
   assert.equal(endOfTurnHp(m({ hp: 5, maxHp: 400, items: sitrus, status: { effect: 1 } }), { s: at(SAND) }), -5, "the weather chip faints it first");
-  // `getHpRatio()` rounds to a whole percent, so the Sitrus bar is < 0.495, not < 0.5.
   const justOver = mon("just over", { hp: 99, maxHp: 200, items: [new BerryModifier(0)] });
   assert.equal(endOfTurnHp(justOver, { s: at() }), 0, "99/200 rounds to 50 %");
   assert.equal(endOfTurnHp(mon("just under", { hp: 98, maxHp: 200, items: [new BerryModifier(0)] }), { s: at() }), 50, "98/200 rounds to 49 %");
-  // An opposing Unnerve skips every berry the mon holds.
   const unnerve = mon("unnerve", { player: false, abilities: ["PreventBerryUseAbAttr"] });
   const hungry = m({ hp: 5, items: sitrus });
   assert.equal(endOfTurnHp(hungry, { s: at(0, 0, { getField: () => [hungry, unnerve] }) }), 10, "Unnerve keeps the Sitrus down");
-  // Grassy Terrain: 1/16 to grounded mons.
   assert.equal(endOfTurnHp(m(), { s: at(0, 3) }), 10, "Grassy Terrain");
   assert.equal(endOfTurnHp(m({ types: [2] }), { s: at(0, 3) }), 0, "Flying isn't grounded");
-  // The enemy's wave heal tokens: 2 % max HP per stack; players don't get it.
   const waveHeal = at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] });
   assert.equal(endOfTurnHp(m({ player: false }), { s: waveHeal }), 9, "enemy turn heal ×3");
   assert.equal(endOfTurnHp(m(), { s: waveHeal }), 0, "not for the player");
   assert.equal(endOfTurnHp(m({ hp: 20, maxHp: 40, player: false }), { s: waveHeal }), 1, "the 1 HP floor covers all stacks");
-  // Shell Bell: 1/8 of the damage dealt this turn per stack.
   assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier", {}, 2)] }), { s: at(), dealt: 100 }), 24, "Shell Bell ×2");
   assert.equal(endOfTurnHp(m({ items: [held("HitHealModifier")] }), { s: at() }), 0, "Shell Bell without damage");
-  // It heals in MoveEffectPhase, before every turn-end phase, so its HP is already there when Sitrus reads the ratio:
-  // 70/160 is under the bar, 80/160 is not.
+  // Shell Bell heals in `MoveEffectPhase`, so Sitrus reads the HP after it (game-code.md §8).
   assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0)] }), { s: at() }), 40, "70/160 eats the berry");
   assert.equal(endOfTurnHp(m({ hp: 70, items: [new BerryModifier(0), held("HitHealModifier")] }), { s: at(), dealt: 80 }), 10, "Shell Bell lifts it over the bar first");
 
-  // Every turn-end heal is queued as a `PokemonHealPhase`: Heal Block cancels it, and Healing Charm on the healed
-  // mon's own side scales it, floored.
+  // Every turn-end heal is a `PokemonHealPhase`, which Heal Block and Healing Charm reach (game-code.md §21).
   assert.equal(endOfTurnHp(m({ tags: ["HEAL_BLOCK"], items: [new TurnHealModifier()] }), { s: at() }), 0, "Heal Block");
   const charmed = at(0, 0, { modifiers: [held("HealingBoosterModifier", { multiplier: 1.1 }, 2)] });
   assert.equal(endOfTurnHp(m({ items: [new TurnHealModifier()] }), { s: charmed }), 12, "Healing Charm ×2 on Leftovers");
   assert.equal(endOfTurnHp(m({ player: false, items: [new TurnHealModifier()] }), { s: charmed }), 10, "which is the player's, not the foe's");
-  // The enemy's wave-heal token carries `preventFullHeal`: it stops a HP short of full.
   assert.equal(endOfTurnHp(m({ hp: 155, player: false }), { s: at(0, 0, { enemyModifiers: [held("EnemyTurnHealModifier", {}, 3)] }) }), 4, "the token stops at max − 1");
 
-  // The TURN_END battler tags, read by class: Leech Seed and the binding moves take a 1/8, Nightmare and Curse a
-  // quarter, Salt Cure a 16th — doubled on a Water or Steel mon — and Ingrain / Aqua Ring heal a 16th.
+  // The TURN_END battler tags, read by class (game-code.md §21).
   const tag = name => new ({ [name]: class {} })[name]();
   class DamagingTrapTag {}
   class BindTag extends DamagingTrapTag {}
@@ -527,8 +486,6 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(m({ types: [10], battlerTags: [tag("SaltCuredTag")] }), { s: at() }), -20, "Salt Cure on a Water mon");
   assert.equal(endOfTurnHp(m({ battlerTags: [tag("AquaRingTag")] }), { s: at() }), 10, "Aqua Ring");
   assert.equal(endOfTurnHp(m({ abilities: ["BlockNonDirectDamageAbAttr"], battlerTags: [tag("NightmareTag")] }), { s: at() }), 0, "Magic Guard vs Nightmare");
-  // Leech Seed takes its 1/8 off the seeded mon and hands it to the seeder it names by battler index — turned into
-  // damage on the seeder by Liquid Ooze on the seeded mon.
   const seed = Object.assign(tag("SeedTag"), { sourceIndex: 1 });
   const seeder = mon("seeder", { hp: 50, maxHp: 160, bi: 1 });
   const seeded = mon("seeded", { hp: 160, maxHp: 160, player: false, battlerTags: [seed], bi: 2 });
@@ -537,8 +494,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(seeder, { s: seedField }), 20, "and hands it over");
   const oozed = mon("oozed", { hp: 160, maxHp: 160, player: false, abilities: ["ReverseDrainAbAttr"], battlerTags: [seed], bi: 2 });
   assert.equal(endOfTurnHp(seeder, { s: at(0, 0, { getField: () => [seeder, oozed] }) }), -20, "Liquid Ooze sends it back");
-  // Bad Dreams: an opposing ability takes a 1/8 off a sleeping mon. `apply` checks Magic Guard on the *holder*, so a
-  // Magic Guard holder deals none of it.
+  // Bad Dreams' `apply` asks the holder's Magic Guard (game-code.md §21).
   const sleeper = m({ status: { effect: 4 } });
   const dreamer = mon("dreamer", { player: false, abilities: ["PostTurnHurtIfSleepingAbAttr"] });
   assert.equal(endOfTurnHp(sleeper, { s: at(0, 0, { getField: () => [sleeper, dreamer] }) }), -20, "Bad Dreams");
@@ -546,7 +502,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(endOfTurnHp(sleeper, { s: at(0, 0, { getField: () => [sleeper, guarded] }) }), 0, "a Magic Guard holder deals none");
 }
 
-// Reviver Seed: a lethal hit isn't a KO — it's back at half HP.
+// ---- A Reviver Seed turns a lethal hit into half HP
 {
   const atk = mon("a");
   const seed = mon("seed", { hp: 100, maxHp: 300, items: [held("PokemonInstantReviveModifier")] });
@@ -559,8 +515,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(moveOutcome(scene, atk, enemies[0], pmOf(bigHit), { crit: false }).revive, 0);
 }
 
-// Stopped before the damage step: primordial weather (a Fire move in heavy rain) and Psychic Terrain (priority into a
-// grounded target) cancel the move in MovePhase, which the simulated damage call never sees.
+// ---- Primordial weather and Psychic Terrain stop a move before the damage step (game-code.md §14)
 {
   const atk = mon("a", { moves: [bigHit] }), def = mon("target");
   for (const [check, why] of [["isMoveWeatherCancelled", "weather"], ["isMoveTerrainCancelled", "terrain"]]) {
@@ -574,13 +529,13 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   }
   setup(atk, def);
   assert.ok(moveOutcome(scene, atk, def, pmOf(bigHit)).expected > 0, "nothing stops it otherwise");
-  // Protect blocks it unless it ignores Protect (MoveFlags.IGNORE_PROTECT, 1 << 1).
+  // `flags: 2` is `MoveFlags.IGNORE_PROTECT`.
   const feint = move(364, "Feint", 0, 30, { flags: 2 });
   assert.equal(moveOutcome(scene, atk, def, pmOf(feint)).bypassProtect, true, "Feint goes through Protect");
   assert.equal(moveOutcome(scene, atk, def, pmOf(bigHit)).bypassProtect, false);
 }
 
-// Status moves: the usable ones with their accuracy, and 0 effectiveness where the target is immune.
+// ---- Status moves: the usable ones with their accuracy, and 0 effectiveness where the target is immune
 {
   const thunderWave = move(86, "Thunder Wave", 12, 0, { acc: 90, cat: 2 });
   const swordsDance = move(14, "Swords Dance", 0, 0, { acc: -1, cat: 2 });
@@ -600,7 +555,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   phaseName = "CommandPhase";
 }
 
-// Outside the command phase no game code runs; the approximation still answers.
+// ---- Outside the command phase no game code runs, and the approximation still answers
 {
   phaseName = "MovePhase";
   const atk = mon("a", { moves: [bigHit] }), def = mon("target");
@@ -612,7 +567,6 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(hits(atk, def).length, 1);
   assert.equal(damageCalls, calls, "no game calls outside CommandPhase");
 
-  // Move-flag immunities: a sound move into Soundproof, a ball move into Bulletproof, a wind move into Wind Rider.
   for (const [ability, flag] of [["Soundproof", 1 << 2], ["Bulletproof", 1 << 10], ["Wind Rider", 1 << 13]]) {
     const flagged = move(9, "Flagged", 14, 120, { flags: flag });
     const wall = mon("wall");
@@ -626,9 +580,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   phaseName = "CommandPhase";
 }
 
-// Drain (#90): the share of the damage dealt that heals the user. Giga Drain and Leech Life are ½, Draining Kiss ¾; a
-// player's Healing Charm raises it; Heal Block stops it; Liquid Ooze makes it damage instead, unless Magic Guard;
-// Strength Sap (a heal by the target's stat) isn't a drain.
+// ---- Drain is a share of the damage dealt, which Heal Block, Healing Charm and Liquid Ooze change (game-code.md §18)
 {
   const hitHeal = (healRatio, healStat = null) => abAttr("HitHealAttr", { healRatio, healStat });
   const gigaDrain = move(202, "Giga Drain", 11, 75, { cat: 1, attrs: [hitHeal(0.5)] });
@@ -652,13 +604,13 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(drainOf(mon("venusaur"), mon("target"), { ...sap, category: 1, power: 10 }).drain, 0, "a heal by a stat isn't a drain");
 }
 
-// KO pacing: `hitOn` lands one hit on the game's bar rule; `koCurve` plays uses of a damage distribution through a
-// target's HP, bars, Reviver Seed, Focus Band and endure token. Each row: [what, target, use, options, P(down) by use].
+// ---- The KO curve plays each use through the target's HP, bars, heals, chip and saves
 {
   const round = by => by.map(x => Math.round(x * 1000) / 1000);
   const sure = (d, n) => [{ d, p: 1, ...(n ? { n } : {}) }];
   const seed = held("PokemonInstantReviveModifier");
   const boss3 = (hp = 300) => mon("boss3", { hp, maxHp: 300, boss: 3, player: false });
+  // [what, target, use, options, P(down) by use]
   const TABLE = [
     ["plain 2HKO", mon("t", { hp: 100 }), sure(60), {}, [0, 1]],
     ["a bar stops a hit at its boundary", mon("b", { hp: 200, boss: 2, player: false }), sure(150), {}, [0, 1]],
@@ -683,45 +635,35 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
     assert.deepEqual(by.slice(0, want.length), want, `${what}: ${by}`);
     assert.equal(by[want.length - 1], 1, `${what}: down by then`);
   }
-  // The same hits one at a time: 150 into the 3-bar boss at 250 goes 250 → 100 in three hits of 50 (each bar breaks on
-  // an exact hit), 250 → 200 as one hit.
+  // Three hits of 50 take the 3-bar boss 250 → 100; one hit of 150 stops at the bar, on 200.
   const b = boss3(250);
   const three = [50, 50, 50].reduce(hitOn, stateOf(b));
   assert.deepEqual([three.hp, three.bar], [100, 0]);
   assert.deepEqual([hitOn(stateOf(b), 150).hp, hitOn(stateOf(b), 150).bar], [200, 1]);
-  // Enough damage goes through every bar at once: 400 past the first bar's floor is four bars' worth.
   assert.equal(hitOn(stateOf(boss3()), 500).hp, 0, "a big enough hit KOs through the bars");
-  // The classic final boss's first form can't fall on its last bar.
   scene.currentBattle.isClassicFinalBoss = true;
   const eternatus = mon("eternatus", { hp: 100, player: false });
   assert.equal(hitOn(stateOf(eternatus), 999).hp, 1, "final boss floor");
   assert.ok(koCurve(eternatus, sure(999)).by.every(x => x === 0), "never down");
   delete scene.currentBattle.isClassicFinalBoss;
-  // Heals stop at max HP; the branches standing after use 1 carry their bar.
   assert.deepEqual(koCurve(mon("t", { hp: 100 }), sure(10), { turnEnd: 30 }).after1.map(x => x.hp), [100]);
   assert.deepEqual(koCurve(mon("b", { hp: 200, boss: 2, player: false }), sure(150)).after1.map(x => [x.hp, x.bar]), [[100, 0]]);
-  // A boss's status chip goes through `damage(dmg, false, true)`, so a bar boundary stops it: 30 off a 220/400 boss
-  // with 200-HP bars deals 20 and breaks the bar, where an unclamped chip would have left it on 190.
+  // A boss's status chip is clamped at the bar (game-code.md §3).
   assert.deepEqual(koCurve(mon("bar", { hp: 220, maxHp: 400, boss: 2, player: false }), sure(0), { turnEnd: -30 }).after1.map(x => [x.hp, x.bar]), [[200, 0]]);
   // `start`: an earlier turn's branches.
   assert.deepEqual(round(koCurve(mon("t", { hp: 100 }), sure(60), { start: [{ hp: 50, p: 0.5 }, { hp: 100, p: 0.5 }] }).by).slice(0, 2), [0.5, 1]);
-  // The endure token saves once a wave, and every lethal hit of the use it went up in.
   scene.enemyModifiers = [held("EnemyEndureChanceModifier", { chance: 50 })];
   const tough = mon("tough", { hp: 100, player: false });
   assert.deepEqual(round(koCurve(tough, sure(300)).by).slice(0, 2), [0.5, 1], "once a wave");
   assert.deepEqual(round(koCurve(tough, sure(600, 2)).by).slice(0, 2), [0.5, 1], "the rest of that use too");
   scene.enemyModifiers = [];
-  // Uses each bar takes: one a bar at 100 a use.
   assert.deepEqual(koCurve(boss3(), sure(100)).perChunk, [1, 1, 1]);
   assert.deepEqual(koCurve(boss3(), sure(60)).perChunk, [2, 2, 2]);
-  // The likely KO use against the expected one.
   assert.equal(koTurn([0.4, 0.6, 1]), 2);
   near(koTurns([0.4, 0.6, 1, 1, 1, 1, 1, 1, 1]), 2, "expected use");
   assert.equal(koTurn([0.5, 1]), 1);
   near(koTurns([0.5, 1, 1, 1, 1, 1, 1, 1, 1]), 1.5, "a coin flip on use 1");
 
-  // useOf: a record's own `use` carries its hit counts (a miss lands none); one without falls back on the likeliest hit
-  // count's rolls, or on a `hits` record's damage.
   const atk = mon("weavile", { player: false }), def = mon("target");
   setup(atk, def);
   const ta = moveOutcome(scene, atk, def, pmOf(tripleAxel), { crit: false });
@@ -730,7 +672,6 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.ok(ta.use.some(x => Math.round(x.n) === 2) && ta.use.some(x => Math.round(x.n) === 3), "two-hit and three-hit uses stay apart");
   assert.ok(useOf({ max: 100, acc: 1, dist: [{ n: 2, p: 0.6 }, { n: 3, p: 0.4 }], perHit: [{ max: 50 }, { max: 50 }, { max: 50 }] }).every(x => x.n === 2));
   near(useOf({ dmg: 100 }).reduce((t, x) => t + x.p, 0), 1, "a hits record rolls its damage");
-  // koChanceAt: the record's own odds at the HP it was worked out for, the rolls below it.
   const o = { max: 100, pKo: 0.2, acc: 1, targetHp: 150 };
   assert.deepEqual([koChanceAt(o, 150), koChanceAt(o, 200), koChanceAt(o, 101)], [0.2, 0.2, 0]);
   near(koChanceAt(o, 90), 10 / 15 + 1 / 16, "into the roll range");
@@ -738,8 +679,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(koChanceAt({ ...o, revive: 50 }, 90), 0, "a Reviver Seed");
 }
 
-// ---- The record carries the move's traits and the costs worded from them (#128). What the traits *are* is
-// movetraitstest's; here they have to reach the record, with this matchup's amounts in the wording.
+// ---- The record carries the move's traits, and costs worded with this matchup's amounts
 {
   const recoiler = move(38, "Double-Edge", 0, 120, { attrs: [Object.assign(new (class RecoilAttr {})(), { damageRatio: 0.33 })] });
   const hyperBeam = move(63, "Hyper Beam", 0, 150, { attrs: [new (class RechargeAttr {})()] });
@@ -752,7 +692,6 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   const beam = moveOutcome(scene, atk, def, pmOf(hyperBeam), { crit: false });
   assert.ok(beam.traits.recharge && beam.costs.includes("recharge turn"), `recharge: ${beam.costs}`);
   assert.ok(!beam.notes.includes("recharge turn"), "a cost is in `costs`, not mixed into the notes");
-  // The approximation path carries them too, so a card outside the command phase shows the same costs.
   phaseName = "MovePhase";
   setup(atk, def);
   const rough = moveOutcomes(scene, atk, def).find(o => o.name === "Hyper Beam");
@@ -761,7 +700,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   console.log(`traits: ${rec.costs.join(" \u00b7 ")} | ${beam.costs.join(" \u00b7 ")}`);
 }
 
-// Which build the page is running, the one thing the Sturdy rule below turns on.
+// ---- The page's game version, compared segment by segment
 {
   assert.equal(gameVersionOf(scene), "1.12.0.11");
   assert.equal(gameVersionOf(null), null);
@@ -772,9 +711,9 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.equal(versionAtLeast(null, "1.0.0"), false, "an unreadable version is older than everything");
 }
 
-// A fixed-damage hit returns before the Sturdy step (game-code.md §1), so it takes a full-HP Sturdy mon down; a rolled hit
-// still doesn't. Upstream #7620 flips this, and the version constant is what will flip with it.
+// ---- A fixed-damage hit goes through a full-HP Sturdy and a rolled hit doesn't (game-code.md §1)
 {
+  // Upstream PR 7620 flips this, and the version constant flips with it.
   class FixedDamageAttr {}
   const atk = mon("tosser");
   const pineco = mon("pineco", { hp: 40, abilities: ["PreDefendFullHpEndureAbAttr"] });
@@ -793,8 +732,7 @@ assert.equal(moveOutcome.lastError, undefined, `game path threw: ${moveOutcome.l
   assert.ok(rolled.notes.includes("sturdy"));
 }
 
-// False Swipe's cap is applied to each roll, not spread over the capped max: at 100 HP a 110-power hit rolls
-// 93–97 below the cap and 99 on every roll from 90 % up, so there is no 84-damage low and never a KO.
+// ---- False Swipe caps each roll, rather than spreading the rolls under the capped max
 {
   const atk = mon("swiper");
   const prey = mon("prey", { hp: 100 });

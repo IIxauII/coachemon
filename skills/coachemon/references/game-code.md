@@ -2064,7 +2064,9 @@ order:
 3. **Boss bars.** When `getEnemyPokemon(false)` `isBoss()`, has `bossSegmentIndex >= 1` and not
    `hasAbility(WONDER_GUARD, false, true)` (lines 428–447): the classic final boss refuses every ball but the Master Ball,
    and the Master Ball too when `hasAnyChallenges()`; any other boss refuses every ball but the Master Ball, and a
-   catchable Daily event boss refuses that too. A Wonder Guard boss takes any ball on any bar.
+   catchable Daily event boss refuses that too. A Wonder Guard boss takes any ball on any bar. `hasAnyChallenges()` is
+   `challenges.length > 0` (`src/game-mode.ts:105`), and a challenge-mode run copies every challenge, values and all
+   (`:65`, `:80`), so it holds for any challenge run, whatever each value is.
 
 **The throw.** `AttemptCapturePhase.start` (`src/phases/attempt-capture-phase.ts:45`) ends at once on a foe with 0 HP,
 before the ball is spent; otherwise it writes `pokeballCounts[type]--` (line 59) and computes (lines 63–73, 88):

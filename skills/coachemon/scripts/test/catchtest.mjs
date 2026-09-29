@@ -1,17 +1,12 @@
-// Catch coach against wild encounters: the capture formula for a known species/ball/HP/status, trainer and boss
-// rules, a new species worth a ball, a caught weak mon not worth one, a dangerous foe a throw ends sooner than a
-// fight, no Master Ball on a low-value catch, and no card at all for the common owned mons of an early run. Prints the rendered sections, so run.mjs also keeps a golden.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { onGame } from "./game-proto.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
-// moves: [name, type, power, cat, target=3, attrs=[]]; sp: species fields
 const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, field, curHp, sp = {}, extra = {}) => onGame({
   id: name, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0,
   species: { speciesId: sp.id ?? 0, catchRate: sp.catchRate ?? 45, baseTotal: sp.bst ?? 400, ability2: 1, abilityHidden: 2, legendary: false, getEvolutionLevels: () => sp.evos ?? [],
-    // `roots`: [starter root, prevolution-free root], the two answers `getRootSpeciesId` gives.
     ...(sp.roots ? { getRootSpeciesId: forStarter => (forStarter ? sp.roots[0] : sp.roots[1]) } : {}), ...(sp.more ?? {}) },
   name, level: lv, hp: curHp ?? hp, getMaxHp: () => hp, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: ability }), hasPassive: () => false,
   getStat: i => [hp, atk, def, spa, spd, spe][i], summonData: { statStages: [0,0,0,0,0,0,0] }, isOnField: () => field,
@@ -25,7 +20,7 @@ const mon = (name, lv, types, ability, [hp, atk, def, spa, spd, spe], moves, fie
 const venusaur = () => mon("Venusaur", 50, ["Grass","Poison"], "Overgrow", [160,90,100,110,110,80], [["Giga Drain","Grass",75,"S"],["Sludge Bomb","Poison",90,"S"]], true, undefined, { id: 3, bst: 525 });
 const blastoise = () => mon("Blastoise", 50, ["Water"], "Torrent", [160,90,110,90,115,80], [["Surf","Water",90,"S"]], false, undefined, { id: 9, bst: 530 });
 
-// dexData: caught species 3, 9, 16 (Pidgey), 58 (Growlithe, root of Arcanine 59). 160 caught entries → crit factor 0.5.
+// Over 100 caught species, so the critical-capture dex factor is 0.5 (game-code.md §20).
 const dexData = () => {
   const d = {};
   for (let i = 1000; i < 1156; i++) d[i] = { caughtAttr: 1n, ivs: [0,0,0,0,0,0] };
@@ -34,8 +29,7 @@ const dexData = () => {
   return d;
 };
 
-// `owned`: extra caught species ids (dex IVs 20, abilityAttr 1). `mode`: gameMode fields over classic. `events`: the
-// game's timed event manager, as 04-game-tables' chunk scan would hand it over.
+// `events`, `registry`: the timed event manager and the species registry, as 04-game-tables' chunk scan hands them over.
 const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 0 }, double = false, owned = [], enemyModifiers = [],
   wave = 23, biome = 3, mode = {}, starters = null, events = null, dex = null, registry = null }) => {
   let el;
@@ -51,7 +45,6 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
     gameData: { dexData: dexData(), starterData: { 3: { abilityAttr: 1 }, 9: { abilityAttr: 1 }, 16: { abilityAttr: 1 }, 58: { abilityAttr: 1 } } },
   };
   if (starters) scene.gameData.starterData = Object.fromEntries(starters.map(id => [id, { abilityAttr: 1 }]));
-  // `dex`: dex entries by species id, for a catch whose attributes are already known.
   for (const [id, entry] of Object.entries(dex ?? {})) scene.gameData.dexData[id] = { ivs: [20,20,20,20,20,20], ...entry };
   for (const id of owned) {
     scene.gameData.dexData[id] = { caughtAttr: 1n | 4n | 16n | 128n, ivs: [20,20,20,20,20,20] };
@@ -65,14 +58,11 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   eval(bundle("hud", { expose: true }));
   const { catchAdvice, captureChance } = globalThis.__hud["45-catch"];
   const { readTurn } = globalThis.__hud["25-turn"];
-  // What the card reads is a turn (hud/25-turn.js) and the run's own account read (98-tick), never the scene.
   const { accountRead } = globalThis.__hud["98-tick"];
-  // A line's final BST is the party profile's, not the catch card's (`08-party.js`).
   const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, readTurn, accountRead, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
     setGameTables: globalThis.__hud["04-game-tables"].setGameTables };
-  // `species`: the game's species registry, as 04-game-tables' chunk scan would hand it to the account read. One call:
-  // `setGameTables` replaces the tables wholesale, so a second would drop whatever the first put there.
+  // One call: `setGameTables` replaces the tables wholesale, so a second would drop what the first put there.
   if (events || registry) globalThis.__ca.setGameTables({ events, species: registry });
   const advice = readTurn(scene, turn => catchAdvice(turn, accountRead(scene)));
   return { advice, scene };
@@ -85,8 +75,7 @@ const show = (label, advice) => {
 };
 const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.stringify(x))), JSON.stringify(x), `${label}: JSON-safe`);
 
-// ---- 1. The formula, written out from AttemptCapturePhase: Pidgeot-like catchRate 45, 100 max HP at 50, Great Ball,
-// paralysed, 160 caught species (critical factor 0.5).
+// ---- The capture chance is `AttemptCapturePhase`'s formula (game-code.md §20)
 {
   const pidgey = mon("Pidgeotto", 22, ["Normal","Flying"], "Keen Eye", [100,50,50,40,40,60], [["Gust","Flying",40,"S"]], true, 50,
     { id: 16, catchRate: 45, bst: 349 }, { status: { effect: 3 } });
@@ -109,14 +98,14 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   assert.ok(scene);
 }
 
-// ---- 2. Trainer battles: never.
+// ---- No catch advice in a trainer battle
 {
   const { advice } = run({ party: [venusaur()], foes: [mon("Pikachu", 20, ["Electric"], "Static", [60,50,40,50,50,90], [["Thunderbolt","Electric",90,"S"]], true, 10, { id: 25, catchRate: 190 })],
     trainer: { getName: () => "Youngster", config: { isBoss: false }, isDouble: () => false } });
   assert.equal(advice, null, "no advice in trainer battles");
 }
 
-// ---- 3. Boss with two bars left: only a Master Ball works; we don't spend one on a merely new species.
+// ---- A boss with bars left takes only a Master Ball, and a merely new species isn't worth one
 {
   const boss = () => mon("Pikachu", 30, ["Electric"], "Static", [200,60,50,60,50,90], [["Thunderbolt","Electric",90,"S"]], true, 150,
     { id: 25, catchRate: 190, bst: 320 }, { bossSegments: 2, bossSegmentIndex: 1 });
@@ -129,13 +118,12 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   assert.equal(t.verdict, "maybe");
   assert.match(t.why, /break its bars first/);
   show("boss", advice);
-  // Last bar: normal balls work again.
   const last = boss(); last.bossSegmentIndex = 0; last.hp = 80;
   const again = run({ party: [venusaur()], foes: [last], counts: { 0: 5, 1: 5, 2: 5, 3: 0, 4: 1 } }).advice.targets[0];
   assert.ok(!again.boss && again.chance.find(x => x.ball === "Poké Ball").p > 0, "last bar: any ball");
 }
 
-// ---- 4. New species, high chance → catch with the cheapest good ball.
+// ---- A new species at high odds is caught with the cheapest good ball
 {
   const pika = mon("Pikachu", 20, ["Electric"], "Static", [60,50,40,50,50,90], [["Thunderbolt","Electric",90,"S"]], true, 15, { id: 25, catchRate: 190, bst: 320 });
   const { advice } = run({ party: [venusaur(), blastoise()], foes: [pika], counts: { 0: 5, 1: 3, 2: 2, 3: 1, 4: 1 } });
@@ -149,7 +137,7 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   show("new species", advice);
 }
 
-// ---- 5. Already caught, weak, full HP, catch rate 3 → skip; and a Master Ball in the bag is not suggested.
+// ---- A weak species already caught is skipped, and no Master Ball is spent on it
 {
   const pidgey = () => mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [55,30,30,30,30,40], [["Tackle","Normal",40,"P"]], true, undefined, { id: 16, catchRate: 3, bst: 251 });
   const { advice } = run({ party: [venusaur()], foes: [pidgey()], counts: { 0: 5, 1: 5, 2: 0, 3: 0, 4: 0 } });
@@ -165,8 +153,7 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   assert.equal(withMaster.verdict, "skip");
 }
 
-// ---- 6. A caught Arcanine at a third of its HP that KOs our Venusaur while we need several turns: an Ultra Ball ends
-// the encounter sooner than fighting.
+// ---- A ball that ends a losing encounter sooner than fighting is worth throwing
 {
   const arcanine = mon("Arcanine", 55, ["Fire"], "Intimidate", [180,160,110,120,100,120], [["Flare Blitz","Fire",120,"P"]], true, 60, { id: 59, catchRate: 75, bst: 555 });
   const weak = mon("Venusaur", 50, ["Grass","Poison"], "Overgrow", [160,40,100,40,110,80], [["Absorb","Grass",20,"S"]], true, undefined, { id: 3, bst: 525 });
@@ -179,17 +166,13 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   jsonSafe(advice, "escape");
   show("escape", advice);
 
-  // Same during the command phase: goes through the sandbox (mocks lack game functions → fallbacks) and restores RNG.
   const live = run({ party: [weak], foes: [arcanine], counts: { 0: 5, 1: 0, 2: 5, 3: 0, 4: 0 }, phase: "CommandPhase" });
   assert.equal(live.advice.targets[0].verdict, "catch");
   assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", "sandbox restored the RNG");
-  // Cached per turn.
-  // No cache of its own any more: the card's hold (60-card) is what keeps a live read between refreshes, so asking
-  // the same turn twice simply gives the same answer.
   assert.deepEqual(globalThis.__ca.readTurn(live.scene, turn => globalThis.__ca.catchAdvice(turn, globalThis.__ca.accountRead(live.scene))), live.advice, "the same turn gives the same advice");
 }
 
-// ---- 7. Team value: a full party weak to Ground meets a caught Pidgeot that is immune to it and outclasses Pikachu.
+// ---- A catch that fills a team hole and outclasses the weakest member names who it replaces
 {
   const m6 = (name, types, bst, id) => mon(name, 40, types, "None", [120,70,70,70,70,70], [["Tackle","Normal",40,"P"]], false, undefined, { id, bst });
   const party = [
@@ -206,20 +189,20 @@ const jsonSafe = (x, label) => assert.equal(JSON.stringify(JSON.parse(JSON.strin
   assert.equal(t.verdict, "catch");
   jsonSafe(advice, "team");
   show("team", advice);
-  // The wave's status-cure tokens (2.5 % a stack each turn) can shake the status off before the throw.
+  // The wave's status-cure tokens can shake the status off before the throw (game-code.md §21).
   const cure = new (class EnemyStatusEffectHealChanceModifier { getStackCount() { return 4; } })();
   const cured = run({ party, foes: [{ ...pidgeot, id: "Pidgeot with cure tokens" }], counts: { 0: 5, 1: 5, 2: 5, 3: 0, 4: 0 }, enemyModifiers: [cure] }).advice.targets[0];
   assert.match(cured.why, /sleep\/paralyse it for better odds \(it cures itself 10%\/turn\)/, cured.why);
 }
 
-// ---- 8. Doubles with two foes out and nothing worth catching: silent.
+// ---- Doubles with two foes out and nothing worth catching: silent
 {
   const a = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [55,30,30,30,30,40], [["Tackle","Normal",40,"P"]], true, undefined, { id: 16, catchRate: 3, bst: 251 });
   const b = mon("Pidgey2", 20, ["Normal","Flying"], "Keen Eye", [55,30,30,30,30,40], [["Tackle","Normal",40,"P"]], true, undefined, { id: 16, catchRate: 3, bst: 251 });
   assert.equal(run({ party: [venusaur(), blastoise()], foes: [a, b], double: true }).advice, null);
 }
 
-// ---- 9. An early run (wave ~25, team L16–20) meeting the route's common mons, all already caught: no card.
+// ---- An early run's common, already-caught mons get no card
 const early = () => {
   const e = (name, types, bst, id, field) => mon(name, 18, types, "None", [55,40,40,40,40,50], [["Tackle","Normal",40,"P"]], field, undefined, { id, bst });
   return [e("Comfey", ["Fairy"], 485, 764, true), e("Lechonk", ["Normal"], 255, 915, true), e("Patrat", ["Normal"], 255, 504, false),
@@ -237,17 +220,16 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.deepEqual(globalThis.__ca.drawCatch(advice), [], "no card");
   show("common owned", advice);
 
-  // Doubles: Patrat + Espurr. Espurr resists the team's Fighting weakness, but an Espurr is already on the team.
+  // Espurr resists the team's Fighting weakness, but one is already on the team.
   const patrat = mon("Patrat", 15, ["Normal"], "Run Away", [45,35,30,25,30,35], [["Tackle","Normal",40,"P"]], true, undefined, { id: 504, catchRate: 255, bst: 255 });
   const espurr = mon("Espurr", 16, ["Psychic"], "Keen Eye", [45,30,35,40,35,50], [["Confusion","Psychic",50,"S"]], true, undefined, { id: 677, catchRate: 190, bst: 355 });
   assert.equal(run({ party: early(), foes: [patrat, espurr], double: true, owned: OWNED }).advice, null, "common owned doubles: silent");
-  // Zigzagoon + Rattata, same.
   const zig = mon("Zigzagoon", 18, ["Normal"], "Pickup", [55,35,40,30,40,60], [["Tackle","Normal",40,"P"]], true, undefined, { id: 263, catchRate: 255, bst: 240 });
   const rat = mon("Rattata", 19, ["Normal"], "Guts", [50,45,30,25,30,65], [["Tackle","Normal",40,"P"]], true, undefined, { id: 19, catchRate: 255, bst: 253 });
   assert.equal(run({ party: early(), foes: [zig, rat], double: true, owned: OWNED }).advice, null, "Zigzagoon + Rattata: silent");
 }
 
-// ---- 10. The same Glameow with its hidden ability, Rogue and Master Balls in the bag: worth a card, with a cheap ball.
+// ---- A new hidden ability is worth a card, and a cheap ball
 {
   const { advice } = run({ party: early(), foes: [glameow({ abilityIndex: 2 })], counts: { 0: 10, 1: 3, 2: 3, 3: 2, 4: 1 }, owned: OWNED });
   const t = advice.targets[0];
@@ -257,24 +239,19 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.ok(globalThis.__ca.drawCatch(advice).length, "card drawn");
   show("hidden ability", advice);
 }
-// ---- 11. "Stronger than" compares lines, not stages: an unevolved Spinarak on the team is an Ariados-to-be, a wild
-// mon far below our levels isn't an upgrade yet, and an unevolved wild catch is judged by what it becomes.
+// ---- "Stronger than" compares lines and levels, not current stages
 {
   const upgradeOf = advice => advice?.targets[0].reasons.find(r => r.text.startsWith("stronger than"))?.text ?? null;
   const member = (name, lv, bst, id, evos) => mon(name, lv, ["Bug","Poison"], "Swarm", [90,60,60,60,60,60], [["Poison Sting","Poison",15,"P"]], true, undefined, { id, bst, evos });
   const counts = { 0: 10, 1: 5, 2: 0, 3: 0, 4: 0 };
-  // Spinarak (190, one stage left) vs a wild final-stage 430: not an upgrade over Ariados (~400).
   const spinarak = member("Spinarak", 20, 190, 167, [[168, 22]]);
   const wild = mon("Lickitung", 21, ["Normal"], "Oblivious", [100,60,70,60,70,30], [["Lick","Ghost",30,"P"]], true, 50, { id: 108, bst: 430 });
   assert.equal(upgradeOf(run({ party: [venusaur(), spinarak], foes: [wild], counts }).advice), null, "Spinarak's line isn't weaker than a 430 wild");
-  // The old comparison would have fired on current BST (430 vs 190).
   const noEvo = member("Spinarak", 20, 190, 167, []);
   assert.match(upgradeOf(run({ party: [venusaur(), noEvo], foes: [wild], counts }).advice) ?? "", /stronger than Spinarak \(BST 430 vs 190\)/);
-  // Level: a Pidgeot 30 levels below our weakest member isn't an upgrade yet.
   const pikachu = mon("Pikachu", 45, ["Electric"], "Static", [90,60,50,60,60,90], [["Spark","Electric",65,"P"]], true, undefined, { id: 25, bst: 320 });
   const lowPidgeot = mon("Pidgeot", 15, ["Normal","Flying"], "Keen Eye", [60,40,40,40,40,50], [["Gust","Flying",40,"S"]], true, 30, { id: 18, bst: 479 });
   assert.equal(upgradeOf(run({ party: [venusaur(), pikachu], foes: [lowPidgeot], counts }).advice), null, "too far below our levels");
-  // An unevolved Charmander-like catch (309, two stages left) outgrows a final-stage 400 member.
   const final400 = member("Ariados", 30, 400, 168, []);
   const charmander = mon("Charmander", 28, ["Fire"], "Blaze", [70,50,40,55,45,60], [["Ember","Fire",40,"S"]], true, 30, { id: 4, bst: 309, evos: [[5, 16], [6, 36]] });
   const grows = run({ party: [venusaur(), final400], foes: [charmander], counts }).advice;
@@ -283,7 +260,7 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   jsonSafe(grows, "final BST");
   show("unevolved upgrade", grows);
 }
-// ---- 12. A fusion is judged by the pair: a Rattata fused with Mewtwo isn't the weak member to release for a 480.
+// ---- A fusion is judged by the pair, not by its base species
 {
   const upgradeOf = advice => advice?.targets[0].reasons.find(r => r.text.startsWith("stronger than"))?.text ?? null;
   const mewtwo = { speciesId: 150, baseTotal: 680, baseStats: [106, 110, 90, 154, 90, 130], getEvolutionLevels: () => [] };
@@ -299,7 +276,7 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.match(upgradeOf(run({ party: [venusaur(), unfused], foes: [wild], counts }).advice) ?? "", /stronger than Rattwo \(BST 490 vs 253\)/);
 }
 
-// ---- 13. Shiny: a shiny fusion half counts (isShiny()), and an event's multiplier replaces ×2.
+// ---- A shiny fusion half counts as shiny, and an event's multiplier replaces ×2
 {
   const foe = extra => mon("Pikachu", 20, ["Electric"], "Static", [60,50,40,50,50,90], [["Thunderbolt","Electric",90,"S"]], true, undefined,
     { id: 16, catchRate: 45, bst: 320 }, extra);
@@ -316,8 +293,7 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.ok(ultra(event) > expect(2));
 }
 
-// ---- 14. "Lower its HP" names a move that can't KO it: False Swipe first, else the strongest safe attack, and warns
-// when every attack on the field can KO it.
+// ---- "Lower its HP" names a move that can't KO it, or warns that every attack can
 {
   const SurviveDamageAttr = class SurviveDamageAttr {};
   const target = () => mon("Pikachu", 20, ["Electric"], "Static", [60,40,40,40,40,90], [["Thundershock","Electric",40,"S"]], true, undefined, { id: 25, catchRate: 3, bst: 320 });
@@ -330,14 +306,13 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.match(why([attacker([nuke])]), /careful: our attacks can KO it$/);
 }
 
-// ---- 15. The End biome follows checkCanUseBall: classic before the final boss only for caught species, the classic final
-// boss while at most one starter is uncaught, endless never, daily away from its final boss.
+// ---- The End biome refuses a ball where `checkCanUseBall` does (game-code.md §20)
 {
   const blocked = opts => run({ party: [venusaur()], counts: { 0: 5, 1: 0, 2: 0, 3: 0, 4: 1 }, biome: 50, ...opts }).advice === null;
   const foe = (id, lv = 60) => mon("Paradox", lv, ["Dragon"], "Protosynthesis", [200,120,100,120,100,100], [["Dragon Claw","Dragon",80,"P"]], true, 100, { id, catchRate: 10, bst: 570 });
   assert.ok(blocked({ foes: [foe(25)], wave: 190 }), "classic: an uncaught species is refused");
   assert.ok(!blocked({ foes: [foe(9)], wave: 190 }), "classic: a caught species can be thrown at");
-  // Starters 3, 9, 16, 58 are caught in the fixture; 25 and 1001 aren't.
+  // Starters 3, 9, 16 and 58 are caught in the fixture; 25 and 777 are not.
   assert.ok(!blocked({ foes: [foe(890, 200)], wave: 200, starters: [3, 9, 16, 58, 25] }), "final boss, one starter missing: catchable");
   assert.ok(blocked({ foes: [foe(890, 200)], wave: 200, starters: [3, 9, 16, 58, 25, 777] }), "final boss, two starters missing: refused");
   assert.ok(blocked({ foes: [foe(9)], wave: 190, mode: { isClassic: false, isEndless: true } }), "endless: never");
@@ -345,13 +320,12 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.ok(blocked({ foes: [foe(25)], wave: 50, mode: { isClassic: false, isDaily: true } }), "daily final boss: refused");
   assert.ok(!blocked({ foes: [foe(25)], wave: 50, mode: { isClassic: false, isDaily: true, dailyConfig: { boss: { catchable: true } } } }), "unless the event boss is catchable");
 }
-// ---- 16. The two bosses that refuse a Master Ball as well (`handleBallCommand`): the classic final boss of a
-// challenge run, and a Daily final boss its event seed marks catchable. Every other boss with bars left still takes one.
+// ---- Only a challenge run's classic final boss and a catchable Daily boss refuse the Master Ball (game-code.md §20)
 {
   const counts = { 0: 5, 1: 0, 2: 0, 3: 0, 4: 1 };
   const finalBoss = () => mon("Eternatus", 70, ["Poison","Dragon"], "Pressure", [400,150,120,150,120,130], [["Dynamax Cannon","Dragon",100,"S"]], true, 300,
     { id: 890, catchRate: 45, bst: 690 }, { bossSegments: 5, bossSegmentIndex: 3 });
-  // Wave 200 in the End biome with one starter left uncaught: the ball itself is allowed through.
+  // One starter left uncaught, so `checkCanUseBall` lets the ball through.
   const at = (opts = {}) => run({ party: [venusaur()], foes: [finalBoss()], counts, biome: 50, wave: 200, starters: [3, 9, 16, 58, 25], ...opts }).advice.targets[0];
   const master = t => t.chance.find(x => x.ball === "Master Ball").p;
 
@@ -359,28 +333,25 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.equal(master(plain), 1, "no challenges: the final boss still takes a Master Ball");
   assert.match(plain.why, /Master Ball, or break its bars first/);
 
-  // `hasAnyChallenges()` is the whole copied challenge list, values and all — one at 0 is still a challenge run.
+  // A challenge at value 0 still makes a challenge run (game-code.md §20).
   const challenge = at({ mode: { challenges: [{ id: 1, value: 0 }] } });
   assert.equal(master(challenge), 0, "a challenge run: no ball works on the classic final boss");
   assert.ok(challenge.chance.every(x => x.p === 0), "and none of the others either");
   assert.match(challenge.why, /break its bars first — no ball works on this boss/);
   show("challenge final boss", { targets: [challenge] });
 
-  // A catchable Daily event boss: balls get through the biome rule, the boss rule refuses them all the same.
   const daily = { isClassic: false, isDaily: true, dailyConfig: { boss: { catchable: true } } };
   const dailyBoss = at({ wave: 50, mode: daily });
   assert.equal(master(dailyBoss), 0, "a catchable Daily boss refuses the Master Ball too");
   assert.match(dailyBoss.why, /no ball works on this boss/);
-  // Its last bar: the rule is off, and the Master Ball is back.
   const lastBar = finalBoss(); lastBar.bossSegmentIndex = 0; lastBar.hp = 80;
   const open = run({ party: [venusaur()], foes: [lastBar], counts, biome: 50, wave: 50, mode: daily }).advice.targets[0];
   assert.ok(!open.boss && open.chance.find(x => x.ball === "Poké Ball").p > 0, "last bar: any ball again");
-  // An ordinary Daily boss on the way (not the final wave) keeps the Master Ball.
   const midRun = run({ party: [venusaur()], foes: [finalBoss()], counts, wave: 30, mode: { isClassic: false, isDaily: true } }).advice.targets[0];
   assert.equal(master(midRun), 1, "a Daily boss short of the final wave takes a Master Ball");
 }
 
-// ---- 17. Candy on a catch: a Daily run pays it only for a dex attribute the catch adds (`!isDaily || hasNewAttr`).
+// ---- A Daily run pays catch candy only for a dex attribute the catch adds (game-code.md §20)
 {
   const counts = { 0: 0, 1: 0, 2: 5, 3: 0, 4: 0 };
   const shinyPika = () => mon("Pikachu", 20, ["Electric"], "Static", [60,50,40,50,50,90], [["Thunderbolt","Electric",90,"S"]], true, undefined,
@@ -390,15 +361,12 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   const reasons = opts => run({ party: [venusaur()], foes: [shinyPika()], counts, ...opts }).advice.targets[0].reasons.map(r => r.text);
   assert.ok(reasons({ dex: known }).includes("shiny · +5 candy"), "classic pays candy for a shiny it already has");
   assert.ok(reasons({ dex: known, mode: { isClassic: false, isDaily: true } }).includes("shiny"), "Daily pays none for the same catch");
-  // A shiny variant the dex is missing *is* a new attribute: the candy is back, Daily or not.
   const variant = () => Object.assign(shinyPika(), { variant: 2 });
   const daily = run({ party: [venusaur()], foes: [variant()], counts, dex: known, mode: { isClassic: false, isDaily: true } }).advice.targets[0];
   assert.ok(daily.reasons.some(r => r.text === "new shiny variant · +20 candy"), JSON.stringify(daily.reasons));
 }
 
-// ---- 18. Which entry the candy is read from. `setPokemonSpeciesCaught` walks the line down and pays at the species
-// with no prevolution — `getRootSpeciesId(false)`, Pichu for a Raichu — masking the attributes with *that* species'
-// `getFullUnlocksData()`, and paying nothing at all when the walk stops early at an uncaught starter mid-line.
+// ---- Candy is read from the prevolution-free root, masked by that species' own unlocks (game-code.md §20)
 {
   const counts = { 0: 0, 1: 0, 2: 5, 3: 0, 4: 0 };
   // Raichu: starter root Pikachu (25), prevolution-free root Pichu (172).
@@ -407,26 +375,21 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   const ALL = 1n | 2n | 4n | 16n | 128n; // non-shiny, shiny, male, default variant, form 0
   const reasons = opts => run({ party: [venusaur()], foes: [raichu(opts.foe)], counts, ...opts }).advice.targets[0].reasons.map(r => r.text);
 
-  // Pichu has this shiny already; Pikachu, which `getRootSpeciesId(true)` stops at, does not. The Daily run pays
-  // nothing, because Pichu's entry is the one `hasNewAttr` is asked of.
+  // Pichu has this shiny already; Pikachu, where `getRootSpeciesId(true)` stops, does not.
   const pichuKnows = { 26: { caughtAttr: ALL }, 25: { caughtAttr: 1n }, 172: { caughtAttr: ALL } };
   assert.ok(reasons({ dex: pichuKnows, mode: { isClassic: false, isDaily: true } }).includes("shiny"),
     "the candy entry is the prevolution-free root, not the first starter up the line");
   assert.ok(reasons({ dex: pichuKnows }).includes("shiny · +5 candy"), "a classic run pays it either way");
 
-  // A starter partway down the line that is new to the dex does not end the walk: it shows "added as a starter" and
-  // recurses from that message's callback, so Pichu is still reached and still paid. The dex state of Pikachu, the
-  // species in the middle, changes nothing.
+  // A starter new to the dex mid-line defers the walk and never ends it (game-code.md §20).
   const pikachuNew = { 26: { caughtAttr: ALL }, 25: { caughtAttr: 0n }, 172: { caughtAttr: 0n } };
   assert.ok(reasons({ dex: pikachuNew, starters: [3, 25] }).includes("shiny · +5 candy"),
     "an uncaught Pikachu in the middle of the line does not stop the walk");
   assert.ok(reasons({ dex: { ...pikachuNew, 25: { caughtAttr: 1n } }, starters: [3, 25] }).includes("shiny · +5 candy"),
     "nor does a caught one");
 
-  // A form the root species cannot own. Charizard has four forms (Normal, Mega X, Mega Y, G-Max) while Charmander,
-  // the species the candy is paid at, has none — so its mask carries the default form bit alone, and a Mega
-  // Charizard's `1n << 8` is masked away. The catch then adds nothing Charmander's entry lacks and a Daily run pays
-  // nothing; unmasked, the same bit reads as a new attribute and promises candy.
+  // A Mega Charizard's form bit is one Charmander, where the candy is paid, cannot own: masked away, the catch adds
+  // nothing new.
   const charizard = extra => mon("Charizard", 40, ["Fire","Flying"], "Blaze", [160,110,80,150,100,120], [["Heat Wave","Fire",95,"S"]], true, undefined,
     { id: 6, catchRate: 45, bst: 534, roots: [4, 4] }, { shiny: true, ...extra });
   const registry = { getSpecies: id => (id === 4 ? { getFullUnlocksData: () => ALL } : null), getAllSpecies: () => [] };
