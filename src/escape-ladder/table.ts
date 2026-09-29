@@ -84,9 +84,9 @@ const partyFromShop = (mode: number, provenance: "source" | "live"): Entry => ({
 /**
  * Rungs are ordered safest first. Rules every entry obeys (#13):
  *   - no rung presses `MENU` — it never reaches a handler, and on STARTER_SELECT / POKEDEX_PAGE it presses SUBMIT
- *     (game-code.md §25);
- *   - no rung calls `ui.revertMode()` — it drops the pending continuation unrun and hangs the phase waiting on it (§25);
- *   - no rung enters Settings — six settings reset the run on leaving (§25).
+ *     (game-code.md §26);
+ *   - no rung calls `ui.revertMode()` — it drops the pending continuation unrun and hangs the phase waiting on it (§26);
+ *   - no rung enters Settings — six settings reset the run on leaving (§26).
  */
 export const LADDER = {
   MESSAGE: {

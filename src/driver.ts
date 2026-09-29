@@ -377,7 +377,7 @@ export class Driver {
       throw new Refusal(code, `${message} Backed out to TITLE; call start_run again with a corrected party.`, { ...detail, screen: "TITLE", log });
     };
 
-    // New Game is the first title option unless Continue is offered, and Classic the first mode (game-code.md §25).
+    // New Game is the first title option unless Continue is offered, and Classic the first mode (game-code.md §26).
     let menu = await this.#game.menu();
     refuseMovedScreen(ready, menu);
     const newGameIndex = menu.options.length >= 5 ? 1 : 0;
@@ -458,7 +458,7 @@ export class Driver {
     }
     s = await select(menu, slotOpt, cur.fine, "save slot");
     presses++;
-    // Only an occupied slot asks to overwrite: on a free one the next CONFIRM is the run's switch prompt (#30, game-code.md §25).
+    // Only an occupied slot asks to overwrite: on a free one the next CONFIRM is the run's switch prompt (#30, game-code.md §26).
     if (slotOpt.hasData === true) {
       if (!s.settled) throw new SetupTimedOut(s, "save slot");
       const r = s.last as Ready;
@@ -751,7 +751,7 @@ export class Driver {
     const last = s.last && s.last.ready ? s.last : null;
     const alert = last?.mode === UiMode.ALERT_MODAL ? last.messageText : null;
     // Idle on a message that takes ACTION, waiting would never end (#55). A live `onActionInput` is a prompt no press
-    // has answered, so this is never a doubled press (game-code.md §25).
+    // has answered, so this is never a doubled press (game-code.md §26).
     const pending = alert === null && last !== null && last.settled && last.mode === UiMode.MESSAGE && last.awaitingActionInput && last.onActionInput;
     return {
       status: outcome.status,
@@ -809,7 +809,7 @@ export class Driver {
       cursor: menu.cursor,
       text: menu.text,
       ...this.#pendingMessage(menu),
-      // While a party screen's own message waits, CANCEL answers it exactly as ACTION does (game-code.md §25).
+      // While a party screen's own message waits, CANCEL answers it exactly as ACTION does (game-code.md §26).
       cancel_effect: menu.messagePending ? "consents" : ladder.status === "ladder" ? ladder.cancelEffect : "unknown",
       screen_class: ladder.status === "ladder" ? ladder.class : null,
       ladder_note: ladder.status === "ladder" ? undefined : ladder.message,

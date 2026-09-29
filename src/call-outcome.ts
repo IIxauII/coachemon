@@ -60,7 +60,7 @@ export class CallOutcomes {
     if (read.runLive && !this.#latch.sawRun) this.#latch = { ...NO_RUN, sawRun: true };
     if (read.phaseName === "GameOverPhase") this.#latch = { ...this.#latch, gameOver: true };
     if (read.phaseName === "LoginPhase" && this.#latch.sawRun && !this.#latch.gameOver && !this.#menuActionInFlight) {
-      // A LoginPhase mid-run with no menu action in flight is `reset(true)`: the save failed (#11, game-code.md §25).
+      // A LoginPhase mid-run with no menu action in flight is `reset(true)`: the save failed (#11, game-code.md §26).
       this.#latch = { ...this.#latch, interrupted: true };
     }
     // Back at the title: whatever ended the run has been latched by now.

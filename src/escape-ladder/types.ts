@@ -10,7 +10,7 @@ export type Risk =
 /** How the claim is known. `live` means observed in a transcript; `source` means read at the pinned ref. */
 export type Provenance = "source" | "live";
 
-/** Buttons a rung may press. `MENU` is deliberately absent: it never reaches a handler (#13, game-code.md §25). */
+/** Buttons a rung may press. `MENU` is deliberately absent: it never reaches a handler (#13, game-code.md §26). */
 export type RungButton = "ACTION" | "CANCEL" | "SUBMIT";
 
 type Costed =
