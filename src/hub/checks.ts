@@ -71,8 +71,8 @@ export async function runChecks(d: CheckDeps, o: CheckOptions = {}): Promise<Run
   const ext = state.extensions.find(e => e.conn === ready[0]!.conn);
   if (ext === undefined) return { reached: false, why: "the counted tab's extension is not in the hub's state" };
 
-  // Either flavour: extension-distribution.md §16's Orion premise is about the store zip, so refusing a store build refuses the one run that
-  // matters.
+  // Either flavour: extension-distribution.md §16's Orion premise is about the store zip, so refusing a store build
+  // refuses the one run that matters.
   c.say(`checking ${o.engine ?? ext.target} — ${ext.target} ${ext.flavour} ${ext.version} on 127.0.0.1:${d.port}`);
   const checks = [await relay(c), await keepalive(c, idleMs, barMs)];
   return {

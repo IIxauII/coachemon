@@ -313,7 +313,6 @@ function troubleMessage(t: HubTrouble): string {
   return reach({ trouble: t, extensions: [], tabs: [] })?.line ?? "The Coachemon hub is not reachable.";
 }
 
-/** The first three numbers only; anything unparsable sorts as 0. */
 export function compare(a: string, b: string): number {
   const parts = (v: string) => v.split(/[.+-]/).slice(0, 3).map(n => (Number.isInteger(Number(n)) ? Number(n) : 0));
   const [x, y] = [parts(a), parts(b)];

@@ -12,7 +12,7 @@ export type Match<T> = { kind: "one"; option: T } | { kind: "none" } | { kind: "
 
 export type Labelled = { label: string | null; name?: string | null };
 
-/** (CONTEXT.md, `Option`) */
+/** (CONTEXT.md `Option`) */
 export function optionAnswersTo(option: Labelled, label: string): boolean {
   const wanted = normalizeLabel(label);
   return [option.label, option.name].some(l => typeof l === "string" && normalizeLabel(l) === wanted);

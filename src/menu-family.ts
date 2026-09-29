@@ -37,7 +37,7 @@ export function step(rule: StepRule, cursor: number, to: number): Button {
     case "down_cycle":
       return Button.DOWN;
     case "battler_grid": {
-      // Enemies 2,3 sit above the player's 0,1, and nothing wraps (#40, game-code.md §25).
+      // (#40, game-code.md §25)
       const enemy = (i: number) => i >= 2;
       if (enemy(cursor) !== enemy(to)) return enemy(to) ? Button.UP : Button.DOWN;
       return cursor < to ? Button.RIGHT : Button.LEFT;
