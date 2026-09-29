@@ -4,8 +4,8 @@ import { closeRead, openRead, sandbox } from "./01-core.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
-// A replay may read only what the key holds: a fact outside it is served stale from the memo until the key moves.
-// HP keys as standing or not, or every hit taken would miss the memo.
+// A replay may read only what the run key or its memo's `k` holds: any other fact is served stale from the memo. HP
+// keys as standing or not, or every hit taken would miss the memo.
 const runFacts = s => {
   const party = tryDo(() => s.getPlayerParty().filter(Boolean), []) ?? [];
   const me = s?.mysteryEncounterSaveData;
@@ -25,7 +25,7 @@ const runFacts = s => {
 const runKeyOf = f => JSON.stringify([f.seed, f.wave, f.biomeId, f.waveCycleOffset, f.offsetGym, f.members,
   f.modifierCount, f.encounteredEvents, f.encounterSpawnChance]);
 
-const RUNS_KEPT = 2;
+const RUNS_KEPT = 2; // at 1, a faint then a revive replays everything
 const runs = new Map(); // run key → Map(bucket → Map(k → answer))
 const bucketsFor = key => {
   let b = runs.get(key);
@@ -47,7 +47,8 @@ export const readRun = (s, fn) => {
     const guard = () => { if (closed) throw new Error("run read after its callback returned"); };
     const run = {
       key, scene: s, facts,
-      // Kept across refreshes until the run key moves, a `build` that throws too, as `{ unavailable }`.
+      // Kept across refreshes for the last `RUNS_KEPT` run keys. `k` is what varies within one; a `build` that throws
+      // is kept too, as `{ unavailable }`.
       memo: (bucket, k, build) => {
         guard();
         let m = buckets.get(bucket);

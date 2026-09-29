@@ -68,7 +68,7 @@ const quickChance = (p, category) => {
   return 1 - (1 - Math.min(1, 0.1 * stack)) * (1 - draw);
 };
 // P(`a` acts before `b`). A null move is a switch, item or run, which goes before any move (game-code.md §5).
-// `thisTurn`: a speed tie is the game's own shuffle (`turn.speedTie`); on any other turn it is a coin flip.
+// `thisTurn`: a speed tie is the game's own shuffle (`turn.speedTie`); a tie it can't name is a coin flip.
 export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => {
   if (!aPm || !bPm) return !aPm && !bPm ? 0.5 : aPm ? 0 : 1;
   const info = (p, pm) => {
@@ -87,7 +87,8 @@ export const actionOrder = (turn, a, aPm, b, bPm, { thisTurn = false } = {}) => 
 
 // The draw our `RANDOM_NEAR_ENEMY` command makes before the enemy picks, so the pick is predicted per command
 // (game-code.md §6, #158). Not covered, which is why such a row is `~`: at slot 0's prompt slot 1's command is still
-// to come and may draw too, and a `VariableTargetAttr` can turn another target random.
+// to come and may draw too, and a `VariableTargetAttr` can turn another target random. Slot 0's command, read at slot
+// 1's prompt, has already drawn: the stream we predict from is past it.
 const commandDraws = (turn, me, myPm) => {
   if (!turn.facts.double || !me?.isOnField?.()) return [];
   const mv = myPm?.getMove?.();
@@ -147,7 +148,8 @@ export const likelyMoves = (turn, foe, me, outs, next, ranges = []) => {
   });
 };
 
-// P(`p` gets to use `mv` this turn, or next turn with `next`) (game-code.md §8).
+// P(`p` gets to use `mv` this turn, or next turn with `next`): sleep, freeze, paralysis and confusion as game-code.md §8
+// has them.
 export const actChance = (p, mv = null, next = false) => {
   const later = next ? 1 : 0;
   if (!next && p.getTag?.("RECHARGING")) return 0;
@@ -247,7 +249,6 @@ export const koBoost = p => {
   } catch { return null; }
   return Object.keys(up).length ? { up, ability: name, any } : null;
 };
-// The damage factor `n` KOs' worth of `boost` adds on stat `st`.
 export const koStageFactor = (p, boost, n, st) => {
   const k = boost?.up?.[st] ?? 0;
   if (!k || !(n > 0)) return 1;
@@ -451,6 +452,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
   const freeThey = opts.free && aimedAtField;
   const pFirst = t ? 1 - (t.pKo > 0 ? t.koFirst : t.first) : 1;
   const pF = opts.free ? 1 : pFirst;
+  // The target's cancelled attempt is the joint's `pBefore` to price, not this: counting it here counts it twice.
   const pFirstField = aimedAtField ? pFirst : tThey ? 1 - (tThey.pKo > 0 ? tThey.koFirst : tThey.first) : 1;
   const pFField = freeThey ? 1 : pFirstField;
   // Our move doing its job (Focus Punch not hit first, Sucker Punch meeting an attack); `steady`: the part that recurs
@@ -518,6 +520,7 @@ export const exchange = (turn, me, pm, foe, opts = {}) => {
         return breaks.includes(j) ? pF * factor(before + 1) + (1 - pF) * factor(before) : factor(before);
       };
     }
+    // Confusion's self-hit at its mean roll (game-code.md §8).
     const confusionHit = confusedHits && ((2 * me.level / 5 + 2) * 40 * stat(me, Stat.ATK) / stat(me, Stat.DEF) / 50 + 2) * 0.925;
     selfSpent = (mine.self ?? 0) * Math.min(hitsWe, turnsWe) + confusedHits * 1.5 * confusionHit / 3;
     const soften = st => (mt.drops?.[st] ? stage(me.summonData?.statStages?.[st - 1] ?? 0) / stage(Math.max(-6, (me.summonData?.statStages?.[st - 1] ?? 0) + mt.drops[st])) : 1);
@@ -681,9 +684,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
       const turns = x.turnsWe + lost;
       return { me, move: o, target: fi, turns, hits: x.turnsWe, score: lasts - x.eTurnsWe - lost + (x.pWeKoFirst - x.pTheyKoFirst) - (x.cost ?? 0) - cost(o) - feed(active[fi]) * x.pTheyKoFirst, hp, trade: x };
     };
-    // A hit whose target has already fainted lands on the survivor carrying the move chosen for the target
-    // (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what it is worth there, and `mix` prices the
-    // blend (#236). A move the survivor is immune to scores the empty turn.
+    // The redirect (CONTEXT.md, `Spare hit`; game-code.md §18): `redirScore` is what the hit is worth on the survivor,
+    // and `mix` prices the blend (#236). A move the survivor is immune to scores the empty turn.
     const withRedirScore = x => {
       if (!pair || x.play || typeof x.target !== "number" || !x.move?.pm) return x;
       const oi = 1 - x.target;
@@ -726,7 +728,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     };
     // A spread move, on every foe it actually hits: one it can't touch adds nothing rather than sinking the option.
     // `each`: turns to KO each foe, 9 for one untouched. Takes the name, not a record: records differ per foe, and
-    // picking one up front read a double as one foe.
+    // picking one up front read a double as one foe (#261).
     const both = name => {
       const os = active.map(f => planOutcomes(turn, me, f).find(x => x.name === name));
       const xs = os.map((y, i) => (y?.expected > 0 ? trade(y, active[i]) : null));
@@ -924,8 +926,8 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
   const empty = Math.max(0, slots - current.length);
   const free = freeSwitch ? slots : empty;
   const plans = [];
-  // The whole-fight plan's value once this mon has taken the turn (#113). Single battles only: it misreads a double
-  // as one-on-one exchanges (#113).
+  // The whole-fight plan's value once this mon has taken the turn. Single battles only: it misreads a double as
+  // one-on-one exchanges (#113).
   const planValueOf = picks => {
     if (!team || slots !== 1 || !picks[0]) return null;
     const mi = party.indexOf(picks[0].me);
@@ -1020,7 +1022,7 @@ export const fieldPlan = (turn, party, active, double, attackers = active, { fre
     const o = planOutcomes(turn, p.me, partner).find(x => x.name === p.move.name);
     return o?.expected > 0 ? { mon: partner, share: Math.min(1, o.expected / partner.getMaxHp()), pKo: o.pKo ?? 0 } : null;
   };
-  // P(`p`'s hit finds its target felled by the partner and lands on the other foe) (#236).
+  // P(`p`'s hit finds its target felled by the partner and lands on the other foe), per #236.
   const redirectOdds = (p, q, payers) => {
     if (!pair || !q || p.redirScore == null || p.play || q.play) return 0;
     if (typeof p.target !== "number" || q.target !== p.target) return 0;
@@ -1520,9 +1522,9 @@ const predictedSwitches = baseTurn => new Map(baseTurn.facts.decision === "check
     return a.switchTo ? [[f, { to: a.switchTo, ratio: 1, back: !!a.switchBack }]] : [];
   }));
 
-// A return (CONTEXT.md, `Return`; #285) is still on the field holding stat stages it loses on landing (game-code.md
-// §9). The turn line and the fight plan both take this turn, or the card argues with itself; `ifStay` keeps
-// `baseTurn`.
+// A return (CONTEXT.md, `Return`; #285) is still on the field holding the summon data it loses on landing
+// (game-code.md §9); only the stages are modelled. The turn line and the fight plan both take this turn, or the card
+// argues with itself; `ifStay` keeps `baseTurn`.
 export const arrivalTurn = baseTurn => baseTurn.memo("arrival", () => {
   const arriving = [...predictedSwitches(baseTurn).values()].filter(v => v.back).flatMap(v => {
     const st = v.to.summonData?.statStages ?? [];
