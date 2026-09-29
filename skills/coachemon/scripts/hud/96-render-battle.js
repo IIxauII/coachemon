@@ -1,6 +1,3 @@
-// Battle card (the 60-card battle model), the first card to be drawn as **group**s (#349): `act` — the ⚔ line per
-// field slot and the switches to get there — then `foes`, then `catch` on a wild wave or `plan` on a trainer's, then
-// `road`. Each group's summary is read off the model, never written here.
 import { STATUS_FRAMES } from "./01-core.js";
 import { catchSummary } from "./45-catch.js";
 import { actSummary, deadEndText, foesSummary, hitsText, planSummary, roadSummary } from "./60-card.js";
@@ -10,12 +7,6 @@ import { drawCatch } from "./95-render-catch.js";
 import { drawPreview } from "./95-render-preview.js";
 import { drawTeamPlan } from "./95-render-team.js";
 
-// The strip's caption: the wave, the trainer if there is one, and the mons we are sending. **Our** actives, not the
-// enemy roster — `order` is who the plan puts in front of each foe, which on a double is the pair on the field.
-// It is dropped where it would only repeat the call sitting directly under it. That used to be an argument about
-// the ⚔ lines below the header; on a strip it is a stronger one, because the call names every slot it is about —
-// so a wild wave's list would say twice, in icons, what the line beneath already says in words. A trainer's does
-// not: its `order` reaches past the field to the bench mons the fight plan sends later, which the call never names.
 export const captionBattle = m => {
   const slotNames = new Set(m.field?.slots.map(sl => sl.name) ?? []);
   const order = m.trainer || (m.order ?? []).some(o => !slotNames.has(o.name)) ? m.order ?? [] : [];
@@ -24,15 +15,10 @@ export const captionBattle = m => {
 };
 
 export const drawBattle = m => {
-  // The exact enemy move couldn't be made (#183): an ordinary card with exactly one `act` group, whose summary says
-  // so and which shows nothing else. The inline ⚠ that carried this is gone — the summary carries it. The next
-  // refresh tries again, so a one-off breach flickers rather than sticking.
   if (m.unavailable) return [group("act", "Now", actSummary(m), [])];
   const f = m.field;
 
   const threatTag = t => {
-    // A threat is **theirs** whatever its level: how bad it is, the skull and the ⚠ already say by shape, and
-    // spending a second ink on the same question is what the law took away (#349).
     const n = h("span", { display: "inline-flex", alignItems: "center", marginRight: "4px", ...ink.theirs },
       t.level === "ko" ? "💀" : "⚠", badge(t.type, t.e >= 2 ? `×${t.e}` : "", true),
       h("span", { marginLeft: "1px" }, `${t.pct}%${t.hits ? ` ${t.hits}-hit` : ""}`));
@@ -40,23 +26,14 @@ export const drawBattle = m => {
       + `${t.pko > 0 && t.pko < 100 ? `, ${t.pko}% KO` : ""}${t.level === "ko" ? ", before it can act" : ""}`;
     return n;
   };
-  // A switch uses the turn: with one, the plan reads as steps — `now:` the switch (and any slot that still
-  // attacks this turn), `next:` the switch-in's move.
-  // The step label takes a column ahead of the gutter, and the gutter itself is the shell's, so a step row and a
-  // plain one line up at every rung of the ladder rather than only at the game's own (#349).
   const step = (label, mark, ...kids) => h("div", ROW,
     label ? h("span", { ...dim, width: rung(3.75), flex: "none" }, label) : null,
     gutterMark(mark), ...kids);
-  // A paid switch-in also says what coming in costs it, and why that's cheap: "takes ~6% · resists Lunge".
   const takesText = x => (x ? `takes ~${x.pct}%${x.e === 0 ? ` · immune to ${x.move}` : x.e != null && x.e < 1 ? ` · resists ${x.move}` : x.e > 1 ? ` · weak to ${x.move}` : ""}` : null);
-  // The ink is the direction the row is about, never how good the swap is: a switch we are being offered is
-  // **ours**, and one that is merely better takes `dim`, because nobody is asking us to make it.
   const swapLine = (sw, style, tail, label) => step(label, "⇄",
     ...(sw.out ? [mon(sw.out.icon, sw.out.name, ICON.mon), sw.out.threat ? threatTag(sw.out.threat) : null, h("span", { ...style, margin: "0 3px" }, "out ›")] : [h("span", { ...style, marginRight: "3px" }, "send")]),
     mon(sw.in.icon, sw.in.name, ICON.mon), h("span", { ...style, marginLeft: "3px" }, tail),
     sw.in.takes ? h("span", { ...dim, marginLeft: "4px" }, `· ${takesText(sw.in.takes)}`) : null);
-  // ⚔ what each field slot should do; ⇄ the switches to get there (dim: better, but not worth a turn). The trap
-  // abilities the move runs into are on the foe rows below, not here.
   const slotLine = (sl, label) => step(label, "⚔",
     mon(sl.icon, sl.name, ICON.mon),
     sl.threat ? threatTag(sl.threat) : null,
@@ -72,8 +49,6 @@ export const drawBattle = m => {
     ...(sl.move ? [badge(sl.type), h("span", { marginRight: "2px" }, sl.move)] : [h("span", dim, "—")]),
     ...(sl.target === "both" ? [h("span", dim, "→ both")] : sl.target ? [h("span", dim, "→"), mon(sl.target.icon, sl.target.name, ICON.ref)] : []),
   ];
-  // `back`: the switch-in is the mon the other slot is withdrawing this same turn, walking straight back in on this
-  // one (#285). Named as a return, because the usual tail rendered while the player watches it leave reads as a bug.
   const enemySwitches = m.enemySwitches.map(es => line("⇄",
     mon(es.from.icon, es.from.name, ICON.mon), h("span", { ...ink.theirs, margin: "0 3px" }, "→"),
     mon(es.to.icon, es.to.name, ICON.mon), h("span", { ...ink.theirs, marginLeft: "3px" },
@@ -89,7 +64,6 @@ export const drawBattle = m => {
   const split = !!f?.slots.some(sl => sl.enter);
   const field = !f ? [...enemySwitches] : [
     ...enemySwitches,
-    // The game is asking whether to switch before the turn: the answer first, then the coming turn's plan.
     ...(f.freeSwitch
       ? [...(f.switches.length
           ? f.switches.map(sw => line("⇄", h("span", { ...ink.ours, marginRight: "3px" }, "free switch?"),
@@ -103,17 +77,12 @@ export const drawBattle = m => {
         ...f.slots.filter(sl => !sl.enter).map(sl => slotLine(sl, "now:")),
         ...f.slots.filter(sl => sl.enter).map(sl => slotLine(sl, "next:"))]
       : [...f.slots.map(sl => slotLine(sl)), ...f.switches.map(sw => swapLine(sw, ink.ours, "in"))]),
-    // The mon on the field is going down this turn, so the next one comes in without paying for a switch (#170):
-    // the fight plan's own step 2, named here so the turn line reads as "stay, and this is what follows".
     f.freeEntry ? line("⤵", mon(f.freeEntry.out.icon, f.freeEntry.out.name, ICON.mon),
       h("span", { ...dim, margin: "0 3px" }, "falls this turn ›"), mon(f.freeEntry.in.icon, f.freeEntry.in.name, ICON.mon),
       h("span", { ...ink.ours, marginLeft: "3px" }, "in free")) : null,
-    // After our KO the trainer sends the best matchup against what we leave out, so the next foe is predictable and
-    // the plan already has an answer in front of it (#170).
     f.nextIn ? line("⤵", h("span", { ...dim, marginRight: "3px" }, "next in likely:"),
       mon(f.nextIn.foe.icon, f.nextIn.foe.name, ICON.mon), h("span", { ...ink.later, margin: "0 3px" }, "› answer"),
       mon(f.nextIn.answer.icon, f.nextIn.answer.name, ICON.mon)) : null,
-    // Doubles: both slots on one foe says why. A split needs no line: the ⚔ targets already show it.
     f.targeting?.kind === "focus" ? line("·", h("span", { ...ink.ours, marginRight: "3px" }, "focus"), mon(f.targeting.target.icon, f.targeting.target.name, ICON.ref),
       h("span", dim, `: ${f.targeting.note}${f.targeting.pko > 0 && f.targeting.pko < 100 ? ` (${f.targeting.pko}%)` : ""}`)) : null,
     ...f.optional.map(sw => swapLine(sw, dim, "in · optional")),
@@ -121,17 +90,13 @@ export const drawBattle = m => {
     ifStay,
   ];
 
-  // Only types the party has a damaging move of: a weakness nobody can hit is noise.
   const usable = ([t]) => !m.moveTypes || m.moveTypes.includes(t);
   const teamWeak = m.team.filter(usable);
   const team = m.trainer && m.rows.length > 1 && teamWeak.length
-    // `×n` here counts the foes weak to the type — it is not an effectiveness, so the badge is not told it is one
-    // and takes no effectiveness colour. `×4` on this row means four foes, and inking it super-effective green
-    // would be this row's own fact read back off its own text (#349).
+    // `×n` counts foes weak to the type, not an effectiveness, so the badge is not told `eff`.
     ? line("", h("span", { ...ink.theirs, marginRight: "4px" }, "foes weak to:"), ...teamWeak.map(([t, n]) => badge(t, `×${n}`)))
     : null;
   const rows = m.rows.map(r => {
-    // `r.traps`: only the abilities the planner found biting one of our own options, not every ability the foe has.
     const weak = r.weak.filter(usable), avoid = r.avoid.filter(usable);
     return h("div", { marginTop: "5px", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,.12)" },
       h("div", { display: "flex", alignItems: "center", gap: "3px" },
@@ -139,8 +104,6 @@ export const drawBattle = m => {
         h("span", { fontWeight: "bold" }, r.name),
         h("span", dim, `L${r.lv}`),
         ...r.types.map(t => badge(t)),
-        // It Terastallizes before it moves this turn, so the types, weaknesses and damage above are already its
-        // Tera type's.
         r.tera ? h("span", { ...ink.theirs, marginRight: "3px" }, "TERA") : null,
         r.boss ? "👑" : null,
         STATUS_FRAMES[r.status] ? img("statuses", STATUS_FRAMES[r.status], STATUS_FRAMES[r.status], ICON.mark, null) : null,
@@ -148,12 +111,7 @@ export const drawBattle = m => {
         hpBar(r.hp)),
       r.traps.length ? line("✦", ...r.traps.map(a => h("span", { ...ink.theirs, marginRight: "6px" }, a))) : null,
       line("▲", ...(weak.length ? weak.map(([t, x]) => badge(t, x, true)) : [h("span", dim, "—")])),
-      // A wall nothing of ours gets through is **immune**, the `×0` case of `▼` and the sixteenth mark (#349): it
-      // takes the neutral ink rather than the resist's red, because a shut door is not bad news about this turn.
-      // A row carrying both is a resist row — the red is the news in it.
       avoid.length ? line(avoid.every(([, x]) => x === "×0") ? IMMUNE : "▼", ...avoid.map(([t, x]) => badge(t, x, true))) : null,
-      // The enemy's likely move into the pokémon we put in front of it: its damage (% of that mon's HP) once the
-      // model carries it, otherwise how likely the AI is to pick it.
       r.likely ? line("↯",
         badge(r.likely.type), h("span", ink.theirs, r.likely.move),
         ...(r.likely.at ? r.likely.at.flatMap(x => [h("span", { ...dim, margin: "0 2px 0 3px" }, "\u2192"), mon(x.icon, x.name, ICON.ref)])
@@ -161,10 +119,7 @@ export const drawBattle = m => {
         h("span", { ...dim, marginLeft: "4px" }, [
           r.likely.pct != null ? `~${r.likely.pct}% HP` : r.likely.p != null ? `${r.likely.p}% likely` : null,
           r.likely.hits ? `${r.likely.hits}-hit` : null, firstText(r.likely.first),
-          // `~`: right only while the game's own draws for this turn are the draws the coach made (a random-target
-          // command of ours in a double). An exact move carries no mark — no `% likely` is the mark.
           r.likely.confidence === "replay" ? "~" : null].filter(Boolean).join(" · "))) : null,
-      // A foe on the field already has its ⚔ line; the pick is only news for one no slot is on yet.
       r.pick?.later
         ? line("➜",
             mon(r.pick.icon, r.pick.name, ICON.mon),
@@ -178,9 +133,6 @@ export const drawBattle = m => {
         : !r.pick && !f ? line("➜", h("span", dim, "no damaging move lands")) : null,
       r.notes?.length ? line("·", h("span", dim, r.notes.join(" · "))) : null);
   });
-  // `road` merges the preview and the look-ahead, because two tabs about what is coming is how a card reaches six.
-  // `catch` keeps a group of its own rather than joining `foes`: catching is a different decision from fighting,
-  // with its own verdict and its own numbers.
   const road = [...drawPreview(m.preview), ...drawAhead(m.ahead)];
   return [
     some("act", "Now", actSummary(m), field),

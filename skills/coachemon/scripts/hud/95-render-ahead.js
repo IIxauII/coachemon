@@ -1,41 +1,26 @@
-// Look-ahead card (the 49-ahead model) and its plain-text summary. Loads after 90-render: only call these from a
-// draw or a summary, never at load time.
-// The readiness reasons, the no-heal stretch, what the wave's rewards are pinned to, party luck, and the Eternatus
-// checklist before wave 200.
-// The card only ever says what the calendar and the seed already decided: the schedule is arithmetic on the wave
-// index, and a named trainer comes from the preview's replay, which marks its own confidence.
 import { aheadIn, aheadWho } from "./49-ahead.js";
 import { dim, h, ink, line } from "./90-render.js";
 
-// Every row here is about a wave that has not arrived, so the whole section is **later** (#349) — the ink the
-// `road` group's own frame wears. How ready we are for it is the gutter's question, not the ink's, so the three
-// readiness verdicts no longer carry a colour of their own: `✓` and `✗` say it by shape.
 export const drawAhead = a => {
   if (!a?.next) return [];
   const r = a.readiness;
   const head = h("span", { fontWeight: "bold", marginRight: "3px" }, `${aheadWho(a)} ${aheadIn(a.next.in)}`);
   const where = h("span", dim, `W${a.next.wave}`);
-  // Rows of the road group, not a card of its own: the shell rules groups apart (#349), and no section has a
-  // control of its own.
   const out = [line("", h("span", { fontWeight: "bold", marginRight: "3px" }, "Next big fight"),
     head, where, h("span", { flex: "1" }),
     a.next.double ? h("span", { ...dim, marginRight: "3px" }, "double") : null,
     a.next.bars ? h("span", ink.later, `👑 ${a.next.bars + 1} bars`) : null)];
-  // The roster, unless the next-wave card above is already showing it: the same foes twice is noise, the readiness
-  // reasons under them are not.
+  // `in` 1 is the next wave, whose foes the preview's rows already list.
   if (a.next.foes?.length && a.next.in > 1) {
     out.push(line("·", h("span", dim,
       a.next.foes.map(f => `${f.name} L${f.level}`).join(" · "))));
   }
-  // What beating it pays, when the fixed-battle table pins the tiers. No roll: it is the config's own list.
   if (a.next.rewards?.tiers.length) {
     out.push(line("·", h("span", dim, `it pays ${a.next.rewards.tiers.join(" · ")}`)));
   }
   for (const n of r?.notes ?? []) {
     out.push(line(n.good ? "✓" : "✗", h("span", {}, n.text)));
   }
-  // The stretch this shop is stocking for: two big fights before the next full heal is the Elite Four, and one mon
-  // topped up isn't a plan for it.
   if (a.fightsBeforeHeal >= 2 || !a.heal) {
     out.push(line("✗", h("span", ink.later, a.heal
       ? `${a.fightsBeforeHeal} big fights before the next full heal (W${a.heal.wave})`
