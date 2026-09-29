@@ -86,7 +86,6 @@ const M = {
 };
 MOVES[M.hyperVoice].moveTarget = 6; // ALL_NEAR_ENEMIES: a spread move
 
-// [id, ppUsed, maxPp]
 let monId = 0;
 const pk = (name, hp, max, status, moves, f = {}) => ({
   id: ++monId, name, hp, level: f.level ?? 40, getMaxHp: () => max, status: status ? { effect: status } : null, getIconAtlasKey: () => "k", getIconId: () => 1,
@@ -95,9 +94,9 @@ const pk = (name, hp, max, status, moves, f = {}) => ({
   getNature: () => f.nature ?? 0, getLuck: () => f.luck ?? 0,
   species: { speciesId: f.speciesId ?? 0, forms: (f.forms ?? []).map(formKey => ({ formKey })), getEvolutionLevels: () => f.evolutions ?? [] },
   moveset: moves.map(([id, used, maxPp]) => new PokemonMove(id, used, maxPp)),
-  // `relearn`: what `getLearnableLevelMoves()` answers — `[level, MoveId, source]` per move a Memory Mushroom could
-  // put back, `level` being 0 for an evolution move, the level it was learnable at for a relearner, and null for an
-  // egg move or a used TM. Left off, the member doesn't expose the method.
+  // `relearn`: what `getLearnableLevelMoves()` answers (game-code.md §17) — `[level, MoveId, source]` per move a
+  // Memory Mushroom could put back, `level` being 0 for an evolution move, the level it was learnable at for a
+  // relearner, and null for an egg move or a used TM. Left off, the member doesn't expose the method.
   ...(f.relearn ? { getLearnableLevelMoves: () => f.relearn } : {}),
 });
 // A TM the listed members can learn (the game's selectFilter: null = compatible and not known).
@@ -231,8 +230,7 @@ const scenarios = {
       assert.match(m.free[1].why, /can't check/);
       assert.equal(m.affordable, 1, "$400 buys one potion");
     } },
-  // Two members low on PP: take the Ether free and buy one Ether fewer. A status move run dry and a few PP spent
-  // aren't "low PP".
+  // Two members low on PP: take the Ether free and buy one Ether fewer.
   "wave 18 free ether": { wave: 18, money: 1622, party: [
       pk("Comfey", 55, 110, 0, [[M.drainingKiss, 2, 10], [M.calmMind, 20, 20]], { types: ["Fairy"] }),
       pk("Morpeko", 120, 120, 0, [[M.spark, 17, 20], [M.bite, 0, 25]], { types: ["Electric", "Dark"] }),
@@ -394,7 +392,7 @@ const scenarios = {
       assert.match(m.free[0].why, /^nobody fainted$/);
       assert.equal(m.ahead.eternatus, null, "24 waves out, the final boss is nobody's business yet");
     } },
-  // Past the last heal: 195 and 200 with nothing in between, and no X1 left to restore anything.
+  // Past the last heal: 195 and 200 with nothing in between, and no X1 left to restore anything (game-code.md §12).
   "no heal left": { wave: 192, money: 3000, mode: "classic", party: [charizard(), pk("Blastoise", 160, 187, 0, [[M.aquaTail, 0, 10]])],
     free: [mk(PokemonReviveModifierType, { name: "Max Revive", iconImage: "max_revive", tier: 2, restorePoints: 0, restorePercent: 100 }),
       mk(AddPokeballModifierType, { name: "5× Great Ball", iconImage: "gb", tier: 1, pokeballType: 1 })],
@@ -492,8 +490,8 @@ const scenarios = {
         assert.ok(r === false || r == null || Array.isArray(r), `${id} answered ${JSON.stringify(r)} (${typeof r})`);
       }
     } },
-  // Daily's level cap reads its wave 30 and a fifth ahead (game-code.md §15). Only the fallback runs: the mocked scene
-  // has no `getMaxExpLevel`.
+  // Daily's level cap reads 30 waves and a fifth of the wave ahead (game-code.md §15). Only the fallback runs: the
+  // mocked scene has no `getMaxExpLevel`.
   "daily level cap": { wave: 30, money: 100, daily: true, party: [snorlax({ level: 40 }), jolteon({ level: 38 })],
     free: [mk(ExpBoosterModifierType, { name: "EXP. Charm", iconImage: "exp_charm", tier: 2, id: "EXP_CHARM", boostPercent: 25 })],
     expect: m => { assert.match(m.free[0].why, /^more EXP · 2 under the Lv 52 cap$/); assert.ok(m.free[0].v > 1); } },

@@ -199,7 +199,8 @@ assert.equal(plan.approxDoubles, false);
   console.log(`== beast boost\nBlastoise loses ${boosted.map(Math.round).join(" / ")} HP after 0 / 1 / 2 KOs (no ability: ${plainHits.map(Math.round).join(" / ")})`);
   assert.ok(plainHits.every(x => x === plainHits[0]), "no ability, no change");
   assert.ok(boosted[0] === plainHits[0] && boosted[1] > boosted[0] && boosted[2] > boosted[1], "each KO fed makes its hits hurt more");
-  // The plan names the step that feeds it: a worn Pidgey chips Buzzwole past half, so Blastoise comes in free.
+  // The plan names the step that feeds it: a worn Pidgey chips Buzzwole past half and falls, and Blastoise comes in
+  // free.
   const fodder = mon("Pidgey", 20, ["Normal","Flying"], "Keen Eye", [60,450,30,30,30,300], [["Brave Bird","Flying",120,"P"]], true, 10);
   const puncher = Object.assign(mon("Buzzwole", 100, ["Bug","Fighting"], "Beast Boost", [400,300,300,100,100,200], [["Lunge","Bug",80,"P"],["Thunder Punch","Electric",75,"P"]], true), beastBoost);
   const plan = run(null, { party: [fodder, blastoise], foes: [puncher] }).plan;

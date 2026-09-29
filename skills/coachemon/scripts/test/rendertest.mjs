@@ -1,4 +1,4 @@
-// The drawn panel. A card's content is pinned in grouptest, which draws nothing.
+// A card's content is pinned in grouptest, which draws nothing.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -120,7 +120,7 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   // The `font` shorthand resets every longhand it does not name, so a register set through it flattens a row's bold.
   assert.ok(rows.flatMap(under).some(n => n?.style?.fontWeight === "bold"), "a row's own emphasis survives the register");
   assert.equal(bundle("hud").match(/\bfont:/g), null, "the panel sets the two faces through the longhands, never the font shorthand");
-  // A size set inside a row renders *larger* than the row around it.
+  // A leftover size literal inside a row renders *larger* than the row containing it.
   const sized = rows.flatMap(under).filter(n => n?.style?.fontSize);
   assert.deepEqual(sized.map(n => n.style.fontSize), [], "nothing inside a row sets a size of its own");
 
@@ -359,8 +359,8 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 }
 
 // ---- What the panel remembers is one key, holding the view and the last group id.
-// Every mount below is a reload, so what survives one is exactly what the key carried.
 {
+  // Every mount below is a reload, so what survives one is exactly what the key carried.
   const battle = () => ({ phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
     ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes });
   // A learn card has no `foes` group.

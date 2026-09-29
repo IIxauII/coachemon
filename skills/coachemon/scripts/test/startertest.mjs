@@ -182,7 +182,7 @@ const checkBudget = (m, limit, label) => {
   assert.equal(m.data, false);
 }
 
-// ---- Single type (Water), 1 point: Azurill is valid only through Marill, so a strict Water member must be picked.
+// ---- Single type, 1 point: Azurill is valid only through Marill, so a strict member is picked (game-code.md §23).
 {
   const water = { id: 1, value: 11, applyStarterChoice: (sp, holder) => { if (sp.type1 !== 10 && sp.type2 !== 10) holder.value = false; return true; } };
   const m = show("single type, 1 point", { limit: 1, valid: [7, 129, 298], challenges: [water] });

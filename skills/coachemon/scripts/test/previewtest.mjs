@@ -408,9 +408,9 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
 }
 
 // ---- A foe's attack types follow 08-party's coverage rule: variable power counts, fixed damage and status don't.
-// Requiring `power > 0` read a Steel foe whose STAB is Gyro Ball as having no Steel attack, and the look-ahead
-// believed it (#266).
 {
+  // Requiring `power > 0` read a Steel foe whose STAB is Gyro Ball as having no Steel attack, and the look-ahead
+  // believed it (#266).
   const { scene, pv } = mount({ wave: 12, foeMoves: [
     ["Gyro Ball", "Steel", -1],
     ["Iron Head", "Steel", 80],
