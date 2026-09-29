@@ -1,58 +1,22 @@
-// Look-ahead to the next big fight: which wave it lands on, who it is, whether the party is ready for it, and what
-// the run gives you to prepare with. Built on 48-preview's replay, so a fixed fight is named exactly rather than
-// guessed from a hand-kept roster table.
-//
-// ---- The schedule
-// Which wave is a big fight and where the run heals are the **run calendar**'s (`03-calendar.js`) — pure arithmetic
-// on the wave index, no roll anywhere in it. This file asks it three things and says what they mean for the party:
-// `bigFightsAhead` for the schedule, `nextHeal` for the next full heal, and `isBossWave` for the double-battle odds.
-// The one reading worth repeating here is why `fightsBeforeHeal` exists: a classic run heals entering 11, 21 … 191
-// and nowhere else, so **waves 181–190 hold the four Elite Four fights and the champion with no heal between them**,
-// and the rewards card spends against that stretch — the difference between topping one mon up and stocking the
-// whole party.
-//
-// ---- Rewards and luck
-// `getNewModifierTypeOption` rolls a tier and then upgrades it while `randSeedInt(floor(512 / (luck + 4))) < 4`, so
-// party luck is a per-item chance of a tier upgrade: 3.1 % at luck 0, 14.3 % at luck 14. A fixed battle's
-// `customModifierRewardSettings` can pin the tiers outright and set `allowLuckUpgrades: false` — the rival at 25 and
-// every boss after it — and then luck buys nothing on the screen as rolled. A reroll drops those settings (it queues a
-// plain `SelectModifierPhase`), so it rolls rarities and takes luck upgrades like any other wave. The luck value
-// itself is `08-party.js`'s `partyLuck` — the party's `getLuck()` summed with the timed event's own terms, and **in
-// Daily a roll of its own** that has nothing to do with the party.
-//
-// Everything here is a read: the calendar is arithmetic on the wave index, and the roster comes from `previewFor`,
-// which replays inside a seed fork. Nothing is called that the preview doesn't already call. The model is read
-// through the **run read** (26-run) and kept in its memo: every input below is in the run key, so there is one
-// look-ahead per run state and it is built on the same preview the card draws.
+// The next big fight, and whether the party is ready for it. Nothing here draws: the schedule is the run calendar's,
+// and the roster is `previewFor`'s replay.
 import { TIER_NAMES, abilitiesOf } from "./01-core.js";
 import { bigFightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { partyLuck, partyProfile } from "./08-party.js";
 import { previewFor } from "./48-preview.js";
 
-// How far ahead the roster is still worth reading. The calendar holds at any distance, but the replay feeds on the
-// party, the luck value and the biome, and a catch, an evolution or a shop pick re-rolls it — so a roster read more
-// than a few waves out is a number that will have moved by the time the fight arrives.
 const LOOKAHEAD = 5;
-// How early the run's last wave is worth preparing for. Longer than LOOKAHEAD on purpose: the Eternatus checklist
-// is about what to carry into 200, and it has to be up while there are still shops left to act on it.
 const FINAL_NOTICE = 10;
-// `label` is what the card says when the fight has no trainer name yet.
 const KIND_LABEL = { final: "final boss", fixed: "fixed battle", gym: "gym leader", boss: "boss" };
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
-// ---- Luck. The value itself is the party profile's (`08-party.js`, `partyLuck`), and the biome card reads the same
-// one — a fact about the party outside Daily, and a roll of the run seed's inside it. What it buys is this file's:
-// the per-reward upgrade chance below.
 const LUCK_GRADES = ["D", "C", "C+", "B-", "B", "B+", "A-", "A", "A+", "A++", "S", "S+", "SS", "SS+", "SSS"];
-// One reward's chance of being upgraded a tier at least once: the loop rolls `randSeedInt(odds) < 4` and repeats
-// while it hits, so the first roll is the one worth quoting.
+// The luck loop's first roll: one reward's chance of at least one tier upgrade (game-code.md §12).
 const upgradeChance = luck => 4 / Math.floor(128 / ((luck + 4) / 4));
 
-// The tiers this wave's rewards are pinned to, and whether luck can still move them. A fixed battle's config
-// carries them; every other wave rolls freely. `TIER_NAMES` is 01-core's, because the look-ahead names a pinned
-// tier waves before there is a shop to name it on.
+// A fixed battle's pinned reward tiers (game-code.md §12), or null for a free roll.
 const rewardRules = (s, wave) => {
   const cfg = tryDo(() => (s.gameMode?.isFixedBattle?.(wave) ? s.gameMode.getFixedBattle(wave) : null));
   const custom = cfg?.customModifierRewardSettings;
@@ -62,20 +26,11 @@ const rewardRules = (s, wave) => {
   return { tiers, luckUpgrades: custom.allowLuckUpgrades !== false };
 };
 
-// ---- Double battles. `checkIsDouble` rolls every wave, `randSeedInt(getDoubleBattleChance(w)) === 0`, and
-// `generateNewBattleTrainer` rolls the same chance for a generic trainer's double variant. The chance is 8, or 32 on
-// an X0 wave, divided by 4 for each lure held (`DoubleBattleChanceBoosterModifier`, one per lure kind) and for each
-// mon on the field carrying `DoubleBattleChanceAbAttr` — Illuminate, Arena Trap, **No Guard and Commander** —
-// floored at 1. `BattleEndPhase` lapses a lure before the rewards screen, so its `battleCount` there is the number
-// of battles ahead it still covers. The final wave and an Endless boss are never double. A fixed battle's config
-// pins it when it says; the four **evil-team grunt waves** don't, and `getRandomTrainerFunc` gives a grunt a double
-// on `randInt(3) === 0` — `Math.random`, unseeded, so no preview and no replay can read it and it is counted here as
-// the flat 1/3 it is. A Mystery Encounter is never double either, but whether a wave is one is itself a roll, so
-// every other wave counts as a battle. `doubleOdds` is the share of double battles over the next `n` waves at those
-// odds: what a permanent choice (a TM) is judged against, rather than whichever way one roll falls.
 const DOUBLE_HORIZON = 10;
 const DOUBLE_ABILITIES = ["Illuminate", "Arena Trap", "No Guard", "Commander"];
-const GRUNT_DOUBLE = 1 / 3; // which waves those are is the run calendar's `isGruntWave`
+const GRUNT_DOUBLE = 1 / 3;
+// The expected share of double battles over the next `n` waves (game-code.md §16): a fixed battle at its config's
+// `double`, a grunt wave at its unseeded 1/3 (§12).
 export const doubleOdds = (s, from, n = DOUBLE_HORIZON) => {
   const gm = s?.gameMode;
   const lures = (s?.modifiers ?? []).filter(m => m?.constructor?.name === "DoubleBattleChanceBoosterModifier")
@@ -95,11 +50,6 @@ export const doubleOdds = (s, from, n = DOUBLE_HORIZON) => {
   return doubles / n;
 };
 
-// ---- Readiness: the party against the roster the preview hands over.
-// The party comes as a profile (`08-party.js`): `hitters` answers who can hit a foe and `weakTo` who it hits back,
-// the same two queries the biome and encounter cards ask. A foe's types, ability and passive come from the replay,
-// so `hitters` prices the real matchup, immunities included; its damaging move types come from the moveset the
-// replay generated, and when those are missing its own types stand in as a STAB proxy.
 const readiness = (model, profile) => {
   const foes = model?.foes ?? [];
   const party = profile.members;
@@ -109,7 +59,6 @@ const readiness = (model, profile) => {
   const answering = foes.map(f => new Set(profile.hitters(f)));
   const unanswered = foes.filter((_, i) => !answering[i].size);
   const hitters = party.filter(p => answering.some(set => set.has(p))).map(p => p.name);
-  // What they swing back with: their damaging moves when the replay generated a moveset, else their own types.
   const theirTypes = [...new Set(foes.flatMap(f => (f.attackTypes?.length ? f.attackTypes : f.types) ?? []))];
   const threats = theirTypes.map(t => ({ type: t, n: profile.weakTo(t).length }))
     .filter(x => x.n >= Math.max(2, Math.ceil(party.length / 2))).sort((a, b) => b.n - a.n);
@@ -131,30 +80,20 @@ const readiness = (model, profile) => {
     verdict: bad === 0 ? "ready" : bad === 1 ? "watch" : "risky",
     levelGap: ourLevel - theirLevel, ourLevel, theirLevel, bars,
     unanswered: unanswered.map(f => f.name), hitters, threats: threats.slice(0, 2), notes,
-    // A roster the preview itself only half-believes makes a readiness call worth only as much.
     sure: model.confidence?.foes === "exact",
   };
 };
 
-// ---- The final boss, from the source rather than from memory. None of this is a roll, so it holds for every run.
-// Phase two's Recover is `new PokemonMove(MoveId.RECOVER, 0, -4)` — `ppUp` −4, so 1 PP, not −4 priority.
-// Phase one can't be knocked out: `Pokemon.damage` caps damage at `hp - 1` while the classic final boss is in form
-// 0 on its last shield, and `getMinimumSegmentIndex` keeps that shield up. `DamageAnimPhase.end` then calls
-// `initFinalBossPhaseTwo`, which hands Eternamax a **non-transferrable Mini Black Hole** — a
-// `TurnHeldItemTransferModifier` that takes one of your held items every turn — regenerates its moveset at form 1
-// and **turns the battle into a double**. Phase one itself carries no held items at all
-// (`generateEnemyModifiers` returns early for the classic final boss) and has no passive ability.
+// The classic final boss, all read and none rolled (game-code.md §12).
 const ETERNATUS_FACTS = [
   { good: false, text: "phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax" },
   { good: false, text: "Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double" },
-  // `new PokemonMove(RECOVER, 0, -4)`: the third argument is `ppUp`, not priority, and `getMovePp` is
-  // `pp + ppUp × toDmgValue(pp / 5)` — 5 + (−4 × 1) = **1 PP**, at Recover's own normal priority. It heals half its
-  // HP once and then the move is spent, which is a reason to keep the pressure on rather than to fear a heal loop.
+  // `new PokemonMove(MoveId.RECOVER, 0, -4)`'s −4 is `ppUp`, not priority: this line once warned of a −4-priority
+  // Recover (#179).
   { good: true, text: "Eternamax's Recover has 1 PP (ppUp −4): it can heal half its bar exactly once" },
   { good: false, text: "phase 1's Cosmic Power raises its defences every use — stalling makes it worse" },
   { good: true, text: "it carries no held items in phase 1 and has no passive ability" },
 ];
-// Who is carrying the most held-item stacks: those are what the Mini Black Hole eats first.
 const heldStacks = (s, party) => party.map(p => ({
   name: p.name,
   n: (s.modifiers ?? []).filter(m => m?.pokemonId != null && m.pokemonId === p.id)
@@ -165,8 +104,6 @@ const eternatusCard = (s, model, party) => {
   const foe = model?.foes?.[0] ?? null;
   const carrying = heldStacks(s, party);
   const facts = [...ETERNATUS_FACTS];
-  // Worth saying only when there is somewhere to spread to and one mon is holding most of it: the thief takes one
-  // item a turn from whatever is on the field, so a stack on a single mon is a stack handed over.
   if (party.length > 1 && carrying[0]?.n >= 3 && carrying[0].n >= (carrying[1]?.n ?? 0) * 2) {
     facts.push({ good: false, text: `${carrying[0].name} carries ${carrying[0].n} held items — spread them before 200` });
   }
@@ -176,9 +113,8 @@ const eternatusCard = (s, model, party) => {
   return { foe: foe && { name: foe.name, level: foe.level, types: foe.types, segments: foe.segments, moves: foe.moves }, facts };
 };
 
-// ---- The model the card draws. One replay at most (the next big fight's), and only when it is close enough to
-// prepare for. Cached like the preview: the schedule walks thirty waves through `isFixedBattle`, which builds a
-// `FixedBattleConfig` and runs the challenge hooks each time, and the panel redraws every second.
+// Memoised: the schedule calls `isFixedBattle` for every wave it walks, and each call builds a config and runs the
+// challenge hooks (game-code.md §12).
 export const aheadModel = run => {
   const s = run.scene;
   const wave = run.facts.wave;
@@ -188,15 +124,12 @@ export const aheadModel = run => {
 
 const build = (run, wave) => {
   const s = run.scene;
-  // The calendar answers what each wave is; naming it for a reader is this card's own job.
   const schedule = bigFightsAhead(s, wave + 1).map(f => ({ ...f, label: KIND_LABEL[f.kind] }));
   const next = schedule[0] ?? null;
   const heal = nextHeal(s, wave + 1);
   const party = run.facts.party;
   const luck = partyLuck(party, s, gameEvents());
 
-  // A preview only for the fight itself, and only once it is near: a replay for a wave 20 away is a cost with no
-  // advice attached, and the inputs it reads will have moved long before then.
   const model = next && next.wave - wave <= LOOKAHEAD ? previewFor(run, next.wave) : null;
   const named = model && !model.unavailable ? model : null;
   if (next) {
@@ -206,32 +139,23 @@ const build = (run, wave) => {
     next.double = named?.double ?? null;
     next.bars = (named?.foes ?? []).reduce((t, f) => t + Math.max(0, (f.segments ?? 0) - 1), 0);
     next.exact = named?.confidence?.foes === "exact";
-    // What beating it pays, when the fixed-battle table pins it. Exact, and a reason to spend on getting there.
     next.rewards = rewardRules(s, next.wave);
   }
-  // The run's last wave, which is worth preparing for earlier than its roster is worth reading.
   const final = schedule.find(f => f.kind === "final");
   const finalNear = final && final.wave - wave <= FINAL_NOTICE;
   return {
     wave, next, heal: heal == null ? null : { wave: heal, in: heal - wave },
-    // The stretch the rewards card spends against: how many big fights stand between here and the next full heal.
     fightsBeforeHeal: heal == null ? schedule.length : schedule.filter(f => f.wave < heal).length,
     schedule: schedule.slice(0, 4).map(f => ({ ...f, in: f.wave - wave })),
     readiness: named ? readiness(named, partyProfile(party.filter(p => p.hp > 0))) : null,
     luck: { value: luck, grade: LUCK_GRADES[luck] ?? String(luck), upgradePct: Math.round(upgradeChance(luck) * 1000) / 10 },
-    // What the rewards for the wave just cleared are pinned to — the fixed battle you have already won, not the
-    // one ahead. This is what decides whether luck can upgrade the screen as first rolled (a reroll drops the pin).
+    // The wave just cleared, not the one ahead: its rewards are the screen on show.
     thisWave: rewardRules(s, wave),
     eternatus: finalNear ? eternatusCard(s, next?.kind === "final" ? named : null, party) : null,
   };
 };
 
-// ---- The foes a move being learned now will be used against (#122). A learned move is kept for the run, so it is
-// judged against the next big fight rather than whatever the next wave rolls: that is where a Taunt or a burn
-// decides a run, and the roster is only read once the fight is near (LOOKAHEAD), so both the learn card and the
-// rewards card see the same foes or none. Plain data, as the preview hands it over.
-// A look-ahead the run read could not build hands the learn card its reason instead, so the card can say it judged
-// the move blind rather than say nothing.
+// The next big fight's foes, which a learned move is judged against (#122).
 export const learnRoster = model => {
   if (model?.unavailable) return { unavailable: model.unavailable };
   const next = model?.next;
@@ -239,14 +163,10 @@ export const learnRoster = model => {
   return { wave: next.wave, exact: !!next.exact, foes: next.foes };
 };
 
-// ---- How the card and its one-line summary name the fight ahead.
 export const aheadIn = n => (n === 1 ? "next wave" : `in ${n}`);
 
-// `Cynthia`, `gym leader`, `boss` — the trainer's own name when the preview could name it, else what the calendar
-// says it is. A fight the preview can only half-believe carries the preview's own `~`.
 export const aheadWho = a => (a.next.trainer ? `${a.next.trainer}${a.next.exact ? "" : "~"}` : a.next.label);
 
-// `Cynthia in 3 (W195) risky — nothing hits Garchomp super-effectively; 2 big fights before the next full heal`.
 export const aheadSummary = a => {
   if (!a?.next) return null;
   const reasons = [...(a.readiness?.notes ?? []).filter(n => !n.good).map(n => n.text),

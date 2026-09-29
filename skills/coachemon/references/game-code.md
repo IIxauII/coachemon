@@ -499,7 +499,7 @@ Poison type, the user's `IGNORE_ACCURACY` tag when its last Lock-On or Mind Read
 
 **Priority**: `move.getPriority(user, simulated = true)` (`move.ts:1191`) = base priority + `IncrementMovePriorityAttr` (Grassy Glide) +
 `ChangeMovePriorityAbAttr` (`ab-attrs.ts:3590`): Prankster status moves +1 (`src/data/abilities/init-abilities.ts:1082`),
-Gale Wings Flying moves at full HP +1 (`:1204`), Triage heals +3 (`:1410`). Pure. Gale Wings calls `getMoveType`, which needs the sandbox when the type can change (§4).
+Gale Wings Flying moves at full HP +1 (`:1204`), Triage +3 on `triageMove()` moves, draining attacks included (`:1410`). Pure. Gale Wings calls `getMoveType`, which needs the sandbox when the type can change (§4).
 Bracket: `move.getPriorityModifier(user, true)` (`move.ts:1199`) returns FIRST when the user has a `BYPASS_SPEED` tag.
 It returns LAST through `ChangeMovePriorityInBracketAbAttr` (`ab-attrs.ts:3614`): Stall on any move (`init-abilities.ts:720`),
 Mycelium Might on status moves (`:2097`). Otherwise NORMAL. Pure.
@@ -1209,11 +1209,20 @@ fork at `w` (`:81`).
 getPartyLuckValue(party))` (`src/field/arena.ts:577`: a luck-shifted tier roll, `randSeedItem` of the pool, up to ten
 retries on a legendary BST mismatch); a Golden Bug Net holder's `randSeedInt(10)` (`src/phases/encounter-phase.ts:115`);
 then `addEnemyPokemon` (`src/battle-scene.ts:916`). That constructor draws ability, id (the IVs), gender, nature
-(`src/field/pokemon.ts:340`–`418`), the moveset and shiny unless shiny-locked (`:6404`–`6408`), a trainer member's IVs
-(`:6432`), and a boss's second IV set (`src/battle-scene.ts:941`). `isEncounterShinyLocked()`
-(`src/phases/encounter-phase.ts:317`) therefore changes the draw count. The scene wrapper's third argument is
+(`src/field/pokemon.ts:340`–`418`), the moveset (`:6404`), a trainer member's IVs (`:6432`), and a boss's second IV set
+(`src/battle-scene.ts:941`). The shiny check draws nothing — `trySetShiny` (`src/field/pokemon.ts:2865`) compares the
+id already drawn — and a shiny's variant is rolled in a fork at the mon's id on the wave seed (`:2958`). So
+`isEncounterShinyLocked()` (`src/phases/encounter-phase.ts:317`: the END biome, and either Endless — Spliced Endless
+included — or Fresh Start; wild spawns only) changes the shiny flag and no stream draw. The scene wrapper's third argument is
 `fromArenaPool`; the arena method's is `attempt`, so calling the arena method with the scene's argument list is a
 different draw (retry counter 1, no luck).
+
+Members are generated in slot order, each stored in `enemyParty[e]` before the next (`src/phases/encounter-phase.ts:103`–
+`195`), and a later member reads the earlier ones off `currentBattle`. `genPartyMember` reads `enemyLevels[index]`
+(`src/field/trainer.ts:312`), `waveIndex` (`:437`, `:477`) and `enemyParty` (the named-double pool `:357`, a
+same-species slot `:413`, balanced types `:489`, the duplicate-species reroll through `getEnemyParty()` `:544`). The
+`EnemyPokemon` constructor reads `enemyParty.length` (`src/field/pokemon.ts:6379`) and `waveIndex` (`:427`, and for a
+trainer member's IV floor `:6429`), never `enemyLevels`.
 
 **So**: a fork is exact from any point in the run; the stream is only as good as a replay that draws what the game
 draws, in order. A fork is exact about its own roll, **not about its inputs**: a generic trainer's members are each
@@ -1906,9 +1915,10 @@ Safeguard (`:4865`). The audit uses the type checks only.
 
 **Priority and speed.** `Move.getPriority(user, simulated = true)` (`src/data/moves/move.ts:1191`) — pure when
 simulated: `move.priority`, then `IncrementMovePriorityAttr`, then `ChangeMovePriorityAbAttr` — Prankster +1 on status
-moves, Gale Wings +1 on Flying moves at full HP, Triage +3 on healing moves (`src/data/abilities/init-abilities.ts:1083`,
-`:1204`, `:1411`). Only Gale Wings makes an attack faster, so it is the one ability the audit counts. On every pop the
-move queue runs `sortInSpeedOrder` (`src/utils/speed-order.ts:21`) — groups shuffled in a fork at
+moves, Gale Wings +1 on Flying moves at full HP, Triage +3 on moves flagged `triageMove()`
+(`src/data/abilities/init-abilities.ts:1083`, `:1204`, `:1411`). That flag is on draining attacks as well as heals —
+Absorb and Mega Drain carry it (`src/data/moves/move.ts:9672`–`9677`) — so Gale Wings and Triage both make an attack
+faster. On every pop the move queue runs `sortInSpeedOrder` (`src/utils/speed-order.ts:21`) — groups shuffled in a fork at
 `turn * 1000 + groups` on the wave seed (`:35`), stable-sorted by `getEffectiveStat(SPD)` descending, reversed under
 Trick Room (`:79`) — then sorts by timing modifier, `getPriority` and the in-bracket modifier (Quick Claw)
 (`src/queues/move-phase-priority-queue.ts:23`, `:73`). The audit compares raw `getStat(SPD)` on both sides — stages,
