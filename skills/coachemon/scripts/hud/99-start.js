@@ -8,7 +8,7 @@ import { EVENT_KINDS, cardEvent, cardSummary } from "./60-card.js";
 import { el, wireCard } from "./90-render.js";
 import { lastFailure, shownCard, shownGroups, tick } from "./98-tick.js";
 
-// By hand from the relay's `extension/src/relay/channel.ts`; `test/cardeventtest.mjs` fails when they drift.
+// By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
 const hudBuild = typeof COACHEMON_BUILD === "string" ? COACHEMON_BUILD : null;
 let sentCard = null, sentError = null;
@@ -62,7 +62,8 @@ const timedTick = () => {
 };
 const timer = setInterval(timedTick, 1000);
 timedTick();
-// probe.js reads `summary()` and `journal()`, and src/page/card.ts reads `card()`: renaming one breaks them.
+// Called from outside the bundle — probe.js, src/page/card.ts, 00-prelude.js's re-inject and the skill's docs — so no
+// method here is renamed alone.
 window.__coachHud = {
   stop: () => { clearInterval(timer); el.remove(); dropChunkHandoff(); delete window.__coachHud; },
   stats: () => ({ breaches: sandboxBreachCount(), lastTickMs, maxTickMs }),

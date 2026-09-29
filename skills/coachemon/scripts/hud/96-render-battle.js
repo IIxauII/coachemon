@@ -133,6 +133,7 @@ export const drawBattle = m => {
         : !r.pick && !f ? line("➜", h("span", dim, "no damaging move lands")) : null,
       r.notes?.length ? line("·", h("span", dim, r.notes.join(" · "))) : null);
   });
+  // The same rows as 96-render-rewards' road, which a file on this layer can't import: change both.
   const road = [...drawPreview(m.preview), ...drawAhead(m.ahead)];
   return [
     some("act", "Now", actSummary(m), field),

@@ -45,7 +45,7 @@ const setShown = card => { shown = card; groups = undefined; };
 let failure = null;
 export const lastFailure = () => failure;
 
-// Runs outside `sandbox`: plain reads only.
+// Runs outside `sandbox`, so nothing here may write game state or draw from its RNG.
 // @only tests: accountRead
 export const accountRead = s => {
   const gd = s.gameData ?? {};
@@ -68,13 +68,14 @@ export const tick = () => {
     failure = null;
     const s = battleScene();
     if (!s?.ui) { el.style.display = "none"; setShown(null); return; }
+    // Before `readCard`: `previewArm` and `rerollArm` overwrite the prediction these two score.
     rerollCheck(s);
     previewCheck(s);
     const card = readCard(s, accountRead(s));
     // Only the tick arms, so a look-ahead read can't take the prediction's place.
     if (card?.preview && card.preview.wave === card.wave + 1) previewArm(card.preview);
     if (card?.kind === "rewards") rerollArm(s, card.rerollAhead);
-    // Every refresh, not only on the encounter card: what the game did with the pick lands on the waves after it.
+    // Every refresh, whatever the card: the journal traces the fight and the rewards an encounter starts.
     journalCheck(s, card);
     if (!card) { el.style.display = "none"; setShown(null); return; }
     setShown(card);
