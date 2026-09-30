@@ -1,6 +1,6 @@
 // Runs in the PokéRogue page world and writes nothing to the game. The result is JSON on
 // `document.documentElement.dataset.mcpOut`, where an isolated-world caller (Orion's `do JavaScript`) can read it off
-// the DOM. `"__MODE__"` becomes read.sh's mode.
+// the DOM. hud-bundle.mjs sets `MODE` to read.sh's mode.
 import { TYPES } from "./hud/01-core.js";
 import { learnState, rewardsScreen } from "./hud/02-screens.js";
 
