@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node src/server.ts",
     "smoke": "node scripts/smoke.ts",
-    "test": "node --test \"src/**/*.test.ts\" && node skills/coachemon/scripts/test/run.mjs",
+    "lag:run": "node scripts/autoplay.ts --lag",
+    "lag:report": "node scripts/lag-report.ts",
+    "test": "node --test \"src/**/*.test.ts\" \"scripts/**/*.test.ts\" && node skills/coachemon/scripts/test/run.mjs",
     "typecheck": "tsc",
     "enums:gen": "node scripts/gen-enums.ts",
     "listing:render": "node scripts/listing/render.ts",

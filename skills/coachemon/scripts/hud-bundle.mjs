@@ -1,6 +1,6 @@
 // Prints the HUD as one injectable script, every hud/*.js file in name order inside one IIFE; any other mode prints
 // probe.js with only the HUD modules it imports. Both have `"__MODE__"` replaced by the mode.
-// Usage: node hud-bundle.mjs <hud|hud-off|battle|starters|journal|stats>
+// Usage: node hud-bundle.mjs <hud|hud-off|battle|starters|journal|stats|drain>
 //
 // Modules. Every file becomes a function with its own scope, and sees only its imports, the injected enums and page
 // globals (`window`, `document`, `Phaser`). A name it never imported is a ReferenceError when that line runs, not a

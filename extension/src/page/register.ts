@@ -13,6 +13,9 @@ import { STORE_COMMANDS } from "../../../src/protocol/commands.ts";
 
 export type Handler = { kind: "read" | "act"; run: (L: any, args: any) => unknown };
 
+/** The panel's meter, which the HUD bundle puts on `window` (`hud/01-meter.js`). */
+type Meter = { driver?: <T>(fn: () => T) => T };
+
 /** What a page instance leaves on `window`, so the next copy can replace it in place (extension-distribution.md §9.6). */
 export type PageInstance = { build: string; stop: () => void };
 
@@ -22,7 +25,7 @@ export type PageDeps = {
   build: string;
   isolated: boolean;
   /** `window`, never "host": CONTEXT.md reserves that word for Apple's host app, which is the browser. */
-  global: { __coachemonPage?: PageInstance };
+  global: { __coachemonPage?: PageInstance; __coachMeter?: Meter };
   extra?: Record<string, Handler>;
 };
 
@@ -68,9 +71,13 @@ export function startPage(d: PageDeps): PageInstance {
     // No reply at all, so the relay answers `no-handler`, the one code for "nobody here".
     if (!handler) return;
     const args = (cmd.args && typeof cmd.args === "object" ? cmd.args : {}) as Record<string, unknown>;
+    const name = cmd.name;
     try {
       // The extension hands the generated mode enums in by importing them; the CDP link inlines them as JSON (#164).
-      const result = dispatch(locate, fine, disc, handler.run, cmd.name, handler.kind, PAGE_MODES, args);
+      const run = () => dispatch(locate, fine, disc, handler.run, name, handler.kind, PAGE_MODES, args);
+      // Read at each command: the panel's meter comes and goes with the HUD (#499).
+      const meter = d.global.__coachMeter;
+      const result = typeof meter?.driver === "function" ? meter.driver(run) : run();
       dispatchEvent(EVENT.reply, { id: cmd.id, ok: true, result });
     } catch (e) {
       // Only the message crosses (extension-distribution.md §9.7).

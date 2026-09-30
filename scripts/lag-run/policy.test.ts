@@ -1,0 +1,101 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { decide, freshMemory, type Card, type Menu, type Opt } from "./policy.ts";
+
+const opts = (labels: string[], extra: Partial<Opt>[] = []): Opt[] => labels.map((label, i) => ({ i, label, ...extra[i] }));
+const command = (active: string): Menu => ({ screen: "COMMAND", wave: 3, text: `What will\n${active} do?`, options: opts(["Fight", "Ball", "Pokémon", "Run"]) });
+const fight = (labels: string[], power: number[]): Menu => ({
+  screen: "FIGHT", wave: 3, options: opts(labels), extra: { moves: labels.map((l, i) => (l === "-" ? null : { pp: 10, power: power[i] })) },
+});
+const party = (screen: string, rows: [string, { fainted?: boolean; active?: boolean }?][]): Menu => ({
+  screen, wave: 3, options: [...rows.map(([label, o], i) => ({ i, label, fainted: false, active: false, ...o })), { i: 6, label: "Cancel", synthetic: true }],
+});
+const battle = (act: string, wave = 3): Card => ({ kind: "battle", card_wave: wave, groups: [{ id: "act", label: "Now", summary: act, rows: [] }] });
+const card = (kind: string, act: string): Card => ({ kind, card_wave: 3, groups: [{ id: "act", label: "Now", summary: act, rows: [] }] });
+
+test("the card's move is the one used, and its target is the one aimed at (#499)", () => {
+  const mem = freshMemory();
+  assert.deepEqual(decide(command("Charmander"), battle("Charmander Ember → Rattata · 1 hit"), mem), { tool: "select_option", args: { label: "Fight" }, by: "card" });
+  assert.deepEqual(decide(fight(["Scratch", "Growl", "Ember", "-"], [40, 0, 40, 0]), null, mem), { tool: "select_option", args: { label: "Ember" }, by: "card" });
+  const target: Menu = { screen: "TARGET_SELECT", wave: 3, options: opts(["Pidgey", "Rattata"]) };
+  assert.deepEqual(decide(target, null, mem).args, { label: "Rattata" });
+});
+
+test("a card naming a benched mon switches to it, and the commit step is the switch-out (#499)", () => {
+  const mem = freshMemory();
+  assert.deepEqual(decide(command("Charmander"), battle("Squirtle Water Gun → Rattata"), mem).args, { label: "Pokémon" });
+  const screen = party("PARTY/SWITCH", [["Charmander Lv.7 20/24", { active: true }], ["Bulbasaur Lv.6 0/22 FNT", { fainted: true }], ["Squirtle Lv.5 20/20"]]);
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Squirtle Lv.5 20/20" });
+  const commit = decide({ screen: "PARTY/SWITCH:options", wave: 3, options: opts(["Switch", "Summary", "Cancel"]) }, null, mem);
+  assert.deepEqual(commit, { tool: "select_option", args: { label: "Switch" }, by: "card", intent: "switch" });
+});
+
+test("a switch the party screen cannot make is cancelled once, and the next command fights (#499)", () => {
+  const mem = freshMemory();
+  decide(command("Charmander"), battle("Squirtle Water Gun → Rattata"), mem);
+  const screen = party("PARTY/SWITCH", [["Charmander Lv.7 20/24", { active: true }], ["Squirtle Lv.5 0/20 FNT", { fainted: true }]]);
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Cancel" });
+  assert.deepEqual(decide(command("Charmander"), battle("Squirtle Water Gun → Rattata"), mem).args, { label: "Fight" });
+});
+
+test("without a card for this wave the rule plays: fight, strongest move (#499)", () => {
+  const mem = freshMemory();
+  assert.deepEqual(decide(command("Charmander"), battle("Squirtle Water Gun", 2), mem), { tool: "select_option", args: { label: "Fight" }, by: "rule" });
+  assert.deepEqual(decide(fight(["Scratch", "Ember", "-", "-"], [40, 60, 0, 0]), null, mem), { tool: "select_option", args: { label: "Ember" }, by: "rule" });
+  assert.deepEqual(decide(command("Charmander"), null, freshMemory()).by, "rule");
+});
+
+test("a double never switches on the card, and each slot takes its own move (#499)", () => {
+  const mem = freshMemory();
+  assert.deepEqual(decide(command("Squirtle"), battle("Charmander Ember → Pidgey ; Squirtle Water Gun → Rattata"), mem).args, { label: "Fight" });
+  assert.deepEqual(decide(fight(["Tackle", "Water Gun"], [40, 40]), null, mem).args, { label: "Water Gun" });
+});
+
+test("a faint is replaced by the mon the card plays, else the first one standing (#499)", () => {
+  const rows: [string, { fainted?: boolean; active?: boolean }?][] = [["Charmander Lv.7 0/24 FNT", { fainted: true, active: true }], ["Bulbasaur Lv.6 22/22"], ["Squirtle Lv.5 20/20"]];
+  assert.deepEqual(decide(party("PARTY/FAINT_SWITCH", rows), battle("Squirtle Water Gun → Rattata"), freshMemory()).args, { label: "Squirtle Lv.5 20/20" });
+  assert.deepEqual(decide(party("PARTY/FAINT_SWITCH", rows), null, freshMemory()).args, { label: "Bulbasaur Lv.6 22/22" });
+  const commit = decide({ screen: "PARTY/FAINT_SWITCH:options", wave: 3, options: opts(["Send Out", "Summary", "Cancel"]) }, null, freshMemory());
+  assert.equal(commit.intent, "replace");
+});
+
+test("the free switch after a foe goes down is taken only when the card plays a benched mon (#499)", () => {
+  const rows: [string, { fainted?: boolean; active?: boolean }?][] = [["Charmander Lv.7 20/24", { active: true }], ["Squirtle Lv.5 20/20"]];
+  assert.deepEqual(decide(party("PARTY/POST_BATTLE_SWITCH", rows), battle("Squirtle Water Gun → Pidgey"), freshMemory()).args, { label: "Squirtle Lv.5 20/20" });
+  assert.deepEqual(decide(party("PARTY/POST_BATTLE_SWITCH", rows), battle("Charmander Ember → Pidgey"), freshMemory()).args, { label: "Cancel" });
+});
+
+test("a learn follows the card: forget what it names, or decline (#499)", () => {
+  const ask: Menu = { screen: "CONFIRM", wave: 3, text: "Should a move be forgotten and\nreplaced with Flamethrower?", options: opts(["Yes", "No"]) };
+  const mem = freshMemory();
+  assert.deepEqual(decide(ask, card("learn", "Learn → forget Ember · ⚠ loses only Fire move"), mem), { tool: "select_option", args: { label: "Yes" }, by: "card", intent: "learn" });
+  const rows: Menu = { screen: "SUMMARY/LEARN_MOVE", wave: 3, options: opts(["Scratch", "Growl", "Ember", "Smokescreen", "Flamethrower"], [{}, {}, {}, {}, { new: true }]) };
+  assert.deepEqual(decide(rows, card("learn", "Learn → forget Ember"), mem).args, { label: "Ember" });
+
+  assert.deepEqual(decide(ask, card("learn", "Skip — not an upgrade over Ember"), freshMemory()).args, { label: "No" });
+  const stop: Menu = { screen: "CONFIRM", wave: 3, text: "Stop trying to teach\nFlamethrower?", options: opts(["Yes", "No"]) };
+  assert.deepEqual(decide(stop, null, freshMemory()).args, { label: "Yes" });
+  assert.deepEqual(decide(rows, null, freshMemory()).args, { label: "Flamethrower" }, "no forget named: decline");
+});
+
+test("the shop buys what the card buys, once each, then takes its reward for the mon it names (#499)", () => {
+  const shop: Menu = {
+    screen: "MODIFIER_SELECT", wave: 3, options: [
+      { i: "0:0", label: "Reroll", kind: "buttons", col: 0, cost: null },
+      { i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 },
+      { i: "1:1", label: "Leftovers", kind: "reward", col: 1, cost: 0 },
+      { i: "2:0", label: "Potion", kind: "shop", col: 0, cost: 200 },
+    ],
+  };
+  const rewards = card("rewards", "take Leftovers → Squirtle · buy Potion");
+  const mem = freshMemory();
+  assert.deepEqual(decide(shop, rewards, mem), { tool: "select_option", args: { index: "2:0" }, by: "card", intent: "shop" });
+  assert.deepEqual(decide(party("PARTY/MODIFIER", [["Charmander Lv.7 20/24"], ["Squirtle Lv.5 20/20"]]), null, mem).args, { label: "Charmander Lv.7 20/24" }, "a buy names no mon");
+  assert.deepEqual(decide(shop, rewards, mem), { tool: "select_option", args: { index: "1:1" }, by: "card", intent: "shop" });
+  assert.deepEqual(decide(party("PARTY/MODIFIER", [["Charmander Lv.7 20/24"], ["Squirtle Lv.5 20/20"]]), null, mem).args, { label: "Squirtle Lv.5 20/20" });
+});
+
+test("with no rewards card the shop takes the first reward (#499)", () => {
+  const shop: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 }] };
+  assert.deepEqual(decide(shop, null, freshMemory()), { tool: "select_option", args: { index: "1:0" }, by: "rule", intent: "shop" });
+});

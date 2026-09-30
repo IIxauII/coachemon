@@ -28,6 +28,14 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
       document.documentElement.dataset.mcpOut = JSON.stringify({ hudActive: !!window.__coachHud, meterActive: !!window.__coachMeter, stats });
       return;
     }
+    // The read is the driver's own work, so it lands in the window it opens (#499).
+    if (MODE === "drain") {
+      let stats = null;
+      const m = window.__coachMeter;
+      try { stats = m?.driver ? m.driver(() => m.drain()) : null; } catch {}
+      document.documentElement.dataset.mcpOut = JSON.stringify({ hudActive: !!window.__coachHud, meterActive: !!m, stats });
+      return;
+    }
     const game = Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
     const s = game.scene.getScene("battle");
     // Mid-reload or on the title screen the battle scene exists without its UI yet.
