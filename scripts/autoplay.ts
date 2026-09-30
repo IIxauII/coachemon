@@ -16,8 +16,8 @@ import { decide, freshMemory, heard, readsCard, refused, type Card, type Menu } 
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
 const LAG = process.argv.includes("--lag");
-const WAVES = Number(arg("--waves", LAG ? "20" : "1"));
-const MAX_CALLS = Number(arg("--max-calls", LAG ? "20000" : "200"));
+const WAVES = Number(arg("--waves", LAG ? "50" : "1"));
+const MAX_CALLS = Number(arg("--max-calls", LAG ? "60000" : "200"));
 const TEAM = arg("--team", "Larvitar,Machop,Growlithe").split(",");
 const SLOT = arg("--slot", "");
 const LOG = arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
@@ -51,10 +51,12 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<R
 
 const tab = LAG ? orion() : null;
 let hidden = 0;
+let facts: { lang?: string | null; sprites?: unknown[] } = {};
 function drain() {
   const d = tab!.drain();
   if (!d.stats) throw new Error(`no meter to drain (${d.error ?? `hudActive ${d.hudActive}, meterActive ${d.meterActive}`}): the extension in Orion predates the lag run (#499)`);
   hidden += (d.stats.frames as { hidden?: number } | undefined)?.hidden ?? 0;
+  facts = (d.stats.facts as typeof facts | undefined) ?? facts;
   return d.stats;
 }
 
@@ -106,7 +108,16 @@ while (!stop && calls < MAX_CALLS) {
   if (read.status !== "ok" && read.status !== "stuck") { stop = `status:${read.status}`; console.log(JSON.stringify(read, null, 1)); break; }
   const menu = read as unknown as Menu;
   const wave = menu.wave;
-  if (wave !== lastWave) waveCalls = calls;
+  if (wave !== lastWave) {
+    waveCalls = calls;
+    if (LAG && wave !== null) {
+      type Mon = { species?: string | null; level?: number | null; boss?: boolean | null } | null;
+      const g = await call("get_state", { detail: "full" });
+      log({ kind: "wave", wave, battleType: g.battleType ?? null, double: g.double ?? null, trainer: g.trainer ?? null,
+        boss: ((g.enemy as Mon[] | null) ?? []).some(m => m?.boss === true),
+        levels: Object.fromEntries(((g.party as Mon[] | null) ?? []).flatMap(m => (m?.species && m.level ? [[m.species, m.level]] : []))) });
+    }
+  }
   // A loop the same-screen guard misses alternates screens: a shop, its party screen, back.
   if (calls - waveCalls > STALL) { stop = `stalled:${menu.screen}`; break; }
   lastWave = wave ?? lastWave;
@@ -116,7 +127,9 @@ while (!stop && calls < MAX_CALLS) {
   lastScreen = String(menu.screen);
   if (repeats > 30) { stop = `same-screen:${menu.screen}`; break; }
   const card = readsCard(menu.screen) ? ((await call("read_card")) as unknown as Card) : null;
+  const lead = mem.swapLead;
   const d = decide(menu, card, mem);
+  const retry = mem.swapLead !== null && mem.swapLead !== lead;
   by[d.by]++;
   const r = await call(d.tool, d.args);
   const messages = r.messages ?? [];
@@ -124,7 +137,7 @@ while (!stop && calls < MAX_CALLS) {
   if (r.battleType === 1 || messages.some(m => /would like to battle/.test(m))) trainerWave = (r.wave as number | null) ?? wave;
   if (LAG) {
     const trainer = trainerWave !== null && trainerWave === wave;
-    log({ kind: "window", wave, screen: menu.screen, action: { tool: d.tool, args: d.args, by: d.by, intent: d.intent ?? null }, messages,
+    log({ kind: "window", wave, screen: menu.screen, action: { tool: d.tool, args: d.args, by: d.by, intent: d.intent ?? null }, messages, retry,
       moments: momentsOf({ intent: d.intent, messages, trainer }), trainer, stats: drain() });
   }
   console.log(`${String(wave).padStart(3)} ${String(menu.screen).padEnd(28)} ${d.by.padEnd(4)} ${d.tool} ${JSON.stringify(d.args).padEnd(30)} → ${r.status ?? r.error} ${r.screen ?? ""} ${messages.length ? JSON.stringify(messages) : ""}`);
@@ -142,7 +155,7 @@ while (!stop && calls < MAX_CALLS) {
   if (r.status !== "ok" && r.status !== "timed_out" && r.status !== "stuck") { stop = `status:${r.status}`; console.log(JSON.stringify(r.diagnostic ?? r, null, 1)); break; }
 }
 if (!stop) stop = "max-calls";
-const summary = { stop, calls, startWave, wave: lastWave, wallMs: Date.now() - t0, by, hidden, log: LOG };
+const summary = { stop, calls, startWave, wave: lastWave, wallMs: Date.now() - t0, by, hidden, lang: facts.lang, sprites: facts.sprites, log: LOG };
 log({ kind: "summary", ...summary });
 console.log(JSON.stringify(summary));
 await client.close();

@@ -3,6 +3,7 @@
  * up, per moment and per card kind. A gap a hub command ran inside is the driver's, counted apart and never compared.
  */
 import { MOMENT_NAMES, MOMENTS, type Moment } from "./moments.ts";
+import { formatFacts, formatWaves, gameFacts, perWave, type WaveRecord, type WaveWindow } from "./waves.ts";
 
 const GAP_MS = 50;
 
@@ -77,16 +78,18 @@ export function compare(before: Window[][], after: Window[][]): Comparison {
 export type RunLog = {
   header: { team?: string[]; slot?: number; waves?: number; started?: string } | null;
   windows: Window[];
+  waves: WaveRecord[];
   summary: { stop?: string; wallMs?: number; wave?: number | null; calls?: number; by?: Record<string, number>; hidden?: number } | null;
 };
 
 export function parseRun(text: string): RunLog {
-  const out: RunLog = { header: null, windows: [], summary: null };
+  const out: RunLog = { header: null, windows: [], waves: [], summary: null };
   for (const line of text.split("\n")) {
     if (!line.trim()) continue;
     const o = JSON.parse(line) as { kind?: string };
     if (o.kind === "run") out.header = o as RunLog["header"];
     else if (o.kind === "window") out.windows.push(o as unknown as Window);
+    else if (o.kind === "wave") out.waves.push(o as unknown as WaveRecord);
     else if (o.kind === "summary") out.summary = o as RunLog["summary"];
   }
   return out;
@@ -94,6 +97,10 @@ export function parseRun(text: string): RunLog {
 
 const spread = (x: Dist) => (x ? `${x.p50} / ${x.p95} / ${x.max}` : "–");
 const count = (x: Dist) => String(x?.n ?? 0);
+
+/** The waves a run finished, up to the length it was started for. */
+export const wavesOf = (run: RunLog) =>
+  perWave(run.windows as unknown as WaveWindow[], run.waves, run.header?.waves ?? Infinity, run.summary?.stop === "waves-reached");
 
 export function formatRun(name: string, run: RunLog): string {
   const s = summarize(run.windows);
@@ -111,6 +118,7 @@ export function formatRun(name: string, run: RunLog): string {
   for (const m of MOMENTS) lines.push(s.moments[m].windows ? row(MOMENT_NAMES[m], s.moments[m]) : `| ${MOMENT_NAMES[m]} | not met | | | | | | |`);
   for (const [k, c] of Object.entries(s.kinds).sort()) lines.push(row(`card: ${k}`, c));
   lines.push(row("whole run", s.total));
+  lines.push("", formatFacts(gameFacts(run.windows as unknown as WaveWindow[])), "", formatWaves(wavesOf(run)));
   return lines.join("\n");
 }
 

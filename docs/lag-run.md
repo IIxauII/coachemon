@@ -1,9 +1,9 @@
 # The lag run
 
-The repeatable measurement every before/after comparison of the panel's lag is judged by (#484, built in #499). One
-run is autoplay on the Orion tab through the store hub: it starts a fresh Classic run with a fixed team in a spare
-save slot, plays waves 1–20 acting on the card's act line (switch, learn, shop), and drains the panel's meter after
-every action. A comparison is 3 runs before and 3 after, back to back, on the same day and the same game build.
+The repeatable measurement every before/after comparison of the overlay's lag is judged by (#484, built in #499,
+extended to wave 50 in #508). One run is autoplay on the Orion tab through the store hub: it starts a fresh Classic run
+with a fixed team in a spare save slot, plays waves 1–50 acting on the card's act line (switch, learn, shop), and
+drains the overlay's meter after every action. A comparison is 3 runs before and 3 after, back to back, on the same day and the same game build.
 
 ## Setup
 
@@ -12,7 +12,8 @@ Once per machine:
 - **Orion with the Coachemon store build of the commit under test.** `cd extension && npx wxt build -b chrome --mode
   store`, then load `extension/.output/chrome-mv3-store/` in Orion's extension manager. The meter's `drain` and the
   `driver` stamp are in it from #499 on; an older build makes the run stop at its first drain with `no meter to
-  drain`.
+  drain`. The game's language and missed sprites are in it from #504 on; an older build's report says `not in this
+  build` for both.
 - **Develop → Allow JavaScript from Apple Events** on in Orion. The run reads the meter and reloads the tab through
   AppleScript, as `read.sh orion` does.
 - **Auto-play allowed for pokerogue.net** in Orion's website settings. The run reloads the tab, and WebKit keeps a
@@ -39,17 +40,22 @@ npm run lag:run -- --slot 4
 ```
 
 The run refuses to start on a hidden tab, with Low Power Mode on, or with the tab's audio locked (`audio-locked`). It
-reloads the tab, waits for the title screen, starts the run and plays until the first command of wave 21, a lost run
+reloads the tab, waits for the title screen, starts the run and plays until the first command of wave 51, a lost run
 (`status:run_over`), a refusal, or a wave that has not ended in 1000 calls (`stalled:<screen>`). The server's `stuck`
 verdict is only advice: the run goes on. A lost battle is retried up to three times a wave. A retry replays the battle's
 seed, so the same plays would lose the same way: each retry opens by switching to the next benched mon, round the bench
-again once it runs out. Each action prints a line (`card` or `rule`: whether the card decided it). It ends with a
-summary line, and the log is at `.cache/lag-run/<start time>.jsonl`.
+again once it runs out. At the first read of every wave it asks `get_state` what the wave is (battle type, double,
+trainer, boss, the party's levels), a hub command like any other. Each action prints a line (`card` or `rule`: whether
+the card decided it). It ends with a summary line carrying the game's language and missed sprites, and the log is at
+`.cache/lag-run/<start time>.jsonl`.
 
-Options: `--team A,B,C` changes the team, `--waves N` the length (keep 20 for a comparison), `--log <file>` the log's
+Options: `--team A,B,C` changes the team, `--waves N` the length (keep 50 for a comparison), `--log <file>` the log's
 path.
 
-A run that stops early with `error:` or `status:` is not a lag run: fix what stopped it and run it again.
+**A usable run** reached wave 30. One that stops at wave 51 (`waves-reached`) is whole. One that stops earlier, lost
+or stalled, counts for the waves it finished: the wave it stopped on is left out of the report, since its numbers
+hold a lost battle's retries or a loop. A run that stops before wave 30 is not a lag run: fix what stopped it, or take
+it again. A comparison compares a wave only where both sides finished it, and says how many runs a side did.
 
 ## Report
 
@@ -66,6 +72,37 @@ npm run lag:report -- --before <b1> <b2> <b3> --after <a1> <a2> <a3>
 ```
 
 ## Reading it
+
+### Per wave
+
+The per-wave table is what every fix ticket reports before and after (#486). A comparison pools, wave by wave, the
+runs that finished that wave, and prints each cell as `before → after`.
+
+- **kind** is the wave's battle: `wild single`, `wild double`, `wild boss`, `trainer single` / `double`, `rival`,
+  `gym leader`, `elite four`, `champion`, `mystery encounter`. A trainer wave shows its intro's name, class and all.
+  `?` is a wave whose `get_state` did not answer.
+- **what happened** is what the numbers depend on: level-ups (the party's levels at this wave's first read against the
+  next's), moves learnt, our faints, our switches and the foe's, shop picks, and retries of a lost battle.
+- **turn card ms** is a refresh at `CommandPhase` that drew a new battle card: the freeze at a new turn's prompt. p95
+  / max and how many.
+- **preview recomputes** are refreshes whose `road` stage (the run read) took 5 ms or more: a cached read is under 2.
+  In brackets, how many landed in a phase other than a prompt (`CommandPhase`, `SelectTargetPhase`,
+  `SelectModifierPhase`, `LearnMovePhase`, `SwitchPhase`, `SelectBiomePhase`, `MysteryEncounterPhase` and the title
+  and starter screens), which is to
+  say inside an animation. Their `road` ms beside.
+- **shop card ms** is the wave's first refresh that drew the shop (`rewards`) card.
+- **overlay-made hitches** are gaps of 50 ms or more with 34 ms or more of the overlay's refreshes inside, and in
+  brackets that overlay ms summed.
+- **overlay share of hitch time** is the overlay's ms inside all gaps of 50 ms or more over those gaps' ms. Driver
+  gaps count in both.
+
+A refresh belongs to the wave the game was on when it ran; a gap to the wave of the refresh it held, else of the one
+before it. So the next wave's encounter, drawn during the last shop pick's window, is the next wave's.
+
+The line above the table says the game's **language** (`prLang`, unset in an English game) and the sprites the overlay
+asked the game for and missed, with how often: the evidence for or against the missing-sprite rebuild (#486).
+
+### Per moment
 
 Every action opens a **window** that runs until the next drain, so the animations an action starts land in its window.
 A window counts toward a **moment** when its action met it:
@@ -93,6 +130,6 @@ behind it.
 
 ## Cost
 
-No human time once set up. The baseline on #499 played waves 1–20 in 14.5 min, so a comparison of 6 runs is about
-1.5 h. Expect some runs to stop early (a lost run, a screen autoplay can't handle); those are run again and never enter
-a comparison. The trainer switch-out moment was not met in that baseline: the card rarely plays a switch-out.
+No human time once set up. Waves 1–20 took 9–15 min (#486), so expect 25–40 min for waves 1–50 and about 3 h for a
+comparison of 6 runs. Expect more runs to stop early than at wave 20: a lost run, a screen autoplay can't handle. The
+trainer switch-out moment was not met in the wave-20 baselines: the card rarely plays a switch-out.
