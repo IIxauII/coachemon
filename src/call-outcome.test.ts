@@ -32,7 +32,6 @@ const hung = read({ settled: false, reason: "encounter", mode: UiMode.MESSAGE, s
 const unmodelled = read({ mode: 999, screen: "UNKNOWN(999)", phaseName: "UnmodelledPhase", runLive: false, fine: "unmodelled" });
 const fight: Choice = { kind: "option", label: "Fight" };
 
-/** A reading call that settles on `r`. */
 function readCall(o: CallOutcomes, r: Ready) {
   const s = settled(r);
   o.waited(s);
@@ -45,7 +44,6 @@ function interrupt(o: CallOutcomes) {
   o.poll(login, 100);
 }
 
-/** A live run, then `GameOverPhase`. */
 function wipe(o: CallOutcomes) {
   o.poll(read(), 0);
   o.poll(read({ phaseName: "GameOverPhase", settled: false }), 100);

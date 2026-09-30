@@ -34,7 +34,6 @@ function tabSession(scene: Record<string, unknown>) {
   return { session, sent, keys, ensured: () => ensured };
 }
 
-/** A COMMAND screen that records the buttons reaching `processInput`. */
 function commandScene(inputs: number[]) {
   return {
     ui: {

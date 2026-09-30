@@ -11,7 +11,6 @@ after(() => {
   for (const h of hubs) h.close();
 });
 
-/** A hub on a port of its own, closed when the file's tests are done. `timeoutMs` and `idleMs` keep the tests quick. */
 async function hub(o: { timeoutMs?: number; idleMs?: number; onIdle?: () => void; onRetire?: () => void; version?: string } = {}): Promise<Hub> {
   const h = await startHub({ port: 0, version: o.version ?? "1.0.0", timeoutMs: o.timeoutMs ?? 300, ...o });
   hubs.push(h);
@@ -20,7 +19,7 @@ async function hub(o: { timeoutMs?: number; idleMs?: number; onIdle?: () => void
 
 type Client = Peer<ToClient, FromClient>;
 
-/** The hub's own view, which is also how a test waits for a frame sent on another socket to have landed. */
+/** The hub's own view, which is how a test waits for a frame sent on another socket to have landed. */
 async function state(c: Client): Promise<HubState> {
   c.send({ t: "state" });
   return c.take<HubState>(f => f.t === "state");
@@ -39,8 +38,6 @@ async function ask(c: Client, id: number, name: string, args: Record<string, unk
   c.send({ t: "cmd", id, name, args });
   return c.take<ClientReply>(f => f.t === "reply" && (f as ClientReply).id === id);
 }
-
-// --------------------------------------------------------------------- extension-distribution.md §7.4 auth
 
 test("the upgrade takes a local client and an extension origin, and 403s anything else (extension-distribution.md §7.4)", async () => {
   const h = await hub();
@@ -76,8 +73,6 @@ test("the hub answers a hello with the product marker, and says nothing before o
   assert.deepEqual(await client.take(f => f.t === "welcome"), welcome);
 });
 
-// ------------------------------------------------------------------ extension-distribution.md §7.5 routing
-
 test("a command goes to the one counted tab and its reply comes back on the client's own id (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   const ext = await readyTab(h.port, 77);
@@ -106,7 +101,6 @@ test("zero tabs refuse no-tab and more than one refuses tabs with the list, at o
   const many = await ask(client, 2, "menu");
   assert.equal(many.ok === false && many.code, "tabs");
   assert.equal(many.ok === false && many.tabs?.length, 2);
-  // Tabs are counted across browsers, so the list names both.
   assert.deepEqual(
     many.ok === false ? many.tabs?.map(t => t.target).sort() : null,
     ["chrome", "firefox"],
@@ -136,7 +130,6 @@ test("a dev build takes the dev table (extension-distribution.md §10.6)", async
 
 test("`dev-reload` reaches every dev build, needing no tab, and never a store build (extension-distribution.md §5.4)", async () => {
   const h = await hub();
-  // No tab anywhere: the dev loop's reload has to work on the build whose relay the last change broke.
   const dev = await fakeExtension(h.port, { flavour: "dev" });
   const store = await fakeExtension(h.port, { flavour: "store" });
   const client = await fakeClient(h.port);
@@ -199,8 +192,6 @@ test("a browser that disconnects mid-command refuses the command instead of hang
   assert.equal(r.ok === false && r.code, "no-tab");
 });
 
-// -------------------------------------------------------------------- extension-distribution.md §7.5 grant
-
 test("claim takes the grant and a second client's claim is contended until the holder's socket closes (extension-distribution.md §7.5)", async () => {
   const h = await hub();
   await readyTab(h.port, 1);
@@ -260,8 +251,6 @@ test("a pumping probe needs the grant and never takes it (extension-distribution
   await ext.take(f => f.t === "cmd");
 });
 
-// --------------------------------------------------------------------- extension-distribution.md §7.5 tabs
-
 test("a tab counts only once it is ready and its browser has consent (extension-distribution.md §7.5, §8.4)", async () => {
   const h = await hub();
   const ext = await fakeExtension(h.port, { target: "firefox", consent: false });
@@ -306,8 +295,6 @@ test("state names every connected extension, its command list and who is driving
   assert.deepEqual(s.tabs, [{ conn: s.extensions[0].conn, tab: 12, target: "firefox", title: "PokéRogue", state: "ready" }]);
   assert.equal(s.driver, null);
 });
-
-// ------------------------------------------------------------------- extension-distribution.md §7.5 events
 
 test("events fan out to subscribers only, and an unsubscribed client hears nothing (extension-distribution.md §7.5)", async () => {
   const h = await hub();
@@ -361,8 +348,6 @@ test("with more than one tab the hub forwards no events and notices once, then r
   assert.deepEqual(await sub.take(f => f.t === "event"), { t: "event", kind: "card", body: { text: "back" } });
 });
 
-// ----------------------------------------------------------------- extension-distribution.md §7.2 lifecycle
-
 test("a second hub on the same port gets EADDRINUSE, which is the first one's win (extension-distribution.md §7.2)", async () => {
   const h = await hub();
   await assert.rejects(startHub({ port: h.port, version: "1.0.0" }), (e: NodeJS.ErrnoException) => e.code === "EADDRINUSE");
@@ -382,7 +367,6 @@ test("retire closes every connection and calls for the exit (extension-distribut
 test("the hub exits after its idle window with no clients and no counted tabs (extension-distribution.md §7.2)", async () => {
   let idle = 0;
   const h = await hub({ idleMs: 40, onIdle: () => idle++ });
-  // An extension connection without a counted tab does not keep the hub alive.
   await fakeExtension(h.port);
   for (let i = 0; i < 50 && idle === 0; i++) await new Promise(r => setTimeout(r, 20));
   assert.ok(idle > 0, "an idle hub with no counted tab must exit");

@@ -1,8 +1,5 @@
-/**
- * The relay contract (extension-distribution.md §9), driven end to end: the relay and the page script on one `EventTarget`, which is a faithful
- * stand-in for `document` in the one way that matters — `dispatchEvent` runs listeners synchronously, so a test that
- * passes here is a test of §9.2's "reply before dispatch returns" and not of a mock.
- */
+// An `EventTarget` stands in for `document` because `dispatchEvent` runs listeners synchronously, so these test
+// "reply before dispatch returns" itself, not a mock of it (extension-distribution.md §9.2).
 import assert from "node:assert/strict";
 import test, { type TestContext } from "node:test";
 import { onPage } from "../../src/page/fake-page.ts";
@@ -15,7 +12,6 @@ import type { Channel } from "../src/relay/channel.ts";
 const BUILD = "1.2.3+abcdef012345";
 const makeEvent = (type: string, detail: string) => new CustomEvent(type, { detail });
 
-/** One tab: a shared channel, the messages the relay sent upward, and the timers it asked for. */
 function tab(o: { build?: string } = {}) {
   const channel = new EventTarget() as unknown as Channel;
   const sent: ToBackground[] = [];
@@ -139,8 +135,7 @@ test("a forged oversized reply cannot poison an in-flight command (extension-dis
   onPage(c, { ui: { mode: 0, handlers: {} } });
   const t = tab();
   const r = t.relay();
-  // A page copy of another build answers first, oversized. Ownership is checked before size, so it is simply ignored
-  // and the real handler's answer still stands.
+  // A page copy of another build answers first, oversized: ownership is checked before size, so it is ignored.
   t.page({
     extra: {
       slow: {
@@ -233,7 +228,6 @@ test("the relay never turns a page event into a command (extension-distribution.
   const t = tab();
   const r = t.relay();
   t.page();
-  // A forged reply for an id nothing is waiting on, and a forged relay hello: both dropped, and nothing goes upward.
   t.emit(EVENT.reply, { build: BUILD, id: 999, ok: true, result: "forged" });
   t.emit(EVENT.hello, { build: BUILD, side: "relay" });
   const before = t.sent.length;
@@ -268,7 +262,7 @@ test("`cardBody` rejects every shape but the one the HUD sends (extension-distri
     { ...good, wave: Number.NaN },
     { ...good, key: undefined },
     { build: BUILD, kind: "learn", key: "k", wave: 1, verdict: "v" },
-    // The field the gate gained: a card without it is the shape a build before #361 sent, and it does not cross.
+    // No `groups`: the shape a build before #361 sent.
     { build: BUILD, kind: "learn", key: "k", wave: 1, verdict: "v", text: "t" },
   ]) {
     assert.equal(cardBody(bad as Record<string, unknown>), null, JSON.stringify(bad));
@@ -280,11 +274,11 @@ test("`cardBody` checks the shape of every group, not just that `groups` is ther
   // Nothing drawn is an empty list, which crosses: `text` is what says the card is empty.
   assert.deepEqual(cardBody(card([]))?.groups, []);
   for (const bad of [
-    "act",                                                             // not a list at all
+    "act",
     [{ id: "hunch", label: "Hunch", summary: null, rows: [] }],        // an id outside the closed eight
-    [{ id: "act", summary: null, rows: [] }],                          // a tab with no name
+    [{ id: "act", summary: null, rows: [] }],
     [{ id: "act", label: "Act", summary: null, rows: [], mark: "!" }], // a key the wire does not carry
-    [{ id: "act", label: "Act", summary: 7, rows: [] }],               // a summary that is not a string
+    [{ id: "act", label: "Act", summary: 7, rows: [] }],
     [{ id: "act", label: "Act", summary: null, rows: "one row" }],     // rows unflattened
     [{ id: "act", label: "Act", summary: null, rows: [{ mark: "✓" }] }], // a node that never crossed the wire
   ]) {

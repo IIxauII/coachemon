@@ -1,6 +1,3 @@
-/**
- * The per-engine smoke checks (extension-distribution.md §16) on a fake clock: the five-minute idle is a number the test hands over, not a wait.
- */
 import assert from "node:assert/strict";
 import test from "node:test";
 import { BAR_MS, IDLE_MS, allPassed, merge, report, runChecks, type Answer, type CheckDeps, type EngineResult, type Ledger } from "./checks.ts";
@@ -16,7 +13,7 @@ function tab(o: Partial<TabInfo> = {}): TabInfo {
   return { conn: 1, tab: 5, target: "chrome", title: "PokéRogue", state: "ready", ...o };
 }
 
-/** A hub whose state is fixed and whose commands answer from a queue, on a clock the test advances by answering. */
+/** Only answers and sleeps move the clock, so the five-minute idle is a number the test hands over, not a wait. */
 function deps(o: { state?: HubState | null; answers?: Answer[]; cost?: number[] } = {}): CheckDeps & { asked: string[]; slept: number[] } {
   const asked: string[] = [];
   const slept: number[] = [];
@@ -47,8 +44,6 @@ const result = async (d: CheckDeps, o = {}): Promise<EngineResult> => {
   return run.result;
 };
 
-// --------------------------------------------------------------- reaching
-
 test("no hub is recorded, not thrown, and names the port actually dialled", async () => {
   const run = await runChecks(deps({ state: null }), { at });
   assert.equal(run.reached, false);
@@ -74,8 +69,6 @@ test("a store build is checked too: extension-distribution.md §16's Orion premi
   assert.equal(r.flavour, "store");
   assert.equal(r.checks.every(c => c.pass), true);
 });
-
-// ------------------------------------------------------------ the checks
 
 test("one probe that comes back at all is the relay premise (extension-distribution.md §9.2)", async () => {
   const d = deps();
@@ -135,8 +128,6 @@ test("Orion runs someone else's build, so the engine is named and the build reco
   assert.equal(r.engine, "orion");
   assert.equal(r.target, "chrome");
 });
-
-// --------------------------------------------------------- the ledger
 
 const passed = (engine: string, pass = true): EngineResult => ({
   engine,

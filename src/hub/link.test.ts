@@ -33,7 +33,6 @@ async function linked(o: { commands?: string[]; flavour?: "store" | "dev"; tab?:
   assert.fail("the link never reached the fake tab");
 }
 
-/** Answers the next command the extension is asked, as the page would. */
 async function answer(ext: Ext, result: unknown): Promise<{ name: string; args: Record<string, unknown> }> {
   const cmd = await ext.take<{ t: "cmd"; id: number; name: string; args: Record<string, unknown> }>(f => f.t === "cmd");
   ext.send({ t: "reply", id: cmd.id, ok: true, result });
@@ -101,7 +100,6 @@ test("presence carries the browsers, the tab count and the driver, and the ladde
   await link.claim();
   assert.equal((await link.presence()).facts.driver, "you");
 
-  // A second ready tab is rung 8, with the list.
   await readyTab(hub.port, 2, { target: "firefox" });
   for (let i = 0; i < 50 && (await link.presence()).reach === null; i++) await new Promise(r => setTimeout(r, 20));
   const many = await link.presence();
@@ -148,7 +146,6 @@ test("the console tail is one probe asking for it, and every probe carries the p
   assert.deepEqual(await tail, [{ t: "t", level: "error", text: "boom" }]);
   assert.deepEqual(seen, [1234], "a newer errorAt is the hang watch's corroboration");
 
-  // The same error twice is one rejection, not two.
   const again = link.probe({});
   await answer(ext, { ready: false, why: "no-phaser", frame: null, domMode: null, pumped: false, errorAt: 1234 });
   await again;

@@ -8,7 +8,7 @@ import type { CursorTarget } from "./port.ts";
 
 type Sent = { command: string; args: unknown };
 
-/** A link whose commands answer through `answers`; a command it does not script fails the test. Every command sent is recorded. */
+/** A command `answers` does not script fails the test. */
 function stubLink(answers: Partial<Record<keyof GameLink, (args: any) => unknown>>) {
   const sent: Sent[] = [];
   const method = (command: keyof GameLink) => async (args: unknown) => {
@@ -80,7 +80,6 @@ function pageOn(mode: number, family: string, disc: Partial<Discriminators>, ext
   }).game;
 }
 
-/** Each family whose typed fields come from `disc`: the Screen both reads derive, and the fields the menu read carries. */
 const screens: { name: string; mode: number; family: string; disc: Partial<Discriminators>; screen: string; fields: Record<string, unknown> }[] = [
   { name: "party", mode: UiMode.PARTY, family: "party", disc: { partyUiMode: 1, optionsMode: true, transferMode: true }, screen: "PARTY/FAINT_SWITCH:options", fields: { optionsMode: true, partyUiMode: 1, transferMode: true } },
   { name: "save_slot", mode: UiMode.SAVE_SLOT, family: "save_slot", disc: { saveSlotUiMode: 1 }, screen: "SAVE_SLOT/SAVE", fields: { uiMode: 1 } },
@@ -149,7 +148,6 @@ test("an act on a game that moved did nothing, and says where the game is now (e
   assert.deepEqual(await game.setCursor({ family: "option_select", index: 1 }, "command|0"), expected);
 });
 
-/** Each family's setCursor: the command and arguments it sends, what the page reads back when it lands, and when it lands elsewhere. */
 const families: { target: CursorTarget; command: keyof GameLink; args: object; landed: object; elsewhere: object }[] = [
   { target: { family: "option_select", index: 2 }, command: "cursorOption", args: { index: 2, fine: "f" }, landed: { ok: true, fullCursor: 2, cursor: 2, fine: "g" }, elsewhere: { ok: true, fullCursor: 0, cursor: 0, fine: "g" } },
   { target: { family: "modifier_select", row: 2, col: 1 }, command: "cursorShop", args: { row: 2, col: 1, fine: "f" }, landed: { ok: true, rowCursor: 2, cursor: 1, fine: "g" }, elsewhere: { ok: true, rowCursor: 2, cursor: 0, fine: "g" } },

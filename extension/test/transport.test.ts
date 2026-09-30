@@ -1,7 +1,3 @@
-/**
- * The background transport (extension-distribution.md §8) on a fake clock and a fake socket: dialing only with a tab, the welcome check and its
- * 10 min back-off, the retry schedule, the ping keepalive, forwarding, and Firefox's consent gate.
- */
 import assert from "node:assert/strict";
 import test from "node:test";
 import { COMMAND_NAMES } from "../../src/protocol/commands.ts";
@@ -10,7 +6,6 @@ import type { ExtensionHello, FromExtension } from "../../src/protocol/wire.ts";
 import { MAX_DETAIL_BYTES } from "../src/relay/channel.ts";
 import { PING_MS, RETRY_MS, RETRY_STEADY_MS, Transport, WELCOME_BACKOFF_MS, WELCOME_MS, type SocketHandlers, type TransportDeps } from "../src/transport/transport.ts";
 
-/** A clock the test winds by hand; `after` is the only timer the transport is given. */
 function clock() {
   let now = 0;
   let due: { at: number; fn: () => void; live: boolean }[] = [];
@@ -61,7 +56,6 @@ function harness(o: Partial<TransportDeps> = {}) {
     },
     ...o,
   });
-  /** Bring the one socket all the way up: dialed, opened, welcomed. */
   const connect = () => {
     const wire = dials.at(-1)!;
     wire.h.open();
@@ -71,7 +65,7 @@ function harness(o: Partial<TransportDeps> = {}) {
   return { t, dials, toTab, connect, advance: c.advance, reply: (fn: (tab: number) => Promise<unknown>) => void (answer = fn) };
 }
 
-/** What a relay says when its tab is ready; the tab id is the argument to `fromTab`, not part of the frame. */
+/** The tab id is `fromTab`'s argument, not part of the frame. */
 const ready = () => ({ t: "tab", state: "ready", title: "PokéRogue" }) as const;
 
 test("no game tab, no loopback traffic (extension-distribution.md §8.1)", () => {
@@ -181,7 +175,6 @@ test("a command the background answers itself never reaches the tab (extension-d
   await Promise.resolve();
   assert.deepEqual(h.toTab, [], "a background command was forwarded to the tab");
   assert.deepEqual(wire.sent.at(-1), { t: "reply", id: 9, ok: true, result: { png: "x" } });
-  // A name it does not own still goes to the tab, so the seam costs the store table nothing.
   wire.h.message(JSON.stringify({ t: "cmd", id: 10, tab: 1, name: "probe", args: {} }));
   await Promise.resolve();
   assert.deepEqual(asked, ["screenshot", "probe"]);
@@ -203,7 +196,6 @@ test("a frame only this build knows is handled by it and answered by nobody (ext
   assert.deepEqual(seen, ["dev-reload"]);
   assert.equal(wire.sent.length, before, "a dev-reload was answered");
   assert.deepEqual(h.toTab, [], "a dev-reload was forwarded to a tab");
-  // A frame it does not claim still takes its usual route: the seam costs the store table nothing.
   wire.h.message(JSON.stringify({ t: "cmd", id: 3, tab: 1, name: "probe", args: {} }));
   assert.deepEqual(seen, ["dev-reload", "cmd"]);
 });

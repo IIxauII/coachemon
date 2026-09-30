@@ -28,7 +28,6 @@ test("a server-only commit does not count for the extension", () => {
 });
 
 test("the shipped paths are whole-directory prefixes, not name prefixes", () => {
-  // Every prefix ends in `/`, so a sibling whose name merely starts the same way never counts.
   for (const prefix of EXTENSION_PATHS as string[]) assert.equal(prefix.endsWith("/"), true);
   assert.equal(touches(["extension-notes/plan.md"]), false);
   assert.equal(touches(["src/pages/index.ts"]), false);
@@ -67,14 +66,13 @@ test("stamping the version leaves the rest of package.json as it was", () => {
   const pkg = `{\n  "name": "coachemon-extension",\n  "version": "0.0.0-placeholder",\n  "private": true\n}\n`;
   const stamped = `{\n  "name": "coachemon-extension",\n  "version": "0.1.0",\n  "private": true\n}\n`;
   assert.equal(stampVersion(pkg, "0.1.0"), stamped);
-  // Re-stamping the version it already carries is not a failure.
   assert.equal(stampVersion(stamped, "0.1.0"), stamped);
   assert.throws(() => stampVersion(`{ "name": "coachemon-extension" }`, "0.1.0"), /no "version" field/);
 });
 
 test("a prerelease is refused, because the artifacts could not be named for it", () => {
-  // WXT names a zip after the manifest, whose version is three numbers, so `submit` would look for a zip that the
-  // build wrote under a different name. `isSemver` admits a prerelease; the release stream does not.
+  // WXT names a zip after the manifest's three-number version, so `submit` would look for a zip the build never wrote.
+  // `isSemver` admits a prerelease; the release stream does not.
   assert.equal(releaseVersion("0.1.0"), "0.1.0");
   assert.throws(() => releaseVersion("1.0.0-beta.1"), /cannot release a prerelease \(1\.0\.0-beta\.1\)/);
 });
