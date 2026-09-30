@@ -1,4 +1,3 @@
-/** The dev loop (extension-distribution.md §5.4). */
 import { spawnSync } from "node:child_process";
 import { watch } from "node:fs";
 import { join } from "node:path";

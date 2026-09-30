@@ -1,6 +1,6 @@
 /**
- * The only place the upward direction is defended: a page event reaches the hub only if it is exactly what the HUD sends
- * (extension-distribution.md §9.5).
+ * The only place the upward direction is defended: a page event reaches the hub only if it is exactly what the HUD
+ * sends (extension-distribution.md §9.5).
  */
 import { KEEPALIVE_MS, TOO_LARGE, type CmdMessage, type RelayReply, type ToBackground } from "../messages.ts";
 import type { TabState } from "../../../src/protocol/wire.ts";
@@ -12,7 +12,6 @@ export type RelayDeps = {
   build: string;
   /** Swallows failures: a background that is gone re-learns the tab from the next keepalive (extension-distribution.md §8.2). */
   send: (message: ToBackground) => void;
-  /** Read fresh: the game rewrites the title. */
   title: () => string;
   onPageHide: (fn: () => void) => void;
   every: (fn: () => void, ms: number) => void;
@@ -21,6 +20,7 @@ export type RelayDeps = {
 export type Relay = {
   /** Synchronous (extension-distribution.md §9.2). */
   command: (msg: CmdMessage) => RelayReply;
+  /** `null` until the page announces. */
   state: () => TabState | null;
 };
 
@@ -83,7 +83,7 @@ export function startRelay(d: RelayDeps): Relay {
   for (const [kind, event] of EVENT_BY_KIND) {
     d.channel.addEventListener(event, e => {
       const raw = e.detail;
-      // Dropped here and nowhere else (extension-distribution.md §9.7).
+      // An oversized event is dropped here, before anything upward carries it (extension-distribution.md §9.7).
       if (typeof raw !== "string" || overCap(raw)) return;
       const detail = mine(raw);
       const body = detail && eventBody(kind, detail);
@@ -117,7 +117,8 @@ export function startRelay(d: RelayDeps): Relay {
       } finally {
         pending = null;
       }
-      // No reply by the time dispatch returned means nobody is listening. No timer, ever (extension-distribution.md §9.2).
+      // No reply by the time dispatch returned means nobody is listening. No timer, ever
+      // (extension-distribution.md §9.2).
       return answer ?? { t: "reply", id: msg.id, ok: false, code: "no-handler", message: `no page handler answered ${msg.name}` };
     },
     state: () => state,

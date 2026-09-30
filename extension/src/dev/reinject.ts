@@ -1,4 +1,7 @@
-/** After `runtime.reload()` the content scripts are orphaned in every open tab, and nothing else puts them back (extension-distribution.md §5.4). */
+/**
+ * After `runtime.reload()` the content scripts are orphaned in every open tab, and nothing else puts them back
+ * (extension-distribution.md §5.4). Each script replaces an older copy in place (§9.6).
+ */
 
 export type Injector = {
   gameTabs: () => Promise<number[]>;

@@ -1,6 +1,6 @@
 /**
- * Everything a store build must not contain — `captureVisibleTab`, `executeScript`, `runtime.reload` — sits here, in the
- * one file a store build never bundles (extension-distribution.md §5.5).
+ * Everything a store build must not contain — `captureVisibleTab`, `executeScript`, `runtime.reload` — sits here, in
+ * the one file a store build never bundles (extension-distribution.md §5.5).
  */
 import { browser } from "wxt/browser";
 import type { ToExtension } from "../../../src/protocol/wire.ts";

@@ -41,8 +41,8 @@ export default defineBackground(() => {
     extra: dev ? devFrames : undefined,
   });
 
-  // Every listener is registered in this first turn, before anything is awaited: Chrome's service worker restarts on
-  // every event, and only a listener registered synchronously wakes it.
+  // Registered in this first turn, before anything is awaited: Chrome's service worker restarts on every event, and
+  // only a listener registered synchronously wakes it.
   browser.runtime.onMessage.addListener((message, sender) => {
     const tab = sender.tab?.id;
     if (tab != null && typeof (message as ToBackground | undefined)?.t === "string") {

@@ -1,6 +1,6 @@
 /**
- * The dev-only command table (extension-distribution.md §10.6). Only a `--mode dev` build may import it: the guard fails
- * a store artifact that carries these names (§5.5).
+ * The dev-only command table (extension-distribution.md §10.6). Only a `--mode dev` build may import it: the guard
+ * fails a store artifact that carries these names (§5.5).
  */
 import type { ExtensionCmd } from "../../../src/protocol/wire.ts";
 import type { RelayReply } from "../messages.ts";

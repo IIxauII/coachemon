@@ -61,8 +61,8 @@ export function decode(detail: unknown): Record<string, unknown> | null {
 const str = (v: unknown): v is string => typeof v === "string";
 
 /**
- * The forgery defence (extension-distribution.md §9.5), and the card detail's version point: a field the panel sends and
- * this gate does not know is a card that never crosses, so the two change together (#361).
+ * The forgery defence (extension-distribution.md §9.5), and the card detail's version point: a field the panel sends
+ * and this gate does not know is a card that never crosses, so the two change together (#361).
  */
 export function cardBody(d: Record<string, unknown>): Omit<CardDetail, "build"> | null {
   const keys = Object.keys(d).sort().join(",");

@@ -1,6 +1,6 @@
 /**
- * Every content script is listed here by hand: WXT adds no manifest entry for an unlisted script, and `hud.js` is written
- * by the build hook (extension-distribution.md §5.2, §5.3).
+ * Every content script is listed here by hand: WXT adds no manifest entry for an unlisted script, and `hud.js` is
+ * written by the build hook (extension-distribution.md §5.2, §5.3).
  */
 import type { Flavour, Target } from "../../../src/protocol/wire.ts";
 
@@ -20,20 +20,20 @@ export const ACTION_TITLE = "Coachemon: click once to let a local AI agent read 
 export const MATCHES = ["https://pokerogue.net/*"];
 
 /**
- * Also filed by hand on AMO's form, and `src/listing.test.ts` pins the filing to this: change both or the listing states
- * something false (extension-distribution.md §5.3, §6).
+ * Also filed by hand on AMO's form, and `src/listing.test.ts` pins the filing to this: change both or the listing
+ * states something false (extension-distribution.md §5.3, §6).
  */
 export const DATA_COLLECTION_PERMISSIONS = { required: ["none"], optional: ["websiteContent"] };
 
 export type Manifest = Record<string, unknown>;
 
-/** One list for the guard and for `manifestFor`'s test (extension-distribution.md §5.5 check 1). */
+/** One list for the guard and for `manifestFor`'s test (extension-distribution.md §5.5). */
 export const BANNED_MANIFEST_KEYS = ["permissions", "optional_permissions", "host_permissions", "optional_host_permissions"];
 export const BANNED_MANIFEST_WORDS = ["nativeMessaging", "scripting", "tabs", "storage", "activeTab", "<all_urls>"];
 
 /**
- * WXT normalises an MV3 background to a service worker, so `wxt.config.ts` puts this back in
- * `build:manifestGenerated` (extension-distribution.md §16).
+ * `scripts` rather than `service_worker` is an accepted premise (extension-distribution.md §16). WXT normalises an MV3
+ * background to a service worker, so `wxt.config.ts` puts this back in `build:manifestGenerated`.
  */
 export const SAFARI_BACKGROUND = { scripts: ["background.js"], persistent: false };
 
@@ -78,7 +78,7 @@ function perTarget(target: Target): Manifest {
       browser_specific_settings: {
         // 142, not `world: "MAIN"`'s 128: with no `gecko_android` key the linter checks Android against this floor, and
         // Android gained `data_collection_permissions` only at 142. Adding that key would offer the add-on on Android
-        // (#380, extension-distribution.md §5.3).
+        // (#379, #380, extension-distribution.md §5.3).
         gecko: {
           id: GECKO_ID,
           strict_min_version: "142.0",

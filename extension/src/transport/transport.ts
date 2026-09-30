@@ -1,10 +1,9 @@
-/** The background's hub transport (extension-distribution.md §8). */
 import { PRODUCT, PROTOCOL } from "../../../src/protocol/version.ts";
 import type { ExtensionHello, Flavour, FromExtension, TabState, Target, ToExtension } from "../../../src/protocol/wire.ts";
 import { MAX_DETAIL_BYTES } from "../relay/channel.ts";
 import { TOO_LARGE, type EventReport, type RelayReply, type ToBackground } from "../messages.ts";
 
-// extension-distribution.md §8.1's timings; the ping is what holds Chrome's service worker (§8.2).
+// extension-distribution.md §8.1, §8.2.
 export const WELCOME_MS = 2_000;
 export const WELCOME_BACKOFF_MS = 10 * 60_000;
 export const PING_MS = 20_000;
@@ -35,7 +34,7 @@ export type TransportDeps = {
   local?: (cmd: Extract<ToExtension, { t: "cmd" }>) => Promise<RelayReply> | null;
   /** A frame only this build knows, `true` once handled; only a dev build has one (extension-distribution.md §5.4). */
   extra?: (frame: ToExtension) => boolean;
-  /** Whether the browser starts consented (extension-distribution.md §8.4). */
+  /** `false` only on Firefox, until the player clicks (extension-distribution.md §8.4). */
   consent: boolean;
 };
 
@@ -247,8 +246,8 @@ export class Transport {
 
   #raw(frame: FromExtension): void {
     const data = JSON.stringify(frame);
-    // The cap a second time, on the frame (extension-distribution.md §8.3): a reply refuses, and an event, which nothing
-    // waits for, is dropped.
+    // The cap a second time, on the frame (extension-distribution.md §8.3): a reply refuses, and an event, which
+    // nothing waits for, is dropped.
     if (data.length > MAX_DETAIL_BYTES) {
       if (frame.t !== "reply") return;
       const over: FromExtension = { t: "reply", id: frame.id, ok: false, code: "too-large", message: TOO_LARGE };

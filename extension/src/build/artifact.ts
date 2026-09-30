@@ -1,4 +1,4 @@
-/** Build-time only: `wxt.config.ts` and the tests import this, never the extension bundle (extension-distribution.md §5.2). */
+/** Build-time only: `wxt.config.ts` and the tests import this, never the extension bundle. */
 import { createHash } from "node:crypto";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
