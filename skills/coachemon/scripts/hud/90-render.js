@@ -5,6 +5,8 @@
 let game = null;
 const sprites = new Map();
 let missed = false; // a wanted sprite wasn't loaded yet during the last draw
+// Never cleared, so `found` tells a late atlas from a sprite that never loads (#485).
+const misses = new Map();
 
 export const battleScene = () => {
   game ??= Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
@@ -15,6 +17,7 @@ export const dropGame = () => { game = null; };
 // Icon atlases load lazily, so a draw that wanted a sprite it didn't get is drawn again next refresh.
 export const missedSprite = () => missed;
 export const clearMissed = () => { missed = false; };
+export const spriteMisses = () => [...misses].map(([id, n]) => ({ id, misses: n, found: sprites.has(id) }));
 
 const sprite = (key, frame) => {
   const id = `${key}/${frame}`;
@@ -72,7 +75,11 @@ export const img = (key, frame, title, rungs, fallback = title) => {
   const url = sprite(key, frame);
   if (!url) {
     // Optional sprites (fallback null) may simply not exist; don't retry those.
-    if (fallback !== null) missed = true;
+    if (fallback !== null) {
+      missed = true;
+      const id = `${key}/${frame}`;
+      misses.set(id, (misses.get(id) ?? 0) + 1);
+    }
     // **The fallback is an element, not a bare string**: the rows and the caption that hold a sprite are flex
     // containers spaced by a `gap`, and contiguous text collapses into one anonymous flex item — so a string fallback
     // landing beside a neighbouring string is spaced by neither the gap nor a space of its own, and `Youngster` and

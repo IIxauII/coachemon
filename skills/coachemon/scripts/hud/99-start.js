@@ -6,7 +6,7 @@ import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { EVENT_KINDS, cardEvent, cardSummary } from "./60-card.js";
-import { battleScene, el, wireCard } from "./90-render.js";
+import { battleScene, el, spriteMisses, wireCard } from "./90-render.js";
 import { lastFailure, shownCard, shownGroups, tick } from "./98-tick.js";
 
 // By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
@@ -58,7 +58,11 @@ const timer = setInterval(clockTick, 1000);
 clockTick();
 meterFacts(() => {
   const loop = battleScene()?.game?.loop;
-  return { fps: loop ? Math.round(loop.actualFps) : null, setTimeoutLoop: loop?.raf?.isSetTimeOut ?? null };
+  // `i18next` is bundled, not a page global; its detector caches the resolved language as `prLang` (the game's
+  // `src/i18n.ts`).
+  let lang = null;
+  try { lang = localStorage.getItem("prLang"); } catch {}
+  return { fps: loop ? Math.round(loop.actualFps) : null, setTimeoutLoop: loop?.raf?.isSetTimeOut ?? null, lang, sprites: spriteMisses() };
 });
 // Called from outside the bundle — probe.js, src/page/card.ts, 00-prelude.js's re-inject and the skill's docs — so no
 // method here is renamed alone.
