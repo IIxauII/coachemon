@@ -1,7 +1,4 @@
-/**
- * Built by `wxt build -b chrome|firefox|safari --mode store|dev` only; `wxt dev` is not a supported build
- * (extension-distribution.md §5.2).
- */
+/** `wxt dev` is not a supported build (extension-distribution.md §5.2). */
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,7 +27,7 @@ const targetOf = (browser: string): Target => {
 export default defineConfig({
   srcDir: ".",
   imports: false,
-  // WXT defaults Firefox and Safari to MV2.
+  // WXT defaults Firefox and Safari to MV2 (extension-distribution.md §5.2).
   manifestVersion: 3,
   mode: "store",
   // Without `{{mode}}`, a dev build overwrites the store build of the same browser.
@@ -39,8 +36,7 @@ export default defineConfig({
   vite: ({ browser, mode }) => ({
     define: {
       COACHEMON_BUILD: JSON.stringify(BUILD_PLACEHOLDER),
-      // The whole URL, not a port: the guard looks for `ws://127.0.0.1:47147` literally
-      // (extension-distribution.md §5.5).
+      // The whole URL, not a port: the guard matches the store URL literally (extension-distribution.md §5.5).
       COACHEMON_HUB_URL: JSON.stringify(`ws://127.0.0.1:${flavourOf(mode) === "dev" ? DEV_PORT : STORE_PORT}/`),
       COACHEMON_TARGET: JSON.stringify(targetOf(browser)),
       COACHEMON_FLAVOUR: JSON.stringify(flavourOf(mode)),
@@ -48,7 +44,7 @@ export default defineConfig({
     },
   }),
   zip: {
-    // Only has to tell the browsers apart: `zip:extension:done` renames it to `zipName`'s
+    // Only has to tell the browsers apart: `zip:extension:done` renames the zip to what `zipName` returns
     // (extension-distribution.md §14.2).
     artifactTemplate: "coachemon-{{browser}}-{{version}}.zip",
     sourcesTemplate: sourcesZipName("{{version}}"),
@@ -74,7 +70,8 @@ export default defineConfig({
     "build:publicAssets": (_wxt, files) => {
       files.push(
         { relativeDest: "hud.js", contents: hudScript(bundle("hud")) },
-        // (extension-distribution.md §15)
+        // Both files ship in every artifact, because `hud.js` goes out comment-stripped
+        // (extension-distribution.md §15).
         { relativeDest: "LICENSE", contents: readFileSync(join(repo, "LICENSE"), "utf8") },
         {
           relativeDest: "THIRD_PARTY_NOTICES.md",
@@ -84,7 +81,7 @@ export default defineConfig({
     },
     /**
      * WXT rewrites an MV3 background to a service worker after `manifestFor`, so Safari's `scripts` goes back in here
-     * (extension-distribution.md §5.3).
+     * (extension-distribution.md §5.3). Firefox's already comes out as `scripts`, so it must not take this branch.
      */
     "build:manifestGenerated": (wxt, manifest) => {
       if (wxt.config.browser === "safari") (manifest as Record<string, unknown>).background = SAFARI_BACKGROUND;
@@ -102,8 +99,8 @@ export default defineConfig({
       wxt.logger.info(`Coachemon build ${build}`);
     },
     /**
-     * `artifactTemplate` cannot branch on the browser, and Safari's artifact is not named for it
-     * (extension-distribution.md §14.2).
+     * `artifactTemplate` cannot branch on the browser, and Safari's artifact is named for what it holds rather than for
+     * the browser (extension-distribution.md §14.2).
      */
     "zip:extension:done": (wxt, zipPath) => {
       if (flavourOf(wxt.config.mode) !== "store") {
