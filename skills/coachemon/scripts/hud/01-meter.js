@@ -105,7 +105,7 @@ const frame = t => {
   ended = [];
   prev = t;
 };
-// Gotcha: a hidden tab gets no frames, so the gap across it is the time away, not a stall.
+// A hidden tab gets no frames, so the gap across it is the time away, not a stall.
 const onVisibility = () => { if (document.visibilityState === "hidden") { prev = null; hidden++; } };
 
 const observe = (type, opts, keep) => {
