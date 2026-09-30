@@ -17,7 +17,6 @@ async function hub(port = 0): Promise<Hub> {
   return h;
 }
 
-/** The CLI against a hub, with a fast retry, collecting its lines; `stop` ends the loop. */
 function watching(port: number, retryMs = 20): { lines: string[]; stop: () => void; done: Promise<void> } {
   const lines: string[] = [];
   const ac = new AbortController();
@@ -34,7 +33,6 @@ function watching(port: number, retryMs = 20): { lines: string[]; stop: () => vo
   return { lines, stop: () => ac.abort(), done };
 }
 
-/** Waits for a condition, so no test sleeps a fixed time for the loop's next tick. */
 async function until(have: () => boolean, ms = 3_000): Promise<void> {
   const end = Date.now() + ms;
   while (Date.now() < end) {
@@ -44,13 +42,12 @@ async function until(have: () => boolean, ms = 3_000): Promise<void> {
   throw new Error("condition never held");
 }
 
-/** Answers the CLI's `card` read with one card. */
 async function answerCard(ext: Peer<ToExtension, FromExtension>, result: Record<string, unknown>): Promise<void> {
   const cmd = await ext.take<{ t: "cmd"; id: number }>(f => f.t === "cmd" && f.name === "card");
   ext.send({ t: "reply", id: cmd.id, ok: true, result });
 }
 
-/** Answers every `card` read, so a read the CLI should not have made shows up as a line rather than as silence. */
+/** A read the CLI should not have made shows up as a line rather than as silence. */
 function autoCard(ext: Peer<ToExtension, FromExtension>, result: Record<string, unknown>): void {
   ext.answering(
     (f): f is ExtensionCmd => f.t === "cmd" && f.name === "card",
@@ -62,8 +59,6 @@ const CARD = { ok: true, kind: "battle", key: "12", wave: 12, verdict: "danger",
 const BATTLE_LINE = "BATTLE w12 · danger | Gyarados L34 will KO Pikachu";
 /** A card of nulls: the late join has nothing to print, so the test's first line is the one it is about. */
 const NO_CARD = { ok: true, kind: null, key: null, wave: null, verdict: null, text: null, summary: null };
-
-// ------------------------------------------------------------------ the lines (extension-distribution.md §11.2)
 
 test("each streamed card kind is one summary line, with the first line of its text (extension-distribution.md §11.2)", () => {
   assert.equal(cardLine({ kind: "battle", wave: 12, verdict: "danger", text: "Gyarados will KO Pikachu\nswitch" }), "BATTLE w12 · danger | Gyarados will KO Pikachu");
@@ -107,20 +102,16 @@ test("a HUD failure, a tab split and a return are their own lines (extension-dis
   );
 });
 
-// ------------------------------------------------------------------ the loop (extension-distribution.md §11.2)
-
 test("while the game is unreachable the ladder line prints once, and again only when it changes (extension-distribution.md §11.2)", async () => {
-  // A dead port, not merely a free one: the loop dials it every retry for the whole phase, so a hub of another test
-  // file's that took it would answer one of those dials and the ladder would read that hub's rungs instead (#327).
+  // A dead port, not merely a free one: the loop dials it every retry, so another test file's hub that took it would
+  // answer, and the ladder would read that hub's rungs (#327).
   const port = await deadPort();
   const w = watching(port);
   await until(() => w.lines.length > 0);
   assert.equal(w.lines[0], "The Coachemon hub would not start: no hub here.");
-  // Several retries later it has not said the same thing twice.
   await new Promise(r => setTimeout(r, 150));
   assert.deepEqual(w.lines, ["The Coachemon hub would not start: no hub here."]);
 
-  // A hub comes up on the port with no browser on it: rung 3 is a different line, so it prints.
   await hub(port);
   await until(() => w.lines.length > 1);
   assert.match(w.lines[1], /^No browser has Coachemon connected\./);
@@ -201,7 +192,6 @@ test("a CLI that joins an already-split tab count reads the card once, not twice
   ext.send({ t: "tab", tab: 2, state: "gone", title: "PokéRogue" });
   await until(() => w.lines.includes("RESUMED"));
   await until(() => w.lines.includes(BATTLE_LINE));
-  // A few retries later the loop has not spent a second read on the same return.
   await new Promise(r => setTimeout(r, 150));
   assert.deepEqual(w.lines.filter(l => l === BATTLE_LINE), [BATTLE_LINE]);
   w.stop();
@@ -214,7 +204,6 @@ test("a rung the TABS line replaced is printed again when it comes back (extensi
   const w = watching(h.port);
   await answerCard(ext, NO_CARD);
 
-  // No ready tab: rung 7, once.
   ext.send({ t: "tab", tab: 1, state: "gone", title: "PokéRogue" });
   await until(() => w.lines.some(l => l.startsWith("Coachemon is connected")));
 

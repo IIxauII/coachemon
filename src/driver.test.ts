@@ -7,19 +7,16 @@ import { fakeGame, type FakeScreen, type ScreenRead } from "./game/fake-game.ts"
 import type { MenuRead } from "./game/port.ts";
 import { CALL_BUDGET_MS } from "./settle.ts";
 
-// `money` joins Ready with #38; spread so this fixture compiles with and without it.
 const money = { money: 1000 };
 
-/** A Driver on a scripted screen, with the fake's clock. */
 function drive(screen: FakeScreen) {
   const fake = fakeGame(screen);
   return { ...fake, driver: new Driver(fake.game, fake.clock) };
 }
 
 /**
- * A game tab on a fake clock: every settle poll advances time by its sleep, nothing else does. The screen is #28's
- * double-battle TARGET_SELECT for a single-target move, where the cursor sits on Zigzagoon and no press ever moves it. With `stallAfterPress`
- * the game stops settling once the first press lands.
+ * #28's double-battle TARGET_SELECT for a single-target move: the cursor sits on Zigzagoon and no press ever moves it.
+ * With `stallAfterPress` the game stops settling once the first press lands.
  */
 function fakeTab(opts: { stallAfterPress: boolean }) {
   const presses: number[] = [];
@@ -65,11 +62,7 @@ test("a cursor walk whose presses never settle returns timed_out at the call dea
   assert.ok(tab.now() <= CALL_BUDGET_MS + 1_000, `returned at ${tab.now()} ms`);
 });
 
-/**
- * A double-battle TARGET_SELECT that moves its cursor the way TargetSelectUiHandler.processInput does (#40): UP/DOWN jump
- * to the first target in the other row (enemies 2,3 on top, player field 0,1 below), LEFT/RIGHT step ±1 within a row,
- * nothing wraps. A spread move (`isMultipleTargets`) ignores every direction; ACTION commits all targets.
- */
+/** A double-battle TARGET_SELECT whose cursor moves the way the game's does (#40, game-code.md §25). */
 function targetGridTab(opts: { targets: { i: number; label: string }[]; cursor: number; isMultipleTargets: boolean }) {
   const presses: number[] = [];
   const targets = opts.targets.map(o => o.i);
@@ -107,13 +100,10 @@ test("a walk reach presses its step rule onto the target, then commits: TARGET_S
 });
 
 /**
- * `start_run` on a scripted tab, from TITLE to the first decision after the save slot. Slot 1 holds a run, the rest are
- * empty. ACTION on a free slot starts the run and settles on CheckSwitchPhase's "Will you switch Pokémon?" CONFIRM, the
- * screen #30 mistook for the overwrite confirm; ACTION on Slot 1 opens the real overwrite confirm first. CANCEL on the
- * grid with an empty party asks to return to the title; Yes goes there (#41), after `yesLingers` settled polls still on
- * the grid, as the live handler sets STARTER_SELECT before the title phase shows TITLE. With `gameModeStalls` the
- * game-mode select never settles; with `filterBar` the grid opens with its filter bar active. `titleMenuScreen` is the
- * Screen the menu reader sees on TITLE, when it differs from the settled read's.
+ * `start_run` from TITLE to the first decision after the save slot, where only Slot 1 holds a run. A free slot settles on
+ * CheckSwitchPhase's CONFIRM, the screen #30 mistook for the overwrite confirm (game-code.md §26). `yesLingers` holds the
+ * grid for that many settled polls after Yes on the return-to-title confirm (#41). `titleMenuScreen` is the Screen the
+ * menu reader sees on TITLE, when it differs from the settled read's.
  */
 function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boolean; yesIgnored?: boolean; yesLingers?: number; gameModeStalls?: boolean; filterBar?: boolean; titleMenuScreen?: string; gridLands?: "wrong_species" | "miss" } = {}) {
   const presses: number[] = [];
@@ -125,7 +115,7 @@ function startRunTab(opts: { costs?: Record<string, number>; cancelIgnored?: boo
   const starterMenu: Screen = { ...gameMode, phase: "SelectStarterPhase", chain: [UiMode.TITLE, UiMode.STARTER_SELECT], options: ["Add to Party", "Cancel"] };
   const begin: Screen = { mode: UiMode.CONFIRM, screen: "CONFIRM", phase: "SelectStarterPhase", chain: [UiMode.TITLE, UiMode.STARTER_SELECT], family: "option_select", options: ["Yes", "No"] };
   const saveSlot: Screen = { mode: UiMode.SAVE_SLOT, screen: "SAVE_SLOT/SAVE", phase: "SelectStarterPhase", chain: [UiMode.TITLE, UiMode.TITLE], family: "save_slot", options: [] };
-  // The stale chain entries below the top are what the live game showed (#30).
+  // The stale chain entries below the top are what the live game showed (#30, game-code.md §26).
   const overwriteConfirm: Screen = { ...begin, chain: [UiMode.TITLE, UiMode.TITLE, UiMode.SAVE_SLOT], text: "Overwrite the data in the selected slot?" };
   const switchConfirm: Screen = { ...begin, phase: "CheckSwitchPhase", chain: [UiMode.TITLE], text: "Will you switch\nPokémon?" };
   const exitConfirm: Screen = { ...begin, text: "Return to the title screen?" };
@@ -303,11 +293,8 @@ test("start_run refuses screen_changed when the menu read's Screen differs from 
 });
 
 /**
- * #28's Charmander on SUMMARY/LEARN_MOVE: Scratch, Growl, Ember, Flare Blitz and the new Metal Claw on row 4, where the
- * row cursor starts. ACTION on a moveset row forgets that move; on row 4 it declines. With `setCursorWorks: false` the
- * handler's setCursor is unavailable and the driver must walk the rows one press at a time. `fineTracksRow: false` drops
- * the row from the fine fingerprint (the #32 hole before #43); `readerFailsAfterPress` makes every menu read throw once a
- * button has been pressed. Raw arrow keys move the row like processInput does.
+ * #28's Charmander on SUMMARY/LEARN_MOVE, the new Metal Claw on row 4 where the row cursor starts: ACTION on a moveset
+ * row forgets that move, and on row 4 declines. `fineTracksRow: false` is the #32 hole before #43.
  */
 function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean; readerFailsAfterPress?: boolean }) {
   const presses: number[] = [];
@@ -339,7 +326,6 @@ function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean; 
       else if (b === Button.DOWN) moveCursor = moveCursor < 4 ? moveCursor + 1 : 0;
       else if (b === Button.ACTION) answered = moveCursor;
     },
-    // The raw keyboard reaches the same handler: an arrow key moves the row exactly as processInput does.
     onRawKey: b => {
       rawKeys.push(b);
       if (b === Button.UP) moveCursor = moveCursor ? moveCursor - 1 : 4;
@@ -398,12 +384,7 @@ test("a set reach whose setCursor lands commits once, pressing nothing to move: 
   assert.deepEqual(tab.presses, [Button.ACTION], "the row is set directly, then committed once");
 });
 
-/**
- * #44's wave-21 shop: a Revive applied to Charmander (slot 1, full HP) on PARTY/MODIFIER. ACTION on Apply closes the
- * option list and PartyUiHandler shows "It won't have any effect." in its own message box, awaiting ACTION or CANCEL;
- * while it waits, every direction is swallowed. The fake mirrors the menu reader's party branch in that state: no options,
- * the handler's own message as text, `messagePending`.
- */
+/** #44's wave-21 shop: a Revive applied to a full-HP Charmander, answered by the party screen's own message (game-code.md §26). */
 function partyMessageTab() {
   const presses: number[] = [];
   const party = ["Fletchling", "Charmander"];
@@ -530,10 +511,7 @@ test("a none reach commits a modal through its own button action, pressing nothi
   assert.deepEqual(presses, []);
 });
 
-/**
- * #45's wave 18 shop: Rarer Candy levels the whole party, and each level-up is its own MESSAGE with a live prompt. ACTION
- * on one shows the next; after the last the shop comes back. Every press moves `messageText`, so the chain is progress.
- */
+/** #45's Rarer Candy: `count` level-up MESSAGEs, then the shop. Every press moves `messageText`, so the chain is progress. */
 function messageChainTab(count: number, opts: { cycle: boolean } = { cycle: false }) {
   const texts = Array.from({ length: count }, (_, i) => `Pokémon ${i + 1} grew to Lv. ${20 + i}!`);
   let shown: number | null = null;
@@ -604,9 +582,8 @@ test("a chain the cap does not reach carries no next hint (#45)", async () => {
 });
 
 /**
- * #55: a level-up chain whose ACTION presses leave the fine fingerprint where it was (the stats window swaps increments
- * for totals under the same message). Every press costs the settle's change grace, so the chain outlasts the call budget
- * while the game sits on a prompt waiting for ACTION.
+ * #55: level-up presses that leave the fine fingerprint where it was, as the stats window changes under the same message
+ * (game-code.md §26). Every press costs the settle's change grace, so the chain outlasts the call budget.
  */
 function unmovedChainTab() {
   let presses = 0;
@@ -637,10 +614,7 @@ test("an acting call that runs out of budget on a MESSAGE waiting for ACTION say
   assert.match(String(r.note), /ACTION/);
 });
 
-/**
- * The guards every acting call passes before its first press (#126 left them in the Driver). Unless `onPress` is given
- * the screen scripts no press: a guard that let the call through fails the test with `unexpected press`.
- */
+/** Unless `onPress` is given the screen scripts no press: a guard that let the call through fails with `unexpected press`. */
 function guardedTab(over: Pick<FakeScreen, "lockHolder" | "frame" | "menu" | "onPress" | "onRawKey" | "pumps" | "unreachable"> & { mode?: number; screen?: string } = {}) {
   const mode = over.mode ?? UiMode.COMMAND;
   const read = (): ScreenRead => ({
@@ -652,7 +626,7 @@ function guardedTab(over: Pick<FakeScreen, "lockHolder" | "frame" | "menu" | "on
   return drive({ ...screen, read });
 }
 
-/** COMMAND's 2×2 grid as the menu reader sees it: `screen` is the Screen it reads, which a test may move away from the settled read's. */
+/** `screen` is the Screen the menu reader reads, which a test may move away from the settled read's. */
 function commandMenu(cursor: number, screen = "COMMAND"): MenuRead {
   const options = ["Fight", "Ball", "Pokémon", "Run"].map((label, i) => ({ i, label }));
   return { readable: true, mode: UiMode.COMMAND, screen, family: "command", cursor, text: null, messagePending: false, extra: { fieldIndex: 0, catchable: true }, options };
@@ -868,7 +842,7 @@ test("auto-advance that finds the game moved on settles again and answers the me
 });
 
 test("a cursor walk that finds the game moved on settles again and walks on, not mistaking the unsent press for a stuck cursor", async () => {
-  // The double-battle TARGET_SELECT of #40; the game moves once on its own before the first press, leaving the cursor alone.
+  // The game moves once on its own before the first press, leaving the cursor alone.
   let cursor = 2;
   let tick = 0;
   let committed: number | null = null;
@@ -908,9 +882,7 @@ test("a frame read that fails is not a frozen loop", async () => {
   assert.equal(presses, 1);
 });
 
-// ---- The coach's read-only tools (extension-distribution.md §11.4)
-
-/** A settled COMMAND screen that scripts nothing but the reads a coach tool makes. */
+/** Scripts nothing but the reads a coach tool makes. */
 function coachTab(over: Pick<FakeScreen, "card" | "starters" | "unreachable">) {
   const read = (): ScreenRead => ({
     ready: true, settled: true, reason: "menu-open", mode: UiMode.COMMAND, screen: "COMMAND", phaseName: "CommandPhase", wave: 12, turn: 1,

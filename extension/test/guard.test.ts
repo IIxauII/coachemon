@@ -1,10 +1,3 @@
-/**
- * The store-artifact guard (extension-distribution.md §5.5). It runs against what the build actually wrote, not against the source, and CI runs
- * it after every build: it is the thing standing between a dev affordance and a store review.
- *
- * Check 4 — the dispatch keys — is the real one. The string checks are a backstop; if a vendored library ever trips
- * one, narrow that check to our own entry chunks, never drop it.
- */
 import assert from "node:assert/strict";
 import { createContext, runInContext } from "node:vm";
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -20,13 +13,12 @@ import { EVENT, encode } from "../src/relay/channel.ts";
 const OUT = fileURLToPath(new URL("../.output/", import.meta.url));
 
 /**
- * Anything that would be a dev affordance or the dev port, in a store artifact's files. extension-distribution.md §5.5 spells the interpreter
- * check as `new Function(`; the minifier drops the `new`, which no artifact would ever have tripped on, so the bare
- * call is banned too.
+ * A backstop to check 4: if a vendored library ever trips one, narrow the check to our own entry chunks, never drop it.
+ * The minifier drops the `new` from extension-distribution.md §5.5's `new Function(`, so the bare call is banned too.
  */
 const BANNED_IN_STORE = ["47148", "eval(", "new Function(", "Function(", "screenshot", "captureVisibleTab", "executeScript", "runtime.reload", "dev-reload"];
 
-/** The store hub's URL, which a store build must actually dial (extension-distribution.md §8.1). */
+/** The store hub (extension-distribution.md §8.1). */
 const REQUIRED_IN_STORE = "ws://127.0.0.1:47147";
 
 type Artifact = { name: string; dir: string; flavour: "store" | "dev"; target: string };
@@ -41,17 +33,13 @@ function artifacts(): Artifact[] {
   }));
 }
 
-/** Every file in an artifact except the icons, which are the only binaries. */
+/** Every file but the icons, which are the only binaries. */
 function files(dir: string): { path: string; rel: string }[] {
   return walk(dir, name => !name.endsWith(".png")).map(rel => ({ path: join(dir, rel), rel }));
 }
 
 const manifestOf = (a: Artifact) => JSON.parse(readFileSync(join(a.dir, "manifest.json"), "utf8")) as Record<string, unknown>;
 
-/**
- * Check 4: load the built `page.js` in a context with nothing but a fake document, and read the command list out of
- * the hello it announces itself with (extension-distribution.md §9.3). A store artifact's list must **equal** `STORE_COMMANDS`.
- */
 function commandsOf(a: Artifact): { build: string; commands: string[]; answers: boolean } {
   const doc = new EventTarget();
   const hellos: { build: string; side: string; commands?: string[] }[] = [];
@@ -93,9 +81,8 @@ for (const a of all) {
       assert.deepEqual([...commands].sort(), [...COMMAND_NAMES].sort());
       for (const dev of DEV_COMMAND_NAMES) assert.ok(!commands.includes(dev), `store build registers ${dev}`);
     } else {
-      // A dev build may add to the table but never drop a store command.
       for (const name of COMMAND_NAMES) assert.ok(commands.includes(name), `dev build is missing ${name}`);
-      // Only the page's half of the dev table is here: the other two are the background's, and never reach a tab (extension-distribution.md §10.6).
+      // `DEV_COMMAND_NAMES` lists the page's command first; the rest are the background's and never reach a tab (extension-distribution.md §10.6).
       const [inPage, ...inBackground] = DEV_COMMAND_NAMES;
       assert.ok(commands.includes(inPage), `dev build does not register ${inPage}`);
       for (const name of inBackground) assert.ok(!commands.includes(name), `the page registered ${name}`);
@@ -108,9 +95,8 @@ for (const a of all) {
     assert.doesNotMatch(hud, /^\s*\/\*/m);
   });
 
-  // The Firefox add-on linter warns on `import()` whose argument it can't see is a literal, and the HUD is the one
-  // script that reaches the game's own modules (#381). It does that through an injected module script whose source
-  // imports one literal URL, so the packaged file calls `import` not at all.
+  // The Firefox add-on linter warns on an `import()` it cannot see is a literal (#381): the HUD reaches the game's
+  // modules through an injected module script instead.
   test(`${a.name}: the HUD calls no import() (extension-distribution.md §5.2)`, () => {
     assert.doesNotMatch(readFileSync(join(a.dir, "hud.js"), "utf8"), /(?<![\w$.])import\s*\(/);
   });

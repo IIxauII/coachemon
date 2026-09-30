@@ -1,12 +1,5 @@
-/**
- * `deadPort`: the port a test points a client at to watch it find no hub. The other fakes here are scripted by the
- * test that uses them, so they are checked by those tests; this one makes a promise of its own, which is what these
- * tests hold it to.
- *
- * The promise is the one `freePort` could not make — that no `listen(0)` in the run can be handed the port between
- * the test getting it and using it (#327). A hub that took it answered the handshake, and the test asserting an
- * unreachable game read that hub's rungs instead, which failed a release.
- */
+// `deadPort` promises what `freePort` could not: no `listen(0)` in the run is handed the port between the test getting
+// it and using it. A hub that took it answered the handshake, and a test of an unreachable game read its rungs (#327).
 import assert from "node:assert/strict";
 import { connect, createServer } from "node:net";
 import { after, test } from "node:test";
@@ -18,11 +11,7 @@ after(() => {
   for (const s of shut) s();
 });
 
-/**
- * One port the kernel chose itself: what every hub in these tests binds, and what used to steal a dead port. It binds
- * port 0 directly rather than through `bindable`, so the sweep below is an honest witness and not the helper agreeing
- * with itself. `shut` is the failure path: an assertion that throws mid-sweep still gives the listeners back.
- */
+/** Binds port 0 directly, not through `bindable`, so the sweep below is an honest witness and not the helper agreeing with itself. */
 function bindEphemeral(): Promise<{ port: number; close: () => Promise<void> }> {
   return new Promise(resolve => {
     const s = createServer();
@@ -31,7 +20,6 @@ function bindEphemeral(): Promise<{ port: number; close: () => Promise<void> }> 
   });
 }
 
-/** How a client finds nothing there: the connection is refused rather than accepted by a squatter. */
 function dial(port: number): Promise<NodeJS.ErrnoException | null> {
   return new Promise(resolve => {
     const s = connect(port, "127.0.0.1", () => {
@@ -52,8 +40,7 @@ test("a dead port is outside the ephemeral range, so no `listen(0)` in the run c
   const { first, last } = EPHEMERAL_RANGE;
   assert.ok(port < first || port > last, `${port} is in ${first}..${last}, the range the kernel hands out, so another test's hub can take it`);
 
-  // The range is the guarantee; this is the witness to it, in the traffic that caused the flake — every hub in these
-  // tests binds port 0. A sweep that did land on the dead port would mean the range above is wrong for this machine.
+  // A sweep that lands on the dead port means the range above is wrong for this machine.
   const held = [];
   for (let i = 0; i < 200; i++) held.push(await bindEphemeral());
   const stolen = held.find(h => h.port === port);
@@ -67,7 +54,6 @@ test("a kernel with no room below its range gets a band above it, rather than ev
   assert.deepEqual(bandOutside({ first: 49_152, last: 65_535 }), { first: 39_152, width: 10_000 });
   // A range starting too low for that: the ports above its end are still ports `listen(0)` is never handed.
   assert.deepEqual(bandOutside({ first: 10_000, last: 60_999 }), { first: 61_000, width: 4_536 });
-  // A kernel that hands out everything leaves nowhere to stand, and says so rather than picking a port it hands out.
   assert.throws(() => bandOutside({ first: 1_024, last: 65_535 }), /leaves no band of ports outside it/);
 });
 

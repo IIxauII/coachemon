@@ -1,7 +1,3 @@
-/**
- * The manifests (extension-distribution.md §5.3, §5.4), pinned key by key. The guard checks the artifact; this checks the intent, so a change
- * to a reviewed value has to be deliberate.
- */
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Target } from "../../src/protocol/wire.ts";
@@ -48,7 +44,6 @@ test("Chrome's floor is `world: \"MAIN\"`'s, on a service worker (extension-dist
   const m = store("chrome");
   assert.equal(m.minimum_chrome_version, "111");
   assert.deepEqual(m.background, { service_worker: "background.js" });
-  // Nothing pins the extension id, so Chrome needs no `key`.
   assert.ok(!("key" in m));
 });
 
@@ -57,8 +52,7 @@ test("Firefox carries the CSP override, the gecko id, the 142 floor and the data
   assert.deepEqual(m.background, { scripts: ["background.js"] });
   assert.deepEqual(m.action, { default_title: ACTION_TITLE });
   assert.deepEqual(m.content_security_policy, { extension_pages: "script-src 'self'" });
-  // Exact, so neither half of #380 can regress unseen: a floor below 142, or a `gecko_android` key. `manifest.ts`
-  // says why each one matters; extension-distribution.md §5.3 is the source.
+  // Exact, so neither half of #380 can regress unseen: a floor below 142, or a `gecko_android` key.
   assert.deepEqual(m.browser_specific_settings, {
     gecko: {
       id: GECKO_ID,
@@ -81,7 +75,6 @@ test("the dev flavour adds exactly the two permissions it needs (extension-distr
     const m = manifestFor({ target, flavour: "dev", version: "1.2.3" });
     assert.deepEqual(m.permissions, ["scripting", "activeTab"]);
     assert.deepEqual(m.host_permissions, ["<all_urls>"]);
-    // Everything else is the store manifest, unchanged.
     const { permissions, host_permissions, ...rest } = m;
     assert.deepEqual(rest, store(target));
   }

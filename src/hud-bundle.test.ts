@@ -11,7 +11,6 @@ const fails = (files: Files, code: string, message: RegExp) =>
     assert.match(e.message, message);
     return true;
   });
-// Loads an expose-mode bundle and returns what it put on globalThis.__hud.
 const load = (files: Files): Record<string, Record<string, unknown>> => {
   new Function(hud(files, true))();
   return (globalThis as unknown as { __hud: Record<string, Record<string, unknown>> }).__hud;
@@ -87,7 +86,6 @@ test("hud-off is the prelude alone, and the probe carries only its imports", () 
   assert.doesNotMatch(off, /01-core/);
   const probe = bundle("starters");
   assert.match(probe, /const MODE = "starters";/);
-  // The probe imports the shared screen detection (02-screens) as well as the type chart, and nothing else.
   assert.deepEqual([...probe.matchAll(/^\/\/ ---- ([\w-]+\.js|enums)\b/gm)].map(m => m[1]), ["enums", "01-core.js", "02-screens.js", "probe.js"]);
   assert.match(probe, /^const \{ TYPES \} = __hud\["01-core"\];$/m);
   assert.match(probe, /^const \{ learnState, rewardsScreen \} = __hud\["02-screens"\];$/m);
@@ -133,13 +131,11 @@ test("the HUD bundle ships comment-stripped and still parses (extension-distribu
   assert.doesNotThrow(() => new Function(stripped));
 });
 
-// The Firefox add-on linter rejects `import()` whose argument it can't see is a literal, and `hud.js` ships inside the
-// extension (#381). The chunk scan reaches the game's own modules through an injected module script instead, so what
-// ships holds no `import()` call at all — the one shape of this check that can't drift with how the scan is written.
-// Stripped, because that is the form the linter reads (extension-distribution.md §5.2): the scan's own comments may name the call it avoids.
+// The Firefox add-on linter rejects an `import()` it cannot see is a literal (#381). Stripped, because that is the form
+// the linter reads (extension-distribution.md §5.2): the scan's own comments may name the call it avoids.
 test("the shipped HUD calls no import() (extension-distribution.md §5.2)", () => {
   assert.doesNotMatch(stripComments(bundle("hud")), /(?<![\w$.])import\s*\(/);
-  // And still reads the chunks: a script the HUD gives `type = "module"`, whose source is the import. Without this the
-  // check above would also pass on a HUD that had stopped reading them altogether.
+  // The chunks are read through a module script instead: without this the check above would also pass on a HUD that had
+  // stopped reading them altogether.
   assert.match(stripComments(bundle("hud")), /\.type = "module";/);
 });

@@ -1,7 +1,3 @@
-/**
- * Firefox's consent (extension-distribution.md §8.4): the data-collection permission the toolbar click asks for, and Orion — which runs the
- * AMO build and must count as consented without ever showing a click.
- */
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Target } from "../../src/protocol/wire.ts";
@@ -25,7 +21,6 @@ function deps(o: { target?: Target; name?: string | null; contains?: boolean; re
   return { d, clicks, requested };
 }
 
-/** `startConsent` calls `grant` synchronously or not at all; this collects whichever. */
 async function run(h: ReturnType<typeof deps>) {
   let granted = 0;
   await startConsent(h.d, () => void granted++);

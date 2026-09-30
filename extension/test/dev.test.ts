@@ -1,7 +1,3 @@
-/**
- * The dev-only table (extension-distribution.md §10.6). The guard proves these names never reach a store artifact; this proves they do what the
- * dev loop and `scripts/eval.ts` need of them.
- */
 import assert from "node:assert/strict";
 import test from "node:test";
 import { DEV_PAGE_HANDLERS, SCREENSHOT_CHUNK, devCommands, type DevApi, type ScreenshotPart } from "../src/dev/commands.ts";
@@ -27,8 +23,6 @@ const result = async (answer: Promise<RelayReply> | null): Promise<any> => {
   assert.equal(reply.ok, true);
   return (reply as { result: unknown }).result;
 };
-
-// ------------------------------------------------------------------- eval
 
 test("eval runs a body after the locator, with the scene in scope", t => {
   onPage(t, { arena: { biomeType: 4 }, ui: { mode: 2 } });
@@ -57,9 +51,6 @@ test("a body with no return answers null, which is a value the channel can carry
   assert.equal(run("1 + 1"), null);
 });
 
-// ------------------------------------------------------------- screenshot
-
-/** A capture of `size` base64 characters, plus the data URL prefix the browser puts in front of it. */
 function capture(size: number): { api: DevApi; calls: () => number; body: string } {
   let calls = 0;
   const body = "a".repeat(size);
@@ -119,8 +110,6 @@ test("the capture is of the window the game tab is in", async () => {
   assert.deepEqual(seen, [3]);
 });
 
-// ----------------------------------------------------------------- reload
-
 test("reload answers before it reloads: the reply goes out on the socket the reload takes", async () => {
   const order: string[] = [];
   let fire: (() => void) | null = null;
@@ -144,8 +133,6 @@ test("a store command is not the background's to answer", () => {
   assert.equal(dev(cmd("probe")), null);
   assert.equal(dev(cmd("press", { button: 0, fine: "x" })), null);
 });
-
-// -------------------------------------------------------------- reinject
 
 test("a reloaded dev build puts both worlds' scripts back into every game tab (extension-distribution.md §5.4)", async () => {
   const done: string[] = [];
@@ -176,8 +163,6 @@ test("a tab the browser will not script does not take the others down with it", 
 test("no tabs to query is no re-injection, not a failure", async () => {
   await reinject({ gameTabs: () => Promise.reject(new Error("no tabs permission")), inject: async () => assert.fail("injected with no tabs") });
 });
-
-// ----------------------------------------------------------- the dev loop
 
 test("the watcher rebuilds for what the build reads (extension-distribution.md §5.4)", () => {
   for (const path of [
