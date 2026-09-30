@@ -145,8 +145,11 @@ test("the trainer's switch prompt is taken when the card plays one mon, so its f
   const ask: Menu = { screen: "CONFIRM", wave: 3, text: "Will you switch\nPokémon?", options: opts(["Yes", "No"]) };
   assert.deepEqual(decide(ask, battle("Squirtle Water Gun → Pidgey"), freshMemory()).args, { label: "Yes" });
   assert.deepEqual(decide(ask, null, freshMemory()).args, { label: "No" });
-  const named: Menu = { ...ask, text: "Will you switch\nCharmander?" };
-  assert.deepEqual(decide(named, battle("Charmander Ember → Pidgey"), freshMemory()).args, { label: "No" }, "the card keeps the mon the prompt names");
+});
+
+test("the trainer's switch prompt is declined when the card plays the mon it names, and the No is the card's (#499)", () => {
+  const named: Menu = { screen: "CONFIRM", wave: 3, text: "Will you switch\nCharmander?", options: opts(["Yes", "No"]) };
+  assert.deepEqual(decide(named, battle("Charmander Ember → Pidgey"), freshMemory()), { tool: "select_option", args: { label: "No" }, by: "card" });
   assert.deepEqual(decide(named, battle("Squirtle Water Gun → Pidgey"), freshMemory()).args, { label: "Yes" });
 });
 

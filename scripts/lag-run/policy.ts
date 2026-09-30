@@ -208,7 +208,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
       const one = line ? slots(line) : [];
       const active = /will you switch\s+(.+?)\?/i.exec(text)?.[1];
       const keeps = !!active && !/^pok[ée]mon$/i.test(active) && one.length === 1 && startsWithMon(one[0].text, active);
-      return one.length === 1 && !keeps ? pick(has(/^yes/) ?? first, "card") : pick(has(/^no/) ?? first, line ? "card" : "rule");
+      return one.length === 1 && !keeps ? pick(has(/^yes/) ?? first, "card") : pick(has(/^no/) ?? first, keeps ? "card" : "rule");
     }
     return pick(has(/^no/) ?? first, "rule");
   }

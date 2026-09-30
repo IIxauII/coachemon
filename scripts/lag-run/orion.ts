@@ -23,19 +23,19 @@ function inTab(js: string): string {
   return out;
 }
 
-// read.sh's wrapper: the probe reaches the page world through a <script> tag and answers on the DOM.
-const probe = (mode: string) => `(() => { const e = document.createElement('script'); e.textContent = ${JSON.stringify(bundle(mode))};
+// read.sh's wrapper: page-world code reaches the page through a <script> tag and answers on the DOM.
+const inPage = (body: string) => `(() => { const e = document.createElement('script'); e.textContent = ${JSON.stringify(body)};
   document.documentElement.appendChild(e); e.remove(); const r = document.documentElement.dataset.mcpOut;
   delete document.documentElement.dataset.mcpOut; return r || JSON.stringify({ error: 'no result (CSP or page not loaded)' }); })()`;
 
+const probe = (mode: string) => inPage(bundle(mode));
+
 // The phases that wait on a sound's end, such as the heal after a boss wave, wait forever on a locked AudioContext:
 // WebKit unlocks it on a real gesture, never on `do JavaScript`, and the run's reload locks it again (#499).
-const AUDIO = `(() => { const e = document.createElement('script'); e.textContent = ${JSON.stringify(`try {
+const AUDIO = inPage(`try {
   const game = Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
   document.documentElement.dataset.mcpOut = JSON.stringify({ state: game.sound.context?.state ?? null });
-} catch (err) { document.documentElement.dataset.mcpOut = JSON.stringify({ error: String(err) }); }`)};
-  document.documentElement.appendChild(e); e.remove(); const r = document.documentElement.dataset.mcpOut;
-  delete document.documentElement.dataset.mcpOut; return r || JSON.stringify({ error: 'no result' }); })()`;
+} catch (err) { document.documentElement.dataset.mcpOut = JSON.stringify({ error: String(err) }); }`);
 
 export type Drained = { hudActive: boolean; meterActive: boolean; stats: Record<string, unknown> & { ticks: unknown[]; gaps: unknown[] } | null; error?: string };
 

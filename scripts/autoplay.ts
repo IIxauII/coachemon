@@ -75,7 +75,8 @@ if (LAG) {
   }
   const audio = screen === "TITLE" ? tab!.audio() : null;
   if (screen !== "TITLE") stop = `no-title:${screen}`;
-  else if (audio?.state !== "running") {
+  else if (audio?.error || audio?.state == null) stop = `audio-probe:${audio?.error ?? "no context"}`;
+  else if (audio.state !== "running") {
     stop = "audio-locked";
     console.error(`the tab's audio is locked (${JSON.stringify(audio)}): the heal after wave 10 would wait on it forever. Allow auto-play for pokerogue.net in Orion (docs/lag-run.md)`);
   } else {
