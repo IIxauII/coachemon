@@ -347,7 +347,8 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 }
 
 // A sprite the atlas has not loaded falls back to the name it stands for, and the panel redraws on the next refresh
-// until the sprite lands: the draw signature is never banked while a sprite is still missing.
+// until the sprite lands: the draw signature is never banked while a sprite is still missing. The meter counts every
+// draw that wanted it, and keeps the sprite, marked found, once it lands.
 {
   const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
   const el = mount(scene, { expose: true });
@@ -365,11 +366,12 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.deepEqual(entry(), { id: "k/1", misses, found: true }, "a sprite that lands is kept, marked found");
 }
 
+// The meter's `lang` is the language the game's detector cached, and `null` when the key holds none.
 {
   mount({ ui: null }, { stored: { prLang: "de" } });
   assert.equal(globalThis.__coachHud.stats().facts.lang, "de");
   mount({ ui: null });
-  assert.equal(globalThis.__coachHud.stats().facts.lang, null, "a first visit before the detector has cached one");
+  assert.equal(globalThis.__coachHud.stats().facts.lang, null, "no language cached");
 }
 
 // ---- What the panel remembers is one key, holding the view and the last group id.

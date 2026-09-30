@@ -58,7 +58,7 @@ const timer = setInterval(clockTick, 1000);
 clockTick();
 meterFacts(() => {
   const loop = battleScene()?.game?.loop;
-  // The game's language, as its detector cached it (game-code.md §22).
+  // game-code.md §22.
   let lang = null;
   try { lang = localStorage.getItem("prLang"); } catch {}
   return { fps: loop ? Math.round(loop.actualFps) : null, setTimeoutLoop: loop?.raf?.isSetTimeOut ?? null, lang, sprites: spriteMisses() };

@@ -3,7 +3,7 @@
 The checklist for [#485](https://github.com/IIxauII/coachemon/issues/485): the player plays, the agent reads. It is one
 session of eight short segments, each a Web Inspector recording plus one read of the panel's meter, and two facts only
 the live game knows. The reasoning behind each step is the research note linked from
-[#482](https://github.com/IIxauII/coachemon/issues/482), §7.2.
+[#482](https://github.com/IIxauII/coachemon/issues/482).
 
 Commands below run from the repo root. `read.sh` is `skills/coachemon/scripts/read.sh`.
 
@@ -57,12 +57,14 @@ A segment that happens to cover a second moment (a level-up that brings a move-l
 
 ## The two facts
 
-Read these from the last `.stats.json`:
+Read these from `6-mystery.stats.json`, the last read with the panel on; the baseline segments draw nothing, so their
+sprite counts stand still.
 
 - **The game's language** is `.stats.facts.lang`. With an older panel, run `localStorage.getItem("prLang")` in the
-  console. `i18next.resolvedLanguage` throws there: the console has no `i18next` global (game-code.md §22).
+  console. `i18next.resolvedLanguage` throws there: the console has no `i18next` global (game-code.md §22). A `null`
+  means the page could not reach its storage; ask for `navigator.language` from the console instead.
 - **A sprite the panel keeps failing to find** is an entry in `.stats.facts.sprites` with `found: false` whose
-  `misses` keeps climbing from one segment to the next. An entry that turned `found: true` was only a late atlas. With
+  `misses` keeps climbing from segment 1 to segment 6. An entry that turned `found: true` was only a late atlas. With
   an older panel, the agent looks instead for `clock` ticks with `drew: true` on an unchanged `kind` and `wave`: a card
   redrawn every second is the symptom.
 
@@ -71,8 +73,8 @@ Read these from the last `.stats.json`:
 Tell the agent where the folder is. The agent reads the `.stats.json` files and the Timelines exports and posts to #485:
 
 - the per-stage refresh timings per segment
-- every frame gap of 34 ms and up (two frames at 60 Hz), with the panel's stage and milliseconds inside it, the
-  baseline segments alongside; a single late frame under 34 ms is only counted, in `frames.under`, with no stage
+- every frame gap of `GAP_MS` and up (`01-meter.js`), with the panel's stage and milliseconds inside it, the baseline
+  segments alongside; a late frame under `GAP_MS` is only counted, in `frames.under`, with no stage
 - the Event Timing entries for the key presses that froze
 - the language and the sprite answer
 - the notes
