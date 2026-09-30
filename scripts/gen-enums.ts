@@ -1,21 +1,7 @@
 /**
- * Enum codegen: `Button`, `UiMode` and the discriminator enums the server
- * resolves screens with, generated from the public PokéRogue source at the
- * pinned tag rather than hand-transcribed (#2).
- *
- *   npm run enums:gen                       # at the pin in src/escape-ladder/reviewed.json
- *   npm run enums:gen -- --version 1.12.0.12
- *   npm run enums:gen -- --source ../pokerogue
- *   npm run enums:gen -- --check           # fail if generated.ts has drifted from this generator
- *
- * `--check` is what CI runs on every PR (#258, #278): the output is a function of
- * the pinned tag, this file and `src/enums/parse.ts` (imported below) alone, so a
- * hand-edit to `src/enums/generated.ts` — or a generator change that was never
- * re-run — is a red build rather than a silent revert at the next generate.
- *
- * The pin is shared with the escape ladder: both resolve `v<gameVersion>` and
- * never fetch a default branch, because the repo's default is `beta` and its
- * tables already differ from the deployed build (#2).
+ * Enum codegen from PokéRogue's source at the pinned tag, never its default branch: that is `beta`, whose tables
+ * already differ from the deployed build (#2). CI runs `--check` (#258, #278), so the output must stay a function of
+ * the tag, this file and `src/enums/parse.ts` alone.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -26,7 +12,6 @@ const RAW = "https://raw.githubusercontent.com/pagefaultgames/pokerogue";
 const REVIEWED = new URL("../src/escape-ladder/reviewed.json", import.meta.url);
 const OUT = new URL("../src/enums/generated.ts", import.meta.url);
 
-/** Enum name → file it lives in. `enum X {}`, `const X = {} as const` and `Object.freeze({})` forms are parsed. */
 const ENUMS: Record<string, string> = {
   Button: "src/enums/buttons.ts",
   UiMode: "src/enums/ui-mode.ts",
@@ -36,8 +21,6 @@ const ENUMS: Record<string, string> = {
   SaveSlotUiMode: "src/ui/handlers/save-slot-select-ui-handler.ts",
   SummaryUiMode: "src/ui/handlers/summary-ui-handler.ts",
   PartyOption: "src/ui/handlers/party-ui-handler.ts",
-  // The coach HUD's enums (#94). The game's build inlines enums as numbers, so no
-  // names exist at runtime: `hud-bundle.mjs` injects the members the HUD names.
   AbilityAttr: "src/enums/ability-attr.ts",
   AbilityId: "src/enums/ability-id.ts",
   AiType: "src/enums/ai-type.ts",

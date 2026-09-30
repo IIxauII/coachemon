@@ -1,43 +1,19 @@
 /**
- * Moveset-prior codegen: trims the pkmn/randbats sets into the snapshot the
- * coach HUD bundles (#70).
- *
- *   npm run randbats:gen            # refetch and rewrite the snapshot
- *   npm run randbats:gen -- --check # fail if the snapshot is stale or oversized
- *
- * Why a snapshot and not a live fetch: the HUD runs inside the PokéRogue page,
- * which may not reach a third-party host, and a prior that disappears when the
- * network does is a prior the card cannot explain. The upstream files are MIT
- * (pkmn/randbats, Showdown's dex); only move *names per role* and the evolution
- * chains are kept — no PokéRogue data is copied (see #77).
- *
- * The prior is a nudge and never a veto, so staleness is cheap: a set that
- * moved on just stops matching. `.github/workflows/randbats.yml` re-runs this
- * weekly so the drift stays small (#258), regenerates the goldens alongside it
- * and opens a pull request; the committed `05-randbats.js` is the pin, and
- * merging that PR is the deliberate bump. It used to run in the release job
- * instead, which let upstream moving on its own redden a push that changed
- * nothing here (#279, #291).
- *
- * `--check` is *not* a CI gate: it rebuilds from live upstream, which moves on
- * its own, and would go red on days nothing here changed. It stays a local
- * staleness check — the weekly job refreshes rather than checks, so the only
- * hard exit that can fire there is the 150 KB budget, and upstream moving is
- * that job's whole subject.
+ * Trims the MIT pkmn/randbats sets into the snapshot the coach HUD bundles (#70), and copies no PokéRogue data (#77).
+ * Both modes read live upstream, which moves on its own: `--check` gates nothing, and the refresh runs only in
+ * `randbats.yml`'s weekly pull request — in the release job it reddened pushes that changed nothing here (#279, #291).
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 const RANDBATS = "https://data.pkmn.cc/randbats";
-/** Showdown's dex, for evolution chains only: randbats has no not-fully-evolved species. */
 const DEX = "https://play.pokemonshowdown.com/data/pokedex.json";
 const OUT = new URL("../skills/coachemon/scripts/hud/05-randbats.js", import.meta.url);
-/** The snapshot rides in the injected HUD bundle, so it stays small enough to paste. */
 const MAX_BYTES = 150 * 1024;
 
 const { values: args } = parseArgs({ options: { check: { type: "boolean" } } });
 
-/** Showdown's id form: lowercase, letters and digits only. The HUD normalises the same way. */
+/** The HUD's `rbId` (`40-learn.js`, `51-starters.js`) normalises the same way: change all three together. */
 const toId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 type Role = { moves?: string[] };
@@ -52,7 +28,7 @@ const fetchJson = async <T>(url: string): Promise<T> => {
   return (await res.json()) as T;
 };
 
-/** Move names per role, deduped and sorted, for one randbats file. Older gens have a flat `moves` list. */
+/** Older gens have a flat `moves` list, not roles. */
 const rolesOf = (set: Set_): [string, string[]][] => {
   const roles = set.roles && Object.keys(set.roles).length
     ? Object.entries(set.roles).map(([name, r]) => [name, r.moves ?? []] as [string, string[]])
@@ -60,10 +36,7 @@ const rolesOf = (set: Set_): [string, string[]][] => {
   return roles.filter(([, moves]) => moves.length).map(([name, moves]) => [name, [...new Set(moves)].sort()]);
 };
 
-/**
- * Species → roles, as indices into the shared move and role tables. Later files only fill species the
- * earlier ones missed, so gen 9 wins and gen 8/7 are the fallback for species it dropped.
- */
+/** An earlier file wins: a later one only fills the species the earlier ones miss. */
 const pack = (files: Sets[], moveIx: Map<string, number>, roleIx: Map<string, number>) => {
   const out: Record<string, number[][]> = {};
   for (const sets of files) {
@@ -85,7 +58,6 @@ const intern = (table: Map<string, number>, key: string) => {
   return table.size - 1;
 };
 
-/** Every fully-evolved descendant of `id`, by walking the dex's `evos` to the leaves. */
 const finalsOf = (dex: Dex, id: string): string[] => {
   const evos = dex[id]?.evos;
   if (!evos?.length) return [id];
@@ -108,19 +80,15 @@ const build = async () => {
   const doubles = pack([gen9d], moveIx, roleIx);
   const has = (id: string) => id in singles || id in doubles;
 
-  // Forms: randbats keys a form ("Rotom-Wash") that a base name ("Rotom") never matches, and the HUD only
-  // knows PokéRogue's base species name. Derived from the dex's `baseSpecies`, not hand-listed: every form
-  // whose base has no sets of its own lands under that base.
+  // The HUD knows only PokéRogue's base species name, which never matches a randbats form key ("Rotom-Wash").
   const forms: Record<string, string[]> = {};
   for (const id of [...new Set([...Object.keys(singles), ...Object.keys(doubles)])].sort()) {
     const base = dex[id]?.baseSpecies ? toId(dex[id].baseSpecies!) : null;
     if (!base || base === id || has(base)) continue;
     (forms[base] ??= []).push(id);
   }
-  /** The sets an id stands for: its own, or every form of it. */
   const setsFor = (id: string) => (has(id) ? [id] : (forms[id] ?? []));
 
-  // Not-fully-evolved species: the sets they'd grow into. Only where the species itself has none.
   const evos: Record<string, string[]> = {};
   for (const [id, entry] of Object.entries(dex)) {
     if (has(id) || id in forms || !entry.evos?.length) continue;
@@ -152,9 +120,6 @@ f: ${list(b.forms)},
 };
 `;
 
-// A refresh is a nicety, not a gate: if the upstream files are unreachable, keep the snapshot we have. The weekly
-// job then sees a clean tree and opens no pull request. The prior only ever nudges a score, so one that is a few
-// weeks stale costs nothing worth a red for.
 let built: Awaited<ReturnType<typeof build>>;
 try {
   built = await build();
