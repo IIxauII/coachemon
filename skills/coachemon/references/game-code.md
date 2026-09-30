@@ -2647,6 +2647,16 @@ and calls `launchBattle()`, which ends in `phaseManager.toTitleScreen(true)` (`:
 save takes this path: `EncounterPhase` calls it when `gameData.saveAll` resolves false
 (`src/phases/encounter-phase.ts:299-305`, `src/system/game-data.ts:1315-1395`).
 
+**A rejected per-wave save hangs instead.** That `saveAll(...).then(...)` has no `.catch` and is not returned
+(`src/phases/encounter-phase.ts:290-309`), so a rejection skips both `reset(true)` and `doEncounter()`: the phase never
+calls `end()`, and the rejection goes unhandled. The rejecting call is the unguarded verify fetch
+(`src/api/system-savedata-api.ts:40-45`, `src/api/api-base.ts:97`), which `saveAll` reaches only on a logged-in wave
+that does not sync (`src/system/game-data.ts:596-601`, `:1373-1374`); a syncing wave's `updateAll` catches its own
+errors and resolves `false` (`src/api/savedata-api.ts:23-33`). Only the run's first wave is an `EncounterPhase`: later
+ones are `NextEncounterPhase` or `NewBiomeEncounterPhase` (`src/battle-scene.ts:1611-1614`), subclasses with their own
+`phaseName` that inherit this save. The hung phase sits in MESSAGE with no `onActionInput`, the state a healthy one
+also passes through during its 2 s intro tween and its unprompted wild-wave text (`encounter-phase.ts:350-366`, `:429`).
+
 **Settings.** Six settings carry `requireReload` (`src/system/settings/settings.ts`: Language `:438`, UI theme `:455`,
 candy upgrade display `:549`, time-of-day widget `:578`, sprite set `:611`, battle music `:732`). Changing one only
 saves it and flags the handler (`src/ui/settings/base-settings-ui-handler.ts:421-425`); leaving the screen, by CANCEL

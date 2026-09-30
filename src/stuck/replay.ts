@@ -1,4 +1,3 @@
-/** Replays a recorded sequence of acting calls and screen reads through a fresh detector. */
 import { StuckDetector, type ActingCall, type Assessment, type AssessContext } from "./detector.ts";
 
 export type ReplayStep =
@@ -16,7 +15,7 @@ export type ReplayResult = {
   admitted: number;
   trips: number;
   firstTrip: Trip | null;
-  /** Most repeats of any assessed fingerprint in the window, tripped or not. */
+  /** Most repeats of any settled read's fingerprint in the window, tripped or not. */
   maxRepeats: number;
   /** Where `maxRepeats` was first reached. */
   maxRepeatsAt: { transcriptLine: number; fingerprint: string } | null;
