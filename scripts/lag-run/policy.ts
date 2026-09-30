@@ -161,6 +161,12 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     }
     if (/stop trying/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
     if (/skip taking/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
+    // Offered only with the game's retries setting on; a fight lost every time would otherwise loop.
+    if (/retry/i.test(text)) {
+      const n = [1, 2, 3].find(i => !mem.tried.has(`${menu.wave}|retry|${i}`));
+      if (n) { tried(mem, `${menu.wave}|retry|${n}`); return pick(has(/^yes/) ?? first, "rule"); }
+      return pick(has(/^no/) ?? first, "rule");
+    }
     // A yes the party screen cannot use is cancelled there.
     if (/will you switch/i.test(text)) {
       const line = act(live, "battle");

@@ -119,6 +119,12 @@ test("a reward that came back unused is not taken again: the next one is, then t
   assert.deepEqual(decide(skip, null, mem).args, { label: "Yes" });
 });
 
+test("a lost battle is retried three times a wave, then the run is let go (#499)", () => {
+  const ask: Menu = { screen: "CONFIRM", wave: 9, text: "Would you like to retry\nthe battle?", options: opts(["Yes", "No"]) };
+  const mem = freshMemory();
+  assert.deepEqual([1, 2, 3, 4].map(() => decide(ask, null, mem).args.label), ["Yes", "Yes", "Yes", "No"]);
+});
+
 test("a PP item's move list takes the first move, since no verb there commits it (#499)", () => {
   const moves: Menu = { screen: "PARTY/MOVE_MODIFIER:options", wave: 6, options: opts(["Tackle", "Vine Whip", "Cancel"]) };
   assert.deepEqual(decide(moves, null, freshMemory()).args, { label: "Tackle" });
