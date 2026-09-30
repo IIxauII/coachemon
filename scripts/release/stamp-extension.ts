@@ -1,7 +1,5 @@
-/**
- * The extension stream's `prepare` (extension-distribution.md §14.2). The version is stamped into the workspace only and
- * never committed: the `extension-v*` tag is the version, and `extension/package.json` stays `0.0.0-placeholder`.
- */
+/** The extension stream's `prepare` (extension-distribution.md §14.2): the stamp is never committed, so `master` keeps
+ * `0.0.0-placeholder`. */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

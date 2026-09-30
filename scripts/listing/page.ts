@@ -1,9 +1,6 @@
-/**
- * Two documents, and they cannot be one: the panel's footprint is a share of `min(100vw, 177.78vh)`, so a 1280 px shot
- * window would lay it out at about 200 px. The **stage** holds the HUD at a pinned 1080p viewport and the **frame** is
- * the store-sized window that scales it (#349). The game's two faces are rendered from the pinned clone, **never
- * committed** (extension-distribution.md §3).
- */
+/** The **stage** lays the HUD out at a pinned 1080p viewport and the **frame** scales it to the store's window: laid out
+ * at 1280 px, the panel would be about 200 px (#349). The game's faces are rendered, **never committed**
+ * (extension-distribution.md §3). */
 import { existsSync, readFileSync } from "node:fs";
 import { repoPath } from "./listing.ts";
 import type { Fixture, ShotAsset } from "./listing.ts";

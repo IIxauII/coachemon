@@ -1,7 +1,3 @@
-/**
- * `--screenshot` sizes the shot by `--window-size`, so the stage is fitted by a scale inside the page, which
- * re-rasterises sharp where a scaled PNG would not. `--virtual-time-budget` gives the HUD's first tick time to land.
- */
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -68,6 +64,8 @@ try {
       "--headless", "--disable-gpu", "--hide-scrollbars", "--force-device-scale-factor=1",
       // Without its own profile Chrome takes the developer's, which the repo's own server may hold open.
       `--user-data-dir=${join(work, "profile")}`,
+      // `--screenshot` sizes the shot by `--window-size`, so the stage is fitted by a scale inside the page, which
+      // re-rasterises sharp where a scaled PNG would not. The time budget lets the HUD's first tick land.
       `--window-size=${asset.width},${asset.height}`, "--virtual-time-budget=4000",
       `--screenshot=${shot}`, `file://${frame}`,
     ], shot);

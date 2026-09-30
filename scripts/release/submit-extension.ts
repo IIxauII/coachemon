@@ -1,7 +1,4 @@
-/**
- * The extension stream's `publish` (extension-distribution.md §14.4). It runs after the tag and the GitHub Release
- * exist, so a failed submission fails the job with both already out, and the dev resubmits by hand.
- */
+/** The extension stream's `publish`, after the tag and the GitHub Release exist (extension-distribution.md §14.4). */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

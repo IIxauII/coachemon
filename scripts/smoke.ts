@@ -1,14 +1,6 @@
-/**
- * Drives the server over stdio the way Claude Code does, without Claude. Tool calls chain, each taking an optional
- * JSON argument:
- *
- *   node scripts/smoke.ts status get_state '{"detail":"party"}' screenshot   # the shot lands in .cache/screenshot.png
- *
- * `--engines` runs the per-engine checks instead, straight at the hub rather than through the server
- * (extension-distribution.md §16):
- *
- *   node scripts/smoke.ts --engines [--engine orion] [--idle <seconds>] [--report]
- */
+/** Chained tool calls, each with an optional JSON argument: `status get_state '{"detail":"party"}' screenshot`.
+ * `--engines [--engine orion] [--idle <seconds>] [--report]` runs the per-engine checks straight at the hub instead,
+ * never through the server (extension-distribution.md §16). */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";

@@ -4,7 +4,8 @@
  */
 import { fileURLToPath } from "node:url";
 
-/** The HUD and the manifest carry their own copies, and `src/listing.test.ts` pins all three (extension-distribution.md §3). */
+/** The manifest's description and every listing text carry it, the panel none, and `src/listing.test.ts` pins that
+ * (extension-distribution.md §3). */
 export const DISCLAIMER = "Unofficial. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
 
 /** GitHub Pages, from `master` / root, which is why `PRIVACY.md` carries Jekyll front matter (extension-distribution.md §3). */

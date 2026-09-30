@@ -2,7 +2,7 @@
 import { join } from "node:path";
 import { safariAppZipName, zipName } from "./artifacts.ts";
 
-/** Picked by extension-distribution.md §14.6. */
+/** Picked by extension-distribution.md §3 and §14.6. */
 export const APP_NAME = "Coachemon";
 export const BUNDLE_ID = "io.github.iixauii.coachemon";
 
@@ -159,7 +159,6 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       command: "gh",
       args: [
         "release", "download", tag,
-        // Named, never inferred (extension-distribution.md §14.6).
         "--repo", plan.repo,
         "--pattern", zipName("safari", plan.version),
         "--dir", plan.work,

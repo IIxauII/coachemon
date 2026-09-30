@@ -1,7 +1,7 @@
 /**
  * A local semantic-release plugin: wraps `commit-analyzer` and `release-notes-generator` and hands them only the
  * commits that touched what the extension ships (extension-distribution.md §14.2). Plain `.mjs`, because
- * semantic-release loads a local plugin by path.
+ * semantic-release loads a local plugin by path and Node would have to strip types for it.
  */
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
