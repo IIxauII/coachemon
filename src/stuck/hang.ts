@@ -5,7 +5,7 @@
 
 /**
  * `CALL_BUDGET_MS`, for an uncorroborated hold. A healthy encounter shows the same signature through its intro and its
- * unprompted text (game-code.md §26), so a shorter dwell reads a live game as hung.
+ * unprompted text (game-code.md §26) for a time never measured, so no shorter dwell is known safe.
  */
 export const HANG_DWELL_MS = 30_000;
 
