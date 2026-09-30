@@ -1,9 +1,8 @@
-// Contract: the meter outlives `__coachHud.stop()` — its frame watcher keeps running with the panel off, for the
-// baseline, and is read as `window.__coachMeter.stats()` — until the next copy's meter replaces it (#481, #482).
-// Every number is `performance.now()` milliseconds, so the rings line up with each other and with an inspector's
-// recording.
+// The meter outlives `__coachHud.stop()`: its frame watcher keeps running with the panel off, read as
+// `window.__coachMeter.stats()`, until the next copy's meter replaces it (#481, #482). Every number is
+// `performance.now()` milliseconds.
 const RING = { ticks: 120, gaps: 200, events: 100, loaf: 50 };
-const GAP_MS = 50;
+const GAP_MS = 34;
 const BUCKETS = [20, 34, 50, 100, 250];
 const TRACK = { devtools: { dataType: "track-entry", track: "Coach panel" } };
 
@@ -11,10 +10,10 @@ const now = () => performance.now();
 const r1 = x => Math.round(x * 10) / 10;
 const ring = n => {
   const a = [];
-  return { push: x => { a.push(x); if (a.length > n) a.shift(); }, all: () => a.slice(), last: k => a.slice(-k) };
+  return { push: x => { a.push(x); if (a.length > n) a.shift(); }, all: () => a.slice() };
 };
 
-// Gotcha: a user-timing entry is kept by the page until cleared, so each is cleared as soon as it is made; an inspector
+// A user-timing entry is kept by the page until cleared, so each is cleared as soon as it is made; an inspector
 // has recorded it by then.
 const mark = name => { try { performance.mark(name); performance.clearMarks(name); } catch {} };
 const measure = (name, start, duration) => {
@@ -46,10 +45,10 @@ export const refresh = (why, fn) => {
   try { return fn(); } finally {
     open = null;
     const ms = now() - t0;
-    let inStages = 0, top = null;
+    let inStages = 0, top = null, topMs = 0;
     for (const [k, v] of Object.entries(rec.stages)) {
       inStages += v;
-      if (!top || v > rec.stages[top]) top = k;
+      if (!top || v > topMs) { top = k; topMs = v; }
       rec.stages[k] = r1(v);
     }
     rec.stages.other = r1(Math.max(0, ms - inStages));
@@ -84,7 +83,7 @@ export const note = fields => { if (open) Object.assign(open, fields); };
 // The panel's refresh time inside `[from, to]`, from the ticks still in the ring.
 const panelIn = (from, to) => {
   let ms = 0;
-  for (const t of ticks.last(10)) ms += Math.max(0, Math.min(to, t.at + t.ms) - Math.max(from, t.at));
+  for (const t of ticks.all()) ms += Math.max(0, Math.min(to, t.at + t.ms) - Math.max(from, t.at));
   return r1(ms);
 };
 

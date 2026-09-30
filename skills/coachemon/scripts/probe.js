@@ -22,7 +22,6 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
       document.documentElement.dataset.mcpOut = JSON.stringify({ hudActive: !!window.__coachHud, stats, entries });
       return;
     }
-    // The meter outlives the panel (`hud/01-meter.js`), so `stats` answers with the panel off too.
     if (MODE === "stats") {
       let stats = null;
       try { stats = window.__coachHud?.stats?.() ?? window.__coachMeter?.stats?.() ?? null; } catch {}
