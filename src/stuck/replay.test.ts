@@ -1,9 +1,4 @@
-/**
- * The detector replayed against #6's six prototype transcripts. The fixtures
- * are frozen data: `scripts/stuck-replay.ts --emit src/stuck/fixtures` made
- * them, and that script now lives only in git history (removed by #172). This
- * is the measurement #13 could only infer: that 12/5 catches the shop↔party loop.
- */
+// The prototype's transcripts (#6) cannot be regenerated: the script that emitted them is gone (#172).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";

@@ -24,8 +24,7 @@ const PLAN = {
 };
 
 test("the notarized app's zip is named for the release, not for what the packager fed on", () => {
-  // The release already carries `coachemon-safari-web-extension-<v>.zip`, the unpackaged folder (extension-distribution.md §14.2). The hand
-  // build adds a second Safari asset, and the two names must not collide on the same release.
+  // The same release already carries the unpackaged folder (extension-distribution.md §14.2).
   assert.equal(safariAppZipName("0.1.0"), "Coachemon-safari-0.1.0.zip");
   assert.notEqual(safariAppZipName("0.1.0"), zipName("safari", "0.1.0"));
 });
@@ -38,7 +37,6 @@ test("a Developer ID Application identity is picked out of the keychain's listin
     `     3 valid identities found`,
   ].join("\n");
   assert.deepEqual(developerIdIdentities(listing), ["Developer ID Application: Jane Dev (AB12CD34EF)"]);
-  // An installer identity cannot sign an app, and a development one is not notarizable: neither is a candidate.
   assert.deepEqual(developerIdIdentities(`  1) AAAA "Apple Development: Jane Dev (XXXXXXXXXX)"`), []);
   assert.deepEqual(developerIdIdentities(""), []);
 });
@@ -49,7 +47,6 @@ test("picking an identity refuses to guess when the keychain holds none or sever
   assert.equal(pickIdentity([one], undefined), one);
   assert.throws(() => pickIdentity([], undefined), /no Developer ID Application identity/);
   assert.throws(() => pickIdentity([one, two], undefined), /--identity/);
-  // Named explicitly, the same keychain is unambiguous.
   assert.equal(pickIdentity([one, two], two), two);
   assert.throws(() => pickIdentity([one], two), /not in the keychain/);
 });
@@ -57,7 +54,6 @@ test("picking an identity refuses to guess when the keychain holds none or sever
 test("the team id comes off the identity, so it is never configured twice", () => {
   assert.equal(teamIdFrom("Developer ID Application: Jane Dev (AB12CD34EF)"), "AB12CD34EF");
   assert.throws(() => teamIdFrom("Developer ID Application: Jane Dev"), /no team id/);
-  // A parenthesised name is not a team id: only the trailing ten-character code is.
   assert.throws(() => teamIdFrom("Developer ID Application: Jane (Dev)"), /no team id/);
 });
 
@@ -72,7 +68,6 @@ test("the export options ask for a Developer ID export of exactly one team", () 
   const plist = exportOptions("AB12CD34EF");
   assert.match(plist, /<key>method<\/key>\s*<string>developer-id<\/string>/);
   assert.match(plist, /<key>teamID<\/key>\s*<string>AB12CD34EF<\/string>/);
-  // `upload` would hand the app to Apple's distribution service; this build is a download from a GitHub Release.
   assert.match(plist, /<key>destination<\/key>\s*<string>export<\/string>/);
   // Manual signing with no certificate named is what makes an export go looking for a provisioning profile.
   assert.match(plist, /<key>signingCertificate<\/key>\s*<string>Developer ID Application<\/string>/);
@@ -84,8 +79,6 @@ test("the downloaded folder is checked against the version being released", () =
 });
 
 test("the steps run in the one order that produces a stapled artifact", () => {
-  // Notarization staples nothing into the zip it was handed: that zip is a scratch file, and the asset the release
-  // carries is cut from the app *after* stapling. Uploading the submitted zip would ship an unstapled app.
   assert.deepEqual(safariSteps(PLAN).map(step => step.id), [
     "download",
     "unpack",
@@ -103,8 +96,6 @@ test("the steps run in the one order that produces a stapled artifact", () => {
 });
 
 test("the runner's post-unpack check hangs off an id, not off a printed sentence", () => {
-  // `safari-release.ts` runs the manifest-version guard after the step whose id is `unpack`. Were that a title match,
-  // rewording the line would silently stop the guard running and nothing would say so.
   const unpack = safariSteps(PLAN).filter(step => step.id === "unpack");
   assert.equal(unpack.length, 1);
   assert.notEqual(unpack[0].title, unpack[0].id);
@@ -115,8 +106,6 @@ test("the converter is driven exactly as extension-distribution.md §14.6 spells
   assert.ok(step, "no converter step");
   const paths = safariPaths(PLAN);
   assert.deepEqual(step.args, [
-    // The converter, not the "packager" extension-distribution.md §14.6 named: `xcrun` finds no such tool, so the spec's name would abort
-    // every run three steps in. Apple's page is titled "Packaging a web extension for Safari"; the tool is not.
     "safari-web-extension-converter",
     paths.unpacked,
     "--project-location", paths.project,
@@ -133,12 +122,11 @@ test("the archive is hardened and signed with the Developer ID identity", () => 
   const step = safariSteps(PLAN).find(s => s.id === "archive");
   assert.ok(step, "no archive step");
   const settings = step.args.join(" ");
-  // Notarization rejects a build without the hardened runtime, and a secure timestamp is required with it.
   assert.match(settings, /ENABLE_HARDENED_RUNTIME=YES/);
   assert.match(settings, /OTHER_CODE_SIGN_FLAGS=.*--timestamp/);
   assert.match(settings, /CODE_SIGN_IDENTITY=Developer ID Application/);
   assert.match(settings, /DEVELOPMENT_TEAM=AB12CD34EF/);
-  // Automatic signing in a CI-less shell picks whatever profile Xcode last cached; this build names its identity.
+  // Automatic signing picks whatever profile Xcode last cached.
   assert.match(settings, /CODE_SIGN_STYLE=Manual/);
 });
 
@@ -148,14 +136,11 @@ test("notarization waits, so the next step cannot staple an unapproved app", () 
   assert.deepEqual(step.args.slice(0, 2), ["notarytool", "submit"]);
   assert.ok(step.args.includes("--wait"));
   assert.deepEqual(step.args.slice(-2), ["--keychain-profile", "coachemon"]);
-  // The password never reaches the command line: `notarytool store-credentials` put it in the keychain (runbook).
   assert.equal(step.args.some(arg => arg.includes("password")), false);
-  // The verdict has to be machine-readable, because the exit code does not carry it (#241).
   assert.deepEqual(step.args.slice(-4, -2), ["--output-format", "json"]);
 });
 
 test("a rejected notarization is caught at the notarize step, not at the staple after it", () => {
-  // `notarytool submit --wait` exits 0 on any *final* verdict, `Invalid` included, so the status is what decides.
   const rejected = JSON.stringify({
     id: "8f1c2d3e-0000-4444-aaaa-bbbbccccdddd",
     status: "Invalid",
@@ -164,8 +149,6 @@ test("a rejected notarization is caught at the notarize step, not at the staple 
   assert.throws(
     () => acceptedSubmissionId(rejected, "coachemon"),
     (error: Error) =>
-      // The submission id, because the log command is useless without it, and the command itself, because the dev
-      // would otherwise have to go and find it in the runbook mid-release.
       error.message.includes("8f1c2d3e-0000-4444-aaaa-bbbbccccdddd") &&
       error.message.includes("Invalid") &&
       error.message.includes("xcrun notarytool log 8f1c2d3e-0000-4444-aaaa-bbbbccccdddd --keychain-profile coachemon"),
@@ -178,8 +161,6 @@ test("an accepted notarization hands back the submission id", () => {
 });
 
 test("a verdict that cannot be read is a failure, never a pass", () => {
-  // Anything but a parsed `Accepted` has to stop the run: a changed output format or a truncated pipe must not read
-  // as approval, which is the whole failure mode this replaced.
   assert.throws(() => acceptedSubmissionId("Successfully uploaded file", "coachemon"), /no JSON verdict/);
   assert.throws(() => acceptedSubmissionId(JSON.stringify({ status: "Accepted" }), "coachemon"), /no id and status/);
   assert.throws(() => acceptedSubmissionId(JSON.stringify({ id: "abc" }), "coachemon"), /no id and status/);
@@ -188,7 +169,6 @@ test("a verdict that cannot be read is a failure, never a pass", () => {
 test("Gatekeeper is asked the question a downloaded app actually faces", () => {
   const step = safariSteps(PLAN).find(s => s.id === "gatekeeper");
   assert.ok(step, "no gatekeeper step");
-  // `-t install` is the installer-package assessment; the default, `execute`, is what a downloaded .app meets.
   assert.equal(step.args.includes("-t"), false);
   assert.deepEqual(step.args.slice(0, 2), ["-a", "-vvv"]);
 });
@@ -205,8 +185,6 @@ test("the upload targets the release the artifacts were downloaded from", () => 
 });
 
 test("both gh steps name the repo, because neither runs inside a checkout", () => {
-  // Every step runs in the scratch directory, and the repo is private: `gh` can neither read a remote there nor fall
-  // back to a public guess. Without this the very first step dies and the release is never touched.
   const gh = safariSteps(PLAN).filter(s => s.command === "gh");
   assert.equal(gh.length, 2);
   for (const step of gh) {
@@ -220,7 +198,6 @@ test("every step names a command and nothing is left interactive", () => {
   for (const step of safariSteps(PLAN)) {
     assert.ok(step.title.length > 0, "a step with no title");
     assert.ok(step.command.length > 0, `${step.title} runs nothing`);
-    // `--no-open`/`--no-prompt` on the converter and `--wait` on notarytool are the three that would block on a human.
     assert.equal(step.args.includes("--open"), false);
   }
 });

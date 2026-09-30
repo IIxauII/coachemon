@@ -3,7 +3,6 @@ import { test } from "node:test";
 import type { Recorder } from "./errors.ts";
 import { recordErrors } from "./errors.ts";
 
-/** A page global with its own event target and console, so the recorder never touches the test runner's. */
 function page(t: { after: (fn: () => void) => void }) {
   const g = globalThis as unknown as Record<string, unknown>;
   const keys = ["addEventListener", "console", "__coachemonErrors"] as const;

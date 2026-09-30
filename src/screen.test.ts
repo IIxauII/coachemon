@@ -28,7 +28,6 @@ test("SAVE_SLOT, SUMMARY and ALERT_MODAL discriminators", () => {
 test("STARTER_SELECT with the filter bar active is its own screen", () => {
   assert.equal(screenId(10, none), "STARTER_SELECT");
   assert.equal(screenId(10, { ...none, filterMode: true }), "STARTER_SELECT/FILTER");
-  // filterMode is the starter handler's own field: no other mode reads it.
   assert.equal(screenId(8, { ...none, filterMode: true }), "PARTY");
 });
 

@@ -11,7 +11,6 @@ function ready(over: Partial<Ready> = {}): Ready {
   };
 }
 
-/** A scripted poller with a fake clock: each poll advances time by POLL_MS. */
 function scripted(reads: PredicateRead[]) {
   let t = 0;
   let i = 0;

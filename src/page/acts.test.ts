@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { onPage, send } from "./fake-page.ts";
 
-/** An OPTION_SELECT whose `setCursor` moves the cursor over its unskipped list. */
 function optionScene() {
   const h = { active: true, cursor: 0, fullCursor: 0, setCursor(i: number) { this.cursor = i; this.fullCursor = i; } };
   return { ui: { mode: 13, handlers: { 13: h } }, phaseManager: { currentPhase: { phaseName: "TitlePhase" } } };
@@ -27,7 +26,8 @@ test("key sends the button as a keydown then a keyup on window, keyCode pinned (
   target.addEventListener("keydown", e => seen.push({ ...pick(e) }));
   target.addEventListener("keyup", e => seen.push({ ...pick(e) }));
   g.window = target;
-  // Node has no KeyboardEvent: this one drops keyCode from its init, as some engines do, so only the pin carries it.
+  // Node has no KeyboardEvent: this one drops `keyCode` and `which` from its init, as some engines do, so only the pin
+  // carries them.
   g.KeyboardEvent = class extends Event {
     key: string;
     code: string;

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { offPage, onPage, send } from "./fake-page.ts";
 
-/** A COMMAND screen whose `processInput` records what reached it. */
 function commandScene(inputs: number[]) {
   const h = { active: true, cursor: 0 };
   return {

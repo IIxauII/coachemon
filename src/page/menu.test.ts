@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { onPage, send } from "./fake-page.ts";
 
-/** BALL as game 1.12 builds it (BallUiHandler.setup): a names text ending in Cancel, then a separate counts text. */
+/** BALL as the game builds it (game-code.md §20). */
 function ballScene(counts: number[], cursor: number) {
   const text = (t: string) => ({ text: t });
   const countsText = text(counts.map(c => `×${c}`).join("\n"));

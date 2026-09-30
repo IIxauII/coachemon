@@ -3,7 +3,6 @@ import { test } from "node:test";
 import { UiMode } from "../enums/generated.ts";
 import { onPage, send } from "./fake-page.ts";
 
-/** One unlocked species as `gameData` holds it: the dex entry it was caught with, and its starter progress. */
 function gameData(over: Record<string, unknown> = {}) {
   return {
     dexData: {
@@ -19,7 +18,6 @@ function gameData(over: Record<string, unknown> = {}) {
   };
 }
 
-/** The starter grid, with `starters` cursor state and two containers on it. */
 function gridScene() {
   const h = {
     cursor: 2,
