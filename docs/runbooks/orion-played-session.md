@@ -2,8 +2,8 @@
 
 The checklist for [#485](https://github.com/IIxauII/coachemon/issues/485): the player plays, the agent reads. It is one
 session of eight short segments, each a Web Inspector recording plus one read of the panel's meter, and two facts only
-the live game knows. The reasoning behind each step is in `docs/research/stall-attribution-on-webkit.md` §7.2 on the
-`research/stall-attribution-on-webkit` branch.
+the live game knows. The reasoning behind each step is the research note linked from
+[#482](https://github.com/IIxauII/coachemon/issues/482), §7.2.
 
 Commands below run from the repo root. `read.sh` is `skills/coachemon/scripts/read.sh`.
 
@@ -11,12 +11,13 @@ Commands below run from the repo root. `read.sh` is `skills/coachemon/scripts/re
 
 1. **The machine.** Low Power Mode off (System Settings › Battery), the Mac on power, nothing heavy running. Low Power
    Mode turns every frame into a 30 ms frame and would double the baseline.
-2. **The folder.** `mkdir -p ~/coachemon-485` and a `notes.txt` in it with the Orion version (Orion › About Orion) and
-   `sw_vers -productVersion`.
+2. **The folder.** `mkdir -p ~/coachemon-485` and a `notes.txt` in it with the Orion version (Orion › About Orion),
+   the WebKit build its release notes name, `sw_vers -productVersion`, and whether Orion updated itself since the last
+   session.
 3. **The tab.** pokerogue.net in the front window, visible, not covered, zoom at 100%. No tab switching while a segment
    runs; if you have to, say so and that segment is played again.
 4. **Apple Events.** Develop › *Allow JavaScript from Apple Events* on. Switch it off after the session.
-5. **The build.** `read.sh orion stats | jq '.facts | {lang, sprites, fps, setTimeoutLoop, crossOriginIsolated, observes}'`.
+5. **The build.** `read.sh orion stats | jq '.stats.facts | {lang, sprites, fps, setTimeoutLoop, crossOriginIsolated, observes}'`.
    `lang` and `sprites` come from the panel that landed with #485. If both keys are missing, the running panel is older:
    the session still works, and the two facts are answered by hand (below). If `setTimeoutLoop` is `true`, stop and
    say so: the frame watcher and the game would run on different clocks.
@@ -28,14 +29,16 @@ Commands below run from the repo root. `read.sh` is `skills/coachemon/scripts/re
 
 ## Per segment
 
-The meter keeps only the last 120 refreshes (about two minutes) and 200 frame gaps, so every segment is read and reset
-on its own, and each stays under a minute of play.
+The meter keeps only its last couple of minutes of refreshes and frame gaps (`RING` in
+`skills/coachemon/scripts/hud/01-meter.js`), so every segment is read and reset on its own, and each stays under a
+minute of play.
 
 1. In the Web Inspector console: `__coachMeter.reset()`.
 2. Start the Timelines recording, play the segment, stop the recording.
 3. Export the recording (`⌘S`) into `~/coachemon-485` as `<n>-<segment>.json`.
 4. `read.sh orion stats > ~/coachemon-485/<n>-<segment>.stats.json`. Without Apple Events, run
-   `copy(JSON.stringify(__coachMeter.stats()))` in the console and paste it into that file instead.
+   `copy(JSON.stringify({ stats: (window.__coachHud ?? __coachMeter).stats() }))` in the console and paste it into that
+   file instead: the same shape `read.sh` writes.
 5. One line in `notes.txt`: where you *felt* a freeze ("after my Thunderbolt", "when the shop opened"), or `none`.
 
 | n | segment              | play                                                                                                     |
@@ -56,20 +59,20 @@ A segment that happens to cover a second moment (a level-up that brings a move-l
 
 Read these from the last `.stats.json`:
 
-- **The game's language** is `.facts.lang`. With an older panel, run `localStorage.getItem("prLang")` in the console.
-  `i18next.resolvedLanguage` does not work there: the game bundles i18next, so the console has no `i18next` global.
-  The detector caches the resolved language under `prLang` (the game's `src/i18n.ts`).
-- **A sprite the panel keeps failing to find** is an entry in `.facts.sprites` with `found: false` whose `misses` keeps
-  climbing from one segment to the next. An entry that turned `found: true` was only a late atlas. With an older panel,
-  the agent looks instead for `clock` ticks with `drew: true` on an unchanged `kind` and `wave`: a card redrawn every
-  second is the symptom.
+- **The game's language** is `.stats.facts.lang`. With an older panel, run `localStorage.getItem("prLang")` in the
+  console. `i18next.resolvedLanguage` throws there: the console has no `i18next` global (game-code.md §22).
+- **A sprite the panel keeps failing to find** is an entry in `.stats.facts.sprites` with `found: false` whose
+  `misses` keeps climbing from one segment to the next. An entry that turned `found: true` was only a late atlas. With
+  an older panel, the agent looks instead for `clock` ticks with `drew: true` on an unchanged `kind` and `wave`: a card
+  redrawn every second is the symptom.
 
 ## Handing it back
 
 Tell the agent where the folder is. The agent reads the `.stats.json` files and the Timelines exports and posts to #485:
 
 - the per-stage refresh timings per segment
-- every frame gap of 34 ms and up, with the panel's stage and milliseconds inside it, the baseline segments alongside
+- every frame gap of 34 ms and up (two frames at 60 Hz), with the panel's stage and milliseconds inside it, the
+  baseline segments alongside; a single late frame under 34 ms is only counted, in `frames.under`, with no stage
 - the Event Timing entries for the key presses that froze
 - the language and the sprite answer
 - the notes

@@ -356,18 +356,15 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   el.kids = undefined;
   globalThis.__hud["98-tick"].tick();
   assert.ok(el.kids, "the same card is drawn again while a sprite is still missing");
-  // The stats name every sprite a draw wanted and didn't get, so a played session can tell a late atlas from one
-  // that never loads (#485).
-  const missing = () => globalThis.__coachHud.stats().facts.sprites.find(s => s.id === "k/1");
-  const misses = missing().misses;
+  const entry = () => globalThis.__coachHud.stats().facts.sprites.find(s => s.id === "k/1");
+  const misses = entry().misses;
   assert.ok(misses >= 2, "every draw that wanted it counts");
-  assert.equal(missing().found, false);
+  assert.equal(entry().found, false);
   Phaser.Display.Canvas.CanvasPool.pool[0].parent.game.textures = { exists: () => true, get: () => ({ has: () => true }), getBase64: () => "data:k" };
   globalThis.__hud["98-tick"].tick();
-  assert.deepEqual(missing(), { id: "k/1", misses, found: true }, "a sprite that lands is kept, marked found");
+  assert.deepEqual(entry(), { id: "k/1", misses, found: true }, "a sprite that lands is kept, marked found");
 }
 
-// The game's language is the one its detector cached; i18next itself is bundled, not a page global (#485).
 {
   mount({ ui: null }, { stored: { prLang: "de" } });
   assert.equal(globalThis.__coachHud.stats().facts.lang, "de");

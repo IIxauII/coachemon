@@ -58,8 +58,7 @@ const timer = setInterval(clockTick, 1000);
 clockTick();
 meterFacts(() => {
   const loop = battleScene()?.game?.loop;
-  // `i18next` is bundled, not a page global; its detector caches the resolved language as `prLang` (the game's
-  // `src/i18n.ts`).
+  // The game's language, as its detector cached it (game-code.md §22).
   let lang = null;
   try { lang = localStorage.getItem("prLang"); } catch {}
   return { fps: loop ? Math.round(loop.actualFps) : null, setTimeoutLoop: loop?.raf?.isSetTimeOut ?? null, lang, sprites: spriteMisses() };
