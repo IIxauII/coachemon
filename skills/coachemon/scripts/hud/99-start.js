@@ -1,11 +1,12 @@
 // The refresh loop and the card stream (extension-distribution.md §11.1, §9.1, §9.5).
 import { sandboxBreachCount } from "./01-core.js";
+import { meterFacts, meterStats, refresh, stage } from "./01-meter.js";
 import { dropChunkHandoff } from "./04-game-tables.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { EVENT_KINDS, cardEvent, cardSummary } from "./60-card.js";
-import { el, wireCard } from "./90-render.js";
+import { battleScene, el, wireCard } from "./90-render.js";
 import { lastFailure, shownCard, shownGroups, tick } from "./98-tick.js";
 
 // By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
@@ -52,21 +53,18 @@ const stream = () => {
   push(CARD_EVENT, body);
 };
 
-let lastTickMs = 0, maxTickMs = 0;
-const timedTick = () => {
-  const t0 = performance.now();
-  tick();
-  stream();
-  lastTickMs = performance.now() - t0;
-  maxTickMs = Math.max(maxTickMs, lastTickMs);
-};
-const timer = setInterval(timedTick, 1000);
-timedTick();
+const clockTick = () => refresh("clock", () => { tick(); stage("stream", stream); });
+const timer = setInterval(clockTick, 1000);
+clockTick();
+meterFacts(() => {
+  const loop = battleScene()?.game?.loop;
+  return { fps: loop ? Math.round(loop.actualFps) : null, setTimeoutLoop: loop?.raf?.isSetTimeOut ?? null };
+});
 // Called from outside the bundle — probe.js, src/page/card.ts, 00-prelude.js's re-inject and the skill's docs — so no
 // method here is renamed alone.
 window.__coachHud = {
   stop: () => { clearInterval(timer); el.remove(); dropChunkHandoff(); delete window.__coachHud; },
-  stats: () => ({ breaches: sandboxBreachCount(), lastTickMs, maxTickMs }),
+  stats: () => ({ breaches: sandboxBreachCount(), ...meterStats() }),
   last: () => shownCard(),
   summary: () => cardSummary(shownCard()),
   card: () => cardNow(),
