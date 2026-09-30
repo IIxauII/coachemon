@@ -18,7 +18,9 @@ test("the card's move is the one used, and its target is the one aimed at (#499)
   assert.deepEqual(decide(command("Charmander"), battle("Charmander Ember → Rattata · 1 hit"), mem), { tool: "select_option", args: { label: "Fight" }, by: "card" });
   assert.deepEqual(decide(fight(["Scratch", "Growl", "Ember", "-"], [40, 0, 40, 0]), null, mem), { tool: "select_option", args: { label: "Ember" }, by: "card" });
   const target: Menu = { screen: "TARGET_SELECT", wave: 3, options: opts(["Pidgey", "Rattata"]) };
-  assert.deepEqual(decide(target, null, mem).args, { label: "Rattata" });
+  assert.deepEqual(decide(target, null, mem).args, { index: 1 });
+  const twins: Menu = { screen: "TARGET_SELECT", wave: 3, options: opts(["Zigzagoon", "Zigzagoon"]) };
+  assert.deepEqual(decide(twins, null, freshMemory()).args, { index: 0 }, "two foes of one name are told apart by index");
 });
 
 test("a card naming a benched mon switches to it, and the commit step is the switch-out (#499)", () => {

@@ -108,8 +108,9 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
   }
   if (screen === "TARGET_SELECT") {
     const want = mem.move?.target;
-    const hit = want ? labels.find(l => l.startsWith(want)) : undefined;
-    return pick(hit ?? first, hit ? "card" : "rule");
+    const hit = want ? options.find(o => o.label?.startsWith(want)) : undefined;
+    const to = hit ?? options.find(o => o.label);
+    return to ? pickIndex(to.i, hit ? "card" : "rule") : cancel;
   }
   if (screen === "PARTY/SWITCH") {
     const to = mem.switchTo ? benchedFor(options, mem.switchTo) : null;
