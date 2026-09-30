@@ -28,7 +28,6 @@ test("the fine fingerprint moves through the level-up stats window, whose presse
   assert.equal(fps.size, 3);
 });
 
-/** PARTY/MODIFIER's option phase, as PartyUiHandler holds it mid-shop. */
 function partyOptionsScene() {
   const h = {
     active: true, partyUiMode: 4, optionsMode: true, transferMode: false, optionsCursor: 1, cursor: 1,

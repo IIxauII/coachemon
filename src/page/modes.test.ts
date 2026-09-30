@@ -11,7 +11,10 @@ import { PAGE_MODES } from "./modes.ts";
 /** Every function a transport puts in the page, by the name it is stringified under (extension-distribution.md §10.5). */
 const PAGE_FUNCTIONS: Record<string, Function> = { dispatch, locate, fine, disc, ...COMMAND_HANDLERS };
 
-/** A bare mode or handler index says nothing of which `UiMode` it meant, so no codegen or drift check moves it (#164). */
+/**
+ * A bare mode or handler index is moved by no codegen or drift check, so a pin bump breaks it silently: every one
+ * comes from `L.m`/`L.sm` (#164).
+ */
 const BARE = [
   /\bmode\s*[=!]==?\s*\d/,
   /\bhandlers\[\s*\d/,
@@ -31,7 +34,7 @@ test("no page function compares a mode or indexes a handler by a bare number (#1
 test("the enums handed into the page are the generated ones (#164)", () => {
   assert.equal(PAGE_MODES.m, UiMode);
   assert.equal(PAGE_MODES.sm, SummaryUiMode);
-  // The starter bit flags `starters` reads out of `gameData` travel the same way (extension-distribution.md §11.4).
+  // The starter bit flags `starters` reads out of `gameData` travel the same way.
   assert.equal(PAGE_MODES.pa, Passive);
   assert.equal(PAGE_MODES.ab, AbilityAttr);
 });

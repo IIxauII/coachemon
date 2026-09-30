@@ -31,7 +31,6 @@ const at = (screen: string, fingerprint: string, options: readonly string[] | nu
   options,
 });
 
-/** #6's shop↔party loop. */
 function shopPartyLoop(detector: StuckDetector, rounds: number) {
   for (let i = 0; i < rounds; i++) {
     detector.recordActing(call("MODIFIER_SELECT", SHOP, SHOP_PARTY, option("Rare Candy")));

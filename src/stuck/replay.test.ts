@@ -1,4 +1,4 @@
-// #6's six prototype transcripts, frozen: the script that emitted them is gone (#172).
+// The prototype's transcripts (#6) cannot be regenerated: the script that emitted them is gone (#172).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";

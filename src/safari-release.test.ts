@@ -106,7 +106,6 @@ test("the converter is driven exactly as extension-distribution.md §14.6 spells
   assert.ok(step, "no converter step");
   const paths = safariPaths(PLAN);
   assert.deepEqual(step.args, [
-    // (extension-distribution.md §14.6)
     "safari-web-extension-converter",
     paths.unpacked,
     "--project-location", paths.project,
