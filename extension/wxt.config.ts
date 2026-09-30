@@ -70,8 +70,7 @@ export default defineConfig({
     "build:publicAssets": (_wxt, files) => {
       files.push(
         { relativeDest: "hud.js", contents: hudScript(bundle("hud")) },
-        // Both files ship in every artifact, because `hud.js` goes out comment-stripped
-        // (extension-distribution.md §15).
+        // `THIRD_PARTY_NOTICES.md` ships because `hud.js` goes out comment-stripped (extension-distribution.md §15).
         { relativeDest: "LICENSE", contents: readFileSync(join(repo, "LICENSE"), "utf8") },
         {
           relativeDest: "THIRD_PARTY_NOTICES.md",
