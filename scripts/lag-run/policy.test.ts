@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { decide, freshMemory, type Card, type Menu, type Opt } from "./policy.ts";
+import { decide, freshMemory, refused, type Card, type Menu, type Opt } from "./policy.ts";
 
 const opts = (labels: string[], extra: Partial<Opt>[] = []): Opt[] => labels.map((label, i) => ({ i, label, ...extra[i] }));
 const command = (active: string): Menu => ({ screen: "COMMAND", wave: 3, text: `What will\n${active} do?`, options: opts(["Fight", "Ball", "Pokémon", "Run"]) });
@@ -101,6 +101,22 @@ test("an item bounced back to the party screen goes to the next mon, then gives 
   assert.deepEqual(decide(screen, null, mem).args, { label: "Charmander Lv.7 24/24" });
   assert.deepEqual(decide(screen, null, mem).args, { label: "Squirtle Lv.5 20/20" });
   assert.deepEqual(decide(screen, null, mem).args, { label: "Cancel" });
+});
+
+test("a reward that came back unused is not taken again: the next one is, then the shop is skipped (#499)", () => {
+  const shop: Menu = { screen: "MODIFIER_SELECT", wave: 9, options: [
+    { i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 },
+    { i: "1:1", label: "Ether", kind: "reward", col: 1, cost: 0 },
+  ] };
+  const ether = { kind: "reward", card_wave: 9, groups: [{ id: "act", label: "Now", summary: "take Ether → Bulbasaur", rows: [] }] };
+  const mem = freshMemory();
+  assert.deepEqual(decide(shop, ether, mem).args, { index: "1:1" });
+  refused(mem);
+  assert.deepEqual(decide(shop, ether, mem).args, { index: "1:1" }, "a pick the game refused never happened");
+  assert.deepEqual(decide(shop, ether, mem).args, { index: "1:0" });
+  assert.deepEqual(decide(shop, ether, mem), { tool: "press", args: { button: "CANCEL" }, by: "rule" });
+  const skip: Menu = { screen: "CONFIRM", wave: 9, text: "Are you sure you want to skip taking an item?", options: opts(["Yes", "No"]) };
+  assert.deepEqual(decide(skip, null, mem).args, { label: "Yes" });
 });
 
 test("a PP item's move list takes the first move, since no verb there commits it (#499)", () => {

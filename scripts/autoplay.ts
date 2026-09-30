@@ -12,7 +12,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { serverEnv } from "../src/server-env.ts";
 import { momentsOf } from "./lag-run/moments.ts";
 import { lowPowerMode, orion } from "./lag-run/orion.ts";
-import { decide, freshMemory, readsCard, type Card, type Menu } from "./lag-run/policy.ts";
+import { decide, freshMemory, readsCard, refused, type Card, type Menu } from "./lag-run/policy.ts";
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
 const LAG = process.argv.includes("--lag");
@@ -121,7 +121,7 @@ while (!stop && calls < MAX_CALLS) {
     if (r.error === "tab_contended" || r.error === "loop_frozen" || r.error === "settings_mode") { stop = `error:${r.error}`; break; }
     // A pick's cursor move types out the item's description; a panel refresh between the move and the commit lets it
     // advance, and an immediate retry loses the same race until the stuck detector ends the run (#499).
-    if (r.error === "game_moved") await sleep(1500);
+    if (r.error === "game_moved") { refused(mem); await sleep(1500); }
     // A message the game still wants read, such as an item's "won't have any effect".
     if (r.error === "message_pending") await call("press", { button: "ACTION" });
     continue;

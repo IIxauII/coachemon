@@ -629,8 +629,13 @@ export class Driver {
     let walked: SettleResult | null = null;
     if (reach.kind === "set") {
       const r = await this.#setCursor(call, reach.to);
-      if (r.ok) landed?.(r.species);
-      else if (reach.miss === "refuse") throw new Refusal("cursor_unreachable", `could not position the ${reach.cursor} on ${target.label}`, { got: r });
+      if (r.ok) {
+        landed?.(r.species);
+        // A set restarts the text the cursor shows (the shop's item description), which types out over the next
+        // frames: committing on the set's own fine races them into `game_moved` (#499).
+        const typed = await this.#settle(null, call);
+        if (!typed.settled) return { settle: typed, committed: false };
+      } else if (reach.miss === "refuse") throw new Refusal("cursor_unreachable", `could not position the ${reach.cursor} on ${target.label}`, { got: r });
       else walked = await this.#walk(menu, reach.walk, call);
     } else if (reach.kind === "walk") {
       walked = await this.#walk(menu, reach, call);

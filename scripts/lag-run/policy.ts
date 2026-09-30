@@ -24,9 +24,15 @@ export type Memory = {
   target: string | null;
   forget: string | null;
   tried: Set<string>;
+  /** The pick `tried` last took, handed back by `refused` when the game refused it. */
+  last: string | null;
   followed: boolean;
 };
-export const freshMemory = (): Memory => ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), followed: false });
+export const freshMemory = (): Memory => ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false });
+
+const tried = (mem: Memory, key: string) => { mem.tried.add(key); mem.last = key; };
+/** A refused pick never happened, so it may be picked again. */
+export const refused = (mem: Memory) => { if (mem.last) mem.tried.delete(mem.last); mem.last = null; };
 
 export const readsCard = (screen: string): boolean =>
   screen === "COMMAND" || screen === "CONFIRM" || screen === "MODIFIER_SELECT" || screen === "SUMMARY/LEARN_MOVE"
@@ -140,7 +146,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const named = want ? options.find(o => untried(o) && monName(o.label!) === want) : undefined;
     const mon = named ?? options.find(o => untried(o) && o.fainted === false);
     if (!mon) return pick("Cancel", "rule");
-    mem.tried.add(key(mon));
+    tried(mem, key(mon));
     mem.followed = !!named;
     return pick(mon.label!, named ? "card" : "rule");
   }
@@ -154,6 +160,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
       return pick(has(/^no/) ?? first, verdict ? "card" : "rule");
     }
     if (/stop trying/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
+    if (/skip taking/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
     // A yes the party screen cannot use is cancelled there.
     if (/will you switch/i.test(text)) {
       const line = act(live, "battle");
@@ -178,19 +185,21 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
       const key = `${menu.wave}|${name}`;
       const o = options.find(x => x.kind === "shop" && x.label === name && typeof x.cost === "number" && x.cost > 0);
       if (!o || mem.tried.has(key)) continue;
-      mem.tried.add(key);
+      tried(mem, key);
       mem.target = null;
       return pickIndex(o.i, "card", "shop");
     }
     const take = /^take (.+?)(?: → (.+?)(?: \(forget (.+)\))?)?$/.exec(clauses.find(c => c.startsWith("take ")) ?? "");
-    const named = take ? options.find(x => x.kind === "reward" && x.label === take[1]) : undefined;
-    if (named) {
-      mem.target = take![2] ?? null;
-      mem.forget = take![3] ?? null;
-      return pickIndex(named.i, "card", "shop");
+    // A reward with no use for any mon is handed back, and the card names it again.
+    const fresh = (o: Opt) => o.kind === "reward" && !mem.tried.has(`${menu.wave}|take|${o.i}`);
+    const named = take ? options.find(x => fresh(x) && x.label === take[1]) : undefined;
+    const reward = named ?? options.find(fresh);
+    if (reward) {
+      mem.target = named ? take![2] ?? null : null;
+      mem.forget = named ? take![3] ?? null : null;
+      tried(mem, `${menu.wave}|take|${reward.i}`);
+      return pickIndex(reward.i, named ? "card" : "rule", "shop");
     }
-    const reward = options.find(o => o.kind === "reward");
-    if (reward) return pickIndex(reward.i, "rule", "shop");
     const cont = options.find(o => o.kind === "buttons" && o.col === 4);
     return cont ? pick(cont.label!, "rule") : cancel;
   }

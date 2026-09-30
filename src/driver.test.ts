@@ -381,6 +381,35 @@ test("a set reach whose setCursor lands commits once, pressing nothing to move: 
   assert.deepEqual(tab.presses, [Button.ACTION], "the row is set directly, then committed once");
 });
 
+test("a cursor set that restarts the game's typing settles before the commit, so the press carries the typed-out fine (#499)", async () => {
+  // Setting the shop cursor, even where it already is, types the item's description out afresh over a few frames.
+  const presses: number[] = [];
+  let row = 4, typed = 5, answered: number | null = null;
+  const read = (): ScreenRead => {
+    if (typed < 5) typed++;
+    return {
+      ready: true, settled: typed >= 5, reason: typed >= 5 ? "menu-open" : "ui-transition", mode: answered === null ? UiMode.SUMMARY : UiMode.MESSAGE,
+      screen: answered === null ? "SUMMARY/LEARN_MOVE" : "MESSAGE", phaseName: "LearnMovePhase", wave: 16, turn: 1, runLive: true, tutorialActive: false,
+      handler: "SummaryUiHandler", cursor: 2, modeChain: [], messageText: null, onActionInput: false, awaitingActionInput: false,
+      fine: `summary|${row}|${typed}|${answered}`, domMode: null, gameVersion: "1.12.0.11", ...money,
+    };
+  };
+  const menu = (): MenuRead => ({
+    readable: true, mode: UiMode.SUMMARY, screen: "SUMMARY/LEARN_MOVE", family: "learn_move", cursor: row, text: null, messagePending: false,
+    extra: { moveSelect: true, page: 2, pokemon: "Charmander", newMove: "Metal Claw" },
+    options: ["Scratch", "Growl", "Ember", "Flare Blitz", "Metal Claw"].map((label, i) => ({ i, label, forget: i < 4 })),
+  });
+  const { driver } = drive({
+    read, menu, guardFine: true,
+    onSetCursor: target => { if (target.family === "learn_move") { row = target.row; typed = 0; } return { ok: true }; },
+    onPress: b => { presses.push(b); if (b === Button.ACTION) answered = row; },
+  });
+  const r = await outcome(driver.selectOption("Growl", undefined, "SUMMARY/LEARN_MOVE", {}));
+  assert.equal(r.error, undefined, JSON.stringify(r));
+  assert.equal(answered, 1);
+  assert.deepEqual(presses, [Button.ACTION]);
+});
+
 /** #44's wave-21 shop: a Revive applied to a full-HP Charmander, answered by the party screen's own message (game-code.md §26). */
 function partyMessageTab() {
   const presses: number[] = [];
