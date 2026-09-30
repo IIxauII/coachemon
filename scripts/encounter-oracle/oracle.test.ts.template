@@ -167,9 +167,8 @@ const CASES: Case[] = [
   { name: "Bug-Type Superfan", type: MysteryEncounterType.BUG_TYPE_SUPERFAN, biome: BiomeId.CAVE, wave: 45, party: [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.WEEDLE], heldItems: [{ name: "GRIP_CLAW", count: 1 }] },
   { name: "Fun and Games", type: MysteryEncounterType.FUN_AND_GAMES, biome: BiomeId.PLAINS, wave: 37, party: DEFAULT_PARTY },
 
-  // A gated encounter arrives at a wave and party it could really spawn on, since the card reads both. No encounter is
-  // served on a boss wave or the one after it, so a gate "from 100" is first servable at 102: land on 100 and
-  // `mysteryEncounter` is simply undefined (game-code.md §13).
+  // A gated encounter arrives at a wave and party it could really spawn on, since the card reads both. Land on a
+  // refused wave and `mysteryEncounter` is simply undefined (game-code.md §13).
   { name: "Training Session", type: MysteryEncounterType.TRAINING_SESSION, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "The Pokémon Salesman", type: MysteryEncounterType.THE_POKEMON_SALESMAN, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "Trash to Treasure", type: MysteryEncounterType.TRASH_TO_TREASURE, biome: BiomeId.CAVE, wave: 102, party: DEFAULT_PARTY },
@@ -416,8 +415,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(game.scene.money - before).toBe(claimedPay);
   });
 
-  // The case follows the branch the game's stored roll took, never the card's guess at it. `TRAP_PERCENT` is
-  // upstream's own (game-code.md §13), and the prize keys are `46-encounter.js`'s phrasings.
+  // The case follows the branch the game's stored roll took, never the card's guess at it. A roll under
+  // `TRAP_PERCENT` is upstream's trap (game-code.md §13), and the prize keys are `46-encounter.js`'s phrasings.
   const TRAP_PERCENT = 30;
   const CHEST_PRIZES: Record<string, ModifierTier[]> = {
     "pick of 2 Common + 2 Great items": [
@@ -859,7 +858,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(card.minigame.catchRate).toBe(mon.species.catchRate);
     expect(card.minigame.catchStage).toBe(me.misc.catchStage);
     expect(card.minigame.fleeStage).toBe(me.misc.fleeStage);
-    // The mons after this one (game-code.md §13).
+    // `left` counts the mons after this one (game-code.md §13).
     expect(card.minigame.left).toBe(me.misc.safariPokemonRemaining);
     expect(me.misc.safariPokemonRemaining).toBe(2);
   });
