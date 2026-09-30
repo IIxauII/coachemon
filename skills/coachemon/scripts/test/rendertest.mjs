@@ -347,7 +347,8 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
 }
 
 // A sprite the atlas has not loaded falls back to the name it stands for, and the panel redraws on the next refresh
-// until the sprite lands: the draw signature is never banked while a sprite is still missing.
+// until the sprite lands: the draw signature is never banked while a sprite is still missing. The meter counts every
+// draw that wanted it, and keeps the sprite, marked found, once it lands.
 {
   const scene = { currentBattle: { waveIndex: 12, double: false }, ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(["Flamethrower","Fire",90,"S"]) }) }, getEnemyParty: () => [], getPlayerParty: () => [charmeleon] };
   const el = mount(scene, { expose: true });
@@ -356,6 +357,21 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   el.kids = undefined;
   globalThis.__hud["98-tick"].tick();
   assert.ok(el.kids, "the same card is drawn again while a sprite is still missing");
+  const entry = () => globalThis.__coachHud.stats().facts.sprites.find(s => s.id === "k/1");
+  const misses = entry().misses;
+  assert.ok(misses >= 2, "every draw that wanted it counts");
+  assert.equal(entry().found, false);
+  Phaser.Display.Canvas.CanvasPool.pool[0].parent.game.textures = { exists: () => true, get: () => ({ has: () => true }), getBase64: () => "data:k" };
+  globalThis.__hud["98-tick"].tick();
+  assert.deepEqual(entry(), { id: "k/1", misses, found: true }, "a sprite that lands is kept, marked found");
+}
+
+// The meter's `lang` is the language the game's detector cached, and `null` when the key holds none.
+{
+  mount({ ui: null }, { stored: { prLang: "de" } });
+  assert.equal(globalThis.__coachHud.stats().facts.lang, "de");
+  mount({ ui: null });
+  assert.equal(globalThis.__coachHud.stats().facts.lang, null, "no language cached");
 }
 
 // ---- What the panel remembers is one key, holding the view and the last group id.

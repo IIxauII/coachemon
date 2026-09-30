@@ -2396,6 +2396,12 @@ Facts about the served build at `https://pokerogue.net`, not the source. Most of
 - `randSeedInt` and `shiftCharCodes` are exported by name from the `FadeOut` chunk; `randSeedInt` is also reachable
   as `Phaser.Math.RND.integerInRange`. `Phaser.Math.RND.state()` returns a `"!rnd,…"` string (observed live).
 - Enums are numbers at runtime (see the header); e.g. `UiMode.MYSTERY_ENCOUNTER` is the bare `45`.
+- `i18next` is imported as a module (`src/i18n.ts`), not a page global, so the console has no `i18next` to ask. Its
+  language detector (`lookupLocalStorage: "prLang"`, `caches: ["localStorage"]`, order localStorage then navigator)
+  caches the language i18next picked under `localStorage.prLang`, and the Language setting writes the same key
+  (`src/system/settings/settings-language.ts`). i18next writes the code it matched back to that key on init, so
+  `resolvedLanguage` differs from it only when that language's translations fail to load and a fallback has them
+  (`es-419` → `es-ES` → `en`). Source, not checked live.
 
 **Reaching module-private or unexported tables.**
 - `04-game-tables.js` imports the already-loaded `/assets/<name>-<hash>.js` chunk URLs again; the browser returns the same
