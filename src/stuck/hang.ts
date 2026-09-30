@@ -1,15 +1,18 @@
 /**
- * The `hang` verdict: #11's save-failure hang, a rejected per-wave save that leaves the phase on `MESSAGE(0)` with no
+ * The `hang` verdict: the save-failure hang (#11), a rejected per-wave save that leaves the phase on `MESSAGE(0)` with no
  * `onActionInput`, where no press reaches it (game-code.md §26). Source-derived; never reproduced live.
  */
 
 /**
- * An uncorroborated hold waits out `CALL_BUDGET_MS`: a healthy encounter shows the same signature through its intro and
- * its unprompted text (game-code.md §26), for a time never measured (v1-tool-surface.md §6.6).
+ * `CALL_BUDGET_MS`, for an uncorroborated hold. A healthy encounter shows the same signature through its intro and its
+ * unprompted text (game-code.md §26), so a shorter dwell reads a live game as hung.
  */
 export const HANG_DWELL_MS = 30_000;
 
-/** Once the page has thrown the save's unhandled rejection (extension-distribution.md §12.4). 20 polls. */
+/**
+ * Once the page has thrown an unhandled rejection, taken as the save's (extension-distribution.md §12.4). 20 polls.
+ * Never under the hub link: nothing installs `recordErrors` there (#475).
+ */
 export const HANG_CORROBORATED_MS = 2_000;
 
 /** One settle-loop poll, or `null` when the scene locator was unavailable (#14 `scene-unavailable`). */
@@ -35,7 +38,7 @@ export class HangWatch {
   /** Every settle-loop poll, across calls. Never reset between calls: a resume keeps holding. */
   poll(p: HangPoll): void {
     if (p === null) return;
-    // Only wave 1 is an `EncounterPhase`: a later save hangs in a subclass with its own `phaseName` (#488).
+    // `EncounterPhase` alone misses every later wave's save hang (#488, game-code.md §26).
     if (p.mode === MESSAGE && p.phaseName === "EncounterPhase" && !p.onActionInput) {
       this.#since ??= p.t;
       this.#last = p.t;
