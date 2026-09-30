@@ -26,7 +26,8 @@ The server **attaches to an existing `pokerogue.net` tab on debug port 9222 if t
 ## Dev scripts
 
 - `npm run smoke -- <tool> '<json args>'` — calls tools over real stdio
-- `node scripts/autoplay.ts --waves N` — drives waves with a dumb policy and logs every call to `.cache/autoplay.jsonl` (the soak driver for [#25](https://github.com/IIxauII/coachemon/issues/25))
+- `node scripts/autoplay.ts --waves N` — drives waves on the card's act group (`scripts/lag-run/policy.ts`) and logs every call to `.cache/autoplay.jsonl` (the soak driver for [#25](https://github.com/IIxauII/coachemon/issues/25))
+- `npm run lag:run -- --slot N` and `npm run lag:report -- <log>` — the lag run and its report ([`docs/lag-run.md`](docs/lag-run.md), [#499](https://github.com/IIxauII/coachemon/issues/499))
 - `node scripts/eval.ts '<js body>'` — evaluates against the live scene
 - `npm run enums:gen` — regenerates the enum tables from the pinned game tag (`--check` fails if `src/enums/generated.ts` is stale, and CI runs it on every PR)
 - `npm run randbats:gen` — refreshes the coach's bundled moveset-prior snapshot (`--check` fails if it is stale; `.github/workflows/randbats.yml` re-runs it weekly and opens a pull request carrying the new snapshot and the regenerated goldens)

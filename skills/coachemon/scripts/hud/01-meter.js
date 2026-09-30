@@ -26,14 +26,15 @@ const reset = () => {
   ticks = ring(RING.ticks); gaps = ring(RING.gaps); events = ring(RING.events); loaf = ring(RING.loaf);
   hist = BUCKETS.map(() => 0).concat(0);
   frames = 0; hidden = 0; maxMs = 0;
-  since = { ms: 0, stage: null, top: 0, ticks: [] };
+  since = fresh();
   ended = []; awaitingNext = null;
 };
 
 let open = null, seq = 0;
 const nest = [];
-// The panel's work since the last frame: what a gap is charged with.
+// The panel's work and the driver's since the last frame: what a gap is charged with.
 let since, ended, awaitingNext;
+const fresh = () => ({ ms: 0, stage: null, top: 0, ticks: [], driver: 0 });
 reset();
 
 // A refresh opened inside another is part of it, so a clock tick and the tick it calls are one record.
@@ -80,6 +81,18 @@ export const stage = (name, fn) => {
 
 export const note = fields => { if (open) Object.assign(open, fields); };
 
+// A hub command answered in the page: never the panel's work, so it opens no record (#499).
+const driver = fn => {
+  const t0 = now();
+  mark("coach:driver");
+  try { return fn(); } finally {
+    const d = now() - t0;
+    since.driver += d;
+    mark("coach:idle");
+    measure("coach:driver", t0, d);
+  }
+};
+
 // The panel's refresh time inside `[from, to]`, from the ticks still in the ring.
 const panelIn = (from, to) => {
   let ms = 0;
@@ -99,9 +112,12 @@ const frame = t => {
     if (awaitingNext) { awaitingNext.next = r1(gap); awaitingNext = null; }
     for (const rec of ended) rec.frame = r1(gap);
     if (ended.length) awaitingNext = ended[ended.length - 1];
-    if (gap >= GAP_MS) gaps.push({ at: r1(prev), gap: r1(gap), panel: r1(since.ms), stage: since.stage, ticks: since.ticks });
+    if (gap >= GAP_MS) {
+      gaps.push({ at: r1(prev), gap: r1(gap), panel: r1(since.ms), driver: r1(since.driver),
+        stage: since.driver > since.top ? "driver" : since.stage, ticks: since.ticks });
+    }
   }
-  since = { ms: 0, stage: null, top: 0, ticks: [] };
+  since = fresh();
   ended = [];
   prev = t;
 };
@@ -156,7 +172,7 @@ export const meterStats = () => {
     frames: { n: frames, hidden, under: Object.fromEntries(BUCKETS.map((b, i) => [b, hist[i]]).concat([["more", hist[BUCKETS.length]]])) },
     refresh: summary(all.map(t => t.ms)),
     stages: Object.fromEntries(names.map(k => [k, summary(all.filter(t => k in t.stages).map(t => t.stages[k]))])),
-    stalls: { n: g.length, ms: r1(g.reduce((a, x) => a + x.gap, 0)), panel: r1(g.reduce((a, x) => a + x.panel, 0)) },
+    stalls: { n: g.length, ms: r1(g.reduce((a, x) => a + x.gap, 0)), panel: r1(g.reduce((a, x) => a + x.panel, 0)), driver: r1(g.reduce((a, x) => a + x.driver, 0)) },
     ticks: all, gaps: g, events: events.all(), loaf: loaf.all(),
   };
 };
@@ -168,7 +184,8 @@ const stop = () => {
   document.removeEventListener?.("visibilitychange", onVisibility);
   if (window.__coachMeter === meter) delete window.__coachMeter;
 };
-const meter = { stats: meterStats, reset, stop };
+const drain = () => { const s = meterStats(); reset(); return s; };
+const meter = { stats: meterStats, reset, drain, driver, stop };
 window.__coachMeter?.stop?.();
 window.__coachMeter = meter;
 if (typeof requestAnimationFrame === "function") raf = requestAnimationFrame(frame);

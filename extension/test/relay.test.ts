@@ -6,7 +6,7 @@ import { onPage } from "../../src/page/fake-page.ts";
 import type { ToBackground } from "../src/messages.ts";
 import { EVENT, MAX_DETAIL_BYTES, cardBody, encode } from "../src/relay/channel.ts";
 import { startRelay, type Relay } from "../src/relay/relay.ts";
-import { startPage, type Handler } from "../src/page/register.ts";
+import { startPage, type Handler, type PageDeps } from "../src/page/register.ts";
 import type { Channel } from "../src/relay/channel.ts";
 
 const BUILD = "1.2.3+abcdef012345";
@@ -27,13 +27,13 @@ function tab(o: { build?: string } = {}) {
       onPageHide: fn => void pagehide.push(fn),
       every: fn => void ticks.push(fn),
     });
-  const page = (p: { build?: string; isolated?: boolean; extra?: Record<string, Handler> } = {}) =>
+  const page = (p: { build?: string; isolated?: boolean; extra?: Record<string, Handler>; global?: PageDeps["global"] } = {}) =>
     startPage({
       channel,
       makeEvent,
       build: p.build ?? BUILD,
       isolated: p.isolated ?? false,
-      global: {},
+      global: p.global ?? {},
       extra: p.extra,
     });
   const emit = (type: string, detail: unknown) => channel.dispatchEvent(makeEvent(type, encode(detail)));
@@ -75,6 +75,18 @@ test("a command is answered inside the dispatch that delivered it (extension-dis
   assert.equal(reply.t, "reply");
   assert.equal(reply.id, 7);
   assert.equal(reply.ok, true);
+});
+
+test("a command runs inside the meter's driver, so a frame it stalls is charged to the driver (#499)", (c: TestContext) => {
+  onPage(c, { ui: { mode: 0, handlers: {} } });
+  const t = tab();
+  const r = t.relay();
+  const inside: boolean[] = [];
+  let running = false;
+  const meter = { driver: <T>(fn: () => T): T => { running = true; try { return fn(); } finally { running = false; } } };
+  t.page({ global: { __coachMeter: meter }, extra: { spy: { kind: "read", run: () => inside.push(running) } } });
+  r.command({ t: "cmd", id: 1, name: "spy", args: {} });
+  assert.deepEqual(inside, [true]);
 });
 
 test("off the game every command still answers, with the locator's reason (extension-distribution.md §10.1)", () => {

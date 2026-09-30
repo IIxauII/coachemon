@@ -63,6 +63,42 @@ const mount = () => {
   assert.equal(s.gaps[1].panel, 0, "a gap with no refresh in it acquits the panel");
 }
 
+// ---- a hub command's work is the driver's, so a gap it falls in is stamped `driver` and carries its share (#499)
+{
+  const { refresh, stage } = mount();
+  __coachMeter.reset();
+  frame(2000);
+  refresh("clock", () => stage("road", () => { clock += 20; }));
+  const back = __coachMeter.driver(() => { clock += 40; return "reply"; });
+  frame(2100);
+  frame(2116);
+  frame(2200);
+  const s = __coachMeter.stats();
+  console.log(JSON.stringify(s.gaps), JSON.stringify(s.stalls));
+  assert.equal(back, "reply");
+  assert.equal(s.gaps[0].driver, 40);
+  assert.equal(s.gaps[0].panel, 20, "a command is not the panel's work");
+  assert.equal(s.gaps[0].stage, "driver");
+  assert.equal(s.gaps[1].driver, 0);
+  assert.equal(s.ticks.length, 1, "a command is no refresh");
+}
+
+// ---- a drain hands back the window so far and opens a fresh one, so a long run loses nothing to the rings (#499)
+{
+  const { refresh } = mount();
+  __coachMeter.reset();
+  frame(3000);
+  refresh("clock", () => { clock += 60; });
+  frame(3100);
+  const first = __coachMeter.drain();
+  frame(3116);
+  const second = __coachMeter.stats();
+  console.log(JSON.stringify({ ticks: first.ticks.length, gaps: first.gaps.length, then: { ticks: second.ticks.length, gaps: second.gaps.length, frames: second.frames.n } }));
+  assert.equal(first.ticks.length, 1);
+  assert.equal(second.ticks.length, 0);
+  assert.equal(second.frames.n, 1, "the frame watcher carries on across a drain");
+}
+
 // ---- the time a tab spends hidden is not a stall
 {
   mount();
