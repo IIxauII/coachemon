@@ -17,7 +17,7 @@ Once per machine:
   AppleScript, as `read.sh orion` does.
 - **A spare save slot.** Pick one of Slot 1–5 on the save-slot screen that holds nothing of yours: every run
   overwrites it. `--slot` is 0-based, so Slot 5 is `--slot 4`.
-- **The fixed team is unlocked.** Bulbasaur, Charmander and Squirtle (9 points) unless `--team` says otherwise. Keep
+- **The fixed team is unlocked.** Larvitar, Machop and Growlithe (10 points) unless `--team` says otherwise. Keep
   the team the same across a comparison.
 
 Before every run:
@@ -86,5 +86,6 @@ behind it.
 
 ## Cost
 
-No human time once set up. Wall time per run: 20–40 min estimated in #484, replaced by the baseline's measured figure
-on #499.
+No human time once set up. The baseline on #499 played waves 1–20 in 14.5 min, so a comparison of 6 runs is about
+1.5 h. Expect some runs to stop early (a lost run, a screen autoplay can't handle); those are run again and never enter
+a comparison. The trainer switch-out moment was not met in that baseline: the card rarely plays a switch-out.

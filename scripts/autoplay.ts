@@ -18,7 +18,7 @@ const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); retur
 const LAG = process.argv.includes("--lag");
 const WAVES = Number(arg("--waves", LAG ? "20" : "1"));
 const MAX_CALLS = Number(arg("--max-calls", LAG ? "20000" : "200"));
-const TEAM = arg("--team", "Bulbasaur,Charmander,Squirtle").split(",");
+const TEAM = arg("--team", "Larvitar,Machop,Growlithe").split(",");
 const SLOT = arg("--slot", "");
 const LOG = arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
 
@@ -45,7 +45,7 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<R
   const res = await client.callTool({ name, arguments: args }, undefined, { timeout: 90_000 });
   const text = (res.content as { type: string; text?: string }[]).find(c => c.type === "text")?.text ?? "{}";
   const out = JSON.parse(text) as Result;
-  log({ kind: "call", t: Date.now() - t0, ms: Date.now() - t, call: name, args, status: out.status ?? out.error, screen: out.screen, wave: out.wave, selected: out.selected, messages: out.messages });
+  log({ kind: "call", t: Date.now() - t0, ms: Date.now() - t, call: name, args, status: out.status ?? out.error, screen: out.screen, wave: out.wave, selected: out.selected, messages: out.messages, text: out.text });
   return out;
 }
 
@@ -126,7 +126,8 @@ while (!stop && calls < MAX_CALLS) {
     if (r.error === "message_pending") await call("press", { button: "ACTION" });
     continue;
   }
-  if (r.status !== "ok" && r.status !== "timed_out") { stop = `status:${r.status}`; console.log(JSON.stringify(r.diagnostic ?? r, null, 1)); break; }
+  // `stuck` after an act that landed is the detector's advice; the same-screen guard ends a real loop.
+  if (r.status !== "ok" && r.status !== "timed_out" && r.status !== "stuck") { stop = `status:${r.status}`; console.log(JSON.stringify(r.diagnostic ?? r, null, 1)); break; }
 }
 if (!stop) stop = "max-calls";
 const summary = { stop, calls, startWave, wave: lastWave, wallMs: Date.now() - t0, by, hidden, log: LOG };
