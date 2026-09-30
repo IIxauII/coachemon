@@ -1,8 +1,6 @@
 /**
- * Summarise a soak (#25): the server's per-call log plus, optionally, the
- * `claude -p --output-format json` result for tokens and cost.
- *
- *   node scripts/soak-report.ts <calls.jsonl> [claude-output.json]
+ * `node scripts/soak-report.ts <calls.jsonl> [claude-output.json]` — `calls.jsonl` is the server's per-call log,
+ * `claude-output.json` the `claude -p --output-format json` result that tokens and cost are read from.
  */
 import { readFileSync } from "node:fs";
 
