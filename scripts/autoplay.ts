@@ -90,15 +90,14 @@ let lastScreen = "";
 let repeats = 0;
 let waits = 0;
 let waveCalls = 0;
-// The baseline's longest wave, retries aside, took under 100 calls.
-const STALL = 400;
+const STALL = 1000;
 while (!stop && calls < MAX_CALLS) {
   const read = await call("read_menu");
   if (read.error) { stop = `error:${read.error}`; break; }
   // `timed_out` is not fatal: the heal after a boss wave outlasts one call's settle (v1-tool-surface.md §3).
   waits = read.status === "timed_out" ? waits + 1 : 0;
   if (waits > 0 && waits <= 5) continue;
-  // A read adds nothing to the detector's ring, so the read after a stuck act is stuck too: advice, like the act's.
+  // A read adds nothing to the detector's ring, so the read after a stuck act is stuck too.
   if (read.status !== "ok" && read.status !== "stuck") { stop = `status:${read.status}`; console.log(JSON.stringify(read, null, 1)); break; }
   const menu = read as unknown as Menu;
   const wave = menu.wave;

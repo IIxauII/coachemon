@@ -145,6 +145,17 @@ test("the trainer's switch prompt is taken when the card plays one mon, so its f
   const ask: Menu = { screen: "CONFIRM", wave: 3, text: "Will you switch\nPokémon?", options: opts(["Yes", "No"]) };
   assert.deepEqual(decide(ask, battle("Squirtle Water Gun → Pidgey"), freshMemory()).args, { label: "Yes" });
   assert.deepEqual(decide(ask, null, freshMemory()).args, { label: "No" });
+  const named: Menu = { ...ask, text: "Will you switch\nCharmander?" };
+  assert.deepEqual(decide(named, battle("Charmander Ember → Pidgey"), freshMemory()).args, { label: "No" }, "the card keeps the mon the prompt names");
+  assert.deepEqual(decide(named, battle("Squirtle Water Gun → Pidgey"), freshMemory()).args, { label: "Yes" });
+});
+
+test("a retry's lead swap that finds no Pokémon option is dropped, not carried to a later wave (#499)", () => {
+  const mem = freshMemory();
+  decide({ screen: "CONFIRM", wave: 8, text: "Would you like to retry from the start of the battle?", options: opts(["Yes", "No"]) }, null, mem);
+  const noSwitch: Menu = { ...command("Larvitar"), wave: 8, options: opts(["Fight", "Ball", "Run"]) };
+  assert.deepEqual(decide(noSwitch, battle("Larvitar Bite → Pidgey", 8), mem).args, { label: "Fight" });
+  assert.deepEqual(decide({ ...command("Larvitar"), wave: 9 }, battle("Larvitar Bite → Pidgey", 9), mem).args, { label: "Fight" });
 });
 
 test("a message on the party screen is dismissed before anything is picked there (#499)", () => {

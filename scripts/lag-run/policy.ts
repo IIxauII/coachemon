@@ -66,6 +66,7 @@ const slots = (summary: string): Slot[] => summary.split(" ; ").map(text => {
 });
 const forgetOf = (verdict: string | null) => /^Learn → forget (.+?)(?: · |$)/.exec(verdict ?? "")?.[1] ?? null;
 const cancel: Action = { tool: "press", args: { button: "CANCEL" }, by: "rule" };
+const action: Action = { tool: "press", args: { button: "ACTION" }, by: "rule" };
 const startsWithMon = (text: string, name: string) => text.startsWith(`${name} `);
 const moveOf = (slot: Slot, name: string): string | null => {
   const rest = slot.text.slice(name.length + 1);
@@ -73,9 +74,10 @@ const moveOf = (slot: Slot, name: string): string | null => {
   return rest.split(/ → |, then | · /)[0] || null;
 };
 
+const benched = (options: Opt[]): Opt[] => options.filter(o => o.label && o.synthetic !== true && o.fainted !== true && o.active !== true);
 /** The benched, standing option whose mon a slot plays; the longest name wins, so `Mr. Mime` beats `Mr`. */
-const benchedFor = (options: Opt[], text: string): Opt | null => options
-  .filter(o => o.label && o.synthetic !== true && o.fainted !== true && o.active !== true && startsWithMon(text, monName(o.label)))
+const benchedFor = (options: Opt[], text: string): Opt | null => benched(options)
+  .filter(o => startsWithMon(text, monName(o.label!)))
   .sort((a, b) => monName(b.label!).length - monName(a.label!).length)[0] ?? null;
 
 const pick = (label: string, by: Action["by"], intent?: Action["intent"]): Action =>
@@ -100,6 +102,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     mem.move = null;
     // A retry replays the battle's seed, so the same plays would lose the same way (#499).
     if (mem.swapLead && has(/^pok/)) return pick(has(/^pok/)!, "rule");
+    mem.swapLead = null;
     if (mine && active) {
       const move = moveOf(mine, active);
       mem.move = move ? { name: move, target: mine.target } : null;
@@ -128,9 +131,9 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const to = hit ?? options.find(o => o.label);
     return to ? pickIndex(to.i, hit ? "card" : "rule") : cancel;
   }
-  if (screen.startsWith("PARTY/") && menu.message_pending) return { tool: "press", args: { button: "ACTION" }, by: "rule" };
+  if (screen.startsWith("PARTY/") && menu.message_pending) return action;
   if (screen === "PARTY/SWITCH" && mem.swapLead) {
-    const standing = options.filter(o => o.label && o.synthetic !== true && o.fainted !== true && o.active !== true);
+    const standing = benched(options);
     const to = standing[(mem.swapLead - 1) % Math.max(standing.length, 1)];
     mem.swapLead = null;
     if (to) return pick(to.label!, "rule");
@@ -171,7 +174,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const want = mem.target;
     mem.target = null;
     if (mem.bounced) { mem.bounced = false; return pick("Cancel", "rule"); }
-    // An item bounced back here unused is not tried on that mon again this wave.
+    // An item bounced back here unused is not tried on that mon again this wave; the next item still is.
     const key = (o: Opt) => `${menu.wave}|${screen}|${mem.item}|${o.label}`;
     const revive = /revive/i.test(mem.item ?? "");
     const untried = (o: Opt) => !!o.label && o.synthetic !== true && (revive || o.fainted !== true) && !mem.tried.has(key(o));
@@ -202,7 +205,10 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     // A yes the party screen cannot use is cancelled there.
     if (/will you switch/i.test(text)) {
       const line = act(live, "battle");
-      return line && slots(line).length === 1 ? pick(has(/^yes/) ?? first, "card") : pick(has(/^no/) ?? first, "rule");
+      const one = line ? slots(line) : [];
+      const active = /will you switch\s+(.+?)\?/i.exec(text)?.[1];
+      const keeps = !!active && !/^pok[ée]mon$/i.test(active) && one.length === 1 && startsWithMon(one[0].text, active);
+      return one.length === 1 && !keeps ? pick(has(/^yes/) ?? first, "card") : pick(has(/^no/) ?? first, line ? "card" : "rule");
     }
     return pick(has(/^no/) ?? first, "rule");
   }
@@ -248,5 +254,5 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
   if (screen === "OPTION_SELECT" || screen === "MENU_OPTION_SELECT") return pick(first, "rule");
   if (screen.startsWith("MYSTERY_ENCOUNTER") && first) return pick(first, "rule");
   if (screen === "SUMMARY" || screen.startsWith("SUMMARY/")) return cancel;
-  return { tool: "press", args: { button: "ACTION" }, by: "rule" };
+  return action;
 }

@@ -37,9 +37,9 @@ npm run lag:run -- --slot 4
 
 The run refuses to start on a hidden tab or with Low Power Mode on. It reloads the tab, waits for the title screen,
 starts the run and plays until the first command of wave 21, a lost run (`status:run_over`), a refusal, or a wave
-that has not ended in 400 calls (`stalled:<screen>`). The server's `stuck` verdict is only advice: the run goes on.
-A lost battle is retried up to three times a wave, each retry opening with a different benched mon, since a retry
-replays the battle's seed and the same plays would lose the same way. Each action prints a line (`card` or `rule`: whether the card decided it). It ends with a
+that has not ended in 1000 calls (`stalled:<screen>`). The server's `stuck` verdict is only advice: the run goes on.
+A lost battle is retried up to three times a wave. A retry replays the battle's seed, so the same plays would lose the
+same way: each retry opens by switching to the next benched mon, round the bench again once it runs out. Each action prints a line (`card` or `rule`: whether the card decided it). It ends with a
 summary line, and the log is at `.cache/lag-run/<start time>.jsonl`.
 
 Options: `--team A,B,C` changes the team, `--waves N` the length (keep 20 for a comparison), `--log <file>` the log's
