@@ -35,8 +35,8 @@ Before every run:
 npm run lag:run -- --slot 4
 ```
 
-The run reloads the tab, waits for the title screen, starts the run and plays until the first command of wave 21, a
-lost run, or a refusal. Each action prints a line (`card` or `rule`: whether the card decided it). It ends with a
+The run refuses to start on a hidden tab or with Low Power Mode on. It reloads the tab, waits for the title screen,
+starts the run and plays until the first command of wave 21, a lost run (`status:run_over`), or a refusal. Each action prints a line (`card` or `rule`: whether the card decided it). It ends with a
 summary line, and the log is at `.cache/lag-run/<start time>.jsonl`.
 
 Options: `--team A,B,C` changes the team, `--waves N` the length (keep 20 for a comparison), `--log <file>` the log's
@@ -74,8 +74,9 @@ A window counts toward a **moment** when its action met it:
   (#481). Style, layout and paint land in the frame after it, so they show as gaps, not ticks.
 - **gaps ≥ 50** are frames that took 50 ms or more, with their p50 / p95 / max. The meter records gaps from 34 ms; the
   report keeps 50 and up.
-- **driver gaps** are gaps a hub command ran inside. They are the measurement's own cost, counted apart and never
-  compared.
+- **driver gaps** are gaps a hub command's page work ran inside, however little of it. They are the measurement's own
+  cost, reported apart with their own p50 / p95 / max and never compared. Only the command's synchronous work in the
+  page is the driver's: the animations and phases a press sets off are the game's, and land in ordinary gaps.
 - **card: <kind>** rows cut the same numbers by the card up at the time: a gap goes to the card its refreshes drew, else
   the card last drawn before it.
 - A moment **not met** on either side is not compared. Whole-run totals are reported, not judged.

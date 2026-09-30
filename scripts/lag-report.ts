@@ -1,6 +1,6 @@
 /**
  * `node scripts/lag-report.ts <run.jsonl>…` reports each lag run; `--before a b c --after d e f` compares two sets
- * (docs/lag-run.md).
+ * (lag-run.md §Report).
  */
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
@@ -8,10 +8,12 @@ import { compare, formatComparison, formatRun, parseRun } from "./lag-run/report
 
 const argv = process.argv.slice(2);
 const read = (f: string) => parseRun(readFileSync(f, "utf8"));
-const b = argv.indexOf("--before"), a = argv.indexOf("--after");
+const at = { before: argv.indexOf("--before"), after: argv.indexOf("--after") };
 
-if (b > -1 && a > -1) {
-  const [before, after] = b < a ? [argv.slice(b + 1, a), argv.slice(a + 1)] : [argv.slice(b + 1), argv.slice(a + 1, b)];
+if (at.before > -1 && at.after > -1) {
+  const [before, after] = at.before < at.after
+    ? [argv.slice(at.before + 1, at.after), argv.slice(at.after + 1)]
+    : [argv.slice(at.before + 1), argv.slice(at.after + 1, at.before)];
   const runs = { before: before.map(read), after: after.map(read) };
   console.log(formatComparison(compare(runs.before.map(r => r.windows), runs.after.map(r => r.windows)), runs));
 } else if (argv.length) {

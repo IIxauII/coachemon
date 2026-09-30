@@ -17,7 +17,6 @@ export function momentsOf(x: { intent?: Action["intent"]; messages: string[]; tr
   if (x.trainer && (x.intent === "switch" || said(/withdrew/i))) out.push("switch");
   if (x.intent === "learn" || said(/grew to/i) || said(/learned/i)) out.push("levelup");
   if (x.intent === "shop") out.push("shop");
-  // A foe's line opens `Wild ` or `Foe `.
   if (x.intent === "replace" || x.messages.some(m => /fainted!/.test(m) && !/^(Wild|Foe) /.test(m))) out.push("faint");
   return out;
 }

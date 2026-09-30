@@ -28,7 +28,6 @@ export type Memory = {
 };
 export const freshMemory = (): Memory => ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), followed: false });
 
-/** The screens whose decision the card is read for. */
 export const readsCard = (screen: string): boolean =>
   screen === "COMMAND" || screen === "CONFIRM" || screen === "MODIFIER_SELECT" || screen === "SUMMARY/LEARN_MOVE"
   || screen === "PARTY/FAINT_SWITCH" || screen === "PARTY/POST_BATTLE_SWITCH";
@@ -39,12 +38,14 @@ const act = (card: Card, kind: string): string | null =>
 /** `Name Lv.7 20/24 FNT` → `Name`. */
 const monName = (label: string): string => label.replace(/ Lv\.\d+.*$/, "");
 
-/** A battle act line is one `<mon> <move>[ → target][, then …][ · N hits]` per slot (`60-card.js`, `slotText`). */
+// The act line is `slotText`'s, per slot (`60-card.js`).
 type Slot = { text: string; target: string | null };
 const slots = (summary: string): Slot[] => summary.split(" ; ").map(text => {
   const target = / → (.+?)(?:, then | · |$)/.exec(text)?.[1] ?? null;
   return { text, target: target === "both" ? null : target };
 });
+const forgetOf = (verdict: string | null) => /^Learn → forget (.+?)(?: · |$)/.exec(verdict ?? "")?.[1] ?? null;
+const cancel: Action = { tool: "press", args: { button: "CANCEL" }, by: "rule" };
 const startsWithMon = (text: string, name: string) => text.startsWith(`${name} `);
 const moveOf = (slot: Slot, name: string): string | null => {
   const rest = slot.text.slice(name.length + 1);
@@ -140,22 +141,27 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const text = menu.text ?? "";
     if (/forgotten/i.test(text)) {
       const verdict = act(card, "learn");
-      const forget = /^Learn → forget (.+?)(?: · |$)/.exec(verdict ?? "")?.[1] ?? null;
+      const forget = forgetOf(verdict);
       if (forget) mem.forget = forget;
       if (forget || mem.forget) return pick(has(/^yes/) ?? first, "card", "learn");
       return pick(has(/^no/) ?? first, verdict ? "card" : "rule");
     }
     if (/stop trying/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
+    // A yes the party screen cannot use is cancelled there.
+    if (/will you switch/i.test(text)) {
+      const line = act(live, "battle");
+      return line && slots(line).length === 1 ? pick(has(/^yes/) ?? first, "card") : pick(has(/^no/) ?? first, "rule");
+    }
     return pick(has(/^no/) ?? first, "rule");
   }
   if (screen === "SUMMARY/LEARN_MOVE") {
     const verdict = act(card, "learn");
-    const forget = /^Learn → forget (.+?)(?: · |$)/.exec(verdict ?? "")?.[1] ?? mem.forget;
+    const forget = forgetOf(verdict) ?? mem.forget;
     mem.forget = null;
     const hit = forget ? options.find(o => o.new !== true && o.label && normalizeLabel(o.label) === normalizeLabel(forget)) : undefined;
     if (hit) return pick(hit.label!, "card", "learn");
     const decline = options.find(o => o.new === true);
-    return decline?.label ? pick(decline.label, "rule") : { tool: "press", args: { button: "CANCEL" }, by: "rule" };
+    return decline?.label ? pick(decline.label, "rule") : cancel;
   }
   if (screen === "MODIFIER_SELECT") {
     const line = act(live, "rewards") ?? "";
@@ -179,10 +185,10 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const reward = options.find(o => o.kind === "reward");
     if (reward) return pickIndex(reward.i, "rule", "shop");
     const cont = options.find(o => o.kind === "buttons" && o.col === 4);
-    return cont ? pick(cont.label!, "rule", "shop") : { tool: "press", args: { button: "CANCEL" }, by: "rule" };
+    return cont ? pick(cont.label!, "rule") : cancel;
   }
   if (screen === "OPTION_SELECT" || screen === "MENU_OPTION_SELECT") return pick(first, "rule");
   if (screen.startsWith("MYSTERY_ENCOUNTER") && first) return pick(first, "rule");
-  if (screen === "SUMMARY" || screen.startsWith("SUMMARY/")) return { tool: "press", args: { button: "CANCEL" }, by: "rule" };
+  if (screen === "SUMMARY" || screen.startsWith("SUMMARY/")) return cancel;
   return { tool: "press", args: { button: "ACTION" }, by: "rule" };
 }

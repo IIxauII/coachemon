@@ -95,7 +95,15 @@ test("the shop buys what the card buys, once each, then takes its reward for the
   assert.deepEqual(decide(party("PARTY/MODIFIER", [["Charmander Lv.7 20/24"], ["Squirtle Lv.5 20/20"]]), null, mem).args, { label: "Squirtle Lv.5 20/20" });
 });
 
-test("with no rewards card the shop takes the first reward (#499)", () => {
+test("with no rewards card the shop takes the first reward, and leaving an empty shop is no pick (#499)", () => {
   const shop: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 }] };
   assert.deepEqual(decide(shop, null, freshMemory()), { tool: "select_option", args: { index: "1:0" }, by: "rule", intent: "shop" });
+  const empty: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "0:4", label: "Continue", kind: "buttons", col: 4, cost: null }] };
+  assert.equal(decide(empty, null, freshMemory()).intent, undefined);
+});
+
+test("the trainer's switch prompt is taken when the card plays one mon, so its free switch can follow (#484)", () => {
+  const ask: Menu = { screen: "CONFIRM", wave: 3, text: "Will you switch\nPokémon?", options: opts(["Yes", "No"]) };
+  assert.deepEqual(decide(ask, battle("Squirtle Water Gun → Pidgey"), freshMemory()).args, { label: "Yes" });
+  assert.deepEqual(decide(ask, null, freshMemory()).args, { label: "No" });
 });

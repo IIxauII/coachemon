@@ -6,7 +6,7 @@ const tick = (seq: number, at: number, ms: number, kind: string | null) => ({ se
 const gap = (at: number, g: number, ticks: number[], driver = 0) => ({ at, gap: g, panel: 0, driver, stage: null, ticks });
 const win = (moments: Window["moments"], ticks: ReturnType<typeof tick>[], gaps: ReturnType<typeof gap>[]): Window => ({ moments, stats: { ticks, gaps } });
 
-test("a distribution is nearest-rank p50/p95 and the max, and nothing is null (#499)", () => {
+test("a distribution is nearest-rank p50/p95 and the max, and an empty one is none (#499)", () => {
   assert.deepEqual(dist([5, 1, 3, 2, 4]), { n: 5, p50: 3, p95: 5, max: 5 });
   assert.equal(dist([]), null);
 });
@@ -16,12 +16,12 @@ test("a run is cut per moment and per card kind; gaps under 50 ms are left out, 
     win(["shop"], [tick(1, 100, 4, "rewards"), tick(2, 1100, 30, "rewards")], [gap(1090, 120, [2]), gap(2000, 40, []), gap(3000, 90, [], 12)]),
     win([], [tick(3, 4000, 2, "battle")], [gap(4100, 60, [])]),
   ]);
-  assert.deepEqual(s.moments.shop, { windows: 1, ticks: { n: 2, p50: 4, p95: 30, max: 30 }, gaps: { n: 1, p50: 120, p95: 120, max: 120 }, driverGaps: 1 });
+  assert.deepEqual(s.moments.shop, { windows: 1, ticks: { n: 2, p50: 4, p95: 30, max: 30 }, gaps: { n: 1, p50: 120, p95: 120, max: 120 }, driverGaps: { n: 1, p50: 90, p95: 90, max: 90 } });
   assert.equal(s.moments.faint.windows, 0);
   assert.deepEqual(s.kinds.rewards.gaps, { n: 1, p50: 120, p95: 120, max: 120 });
   assert.deepEqual(s.kinds.battle.gaps, { n: 1, p50: 60, p95: 60, max: 60 }, "a gap with no refresh in it goes to the card up before it");
   assert.equal(s.total.ticks!.n, 3);
-  assert.equal(s.total.driverGaps, 1);
+  assert.equal(s.total.driverGaps!.n, 1);
 });
 
 test("a comparison pools three runs a side, and a moment missing on either side is not met (#499)", () => {

@@ -1,6 +1,6 @@
 /**
  * Plays waves through the MCP surface on the card's act line (`lag-run/policy.ts`) and counts what that costs (#25).
- * `--lag --slot N` is the lag run (docs/lag-run.md): a fresh run on the Orion tab through the store hub, the meter
+ * `--lag --slot N` is the lag run (lag-run.md §Command): a fresh run on the Orion tab through the store hub, the meter
  * drained after every action. `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server
  * (extension-distribution.md §7.2).
  */
@@ -61,6 +61,8 @@ function drain() {
 let stop = "";
 if (LAG) {
   log({ kind: "run", team: TEAM, slot: Number(SLOT), waves: WAVES, started: new Date().toISOString(), status: await call("status") });
+  const seen = tab!.visibility();
+  if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
   tab!.reload();
   // The hub loses the tab across the reload; reads fail until the relay is back and the game is on its title screen.
   const until = Date.now() + 180_000;

@@ -19,7 +19,6 @@ end run`;
 
 function inTab(js: string): string {
   const out = execFileSync("osascript", ["-", js], { input: TAB, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }).trim();
-  // Develop → Allow JavaScript from Apple Events off: `do JavaScript` runs nothing.
   if (out === "missing value") throw new Error("Orion is not running JavaScript: check Develop → Allow JavaScript from Apple Events");
   return out;
 }
