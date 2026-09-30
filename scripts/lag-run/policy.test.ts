@@ -134,7 +134,9 @@ test("with no rewards card the shop takes the first reward, and leaving an empty
   const shop: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 }] };
   assert.deepEqual(decide(shop, null, freshMemory()), { tool: "select_option", args: { index: "1:0" }, by: "rule", intent: "shop" });
   const empty: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "0:4", label: "Continue", kind: "buttons", col: 4, cost: null }] };
-  assert.equal(decide(empty, null, freshMemory()).intent, undefined);
+  const mem = freshMemory();
+  assert.equal(decide(empty, null, mem).intent, undefined);
+  assert.deepEqual(decide(empty, null, mem), { tool: "press", args: { button: "CANCEL" }, by: "rule" }, "a Continue that did nothing is not pressed again");
 });
 
 test("the trainer's switch prompt is taken when the card plays one mon, so its free switch can follow (#484)", () => {

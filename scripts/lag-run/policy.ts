@@ -206,7 +206,8 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
       tried(mem, `${menu.wave}|take|${reward.i}`);
       return pickIndex(reward.i, named ? "card" : "rule", "shop");
     }
-    const cont = options.find(o => o.kind === "buttons" && o.col === 4);
+    const cont = options.find(o => o.kind === "buttons" && o.col === 4 && !mem.tried.has(`${menu.wave}|continue`));
+    if (cont) tried(mem, `${menu.wave}|continue`);
     return cont ? pick(cont.label!, "rule") : cancel;
   }
   if (screen === "OPTION_SELECT" || screen === "MENU_OPTION_SELECT") return pick(first, "rule");
