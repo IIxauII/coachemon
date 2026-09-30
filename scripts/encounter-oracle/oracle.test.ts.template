@@ -1,6 +1,5 @@
-// Coachemon oracle (dev-only; scripts/encounter-oracle/run.ts copies this into the pinned clone and removes it again).
-// Drives the coach HUD's Mystery Encounter card against the real game running headless on upstream's own test
-// harness, so the card's claims are checked against what the game actually does rather than against a mock.
+// Runs inside the pinned clone, never this repo: `run.ts` copies it in and removes it again, so every `#…` import is
+// upstream's.
 import { readFileSync } from "node:fs";
 import { timedEventManager } from "#app/global-event-manager";
 import { speciesDataRegistry } from "#app/global-species-data-registry";
@@ -38,17 +37,14 @@ function loadHud() {
   g.window = globalThis;
   // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
   (0, eval)(readFileSync(BUNDLE, "utf8"));
-  // In a page the HUD finds the game's tables by importing its already-loaded `/assets/*.js` chunks and picking the
-  // exports by shape. Under vitest there are no such chunks, so every card that reads a table would degrade — and a
-  // degraded card is not the card this oracle is here to question. The clone holds the real modules, so hand over
-  // the same two objects the scan would have found. They are the game's own singletons, not copies.
+  // Under vitest there are no `/assets/*.js` chunks for the HUD's shape scan to find, and a degraded card is not the
+  // card under test: hand it the game's own two singletons instead.
   g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager });
   return g.__hud;
 }
 
-/** Runs to the encounter and stops on its option screen, the moment the coach panel reads. */
 async function toOptionScreen(game: GameManager) {
-  // Any message the wave queued first (Fiery Fallout's weather, for one), the way upstream's own helper clears it.
+  // Clears any message the wave queued first, Fiery Fallout's weather for one.
   game.onNextPrompt(
     "MessagePhase",
     UiMode.MESSAGE,
@@ -73,8 +69,6 @@ async function toOptionScreen(game: GameManager) {
   await game.phaseInterceptor.to("MysteryEncounterPhase");
 }
 
-/** Everything between a fresh `GameManager` and the encounter's option screen: the overrides that let this
- *  encounter spawn at all, the run up to it, and its intro cleared. */
 async function arrive(game: GameManager, a: Arrival) {
   game.scene.money = 20000;
   game.override.mysteryEncounterChance(100).startingWave(a.wave).startingBiome(a.biome).disableTrainerWaves();
@@ -94,23 +88,21 @@ async function arrive(game: GameManager, a: Arrival) {
   await toOptionScreen(game);
 }
 
-/** The card the panel would draw right now. */
 function readCard(game: GameManager) {
   const hud = loadHud();
   const scene = game.scene;
   const handler = scene.ui.getHandler();
   const account = hud["98-tick"].accountRead(scene);
-  // Through the run read, as the panel reads it (26-run).
+  // Through the run read, as the panel reads it.
   return hud["26-run"].readRun(scene, (run: unknown) => hud["46-encounter"].encounterModel(run, handler, account));
 }
 
-/** What it takes to reach one encounter's option screen. */
 interface Arrival {
   type: MysteryEncounterType;
   biome: BiomeId;
   wave: number;
   party: SpeciesId[];
-  /** Overrides some encounters need to initialise at all, taken from upstream's own test for that encounter. */
+  /** Only where an encounter needs it to initialise at all, as upstream's own test for that encounter sets it. */
   level?: number;
   moveset?: MoveId[];
   /** What the party must be holding for the encounter, or the options the card judges, to exist at all. */
@@ -119,16 +111,15 @@ interface Arrival {
 
 interface Case extends Arrival {
   name: string;
-  /** Field Trip is commented out of the biome table, so a live run can never serve it; the card still reads it. */
+  /** `false` where the card leaves the encounter unjudged: Field Trip, which no run can serve (game-code.md §13). */
   known?: boolean;
 }
 
-/** The card's own type name for a `PokemonType`, read off the bundle rather than copied, so a pin bump can't drift it. */
 const typeName = (t: number): string => loadHud()["01-core"].TYPES[t];
 
 const DEFAULT_PARTY = [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.ABRA];
-// The breeder puts up the party's three least-friendly members and gates on four, so the default three would put the
-// whole party on offer; Weird Dream's is upstream's own party for it, species with room left to grow into.
+// The breeder gates on a party of four (game-code.md §13). Weird Dream's is upstream's own: species with BST left to
+// grow into.
 const BREEDER_PARTY = [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.ABRA, SpeciesId.MAGIKARP];
 const DREAM_PARTY = [SpeciesId.MAGBY, SpeciesId.HAUNTER, SpeciesId.ABRA];
 
@@ -137,14 +128,14 @@ const DELIBIRDY_ITEMS: ModifierOverride[] = [
   { name: "BERRY", count: 1, type: BerryType.SITRUS },
   { name: "GRIP_CLAW", count: 1 },
 ];
-/** Absolute Avarice needs six berries to exist, and the card counts what it took. Upstream's own spread. */
+/** Absolute Avarice needs six berries to spawn (game-code.md §13). Upstream's own spread. */
 const AVARICE_BERRIES: ModifierOverride[] = [
   { name: "BERRY", count: 2, type: BerryType.SITRUS },
   { name: "BERRY", count: 3, type: BerryType.GANLON },
   { name: "BERRY", count: 2, type: BerryType.APICOT },
 ];
 
-/** The case for one encounter, so an outcome check arrives exactly where the structural pass did. */
+/** So an outcome check arrives exactly where the structural pass did. */
 const caseFor = (type: MysteryEncounterType): Case => {
   const found = CASES.find(c => c.type === type);
   if (!found) {
@@ -167,7 +158,6 @@ const CASES: Case[] = [
   { name: "Uncommon Breed", type: MysteryEncounterType.UNCOMMON_BREED, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "Global Trade System", type: MysteryEncounterType.GLOBAL_TRADE_SYSTEM, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "Field Trip", type: MysteryEncounterType.FIELD_TRIP, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY, known: false },
-  // Great tier. Delibird-y and Absolute Avarice read what the party is holding, so they are given something to hold.
   { name: "Mysterious Challengers", type: MysteryEncounterType.MYSTERIOUS_CHALLENGERS, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "Slumbering Snorlax", type: MysteryEncounterType.SLUMBERING_SNORLAX, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "Safari Zone", type: MysteryEncounterType.SAFARI_ZONE, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
@@ -177,22 +167,15 @@ const CASES: Case[] = [
   { name: "Bug-Type Superfan", type: MysteryEncounterType.BUG_TYPE_SUPERFAN, biome: BiomeId.CAVE, wave: 45, party: [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.WEEDLE], heldItems: [{ name: "GRIP_CLAW", count: 1 }] },
   { name: "Fun and Games", type: MysteryEncounterType.FUN_AND_GAMES, biome: BiomeId.PLAINS, wave: 37, party: DEFAULT_PARTY },
 
-  // Ultra tier. `runToMysteryEncounter` forces the type outright, so no wave-range or party-size gate actually refuses
-  // one here — but the card reads wave and party alike (Trash to Treasure's remaining shops, the breeder's three on
-  // offer), so a gated encounter arrives at a wave and party it could really spawn on rather than at upstream's
-  // blanket wave 45. The ungated ones stay at 45.
-  //
-  // Two rules pick those waves, and neither is the encounter's own gate: `isMysteryEncounterValidForWave` refuses a
-  // boss wave (`% 10 === 0`) and the wave after one (`% 10 === 1`), so an encounter gated "from wave 100" is first
-  // servable at 102, and "from 80" at 82. Land on 100 or 80 and the wave runs with no encounter at all, which
-  // surfaces as `mysteryEncounter` being undefined rather than as anything about the gate.
+  // A gated encounter arrives at a wave and party it could really spawn on, since the card reads both. No encounter is
+  // served on a boss wave or the one after it, so a gate "from 100" is first servable at 102: land on 100 and
+  // `mysteryEncounter` is simply undefined (game-code.md §13).
   { name: "Training Session", type: MysteryEncounterType.TRAINING_SESSION, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "The Pokémon Salesman", type: MysteryEncounterType.THE_POKEMON_SALESMAN, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "Trash to Treasure", type: MysteryEncounterType.TRASH_TO_TREASURE, biome: BiomeId.CAVE, wave: 102, party: DEFAULT_PARTY },
   { name: "Clowning Around", type: MysteryEncounterType.CLOWNING_AROUND, biome: BiomeId.CAVE, wave: 82, party: DEFAULT_PARTY },
   { name: "The Expert Pokémon Breeder", type: MysteryEncounterType.THE_EXPERT_POKEMON_BREEDER, biome: BiomeId.CAVE, wave: 45, party: BREEDER_PARTY },
 
-  // Rogue tier.
   { name: "Dark Deal", type: MysteryEncounterType.DARK_DEAL, biome: BiomeId.CAVE, wave: 45, party: DEFAULT_PARTY },
   { name: "A Trainer's Test", type: MysteryEncounterType.A_TRAINERS_TEST, biome: BiomeId.CAVE, wave: 102, party: DEFAULT_PARTY },
   { name: "Weird Dream", type: MysteryEncounterType.WEIRD_DREAM, biome: BiomeId.CAVE, wave: 45, party: DREAM_PARTY },
@@ -223,7 +206,6 @@ describe("Coachemon oracle - Mystery Encounter card, common, great, ultra and ro
     // Every note the card carries about its own failure is a port that threw against the real game.
     expect(card.notes.filter((n: string) => n.startsWith("couldn't judge"))).toEqual([]);
     expect(card.known).toBe(known);
-    // One card row per option the game offers, in the game's own order.
     expect(card.options).toHaveLength(me.options.length);
     expect(card.options.map((o: { index: number }) => o.index)).toEqual(me.options.map((_, i: number) => i));
     for (const o of card.options) {
@@ -231,7 +213,6 @@ describe("Coachemon oracle - Mystery Encounter card, common, great, ultra and ro
       expect(o.label).not.toMatch(/^Option \d$/);
     }
     if (known) {
-      // A judged encounter prices every option it offers.
       for (const o of card.options) {
         expect(o.outcome, `option ${o.index} (${o.label}) has no outcome`).toBeTruthy();
       }
@@ -239,10 +220,9 @@ describe("Coachemon oracle - Mystery Encounter card, common, great, ultra and ro
   });
 });
 
-/** Picks an option on the encounter screen and stops with `MysteryEncounterOptionSelectedPhase` up but not yet run:
- *  the pre-option fork has drawn, so what the game rolled can be read before its branch is taken. The head of
- *  upstream's own helper (we are already on the option screen, so its leading `to("MysteryEncounterPhase")` would
- *  wait for a phase that has already started). */
+/** Stops with `MysteryEncounterOptionSelectedPhase` up but not yet run, so the pre-option roll can be read before its
+ *  branch is taken. Upstream's own helper minus its leading `to("MysteryEncounterPhase")`, which would wait for a
+ *  phase that has already started. */
 async function chooseOption(game: GameManager, optionNo: number, { pokemonNo }: { pokemonNo?: number } = {}) {
   const ui = game.scene.ui.getHandler<MysteryEncounterUiHandler>();
   ui.unblockInput();
@@ -295,7 +275,6 @@ async function runOptionOut(game: GameManager, { isBattle = false }: { isBattle?
   await game.toNextTurn();
 }
 
-/** Picks an option on the encounter screen and runs it out. */
 async function pickOption(
   game: GameManager,
   optionNo: number,
@@ -305,9 +284,8 @@ async function pickOption(
   return await runOptionOut(game, { isBattle });
 }
 
-/** Runs to the next option screen a continuous encounter opens, clearing whatever the turn queued on the way.
- *  `initSubsequentOptionSelect` pushes a second `MysteryEncounterPhase` rather than ending the encounter, so the
- *  minigame's menu is never the `MysteryEncounterRewardsPhase` that `runOptionOut` waits for. */
+/** The menu a continuous encounter re-opens is a second `MysteryEncounterPhase`, never the rewards phase `runOptionOut`
+ *  waits for (game-code.md §13). */
 async function toOverrideMenu(game: GameManager) {
   game.onNextPrompt("MysteryEncounterOptionSelectedPhase", UiMode.MESSAGE, () => {
     game.scene.ui.getHandler<MysteryEncounterUiHandler>().processInput(Button.ACTION);
@@ -319,15 +297,13 @@ async function toOverrideMenu(game: GameManager) {
   return game.scene.ui.getHandler<MysteryEncounterUiHandler>();
 }
 
-/** Pays the Safari fee and stops on the first mon's minigame menu. */
 async function enterSafari(game: GameManager) {
   await chooseOption(game, 1);
   return await toOverrideMenu(game);
 }
 
-/** Presses one of the minigame's override options. They are not on `me.options`, and the game re-opens the menu on
- *  the option last taken (`startingCursorIndex`), so the cursor is set outright rather than walked from a start
- *  `chooseOption` could assume. */
+/** The cursor is set outright: the menu re-opens on the option last taken, not where `chooseOption` would walk from
+ *  (game-code.md §13). */
 function pressOverride(game: GameManager, option: number) {
   const ui = game.scene.ui.getHandler<MysteryEncounterUiHandler>();
   ui.unblockInput();
@@ -335,7 +311,6 @@ function pressOverride(game: GameManager, option: number) {
   ui.processInput(Button.ACTION);
 }
 
-/** Takes one minigame turn and stops on the menu the game re-opens. */
 async function safariTurn(game: GameManager, option: number) {
   pressOverride(game, option);
   return await toOverrideMenu(game);
@@ -347,25 +322,19 @@ const BAIT = 1;
 const MUD = 2;
 const RUN = 3;
 
-// A flee roll sits between every turn and the next screen, and a mon that bolts takes the stage change with it —
-// the next summon resets both stages — so a turn is only observable on a mon that cannot bolt. Wave 52's first
-// safari mon is a Lotad: `isPokemonFlee` reads the *species* catch rate, and at 255 the rate is
-// `(255² − 255²) / 255 / 2 = 0` at every stage, so the roll can never take it. The walk pins the rate rather than
-// the species, so a pin bump that moves the roll back into play goes red there instead of quietly turning the two
-// stage cases into coin flips.
+// A turn is only observable on a mon that cannot bolt: the next summon resets both stages. Flee reads the species
+// catch rate, which at 255 makes it 0 at every stage (game-code.md §13), and wave 52's first safari mon has 255. The
+// walk asserts the rate rather than the species, so a pin bump that brings the roll back goes red there instead of
+// turning the stage cases into coin flips.
 const SAFARI_STILL_WAVE = 52;
 const SAFARI_STILL_RATE = 255;
-/** Enough turns for the certain arm to reach the ±6 clamp, and enough draws that the 4-in-5 arm failing to fire at
- *  all is a 1-in-15,000 seed rather than the coin flip four turns made of it. */
+/** ±2 a turn reaches the ±6 clamp in 3; a 4-in-5 arm misses all 6 at (1/5)⁶ ≈ 1 in 15,600. */
 const SAFARI_TURNS = 6;
 
-/** The certain arm's ladder over `SAFARI_TURNS` turns: `step` a turn, clamped at ±6. Derived rather than written
- *  out, so raising the turn count cannot silently stop matching. */
 function stageLadder(step: number) {
   return Array.from({ length: SAFARI_TURNS }, (_, i) => Math.sign(step) * Math.min(Math.abs(step) * (i + 1), 6));
 }
 
-/** Walks one option over and over on a mon that cannot bolt, reporting both stages after each turn. */
 async function walkSafari(game: GameManager, option: number) {
   const me = game.scene.currentBattle.mysteryEncounter!;
   const before = me.misc.pokemon;
@@ -379,8 +348,6 @@ async function walkSafari(game: GameManager, option: number) {
   for (let i = 0; i < SAFARI_TURNS; i++) {
     await safariTurn(game, option);
     expect(me.misc.pokemon.id, "the mon being worked on is still the mon in front of you").toBe(before.id);
-    // The card's own stage fields, read back against the game at a *non-zero* stage and again at the ±6 clamp —
-    // the one place the card's `clampStage` and the game's own could plausibly part company.
     const shown = readCard(game).minigame;
     expect(shown.catchStage, `turn ${i + 1}: the card's catch stage is not the game's`).toBe(me.misc.catchStage);
     expect(shown.fleeStage, `turn ${i + 1}: the card's flee stage is not the game's`).toBe(me.misc.fleeStage);
@@ -390,7 +357,6 @@ async function walkSafari(game: GameManager, option: number) {
   return { catchStages, fleeStages };
 }
 
-/** The reward options the game is offering right now, once it has reached its `SelectModifierPhase`. */
 function rewardOptions(game: GameManager) {
   expect(game.scene.ui.getMode()).toBe(UiMode.MODIFIER_SELECT);
   const handler = game.scene.ui.handlers.find(h => h instanceof ModifierSelectUiHandler) as ModifierSelectUiHandler;
@@ -409,7 +375,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     game = new GameManager(phaserGame);
   });
 
-  // The destination is the option fork's first draw (×500). The card names it before the player commits.
   it("Teleporting Hijinks: the biome the card names is the biome the game teleports to", async () => {
     await arrive(game, caseFor(MysteryEncounterType.TELEPORTING_HIJINKS));
 
@@ -432,7 +397,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(names[game.scene.arena.biomeId]).toBe(claimed);
   });
 
-  // The pay is a formula over the worker's stats, not a draw: the card names both the worker and the amount.
   it("Part-Timer: the pay the card names is the money the game pays", async () => {
     await arrive(game, caseFor(MysteryEncounterType.PART_TIMER));
 
@@ -452,9 +416,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(game.scene.money - before).toBe(claimedPay);
   });
 
-  // The chest's roll is the pre-option fork's only draw (×1), and which branch it picks is the very thing under test,
-  // so this reads the roll the game stored and follows the game's branch rather than the card's guess at it.
-  // `TRAP_PERCENT` in `mysterious-chest-encounter.ts`; the prize phrasings are `46-encounter.js`'s.
+  // The case follows the branch the game's stored roll took, never the card's guess at it. `TRAP_PERCENT` is
+  // upstream's own (game-code.md §13), and the prize keys are `46-encounter.js`'s phrasings.
   const TRAP_PERCENT = 30;
   const CHEST_PRIZES: Record<string, ModifierTier[]> = {
     "pick of 2 Common + 2 Great items": [
@@ -468,10 +431,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     "a Master item": [ModifierTier.MASTER],
   };
 
-  // The harness's run seed is fixed, so a wave picks the roll: 45 opens a chest, 65 springs the trap. Both branches
-  // of the card's claim are walked rather than whichever one this seed happens to land on. That mapping is pinned
-  // below, so a seed that stops walking both goes red here rather than quietly checking one branch twice; at a pin
-  // bump, re-pick the waves rather than dropping the assertion.
+  // The fixed seed opens a chest at 45 and springs the trap at 65, and that mapping is asserted: at a pin bump,
+  // re-pick the waves rather than drop the assertion.
   it.each([45, 65])("Mysterious Chest at wave %i: the chest the card names is the chest the game opens", async wave => {
     await arrive(game, { ...caseFor(MysteryEncounterType.MYSTERIOUS_CHEST), wave });
 
@@ -523,8 +484,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     { no: 4, prefix: "pick of 4 ball packs", names: [["Poké"], ["Great"], ["Ultra"], ["Rogue"]], keys: ["POKEBALL", "GREAT_BALL", "ULTRA_BALL", "ROGUE_BALL"] },
   ];
 
-  // Every store option's closure runs in the same option fork (×500), so the card reads all four from one offset and
-  // the game runs whichever one is picked from that same offset: one run per option, each checked against its shop.
   it.each(STORE_OPTIONS)(
     "Department Store Sale option $no: the items the card names are the items the game offers",
     async store => {
@@ -546,7 +505,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     },
   );
 
-  // Who the heat burns is the option fork's first draw (×500), over the non-Fire mons that can still take a status.
   it("Fiery Fallout: the mon the card says the heat burns is the mon the game burns", async () => {
     await arrive(game, caseFor(MysteryEncounterType.FIERY_FALLOUT));
 
@@ -562,8 +520,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const burned = game.scene.getPlayerParty().filter(p => p.status?.effect === StatusEffect.BURN);
     console.log(`ORACLE-DIFF fallout claimed="${who} ${what}" actual=[${burned.map(p => p.name)}]`);
     if (what === "shrugs off the burn") {
-      // A shrugged burn leaves nothing behind on the mon, so this branch can only check that nobody was burned:
-      // the card could name the wrong shrugger and still pass. Inherent, not an omission.
+      // A shrugged burn leaves nothing on the mon, so the card could name the wrong shrugger and still pass.
       expect(burned.map(p => p.name)).toEqual([]);
       return;
     }
@@ -571,7 +528,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(burned[0].getAbility().id).toBe(AbilityId.HEATPROOF);
   });
 
-  // The new nature is the post-option fork's draw (×2000), on the mon the card says the cheap deal would take.
   it("Shady Vitamin Dealer: the nature the card names is the nature the game rolls", async () => {
     await arrive(game, caseFor(MysteryEncounterType.SHADY_VITAMIN_DEALER));
 
@@ -589,21 +545,18 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const before = mon.nature;
 
     await pickOption(game, 1, { pokemonNo: carryNo });
-    // The post-option phase sits past the shop the encounter leaves behind, so that has to be dismissed first, the
-    // way upstream's own post-phase tests do it.
+    // The post-option phase sits past the shop the encounter leaves, so the shop is dismissed first.
     await game.phaseInterceptor.to("SelectModifierPhase");
     game.endPhase();
     await game.phaseInterceptor.to("PostMysteryEncounterPhase");
 
-    // `setCustomNature` writes `customPokemonData`, so the new nature is the one `getNature` reads, not the raw field.
+    // `getNature`, not the raw field: `setCustomNature` writes `customPokemonData` (game-code.md §15).
     const after = mon.getNature();
     console.log(`ORACLE-DIFF vitamins ${who} claimed=${nature} actual=${Nature[after]} was=${Nature[before]}`);
     expect(Nature[after]).toBe(nature.toUpperCase());
     expect(after, "the dealer never rolls the nature it already had").not.toBe(before);
   });
 
-  // The tutor's four moves are the option fork's first four draws (×500), one from each pool, and they are rolled
-  // before the fight starts — so the card can name them while the player is still choosing whether to fight at all.
   it("Bug-Type Superfan: the tutor moves the card names are the moves the game rolled", async () => {
     await arrive(game, caseFor(MysteryEncounterType.BUG_TYPE_SUPERFAN));
 
@@ -624,7 +577,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(claimedMoves).toEqual(rolled);
   });
 
-  // How many berries begging gets back is arithmetic over what the Greedent took, two fifths of each holder's own.
   it("Absolute Avarice: the berries the card says come back are the berries the game returns", async () => {
     await arrive(game, caseFor(MysteryEncounterType.ABSOLUTE_AVARICE));
 
@@ -635,7 +587,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(named, `option 2 reads "${claimed}"`).toBeTruthy();
     const [, back, stolen] = named!.map(Number);
 
-    // The encounter takes the berries as its visuals start, so by the option screen the player holds none.
     const count = () =>
       game.scene.findModifiers(m => m instanceof BerryModifier).reduce((t, m) => t + m.getStackCount(), 0);
     expect(count(), "the Greedent has already taken them").toBe(0);
@@ -646,26 +597,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(count()).toBe(back);
   });
 
-  // ---- Ultra and rogue tier
-  //
-  // Several of these encounters fight the party and one transforms it, so what the oracle asserts needs saying once.
-  // The claim under test is the card as the option screen shows it, and a claim is walked past that screen only when
-  // doing so is what settles it:
-  //
-  // - Dark Deal's victim and Clowning Around's type shuffle are both written by a *pre*-option phase, so a single
-  //   `chooseOption` reads them with the option itself never run out. Dark Deal's starter tier is the exception on
-  //   its own card: the fork rolls it and only the boss it produced can be read back, so that one option is run out.
-  // - Weird Dream's swap is checked by running its non-battle option out, because the party afterwards *is* the claim.
-  // - A Trainer's Test is run out too, and for the opposite reason to the rest: its config carries no
-  //   `pokemonConfigs`, so the card's count comes off a party template the game need not use, and only the party it
-  //   fields settles whether that count was right.
-  // - The remaining fights — The Winstrate Challenge, the breeder's, Trash to Treasure's — are never run: what the
-  //   card claims about them it reads off `enemyPartyConfigs` and `misc` before a button is pressed, and that state
-  //   is what the battle is built from. Those are checked against it directly.
-
-  // The victim is `getRandomPlayerPokemon(true, false, true)`, drawn in the pre-option phase, which also writes the
-  // name it took into the `pokeName` dialogue token — so the game names its own victim and the card's guess at it is
-  // checked against that, not against a re-derivation. The whole take/avoid call hangs on this name.
+  // The pre-option phase writes the member it took into the `pokeName` token (game-code.md §13), so the card is checked
+  // against the game's own name for its victim, not a re-derivation.
   it("Dark Deal: the mon the card says is taken is the mon the game takes", async () => {
     await arrive(game, caseFor(MysteryEncounterType.DARK_DEAL));
 
@@ -687,9 +620,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(taken).toBe(who);
     expect(after, `${who} is gone from the party`).not.toContain(who);
 
-    // The tier is the option fork's own draw, and only the boss it produced can be read back. `getRandomSpeciesByStarterCost`
-    // widens its band when no starter of the victim's types sits in it, so the cost is the claim only while the band
-    // was actually servable — which is checked here rather than assumed, off the game's own registry.
+    // Only the boss can tell the tier, and its cost is the claim only while the band was servable: the game widens a
+    // band with no starter of the taken mon's types (game-code.md §13).
     await runOptionOut(game, { isBattle: true });
     const boss = game.scene.getEnemyParty()[0];
     const cost = speciesDataRegistry.getStarterCost(boss.species.speciesId);
@@ -704,18 +636,13 @@ describe("Coachemon oracle - what the card claims against what the game does", (
         return c >= min && c <= max;
       });
     console.log(`ORACLE-DIFF dark-deal-tier claimed=${tier} boss=${boss.species.name} cost=${cost} servable=${servable}`);
-    // The pinned seed lands on a band the registry can serve, so that is pinned too rather than left as a guard: a
-    // pin bump that makes the game widen instead goes red here — "re-read this" — instead of quietly asserting
-    // nothing. `servable` reads types only, where the game also drops its excluded bosses, so it is the wider test of
-    // the two: if it ever goes false the band really was unservable, and the cost below is not the claim to check.
+    // Asserted rather than guarded, so a pin bump that makes the game widen goes red instead of asserting nothing.
+    // `servable` ignores the game's excluded bosses, so it is the wider test: false means the band really was unservable.
     expect(servable, `starter tier ${tier} has a starter of types ${types} to draw from`).toBe(true);
     expect(cost, `the card claimed tier ${tier}; ${boss.species.name} costs ${cost}`).toBeGreaterThanOrEqual(min);
     expect(cost).toBeLessThanOrEqual(max);
   });
 
-  // Every member's second type is redrawn in the pre-option phase, onto `customPokemonData.types`. The card replays
-  // that draw — the priority pool, the game's own default (string) `.sort()` over type *numbers*, `randSeedShuffle`,
-  // then a plain roll when the pool runs dry — so this walks the card's whole named list against what the game wrote.
   it("Clowning Around: the types the card names are the types the game writes", async () => {
     await arrive(game, caseFor(MysteryEncounterType.CLOWNING_AROUND));
 
@@ -726,8 +653,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(listed, `option 3 reads "${claimed}"`).toBeTruthy();
     const pairs = listed![1].split(", ").map(p => p.split(" → ") as [string, string]);
 
-    // The clown's own ability and Blacephalon's rolled types are `onInit` reads the other two options lean on, and
-    // both are on the screen already: checked here rather than given a case of their own.
+    // Two `onInit` reads the other options lean on, checked here rather than in a case of their own.
     const me = game.scene.currentBattle.mysteryEncounter!;
     expect(card.options[0].outcome).toContain(me.dialogueTokens.ability);
     const blace: number[] = me.enemyPartyConfigs[0].pokemonConfigs[1].customPokemonData.types;
@@ -740,8 +666,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(actual).toEqual(pairs);
   });
 
-  // The price is `misc.price`, not the option's `cost` — that is the money *requirement*'s ceiling (2× wave money)
-  // and runs to twice the real price, so a card reading the wrong one would be confidently wrong about every sale.
+  // The price is `misc.price`, not the option's money requirement, which runs up to twice it (game-code.md §13).
   it("The Pokémon Salesman: the price the card names is the money the game takes", async () => {
     await arrive(game, caseFor(MysteryEncounterType.THE_POKEMON_SALESMAN));
 
@@ -764,8 +689,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(bought.level).toBe(5);
   });
 
-  // `onInit` puts up the party's three least-friendly members with an egg count each, and the card's three rows are a
-  // read of that `misc`. Only the picked one fights, so this is checked on the screen rather than run out.
   it("The Expert Pokémon Breeder: the three on offer and their eggs are the ones the game set up", async () => {
     await arrive(game, caseFor(MysteryEncounterType.THE_EXPERT_POKEMON_BREEDER));
 
@@ -784,16 +707,12 @@ describe("Coachemon oracle - what the card claims against what the game does", (
         expect(outcome).toContain(`${common} Common egg${common === 1 ? "" : "s"}`);
       }
     }
-    // The breeder is the trainer fight that *does* set `pokemonConfigs` — it builds the three mons itself — so its
-    // size comes from that length and its `trainerConfig` carries no `partyTemplates` at all. The card takes the
-    // configs first and the template only as a fallback, which is what makes it right here.
+    // The breeder sets `pokemonConfigs`, so the card's configs-first rule is what makes its count right (game-code.md §13).
     const cfg = me.enemyPartyConfigs[0];
     expect(cfg.trainerConfig?.partyTemplates, "the breeder sets its party outright, not from a template").toBeUndefined();
     expect(card.options[0].outcome).toContain(`fights the breeder's ${cfg.pokemonConfigs.length} alone`);
   });
 
-  // `onInit` has rolled the whole swap before the screen opens, so the card names every species it will become. This
-  // is the one transforming option cheap enough to run out: the party afterwards is exactly the claim.
   it("Weird Dream: the party the card names is the party the game swaps in", async () => {
     await arrive(game, caseFor(MysteryEncounterType.WEIRD_DREAM));
 
@@ -817,10 +736,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(after).toEqual(pairs.map(([, to]) => to));
   });
 
-  // A Trainer's Test is the one trainer fight whose config carries no `pokemonConfigs` at all, so the card's count
-  // falls through to `trainerConfig.partyTemplates[0].size` — and `46-encounter.js` warns in its own comment that
-  // `Trainer.getPartyTemplate` need not pick template 0. Reading that same field back would assert the card's rule
-  // against itself, so the fight is run and the count checked against the party the game actually fields.
+  // No `pokemonConfigs`, so the card's count falls through to `partyTemplates[0]`, which the game need not use
+  // (game-code.md §13). Reading that field back would test the card's rule against itself, so the fight is run.
   it("A Trainer's Test: the party size the card names is the party the game fields", async () => {
     await arrive(game, caseFor(MysteryEncounterType.A_TRAINERS_TEST));
 
@@ -841,9 +758,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(Number(claimed)).toBe(fielded);
   });
 
-  // The Winstrate Challenge sets `pokemonConfigs` on every one of its five configs, so the size the card reads is the
-  // party each battle is built from rather than a template it might not use. Running five fights out would settle
-  // nothing that state does not already carry, so this is checked at the screen.
   it("The Winstrate Challenge: the battles and total the card names are the ones the encounter set up", async () => {
     await arrive(game, caseFor(MysteryEncounterType.THE_WINSTRATE_CHALLENGE));
 
@@ -861,10 +775,8 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(Number(named![2])).toBe(mons);
   });
 
-  // Safari Zone's fee. Every claim below this one is about a turn the game has already set up; this is the only one
-  // the card makes *before* a coin is spent, and the only one no phase writes down anywhere to be read back — the
-  // three mons are drawn in forks of their own (`waveIndex x 1000 x remaining`) that stay sealed until each is
-  // summoned. So it is settled the only way it can be: pay, and walk all three out.
+  // No phase writes the three mons down before each is summoned (game-code.md §13), so the fee is paid and all three
+  // are walked out.
   it("Safari Zone: the three mons the card names before the fee are the three the game summons", async () => {
     await arrive(game, caseFor(MysteryEncounterType.SAFARI_ZONE));
 
@@ -894,8 +806,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
         level: mon.level,
         hiddenAbility: mon.abilityIndex === 2,
       });
-      // Running is the one turn that always ends on the next mon: a ball might catch this one, and bait and mud
-      // leave it standing. The third is left alone, since running there ends the safari.
+      // Running always brings the next mon out; on the third it would end the safari.
       if (i < 2) {
         await safariTurn(game, RUN);
       }
@@ -904,14 +815,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     console.log(`ORACLE-DIFF safari-zone claimed=${JSON.stringify(claimed)} actual=${JSON.stringify(actual)}`);
     expect(actual).toEqual(claimed);
   });
-
-
-  // ---- Safari Zone's minigame turn. Every other case here stops on the encounter's own option screen; this one pays
-  // the fee and walks into the screen the encounter re-opens with, which no case had driven before.
-  //
-  // The odds are not among the claims checked. `throwPokeball` and `isPokemonFlee` are module-private, so an oracle
-  // could only re-derive them and compare the card's arithmetic against a copy of its own — no answer at all. What
-  // the game does write down is the mon, the count and the two stages, and those are what these cases read.
 
   it("Safari Zone: the minigame menu is judged, and the turn the card reads is the turn the game holds", async () => {
     await arrive(game, caseFor(MysteryEncounterType.SAFARI_ZONE));
@@ -928,16 +831,13 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     };
     console.log(`ORACLE-DIFF safari-menu claimed=${JSON.stringify(card.minigame)} actual=${JSON.stringify(held)}`);
 
-    // The one thing a mock cannot prove: that the real `MysteryEncounterUiHandler` is showing a *secondary* menu —
-    // four options, none of them on `me.options`, so the card reads them positionally rather than by index.
     expect(game.scene.ui.getMode()).toBe(UiMode.MYSTERY_ENCOUNTER);
     expect(ui.encounterOptions).toHaveLength(4);
     expect(me.options).toHaveLength(2);
     expect(card.options).toHaveLength(4);
     expect(card.options.map((o: { index: number }) => o.index)).toEqual([-1, -1, -1, -1]);
-    // The card reads an override menu *positionally*, so the order it assumes has to be the order the game built
-    // `safariZoneGameOptions` in. Checked against the game's own dialogue keys rather than the rendered labels the
-    // card itself read, which would only agree with themselves.
+    // The card reads this menu positionally. Checked against the game's dialogue keys, not the rendered labels the card
+    // read, which would only agree with themselves.
     const labels = ui.encounterOptions.map(o => o.dialogue?.buttonLabel);
     const key = (n: number) => `mysteryEncounters/safariZone:safari.${n}.label`;
     expect(labels[BALL]).toBe(key(1));
@@ -959,16 +859,13 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     expect(card.minigame.catchRate).toBe(mon.species.catchRate);
     expect(card.minigame.catchStage).toBe(me.misc.catchStage);
     expect(card.minigame.fleeStage).toBe(me.misc.fleeStage);
-    // `summonSafariPokemon` decrements the count as it summons, so the card's `left` is how many come *after* this
-    // one: three in all, one of them already in front of you.
+    // The mons after this one (game-code.md §13).
     expect(card.minigame.left).toBe(me.misc.safariPokemonRemaining);
     expect(me.misc.safariPokemonRemaining).toBe(2);
   });
 
-  // Bait's two arms are told apart by walking it: `tryChangeCatchStage(2)` always lands, so the catch stage is an
-  // exact ladder up to the clamp, while `tryChangeFleeStage(1, 8)` lands 4 times in 5 and so is *observed* rather
-  // than derived. That it fired at all is asserted: a seed that stopped firing it would otherwise leave the card's
-  // "4 times in 5" unchecked, and the case would pass a game that had dropped the arm entirely.
+  // The certain arm is walked as an exact ladder; the 4-in-5 arm is observed, and asserted to have fired at all, or a
+  // game that dropped it would pass (game-code.md §13).
   it("Safari Zone: a bait turn moves the game's stages the way the card said it might", async () => {
     await arrive(game, { ...caseFor(MysteryEncounterType.SAFARI_ZONE), wave: SAFARI_STILL_WAVE });
     await enterSafari(game);
@@ -979,9 +876,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     const { catchStages, fleeStages } = await walkSafari(game, BAIT);
     console.log(`ORACLE-DIFF safari-bait claimed="${claimed}" catch=${catchStages.join(",")} flee=${fleeStages.join(",")}`);
 
-    // The certain arm: +2 a turn, clamped at +6.
     expect(catchStages, "bait raises the catch stage by exactly 2 a turn, clamped at +6").toEqual(stageLadder(2));
-    // The 4-in-5 arm: never down, never more than +1 in one turn, and it landed at least once over these turns.
     for (const [i, fs] of fleeStages.entries()) {
       const moved = fs - (fleeStages[i - 1] ?? 0);
       const why = `turn ${i + 1} moved the flee stage by more than bait can (${fleeStages.join(",")})`;
@@ -1015,8 +910,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
     ).toBeLessThan(0);
   });
 
-  // Walking away is the one turn with no roll in it: `doPlayerFlee` summons the next mon outright, so the three mons
-  // can be walked without ever meeting the flee roll.
+  // Running meets no flee roll (game-code.md §13), so it walks all three mons.
   it("Safari Zone: the count the card names is the count the game holds, and the third mon ends the safari", async () => {
     await arrive(game, caseFor(MysteryEncounterType.SAFARI_ZONE));
     await enterSafari(game);
@@ -1039,8 +933,7 @@ describe("Coachemon oracle - what the card claims against what the game does", (
       }
     }
 
-    // The count, and — since #313 — the mon the run option says is coming. That name is checked against the mon the
-    // game actually summoned on the *next* turn of this same walk, never against the card's own claim about it.
+    // The mon the run option says is next is checked against the mon the game then summoned, never the card (#313).
     expect(runLines[2]).toBe("let it go — the last of the three, so this ends the safari");
     for (const [i, left] of [2, 1].entries()) {
       const coming = names[i + 1];
@@ -1050,8 +943,6 @@ describe("Coachemon oracle - what the card claims against what the game does", (
       );
     }
 
-    // The card said letting the third one go ends the safari, so this walks off the last menu and out of the
-    // encounter rather than into a fourth one.
     pressOverride(game, RUN);
     await runOptionOut(game);
 
