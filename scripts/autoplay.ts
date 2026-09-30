@@ -88,9 +88,13 @@ let lastWave: number | null = null;
 let trainerWave: number | null = null;
 let lastScreen = "";
 let repeats = 0;
+let waits = 0;
 while (!stop && calls < MAX_CALLS) {
   const read = await call("read_menu");
   if (read.error) { stop = `error:${read.error}`; break; }
+  // `timed_out` is not fatal: the heal after a boss wave outlasts one call's settle (v1-tool-surface.md §3).
+  waits = read.status === "timed_out" ? waits + 1 : 0;
+  if (waits > 0 && waits <= 5) continue;
   if (read.status !== "ok") { stop = `status:${read.status}`; console.log(JSON.stringify(read, null, 1)); break; }
   const menu = read as unknown as Menu;
   const wave = menu.wave;
@@ -115,6 +119,11 @@ while (!stop && calls < MAX_CALLS) {
   if (r.error) {
     if (r.error === "no_match" || r.error === "ambiguous") { console.log(JSON.stringify(r)); stop = `error:${r.error}`; break; }
     if (r.error === "tab_contended" || r.error === "loop_frozen" || r.error === "settings_mode") { stop = `error:${r.error}`; break; }
+    // A pick's cursor move types out the item's description; a panel refresh between the move and the commit lets it
+    // advance, and an immediate retry loses the same race until the stuck detector ends the run (#499).
+    if (r.error === "game_moved") await sleep(1500);
+    // A message the game still wants read, such as an item's "won't have any effect".
+    if (r.error === "message_pending") await call("press", { button: "ACTION" });
     continue;
   }
   if (r.status !== "ok" && r.status !== "timed_out") { stop = `status:${r.status}`; console.log(JSON.stringify(r.diagnostic ?? r, null, 1)); break; }

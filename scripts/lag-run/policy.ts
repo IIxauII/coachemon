@@ -122,7 +122,9 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     return pick(standing?.label ?? "Cancel", "rule");
   }
   if (screen.startsWith("PARTY/") && screen.endsWith(":options")) {
-    const label = has(/^(send out|apply|use|teach|switch|revive|select|pass baton)/) ?? "Cancel";
+    // A PP item's options are the mon's moves, with no verb among them.
+    const label = has(/^(send out|apply|use|teach|switch|revive|select|pass baton)/)
+      ?? (screen.startsWith("PARTY/MOVE_MODIFIER") ? labels.find(l => l && !/^cancel$/i.test(l)) : undefined) ?? "Cancel";
     const by = mem.followed ? "card" : "rule";
     mem.followed = false;
     if (screen.startsWith("PARTY/SWITCH") || screen.startsWith("PARTY/POST_BATTLE_SWITCH")) return pick(label, by, "switch");
@@ -132,10 +134,15 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
   if (screen.startsWith("PARTY/")) {
     const want = mem.target;
     mem.target = null;
-    const named = want ? options.find(o => o.label && o.fainted !== true && o.synthetic !== true && monName(o.label) === want) : undefined;
-    if (named) { mem.followed = true; return pick(named.label!, "card"); }
-    const mon = options.find(o => o.fainted === false && o.synthetic !== true);
-    return pick(mon?.label ?? "Cancel", "rule");
+    // An item with no effect on a mon bounces back here, so each mon is tried once per screen and wave.
+    const key = (o: Opt) => `${menu.wave}|${screen}|${o.label}`;
+    const untried = (o: Opt) => !!o.label && o.fainted !== true && o.synthetic !== true && !mem.tried.has(key(o));
+    const named = want ? options.find(o => untried(o) && monName(o.label!) === want) : undefined;
+    const mon = named ?? options.find(o => untried(o) && o.fainted === false);
+    if (!mon) return pick("Cancel", "rule");
+    mem.tried.add(key(mon));
+    mem.followed = !!named;
+    return pick(mon.label!, named ? "card" : "rule");
   }
   if (screen === "CONFIRM") {
     const text = menu.text ?? "";
@@ -164,7 +171,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     return decline?.label ? pick(decline.label, "rule") : cancel;
   }
   if (screen === "MODIFIER_SELECT") {
-    const line = act(live, "rewards") ?? "";
+    const line = act(live, "reward") ?? "";
     const clauses = line.split(" · ");
     const buys = clauses.find(c => c.startsWith("buy "))?.slice(4).split(", ") ?? [];
     for (const name of buys) {

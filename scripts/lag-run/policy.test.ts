@@ -87,12 +87,25 @@ test("the shop buys what the card buys, once each, then takes its reward for the
       { i: "2:0", label: "Potion", kind: "shop", col: 0, cost: 200 },
     ],
   };
-  const rewards = card("rewards", "take Leftovers → Squirtle · buy Potion");
+  const rewards = card("reward", "take Leftovers → Squirtle · buy Potion");
   const mem = freshMemory();
   assert.deepEqual(decide(shop, rewards, mem), { tool: "select_option", args: { index: "2:0" }, by: "card", intent: "shop" });
   assert.deepEqual(decide(party("PARTY/MODIFIER", [["Charmander Lv.7 20/24"], ["Squirtle Lv.5 20/20"]]), null, mem).args, { label: "Charmander Lv.7 20/24" }, "a buy names no mon");
   assert.deepEqual(decide(shop, rewards, mem), { tool: "select_option", args: { index: "1:1" }, by: "card", intent: "shop" });
   assert.deepEqual(decide(party("PARTY/MODIFIER", [["Charmander Lv.7 20/24"], ["Squirtle Lv.5 20/20"]]), null, mem).args, { label: "Squirtle Lv.5 20/20" });
+});
+
+test("an item bounced back to the party screen goes to the next mon, then gives up (#499)", () => {
+  const mem = freshMemory();
+  const screen = party("PARTY/MODIFIER", [["Charmander Lv.7 24/24"], ["Squirtle Lv.5 20/20"]]);
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Charmander Lv.7 24/24" });
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Squirtle Lv.5 20/20" });
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Cancel" });
+});
+
+test("a PP item's move list takes the first move, since no verb there commits it (#499)", () => {
+  const moves: Menu = { screen: "PARTY/MOVE_MODIFIER:options", wave: 6, options: opts(["Tackle", "Vine Whip", "Cancel"]) };
+  assert.deepEqual(decide(moves, null, freshMemory()).args, { label: "Tackle" });
 });
 
 test("with no rewards card the shop takes the first reward, and leaving an empty shop is no pick (#499)", () => {
