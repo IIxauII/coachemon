@@ -1,20 +1,4 @@
-/**
- * The dev loop (extension-distribution.md §5.4): watch what the extension is built from, rerun the dev build, and tell
- * the running dev build to reload itself. It is `wxt dev`'s job, done by hand, because `wxt dev` force-adds `tabs` and
- * `scripting`, runs a throwaway profile, does not watch `hud/`, and covers neither Safari nor Orion (§5.2).
- *
- *   node extension/scripts/dev.ts                       # chrome
- *   node extension/scripts/dev.ts --target chrome,firefox
- *   node extension/scripts/dev.ts --once                # build once, reload once, exit
- *
- * The reload goes out as a `dev-reload` frame through the dev hub on 47148 (§5.4), which the hub fans out to every
- * `flavour: "dev"` extension and to nothing else. A frame rather than the dev table's `reload` command, because a
- * command needs the one counted tab the hub routes to — and the build that most needs reloading is the one whose relay
- * the last change broke, which has no counted tab at all.
- *
- * The extension reloads and puts the content scripts back into the open game tabs itself, so a run keeps its place.
- * Whether Firefox, Safari and Orion honour that is unmeasured; where an engine cannot, the dev reloads by hand.
- */
+/** The dev loop (extension-distribution.md §5.4). */
 import { spawnSync } from "node:child_process";
 import { watch } from "node:fs";
 import { join } from "node:path";
@@ -35,7 +19,6 @@ const once = argv.includes("--once");
 
 const say = (line: string) => process.stderr.write(`${line}\n`);
 
-/** One dev build per target, in order. A target that fails stops the round: reloading a stale build would mislead. */
 function build(): boolean {
   for (const target of targets) {
     const t0 = Date.now();
@@ -49,12 +32,14 @@ function build(): boolean {
   return true;
 }
 
-/** The `dev-reload` frame, over a client of its own: the socket is open only for as long as it takes to send. */
+/**
+ * A `dev-reload` frame, not the dev table's `reload` command: a command needs a counted tab, and the build that most
+ * needs reloading is the one whose relay the last change broke, which has none.
+ */
 async function reload(): Promise<void> {
   const client = new HubClient({ port: DEV_PORT, version: PLUGIN_VERSION });
   try {
-    // Nothing answers it: every extension it reaches is restarting (extension-distribution.md §5.4). Only a hub we
-    // could not reach is news.
+    // Nothing answers it, since every extension it reaches is restarting: only an unreachable hub is news.
     const trouble = await client.devReload();
     say(trouble === null ? "reload: sent" : `reload: no hub on ${DEV_PORT} (${trouble.kind})`);
   } finally {
@@ -71,7 +56,6 @@ if (once) process.exit(0);
 
 let pending: NodeJS.Timeout | null = null;
 let running = false;
-/** A change during a build is not lost: the round that is running finishes, then one more runs for it. */
 let again = false;
 
 function touched(rel: string): void {
@@ -104,7 +88,6 @@ for (const root of WATCHED) {
     watch(dir, { recursive: true }, (_event, name) => touched(join(root, String(name ?? ""))));
     say(`watching ${root}`);
   } catch (e) {
-    // A root that is not there yet is not a reason to refuse to watch the others.
     say(`not watching ${root}: ${e instanceof Error ? e.message : String(e)}`);
   }
 }

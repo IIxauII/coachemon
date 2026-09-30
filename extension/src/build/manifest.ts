@@ -1,62 +1,43 @@
 /**
- * The manifests (extension-distribution.md §5.3, §5.4), as one pure function per target so the tests pin them exactly
- * and `wxt.config.ts` stays a wiring file. The store flavour declares **no permissions of any kind**: the static
- * content-script match on `https://pokerogue.net/*` is the whole permission set, on every target (§6).
- *
- * `relay.js` and `page.js` are WXT unlisted scripts, so they land at the output root and WXT adds nothing to the
- * manifest by itself; `hud.js` is written by the build hook (§5.2). Every content script is therefore listed here by
- * hand, which is also what keeps this file the single answer to "what does the reviewer see".
- *
- * 1.x is the listed line: 0.x ships unlisted by design, and from 1.0.0 the release uploads and submits to both
- * stores itself rather than a human filing the build by hand (§14.1, §14.4). 1.0.0 itself never reached either
- * store: the Chrome Web Store API was not enabled on the service account's project, and AMO 404s until the add-on
- * exists, which the first API upload does not create. Both were fixed by hand; the tag stands unpublished.
+ * Every content script is listed here by hand: WXT adds no manifest entry for an unlisted script, and `hud.js` is written
+ * by the build hook (extension-distribution.md §5.2, §5.3).
  */
 import type { Flavour, Target } from "../../../src/protocol/wire.ts";
 
-/** The listing's fixed disclaimer, which lives in `description` because the extension has no About page (extension-distribution.md §3). */
+/** The listing's fixed disclaimer (extension-distribution.md §3). */
 export const DESCRIPTION =
   "Unofficial coach overlay for PokéRogue. Not affiliated with Pagefault Games, Nintendo or The Pokémon Company.";
 
-/** After the rename; the repo is the homepage on every listing (extension-distribution.md §3). */
 export const HOMEPAGE = "https://github.com/IIxauII/coachemon";
 
 /** Permanent once AMO has seen it (extension-distribution.md §5.3). */
 export const GECKO_ID = "coachemon@iixauii.github.io";
 
-/** What the Firefox toolbar button says it does: the click is what requests the data-collection permission (extension-distribution.md §8.4). */
+/** A test pins this wording (extension-distribution.md §8.4). */
 export const ACTION_TITLE = "Coachemon: click once to let a local AI agent read this game";
 
 /** Not `*.pokerogue.net`: the beta site was never reviewed against (extension-distribution.md §6). */
 export const MATCHES = ["https://pokerogue.net/*"];
 
-/** What AMO is told the extension collects, declared in the manifest and filed by hand on the form
- * (extension-distribution.md §5.3, §6). Exported so `src/listing.test.ts` can pin the filing to it: a change here that
- * the filing did not follow would otherwise leave a false statement standing on the listing. */
+/**
+ * Also filed by hand on AMO's form, and `src/listing.test.ts` pins the filing to this: change both or the listing states
+ * something false (extension-distribution.md §5.3, §6).
+ */
 export const DATA_COLLECTION_PERMISSIONS = { required: ["none"], optional: ["websiteContent"] };
 
 export type Manifest = Record<string, unknown>;
 
-/**
- * What a store manifest may not have, and may not so much as mention (extension-distribution.md §5.5 check 1). One
- * list, read by the guard that checks the built artifact and by the test that checks `manifestFor`: two copies drift,
- * and the first pair did.
- */
+/** One list for the guard and for `manifestFor`'s test (extension-distribution.md §5.5 check 1). */
 export const BANNED_MANIFEST_KEYS = ["permissions", "optional_permissions", "host_permissions", "optional_host_permissions"];
 export const BANNED_MANIFEST_WORDS = ["nativeMessaging", "scripting", "tabs", "storage", "activeTab", "<all_urls>"];
 
 /**
- * Safari's background: `scripts` rather than `service_worker`, which is an accepted premise
- * (extension-distribution.md §16). WXT normalises an MV3 background to a service worker, so `wxt.config.ts` puts this
- * back in `build:manifestGenerated`.
+ * WXT normalises an MV3 background to a service worker, so `wxt.config.ts` puts this back in
+ * `build:manifestGenerated` (extension-distribution.md §16).
  */
 export const SAFARI_BACKGROUND = { scripts: ["background.js"], persistent: false };
 
-/**
- * A store version string from whatever `extension/package.json` holds. Before CI stamps it that is
- * `0.0.0-placeholder`, which no browser accepts, so the numeric prefix is taken and the rest dropped
- * (extension-distribution.md §14.2).
- */
+/** Before CI stamps it, `extension/package.json` holds `0.0.0-placeholder`, which no browser accepts (extension-distribution.md §14.2). */
 export function storeVersion(version: string): string {
   const m = /^(\d+)\.(\d+)\.(\d+)/.exec(version);
   return m ? `${m[1]}.${m[2]}.${m[3]}` : "0.0.0";
@@ -64,9 +45,8 @@ export function storeVersion(version: string): string {
 
 export function manifestFor(o: { target: Target; flavour: Flavour; version: string }): Manifest {
   const common: Manifest = {
-    // `manifest_version` is not set here: WXT owns it, from `manifestVersion: 3` in `wxt.config.ts`, and warns if a
-    // manifest sets it too. It is 3 on every target, MV2 defaults for Firefox and Safari included
-    // (extension-distribution.md §5.2).
+    // No `manifest_version`: WXT sets it from `manifestVersion: 3` in `wxt.config.ts`, and warns if a manifest sets it
+    // too (extension-distribution.md §5.2).
     name: "Coachemon",
     version: storeVersion(o.version),
     description: DESCRIPTION,
@@ -78,8 +58,7 @@ export function manifestFor(o: { target: Target; flavour: Flavour; version: stri
     ],
     ...perTarget(o.target),
   };
-  // The dev flavour alone gets permissions, for `screenshot` and for re-injection into open tabs
-  // (extension-distribution.md §5.4).
+  // extension-distribution.md §5.4.
   return o.flavour === "dev"
     ? { ...common, permissions: ["scripting", "activeTab"], host_permissions: ["<all_urls>"] }
     : common;
@@ -87,8 +66,7 @@ export function manifestFor(o: { target: Target; flavour: Flavour; version: stri
 
 function perTarget(target: Target): Manifest {
   if (target === "chrome") {
-    // The floor is `world: "MAIN"`'s, and nothing pins the extension id, so Chrome needs no `key`
-    // (extension-distribution.md §5.3).
+    // 111 is `world: "MAIN"`'s floor, and nothing pins the extension id, so no `key` (extension-distribution.md §5.3).
     return { minimum_chrome_version: "111", background: { service_worker: "background.js" } };
   }
   if (target === "firefox") {
@@ -98,10 +76,9 @@ function perTarget(target: Target): Manifest {
       // Drops MV3's default `upgrade-insecure-requests`, which turns `ws://127.0.0.1` into a failing TLS handshake.
       content_security_policy: { extension_pages: "script-src 'self'" },
       browser_specific_settings: {
-        // 142, not the 128 `world: "MAIN"` alone would need: `data_collection_permissions` reached Firefox for
-        // Android only at 142, and with no `gecko_android` key the linter checks Android against this floor
-        // (extension-distribution.md §5.3). That key stays absent on purpose — omitting it is what keeps the add-on
-        // desktop-only (#379, #380).
+        // 142, not `world: "MAIN"`'s 128: with no `gecko_android` key the linter checks Android against this floor, and
+        // Android gained `data_collection_permissions` only at 142. Adding that key would offer the add-on on Android
+        // (#380, extension-distribution.md §5.3).
         gecko: {
           id: GECKO_ID,
           strict_min_version: "142.0",
@@ -110,7 +87,7 @@ function perTarget(target: Target): Manifest {
       },
     };
   }
-  // Whether Safari enforces `strict_min_version` is unverified; the Safari 18 floor is stated with the download too.
+  // Whether Safari enforces `strict_min_version` is unverified (extension-distribution.md §5.3).
   return {
     background: SAFARI_BACKGROUND,
     browser_specific_settings: { safari: { strict_min_version: "18.0" } },
