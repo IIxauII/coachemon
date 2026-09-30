@@ -1,8 +1,6 @@
 /**
- * The dev table's live wiring (extension-distribution.md §5.4, §10.6): the browser APIs `commands.ts` and `reinject.ts`
- * are injected with, and what the dev background does on start. Kept apart from them so the logic stays testable with
- * no browser, and so that everything a store build must not contain — `captureVisibleTab`, `executeScript`,
- * `runtime.reload` — sits in one file that a store build never bundles (§5.5).
+ * Everything a store build must not contain — `captureVisibleTab`, `executeScript`, `runtime.reload` — sits here, in
+ * the one file a store build never bundles (extension-distribution.md §5.5).
  */
 import { browser } from "wxt/browser";
 import type { ToExtension } from "../../../src/protocol/wire.ts";
@@ -10,7 +8,7 @@ import { MATCHES } from "../build/manifest.ts";
 import { devCommands, type DevApi, type LocalAnswer } from "./commands.ts";
 import { reinject, type Injector } from "./reinject.ts";
 
-/** The real `DevApi`: the capture is of the window the game tab is in, not of whatever window happens to be focused. */
+/** The capture is of the game tab's window, not of whichever window has focus. */
 export function liveApi(): DevApi {
   const tabs = browser.tabs as unknown as {
     get: (tab: number) => Promise<{ windowId?: number }>;
@@ -22,7 +20,6 @@ export function liveApi(): DevApi {
       return tabs.captureVisibleTab(windowId as number, { format: "png" });
     },
     reload: () => browser.runtime.reload(),
-    // A turn of the event loop, which is all it takes for the reply to be on the socket before the extension goes.
     soon: fn => void setTimeout(fn, 0),
   };
 }
@@ -38,20 +35,12 @@ function liveInjector(): Injector {
   };
 }
 
-/**
- * What a dev background does that a store one does not: answer `screenshot` and `reload` itself, and put the content
- * scripts back into the tabs its own `runtime.reload()` orphaned (extension-distribution.md §5.4).
- */
 export function startDev(): LocalAnswer {
   void reinject(liveInjector());
   return devCommands(liveApi());
 }
 
-/**
- * The frames a dev build knows and the store transport does not (extension-distribution.md §5.4). The name lives here
- * rather than in the transport so that a store artifact never contains the string `dev-reload` at all (§5.5) — and it
- * never needs to, since the hub fans the frame out to dev builds alone.
- */
+/** `dev-reload` is named here, never in the transport, so a store artifact does not contain it (extension-distribution.md §5.5). */
 export function devFrames(frame: ToExtension): boolean {
   if (frame.t !== "dev-reload") return false;
   browser.runtime.reload();

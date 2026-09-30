@@ -1,9 +1,6 @@
 /**
- * The MAIN-world half of the relay channel (extension-distribution.md §9, §10.5): it registers the page handlers,
- * answers `coachemon:cmd` inside the dispatch that delivered it, and announces itself so the relay can count the tab.
- *
- * Nothing here knows the game: `src/page/` holds the handlers, and `dispatch` runs the locator, the act fingerprint
- * check and the handler in one page turn. This file is only the channel and the instance bookkeeping.
+ * The MAIN-world half of the relay channel, which answers `coachemon:cmd` inside the dispatch that delivered it and
+ * knows nothing of the game (extension-distribution.md §9.2, §10.5).
  */
 import { EVENT, encode, decode, type Channel, type Listener, type MakeEvent } from "../relay/channel.ts";
 import { dispatch } from "../../../src/page/dispatch.ts";
@@ -20,26 +17,15 @@ export type Handler = { kind: "read" | "act"; run: (L: any, args: any) => unknow
 export type PageInstance = { build: string; stop: () => void };
 
 export type PageDeps = {
-  /** `document`. */
   channel: Channel;
-  /** `(type, detail) => new CustomEvent(type, { detail })`. */
   makeEvent: MakeEvent;
   build: string;
-  /**
-   * The world marker's visibility, read by the caller as `typeof __coachemonIsolated !== "undefined"`: if this script
-   * can see the relay's own-world global, it ran isolated and must do nothing but say so
-   * (extension-distribution.md §9.4).
-   */
   isolated: boolean;
-  /**
-   * `window`. Never `host`: CONTEXT.md reserves that word for Apple's host app, which is the browser.
-   */
+  /** `window`, never "host": CONTEXT.md reserves that word for Apple's host app, which is the browser. */
   global: { __coachemonPage?: PageInstance };
-  /** Beyond the store table: the dev commands, in a dev build only (extension-distribution.md §10.6). */
   extra?: Record<string, Handler>;
 };
 
-/** The store table as handlers: exactly `STORE_COMMANDS`, one per command, and nothing else in a store build (extension-distribution.md §10.1). */
 function storeHandlers(): Record<string, Handler> {
   const out: Record<string, Handler> = {};
   for (const [name, spec] of Object.entries(STORE_COMMANDS)) {
@@ -54,8 +40,7 @@ export function startPage(d: PageDeps): PageInstance {
   };
 
   if (d.isolated) {
-    // No handlers, no HUD, no presence: the relay reports `wrong-world` and the tab is not counted
-    // (extension-distribution.md §9.4).
+    // extension-distribution.md §9.4.
     dispatchEvent(EVENT.wrongWorld, { side: "page" });
     return { build: d.build, stop: () => {} };
   }
@@ -80,7 +65,7 @@ export function startPage(d: PageDeps): PageInstance {
     const cmd = decode(e.detail);
     if (!cmd || cmd.build !== d.build || typeof cmd.id !== "number" || typeof cmd.name !== "string") return;
     const handler = table[cmd.name];
-    // A name we do not have gets no reply at all, so the relay answers `no-handler` — the one code for "nobody here".
+    // No reply at all, so the relay answers `no-handler`, the one code for "nobody here".
     if (!handler) return;
     const args = (cmd.args && typeof cmd.args === "object" ? cmd.args : {}) as Record<string, unknown>;
     try {
@@ -88,8 +73,7 @@ export function startPage(d: PageDeps): PageInstance {
       const result = dispatch(locate, fine, disc, handler.run, cmd.name, handler.kind, PAGE_MODES, args);
       dispatchEvent(EVENT.reply, { id: cmd.id, ok: true, result });
     } catch (e) {
-      // Only the message crosses: a stack is page internals and the server treats `threw` as a failed read
-      // (extension-distribution.md §9.7).
+      // Only the message crosses (extension-distribution.md §9.7).
       dispatchEvent(EVENT.reply, { id: cmd.id, ok: false, code: "threw", message: e instanceof Error ? e.message : String(e) });
     }
   };

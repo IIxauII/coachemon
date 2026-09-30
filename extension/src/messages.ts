@@ -1,17 +1,12 @@
 /**
- * Runtime messaging between a relay and the background (extension-distribution.md §8.3). The relay never learns its own
- * tab id: the background takes it from `sender.tab.id` and keys everything by it, which is also why no message here
- * carries one.
+ * No message carries a tab id: the relay never learns its own, and the background keys everything by `sender.tab.id`
+ * (extension-distribution.md §8.3).
  */
 import type { EventKind, RelayCode, TabState } from "../../src/protocol/wire.ts";
 
-/** A relay announcing what its tab is now (extension-distribution.md §9.3). */
 export type TabReport = { t: "tab"; state: TabState; title: string };
 
-/**
- * The relay's 20 s tick, which is what holds Firefox's event page, and how the background re-learns tabs after any
- * restart (extension-distribution.md §8.2). It carries the tab's state so a restarted background needs nothing else.
- */
+/** Carries the tab's state, so a restarted background re-learns the tab from it alone (extension-distribution.md §8.2). */
 export type Keepalive = { t: "keepalive"; state: TabState | null; title: string };
 
 /** A HUD event that passed the relay's structural filter (extension-distribution.md §9.5). */
@@ -19,10 +14,9 @@ export type EventReport = { t: "event"; kind: EventKind; body: Record<string, un
 
 export type ToBackground = TabReport | Keepalive | EventReport;
 
-/** One command, forwarded from the hub frame unchanged but for the tab id (extension-distribution.md §7.6). */
 export type CmdMessage = { t: "cmd"; id: number; name: string; args: Record<string, unknown> };
 
-/** What the relay answers through `sendResponse`, ready to go on the wire as it stands. */
+/** Ready to go on the wire as it stands. */
 export type RelayReply =
   | { t: "reply"; id: number; ok: true; result: unknown }
   | { t: "reply"; id: number; ok: false; code: RelayCode; message: string };
