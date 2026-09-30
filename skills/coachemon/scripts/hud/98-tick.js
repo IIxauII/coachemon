@@ -1,4 +1,5 @@
 // `KIND` is the one place a kind meets its draw (#388). This file decides nothing about the card and formats nothing.
+import { note, refresh, stage } from "./01-meter.js";
 import { readCard } from "./60-card.js";
 import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
@@ -37,7 +38,7 @@ export const shownCard = () => shown;
 let groups;
 export const shownGroups = () => {
   if (!shown) return null;
-  if (groups === undefined) groups = KIND[shown.kind]?.draw(shown) ?? null;
+  if (groups === undefined) groups = stage("groups", () => KIND[shown.kind]?.draw(shown) ?? null);
   return groups;
 };
 const setShown = card => { shown = card; groups = undefined; };
@@ -63,38 +64,47 @@ export const accountRead = s => {
   };
 };
 
-export const tick = () => {
+const body = () => {
   try {
     failure = null;
     const s = battleScene();
     if (!s?.ui) { el.style.display = "none"; setShown(null); return; }
     // Before `readCard`: `previewArm` and `rerollArm` overwrite the prediction these two score.
-    rerollCheck(s);
-    previewCheck(s);
-    const card = readCard(s, accountRead(s));
-    // Only the tick arms, so a look-ahead read can't take the prediction's place.
-    if (card?.preview && card.preview.wave === card.wave + 1) previewArm(card.preview);
-    if (card?.kind === "rewards") rerollArm(s, card.rerollAhead);
+    stage("check", () => { rerollCheck(s); previewCheck(s); });
+    const card = stage("read", () => readCard(s, accountRead(s)));
+    note({ kind: card?.kind ?? null, wave: card?.wave ?? s.currentBattle?.waveIndex ?? null, mode: s.ui.getMode?.() ?? null,
+      phase: s.phaseManager?.getCurrentPhase?.()?.phaseName ?? null });
+    stage("arm", () => {
+      // Only the tick arms, so a look-ahead read can't take the prediction's place.
+      if (card?.preview && card.preview.wave === card.wave + 1) previewArm(card.preview);
+      if (card?.kind === "rewards") rerollArm(s, card.rerollAhead);
+    });
     // Every refresh, whatever the card: the journal traces the fight and the rewards an encounter starts.
-    journalCheck(s, card);
+    stage("journal", () => journalCheck(s, card));
     if (!card) { el.style.display = "none"; setShown(null); return; }
     setShown(card);
     const sig = sigOf(card);
     el.style.display = "block";
     el.style.width = panelState() === "closed" ? "auto" : PANEL_W;
     if (sig !== last) {
-      clearMissed();
-      el.replaceChildren(...(panelState() === "closed" ? [glyph()] : open(card, shownGroups())));
+      note({ drew: true });
+      stage("dom", () => {
+        clearMissed();
+        el.replaceChildren(...(panelState() === "closed" ? [glyph()] : open(card, shownGroups())));
+      });
       // Taken again, not `sig`: drawing a card that lacks the open group moves the drawer to `act` (#349).
       last = missedSprite() ? "" : sigOf(card);
     }
   } catch (e) {
     dropGame();
     failure = e.message;
+    note({ failed: true });
     el.style.display = "block";
     el.textContent = `coach: ${e.message}`;
     last = "";
   }
 };
 
-setRedraw(() => { last = ""; tick(); });
+export const tick = () => refresh("tick", body);
+
+setRedraw(() => { last = ""; refresh("click", body); });

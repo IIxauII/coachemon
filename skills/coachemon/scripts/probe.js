@@ -22,6 +22,12 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
       document.documentElement.dataset.mcpOut = JSON.stringify({ hudActive: !!window.__coachHud, stats, entries });
       return;
     }
+    if (MODE === "stats") {
+      let stats = null;
+      try { stats = window.__coachHud?.stats?.() ?? window.__coachMeter?.stats?.() ?? null; } catch {}
+      document.documentElement.dataset.mcpOut = JSON.stringify({ hudActive: !!window.__coachHud, meterActive: !!window.__coachMeter, stats });
+      return;
+    }
     const game = Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
     const s = game.scene.getScene("battle");
     // Mid-reload or on the title screen the battle scene exists without its UI yet.

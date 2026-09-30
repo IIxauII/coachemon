@@ -1,5 +1,6 @@
 // Which card the panel shows, and what it says in plain text: this module detects the screen, builds the card and sets
 // the battle verdict, and the renderers decide nothing. Each card's own wording lives beside its model builder.
+import { stage } from "./01-meter.js";
 import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-screens.js";
 import { partyProfile } from "./08-party.js";
 import { readTurn } from "./25-turn.js";
@@ -119,11 +120,11 @@ export const readCard = (s, account) => {
   card.wave = s.currentBattle?.waveIndex ?? null;
   if (card.kind === "battle" || card.kind === "rewards") {
     // After the turn read has closed: the two reads are sequential, never nested (26-run).
-    readRun(s, run => {
+    stage("road", () => readRun(s, run => {
       card.preview = previewNext(run);
       // The rewards card has already built its own.
       card.ahead ??= aheadModel(run);
-    });
+    }));
   }
   return card;
 };
