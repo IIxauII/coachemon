@@ -1,23 +1,21 @@
-// Prints the HUD as one injectable script: every hud/*.js file in name order, inside a single IIFE, with "__MODE__"
-// replaced. Any other mode prints probe.js with only the HUD modules it imports. Used by read.sh and by the tests.
+// Prints the HUD as one injectable script, every hud/*.js file in name order inside one IIFE; any other mode prints
+// probe.js with only the HUD modules it imports. Both have `"__MODE__"` replaced by the mode.
 // Usage: node hud-bundle.mjs <hud|hud-off|battle|starters|journal>
 //
-// Modules. The page can't load real ES modules (read.sh injects a classic inline <script>, and tests `eval` it), so
-// every file is turned into a function with its own scope. There is no shared scope: a file reaches another file's
-// name only by importing it, and a reference to a name it never imported is a ReferenceError when that line runs —
-// not a bundle error, since finding a free name would need a parser here. The rules below are what the bundle itself
-// refuses, each with a named error (`err.code`):
+// Modules. Every file becomes a function with its own scope, and sees only its imports, the injected enums and page
+// globals (`window`, `document`, `Phaser`). A name it never imported is a ReferenceError when that line runs, not a
+// bundle error. The rules below are what the bundle itself refuses, each with a named error (`err.code`):
 //   - Named imports only, at the top of the file, before any code: `import { a, b } from "./NN-name.js";`
 //     (`"./hud/NN-name.js"` from probe.js). Default, star, side-effect imports, `as` renames and an import below code
 //     are `unsupported-form`.
-//   - Exports are `export const name = …` or `export function name`. `export let` is `export-let`: state another file
-//     needs is read and written through functions, since an imported binding never sees a reassignment. Default,
-//     star, list and re-exports are `unsupported-form`.
+//   - Exports are `export const name = …` or `export function name`. `export let` is `export-let`: an imported binding
+//     never sees a reassignment, so shared state is read and written through functions. Default, star, list and
+//     re-exports are `unsupported-form`.
 //   - The number prefix is the layer order: a file imports only from lower-numbered files (`forward-import`).
+//     probe.js, unnumbered, may import from any.
 //   - An imported name must be one the target exports (`undeclared-import`); the target must exist (`missing-file`).
 //   - `// @only <importers>: <names>` restricts who may import those exports, by file name without `.js`. `tests`
 //     means expose mode only. Any other importer fails with `only-violation`.
-// A module sees only its imports, the injected enums and page globals (`window`, `document`, `Phaser`).
 //
 // Expose mode (`bundle("hud", { expose: true })`, tests only): `globalThis.__hud["NN-name"]` holds each module's
 // exports, `@only tests` names included. Private names are never exposed.
@@ -27,10 +25,10 @@ import * as generated from "../../../src/enums/generated.ts";
 
 const TABLES = Object.fromEntries(Object.entries(generated).filter(([k, v]) => k !== "NAMES" && v && typeof v === "object"));
 
-// The game's build inlines its enums as numbers, so no enum names exist in the page. Source written as
-// `MoveCategory.STATUS` gets a `const MoveCategory` holding the members it names, from the tables generated at the
-// pinned tag (`npm run enums:gen`). A member the tag doesn't have fails the bundle, so a pin bump that renames or
-// drops one can't break the HUD silently. Only `Enum.MEMBER` references are injected, never a whole table.
+// The game's build inlines its enums, so no enum name exists in the page. Source written as `MoveCategory.STATUS` gets
+// a frozen `const MoveCategory` holding only the members it names, from the tables at the pinned tag
+// (`npm run enums:gen`); a member the tag lacks fails the bundle. The scan reads raw source, comments included, so
+// deleting a comment can drop a member from the prelude (#425).
 export const enumPrelude = source => {
   const used = new Map();
   for (const [, name, member] of source.matchAll(/(?<![\w$.])([A-Z]\w*)\.([A-Z][A-Z0-9_]*)\b/g)) {
@@ -105,11 +103,8 @@ const skipLiteral = (src, i, prev) => {
   return i;
 };
 
-// Strips every comment from a bundled script. The extension ships `hud.js` comment-stripped in every flavour
-// (extension-distribution.md §5.2), which is what removes the comment lines that quote PokéRogue's own code. A block
-// comment leaves its newlines behind, so nothing that relied on a line break gets joined; blank lines and trailing
-// whitespace then collapse. Uses the same literal scanner as the import rules, so a `//` inside a string, a template
-// or a regex survives.
+// Strips every comment from a bundled script (extension-distribution.md §5.2). A block comment leaves its newlines
+// behind, so nothing that relied on a line break gets joined; blank lines and trailing whitespace then collapse.
 export const stripComments = src => {
   let out = "", i = 0, prev = "";
   while (i < src.length) {
@@ -132,8 +127,7 @@ export const stripComments = src => {
 
 const STATIC_IMPORT = /^\s*import\s*(?:[{*"'`]|[A-Za-z_$][\w$]*\s*(?:,|from\b))/;
 
-// Parses one file: its imports, exports and `@only` rules. `pathRe` matches an import path and captures the target's
-// file name.
+// `pathRe` matches an import path and captures the target's id, its file name without `.js`.
 export const parseFile = (file, src, pathRe) => {
   const id = file.replace(/\.js$/, "");
   const lines = src.split("\n");
@@ -171,7 +165,7 @@ export const parseFile = (file, src, pathRe) => {
     if (STATIC_IMPORT.test(lines[k]) && !/^\s*\/\//.test(lines[k])) fail("unsupported-form", k + 1, "import below code; imports go at the top of the file");
   }
 
-  const exports = new Map(); // name → line
+  const exports = new Map();
   lines.forEach((l, k) => {
     if (!/^\s*export\b/.test(l)) return;
     const line = k + 1;
@@ -186,7 +180,7 @@ export const parseFile = (file, src, pathRe) => {
     body[k] = l.replace(/^export\s+/, "");
   });
 
-  const only = new Map(); // name → Set of importers
+  const only = new Map();
   lines.forEach((l, k) => {
     const m = /^\/\/\s*@only\s+([^:]+):\s*(.+)$/.exec(l);
     if (!m) return;
@@ -203,7 +197,6 @@ export const parseFile = (file, src, pathRe) => {
 const numberOf = id => (/^(\d+)-/.exec(id)?.[1] ?? null);
 const q = JSON.stringify;
 
-// Checks every import against the rules. `files` in load order; `entry` (the probe) may import from any numbered file.
 const check = (files, entry) => {
   const byId = new Map(files.map(f => [f.id, f]));
   for (const f of entry ? [...files, entry] : files) {
@@ -229,13 +222,10 @@ const check = (files, entry) => {
 
 const braces = list => (list.length ? `{ ${list.join(", ")} }` : "{}");
 const factory = f => `// ---- ${f.file}\n${q(f.id)}: (${braces(f.imports.flatMap(i => i.names))}) => {\n${f.body}\nreturn ${braces([...f.exports.keys()])};\n},`;
-// The call that runs a module, handing it its imports from the modules it named.
 const instantiate = f => `__hud[${q(f.id)}] = __hudModules[${q(f.id)}](${braces(f.imports.flatMap(({ from, names }) =>
   names.map(n => `${n}: __hud[${q(from)}].${n}`)))});`;
 
-// Links parsed files into one script body: the module factories, then a call per file in load order, so each one's
-// imports are built before it runs. With an `entry` (the probe) its imports are destructured for the code after them;
-// otherwise `expose` decides whether the instances are reachable from outside.
+// Modules run in load order: a module's imports are built before it runs only because `forward-import` holds.
 const link = (files, { expose = false, entry = null } = {}) => {
   check(files, entry);
   const enums = enumPrelude([...files.map(f => f.body), entry?.body ?? ""].join("\n"));
@@ -257,10 +247,7 @@ const link = (files, { expose = false, entry = null } = {}) => {
 
 const withMode = (text, mode) => text.replaceAll('"__MODE__"', q(mode));
 
-// `files`: [[file name, source]] in load order, for tests of the rules; read from hud/ otherwise. The encounter
-// oracle also passes the real hud/ files minus `99-start.js`, so the bundle it evals has no refresh loop to tick
-// game code against the harness's own game (`scripts/encounter-oracle/run.ts`) — a partial bundle, so the header's
-// "Source: skills/coachemon/scripts/hud/" is only the whole panel when `files` is left out.
+// `files`: `[[file name, source]]` in load order, read in place of hud/.
 export const bundle = (mode, { expose = false, files } = {}) => {
   const dir = fileURLToPath(new URL("./hud/", import.meta.url));
   const read = () => files ?? readdirSync(dir).filter(f => f.endsWith(".js")).sort().map(f => [f, readFileSync(dir + f, "utf8")]);
@@ -276,8 +263,6 @@ ${link(parsed, { expose })}
 })();
 `, mode);
   }
-  // The probe carries only the modules it imports, transitively. A block, so injecting it twice doesn't redeclare
-  // the consts in the page's global scope.
   const probe = parseFile("probe.js", readFileSync(fileURLToPath(new URL("./probe.js", import.meta.url)), "utf8"), /^\.\/hud\/(\d+-[\w-]+)\.js$/);
   const byId = new Map(hudFiles.map(f => [f.id, f]));
   const needed = new Set();
@@ -291,6 +276,7 @@ ${link(parsed, { expose })}
   const closure = hudFiles.filter(f => needed.has(f.id));
   const missing = probe.imports.find(i => !byId.has(i.from));
   if (missing) throw new BundleError("missing-file", probe.file, missing.line, `imports from ${missing.from}.js, which doesn't exist`);
+  // A block, so injecting it twice doesn't redeclare the consts in the page's global scope.
   return withMode(`{\n${link(closure, { entry: probe })}\n}\n`, mode);
 };
 

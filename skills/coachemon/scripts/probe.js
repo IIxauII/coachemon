@@ -1,7 +1,6 @@
-// Runs in the PokéRogue page world. Read-only: presses nothing, writes nothing
-// to the game. Result is JSON on document.documentElement.dataset.mcpOut so an
-// isolated-world caller (Orion's `do JavaScript`) can pick it up from the DOM.
-// hud-bundle.mjs replaces the MODE literal with "battle" or "starters", and bundles the HUD modules imported here.
+// Runs in the PokéRogue page world and writes nothing to the game. The result is JSON on
+// `document.documentElement.dataset.mcpOut`, where an isolated-world caller (Orion's `do JavaScript`) can read it off
+// the DOM. `"__MODE__"` becomes read.sh's mode.
 import { TYPES } from "./hud/01-core.js";
 import { learnState, rewardsScreen } from "./hud/02-screens.js";
 
@@ -12,9 +11,8 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
   const STATS = ["hp","atk","def","spa","spd","spe"];
   let out;
   try {
-    // The Mystery Encounter journal is harvested without a run, a scene or even a running panel: it is written to
-    // `localStorage` as the encounters happen, so this reads the store and asks the panel only when it is up (its
-    // copy carries the encounter still being recorded, which is not in the store yet).
+    // Needs no run, no scene and no panel, so it comes before the game lookup. The panel's copy wins over the store's:
+    // it carries the encounter still being recorded.
     if (MODE === "journal") {
       let stored = null;
       try { stored = JSON.parse(localStorage.getItem("coach-me-journal")); } catch {}
@@ -28,7 +26,6 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
     const s = game.scene.getScene("battle");
     // Mid-reload or on the title screen the battle scene exists without its UI yet.
     if (!s?.ui) throw Object.assign(new Error("game loading"), { loading: true });
-    // Title screen or between runs: no battle to read.
     if (MODE === "battle" && !s.currentBattle) throw Object.assign(new Error("no battle"), { loading: true });
     if (MODE === "starters") {
       const gd = s.gameData;
@@ -48,7 +45,6 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
             costReduction: st.valueReduction,
             candy: st.candyCount,
           })),
-        // The HUD's starter card as one line (its proposals), when the panel is running on the grid.
         hud: (() => { try { return window.__coachHud?.summary?.()?.starters ?? null; } catch { return null; } })(),
       };
     } else {
@@ -66,7 +62,7 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
         status: p.status?.effect ?? null,
         onField: p.isOnField(),
         boss: p.isBoss(),
-        // HP bars still standing out of the boss's total (bossSegmentIndex counts down to 0 on the last bar).
+        // `bossSegmentIndex` is 0 on the last bar (game-code.md §3).
         bossBars: p.isBoss() && p.bossSegments > 1 ? { left: (p.bossSegmentIndex ?? p.bossSegments - 1) + 1, of: p.bossSegments } : null,
         held: (p.getHeldItems?.() ?? []).map(m => `${m.type?.name} x${m.stackCount}`),
         moves: p.moveset.map(m => {
@@ -76,8 +72,6 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
       });
       const b = s.currentBattle;
       const party = s.getPlayerParty();
-      // Learn-move and rewards: the same detection the HUD's cards use (02-screens), so the two can't disagree.
-      // The extraction below is the probe's own: the raw move and item names the watcher reads without a HUD.
       const st = learnState(s);
       const learn = st ? { pokemon: st.pk.name, move: moveInfo(st.mv) } : null;
 
@@ -93,9 +87,6 @@ import { learnState, rewardsScreen } from "./hud/02-screens.js";
         rewards = { free: rh.options.map(item), shop: (rh.shopOptionsRows || []).flat().map(item), rerollCost: rh.rerollCost ?? null };
       }
 
-      // The HUD's own summary of what it shows (its verdict, the ⚔ line, the fight plan, learn and reward calls, the
-      // team audit), when it is running. Passed through whole: the summary has one declared shape, checked by a
-      // contract test, so there is no key list to keep in step here.
       let hud = null;
       try { hud = window.__coachHud?.summary?.() ?? null; } catch {}
 
