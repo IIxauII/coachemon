@@ -5,7 +5,9 @@
 import { normalizeLabel } from "../../src/labels.ts";
 
 export type Opt = { i: number | string; label: string | null; [k: string]: unknown };
-export type Menu = { screen: string; wave: number | null; options: Opt[]; text?: string | null; extra?: Record<string, unknown> };
+export type Menu = {
+  screen: string; wave: number | null; options: Opt[]; text?: string | null; message_pending?: boolean; extra?: Record<string, unknown>;
+};
 export type Group = { id: string; label: string; summary: string | null; rows: string[] };
 export type Card = { kind: string | null; card_wave: number | null; groups: Group[] | null } | null;
 export type Action = {
@@ -27,12 +29,24 @@ export type Memory = {
   /** The pick `tried` last took, handed back by `refused` when the game refused it. */
   last: string | null;
   followed: boolean;
+  /** The shop item the party screen is applying. */
+  item: string | null;
+  /** The item just had no effect: the party screen hands it back rather than trying the next mon. */
+  bounced: boolean;
+  /** The retry this wave is on, until its opening turn has sent out a different lead. */
+  swapLead: number | null;
 };
-export const freshMemory = (): Memory => ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false });
+export const freshMemory = (): Memory =>
+  ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false, item: null, bounced: false, swapLead: null });
 
 const tried = (mem: Memory, key: string) => { mem.tried.add(key); mem.last = key; };
 /** A refused pick never happened, so it may be picked again. */
 export const refused = (mem: Memory) => { if (mem.last) mem.tried.delete(mem.last); mem.last = null; };
+
+/** What an act's messages leave for the next decision. */
+export const heard = (mem: Memory, messages: string[]) => {
+  if (messages.some(m => /won't have any effect/i.test(m))) mem.bounced = true;
+};
 
 export const readsCard = (screen: string): boolean =>
   screen === "COMMAND" || screen === "CONFIRM" || screen === "MODIFIER_SELECT" || screen === "SUMMARY/LEARN_MOVE"
@@ -84,6 +98,8 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const all = line ? slots(line) : [];
     const mine = active ? all.find(s => startsWithMon(s.text, active)) : undefined;
     mem.move = null;
+    // A retry replays the battle's seed, so the same plays would lose the same way (#499).
+    if (mem.swapLead && has(/^pok/)) return pick(has(/^pok/)!, "rule");
     if (mine && active) {
       const move = moveOf(mine, active);
       mem.move = move ? { name: move, target: mine.target } : null;
@@ -112,6 +128,15 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const to = hit ?? options.find(o => o.label);
     return to ? pickIndex(to.i, hit ? "card" : "rule") : cancel;
   }
+  if (screen.startsWith("PARTY/") && menu.message_pending) return { tool: "press", args: { button: "ACTION" }, by: "rule" };
+  if (screen === "PARTY/SWITCH" && mem.swapLead) {
+    const standing = options.filter(o => o.label && o.synthetic !== true && o.fainted !== true && o.active !== true);
+    const to = standing[(mem.swapLead - 1) % Math.max(standing.length, 1)];
+    mem.swapLead = null;
+    if (to) return pick(to.label!, "rule");
+    mem.noSwitch = true;
+    return pick("Cancel", "rule");
+  }
   if (screen === "PARTY/SWITCH") {
     const to = mem.switchTo ? benchedFor(options, mem.switchTo) : null;
     mem.switchTo = null;
@@ -129,9 +154,13 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     return pick(standing?.label ?? "Cancel", "rule");
   }
   if (screen.startsWith("PARTY/") && screen.endsWith(":options")) {
-    // A PP item's options are the mon's moves, with no verb among them.
+    // A PP item's options are the mon's moves, with no verb among them: one at full PP gains nothing.
+    const moves = labels.filter(l => l && !/^cancel$/i.test(l));
+    const pp = (l: string) => /(\d+)\/(\d+)$/.exec(l);
+    const spent = moves.find(l => { const m = pp(l); return !!m && Number(m[1]) < Number(m[2]); });
+    const move = moves.some(l => pp(l)) ? spent : moves[0];
     const label = has(/^(send out|apply|use|teach|switch|revive|select|pass baton)/)
-      ?? (screen.startsWith("PARTY/MOVE_MODIFIER") ? labels.find(l => l && !/^cancel$/i.test(l)) : undefined) ?? "Cancel";
+      ?? (screen.startsWith("PARTY/MOVE_MODIFIER") ? move : undefined) ?? "Cancel";
     const by = mem.followed ? "card" : "rule";
     mem.followed = false;
     if (screen.startsWith("PARTY/SWITCH") || screen.startsWith("PARTY/POST_BATTLE_SWITCH")) return pick(label, by, "switch");
@@ -141,11 +170,13 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
   if (screen.startsWith("PARTY/")) {
     const want = mem.target;
     mem.target = null;
-    // An item with no effect on a mon bounces back here, so each mon is tried once per screen and wave.
-    const key = (o: Opt) => `${menu.wave}|${screen}|${o.label}`;
-    const untried = (o: Opt) => !!o.label && o.fainted !== true && o.synthetic !== true && !mem.tried.has(key(o));
+    if (mem.bounced) { mem.bounced = false; return pick("Cancel", "rule"); }
+    // An item bounced back here unused is not tried on that mon again this wave.
+    const key = (o: Opt) => `${menu.wave}|${screen}|${mem.item}|${o.label}`;
+    const revive = /revive/i.test(mem.item ?? "");
+    const untried = (o: Opt) => !!o.label && o.synthetic !== true && (revive || o.fainted !== true) && !mem.tried.has(key(o));
     const named = want ? options.find(o => untried(o) && monName(o.label!) === want) : undefined;
-    const mon = named ?? options.find(o => untried(o) && o.fainted === false);
+    const mon = named ?? options.find(o => untried(o) && o.fainted === revive);
     if (!mon) return pick("Cancel", "rule");
     tried(mem, key(mon));
     mem.followed = !!named;
@@ -165,7 +196,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     // Offered only with the game's retries setting on; a fight lost every time would otherwise loop.
     if (/retry/i.test(text)) {
       const n = [1, 2, 3].find(i => !mem.tried.has(`${menu.wave}|retry|${i}`));
-      if (n) { tried(mem, `${menu.wave}|retry|${n}`); return pick(has(/^yes/) ?? first, "rule"); }
+      if (n) { tried(mem, `${menu.wave}|retry|${n}`); mem.swapLead = n; return pick(has(/^yes/) ?? first, "rule"); }
       return pick(has(/^no/) ?? first, "rule");
     }
     // A yes the party screen cannot use is cancelled there.
@@ -185,6 +216,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     return decline?.label ? pick(decline.label, "rule") : cancel;
   }
   if (screen === "MODIFIER_SELECT") {
+    mem.bounced = false;
     const line = act(live, "reward") ?? "";
     const clauses = line.split(" · ");
     const buys = clauses.find(c => c.startsWith("buy "))?.slice(4).split(", ") ?? [];
@@ -194,6 +226,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
       if (!o || mem.tried.has(key)) continue;
       tried(mem, key);
       mem.target = null;
+      mem.item = name;
       return pickIndex(o.i, "card", "shop");
     }
     const take = /^take (.+?)(?: → (.+?)(?: \(forget (.+)\))?)?$/.exec(clauses.find(c => c.startsWith("take ")) ?? "");
@@ -204,6 +237,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     if (reward) {
       mem.target = named ? take![2] ?? null : null;
       mem.forget = named ? take![3] ?? null : null;
+      mem.item = reward.label;
       tried(mem, `${menu.wave}|take|${reward.i}`);
       return pickIndex(reward.i, named ? "card" : "rule", "shop");
     }

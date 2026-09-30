@@ -12,7 +12,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { serverEnv } from "../src/server-env.ts";
 import { momentsOf } from "./lag-run/moments.ts";
 import { lowPowerMode, orion } from "./lag-run/orion.ts";
-import { decide, freshMemory, readsCard, refused, type Card, type Menu } from "./lag-run/policy.ts";
+import { decide, freshMemory, heard, readsCard, refused, type Card, type Menu } from "./lag-run/policy.ts";
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
 const LAG = process.argv.includes("--lag");
@@ -89,15 +89,22 @@ let trainerWave: number | null = null;
 let lastScreen = "";
 let repeats = 0;
 let waits = 0;
+let waveCalls = 0;
+// The baseline's longest wave, retries aside, took under 100 calls.
+const STALL = 400;
 while (!stop && calls < MAX_CALLS) {
   const read = await call("read_menu");
   if (read.error) { stop = `error:${read.error}`; break; }
   // `timed_out` is not fatal: the heal after a boss wave outlasts one call's settle (v1-tool-surface.md §3).
   waits = read.status === "timed_out" ? waits + 1 : 0;
   if (waits > 0 && waits <= 5) continue;
-  if (read.status !== "ok") { stop = `status:${read.status}`; console.log(JSON.stringify(read, null, 1)); break; }
+  // A read adds nothing to the detector's ring, so the read after a stuck act is stuck too: advice, like the act's.
+  if (read.status !== "ok" && read.status !== "stuck") { stop = `status:${read.status}`; console.log(JSON.stringify(read, null, 1)); break; }
   const menu = read as unknown as Menu;
   const wave = menu.wave;
+  if (wave !== lastWave) waveCalls = calls;
+  // A loop the same-screen guard misses alternates screens: a shop, its party screen, back.
+  if (calls - waveCalls > STALL) { stop = `stalled:${menu.screen}`; break; }
   lastWave = wave ?? lastWave;
   if (startWave === null && wave !== null) startWave = LAG ? 1 : wave;
   if (startWave !== null && wave !== null && wave >= startWave + WAVES && menu.screen === "COMMAND") { stop = "waves-reached"; break; }
@@ -109,6 +116,7 @@ while (!stop && calls < MAX_CALLS) {
   by[d.by]++;
   const r = await call(d.tool, d.args);
   const messages = r.messages ?? [];
+  heard(mem, messages);
   if (r.battleType === 1 || messages.some(m => /would like to battle/.test(m))) trainerWave = (r.wave as number | null) ?? wave;
   if (LAG) {
     const trainer = trainerWave !== null && trainerWave === wave;

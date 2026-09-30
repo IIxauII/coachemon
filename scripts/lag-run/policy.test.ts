@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { decide, freshMemory, refused, type Card, type Menu, type Opt } from "./policy.ts";
+import { decide, freshMemory, heard, refused, type Card, type Menu, type Opt } from "./policy.ts";
 
 const opts = (labels: string[], extra: Partial<Opt>[] = []): Opt[] => labels.map((label, i) => ({ i, label, ...extra[i] }));
 const command = (active: string): Menu => ({ screen: "COMMAND", wave: 3, text: `What will\n${active} do?`, options: opts(["Fight", "Ball", "Pokémon", "Run"]) });
@@ -145,4 +145,63 @@ test("the trainer's switch prompt is taken when the card plays one mon, so its f
   const ask: Menu = { screen: "CONFIRM", wave: 3, text: "Will you switch\nPokémon?", options: opts(["Yes", "No"]) };
   assert.deepEqual(decide(ask, battle("Squirtle Water Gun → Pidgey"), freshMemory()).args, { label: "Yes" });
   assert.deepEqual(decide(ask, null, freshMemory()).args, { label: "No" });
+});
+
+test("a message on the party screen is dismissed before anything is picked there (#499)", () => {
+  const screen = { ...party("PARTY/MOVE_MODIFIER", [["Larvitar Lv.9 30/30"]]), message_pending: true };
+  assert.deepEqual(decide(screen, null, freshMemory()), { tool: "press", args: { button: "ACTION" }, by: "rule" });
+});
+
+test("an item that had no effect goes back to the shop at once, not to the next mon (#499)", () => {
+  const mem = freshMemory();
+  const screen = party("PARTY/MODIFIER", [["Larvitar Lv.9 30/30"], ["Machop Lv.9 30/30"]]);
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Larvitar Lv.9 30/30" });
+  heard(mem, ["It won't have any effect."]);
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Cancel" });
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Machop Lv.9 30/30" }, "the bounce is one item's, not the wave's");
+});
+
+test("a PP item restores a move that is missing PP, and a full move list is cancelled (#499)", () => {
+  const moves: Menu = { screen: "PARTY/MOVE_MODIFIER:options", wave: 6, options: opts(["Tackle 35/35", "Bite 20/25", "Cancel"]) };
+  assert.deepEqual(decide(moves, null, freshMemory()).args, { label: "Bite 20/25" });
+  const full: Menu = { screen: "PARTY/MOVE_MODIFIER:options", wave: 6, options: opts(["Tackle 35/35", "Bite 25/25", "Cancel"]) };
+  assert.deepEqual(decide(full, null, freshMemory()).args, { label: "Cancel" });
+});
+
+test("each item tries each mon once: one that bounced off a mon does not use that mon up for the next (#499)", () => {
+  const shop: Menu = { screen: "MODIFIER_SELECT", wave: 8, options: [
+    { i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 },
+    { i: "1:1", label: "Rare Candy", kind: "reward", col: 1, cost: 0 },
+  ] };
+  const screen = party("PARTY/MODIFIER", [["Larvitar Lv.9 30/30"]]);
+  const mem = freshMemory();
+  decide(shop, null, mem);
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Larvitar Lv.9 30/30" });
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Cancel" });
+  decide(shop, null, mem);
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Larvitar Lv.9 30/30" });
+});
+
+test("a revive goes to a fainted mon (#499)", () => {
+  const shop: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "2:2", label: "Revive", kind: "shop", col: 2, cost: 500 }] };
+  const mem = freshMemory();
+  assert.equal(decide(shop, card("reward", "buy Revive"), mem).args.index, "2:2");
+  const screen = party("PARTY/MODIFIER", [["Larvitar Lv.9 30/30"], ["Machop Lv.9 0/30 FNT", { fainted: true }]]);
+  assert.deepEqual(decide(screen, null, mem).args, { label: "Machop Lv.9 0/30 FNT" });
+});
+
+test("a retried battle opens with a different lead, so the retry does not replay the loss (#499)", () => {
+  const ask: Menu = { screen: "CONFIRM", wave: 8, text: "Would you like to retry from the start of the battle?", options: opts(["Yes", "No"]) };
+  const mem = freshMemory();
+  decide(ask, null, mem);
+  const cmd = { ...command("Larvitar"), wave: 8 };
+  assert.deepEqual(decide(cmd, battle("Larvitar Rock Throw → Pidgey", 8), mem).args, { label: "Pokémon" });
+  const rows: [string, { fainted?: boolean; active?: boolean }?][] = [["Larvitar Lv.9 30/30", { active: true }], ["Machop Lv.9 30/30"], ["Growlithe Lv.9 30/30"]];
+  assert.deepEqual(decide({ ...party("PARTY/SWITCH", rows), wave: 8 }, null, mem).args, { label: "Machop Lv.9 30/30" });
+  assert.equal(decide({ screen: "PARTY/SWITCH:options", wave: 8, options: opts(["Switch", "Summary", "Cancel"]) }, null, mem).intent, "switch");
+  assert.deepEqual(decide({ ...command("Machop"), wave: 8 }, battle("Machop Karate Chop → Pidgey", 8), mem).args, { label: "Fight" }, "only the opening turn swaps");
+
+  decide(ask, null, mem);
+  decide(cmd, battle("Larvitar Rock Throw → Pidgey", 8), mem);
+  assert.deepEqual(decide({ ...party("PARTY/SWITCH", rows), wave: 8 }, null, mem).args, { label: "Growlithe Lv.9 30/30" }, "the second retry leads with the next mon");
 });
