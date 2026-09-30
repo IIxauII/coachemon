@@ -1,6 +1,6 @@
 /**
- * A dumb policy over the MCP surface, not strategy: it drives waves through the server and counts what that costs (#25).
- * `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server (extension-distribution.md §7.2).
+ * A dumb policy over the MCP surface, not strategy: it drives waves through the server and counts what that costs
+ * (#25). `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server (extension-distribution.md §7.2).
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -60,7 +60,7 @@ function decide(menu: Result): { tool: "select_option" | "press"; args: Record<s
     return { tool: "select_option", args: { label: has(/^(send out|apply|use|teach|switch|revive|select|pass baton)/) ?? "Cancel" } };
   }
   if (screen.startsWith("PARTY/")) {
-    // The mon on the field has no Send Out in a double battle, and cancelling a must-answer party screen loops (#6).
+    // Cancelling a must-answer party screen loops (#6).
     const needBenched = /^PARTY\/(FAINT_SWITCH|SWITCH|POST_BATTLE_SWITCH)/.test(screen);
     const mon = options.find(o => o.fainted === false && (!needBenched || o.active !== true) && o.synthetic !== true);
     if (mon) return { tool: "select_option", args: { label: mon.label } };

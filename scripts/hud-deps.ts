@@ -1,7 +1,7 @@
 /**
- * Game code each coach HUD module leans on, hand-curated and hashed by `npm run drift:check` (ADR 0001). A ref is listed
- * whether the module calls it, re-implements it or replays it in order, and a moved hash names only the module that
- * reads it, never the modules built on that one.
+ * Game code each coach HUD module leans on, hand-curated and hashed by `npm run drift:check`
+ * (0001-escape-ladder-hand-curated-checked-at-pin-bump.md). A ref is listed whether the module calls it, re-implements
+ * it or replays it in order, and a moved hash names only the module that reads it, never the modules built on it.
  */
 import type { SourceRef } from "../src/escape-ladder/types.ts";
 
@@ -90,7 +90,7 @@ export const HUD_DEPS = {
     `src/enums/move-target.ts#MoveTarget`,
   ],
 
-  /** game-code.md §1–§5, §8, §18, §21. */
+  /** game-code.md §1, §2, §3, §4, §5, §8, §18, §21. */
   "10-damage.js": [
     `${P}#Pokemon.getAttackDamage`,
     `${P}#Pokemon.calculateStabMultiplier`,

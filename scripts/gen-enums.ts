@@ -1,7 +1,7 @@
 /**
- * Enum codegen from PokéRogue's source at the pinned tag, never its default branch: that is `beta`, whose tables already
- * differ from the deployed build (#2). CI runs `--check` (#258, #278), so the output must stay a function of the tag,
- * this file and `src/enums/parse.ts` alone.
+ * Enum codegen from PokéRogue's source at the pinned tag, never its default branch: that is `beta`, whose tables
+ * already differ from the deployed build (#2). CI runs `--check` (#258, #278), so the output must stay a function of
+ * the tag, this file and `src/enums/parse.ts` alone.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";

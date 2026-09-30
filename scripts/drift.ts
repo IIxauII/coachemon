@@ -1,7 +1,7 @@
 /**
  * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder and the coach HUD, under one
- * pin and one stamp (ADR 0001). Run it at a pin bump — at the pinned ref no hash can move — and `--stamp` only after
- * re-reading every entry it named: stamping is the review sign-off.
+ * pin and one stamp (0001-escape-ladder-hand-curated-checked-at-pin-bump.md). Run it at a pin bump, since at the
+ * pinned ref no hash can move, and `--stamp` only after re-reading every entry it named: stamping is the sign-off.
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";

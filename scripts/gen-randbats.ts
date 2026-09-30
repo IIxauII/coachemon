@@ -1,9 +1,7 @@
 /**
- * Trims the pkmn/randbats sets into the snapshot the coach HUD bundles (#70). Upstream is MIT, and only move names per
- * role and the evolution chains are kept (#77).
- *
- * Both modes rebuild from live upstream, which moves on its own, so `--check` gates nothing and the refresh runs only in
- * `randbats.yml`'s weekly pull request: in the release job it reddened pushes that changed nothing here (#279, #291).
+ * Trims the MIT pkmn/randbats sets into the snapshot the coach HUD bundles (#70), and copies no PokéRogue data (#77).
+ * Both modes read live upstream, which moves on its own: `--check` gates nothing, and the refresh runs only in
+ * `randbats.yml`'s weekly pull request — in the release job it reddened pushes that changed nothing here (#279, #291).
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";

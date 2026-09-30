@@ -30,7 +30,8 @@ const missing = (what: string, how: string): never => {
 };
 
 if (!existsSync(clone)) {
-  // A worktree's `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule (#296).
+  // A worktree's `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule
+  // (#296).
   missing(`No pinned clone at ${clone}.`, "npm run drift:check   # in a worktree: ln -s <main-checkout>/.cache .cache");
 }
 if (!existsSync(path.join(clone, "node_modules"))) {
@@ -98,7 +99,7 @@ type Report = {
   numPendingTests: number;
 };
 
-/** Read from vitest's results, never its exit code, which the clone's own rejection turns to 1 however the cases went. */
+/** Read from vitest's results, never its exit code: the clone's own rejection makes that 1 however the cases went. */
 const answer = (output: string): Exit => {
   const plain = output.replace(ANSI, "");
   const raised = Number(ERROR_TALLY.exec(plain)?.[1] ?? "0");
