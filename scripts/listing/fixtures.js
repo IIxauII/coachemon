@@ -1,11 +1,5 @@
-// The fixture snapshots the listing screenshots are drawn from (extension-distribution.md §3): a scene object shaped
-// like the game's, with no sprite atlas, so every icon falls back to the name it stands for and no franchise art can
-// reach a store.
-//
-// This file runs in the page, before the HUD bundle, as a classic script: it puts `__fixtures` and a fake `Phaser` on
-// `window`, and the bundle finds them exactly as it finds the real game's. The mocks are the HUD's own test mocks
-// (`skills/coachemon/scripts/test/rendertest.mjs`) — the same shapes, kept readable rather than shared, because the
-// tests build theirs for Node and this one has to survive being pasted into a browser.
+// Pasted into the page ahead of the HUD bundle as a classic script, so it imports nothing. The atlas has nothing, so
+// every icon falls back to its name and no franchise art reaches a store (extension-distribution.md §3).
 (() => {
   const TY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water",
     "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy"];
@@ -52,7 +46,6 @@
     };
   };
 
-  /** A move to learn, with a team behind it: the card has to say what is gained and what the team loses. */
   const learn = () => {
     const espeon = pk("Espeon", ["Psychic"], 65, 130,
       [["Bite", "Dark", 60, "P"], ["Psychic", "Psychic", 90, "S"], ["Shadow Ball", "Ghost", 80, "S"], ["Dazzling Gleam", "Fairy", 80, "S"]]);
@@ -98,7 +91,6 @@
 
   window.__fixtures = { battle, learn, rewards };
 
-  /** The page the HUD expects: a Phaser game whose battle scene is the fixture, and an atlas that has nothing. */
   window.__mountFixture = name => {
     const scene = window.__fixtures[name]();
     window.Phaser = {

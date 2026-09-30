@@ -1,17 +1,4 @@
-/**
- * The Safari half of a release, run by hand on the dev's Mac (extension-distribution.md §14.6). Safari is not a store
- * and this is not CI: the build needs an individual Apple Developer Program membership, a Developer ID Application
- * identity in the login keychain, Xcode, and a `notarytool` credential profile. `docs/runbooks/safari-release.md` sets
- * those up once.
- *
- *   node scripts/release/safari-release.ts 0.1.0
- *   node scripts/release/safari-release.ts 0.1.0 --dry-run
- *
- * It takes the release's own `coachemon-safari-web-extension-<v>.zip`, packages it into the generated near-shell,
- * signs, notarizes, staples, and uploads `Coachemon-safari-<v>.zip` back onto the same release. The steps and their
- * order are `safariSteps` in `safari.ts`, which `src/safari-release.test.ts` covers. What is here is the rest: the
- * preflight, the scratch directory, and the one check that reads a file the plan produced.
- */
+/** Carries out `safariSteps` on the dev's Mac (extension-distribution.md §14.6), set up once by `docs/runbooks/safari-release.md`. */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -47,11 +34,7 @@ const die = (message: string): never => {
   process.exit(1);
 };
 
-/**
- * A dry run prints the plan and runs none of it, so it is the one mode that has to work before the membership exists:
- * extension-distribution.md §16 leaves enrolment off-map, and until it lands this is how the dev reads what the release
- * will do. So a missing tool or identity is a warning here and a refusal everywhere else.
- */
+/** A warning in a dry run and a refusal otherwise: a dry run has to work before the membership exists. */
 const missing = (message: string): void => {
   if (!dryRun) die(message);
   console.warn(`! ${message}`);
@@ -60,10 +43,8 @@ const missing = (message: string): void => {
 const capture = (command: string, args: string[]): string =>
   execFileSync(command, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 
-/** This checkout, found from the script rather than from the shell's cwd, which by then is the scratch directory. */
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
-// Nothing below exists off macOS, and a half-run that fails at `xcrun` has already downloaded and unpacked.
 if (process.platform !== "darwin") missing(`the Safari release runs on macOS only (this is ${process.platform})`);
 for (const tool of ["xcrun", "xcodebuild", "ditto", "spctl", "gh", "security"]) {
   try {
@@ -73,12 +54,11 @@ for (const tool of ["xcrun", "xcodebuild", "ditto", "spctl", "gh", "security"]) 
   }
 }
 
-/** What a dry run signs with when the keychain holds nothing yet: shaped like an identity, valid for nothing. */
+/** A dry run's identity when the keychain holds none, shaped so `teamIdFrom` reads it. */
 const PLACEHOLDER = "Developer ID Application: <not enrolled yet> (TEAMID1234)";
 
 const identity = ((): string => {
-  // Asked of the converter rather than of `xcode-select -p`, which prints the Command Line Tools path just as
-  // happily: those are on every dev Mac, ship no converter, and would fail three steps in.
+  // Asked of the converter, not `xcode-select -p`: the Command Line Tools answer that too, and ship no converter.
   try {
     capture("xcrun", ["--find", "safari-web-extension-converter"]);
   } catch {
@@ -95,12 +75,8 @@ const identity = ((): string => {
 const teamId = teamIdFrom(identity);
 
 /**
- * The scratch directory. A fresh one per run, because a rerun after a failure must not package last attempt's
- * leftovers — but `--work` is a path a human typed, so it is required to be empty rather than emptied: this script
- * deletes only a directory it made itself.
- *
- * A dry run wants the real paths inside the commands it prints and has nothing to put in them, so it names a
- * directory and never creates one. That is also what lets it run before any of the setup exists.
+ * Fresh per run, so a rerun never packages leftovers. A `--work` a human typed must be empty and is never emptied or
+ * removed, and a dry run names a directory without creating one.
  */
 function scratchDir(): string {
   const asked = flag("work");
@@ -111,10 +87,6 @@ function scratchDir(): string {
   return asked;
 }
 
-/**
- * The repo the release lives on. Read off this checkout's `origin` rather than written down, because `gh` runs in the
- * scratch directory, which is no checkout, and cannot work it out for itself there.
- */
 const repo = ((): string => {
   const asked = flag("repo");
   if (asked) return asked;
@@ -130,8 +102,6 @@ const work = scratchDir();
 const plan = { version, work, identity, profile, repo };
 const paths = safariPaths(plan);
 const steps = safariSteps(plan);
-// Only a directory this run made is one this run may remove: `--work` is a path a human typed, and a dry run makes
-// no directory at all.
 const removable = !keep && !dryRun && !flag("work");
 
 console.log(`${extensionTag(version)} → ${paths.asset}`);
@@ -143,9 +113,8 @@ if (!dryRun) console.log(`  scratch   ${work}${removable ? " (removed when this 
 if (!dryRun) writeFileSync(paths.exportOptions, exportOptions(teamId));
 
 /**
- * What the packager is about to eat, against what was asked for. `gh release download` leaves whatever is already in
- * the directory when it matches nothing, so without this a rerun after a botched download quietly wraps the previous
- * release's extension in an app named for this one.
+ * `gh release download` leaves the directory as it was when it matches nothing, so a rerun after a botched download
+ * would wrap the previous release's extension in an app named for this one.
  */
 function checkDownload(): void {
   const manifest = join(paths.unpacked, "manifest.json");
@@ -155,10 +124,6 @@ function checkDownload(): void {
   console.log(`  manifest  ${found} ✓`);
 }
 
-/**
- * Apple's verdict, which the notarize step's exit code does not carry: `--wait` exits 0 on `Invalid` too (#241).
- * Read here rather than left to the staple that follows, which fails for want of a ticket and names the wrong step.
- */
 function checkNotarization(output: string): void {
   try {
     console.log(`  submission  ${acceptedSubmissionId(output, profile)} accepted ✓`);
@@ -174,8 +139,6 @@ for (const [index, step] of steps.entries()) {
   console.log(`\n[${index + 1}/${steps.length}] ${step.title}`);
   console.log(`  ${[step.command, ...step.args].map(quote).join(" ")}`);
   if (dryRun) continue;
-  // Only the notarize step's stdout is read, and it is the one step whose output is machine-readable rather than a
-  // log to watch; every other step streams straight through, because that is where a slow build shows progress.
   const reads = step.id === "notarize";
   let output = "";
   try {
@@ -185,11 +148,9 @@ for (const [index, step] of steps.entries()) {
       execFileSync(step.command, step.args, { cwd: work, stdio: "inherit" });
     }
   } catch (error) {
-    // Notarization and the archive are slow and their logs are where a failure is diagnosed, so a failed run leaves
-    // the scratch directory behind and says where it is. Nothing is uploaded, because the upload is the last step.
     console.error(`\n${step.title.toLowerCase()} failed: ${(error as Error).message}`);
-    // A step that was read rather than streamed said whatever it had to say down the pipe, so it is printed here or
-    // nowhere — and for a notarization that is the one place the submission id appears.
+    // A read step's output went down the pipe, so it is printed here or nowhere, and for a notarization it holds the
+    // submission id.
     const piped = (error as { stdout?: string }).stdout;
     if (piped) console.error(piped.trim());
     die(`the scratch directory is kept at ${work}`);

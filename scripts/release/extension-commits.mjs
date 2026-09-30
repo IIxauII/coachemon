@@ -1,20 +1,13 @@
 /**
- * The extension stream's commit filter (extension-distribution.md §14.2), a local semantic-release plugin. Its two
- * hooks wrap the stock `commit-analyzer` and `release-notes-generator` and hand them only the commits that touched what
- * the extension ships, so a server-only commit never bumps the extension stream and a HUD fix bumps both.
- *
- * The wrapped plugins are not installed anywhere in this repo: they are semantic-release's own dependencies, and the
- * release toolchain is deliberately not a devDependency (see `.github/workflows/release.yml`). So resolution starts
- * from the running `semantic-release` bin rather than from this file, and happens on first use — the tests import
- * `touches` and `keep` without a semantic-release install in sight.
- *
- * Plain `.mjs`, because semantic-release loads a local plugin by path and Node would have to strip types for it.
+ * A local semantic-release plugin: wraps `commit-analyzer` and `release-notes-generator` and hands them only the
+ * commits that touched what the extension ships (extension-distribution.md §14.2). Plain `.mjs`, because
+ * semantic-release loads a local plugin by path and Node would have to strip types for it.
  */
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
-/** What the extension ships (extension-distribution.md §14.2). Whole directories, so every prefix ends in `/`. */
+/** Whole directories, so every prefix ends in `/` (extension-distribution.md §14.2). */
 export const EXTENSION_PATHS = [
   "extension/",
   "src/protocol/",
@@ -22,23 +15,15 @@ export const EXTENSION_PATHS = [
   "skills/coachemon/scripts/hud/",
 ];
 
-/** Whether one commit's changed paths reach the extension. One shipped path among server-only ones is enough. */
 export const touches = paths => paths.some(path => EXTENSION_PATHS.some(prefix => path.startsWith(prefix)));
 
-/**
- * The commits that count, given a way to read one commit's changed paths. A merge commit has no diff of its own under
- * `git diff-tree -r`, so it drops out; its `Merge pull request` subject bumps nothing anyway.
- */
+/** A merge commit has no diff of its own under `git diff-tree -r`, so it drops out. */
 export const keep = (commits, pathsOf) => commits.filter(commit => touches(pathsOf(commit.hash)));
 
-/**
- * The paths one commit changed, from the repo root whatever the cwd is, which is what `EXTENSION_PATHS` are.
- *
- * `-z` matters: without it `git` C-quotes any path that is not plain ASCII, so `extension/src/café.ts` arrives as
- * `"extension/src/caf\303\251.ts"` — leading quote and all — and would miss every prefix.
- */
 export const splitPaths = stdout => stdout.split("\0").filter(Boolean);
 
+// `-z`, or `git` C-quotes a path that is not plain ASCII: `extension/src/café.ts` arrives as
+// `"extension/src/caf\303\251.ts"`, leading quote and all, and misses every prefix.
 const gitPaths = cwd => hash =>
   splitPaths(
     execFileSync("git", ["diff-tree", "--no-commit-id", "--name-only", "-r", "-z", hash], { cwd, encoding: "utf8" }),
@@ -52,8 +37,8 @@ async function plugin(name) {
 }
 
 async function load(name) {
-  // `process.argv[1]` is semantic-release's own bin, and `commit-analyzer` and `release-notes-generator` are its
-  // dependencies, so they resolve from there whether npx installed semantic-release or a package did.
+  // Resolved from `process.argv[1]`, semantic-release's own bin, and on first use: the wrapped plugins are its
+  // dependencies, not this repo's, and the tests import this file with no semantic-release installed.
   try {
     const module = await import(pathToFileURL(createRequire(process.argv[1]).resolve(name)).href);
     return module.default ?? module;

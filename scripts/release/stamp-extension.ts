@@ -1,10 +1,5 @@
-/**
- * semantic-release's `prepare` for the extension stream (extension-distribution.md §14.2): put the version being
- * released into `extension/package.json` **in the workspace only**, then build and zip the three store artifacts.
- *
- * Nothing is committed — there is no `@semantic-release/git` in this run, and the `extension-v*` tag is the source of
- * truth for the version. `extension/package.json` keeps its `0.0.0-placeholder` on `master`.
- */
+/** The extension stream's `prepare` (extension-distribution.md §14.2): the stamp is never committed, so `master` keeps
+ * `0.0.0-placeholder`. */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -18,16 +13,14 @@ const run = (command: string, args: string[]) =>
 const pkg = join(EXTENSION_DIR, "package.json");
 writeFileSync(pkg, stampVersion(readFileSync(pkg, "utf8"), version));
 
-// `wxt zip` builds before it zips, so this is the build too. The Firefox run is the only one that also writes the AMO
-// sources zip, because that is where WXT turns `zipSources` on by itself.
+// `wxt zip` builds before it zips, so this is the build too.
 for (const target of TARGETS) run("npx", ["wxt", "zip", "-b", target, "--mode", "store"]);
 
-// The store-artifact guard (extension-distribution.md §5.5) reads `.output/`, so this is the first moment it can see
-// what is about to be uploaded. `release-extension` builds the artifacts here rather than in a job step, so it has to
-// run the suite here too — otherwise nothing between a dev affordance and a store review runs on the shipped build.
+// The store-artifact guard (extension-distribution.md §5.5) reads `.output/`, which exists only from here: without this
+// run, nothing tests the shipped build before a store review.
 run("npm", ["test"]);
 
-// `@semantic-release/github` only warns when an asset cannot be read and publishes anyway, so a missing or misnamed
-// zip would cut a release with three artifacts and a green build. Fail here, while `prepare` is still before the tag.
+// `@semantic-release/github` only warns on an asset it cannot read and publishes anyway, so a missing zip would cut a
+// green release without it.
 const missing = releaseArtifacts(version).filter(name => !existsSync(join(EXTENSION_DIR, ".output", name)));
 if (missing.length > 0) throw new Error(`the build wrote no ${missing.join(", ")}; the release would ship without it`);
