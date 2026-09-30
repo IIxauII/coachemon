@@ -12,10 +12,7 @@ import { EVENT, encode } from "../src/relay/channel.ts";
 
 const OUT = fileURLToPath(new URL("../.output/", import.meta.url));
 
-/**
- * A backstop to check 4: if a vendored library ever trips one, narrow the check to our own entry chunks, never drop it.
- * The minifier drops the `new` from extension-distribution.md §5.5's `new Function(`, so the bare call is banned too.
- */
+/** A backstop to check 4 (extension-distribution.md §5.5). The minifier drops the `new` from `new Function(`, so the bare call is banned too. */
 const BANNED_IN_STORE = ["47148", "eval(", "new Function(", "Function(", "screenshot", "captureVisibleTab", "executeScript", "runtime.reload", "dev-reload"];
 
 /** The store hub (extension-distribution.md §8.1). */

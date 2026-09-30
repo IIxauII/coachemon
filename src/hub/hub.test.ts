@@ -19,7 +19,7 @@ async function hub(o: { timeoutMs?: number; idleMs?: number; onIdle?: () => void
 
 type Client = Peer<ToClient, FromClient>;
 
-/** Also how a test waits for a frame sent on another socket to have landed. */
+/** The hub's own view, which is how a test waits for a frame sent on another socket to have landed. */
 async function state(c: Client): Promise<HubState> {
   c.send({ t: "state" });
   return c.take<HubState>(f => f.t === "state");

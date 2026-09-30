@@ -71,6 +71,7 @@ test("stamping the version leaves the rest of package.json as it was", () => {
 });
 
 test("a prerelease is refused, because the artifacts could not be named for it", () => {
+  // WXT names a zip after the manifest's three-number version, so `submit` would look for a zip the build never wrote.
   // `isSemver` admits a prerelease; the release stream does not.
   assert.equal(releaseVersion("0.1.0"), "0.1.0");
   assert.throws(() => releaseVersion("1.0.0-beta.1"), /cannot release a prerelease \(1\.0\.0-beta\.1\)/);

@@ -204,6 +204,7 @@ test("a rung the TABS line replaced is printed again when it comes back (extensi
   const w = watching(h.port);
   await answerCard(ext, NO_CARD);
 
+  // No ready tab: rung 7, once.
   ext.send({ t: "tab", tab: 1, state: "gone", title: "PokéRogue" });
   await until(() => w.lines.some(l => l.startsWith("Coachemon is connected")));
 

@@ -179,6 +179,7 @@ test("the newest page script replaces the running one in place (extension-distri
   const second = start("9.9.9+ffffffffffff");
   assert.equal(host.__coachemonPage, second);
   assert.equal(host.__coachemonPage?.build, "9.9.9+ffffffffffff");
+  // The replaced copy answers nothing: a relay of the old build finds no handler at all.
   const t = tab();
   first.stop();
   const orphan = startRelay({

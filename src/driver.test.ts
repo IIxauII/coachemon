@@ -292,10 +292,7 @@ test("start_run refuses screen_changed when the menu read's Screen differs from 
   assert.deepEqual(tab.presses, []);
 });
 
-/**
- * #28's Charmander on SUMMARY/LEARN_MOVE, the new Metal Claw on row 4 where the row cursor starts: ACTION on a moveset
- * row forgets that move, and on row 4 declines. `fineTracksRow: false` is the #32 hole before #43.
- */
+/** #28's Charmander on SUMMARY/LEARN_MOVE, the new Metal Claw on row 4. `fineTracksRow: false` is the #32 hole before #43. */
 function learnMoveTab(opts: { setCursorWorks: boolean; fineTracksRow?: boolean; readerFailsAfterPress?: boolean }) {
   const presses: number[] = [];
   const rawKeys: number[] = [];
