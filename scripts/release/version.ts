@@ -1,9 +1,3 @@
-/**
- * The version text both release streams handle: `scripts/set-version.ts` stamps the server's files and
- * `scripts/release/stamp-extension.ts` the extension's, and both are handed the version on the command line.
- *
- * Pure but for `versionArg`, which is a command line's own exit; `src/extension-release.test.ts` covers the rest.
- */
 const SEMVER = /^\d+\.\d+\.\d+(-[\w.]+)?$/;
 const VERSION_FIELD = /"version":\s*"[^"]*"/;
 

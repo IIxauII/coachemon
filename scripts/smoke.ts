@@ -1,28 +1,13 @@
 /**
- * Drive the server over stdio the way Claude Code does, without Claude.
+ * Drives the server over stdio the way Claude Code does, without Claude. Tool calls chain, each taking an optional
+ * JSON argument:
  *
- *   node scripts/smoke.ts status
- *   node scripts/smoke.ts read_menu
- *   node scripts/smoke.ts get_state '{"detail":"party"}'
- *   node scripts/smoke.ts select_option '{"label":"Fight"}'
- *   node scripts/smoke.ts press '{"button":"ACTION"}'
- *   node scripts/smoke.ts start_run '{"species":["Bulbasaur"]}'
- *   node scripts/smoke.ts screenshot            # writes .cache/screenshot.png
+ *   node scripts/smoke.ts status get_state '{"detail":"party"}' screenshot   # the shot lands in .cache/screenshot.png
  *
- * Several calls can be chained: `node scripts/smoke.ts status read_menu`.
+ * `--engines` runs the per-engine checks instead, straight at the hub rather than through the server
+ * (extension-distribution.md §16):
  *
- * With `COACHEMON_DEV=1` the server it spawns talks to the dev hub on 47148 instead of the store hub, which is how a
- * checkout reaches a paired dev build of the extension (extension-distribution.md §7.2); `COACHEMON_TRANSPORT=hub` is
- * what selects the hub at all (§12.1). Both are passed through to the server, which the MCP SDK does not do by itself.
- *
- * The per-engine smoke checks (§16) are the other mode, and they do not go through the server at all. They dial the
- * same port everything else does — 47147, or 47148 with `COACHEMON_DEV=1` — so a dev build is checked on the dev hub
- * and a store install, which is what §16's Orion premise is about, on the store hub:
- *
- *   COACHEMON_DEV=1 node scripts/smoke.ts --engines       # the connected dev build, 5 min idle, then the report
- *   node scripts/smoke.ts --engines --engine orion        # Orion runs the Chrome or Firefox build, so name it
- *   COACHEMON_DEV=1 node scripts/smoke.ts --engines --idle 30   # a shorter idle, for a check of the check
- *   node scripts/smoke.ts --engines --report              # print the ledger and run nothing
+ *   node scripts/smoke.ts --engines [--engine orion] [--idle <seconds>] [--report]
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -43,11 +28,7 @@ const value = (k: string, d: string) => {
 if (flag("--engines")) await engines();
 else await tools();
 
-/**
- * The relay and keepalive checks against whichever engine has the one counted tab right now
- * (extension-distribution.md §16). One engine per run: with more than one tab the hub refuses reads as well as acts.
- * The ledger keeps every engine's latest result, so the report names the ones this machine never reached.
- */
+/** One engine per run, whichever holds the one counted tab: with more than one tab the hub refuses reads as well as acts. */
 async function engines(): Promise<void> {
   const path = value("--ledger", ".cache/engine-checks.json");
   let ledger: Ledger = {};
@@ -78,7 +59,6 @@ async function engines(): Promise<void> {
     );
     client.close();
     if (!run.reached) {
-      // Not an engine result: nothing about an engine was learned, so nothing is recorded against one.
       process.stderr.write(`no engine checked: ${run.why}\n`);
     } else {
       ledger = merge(ledger, run.result);
@@ -88,7 +68,6 @@ async function engines(): Promise<void> {
   }
 
   console.log(report(ledger));
-  // A failing check is a failing run: this is the ticket's acceptance line, not a report for a human to squint at.
   process.exitCode = allPassed(ledger) ? 0 : 1;
 }
 

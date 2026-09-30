@@ -1,16 +1,6 @@
 /**
- * semantic-release's `publish` for the extension stream (extension-distribution.md §14.4): from 1.0.0 on, upload the
- * Chrome and Firefox artifacts to their stores and submit them for review. 0.x is unlisted — it says so and stops.
- *
- * Chrome goes through Web Store API v2: v1.1 stops being supported on 2026-10-15, and v2 is what can cancel a pending
- * review before submitting the newest build (`POST /v2/{name}:cancelSubmission`, confirmed against the API reference
- * and implemented by `publish-browser-extension` behind `--chrome-cancel-pending`). A burst of HUD releases therefore
- * restarts Chrome's review each time, which is accepted.
- *
- * v2 authenticates as a GCP service account, not with the v1.1 client id / secret / refresh token. `release.yml` maps
- * the repo's secrets onto the tool's environment names; nothing secret is passed on the command line.
- *
- * A failed submission fails the job, after the tag and the GitHub Release already exist. The dev resubmits by hand.
+ * The extension stream's `publish` (extension-distribution.md §14.4). It runs after the tag and the GitHub Release
+ * exist, so a failed submission fails the job with both already out, and the dev resubmits by hand.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -26,8 +16,7 @@ import {
 import { versionArg } from "./version.ts";
 
 const version = releaseVersion(versionArg("scripts/release/submit-extension.ts"));
-// `verifyRelease` passes `--verify`: check that a submission could succeed, and submit nothing. It runs before the tag
-// is cut, so an accidental 1.0.0 with no store secrets configured fails while nothing has been published yet.
+// `verifyRelease` passes `--verify`, before the tag is cut: check that a submission could succeed, and submit nothing.
 const verifyOnly = process.argv.includes("--verify");
 
 if (!submitsToStores(version)) {
@@ -45,8 +34,6 @@ if (verifyOnly) {
   process.exit(0);
 }
 
-// AMO's extension id is the gecko id (extension-distribution.md §5.3), read off the build that is about to be uploaded
-// so it cannot drift from what `manifestFor` wrote.
 const built = join(EXTENSION_DIR, ".output", "firefox-mv3-store", "manifest.json");
 const firefox = JSON.parse(readFileSync(built, "utf8")) as {
   browser_specific_settings?: { gecko?: { id?: string } };

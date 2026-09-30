@@ -1,33 +1,14 @@
-/**
- * The Safari release, by hand, every release (extension-distribution.md §14.6). Safari is not a store: nothing in CI
- * can produce this artifact, because it needs the dev's individual Apple Developer Program membership, their Developer
- * ID signing identity in a local keychain, and Xcode. So this half is the plan — pure, and covered by
- * `src/safari-release.test.ts` — and `safari-release.ts` is the runner that carries it out on the dev's Mac.
- *
- * The order is the part worth pinning down. `notarytool` returns a ticket that lives on Apple's servers; `stapler`
- * writes it into the app so a first launch offline is not a refusal. Neither touches the zip that was submitted, so
- * the asset the release carries has to be cut from the app *after* stapling. Uploading the submitted zip would ship
- * an app that passes Gatekeeper only while the player is online.
- */
+/** The Safari release as a pure plan, which `safari-release.ts` carries out on the dev's Mac (extension-distribution.md §14.6). */
 import { join } from "node:path";
 import { safariAppZipName, zipName } from "./artifacts.ts";
 
-/**
- * The containing app's name and bundle identifier (extension-distribution.md §14.6, both picked by the spec). The app
- * is the packager's generated near-shell and stays that way: the Developer ID route has no review, and Attachment 7
- * bars bundling the extension with an app that has a different purpose.
- */
+/** Picked by extension-distribution.md §14.6. */
 export const APP_NAME = "Coachemon";
 export const BUNDLE_ID = "io.github.iixauii.coachemon";
 
-/** The tag the extension stream cuts (extension-distribution.md §14.1); both the download and the upload address the same release. */
 export const extensionTag = (version: string): string => `extension-v${version}`;
 
-/**
- * One command in the plan: `id` is what code branches on, `title` the line the runner prints. Two fields and not one
- * because the runner has a check to run after the unpack, and hanging that off display text means rewording a
- * sentence silently stops it running.
- */
+/** Code branches on `id`, never on `title`: a check hung off display text stops running when the sentence is reworded. */
 export type SafariStep = { id: StepId; title: string; command: string; args: string[] };
 
 export type StepId =
@@ -45,26 +26,20 @@ export type StepId =
   | "upload";
 
 export type SafariPlan = {
-  /** The version being released, three numbers, as the release's artifacts are named for it. */
   version: string;
   /** A scratch directory. Everything the build writes lands under it and nothing outside it is touched. */
   work: string;
   /** The full `Developer ID Application: …` string, as the keychain spells it. */
   identity: string;
-  /** The `notarytool store-credentials` profile holding the app-specific password (see the runbook). */
+  /** The `notarytool store-credentials` profile holding the app-specific password (`docs/runbooks/safari-release.md`). */
   profile: string;
-  /** `owner/name` of the repo carrying the release. `gh` runs outside the checkout, so it is told rather than asked. */
+  /** `owner/name`, told because `gh` runs outside the checkout (extension-distribution.md §14.6). */
   repo: string;
 };
 
-/**
- * Every path the plan writes or reads, derived from the scratch directory alone so a dry run names real files. It
- * takes the plan rather than the two fields, so the runner and `safariSteps` cannot derive a path from different ones.
- */
 export function safariPaths({ work, version }: Pick<SafariPlan, "work" | "version">) {
   const exported = join(work, "export");
   return {
-    /** The release's own Safari asset: the unpackaged web extension, not something Safari installs. */
     download: join(work, zipName("safari", version)),
     unpacked: join(work, "extension"),
     project: join(work, "project"),
@@ -84,15 +59,13 @@ const IDENTITY = /"(Developer ID Application: [^"]+)"/g;
 const TEAM_ID = /\(([A-Z0-9]{10})\)$/;
 
 /**
- * The Developer ID Application identities in `security find-identity -v -p codesigning` output. An `Apple
- * Development` identity is not notarizable and a `Developer ID Installer` one signs packages, not apps, so neither is
- * a candidate even though both sit in the same listing.
+ * An `Apple Development` identity is not notarizable and a `Developer ID Installer` one signs packages, not apps, so
+ * neither is a candidate though both sit in the same listing.
  */
 export function developerIdIdentities(listing: string): string[] {
   return [...listing.matchAll(IDENTITY)].map(match => match[1]);
 }
 
-/** The identity to sign with: the only candidate, or the one named on the command line. Never a guess. */
 export function pickIdentity(candidates: string[], asked: string | undefined): string {
   if (asked) {
     if (!candidates.includes(asked)) {
@@ -111,27 +84,20 @@ export function pickIdentity(candidates: string[], asked: string | undefined): s
 
 const REMOTE = /[:/]([^/:]+\/[^/]+?)(?:\.git)?\/?$/;
 
-/**
- * `owner/name` out of a remote URL, in either spelling `git remote get-url` can hand back. Read off the checkout
- * rather than written down, so a fork or a rename does not leave this script uploading to somebody else's release.
- */
+/** Either spelling `git remote get-url` hands back, SSH or HTTPS. */
 export function repoFromRemote(url: string): string {
   const match = REMOTE.exec(url.trim());
   if (!match) throw new Error(`no owner/name in the remote ${url}`);
   return match[1];
 }
 
-/** The team id, read off the identity rather than configured a second time where it could drift from it. */
 export function teamIdFrom(identity: string): string {
   const match = TEAM_ID.exec(identity.trim());
   if (!match) throw new Error(`no team id in ${identity}; expected a trailing "(TEAMID1234)"`);
   return match[1];
 }
 
-/**
- * `-exportArchive`'s options. `developer-id` is the route with no review; `destination: export` writes the app to
- * disk rather than handing it to Apple's distribution service, which is what a GitHub Release download needs.
- */
+/** `destination: export` writes the app to disk rather than handing it to Apple's distribution service. */
 export function exportOptions(teamId: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -152,11 +118,6 @@ export function exportOptions(teamId: string): string {
 `;
 }
 
-/**
- * The version in a built manifest. The runner compares it with the version it was asked for: `gh release download`
- * would happily fetch nothing and leave a stale unzip in place, and a near-shell around last release's extension is
- * the kind of thing only a player would find.
- */
 export function packagedVersion(manifest: string): string {
   const version = (JSON.parse(manifest) as { version?: string }).version;
   if (!version) throw new Error("the downloaded extension carries no version in its manifest");
@@ -164,12 +125,9 @@ export function packagedVersion(manifest: string): string {
 }
 
 /**
- * The submission id from a notarization Apple accepted, or a refusal naming the log command.
- *
- * `notarytool submit --wait` exits `0` once Apple returns a *final* verdict, `Invalid` among them: the exit code says
- * the submission finished, not that it passed. So the status is read rather than inferred. Without this the run walks
- * on to `stapler staple`, which fails for want of a ticket to staple — nothing is uploaded either way, because the
- * upload is the last step, but the dev is left reading a staple failure for a notarization problem (#241).
+ * `notarytool submit --wait` exits 0 on any *final* verdict, `Invalid` among them, so the status is read rather than
+ * inferred: otherwise the run walks on to `stapler staple`, which fails for want of a ticket and leaves the dev reading
+ * a staple failure for a notarization problem (#241).
  */
 export function acceptedSubmissionId(output: string, profile: string): string {
   let verdict: { id?: string; status?: string; message?: string };
@@ -179,7 +137,6 @@ export function acceptedSubmissionId(output: string, profile: string): string {
     throw new Error(`notarytool printed no JSON verdict to read:\n${output.trim()}`);
   }
   const { id, status, message } = verdict;
-  // Both, because the refusal below is only actionable when it can name the submission to fetch the log for.
   if (!id || !status) throw new Error(`notarytool's verdict carries no id and status:\n${output.trim()}`);
   if (status !== "Accepted") {
     throw new Error(
@@ -190,7 +147,7 @@ export function acceptedSubmissionId(output: string, profile: string): string {
   return id;
 }
 
-/** extension-distribution.md §14.6 as commands, in order. Pure: the runner executes these, and a dry run prints them. */
+/** extension-distribution.md §14.6 as commands, in order. */
 export function safariSteps(plan: SafariPlan): SafariStep[] {
   const p = safariPaths(plan);
   const tag = extensionTag(plan.version);
@@ -202,8 +159,7 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       command: "gh",
       args: [
         "release", "download", tag,
-        // Named, never inferred: every step runs in the scratch directory, which is no checkout, and the repo is
-        // private, so `gh` has neither a remote to read there nor a public fallback to guess from.
+        // Named, never inferred (extension-distribution.md §14.6).
         "--repo", plan.repo,
         "--pattern", zipName("safari", plan.version),
         "--dir", plan.work,
@@ -211,7 +167,6 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       ],
     },
     {
-      // `ditto -x -k` and not `unzip`: the same tool that writes the asset, and it keeps macOS metadata intact.
       id: "unpack",
       title: "Unpack the web extension",
       command: "ditto",
@@ -222,9 +177,7 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       title: `Package the extension into the ${APP_NAME} near-shell`,
       command: "xcrun",
       args: [
-        // `safari-web-extension-converter`, and not the `safari-web-extension-packager` extension-distribution.md §14.6
-        // named: Apple's page is titled "Packaging a web extension for Safari", but the tool it documents is the
-        // converter, and `xcrun` finds no packager on any Mac. The spec is corrected where it says this.
+        // The converter, not a packager: `xcrun` finds none (extension-distribution.md §14.6).
         "safari-web-extension-converter",
         p.unpacked,
         "--project-location", p.project,
@@ -233,7 +186,6 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
         "--macos-only",
         "--copy-resources",
         "--no-open",
-        // Without it the converter stops on its warning summary and waits for a human a scripted run has not got.
         "--no-prompt",
       ],
     },
@@ -277,10 +229,8 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       id: "notarize",
       title: "Submit for notarization and wait for Apple's verdict",
       command: "xcrun",
-      // `--output-format json` so the verdict can be read: `--wait` exits 0 on a rejection just as happily as on an
-      // approval, and `acceptedSubmissionId` is what tells the two apart (#241). It costs the progress chatter, which
-      // is why the runner prints the submission id itself. Placed before `--keychain-profile` so the profile stays
-      // last, where the runner's own listing and the runbook both read it.
+      // JSON, so `acceptedSubmissionId` can read the verdict `--wait`'s exit code hides (#241). The profile stays last,
+      // where the runbook reads it off the runner's listing.
       args: [
         "notarytool", "submit", p.submitted,
         "--wait",
@@ -289,7 +239,6 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       ],
     },
     {
-      // Without the ticket in the bundle, a player who is offline on first launch is refused by Gatekeeper.
       id: "staple",
       title: "Staple the notarization ticket into the app",
       command: "xcrun",
@@ -302,12 +251,10 @@ export function safariSteps(plan: SafariPlan): SafariStep[] {
       args: ["stapler", "validate", p.app],
     },
     {
-      // What the player's Mac will ask on first launch, asked here instead, where an answer is still cheap.
       id: "gatekeeper",
       title: "Check what Gatekeeper makes of it",
       command: "spctl",
-      // No `-t`: `spctl`'s default assessment is `execute`, which is what happens to a downloaded `.app`. `install` is
-      // the installer-package assessment, and answers a question nobody will ask of this artifact.
+      // No `-t` (extension-distribution.md §14.6).
       args: ["-a", "-vvv", p.app],
     },
     {
