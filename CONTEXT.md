@@ -77,7 +77,7 @@ What the game is actually asking, as a whole. A screen is *not* the same as a **
 
 ## Overlay
 
-The **coach** as it runs in the player's tab: the whole part that reads the game, works out the **card** and draws it over PokéRogue, and the box the card is drawn in. Its cost to the game is everything it makes the page do, the game's own code it calls included. Not the *panel* or the *HUD*, which each name only one half of it.
+The **coach** as it runs in the player's tab: the whole part that reads the game, works out the **card** and draws it over PokéRogue, and the box the card is drawn in. Its cost to the game includes every game function it calls while it runs. The code calls it the *HUD*. Not the *panel*, which names only the box.
 
 ## Card
 
@@ -93,7 +93,7 @@ The line of a **card** that stays in front of the player whatever else they have
 
 ## Drawer
 
-Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them. A **tab bar** names every group the card has, one **tab** each, in an order that is the same on every card; the open group's own contents are its **pane**, and a pane too tall for the overlay scrolls inside itself. A tab carries its group's name and nothing else — no mark, no count, no state but being the open one. The drawer can be shut by the caret in the overlay's corner, leaving the **strip** alone, and the overlay dismissed by the × beside it, leaving a bare glyph that is the same on every wave and is only the way back. A dismissal covers the overlay rather than replacing it, so reopening comes back to the strip or the drawer the player left. Which group is open is remembered by id as the cards change under it and across a reload; a card with no group of that id moves the drawer to `act` and does not move it back when the group returns.
+Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them. A **tab bar** names every group the card has, one **tab** each, in an order that is the same on every card; the open group's own contents are its **pane**, and a pane too tall for the overlay's box scrolls inside itself. A tab carries its group's name and nothing else — no mark, no count, no state but being the open one. The drawer can be shut by the caret in the box's corner, leaving the **strip** alone, and the box dismissed by the × beside it, leaving a bare glyph that is the same on every wave and is only the way back. A dismissal covers the box rather than replacing it, and the overlay goes on reading the game underneath, so reopening comes back to the strip or the drawer the player left. Which group is open is remembered by id as the cards change under it and across a reload; a card with no group of that id moves the drawer to `act` and does not move it back when the group returns.
 
 ## Minigame turn
 
