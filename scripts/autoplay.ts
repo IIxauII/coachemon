@@ -73,8 +73,12 @@ if (LAG) {
     screen = String(m.screen ?? m.error ?? "");
     if (screen === "TITLE") break;
   }
+  const audio = screen === "TITLE" ? tab!.audio() : null;
   if (screen !== "TITLE") stop = `no-title:${screen}`;
-  else {
+  else if (audio?.state !== "running") {
+    stop = "audio-locked";
+    console.error(`the tab's audio is locked (${JSON.stringify(audio)}): the heal after wave 10 would wait on it forever. Allow auto-play for pokerogue.net in Orion (docs/lag-run.md)`);
+  } else {
     const r = await call("start_run", { species: TEAM, slot: Number(SLOT), overwrite: true });
     if (r.error || (r.status !== "ok" && r.status !== "timed_out")) { stop = `start_run:${r.error ?? r.status}`; console.log(JSON.stringify(r, null, 1)); }
     else log({ kind: "window", wave: r.wave ?? null, screen: "TITLE", action: { tool: "start_run" }, moments: [], trainer: false, stats: drain() });

@@ -15,6 +15,9 @@ Once per machine:
   drain`.
 - **Develop → Allow JavaScript from Apple Events** on in Orion. The run reads the meter and reloads the tab through
   AppleScript, as `read.sh orion` does.
+- **Auto-play allowed for pokerogue.net** in Orion's website settings. The run reloads the tab, and WebKit keeps a
+  reloaded page's audio locked until a real click; the heal after every boss wave waits on its jingle, so a locked
+  tab hangs on a black screen at wave 10. The run checks after the reload and stops with `audio-locked`.
 - **A spare save slot.** Pick one of Slot 1–5 on the save-slot screen that holds nothing of yours: every run
   overwrites it. `--slot` is 0-based, so Slot 5 is `--slot 4`.
 - **The fixed team is unlocked.** Larvitar, Machop and Growlithe (10 points) unless `--team` says otherwise. Keep

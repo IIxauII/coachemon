@@ -28,6 +28,15 @@ const probe = (mode: string) => `(() => { const e = document.createElement('scri
   document.documentElement.appendChild(e); e.remove(); const r = document.documentElement.dataset.mcpOut;
   delete document.documentElement.dataset.mcpOut; return r || JSON.stringify({ error: 'no result (CSP or page not loaded)' }); })()`;
 
+// The phases that wait on a sound's end, such as the heal after a boss wave, wait forever on a locked AudioContext:
+// WebKit unlocks it on a real gesture, never on `do JavaScript`, and the run's reload locks it again (#499).
+const AUDIO = `(() => { const e = document.createElement('script'); e.textContent = ${JSON.stringify(`try {
+  const game = Phaser.Display.Canvas.CanvasPool.pool.map(p => p.parent).find(p => p && p.game).game;
+  document.documentElement.dataset.mcpOut = JSON.stringify({ state: game.sound.context?.state ?? null });
+} catch (err) { document.documentElement.dataset.mcpOut = JSON.stringify({ error: String(err) }); }`)};
+  document.documentElement.appendChild(e); e.remove(); const r = document.documentElement.dataset.mcpOut;
+  delete document.documentElement.dataset.mcpOut; return r || JSON.stringify({ error: 'no result' }); })()`;
+
 export type Drained = { hudActive: boolean; meterActive: boolean; stats: Record<string, unknown> & { ticks: unknown[]; gaps: unknown[] } | null; error?: string };
 
 export function orion() {
@@ -37,6 +46,8 @@ export function orion() {
     reload: (): void => { inTab("location.reload(), 'ok'"); },
     /** `hidden`, `visible`, or the tab's error. */
     visibility: (): string => inTab("document.visibilityState"),
+    /** The AudioContext's state: Phaser's own `locked` stays true when auto-play, not a gesture, started it. */
+    audio: (): { state?: string | null; error?: string } => JSON.parse(inTab(AUDIO)),
   };
 }
 
