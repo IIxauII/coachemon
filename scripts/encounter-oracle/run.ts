@@ -1,54 +1,7 @@
 /**
- * Mystery Encounter oracle: the coach's encounter card judged against the real game, headless.
- *
- *   npm run oracle:encounter                 # every case
- *   npm run oracle:encounter -- -t "Part"    # vitest's name filter, passed through
- *
- * The encounter card re-implements what each encounter's option closures do, because they can't be read from the
- * page (`46-encounter.js`). Everything else the HUD claims is checked against a mock, which can only say the port
- * matches what we *think* the game does. This runs the card against the game itself: upstream's vitest harness
- * plays the encounter headless in the pinned clone, the card reads that live scene, and the claims it makes are
- * compared with what the game then actually did.
- *
- * Every exact claim the card makes is walked: the teleport destination, the part-timer's pay, the chest (both its
- * prize tiers and its trap), the store's four shops, who the fallout burns, and the vitamin dealer's new nature.
- * Safari Zone is walked past its fee and into the minigame turn it re-opens the option screen with — the one screen
- * the card judges that is not an encounter's own — where the mon, the count and the two stages the game writes are
- * checked against the turn the card read. The take / ok / avoid call is judgement and stays unchecked.
- *
- * What it exits with:
- *
- *   0  every case run agrees with the game
- *   1  a case disagrees — the card contradicts the game, and nothing else says that
- *   2  no answer: the clone is not provisioned, vitest produced no results, or the run raised an unhandled error
- *      the oracle does not recognise, so its results cannot be vouched for
- *
- * The exit code of `vitest` itself is *not* that signal and must not be used as one. The pinned clone raises one
- * unhandled rejection per test file during i18n init, which vitest counts as a run failure however the cases went;
- * upstream's own encounter tests exit 1 in this clone for the same reason. So the answer is read from vitest's
- * own results (a JSON report), and unhandled errors are classified: the clone's known one is noted and ignored,
- * any other is a refusal to judge. Fixing the rejection by stubbing `localStorage` early was rejected on purpose —
- * it would let `initFonts` run where upstream's tests have it reject, and the oracle must not alter the game it is
- * questioning.
- *
- * Dev-only. Nothing here ships: the oracle lives in this repo, the game stays in `.cache`, and the four files this
- * writes into the clone are removed again on the way out. Run it at a pin bump, beside `npm run drift:check`: a
- * moved hash says "re-read this", the oracle says "the numbers still match".
- *
- * It needs the pinned clone with its dependencies, which `drift:check` alone does not leave behind:
- *
- *   npm run drift:check                                  # clones .cache/pokerogue/v<pin>
- *   cd .cache/pokerogue/v<pin>
- *   git submodule update --init --depth 1 locales assets # assets carries the battle animations
- *   pnpm install --frozen-lockfile                       # pnpm 10, node >= 24.9
- *
- * In an agent worktree `drift:check` leaves a *bare* clone — no submodules, no `node_modules` — and provisioning it
- * again re-fetches the 815 MB `assets` submodule. Point the worktree at the main checkout's instead:
- *
- *   ln -s /path/to/main/checkout/.cache .cache
- *
- * Without `assets`, every option that starts a battle dies in `populateMoveAnim` — upstream's own encounter tests
- * fail the same way, so a red run there is the clone, not the card.
+ * The coach's Mystery Encounter card judged against the real game: upstream's vitest harness plays each encounter
+ * headless in the pinned clone, and the claims the card reads off that live scene are compared with what the game did
+ * (game-code.md §13).
  */
 import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -77,23 +30,21 @@ const missing = (what: string, how: string): never => {
 };
 
 if (!existsSync(clone)) {
-  // In a worktree `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule,
-  // so point at the main checkout's `.cache` rather than building a second one.
+  // A worktree's `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule (#296).
   missing(`No pinned clone at ${clone}.`, "npm run drift:check   # in a worktree: ln -s <main-checkout>/.cache .cache");
 }
 if (!existsSync(path.join(clone, "node_modules"))) {
   missing(`The clone at ${clone} has no dependencies.`, `cd ${clone} && pnpm install --frozen-lockfile`);
 }
 // An empty submodule is the quiet failure: every option that starts a battle dies in `populateMoveAnim` with no
-// hint of why, so say it here rather than let a red run look like the card's fault.
+// hint of why, and the red run looks like the card's fault.
 for (const sub of ["assets", "locales"]) {
   if (readdirSync(path.join(clone, sub)).length === 0) {
     missing(`The clone's \`${sub}\` submodule is empty.`, `cd ${clone} && git submodule update --init --depth 1 ${sub}`);
   }
 }
 
-// The HUD as one eval-able script, minus `99-start.js`: the oracle calls the card directly and must never start a
-// refresh loop that ticks game code against the harness's own game.
+// Never `99-start.js`: its refresh loop would tick game code against the harness's own game.
 const files = readdirSync(HUD)
   .filter(f => f.endsWith(".js") && f !== "99-start.js")
   .sort()
@@ -101,11 +52,10 @@ const files = readdirSync(HUD)
 const bundlePath = path.join(clone, "test/tests/.coach-oracle.bundle.js");
 const testPath = path.join(clone, "test/tests/coach-oracle.test.ts");
 const reportPath = path.join(clone, "test/tests/.coach-oracle.report.json");
-// Naming a reporter on the command line replaces the clone's own, and its per-test banners are what separate one
-// case's phase log from the next's. Re-export it as a default export so it can be named back alongside the JSON one.
+// Naming a reporter on the command line replaces the clone's own, whose per-test banners are all that separate one
+// case's phase log from the next's: this shim names it back beside the JSON one.
 const reporterPath = path.join(clone, "test/reporters/.coach-default-reporter.ts");
 
-/** Run a command, streaming its output to the terminal while keeping a copy to read the answer out of. */
 const tee = (file: string, args: string[]): Promise<string> =>
   new Promise(resolve => {
     const child = spawn(file, args, {
@@ -122,7 +72,6 @@ const tee = (file: string, args: string[]): Promise<string> =>
     forward(child.stdout, process.stdout);
     forward(child.stderr, process.stderr);
     child.on("error", (err: Error) => {
-      // Say so: otherwise the run resolves empty and the caller reports "no results" with nothing above to explain it.
       const said = `\noracle: could not run vitest — ${err.message}\n`;
       output += said;
       process.stderr.write(said);
@@ -134,13 +83,10 @@ const tee = (file: string, args: string[]): Promise<string> =>
 // Written as an escape, not the raw control byte it used to be: invisible in a diff, it reads as a missing `\u001b`
 // and invites a "fix" that would leave a bare ESC in front of `Errors`, where `\s` does not match it.
 const ANSI = /\u001b\[[0-9;]*m/g;
-/** vitest's own tally of unhandled errors, which it reports separately from, and alongside, the test results. */
 const ERROR_TALLY = /^\s*Errors\s+(\d+)\s+errors?\s*$/m;
 /**
- * The clone's own unhandled rejection, raised once per test file and never the card's fault: `globalThis.localStorage`
- * is undefined at module scope under vitest's jsdom, and upstream defines it only later, in its `beforeAll` stubs, so
- * i18n's init callback rejects before any stub exists. Upstream's own encounter tests raise it in this clone too.
- * Should a pin bump fix it upstream there is simply nothing left to match, and the run stays green.
+ * The clone's own i18n rejection (game-code.md §13). Stubbing `localStorage` early would silence it, and alter the game
+ * the oracle is questioning.
  */
 const CLONE_I18N_REJECTION = /Cannot read properties of undefined \(reading 'getItem'\)[\s\S]{0,200}?src\/i18n\.ts/g;
 
@@ -152,7 +98,7 @@ type Report = {
   numPendingTests: number;
 };
 
-/** What the run says, read from vitest's results rather than its exit code. */
+/** Read from vitest's results, never its exit code, which the clone's own rejection turns to 1 however the cases went. */
 const answer = (output: string): Exit => {
   const plain = output.replace(ANSI, "");
   const raised = Number(ERROR_TALLY.exec(plain)?.[1] ?? "0");
@@ -172,15 +118,12 @@ const answer = (output: string): Exit => {
 
   const { numPassedTests: agree, numFailedTests: disagree, numPendingTests: skipped } = report;
   const tally = `${agree} agree, ${disagree} disagree${skipped ? `, ${skipped} not run` : ""}`;
-  // A name filter that matches nothing leaves every case pending. Nothing was asked of the game, so there is
-  // nothing to vouch for, and green would be a lie.
   if (agree === 0 && disagree === 0) {
     console.error(`\noracle: no answer — ${tally}. Nothing was run; check the name filter.`);
     return NO_ANSWER;
   }
-  // Read before the cases, not after: an unhandled error the oracle cannot place may be *why* a case failed, and `1`
-  // has to mean the card disagrees and nothing else. A count that does not come out even fails closed too — more
-  // copies of the known rejection than vitest counted errors means the two cannot be matched up, not that all is well.
+  // Before the cases, not after: an error the oracle cannot place may be *why* a case failed, and `1` must mean the
+  // card disagrees and nothing else.
   if (unrecognised !== 0) {
     console.error(
       unrecognised > 0
@@ -227,8 +170,7 @@ try {
     ]),
   );
 } catch (err) {
-  // Writing the bundle or the shim can throw — a missing `test/reporters/`, a bundle that no longer builds. Without
-  // this the throw escapes to node's own exit 1, which in this script's vocabulary accuses the card of disagreeing.
+  // Uncaught, a throw here exits 1 — which accuses the card.
   console.error(`\noracle: no answer — the oracle failed before it could ask.\n`);
   console.error(err instanceof Error ? (err.stack ?? err.message) : String(err));
   code = NO_ANSWER;

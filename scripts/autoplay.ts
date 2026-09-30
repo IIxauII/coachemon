@@ -1,14 +1,6 @@
 /**
- * A dumb policy over the MCP surface, for soak and cost measurement (#25):
- * fight with the strongest move, take the first reward, never switch, decline
- * confirms. Not strategy — it exists to drive waves through the server and
- * count what that costs. Stops on any non-ok status, a refusal it cannot
- * route around, or the wave target.
- *
- *   node scripts/autoplay.ts --waves 2 [--max-calls 200] [--log .cache/autoplay.jsonl]
- *
- * `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server, which is how this runs against a paired
- * dev build of the extension on the dev hub (extension-distribution.md §7.2).
+ * A dumb policy over the MCP surface, not strategy: it drives waves through the server and counts what that costs (#25).
+ * `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server (extension-distribution.md §7.2).
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -65,12 +57,10 @@ function decide(menu: Result): { tool: "select_option" | "press"; args: Record<s
     return cont ? { tool: "select_option", args: { label: cont.label } } : { tool: "press", args: { button: "CANCEL" } };
   }
   if (screen.startsWith("PARTY/") && screen.endsWith(":options")) {
-    // The verb that does the thing, or back out: Summary is a viewer and the rest are cosmetic.
     return { tool: "select_option", args: { label: has(/^(send out|apply|use|teach|switch|revive|select|pass baton)/) ?? "Cancel" } };
   }
   if (screen.startsWith("PARTY/")) {
-    // Switch screens need a benched mon (the one on the field has no Send Out in a double battle);
-    // item screens take any standing mon. Cancelling a must-answer party screen is #6's loop.
+    // The mon on the field has no Send Out in a double battle, and cancelling a must-answer party screen loops (#6).
     const needBenched = /^PARTY\/(FAINT_SWITCH|SWITCH|POST_BATTLE_SWITCH)/.test(screen);
     const mon = options.find(o => o.fainted === false && (!needBenched || o.active !== true) && o.synthetic !== true);
     if (mon) return { tool: "select_option", args: { label: mon.label } };

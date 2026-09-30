@@ -1,26 +1,7 @@
 /**
- * Drift check for everything this repo reads out of PokéRogue's source: the
- * escape ladder (`src/escape-ladder/table.ts`) and the coach HUD
- * (`scripts/hud-deps.ts`). Run at pin bump, not per push: at a fixed pinned ref
- * the hashes cannot move, so the check only means something against a candidate
- * ref. One pin, one stamp, one sign-off for both groups.
- *
- *   npm run drift:check                          # check the pinned ref
- *   npm run drift:check -- --version 1.12.0.12   # check a candidate build
- *   npm run drift:check -- --source ../pokerogue # check a local checkout
- *   npm run drift:check -- --only hud            # or `ladder`: report one group
- *   npm run drift:check -- --version 1.12.0.12 --stamp
- *       # after re-reading every entry the check named: record the new
- *       # hashes and move the pin. Stamping is the review sign-off.
- *
- * Each hashed unit is one method (`path#Class.method`, `path#Class.constructor`),
- * top-level function or enum (`path#name`), printed without comments so
- * formatting-only churn does not trip it. Exit 1 when any dep moved, vanished,
- * or has never been reviewed.
- *
- * `--only` narrows the report and the verdict to one group, for a bump that has
- * only one group left to re-read. It cannot be combined with `--stamp`: the pin
- * is shared, so a stamp is always a sign-off on both groups at once.
+ * Drift check for everything this repo reads out of PokéRogue's source, the escape ladder and the coach HUD, under one
+ * pin and one stamp (ADR 0001). Run it at a pin bump — at the pinned ref no hash can move — and `--stamp` only after
+ * re-reading every entry it named: stamping is the review sign-off.
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -74,9 +55,7 @@ const version = args.version ?? reviewed.pinned.gameVersion;
 const source = args.source ? path.resolve(args.source) : checkout(version);
 const sha = execFileSync("git", ["-C", source, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 
-/** Which screens and HUD modules lean on each ref, so a moved hash names what to re-read. */
 const dependents = new Map<string, string[]>();
-/** Which group a ref is reported under. A ref both groups lean on belongs to both. */
 const groups = new Map<string, Set<"ladder" | "hud">>();
 const lean = (ref: string, dependent: string, group: "ladder" | "hud") => {
   dependents.set(ref, [...(dependents.get(ref) ?? []), dependent]);
@@ -109,7 +88,6 @@ function findUnit(sf: ts.SourceFile, symbol: string): ts.Node | undefined {
   for (const node of sf.statements) {
     if (className === undefined) {
       if (ts.isFunctionDeclaration(node) && node.name?.text === member) return node;
-      // An enum is a unit too: the coach reads several of them as bare numbers, so a reordered member is drift.
       if (ts.isEnumDeclaration(node) && node.name.text === member) return node;
       if (ts.isVariableStatement(node)) {
         const decl = node.declarationList.declarations.find(d => ts.isIdentifier(d.name) && d.name.text === member);
@@ -153,7 +131,6 @@ for (const ref of refs) {
   else if (was !== hash) moved.push(ref);
 }
 
-/** Each entry's `mode` and `handler` are claims too: check them against UiMode and `UI.handlers` at this ref. */
 const misplaced: string[] = [];
 {
   const read = (file: string) => (existsSync(path.join(source, file)) ? readFileSync(path.join(source, file), "utf8") : "");
@@ -174,7 +151,6 @@ const misplaced: string[] = [];
   }
 }
 
-/** `--only` narrows every list below to the chosen group; the hashing above always covers both. */
 const shown = (list: string[]) => (only === undefined ? list : list.filter(ref => groups.get(ref)?.has(only)));
 const shownMisplaced = only === "hud" ? [] : misplaced;
 
