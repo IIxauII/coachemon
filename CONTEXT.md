@@ -75,6 +75,10 @@ Stuck is reported, never escaped unilaterally.
 
 What the game is actually asking, as a whole. A screen is *not* the same as a **UiMode**: one UiMode can serve several screens that differ in what they mean and in how they can be left, so a screen is identified by the UiMode together with whatever discriminates it. The **menu** is the choice a screen presents; the screen is the thing Claude is looking at.
 
+## Overlay
+
+The **coach** as it runs in the player's tab: the whole part that reads the game, works out the **card** and draws it over PokéRogue, and the box the card is drawn in. Its cost to the game includes every game function it calls while it runs. The code calls it the *HUD*. Not the *panel*, which names only the box.
+
 ## Card
 
 The **coach**'s advice for the decision the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it. A card is shown as a **strip** over a **drawer** of **group**s.
@@ -89,7 +93,7 @@ The line of a **card** that stays in front of the player whatever else they have
 
 ## Drawer
 
-Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them. A **tab bar** names every group the card has, one **tab** each, in an order that is the same on every card; the open group's own contents are its **pane**, and a pane too tall for the panel scrolls inside itself. A tab carries its group's name and nothing else — no mark, no count, no state but being the open one. The drawer can be shut by the caret in the panel's corner, leaving the **strip** alone, and the panel dismissed by the × beside it, leaving a bare glyph that is the same on every wave and is only the way back. A dismissal covers the panel rather than replacing it, so reopening comes back to the strip or the drawer the player left. Which group is open is remembered by id as the cards change under it and across a reload; a card with no group of that id moves the drawer to `act` and does not move it back when the group returns.
+Where a **card**'s **group**s sit, one shown at a time: the one the player last picked, never one the coach chose for them. A **tab bar** names every group the card has, one **tab** each, in an order that is the same on every card; the open group's own contents are its **pane**, and a pane too tall for the overlay's box scrolls inside itself. A tab carries its group's name and nothing else — no mark, no count, no state but being the open one. The drawer can be shut by the caret in the box's corner, leaving the **strip** alone, and the box dismissed by the × beside it, leaving a bare glyph that is the same on every wave and is only the way back. A dismissal covers the box rather than replacing it, and the overlay goes on reading the game underneath, so reopening comes back to the strip or the drawer the player left. Which group is open is remembered by id as the cards change under it and across a reload; a card with no group of that id moves the drawer to `act` and does not move it back when the group returns.
 
 ## Minigame turn
 
@@ -340,7 +344,7 @@ Priced that way the pick turns on a second axis too: how sure the first hit is. 
 
 ## Return
 
-In a double, the switch-in that is the mon the **other** slot is withdrawing this same turn: both slots' benches name the same party index, the game resolves the two switches one after the other, and so the later send-in is the mon the earlier switch has already pulled. The card says *returns from the other slot* where an ordinary switch-in *switches*, because the usual wording, read while the player watches that mon leave the other slot, looks like a broken panel. A return is also the one switch-in that the coach sees still carrying stat stages it is about to lose — it is on the field as the coach reads it, and a switch-in's summon data is reset when it lands — so the turn read and the fight plan both price it at base stages.
+In a double, the switch-in that is the mon the **other** slot is withdrawing this same turn: both slots' benches name the same party index, the game resolves the two switches one after the other, and so the later send-in is the mon the earlier switch has already pulled. The card says *returns from the other slot* where an ordinary switch-in *switches*, because the usual wording, read while the player watches that mon leave the other slot, looks like a broken overlay. A return is also the one switch-in that the coach sees still carrying stat stages it is about to lose — it is on the field as the coach reads it, and a switch-in's summon data is reset when it lands — so the turn read and the fight plan both price it at base stages.
 
 ## Hypothesis
 
