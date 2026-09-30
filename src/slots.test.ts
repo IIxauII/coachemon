@@ -3,7 +3,6 @@ import { test } from "node:test";
 import { UiMode } from "./enums/generated.ts";
 import { isOverwriteConfirm, planSlot, slotLabel } from "./slots.ts";
 
-// The #28 screen: slots 1–2 hold runs, 3–5 are empty.
 const screen = [0, 1, 2, 3, 4].map(i => ({ i, label: `Slot ${i + 1}`, hasData: i < 2 }));
 
 test("free and occupied are the labels select_option accepts", () => {

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { onPage, send } from "./fake-page.ts";
 
-/** A move as the page holds it: the moveset entry, with the move it points at. */
 function move(name: string, over: Record<string, unknown> = {}) {
   const mv = { power: 90, category: 1, type: 9, accuracy: 100, ...over };
   return { getName: () => name, getMove: () => mv, getMovePp: () => 15, ppUsed: 3 };

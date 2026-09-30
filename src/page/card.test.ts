@@ -4,7 +4,6 @@ import { onPage, send } from "./fake-page.ts";
 
 type Hud = { summary?: () => unknown; card?: () => unknown };
 
-/** Install a HUD on the page, the way the panel leaves itself on `window`. */
 function hud(t: { after: (fn: () => void) => void }, panel: Hud | null) {
   const g = globalThis as { __coachHud?: Hud };
   const prev = g.__coachHud;

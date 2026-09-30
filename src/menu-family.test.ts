@@ -5,7 +5,6 @@ import { Refusal } from "./envelope.ts";
 import type { FamilyExtra, MenuOption, MenuRead } from "./game/port.ts";
 import { planSelect, step, type StepRule } from "./menu-family.ts";
 
-/** A readable menu of one family, on its own Screen. */
 function menuOf<F extends keyof FamilyExtra>(family: F, extra: FamilyExtra[F], options: MenuOption[], screen: string = family.toUpperCase()): MenuRead {
   return { readable: true, mode: -1, screen, family, options, cursor: 0, text: null, messagePending: false, extra } as MenuRead;
 }
@@ -22,15 +21,13 @@ function refusal(f: () => unknown): Refusal {
   assert.fail("expected a refusal");
 }
 
-// ------------------------------------------------------------------ step
-
 const steps: Record<StepRule, [cursor: number, to: number, button: Button][]> = {
   list: [[0, 2, Button.DOWN], [3, 1, Button.UP], [4, 0, Button.UP]],
-  // UP/DOWN ±2 across rows, LEFT/RIGHT ±1 along one.
+  // (game-code.md §25)
   grid2x2: [[0, 1, Button.RIGHT], [1, 0, Button.LEFT], [0, 3, Button.DOWN], [1, 2, Button.DOWN], [3, 0, Button.UP], [2, 3, Button.RIGHT]],
-  // The party slot list only ever cycles forward: 0..n-1 → 6 (Cancel) → 0.
+  // (v1-tool-surface.md §10)
   down_cycle: [[0, 6, Button.DOWN], [6, 0, Button.DOWN], [3, 1, Button.DOWN]],
-  // Enemies 2,3 on top, player field 0,1 below; nothing wraps (#40).
+  // (#40, game-code.md §25)
   battler_grid: [[2, 1, Button.DOWN], [3, 0, Button.DOWN], [1, 3, Button.UP], [0, 2, Button.UP], [3, 2, Button.LEFT], [2, 3, Button.RIGHT], [0, 1, Button.RIGHT], [1, 0, Button.LEFT]],
 };
 
@@ -39,8 +36,6 @@ for (const [rule, rows] of Object.entries(steps) as [StepRule, [number, number, 
     for (const [cursor, to, button] of rows) assert.equal(step(rule, cursor, to), button, `${rule}: ${cursor} → ${to}`);
   });
 }
-
-// ----------------------------------------------------------- planSelect
 
 test("option_select sets the cursor over the unskipped list and walks it as a list when that misses", () => {
   const menu = menuOf("option_select", { unskippedIndices: [0, 2], selectedIndex: 0 }, labelled("Classic", "Daily Run", "Cancel"));

@@ -11,10 +11,7 @@ import { PAGE_MODES } from "./modes.ts";
 /** Every function a transport puts in the page, by the name it is stringified under (extension-distribution.md §10.5). */
 const PAGE_FUNCTIONS: Record<string, Function> = { dispatch, locate, fine, disc, ...COMMAND_HANDLERS };
 
-/**
- * A bare numeric mode or handler index in the page source is a silent break waiting for a pin bump: it says nothing
- * about which `UiMode` it meant, and no codegen or drift check moves it (#164). Every one must come from `L.m`/`L.sm`.
- */
+/** A bare mode or handler index says nothing of which `UiMode` it meant, so no codegen or drift check moves it (#164). */
 const BARE = [
   /\bmode\s*[=!]==?\s*\d/,
   /\bhandlers\[\s*\d/,

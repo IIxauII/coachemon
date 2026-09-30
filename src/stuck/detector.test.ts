@@ -31,7 +31,7 @@ const at = (screen: string, fingerprint: string, options: readonly string[] | nu
   options,
 });
 
-/** #6's 147-iteration loop: pick Rare Candy in the shop, CANCEL out of the party it opens, repeat. */
+/** #6's shop↔party loop. */
 function shopPartyLoop(detector: StuckDetector, rounds: number) {
   for (let i = 0; i < rounds; i++) {
     detector.recordActing(call("MODIFIER_SELECT", SHOP, SHOP_PARTY, option("Rare Candy")));
@@ -73,7 +73,7 @@ test("the fifth sighting of a fingerprint in the window is a loop", () => {
   );
 });
 
-/** #35's shop run: Potion, pick the pokémon, Apply. The screens repeat; only the money says whether the purchase went through. */
+/** The screens repeat on every purchase; only the money says whether one went through (#35). */
 function shopPurchases(detector: StuckDetector, rounds: number, spend: number) {
   const read = { phaseName: "SelectModifierPhase", modeChain: [], cursor: 0, messageText: null, wave: 15, turn: 1 };
   const shop = (money: number) => progressFingerprint({ ...read, mode: 6, money });
@@ -170,7 +170,7 @@ test("a decision whose outcome was a settle timeout does not tick the window", (
 });
 
 test("a decision pressed from a timed-out read does not tick the window", () => {
-  // run4's stall: the prototype pressed 4 ms after each timeout, and its ring took a duplicate every time.
+  // run4's stall: the prototype pressed 4 ms after each timeout, and its ring took a duplicate every time (#6).
   const detector = new StuckDetector();
   for (let i = 0; i < 8; i++) {
     detector.recordActing({
@@ -294,7 +294,6 @@ test("the untried-option rung is spent only once every readable option has been 
 
   detector.recordActing(call("PARTY/FAINT_SWITCH", faint, faint, option("Squirtle")));
   assert.equal(detector.assess(at("PARTY/FAINT_SWITCH", faint, ["Bulbasaur", "Squirtle"])).status, "run_interrupted");
-  // Unreadable options can never prove the rung spent, so nothing is promoted.
   assert.equal(detector.assess(at("PARTY/FAINT_SWITCH", faint, null)).status, "stuck");
 });
 

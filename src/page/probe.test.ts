@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { offPage, onPage, send } from "./fake-page.ts";
 
-/** A MESSAGE screen as LevelUpPhase leaves it (BattleMessageUiHandler.promptLevelUpStats): same text throughout, stats window on top. */
+/** A MESSAGE screen as LevelUpPhase leaves it (game-code.md §26). */
 function levelUpScene(stats: "hidden" | "increments" | "totals") {
   const mh = {
     active: true,
@@ -28,7 +28,7 @@ test("the fine fingerprint moves through the level-up stats window, whose presse
   assert.equal(fps.size, 3);
 });
 
-/** PARTY/MODIFIER's option phase over a two-slot party, as PartyUiHandler holds it mid-shop. */
+/** PARTY/MODIFIER's option phase, as PartyUiHandler holds it mid-shop. */
 function partyOptionsScene() {
   const h = {
     active: true, partyUiMode: 4, optionsMode: true, transferMode: false, optionsCursor: 1, cursor: 1,
@@ -47,7 +47,6 @@ test("the probe and the menu reader read the same discriminators, and the reader
   for (const k of ["optionsMode", "partyUiMode", "transferMode"]) assert.ok(!(k in menu.extra), `extra.${k} is the adapter's to fill`);
 });
 
-/** A settled COMMAND screen on a game loop that advances only when ticked. */
 function frozenLoop() {
   const loop = { frame: 40, ticks: 0, tick() { this.ticks++; this.frame++; } };
   const scene = { ui: { mode: 2, handlers: { 2: { active: true, cursor: 0 } } }, phaseManager: { currentPhase: { phaseName: "CommandPhase" } } };
