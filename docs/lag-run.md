@@ -53,7 +53,14 @@ Options: `--team A,B,C` changes the team, `--waves N` the length (keep 50 for a 
 path.
 
 The team grows by the card's catch line: where it says `catch <mon> — <ball> <odds>`, the run throws that ball, up to
-three a wave, never into a full party. The three starters alone lose the gym leader at wave 30 (#508).
+three a wave. Into a full party it throws only when the line says `party full: replaces <mon>`, and releases that
+mon. It takes an EXP item (EXP. All, the EXP. Charms, Lucky and Golden Egg) ahead of the card's reward, since only the
+mons that fight earn EXP otherwise. The three starters alone lose the gym leader at wave 30, and a caught bench left
+to fall behind loses at wave 35 (#508).
+
+`--team coach` takes the first team the starters card proposes: the run opens the grid, reads the card, backs out to
+the title and starts with that team. The log's `team` record names it; a comparison passes those names to `--team` so
+every run of it plays the same team.
 
 **A run that lost its tab** (closed, or the page crashed) stops with `no meter to drain`, and the game's session is
 saved at the wave it was on. Reopen pokerogue.net in front, check no `node src/server.ts` of the stopped run is left

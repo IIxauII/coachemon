@@ -1,6 +1,7 @@
 /**
  * Autoplay's policy: act on the card's `act` group where it names a switch, a learn or a shop pick, throw the ball its
- * `catch` group names, and fall back to the strongest move and the first reward where it does not. It serves the lag run, not play (#484).
+ * `catch` group names (releasing the mon it says the catch replaces), take the EXP items that keep a caught bench level
+ * with the wave, and fall back to the strongest move and the first reward where it does not. It serves the lag run, not play (#484).
  */
 import { normalizeLabel } from "../../src/labels.ts";
 
@@ -37,9 +38,13 @@ export type Memory = {
   swapLead: number | null;
   /** The ball the catch group named, `Great` for `Great Ball`, for the ball screen after COMMAND's Ball. */
   ball: string | null;
+  /** The party's size, from the wave's `get_state`: a catch into a full party must replace someone. */
+  party: number | null;
+  /** The mon the catch group says the new catch replaces, for the release prompt that follows it. */
+  release: string | null;
 };
 export const freshMemory = (): Memory =>
-  ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false, item: null, bounced: false, swapLead: null, ball: null });
+  ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false, item: null, bounced: false, swapLead: null, ball: null, party: null, release: null });
 
 const tried = (mem: Memory, key: string) => { mem.tried.add(key); mem.last = key; };
 /** A refused pick never happened, so it may be picked again. */
@@ -48,6 +53,7 @@ export const refused = (mem: Memory) => { if (mem.last) mem.tried.delete(mem.las
 /** What an act's messages leave for the next decision. */
 export const heard = (mem: Memory, messages: string[]) => {
   if (messages.some(m => /won't have any effect/i.test(m))) mem.bounced = true;
+  if (mem.party !== null && mem.party < 6 && messages.some(m => /was caught/i.test(m))) mem.party++;
 };
 
 export const readsCard = (screen: string): boolean =>
@@ -57,12 +63,18 @@ export const readsCard = (screen: string): boolean =>
 const act = (card: Card, kind: string): string | null =>
   card?.kind === kind ? card.groups?.find(g => g.id === "act")?.summary ?? null : null;
 
-/** The catch group's firm call, `catch Pidgey — Great 81%`; a `maybe` has no summary, and a full party would release a mon. */
-const catchCall = (card: Card): { ball: string | null } | null => {
+/** The catch group's firm call, `catch Pidgey — Great 81%`, and whom it replaces in a full party; a `maybe` has no summary. */
+const catchCall = (card: Card): { ball: string | null; replaces: string | null } | null => {
   const g = card?.kind === "battle" ? card.groups?.find(x => x.id === "catch") : undefined;
   const m = /^catch .+?(?: — (\S+) \d+%)?$/.exec(g?.summary ?? "");
-  return m && !g!.rows.some(r => /party full/i.test(r)) ? { ball: m[1] ?? null } : null;
+  if (!m) return null;
+  const replaces = g!.rows.map(r => /party full: replaces (.+?)\s*$/.exec(r)?.[1]).find(Boolean) ?? null;
+  return { ball: m[1] ?? null, replaces };
 };
+
+// A caught bench that never fights falls behind the wave; these share or grow the EXP (#508).
+const EXP_ITEM = /exp\.? ?(all|share|charm)|lucky egg|golden egg/i;
+const levelOf = (label: string) => Number(/ Lv\.(\d+)/.exec(label)?.[1] ?? Infinity);
 
 /** `Name Lv.7 20/24 FNT` → `Name`. */
 const monName = (label: string): string => label.replace(/ Lv\.\d+.*$/, "");
@@ -112,12 +124,15 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     // A retry replays the battle's seed, so the same plays would lose the same way (#499).
     if (mem.swapLead && has(/^pok/)) return pick(has(/^pok/)!, "rule");
     mem.swapLead = null;
+    mem.release = null;
     // Three starters lose the gym at wave 30; the mons the card wants caught carry the run to 50 (#508).
     const call = catchCall(live);
     const throws = [1, 2, 3].find(i => !mem.tried.has(`${menu.wave}|ball|${i}`));
-    if (call && throws && has(/^ball$/)) {
+    const room = call?.replaces || (mem.party ?? 0) < 6;
+    if (call && room && throws && has(/^ball$/)) {
       tried(mem, `${menu.wave}|ball|${throws}`);
       mem.ball = call.ball;
+      mem.release = call.replaces;
       return pick(has(/^ball$/)!, "card");
     }
     if (mine && active) {
@@ -157,6 +172,13 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     return to ? pickIndex(to.i, hit ? "card" : "rule") : cancel;
   }
   if (screen.startsWith("PARTY/") && menu.message_pending) return action;
+  if (screen === "PARTY/RELEASE") {
+    const mons = options.filter(o => o.label && o.synthetic !== true && !/^cancel$/i.test(o.label));
+    const named = mem.release ? mons.find(o => monName(o.label!) === mem.release) : undefined;
+    const to = named ?? mons.slice().sort((a, b) => levelOf(a.label!) - levelOf(b.label!))[0];
+    mem.followed = !!named;
+    return to ? pick(to.label!, named ? "card" : "rule") : pick("Cancel", "rule");
+  }
   if (screen === "PARTY/SWITCH" && mem.swapLead) {
     const standing = benched(options);
     const to = standing[(mem.swapLead - 1) % Math.max(standing.length, 1)];
@@ -187,7 +209,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const pp = (l: string) => /(\d+)\/(\d+)$/.exec(l);
     const spent = moves.find(l => { const m = pp(l); return !!m && Number(m[1]) < Number(m[2]); });
     const move = moves.some(l => pp(l)) ? spent : moves[0];
-    const label = has(/^(send out|apply|use|teach|switch|revive|select|pass baton)/)
+    const label = has(/^(send out|apply|use|teach|switch|revive|select|pass baton|release)/)
       ?? (screen.startsWith("PARTY/MOVE_MODIFIER") ? move : undefined) ?? "Cancel";
     const by = mem.followed ? "card" : "rule";
     mem.followed = false;
@@ -219,6 +241,8 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
       if (forget || mem.forget) return pick(has(/^yes/) ?? first, "card", "learn");
       return pick(has(/^no/) ?? first, verdict ? "card" : "rule");
     }
+    // After a catch into a full party: release the mon the card named, or give the catch up.
+    if (/release|party is full|make room/i.test(text)) return pick(has(mem.release ? /^yes/ : /^no/) ?? first, mem.release ? "card" : "rule");
     if (/stop trying/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
     if (/skip taking/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
     // Offered only with the game's retries setting on; a fight lost every time would otherwise loop.
@@ -263,8 +287,9 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const take = /^take (.+?)(?: → (.+?)(?: \(forget (.+)\))?)?$/.exec(clauses.find(c => c.startsWith("take ")) ?? "");
     // A reward with no use for any mon is handed back, and the card names it again.
     const fresh = (o: Opt) => o.kind === "reward" && !mem.tried.has(`${menu.wave}|take|${o.i}`);
-    const named = take ? options.find(x => fresh(x) && x.label === take[1]) : undefined;
-    const reward = named ?? options.find(fresh);
+    const exp = options.find(x => fresh(x) && EXP_ITEM.test(x.label ?? ""));
+    const named = exp ? undefined : take ? options.find(x => fresh(x) && x.label === take[1]) : undefined;
+    const reward = exp ?? named ?? options.find(fresh);
     if (reward) {
       mem.target = named ? take![2] ?? null : null;
       mem.forget = named ? take![3] ?? null : null;

@@ -232,10 +232,30 @@ test("a card that says catch throws the ball it names, so the team grows past th
   assert.deepEqual(decide(balls, null, freshMemory()).args, { label: "Poké Ball ×5" }, "with no ball named, the first one held");
 });
 
-test("a maybe, a full party or a fourth throw in a wave fights instead (#508)", () => {
+test("a catch into a full party releases the mon the card says it replaces, and only then (#508)", () => {
+  const mem = { ...freshMemory(), party: 6 };
+  assert.deepEqual(decide(command("Charmander"), catching("catch Pidgey — Poké 77%"), mem).args, { label: "Fight" }, "no one named to replace");
+  const full = catching("catch Pidgey — Poké 77%", ["· team party full: replaces Squirtle"]);
+  assert.deepEqual(decide(command("Charmander"), full, mem).args, { label: "Ball" });
+  decide(balls, null, mem);
+  const prompt: Menu = { screen: "CONFIRM", wave: 3, text: "Your party is full.\nRelease a Pokémon to make room for Pidgey?", options: opts(["Yes", "No"]) };
+  assert.deepEqual(decide(prompt, null, mem), { tool: "select_option", args: { label: "Yes" }, by: "card" });
+  const rows: [string, { fainted?: boolean; active?: boolean }?][] = [["Charmander Lv.9 30/30", { active: true }], ["Squirtle Lv.12 30/30"], ["Bulbasaur Lv.8 30/30"]];
+  assert.deepEqual(decide(party("PARTY/RELEASE", rows), null, mem).args, { label: "Squirtle Lv.12 30/30" });
+  assert.deepEqual(decide({ screen: "PARTY/RELEASE:options", wave: 3, options: opts(["Release", "Summary", "Cancel"]) }, null, mem).args, { label: "Release" });
+  assert.deepEqual(decide(prompt, null, freshMemory()).args, { label: "No" }, "a catch nobody asked to keep is given up");
+});
+
+test("an EXP item is taken ahead of the card's reward, so the caught bench keeps up (#508)", () => {
+  const shop: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [
+    { i: "1:0", label: "Potion", kind: "reward" }, { i: "1:1", label: "EXP. All", kind: "reward" },
+  ] };
+  const rewards: Card = { kind: "reward", card_wave: 3, groups: [{ id: "act", label: "Now", summary: "take Potion", rows: [] }] };
+  assert.deepEqual(decide(shop, rewards, freshMemory()), { tool: "select_option", args: { index: "1:1" }, by: "rule", intent: "shop" });
+});
+
+test("a maybe or a fourth throw in a wave fights instead (#508)", () => {
   assert.deepEqual(decide(command("Charmander"), catching(null), freshMemory()).args, { label: "Fight" });
-  const full = catching("catch Pidgey — Poké 77%", ["· team party full: replaces Charmander"]);
-  assert.deepEqual(decide(command("Charmander"), full, freshMemory()).args, { label: "Fight" });
   const mem = freshMemory();
   for (let i = 0; i < 3; i++) assert.deepEqual(decide(command("Charmander"), catching("catch Pidgey — Poké 30%"), mem).args, { label: "Ball" });
   assert.deepEqual(decide(command("Charmander"), catching("catch Pidgey — Poké 30%"), mem).args, { label: "Fight" });

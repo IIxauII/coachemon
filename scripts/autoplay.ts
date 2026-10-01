@@ -19,7 +19,9 @@ const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); retur
 const LAG = process.argv.includes("--lag");
 const WAVES = Number(arg("--waves", LAG ? "50" : "1"));
 const MAX_CALLS = Number(arg("--max-calls", LAG ? "60000" : "200"));
-const TEAM = arg("--team", "Larvitar,Machop,Growlithe").split(",");
+// `--team coach` takes the first team the starters card proposes, read off the grid before the run starts (#508).
+const COACH = arg("--team", "") === "coach";
+let TEAM = COACH ? [] : arg("--team", "Larvitar,Machop,Growlithe").split(",");
 const SLOT = arg("--slot", "");
 const RESUME = arg("--resume", "");
 const LOG = RESUME || arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
@@ -68,6 +70,34 @@ function drain() {
 }
 
 let stop = "";
+
+/** From TITLE: New Game, Classic, the starters card's first team, then back out to TITLE for `start_run`. */
+async function coachTeam(): Promise<boolean> {
+  const title = await call("read_menu");
+  const n = ((title.options as unknown[] | undefined) ?? []).length;
+  // New Game is the first title option unless Continue is offered (game-code.md §26).
+  const mode = await call("select_option", { index: n >= 5 ? 1 : 0 });
+  const grid = mode.screen === "OPTION_SELECT" ? await call("select_option", { index: 0 }) : mode;
+  if (grid.screen !== "STARTER_SELECT") { stop = `coach-team:${grid.screen ?? grid.error}`; return false; }
+  let summary: string | null = null;
+  for (let i = 0; i < 15 && !summary; i++) {
+    const c = (await call("read_card")) as unknown as Card;
+    summary = c?.kind === "starters" ? c.groups?.find(g => g.id === "act")?.summary ?? null : null;
+    if (!summary) await sleep(1000);
+  }
+  await call("press", { button: "CANCEL" });
+  await call("select_option", { label: "Yes" });
+  for (let i = 0; i < 20 && String((await call("read_menu")).screen) !== "TITLE"; i++) await sleep(1000);
+  // `best: Larvitar (carry) + Machop + Growlithe · 10/10 pts · weak Water; trio: …`
+  const first = summary?.split("; ")[0] ?? "";
+  TEAM = first.slice(first.indexOf(": ") + 2).split(" · ")[0].split(" + ").map(x => x.replace(/ \(carry\)$/, "").trim()).filter(Boolean);
+  log({ kind: "team", by: "coach", team: TEAM, summary });
+  console.log(`coach team: ${TEAM.join(", ")} (${summary})`);
+  drain();
+  if (!TEAM.length) stop = "coach-team:no-card";
+  return TEAM.length > 0;
+}
+
 if (LAG && RESUME) {
   const seen = tab!.visibility();
   if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
@@ -77,7 +107,7 @@ if (LAG && RESUME) {
   log({ kind: "resume", at: new Date().toISOString(), priorCalls: prior.calls, priorMs: prior.ms, status: s });
   drain();
 } else if (LAG) {
-  log({ kind: "run", team: TEAM, slot: Number(SLOT), waves: WAVES, started: new Date().toISOString(), status: await call("status") });
+  log({ kind: "run", team: COACH ? null : TEAM, slot: Number(SLOT), waves: WAVES, started: new Date().toISOString(), status: await call("status") });
   const seen = tab!.visibility();
   if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
   tab!.reload();
@@ -96,6 +126,8 @@ if (LAG && RESUME) {
   else if (audio.state !== "running") {
     stop = "audio-locked";
     console.error(`the tab's audio is locked (${JSON.stringify(audio)}): the heal after wave 10 would wait on it forever. Allow auto-play for pokerogue.net in Orion (docs/lag-run.md)`);
+  } else if (COACH && !(await coachTeam())) {
+    stop ||= "coach-team";
   } else {
     const r = await call("start_run", { species: TEAM, slot: Number(SLOT), overwrite: true });
     if (r.error || (r.status !== "ok" && r.status !== "timed_out")) { stop = `start_run:${r.error ?? r.status}`; console.log(JSON.stringify(r, null, 1)); }
@@ -128,6 +160,7 @@ while (!stop && calls < MAX_CALLS) {
     if (LAG && wave !== null) {
       type Mon = { species?: string | null; level?: number | null; boss?: boolean | null } | null;
       const g = await call("get_state", { detail: "full" });
+      mem.party = ((g.party as Mon[] | null) ?? []).filter(m => m?.species).length || null;
       log({ kind: "wave", wave, battleType: g.battleType ?? null, double: g.double ?? null, trainer: g.trainer ?? null,
         boss: ((g.enemy as Mon[] | null) ?? []).some(m => m?.boss === true),
         levels: Object.fromEntries(((g.party as Mon[] | null) ?? []).flatMap(m => (m?.species && m.level ? [[m.species, m.level]] : []))) });
