@@ -70,6 +70,7 @@ function eventsOf(windows: WaveWindow[], levels: number): string[] {
     ["our faint", said(/fainted!/) - said(/^(Wild|Foe) [^]*fainted!/)],
     ["our switch", did("switch")],
     ["foe switch", said(/withdrew/i)],
+    ["catch", said(/was caught/i)],
     ["shop pick", did("shop")],
     ["retry", windows.filter(w => w.retry).length],
   ];

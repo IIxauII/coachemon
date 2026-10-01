@@ -1,6 +1,6 @@
 /**
- * Autoplay's policy: act on the card's `act` group where it names a switch, a learn or a shop pick, and fall back to
- * the strongest move and the first reward where it does not. It serves the lag run, not play (#484).
+ * Autoplay's policy: act on the card's `act` group where it names a switch, a learn or a shop pick, throw the ball its
+ * `catch` group names, and fall back to the strongest move and the first reward where it does not. It serves the lag run, not play (#484).
  */
 import { normalizeLabel } from "../../src/labels.ts";
 
@@ -35,9 +35,11 @@ export type Memory = {
   bounced: boolean;
   /** The retry this wave is on, until its opening turn has sent out a different lead. */
   swapLead: number | null;
+  /** The ball the catch group named, `Great` for `Great Ball`, for the ball screen after COMMAND's Ball. */
+  ball: string | null;
 };
 export const freshMemory = (): Memory =>
-  ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false, item: null, bounced: false, swapLead: null });
+  ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false, item: null, bounced: false, swapLead: null, ball: null });
 
 const tried = (mem: Memory, key: string) => { mem.tried.add(key); mem.last = key; };
 /** A refused pick never happened, so it may be picked again. */
@@ -54,6 +56,13 @@ export const readsCard = (screen: string): boolean =>
 
 const act = (card: Card, kind: string): string | null =>
   card?.kind === kind ? card.groups?.find(g => g.id === "act")?.summary ?? null : null;
+
+/** The catch group's firm call, `catch Pidgey — Great 81%`; a `maybe` has no summary, and a full party would release a mon. */
+const catchCall = (card: Card): { ball: string | null } | null => {
+  const g = card?.kind === "battle" ? card.groups?.find(x => x.id === "catch") : undefined;
+  const m = /^catch .+?(?: — (\S+) \d+%)?$/.exec(g?.summary ?? "");
+  return m && !g!.rows.some(r => /party full/i.test(r)) ? { ball: m[1] ?? null } : null;
+};
 
 /** `Name Lv.7 20/24 FNT` → `Name`. */
 const monName = (label: string): string => label.replace(/ Lv\.\d+.*$/, "");
@@ -103,6 +112,14 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     // A retry replays the battle's seed, so the same plays would lose the same way (#499).
     if (mem.swapLead && has(/^pok/)) return pick(has(/^pok/)!, "rule");
     mem.swapLead = null;
+    // Three starters lose the gym at wave 30; the mons the card wants caught carry the run to 50 (#508).
+    const call = catchCall(live);
+    const throws = [1, 2, 3].find(i => !mem.tried.has(`${menu.wave}|ball|${i}`));
+    if (call && throws && has(/^ball$/)) {
+      tried(mem, `${menu.wave}|ball|${throws}`);
+      mem.ball = call.ball;
+      return pick(has(/^ball$/)!, "card");
+    }
     if (mine && active) {
       const move = moveOf(mine, active);
       mem.move = move ? { name: move, target: mine.target } : null;
@@ -124,6 +141,14 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     let best = -1, at = -1;
     labels.forEach((_, i) => { if (usable(i) && moves[i]!.power > best) { best = moves[i]!.power; at = i; } });
     return pick(at >= 0 ? labels[at] : first, "rule");
+  }
+  if (screen === "BALL") {
+    const short = mem.ball;
+    mem.ball = null;
+    const held = options.filter(o => o.label && / ball\b/i.test(o.label) && o.count !== 0);
+    const named = short ? held.find(o => normalizeLabel(o.label).startsWith(normalizeLabel(`${short} Ball`))) : undefined;
+    const ball = named ?? held[0];
+    return ball ? pick(ball.label!, named ? "card" : "rule") : pick("Cancel", "rule");
   }
   if (screen === "TARGET_SELECT") {
     const want = mem.move?.target;

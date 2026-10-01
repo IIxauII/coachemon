@@ -219,3 +219,24 @@ test("a retried battle opens with a different lead, so the retry does not replay
   decide(cmd, battle("Larvitar Rock Throw → Pidgey", 8), mem);
   assert.deepEqual(decide({ ...party("PARTY/SWITCH", rows), wave: 8 }, null, mem).args, { label: "Growlithe Lv.9 30/30" }, "the second retry leads with the next mon");
 });
+
+const catching = (summary: string | null, rows: string[] = []): Card => ({
+  kind: "battle", card_wave: 3, groups: [{ id: "act", label: "Now", summary: "Charmander Ember → Pidgey", rows: [] }, { id: "catch", label: "Catch", summary, rows }],
+});
+const balls: Menu = { screen: "BALL", wave: 3, options: [...opts(["Poké Ball ×5", "Great Ball ×2"]), { i: 2, label: "Cancel" }] };
+
+test("a card that says catch throws the ball it names, so the team grows past the starters (#508)", () => {
+  const mem = freshMemory();
+  assert.deepEqual(decide(command("Charmander"), catching("catch Pidgey — Great 81%"), mem), { tool: "select_option", args: { label: "Ball" }, by: "card" });
+  assert.deepEqual(decide(balls, null, mem), { tool: "select_option", args: { label: "Great Ball ×2" }, by: "card" });
+  assert.deepEqual(decide(balls, null, freshMemory()).args, { label: "Poké Ball ×5" }, "with no ball named, the first one held");
+});
+
+test("a maybe, a full party or a fourth throw in a wave fights instead (#508)", () => {
+  assert.deepEqual(decide(command("Charmander"), catching(null), freshMemory()).args, { label: "Fight" });
+  const full = catching("catch Pidgey — Poké 77%", ["· team party full: replaces Charmander"]);
+  assert.deepEqual(decide(command("Charmander"), full, freshMemory()).args, { label: "Fight" });
+  const mem = freshMemory();
+  for (let i = 0; i < 3; i++) assert.deepEqual(decide(command("Charmander"), catching("catch Pidgey — Poké 30%"), mem).args, { label: "Ball" });
+  assert.deepEqual(decide(command("Charmander"), catching("catch Pidgey — Poké 30%"), mem).args, { label: "Fight" });
+});

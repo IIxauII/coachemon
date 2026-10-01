@@ -2,7 +2,7 @@
 
 The repeatable measurement every before/after comparison of the overlay's lag is judged by (#484, built in #499,
 extended to wave 50 in #508). One run is autoplay on the Orion tab through the store hub: it starts a fresh Classic run
-with a fixed team in a spare save slot, plays waves 1–50 acting on the card's act line (switch, learn, shop), and
+with a fixed team in a spare save slot, plays waves 1–50 acting on the card's act line (switch, learn, shop) and its catch line, and
 drains the overlay's meter after every action. A comparison is 3 runs before and 3 after, back to back, on the same day and the same game build.
 
 ## Setup
@@ -51,6 +51,15 @@ the card decided it). It ends with a summary line carrying the game's language a
 
 Options: `--team A,B,C` changes the team, `--waves N` the length (keep 50 for a comparison), `--log <file>` the log's
 path.
+
+The team grows by the card's catch line: where it says `catch <mon> — <ball> <odds>`, the run throws that ball, up to
+three a wave, never into a full party. The three starters alone lose the gym leader at wave 30 (#508).
+
+**A run that lost its tab** (closed, or the page crashed) stops with `no meter to drain`, and the game's session is
+saved at the wave it was on. Reopen pokerogue.net in front, check no `node src/server.ts` of the stopped run is left
+holding the tab (every press is refused `contended` while one is), and take it back up:
+`npm run lag:run -- --slot 4 --resume .cache/lag-run/<run>.jsonl`. It skips the reload and the new run, appends to
+that log, and its summary counts both parts' calls and play time; the minutes with no tab are not in it.
 
 **A usable run** reached wave 30. One that stops at wave 51 (`waves-reached`) is whole. One that stops earlier, lost
 or stalled, counts for the waves it finished: the wave it stopped on is left out of the report, since its numbers

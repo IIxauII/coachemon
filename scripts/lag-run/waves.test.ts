@@ -60,7 +60,7 @@ test("a run that stopped short leaves out the wave it stopped on; one that reach
 
 test("a wave's events are its level-ups, learns, faints, switches, shop picks and retries (#508)", () => {
   const [row] = perWave([
-    win(1, [], [], { messages: ["Rival Ivy\nwould like to battle!", "Larvitar learned\nBite!", "Machop fainted!", "Foe Pidgey fainted!", "Rival Ivy withdrew\nPidgey!"] }),
+    win(1, [], [], { messages: ["Rival Ivy\nwould like to battle!", "Larvitar learned\nBite!", "Machop fainted!", "Foe Pidgey fainted!", "Rival Ivy withdrew\nPidgey!", "Rattata was caught!"] }),
     win(1, [], [], { action: { intent: "switch" } }),
     win(1, [], [], { action: { intent: "shop" }, retry: true }),
     win(1, [], [], { action: { intent: "shop" } }),
@@ -68,7 +68,7 @@ test("a wave's events are its level-ups, learns, faints, switches, shop picks an
   ], [rec(1, { battleType: 1, trainer: "Ivy", levels: { Larvitar: 5, Machop: 5 } }), rec(2, { levels: { Larvitar: 7, Machop: 5 } })], 50, false);
   assert.equal(row.kind, "rival single");
   assert.equal(row.trainer, "Rival Ivy");
-  assert.deepEqual(row.events, ["level-up ×2", "move learnt", "our faint", "our switch", "foe switch", "shop pick ×2", "retry"]);
+  assert.deepEqual(row.events, ["level-up ×2", "move learnt", "our faint", "our switch", "foe switch", "catch", "shop pick ×2", "retry"]);
 });
 
 test("the game's language and missed sprites come from the last drain, and a build without them says so (#508)", () => {

@@ -1,12 +1,13 @@
 /**
  * Plays waves through the MCP surface on the card's act line (`lag-run/policy.ts`) and counts what that costs (#25).
  * `--lag --slot N` is the lag run (lag-run.md §Command): a fresh run on the Orion tab through the store hub, the meter
- * drained after every action. `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server
+ * drained after every action. `--lag --slot N --resume <log>` takes a lag run that lost its tab back up on the game's
+ * saved session: no reload, no new run, appended to that log. `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server
  * (extension-distribution.md §7.2).
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { serverEnv } from "../src/server-env.ts";
@@ -20,11 +21,13 @@ const WAVES = Number(arg("--waves", LAG ? "50" : "1"));
 const MAX_CALLS = Number(arg("--max-calls", LAG ? "60000" : "200"));
 const TEAM = arg("--team", "Larvitar,Machop,Growlithe").split(",");
 const SLOT = arg("--slot", "");
-const LOG = arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
+const RESUME = arg("--resume", "");
+const LOG = RESUME || arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
 
 if (LAG) {
   // The slot is overwritten every run, so it is never guessed.
   if (!/^[0-4]$/.test(SLOT)) { console.error("--lag needs --slot 0-4: a save slot that holds nothing of yours"); process.exit(2); }
+  if (RESUME && !existsSync(RESUME)) { console.error(`--resume ${RESUME}: no such log`); process.exit(2); }
   if (lowPowerMode()) { console.error("Low Power Mode is on: it throttles the frames the run measures (docs/lag-run.md)"); process.exit(2); }
   process.env.COACHEMON_TRANSPORT = "hub";
   delete process.env.COACHEMON_DEV;
@@ -37,8 +40,11 @@ type Result = Record<string, unknown> & { status?: string; screen?: string; wave
 const client = new Client({ name: "autoplay", version: "0" });
 await client.connect(new StdioClientTransport({ command: "node", args: ["src/server.ts"], stderr: "inherit", env: serverEnv() }));
 
-let calls = 0;
-const t0 = Date.now();
+// A resumed run carries on the first part's calls and time, so the summary covers the whole run.
+const prior = RESUME ? readFileSync(RESUME, "utf8").split("\n").filter(Boolean).map(l => JSON.parse(l) as { kind?: string; t?: number })
+  .reduce((p, o) => (o.kind === "call" ? { calls: p.calls + 1, ms: Math.max(p.ms, o.t ?? 0) } : p), { calls: 0, ms: 0 }) : { calls: 0, ms: 0 };
+let calls = prior.calls;
+const t0 = Date.now() - prior.ms;
 async function call(name: string, args: Record<string, unknown> = {}): Promise<Result> {
   calls++;
   const t = Date.now();
@@ -54,14 +60,23 @@ let hidden = 0;
 let facts: { lang?: string | null; sprites?: unknown[] } = {};
 function drain() {
   const d = tab!.drain();
-  if (!d.stats) throw new Error(`no meter to drain (${d.error ?? `hudActive ${d.hudActive}, meterActive ${d.meterActive}`}): the extension in Orion predates the lag run (#499)`);
+  if (d.error) throw new Error(`no meter to drain: ${d.error}`);
+  if (!d.stats) throw new Error(`no meter to drain (hudActive ${d.hudActive}, meterActive ${d.meterActive}): the extension in Orion predates the lag run (#499)`);
   hidden += (d.stats.frames as { hidden?: number } | undefined)?.hidden ?? 0;
   facts = (d.stats.facts as typeof facts | undefined) ?? facts;
   return d.stats;
 }
 
 let stop = "";
-if (LAG) {
+if (LAG && RESUME) {
+  const seen = tab!.visibility();
+  if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
+  const audio = tab!.audio();
+  if (audio.state !== "running") { console.error(`the tab's audio is not running (${JSON.stringify(audio)}): click in the game once, or allow auto-play for pokerogue.net`); process.exit(2); }
+  const s = await call("status");
+  log({ kind: "resume", at: new Date().toISOString(), priorCalls: prior.calls, priorMs: prior.ms, status: s });
+  drain();
+} else if (LAG) {
   log({ kind: "run", team: TEAM, slot: Number(SLOT), waves: WAVES, started: new Date().toISOString(), status: await call("status") });
   const seen = tab!.visibility();
   if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
@@ -155,7 +170,7 @@ while (!stop && calls < MAX_CALLS) {
   if (r.status !== "ok" && r.status !== "timed_out" && r.status !== "stuck") { stop = `status:${r.status}`; console.log(JSON.stringify(r.diagnostic ?? r, null, 1)); break; }
 }
 if (!stop) stop = "max-calls";
-const summary = { stop, calls, startWave, wave: lastWave, wallMs: Date.now() - t0, by, hidden, lang: facts.lang, sprites: facts.sprites, log: LOG };
+const summary = { stop, calls, ...(RESUME ? { resumed: prior } : {}), startWave, wave: lastWave, wallMs: Date.now() - t0, by, hidden, lang: facts.lang, sprites: facts.sprites, log: LOG };
 log({ kind: "summary", ...summary });
 console.log(JSON.stringify(summary));
 await client.close();
