@@ -50,7 +50,8 @@ the card decided it). It ends with a summary line carrying the game's language a
 `.cache/lag-run/<start time>.jsonl`.
 
 Options: `--team A,B,C` changes the team, `--waves N` the length (keep 50 for a comparison), `--log <file>` the log's
-path.
+path. `--reroll` rerolls once a shop, ahead of the buys, wherever the card's act line can pay for it, so the shop
+card's draw after a reroll is measured (#516); it spends money a comparison's runs don't, so a comparison leaves it off.
 
 The team grows by the card's catch line: where it says `catch <mon> — <ball> <odds>`, the run throws that ball, up to
 three a wave. Into a full party it throws only when the line says `party full: replaces <mon>`, and releases that
@@ -98,7 +99,7 @@ runs that finished that wave, and prints each cell as `before → after`.
   `gym leader`, `elite four`, `champion`, `evil team`, `evil team boss`, `mystery encounter`. A trainer wave shows its
   intro's name, class and all. `?` is a wave whose `get_state` did not answer.
 - **what happened** is what the numbers depend on: level-ups (the party's levels at this wave's first read against the
-  next's), moves learnt, our faints, our switches and the foe's, catches, shop picks, and retries of a lost battle.
+  next's), moves learnt, our faints, our switches and the foe's, catches, shop picks, a `--reroll` run's rerolls, and retries of a lost battle.
 - **turn card ms** is a refresh at `CommandPhase` that drew a new battle card: the freeze at a new turn's prompt. p95
   / max and how many.
 - **preview recomputes** are refreshes whose `road` stage (the run read) took 5 ms or more: a cached read is under 2.
@@ -116,6 +117,17 @@ before it. So the next wave's encounter, drawn during the last shop pick's windo
 
 The line above the table says the game's **language** (`prLang`, unset in an English game) and the sprites the overlay
 asked the game for and missed, with how often: the evidence for or against the missing-sprite rebuild (#486).
+
+### Shop card by stage
+
+A log whose overlay notes the shop (#516) gets a table of the shop card's draws below the per-wave one: per wave, the
+first draw, the first after each reroll (`reroll`) and the first after each buy (`buy`), with the party's size, the TMs
+on offer and in the previewed rolls, the refresh's ms and its exclusive stages. Inside `read`, the rewards card's run
+read is `shop.run` (the sandbox and the run facts) around `shop.model` (the model's own code), which holds
+`shop.ahead` (`aheadModel`), `shop.needs` (the needs and both `planBuys`), `shop.context` (`rewardContext`),
+`shop.judge` (the free options) with `shop.tm` (`tmAdvice`), `shop.roll` (`rerollPreview`), `shop.rollJudge`
+(`rerollAdvice`) with `shop.rollTm`, and `shop.audit` (`teamAudit`). `odds` is every `doubleOdds` call, wherever it
+runs. `read` keeps what is left: the screen checks and the account read.
 
 ### Per moment
 

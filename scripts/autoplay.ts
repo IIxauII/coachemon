@@ -24,6 +24,8 @@ const COACH = arg("--team", "") === "coach";
 let TEAM = COACH ? [] : arg("--team", "Larvitar,Machop,Growlithe").split(",");
 const SLOT = arg("--slot", "");
 const RESUME = arg("--resume", "");
+// `--reroll` rerolls once a shop so the shop card's draw after a reroll is measured (#516); a comparison leaves it off.
+const REROLL = process.argv.includes("--reroll");
 const LOG = RESUME || arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
 
 if (LAG) {
@@ -135,7 +137,7 @@ if (LAG && RESUME) {
   }
 }
 
-const mem = freshMemory();
+const mem = freshMemory(REROLL);
 const by = { card: 0, rule: 0 };
 let startWave: number | null = null;
 let lastWave: number | null = null;

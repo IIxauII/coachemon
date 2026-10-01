@@ -429,6 +429,13 @@ const scenarios = {
       api.rewardsModel(scene, scene.ui.getHandler());
       assert.equal(log.length, before, "an unchanged screen is served from the cache");
       assert.match(api.cardSummary(m).rewards, /reroll \$250 → .* \(reroll\) \[~\]/);
+      // The refresh that drew it is cut into the rewards model's stages, still exclusive (#516).
+      const t = globalThis.__coachMeter.stats().ticks.filter(x => x.kind === "rewards").at(-1);
+      for (const k of ["shop.run", "shop.model", "shop.ahead", "shop.needs", "shop.context", "odds", "shop.judge", "shop.roll", "shop.rollJudge", "shop.audit"]) {
+        assert.ok(k in t.stages, `${k} is a stage`);
+      }
+      assert.ok(Math.abs(Object.values(t.stages).reduce((a, b) => a + b, 0) - t.ms) < 1, "the stages sum to the refresh");
+      assert.deepEqual(t.shop, { rerolls: 0, money: 3000, party: 2, tms: 0, rollTms: 0 });
 
       // A reroll that shows the previewed offers is a hit.
       const rolled = sc.pool.filter(t => plain.offers.some(f => f.name === t.name));

@@ -1,6 +1,7 @@
 // The next big fight, and whether the party is ready for it. Nothing here draws: the schedule is the run calendar's,
 // and the roster is `previewFor`'s replay.
 import { TIER_NAMES, abilitiesOf } from "./01-core.js";
+import { stage } from "./01-meter.js";
 import { bigFightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { partyLuck, partyProfile } from "./08-party.js";
@@ -31,7 +32,7 @@ const DOUBLE_ABILITIES = ["Illuminate", "Arena Trap", "No Guard", "Commander"];
 const GRUNT_DOUBLE = 1 / 3;
 // The expected share of double battles over the next `n` waves (game-code.md §16): a fixed battle at its config's
 // `double`, a grunt wave at its unseeded 1/3 (§12).
-export const doubleOdds = (s, from, n = DOUBLE_HORIZON) => {
+export const doubleOdds = (s, from, n = DOUBLE_HORIZON) => stage("odds", () => {
   const gm = s?.gameMode;
   const lures = (s?.modifiers ?? []).filter(m => m?.constructor?.name === "DoubleBattleChanceBoosterModifier")
     .map(m => tryDo(() => m.getBattleCount(), m.battleCount ?? 0));
@@ -48,7 +49,7 @@ export const doubleOdds = (s, from, n = DOUBLE_HORIZON) => {
     doubles += 1 / Math.max(1, (isBossWave(s, w) ? 32 : 8) / 4 ** (lured + abilities));
   }
   return doubles / n;
-};
+});
 
 const readiness = (model, profile) => {
   const foes = model?.foes ?? [];
