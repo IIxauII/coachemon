@@ -74,6 +74,8 @@ const catchCall = (card: Card): { ball: string | null; replaces: string | null }
 
 // A caught bench that never fights falls behind the wave; these share or grow the EXP (#508).
 const EXP_ITEM = /exp\.? ?(all|share|charm)|lucky egg|golden egg/i;
+// Both 10-point teams met wave 30's gym leader 8+ levels short; a candy is a level the potions are not (#508).
+const LEVEL_ITEM = /rare candy/i;
 const levelOf = (label: string) => Number(/ Lv\.(\d+)/.exec(label)?.[1] ?? Infinity);
 
 /** `Name Lv.7 20/24 FNT` → `Name`. */
@@ -247,7 +249,9 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     if (/skip taking/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
     // Offered only with the game's retries setting on; a fight lost every time would otherwise loop.
     if (/retry/i.test(text)) {
-      const n = [1, 2, 3].find(i => !mem.tried.has(`${menu.wave}|retry|${i}`));
+      // One retry per benched mon leading, at least three.
+      const limit = Math.max(3, (mem.party ?? 0) - 1);
+      const n = Array.from({ length: limit }, (_, i) => i + 1).find(i => !mem.tried.has(`${menu.wave}|retry|${i}`));
       if (n) { tried(mem, `${menu.wave}|retry|${n}`); mem.swapLead = n; return pick(has(/^yes/) ?? first, "rule"); }
       return pick(has(/^no/) ?? first, "rule");
     }
@@ -287,7 +291,7 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const take = /^take (.+?)(?: → (.+?)(?: \(forget (.+)\))?)?$/.exec(clauses.find(c => c.startsWith("take ")) ?? "");
     // A reward with no use for any mon is handed back, and the card names it again.
     const fresh = (o: Opt) => o.kind === "reward" && !mem.tried.has(`${menu.wave}|take|${o.i}`);
-    const exp = options.find(x => fresh(x) && EXP_ITEM.test(x.label ?? ""));
+    const exp = options.find(x => fresh(x) && EXP_ITEM.test(x.label ?? "")) ?? options.find(x => fresh(x) && LEVEL_ITEM.test(x.label ?? ""));
     const named = exp ? undefined : take ? options.find(x => fresh(x) && x.label === take[1]) : undefined;
     const reward = exp ?? named ?? options.find(fresh);
     if (reward) {

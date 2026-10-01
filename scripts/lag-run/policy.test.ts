@@ -125,6 +125,8 @@ test("a lost battle is retried three times a wave, then the run is let go (#499)
   const ask: Menu = { screen: "CONFIRM", wave: 9, text: "Would you like to retry\nthe battle?", options: opts(["Yes", "No"]) };
   const mem = freshMemory();
   assert.deepEqual([1, 2, 3, 4].map(() => decide(ask, null, mem).args.label), ["Yes", "Yes", "Yes", "No"]);
+  const six = { ...freshMemory(), party: 6 };
+  assert.deepEqual([1, 2, 3, 4, 5, 6].map(() => decide(ask, null, six).args.label), ["Yes", "Yes", "Yes", "Yes", "Yes", "No"], "a full party lets each benched mon lead once (#508)");
 });
 
 test("a PP item's move list takes the first move, since no verb there commits it (#499)", () => {
@@ -252,6 +254,8 @@ test("an EXP item is taken ahead of the card's reward, so the caught bench keeps
   ] };
   const rewards: Card = { kind: "reward", card_wave: 3, groups: [{ id: "act", label: "Now", summary: "take Potion", rows: [] }] };
   assert.deepEqual(decide(shop, rewards, freshMemory()), { tool: "select_option", args: { index: "1:1" }, by: "rule", intent: "shop" });
+  const candy: Menu = { ...shop, options: [{ i: "1:0", label: "Potion", kind: "reward" }, { i: "1:1", label: "Rare Candy", kind: "reward" }] };
+  assert.deepEqual(decide(candy, rewards, freshMemory()).args, { index: "1:1" }, "a Rare Candy too");
 });
 
 test("a maybe or a fourth throw in a wave fights instead (#508)", () => {

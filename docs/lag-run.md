@@ -42,7 +42,7 @@ npm run lag:run -- --slot 4
 The run refuses to start on a hidden tab, with Low Power Mode on, or with the tab's audio locked (`audio-locked`). It
 reloads the tab, waits for the title screen, starts the run and plays until the first command of wave 51, a lost run
 (`status:run_over`), a refusal, or a wave that has not ended in 1000 calls (`stalled:<screen>`). The server's `stuck`
-verdict is only advice: the run goes on. A lost battle is retried up to three times a wave. A retry replays the battle's
+verdict is only advice: the run goes on. A lost battle is retried up to three times a wave, or once per benched mon with a bigger party. A retry replays the battle's
 seed, so the same plays would lose the same way: each retry opens by switching to the next benched mon, round the bench
 again once it runs out. At the first read of every wave it asks `get_state` what the wave is (battle type, double,
 trainer, boss, the party's levels), a hub command like any other. Each action prints a line (`card` or `rule`: whether
@@ -54,7 +54,7 @@ path.
 
 The team grows by the card's catch line: where it says `catch <mon> — <ball> <odds>`, the run throws that ball, up to
 three a wave. Into a full party it throws only when the line says `party full: replaces <mon>`, and releases that
-mon. It takes an EXP item (EXP. All, the EXP. Charms, Lucky and Golden Egg) ahead of the card's reward, since only the
+mon. It takes an EXP item (EXP. All, the EXP. Charms, Lucky and Golden Egg), else a Rare Candy, ahead of the card's reward, since only the
 mons that fight earn EXP otherwise. The three starters alone lose the gym leader at wave 30, and a caught bench left
 to fall behind loses at wave 35 (#508).
 
