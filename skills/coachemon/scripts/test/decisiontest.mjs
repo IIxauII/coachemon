@@ -17,8 +17,9 @@ const { watchFrame, watchBuilt } = globalThis.__hud["02-watch"];
 
 const battle = { turn: 1, turnCommands: {} };
 const party = [{ moveset: [{ moveId: 1 }, { moveId: 2 }, { moveId: 3 }, { moveId: 4 }] }, { moveset: [{ moveId: 1 }] }];
+let money = 1000;
 const scene = (phase, mode, handler = {}) => ({
-  currentBattle: battle, getPlayerParty: () => party,
+  currentBattle: battle, getPlayerParty: () => party, money,
   phaseManager: { getCurrentPhase: () => phase },
   ui: { getMode: () => mode, getHandler: () => handler, handlers: {} },
 });
@@ -50,6 +51,9 @@ const offers = { options: [1, 2, 3], awaitingActionInput: false };
 assert.equal(step("shop reveal", scene(shop, UiMode.MODIFIER_SELECT, offers)), true);
 offers.awaitingActionInput = true;
 assert.equal(step("shop takes input", scene(shop, UiMode.MODIFIER_SELECT, offers)), false);
+assert.equal(step("revive's party screen", scene(shop, UiMode.PARTY, { partyUiMode: PartyUiMode.MODIFIER })), false);
+money = 300;
+assert.equal(step("back after buying it", scene(shop, UiMode.MODIFIER_SELECT, offers)), true);
 assert.equal(step("TM party screen", scene(shop, UiMode.PARTY, { partyUiMode: PartyUiMode.TM_MODIFIER })), false);
 assert.equal(step("splice screen", scene(shop, UiMode.PARTY, { partyUiMode: PartyUiMode.SPLICE })), true);
 assert.equal(step("back to the shop", scene(shop, UiMode.MODIFIER_SELECT, offers)), true);

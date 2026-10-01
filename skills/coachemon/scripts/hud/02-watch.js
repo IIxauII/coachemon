@@ -41,7 +41,8 @@ export const detectDecision = s => {
     case "SelectModifierPhase": {
       const h = ui.getHandler();
       if (mode === UiMode.PARTY && h.partyUiMode === PartyUiMode.SPLICE) return set("fusion", ph, s.getPlayerParty().length, true, true);
-      return set("reward", ph, null, mode === UiMode.MODIFIER_SELECT && h.options.length > 0, h.awaitingActionInput === true);
+      // Keyed on the money too: a shop-row purchase keeps the phase, and the card must follow each buy (#524).
+      return set("reward", ph, s.money, mode === UiMode.MODIFIER_SELECT && h.options.length > 0, h.awaitingActionInput === true);
     }
     case "LearnMovePhase": {
       // Under four moves the phase teaches the move in `start()`: no choice is asked.

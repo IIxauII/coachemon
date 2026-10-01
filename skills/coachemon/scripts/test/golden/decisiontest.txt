@@ -7,7 +7,9 @@ the enemy has chosen               -     command ready 0 input 0 end 80
 next turn                          build command ready 0 input 0 end null
 shop reveal                        build reward ready 0 input null end null
 shop takes input                   -     reward ready 0 input 16 end null
-TM party screen                    -     reward ready 0 input 16 end null
+revive's party screen              -     reward ready 0 input 16 end null
+back after buying it               build reward ready 0 input 0 end null
+TM party screen                    -     reward ready 0 input 0 end null
 splice screen                      build fusion ready 0 input 0 end null
 back to the shop                   build reward ready 0 input 0 end null
 auto-learn, three moves            -     reward ready 0 input 0 end 16
