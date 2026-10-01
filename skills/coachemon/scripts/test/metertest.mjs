@@ -99,6 +99,23 @@ const mount = () => {
   assert.equal(second.frames.n, 1, "the frame watcher carries on across a drain");
 }
 
+// ---- a drain between a refresh and its frame leaves the gap charged to that refresh, with its card and wave (#515)
+{
+  const { refresh, stage, note } = mount();
+  __coachMeter.reset();
+  frame(4000);
+  refresh("clock", () => { note({ kind: "battle", wave: 25 }); stage("read", () => { clock += 7500; }); });
+  const drained = __coachMeter.driver(() => { clock += 38; return __coachMeter.drain(); });
+  frame(11660);
+  const [g] = __coachMeter.stats().gaps;
+  console.log(JSON.stringify(g));
+  assert.deepEqual([drained.ticks.length, drained.gaps.length], [1, 0]);
+  assert.equal(g.panel, 7500);
+  assert.equal(g.driver, 38);
+  assert.equal(g.stage, "read");
+  assert.deepEqual([g.kind, g.wave], ["battle", 25]);
+}
+
 // ---- the time a tab spends hidden is not a stall
 {
   mount();

@@ -3,7 +3,8 @@ import test from "node:test";
 import { compare, dist, parseRun, summarize, type Window } from "./report.ts";
 
 const tick = (seq: number, at: number, ms: number, kind: string | null) => ({ seq, at, ms, kind });
-const gap = (at: number, g: number, ticks: number[], driver = 0) => ({ at, gap: g, panel: 0, driver, stage: null, ticks });
+const gap = (at: number, g: number, ticks: number[], driver = 0): { at: number; gap: number; panel: number; driver: number; stage: null; ticks: number[]; kind?: string } =>
+  ({ at, gap: g, panel: 0, driver, stage: null, ticks });
 const win = (moments: Window["moments"], ticks: ReturnType<typeof tick>[], gaps: ReturnType<typeof gap>[]): Window => ({ moments, stats: { ticks, gaps } });
 
 test("a distribution is nearest-rank p50/p95 and the max, and an empty one is none (#499)", () => {
@@ -32,6 +33,21 @@ test("a comparison pools three runs a side, and a moment missing on either side 
   assert.deepEqual(c.moments.shop.after.ticks, { n: 2, p50: 1, p95: 3, max: 3 });
   assert.equal(c.moments.faint.met, false);
   assert.equal(c.kinds.rewards.met, true);
+});
+
+test("a gap is the driver's only when its commands took more of it than the overlay's refreshes (#515)", () => {
+  const s = summarize([win([], [tick(1, 0, 7508, "battle")], [{ ...gap(10, 7660, [1], 38), panel: 7508 }, gap(9000, 90, [], 12)])]);
+  assert.deepEqual(s.total.gaps, { n: 1, p50: 7660, p95: 7660, max: 7660 });
+  assert.deepEqual(s.total.driverGaps, { n: 1, p50: 90, p95: 90, max: 90 });
+});
+
+test("a gap whose refresh a drain handed back in the window before keeps that refresh's card (#515)", () => {
+  const s = summarize([
+    win([], [tick(1, 0, 7500, "battle")], []),
+    win([], [tick(2, 9000, 3, "rewards")], [{ ...gap(1, 7660, [1], 38), panel: 7500, kind: "battle" }]),
+  ]);
+  assert.equal(s.kinds.battle.gaps!.n, 1);
+  assert.equal(s.kinds.rewards.gaps, null);
 });
 
 test("a run log reads back its windows, its header and its summary (#499)", () => {

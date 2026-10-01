@@ -14,7 +14,7 @@ const PROMPTS = new Set([
 ]);
 
 type Tick = { seq: number; at: number; ms: number; kind: string | null; wave?: number | null; phase?: string | null; drew?: boolean; stages?: Record<string, number> };
-type Gap = { at: number; gap: number; panel: number; driver?: number; ticks: number[] };
+type Gap = { at: number; gap: number; panel: number; driver?: number; ticks: number[]; wave?: number | null };
 type Facts = { lang?: string | null; sprites?: { id: string; misses: number; found: boolean }[] };
 export type WaveWindow = {
   wave: number | null; action?: { intent?: string | null }; messages?: string[]; retry?: boolean;
@@ -89,6 +89,7 @@ function byWave(windows: WaveWindow[]) {
     push(acts, w.wave, w);
     for (const t of w.stats.ticks) push(ticks, t.wave ?? w.wave, t);
     for (const g of w.stats.gaps) {
+      if (g.ticks.length && "wave" in g) { push(gaps, g.wave ?? w.wave, g); continue; }
       const own = w.stats.ticks.find(t => g.ticks.includes(t.seq)) ?? w.stats.ticks.filter(t => t.at <= g.at).at(-1);
       push(gaps, own ? own.wave ?? w.wave : w.wave, g);
     }

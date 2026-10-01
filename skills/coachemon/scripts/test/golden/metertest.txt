@@ -1,7 +1,8 @@
 {"why":"clock","kind":"battle","wave":12,"ms":9,"stages":{"road":3,"read":5,"other":1}}
-[{"at":1000,"gap":140,"panel":120,"driver":0,"stage":"road","ticks":[2]},{"at":1156,"gap":244,"panel":0,"driver":0,"stage":null,"ticks":[]}] {"frame":140,"next":16} {"n":3,"hidden":0,"under":{"20":1,"34":0,"50":0,"100":0,"250":2,"more":0}} {"n":2,"ms":384,"panel":120,"driver":0}
-[{"at":2000,"gap":100,"panel":20,"driver":40,"stage":"driver","ticks":[2]},{"at":2116,"gap":84,"panel":0,"driver":0,"stage":null,"ticks":[]}] {"n":2,"ms":184,"panel":20,"driver":40}
+[{"at":1000,"gap":140,"panel":120,"driver":0,"stage":"road","ticks":[2],"kind":null,"wave":null},{"at":1156,"gap":244,"panel":0,"driver":0,"stage":null,"ticks":[],"kind":null,"wave":null}] {"frame":140,"next":16} {"n":3,"hidden":0,"under":{"20":1,"34":0,"50":0,"100":0,"250":2,"more":0}} {"n":2,"ms":384,"panel":120,"driver":0}
+[{"at":2000,"gap":100,"panel":20,"driver":40,"stage":"driver","ticks":[2],"kind":null,"wave":null},{"at":2116,"gap":84,"panel":0,"driver":0,"stage":null,"ticks":[],"kind":null,"wave":null}] {"n":2,"ms":184,"panel":20,"driver":40}
 {"ticks":1,"gaps":1,"then":{"ticks":0,"gaps":0,"frames":1}}
+{"at":4000,"gap":7660,"panel":7500,"driver":38,"stage":"read","ticks":[2],"kind":"battle","wave":25}
 {"gaps":0,"hidden":1,"frames":1}
 {"ticks":120,"entries":0,"refresh":{"n":120,"mean":1,"p95":1,"max":1}}
 [{"at":5010,"name":"keydown","ms":200,"delay":80,"run":10,"panel":70}] [{"at":4990,"ms":150,"blocking":100,"render":20,"panel":80,"scripts":[{"ms":78,"src":"hud.js","fn":"body","invoker":"TimerHandler:setInterval"}]}]

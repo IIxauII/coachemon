@@ -26,15 +26,14 @@ const reset = () => {
   ticks = ring(RING.ticks); gaps = ring(RING.gaps); events = ring(RING.events); loaf = ring(RING.loaf);
   hist = BUCKETS.map(() => 0).concat(0);
   frames = 0; hidden = 0; maxMs = 0;
-  since = fresh();
-  ended = []; awaitingNext = null;
 };
 
 let open = null, seq = 0;
 const nest = [];
-// The panel's work and the driver's since the last frame: what a gap is charged with.
-let since, ended, awaitingNext;
-const fresh = () => ({ ms: 0, stage: null, top: 0, ticks: [], driver: 0 });
+// The panel's work and the driver's since the last frame: what a gap is charged with. `reset` leaves it alone: a
+// drain between a long refresh and the next frame charged that frame's gap to nobody (#515).
+const fresh = () => ({ ms: 0, stage: null, top: 0, ticks: [], driver: 0, longest: 0, kind: null, wave: null });
+let since = fresh(), ended = [], awaitingNext = null;
 reset();
 
 // A refresh opened inside another is part of it, so a clock tick and the tick it calls are one record.
@@ -60,6 +59,7 @@ export const refresh = (why, fn) => {
     since.ms += ms;
     since.ticks.push(rec.seq);
     if (top && rec.stages[top] > since.top) { since.top = rec.stages[top]; since.stage = top; }
+    if (ms > since.longest) { since.longest = ms; since.kind = rec.kind; since.wave = rec.wave; }
     mark("coach:idle");
     measure("coach:refresh", t0, ms);
   }
@@ -113,8 +113,9 @@ const frame = t => {
     for (const rec of ended) rec.frame = r1(gap);
     if (ended.length) awaitingNext = ended[ended.length - 1];
     if (gap >= GAP_MS) {
+      // `kind` and `wave` are the longest refresh's, which a drain may have handed back in the window before.
       gaps.push({ at: r1(prev), gap: r1(gap), panel: r1(since.ms), driver: r1(since.driver),
-        stage: since.driver > since.top ? "driver" : since.stage, ticks: since.ticks });
+        stage: since.driver > since.top ? "driver" : since.stage, ticks: since.ticks, kind: since.kind, wave: since.wave });
     }
   }
   since = fresh();

@@ -1,6 +1,7 @@
 /**
  * Reads lag-run logs into the numbers a comparison is judged by (#484): tick p50/p95/max and frame gaps of 50 ms and
- * up, per moment and per card kind. A gap a hub command ran inside is the driver's, counted apart and never compared.
+ * up, per moment and per card kind. A gap the hub's commands spent more of than the overlay is the driver's, counted
+ * apart and never compared.
  */
 import { MOMENT_NAMES, MOMENTS, type Moment } from "./moments.ts";
 import { formatFacts, formatWaves, gameFacts, perWave, type WaveRecord, type WaveWindow } from "./waves.ts";
@@ -8,7 +9,7 @@ import { formatFacts, formatWaves, gameFacts, perWave, type WaveRecord, type Wav
 export const GAP_MS = 50;
 
 type Tick = { seq: number; at: number; ms: number; kind: string | null };
-type Gap = { at: number; gap: number; panel: number; driver?: number; stage: string | null; ticks: number[] };
+type Gap = { at: number; gap: number; panel: number; driver?: number; stage: string | null; ticks: number[]; kind?: string | null };
 export type Window = { moments: Moment[]; stats: { ticks: Tick[]; gaps: Gap[] } };
 export type Dist = { n: number; p50: number; p95: number; max: number } | null;
 export type Cell = { windows: number; ticks: Dist; gaps: Dist; driverGaps: Dist };
@@ -24,10 +25,13 @@ export const dist = (xs: number[]): Dist => {
 type Acc = { windows: number; ticks: number[]; gaps: number[]; driverGaps: number[] };
 const acc = (): Acc => ({ windows: 0, ticks: [], gaps: [], driverGaps: [] });
 const cell = (a: Acc): Cell => ({ windows: a.windows, ticks: dist(a.ticks), gaps: dist(a.gaps), driverGaps: dist(a.driverGaps) });
-const addGap = (a: Acc, g: Gap) => { ((g.driver ?? 0) > 0 ? a.driverGaps : a.gaps).push(g.gap); };
+/** A refresh drained just before its frame lands as a gap with a little of the driver's in it (#515). */
+const isDriverGap = (g: { panel: number; driver?: number }) => (g.driver ?? 0) > g.panel;
+const addGap = (a: Acc, g: Gap) => { (isDriverGap(g) ? a.driverGaps : a.gaps).push(g.gap); };
 
 /** A gap's card is the one its refreshes drew, else the last one drawn before it. */
 const kindOfGap = (g: Gap, ticks: Tick[]): string => {
+  if (g.ticks.length && "kind" in g) return g.kind ?? "none";
   const own = ticks.find(t => g.ticks.includes(t.seq));
   if (own) return own.kind ?? "none";
   const before = ticks.filter(t => t.at <= g.at).at(-1);
