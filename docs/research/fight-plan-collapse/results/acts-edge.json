@@ -1,0 +1,4617 @@
+[
+ {
+  "name": "heals · Tangela out · random #0 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 12/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 15/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 6/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 29/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 21/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 26/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 40/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 39/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 33/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "tangela": "heals",
+  "random": 0,
+  "wave": 25,
+  "trainer": "Ivy",
+  "variants": {
+   "base": {
+    "ms": [
+     124.1
+    ],
+    "collapseMs": [
+     51
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 3 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 6,
+      "of": 6,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 64,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (70%) · 64% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "switch",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "switch in, takes a hit · sacrifice → Rockruff in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       },
+       "entry": "free",
+       "move": "Rock Throw",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "sacrifice → Taillow in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "free",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "sacrifice → Machop in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "free",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": false,
+       "why": "falls · foe at 60%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 59,
+       "sacrifice": false,
+       "why": "falls · foe at 59%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": false,
+       "why": "falls · foe at 60%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 90,
+       "acts": false
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 45,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 57,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_7",
+        "744"
+       ],
+       "name": "Rockruff",
+       "hp": 81,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_3",
+        "276"
+       ],
+       "name": "Taillow",
+       "hp": 19,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 100,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 3,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 23.18331095032183,
+      "foeHp": 0,
+      "turns": 2,
+      "odds": 0.7022137360627785
+     },
+     {
+      "mi": 4,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 33,
+      "turns": 0,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 5,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 2,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33.00000000000001,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33.00000000000001,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 3,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 32.51699642320823,
+      "turns": 1,
+      "odds": 0.9999891683619422
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "6024:bfdc4a1e",
+    "collapses": 140,
+    "maxPool": 184,
+    "pruneKept": 1,
+    "teamPlannerMs": 102.4,
+    "gameMs": 37,
+    "mergeK4Ms": 0.7,
+    "actsEdge": [
+     2,
+     7
+    ],
+    "fightRuns": 111,
+    "stable": true
+   },
+   "exact": {
+    "ms": [
+     61.3
+    ],
+    "collapseMs": [
+     15.5
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 3 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 6,
+      "of": 6,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 64,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (70%) · 64% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "switch",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "switch in, takes a hit · sacrifice → Rockruff in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       },
+       "entry": "free",
+       "move": "Rock Throw",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "sacrifice → Taillow in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "free",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "sacrifice → Machop in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "free",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": false,
+       "why": "falls · foe at 60%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 59,
+       "sacrifice": false,
+       "why": "falls · foe at 59%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": false,
+       "why": "falls · foe at 60%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 90,
+       "acts": false
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 45,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 57,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_7",
+        "744"
+       ],
+       "name": "Rockruff",
+       "hp": 81,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_3",
+        "276"
+       ],
+       "name": "Taillow",
+       "hp": 19,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 100,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 3,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 23.18331095032183,
+      "foeHp": 0,
+      "turns": 2,
+      "odds": 0.7022137360627785
+     },
+     {
+      "mi": 4,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 33,
+      "turns": 0,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 5,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 2,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33.00000000000001,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33.00000000000001,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 3,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 32.51699642320823,
+      "turns": 1,
+      "odds": 0.9999891683619422
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "6024:bfdc4a1e",
+    "collapses": 140,
+    "maxPool": 184,
+    "pruneKept": 1,
+    "teamPlannerMs": 46.4,
+    "gameMs": 23.2,
+    "mergeK4Ms": 0.4,
+    "actsEdge": [
+     2,
+     7
+    ],
+    "fightRuns": 111,
+    "stable": true
+   },
+   "mode": {
+    "ms": [
+     41.3
+    ],
+    "collapseMs": [
+     1.6
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 3 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 6,
+      "of": 6,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 64,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (70%) · 64% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "switch",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · falls · foe at 60%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "free",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "sacrifice → Rockruff in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       },
+       "entry": "free",
+       "move": "Rock Throw",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "sacrifice → Taillow in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "free",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": true,
+       "why": "sacrifice → Growlithe in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 59,
+       "sacrifice": false,
+       "why": "falls · foe at 59%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 60,
+       "sacrifice": false,
+       "why": "falls · foe at 60%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 90,
+       "acts": true
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 45,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 57,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_7",
+        "744"
+       ],
+       "name": "Rockruff",
+       "hp": 81,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_3",
+        "276"
+       ],
+       "name": "Taillow",
+       "hp": 19,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 100,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 3,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 23.183310950321825,
+      "foeHp": 0,
+      "turns": 2,
+      "odds": 0.7022137360627785
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 33,
+      "turns": 0,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 4,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33,
+      "turns": 1,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 5,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 32.99999999999999,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 2,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33.00000000000001,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 3,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 32.516996423208234,
+      "turns": 1,
+      "odds": 0.9999891683619422
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 33.00000000000002,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "6016:1cd768f6",
+    "collapses": 140,
+    "maxPool": 184,
+    "pruneKept": 1,
+    "teamPlannerMs": 28.8,
+    "gameMs": 20.6,
+    "mergeK4Ms": 0.4,
+    "actsEdge": [
+     2,
+     7
+    ],
+    "fightRuns": 111,
+    "stable": true
+   }
+  }
+ },
+ {
+  "name": "heals · Tangela out · random #1 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 16/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 26/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 5/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 27/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 33/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 48/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 37/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 46/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "tangela": "heals",
+  "random": 1,
+  "wave": 25,
+  "trainer": "Ivy",
+  "variants": {
+   "base": {
+    "ms": [
+     168.9
+    ],
+    "collapseMs": [
+     138.2
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 3 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 5,
+      "of": 5,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 54,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (70%) · 54% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "switch",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 84,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · falls · foe at 84%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "free",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 84,
+       "sacrifice": true,
+       "why": "sacrifice → Skwovet in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "free",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 82,
+       "sacrifice": true,
+       "why": "sacrifice → Growlithe in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 81,
+       "sacrifice": false,
+       "why": "falls · foe at 81%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 82,
+       "sacrifice": false,
+       "why": "falls · foe at 82%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 65,
+       "acts": false
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 32,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_3",
+        "276"
+       ],
+       "name": "Taillow",
+       "hp": 16,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 89,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody outspeeds Combusken and it KOs 5 of 5 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 101.59510869565216,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 3,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 19.575832288229357,
+      "foeHp": 0,
+      "turns": 3,
+      "odds": 0.7017488338378793
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 45.99999999999999,
+      "turns": 0,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 2,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 46.00000000000001,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 4,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 45.26625,
+      "turns": 1,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 3,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 44.783246423208205,
+      "turns": 1,
+      "odds": 0.9999891683619422
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 45.26625000000001,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5463:89a18063",
+    "collapses": 161,
+    "maxPool": 348,
+    "pruneKept": 1,
+    "teamPlannerMs": 158.3,
+    "gameMs": 15.5,
+    "mergeK4Ms": 0.9,
+    "actsEdge": [
+     0,
+     5
+    ],
+    "fightRuns": 111,
+    "stable": true
+   },
+   "exact": {
+    "ms": [
+     57.8
+    ],
+    "collapseMs": [
+     29.7
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 3 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 5,
+      "of": 5,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 54,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (70%) · 54% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "switch",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 84,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · falls · foe at 84%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "free",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 84,
+       "sacrifice": true,
+       "why": "sacrifice → Skwovet in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "free",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 82,
+       "sacrifice": true,
+       "why": "sacrifice → Growlithe in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 81,
+       "sacrifice": false,
+       "why": "falls · foe at 81%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 82,
+       "sacrifice": false,
+       "why": "falls · foe at 82%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 65,
+       "acts": false
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 32,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_3",
+        "276"
+       ],
+       "name": "Taillow",
+       "hp": 16,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 89,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody outspeeds Combusken and it KOs 5 of 5 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 101.59510869565216,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 3,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 19.575832288229357,
+      "foeHp": 0,
+      "turns": 3,
+      "odds": 0.7017488338378793
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 45.99999999999999,
+      "turns": 0,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 2,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 46.00000000000001,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 4,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 45.26625,
+      "turns": 1,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 3,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 44.783246423208205,
+      "turns": 1,
+      "odds": 0.9999891683619422
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 45.26625000000001,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5463:89a18063",
+    "collapses": 161,
+    "maxPool": 348,
+    "pruneKept": 1,
+    "teamPlannerMs": 49.3,
+    "gameMs": 14.9,
+    "mergeK4Ms": 0.8,
+    "actsEdge": [
+     0,
+     5
+    ],
+    "fightRuns": 111,
+    "stable": true
+   },
+   "mode": {
+    "ms": [
+     28
+    ],
+    "collapseMs": [
+     2.4
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 3 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 5,
+      "of": 5,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 54,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (70%) · 54% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "switch",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 84,
+       "sacrifice": true,
+       "why": "switch in, takes a hit · sacrifice → Machop in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "free",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 84,
+       "sacrifice": false,
+       "why": "falls · foe at 84%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "free",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 82,
+       "sacrifice": true,
+       "why": "sacrifice → Growlithe in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 81,
+       "sacrifice": false,
+       "why": "falls · foe at 81%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 82,
+       "sacrifice": false,
+       "why": "falls · foe at 82%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 65,
+       "acts": true
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 32,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_3",
+        "276"
+       ],
+       "name": "Taillow",
+       "hp": 16,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 89,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 101.59510869565214,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 3,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 19.575832288229357,
+      "foeHp": 0,
+      "turns": 3,
+      "odds": 0.7017488338378793
+     },
+     {
+      "mi": 2,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 45.99999999999999,
+      "turns": 0,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 45.99999999999999,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 4,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 45.26624999999999,
+      "turns": 1,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 3,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 44.7832495181801,
+      "turns": 1,
+      "odds": 0.9999890203930285
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 45.266250000000014,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5450:c5be0ef0",
+    "collapses": 161,
+    "maxPool": 348,
+    "pruneKept": 1,
+    "teamPlannerMs": 21,
+    "gameMs": 13.5,
+    "mergeK4Ms": 0.8,
+    "actsEdge": [
+     2,
+     3
+    ],
+    "fightRuns": 111,
+    "stable": true
+   }
+  }
+ },
+ {
+  "name": "heals · Tangela out · random #2 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 10/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 12/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 26/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 18/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 34/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 15/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 41/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 44/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 19/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "tangela": "heals",
+  "random": 2,
+  "wave": 25,
+  "trainer": "Ivy",
+  "variants": {
+   "base": {
+    "ms": [
+     127
+    ],
+    "collapseMs": [
+     90.2
+    ],
+    "act": [
+     {
+      "name": "Taillow",
+      "move": "Peck",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Taillow Peck → Tangela",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 6,
+      "of": 6,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "switch",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 49,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (51%) · 49% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "stay",
+       "move": "Quick Attack",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": false,
+       "why": "falls · foe at 98%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Bite",
+       "type": "Dark",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": false,
+       "why": "falls · foe at 98%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       },
+       "entry": "free",
+       "move": "Rock Throw",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": true,
+       "why": "sacrifice → Skwovet in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "free",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 77,
+       "sacrifice": true,
+       "why": "sacrifice → Larvitar in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 12,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "KO · 12% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "switch",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 35,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · falls · foe at 35%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 35,
+       "sacrifice": false,
+       "why": "falls · foe at 35%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 100,
+       "acts": false
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 79,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 97,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_7",
+        "744"
+       ],
+       "name": "Rockruff",
+       "hp": 47,
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 92,
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 200,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 2,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 15.277634014698057,
+      "foeHp": 0,
+      "turns": 5,
+      "odds": 0.5122452431769724
+     },
+     {
+      "mi": 2,
+      "fi": 1,
+      "entry": "stay",
+      "hp": 0,
+      "foeHp": 44.000000000000014,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 3,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 43.99999999999999,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 5,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 44,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 4,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 34.757668263402245,
+      "turns": 2,
+      "odds": 0.9999916904966478
+     },
+     {
+      "mi": 1,
+      "fi": 1,
+      "entry": "free",
+      "hp": 5.333570715661095,
+      "foeHp": 0,
+      "turns": 1,
+      "odds": 0.9052074833962311
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 19,
+      "turns": 0,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 19,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5927:f27a8395",
+    "collapses": 227,
+    "maxPool": 340,
+    "pruneKept": 1,
+    "teamPlannerMs": 110.7,
+    "gameMs": 18.3,
+    "mergeK4Ms": 1,
+    "actsEdge": [
+     1,
+     9
+    ],
+    "fightRuns": 166,
+    "stable": true
+   },
+   "exact": {
+    "ms": [
+     54.9
+    ],
+    "collapseMs": [
+     21.9
+    ],
+    "act": [
+     {
+      "name": "Taillow",
+      "move": "Peck",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Taillow Peck → Tangela",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 6,
+      "of": 6,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "switch",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 49,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (51%) · 49% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "stay",
+       "move": "Quick Attack",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": false,
+       "why": "falls · foe at 98%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Bite",
+       "type": "Dark",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": false,
+       "why": "falls · foe at 98%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       },
+       "entry": "free",
+       "move": "Rock Throw",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": true,
+       "why": "sacrifice → Skwovet in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "free",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 77,
+       "sacrifice": true,
+       "why": "sacrifice → Larvitar in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 12,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "KO · 12% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "switch",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 35,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · falls · foe at 35%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 35,
+       "sacrifice": false,
+       "why": "falls · foe at 35%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 100,
+       "acts": false
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 79,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 97,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_7",
+        "744"
+       ],
+       "name": "Rockruff",
+       "hp": 47,
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 92,
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 200,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 2,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 15.277634014698057,
+      "foeHp": 0,
+      "turns": 5,
+      "odds": 0.5122452431769724
+     },
+     {
+      "mi": 2,
+      "fi": 1,
+      "entry": "stay",
+      "hp": 0,
+      "foeHp": 44.000000000000014,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 3,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 43.99999999999999,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 5,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 44,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 4,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 34.757668263402245,
+      "turns": 2,
+      "odds": 0.9999916904966478
+     },
+     {
+      "mi": 1,
+      "fi": 1,
+      "entry": "free",
+      "hp": 5.333570715661095,
+      "foeHp": 0,
+      "turns": 1,
+      "odds": 0.9052074833962311
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 19,
+      "turns": 0,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 19,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5927:f27a8395",
+    "collapses": 227,
+    "maxPool": 340,
+    "pruneKept": 1,
+    "teamPlannerMs": 42.2,
+    "gameMs": 15.6,
+    "mergeK4Ms": 1,
+    "actsEdge": [
+     1,
+     9
+    ],
+    "fightRuns": 166,
+    "stable": true
+   },
+   "mode": {
+    "ms": [
+     35.7
+    ],
+    "collapseMs": [
+     2.1
+    ],
+    "act": [
+     {
+      "name": "Taillow",
+      "move": "Peck",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Taillow Peck → Tangela",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 6,
+      "of": 6,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "switch",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 49,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (51%) · 49% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "stay",
+       "move": "Quick Attack",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": false,
+       "why": "falls · foe at 98%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Bite",
+       "type": "Dark",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": false,
+       "why": "falls · foe at 98%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_7",
+         "744"
+        ],
+        "name": "Rockruff"
+       },
+       "entry": "free",
+       "move": "Rock Throw",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 98,
+       "sacrifice": true,
+       "why": "sacrifice → Skwovet in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "free",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 77,
+       "sacrifice": true,
+       "why": "sacrifice → Larvitar in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 12,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "KO · 12% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "switch",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 35,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · falls · foe at 35%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 35,
+       "sacrifice": false,
+       "why": "falls · foe at 35%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 100,
+       "acts": true
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 79,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 97,
+       "acts": true
+      }
+     ],
+     "prefers": null,
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_7",
+        "744"
+       ],
+       "name": "Rockruff",
+       "hp": 47,
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       }
+      },
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 92,
+       "vs": {
+        "icon": [
+         "pokemon_icons_9",
+         "940"
+        ],
+        "name": "Wattrel"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 200,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 2,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 15.27763401469806,
+      "foeHp": 0,
+      "turns": 5,
+      "odds": 0.5122452431769724
+     },
+     {
+      "mi": 2,
+      "fi": 1,
+      "entry": "stay",
+      "hp": 0,
+      "foeHp": 44.00000000000001,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 3,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 44,
+      "turns": 1,
+      "odds": 1.0000000000000002
+     },
+     {
+      "mi": 5,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 44,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 4,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 34.757668263402245,
+      "turns": 2,
+      "odds": 0.9999916904966478
+     },
+     {
+      "mi": 1,
+      "fi": 1,
+      "entry": "free",
+      "hp": 5.333570715661089,
+      "foeHp": 0,
+      "turns": 1,
+      "odds": 0.9052074833962311
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 19.000000000000004,
+      "turns": 0,
+      "odds": 1.0000000000000004
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 19.000000000000014,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5915:d6dd304c",
+    "collapses": 227,
+    "maxPool": 340,
+    "pruneKept": 1,
+    "teamPlannerMs": 25.5,
+    "gameMs": 15.8,
+    "mergeK4Ms": 1,
+    "actsEdge": [
+     3,
+     7
+    ],
+    "fightRuns": 166,
+    "stable": true
+   }
+  }
+ },
+ {
+  "name": "heals · Tangela out · random #3 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 25/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 32/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 28/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 27/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 8/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 34/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 37/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 28/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "tangela": "heals",
+  "random": 3,
+  "wave": 25,
+  "trainer": "Ivy",
+  "variants": {
+   "base": {
+    "ms": [
+     60.6
+    ],
+    "collapseMs": [
+     34.5
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 2 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 5,
+      "of": 5,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 60,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (72%) · 60% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "switch",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": true,
+       "why": "switch in, takes a hit · sacrifice → Machop in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "free",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "falls · foe at 51%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "free",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "falls · foe at 51%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 50,
+       "sacrifice": false,
+       "why": "falls · foe at 50%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "falls · foe at 51%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 100,
+       "acts": false
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 53,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": {
+      "text": "Taillow in",
+      "gain": 100,
+      "flips": false
+     },
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 22,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody outspeeds Combusken and it KOs 5 of 5 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 200,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 2,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 16.772217749966327,
+      "foeHp": 0,
+      "turns": 4,
+      "odds": 0.6480964479164033
+     },
+     {
+      "mi": 4,
+      "fi": 1,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 36.99999999999999,
+      "turns": 0,
+      "odds": 1
+     },
+     {
+      "mi": 2,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 37.000000000000014,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 3,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 28.12239728881236,
+      "turns": 2,
+      "odds": 0.9999960871394192
+     },
+     {
+      "mi": 1,
+      "fi": 1,
+      "entry": "free",
+      "hp": 24.54358112914084,
+      "foeHp": 0,
+      "turns": 1,
+      "odds": 0.9995546656846873
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 27.999999999999996,
+      "turns": 0,
+      "odds": 1.0000000000000007
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 28.000000000000004,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5306:775fd6dc",
+    "collapses": 188,
+    "maxPool": 192,
+    "pruneKept": 1,
+    "teamPlannerMs": 52,
+    "gameMs": 13.1,
+    "mergeK4Ms": 0.9,
+    "actsEdge": [
+     0,
+     6
+    ],
+    "fightRuns": 141,
+    "stable": true
+   },
+   "exact": {
+    "ms": [
+     37.7
+    ],
+    "collapseMs": [
+     11.5
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 2 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 5,
+      "of": 5,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 60,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (72%) · 60% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "switch",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": true,
+       "why": "switch in, takes a hit · sacrifice → Machop in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "free",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "falls · foe at 51%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "free",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "falls · foe at 51%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 50,
+       "sacrifice": false,
+       "why": "falls · foe at 50%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "falls · foe at 51%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 100,
+       "acts": false
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 53,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": {
+      "text": "Taillow in",
+      "gain": 100,
+      "flips": false
+     },
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 22,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody outspeeds Combusken and it KOs 5 of 5 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 200,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 2,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 16.772217749966327,
+      "foeHp": 0,
+      "turns": 4,
+      "odds": 0.6480964479164033
+     },
+     {
+      "mi": 4,
+      "fi": 1,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 36.99999999999999,
+      "turns": 0,
+      "odds": 1
+     },
+     {
+      "mi": 2,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 37.000000000000014,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 3,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 28.12239728881236,
+      "turns": 2,
+      "odds": 0.9999960871394192
+     },
+     {
+      "mi": 1,
+      "fi": 1,
+      "entry": "free",
+      "hp": 24.54358112914084,
+      "foeHp": 0,
+      "turns": 1,
+      "odds": 0.9995546656846873
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 27.999999999999996,
+      "turns": 0,
+      "odds": 1.0000000000000007
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 28.000000000000004,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5306:775fd6dc",
+    "collapses": 188,
+    "maxPool": 192,
+    "pruneKept": 1,
+    "teamPlannerMs": 30.7,
+    "gameMs": 14.3,
+    "mergeK4Ms": 0.9,
+    "actsEdge": [
+     0,
+     6
+    ],
+    "fightRuns": 141,
+    "stable": true
+   },
+   "mode": {
+    "ms": [
+     26.4
+    ],
+    "collapseMs": [
+     1.5
+    ],
+    "act": [
+     {
+      "name": "Growlithe",
+      "move": "Ember",
+      "target": "Tangela"
+     }
+    ],
+    "actText": "Growlithe Ember → Tangela · 2 hits",
+    "result": "loss",
+    "win": "Combusken",
+    "plan": {
+     "result": "loss",
+     "win": {
+      "icon": [
+       "pokemon_icons_3",
+       "256-f"
+      ],
+      "name": "Combusken",
+      "kills": 5,
+      "of": 5,
+      "boss": false
+     },
+     "steps": [
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_1",
+         "114"
+        ],
+        "name": "Tangela"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "switch",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 60,
+       "foeHp": 0,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · KO (72%) · 60% left"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_3",
+         "276"
+        ],
+        "name": "Taillow"
+       },
+       "entry": "switch",
+       "move": "Peck",
+       "type": "Flying",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "switch in, takes a hit · falls · foe at 51%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_8",
+         "819"
+        ],
+        "name": "Skwovet"
+       },
+       "entry": "free",
+       "move": "Tackle",
+       "type": "Normal",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": true,
+       "why": "sacrifice → Machop in free"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       },
+       "entry": "free",
+       "move": "Focus Punch",
+       "type": "Fighting",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "falls · foe at 51%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_1",
+         "58"
+        ],
+        "name": "Growlithe"
+       },
+       "entry": "free",
+       "move": "Ember",
+       "type": "Fire",
+       "hp": 0,
+       "foeHp": 50,
+       "sacrifice": false,
+       "why": "falls · foe at 50%"
+      },
+      {
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "send": {
+        "icon": [
+         "pokemon_icons_2",
+         "246"
+        ],
+        "name": "Larvitar"
+       },
+       "entry": "free",
+       "move": "Rock Slide",
+       "type": "Rock",
+       "hp": 0,
+       "foeHp": 51,
+       "sacrifice": false,
+       "why": "falls · foe at 51%"
+      }
+     ],
+     "reserve": [
+      {
+       "icon": [
+        "pokemon_icons_1",
+        "66"
+       ],
+       "name": "Machop",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 100,
+       "acts": true
+      },
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "per": 53,
+       "acts": false
+      }
+     ],
+     "only": [
+      {
+       "icon": [
+        "pokemon_icons_2",
+        "246"
+       ],
+       "name": "Larvitar",
+       "for": [
+        {
+         "icon": [
+          "pokemon_icons_9",
+          "940"
+         ],
+         "name": "Wattrel"
+        }
+       ],
+       "per": 100,
+       "acts": true
+      }
+     ],
+     "prefers": {
+      "text": "Taillow in",
+      "gain": 100,
+      "flips": false
+     },
+     "pinned": true,
+     "sacrifice": [
+      {
+       "icon": [
+        "pokemon_icons_8",
+        "819"
+       ],
+       "name": "Skwovet",
+       "hp": 22,
+       "vs": {
+        "icon": [
+         "pokemon_icons_3",
+         "256-f"
+        ],
+        "name": "Combusken"
+       },
+       "frees": {
+        "icon": [
+         "pokemon_icons_1",
+         "66"
+        ],
+        "name": "Machop"
+       }
+      }
+     ],
+     "warnings": [
+      "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+     ],
+     "compact": false,
+     "summary": null,
+     "approxDoubles": false
+    },
+    "value": 200,
+    "baseResult": "loss",
+    "steps": [
+     {
+      "mi": 2,
+      "fi": 0,
+      "entry": "switch",
+      "hp": 16.772217749966323,
+      "foeHp": 0,
+      "turns": 4,
+      "odds": 0.6480964479164033
+     },
+     {
+      "mi": 4,
+      "fi": 1,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 37,
+      "turns": 0,
+      "odds": 1
+     },
+     {
+      "mi": 2,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 37.000000000000014,
+      "turns": 1,
+      "odds": 1
+     },
+     {
+      "mi": 3,
+      "fi": 1,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 28.12239728881239,
+      "turns": 2,
+      "odds": 0.9999960871394192
+     },
+     {
+      "mi": 1,
+      "fi": 1,
+      "entry": "free",
+      "hp": 24.54358112914081,
+      "foeHp": 0,
+      "turns": 1,
+      "odds": 0.9995546656846873
+     },
+     {
+      "mi": 0,
+      "fi": 2,
+      "entry": "switch",
+      "hp": 0,
+      "foeHp": 27.999999999999993,
+      "turns": 0,
+      "odds": 1.0000000000000007
+     },
+     {
+      "mi": 1,
+      "fi": 2,
+      "entry": "free",
+      "hp": 0,
+      "foeHp": 28.000000000000014,
+      "turns": 1,
+      "odds": 0.9999999999999999
+     }
+    ],
+    "sig": "5294:91be8342",
+    "collapses": 192,
+    "maxPool": 192,
+    "pruneKept": 1,
+    "teamPlannerMs": 19.1,
+    "gameMs": 13.5,
+    "mergeK4Ms": 1.2,
+    "actsEdge": [
+     1,
+     5
+    ],
+    "fightRuns": 143,
+    "stable": true
+   }
+  }
+ }
+]
