@@ -42,7 +42,6 @@ export type WaveRow = {
 /** A trainer's intro says its class, which `get_state`'s bare name does not. */
 const intro = (messages: string[]) => messages.map(m => /^([^]+?)\s+would like to battle!/.exec(m)?.[1]).find(Boolean)?.replace(/\s+/g, " ") ?? null;
 
-// `Team Star Leader` is an evil team's boss, so these are tested ahead of the gym leader's `Leader`.
 const EVIL_BOSS = /^(Team \w+ Boss|Aether President|Macro Cosmos President|Team Star Leader)\b/;
 const EVIL_TEAM = /^(Team |Macro Cosmos\b|Aether Foundation\b)|\bGrunts?\b/;
 
@@ -52,6 +51,7 @@ export function waveKind(rec: WaveRecord | undefined, introduced: string | null)
   if (rec.battleType === BattleType.MYSTERY_ENCOUNTER) return "mystery encounter";
   if (rec.battleType === BattleType.TRAINER) {
     const title = introduced ?? rec.trainer ?? "";
+    // `Team Star Leader` is an evil team's boss, so the evil-team tests go ahead of the gym leader's `Leader`.
     const cls = /^Rival\b/.test(title) ? "rival" : /^Elite Four\b/.test(title) ? "elite four" : /^Champion\b/.test(title) ? "champion"
       : EVIL_BOSS.test(title) ? "evil team boss" : EVIL_TEAM.test(title) ? "evil team" : /\bLeader\b/.test(title) ? "gym leader" : "trainer";
     return `${cls} ${n}`;

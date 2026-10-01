@@ -102,10 +102,9 @@ runs that finished that wave, and prints each cell as `before → after`.
 - **turn card ms** is a refresh at `CommandPhase` that drew a new battle card: the freeze at a new turn's prompt. p95
   / max and how many.
 - **preview recomputes** are refreshes whose `road` stage (the run read) took 5 ms or more: a cached read is under 2.
-  In brackets, how many landed in a phase other than a prompt (`CommandPhase`, `SelectTargetPhase`,
+  In brackets, how many landed in a phase other than a prompt (`CommandPhase`, `CheckSwitchPhase`, `SelectTargetPhase`,
   `SelectModifierPhase`, `LearnMovePhase`, `SwitchPhase`, `SelectBiomePhase`, `MysteryEncounterPhase` and the title
-  and starter screens), which is to
-  say inside an animation. Their `road` ms beside.
+  and starter screens), which is to say inside an animation. Their `road` ms beside.
 - **shop card ms** is the wave's first refresh that drew the shop (`rewards`) card.
 - **overlay-made hitches** are gaps of 50 ms or more with 34 ms or more of the overlay's refreshes inside, and in
   brackets that overlay ms summed.
