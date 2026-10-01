@@ -79,9 +79,13 @@ What the game is actually asking, as a whole. A screen is *not* the same as a **
 
 The **coach** as it runs in the player's tab: the whole part that reads the game, works out the **card** and draws it over PokéRogue, and the box the card is drawn in. Its cost to the game includes every game function it calls while it runs. The code calls it the *HUD*. Not the *panel*, which names only the box.
 
+## Decision
+
+A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn, the free switch offered when a foe faints, or the replacement for one of ours that fainted. Outside one, it is a reward, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. Every decision is a **settled** moment, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
+
 ## Card
 
-The **coach**'s advice for the decision the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it. A card is shown as a **strip** over a **drawer** of **group**s.
+The **coach**'s advice for the **decision** the player faces right now: a battle, a move to learn, a reward choice, a biome choice or a mystery encounter. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it. A card is shown as a **strip** over a **drawer** of **group**s.
 
 ## Group
 
