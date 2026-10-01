@@ -1,6 +1,6 @@
 // Which card the panel shows, and what it says in plain text: this module detects the screen, builds the card and sets
 // the battle verdict, and the renderers decide nothing. Each card's own wording lives beside its model builder.
-import { stage } from "./01-meter.js";
+import { note, stage } from "./01-meter.js";
 import { learnState, rewardsScreen, biomeScreen, encounterScreen } from "./02-screens.js";
 import { partyProfile } from "./08-party.js";
 import { readTurn } from "./25-turn.js";
@@ -87,6 +87,13 @@ const verdictOf = m => (easyWave(m) ? "easy" : m.trainer ? "trainer"
   : dangerTags(m).length || m.rows.some(r => r.boss) || m.field?.noSafeSwitch ? "danger"
   : catchWorthIt(m) ? "catch" : "fight");
 
+// `lag-run/shop.ts` tells a shop's first draw from one after a reroll or a buy by these (#516).
+const tmCount = offers => (offers ?? []).filter(f => f.class === "TmModifierType").length;
+const shopNote = (s, card) => note({ shop: {
+  rerolls: s.phaseManager?.getCurrentPhase?.()?.rerollCount ?? 0, money: s.money, party: s.getPlayerParty().length,
+  tms: tmCount(card?.free), rollTms: (card?.rerollAhead?.rolls ?? []).reduce((n, r) => n + tmCount(r.offers), 0),
+} });
+
 // `account`: the run's own data, read once a refresh by 98-tick, which only the catch and Mystery Encounter cards weigh
 // a mon by.
 export const readCard = (s, account) => {
@@ -104,7 +111,8 @@ export const readCard = (s, account) => {
   } else if (spliceScreen(s, handler)) {
     card = fusionModel(s, handler);
   } else if (rewards) {
-    card = readRun(s, run => rewardsModel(run, rewards));
+    card = stage("shop.run", () => readRun(s, run => stage("shop.model", () => rewardsModel(run, rewards))));
+    shopNote(s, card);
   } else if (biomeScreen(s, handler)) {
     card = readRun(s, run => biomeModel(run, handler));
   } else if (encounterScreen(s, handler)) {

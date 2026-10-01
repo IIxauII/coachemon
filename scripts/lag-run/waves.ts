@@ -76,6 +76,7 @@ function eventsOf(windows: WaveWindow[], levels: number): string[] {
     ["foe switch", said(/withdrew/i)],
     ["catch", said(/was caught/i)],
     ["shop pick", did("shop")],
+    ["reroll", did("reroll")],
     ["retry", windows.filter(w => w.retry).length],
   ];
   return out.filter(([, n]) => n > 0).map(([e, n]) => (n > 1 ? `${e} ×${n}` : e));

@@ -97,6 +97,22 @@ test("the shop buys what the card buys, once each, then takes its reward for the
   assert.deepEqual(decide(party("PARTY/MODIFIER", [["Charmander Lv.7 20/24"], ["Squirtle Lv.5 20/20"]]), null, mem).args, { label: "Squirtle Lv.5 20/20" });
 });
 
+test("--reroll rerolls once a shop ahead of the buys, and never where the card says the money is short (#516)", () => {
+  const shop: Menu = {
+    screen: "MODIFIER_SELECT", wave: 3, options: [
+      { i: "0:0", label: "Reroll", kind: "buttons", col: 0, cost: null },
+      { i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 },
+      { i: "2:0", label: "Potion", kind: "shop", col: 0, cost: 200 },
+    ],
+  };
+  const line = (verdict: string) => card("reward", `take Potion · buy Potion · reroll $250 → TM (Rest), Ether, Potion (${verdict}) [~]`);
+  const mem = freshMemory(true);
+  assert.deepEqual(decide(shop, line("keep"), mem), { tool: "select_option", args: { index: "0:0" }, by: "rule", intent: "reroll" });
+  assert.equal(decide(shop, line("keep"), mem).intent, "shop", "once a shop");
+  assert.equal(decide(shop, line("keep"), freshMemory()).intent, "shop", "off without --reroll");
+  assert.equal(decide(shop, line("short"), freshMemory(true)).intent, "shop");
+});
+
 test("an item bounced back to the party screen goes to the next mon, then gives up (#499)", () => {
   const mem = freshMemory();
   const screen = party("PARTY/MODIFIER", [["Charmander Lv.7 24/24"], ["Squirtle Lv.5 20/20"]]);

@@ -1,6 +1,7 @@
 // The rewards card's model: what to take, what to buy, and whether to reroll. A reward is judged by who the game's own
 // select filter lets use it, then by its tier; 51-items.js judges the ones that go to one member (game-code.md §15).
 import { TIER_NAMES, TYPES, iconOf } from "./01-core.js";
+import { stage } from "./01-meter.js";
 import { waveKind } from "./03-calendar.js";
 import { learnAdvice, learnMoveById } from "./40-learn.js";
 import { aheadModel, doubleOdds, learnRoster } from "./49-ahead.js";
@@ -72,7 +73,7 @@ export const rewardsModel = (run, h) => {
   const party = s.getPlayerParty();
   const alive = party.filter(p => p.hp > 0);
   const wave = s.currentBattle?.waveIndex ?? 0;
-  const ahead = aheadModel(run);
+  const ahead = stage("shop.ahead", () => aheadModel(run));
   const bossNext = waveKind(s, wave + 1) != null;
   const gauntlet = (ahead?.fightsBeforeHeal ?? 0) >= 2;
   const hurtBelow = gauntlet ? 90 : bossNext ? 80 : 60;
@@ -81,12 +82,12 @@ export const rewardsModel = (run, h) => {
     const max = m.getMovePp(), left = max - m.ppUsed;
     return m.ppUsed > 0 && left <= Math.min(5, Math.max(1, Math.floor(max / 4)));
   };
-  const needs = {
+  const needs = stage("shop.needs", () => ({
     fainted: party.filter(p => p.hp <= 0),
     status: party.filter(p => p.hp > 0 && (p.status?.effect ?? 0) > StatusEffect.NONE),
     hurt: party.filter(p => p.hp > 0 && pct(p) < hurtBelow).sort((a, b) => pct(a) - pct(b)),
     lowPp: party.filter(p => p.hp > 0).map(p => ({ p, moves: p.moveset.filter(Boolean).filter(lowOn) })).filter(x => x.moves.length),
-  };
+  }));
 
   const shop = (h.shopOptionsRows || []).flat().map(o => ({ t: o.modifierTypeOption.type, cost: o.modifierTypeOption.cost }));
   const byCost = pred => shop.filter(i => pred(i.t)).sort((a, b) => a.cost - b.cost);
@@ -121,12 +122,12 @@ export const rewardsModel = (run, h) => {
     }
     return { buys, left: money };
   };
-  const baseline = planBuys(null);
+  const baseline = stage("shop.needs", () => planBuys(null));
   const owned = name => (s.modifiers ?? []).some(m => m?.constructor?.name === name);
 
   const balls = s.pokeballCounts ?? {};
-  const rctx = rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1) });
-  const judge = t => {
+  const rctx = stage("shop.context", () => rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1) }));
+  const judge = (t, tmStage = "shop.tm") => {
     const tier = shopTier(t);
     let v = (tier ?? 0) * 10;
     let why = TIER_NAMES[tier] ?? "";
@@ -189,7 +190,7 @@ export const rewardsModel = (run, h) => {
         const relearnNote = relearn.length === users.length
           ? ` · ${relearn.length > 1 ? "all" : relearn[0].name} can relearn it (Memory Mushroom)` : "";
         // Kept for the run, so judged against the doubles and the roster ahead (#122), not this wave.
-        const advice = tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party, roster: learnRoster(ahead) });
+        const advice = stage(tmStage, () => tmAdvice(mv, users, { double: doubleOdds(s, wave + 1), party, roster: learnRoster(ahead) }));
         const b = advice.best;
         extra.users = users.map(p => p.name);
         // Whatever the verdict: the watcher and the journal read the offer, not only the advice on it.
@@ -236,17 +237,18 @@ export const rewardsModel = (run, h) => {
       tier, tierName: TIER_NAMES[tier] ?? null, class: t.constructor?.name ?? null, id: t.id ?? null, ...extra,
     };
   };
-  const free = (h.options || []).map(o => judge(o.modifierTypeOption.type));
+  const free = stage("shop.judge", () => (h.options || []).map(o => judge(o.modifierTypeOption.type)));
   const pick = free.reduce((best, f, i) => (best < 0 || f.v > free[best].v ? i : best), -1);
   if (pick >= 0 && free[pick].v < 0) free[pick].why = `least bad · ${free[pick].why}`;
-  const { buys, left: money } = planBuys(pick >= 0 ? free[pick].covers : null);
+  const { buys, left: money } = stage("shop.needs", () => planBuys(pick >= 0 ? free[pick].covers : null));
   for (const f of free) delete f.covers; // holds pokémon objects; the model must stay JSON-safe for the signature
   for (const b of buys) { delete b.pokemon; delete b.kind; delete b.t; }
 
   // `pinned` is this screen's alone: a reroll drops the wave's reward settings (game-code.md §19).
   const pinned = ahead?.thisWave ?? null;
-  const preview = rerollPreview(run);
-  const rerollAhead = preview?.rolls?.length ? rerollAdvice(preview, judge, pick >= 0 ? free[pick] : null, s.money, money) : null;
+  const preview = stage("shop.roll", () => rerollPreview(run));
+  const rerollAhead = preview?.rolls?.length
+    ? stage("shop.rollJudge", () => rerollAdvice(preview, judge, pick >= 0 ? free[pick] : null, s.money, money)) : null;
   const reroll = rerollAhead ? null
     : pick >= 0 && free[pick].v < 10 && h.rerollCost > 0 && money >= h.rerollCost * 3 ? `nothing good — reroll for $${h.rerollCost}?` : null;
   const luck = ahead?.luck
@@ -254,14 +256,14 @@ export const rewardsModel = (run, h) => {
     : null;
   const affordable = shop.filter(i => i.cost <= s.money).length;
   return { kind: "rewards", money: s.money, left: money, buys, free, pick, reroll, rerollAhead, bossNext, gauntlet, luck, wave,
-    affordable, ahead, audit: teamAudit(run, ahead) };
+    affordable, ahead, audit: stage("shop.audit", () => teamAudit(run, ahead)) };
 };
 
 const REROLL_GAIN = 5;
 const rerollAdvice = (preview, judge, now, money, afterBuys) => {
   const rolls = preview.rolls.map(r => {
     const offers = r.types.map((t, i) => {
-      const f = judge(t);
+      const f = judge(t, "shop.rollTm");
       delete f.covers;
       return { ...f, ...(r.upgrades[i] > 0 ? { upgraded: r.upgrades[i] } : {}) };
     });

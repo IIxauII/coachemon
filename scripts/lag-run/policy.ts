@@ -15,7 +15,7 @@ export type Action = {
   args: Record<string, unknown>;
   by: "card" | "rule";
   /** The commit step of a moment the lag run is after (`moments.ts`). */
-  intent?: "switch" | "replace" | "learn" | "shop";
+  intent?: "switch" | "replace" | "learn" | "shop" | "reroll";
 };
 
 /** What a decision leaves for the screens that finish it: the move after Fight, the mon after a pick, and so on. */
@@ -41,9 +41,11 @@ export type Memory = {
   party: number | null;
   /** The mon the catch group says the new catch replaces, for the release prompt that follows it. */
   release: string | null;
+  /** `--reroll`: reroll once a shop, ahead of the buys, wherever the card's act line can pay for it (#516). */
+  reroll: boolean;
 };
-export const freshMemory = (): Memory =>
-  ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false, item: null, bounced: false, swapLead: null, ball: null, party: null, release: null });
+export const freshMemory = (reroll = false): Memory =>
+  ({ move: null, switchTo: null, noSwitch: false, target: null, forget: null, tried: new Set(), last: null, followed: false, item: null, bounced: false, swapLead: null, ball: null, party: null, release: null, reroll });
 
 const tried = (mem: Memory, key: string) => { mem.tried.add(key); mem.last = key; };
 /** A refused pick never happened, so it may be picked again. */
@@ -272,6 +274,13 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     mem.bounced = false;
     const line = act(live, "reward") ?? "";
     const clauses = line.split(" · ");
+    // `rerollSummary`'s clause, `reroll $250 → A, B, C (keep) [~]`: a `short` verdict is one the money can't pay.
+    const payable = clauses.some(c => /reroll(?: locked)? \$\d+ → .*\((?!short\))[^)]*\) \[[~!]\]$/.test(c));
+    const button = options.find(o => o.kind === "buttons" && /^reroll$/i.test(o.label ?? ""));
+    if (mem.reroll && payable && button && !mem.tried.has(`${menu.wave}|reroll`)) {
+      tried(mem, `${menu.wave}|reroll`);
+      return pickIndex(button.i, "rule", "reroll");
+    }
     const buys = clauses.find(c => c.startsWith("buy "))?.slice(4).split(", ") ?? [];
     for (const name of buys) {
       const key = `${menu.wave}|${name}`;

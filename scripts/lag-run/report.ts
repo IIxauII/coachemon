@@ -3,6 +3,7 @@
  * up, per moment and per card kind. A gap a hub command ran inside is the driver's, counted apart and never compared.
  */
 import { MOMENT_NAMES, MOMENTS, type Moment } from "./moments.ts";
+import { formatShopDraws, shopDraws } from "./shop.ts";
 import { formatFacts, formatWaves, gameFacts, perWave, type WaveRecord, type WaveWindow } from "./waves.ts";
 
 export const GAP_MS = 50;
@@ -119,6 +120,8 @@ export function formatRun(name: string, run: RunLog): string {
   for (const [k, c] of Object.entries(s.kinds).sort()) lines.push(row(`card: ${k}`, c));
   lines.push(row("whole run", s.total));
   lines.push("", formatFacts(gameFacts(run.windows as unknown as WaveWindow[])), "", formatWaves(wavesOf(run)));
+  const draws = shopDraws(run.windows as unknown as WaveWindow[]);
+  if (draws.length) lines.push("", "### Shop card by stage", "", formatShopDraws(draws));
   return lines.join("\n");
 }
 
