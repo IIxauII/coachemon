@@ -14,7 +14,7 @@ const PROMPTS = new Set([
   "SelectStarterPhase", "TitlePhase", "MysteryEncounterPhase",
 ]);
 
-type Tick = { seq: number; at: number; ms: number; kind: string | null; wave?: number | null; phase?: string | null; drew?: boolean; stages?: Record<string, number> };
+type Tick = { seq: number; at: number; ms: number; kind: string | null; why?: string; wave?: number | null; phase?: string | null; drew?: boolean; stages?: Record<string, number> };
 type Gap = { at: number; gap: number; panel: number; driver?: number; ticks: number[]; wave?: number | null };
 type Facts = { lang?: string | null; sprites?: { id: string; misses: number; found: boolean }[]; refresh?: string | null };
 export type WaveWindow = {
@@ -121,10 +121,10 @@ export function perWave(windows: WaveWindow[], records: WaveRecord[], upTo: numb
       kind: waveKind(rec, introduced),
       trainer: rec?.battleType === BattleType.TRAINER ? introduced ?? rec.trainer : null,
       events: eventsOf(acted, levelUps(rec, records.find(r => r.wave === wave + 1))),
-      turnCardMs: ts.filter(t => t.phase === "CommandPhase" && t.kind === "battle" && t.drew).map(t => t.ms),
+      turnCardMs: ts.filter(t => t.phase === "CommandPhase" && t.kind === "battle" && t.drew && t.why !== "road").map(t => t.ms),
       recomputeMs: recomputes.map(t => t.stages!.road),
       inAnimation: recomputes.filter(t => t.phase && !PROMPTS.has(t.phase)).length,
-      shopCard: ts.find(t => t.kind === "rewards" && t.drew)?.ms ?? null,
+      shopCard: ts.find(t => t.kind === "rewards" && t.drew && t.why !== "road")?.ms ?? null,
       hitches: { n: made.length, overlayMs: Math.round(made.reduce((a, g) => a + g.panel, 0)) },
       hitchMs: hitches.reduce((a, g) => a + g.gap, 0),
       overlayMs: hitches.reduce((a, g) => a + g.panel, 0),
