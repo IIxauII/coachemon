@@ -1,0 +1,336 @@
+[
+  {
+    "label": "command (single)",
+    "phase": "CommandPhase",
+    "mode": "COMMAND",
+    "handler": "CommandUiHandler",
+    "watch": {
+      "kind": "command",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "command",
+    "watchNs": 19,
+    "overlayNs": 21.7
+  },
+  {
+    "label": "command (double, slot 0)",
+    "phase": "CommandPhase",
+    "mode": "COMMAND",
+    "handler": "CommandUiHandler",
+    "watch": {
+      "kind": "command",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "command",
+    "watchNs": 38.3,
+    "overlayNs": 143.4
+  },
+  {
+    "label": "command (double, target select)",
+    "phase": "SelectTargetPhase",
+    "mode": "TARGET_SELECT",
+    "handler": "TargetSelectUiHandler",
+    "watch": {
+      "kind": "command",
+      "ready": true,
+      "fresh": false
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "battle?",
+    "watchNs": 30.2,
+    "overlayNs": 117.9
+  },
+  {
+    "label": "command (double, slot 1)",
+    "phase": "CommandPhase",
+    "mode": "COMMAND",
+    "handler": "CommandUiHandler",
+    "watch": {
+      "kind": "command",
+      "ready": true,
+      "fresh": false
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "command",
+    "watchNs": 26.1,
+    "overlayNs": 89.8
+  },
+  {
+    "label": "command (double, slot 0 again after cancel)",
+    "phase": "CommandPhase",
+    "mode": "COMMAND",
+    "handler": "CommandUiHandler",
+    "watch": {
+      "kind": "command",
+      "ready": true,
+      "fresh": false
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "command"
+  },
+  {
+    "label": "free switch (question)",
+    "phase": "CheckSwitchPhase",
+    "mode": "CONFIRM",
+    "handler": "ConfirmUiHandler",
+    "watch": {
+      "kind": "free-switch",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "check-switch",
+    "watchNs": 27.4,
+    "overlayNs": 93
+  },
+  {
+    "label": "free switch (party)",
+    "phase": "SwitchPhase",
+    "mode": "PARTY",
+    "handler": "PartyUiHandler",
+    "watch": {
+      "kind": "free-switch",
+      "ready": true,
+      "fresh": false
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "check-switch",
+    "watchNs": 29.3,
+    "overlayNs": 117.7
+  },
+  {
+    "label": "command before the faint",
+    "phase": "CommandPhase",
+    "mode": "COMMAND",
+    "handler": "CommandUiHandler",
+    "watch": {
+      "kind": "command",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "command"
+  },
+  {
+    "label": "replacement",
+    "phase": "SwitchPhase",
+    "mode": "PARTY",
+    "handler": "PartyUiHandler",
+    "watch": {
+      "kind": "replacement",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 2,
+    "wave": 1,
+    "overlay": "faint-switch",
+    "watchNs": 32,
+    "overlayNs": 134.9
+  },
+  {
+    "label": "command before the wave ends",
+    "phase": "CommandPhase",
+    "mode": "COMMAND",
+    "handler": "CommandUiHandler",
+    "watch": {
+      "kind": "command",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "command"
+  },
+  {
+    "label": "reward",
+    "phase": "SelectModifierPhase",
+    "mode": "MODIFIER_SELECT",
+    "handler": "ModifierSelectUiHandler",
+    "watch": {
+      "kind": "reward",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 2,
+    "wave": 1,
+    "overlay": "rewards",
+    "watchNs": 55.3,
+    "overlayNs": 125.6
+  },
+  {
+    "label": "fusion",
+    "phase": "SelectModifierPhase",
+    "mode": "PARTY",
+    "handler": "PartyUiHandler",
+    "watch": {
+      "kind": "fusion",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 2,
+    "wave": 1,
+    "overlay": "fusion",
+    "watchNs": 47.2,
+    "overlayNs": 98.6
+  },
+  {
+    "label": "reward (back from the fusion screen)",
+    "phase": "SelectModifierPhase",
+    "mode": "MODIFIER_SELECT",
+    "handler": "ModifierSelectUiHandler",
+    "watch": {
+      "kind": "reward",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 2,
+    "wave": 1,
+    "overlay": "rewards"
+  },
+  {
+    "label": "reward (after a reroll)",
+    "phase": "SelectModifierPhase",
+    "mode": "MODIFIER_SELECT",
+    "handler": "ModifierSelectUiHandler",
+    "watch": {
+      "kind": "reward",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 2,
+    "wave": 1,
+    "overlay": "rewards"
+  },
+  {
+    "label": "learn (full moveset, mid-turn)",
+    "phase": "LearnMovePhase",
+    "mode": "CONFIRM",
+    "handler": "ConfirmUiHandler",
+    "watch": {
+      "kind": "learn",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": true,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "learn",
+    "watchNs": 50.5,
+    "overlayNs": 127.5
+  },
+  {
+    "label": "learn (moveset not full), right after start()",
+    "phase": "MovePhase",
+    "mode": "MESSAGE",
+    "handler": "BattleMessageUiHandler",
+    "watch": {
+      "kind": null,
+      "ready": false,
+      "fresh": false
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": true,
+    "turn": 1,
+    "wave": 1,
+    "overlay": "battle?"
+  },
+  {
+    "label": "learn (moveset not full): move already in the moveset after start()",
+    "known": true
+  },
+  {
+    "label": "biome",
+    "phase": "SelectBiomePhase",
+    "mode": "OPTION_SELECT",
+    "handler": "OptionSelectUiHandler",
+    "watch": {
+      "kind": "biome",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 2,
+    "wave": 10,
+    "overlay": "biome",
+    "watchNs": 52.2,
+    "overlayNs": 111.3
+  },
+  {
+    "label": "encounter",
+    "phase": "MysteryEncounterPhase",
+    "mode": "MYSTERY_ENCOUNTER",
+    "handler": "MysteryEncounterUiHandler",
+    "watch": {
+      "kind": "encounter",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": false,
+    "turn": 1,
+    "wave": 12,
+    "overlay": "encounter",
+    "watchNs": 52,
+    "overlayNs": 139.9
+  },
+  {
+    "label": "starter",
+    "phase": "SelectStarterPhase",
+    "mode": "STARTER_SELECT",
+    "handler": "StarterSelectUiHandler",
+    "watch": {
+      "kind": "starter",
+      "ready": true,
+      "fresh": true
+    },
+    "freshOnNextFrame": false,
+    "enemyChosen": null,
+    "turn": null,
+    "wave": null,
+    "overlay": "starters",
+    "watchNs": 58.2,
+    "overlayNs": 111.1
+  }
+]

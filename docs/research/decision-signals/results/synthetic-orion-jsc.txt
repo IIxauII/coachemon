@@ -1,0 +1,56 @@
+# 2026-10-01T13:59:44Z Apple M4, macOS 26.2, Orion 1.1.3, Orion's JavaScriptCore.framework 625.1.8
+# DYLD_FRAMEWORK_PATH=/Applications/Orion.app/Contents/Frameworks /Applications/Orion.app/Contents/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc -m bench-jsc.js
+cold, ns per frame: first frame 93018, next 59 1390, next 540 1185, next 5400 161
+engine: JavaScriptCore (jsc shell)
+per kind, ns per watch() call, median of 5 x 2000000 calls (one state held, as while a decision or an animation lasts):
+  command                    10.9
+  command (target select)    11.0
+  free switch (question)     10.8
+  free switch (party)        11.2
+  replacement                12.0
+  reward                     11.1
+  learn                      16.2
+  biome                      11.1
+  encounter                  11.3
+  starter                    11.2
+  fusion                     16.9
+  no decision (MovePhase)    8.5
+mixed: 10.2 ns per frame (median of 5 x 2000000; includes switching state every 8 frames)
+  of which the harness's state switch: 1.1 ns per frame
+(sink true)
+cold, ns per frame: first frame 114014, next 59 1614, next 540 857, next 5400 177
+engine: JavaScriptCore (jsc shell)
+per kind, ns per watch() call, median of 5 x 2000000 calls (one state held, as while a decision or an animation lasts):
+  command                    13.7
+  command (target select)    11.4
+  free switch (question)     10.8
+  free switch (party)        11.5
+  replacement                12.3
+  reward                     11.3
+  learn                      15.8
+  biome                      11.3
+  encounter                  11.2
+  starter                    10.9
+  fusion                     10.7
+  no decision (MovePhase)    8.2
+mixed: 10.1 ns per frame (median of 5 x 2000000; includes switching state every 8 frames)
+  of which the harness's state switch: 1.3 ns per frame
+(sink true)
+cold, ns per frame: first frame 93018, next 59 1697, next 540 568, next 5400 222
+engine: JavaScriptCore (jsc shell)
+per kind, ns per watch() call, median of 5 x 2000000 calls (one state held, as while a decision or an animation lasts):
+  command                    10.8
+  command (target select)    10.9
+  free switch (question)     11.0
+  free switch (party)        11.3
+  replacement                12.1
+  reward                     14.6
+  learn                      23.2
+  biome                      11.9
+  encounter                  11.2
+  starter                    10.8
+  fusion                     10.3
+  no decision (MovePhase)    6.7
+mixed: 8.7 ns per frame (median of 5 x 2000000; includes switching state every 8 frames)
+  of which the harness's state switch: 1.3 ns per frame
+(sink true)

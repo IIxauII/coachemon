@@ -1,0 +1,260 @@
+// #518 research harness (docs/research/decision-signals/run.ts copies this into the pinned clone and removes it again).
+// Plays to each kind of decision on upstream's headless harness, then asks two questions of the live scene: what the
+// watch (`watch.js`) says there, frame after frame, and what one read of it costs next to the overlay's detectors.
+import { readFileSync, writeFileSync } from "node:fs";
+import { timedEventManager } from "#app/global-event-manager";
+import { speciesDataRegistry } from "#app/global-species-data-registry";
+import { BattleStyle } from "#enums/battle-style";
+import { BattlerIndex } from "#enums/battler-index";
+import { BiomeId } from "#enums/biome-id";
+import { Button } from "#enums/buttons";
+import { Command } from "#enums/command";
+import { GameModes } from "#enums/game-modes";
+import { MoveId } from "#enums/move-id";
+import { MysteryEncounterType } from "#enums/mystery-encounter-type";
+import { PartyUiMode } from "#enums/party-ui-mode";
+import { SpeciesId } from "#enums/species-id";
+import { UiMode } from "#enums/ui-mode";
+import { GameManager } from "#test/framework/game-manager";
+import type { MessageUiHandler } from "#ui/message-ui-handler";
+import { afterAll, beforeAll, beforeEach, describe, it, vi } from "vitest";
+// @ts-expect-error: plain JS copied in by run.ts
+import { makeWatch } from "./.coach-watch.js";
+
+const BUNDLE = process.env.COACH_BUNDLE as string;
+const OUT = process.env.COACH_OUT as string;
+const E = { UiMode, PartyUiMode, BattlerIndex };
+
+// biome-ignore lint/suspicious/noExplicitAny: the HUD and the watch are plain page-world JS with no types here.
+const g = globalThis as any;
+function loadHud() {
+  if (g.__hud) return g.__hud;
+  g.window = globalThis;
+  // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
+  (0, eval)(readFileSync(BUNDLE, "utf8"));
+  g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager });
+  return g.__hud;
+}
+
+// The overlay's own look at the screen, in `readCard`'s order (60-card.js:92-118), plus the turn read's gate.
+// biome-ignore lint/suspicious/noExplicitAny: page-world scene
+function overlayDetectors(s: any) {
+  const H = loadHud();
+  const handler = s.ui.getHandler();
+  const starters = H["51-starters"].starterScreen(s);
+  const learn = H["02-screens"].learnState(s);
+  const rewards = H["02-screens"].rewardsScreen(s);
+  if (starters) return "starters";
+  if (learn) return "learn";
+  if (H["49-fusion"].spliceScreen(s, handler)) return "fusion";
+  if (rewards) return "rewards";
+  if (H["02-screens"].biomeScreen(s, handler)) return "biome";
+  if (H["02-screens"].encounterScreen(s, handler)) return "encounter";
+  return H["01-core"].awaitingDecision(s) ?? "battle?";
+}
+
+const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[xs.length >> 1];
+// biome-ignore lint/suspicious/noExplicitAny: page-world scene
+function nsPerCall(fn: (s: any) => unknown, s: any, n: number) {
+  let sink = 0;
+  for (let i = 0; i < n / 5; i++) sink += fn(s) ? 1 : 0;
+  const runs: number[] = [];
+  for (let r = 0; r < 5; r++) {
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++) sink += fn(s) ? 1 : 0;
+    runs.push(((performance.now() - t0) * 1e6) / n);
+  }
+  return { ns: Math.round(median(runs) * 10) / 10, sink: sink > 0 };
+}
+
+const results: Record<string, unknown>[] = [];
+// One watch per test, held across its observations, so `fresh` says whether the watch saw a new decision.
+let W = makeWatch(E);
+
+function observe(label: string, game: GameManager, timeIt = true) {
+  const s = game.scene;
+  const d = W.watch(s);
+  const seen = { kind: d.kind, ready: d.ready, fresh: d.fresh };
+  const again = W.watch(s).fresh;
+  const b = s.currentBattle;
+  const row: Record<string, unknown> = {
+    label,
+    phase: s.phaseManager.getCurrentPhase()?.phaseName,
+    mode: UiMode[s.ui.getMode()] ?? s.ui.getMode(),
+    handler: s.ui.getHandler()?.constructor?.name,
+    watch: seen,
+    freshOnNextFrame: again,
+    enemyChosen: b ? b.turnCommands[BattlerIndex.ENEMY] != null : null,
+    turn: b?.turn ?? null,
+    wave: b?.waveIndex ?? null,
+    overlay: (() => { try { return overlayDetectors(s); } catch (e) { return `threw: ${(e as Error).message}`; } })(),
+  };
+  if (timeIt) {
+    const probe = makeWatch(E);
+    row.watchNs = nsPerCall(probe.watch, s, 1_000_000).ns;
+    try { row.overlayNs = nsPerCall(overlayDetectors, s, 50_000).ns; } catch (e) { row.overlayNs = `threw: ${(e as Error).message}`; }
+  }
+  results.push(row);
+  console.log(`[signals] ${JSON.stringify(row)}`);
+  return seen;
+}
+
+const until = (fn: () => boolean) => vi.waitUntil(fn, { timeout: 10_000, interval: 2 });
+const current = (game: GameManager) => game.scene.phaseManager.getCurrentPhase();
+// Starts the current phase the way the phase manager would (the harness disables `startCurrentPhase`), then waits for
+// the watch to call it ready or for `done`.
+async function startHere(game: GameManager, name: string, done?: () => boolean) {
+  await until(() => current(game)?.phaseName === name);
+  current(game).start();
+  await until(done ?? (() => W.detect(game.scene).ready));
+}
+
+describe("Coachemon #518 - the watch at each kind of decision", () => {
+  let phaserGame: Phaser.Game;
+  let game: GameManager;
+
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+  beforeEach(() => {
+    game = new GameManager(phaserGame);
+    W = makeWatch(E);
+    game.override.enemySpecies(SpeciesId.MAGIKARP).enemyMoveset(MoveId.SPLASH).enemyLevel(5).startingLevel(30)
+      .moveset([MoveId.TACKLE, MoveId.SPLASH, MoveId.GROWL, MoveId.LEER]).disableTrainerWaves();
+  });
+  afterAll(() => {
+    writeFileSync(OUT, JSON.stringify(results, null, 2));
+  });
+
+  it("command, single", async () => {
+    game.override.battleStyle("single");
+    await game.classicMode.startBattle(SpeciesId.FEEBAS);
+    observe("command (single)", game);
+  });
+
+  it("command, double: slot 0, target select, slot 1, cancel back to slot 0", async () => {
+    game.override.battleStyle("double");
+    await game.classicMode.startBattle(SpeciesId.FEEBAS, SpeciesId.WOOPER);
+    observe("command (double, slot 0)", game);
+    // biome-ignore lint/suspicious/noExplicitAny: private phase API
+    (current(game) as any).handleCommand(Command.FIGHT, 0);
+    await startHere(game, "SelectTargetPhase", () => game.scene.ui.getMode() === UiMode.TARGET_SELECT);
+    observe("command (double, target select)", game);
+    game.scene.ui.getHandler().processInput(Button.ACTION);
+    await startHere(game, "CommandPhase", () => game.scene.ui.getMode() === UiMode.COMMAND);
+    observe("command (double, slot 1)", game);
+    // biome-ignore lint/suspicious/noExplicitAny: private phase API
+    (current(game) as any).cancel();
+    await startHere(game, "CommandPhase", () => game.scene.ui.getMode() === UiMode.COMMAND);
+    observe("command (double, slot 0 again after cancel)", game, false);
+  });
+
+  it("free switch: the question, then the party", async () => {
+    game.override.battleStyle("single");
+    game.settings.battleStyle(BattleStyle.SWITCH);
+    await game.classicMode.runToSummon(SpeciesId.FEEBAS, SpeciesId.WOOPER);
+    await game.phaseInterceptor.to("CheckSwitchPhase", false);
+    await startHere(game, "CheckSwitchPhase", () => game.scene.ui.getMode() === UiMode.CONFIRM);
+    observe("free switch (question)", game);
+    game.scene.ui.getHandler().processInput(Button.ACTION);
+    await startHere(game, "SwitchPhase", () => game.scene.ui.getMode() === UiMode.PARTY);
+    observe("free switch (party)", game);
+  });
+
+  it("replacement after one of ours faints", async () => {
+    game.override.battleStyle("single").enemyMoveset(MoveId.TACKLE).enemyLevel(50);
+    await game.classicMode.startBattle(SpeciesId.FEEBAS, SpeciesId.WOOPER);
+    observe("command before the faint", game, false);
+    game.scene.getPlayerPokemon()!.hp = 1;
+    game.move.select(MoveId.SPLASH);
+    await game.phaseInterceptor.to("SwitchPhase", false);
+    await startHere(game, "SwitchPhase", () => game.scene.ui.getMode() === UiMode.PARTY);
+    observe("replacement", game);
+  });
+
+  it("reward, fusion, back to the reward, reroll", async () => {
+    game.override.battleStyle("single");
+    await game.classicMode.startBattle(SpeciesId.FEEBAS, SpeciesId.WOOPER);
+    observe("command before the wave ends", game, false);
+    game.move.select(MoveId.SPLASH);
+    await game.doKillOpponents();
+    await game.phaseInterceptor.to("SelectModifierPhase");
+    await until(() => W.detect(game.scene).ready);
+    observe("reward", game);
+    const shop = current(game);
+    game.scene.ui.setModeWithoutClear(UiMode.PARTY, PartyUiMode.SPLICE, -1, () => {});
+    await until(() => game.scene.ui.getMode() === UiMode.PARTY);
+    observe("fusion", game);
+    // biome-ignore lint/suspicious/noExplicitAny: private phase API
+    (shop as any).resetModifierSelect(() => false);
+    await until(() => game.scene.ui.getMode() === UiMode.MODIFIER_SELECT);
+    observe("reward (back from the fusion screen)", game, false);
+    game.scene.money = 1_000_000;
+    // biome-ignore lint/suspicious/noExplicitAny: private phase API
+    (shop as any).rerollModifiers();
+    await until(() => current(game) !== shop);
+    await startHere(game, "SelectModifierPhase");
+    observe("reward (after a reroll)", game, false);
+  });
+
+  it("learn, full moveset, mid-turn", async () => {
+    game.override.battleStyle("single");
+    await game.classicMode.startBattle(SpeciesId.FEEBAS);
+    game.move.select(MoveId.SPLASH);
+    await game.phaseInterceptor.to("TurnStartPhase", false);
+    game.scene.phaseManager.unshiftNew("LearnMovePhase", 0, MoveId.THUNDERBOLT);
+    await game.phaseInterceptor.to("LearnMovePhase", false);
+    await startHere(game, "LearnMovePhase", () => W.detect(game.scene).kind === "learn");
+    observe("learn (full moveset, mid-turn)", game);
+  });
+
+  it("learn, moveset not full: no decision", async () => {
+    game.override.battleStyle("single").moveset([MoveId.TACKLE, MoveId.SPLASH]);
+    await game.classicMode.startBattle(SpeciesId.FEEBAS);
+    game.move.select(MoveId.SPLASH);
+    await game.phaseInterceptor.to("TurnStartPhase", false);
+    game.scene.phaseManager.unshiftNew("LearnMovePhase", 0, MoveId.THUNDERBOLT);
+    await game.phaseInterceptor.to("LearnMovePhase", false);
+    // Read at once after `start()`: the harness types text instantly, so the phase would be gone by any later look,
+    // where in play the "learned" message holds it for the next frames with the move already set.
+    current(game).start();
+    observe("learn (moveset not full), right after start()", game, false);
+    results.push({ label: "learn (moveset not full): move already in the moveset after start()",
+      known: game.scene.getPlayerParty()[0].moveset.some(m => m?.moveId === MoveId.THUNDERBOLT) });
+  });
+
+  it("biome", async () => {
+    game.override.battleStyle("single").startingWave(10).startingBiome(BiomeId.PLAINS).startingModifier([{ name: "MAP" }]);
+    await game.classicMode.startBattle(SpeciesId.FEEBAS);
+    game.move.select(MoveId.SPLASH);
+    await game.doKillOpponents();
+    game.doSelectModifier();
+    await game.phaseInterceptor.to("SelectBiomePhase", false);
+    await startHere(game, "SelectBiomePhase", () => game.scene.ui.getMode() === UiMode.OPTION_SELECT);
+    observe("biome", game);
+  });
+
+  it("mystery encounter", async () => {
+    game.override.mysteryEncounterChance(100).startingWave(12).startingBiome(BiomeId.CAVE);
+    await game.runToMysteryEncounter(MysteryEncounterType.MYSTERIOUS_CHEST, [SpeciesId.FEEBAS, SpeciesId.WOOPER]);
+    game.onNextPrompt("MysteryEncounterPhase", UiMode.MESSAGE, () => {
+      game.scene.ui.getHandler<MessageUiHandler>().processInput(Button.ACTION);
+    }, () => game.isCurrentPhase("MysteryEncounterOptionSelectedPhase", "CommandPhase", "TurnInitPhase"));
+    await game.phaseInterceptor.to("MysteryEncounterPhase");
+    await until(() => W.detect(game.scene).ready);
+    observe("encounter", game);
+  });
+
+  it("starter", async () => {
+    await game.runToTitle();
+    game.onNextPrompt("TitlePhase", UiMode.TITLE, () => {
+      // biome-ignore lint/suspicious/noExplicitAny: private phase API
+      const title = current(game) as any;
+      title.gameMode = GameModes.CLASSIC;
+      title.end();
+    });
+    await game.phaseInterceptor.to("SelectStarterPhase");
+    await until(() => W.detect(game.scene).ready);
+    observe("starter", game);
+  });
+});
