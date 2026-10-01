@@ -1,0 +1,279 @@
+// #514 research harness (docs/research/read-stage-stall/run.ts copies this into the pinned clone and removes it again). Rebuilds
+// the lag run's wave 25 (Rival Ivy against a party of six) and times the overlay's battle card on it, split by stage.
+import { readFileSync, writeFileSync } from "node:fs";
+import { timedEventManager } from "#app/global-event-manager";
+import { speciesDataRegistry } from "#app/global-species-data-registry";
+import { MoveId } from "#enums/move-id";
+import { SpeciesId } from "#enums/species-id";
+import { PokemonMove } from "#moves/pokemon-move";
+import { GameManager } from "#test/framework/game-manager";
+import { afterAll, beforeAll, beforeEach, describe, it, vi } from "vitest";
+
+const BUNDLE = process.env.COACH_BUNDLE as string;
+const OUT = process.env.COACH_PROF_OUT as string;
+const REPS = Number(process.env.COACH_REPS ?? 3);
+
+// biome-ignore lint/suspicious/noExplicitAny: the HUD is plain page-world JS with no types here.
+const g = globalThis as any;
+
+// ---- the profiler the patched bundle calls
+type Frame = { label: string; t0: number; child: number };
+const prof = {
+  stack: [] as Frame[],
+  spans: new Map<string, { n: number; incl: number; excl: number }>(),
+  counts: new Map<string, number>(),
+  maxes: new Map<string, number>(),
+  fightTurns: new Map<number, number>(),
+  reset() {
+    this.stack = [];
+    this.spans = new Map();
+    this.counts = new Map();
+    this.maxes = new Map();
+    this.fightTurns = new Map();
+  },
+  top() {
+    return this.stack.at(-1)?.label ?? "-";
+  },
+  span<T>(label: string, fn: () => T, searchLike = false): T {
+    if (searchLike) this.count(`searches:${label}`);
+    const f: Frame = { label, t0: performance.now(), child: 0 };
+    this.stack.push(f);
+    try {
+      return fn();
+    } finally {
+      const dt = performance.now() - f.t0;
+      this.stack.pop();
+      const parent = this.stack.at(-1);
+      if (parent) parent.child += dt;
+      const s = this.spans.get(label) ?? { n: 0, incl: 0, excl: 0 };
+      s.n++;
+      // A recursive span (game inside game) is counted once, at its outermost frame.
+      if (!this.stack.some(x => x.label === label)) s.incl += dt;
+      s.excl += dt - f.child;
+      this.spans.set(label, s);
+    }
+  },
+  game<T>(fn: () => T): T {
+    return this.span("game", fn);
+  },
+  count(k: string, n = 1) {
+    this.counts.set(k, (this.counts.get(k) ?? 0) + n);
+  },
+  max(k: string, v: number) {
+    this.maxes.set(k, Math.max(this.maxes.get(k) ?? 0, v));
+  },
+  // tpFight: a memo hit is a call that left the memo the same size and had no `over`.
+  fight<T>(fn: (...a: unknown[]) => T, a: unknown[]): T {
+    const T = a[0] as { memo?: Map<string, unknown> };
+    const before = T.memo?.size ?? 0;
+    const t0 = performance.now();
+    const r = fn(...a);
+    const dt = performance.now() - t0;
+    const where = this.top();
+    this.count(`fight.calls:${where}`);
+    if ((T.memo?.size ?? 0) > before || a[5]) {
+      this.count(`fight.runs:${where}`);
+      this.count(`fight.runMs:${where}`, dt);
+    }
+    return r;
+  },
+  fightEnd(turns: number, standing: number) {
+    this.fightTurns.set(turns, (this.fightTurns.get(turns) ?? 0) + 1);
+    if (standing > 0) this.count("fight.hitTurnCap");
+  },
+  merge<T>(fn: (...a: unknown[]) => T, a: unknown[]): T {
+    const n = (a[0] as unknown[]).length;
+    const k = a[1] as number;
+    this.count("merge.calls");
+    this.max("merge.maxIn", n);
+    this.count(`merge.in≤${[4, 16, 64, 128, 256, 512].find(b => n <= b) ?? "more"}`);
+    if (n > k) {
+      this.count("merge.merging");
+      let pairs = 0;
+      for (let m = n; m > k; m--) pairs += (m * (m - 1)) / 2;
+      this.count("merge.pairChecks", pairs);
+    }
+    const t0 = performance.now();
+    const r = fn(...a);
+    const dt = performance.now() - t0;
+    this.count("merge.ms", dt);
+    // k = 4: the turn loop's beam; k = 1: `one()`, an ending's pool collapsed to one branch.
+    this.count(`merge.k${k}.calls`);
+    this.count(`merge.k${k}.ms`, dt);
+    this.max(`merge.k${k}.maxIn`, n);
+    return r;
+  },
+  snapshot() {
+    const r = (x: number) => Math.round(x * 10) / 10;
+    return {
+      spans: Object.fromEntries([...this.spans].map(([k, s]) => [k, { n: s.n, incl: r(s.incl), excl: r(s.excl) }])),
+      counts: Object.fromEntries([...this.counts].map(([k, v]) => [k, r(v)])),
+      maxes: Object.fromEntries(this.maxes),
+      fightTurns: Object.fromEntries([...this.fightTurns].sort((a, b) => a[0] - b[0])),
+    };
+  },
+};
+g.__prof = prof;
+
+function loadHud() {
+  if (g.__hud) return g.__hud;
+  g.window = globalThis;
+  // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
+  (0, eval)(readFileSync(BUNDLE, "utf8"));
+  g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager });
+  return g.__hud;
+}
+
+// ---- wave 25 of the 2026-10-01T10-41-17-742Z lag run, as far as the log shows it: species, levels, and every move a
+// card in that wave names. The log has no full sets, so the remaining slots are plausible fillers, and IVs and natures
+// are the harness's normalised 31 / Hardy. Printed with the results.
+type Mon = { sp: SpeciesId; lv: number; moves?: MoveId[] };
+const OURS: Mon[] = [
+  { sp: SpeciesId.LARVITAR, lv: 15, moves: [MoveId.ROCK_THROW, MoveId.ROCK_SLIDE, MoveId.BITE, MoveId.LEER] },
+  { sp: SpeciesId.MACHOP, lv: 13, moves: [MoveId.FOCUS_PUNCH, MoveId.LOW_KICK, MoveId.LOW_SWEEP, MoveId.LEER] },
+  { sp: SpeciesId.TAILLOW, lv: 10, moves: [MoveId.PECK, MoveId.QUICK_ATTACK, MoveId.GROWL, MoveId.FOCUS_ENERGY] },
+  { sp: SpeciesId.GROWLITHE, lv: 11, moves: [MoveId.EMBER, MoveId.BITE, MoveId.LEER, MoveId.HOWL] },
+  { sp: SpeciesId.SKWOVET, lv: 10, moves: [MoveId.TACKLE, MoveId.TAIL_WHIP, MoveId.BITE, MoveId.STUFF_CHEEKS] },
+  { sp: SpeciesId.ROCKRUFF, lv: 10, moves: [MoveId.BITE, MoveId.TACKLE, MoveId.LEER, MoveId.ROCK_THROW] },
+];
+const TANGELA_HEALS = [MoveId.MEGA_DRAIN, MoveId.INGRAIN, MoveId.SLEEP_POWDER, MoveId.VINE_WHIP];
+const TANGELA_PLAIN = [MoveId.VINE_WHIP, MoveId.BIND, MoveId.POISON_POWDER, MoveId.GROWTH];
+const FOES: Mon[] = [
+  { sp: SpeciesId.COMBUSKEN, lv: 18, moves: [MoveId.DOUBLE_KICK, MoveId.EMBER, MoveId.PECK, MoveId.FOCUS_ENERGY] },
+  { sp: SpeciesId.WATTREL, lv: 17, moves: [MoveId.PLUCK, MoveId.SPARK, MoveId.QUICK_ATTACK, MoveId.GROWL] },
+  { sp: SpeciesId.TANGELA, lv: 16, moves: TANGELA_HEALS },
+];
+
+const setMon = (p: any, m: Mon) => {
+  if (p.level !== m.lv) {
+    p.level = m.lv;
+    p.calculateStats();
+  }
+  p.hp = p.getMaxHp();
+  if (m.moves) p.moveset = m.moves.map(id => new PokemonMove(id));
+};
+const describeMon = (p: any) =>
+  `${p.name} L${p.level} ${p.hp}/${p.getMaxHp()} [${p.moveset.map((m: any) => m.getName()).join(", ")}]${p.isOnField() ? " (field)" : ""}`;
+
+const results: unknown[] = [];
+
+describe("read stage, wave 25", () => {
+  let phaserGame: Phaser.Game;
+  let game: GameManager;
+
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+  beforeEach(() => {
+    game = new GameManager(phaserGame);
+  });
+  afterAll(() => {
+    writeFileSync(OUT, JSON.stringify(results, null, 1));
+  });
+
+  async function arrive(foes: Mon[], ours: Mon[] = OURS) {
+    game.override.startingWave(25).battleStyle("single");
+    const scene = game.scene as any;
+    const orig = scene.addEnemyPokemon.bind(scene);
+    let i = 0;
+    vi.spyOn(scene, "addEnemyPokemon").mockImplementation((_sp: unknown, _lv: unknown, ...rest: unknown[]) => {
+      const m = foes[i++ % foes.length];
+      return orig(speciesDataRegistry.getSpecies(m.sp), m.lv, ...rest);
+    });
+    await (game.classicMode.startBattle as any)(...ours.map(m => m.sp));
+    const party = scene.getPlayerParty();
+    party.forEach((p: any, k: number) => setMon(p, ours[k]));
+    scene.getEnemyParty().forEach((p: any, k: number) => setMon(p, foes[k]));
+    return scene;
+  }
+
+  // One card, built fresh (the panel builds it once per new turn or faint), timed whole and by stage.
+  function measure(scene: any, name: string, note: Record<string, unknown> = {}, times = REPS) {
+    const hud = loadHud();
+    const account = hud["98-tick"].accountRead(scene);
+    const reps: unknown[] = [];
+    let card: any = null;
+    for (let k = 0; k < times; k++) {
+      prof.reset();
+      const t0 = performance.now();
+      card = hud["25-turn"].readTurn(scene, (turn: any) => hud["60-card"].composeBattleCard(turn, account));
+      const ms = performance.now() - t0;
+      reps.push({ ms: Math.round(ms), ...prof.snapshot() });
+    }
+    const plan = card?.teamPlan;
+    const row = {
+      name,
+      ...note,
+      wave: scene.currentBattle.waveIndex,
+      trainer: scene.currentBattle.trainer?.getName?.() ?? null,
+      ours: scene.getPlayerParty().map(describeMon),
+      foes: scene.getEnemyParty().map(describeMon),
+      act: hud["60-card"].actSummary(card),
+      plan: plan ? { result: plan.result, win: plan.win, warnings: plan.warnings, steps: plan.steps?.length } : null,
+      reps,
+    };
+    results.push(row);
+    console.log(`PROF ${name}: ${(reps as any[]).map(r => r.ms).join(" / ")} ms · ${row.act}`);
+    return row;
+  }
+
+  // Ours standing, from all six down to the lead alone: the bench is fainted from the back.
+  const standing = (scene: any, n: number) => {
+    scene.getPlayerParty().forEach((p: any, k: number) => {
+      p.hp = k < n ? p.getMaxHp() : 0;
+    });
+  };
+
+  it("Tangela with its heals: ours standing 6 → 1, all three foes up", async () => {
+    const scene = await arrive(FOES);
+    for (let n = 6; n >= 1; n--) {
+      standing(scene, n);
+      measure(scene, `heals · ours ${n} · foes 3`, { ours: n, foes: 3, tangela: "heals" });
+    }
+  });
+
+  it("Tangela without heals: ours standing 6 → 3", async () => {
+    const scene = await arrive([FOES[0], FOES[1], { ...FOES[2], moves: TANGELA_PLAIN }]);
+    for (let n = 6; n >= 3; n--) {
+      standing(scene, n);
+      measure(scene, `plain · ours ${n} · foes 3`, { ours: n, foes: 3, tangela: "plain" });
+    }
+  });
+
+  it("one foe down: six of ours against two", async () => {
+    const scene = await arrive(FOES);
+    for (const down of [2, 1]) {
+      standing(scene, 6);
+      scene.getEnemyParty().forEach((p: any, k: number) => {
+        p.hp = k === down ? 0 : p.getMaxHp();
+      });
+      measure(scene, `heals · ours 6 · foes 2 (${FOES[down].sp === SpeciesId.TANGELA ? "Tangela" : "Wattrel"} down)`, { ours: 6, foes: 2, down });
+    }
+  });
+
+  // The field's most common slow state: Tangela out, one of ours facing it. Machop leads, as at #13–#15.
+  it("Tangela on the field against Machop: ours standing 6 → 3", async () => {
+    const scene = await arrive([FOES[2], FOES[1], FOES[0]], [OURS[1], OURS[0], ...OURS.slice(2)]);
+    for (let n = 6; n >= 3; n--) {
+      standing(scene, n);
+      measure(scene, `heals · Tangela out · ours ${n} · foes 3`, { ours: n, foes: 3, tangela: "heals", out: "Tangela" });
+    }
+  });
+
+  // Mid-fight HP, as the field had it: the memo is keyed on HP, so the states a search walks differ with it.
+  it("Tangela on the field, random mid-fight HP: 5 and 6 of ours", async () => {
+    const scene = await arrive([FOES[2], FOES[1], FOES[0]], [OURS[1], OURS[0], ...OURS.slice(2)]);
+    let seed = 514;
+    const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    for (let k = 0; k < Number(process.env.COACH_RANDOM ?? 16); k++) {
+      const n = k % 2 ? 5 : 6;
+      scene.getPlayerParty().forEach((p: any, i: number) => {
+        p.hp = i < n ? Math.max(1, Math.round(p.getMaxHp() * (0.15 + 0.85 * rnd()))) : 0;
+      });
+      scene.getEnemyParty().forEach((p: any) => {
+        p.hp = Math.max(1, Math.round(p.getMaxHp() * (0.3 + 0.7 * rnd())));
+      });
+      measure(scene, `heals · Tangela out · random #${k} · ours ${n} · foes 3`, { ours: n, foes: 3, random: k }, 1);
+    }
+  });
+});

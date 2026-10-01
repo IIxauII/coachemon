@@ -1,0 +1,8468 @@
+[
+ {
+  "name": "heals · ours 6 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 32/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 1007,
+    "spans": {
+     "game": {
+      "n": 288,
+      "incl": 125,
+      "excl": 125
+     },
+     "tables": {
+      "n": 1,
+      "incl": 138.9,
+      "excl": 30
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 136.7,
+      "excl": 136.7
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 320.8,
+      "excl": 320.8
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 256,
+      "excl": 256
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 853.9,
+      "excl": 1.2
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 49,
+      "excl": 49
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 3.4,
+      "excl": 3.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 142.8,
+      "excl": 75.7
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 1.2,
+      "excl": 1.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 1.4,
+      "excl": 0.1
+     }
+    },
+    "counts": {
+     "merge.calls": 1454,
+     "merge.in≤4": 530,
+     "merge.ms": 670.6,
+     "merge.in≤16": 495,
+     "merge.merging": 943,
+     "merge.pairChecks": 178145118,
+     "merge.in≤64": 281,
+     "merge.in≤512": 14,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 135.8,
+     "merge.in≤256": 81,
+     "merge.in≤128": 53,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 691,
+     "search.cands": 1533,
+     "fight.calls:search:held": 1821,
+     "fight.runs:search:held": 164,
+     "fight.runMs:search:held": 311.7,
+     "search.depths": 70,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3585,
+     "fight.runs:search:free": 98,
+     "fight.runMs:search:free": 231.2,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 5146,
+     "fight.runs:search:at": 36,
+     "fight.runMs:search:at": 22.4,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 812,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.8,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 101
+    },
+    "fightTurns": {
+     "0": 4,
+     "1": 136,
+     "2": 41,
+     "3": 27,
+     "4": 25,
+     "5": 40,
+     "6": 46,
+     "7": 2,
+     "8": 1,
+     "10": 1,
+     "11": 1,
+     "12": 2
+    }
+   },
+   {
+    "ms": 671,
+    "spans": {
+     "game": {
+      "n": 288,
+      "incl": 57.9,
+      "excl": 57.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 62.9,
+      "excl": 9.9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 75,
+      "excl": 75
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 293.3,
+      "excl": 293.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 185.8,
+      "excl": 185.8
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 617.2,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 29.3,
+      "excl": 29.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.6,
+      "excl": 1.6
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 51.6,
+      "excl": 16.2
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1454,
+     "merge.in≤4": 530,
+     "merge.ms": 543,
+     "merge.in≤16": 495,
+     "merge.merging": 943,
+     "merge.pairChecks": 178145118,
+     "merge.in≤64": 281,
+     "merge.in≤512": 14,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 74.7,
+     "merge.in≤256": 81,
+     "merge.in≤128": 53,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 691,
+     "search.cands": 1533,
+     "fight.calls:search:held": 1821,
+     "fight.runs:search:held": 164,
+     "fight.runMs:search:held": 287.8,
+     "search.depths": 70,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3585,
+     "fight.runs:search:free": 98,
+     "fight.runMs:search:free": 176.4,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 5146,
+     "fight.runs:search:at": 36,
+     "fight.runMs:search:at": 20.6,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 812,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 101
+    },
+    "fightTurns": {
+     "0": 4,
+     "1": 136,
+     "2": 41,
+     "3": 27,
+     "4": 25,
+     "5": 40,
+     "6": 46,
+     "7": 2,
+     "8": 1,
+     "10": 1,
+     "11": 1,
+     "12": 2
+    }
+   },
+   {
+    "ms": 839,
+    "spans": {
+     "game": {
+      "n": 288,
+      "incl": 82.6,
+      "excl": 82.6
+     },
+     "tables": {
+      "n": 1,
+      "incl": 86.6,
+      "excl": 14.5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 72.1,
+      "excl": 72.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 369.2,
+      "excl": 369.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 227.4,
+      "excl": 227.4
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 755.7,
+      "excl": 0.4
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 37.4,
+      "excl": 37.4
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2,
+      "excl": 2
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 80,
+      "excl": 30.4
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1454,
+     "merge.in≤4": 530,
+     "merge.ms": 648.1,
+     "merge.in≤16": 495,
+     "merge.merging": 943,
+     "merge.pairChecks": 178145118,
+     "merge.in≤64": 281,
+     "merge.in≤512": 14,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 71.9,
+     "merge.in≤256": 81,
+     "merge.in≤128": 53,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 691,
+     "search.cands": 1533,
+     "fight.calls:search:held": 1821,
+     "fight.runs:search:held": 164,
+     "fight.runMs:search:held": 361.8,
+     "search.depths": 70,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3585,
+     "fight.runs:search:free": 98,
+     "fight.runMs:search:free": 215.2,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 5146,
+     "fight.runs:search:at": 36,
+     "fight.runMs:search:at": 23.1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 812,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.6,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 101
+    },
+    "fightTurns": {
+     "0": 4,
+     "1": 136,
+     "2": 41,
+     "3": 27,
+     "4": 25,
+     "5": 40,
+     "6": 46,
+     "7": 2,
+     "8": 1,
+     "10": 1,
+     "11": 1,
+     "12": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 5 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 700,
+    "spans": {
+     "game": {
+      "n": 255,
+      "incl": 51,
+      "excl": 51
+     },
+     "tables": {
+      "n": 1,
+      "incl": 53.3,
+      "excl": 7.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 81.3,
+      "excl": 81.3
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 288.7,
+      "excl": 288.7
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 248.8,
+      "excl": 248.8
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 672.4,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 2,
+      "excl": 2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.3,
+      "excl": 1.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 25.5,
+      "excl": 17.2
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1139,
+     "merge.in≤4": 401,
+     "merge.ms": 589.4,
+     "merge.in≤16": 366,
+     "merge.merging": 748,
+     "merge.pairChecks": 156020844,
+     "merge.in≤64": 247,
+     "merge.in≤512": 14,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 81.2,
+     "merge.in≤256": 65,
+     "merge.in≤128": 46,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 366,
+     "search.cands": 721,
+     "fight.calls:search:held": 671,
+     "fight.runs:search:held": 87,
+     "fight.runMs:search:held": 284.4,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1982,
+     "fight.runs:search:free": 120,
+     "fight.runMs:search:free": 242.7,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1389,
+     "fight.runs:search:at": 6,
+     "fight.runMs:search:at": 0.1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 286,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.6,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 77
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 76,
+     "2": 36,
+     "3": 24,
+     "4": 15,
+     "5": 33,
+     "6": 43,
+     "7": 2,
+     "8": 1,
+     "11": 1,
+     "12": 2
+    }
+   },
+   {
+    "ms": 634,
+    "spans": {
+     "game": {
+      "n": 255,
+      "incl": 39.6,
+      "excl": 39.6
+     },
+     "tables": {
+      "n": 1,
+      "incl": 41.2,
+      "excl": 6.6
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 70.7,
+      "excl": 70.7
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 253.7,
+      "excl": 253.7
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 238.2,
+      "excl": 238.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 604,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 2.3,
+      "excl": 2.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.6,
+      "excl": 0.6
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 27.4,
+      "excl": 19.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1139,
+     "merge.in≤4": 401,
+     "merge.ms": 537.9,
+     "merge.in≤16": 366,
+     "merge.merging": 748,
+     "merge.pairChecks": 156020844,
+     "merge.in≤64": 247,
+     "merge.in≤512": 14,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 70.4,
+     "merge.in≤256": 65,
+     "merge.in≤128": 46,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 366,
+     "search.cands": 721,
+     "fight.calls:search:held": 671,
+     "fight.runs:search:held": 87,
+     "fight.runMs:search:held": 250.6,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1982,
+     "fight.runs:search:free": 120,
+     "fight.runMs:search:free": 232.6,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1389,
+     "fight.runs:search:at": 6,
+     "fight.runMs:search:at": 0.2,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 286,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.3,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 77
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 76,
+     "2": 36,
+     "3": 24,
+     "4": 15,
+     "5": 33,
+     "6": 43,
+     "7": 2,
+     "8": 1,
+     "11": 1,
+     "12": 2
+    }
+   },
+   {
+    "ms": 729,
+    "spans": {
+     "game": {
+      "n": 255,
+      "incl": 71.7,
+      "excl": 71.7
+     },
+     "tables": {
+      "n": 1,
+      "incl": 77.2,
+      "excl": 12
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 78.4,
+      "excl": 78.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 284.8,
+      "excl": 284.8
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 248.9,
+      "excl": 248.9
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 689.8,
+      "excl": 0.3
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 3.5,
+      "excl": 3.5
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.3,
+      "excl": 1.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 35,
+      "excl": 24.1
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1139,
+     "merge.in≤4": 401,
+     "merge.ms": 572.2,
+     "merge.in≤16": 366,
+     "merge.merging": 748,
+     "merge.pairChecks": 156020844,
+     "merge.in≤64": 247,
+     "merge.in≤512": 14,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 78.3,
+     "merge.in≤256": 65,
+     "merge.in≤128": 46,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 366,
+     "search.cands": 721,
+     "fight.calls:search:held": 671,
+     "fight.runs:search:held": 87,
+     "fight.runMs:search:held": 279.3,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1982,
+     "fight.runs:search:free": 120,
+     "fight.runMs:search:free": 237.6,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1389,
+     "fight.runs:search:at": 6,
+     "fight.runMs:search:at": 0.3,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 286,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.5,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 77
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 76,
+     "2": 36,
+     "3": 24,
+     "4": 15,
+     "5": 33,
+     "6": 43,
+     "7": 2,
+     "8": 1,
+     "11": 1,
+     "12": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 4 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 4,
+    "of": 4,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 5
+  },
+  "reps": [
+   {
+    "ms": 371,
+    "spans": {
+     "game": {
+      "n": 218,
+      "incl": 31,
+      "excl": 31
+     },
+     "tables": {
+      "n": 1,
+      "incl": 31.3,
+      "excl": 4.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 50.9,
+      "excl": 50.9
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 122.9,
+      "excl": 122.9
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 148.4,
+      "excl": 148.4
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 353.8,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 14.6,
+      "excl": 10.4
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 700,
+     "merge.in≤4": 265,
+     "merge.ms": 307.8,
+     "merge.in≤16": 227,
+     "merge.merging": 440,
+     "merge.pairChecks": 97176693,
+     "merge.in≤64": 124,
+     "merge.in≤512": 9,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 50.7,
+     "merge.in≤256": 50,
+     "merge.in≤128": 25,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 176,
+     "search.cands": 302,
+     "fight.calls:search:held": 177,
+     "fight.runs:search:held": 41,
+     "fight.runMs:search:held": 121.8,
+     "search.depths": 39,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 803,
+     "fight.runs:search:free": 85,
+     "fight.runMs:search:free": 145.2,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 366,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 100,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.3,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 293,
+     "search.beam": 45
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 43,
+     "2": 23,
+     "3": 12,
+     "4": 7,
+     "5": 25,
+     "6": 32
+    }
+   },
+   {
+    "ms": 352,
+    "spans": {
+     "game": {
+      "n": 218,
+      "incl": 26.4,
+      "excl": 26.4
+     },
+     "tables": {
+      "n": 1,
+      "incl": 26.7,
+      "excl": 4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 32.8,
+      "excl": 32.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 114.3,
+      "excl": 114.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 157.4,
+      "excl": 157.4
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 331.4,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 1.6,
+      "excl": 1.6
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 18.7,
+      "excl": 13
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 700,
+     "merge.in≤4": 265,
+     "merge.ms": 290.8,
+     "merge.in≤16": 227,
+     "merge.merging": 440,
+     "merge.pairChecks": 97176693,
+     "merge.in≤64": 124,
+     "merge.in≤512": 9,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 32.6,
+     "merge.in≤256": 50,
+     "merge.in≤128": 25,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 176,
+     "search.cands": 302,
+     "fight.calls:search:held": 177,
+     "fight.runs:search:held": 41,
+     "fight.runMs:search:held": 113.3,
+     "search.depths": 39,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 803,
+     "fight.runs:search:free": 85,
+     "fight.runMs:search:free": 154.3,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 366,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 100,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.3,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 293,
+     "search.beam": 45
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 43,
+     "2": 23,
+     "3": 12,
+     "4": 7,
+     "5": 25,
+     "6": 32
+    }
+   },
+   {
+    "ms": 365,
+    "spans": {
+     "game": {
+      "n": 218,
+      "incl": 28,
+      "excl": 28
+     },
+     "tables": {
+      "n": 1,
+      "incl": 25,
+      "excl": 3.5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 30.9,
+      "excl": 30.9
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 124.2,
+      "excl": 124.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 150.4,
+      "excl": 150.4
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 330.7,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 0.9,
+      "excl": 0.9
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.3,
+      "excl": 1.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 30.7,
+      "excl": 23.2
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 700,
+     "merge.in≤4": 265,
+     "merge.ms": 292,
+     "merge.in≤16": 227,
+     "merge.merging": 440,
+     "merge.pairChecks": 97176693,
+     "merge.in≤64": 124,
+     "merge.in≤512": 9,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 30.8,
+     "merge.in≤256": 50,
+     "merge.in≤128": 25,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 176,
+     "search.cands": 302,
+     "fight.calls:search:held": 177,
+     "fight.runs:search:held": 41,
+     "fight.runMs:search:held": 123.1,
+     "search.depths": 39,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 803,
+     "fight.runs:search:free": 85,
+     "fight.runMs:search:free": 147.1,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 366,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 100,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 1,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 293,
+     "search.beam": 45
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 43,
+     "2": 23,
+     "3": 12,
+     "4": 7,
+     "5": 25,
+     "6": 32
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 3 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Taillow Peck → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 3,
+    "of": 3,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 5
+  },
+  "reps": [
+   {
+    "ms": 171,
+    "spans": {
+     "game": {
+      "n": 180,
+      "incl": 25.6,
+      "excl": 25.6
+     },
+     "tables": {
+      "n": 1,
+      "incl": 27.1,
+      "excl": 4.1
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 27.4,
+      "excl": 27.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 82.4,
+      "excl": 82.4
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 16.6,
+      "excl": 16.6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 153.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 3.3,
+      "excl": 3.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 16.5,
+      "excl": 10.7
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 270,
+     "merge.in≤4": 109,
+     "merge.ms": 124.9,
+     "merge.in≤16": 79,
+     "merge.merging": 164,
+     "merge.pairChecks": 42981281,
+     "merge.in≤64": 57,
+     "merge.in≤512": 7,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 12,
+     "fight.runMs:sweep": 27.2,
+     "merge.in≤256": 10,
+     "merge.in≤128": 8,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 98,
+     "search.cands": 137,
+     "fight.calls:search:held": 75,
+     "fight.runs:search:held": 22,
+     "fight.runMs:search:held": 81.6,
+     "search.depths": 29,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 179,
+     "fight.runs:search:free": 31,
+     "fight.runMs:search:free": 16.1,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 139,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 75,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 3.2,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 293,
+     "search.beam": 13
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 30,
+     "2": 11,
+     "3": 5,
+     "4": 3,
+     "5": 8,
+     "6": 7
+    }
+   },
+   {
+    "ms": 192,
+    "spans": {
+     "game": {
+      "n": 180,
+      "incl": 23.1,
+      "excl": 23.1
+     },
+     "tables": {
+      "n": 1,
+      "incl": 22.3,
+      "excl": 3.9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 22,
+      "excl": 22
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 93.6,
+      "excl": 93.6
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 27.4,
+      "excl": 27.4
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 165.4,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 5.5,
+      "excl": 5.5
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 24.8,
+      "excl": 14.4
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 270,
+     "merge.in≤4": 109,
+     "merge.ms": 143.1,
+     "merge.in≤16": 79,
+     "merge.merging": 164,
+     "merge.pairChecks": 42981281,
+     "merge.in≤64": 57,
+     "merge.in≤512": 7,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 12,
+     "fight.runMs:sweep": 21.9,
+     "merge.in≤256": 10,
+     "merge.in≤128": 8,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 98,
+     "search.cands": 137,
+     "fight.calls:search:held": 75,
+     "fight.runs:search:held": 22,
+     "fight.runMs:search:held": 93.1,
+     "search.depths": 29,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 179,
+     "fight.runs:search:free": 31,
+     "fight.runMs:search:free": 26.5,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 139,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 75,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 5.1,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 293,
+     "search.beam": 13
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 30,
+     "2": 11,
+     "3": 5,
+     "4": 3,
+     "5": 8,
+     "6": 7
+    }
+   },
+   {
+    "ms": 245,
+    "spans": {
+     "game": {
+      "n": 180,
+      "incl": 29.8,
+      "excl": 29.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 30.3,
+      "excl": 4.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 33.4,
+      "excl": 33.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 128.3,
+      "excl": 128.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 27.3,
+      "excl": 27.3
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 219.5,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 5.1,
+      "excl": 5.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 24.7,
+      "excl": 15.5
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 270,
+     "merge.in≤4": 109,
+     "merge.ms": 188.6,
+     "merge.in≤16": 79,
+     "merge.merging": 164,
+     "merge.pairChecks": 42981281,
+     "merge.in≤64": 57,
+     "merge.in≤512": 7,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 12,
+     "fight.runMs:sweep": 33.2,
+     "merge.in≤256": 10,
+     "merge.in≤128": 8,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 98,
+     "search.cands": 137,
+     "fight.calls:search:held": 75,
+     "fight.runs:search:held": 22,
+     "fight.runMs:search:held": 127.8,
+     "search.depths": 29,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 179,
+     "fight.runs:search:free": 31,
+     "fight.runMs:search:free": 26.7,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 139,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 75,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 4.9,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 293,
+     "search.beam": 13
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 30,
+     "2": 11,
+     "3": 5,
+     "4": 3,
+     "5": 8,
+     "6": 7
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 2 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 0/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Machop Low Kick → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_1",
+     "114"
+    ],
+    "name": "Tangela",
+    "kills": 2,
+    "of": 2,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Tangela 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 2
+  },
+  "reps": [
+   {
+    "ms": 67,
+    "spans": {
+     "game": {
+      "n": 145,
+      "incl": 16.4,
+      "excl": 16.4
+     },
+     "tables": {
+      "n": 1,
+      "incl": 16,
+      "excl": 2.6
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 27.4,
+      "excl": 27.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 3.7,
+      "excl": 3.7
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 47.5,
+      "excl": 0.3
+     },
+     "search:at": {
+      "n": 2,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 3,
+      "excl": 3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 18.1,
+      "excl": 12.1
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 83,
+     "merge.in≤4": 34,
+     "merge.ms": 31.8,
+     "merge.in≤16": 20,
+     "merge.merging": 50,
+     "merge.pairChecks": 7891856,
+     "merge.in≤64": 20,
+     "merge.in≤512": 1,
+     "fight.calls:sweep": 8,
+     "fight.runs:sweep": 8,
+     "fight.runMs:sweep": 27.3,
+     "merge.in≤256": 3,
+     "merge.in≤128": 5,
+     "fight.calls:matrix": 6,
+     "searches:search:held": 1,
+     "search.states": 12,
+     "search.cands": 14,
+     "fight.calls:search:held": 16,
+     "fight.runs:search:held": 7,
+     "fight.runMs:search:held": 3.5,
+     "search.depths": 10,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 16,
+     "searches:search:at": 2,
+     "fight.calls:search:at": 16,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 9,
+     "fight.runs:search:at+move": 4,
+     "fight.runMs:search:at+move": 2.9,
+     "fight.calls:tpView": 6
+    },
+    "maxes": {
+     "merge.maxIn": 288,
+     "search.beam": 2
+    },
+    "fightTurns": {
+     "1": 6,
+     "2": 6,
+     "3": 3,
+     "4": 1,
+     "5": 1,
+     "6": 2
+    }
+   },
+   {
+    "ms": 57,
+    "spans": {
+     "game": {
+      "n": 145,
+      "incl": 17.8,
+      "excl": 17.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 16.8,
+      "excl": 2.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 19.6,
+      "excl": 19.6
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 2.5,
+      "excl": 2.5
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 39,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 2,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2.3,
+      "excl": 2.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 17.3,
+      "excl": 12
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 83,
+     "merge.in≤4": 34,
+     "merge.ms": 23.1,
+     "merge.in≤16": 20,
+     "merge.merging": 50,
+     "merge.pairChecks": 7891856,
+     "merge.in≤64": 20,
+     "merge.in≤512": 1,
+     "fight.calls:sweep": 8,
+     "fight.runs:sweep": 8,
+     "fight.runMs:sweep": 19.5,
+     "merge.in≤256": 3,
+     "merge.in≤128": 5,
+     "fight.calls:matrix": 6,
+     "searches:search:held": 1,
+     "search.states": 12,
+     "search.cands": 14,
+     "fight.calls:search:held": 16,
+     "fight.runs:search:held": 7,
+     "fight.runMs:search:held": 2.3,
+     "search.depths": 10,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 16,
+     "searches:search:at": 2,
+     "fight.calls:search:at": 16,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 9,
+     "fight.runs:search:at+move": 4,
+     "fight.runMs:search:at+move": 2.3,
+     "fight.calls:tpView": 6
+    },
+    "maxes": {
+     "merge.maxIn": 288,
+     "search.beam": 2
+    },
+    "fightTurns": {
+     "1": 6,
+     "2": 6,
+     "3": 3,
+     "4": 1,
+     "5": 1,
+     "6": 2
+    }
+   },
+   {
+    "ms": 45,
+    "spans": {
+     "game": {
+      "n": 145,
+      "incl": 11.9,
+      "excl": 11.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 11.4,
+      "excl": 1.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 17.6,
+      "excl": 17.6
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 1.6,
+      "excl": 1.6
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 30.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 2,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2.9,
+      "excl": 2.9
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 13.7,
+      "excl": 8.5
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "view": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 83,
+     "merge.in≤4": 34,
+     "merge.ms": 21,
+     "merge.in≤16": 20,
+     "merge.merging": 50,
+     "merge.pairChecks": 7891856,
+     "merge.in≤64": 20,
+     "merge.in≤512": 1,
+     "fight.calls:sweep": 8,
+     "fight.runs:sweep": 8,
+     "fight.runMs:sweep": 17.5,
+     "merge.in≤256": 3,
+     "merge.in≤128": 5,
+     "fight.calls:matrix": 6,
+     "searches:search:held": 1,
+     "search.states": 12,
+     "search.cands": 14,
+     "fight.calls:search:held": 16,
+     "fight.runs:search:held": 7,
+     "fight.runMs:search:held": 1.5,
+     "search.depths": 10,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 16,
+     "searches:search:at": 2,
+     "fight.calls:search:at": 16,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 9,
+     "fight.runs:search:at+move": 4,
+     "fight.runMs:search:at+move": 2.8,
+     "fight.calls:tpView": 6
+    },
+    "maxes": {
+     "merge.maxIn": 288,
+     "search.beam": 2
+    },
+    "fightTurns": {
+     "1": 6,
+     "2": 6,
+     "3": 3,
+     "4": 1,
+     "5": 1,
+     "6": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 1 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 0/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 0/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Throw → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_1",
+     "114"
+    ],
+    "name": "Tangela",
+    "kills": 1,
+    "of": 1,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Tangela 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Larvitar"
+   ],
+   "steps": 1
+  },
+  "reps": [
+   {
+    "ms": 31,
+    "spans": {
+     "game": {
+      "n": 98,
+      "incl": 5.3,
+      "excl": 5.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 4.8,
+      "excl": 1
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 17.4,
+      "excl": 17.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 22.3,
+      "excl": 0
+     },
+     "search:at": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 8.2,
+      "excl": 6.8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 21,
+     "merge.in≤4": 9,
+     "merge.ms": 17,
+     "merge.in≤16": 9,
+     "merge.merging": 12,
+     "merge.pairChecks": 5965682,
+     "merge.in≤64": 1,
+     "merge.in≤512": 1,
+     "fight.calls:sweep": 3,
+     "fight.runs:sweep": 3,
+     "fight.runMs:sweep": 17.3,
+     "merge.in≤256": 1,
+     "fight.calls:matrix": 3,
+     "searches:search:held": 1,
+     "search.states": 4,
+     "search.cands": 4,
+     "fight.calls:search:held": 1,
+     "fight.runs:search:held": 1,
+     "fight.runMs:search:held": 0,
+     "search.depths": 4,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1,
+     "searches:search:at": 1,
+     "fight.calls:search:at": 1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 1,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 3
+    },
+    "maxes": {
+     "merge.maxIn": 288,
+     "search.beam": 0
+    },
+    "fightTurns": {
+     "1": 3,
+     "5": 1,
+     "6": 1
+    }
+   },
+   {
+    "ms": 39,
+    "spans": {
+     "game": {
+      "n": 98,
+      "incl": 9.6,
+      "excl": 9.6
+     },
+     "tables": {
+      "n": 1,
+      "incl": 8.9,
+      "excl": 1.2
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 20.8,
+      "excl": 20.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 30,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 9.1,
+      "excl": 7.3
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "view": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 21,
+     "merge.in≤4": 9,
+     "merge.ms": 20.6,
+     "merge.in≤16": 9,
+     "merge.merging": 12,
+     "merge.pairChecks": 5965682,
+     "merge.in≤64": 1,
+     "merge.in≤512": 1,
+     "fight.calls:sweep": 3,
+     "fight.runs:sweep": 3,
+     "fight.runMs:sweep": 20.8,
+     "merge.in≤256": 1,
+     "fight.calls:matrix": 3,
+     "searches:search:held": 1,
+     "search.states": 4,
+     "search.cands": 4,
+     "fight.calls:search:held": 1,
+     "fight.runs:search:held": 1,
+     "fight.runMs:search:held": 0,
+     "search.depths": 4,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1,
+     "searches:search:at": 1,
+     "fight.calls:search:at": 1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 1,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 3
+    },
+    "maxes": {
+     "merge.maxIn": 288,
+     "search.beam": 0
+    },
+    "fightTurns": {
+     "1": 3,
+     "5": 1,
+     "6": 1
+    }
+   },
+   {
+    "ms": 39,
+    "spans": {
+     "game": {
+      "n": 98,
+      "incl": 9,
+      "excl": 9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 8.5,
+      "excl": 1.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 19.3,
+      "excl": 19.3
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 27.9,
+      "excl": 0
+     },
+     "search:at": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 10.6,
+      "excl": 8.7
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 21,
+     "merge.in≤4": 9,
+     "merge.ms": 18.8,
+     "merge.in≤16": 9,
+     "merge.merging": 12,
+     "merge.pairChecks": 5965682,
+     "merge.in≤64": 1,
+     "merge.in≤512": 1,
+     "fight.calls:sweep": 3,
+     "fight.runs:sweep": 3,
+     "fight.runMs:sweep": 19.2,
+     "merge.in≤256": 1,
+     "fight.calls:matrix": 3,
+     "searches:search:held": 1,
+     "search.states": 4,
+     "search.cands": 4,
+     "fight.calls:search:held": 1,
+     "fight.runs:search:held": 1,
+     "fight.runMs:search:held": 0,
+     "search.depths": 4,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1,
+     "searches:search:at": 1,
+     "fight.calls:search:at": 1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 1,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 3
+    },
+    "maxes": {
+     "merge.maxIn": 288,
+     "search.beam": 0
+    },
+    "fightTurns": {
+     "1": 3,
+     "5": 1,
+     "6": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "plain · ours 6 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 32/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Vine Whip, Bind, Poison Powder, Growth]"
+  ],
+  "tangela": "plain",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 172,
+    "spans": {
+     "game": {
+      "n": 260,
+      "incl": 73.3,
+      "excl": 73.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 70.6,
+      "excl": 8.7
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 43.4,
+      "excl": 43.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 10.9,
+      "excl": 10.9
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 8.7,
+      "excl": 8.7
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 133.7,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 4.5,
+      "excl": 4.5
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.4,
+      "excl": 1.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 32.9,
+      "excl": 19.4
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 171,
+     "merge.in≤4": 55,
+     "merge.ms": 47.5,
+     "merge.in≤16": 63,
+     "merge.merging": 118,
+     "merge.pairChecks": 11751390,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 23,
+     "fight.runMs:sweep": 43.1,
+     "merge.in≤64": 34,
+     "merge.in≤256": 6,
+     "merge.in≤128": 12,
+     "merge.in≤512": 1,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 294,
+     "search.cands": 722,
+     "fight.calls:search:held": 1332,
+     "fight.runs:search:held": 19,
+     "fight.runMs:search:held": 7.2,
+     "search.depths": 54,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2464,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 2353,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 672,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 300,
+     "search.beam": 36
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 23,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 6,
+     "6": 2,
+     "13": 1
+    }
+   },
+   {
+    "ms": 133,
+    "spans": {
+     "game": {
+      "n": 260,
+      "incl": 57.7,
+      "excl": 57.7
+     },
+     "tables": {
+      "n": 1,
+      "incl": 58.3,
+      "excl": 6.5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 34.3,
+      "excl": 34.3
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 8.2,
+      "excl": 8.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 5.2,
+      "excl": 5.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 106,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 6.2,
+      "excl": 6.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.3,
+      "excl": 1.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 24.7,
+      "excl": 12.3
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 171,
+     "merge.in≤4": 55,
+     "merge.ms": 37.5,
+     "merge.in≤16": 63,
+     "merge.merging": 118,
+     "merge.pairChecks": 11751390,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 23,
+     "fight.runMs:sweep": 34,
+     "merge.in≤64": 34,
+     "merge.in≤256": 6,
+     "merge.in≤128": 12,
+     "merge.in≤512": 1,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 294,
+     "search.cands": 722,
+     "fight.calls:search:held": 1332,
+     "fight.runs:search:held": 19,
+     "fight.runMs:search:held": 5.6,
+     "search.depths": 54,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2464,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 2353,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 672,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 300,
+     "search.beam": 36
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 23,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 6,
+     "6": 2,
+     "13": 1
+    }
+   },
+   {
+    "ms": 131,
+    "spans": {
+     "game": {
+      "n": 260,
+      "incl": 42.5,
+      "excl": 42.5
+     },
+     "tables": {
+      "n": 1,
+      "incl": 40.1,
+      "excl": 6.2
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 40.5,
+      "excl": 40.5
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 10.8,
+      "excl": 10.8
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 4.2,
+      "excl": 4.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 95.9,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 4.7,
+      "excl": 4.7
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 3.1,
+      "excl": 3.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 32.6,
+      "excl": 17.8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 171,
+     "merge.in≤4": 55,
+     "merge.ms": 46.4,
+     "merge.in≤16": 63,
+     "merge.merging": 118,
+     "merge.pairChecks": 11751390,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 23,
+     "fight.runMs:sweep": 40.1,
+     "merge.in≤64": 34,
+     "merge.in≤256": 6,
+     "merge.in≤128": 12,
+     "merge.in≤512": 1,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 294,
+     "search.cands": 722,
+     "fight.calls:search:held": 1332,
+     "fight.runs:search:held": 19,
+     "fight.runMs:search:held": 8.4,
+     "search.depths": 54,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2464,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 2353,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 672,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 300,
+     "search.beam": 36
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 23,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 6,
+     "6": 2,
+     "13": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "plain · ours 5 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Vine Whip, Bind, Poison Powder, Growth]"
+  ],
+  "tangela": "plain",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 5
+  },
+  "reps": [
+   {
+    "ms": 160,
+    "spans": {
+     "game": {
+      "n": 218,
+      "incl": 52,
+      "excl": 52
+     },
+     "tables": {
+      "n": 1,
+      "incl": 49.2,
+      "excl": 6.7
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 56,
+      "excl": 56
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 13.8,
+      "excl": 13.8
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 4.9,
+      "excl": 4.9
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 124.1,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 2.5,
+      "excl": 2.5
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.8,
+      "excl": 0.8
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 33.2,
+      "excl": 21.3
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 151,
+     "merge.in≤4": 46,
+     "merge.ms": 64.3,
+     "merge.in≤16": 55,
+     "merge.merging": 107,
+     "merge.pairChecks": 11063966,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 19,
+     "fight.runMs:sweep": 55.8,
+     "merge.in≤64": 32,
+     "merge.in≤256": 5,
+     "merge.in≤128": 12,
+     "merge.in≤512": 1,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 146,
+     "search.cands": 294,
+     "fight.calls:search:held": 432,
+     "fight.runs:search:held": 16,
+     "fight.runMs:search:held": 11.7,
+     "search.depths": 40,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 912,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0.1,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 703,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 229,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.1,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 300,
+     "search.beam": 19
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 17,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 5,
+     "6": 2,
+     "13": 1
+    }
+   },
+   {
+    "ms": 144,
+    "spans": {
+     "game": {
+      "n": 218,
+      "incl": 58.9,
+      "excl": 58.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 60.7,
+      "excl": 7.7
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 48.4,
+      "excl": 48.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 10.9,
+      "excl": 10.9
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 1.9,
+      "excl": 1.9
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 122.1,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 1.4,
+      "excl": 1.4
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 17.9,
+      "excl": 11.6
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 151,
+     "merge.in≤4": 46,
+     "merge.ms": 54.3,
+     "merge.in≤16": 55,
+     "merge.merging": 107,
+     "merge.pairChecks": 11063966,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 19,
+     "fight.runMs:sweep": 48.2,
+     "merge.in≤64": 32,
+     "merge.in≤256": 5,
+     "merge.in≤128": 12,
+     "merge.in≤512": 1,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 146,
+     "search.cands": 294,
+     "fight.calls:search:held": 432,
+     "fight.runs:search:held": 16,
+     "fight.runMs:search:held": 8.6,
+     "search.depths": 40,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 912,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 703,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 229,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 300,
+     "search.beam": 19
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 17,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 5,
+     "6": 2,
+     "13": 1
+    }
+   },
+   {
+    "ms": 153,
+    "spans": {
+     "game": {
+      "n": 218,
+      "incl": 84.8,
+      "excl": 84.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 90.1,
+      "excl": 11.9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 32.3,
+      "excl": 32.3
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 6.8,
+      "excl": 6.8
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 1.8,
+      "excl": 1.8
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 131.2,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 1.2,
+      "excl": 1.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 18.3,
+      "excl": 11.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 151,
+     "merge.in≤4": 46,
+     "merge.ms": 36.4,
+     "merge.in≤16": 55,
+     "merge.merging": 107,
+     "merge.pairChecks": 11063966,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 19,
+     "fight.runMs:sweep": 32.2,
+     "merge.in≤64": 32,
+     "merge.in≤256": 5,
+     "merge.in≤128": 12,
+     "merge.in≤512": 1,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 146,
+     "search.cands": 294,
+     "fight.calls:search:held": 432,
+     "fight.runs:search:held": 16,
+     "fight.runMs:search:held": 6.1,
+     "search.depths": 40,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 912,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 703,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 229,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 300,
+     "search.beam": 19
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 17,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 5,
+     "6": 2,
+     "13": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "plain · ours 4 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Vine Whip, Bind, Poison Powder, Growth]"
+  ],
+  "tangela": "plain",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 4,
+    "of": 4,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 4
+  },
+  "reps": [
+   {
+    "ms": 70,
+    "spans": {
+     "game": {
+      "n": 182,
+      "incl": 28.3,
+      "excl": 28.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 27.6,
+      "excl": 4.5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 17.6,
+      "excl": 17.6
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 6.9,
+      "excl": 6.9
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 52.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 14.5,
+      "excl": 10.5
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 119,
+     "merge.in≤4": 37,
+     "merge.ms": 22.4,
+     "merge.in≤16": 46,
+     "merge.merging": 82,
+     "merge.pairChecks": 6182673,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 15,
+     "fight.runMs:sweep": 17.4,
+     "merge.in≤64": 21,
+     "merge.in≤256": 5,
+     "merge.in≤128": 10,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 67,
+     "search.cands": 107,
+     "fight.calls:search:held": 126,
+     "fight.runs:search:held": 13,
+     "fight.runMs:search:held": 6.4,
+     "search.depths": 28,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 270,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 201,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 74,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 11
+    },
+    "fightTurns": {
+     "1": 13,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 4,
+     "6": 2
+    }
+   },
+   {
+    "ms": 88,
+    "spans": {
+     "game": {
+      "n": 182,
+      "incl": 39.2,
+      "excl": 39.2
+     },
+     "tables": {
+      "n": 1,
+      "incl": 39.3,
+      "excl": 5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 24,
+      "excl": 24
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 6.3,
+      "excl": 6.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 70.1,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 15.4,
+      "excl": 11.3
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 119,
+     "merge.in≤4": 37,
+     "merge.ms": 28.1,
+     "merge.in≤16": 46,
+     "merge.merging": 82,
+     "merge.pairChecks": 6182673,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 15,
+     "fight.runMs:sweep": 23.8,
+     "merge.in≤64": 21,
+     "merge.in≤256": 5,
+     "merge.in≤128": 10,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 67,
+     "search.cands": 107,
+     "fight.calls:search:held": 126,
+     "fight.runs:search:held": 13,
+     "fight.runMs:search:held": 5.9,
+     "search.depths": 28,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 270,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 201,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 74,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 11
+    },
+    "fightTurns": {
+     "1": 13,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 4,
+     "6": 2
+    }
+   },
+   {
+    "ms": 74,
+    "spans": {
+     "game": {
+      "n": 182,
+      "incl": 34.9,
+      "excl": 34.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 35.7,
+      "excl": 4.9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 17.4,
+      "excl": 17.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 6,
+      "excl": 6
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 59.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 12.5,
+      "excl": 9.2
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 119,
+     "merge.in≤4": 37,
+     "merge.ms": 21.9,
+     "merge.in≤16": 46,
+     "merge.merging": 82,
+     "merge.pairChecks": 6182673,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 15,
+     "fight.runMs:sweep": 17.3,
+     "merge.in≤64": 21,
+     "merge.in≤256": 5,
+     "merge.in≤128": 10,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 67,
+     "search.cands": 107,
+     "fight.calls:search:held": 126,
+     "fight.runs:search:held": 13,
+     "fight.runMs:search:held": 5.7,
+     "search.depths": 28,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 270,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 201,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 74,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 11
+    },
+    "fightTurns": {
+     "1": 13,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 4,
+     "6": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "plain · ours 3 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Vine Whip, Bind, Poison Powder, Growth]"
+  ],
+  "tangela": "plain",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 3,
+    "of": 3,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 3
+  },
+  "reps": [
+   {
+    "ms": 63,
+    "spans": {
+     "game": {
+      "n": 146,
+      "incl": 37,
+      "excl": 37
+     },
+     "tables": {
+      "n": 1,
+      "incl": 36.3,
+      "excl": 4.2
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 8.2,
+      "excl": 8.2
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 2.4,
+      "excl": 2.4
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 47.3,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 14.3,
+      "excl": 9.8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 76,
+     "merge.in≤4": 27,
+     "merge.ms": 9.8,
+     "merge.in≤16": 28,
+     "merge.merging": 49,
+     "merge.pairChecks": 3140009,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 11,
+     "fight.runMs:sweep": 8.2,
+     "merge.in≤64": 12,
+     "merge.in≤256": 1,
+     "merge.in≤128": 8,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 28,
+     "search.cands": 36,
+     "fight.calls:search:held": 34,
+     "fight.runs:search:held": 8,
+     "fight.runMs:search:held": 2.2,
+     "search.depths": 18,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 66,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 57,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 23,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.1,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 5
+    },
+    "fightTurns": {
+     "1": 11,
+     "2": 4,
+     "3": 4,
+     "6": 2
+    }
+   },
+   {
+    "ms": 58,
+    "spans": {
+     "game": {
+      "n": 146,
+      "incl": 34.1,
+      "excl": 34.1
+     },
+     "tables": {
+      "n": 1,
+      "incl": 35.2,
+      "excl": 4.7
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 8.5,
+      "excl": 8.5
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 3.1,
+      "excl": 3.1
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 47.6,
+      "excl": 0.6
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 8.2,
+      "excl": 5.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 76,
+     "merge.in≤4": 27,
+     "merge.ms": 10.6,
+     "merge.in≤16": 28,
+     "merge.merging": 49,
+     "merge.pairChecks": 3140009,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 11,
+     "fight.runMs:sweep": 8.5,
+     "merge.in≤64": 12,
+     "merge.in≤256": 1,
+     "merge.in≤128": 8,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 28,
+     "search.cands": 36,
+     "fight.calls:search:held": 34,
+     "fight.runs:search:held": 8,
+     "fight.runMs:search:held": 2.9,
+     "search.depths": 18,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 66,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 57,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 23,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 5
+    },
+    "fightTurns": {
+     "1": 11,
+     "2": 4,
+     "3": 4,
+     "6": 2
+    }
+   },
+   {
+    "ms": 66,
+    "spans": {
+     "game": {
+      "n": 146,
+      "incl": 37.2,
+      "excl": 37.2
+     },
+     "tables": {
+      "n": 1,
+      "incl": 37.8,
+      "excl": 5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 12.8,
+      "excl": 12.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 2.6,
+      "excl": 2.6
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 53.4,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 10.3,
+      "excl": 7
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 76,
+     "merge.in≤4": 27,
+     "merge.ms": 14.1,
+     "merge.in≤16": 28,
+     "merge.merging": 49,
+     "merge.pairChecks": 3140009,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 11,
+     "fight.runMs:sweep": 12.6,
+     "merge.in≤64": 12,
+     "merge.in≤256": 1,
+     "merge.in≤128": 8,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 28,
+     "search.cands": 36,
+     "fight.calls:search:held": 34,
+     "fight.runs:search:held": 8,
+     "fight.runMs:search:held": 2.4,
+     "search.depths": 18,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 66,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 57,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 23,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 5
+    },
+    "fightTurns": {
+     "1": 11,
+     "2": 4,
+     "3": 4,
+     "6": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 6 · foes 2 (Tangela down)",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 32/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 0/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "down": 2,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 138,
+    "spans": {
+     "game": {
+      "n": 175,
+      "incl": 72.3,
+      "excl": 72.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 73.6,
+      "excl": 8.1
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 23.8,
+      "excl": 23.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 9.2,
+      "excl": 9.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 3.1,
+      "excl": 3.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 109.9,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 2.9,
+      "excl": 2.9
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.9,
+      "excl": 0.9
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 24,
+      "excl": 14.3
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 125,
+     "merge.in≤4": 47,
+     "merge.ms": 29.4,
+     "merge.in≤16": 49,
+     "merge.merging": 80,
+     "merge.pairChecks": 6424758,
+     "fight.calls:sweep": 27,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 23.7,
+     "merge.in≤64": 17,
+     "merge.in≤256": 6,
+     "merge.in≤128": 6,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 293,
+     "search.cands": 721,
+     "fight.calls:search:held": 901,
+     "fight.runs:search:held": 17,
+     "fight.runMs:search:held": 7.6,
+     "search.depths": 54,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1678,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 1597,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 459,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 36
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 21,
+     "2": 5,
+     "3": 1,
+     "4": 1,
+     "5": 6,
+     "6": 1
+    }
+   },
+   {
+    "ms": 110,
+    "spans": {
+     "game": {
+      "n": 175,
+      "incl": 51.7,
+      "excl": 51.7
+     },
+     "tables": {
+      "n": 1,
+      "incl": 52.8,
+      "excl": 6.5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 22.3,
+      "excl": 22.3
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 8.4,
+      "excl": 8.4
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 3.6,
+      "excl": 3.6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 87.4,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 3.9,
+      "excl": 3.9
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.4,
+      "excl": 1.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 20.1,
+      "excl": 10.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 125,
+     "merge.in≤4": 47,
+     "merge.ms": 27.2,
+     "merge.in≤16": 49,
+     "merge.merging": 80,
+     "merge.pairChecks": 6424758,
+     "fight.calls:sweep": 27,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 22.1,
+     "merge.in≤64": 17,
+     "merge.in≤256": 6,
+     "merge.in≤128": 6,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 293,
+     "search.cands": 721,
+     "fight.calls:search:held": 901,
+     "fight.runs:search:held": 17,
+     "fight.runMs:search:held": 6.6,
+     "search.depths": 54,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1678,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 1597,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 459,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 36
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 21,
+     "2": 5,
+     "3": 1,
+     "4": 1,
+     "5": 6,
+     "6": 1
+    }
+   },
+   {
+    "ms": 124,
+    "spans": {
+     "game": {
+      "n": 175,
+      "incl": 67.7,
+      "excl": 67.7
+     },
+     "tables": {
+      "n": 1,
+      "incl": 71.3,
+      "excl": 8.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 16,
+      "excl": 16
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 8.9,
+      "excl": 8.9
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 3.6,
+      "excl": 3.6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 99.9,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 4.1,
+      "excl": 4.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.1,
+      "excl": 1.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 20.8,
+      "excl": 11.6
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 125,
+     "merge.in≤4": 47,
+     "merge.ms": 21.4,
+     "merge.in≤16": 49,
+     "merge.merging": 80,
+     "merge.pairChecks": 6424758,
+     "fight.calls:sweep": 27,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 15.9,
+     "merge.in≤64": 17,
+     "merge.in≤256": 6,
+     "merge.in≤128": 6,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 293,
+     "search.cands": 721,
+     "fight.calls:search:held": 901,
+     "fight.runs:search:held": 17,
+     "fight.runMs:search:held": 6.8,
+     "search.depths": 54,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1678,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 1597,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 459,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "search.beam": 36
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 21,
+     "2": 5,
+     "3": 1,
+     "4": 1,
+     "5": 6,
+     "6": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 6 · foes 2 (Wattrel down)",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 32/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 0/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "down": 1,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 520,
+    "spans": {
+     "game": {
+      "n": 197,
+      "incl": 53.1,
+      "excl": 53.1
+     },
+     "tables": {
+      "n": 1,
+      "incl": 56,
+      "excl": 8.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 91.1,
+      "excl": 91.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 161.3,
+      "excl": 161.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 163.2,
+      "excl": 163.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 472,
+      "excl": 0.4
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 22.8,
+      "excl": 22.8
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.4,
+      "excl": 1.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 45.6,
+      "excl": 16.1
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 652,
+     "merge.in≤4": 231,
+     "merge.ms": 390,
+     "merge.in≤16": 208,
+     "merge.merging": 429,
+     "merge.pairChecks": 75110078,
+     "merge.in≤64": 156,
+     "merge.in≤512": 8,
+     "fight.calls:sweep": 27,
+     "fight.runs:sweep": 21,
+     "fight.runMs:sweep": 91,
+     "merge.in≤256": 34,
+     "merge.in≤128": 15,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 877,
+     "search.cands": 2388,
+     "fight.calls:search:held": 1361,
+     "fight.runs:search:held": 82,
+     "fight.runMs:search:held": 156.2,
+     "search.depths": 63,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1778,
+     "fight.runs:search:free": 31,
+     "fight.runMs:search:free": 147.4,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4615,
+     "fight.runs:search:at": 28,
+     "fight.runMs:search:at": 9.9,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 913,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 94
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 85,
+     "2": 18,
+     "3": 14,
+     "4": 6,
+     "5": 26,
+     "6": 6,
+     "7": 2,
+     "8": 1,
+     "10": 1,
+     "11": 1,
+     "12": 2
+    }
+   },
+   {
+    "ms": 376,
+    "spans": {
+     "game": {
+      "n": 197,
+      "incl": 53.2,
+      "excl": 53.2
+     },
+     "tables": {
+      "n": 1,
+      "incl": 55.8,
+      "excl": 7.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 60.3,
+      "excl": 60.3
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 131.4,
+      "excl": 131.4
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 79.1,
+      "excl": 79.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 326.8,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 21.6,
+      "excl": 21.6
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2.8,
+      "excl": 2.8
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 46.2,
+      "excl": 17
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 652,
+     "merge.in≤4": 231,
+     "merge.ms": 266.2,
+     "merge.in≤16": 208,
+     "merge.merging": 429,
+     "merge.pairChecks": 75110078,
+     "merge.in≤64": 156,
+     "merge.in≤512": 8,
+     "fight.calls:sweep": 27,
+     "fight.runs:sweep": 21,
+     "fight.runMs:sweep": 60.2,
+     "merge.in≤256": 34,
+     "merge.in≤128": 15,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 877,
+     "search.cands": 2388,
+     "fight.calls:search:held": 1361,
+     "fight.runs:search:held": 82,
+     "fight.runMs:search:held": 126.7,
+     "search.depths": 63,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1778,
+     "fight.runs:search:free": 31,
+     "fight.runMs:search:free": 76.1,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4615,
+     "fight.runs:search:at": 28,
+     "fight.runMs:search:at": 9.9,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 913,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.6,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 94
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 85,
+     "2": 18,
+     "3": 14,
+     "4": 6,
+     "5": 26,
+     "6": 6,
+     "7": 2,
+     "8": 1,
+     "10": 1,
+     "11": 1,
+     "12": 2
+    }
+   },
+   {
+    "ms": 448,
+    "spans": {
+     "game": {
+      "n": 197,
+      "incl": 56.6,
+      "excl": 56.6
+     },
+     "tables": {
+      "n": 1,
+      "incl": 59.1,
+      "excl": 7.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 73.9,
+      "excl": 73.9
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 175.9,
+      "excl": 175.9
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 87.2,
+      "excl": 87.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 396.7,
+      "excl": 0.4
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 22.4,
+      "excl": 22.4
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2.4,
+      "excl": 2.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 48.8,
+      "excl": 19
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 652,
+     "merge.in≤4": 231,
+     "merge.ms": 330.7,
+     "merge.in≤16": 208,
+     "merge.merging": 429,
+     "merge.pairChecks": 75110078,
+     "merge.in≤64": 156,
+     "merge.in≤512": 8,
+     "fight.calls:sweep": 27,
+     "fight.runs:sweep": 21,
+     "fight.runMs:sweep": 73.7,
+     "merge.in≤256": 34,
+     "merge.in≤128": 15,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 877,
+     "search.cands": 2388,
+     "fight.calls:search:held": 1361,
+     "fight.runs:search:held": 82,
+     "fight.runMs:search:held": 171.2,
+     "search.depths": 63,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1778,
+     "fight.runs:search:free": 31,
+     "fight.runMs:search:free": 82.6,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4615,
+     "fight.runs:search:at": 28,
+     "fight.runMs:search:at": 11,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 913,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.5,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 94
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 85,
+     "2": 18,
+     "3": 14,
+     "4": 6,
+     "5": 26,
+     "6": 6,
+     "7": 2,
+     "8": 1,
+     "10": 1,
+     "11": 1,
+     "12": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 32/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "tangela": "heals",
+  "out": "Tangela",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 985,
+    "spans": {
+     "game": {
+      "n": 289,
+      "incl": 275.3,
+      "excl": 275.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 272.8,
+      "excl": 49.7
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 136.4,
+      "excl": 136.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 372.2,
+      "excl": 372.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 95.6,
+      "excl": 95.6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 877.6,
+      "excl": 0.5
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 21.1,
+      "excl": 21.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.9,
+      "excl": 1.9
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 56.9,
+      "excl": 22.2
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1236,
+     "merge.in≤16": 442,
+     "merge.merging": 795,
+     "merge.pairChecks": 110802182,
+     "merge.ms": 557.7,
+     "merge.in≤4": 470,
+     "merge.in≤64": 214,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 135.9,
+     "merge.in≤256": 54,
+     "merge.in≤512": 4,
+     "merge.in≤128": 52,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 661,
+     "search.cands": 1472,
+     "fight.calls:search:held": 1806,
+     "fight.runs:search:held": 161,
+     "fight.runMs:search:held": 363.4,
+     "search.depths": 70,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3550,
+     "fight.runs:search:free": 85,
+     "fight.runMs:search:free": 80.6,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4741,
+     "fight.runs:search:at": 38,
+     "fight.runMs:search:at": 13,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 806,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 102
+    },
+    "fightTurns": {
+     "0": 4,
+     "1": 170,
+     "2": 24,
+     "3": 30,
+     "4": 28,
+     "5": 21,
+     "6": 31,
+     "11": 3,
+     "12": 1
+    }
+   },
+   {
+    "ms": 565,
+    "spans": {
+     "game": {
+      "n": 289,
+      "incl": 61.8,
+      "excl": 61.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 60.8,
+      "excl": 8.3
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 51,
+      "excl": 51
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 312,
+      "excl": 312
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 77.6,
+      "excl": 77.6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 501.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 25.8,
+      "excl": 25.8
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2.3,
+      "excl": 2.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 59.1,
+      "excl": 22.8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1236,
+     "merge.in≤16": 442,
+     "merge.merging": 795,
+     "merge.pairChecks": 110802182,
+     "merge.ms": 431,
+     "merge.in≤4": 470,
+     "merge.in≤64": 214,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 50.9,
+     "merge.in≤256": 54,
+     "merge.in≤512": 4,
+     "merge.in≤128": 52,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 661,
+     "search.cands": 1472,
+     "fight.calls:search:held": 1806,
+     "fight.runs:search:held": 161,
+     "fight.runMs:search:held": 307.4,
+     "search.depths": 70,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3550,
+     "fight.runs:search:free": 85,
+     "fight.runMs:search:free": 68.7,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4741,
+     "fight.runs:search:at": 38,
+     "fight.runMs:search:at": 16.2,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 806,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 102
+    },
+    "fightTurns": {
+     "0": 4,
+     "1": 170,
+     "2": 24,
+     "3": 30,
+     "4": 28,
+     "5": 21,
+     "6": 31,
+     "11": 3,
+     "12": 1
+    }
+   },
+   {
+    "ms": 522,
+    "spans": {
+     "game": {
+      "n": 289,
+      "incl": 61,
+      "excl": 61
+     },
+     "tables": {
+      "n": 1,
+      "incl": 55.9,
+      "excl": 7.5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 56.8,
+      "excl": 56.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 235.2,
+      "excl": 235.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 92.6,
+      "excl": 92.6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 440.7,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 38.2,
+      "excl": 38.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 3,
+      "excl": 3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 76.7,
+      "excl": 25.6
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1236,
+     "merge.in≤16": 442,
+     "merge.merging": 795,
+     "merge.pairChecks": 110802182,
+     "merge.ms": 376.9,
+     "merge.in≤4": 470,
+     "merge.in≤64": 214,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 56.6,
+     "merge.in≤256": 54,
+     "merge.in≤512": 4,
+     "merge.in≤128": 52,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 661,
+     "search.cands": 1472,
+     "fight.calls:search:held": 1806,
+     "fight.runs:search:held": 161,
+     "fight.runMs:search:held": 231.4,
+     "search.depths": 70,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3550,
+     "fight.runs:search:free": 85,
+     "fight.runMs:search:free": 81.7,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4741,
+     "fight.runs:search:at": 38,
+     "fight.runMs:search:at": 21.5,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 806,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 102
+    },
+    "fightTurns": {
+     "0": 4,
+     "1": 170,
+     "2": 24,
+     "3": 30,
+     "4": 28,
+     "5": 21,
+     "6": 31,
+     "11": 3,
+     "12": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "tangela": "heals",
+  "out": "Tangela",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 423,
+    "spans": {
+     "game": {
+      "n": 247,
+      "incl": 44.8,
+      "excl": 44.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 43.4,
+      "excl": 5.9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 59.2,
+      "excl": 59.2
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 201.3,
+      "excl": 201.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 90.1,
+      "excl": 90.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 394.1,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 3.1,
+      "excl": 3.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1,
+      "excl": 1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 25.7,
+      "excl": 15.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 844,
+     "merge.in≤16": 286,
+     "merge.merging": 542,
+     "merge.pairChecks": 86961496,
+     "merge.ms": 331.3,
+     "merge.in≤4": 312,
+     "merge.in≤64": 164,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 59.1,
+     "merge.in≤256": 35,
+     "merge.in≤512": 4,
+     "merge.in≤128": 43,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 352,
+     "search.cands": 709,
+     "fight.calls:search:held": 662,
+     "fight.runs:search:held": 80,
+     "fight.runMs:search:held": 198.6,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2014,
+     "fight.runs:search:free": 92,
+     "fight.runMs:search:free": 83.3,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1270,
+     "fight.runs:search:at": 5,
+     "fight.runMs:search:at": 0.1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 281,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 85
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 92,
+     "2": 21,
+     "3": 27,
+     "4": 14,
+     "5": 16,
+     "6": 23,
+     "11": 3,
+     "12": 1
+    }
+   },
+   {
+    "ms": 441,
+    "spans": {
+     "game": {
+      "n": 247,
+      "incl": 50.3,
+      "excl": 50.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 49.7,
+      "excl": 6.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 63,
+      "excl": 63
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 204.5,
+      "excl": 204.5
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 95.3,
+      "excl": 95.3
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 412.7,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 2.3,
+      "excl": 2.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.7,
+      "excl": 0.7
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 24.8,
+      "excl": 15.6
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 844,
+     "merge.in≤16": 286,
+     "merge.merging": 542,
+     "merge.pairChecks": 86961496,
+     "merge.ms": 343,
+     "merge.in≤4": 312,
+     "merge.in≤64": 164,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 62.9,
+     "merge.in≤256": 35,
+     "merge.in≤512": 4,
+     "merge.in≤128": 43,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 352,
+     "search.cands": 709,
+     "fight.calls:search:held": 662,
+     "fight.runs:search:held": 80,
+     "fight.runMs:search:held": 201.3,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2014,
+     "fight.runs:search:free": 92,
+     "fight.runMs:search:free": 89.4,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1270,
+     "fight.runs:search:at": 5,
+     "fight.runMs:search:at": 0.1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 281,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 85
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 92,
+     "2": 21,
+     "3": 27,
+     "4": 14,
+     "5": 16,
+     "6": 23,
+     "11": 3,
+     "12": 1
+    }
+   },
+   {
+    "ms": 407,
+    "spans": {
+     "game": {
+      "n": 247,
+      "incl": 52.3,
+      "excl": 52.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 51.8,
+      "excl": 6.1
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 70.6,
+      "excl": 70.6
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 193.1,
+      "excl": 193.1
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 67.1,
+      "excl": 67.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 384.1,
+      "excl": 1.3
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 2.3,
+      "excl": 2.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.6,
+      "excl": 0.6
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 19.8,
+      "excl": 11.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 844,
+     "merge.in≤16": 286,
+     "merge.merging": 542,
+     "merge.pairChecks": 86961496,
+     "merge.ms": 315.7,
+     "merge.in≤4": 312,
+     "merge.in≤64": 164,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 70.4,
+     "merge.in≤256": 35,
+     "merge.in≤512": 4,
+     "merge.in≤128": 43,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 352,
+     "search.cands": 709,
+     "fight.calls:search:held": 662,
+     "fight.runs:search:held": 80,
+     "fight.runMs:search:held": 190.7,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2014,
+     "fight.runs:search:free": 92,
+     "fight.runMs:search:free": 63.7,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1270,
+     "fight.runs:search:at": 5,
+     "fight.runMs:search:at": 0.1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 281,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "search.beam": 85
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 92,
+     "2": 21,
+     "3": 27,
+     "4": 14,
+     "5": 16,
+     "6": 23,
+     "11": 3,
+     "12": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · ours 4 · foes 3",
+  "ours": [
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "tangela": "heals",
+  "out": "Tangela",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 4,
+    "of": 4,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 5
+  },
+  "reps": [
+   {
+    "ms": 164,
+    "spans": {
+     "game": {
+      "n": 211,
+      "incl": 28.3,
+      "excl": 28.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 26.2,
+      "excl": 3.2
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 18.1,
+      "excl": 18.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 42,
+      "excl": 42
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 60.1,
+      "excl": 60.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 146.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 1,
+      "excl": 1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 14.3,
+      "excl": 9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 472,
+     "merge.in≤16": 155,
+     "merge.merging": 280,
+     "merge.pairChecks": 35828037,
+     "merge.ms": 112.7,
+     "merge.in≤4": 195,
+     "merge.in≤64": 67,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 18,
+     "merge.in≤256": 24,
+     "merge.in≤128": 31,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 176,
+     "search.cands": 310,
+     "fight.calls:search:held": 173,
+     "fight.runs:search:held": 34,
+     "fight.runMs:search:held": 41.1,
+     "search.depths": 39,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 833,
+     "fight.runs:search:free": 60,
+     "fight.runMs:search:free": 57.5,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 350,
+     "fight.runs:search:at": 1,
+     "fight.runMs:search:at": 0.2,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 96,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.3,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 237,
+     "search.beam": 45
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 47,
+     "2": 17,
+     "3": 15,
+     "4": 11,
+     "5": 9,
+     "6": 13
+    }
+   },
+   {
+    "ms": 176,
+    "spans": {
+     "game": {
+      "n": 211,
+      "incl": 26.2,
+      "excl": 26.2
+     },
+     "tables": {
+      "n": 1,
+      "incl": 23.7,
+      "excl": 3.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 14,
+      "excl": 14
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 40.4,
+      "excl": 40.4
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 76.7,
+      "excl": 76.7
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 155,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 1.3,
+      "excl": 1.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 19,
+      "excl": 12.7
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 472,
+     "merge.in≤16": 155,
+     "merge.merging": 280,
+     "merge.pairChecks": 35828037,
+     "merge.ms": 123.2,
+     "merge.in≤4": 195,
+     "merge.in≤64": 67,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 13.9,
+     "merge.in≤256": 24,
+     "merge.in≤128": 31,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 176,
+     "search.cands": 310,
+     "fight.calls:search:held": 173,
+     "fight.runs:search:held": 34,
+     "fight.runMs:search:held": 39.7,
+     "search.depths": 39,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 833,
+     "fight.runs:search:free": 60,
+     "fight.runMs:search:free": 74.3,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 350,
+     "fight.runs:search:at": 1,
+     "fight.runMs:search:at": 0.2,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 96,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 237,
+     "search.beam": 45
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 47,
+     "2": 17,
+     "3": 15,
+     "4": 11,
+     "5": 9,
+     "6": 13
+    }
+   },
+   {
+    "ms": 160,
+    "spans": {
+     "game": {
+      "n": 211,
+      "incl": 27.9,
+      "excl": 27.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 28.2,
+      "excl": 4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 16.8,
+      "excl": 16.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 42.6,
+      "excl": 42.6
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 58.5,
+      "excl": 58.5
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 146.2,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 0.7,
+      "excl": 0.7
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 12.4,
+      "excl": 8.4
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 472,
+     "merge.in≤16": 155,
+     "merge.merging": 280,
+     "merge.pairChecks": 35828037,
+     "merge.ms": 110.4,
+     "merge.in≤4": 195,
+     "merge.in≤64": 67,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 16.6,
+     "merge.in≤256": 24,
+     "merge.in≤128": 31,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 176,
+     "search.cands": 310,
+     "fight.calls:search:held": 173,
+     "fight.runs:search:held": 34,
+     "fight.runMs:search:held": 41.9,
+     "search.depths": 39,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 833,
+     "fight.runs:search:free": 60,
+     "fight.runMs:search:free": 56,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 350,
+     "fight.runs:search:at": 1,
+     "fight.runMs:search:at": 0.2,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 96,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.3,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 237,
+     "search.beam": 45
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 47,
+     "2": 17,
+     "3": 15,
+     "4": 11,
+     "5": 9,
+     "6": 13
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · ours 3 · foes 3",
+  "ours": [
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "tangela": "heals",
+  "out": "Tangela",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Taillow Peck → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 3,
+    "of": 3,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 5
+  },
+  "reps": [
+   {
+    "ms": 78,
+    "spans": {
+     "game": {
+      "n": 168,
+      "incl": 21.3,
+      "excl": 21.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 20.3,
+      "excl": 2.7
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 10.1,
+      "excl": 10.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 11.2,
+      "excl": 11.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 19.9,
+      "excl": 19.9
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 61.5,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.4,
+      "excl": 1.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 14.7,
+      "excl": 9.8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 209,
+     "merge.in≤16": 73,
+     "merge.merging": 126,
+     "merge.pairChecks": 15283314,
+     "merge.ms": 40.2,
+     "merge.in≤4": 85,
+     "merge.in≤64": 34,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 12,
+     "fight.runMs:sweep": 10,
+     "merge.in≤256": 13,
+     "merge.in≤128": 4,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 77,
+     "search.cands": 108,
+     "fight.calls:search:held": 34,
+     "fight.runs:search:held": 11,
+     "fight.runMs:search:held": 10.9,
+     "search.depths": 29,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 221,
+     "fight.runs:search:free": 29,
+     "fight.runMs:search:free": 19.4,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 86,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 34,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 1.4,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 237,
+     "search.beam": 17
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 30,
+     "2": 4,
+     "3": 4,
+     "4": 4,
+     "5": 3,
+     "6": 7
+    }
+   },
+   {
+    "ms": 105,
+    "spans": {
+     "game": {
+      "n": 168,
+      "incl": 25.3,
+      "excl": 25.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 24.9,
+      "excl": 3.3
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 24,
+      "excl": 24
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 17.3,
+      "excl": 17.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 24.3,
+      "excl": 24.3
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 90.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.8,
+      "excl": 1.8
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 12.4,
+      "excl": 7.7
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 209,
+     "merge.in≤16": 73,
+     "merge.merging": 126,
+     "merge.pairChecks": 15283314,
+     "merge.ms": 63.6,
+     "merge.in≤4": 85,
+     "merge.in≤64": 34,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 12,
+     "fight.runMs:sweep": 23.9,
+     "merge.in≤256": 13,
+     "merge.in≤128": 4,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 77,
+     "search.cands": 108,
+     "fight.calls:search:held": 34,
+     "fight.runs:search:held": 11,
+     "fight.runMs:search:held": 17,
+     "search.depths": 29,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 221,
+     "fight.runs:search:free": 29,
+     "fight.runMs:search:free": 23.7,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 86,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 34,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 1.7,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 237,
+     "search.beam": 17
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 30,
+     "2": 4,
+     "3": 4,
+     "4": 4,
+     "5": 3,
+     "6": 7
+    }
+   },
+   {
+    "ms": 75,
+    "spans": {
+     "game": {
+      "n": 168,
+      "incl": 21.7,
+      "excl": 21.7
+     },
+     "tables": {
+      "n": 1,
+      "incl": 22.5,
+      "excl": 3.2
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 10.1,
+      "excl": 10.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 11.7,
+      "excl": 11.7
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 20.1,
+      "excl": 20.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 64.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.2,
+      "excl": 1.2
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 9.8,
+      "excl": 6.5
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "view": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 209,
+     "merge.in≤16": 73,
+     "merge.merging": 126,
+     "merge.pairChecks": 15283314,
+     "merge.ms": 41,
+     "merge.in≤4": 85,
+     "merge.in≤64": 34,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 12,
+     "fight.runMs:sweep": 10.1,
+     "merge.in≤256": 13,
+     "merge.in≤128": 4,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 77,
+     "search.cands": 108,
+     "fight.calls:search:held": 34,
+     "fight.runs:search:held": 11,
+     "fight.runMs:search:held": 11.6,
+     "search.depths": 29,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 221,
+     "fight.runs:search:free": 29,
+     "fight.runMs:search:free": 19.6,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 86,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 34,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 1.1,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 237,
+     "search.beam": 17
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 30,
+     "2": 4,
+     "3": 4,
+     "4": 4,
+     "5": 3,
+     "6": 7
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #0 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 12/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 15/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 6/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 29/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 21/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 26/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 40/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 39/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 33/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 0,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 115,
+    "spans": {
+     "game": {
+      "n": 268,
+      "incl": 37.8,
+      "excl": 37.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 36.4,
+      "excl": 4.6
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 5.4,
+      "excl": 5.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 31.8,
+      "excl": 31.8
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 12.6,
+      "excl": 12.6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 86.4,
+      "excl": 0
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 6.7,
+      "excl": 6.7
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.1,
+      "excl": 1.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 24.4,
+      "excl": 11.4
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 363,
+     "merge.in≤4": 153,
+     "merge.ms": 40.4,
+     "merge.in≤16": 135,
+     "merge.merging": 224,
+     "merge.pairChecks": 15762792,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 18,
+     "fight.runMs:sweep": 5.4,
+     "merge.in≤128": 11,
+     "merge.in≤64": 47,
+     "merge.in≤256": 17,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 525,
+     "search.cands": 1228,
+     "fight.calls:search:held": 1593,
+     "fight.runs:search:held": 61,
+     "fight.runMs:search:held": 29.4,
+     "search.depths": 63,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2839,
+     "fight.runs:search:free": 31,
+     "fight.runMs:search:free": 7.7,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 3972,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 653,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 184,
+     "search.beam": 62
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 80,
+     "2": 1,
+     "3": 10,
+     "4": 1,
+     "5": 6,
+     "6": 11
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #1 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 16/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 26/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 5/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 27/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 33/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 48/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 37/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 46/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 1,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 5 of 5 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 337,
+    "spans": {
+     "game": {
+      "n": 240,
+      "incl": 36.2,
+      "excl": 36.2
+     },
+     "tables": {
+      "n": 1,
+      "incl": 35.9,
+      "excl": 4.9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 32,
+      "excl": 32
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 92.3,
+      "excl": 92.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 154.4,
+      "excl": 154.4
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 314.7,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 5.3,
+      "excl": 5.3
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 18.8,
+      "excl": 9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 520,
+     "merge.in≤4": 175,
+     "merge.ms": 270.1,
+     "merge.in≤16": 175,
+     "merge.merging": 354,
+     "merge.pairChecks": 81890221,
+     "merge.in≤64": 126,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 19,
+     "fight.runMs:sweep": 31.8,
+     "merge.in≤128": 6,
+     "merge.in≤512": 10,
+     "merge.in≤256": 28,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 300,
+     "search.cands": 571,
+     "fight.calls:search:held": 587,
+     "fight.runs:search:held": 37,
+     "fight.runMs:search:held": 90.2,
+     "search.depths": 48,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1513,
+     "fight.runs:search:free": 53,
+     "fight.runMs:search:free": 150.9,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1214,
+     "fight.runs:search:at": 1,
+     "fight.runMs:search:at": 3,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 292,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 348,
+     "search.beam": 53
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 49,
+     "2": 11,
+     "3": 10,
+     "4": 4,
+     "5": 11,
+     "6": 14,
+     "8": 1,
+     "9": 4,
+     "10": 5
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #2 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 10/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 12/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 26/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 18/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 34/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 15/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 41/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 44/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 19/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 2,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Taillow Peck → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+   ],
+   "steps": 8
+  },
+  "reps": [
+   {
+    "ms": 256,
+    "spans": {
+     "game": {
+      "n": 275,
+      "incl": 47.1,
+      "excl": 47.1
+     },
+     "tables": {
+      "n": 1,
+      "incl": 49.3,
+      "excl": 6.9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 24.3,
+      "excl": 24.3
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 98.6,
+      "excl": 98.6
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 48.9,
+      "excl": 48.9
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 221.3,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 18.2,
+      "excl": 18.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2.1,
+      "excl": 2.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 31.3,
+      "excl": 7.6
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 592,
+     "merge.in≤4": 220,
+     "merge.ms": 167.7,
+     "merge.in≤16": 193,
+     "merge.merging": 390,
+     "merge.pairChecks": 53697390,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 18,
+     "fight.runMs:sweep": 24.3,
+     "merge.in≤64": 134,
+     "merge.in≤128": 26,
+     "merge.in≤512": 6,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 586,
+     "search.cands": 1357,
+     "merge.in≤256": 13,
+     "fight.calls:search:held": 1652,
+     "fight.runs:search:held": 90,
+     "fight.runMs:search:held": 95.2,
+     "search.depths": 70,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3295,
+     "fight.runs:search:free": 41,
+     "fight.runMs:search:free": 41.6,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4236,
+     "fight.runs:search:at": 16,
+     "fight.runMs:search:at": 10.8,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 395,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 1.2,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 340,
+     "search.beam": 80
+    },
+    "fightTurns": {
+     "0": 5,
+     "1": 110,
+     "2": 9,
+     "3": 13,
+     "4": 6,
+     "5": 8,
+     "6": 7,
+     "7": 2,
+     "9": 1,
+     "10": 5
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #3 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 25/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 32/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 28/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 27/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 8/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 34/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 37/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 28/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 3,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 2 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 5 of 5 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 109,
+    "spans": {
+     "game": {
+      "n": 247,
+      "incl": 28.4,
+      "excl": 28.4
+     },
+     "tables": {
+      "n": 1,
+      "incl": 27.3,
+      "excl": 3.3
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 9.6,
+      "excl": 9.6
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 31.3,
+      "excl": 31.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 23.9,
+      "excl": 23.9
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 92.2,
+      "excl": 0
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 2.2,
+      "excl": 2.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 15.7,
+      "excl": 8.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 499,
+     "merge.in≤16": 162,
+     "merge.merging": 316,
+     "merge.pairChecks": 19834085,
+     "merge.ms": 57.4,
+     "merge.in≤4": 197,
+     "merge.in≤128": 21,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 15,
+     "fight.runMs:sweep": 9.5,
+     "merge.in≤64": 99,
+     "merge.in≤256": 20,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 319,
+     "search.cands": 654,
+     "fight.calls:search:held": 578,
+     "fight.runs:search:held": 48,
+     "fight.runMs:search:held": 30.3,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1751,
+     "fight.runs:search:free": 75,
+     "fight.runMs:search:free": 21,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1230,
+     "fight.runs:search:at": 2,
+     "fight.runMs:search:at": 0,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 244,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 192,
+     "search.beam": 61
+    },
+    "fightTurns": {
+     "0": 5,
+     "1": 76,
+     "2": 25,
+     "3": 6,
+     "4": 7,
+     "5": 11,
+     "6": 11
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #4 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 33/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 20/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 6/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 12/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 30/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 13/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 39/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 39/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 20/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 4,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Machop Low Sweep → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": null,
+   "warnings": [
+    "likely lost: the plan runs out with 3 foes standing — maximise damage"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 96,
+    "spans": {
+     "game": {
+      "n": 274,
+      "incl": 31.8,
+      "excl": 31.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 31.4,
+      "excl": 4.2
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 7.1,
+      "excl": 7.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 12.5,
+      "excl": 12.5
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 17.9,
+      "excl": 17.9
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 69.1,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 3.4,
+      "excl": 3.4
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 7.8,
+      "excl": 7.8
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 25.1,
+      "excl": 9.8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 681,
+     "merge.in≤16": 220,
+     "merge.merging": 381,
+     "merge.pairChecks": 9281191,
+     "merge.ms": 34,
+     "merge.in≤4": 335,
+     "merge.in≤64": 62,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 18,
+     "fight.runMs:sweep": 7,
+     "merge.in≤128": 56,
+     "merge.in≤256": 8,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 451,
+     "search.cands": 975,
+     "fight.calls:search:held": 696,
+     "fight.runs:search:held": 93,
+     "fight.runMs:search:held": 11.3,
+     "search.depths": 67,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3073,
+     "fight.runs:search:free": 88,
+     "fight.runMs:search:free": 12.6,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 2475,
+     "fight.runs:search:at": 1,
+     "fight.runMs:search:at": 0,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 361,
+     "fight.runs:search:at+move": 38,
+     "fight.runMs:search:at+move": 7.2,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 180,
+     "search.beam": 81
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 150,
+     "2": 67,
+     "3": 11,
+     "4": 3,
+     "5": 6
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #5 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 33/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 15/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 22/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 19/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 35/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 26/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 35/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 20/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 5,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Machop Low Kick → Tangela, then Low Sweep",
+  "plan": {
+   "result": "loss",
+   "win": null,
+   "warnings": [
+    "likely lost: the plan runs out with 1 foe standing — maximise damage"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 338,
+    "spans": {
+     "game": {
+      "n": 232,
+      "incl": 44.6,
+      "excl": 44.6
+     },
+     "tables": {
+      "n": 1,
+      "incl": 45.4,
+      "excl": 5.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 23.1,
+      "excl": 23.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 69.7,
+      "excl": 69.7
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 120.5,
+      "excl": 120.5
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 258.8,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 5,
+      "excl": 5
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 58,
+      "excl": 58
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 78,
+      "excl": 10.8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 650,
+     "merge.in≤16": 202,
+     "merge.merging": 419,
+     "merge.pairChecks": 65495183,
+     "merge.ms": 250.7,
+     "merge.in≤4": 246,
+     "merge.in≤128": 38,
+     "fight.calls:sweep": 15,
+     "fight.runs:sweep": 15,
+     "fight.runMs:sweep": 23.1,
+     "merge.in≤64": 137,
+     "merge.in≤256": 20,
+     "merge.in≤512": 7,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 510,
+     "search.cands": 980,
+     "fight.calls:search:held": 940,
+     "fight.runs:search:held": 62,
+     "fight.runMs:search:held": 65.7,
+     "search.depths": 56,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1822,
+     "fight.runs:search:free": 81,
+     "fight.runMs:search:free": 114.2,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1910,
+     "fight.runs:search:at": 7,
+     "fight.runMs:search:at": 0.2,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 440,
+     "fight.runs:search:at+move": 20,
+     "fight.runMs:search:at+move": 56.3,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 348,
+     "search.beam": 64
+    },
+    "fightTurns": {
+     "0": 9,
+     "1": 104,
+     "2": 31,
+     "3": 7,
+     "4": 13,
+     "5": 10,
+     "6": 2,
+     "7": 3,
+     "8": 1,
+     "9": 3,
+     "10": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #6 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 17/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 14/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 16/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 23/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 25/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 25/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 44/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 17/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 41/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 6,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 121,
+    "spans": {
+     "game": {
+      "n": 268,
+      "incl": 52.7,
+      "excl": 52.7
+     },
+     "tables": {
+      "n": 1,
+      "incl": 54,
+      "excl": 5.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 7.1,
+      "excl": 7.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 31.6,
+      "excl": 31.6
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 6,
+      "excl": 6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 98.8,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 7.5,
+      "excl": 7.5
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.1,
+      "excl": 1.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 20.6,
+      "excl": 8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 237,
+     "merge.in≤4": 109,
+     "merge.ms": 33.5,
+     "merge.in≤16": 82,
+     "merge.merging": 134,
+     "merge.pairChecks": 8119786,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 18,
+     "fight.runMs:sweep": 7,
+     "merge.in≤64": 36,
+     "merge.in≤128": 3,
+     "merge.in≤256": 7,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 521,
+     "search.cands": 1232,
+     "fight.calls:search:held": 1616,
+     "fight.runs:search:held": 47,
+     "fight.runMs:search:held": 27.7,
+     "search.depths": 63,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2990,
+     "fight.runs:search:free": 10,
+     "fight.runMs:search:free": 0.8,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4030,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 653,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.5,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 184,
+     "search.beam": 60
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 52,
+     "2": 7,
+     "3": 8,
+     "4": 1,
+     "5": 2,
+     "6": 5
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #7 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 12/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 34/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 9/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 29/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 24/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 47/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 14/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 50/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 7,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 5 of 5 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 75,
+    "spans": {
+     "game": {
+      "n": 226,
+      "incl": 33.7,
+      "excl": 33.7
+     },
+     "tables": {
+      "n": 1,
+      "incl": 35.3,
+      "excl": 4.5
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 5.8,
+      "excl": 5.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 19.9,
+      "excl": 19.9
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 2.4,
+      "excl": 2.4
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 63.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 1.4,
+      "excl": 1.4
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 9.6,
+      "excl": 5.3
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 179,
+     "merge.in≤4": 75,
+     "merge.ms": 24,
+     "merge.in≤16": 58,
+     "merge.merging": 108,
+     "merge.pairChecks": 8923891,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 15,
+     "fight.runMs:sweep": 5.8,
+     "merge.in≤64": 34,
+     "merge.in≤128": 4,
+     "merge.in≤256": 8,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 248,
+     "search.cands": 498,
+     "fight.calls:search:held": 446,
+     "fight.runs:search:held": 28,
+     "fight.runMs:search:held": 18.9,
+     "search.depths": 48,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1242,
+     "fight.runs:search:free": 7,
+     "fight.runMs:search:free": 0.1,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 976,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 216,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.3,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 192,
+     "search.beam": 35
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 32,
+     "2": 5,
+     "3": 5,
+     "6": 8
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #8 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 22/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 26/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 11/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 27/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 25/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 26/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 26/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 33/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 35/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 8,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 2 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 138,
+    "spans": {
+     "game": {
+      "n": 282,
+      "incl": 32.4,
+      "excl": 32.4
+     },
+     "tables": {
+      "n": 1,
+      "incl": 32.4,
+      "excl": 4.6
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 6.4,
+      "excl": 6.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 51.2,
+      "excl": 51.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 20.2,
+      "excl": 20.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 110.4,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 10,
+      "excl": 10
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.9,
+      "excl": 1.9
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 24.7,
+      "excl": 8.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 563,
+     "merge.in≤4": 222,
+     "merge.ms": 70.3,
+     "merge.in≤16": 228,
+     "merge.merging": 344,
+     "merge.pairChecks": 22143555,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 18,
+     "fight.runMs:sweep": 6.3,
+     "merge.in≤128": 29,
+     "merge.in≤64": 67,
+     "merge.in≤256": 17,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 524,
+     "search.cands": 1236,
+     "fight.calls:search:held": 1593,
+     "fight.runs:search:held": 81,
+     "fight.runMs:search:held": 48.1,
+     "search.depths": 63,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2900,
+     "fight.runs:search:free": 84,
+     "fight.runMs:search:free": 16.7,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 4008,
+     "fight.runs:search:at": 3,
+     "fight.runMs:search:at": 4,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 653,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 184,
+     "search.beam": 61
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 139,
+     "2": 6,
+     "3": 16,
+     "4": 8,
+     "5": 2,
+     "6": 15
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #9 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 33/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 38/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 28/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 32/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 30/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 22/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 19/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 35/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 9,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 2 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 265,
+    "spans": {
+     "game": {
+      "n": 247,
+      "incl": 81.2,
+      "excl": 81.2
+     },
+     "tables": {
+      "n": 1,
+      "incl": 84.5,
+      "excl": 8.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 16.8,
+      "excl": 16.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 69,
+      "excl": 69
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 71,
+      "excl": 71
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 241.5,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 7.9,
+      "excl": 7.9
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 20.5,
+      "excl": 8.5
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 875,
+     "merge.in≤16": 292,
+     "merge.merging": 554,
+     "merge.pairChecks": 45385910,
+     "merge.ms": 145.1,
+     "merge.in≤4": 344,
+     "merge.in≤128": 68,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 16.7,
+     "merge.in≤64": 137,
+     "merge.in≤256": 34,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 374,
+     "search.cands": 727,
+     "fight.calls:search:held": 684,
+     "fight.runs:search:held": 72,
+     "fight.runMs:search:held": 66.5,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1906,
+     "fight.runs:search:free": 110,
+     "fight.runMs:search:free": 66.5,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1418,
+     "fight.runs:search:at": 13,
+     "fight.runMs:search:at": 5.5,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 302,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 222,
+     "search.beam": 70
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 90,
+     "2": 41,
+     "3": 40,
+     "4": 10,
+     "5": 9,
+     "6": 26
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #10 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 17/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 21/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 23/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 10/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 22/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 10/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 27/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 31/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 17/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 10,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Machop Focus Punch → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 6 of 6 — maximise damage before it comes in, keep Machop, Larvitar healthy",
+    "Machop goes down before Combusken comes in"
+   ],
+   "steps": 8
+  },
+  "reps": [
+   {
+    "ms": 296,
+    "spans": {
+     "game": {
+      "n": 260,
+      "incl": 47.9,
+      "excl": 47.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 49.3,
+      "excl": 5.1
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 8.9,
+      "excl": 8.9
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 69.3,
+      "excl": 69.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 145,
+      "excl": 145
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 272.6,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 12.2,
+      "excl": 12.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.8,
+      "excl": 0.8
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 21.1,
+      "excl": 5.2
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 673,
+     "merge.in≤4": 307,
+     "merge.ms": 215.5,
+     "merge.in≤16": 223,
+     "merge.merging": 382,
+     "merge.pairChecks": 63760672,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 18,
+     "fight.runMs:sweep": 8.8,
+     "merge.in≤64": 92,
+     "merge.in≤256": 23,
+     "merge.in≤128": 22,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 613,
+     "search.cands": 1240,
+     "fight.calls:search:held": 1234,
+     "fight.runs:search:held": 112,
+     "fight.runMs:search:held": 64.9,
+     "search.depths": 71,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3186,
+     "fight.runs:search:free": 82,
+     "fight.runMs:search:free": 140,
+     "merge.in≤512": 6,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 3217,
+     "fight.runs:search:at": 25,
+     "fight.runMs:search:at": 8.8,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 828,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 318,
+     "search.beam": 81
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 181,
+     "2": 24,
+     "3": 1,
+     "4": 10,
+     "5": 13,
+     "6": 6
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #11 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 44/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 17/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 10/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 31/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 24/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 31/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 41/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 46/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 11,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 2 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 152,
+    "spans": {
+     "game": {
+      "n": 239,
+      "incl": 28.9,
+      "excl": 28.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 29.5,
+      "excl": 4.6
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 10.6,
+      "excl": 10.6
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 40.1,
+      "excl": 40.1
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 50.8,
+      "excl": 50.8
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 131.2,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 7.2,
+      "excl": 7.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 19.3,
+      "excl": 8.8
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 677,
+     "merge.in≤16": 234,
+     "merge.merging": 422,
+     "merge.pairChecks": 33796376,
+     "merge.ms": 96.8,
+     "merge.in≤4": 265,
+     "merge.in≤64": 113,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 10.5,
+     "merge.in≤128": 32,
+     "merge.in≤256": 33,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 313,
+     "search.cands": 595,
+     "fight.calls:search:held": 587,
+     "fight.runs:search:held": 46,
+     "fight.runMs:search:held": 38.4,
+     "search.depths": 49,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1668,
+     "fight.runs:search:free": 94,
+     "fight.runMs:search:free": 47.5,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1211,
+     "fight.runs:search:at": 8,
+     "fight.runMs:search:at": 5.3,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 309,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.1,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 188,
+     "search.beam": 64
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 89,
+     "2": 20,
+     "3": 14,
+     "4": 17,
+     "5": 13,
+     "6": 17
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #12 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 11/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 8/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 7/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 30/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 19/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 28/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 22/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 42/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 51/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 12,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 2 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 122,
+    "spans": {
+     "game": {
+      "n": 268,
+      "incl": 36.8,
+      "excl": 36.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 37.9,
+      "excl": 4.6
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 7.4,
+      "excl": 7.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 22.7,
+      "excl": 22.7
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 16.7,
+      "excl": 16.7
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 84.9,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 24.5,
+      "excl": 24.5
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.4,
+      "excl": 1.4
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 34.6,
+      "excl": 6.2
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 597,
+     "merge.in≤4": 268,
+     "merge.ms": 54,
+     "merge.in≤16": 210,
+     "merge.merging": 347,
+     "merge.pairChecks": 18143468,
+     "fight.calls:sweep": 48,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 7.3,
+     "merge.in≤64": 86,
+     "merge.in≤256": 18,
+     "merge.in≤128": 15,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 733,
+     "search.cands": 1915,
+     "fight.calls:search:held": 2026,
+     "fight.runs:search:held": 82,
+     "fight.runMs:search:held": 19.9,
+     "search.depths": 63,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2853,
+     "fight.runs:search:free": 68,
+     "fight.runMs:search:free": 13.4,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 5701,
+     "fight.runs:search:at": 14,
+     "fight.runMs:search:at": 16.6,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 1180,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.3,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 184,
+     "search.beam": 65
+    },
+    "fightTurns": {
+     "1": 123,
+     "2": 36,
+     "3": 15,
+     "4": 1,
+     "5": 6,
+     "6": 11
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #13 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 25/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 29/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 25/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 22/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 23/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 16/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 24/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 47/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 13,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 1 hit",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody outspeeds Combusken and it KOs 5 of 5 — maximise damage before it comes in, keep Machop, Larvitar healthy"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 137,
+    "spans": {
+     "game": {
+      "n": 240,
+      "incl": 43.9,
+      "excl": 43.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 45,
+      "excl": 4.6
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 5.5,
+      "excl": 5.5
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 22.1,
+      "excl": 22.1
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 43.5,
+      "excl": 43.5
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 116.2,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 8.6,
+      "excl": 8.6
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 18.9,
+      "excl": 6.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 489,
+     "merge.in≤4": 204,
+     "merge.ms": 68.8,
+     "merge.merging": 298,
+     "merge.pairChecks": 22294545,
+     "merge.in≤128": 21,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 15,
+     "fight.runMs:sweep": 5.4,
+     "merge.in≤16": 166,
+     "merge.in≤64": 77,
+     "merge.in≤256": 21,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 309,
+     "search.cands": 647,
+     "fight.calls:search:held": 505,
+     "fight.runs:search:held": 41,
+     "fight.runMs:search:held": 20.8,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1695,
+     "fight.runs:search:free": 78,
+     "fight.runMs:search:free": 39.8,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1102,
+     "fight.runs:search:at": 6,
+     "fight.runMs:search:at": 7.1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 216,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.1,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 186,
+     "search.beam": 60
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 82,
+     "2": 24,
+     "3": 8,
+     "4": 4,
+     "5": 11,
+     "6": 10
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #14 · ours 6 · foes 3",
+  "ours": [
+   "Machop L13 31/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 9/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 16/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 23/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 32/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 31/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 28/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 18/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 47/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 14,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 2 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 594,
+    "spans": {
+     "game": {
+      "n": 281,
+      "incl": 42.9,
+      "excl": 42.9
+     },
+     "tables": {
+      "n": 1,
+      "incl": 36.1,
+      "excl": 4.4
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 26,
+      "excl": 26
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 195.3,
+      "excl": 195.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 243,
+      "excl": 243
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 500.5,
+      "excl": 0
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 53,
+      "excl": 53
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2.8,
+      "excl": 2.8
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 89.6,
+      "excl": 23.1
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.4,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1178,
+     "merge.in≤16": 413,
+     "merge.merging": 767,
+     "merge.pairChecks": 159418523,
+     "merge.ms": 483.9,
+     "merge.in≤4": 421,
+     "merge.in≤128": 55,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 25.9,
+     "merge.in≤64": 227,
+     "merge.in≤512": 18,
+     "merge.in≤256": 44,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 851,
+     "search.cands": 2176,
+     "fight.calls:search:held": 2343,
+     "fight.runs:search:held": 118,
+     "fight.runMs:search:held": 190.6,
+     "search.depths": 63,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3206,
+     "fight.runs:search:free": 103,
+     "fight.runMs:search:free": 236.6,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 7182,
+     "fight.runs:search:at": 32,
+     "fight.runMs:search:at": 42.2,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 1790,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 348,
+     "search.beam": 79
+    },
+    "fightTurns": {
+     "1": 118,
+     "2": 73,
+     "3": 25,
+     "4": 4,
+     "5": 7,
+     "6": 34,
+     "7": 2,
+     "8": 2,
+     "9": 4,
+     "10": 12
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · Tangela out · random #15 · ours 5 · foes 3",
+  "ours": [
+   "Machop L13 17/45 [Focus Punch, Low Kick, Low Sweep, Leer] (field)",
+   "Larvitar L15 37/44 [Rock Throw, Rock Slide, Bite, Leer]",
+   "Taillow L10 29/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 35/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 28/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Tangela L16 32/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip] (field)",
+   "Wattrel L17 23/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Combusken L18 53/55 [Double Kick, Ember, Peck, Focus Energy]"
+  ],
+  "random": 15,
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 2 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256-f"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Larvitar"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 266,
+    "spans": {
+     "game": {
+      "n": 233,
+      "incl": 74.6,
+      "excl": 74.6
+     },
+     "tables": {
+      "n": 1,
+      "incl": 75.2,
+      "excl": 9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 22.6,
+      "excl": 22.6
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 87.2,
+      "excl": 87.2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 53.2,
+      "excl": 53.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 238.3,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 4.2,
+      "excl": 4.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.7,
+      "excl": 0.7
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 23.6,
+      "excl": 12.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 645,
+     "merge.in≤4": 270,
+     "merge.ms": 145.7,
+     "merge.in≤16": 208,
+     "merge.merging": 389,
+     "merge.pairChecks": 37413460,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 19,
+     "fight.runMs:sweep": 22.4,
+     "merge.in≤64": 102,
+     "merge.in≤128": 35,
+     "merge.in≤256": 30,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 336,
+     "search.cands": 682,
+     "fight.calls:search:held": 590,
+     "fight.runs:search:held": 67,
+     "fight.runMs:search:held": 84.3,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1832,
+     "fight.runs:search:free": 76,
+     "fight.runMs:search:free": 47.3,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1264,
+     "fight.runs:search:at": 7,
+     "fight.runMs:search:at": 0.1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 217,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.2,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 219,
+     "search.beam": 64
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 87,
+     "2": 24,
+     "3": 18,
+     "4": 8,
+     "5": 7,
+     "6": 23
+    }
+   }
+  ]
+ }
+]

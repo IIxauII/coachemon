@@ -1,0 +1,1571 @@
+[
+ {
+  "name": "heals · ours 6 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 32/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 7
+  },
+  "reps": [
+   {
+    "ms": 687,
+    "spans": {
+     "game": {
+      "n": 288,
+      "incl": 69,
+      "excl": 69
+     },
+     "tables": {
+      "n": 1,
+      "incl": 77.4,
+      "excl": 16.1
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 105.9,
+      "excl": 105.9
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0.3
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 271.5,
+      "excl": 271.5
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 159.7,
+      "excl": 159.7
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 615.6,
+      "excl": 0.7
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 19.8,
+      "excl": 19.8
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.6,
+      "excl": 1.6
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 66.5,
+      "excl": 38.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 1.2,
+      "excl": 1.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 1.3,
+      "excl": 0.1
+     }
+    },
+    "counts": {
+     "merge.calls": 1454,
+     "merge.in≤4": 530,
+     "merge.ms": 512.1,
+     "merge.k4.calls": 962,
+     "merge.k4.ms": 4.5,
+     "merge.in≤16": 495,
+     "merge.merging": 943,
+     "merge.pairChecks": 178145118,
+     "merge.in≤64": 281,
+     "merge.k1.calls": 492,
+     "merge.k1.ms": 507.5,
+     "merge.in≤512": 14,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 27,
+     "fight.runMs:sweep": 105.2,
+     "merge.in≤256": 81,
+     "merge.in≤128": 53,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 691,
+     "search.cands": 1533,
+     "fight.calls:search:held": 1821,
+     "fight.runs:search:held": 164,
+     "fight.runMs:search:held": 264.9,
+     "search.depths": 70,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 3585,
+     "fight.runs:search:free": 98,
+     "fight.runMs:search:free": 152.3,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 5146,
+     "fight.runs:search:at": 36,
+     "fight.runMs:search:at": 12,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 812,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "merge.k4.maxIn": 57,
+     "merge.k1.maxIn": 372,
+     "search.beam": 101
+    },
+    "fightTurns": {
+     "0": 4,
+     "1": 136,
+     "2": 41,
+     "3": 27,
+     "4": 25,
+     "5": 40,
+     "6": 46,
+     "7": 2,
+     "8": 1,
+     "10": 1,
+     "11": 1,
+     "12": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 5 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 566,
+    "spans": {
+     "game": {
+      "n": 255,
+      "incl": 37.8,
+      "excl": 37.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 36.7,
+      "excl": 5.1
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 55,
+      "excl": 55
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 232.5,
+      "excl": 232.5
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 205.8,
+      "excl": 205.8
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 530.2,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 4.1,
+      "excl": 4.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.8,
+      "excl": 0.8
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 32.6,
+      "excl": 21.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.8,
+      "excl": 0.8
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.8,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 1139,
+     "merge.in≤4": 401,
+     "merge.ms": 469,
+     "merge.k4.calls": 776,
+     "merge.k4.ms": 4.1,
+     "merge.in≤16": 366,
+     "merge.merging": 748,
+     "merge.pairChecks": 156020844,
+     "merge.in≤64": 247,
+     "merge.k1.calls": 363,
+     "merge.k1.ms": 465,
+     "merge.in≤512": 14,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 22,
+     "fight.runMs:sweep": 54.8,
+     "merge.in≤256": 65,
+     "merge.in≤128": 46,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 366,
+     "search.cands": 721,
+     "fight.calls:search:held": 671,
+     "fight.runs:search:held": 87,
+     "fight.runMs:search:held": 229.5,
+     "search.depths": 53,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1982,
+     "fight.runs:search:free": 120,
+     "fight.runMs:search:free": 200,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 1389,
+     "fight.runs:search:at": 6,
+     "fight.runMs:search:at": 0.2,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 286,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 372,
+     "merge.k4.maxIn": 57,
+     "merge.k1.maxIn": 372,
+     "search.beam": 77
+    },
+    "fightTurns": {
+     "0": 3,
+     "1": 76,
+     "2": 36,
+     "3": 24,
+     "4": 15,
+     "5": 33,
+     "6": 43,
+     "7": 2,
+     "8": 1,
+     "11": 1,
+     "12": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 4 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Growlithe Ember → Tangela · 3 hits",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 4,
+    "of": 4,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 5
+  },
+  "reps": [
+   {
+    "ms": 360,
+    "spans": {
+     "game": {
+      "n": 218,
+      "incl": 44.5,
+      "excl": 44.5
+     },
+     "tables": {
+      "n": 1,
+      "incl": 48.3,
+      "excl": 7
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 36.6,
+      "excl": 36.6
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 115.5,
+      "excl": 115.5
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 142.8,
+      "excl": 142.8
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 343.4,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 0.8,
+      "excl": 0.8
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 15.1,
+      "excl": 10.9
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 700,
+     "merge.in≤4": 265,
+     "merge.ms": 283,
+     "merge.k4.calls": 483,
+     "merge.k4.ms": 1.9,
+     "merge.in≤16": 227,
+     "merge.merging": 440,
+     "merge.pairChecks": 97176693,
+     "merge.in≤64": 124,
+     "merge.k1.calls": 217,
+     "merge.k1.ms": 281,
+     "merge.in≤512": 9,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 17,
+     "fight.runMs:sweep": 35.4,
+     "merge.in≤256": 50,
+     "merge.in≤128": 25,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 176,
+     "search.cands": 302,
+     "fight.calls:search:held": 177,
+     "fight.runs:search:held": 41,
+     "fight.runMs:search:held": 114.6,
+     "search.depths": 39,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 803,
+     "fight.runs:search:free": 85,
+     "fight.runMs:search:free": 139.9,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 366,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 100,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0.4,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 293,
+     "merge.k4.maxIn": 57,
+     "merge.k1.maxIn": 293,
+     "search.beam": 45
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 43,
+     "2": 23,
+     "3": 12,
+     "4": 7,
+     "5": 25,
+     "6": 32
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 3 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Taillow Peck → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 3,
+    "of": 3,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 5
+  },
+  "reps": [
+   {
+    "ms": 197,
+    "spans": {
+     "game": {
+      "n": 180,
+      "incl": 21.3,
+      "excl": 21.3
+     },
+     "tables": {
+      "n": 1,
+      "incl": 17.8,
+      "excl": 2.3
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 18.1,
+      "excl": 18.1
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 97.6,
+      "excl": 97.6
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 28.6,
+      "excl": 28.6
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 162.4,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 4.3,
+      "excl": 4.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 33.8,
+      "excl": 23.5
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 270,
+     "merge.in≤4": 109,
+     "merge.ms": 143.7,
+     "merge.k4.calls": 169,
+     "merge.k4.ms": 0.7,
+     "merge.in≤16": 79,
+     "merge.merging": 164,
+     "merge.pairChecks": 42981281,
+     "merge.in≤64": 57,
+     "merge.k1.calls": 101,
+     "merge.k1.ms": 143,
+     "merge.in≤512": 7,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 12,
+     "fight.runMs:sweep": 18.1,
+     "merge.in≤256": 10,
+     "merge.in≤128": 8,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 98,
+     "search.cands": 137,
+     "fight.calls:search:held": 75,
+     "fight.runs:search:held": 22,
+     "fight.runMs:search:held": 97.2,
+     "search.depths": 29,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 179,
+     "fight.runs:search:free": 31,
+     "fight.runMs:search:free": 27.8,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 139,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 75,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 3.9,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 293,
+     "merge.k4.maxIn": 40,
+     "merge.k1.maxIn": 293,
+     "search.beam": 13
+    },
+    "fightTurns": {
+     "0": 2,
+     "1": 30,
+     "2": 11,
+     "3": 5,
+     "4": 3,
+     "5": 8,
+     "6": 7
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 2 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 0/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Machop Low Kick → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_1",
+     "114"
+    ],
+    "name": "Tangela",
+    "kills": 2,
+    "of": 2,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Tangela 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop, Larvitar"
+   ],
+   "steps": 2
+  },
+  "reps": [
+   {
+    "ms": 76,
+    "spans": {
+     "game": {
+      "n": 145,
+      "incl": 25.5,
+      "excl": 25.5
+     },
+     "tables": {
+      "n": 1,
+      "incl": 24.7,
+      "excl": 3.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 28.2,
+      "excl": 28.2
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 2,
+      "excl": 2
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 55.1,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 2,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 2.7,
+      "excl": 2.7
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 20.5,
+      "excl": 13.4
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 83,
+     "merge.in≤4": 34,
+     "merge.ms": 30.5,
+     "merge.k4.calls": 50,
+     "merge.k4.ms": 0.4,
+     "merge.in≤16": 20,
+     "merge.merging": 50,
+     "merge.pairChecks": 7891856,
+     "merge.in≤64": 20,
+     "merge.k1.calls": 33,
+     "merge.k1.ms": 30,
+     "merge.in≤512": 1,
+     "fight.calls:sweep": 8,
+     "fight.runs:sweep": 8,
+     "fight.runMs:sweep": 28,
+     "merge.in≤256": 3,
+     "merge.in≤128": 5,
+     "fight.calls:matrix": 6,
+     "searches:search:held": 1,
+     "search.states": 12,
+     "search.cands": 14,
+     "fight.calls:search:held": 16,
+     "fight.runs:search:held": 7,
+     "fight.runMs:search:held": 1.9,
+     "search.depths": 10,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 16,
+     "searches:search:at": 2,
+     "fight.calls:search:at": 16,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 9,
+     "fight.runs:search:at+move": 4,
+     "fight.runMs:search:at+move": 2.7,
+     "fight.calls:tpView": 6
+    },
+    "maxes": {
+     "merge.maxIn": 288,
+     "merge.k4.maxIn": 40,
+     "merge.k1.maxIn": 288,
+     "search.beam": 2
+    },
+    "fightTurns": {
+     "1": 6,
+     "2": 6,
+     "3": 3,
+     "4": 1,
+     "5": 1,
+     "6": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "heals · ours 1 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 0/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 0/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Mega Drain, Ingrain, Sleep Powder, Vine Whip]"
+  ],
+  "tangela": "heals",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Throw → Tangela",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_1",
+     "114"
+    ],
+    "name": "Tangela",
+    "kills": 1,
+    "of": 1,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Tangela 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Larvitar"
+   ],
+   "steps": 1
+  },
+  "reps": [
+   {
+    "ms": 54,
+    "spans": {
+     "game": {
+      "n": 98,
+      "incl": 10.7,
+      "excl": 10.7
+     },
+     "tables": {
+      "n": 1,
+      "incl": 8,
+      "excl": 1.1
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 21.4,
+      "excl": 21.4
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 29.5,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 23.6,
+      "excl": 20
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 21,
+     "merge.in≤4": 9,
+     "merge.ms": 21.1,
+     "merge.k4.calls": 14,
+     "merge.k4.ms": 0,
+     "merge.in≤16": 9,
+     "merge.merging": 12,
+     "merge.pairChecks": 5965682,
+     "merge.in≤64": 1,
+     "merge.k1.calls": 7,
+     "merge.k1.ms": 21,
+     "merge.in≤512": 1,
+     "fight.calls:sweep": 3,
+     "fight.runs:sweep": 3,
+     "fight.runMs:sweep": 21.3,
+     "merge.in≤256": 1,
+     "fight.calls:matrix": 3,
+     "searches:search:held": 1,
+     "search.states": 4,
+     "search.cands": 4,
+     "fight.calls:search:held": 1,
+     "fight.runs:search:held": 1,
+     "fight.runMs:search:held": 0,
+     "search.depths": 4,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 1,
+     "searches:search:at": 1,
+     "fight.calls:search:at": 1,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 1,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 3
+    },
+    "maxes": {
+     "merge.maxIn": 288,
+     "merge.k4.maxIn": 16,
+     "merge.k1.maxIn": 288,
+     "search.beam": 0
+    },
+    "fightTurns": {
+     "1": 3,
+     "5": 1,
+     "6": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "plain · ours 6 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 32/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Vine Whip, Bind, Poison Powder, Growth]"
+  ],
+  "tangela": "plain",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 6,
+    "of": 6,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 6
+  },
+  "reps": [
+   {
+    "ms": 200,
+    "spans": {
+     "game": {
+      "n": 260,
+      "incl": 110.1,
+      "excl": 110.1
+     },
+     "tables": {
+      "n": 1,
+      "incl": 116.6,
+      "excl": 18.8
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 38.5,
+      "excl": 38.5
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 7.7,
+      "excl": 7.7
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 5.2,
+      "excl": 5.2
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 168.3,
+      "excl": 0.3
+     },
+     "search:at": {
+      "n": 6,
+      "incl": 3.1,
+      "excl": 3.1
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 1.3,
+      "excl": 1.3
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 23.4,
+      "excl": 13.7
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.3,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 171,
+     "merge.in≤4": 55,
+     "merge.ms": 39.1,
+     "merge.k4.calls": 112,
+     "merge.k4.ms": 1.2,
+     "merge.in≤16": 63,
+     "merge.merging": 118,
+     "merge.pairChecks": 11751390,
+     "merge.k1.calls": 59,
+     "merge.k1.ms": 38,
+     "fight.calls:sweep": 33,
+     "fight.runs:sweep": 23,
+     "fight.runMs:sweep": 38.3,
+     "merge.in≤64": 34,
+     "merge.in≤256": 6,
+     "merge.in≤128": 12,
+     "merge.in≤512": 1,
+     "fight.calls:matrix": 18,
+     "searches:search:held": 1,
+     "search.states": 294,
+     "search.cands": 722,
+     "fight.calls:search:held": 1332,
+     "fight.runs:search:held": 19,
+     "fight.runMs:search:held": 4.7,
+     "search.depths": 54,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 2464,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 6,
+     "fight.calls:search:at": 2353,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 672,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 18
+    },
+    "maxes": {
+     "merge.maxIn": 300,
+     "merge.k4.maxIn": 60,
+     "merge.k1.maxIn": 300,
+     "search.beam": 36
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 23,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 6,
+     "6": 2,
+     "13": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "plain · ours 5 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 37/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Vine Whip, Bind, Poison Powder, Growth]"
+  ],
+  "tangela": "plain",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 5,
+    "of": 5,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 5
+  },
+  "reps": [
+   {
+    "ms": 104,
+    "spans": {
+     "game": {
+      "n": 218,
+      "incl": 41.2,
+      "excl": 41.2
+     },
+     "tables": {
+      "n": 1,
+      "incl": 41.5,
+      "excl": 5.2
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 32.9,
+      "excl": 32.9
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 5.3,
+      "excl": 5.3
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 1.8,
+      "excl": 1.8
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 81.7,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 5,
+      "incl": 2,
+      "excl": 2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.8,
+      "excl": 0.8
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 19.5,
+      "excl": 12.7
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 151,
+     "merge.in≤4": 46,
+     "merge.ms": 35.7,
+     "merge.k4.calls": 100,
+     "merge.k4.ms": 0.9,
+     "merge.in≤16": 55,
+     "merge.merging": 107,
+     "merge.pairChecks": 11063966,
+     "merge.k1.calls": 51,
+     "merge.k1.ms": 34.8,
+     "fight.calls:sweep": 25,
+     "fight.runs:sweep": 19,
+     "fight.runMs:sweep": 32.8,
+     "merge.in≤64": 32,
+     "merge.in≤256": 5,
+     "merge.in≤128": 12,
+     "merge.in≤512": 1,
+     "fight.calls:matrix": 15,
+     "searches:search:held": 1,
+     "search.states": 146,
+     "search.cands": 294,
+     "fight.calls:search:held": 432,
+     "fight.runs:search:held": 16,
+     "fight.runMs:search:held": 4.6,
+     "search.depths": 40,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 912,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 5,
+     "fight.calls:search:at": 703,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 229,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 15
+    },
+    "maxes": {
+     "merge.maxIn": 300,
+     "merge.k4.maxIn": 60,
+     "merge.k1.maxIn": 300,
+     "search.beam": 19
+    },
+    "fightTurns": {
+     "0": 1,
+     "1": 17,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 5,
+     "6": 2,
+     "13": 1
+    }
+   }
+  ]
+ },
+ {
+  "name": "plain · ours 4 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 36/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Vine Whip, Bind, Poison Powder, Growth]"
+  ],
+  "tangela": "plain",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 4,
+    "of": 4,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 4
+  },
+  "reps": [
+   {
+    "ms": 93,
+    "spans": {
+     "game": {
+      "n": 182,
+      "incl": 43.5,
+      "excl": 43.5
+     },
+     "tables": {
+      "n": 1,
+      "incl": 41.5,
+      "excl": 5.7
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 15.3,
+      "excl": 15.3
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 9.5,
+      "excl": 9.5
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.5,
+      "excl": 0.5
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 67.1,
+      "excl": 0.2
+     },
+     "search:at": {
+      "n": 4,
+      "incl": 0.4,
+      "excl": 0.4
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 22,
+      "excl": 15.3
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.2,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 119,
+     "merge.in≤4": 37,
+     "merge.ms": 22.6,
+     "merge.k4.calls": 77,
+     "merge.k4.ms": 0.7,
+     "merge.in≤16": 46,
+     "merge.merging": 82,
+     "merge.pairChecks": 6182673,
+     "merge.k1.calls": 42,
+     "merge.k1.ms": 22,
+     "fight.calls:sweep": 18,
+     "fight.runs:sweep": 15,
+     "fight.runMs:sweep": 15.1,
+     "merge.in≤64": 21,
+     "merge.in≤256": 5,
+     "merge.in≤128": 10,
+     "fight.calls:matrix": 12,
+     "searches:search:held": 1,
+     "search.states": 67,
+     "search.cands": 107,
+     "fight.calls:search:held": 126,
+     "fight.runs:search:held": 13,
+     "fight.runMs:search:held": 9.1,
+     "search.depths": 28,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 270,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 4,
+     "fight.calls:search:at": 201,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 74,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 12
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "merge.k4.maxIn": 60,
+     "merge.k1.maxIn": 228,
+     "search.beam": 11
+    },
+    "fightTurns": {
+     "1": 13,
+     "2": 5,
+     "3": 5,
+     "4": 1,
+     "5": 4,
+     "6": 2
+    }
+   }
+  ]
+ },
+ {
+  "name": "plain · ours 3 · foes 3",
+  "ours": [
+   "Larvitar L15 44/44 [Rock Throw, Rock Slide, Bite, Leer] (field)",
+   "Machop L13 45/45 [Focus Punch, Low Kick, Low Sweep, Leer]",
+   "Taillow L10 31/31 [Peck, Quick Attack, Growl, Focus Energy]",
+   "Growlithe L11 0/36 [Ember, Bite, Leer, Howl]",
+   "Skwovet L10 0/37 [Tackle, Tail Whip, Bite, Stuff Cheeks]",
+   "Rockruff L10 0/32 [Bite, Tackle, Leer, Rock Throw]"
+  ],
+  "foes": [
+   "Combusken L18 55/55 [Double Kick, Ember, Peck, Focus Energy] (field)",
+   "Wattrel L17 45/45 [Pluck, Spark, Quick Attack, Growl]",
+   "Tangela L16 51/51 [Vine Whip, Bind, Poison Powder, Growth]"
+  ],
+  "tangela": "plain",
+  "wave": 25,
+  "trainer": "Ivy",
+  "act": "Larvitar Rock Slide → Combusken",
+  "plan": {
+   "result": "loss",
+   "win": {
+    "icon": [
+     "pokemon_icons_3",
+     "256"
+    ],
+    "name": "Combusken",
+    "kills": 3,
+    "of": 3,
+    "boss": false
+   },
+   "warnings": [
+    "likely lost: nobody KOs Combusken 1-on-1 or outspeeds it — maximise damage before it comes in, chip it with Machop"
+   ],
+   "steps": 3
+  },
+  "reps": [
+   {
+    "ms": 61,
+    "spans": {
+     "game": {
+      "n": 146,
+      "incl": 34.8,
+      "excl": 34.8
+     },
+     "tables": {
+      "n": 1,
+      "incl": 34,
+      "excl": 3.9
+     },
+     "sweep": {
+      "n": 1,
+      "incl": 9.8,
+      "excl": 9.8
+     },
+     "matrix": {
+      "n": 1,
+      "incl": 0,
+      "excl": 0
+     },
+     "search:held": {
+      "n": 1,
+      "incl": 3.1,
+      "excl": 3.1
+     },
+     "search:free": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "teamPlanner": {
+      "n": 1,
+      "incl": 47.1,
+      "excl": 0.1
+     },
+     "search:at": {
+      "n": 3,
+      "incl": 0.2,
+      "excl": 0.2
+     },
+     "search:at+move": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "battleModel": {
+      "n": 1,
+      "incl": 11.7,
+      "excl": 8.3
+     },
+     "tpView": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0.1
+     },
+     "view": {
+      "n": 1,
+      "incl": 0.1,
+      "excl": 0
+     }
+    },
+    "counts": {
+     "merge.calls": 76,
+     "merge.in≤4": 27,
+     "merge.ms": 12.1,
+     "merge.k4.calls": 45,
+     "merge.k4.ms": 0.5,
+     "merge.in≤16": 28,
+     "merge.merging": 49,
+     "merge.pairChecks": 3140009,
+     "merge.k1.calls": 31,
+     "merge.k1.ms": 11.6,
+     "fight.calls:sweep": 12,
+     "fight.runs:sweep": 11,
+     "fight.runMs:sweep": 9.8,
+     "merge.in≤64": 12,
+     "merge.in≤256": 1,
+     "merge.in≤128": 8,
+     "fight.calls:matrix": 9,
+     "searches:search:held": 1,
+     "search.states": 28,
+     "search.cands": 36,
+     "fight.calls:search:held": 34,
+     "fight.runs:search:held": 8,
+     "fight.runMs:search:held": 3.1,
+     "search.depths": 18,
+     "searches:search:free": 1,
+     "fight.calls:search:free": 66,
+     "fight.runs:search:free": 1,
+     "fight.runMs:search:free": 0,
+     "searches:search:at": 3,
+     "fight.calls:search:at": 57,
+     "searches:search:at+move": 1,
+     "fight.calls:search:at+move": 23,
+     "fight.runs:search:at+move": 1,
+     "fight.runMs:search:at+move": 0,
+     "fight.calls:tpView": 9
+    },
+    "maxes": {
+     "merge.maxIn": 228,
+     "merge.k4.maxIn": 60,
+     "merge.k1.maxIn": 228,
+     "search.beam": 5
+    },
+    "fightTurns": {
+     "1": 11,
+     "2": 4,
+     "3": 4,
+     "6": 2
+    }
+   }
+  ]
+ }
+]
