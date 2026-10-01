@@ -121,7 +121,7 @@ test("a reward that came back unused is not taken again: the next one is, then t
   assert.deepEqual(decide(skip, null, mem).args, { label: "Yes" });
 });
 
-test("a lost battle is retried three times a wave, then the run is let go (#499)", () => {
+test("a lost battle is retried once per benched lead, at least three times, then the run is let go (#499)", () => {
   const ask: Menu = { screen: "CONFIRM", wave: 9, text: "Would you like to retry\nthe battle?", options: opts(["Yes", "No"]) };
   const mem = freshMemory();
   assert.deepEqual([1, 2, 3, 4].map(() => decide(ask, null, mem).args.label), ["Yes", "Yes", "Yes", "No"]);
@@ -227,7 +227,7 @@ const catching = (summary: string | null, rows: string[] = []): Card => ({
 });
 const balls: Menu = { screen: "BALL", wave: 3, options: [...opts(["Poké Ball ×5", "Great Ball ×2"]), { i: 2, label: "Cancel" }] };
 
-test("a card that says catch throws the ball it names, so the team grows past the starters (#508)", () => {
+test("a card that says catch throws the ball it names (#508)", () => {
   const mem = freshMemory();
   assert.deepEqual(decide(command("Charmander"), catching("catch Pidgey — Great 81%"), mem), { tool: "select_option", args: { label: "Ball" }, by: "card" });
   assert.deepEqual(decide(balls, null, mem), { tool: "select_option", args: { label: "Great Ball ×2" }, by: "card" });
@@ -248,7 +248,7 @@ test("a catch into a full party releases the mon the card says it replaces, and 
   assert.deepEqual(decide(prompt, null, freshMemory()).args, { label: "No" }, "a catch nobody asked to keep is given up");
 });
 
-test("an EXP item is taken ahead of the card's reward, so the caught bench keeps up (#508)", () => {
+test("an EXP item or a Rare Candy is taken ahead of the card's reward (#508)", () => {
   const shop: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [
     { i: "1:0", label: "Potion", kind: "reward" }, { i: "1:1", label: "EXP. All", kind: "reward" },
   ] };

@@ -5,7 +5,7 @@
 import { MOMENT_NAMES, MOMENTS, type Moment } from "./moments.ts";
 import { formatFacts, formatWaves, gameFacts, perWave, type WaveRecord, type WaveWindow } from "./waves.ts";
 
-const GAP_MS = 50;
+export const GAP_MS = 50;
 
 type Tick = { seq: number; at: number; ms: number; kind: string | null };
 type Gap = { at: number; gap: number; panel: number; driver?: number; stage: string | null; ticks: number[] };

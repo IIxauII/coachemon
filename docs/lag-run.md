@@ -95,10 +95,10 @@ The per-wave table is what every fix ticket reports before and after (#486). A c
 runs that finished that wave, and prints each cell as `before → after`.
 
 - **kind** is the wave's battle: `wild single`, `wild double`, `wild boss`, `trainer single` / `double`, `rival`,
-  `gym leader`, `elite four`, `champion`, `mystery encounter`. A trainer wave shows its intro's name, class and all.
-  `?` is a wave whose `get_state` did not answer.
+  `gym leader`, `elite four`, `champion`, `evil team`, `evil team boss`, `mystery encounter`. A trainer wave shows its
+  intro's name, class and all. `?` is a wave whose `get_state` did not answer.
 - **what happened** is what the numbers depend on: level-ups (the party's levels at this wave's first read against the
-  next's), moves learnt, our faints, our switches and the foe's, shop picks, and retries of a lost battle.
+  next's), moves learnt, our faints, our switches and the foe's, catches, shop picks, and retries of a lost battle.
 - **turn card ms** is a refresh at `CommandPhase` that drew a new battle card: the freeze at a new turn's prompt. p95
   / max and how many.
 - **preview recomputes** are refreshes whose `road` stage (the run read) took 5 ms or more: a cached read is under 2.

@@ -16,6 +16,9 @@ test("a wave is named by its battle type, its trainer's class and whether it is 
   assert.equal(waveKind(rec(8, { battleType: 1, trainer: "Ivy" }), "Rival Ivy"), "rival single");
   assert.equal(waveKind(rec(20, { battleType: 1, trainer: "Brock" }), "Gym Leader Brock"), "gym leader single");
   assert.equal(waveKind(rec(15, { battleType: 1, double: true, trainer: "Clea & Gil" }), "Twins Clea & Gil"), "trainer double");
+  assert.equal(waveKind(rec(35, { battleType: 1, trainer: "Macro Cosmos Trainer" }), "Macro Cosmos Trainer"), "evil team single");
+  assert.equal(waveKind(rec(62, { battleType: 1, trainer: "Giacomo" }), "Team Star Squad Boss Giacomo"), "evil team single");
+  assert.equal(waveKind(rec(115, { battleType: 1, trainer: "Penny" }), "Team Star Leader Penny"), "evil team boss single", "not a gym leader");
   assert.equal(waveKind(rec(33, { battleType: 3 }), null), "mystery encounter");
   assert.equal(waveKind(undefined, null), "?", "a wave the driver never read is not guessed");
 });
@@ -28,13 +31,14 @@ test("each wave reports its turn card, preview recomputes, shop card, overlay-ma
       tick(3, 2100, 30, { wave: 1, phase: "MoveEffectPhase", drew: true, road: 25 }),
       tick(4, 3100, 9, { wave: 1, phase: "CommandPhase", road: 1 }),
       tick(5, 4100, 35, { wave: 1, phase: "SelectModifierPhase", kind: "rewards", drew: true, road: 8 }),
+      tick(8, 4600, 7, { wave: 1, phase: "CheckSwitchPhase", road: 6 }),
       tick(6, 5100, 6, { wave: 1, phase: "SelectModifierPhase", kind: "rewards", drew: true }),
     ], [gap(90, 80, 40, [1]), gap(2090, 60, 30, [3]), gap(5000, 100, 0)]),
     win(2, [tick(7, 9000, 3, { wave: 2, phase: "CommandPhase", drew: true })]),
   ], [rec(1)], 50, false);
   assert.deepEqual(row.turnCardMs, [40], "a held card's refresh is not a turn card");
-  assert.deepEqual(row.recomputeMs, [25, 8], "a cached run read is not a recompute");
-  assert.equal(row.inAnimation, 1, "a recompute at the shop is at a prompt");
+  assert.deepEqual(row.recomputeMs, [25, 8, 6], "a cached run read is not a recompute");
+  assert.equal(row.inAnimation, 1, "a recompute at the shop or the switch question is at a prompt");
   assert.equal(row.shopCard, 35, "only the shop's first draw");
   assert.deepEqual(row.hitches, { n: 1, overlayMs: 40 }, "a hitch with under 34 ms of overlay in it is not overlay-made");
   assert.equal(row.overlayMs / row.hitchMs, 70 / 240);
@@ -58,7 +62,7 @@ test("a run that stopped short leaves out the wave it stopped on; one that reach
   assert.deepEqual(perWave(windows, [], 3, true).map(r => r.wave), [1, 2, 3]);
 });
 
-test("a wave's events are its level-ups, learns, faints, switches, shop picks and retries (#508)", () => {
+test("a wave's events are its level-ups, learns, faints, switches, catches, shop picks and retries (#508)", () => {
   const [row] = perWave([
     win(1, [], [], { messages: ["Rival Ivy\nwould like to battle!", "Larvitar learned\nBite!", "Machop fainted!", "Foe Pidgey fainted!", "Rival Ivy withdrew\nPidgey!", "Rattata was caught!"] }),
     win(1, [], [], { action: { intent: "switch" } }),

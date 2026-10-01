@@ -1,7 +1,6 @@
 /**
- * Autoplay's policy: act on the card's `act` group where it names a switch, a learn or a shop pick, throw the ball its
- * `catch` group names (releasing the mon it says the catch replaces), take the EXP items that keep a caught bench level
- * with the wave, and fall back to the strongest move and the first reward where it does not. It serves the lag run, not play (#484).
+ * Autoplay's policy: follow the card where it names a play, and fall back to a rule where it does not. It serves the lag
+ * run, not play (#484).
  */
 import { normalizeLabel } from "../../src/labels.ts";
 
@@ -72,9 +71,7 @@ const catchCall = (card: Card): { ball: string | null; replaces: string | null }
   return { ball: m[1] ?? null, replaces };
 };
 
-// A caught bench that never fights falls behind the wave; these share or grow the EXP (#508).
 const EXP_ITEM = /exp\.? ?(all|share|charm)|lucky egg|golden egg/i;
-// Both 10-point teams met wave 30's gym leader 8+ levels short; a candy is a level the potions are not (#508).
 const LEVEL_ITEM = /rare candy/i;
 const levelOf = (label: string) => Number(/ Lv\.(\d+)/.exec(label)?.[1] ?? Infinity);
 
@@ -127,7 +124,6 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     if (mem.swapLead && has(/^pok/)) return pick(has(/^pok/)!, "rule");
     mem.swapLead = null;
     mem.release = null;
-    // Three starters lose the gym at wave 30; the mons the card wants caught carry the run to 50 (#508).
     const call = catchCall(live);
     const throws = [1, 2, 3].find(i => !mem.tried.has(`${menu.wave}|ball|${i}`));
     const room = call?.replaces || (mem.party ?? 0) < 6;
@@ -243,13 +239,11 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
       if (forget || mem.forget) return pick(has(/^yes/) ?? first, "card", "learn");
       return pick(has(/^no/) ?? first, verdict ? "card" : "rule");
     }
-    // After a catch into a full party: release the mon the card named, or give the catch up.
     if (/release|party is full|make room/i.test(text)) return pick(has(mem.release ? /^yes/ : /^no/) ?? first, mem.release ? "card" : "rule");
     if (/stop trying/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
     if (/skip taking/i.test(text)) return pick(has(/^yes/) ?? first, "rule");
     // Offered only with the game's retries setting on; a fight lost every time would otherwise loop.
     if (/retry/i.test(text)) {
-      // One retry per benched mon leading, at least three.
       const limit = Math.max(3, (mem.party ?? 0) - 1);
       const n = Array.from({ length: limit }, (_, i) => i + 1).find(i => !mem.tried.has(`${menu.wave}|retry|${i}`));
       if (n) { tried(mem, `${menu.wave}|retry|${n}`); mem.swapLead = n; return pick(has(/^yes/) ?? first, "rule"); }

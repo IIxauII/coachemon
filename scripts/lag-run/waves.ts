@@ -2,14 +2,14 @@
  * The lag run cut per wave (#508): the five numbers every fix ticket reports before and after (#486), what the wave
  * was, and what happened in it.
  */
-import { dist, type Dist } from "./report.ts";
+import { BattleType } from "../../src/enums/generated.ts";
+import { dist, GAP_MS, type Dist } from "./report.ts";
 
-const HITCH_MS = 50;
 const OVERLAY_MADE_MS = 34;
 const RECOMPUTE_MS = 5;
 /** The phases where the game waits on the player; a recompute anywhere else lands inside an animation. */
 const PROMPTS = new Set([
-  "CommandPhase", "SelectTargetPhase", "SelectModifierPhase", "LearnMovePhase", "SwitchPhase", "SelectBiomePhase",
+  "CommandPhase", "CheckSwitchPhase", "SelectTargetPhase", "SelectModifierPhase", "LearnMovePhase", "SwitchPhase", "SelectBiomePhase",
   "SelectStarterPhase", "TitlePhase", "MysteryEncounterPhase",
 ]);
 
@@ -42,17 +42,21 @@ export type WaveRow = {
 /** A trainer's intro says its class, which `get_state`'s bare name does not. */
 const intro = (messages: string[]) => messages.map(m => /^([^]+?)\s+would like to battle!/.exec(m)?.[1]).find(Boolean)?.replace(/\s+/g, " ") ?? null;
 
+// `Team Star Leader` is an evil team's boss, so these are tested ahead of the gym leader's `Leader`.
+const EVIL_BOSS = /^(Team \w+ Boss|Aether President|Macro Cosmos President|Team Star Leader)\b/;
+const EVIL_TEAM = /^(Team |Macro Cosmos\b|Aether Foundation\b)|\bGrunts?\b/;
+
 export function waveKind(rec: WaveRecord | undefined, introduced: string | null): string {
   if (!rec) return "?";
   const n = rec.double ? "double" : "single";
-  if (rec.battleType === 3) return "mystery encounter";
-  if (rec.battleType === 1) {
+  if (rec.battleType === BattleType.MYSTERY_ENCOUNTER) return "mystery encounter";
+  if (rec.battleType === BattleType.TRAINER) {
     const title = introduced ?? rec.trainer ?? "";
-    const cls = /^Rival\b/.test(title) ? "rival" : /\bLeader\b/.test(title) ? "gym leader" : /^Elite Four\b/.test(title) ? "elite four"
-      : /^Champion\b/.test(title) ? "champion" : "trainer";
+    const cls = /^Rival\b/.test(title) ? "rival" : /^Elite Four\b/.test(title) ? "elite four" : /^Champion\b/.test(title) ? "champion"
+      : EVIL_BOSS.test(title) ? "evil team boss" : EVIL_TEAM.test(title) ? "evil team" : /\bLeader\b/.test(title) ? "gym leader" : "trainer";
     return `${cls} ${n}`;
   }
-  if (rec.battleType === 0) return `wild ${rec.boss ? "boss" : n}`;
+  if (rec.battleType === BattleType.WILD) return `wild ${rec.boss ? "boss" : n}`;
   return `battleType ${rec.battleType}`;
 }
 
@@ -99,15 +103,16 @@ export function perWave(windows: WaveWindow[], records: WaveRecord[], upTo: numb
   const rows: WaveRow[] = [];
   for (let wave = 1; wave <= last; wave++) {
     const ts = ticks.get(wave) ?? [];
-    const hitches = (gaps.get(wave) ?? []).filter(g => g.gap >= HITCH_MS);
+    const hitches = (gaps.get(wave) ?? []).filter(g => g.gap >= GAP_MS);
     const made = hitches.filter(g => g.panel >= OVERLAY_MADE_MS);
     const recomputes = ts.filter(t => (t.stages?.road ?? 0) >= RECOMPUTE_MS);
     const acted = acts.get(wave) ?? [];
     const rec = records.find(r => r.wave === wave);
+    const introduced = intro(acted.flatMap(w => w.messages ?? []));
     rows.push({
       wave,
-      kind: waveKind(rec, intro(acted.flatMap(w => w.messages ?? []))),
-      trainer: rec?.battleType === 1 ? intro(acted.flatMap(w => w.messages ?? [])) ?? rec.trainer : null,
+      kind: waveKind(rec, introduced),
+      trainer: rec?.battleType === BattleType.TRAINER ? introduced ?? rec.trainer : null,
       events: eventsOf(acted, levelUps(rec, records.find(r => r.wave === wave + 1))),
       turnCardMs: ts.filter(t => t.phase === "CommandPhase" && t.kind === "battle" && t.drew).map(t => t.ms),
       recomputeMs: recomputes.map(t => t.stages!.road),
