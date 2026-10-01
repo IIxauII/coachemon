@@ -1,12 +1,13 @@
 /**
  * Plays waves through the MCP surface on the card's act line (`lag-run/policy.ts`) and counts what that costs (#25).
  * `--lag --slot N` is the lag run (lag-run.md §Command): a fresh run on the Orion tab through the store hub, the meter
- * drained after every action. `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server
+ * drained after every action. `--lag --slot N --resume <log>` takes a lag run that lost its tab back up on the game's
+ * saved session: no reload, no new run, appended to that log. `COACHEMON_TRANSPORT=hub` and `COACHEMON_DEV=1` reach the spawned server
  * (extension-distribution.md §7.2).
  */
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { serverEnv } from "../src/server-env.ts";
@@ -16,15 +17,19 @@ import { decide, freshMemory, heard, readsCard, refused, type Card, type Menu } 
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
 const LAG = process.argv.includes("--lag");
-const WAVES = Number(arg("--waves", LAG ? "20" : "1"));
-const MAX_CALLS = Number(arg("--max-calls", LAG ? "20000" : "200"));
-const TEAM = arg("--team", "Larvitar,Machop,Growlithe").split(",");
+const WAVES = Number(arg("--waves", LAG ? "50" : "1"));
+const MAX_CALLS = Number(arg("--max-calls", LAG ? "60000" : "200"));
+// `--team coach` takes the first team the starters card proposes, read off the grid before the run starts (#508).
+const COACH = arg("--team", "") === "coach";
+let TEAM = COACH ? [] : arg("--team", "Larvitar,Machop,Growlithe").split(",");
 const SLOT = arg("--slot", "");
-const LOG = arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
+const RESUME = arg("--resume", "");
+const LOG = RESUME || arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
 
 if (LAG) {
   // The slot is overwritten every run, so it is never guessed.
   if (!/^[0-4]$/.test(SLOT)) { console.error("--lag needs --slot 0-4: a save slot that holds nothing of yours"); process.exit(2); }
+  if (RESUME && !existsSync(RESUME)) { console.error(`--resume ${RESUME}: no such log`); process.exit(2); }
   if (lowPowerMode()) { console.error("Low Power Mode is on: it throttles the frames the run measures (docs/lag-run.md)"); process.exit(2); }
   process.env.COACHEMON_TRANSPORT = "hub";
   delete process.env.COACHEMON_DEV;
@@ -37,8 +42,11 @@ type Result = Record<string, unknown> & { status?: string; screen?: string; wave
 const client = new Client({ name: "autoplay", version: "0" });
 await client.connect(new StdioClientTransport({ command: "node", args: ["src/server.ts"], stderr: "inherit", env: serverEnv() }));
 
-let calls = 0;
-const t0 = Date.now();
+// A resumed run carries on the first part's calls and time, so the summary covers the whole run.
+const prior = RESUME ? readFileSync(RESUME, "utf8").split("\n").filter(Boolean).map(l => JSON.parse(l) as { kind?: string; t?: number })
+  .reduce((p, o) => (o.kind === "call" ? { calls: p.calls + 1, ms: Math.max(p.ms, o.t ?? 0) } : p), { calls: 0, ms: 0 }) : { calls: 0, ms: 0 };
+let calls = prior.calls;
+const t0 = Date.now() - prior.ms;
 async function call(name: string, args: Record<string, unknown> = {}): Promise<Result> {
   calls++;
   const t = Date.now();
@@ -51,16 +59,55 @@ async function call(name: string, args: Record<string, unknown> = {}): Promise<R
 
 const tab = LAG ? orion() : null;
 let hidden = 0;
+let facts: { lang?: string | null; sprites?: unknown[] } = {};
 function drain() {
   const d = tab!.drain();
-  if (!d.stats) throw new Error(`no meter to drain (${d.error ?? `hudActive ${d.hudActive}, meterActive ${d.meterActive}`}): the extension in Orion predates the lag run (#499)`);
+  if (d.error) throw new Error(`no meter to drain: ${d.error}`);
+  if (!d.stats) throw new Error(`no meter to drain (hudActive ${d.hudActive}, meterActive ${d.meterActive}): the extension in Orion predates the lag run (#499)`);
   hidden += (d.stats.frames as { hidden?: number } | undefined)?.hidden ?? 0;
+  facts = (d.stats.facts as typeof facts | undefined) ?? facts;
   return d.stats;
 }
 
 let stop = "";
-if (LAG) {
-  log({ kind: "run", team: TEAM, slot: Number(SLOT), waves: WAVES, started: new Date().toISOString(), status: await call("status") });
+
+/** From TITLE: New Game, Classic, the starters card's first team, then back out to TITLE for `start_run`. */
+async function coachTeam(): Promise<boolean> {
+  const title = await call("read_menu");
+  const n = ((title.options as unknown[] | undefined) ?? []).length;
+  // New Game is the first title option unless Continue is offered (game-code.md §26).
+  const mode = await call("select_option", { index: n >= 5 ? 1 : 0 });
+  const grid = mode.screen === "OPTION_SELECT" ? await call("select_option", { index: 0 }) : mode;
+  if (grid.screen !== "STARTER_SELECT") { stop = `coach-team:${grid.screen ?? grid.error}`; return false; }
+  let summary: string | null = null;
+  for (let i = 0; i < 15 && !summary; i++) {
+    const c = (await call("read_card")) as unknown as Card;
+    summary = c?.kind === "starters" ? c.groups?.find(g => g.id === "act")?.summary ?? null : null;
+    if (!summary) await sleep(1000);
+  }
+  await call("press", { button: "CANCEL" });
+  await call("select_option", { label: "Yes" });
+  for (let i = 0; i < 20 && String((await call("read_menu")).screen) !== "TITLE"; i++) await sleep(1000);
+  // `best: Larvitar (carry) + Machop + Growlithe · 10/10 pts · weak Water; trio: …`
+  const first = summary?.split("; ")[0] ?? "";
+  TEAM = first.slice(first.indexOf(": ") + 2).split(" · ")[0].split(" + ").map(x => x.replace(/ \(carry\)$/, "").trim()).filter(Boolean);
+  log({ kind: "team", by: "coach", team: TEAM, summary });
+  console.log(`coach team: ${TEAM.join(", ")} (${summary})`);
+  drain();
+  if (!TEAM.length) stop = "coach-team:no-card";
+  return TEAM.length > 0;
+}
+
+if (LAG && RESUME) {
+  const seen = tab!.visibility();
+  if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
+  const audio = tab!.audio();
+  if (audio.state !== "running") { console.error(`the tab's audio is not running (${JSON.stringify(audio)}): click in the game once, or allow auto-play for pokerogue.net`); process.exit(2); }
+  const s = await call("status");
+  log({ kind: "resume", at: new Date().toISOString(), priorCalls: prior.calls, priorMs: prior.ms, status: s });
+  drain();
+} else if (LAG) {
+  log({ kind: "run", team: COACH ? null : TEAM, slot: Number(SLOT), waves: WAVES, started: new Date().toISOString(), status: await call("status") });
   const seen = tab!.visibility();
   if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
   tab!.reload();
@@ -79,6 +126,8 @@ if (LAG) {
   else if (audio.state !== "running") {
     stop = "audio-locked";
     console.error(`the tab's audio is locked (${JSON.stringify(audio)}): the heal after wave 10 would wait on it forever. Allow auto-play for pokerogue.net in Orion (docs/lag-run.md)`);
+  } else if (COACH && !(await coachTeam())) {
+    stop ||= "coach-team";
   } else {
     const r = await call("start_run", { species: TEAM, slot: Number(SLOT), overwrite: true });
     if (r.error || (r.status !== "ok" && r.status !== "timed_out")) { stop = `start_run:${r.error ?? r.status}`; console.log(JSON.stringify(r, null, 1)); }
@@ -106,7 +155,17 @@ while (!stop && calls < MAX_CALLS) {
   if (read.status !== "ok" && read.status !== "stuck") { stop = `status:${read.status}`; console.log(JSON.stringify(read, null, 1)); break; }
   const menu = read as unknown as Menu;
   const wave = menu.wave;
-  if (wave !== lastWave) waveCalls = calls;
+  if (wave !== lastWave) {
+    waveCalls = calls;
+    if (LAG && wave !== null) {
+      type Mon = { species?: string | null; level?: number | null; boss?: boolean | null } | null;
+      const g = await call("get_state", { detail: "full" });
+      mem.party = ((g.party as Mon[] | null) ?? []).filter(m => m?.species).length || null;
+      log({ kind: "wave", wave, battleType: g.battleType ?? null, double: g.double ?? null, trainer: g.trainer ?? null,
+        boss: ((g.enemy as Mon[] | null) ?? []).some(m => m?.boss === true),
+        levels: Object.fromEntries(((g.party as Mon[] | null) ?? []).flatMap(m => (m?.species && m.level ? [[m.species, m.level]] : []))) });
+    }
+  }
   // A loop the same-screen guard misses alternates screens: a shop, its party screen, back.
   if (calls - waveCalls > STALL) { stop = `stalled:${menu.screen}`; break; }
   lastWave = wave ?? lastWave;
@@ -116,7 +175,9 @@ while (!stop && calls < MAX_CALLS) {
   lastScreen = String(menu.screen);
   if (repeats > 30) { stop = `same-screen:${menu.screen}`; break; }
   const card = readsCard(menu.screen) ? ((await call("read_card")) as unknown as Card) : null;
+  const lead = mem.swapLead;
   const d = decide(menu, card, mem);
+  const retry = mem.swapLead !== null && mem.swapLead !== lead;
   by[d.by]++;
   const r = await call(d.tool, d.args);
   const messages = r.messages ?? [];
@@ -124,7 +185,7 @@ while (!stop && calls < MAX_CALLS) {
   if (r.battleType === 1 || messages.some(m => /would like to battle/.test(m))) trainerWave = (r.wave as number | null) ?? wave;
   if (LAG) {
     const trainer = trainerWave !== null && trainerWave === wave;
-    log({ kind: "window", wave, screen: menu.screen, action: { tool: d.tool, args: d.args, by: d.by, intent: d.intent ?? null }, messages,
+    log({ kind: "window", wave, screen: menu.screen, action: { tool: d.tool, args: d.args, by: d.by, intent: d.intent ?? null }, messages, retry,
       moments: momentsOf({ intent: d.intent, messages, trainer }), trainer, stats: drain() });
   }
   console.log(`${String(wave).padStart(3)} ${String(menu.screen).padEnd(28)} ${d.by.padEnd(4)} ${d.tool} ${JSON.stringify(d.args).padEnd(30)} → ${r.status ?? r.error} ${r.screen ?? ""} ${messages.length ? JSON.stringify(messages) : ""}`);
@@ -142,7 +203,7 @@ while (!stop && calls < MAX_CALLS) {
   if (r.status !== "ok" && r.status !== "timed_out" && r.status !== "stuck") { stop = `status:${r.status}`; console.log(JSON.stringify(r.diagnostic ?? r, null, 1)); break; }
 }
 if (!stop) stop = "max-calls";
-const summary = { stop, calls, startWave, wave: lastWave, wallMs: Date.now() - t0, by, hidden, log: LOG };
+const summary = { stop, calls, ...(RESUME ? { resumed: prior } : {}), startWave, wave: lastWave, wallMs: Date.now() - t0, by, hidden, lang: facts.lang, sprites: facts.sprites, log: LOG };
 log({ kind: "summary", ...summary });
 console.log(JSON.stringify(summary));
 await client.close();
