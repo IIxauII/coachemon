@@ -1,8 +1,9 @@
 // The meter outlives `__coachHud.stop()`: its frame watcher keeps running with the panel off, read as
 // `window.__coachMeter.stats()`, until the next copy's meter replaces it (#481, #482). Every number is
 // `performance.now()` milliseconds.
-const RING = { ticks: 120, gaps: 200, events: 100, loaf: 50 };
+const RING = { ticks: 120, gaps: 200, events: 100, loaf: 50, decisions: 60 };
 const GAP_MS = 34;
+const LATE_MS = 250;
 const BUCKETS = [20, 34, 50, 100, 250];
 const TRACK = { devtools: { dataType: "track-entry", track: "Coach panel" } };
 
@@ -20,12 +21,16 @@ const measure = (name, start, duration) => {
   try { performance.measure(name, { start, duration, detail: TRACK }); performance.clearMeasures(name); } catch {}
 };
 
-let started, ticks, gaps, events, loaf, hist, frames, hidden, maxMs;
+let started, ticks, gaps, events, loaf, decisions, hist, frames, hidden, maxMs, watch;
+// The open decision rides into the next drain as well, so a report keeps a decision's last copy by `id`.
+let decision = null, decisionSeq = 0;
 const reset = () => {
   started = now();
   ticks = ring(RING.ticks); gaps = ring(RING.gaps); events = ring(RING.events); loaf = ring(RING.loaf);
+  decisions = ring(RING.decisions);
+  if (decision) decisions.push(decision);
   hist = BUCKETS.map(() => 0).concat(0);
-  frames = 0; hidden = 0; maxMs = 0;
+  frames = 0; hidden = 0; maxMs = 0; watch = { frames: 0, ms: 0 };
 };
 
 let open = null, seq = 0;
@@ -60,6 +65,7 @@ export const refresh = (why, fn) => {
     since.ticks.push(rec.seq);
     if (top && rec.stages[top] > since.top) { since.top = rec.stages[top]; since.stage = top; }
     if (ms > since.longest) { since.longest = ms; since.kind = rec.kind; since.wave = rec.wave; }
+    if (decision) charge(decision, rec, t0, ms);
     mark("coach:idle");
     measure("coach:refresh", t0, ms);
   }
@@ -81,6 +87,28 @@ export const stage = (name, fn) => {
 
 export const note = fields => { if (open) Object.assign(open, fields); };
 
+// A decision (CONTEXT.md) as the watch saw it, every time relative to `at`: when it was ready, when the game took input,
+// when a refresh first came back with its kind of card, and the overlay's ms more than `LATE_MS` in (#519).
+export const decisionBegin = (kind, card, wave) => {
+  decisionEnd();
+  decision = { id: ++decisionSeq, kind, card, wave, at: r1(now()), ready: null, input: null, drawn: null, refreshes: 0, ms: 0, late: 0, end: null };
+  decisions.push(decision);
+};
+export const decisionAt = field => { if (decision && decision[field] === null) decision[field] = r1(now() - decision.at); };
+export const decisionEnd = () => {
+  if (!decision) return;
+  decision.end = r1(now() - decision.at);
+  decision = null;
+};
+const charge = (d, rec, t0, ms) => {
+  const end = t0 + ms;
+  d.refreshes++;
+  d.ms = r1(d.ms + ms);
+  d.late = r1(d.late + Math.max(0, end - Math.max(t0, d.at + LATE_MS)));
+  if (d.drawn === null && rec.kind === d.card) d.drawn = r1(end - d.at);
+  rec.decision = d.id;
+};
+
 // A hub command answered in the page: never the panel's work, so it opens no record (#499).
 const driver = fn => {
   const t0 = now();
@@ -101,7 +129,15 @@ const panelIn = (from, to) => {
 };
 
 const bucketOf = gap => { const i = BUCKETS.findIndex(b => gap < b); return i < 0 ? BUCKETS.length : i; };
-let prev = null, raf = 0, live = true;
+let prev = null, raf = 0, live = true, hook = null;
+// Run at the end of every frame callback, so a refresh it opens is charged to the frame after (#518).
+export const onFrame = fn => { hook = fn; };
+const runHook = t => {
+  const t0 = now(), overlay = since.ms;
+  try { hook(t); } catch {}
+  watch.frames++;
+  watch.ms += now() - t0 - (since.ms - overlay);
+};
 const frame = t => {
   if (!live) return;
   raf = requestAnimationFrame(frame);
@@ -121,6 +157,7 @@ const frame = t => {
   since = fresh();
   ended = [];
   prev = t;
+  if (hook) runHook(t);
 };
 // A hidden tab gets no frames, so the gap across it is the time away, not a stall.
 const onVisibility = () => { if (document.visibilityState === "hidden") { prev = null; hidden++; } };
@@ -174,7 +211,8 @@ export const meterStats = () => {
     refresh: summary(all.map(t => t.ms)),
     stages: Object.fromEntries(names.map(k => [k, summary(all.filter(t => k in t.stages).map(t => t.stages[k]))])),
     stalls: { n: g.length, ms: r1(g.reduce((a, x) => a + x.gap, 0)), panel: r1(g.reduce((a, x) => a + x.panel, 0)), driver: r1(g.reduce((a, x) => a + x.driver, 0)) },
-    ticks: all, gaps: g, events: events.all(), loaf: loaf.all(),
+    watch: { frames: watch.frames, ms: r1(watch.ms) },
+    ticks: all, gaps: g, events: events.all(), loaf: loaf.all(), decisions: decisions.all(),
   };
 };
 

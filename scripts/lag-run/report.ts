@@ -3,6 +3,7 @@
  * up, per moment and per card kind. A gap the hub's commands spent more of than the overlay is the driver's, counted
  * apart and never compared.
  */
+import { byKind, decisionsOf, formatKinds, refreshModel, watchCost } from "./decisions.ts";
 import { MOMENT_NAMES, MOMENTS, type Moment } from "./moments.ts";
 import { formatShopDraws, shopDraws } from "./shop.ts";
 import { formatFacts, formatWaves, gameFacts, perWave, type WaveRecord, type WaveWindow } from "./waves.ts";
@@ -126,7 +127,15 @@ export function formatRun(name: string, run: RunLog): string {
   lines.push("", formatFacts(gameFacts(run.windows as unknown as WaveWindow[])), "", formatWaves(wavesOf(run)));
   const draws = shopDraws(run.windows as unknown as WaveWindow[]);
   if (draws.length) lines.push("", "### Shop card by stage", "", formatShopDraws(draws));
+  const decisions = decisionsOf(run.windows as unknown as WaveWindow[]);
+  if (decisions.length) lines.push("", "### Decisions", "", formatDecisionFacts(run), "", formatKinds(byKind(decisions)));
   return lines.join("\n");
+}
+
+export function formatDecisionFacts(run: RunLog): string {
+  const ws = run.windows as unknown as WaveWindow[];
+  const w = watchCost(ws);
+  return `refresh model **${refreshModel(ws) ?? "not in this build"}**, the watch's read ${w.usPerFrame ?? "–"} µs a frame over ${w.frames} frames`;
 }
 
 export function formatComparison(c: Comparison, runs: { before: RunLog[]; after: RunLog[] }): string {

@@ -94,9 +94,17 @@ const shopNote = (s, card) => note({ shop: {
   tms: tmCount(card?.free), rollTms: (card?.rerollAhead?.rolls ?? []).reduce((n, r) => n + tmCount(r.offers), 0),
 } });
 
+export const hasRoad = card => card?.kind === "battle" || card?.kind === "rewards";
+// After the turn read has closed: the two reads are sequential, never nested (26-run).
+export const readRoad = (s, card) => readRun(s, run => {
+  card.preview = previewNext(run);
+  // The rewards card has already built its own.
+  card.ahead ??= aheadModel(run);
+});
+
 // `account`: the run's own data, read once a refresh by 98-tick, which only the catch and Mystery Encounter cards weigh
-// a mon by.
-export const readCard = (s, account) => {
+// a mon by. `road: false` leaves the road group to `readRoad`, in a task of its own (#519).
+export const readCard = (s, account, { road = true } = {}) => {
   if (!s?.ui) return null;
   const handler = s.ui.getHandler();
   const starters = starterScreen(s);
@@ -126,14 +134,7 @@ export const readCard = (s, account) => {
   }
   if (!card) return null;
   card.wave = s.currentBattle?.waveIndex ?? null;
-  if (card.kind === "battle" || card.kind === "rewards") {
-    // After the turn read has closed: the two reads are sequential, never nested (26-run).
-    stage("road", () => readRun(s, run => {
-      card.preview = previewNext(run);
-      // The rewards card has already built its own.
-      card.ahead ??= aheadModel(run);
-    }));
-  }
+  if (road && hasRoad(card)) stage("road", () => readRoad(s, card));
   return card;
 };
 

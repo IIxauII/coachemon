@@ -1,0 +1,21 @@
+command, slot 0                    build command ready 0 input 0 end null
+command, same frame again          -     command ready 0 input 0 end null
+commit window                      -     command ready 0 input 0 end null
+command, slot 1                    -     command ready 0 input 0 end null
+target select                      -     command ready 0 input 0 end null
+the enemy has chosen               -     command ready 0 input 0 end 80
+next turn                          build command ready 0 input 0 end null
+shop reveal                        build reward ready 0 input null end null
+shop takes input                   -     reward ready 0 input 16 end null
+TM party screen                    -     reward ready 0 input 16 end null
+splice screen                      build fusion ready 0 input 0 end null
+back to the shop                   build reward ready 0 input 0 end null
+auto-learn, three moves            -     reward ready 0 input 0 end 16
+already known                      -     reward ready 0 input 0 end 16
+learn, prompted message            build learn ready 0 input null end null
+learn, forget a move?              -     learn ready 0 input 16 end null
+U-turn party screen                -     learn ready 0 input 16 end 32
+replacement, fading                -     replacement ready null input null end null
+replacement, party up              build replacement ready 16 input 16 end null
+biome, blocked                     build biome ready 0 input null end null
+biome, open                        -     biome ready 0 input 16 end null

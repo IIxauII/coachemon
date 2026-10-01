@@ -12,7 +12,7 @@ import { dirname } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { serverEnv } from "../src/server-env.ts";
 import { momentsOf } from "./lag-run/moments.ts";
-import { lowPowerMode, orion } from "./lag-run/orion.ts";
+import { lowPowerMode, orion, type Refresh } from "./lag-run/orion.ts";
 import { decide, freshMemory, heard, readsCard, refused, type Card, type Menu } from "./lag-run/policy.ts";
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
@@ -27,10 +27,13 @@ const RESUME = arg("--resume", "");
 // `--reroll` rerolls once a shop so the shop card's draw after a reroll is measured (#516); a comparison leaves it off.
 const REROLL = process.argv.includes("--reroll");
 const LOG = RESUME || arg("--log", LAG ? `.cache/lag-run/${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl` : ".cache/autoplay.jsonl");
+// `--refresh clock|watch` plays on this checkout's overlay, injected after the reload, in place of the extension's (#519).
+const REFRESH = arg("--refresh", "") as Refresh | "";
 
 if (LAG) {
   // The slot is overwritten every run, so it is never guessed.
   if (!/^[0-4]$/.test(SLOT)) { console.error("--lag needs --slot 0-4: a save slot that holds nothing of yours"); process.exit(2); }
+  if (REFRESH && REFRESH !== "clock" && REFRESH !== "watch") { console.error("--refresh is clock or watch"); process.exit(2); }
   if (RESUME && !existsSync(RESUME)) { console.error(`--resume ${RESUME}: no such log`); process.exit(2); }
   if (lowPowerMode()) { console.error("Low Power Mode is on: it throttles the frames the run measures (docs/lag-run.md)"); process.exit(2); }
   process.env.COACHEMON_TRANSPORT = "hub";
@@ -73,6 +76,15 @@ function drain() {
 
 let stop = "";
 
+function inject(): boolean {
+  if (!REFRESH) return true;
+  const r = tab!.inject(REFRESH);
+  const on = (drain().facts as { refresh?: string } | undefined)?.refresh;
+  if (r.hud !== "on" || on !== REFRESH) { stop = `inject:${r.error ?? r.hud ?? "?"}:${on ?? "no model"}`; return false; }
+  log({ kind: "inject", refresh: REFRESH });
+  return true;
+}
+
 /** From TITLE: New Game, Classic, the starters card's first team, then back out to TITLE for `start_run`. */
 async function coachTeam(): Promise<boolean> {
   const title = await call("read_menu");
@@ -107,9 +119,9 @@ if (LAG && RESUME) {
   if (audio.state !== "running") { console.error(`the tab's audio is not running (${JSON.stringify(audio)}): click in the game once, or allow auto-play for pokerogue.net`); process.exit(2); }
   const s = await call("status");
   log({ kind: "resume", at: new Date().toISOString(), priorCalls: prior.calls, priorMs: prior.ms, status: s });
-  drain();
+  if (REFRESH) inject(); else drain();
 } else if (LAG) {
-  log({ kind: "run", team: COACH ? null : TEAM, slot: Number(SLOT), waves: WAVES, started: new Date().toISOString(), status: await call("status") });
+  log({ kind: "run", team: COACH ? null : TEAM, slot: Number(SLOT), waves: WAVES, refresh: REFRESH || null, started: new Date().toISOString(), status: await call("status") });
   const seen = tab!.visibility();
   if (seen !== "visible") { console.error(`the pokerogue.net tab is not in the foreground (${seen}): bring its Orion window to the front`); process.exit(2); }
   tab!.reload();
@@ -128,7 +140,7 @@ if (LAG && RESUME) {
   else if (audio.state !== "running") {
     stop = "audio-locked";
     console.error(`the tab's audio is locked (${JSON.stringify(audio)}): the heal after wave 10 would wait on it forever. Allow auto-play for pokerogue.net in Orion (docs/lag-run.md)`);
-  } else if (COACH && !(await coachTeam())) {
+  } else if (!inject() || (COACH && !(await coachTeam()))) {
     stop ||= "coach-team";
   } else {
     const r = await call("start_run", { species: TEAM, slot: Number(SLOT), overwrite: true });

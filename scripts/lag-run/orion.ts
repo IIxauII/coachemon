@@ -39,10 +39,15 @@ const AUDIO = inPage(`try {
 
 export type Drained = { hudActive: boolean; meterActive: boolean; stats: Record<string, unknown> & { ticks: unknown[]; gaps: unknown[] } | null; error?: string };
 
+export type Refresh = "clock" | "watch";
+
 export function orion() {
   const drainJs = probe("drain");
   return {
     drain: (): Drained => JSON.parse(inTab(drainJs)) as Drained,
+    /** This checkout's overlay in place of the extension's, on the refresh model given (#519). */
+    inject: (refresh: Refresh): { hud?: string; error?: string } =>
+      JSON.parse(inTab(inPage(`try { localStorage.setItem("coachemon:refresh", ${JSON.stringify(refresh)}); } catch {}\n${bundle("hud")}`))),
     reload: (): void => { inTab("location.reload(), 'ok'"); },
     /** `hidden`, `visible`, or the tab's error. */
     visibility: (): string => inTab("document.visibilityState"),

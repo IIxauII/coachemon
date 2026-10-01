@@ -3,6 +3,7 @@
  * was, and what happened in it.
  */
 import { BattleType } from "../../src/enums/generated.ts";
+import { decisionsOf, type Decision } from "./decisions.ts";
 import { dist, GAP_MS, type Dist } from "./report.ts";
 
 const OVERLAY_MADE_MS = 34;
@@ -15,10 +16,10 @@ const PROMPTS = new Set([
 
 type Tick = { seq: number; at: number; ms: number; kind: string | null; wave?: number | null; phase?: string | null; drew?: boolean; stages?: Record<string, number> };
 type Gap = { at: number; gap: number; panel: number; driver?: number; ticks: number[]; wave?: number | null };
-type Facts = { lang?: string | null; sprites?: { id: string; misses: number; found: boolean }[] };
+type Facts = { lang?: string | null; sprites?: { id: string; misses: number; found: boolean }[]; refresh?: string | null };
 export type WaveWindow = {
   wave: number | null; action?: { intent?: string | null }; messages?: string[]; retry?: boolean;
-  stats: { ticks: Tick[]; gaps: Gap[]; facts?: Facts };
+  stats: { ticks: Tick[]; gaps: Gap[]; facts?: Facts; decisions?: Decision[] };
 };
 /** The driver's `get_state` at the wave's first read. */
 export type WaveRecord = {
@@ -37,6 +38,9 @@ export type WaveRow = {
   hitches: { n: number; overlayMs: number };
   hitchMs: number;
   overlayMs: number;
+  cardMs: number[];
+  notDrawn: number;
+  lateMs: number;
 };
 
 /** A trainer's intro says its class, which `get_state`'s bare name does not. */
@@ -101,6 +105,7 @@ function byWave(windows: WaveWindow[]) {
 /** Waves 1 up to the last one the run finished: a run that stopped short leaves out the wave it stopped on. */
 export function perWave(windows: WaveWindow[], records: WaveRecord[], upTo: number, reached: boolean): WaveRow[] {
   const { ticks, gaps, acts } = byWave(windows);
+  const decisions = decisionsOf(windows);
   const last = reached ? upTo : Math.min(upTo, Math.max(0, ...windows.map(w => w.wave ?? 0)) - 1);
   const rows: WaveRow[] = [];
   for (let wave = 1; wave <= last; wave++) {
@@ -123,9 +128,18 @@ export function perWave(windows: WaveWindow[], records: WaveRecord[], upTo: numb
       hitches: { n: made.length, overlayMs: Math.round(made.reduce((a, g) => a + g.panel, 0)) },
       hitchMs: hitches.reduce((a, g) => a + g.gap, 0),
       overlayMs: hitches.reduce((a, g) => a + g.panel, 0),
+      ...decisionCells(decisions.filter(d => d.wave === wave)),
     });
   }
   return rows;
+}
+
+function decisionCells(ds: Decision[]) {
+  return {
+    cardMs: ds.flatMap(d => (d.drawn === null ? [] : [d.drawn])),
+    notDrawn: ds.filter(d => d.drawn === null).length,
+    lateMs: Math.round(ds.reduce((a, d) => a + d.late, 0)),
+  };
 }
 
 /** The meter's facts are the overlay's since the page loaded, so the last drain has them all. */
@@ -156,12 +170,15 @@ function cells(rs: WaveRow[]) {
     shop: shops.length ? String(Math.max(...shops)) : "–",
     hitches: `${sum(r => r.hitches.n)} (${sum(r => r.hitches.overlayMs)})`,
     share: share(sum(r => r.overlayMs), sum(r => r.hitchMs)),
+    card: (() => { const c = dist(all(r => r.cardMs)); const missed = sum(r => r.notDrawn); return `${spread(c)}${c ? ` (${c.n}${missed ? `, ${missed} never` : ""})` : missed ? `– (${missed} never)` : ""}`; })(),
+    late: String(sum(r => r.lateMs)),
   };
 }
 type Cells = ReturnType<typeof cells>;
 const COLUMNS: [keyof Cells, string][] = [
   ["turn", "turn card ms p95 / max (n)"], ["preview", "preview recomputes (in animation)"], ["road", "recompute ms p95 / max"],
   ["shop", "shop card ms"], ["hitches", "overlay-made hitches (overlay ms)"], ["share", "overlay share of hitch time"],
+  ["card", "decision → card ms p95 / max (n)"], ["late", "late block ms"],
 ];
 
 export function formatWaves(rows: WaveRow[]): string {
