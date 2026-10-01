@@ -25,7 +25,7 @@ export const dist = (xs: number[]): Dist => {
 type Acc = { windows: number; ticks: number[]; gaps: number[]; driverGaps: number[] };
 const acc = (): Acc => ({ windows: 0, ticks: [], gaps: [], driverGaps: [] });
 const cell = (a: Acc): Cell => ({ windows: a.windows, ticks: dist(a.ticks), gaps: dist(a.gaps), driverGaps: dist(a.driverGaps) });
-/** A refresh drained just before its frame lands as a gap with a little of the driver's in it (#515). */
+/** Any driver ms made a gap the driver's, so a 7,508 ms refresh drained before its frame read as a driver gap (#515). */
 const isDriverGap = (g: { panel: number; driver?: number }) => (g.driver ?? 0) > g.panel;
 const addGap = (a: Acc, g: Gap) => { (isDriverGap(g) ? a.driverGaps : a.gaps).push(g.gap); };
 

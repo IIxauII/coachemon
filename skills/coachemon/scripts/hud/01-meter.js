@@ -30,7 +30,7 @@ const reset = () => {
 
 let open = null, seq = 0;
 const nest = [];
-// The panel's work and the driver's since the last frame: what a gap is charged with. `reset` leaves it alone: a
+// The overlay's work and the driver's since the last frame: what a gap is charged with. `reset` leaves it alone: a
 // drain between a long refresh and the next frame charged that frame's gap to nobody (#515).
 const fresh = () => ({ ms: 0, stage: null, top: 0, ticks: [], driver: 0, longest: 0, kind: null, wave: null });
 let since = fresh(), ended = [], awaitingNext = null;
