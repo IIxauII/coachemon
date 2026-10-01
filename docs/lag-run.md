@@ -145,9 +145,11 @@ A window counts toward a **moment** when its action met it:
   (#481). Style, layout and paint land in the frame after it, so they show as gaps, not ticks.
 - **gaps ≥ 50** are frames that took 50 ms or more, with their p50 / p95 / max. The meter records gaps from 34 ms; the
   report keeps 50 and up.
-- **driver gaps** are gaps a hub command's page work ran inside, however little of it. They are the measurement's own
-  cost, reported apart with their own p50 / p95 / max and never compared. Only the command's synchronous work in the
-  page is the driver's: the animations and phases a press sets off are the game's, and land in ordinary gaps.
+- **driver gaps** are gaps a hub command's page work took more of than the overlay's refreshes. They are the
+  measurement's own cost, reported apart with their own p50 / p95 / max and never compared. Only the command's
+  synchronous work in the page is the driver's: the animations and phases a press sets off are the game's, and land in
+  ordinary gaps. A drain that runs between a refresh and its frame leaves the gap charged to that refresh from #515's
+  build on; an older build's log files it with the overlay at about 0 ms, and its overlay share is too low.
 - **card: <kind>** rows cut the same numbers by the card up at the time: a gap goes to the card its refreshes drew, else
   the card last drawn before it.
 - A moment **not met** on either side is not compared. Whole-run totals are reported, not judged.

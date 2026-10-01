@@ -4,7 +4,7 @@ import { gameFacts, perWave, waveKind, type WaveRecord, type WaveWindow } from "
 
 const tick = (seq: number, at: number, ms: number, o: { wave: number; phase: string; kind?: string | null; drew?: boolean; road?: number }) =>
   ({ seq, at, ms, kind: o.kind ?? "battle", wave: o.wave, phase: o.phase, drew: o.drew ?? false, stages: { read: ms, ...(o.road != null ? { road: o.road } : {}) } });
-const gap = (at: number, g: number, panel: number, ticks: number[] = []) => ({ at, gap: g, panel, ticks });
+const gap = (at: number, g: number, panel: number, ticks: number[] = []): { at: number; gap: number; panel: number; ticks: number[]; wave?: number } => ({ at, gap: g, panel, ticks });
 const win = (wave: number, ticks: ReturnType<typeof tick>[], gaps: ReturnType<typeof gap>[] = [], o: Partial<WaveWindow> = {}): WaveWindow =>
   ({ wave, messages: [], stats: { ticks, gaps }, ...o });
 const rec = (wave: number, o: Partial<WaveRecord> = {}): WaveRecord => ({ wave, battleType: 0, double: false, trainer: null, boss: false, ...o });
@@ -54,6 +54,16 @@ test("a gap belongs to the wave of the refresh it held, else of the refresh befo
   assert.equal(rows[0].hitchMs, 0);
   assert.equal(rows[1].hitchMs, 90 + 70 + 60);
   assert.equal(rows[1].recomputeMs.length, 1);
+});
+
+test("a gap whose refresh a drain handed back in the window before is that refresh's wave (#515)", () => {
+  const rows = perWave([
+    win(24, [tick(1, 100, 7500, { wave: 25, phase: "CommandPhase" })]),
+    win(26, [], [{ ...gap(90, 7660, 7500, [1]), wave: 25 }]),
+    win(27, []),
+  ], [], 50, false);
+  assert.equal(rows.find(r => r.wave === 25)!.overlayMs, 7500);
+  assert.equal(rows.find(r => r.wave === 26)!.hitchMs, 0);
 });
 
 test("a run that stopped short leaves out the wave it stopped on; one that reached its length keeps the last (#508)", () => {
