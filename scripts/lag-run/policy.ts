@@ -311,7 +311,12 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     return cont ? pick(cont.label!, "rule") : cancel;
   }
   if (screen === "OPTION_SELECT" || screen === "MENU_OPTION_SELECT") return pick(first, "rule");
-  if (screen.startsWith("MYSTERY_ENCOUNTER") && first) return pick(first, "rule");
+  if (screen.startsWith("MYSTERY_ENCOUNTER") && first) {
+    // A retry replays the encounter from its menu, and its fight lost once is lost again (#519).
+    const lost = [...mem.tried].some(k => k.startsWith(`${menu.wave}|retry|`));
+    const leave = lost ? has(/^(leave|run away|flee|walk away|ignore|move on|go away|decline|refuse)/i) : undefined;
+    return pick(leave ?? first, "rule");
+  }
   if (screen === "SUMMARY" || screen.startsWith("SUMMARY/")) return cancel;
   return action;
 }

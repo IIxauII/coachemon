@@ -150,6 +150,16 @@ test("a PP item's move list takes the first move, since no verb there commits it
   assert.deepEqual(decide(moves, null, freshMemory()).args, { label: "Tackle" });
 });
 
+test("a mystery encounter whose fight was lost is left on the retry, where it can be (#519)", () => {
+  const mem = freshMemory();
+  const me: Menu = { screen: "MYSTERY_ENCOUNTER", wave: 39, options: opts(["Battle the Pokémon", "Steal the item", "Leave it be"]) };
+  assert.deepEqual(decide(me, null, mem).args, { label: "Battle the Pokémon" });
+  decide({ screen: "CONFIRM", wave: 39, text: "Would you like to retry from the start of the battle?", options: opts(["Yes", "No"]) }, null, mem);
+  assert.deepEqual(decide(me, null, mem).args, { label: "Leave it be" });
+  const noWayOut: Menu = { ...me, options: opts(["Battle the Pokémon", "Steal the item"]) };
+  assert.deepEqual(decide(noWayOut, null, mem).args, { label: "Battle the Pokémon" });
+});
+
 test("a Memory Mushroom recalls the first forgotten move, the one row the reader indexes right (#519)", () => {
   const moves: Menu = { screen: "PARTY/REMEMBER_MOVE_MODIFIER:options", wave: 23, options: opts(["Wrap", "1", "Leer", "1", "Twister", "5", "Cancel"]) };
   assert.deepEqual(decide(moves, null, freshMemory()).args, { label: "Wrap" });
