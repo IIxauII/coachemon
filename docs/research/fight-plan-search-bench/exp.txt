@@ -1,0 +1,112 @@
+
+== quick N=3 (median over 6 seeds of per-seed median of 5)
+orig 16.2 ms (min 8.9, max 54.0) · phases model 15.4 / ats 0.3 / view 0.5
+  mean counts: tpFight 411 (hit 333, miss 76) · tpSearch 5.8 · tpValue 159 · children 134 · tpMerge 246 (to-1 91, max n 248; to-4 max n 128)
+  time share: merge-to-1 56% · merge-to-4 25% · tpFight rest (under tpValue 6%, elsewhere 7%) · tpValue own 1% · tpSearch own 4% · tpModel own 1%
+  nn               12.2 ms  x1.5  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key           13.1 ms  x1.6  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key+vmemo     14.1 ms  x1.4  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam12           11.8 ms  x1.3  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam6            14.2 ms  x1.6  identical 5/6  base-first-step changed 1/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 76.93
+  turns10          12.9 ms  x1.6  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  turns6           11.8 ms  x1.4  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse1%         12.0 ms  x1.4  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse3%         13.0 ms  x1.3  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+
+== quick N=4 (median over 6 seeds of per-seed median of 5)
+orig 40.3 ms (min 16.1, max 94.2) · phases model 36.5 / ats 6.6 / view 0.7
+  mean counts: tpFight 1747 (hit 1537, miss 210) · tpSearch 6.3 · tpValue 711 · children 617 · tpMerge 596 (to-1 242, max n 248; to-4 max n 128)
+  time share: merge-to-1 60% · merge-to-4 22% · tpFight rest (under tpValue 6%, elsewhere 5%) · tpValue own 1% · tpSearch own 4% · tpModel own 0%
+  nn               22.1 ms  x2.2  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key           21.2 ms  x2.2  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key+vmemo     25.2 ms  x1.6  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam12           20.6 ms  x2.1  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam6            26.0 ms  x2.1  identical 5/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  turns10          31.2 ms  x1.4  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  turns6           23.7 ms  x1.7  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse1%         27.7 ms  x1.9  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse3%         23.3 ms  x2.0  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+
+== quick N=5 (median over 6 seeds of per-seed median of 5)
+orig 61.1 ms (min 40.0, max 94.5) · phases model 44.9 / ats 16.4 / view 1.0
+  mean counts: tpFight 5371 (hit 4942, miss 428) · tpSearch 7.3 · tpValue 1771 · children 1520 · tpMerge 1155 (to-1 493, max n 216; to-4 max n 128)
+  time share: merge-to-1 64% · merge-to-4 14% · tpFight rest (under tpValue 10%, elsewhere 4%) · tpValue own 2% · tpSearch own 5% · tpModel own 0%
+  nn               41.9 ms  x1.5  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key           43.5 ms  x1.5  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key+vmemo     41.7 ms  x1.4  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam12           34.2 ms  x1.3  identical 5/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 1/6  max|dval| 3.66
+  beam6            24.2 ms  x2.7  identical 3/6  base-first-step changed 1/6  result 0/6  pinned-step2 0/6  at()-argmax 1/6  max|dval| 12.21
+  turns10          38.4 ms  x1.8  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  turns6           38.6 ms  x1.5  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse1%         44.2 ms  x1.5  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse3%         40.0 ms  x1.4  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+
+== quick N=6 (median over 6 seeds of per-seed median of 5)
+orig 103.3 ms (min 84.9, max 369.2) · phases model 77.9 / ats 43.1 / view 2.1
+  mean counts: tpFight 12130 (hit 11130, miss 999) · tpSearch 8.3 · tpValue 3233 · children 2830 · tpMerge 2736 (to-1 1126, max n 248; to-4 max n 128)
+  time share: merge-to-1 57% · merge-to-4 16% · tpFight rest (under tpValue 14%, elsewhere 4%) · tpValue own 3% · tpSearch own 6% · tpModel own 0%
+  nn               91.0 ms  x1.5  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key           80.1 ms  x1.9  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key+vmemo     75.7 ms  x1.5  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam12           69.8 ms  x2.5  identical 5/6  base-first-step changed 1/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.21
+  beam6            50.9 ms  x2.3  identical 0/6  base-first-step changed 1/6  result 0/6  pinned-step2 1/6  at()-argmax 0/6  max|dval| 6.43
+  turns10         100.0 ms  x1.3  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  turns6           97.7 ms  x1.4  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse1%         73.1 ms  x1.7  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse3%         76.8 ms  x1.7  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+
+== stall N=3 (median over 6 seeds of per-seed median of 5)
+orig 48.5 ms (min 28.0, max 120.2) · phases model 46.9 / ats 0.1 / view 2.9
+  mean counts: tpFight 204 (hit 161, miss 42) · tpSearch 5.5 · tpValue 63 · children 52 · tpMerge 268 (to-1 51, max n 280; to-4 max n 128)
+  time share: merge-to-1 31% · merge-to-4 58% · tpFight rest (under tpValue 4%, elsewhere 5%) · tpValue own 0% · tpSearch own 1% · tpModel own 0%
+  nn               34.2 ms  x1.7  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key           27.1 ms  x1.7  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key+vmemo     27.8 ms  x1.8  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam12           24.6 ms  x2.0  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam6            27.8 ms  x1.7  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  turns10          21.0 ms  x2.4  identical 0/6  base-first-step changed 4/6  result 1/6  pinned-step2 3/6  at()-argmax 3/6  max|dval| 185.09
+  turns6            7.4 ms  x7.3  identical 0/6  base-first-step changed 3/6  result 4/6  pinned-step2 6/6  at()-argmax 2/6  max|dval| 307.65
+  coarse1%         26.2 ms  x2.1  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse3%         28.8 ms  x1.7  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+
+== stall N=4 (median over 6 seeds of per-seed median of 5)
+orig 200.9 ms (min 59.1, max 242.7) · phases model 198.9 / ats 0.7 / view 2.1
+  mean counts: tpFight 892 (hit 768, miss 123) · tpSearch 6.7 · tpValue 310 · children 272 · tpMerge 650 (to-1 142, max n 248; to-4 max n 128)
+  time share: merge-to-1 32% · merge-to-4 57% · tpFight rest (under tpValue 6%, elsewhere 3%) · tpValue own 0% · tpSearch own 1% · tpModel own 0%
+  nn               73.3 ms  x2.3  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key           71.8 ms  x2.0  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key+vmemo     67.1 ms  x2.0  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam12           71.9 ms  x1.8  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam6            71.3 ms  x2.0  identical 5/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 1.99
+  turns10          28.0 ms  x4.8  identical 0/6  base-first-step changed 5/6  result 5/6  pinned-step2 3/6  at()-argmax 5/6  max|dval| 306.33
+  turns6           14.9 ms  x12.7  identical 0/6  base-first-step changed 3/6  result 6/6  pinned-step2 5/6  at()-argmax 3/6  max|dval| 336.57
+  coarse1%         72.6 ms  x2.2  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse3%         72.8 ms  x2.1  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+
+== stall N=5 (median over 6 seeds of per-seed median of 5)
+orig 299.8 ms (min 119.0, max 915.4) · phases model 275.7 / ats 13.3 / view 2.3
+  mean counts: tpFight 2576 (hit 2296, miss 279) · tpSearch 7.7 · tpValue 668 · children 583 · tpMerge 1914 (to-1 320, max n 303; to-4 max n 128)
+  time share: merge-to-1 30% · merge-to-4 63% · tpFight rest (under tpValue 5%, elsewhere 1%) · tpValue own 0% · tpSearch own 0% · tpModel own 0%
+  nn              177.1 ms  x1.9  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key          168.5 ms  x2.2  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key+vmemo    219.9 ms  x2.0  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam12          154.8 ms  x2.2  identical 4/6  base-first-step changed 1/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 23.28
+  beam6           142.8 ms  x2.1  identical 3/6  base-first-step changed 2/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 23.28
+  turns10         119.5 ms  x3.6  identical 1/6  base-first-step changed 3/6  result 2/6  pinned-step2 1/6  at()-argmax 3/6  max|dval| 278.94
+  turns6           16.5 ms  x41.2  identical 0/6  base-first-step changed 4/6  result 5/6  pinned-step2 4/6  at()-argmax 4/6  max|dval| 321.04
+  coarse1%        169.8 ms  x2.0  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse3%        178.5 ms  x2.3  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+
+== stall N=6 (median over 6 seeds of per-seed median of 5)
+orig 628.0 ms (min 262.9, max 1034.5) · phases model 578.4 / ats 79.3 / view 3.4
+  mean counts: tpFight 8419 (hit 7754, miss 664) · tpSearch 8.3 · tpValue 2000 · children 1717 · tpMerge 3719 (to-1 751, max n 284; to-4 max n 128)
+  time share: merge-to-1 32% · merge-to-4 59% · tpFight rest (under tpValue 6%, elsewhere 1%) · tpValue own 0% · tpSearch own 1% · tpModel own 0%
+  nn              318.5 ms  x2.1  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key          337.8 ms  x2.2  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  nn+key+vmemo    336.9 ms  x2.2  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  beam12          301.7 ms  x2.1  identical 3/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 2/6  max|dval| 4.45
+  beam6           227.9 ms  x2.8  identical 2/6  base-first-step changed 1/6  result 0/6  pinned-step2 0/6  at()-argmax 2/6  max|dval| 23.54
+  turns10         178.7 ms  x4.6  identical 0/6  base-first-step changed 3/6  result 3/6  pinned-step2 3/6  at()-argmax 3/6  max|dval| 305.60
+  turns6           22.8 ms  x31.4  identical 0/6  base-first-step changed 4/6  result 6/6  pinned-step2 5/6  at()-argmax 5/6  max|dval| 326.39
+  coarse1%        316.7 ms  x2.0  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
+  coarse3%        351.1 ms  x2.1  identical 6/6  base-first-step changed 0/6  result 0/6  pinned-step2 0/6  at()-argmax 0/6  max|dval| 0.00
