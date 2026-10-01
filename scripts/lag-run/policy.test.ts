@@ -150,6 +150,11 @@ test("a PP item's move list takes the first move, since no verb there commits it
   assert.deepEqual(decide(moves, null, freshMemory()).args, { label: "Tackle" });
 });
 
+test("a Memory Mushroom recalls the first forgotten move, the one row the reader indexes right (#519)", () => {
+  const moves: Menu = { screen: "PARTY/REMEMBER_MOVE_MODIFIER:options", wave: 23, options: opts(["Wrap", "1", "Leer", "1", "Twister", "5", "Cancel"]) };
+  assert.deepEqual(decide(moves, null, freshMemory()).args, { label: "Wrap" });
+});
+
 test("with no rewards card the shop takes the first reward, and leaving an empty shop is no pick (#499)", () => {
   const shop: Menu = { screen: "MODIFIER_SELECT", wave: 3, options: [{ i: "1:0", label: "Potion", kind: "reward", col: 0, cost: 0 }] };
   assert.deepEqual(decide(shop, null, freshMemory()), { tool: "select_option", args: { index: "1:0" }, by: "rule", intent: "shop" });

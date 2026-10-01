@@ -210,7 +210,9 @@ export function decide(menu: Menu, card: Card, mem: Memory): Action {
     const spent = moves.find(l => { const m = pp(l); return !!m && Number(m[1]) < Number(m[2]); });
     const move = moves.some(l => pp(l)) ? spent : moves[0];
     const label = has(/^(send out|apply|use|teach|switch|revive|select|pass baton|release)/)
-      ?? (screen.startsWith("PARTY/MOVE_MODIFIER") ? move : undefined) ?? "Cancel";
+      ?? (screen.startsWith("PARTY/MOVE_MODIFIER") ? move : undefined)
+      // The reader lists each forgotten move's level as a row of its own, so only the first row's index is right (#519).
+      ?? (screen.startsWith("PARTY/REMEMBER_MOVE_MODIFIER") ? moves[0] : undefined) ?? "Cancel";
     const by = mem.followed ? "card" : "rule";
     mem.followed = false;
     if (screen.startsWith("PARTY/SWITCH") || screen.startsWith("PARTY/POST_BATTLE_SWITCH")) return pick(label, by, "switch");

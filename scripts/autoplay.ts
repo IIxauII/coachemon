@@ -211,6 +211,8 @@ while (!stop && calls < MAX_CALLS) {
     if (r.error === "game_moved") { refused(mem); await sleep(1500); }
     // A message the game still wants read, such as an item's "won't have any effect".
     if (r.error === "message_pending") await call("press", { button: "ACTION" });
+    // A menu whose rows the reader miscounts never puts the cursor on "Cancel"; the button gets out the same (#519).
+    if (r.error === "cursor_unreachable" && (d.args as { label?: string }).label === "Cancel") await call("press", { button: "CANCEL" });
     continue;
   }
   // `stuck` after an act that landed is the detector's advice; the same-screen guard ends a real loop.
