@@ -7,8 +7,7 @@ const CARD_OF = {
   learn: "learn", biome: "biome", encounter: "encounter", starter: "starters",
 };
 
-// `k1`…`k4` hold each kind's key from #537's table, in its order, and are compared by `===`. #544 adds slot 0's command to
-// slot 1's command key, and money and the held items to the fusion key.
+// `k1`…`k4` hold each kind's key from #537's table as #544 widened it, in its order, and are compared by `===`.
 const out = { kind: null, k1: null, k2: null, k3: null, k4: null, ready: false, input: false };
 const set = (kind, k1, k2, k3, k4, ready, input) => {
   out.kind = kind; out.k1 = k1; out.k2 = k2; out.k3 = k3; out.k4 = k4;
