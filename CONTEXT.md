@@ -81,11 +81,15 @@ The **coach** as it runs in the player's tab: the whole part that reads the game
 
 ## Decision
 
-A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn, the free switch offered when a foe faints, or the replacement for one of ours that fainted. Outside one, it is a reward, free or from the shop, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. A decision is only ever made while the game is **settled**, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
+A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn (in a double, each slot's command is its own decision), the free switch offered when a foe faints, or the replacement for one of ours that fainted. Outside one, it is a reward, free or from the shop, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A shop purchase commits a decision, and the shop that stays open asks a new one. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. A decision is only ever made while the game is **settled**, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
+
+## Watch
+
+How the **overlay** notices a **decision**: a look, every frame, at which decision the game is waiting on and with what key, read from what the game already shows, never by hooking it. A new decision has its **card** built at once; nothing between decisions builds one.
 
 ## Card
 
-The **coach**'s advice for the **decision** the player faces right now. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. What a card is showing is also available as plain text, for whoever follows the game without seeing it. A card is shown as a **strip** over a **drawer** of **group**s.
+The **coach**'s advice for the **decision** the player faces right now. There is one card per decision, so a card is coarser than a **screen**: a single battle card stays up while the player moves between the command, fight and target screens. A card is built when its decision begins and is held until the next one: what happens between two decisions (a faint, a level-up, a new wave) leaves it as it was. The one exception is a mon sent in mid-turn, on either side, which redraws the card once from the type chart alone. What a card is showing is also available as plain text, for whoever follows the game without seeing it. A card is shown as a **strip** over a **drawer** of **group**s.
 
 ## Group
 
@@ -101,7 +105,7 @@ Where a **card**'s **group**s sit, one shown at a time: the one the player last 
 
 ## Minigame turn
 
-One turn of a **continuous encounter**: an encounter that re-opens its own screen with a fresh menu until it is done — Safari Zone's ball / bait / mud / run, three wild mons in turn. The options on that menu are the game's **override options**, not the encounter's own, so nothing keys them by index and only an encounter the coach knows by name can judge them. A turn is its own decision on the same **card**, told apart by the mon in front of you and by the two stages its odds are read from.
+One turn of a **continuous encounter**: an encounter that re-opens its own screen with a fresh menu until it is done — Safari Zone's ball / bait / mud / run, three wild mons in turn. The options on that menu are the game's **override options**, not the encounter's own, so nothing keys them by index and only an encounter the coach knows by name can judge them. A turn is its own decision, and so gets its own card, told apart by the mon in front of you and by the two stages its odds are read from.
 
 ## Verdict
 
@@ -327,7 +331,7 @@ A move's **costs** are the traits that hurt its user, and are always named the s
 
 ## Turn read
 
-The **coach**'s look at a battle while the game waits on the player's decision (a command, a free switch or a faint replacement). Every damage number, enemy move, enemy switch and Terastallization the coach shows then comes from the game's own code, as the battle stands. The enemy's move is the game's own decision rather than a guess at it, and carries a **confidence**: **exact**, except where a command of ours draws first and so decides which move the enemy picks, where it is a **replay** of that command. Outside a decision the game can't be asked, so the coach falls back to numbers worked out from the type chart alone. When the game's own code can't be asked *at* a decision, the coach says why and withholds the turn read rather than advising from an **estimate** — the fight, the team's plan and what lies ahead go quiet together. A **card** built from a turn read stays up through the turn's animations, until the turn ends, the wave changes or a foe is sent in.
+The **coach**'s look at a battle while the game waits on the player's decision (a command, a free switch or a faint replacement). Every damage number, enemy move, enemy switch and Terastallization the coach shows then comes from the game's own code, as the battle stands. The enemy's move is the game's own decision rather than a guess at it, and carries a **confidence**: **exact**, except where a command of ours draws first and so decides which move the enemy picks, where it is a **replay** of that command. Outside a decision the game can't be asked, so the coach falls back to numbers worked out from the type chart alone. When the game's own code can't be asked *at* a decision, the coach says why and withholds the turn read rather than advising from an **estimate** — the fight, the team's plan and what lies ahead go quiet together. A **card** built from a turn read is held like any card until the next decision. A mon sent in mid-turn redraws it from the type chart alone: the enemy has already chosen, and asking the game again would replay a choice already made.
 
 ## Run read
 

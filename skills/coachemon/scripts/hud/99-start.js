@@ -1,19 +1,19 @@
-// The refresh loop and the card stream (extension-distribution.md §11.1, §9.1, §9.5).
+// The watch's builds, its fallback clock and the card stream (extension-distribution.md §11.1, §9.1, §9.5).
 import { sandboxBreachCount } from "./01-core.js";
 import { meterFacts, meterStats, onFrame, refresh, stage } from "./01-meter.js";
-import { watchFrame } from "./02-decision.js";
+import { watchBuilt, watchForget, watchFrame, watchOpen } from "./02-decision.js";
 import { dropChunkHandoff } from "./04-game-tables.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
-import { journalClear, journalEntries, journalStats } from "./55-journal.js";
-import { EVENT_KINDS, cardEvent, cardSummary } from "./60-card.js";
-import { battleScene, el, spriteMisses, wireCard } from "./90-render.js";
-import { lastFailure, shownCard, shownGroups, tick } from "./98-tick.js";
+import { journalCheck, journalClear, journalEntries, journalStats } from "./55-journal.js";
+import { EVENT_KINDS, cardEvent, cardSummary, roadLanded } from "./60-card.js";
+import { battleScene, el, setRedraw, spriteMisses, wireCard } from "./90-render.js";
+import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, shownCard, shownGroups, tick } from "./98-tick.js";
 
 // By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
 const hudBuild = typeof COACHEMON_BUILD === "string" ? COACHEMON_BUILD : null;
-let sentCard = null, sentError = null;
+let sentCard = null, sentRoad = false, sentError = null;
 
 const push = (type, detail) => {
   if (hudBuild === null) return;
@@ -47,17 +47,54 @@ const stream = () => {
   // The kind rides in the signature because two kinds share a key on one wave: a biome choice and its battle are both
   // keyed on the wave alone.
   const sig = `${ev.kind}|${ev.key}|${ev.verdict}`;
-  if (sig === sentCard) return;
+  const road = roadLanded(shownCard());
+  // The road group lands after its card, so a card sent without it goes again once it has it (#542).
+  if (sig === sentCard && (sentRoad || !road)) return;
   const body = bodyOf(ev);
   if (typeof body?.text !== "string") return;
   sentCard = sig;
+  sentRoad = road;
   push(CARD_EVENT, body);
 };
 
-const clockTick = () => refresh("clock", () => { tick(); stage("stream", stream); });
-const timer = setInterval(clockTick, 1000);
-clockTick();
-onFrame(() => { let s = null; try { s = battleScene(); } catch {} watchFrame(s); });
+const scene = () => { try { return battleScene(); } catch { return null; } };
+// A scene that throws mid-read is no decision; the build that follows reports it.
+const look = s => { try { return watchFrame(s); } catch { return false; } };
+const gone = s => !s?.ui || (!watchOpen() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
+
+// A press between the card and its road task leaves the road group to the next decision (#487).
+let roadTimer = 0, builds = 0;
+const roadLater = () => {
+  const id = ++builds;
+  roadTimer = setTimeout(() => {
+    if (id === builds && watchBuilt()) refresh("road", () => { roadNow(); stage("stream", stream); });
+  }, 0);
+};
+
+// A frame since the last fallback tick: the watch is looking, so the fallback builds nothing.
+let framed = false;
+onFrame(() => {
+  framed = true;
+  if (!look(scene())) return;
+  refresh("watch", () => { tick(false); stage("stream", stream); });
+  if (roadOwed()) roadLater();
+});
+
+const fallback = () => refresh("fallback", () => {
+  const quiet = !framed;
+  framed = false;
+  let s, fresh, away;
+  try { s = battleScene(); fresh = quiet && look(s); away = gone(s); }
+  catch (e) { fail(e); watchForget(); stage("stream", stream); return; }
+  if (away) { hideCard(); watchForget(); return; }
+  if (fresh) { builds++; tick(true); } else stage("journal", () => journalCheck(s, shownCard()));
+  stage("stream", stream);
+});
+const timer = setInterval(fallback, 1000);
+
+// The screen the overlay lands on, drawn whole; the decision it lands on counts as built.
+refresh("start", () => { look(scene()); tick(true); stage("stream", stream); });
+setRedraw(() => refresh("click", () => { builds++; redraw(); stage("stream", stream); }));
 meterFacts(() => {
   const loop = battleScene()?.game?.loop;
   // game-code.md §22.
@@ -68,7 +105,7 @@ meterFacts(() => {
 // Called from outside the bundle — probe.js, src/page/card.ts, 00-prelude.js's re-inject and the skill's docs — so no
 // method here is renamed alone.
 window.__coachHud = {
-  stop: () => { clearInterval(timer); onFrame(null); el.remove(); dropChunkHandoff(); delete window.__coachHud; },
+  stop: () => { clearInterval(timer); clearTimeout(roadTimer); onFrame(null); el.remove(); dropChunkHandoff(); delete window.__coachHud; },
   stats: () => ({ breaches: sandboxBreachCount(), ...meterStats() }),
   last: () => shownCard(),
   summary: () => cardSummary(shownCard()),

@@ -76,10 +76,12 @@ const detect = s => {
   }
 };
 
-const cur = { kind: null, k1: null, k2: null, k3: null, k4: null };
+const NONE = { kind: null, k1: null, k2: null, k3: null, k4: null };
+const cur = { ...NONE }, built = { ...NONE };
 const same = (x, y) => x.kind === y.kind && x.k1 === y.k1 && x.k2 === y.k2 && x.k3 === y.k3 && x.k4 === y.k4;
 const copy = (to, from) => { to.kind = from.kind; to.k1 = from.k1; to.k2 = from.k2; to.k3 = from.k3; to.k4 = from.k4; };
 
+// True on the first ready frame of a decision whose card is not built yet, which the caller then builds.
 export const watchFrame = s => {
   const d = detect(s);
   if (!same(d, cur)) {
@@ -87,7 +89,15 @@ export const watchFrame = s => {
     if (d.kind) decisionBegin(d.kind, CARD_OF[d.kind], s.currentBattle?.waveIndex ?? null);
     else decisionEnd();
   }
-  if (!d.ready) return;
+  if (!d.ready) return false;
   decisionAt("ready");
   if (d.input) decisionAt("input");
+  if (same(d, built)) return false;
+  copy(built, d);
+  return true;
 };
+
+export const watchBuilt = () => built.kind !== null && same(cur, built);
+export const watchOpen = () => cur.kind !== null;
+// The open decision builds again on its next ready frame.
+export const watchForget = () => copy(built, NONE);

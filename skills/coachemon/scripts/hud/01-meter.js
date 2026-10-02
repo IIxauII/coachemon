@@ -47,7 +47,7 @@ const ended = [];
 let awaitingNext = null;
 reset();
 
-// A refresh opened inside another is part of it, so a clock tick and the tick it calls are one record.
+// A refresh opened inside another is part of it, so a watch build and the tick it calls are one record.
 export const refresh = (why, fn) => {
   if (open) return fn();
   const t0 = now();
