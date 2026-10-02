@@ -17,6 +17,8 @@ winnable · Charizard
 KO · 60% left
 == mirror at a speed tie
 win 0.500 · loss 0.500
+== an ending's one branch
+win 1 · 128.00 HP · berry eaten
 == drain
 3 → 4 turns
 == beast boost

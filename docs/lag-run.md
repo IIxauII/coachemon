@@ -3,7 +3,10 @@
 The repeatable measurement every before/after comparison of the overlay's lag is judged by (#484, built in #499,
 extended to wave 50 in #508). One run is autoplay on the Orion tab through the store hub: it starts a fresh Classic run
 with a fixed team in a spare save slot, plays waves 1–50 acting on the card's act line (switch, learn, shop) and its catch line, and
-drains the overlay's meter after every action. A comparison is 3 runs before and 3 after, back to back, on the same day and the same game build.
+drains the overlay's meter after every action. A comparison is 1 run before and 1 after, back to back, on the same day
+and the same game build, plus a headless harness on both commits wherever the fix's code has one (#510, #527). The
+harness reruns the same states every time, so it carries the precision one run a side lacks; the lag run shows the fix
+on Orion.
 
 ## Setup
 
@@ -82,10 +85,10 @@ One run, or several side by side:
 npm run lag:report -- .cache/lag-run/<run>.jsonl
 ```
 
-A comparison, 3 runs a side:
+A comparison, 1 run a side (`--before` and `--after` take more than one run each, for a cell that needs more):
 
 ```sh
-npm run lag:report -- --before <b1> <b2> <b3> --after <a1> <a2> <a3>
+npm run lag:report -- --before <before run> --after <after run>
 ```
 
 ## Reading it
@@ -159,6 +162,6 @@ behind it.
 
 ## Cost
 
-No human time once set up. Waves 1–20 took 9–15 min (#486), so expect 25–40 min for waves 1–50 and about 3 h for a
-comparison of 6 runs. Expect more runs to stop early than at wave 20: a lost run, a screen autoplay can't handle. The
+No human time once set up. Waves 1–20 took 9–15 min (#486), so expect 25–40 min for waves 1–50 and about 1 h for a
+comparison of 2 runs. Expect more runs to stop early than at wave 20: a lost run, a screen autoplay can't handle. The
 trainer switch-out moment was not met in the wave-20 baselines: the card rarely plays a switch-out.

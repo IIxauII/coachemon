@@ -46,9 +46,9 @@ const run = (phase, { party: ours = party, foes: theirs = foes, double = false, 
   globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  const { teamPlan, tpHealProfile, tpSendScore, tpFight, tpTables } = globalThis.__hud["35-team-plan"];
+  const { teamPlan, tpHealProfile, tpSendScore, tpFight, tpTables, tpActs } = globalThis.__hud["35-team-plan"];
   const { readTurn } = globalThis.__hud["25-turn"];
-  globalThis.__tp = { readTurn, teamPlan, drawTeamPlan: globalThis.__hud["95-render-team"].drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables };
+  globalThis.__tp = { readTurn, teamPlan, drawTeamPlan: globalThis.__hud["95-render-team"].drawTeamPlan, tpHealProfile, tpSendScore, tpFight, tpTables, tpActs };
   const plan = readTurn(scene, turn => teamPlan(turn));
   return { plan, scene, nodes: globalThis.__tp.drawTeamPlan(plan) };
 };
@@ -162,6 +162,32 @@ assert.equal(plan.approxDoubles, false);
   T.first = [[0]];
   const faster = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
   assert.ok(faster.pWin > 0.8 && faster.pWin < 1, `outspeeding wins most, not all: ${faster.pWin}`);
+}
+// An ending's HP is its pool's mean, and its berries the likeliest combination's (#527). We win on turn 2 at 116 with
+// the Sitrus Berry kept (40 %), or at 142 or 130 with it eaten (30 % each): the likeliest single branch kept it.
+{
+  const { tpFight } = globalThis.__tp;
+  const T = { ours: [[{ dmg: 100 }]], theirs: [[{ dmg: 120, e: 1, use: [{ r: 0.7, p: 0.4 }, { r: 0.9, p: 0.3 }, { r: 1, p: 0.3 }] }]],
+    first: [[0]], ourMax: [200], foeMax: [200], ourHeal: [{ base: 0, sitrus: 50 }], foeHeal: [null] };
+  const r = tpFight(T, { oh: [200], ob: [0], fh: [200], fs: [0], fb: [0] }, 0, 0, "free");
+  console.log(`== an ending's one branch\nwin ${r.pWin} · ${r.ends.win.mh.toFixed(2)} HP · berry ${r.ends.win.mb ? "eaten" : "kept"}`);
+  assert.equal(r.pWin, 1);
+  assert.ok(Math.abs(r.ends.win.mh - (0.4 * 116 + 0.3 * 142 + 0.3 * 130)) < 1e-9, `HP is the pool's mean: ${r.ends.win.mh}`);
+  assert.equal(r.ends.win.mb, 1, "the berry follows the likeliest combination, not the likeliest branch");
+  assert.equal(r.ends.win.turns, 2);
+}
+// Acting is taking at least 1 HP off the foe (#527). Outsped and OHKO'd on every roll we land nothing, but the mean of
+// 101 over these weights is a float error under 101.
+{
+  const { tpFight, tpActs } = globalThis.__tp;
+  const T = { ours: [[{ dmg: 50 }]], theirs: [[{ dmg: 100, e: 1, use: [{ r: 0.9, p: 0.1 }, { r: 1, p: 0.6 }, { r: 1.1, p: 0.3 }] }]],
+    first: [[1]], ourMax: [80], foeMax: [101], ourHeal: [null], foeHeal: [null] };
+  const r = tpFight(T, { oh: [80], ob: [0], fh: [101], fs: [0], fb: [0] }, 0, 0, "free");
+  assert.equal(r.pLoss, 1);
+  assert.ok(r.fh < 101 && r.fh > 101 - 1e-9, `the knife edge is still there: ${r.fh}`);
+  assert.equal(tpActs(r, 101), false, "no hit landed");
+  assert.equal(tpActs({ fh: 100 }, 101), true, "1 HP is a hit");
+  assert.equal(tpActs({ fh: 100.5 }, 101), false, "half of one is not");
 }
 // Drain (#90): the foe heals 30 of each 60 it lands, so our 100 a turn needs a fourth turn (300 → 230 → 160 → 90).
 {
