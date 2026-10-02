@@ -251,11 +251,14 @@ scene = game;
   step("the turn plays", () => { g.battle.turnCommands[BattlerIndex.ENEMY] = { move: 1 }; g.phase = { phaseName: "MoveEffectPhase" }; g.mode = UiMode.MESSAGE; });
   assert.deepEqual(step("their mon faints", () => { machop.hp = 0; g.phase = { phaseName: "FaintPhase" }; }), []);
   assert.deepEqual(targets(), ["Machop"], "the held card still names the fainted foe");
+  const opening = __coachHud.last().ahead;
+  assert.ok(opening, "the free switch's card has its road group");
   assert.deepEqual(step("a mid-turn learn", () => { g.phase = { phaseName: "LearnMovePhase", partyMemberIndex: 0, moveId: 53 }; }), ["watch:learn"]);
   assert.deepEqual(step("the learn is dismissed", () => { g.phase = { phaseName: "FaintPhase" }; }), []);
   assert.equal(__coachHud.last()?.kind, "learn", "the learn card is held after it is dismissed");
   assert.deepEqual(step("their next mon comes in", () => { g.foes = [geodude, machop]; g.phase = { phaseName: "SwitchSummonPhase" }; }), ["send-in:battle"]);
   assert.deepEqual([__coachHud.last()?.kind, targets()], ["battle", ["Geodude"]]);
+  assert.equal(__coachHud.last().ahead, opening, "the redraw keeps the road group of the battle card before the learn");
   assert.deepEqual(step("it lands", () => { g.phase = { phaseName: "TurnEndPhase" }; }), []);
   assert.deepEqual(step("turn 2's command", () => { g.battle.turnCommands = {}; g.battle.turn = 2; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; }),
     ["watch:battle", "road:battle"]);
@@ -348,7 +351,7 @@ scene = game;
 // ---- a frame where the decision holds, or where a turn plays under its battle card, opens no refresh and allocates nothing
 {
   const N = 100000;
-  const held = {
+  const states = {
     shop: () => { g.phase = { phaseName: "SelectModifierPhase" }; g.mode = UiMode.MODIFIER_SELECT; g.handler = { options: [1], awaitingActionInput: true }; },
     turn: () => {
       g.battle.turn = 2; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; g.handler = {};
@@ -357,7 +360,7 @@ scene = game;
       g.battle.turnCommands[BattlerIndex.ENEMY] = { move: 1 }; g.phase = { phaseName: "MoveEffectPhase" }; g.mode = UiMode.MESSAGE;
     },
   };
-  for (const [name, enter] of Object.entries(held)) {
+  for (const [name, enter] of Object.entries(states)) {
     enter();
     frame();
     runTasks();

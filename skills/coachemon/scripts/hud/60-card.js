@@ -107,7 +107,7 @@ export const readRoad = (s, card) => {
   });
   roads.add(card);
 };
-// A card redrawn between decisions takes the road group of the one it replaces, stale until the next decision (#537).
+// A card redrawn between decisions takes the road group of the one it replaces, stale until the next decision.
 export const keepRoad = (from, to) => {
   if (!roadLanded(from) || !hasRoad(to)) return;
   to.preview = from.preview;

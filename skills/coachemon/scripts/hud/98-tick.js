@@ -97,12 +97,13 @@ const screenNote = (s, card) => note({ kind: card?.kind ?? null, wave: card?.wav
 // Only a card's own build arms, so a look-ahead read can't take the prediction's place.
 const armPreview = card => { if (card?.preview && card.preview.wave === card.wave + 1) previewArm(card.preview); };
 
+// The battle card the watch's field was taken from, which a learn card held since does not replace.
+let fieldCard = null;
 const body = (road, sendIn = false) => {
   try {
     failure = null;
     const s = battleScene();
     if (!s?.ui) { hideCard(); return; }
-    const was = shown;
     // Before `readCard`: `previewArm` and `rerollArm` overwrite the prediction these two score.
     stage("check", () => { rerollCheck(s); previewCheck(s); });
     const card = stage("read", () => readCard(s, accountRead(s), { road, estimate: sendIn }));
@@ -113,18 +114,22 @@ const body = (road, sendIn = false) => {
     });
     // Every build, whatever the card: the journal traces the fight and the rewards an encounter starts.
     stage("journal", () => journalCheck(s, card));
+    const replaced = fieldCard;
     // A learn card keeps the field of the battle card before it, so a send-in after the learn still redraws (#537).
-    if (card?.kind !== "learn") watchField(card?.kind === "battle" ? s : null);
+    if (card?.kind !== "learn") {
+      fieldCard = card?.kind === "battle" ? card : null;
+      watchField(fieldCard && s);
+    }
     if (!card) { hideCard(); return; }
     // After the arm: only a card's own build arms the preview.
-    if (sendIn) keepRoad(was, card);
+    if (sendIn) keepRoad(replaced, card);
     draw(card);
   } catch (e) { fail(e); }
 };
 
 // `road: false` builds the card alone, its road group left to `roadNow`.
 export const tick = (road = true) => refresh("tick", () => body(road));
-// Never asks the game, which has already had the enemy choose (CONTEXT.md, `Turn read`).
+// Never asks the game (CONTEXT.md, `Turn read`).
 export const sentIn = () => refresh("tick", () => body(false, true));
 
 export const roadOwed = () => hasRoad(shown) && !roadLanded(shown);
