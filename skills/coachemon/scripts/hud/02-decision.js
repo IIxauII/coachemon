@@ -41,7 +41,9 @@ const detect = s => {
   switch (ph.phaseName) {
     case "CommandPhase":
     case "SelectTargetPhase":
-      return set("command", b, b.turn, ph.fieldIndex, null, mode !== UiMode.MESSAGE && enemyFree(b), true);
+      // Slot 1's command is asked around slot 0's, which a cancel leaves standing and a commit replaces (#544).
+      return set("command", b, b.turn, ph.fieldIndex, ph.fieldIndex ? b.turnCommands[BattlerIndex.PLAYER] ?? null : null,
+        mode !== UiMode.MESSAGE && enemyFree(b), true);
     case "CheckSwitchPhase":
       return set("free-switch", b, ph.fieldIndex, null, null, mode === UiMode.CONFIRM && enemyFree(b), true);
     case "SwitchPhase":
@@ -99,4 +101,24 @@ export const watchFrame = s => {
 
 export const watchBuilt = () => built.kind !== null && same(cur, built);
 export const watchOpen = () => cur.kind !== null;
-export const watchForget = () => copy(built, NONE);
+
+// The cards of the last few decisions built, by key: coming back to one shows its card again (#544).
+const KEPT = 8;
+const kept = Array.from({ length: KEPT }, () => ({ ...NONE, card: null }));
+let keptAt = 0;
+const keptFor = d => {
+  for (let i = 0; i < KEPT; i++) if (kept[i].card && same(kept[i], d)) return kept[i];
+  return null;
+};
+export const watchKept = () => (built.kind === null ? null : keptFor(built)?.card ?? null);
+export const watchKeep = card => {
+  if (!card || !watchBuilt()) return;
+  let k = keptFor(built);
+  if (!k) { k = kept[keptAt]; keptAt = (keptAt + 1) % KEPT; }
+  copy(k, built);
+  k.card = card;
+};
+export const watchForget = () => {
+  copy(built, NONE);
+  for (let i = 0; i < KEPT; i++) { copy(kept[i], NONE); kept[i].card = null; }
+};

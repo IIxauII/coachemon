@@ -1,14 +1,14 @@
 // The watch's builds, its fallback clock and the card stream (extension-distribution.md §11.1, §9.1, §9.5).
 import { sandboxBreachCount } from "./01-core.js";
-import { meterFacts, meterStats, onFrame, refresh, stage } from "./01-meter.js";
-import { watchBuilt, watchForget, watchFrame, watchOpen } from "./02-decision.js";
+import { decisionAt, meterFacts, meterStats, onFrame, refresh, stage } from "./01-meter.js";
+import { watchBuilt, watchForget, watchFrame, watchKeep, watchKept, watchOpen } from "./02-decision.js";
 import { dropChunkHandoff } from "./04-game-tables.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalCheck, journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { EVENT_KINDS, cardEvent, cardSummary, roadLanded } from "./60-card.js";
 import { battleScene, el, setRedraw, spriteMisses, wireCard } from "./90-render.js";
-import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, shownCard, shownGroups, tick } from "./98-tick.js";
+import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, showCard, shownCard, shownGroups, tick } from "./98-tick.js";
 
 // By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
@@ -75,13 +75,23 @@ const roadLater = () => {
   }, 0);
 };
 
+// A decision come back to is drawn from its kept card, which opens no refresh (#544).
+const showKept = () => {
+  const card = watchKept();
+  if (!card) return false;
+  showCard(card);
+  decisionAt("drawn");
+  stage("stream", stream);
+  return true;
+};
+
 // A frame since the last fallback tick: the watch is looking, so the fallback builds nothing.
 let framed = false;
 onFrame(() => {
   framed = true;
   if (!look(scene())) return;
   cardGen++;
-  refresh("watch", () => { tick(false); stage("stream", stream); });
+  if (!showKept()) refresh("watch", () => { watchKeep(tick(false)); stage("stream", stream); });
   if (roadOwed()) roadLater();
 });
 
@@ -96,7 +106,8 @@ const fallback = () => refresh("fallback", () => {
     watchForget();
   } else if (fresh) {
     cardGen++;
-    tick(true);
+    if (!showKept()) watchKeep(tick(true));
+    else if (roadOwed()) roadNow();
   } else {
     if (s?.ui) stage("journal", () => journalCheck(s, shownCard()));
     if (away) { hideCard(); watchForget(); }
@@ -106,8 +117,8 @@ const fallback = () => refresh("fallback", () => {
 const timer = setInterval(fallback, 1000);
 
 // The screen the overlay lands on, drawn whole; the decision it lands on counts as built.
-refresh("start", () => { look(scene()); tick(true); stage("stream", stream); });
-setRedraw(() => refresh("click", () => { cardGen++; redraw(); stage("stream", stream); }));
+refresh("start", () => { look(scene()); watchKeep(tick(true)); stage("stream", stream); });
+setRedraw(() => refresh("click", () => { cardGen++; watchKeep(redraw()); stage("stream", stream); }));
 meterFacts(() => {
   const loop = battleScene()?.game?.loop;
   // game-code.md §22.

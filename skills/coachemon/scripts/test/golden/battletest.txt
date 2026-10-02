@@ -187,3 +187,6 @@ Fight plan steps approximate winnable
 ➜ 2.~ Blastoise Water Wave Crash → Arcanine KO · 42% left
 ➜ 3.~ Venusaur Poison Sludge Bomb → Ludicolo KO · 27% left
 summary trainer | Blastoise Flash Cannon → Arcanine, then Wave Crash · 2 hits ; Venusaur Power Whip → Gyarados · 3 hits | plan: winnable · Venusaur › Blastoise
+slot 0 | Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
+slot 1 | Charizard Heat Wave → both · 3 hits ; Venusaur Power Whip → Nidoqueen · 2 hits
+slot 1 | Charizard Flamethrower → Bisharp · 1 hit ; Venusaur Power Whip → Bisharp · 3 hits

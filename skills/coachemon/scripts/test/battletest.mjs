@@ -1,6 +1,7 @@
+import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
-import { MoveFlags } from "../../../../src/enums/generated.ts";
+import { BattlerIndex, Command, MoveFlags, UiMode } from "../../../../src/enums/generated.ts";
 import { onGame } from "./game-proto.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -145,4 +146,35 @@ for (const [label, sc] of Object.entries(scenarios)) {
   console.log(`== ${label}\n${lines(el)}`);
   const x = globalThis.__coachHud.summary();
   console.log(`summary ${x.verdict} | ${x.field}${x.danger.length ? ` | ${x.danger.map(d => `${d.level === "ko" ? "\u{1F480}" : "\u26a0"} ${d.mon}`).join(" ")}` : ""}${x.plan ? ` | plan: ${x.plan}` : ""}`);
+}
+
+// ---- slot 1's card is planned around the command slot 0 has given, never served slot 0's card
+{
+  const sc = scenarios.double;
+  const [charizard, venusaur] = sc.party, [bisharp, nidoqueen] = sc.foes;
+  for (const [m, bi] of [[charizard, BattlerIndex.PLAYER], [venusaur, BattlerIndex.PLAYER_2], [bisharp, BattlerIndex.ENEMY], [nidoqueen, BattlerIndex.ENEMY_2]]) m.getBattlerIndex = () => bi;
+  let phase = { phaseName: "CommandPhase", fieldIndex: 0 }, fallback = null;
+  globalThis.window = globalThis; delete globalThis.__coachHud;
+  const battle = { waveIndex: 89, turn: 1, double: true, enemySwitchCounter: 0, getBattlerCount: () => 2, trainer: null, turnCommands: {} };
+  const onField = () => sc.party.filter(p => p.isOnField());
+  const scene = { phaseManager: { getCurrentPhase: () => phase }, getField: () => [...onField(), ...sc.foes.filter(f => f.isOnField())], currentBattle: battle,
+    ui: { getMode: () => UiMode.COMMAND, getHandler: () => ({}) }, getPlayerParty: () => sc.party, getEnemyParty: () => sc.foes };
+  globalThis.Phaser.Display.Canvas.CanvasPool.pool[0].parent.game.scene.getScene = () => scene;
+  globalThis.setInterval = fn => { fallback = fn; return 0; };
+  eval(bundle("hud"));
+  const venusaurAct = () => globalThis.__coachHud.summary().field.split(" ; ")[1];
+  const unlocked = venusaurAct();
+  // With no frames, the fallback's tick is what sees slot 1's decision and builds it.
+  const slot1 = (cursor, move, targets) => {
+    battle.turnCommands = { [BattlerIndex.PLAYER]: { command: Command.FIGHT, cursor, move: { move, targets }, targets } };
+    phase = { phaseName: "CommandPhase", fieldIndex: 1 };
+    fallback();
+    console.log(`slot 1 | ${globalThis.__coachHud.summary().field}`);
+    return venusaurAct();
+  };
+  console.log(`slot 0 | ${globalThis.__coachHud.summary().field}`);
+  assert.equal(slot1(0, 1, []), unlocked, "slot 0 took the plan's own pick, so slot 1's act stands");
+  phase = { phaseName: "CommandPhase", fieldIndex: 0 };
+  fallback();
+  assert.equal(slot1(3, 4, [BattlerIndex.ENEMY]), "Venusaur Power Whip → Bisharp · 3 hits", `slot 0's KO on Bisharp moves slot 1's act off ${unlocked}`);
 }

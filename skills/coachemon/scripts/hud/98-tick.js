@@ -111,13 +111,21 @@ const body = road => {
     });
     // Every build, whatever the card: the journal traces the fight and the rewards an encounter starts.
     stage("journal", () => journalCheck(s, card));
-    if (!card) { hideCard(); return; }
+    if (!card) { hideCard(); return null; }
     draw(card);
-  } catch (e) { fail(e); }
+    return card;
+  } catch (e) { fail(e); return null; }
 };
 
 // `road: false` builds the card alone, its road group left to `roadNow`.
 export const tick = (road = true) => refresh("tick", () => body(road));
+// A card built before, drawn again as it was: nothing is read, armed or journalled.
+export const showCard = card => {
+  try {
+    failure = null;
+    draw(card);
+  } catch (e) { fail(e); }
+};
 
 export const roadOwed = () => hasRoad(shown) && !roadLanded(shown);
 export const roadNow = () => {
@@ -133,4 +141,4 @@ export const roadNow = () => {
   } catch (e) { fail(e); }
 };
 
-export const redraw = () => { last = ""; body(true); };
+export const redraw = () => { last = ""; return body(true); };

@@ -154,23 +154,32 @@ scene = game;
   assert.equal(__coachHud.summary().wave, 8);
 }
 
-// ---- in a double, slot 1 is its own decision, and cancelling back to slot 0 asks slot 0's again
+// ---- in a double, slot 1 builds its own card, and cancelling back to slot 0 shows slot 0's again without a build
 {
+  // A new object on every commit, as `CommandPhase` writes it: a cancel leaves the old one standing.
+  const commit = (cursor, move) => { g.battle.turnCommands[BattlerIndex.PLAYER] = { command: 0, cursor, move: { move, targets: [] }, targets: [BattlerIndex.ENEMY] }; };
   step("double, slot 0", () => { g.battle.double = true; g.battle.turn = 3; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; });
+  const slot0 = __coachHud.last();
   step("slot 0's target select", () => { g.phase = { phaseName: "SelectTargetPhase", fieldIndex: 0 }; g.mode = UiMode.TARGET_SELECT; });
-  step("slot 1", () => { g.phase = { phaseName: "CommandPhase", fieldIndex: 1 }; g.mode = UiMode.COMMAND; });
+  assert.deepEqual(step("slot 1", () => { commit(0, 33); g.phase = { phaseName: "CommandPhase", fieldIndex: 1 }; g.mode = UiMode.COMMAND; }), ["watch:battle", "road:battle"]);
+  const slot1 = __coachHud.last();
+  assert.notEqual(slot1, slot0, "slot 1 has a card of its own");
   step("slot 1's target select", () => { g.phase = { phaseName: "SelectTargetPhase", fieldIndex: 1 }; g.mode = UiMode.TARGET_SELECT; });
-  step("cancel back to slot 0", () => { g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; });
-  assert.equal(count("command"), 7);
+  assert.deepEqual(step("cancel back to slot 0", () => { g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; }), []);
+  assert.equal(__coachHud.last(), slot0, "slot 0's own card, shown again");
+  assert.deepEqual([decisions().at(-1).drawn, decisions().at(-1).refreshes], [0, 0], "drawn on the frame it was asked, by no refresh");
+  assert.deepEqual(step("slot 1 after slot 0 picks again", () => { commit(1, 52); g.phase = { phaseName: "CommandPhase", fieldIndex: 1 }; }), ["watch:battle", "road:battle"]);
+  assert.notEqual(__coachHud.last(), slot1, "slot 0's new command is a new slot 1 decision");
+  assert.equal(count("command"), 8);
   g.battle.double = false;
+  g.battle.turnCommands = {};
 }
 
 // ---- a free switch builds once the question is up, and its party screen is the same decision
 {
   const check = { phaseName: "CheckSwitchPhase", fieldIndex: 0 };
   assert.deepEqual(step("free switch, the question's text", () => { g.phase = check; g.mode = UiMode.MESSAGE; }), []);
-  // The same turn: the battle card it gets back already has its road group.
-  assert.deepEqual(step("free switch, yes or no", () => { g.mode = UiMode.CONFIRM; }), ["watch:battle"]);
+  assert.deepEqual(step("free switch, yes or no", () => { g.mode = UiMode.CONFIRM; }), ["watch:battle", "road:battle"]);
   assert.deepEqual(step("its party screen", () => { g.phase = { phaseName: "SwitchPhase", isModal: false, doReturn: true, fieldIndex: 0 }; g.mode = UiMode.PARTY; }), []);
   assert.equal(count("free-switch"), 1);
 }
@@ -202,10 +211,15 @@ scene = game;
   step("reroll", () => { shop = g.phase = { phaseName: "SelectModifierPhase" }; g.money = 450; });
   assert.equal(count("reward"), 5);
   assert.equal(watched() - before, 5, "each of the shop's decisions built once");
-  step("splice screen", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; });
-  step("splice done", () => { g.party = [full]; });
-  step("back to the shop", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
-  assert.deepEqual([count("fusion"), count("reward")], [2, 6]);
+  const rerolled = __coachHud.last();
+  assert.deepEqual(step("splice screen", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
+  assert.deepEqual(step("splice backed out of", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }), []);
+  assert.equal(__coachHud.last(), rerolled, "the shop's card, shown again");
+  assert.deepEqual(step("splice screen again", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), []);
+  assert.equal(__coachHud.last()?.kind, "fusion");
+  step("splice done, and paid for", () => { g.party = [full]; g.money = 150; });
+  assert.deepEqual(step("back to the shop", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }), ["watch:rewards", "road:rewards"]);
+  assert.deepEqual([count("fusion"), count("reward")], [3, 7]);
   g.party = [full, three];
 }
 
@@ -268,6 +282,22 @@ scene = game;
   const again = opened();
   console.log(`frames stop: ${framed.join(" ")}, then a new decision: ${quiet.join(" ")}, then ${again.join(" ")}`);
   assert.deepEqual([framed, quiet, again], [["fallback"], ["fallback:battle"], ["fallback"]]);
+}
+
+// ---- with no frames, a decision come back to is shown from its kept card
+{
+  const slot0 = __coachHud.last();
+  g.battle.double = true;
+  g.battle.turnCommands = { [BattlerIndex.PLAYER]: { command: 0, cursor: 0, move: { move: 33, targets: [] }, targets: [BattlerIndex.ENEMY] } };
+  g.phase = { phaseName: "CommandPhase", fieldIndex: 1 };
+  ticker();
+  const slot1 = opened();
+  g.phase = { phaseName: "CommandPhase", fieldIndex: 0 };
+  ticker();
+  console.log(`no frames: slot 1 ${slot1.join(" ")}, then slot 0 again ${opened().join(" ")}`);
+  assert.deepEqual([slot1, __coachHud.last() === slot0, decisions().at(-1).drawn], [["fallback:battle"], true, 0]);
+  g.battle.double = false;
+  g.battle.turnCommands = {};
 }
 
 // ---- with frames, the fallback builds nothing and the watch builds on the frame after

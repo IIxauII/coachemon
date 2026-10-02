@@ -94,7 +94,7 @@ export const stage = (name, fn) => {
 export const note = fields => { if (open) Object.assign(open, fields); };
 
 // A decision (CONTEXT.md, `Decision`), every time relative to `at`. `drawn` is the end of the first refresh that came back with its
-// kind of card, and `late` the overlay's ms more than `LATE_MS` in (#519).
+// kind of card, or the moment a kept one is shown again (#544), and `late` the overlay's ms more than `LATE_MS` in (#519).
 export const decisionBegin = (kind, card, wave) => {
   decisionEnd();
   decision = { id: ++decisionSeq, kind, card, wave, at: r1(now()), ready: null, input: null, drawn: null, refreshes: 0, ms: 0, late: 0, end: null };
