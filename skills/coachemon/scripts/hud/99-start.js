@@ -1,14 +1,14 @@
 // The watch's builds, its fallback clock and the card stream (extension-distribution.md §11.1, §9.1, §9.5).
 import { sandboxBreachCount } from "./01-core.js";
 import { meterFacts, meterStats, onFrame, refresh, stage } from "./01-meter.js";
-import { watchBuilt, watchForget, watchFrame, watchOpen, watchSentIn } from "./02-decision.js";
+import { watchBuilt, watchForget, watchFrame, watchKept, watchOpen, watchSentIn } from "./02-decision.js";
 import { dropChunkHandoff } from "./04-game-tables.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalCheck, journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { EVENT_KINDS, cardEvent, cardSummary, roadLanded } from "./60-card.js";
 import { battleScene, el, setRedraw, spriteMisses, wireCard } from "./90-render.js";
-import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, sentIn, shownCard, shownGroups, tick } from "./98-tick.js";
+import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, sentIn, showKept, shownCard, shownGroups, tick } from "./98-tick.js";
 
 // By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
@@ -83,7 +83,9 @@ onFrame(() => {
   const s = scene();
   if (look(s)) {
     cardGen++;
-    refresh("watch", () => { tick(false); stage("stream", stream); });
+    const card = watchKept();
+    if (card) refresh("cache", () => { showKept(card); stage("stream", stream); });
+    else refresh("watch", () => { tick(false); stage("stream", stream); });
     if (roadOwed()) roadLater();
   } else if (lookSentIn(s)) {
     cardGen++;
@@ -102,7 +104,12 @@ const fallback = () => refresh("fallback", () => {
     watchForget();
   } else if (fresh) {
     cardGen++;
-    tick(true);
+    const card = watchKept();
+    if (!card) tick(true);
+    else {
+      showKept(card);
+      roadNow();
+    }
   } else {
     if (s?.ui) stage("journal", () => journalCheck(s, shownCard()));
     if (away) { hideCard(); watchForget(); }

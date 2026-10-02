@@ -1,6 +1,6 @@
 // `KIND` is the one place a kind meets its draw (#388). This file decides nothing about the card and formats nothing.
 import { note, refresh, stage } from "./01-meter.js";
-import { watchField } from "./02-decision.js";
+import { watchField, watchKeep } from "./02-decision.js";
 import { hasRoad, keepRoad, readCard, readRoad, roadLanded } from "./60-card.js";
 import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
@@ -99,6 +99,12 @@ const armPreview = card => { if (card?.preview && card.preview.wave === card.wav
 
 // The battle card the watch's field was taken from, which a learn card held since does not replace.
 let fieldCard = null;
+// A learn card keeps the field of the battle card before it, so a send-in after the learn still redraws (#537).
+const takeField = (s, card) => {
+  if (card?.kind === "learn") return;
+  fieldCard = card?.kind === "battle" ? card : null;
+  watchField(fieldCard && s);
+};
 const body = (road, sendIn = false) => {
   try {
     failure = null;
@@ -115,14 +121,11 @@ const body = (road, sendIn = false) => {
     // Every build, whatever the card: the journal traces the fight and the rewards an encounter starts.
     stage("journal", () => journalCheck(s, card));
     const replaced = fieldCard;
-    // A learn card keeps the field of the battle card before it, so a send-in after the learn still redraws (#537).
-    if (card?.kind !== "learn") {
-      fieldCard = card?.kind === "battle" ? card : null;
-      watchField(fieldCard && s);
-    }
+    takeField(s, card);
     if (!card) { hideCard(); return; }
     // After the arm: only a card's own build arms the preview.
     if (sendIn) keepRoad(replaced, card);
+    else watchKeep(card);
     draw(card);
   } catch (e) { fail(e); }
 };
@@ -131,6 +134,17 @@ const body = (road, sendIn = false) => {
 export const tick = (road = true) => refresh("tick", () => body(road));
 // Never asks the game (CONTEXT.md, `Turn read`).
 export const sentIn = () => refresh("tick", () => body(false, true));
+// A card already built for this decision, drawn without reading the game.
+export const showKept = card => refresh("tick", () => {
+  try {
+    failure = null;
+    const s = battleScene();
+    if (!s?.ui) { hideCard(); return; }
+    screenNote(s, card);
+    takeField(s, card);
+    draw(card);
+  } catch (e) { fail(e); }
+});
 
 export const roadOwed = () => hasRoad(shown) && !roadLanded(shown);
 export const roadNow = () => {

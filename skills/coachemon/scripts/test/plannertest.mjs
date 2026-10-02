@@ -1013,6 +1013,29 @@ const hydreigonSnorlax = () => [
   assert.ok(!field.some(l => /⚔ Garchomp/.test(l)), "Garchomp isn't planned to act");
 }
 
+// ---- Slot 1's card is planned around slot 0's command, not handed slot 0's card for the same turn (#544)
+{
+  Object.assign(TABLE, { "Garchomp>Thunder Punch>Toxapex": [[400], 1, 1], "Garchomp>Thunder Punch>Weezing": [[100], 1, 1] });
+  const party = [
+    mon("Garchomp", 80, ["Dragon", "Ground"], [270, 200, 150, 120, 130, 130], [["Dragon Claw", "Dragon", 80, "P"], ["Thunder Punch", "Electric", 75, "P"]], true, undefined, { getBattlerIndex: () => 0 }),
+    doublesParty()[1],
+  ];
+  const foes = [
+    foeAt(2, "Weezing", 80, ["Poison"], [300, 100, 150, 120, 110, 60], [["Sludge Bomb", "Poison", 90, "S"]]),
+    foeAt(3, "Toxapex", 80, ["Poison", "Water"], [300, 90, 180, 80, 180, 50], [["Scald", "Water", 80, "S"]]),
+  ];
+  const { scene } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
+  const cardAt = (fieldIndex, turnCommands = []) => globalThis.__hud["60-card"].heldBattleCard(
+    stubTurn({ party, foes, live: true, double: true, trainer: scene.facts.trainer, fieldIndex, turnCommands }), null);
+  const aims = card => Object.fromEntries(card.field.slots.map(sl => [sl.name, sl.target?.name ?? null]));
+  const slot0 = cardAt(0);
+  // Thunder Punch into Toxapex, which the faster Garchomp KOs before Lucario moves.
+  const slot1 = cardAt(1, [{ command: 0, cursor: 1, move: { move: 7, targets: [], useMode: 0 }, targets: [3] }]);
+  assert.deepEqual(aims(slot0), { Garchomp: "Weezing", Lucario: "Toxapex" });
+  assert.notEqual(slot1, slot0, "slot 1 gets a card of its own");
+  assert.deepEqual(aims(slot1), { Garchomp: "Toxapex", Lucario: "Weezing" }, "slot 1 is planned around Garchomp's Thunder Punch");
+}
+
 // Protect: Hydreigon outspeeds and KOs Lucario, whose hit barely matters, but the faster Garchomp KOs Hydreigon first.
 {
   Object.assign(TABLE, { "Garchomp>Dragon Claw>Hydreigon": [[400], 1, 2], "Hydreigon>Dark Pulse>Lucario": [[300], 1, 1], "Lucario>Aura Sphere>Snorlax": [[30], 1, 2] });

@@ -15,66 +15,68 @@ a new wave                           ·
 its first command                    #4 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
 double, slot 0                       #5 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
 slot 0's target select               · 
-slot 1                               #6 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle
+slot 1                               #6 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
 slot 1's target select               · 
-cancel back to slot 0                #7 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle
-free switch, the question's text     #8 free-switch/battle w8 ready null input null drawn null end null 
-free switch, yes or no               #8 free-switch/battle w8 ready 16 input 16 drawn 16 end null | watch:battle
+cancel back to slot 0                #7 command/battle w8 ready 0 input 0 drawn 0 end null | cache:battle
+slot 1 after slot 0 picks again      #8 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+free switch, the question's text     #9 free-switch/battle w8 ready null input null drawn null end null 
+free switch, yes or no               #9 free-switch/battle w8 ready 16 input 16 drawn 16 end null | watch:battle road:battle
 its party screen                     · 
-replacement, the faint's message     #9 replacement/battle w8 ready null input null drawn null end null 
-replacement, party up                #9 replacement/battle w8 ready 16 input 16 drawn 16 end null | watch:battle
-shop, offers not out yet             #10 reward/rewards w8 ready null input null drawn null end null 
-shop reveal                          #10 reward/rewards w8 ready 16 input null drawn 16 end null | watch:rewards road:rewards
-shop takes input                     #10 reward/rewards w8 ready 16 input 32 drawn 16 end null 
+replacement, the faint's message     #10 replacement/battle w8 ready null input null drawn null end null 
+replacement, party up                #10 replacement/battle w8 ready 16 input 16 drawn 16 end null | watch:battle
+shop, offers not out yet             #11 reward/rewards w8 ready null input null drawn null end null 
+shop reveal                          #11 reward/rewards w8 ready 16 input null drawn 16 end null | watch:rewards road:rewards
+shop takes input                     #11 reward/rewards w8 ready 16 input 32 drawn 16 end null 
 Revive's party screen                · 
-back after buying it                 #11 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
-lock capsule toggled                 #12 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+back after buying it                 #12 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+lock capsule toggled                 #13 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
 transfer screen                      · 
-Leftovers handed over                #13 reward/rewards w8 ready null input null drawn null end null 
-back from the transfer               #13 reward/rewards w8 ready 16 input 16 drawn 16 end null | watch:rewards road:rewards
-reroll                               #14 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
-splice screen                        #15 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
-splice done                          #16 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
-back to the shop                     #17 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
-auto-learn, three moves              #17 reward/rewards w8 ready 0 input 0 drawn 0 end 16 
+Leftovers handed over                #14 reward/rewards w8 ready null input null drawn null end null 
+back from the transfer               #14 reward/rewards w8 ready 16 input 16 drawn 16 end null | watch:rewards road:rewards
+reroll                               #15 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+splice screen                        #16 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
+back to the shop, no splice          #17 reward/rewards w8 ready 0 input 0 drawn 0 end null | cache:rewards
+splice screen again                  #18 fusion/fusion w8 ready 0 input 0 drawn 0 end null | cache:fusion
+spliced, and paid for                #19 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+auto-learn, three moves              #19 reward/rewards w8 ready 0 input 0 drawn 0 end 16 
 already known                        · 
-learn, the prompt's message          #18 learn/learn w8 ready 0 input null drawn 0 end null | watch:learn
-learn, forget a move?                #18 learn/learn w8 ready 0 input 16 drawn 0 end null 
+learn, the prompt's message          #20 learn/learn w8 ready 0 input null drawn 0 end null | watch:learn
+learn, forget a move?                #20 learn/learn w8 ready 0 input 16 drawn 0 end null 
 learn, the summary                   · 
 learn card Learn → forget Ember
-biome, blocked                       #19 biome/biome w8 ready 0 input null drawn 0 end null | watch:biome
-biome, open                          #19 biome/biome w8 ready 0 input 16 drawn 0 end null 
-encounter, before its options        #20 encounter/encounter w8 ready null input null drawn null end null 
-encounter, options out               #20 encounter/encounter w8 ready 16 input null drawn 16 end null | watch:encounter
-encounter, open                      #20 encounter/encounter w8 ready 16 input 32 drawn 16 end null 
-starter, loading                     #21 starter/starters w8 ready null input null drawn null end null 
-starter, ready                       #21 starter/starters w8 ready 16 input 16 drawn 16 end null | watch:starters
-wave 12's free switch                #22 free-switch/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle
-the turn plays                       #22 free-switch/battle w12 ready 0 input 0 drawn 0 end 16 
+biome, blocked                       #21 biome/biome w8 ready 0 input null drawn 0 end null | watch:biome
+biome, open                          #21 biome/biome w8 ready 0 input 16 drawn 0 end null 
+encounter, before its options        #22 encounter/encounter w8 ready null input null drawn null end null 
+encounter, options out               #22 encounter/encounter w8 ready 16 input null drawn 16 end null | watch:encounter
+encounter, open                      #22 encounter/encounter w8 ready 16 input 32 drawn 16 end null 
+starter, loading                     #23 starter/starters w8 ready null input null drawn null end null 
+starter, ready                       #23 starter/starters w8 ready 16 input 16 drawn 16 end null | watch:starters
+wave 12's free switch                #24 free-switch/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+the turn plays                       #24 free-switch/battle w12 ready 0 input 0 drawn 0 end 16 
 their mon faints                     · 
-a mid-turn learn                     #23 learn/learn w12 ready 0 input null drawn 0 end null | watch:learn
-the learn is dismissed               #23 learn/learn w12 ready 0 input null drawn 0 end 16 
+a mid-turn learn                     #25 learn/learn w12 ready 0 input null drawn 0 end null | watch:learn
+the learn is dismissed               #25 learn/learn w12 ready 0 input null drawn 0 end 16 
 their next mon comes in              · | send-in:battle
 it lands                             · 
-turn 2's command                     #24 command/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle
-we switch                            #24 command/battle w12 ready 0 input 0 drawn 0 end 16 
+turn 2's command                     #26 command/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+we switch                            #26 command/battle w12 ready 0 input 0 drawn 0 end 16 
 ours comes in                        · | send-in:battle
 it lands                             · 
 send-in redraws read the turn as estimate, estimate, the watch's build as live
-a free switch, the card alone        #25 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
+a free switch, the card alone        #27 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
 streamed battle 9 fight | road null
 streamed battle 9 fight | road boss next wave (W10)
-its party screen                     #25 free-switch/battle w9 ready 0 input 0 drawn 0 end null 
+its party screen                     #27 free-switch/battle w9 ready 0 input 0 drawn 0 end null 
 frames stop: fallback, then a new decision: fallback:battle, then fallback
-the frame after                      #27 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+the frame after                      #31 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle
 the phase throws                     · 
 fallback reports: phase unreadable
-the game reads again                 #27 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
-back to the title                    #27 command/battle w9 ready 0 input 0 drawn 0 end 48 
-a command before the drain           #28 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
-its menu after the drain             #28 command/battle w8 ready 0 input 0 drawn 0 end null 
-the turn plays                       #28 command/battle w8 ready 0 input 0 drawn 0 end 32 
-drained 28 then #28 command/battle w8 ready 0 input 0 drawn 0 end 32
+the game reads again                 #31 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
+back to the title                    #31 command/battle w9 ready 0 input 0 drawn 0 end 48 
+a command before the drain           #32 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+its menu after the drain             #32 command/battle w8 ready 0 input 0 drawn 0 end null 
+the turn plays                       #32 command/battle w8 ready 0 input 0 drawn 0 end 32 
+drained 32 then #32 command/battle w8 ready 0 input 0 drawn 0 end 32
 shop: watch frames 200000 refreshes 0
 turn: watch frames 200000 refreshes 0
 after stop: watch frames 0, refreshes 0
