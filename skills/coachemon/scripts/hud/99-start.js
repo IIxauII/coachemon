@@ -1,14 +1,14 @@
 // The watch's builds, its fallback clock and the card stream (extension-distribution.md §11.1, §9.1, §9.5).
 import { sandboxBreachCount } from "./01-core.js";
 import { meterFacts, meterStats, onFrame, refresh, stage } from "./01-meter.js";
-import { watchBuilt, watchForget, watchFrame, watchKept, watchOpen, watchSentIn } from "./02-decision.js";
+import { watchBuilt, watchCached, watchForget, watchFrame, watchOpen, watchSentIn } from "./02-decision.js";
 import { dropChunkHandoff } from "./04-game-tables.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalCheck, journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { EVENT_KINDS, cardEvent, cardSummary, roadLanded } from "./60-card.js";
 import { battleScene, el, setRedraw, spriteMisses, wireCard } from "./90-render.js";
-import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, sentIn, showKept, shownCard, shownGroups, tick } from "./98-tick.js";
+import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, sentIn, showCached, shownCard, shownGroups, tick } from "./98-tick.js";
 
 // By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
@@ -76,16 +76,22 @@ const roadLater = () => {
   }, 0);
 };
 
+// A decision built before shows the card it was built with. `road: false` leaves the road group to the caller.
+const decide = road => {
+  cardGen++;
+  const card = watchCached();
+  if (!card) { tick(road); return; }
+  showCached(card);
+  if (road) roadNow();
+};
+
 // A frame since the last fallback tick: the watch is looking, so the fallback builds nothing.
 let framed = false;
 onFrame(() => {
   framed = true;
   const s = scene();
   if (look(s)) {
-    cardGen++;
-    const card = watchKept();
-    if (card) refresh("cache", () => { showKept(card); stage("stream", stream); });
-    else refresh("watch", () => { tick(false); stage("stream", stream); });
+    refresh(watchCached() ? "cache" : "watch", () => { decide(false); stage("stream", stream); });
     if (roadOwed()) roadLater();
   } else if (lookSentIn(s)) {
     cardGen++;
@@ -103,13 +109,7 @@ const fallback = () => refresh("fallback", () => {
     lookFailed = null;
     watchForget();
   } else if (fresh) {
-    cardGen++;
-    const card = watchKept();
-    if (!card) tick(true);
-    else {
-      showKept(card);
-      roadNow();
-    }
+    decide(true);
   } else {
     if (s?.ui) stage("journal", () => journalCheck(s, shownCard()));
     if (away) { hideCard(); watchForget(); }

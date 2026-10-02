@@ -2593,6 +2593,12 @@ member of `targets` (`:49`). UP goes to the first entry of `targets` at or above
 `multiple` (`src/data/moves/move-utils.ts:85,92,108,113`) — side- and field-targeting moves as well as damaging spread
 moves — no direction moves it and ACTION sends every target (`:96`, `:106-107`). CANCEL answers `[]` (`:97`).
 
+**A committed command is a new object.** Every commit assigns a fresh literal to `currentBattle.turnCommands[fieldIndex]`:
+FIGHT (`src/phases/command-phase.ts:264-269,314`), BALL (`:449-453`), POKEMON and RUN (`:547-555`). The target screen
+writes its pick onto that same object (`src/phases/select-target-phase.ts:59`), or nulls the entry and asks the command
+again (`:57-58`). Cancelling slot 1's command queues `CommandPhase` 0 then 1 (`command-phase.ts:670-675`), so slot 0
+commits anew. While slot 1 is asked, slot 0's entry is one object, and a second ask of slot 1 sees a different one.
+
 ## 26. The screens the MCP driver walks: title, save slot, and who answers a prompt
 
 Read at the pinned tag (`v1.12.0.11`) for the MCP driver (`src/driver.ts`), not the HUD; nothing here is called from the

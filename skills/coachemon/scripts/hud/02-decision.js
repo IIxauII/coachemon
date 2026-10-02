@@ -41,7 +41,7 @@ const detect = s => {
   switch (ph.phaseName) {
     case "CommandPhase":
     case "SelectTargetPhase":
-      // Slot 1's card is planned around slot 0's command, which the game writes as a new object on every commit.
+      // Slot 0's command is a new object on every commit (game-code.md §25).
       return set("command", b, b.turn, ph.fieldIndex, ph.fieldIndex === 1 ? b.turnCommands[0] ?? null : null,
         mode !== UiMode.MESSAGE && enemyFree(b), true);
     case "CheckSwitchPhase":
@@ -103,18 +103,18 @@ export const watchBuilt = () => built.kind !== null && same(cur, built);
 export const watchOpen = () => cur.kind !== null;
 
 // The cards of the last few decisions built, so returning to one shows its card as it was (#544).
-const KEPT = 8;
-const kept = [];
-export const watchKeep = card => {
+const CACHED = 8;
+const cache = [];
+export const watchCache = card => {
   if (!card || !watchBuilt()) return;
-  const i = kept.findIndex(e => same(e, built));
-  if (i >= 0) kept.splice(i, 1);
+  const i = cache.findIndex(e => same(e, built));
+  if (i >= 0) cache.splice(i, 1);
   const e = { card };
   copy(e, built);
-  kept.push(e);
-  if (kept.length > KEPT) kept.shift();
+  cache.push(e);
+  if (cache.length > CACHED) cache.shift();
 };
-export const watchKept = () => kept.find(e => same(e, built))?.card ?? null;
+export const watchCached = () => cache.find(e => same(e, built))?.card ?? null;
 
 // The field the held battle card was built for. The field is the front of each party and a send-in swaps party
 // entries, so a faint, which swaps none, is no send-in (game-code.md §7).
@@ -137,4 +137,4 @@ export const watchSentIn = s => {
   watchField(s);
   return true;
 };
-export const watchForget = () => { copy(built, NONE); field.battle = null; kept.length = 0; };
+export const watchForget = () => { copy(built, NONE); field.battle = null; cache.length = 0; };

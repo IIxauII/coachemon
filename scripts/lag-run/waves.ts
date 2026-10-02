@@ -13,7 +13,7 @@ const PROMPTS = new Set([
   "SelectStarterPhase", "TitlePhase", "MysteryEncounterPhase",
 ]);
 
-type Tick = { seq: number; at: number; ms: number; kind: string | null; wave?: number | null; phase?: string | null; drew?: boolean; stages?: Record<string, number> };
+type Tick = { seq: number; at: number; ms: number; why?: string; kind: string | null; wave?: number | null; phase?: string | null; drew?: boolean; stages?: Record<string, number> };
 type Gap = { at: number; gap: number; panel: number; driver?: number; ticks: number[]; wave?: number | null };
 type Facts = { lang?: string | null; sprites?: { id: string; misses: number; found: boolean }[] };
 export type WaveWindow = {
@@ -105,6 +105,7 @@ export function perWave(windows: WaveWindow[], records: WaveRecord[], upTo: numb
   const rows: WaveRow[] = [];
   for (let wave = 1; wave <= last; wave++) {
     const ts = ticks.get(wave) ?? [];
+    const cards = ts.filter(t => t.drew && t.why !== "cache");
     const hitches = (gaps.get(wave) ?? []).filter(g => g.gap >= GAP_MS);
     const made = hitches.filter(g => g.panel >= OVERLAY_MADE_MS);
     const recomputes = ts.filter(t => (t.stages?.road ?? 0) >= RECOMPUTE_MS);
@@ -116,10 +117,10 @@ export function perWave(windows: WaveWindow[], records: WaveRecord[], upTo: numb
       kind: waveKind(rec, introduced),
       trainer: rec?.battleType === BattleType.TRAINER ? introduced ?? rec.trainer : null,
       events: eventsOf(acted, levelUps(rec, records.find(r => r.wave === wave + 1))),
-      turnCardMs: ts.filter(t => t.phase === "CommandPhase" && t.kind === "battle" && t.drew).map(t => t.ms),
+      turnCardMs: cards.filter(t => t.phase === "CommandPhase" && t.kind === "battle").map(t => t.ms),
       recomputeMs: recomputes.map(t => t.stages!.road),
       inAnimation: recomputes.filter(t => t.phase && !PROMPTS.has(t.phase)).length,
-      shopCard: ts.find(t => t.kind === "rewards" && t.drew)?.ms ?? null,
+      shopCard: cards.find(t => t.kind === "rewards")?.ms ?? null,
       hitches: { n: made.length, overlayMs: Math.round(made.reduce((a, g) => a + g.panel, 0)) },
       hitchMs: hitches.reduce((a, g) => a + g.gap, 0),
       overlayMs: hitches.reduce((a, g) => a + g.panel, 0),

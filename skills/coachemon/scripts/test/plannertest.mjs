@@ -1030,7 +1030,7 @@ const hydreigonSnorlax = () => [
   const aims = card => Object.fromEntries(card.field.slots.map(sl => [sl.name, sl.target?.name ?? null]));
   const slot0 = cardAt(0);
   // Thunder Punch into Toxapex, which the faster Garchomp KOs before Lucario moves.
-  const slot1 = cardAt(1, [{ command: 0, cursor: 1, move: { move: 7, targets: [], useMode: 0 }, targets: [3] }]);
+  const slot1 = cardAt(1, [{ command: 0, cursor: 1, move: { move: 9, targets: [], useMode: 0 }, targets: [3] }]);
   assert.deepEqual(aims(slot0), { Garchomp: "Weezing", Lucario: "Toxapex" });
   assert.notEqual(slot1, slot0, "slot 1 gets a card of its own");
   assert.deepEqual(aims(slot1), { Garchomp: "Toxapex", Lucario: "Weezing" }, "slot 1 is planned around Garchomp's Thunder Punch");

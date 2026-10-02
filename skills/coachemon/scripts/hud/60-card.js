@@ -64,7 +64,7 @@ let held = { key: null, card: null };
 export const heldBattleCard = (turn, account) => {
   const { wave, turn: t, enemySwitchCounter, party, foes, command: c } = turn.facts;
   // Who is in the battle as well as when it is: a wave 1 turn 1 of a new run is not the last run's, and a mon's
-  // faint changes the field without changing the turn. Slot 0's command keys slot 1's card, which is planned around it.
+  // faint changes the field without changing the turn. Without slot 0's command, slot 1 was handed slot 0's card (#544).
   const key = [wave, t, enemySwitchCounter, ...party.map(p => p?.id), "|", ...foes.map(f => f?.id),
     "|", c ? [c.kind, c.cursor, c.move?.move, ...c.targets].join(" ") : ""].join(",");
   if (held.key === key && held.card) return held.card;
