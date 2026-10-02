@@ -99,4 +99,26 @@ export const watchFrame = s => {
 
 export const watchBuilt = () => built.kind !== null && same(cur, built);
 export const watchOpen = () => cur.kind !== null;
-export const watchForget = () => copy(built, NONE);
+
+// The field the held battle card was built for. The field is the front of each party and a send-in swaps party
+// entries, so a faint, which swaps none, is no send-in (game-code.md §7).
+const field = { battle: null, p0: null, p1: null, e0: null, e1: null };
+export const watchField = s => {
+  const b = s?.currentBattle ?? null;
+  field.battle = b;
+  if (!b) return;
+  const p = s.getPlayerParty(), e = s.getEnemyParty();
+  field.p0 = p[0]; field.e0 = e[0];
+  field.p1 = b.double ? p[1] : null; field.e1 = b.double ? e[1] : null;
+};
+// True on the first frame between decisions that the battle the card was built for has a mon in front it wasn't built
+// for. A new wave is a new battle, and sends nothing in.
+export const watchSentIn = s => {
+  const b = s?.currentBattle;
+  if (cur.kind !== null || !b || b !== field.battle) return false;
+  const p = s.getPlayerParty(), e = s.getEnemyParty();
+  if (p[0] === field.p0 && e[0] === field.e0 && (!b.double || (p[1] === field.p1 && e[1] === field.e1))) return false;
+  watchField(s);
+  return true;
+};
+export const watchForget = () => { copy(built, NONE); field.battle = null; };

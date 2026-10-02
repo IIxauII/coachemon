@@ -2,6 +2,7 @@
 // game's own code, opens the only sandbox, sets a predicted Tera, and hands callers a turn whose every answer is
 // memoised under one key. 10-damage and 20-enemy-ai know how to ask the game; this file decides when.
 import { TYPES, awaitingDecision, closeRead, effectiveness, openRead, sandbox, stat, typesOf } from "./01-core.js";
+import { note } from "./01-meter.js";
 import { waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
 import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneStatusMoves, sceneStopped, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
@@ -342,18 +343,19 @@ const predictedTeras = (env, turn) => {
   return turn.activeFoes().filter(e => tryDo(() => turn.teraNow(e), false));
 };
 
-// The turn is dead once `fn` returns.
-export const readTurn = (s, fn) => {
+// The turn is dead once `fn` returns. `estimate` never asks the game, decision or not.
+export const readTurn = (s, fn, { estimate = false } = {}) => {
   openRead("turn"); // refuses while a turn or a run read is open: sequential, never nested
   try {
-    return readOpened(s, fn);
+    return readOpened(s, fn, estimate);
   } finally { closeRead(); }
 };
-const readOpened = (s, fn) => {
+const readOpened = (s, fn, estimate) => {
   const env = sceneEnv(s);
   // Live while the game waits on a decision (game-code.md §9). A call that can't be answered falls back for that
   // answer alone, and its record says so.
-  const live = !!s && awaitingDecision(s) !== null;
+  const live = !estimate && !!s && awaitingDecision(s) !== null;
+  note({ turnRead: live ? "live" : "estimate" });
   const facts = sceneFacts(s, env, live);
   const turn = makeTurn(env, { live, facts, baseKey: turnKeyOf(env, facts), shared: {} });
   const finish = () => { try { return fn(turn); } finally { turn.__close(); } };

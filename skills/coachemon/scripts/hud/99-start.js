@@ -1,14 +1,14 @@
 // The watch's builds, its fallback clock and the card stream (extension-distribution.md §11.1, §9.1, §9.5).
 import { sandboxBreachCount } from "./01-core.js";
 import { meterFacts, meterStats, onFrame, refresh, stage } from "./01-meter.js";
-import { watchBuilt, watchForget, watchFrame, watchOpen } from "./02-decision.js";
+import { watchBuilt, watchForget, watchFrame, watchOpen, watchSentIn } from "./02-decision.js";
 import { dropChunkHandoff } from "./04-game-tables.js";
 import { previewStats } from "./48-preview.js";
 import { rerollStats } from "./50-reroll.js";
 import { journalCheck, journalClear, journalEntries, journalStats } from "./55-journal.js";
 import { EVENT_KINDS, cardEvent, cardSummary, roadLanded } from "./60-card.js";
 import { battleScene, el, setRedraw, spriteMisses, wireCard } from "./90-render.js";
-import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, shownCard, shownGroups, tick } from "./98-tick.js";
+import { fail, hideCard, lastFailure, redraw, roadNow, roadOwed, sentIn, shownCard, shownGroups, tick } from "./98-tick.js";
 
 // By hand from the relay's `extension/src/relay/channel.ts`; `scripts/test/cardeventtest.mjs` fails when they drift.
 const CARD_EVENT = "coachemon:card", COACH_ERROR_EVENT = "coachemon:coach-error";
@@ -63,6 +63,7 @@ let lookFailed = null;
 const look = s => {
   try { const fresh = watchFrame(s); lookFailed = null; return fresh; } catch (e) { lookFailed = e; return false; }
 };
+const lookSentIn = s => { try { return watchSentIn(s); } catch (e) { lookFailed = e; return false; } };
 const gone = s => !s?.ui || (!watchOpen() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
 
 // Every card build takes a new generation, so a press between the card and its road task leaves the road group to the
@@ -79,10 +80,15 @@ const roadLater = () => {
 let framed = false;
 onFrame(() => {
   framed = true;
-  if (!look(scene())) return;
-  cardGen++;
-  refresh("watch", () => { tick(false); stage("stream", stream); });
-  if (roadOwed()) roadLater();
+  const s = scene();
+  if (look(s)) {
+    cardGen++;
+    refresh("watch", () => { tick(false); stage("stream", stream); });
+    if (roadOwed()) roadLater();
+  } else if (lookSentIn(s)) {
+    cardGen++;
+    refresh("send-in", () => { sentIn(); stage("stream", stream); });
+  }
 });
 
 const fallback = () => refresh("fallback", () => {

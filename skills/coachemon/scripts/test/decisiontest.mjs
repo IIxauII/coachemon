@@ -41,7 +41,7 @@ const mon = (id, name, types, moves) => ({ id, name, level: 30, hp: 100, getMaxH
   status: null, getIconAtlasKey: () => "k", getIconId: () => 1, moveset: moves.map(m => new Move(m)) });
 const full = mon(11, "Charmeleon", ["Fire"], [33, 52, 225, 10]);
 const three = mon(12, "Bulbasaur", ["Grass", "Poison"], [33, 22, 45]);
-const foe = id => { const f = mon(id, "Paras", ["Bug", "Grass"], [10]); f.getOpponents = () => [g.party[0]]; return f; };
+const foe = (id, name = "Paras") => { const f = mon(id, name, ["Bug", "Grass"], [10]); f.getOpponents = () => [g.party[0]]; return f; };
 const battle = (waveIndex, turn) => ({ waveIndex, turn, double: false, enemySwitchCounter: 0, turnCommands: {}, trainer: null,
   getBattlerCount() { return this.double ? 2 : 1; } });
 const g = {
@@ -238,6 +238,40 @@ scene = game;
   assert.deepEqual([by("biome"), by("encounter"), by("starter")], [[[0, 16, 1]], [[16, 32, 1]], [[16, 16, 1]]]);
 }
 
+// ---- a mon sent in between decisions redraws the battle card once from the estimate path, and a faint or a learn alone does not
+{
+  const machop = foe(31, "Machop"), geodude = foe(32, "Geodude");
+  for (const f of [machop, geodude]) f.isOnField = () => g.foes[0] === f;
+  for (const p of [full, three]) p.isOnField = () => g.party[0] === p;
+  const redraws = () => __coachHud.stats().ticks.filter(t => t.why === "send-in");
+  const targets = () => __coachHud.last().field?.slots.map(sl => sl.target?.name);
+  const ours = () => __coachHud.last().field?.slots.map(sl => [sl.name, sl.out]);
+  // A free switch: the command's live read in this game stops at the exact gate, which leaves its card no act line.
+  step("wave 12's free switch", () => { g.battle = battle(12, 1); g.foes = [machop, geodude]; g.phase = { phaseName: "CheckSwitchPhase", fieldIndex: 0 }; g.mode = UiMode.CONFIRM; g.handler = {}; g.handlers = {}; });
+  step("the turn plays", () => { g.battle.turnCommands[BattlerIndex.ENEMY] = { move: 1 }; g.phase = { phaseName: "MoveEffectPhase" }; g.mode = UiMode.MESSAGE; });
+  assert.deepEqual(step("their mon faints", () => { machop.hp = 0; g.phase = { phaseName: "FaintPhase" }; }), []);
+  assert.deepEqual(targets(), ["Machop"], "the held card still names the fainted foe");
+  assert.deepEqual(step("a mid-turn learn", () => { g.phase = { phaseName: "LearnMovePhase", partyMemberIndex: 0, moveId: 53 }; }), ["watch:learn"]);
+  assert.deepEqual(step("the learn is dismissed", () => { g.phase = { phaseName: "FaintPhase" }; }), []);
+  assert.equal(__coachHud.last()?.kind, "learn", "the learn card is held after it is dismissed");
+  assert.deepEqual(step("their next mon comes in", () => { g.foes = [geodude, machop]; g.phase = { phaseName: "SwitchSummonPhase" }; }), ["send-in:battle"]);
+  assert.deepEqual([__coachHud.last()?.kind, targets()], ["battle", ["Geodude"]]);
+  assert.deepEqual(step("it lands", () => { g.phase = { phaseName: "TurnEndPhase" }; }), []);
+  assert.deepEqual(step("turn 2's command", () => { g.battle.turnCommands = {}; g.battle.turn = 2; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; }),
+    ["watch:battle", "road:battle"]);
+  step("we switch", () => { g.battle.turnCommands[BattlerIndex.ENEMY] = { move: 1 }; g.phase = { phaseName: "TurnStartPhase" }; g.mode = UiMode.MESSAGE; });
+  const road = __coachHud.last().ahead;
+  assert.deepEqual(step("ours comes in", () => { g.party = [three, full]; g.phase = { phaseName: "SwitchSummonPhase" }; }), ["send-in:battle"]);
+  assert.deepEqual(ours(), [["Charmeleon", false]], "the redraw has Charmeleon off the field");
+  assert.equal(__coachHud.last().ahead, road, "the redraw keeps the road group it replaces");
+  assert.deepEqual(step("it lands", () => { g.phase = { phaseName: "MoveEffectPhase" }; }), []);
+  const watched = __coachHud.stats().ticks.filter(t => t.why === "watch").at(-1);
+  console.log(`send-in redraws read the turn as ${redraws().map(t => t.turnRead).join(", ")}, the watch's build as ${watched.turnRead}`);
+  assert.deepEqual(redraws().map(t => t.turnRead), ["estimate", "estimate"]);
+  g.party = [full, three];
+  for (const p of g.party) p.isOnField = () => true;
+}
+
 // ---- the streamed card goes again once its road group lands
 {
   const before = cards().length;
@@ -311,29 +345,40 @@ scene = game;
   assert.deepEqual([decisions().length, d.wave, d.end], [1, 8, 32]);
 }
 
-// ---- a frame where the decision holds opens no refresh and allocates nothing
+// ---- a frame where the decision holds, or where a turn plays under its battle card, opens no refresh and allocates nothing
 {
   const N = 100000;
-  g.phase = { phaseName: "SelectModifierPhase" }; g.mode = UiMode.MODIFIER_SELECT; g.handler = { options: [1], awaitingActionInput: true };
-  frame();
-  runTasks();
-  const before = __coachHud.stats();
-  for (let i = 0; i < N; i++) frame();
-  const collections = [];
-  const watcher = new NodeObserver(list => collections.push(...list.getEntries().map(e => e.startTime)));
-  watcher.observe({ entryTypes: ["gc"] });
-  gc();
-  const from = nodePerf.now(), heap = process.memoryUsage().heapUsed;
-  for (let i = 0; i < N; i++) frame();
-  const grew = process.memoryUsage().heapUsed - heap, to = nodePerf.now();
-  await new Promise(r => later(r, 10));
-  watcher.disconnect();
-  const after = __coachHud.stats();
-  console.log(`watch frames ${after.watch.frames - before.watch.frames} refreshes ${after.ticks.at(-1).seq - before.ticks.at(-1).seq}`);
-  assert.equal(after.ticks.at(-1).seq, before.ticks.at(-1).seq, "the watch opened no refresh");
-  assert.deepEqual(collections.filter(t => t >= from && t <= to), [], "a collection ran inside the measured frames");
-  assert.ok(grew < N, `the heap grew ${grew} bytes over ${N} frames`);
-  opened();
+  const held = {
+    shop: () => { g.phase = { phaseName: "SelectModifierPhase" }; g.mode = UiMode.MODIFIER_SELECT; g.handler = { options: [1], awaitingActionInput: true }; },
+    turn: () => {
+      g.battle.turn = 2; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; g.handler = {};
+      frame();
+      runTasks();
+      g.battle.turnCommands[BattlerIndex.ENEMY] = { move: 1 }; g.phase = { phaseName: "MoveEffectPhase" }; g.mode = UiMode.MESSAGE;
+    },
+  };
+  for (const [name, enter] of Object.entries(held)) {
+    enter();
+    frame();
+    runTasks();
+    const before = __coachHud.stats();
+    for (let i = 0; i < N; i++) frame();
+    const collections = [];
+    const watcher = new NodeObserver(list => collections.push(...list.getEntries().map(e => e.startTime)));
+    watcher.observe({ entryTypes: ["gc"] });
+    gc();
+    const from = nodePerf.now(), heap = process.memoryUsage().heapUsed;
+    for (let i = 0; i < N; i++) frame();
+    const grew = process.memoryUsage().heapUsed - heap, to = nodePerf.now();
+    await new Promise(r => later(r, 10));
+    watcher.disconnect();
+    const after = __coachHud.stats();
+    console.log(`${name}: watch frames ${after.watch.frames - before.watch.frames} refreshes ${after.ticks.at(-1).seq - before.ticks.at(-1).seq}`);
+    assert.equal(after.ticks.at(-1).seq, before.ticks.at(-1).seq, "the watch opened no refresh");
+    assert.deepEqual(collections.filter(t => t >= from && t <= to), [], "a collection ran inside the measured frames");
+    assert.ok(grew < N, `the heap grew ${grew} bytes over ${N} frames`);
+    opened();
+  }
 }
 
 // ---- `stop()` unhooks the frame callback
