@@ -7,3 +7,6 @@
 {"ticks":120,"entries":0,"refresh":{"n":120,"mean":1,"p95":1,"max":1}}
 [{"at":5010,"name":"keydown","ms":200,"delay":80,"run":10,"panel":70}] [{"at":4990,"ms":150,"blocking":100,"render":20,"panel":80,"scripts":[{"ms":78,"src":"hud.js","fn":"body","invoker":"TimerHandler:setInterval"}]}]
 {"frames":2,"gaps":1,"fps":60,"setTimeoutLoop":false,"observes":["event","loaf"]}
+[{"id":1,"kind":"command","card":"battle","wave":7,"at":20000,"ready":10,"input":10,"drawn":140,"refreshes":2,"ms":70,"late":20,"end":null}] {"id":1,"kind":"command","card":"battle","wave":7,"at":20000,"ready":10,"input":10,"drawn":140,"refreshes":2,"ms":70,"late":20,"end":500}
+[null,300,null]
+{"frames":3,"ms":3} [[184,60]]

@@ -1,8 +1,9 @@
 // The meter outlives `__coachHud.stop()`: its frame watcher keeps running with the panel off, read as
 // `window.__coachMeter.stats()`, until the next copy's meter replaces it (#481, #482). Every number is
 // `performance.now()` milliseconds.
-const RING = { ticks: 120, gaps: 200, events: 100, loaf: 50 };
+const RING = { ticks: 120, gaps: 200, events: 100, loaf: 50, decisions: 60 };
 const GAP_MS = 34;
+const LATE_MS = 250;
 const BUCKETS = [20, 34, 50, 100, 250];
 const TRACK = { devtools: { dataType: "track-entry", track: "Coach panel" } };
 
@@ -20,20 +21,30 @@ const measure = (name, start, duration) => {
   try { performance.measure(name, { start, duration, detail: TRACK }); performance.clearMeasures(name); } catch {}
 };
 
-let started, ticks, gaps, events, loaf, hist, frames, hidden, maxMs;
+let started, ticks, gaps, events, loaf, decisions, hist, frames, hidden, maxMs, watch;
+// The open decision rides into the next window as well, so a report keeps a decision's last copy by `id`.
+let decision = null, decisionSeq = 0;
 const reset = () => {
   started = now();
   ticks = ring(RING.ticks); gaps = ring(RING.gaps); events = ring(RING.events); loaf = ring(RING.loaf);
+  decisions = ring(RING.decisions);
+  if (decision) decisions.push(decision);
   hist = BUCKETS.map(() => 0).concat(0);
-  frames = 0; hidden = 0; maxMs = 0;
+  frames = 0; hidden = 0; maxMs = 0; watch = { frames: 0, ms: 0 };
 };
 
 let open = null, seq = 0;
 const nest = [];
 // The overlay's work and the driver's since the last frame: what a gap is charged with. `reset` leaves it alone: a
 // drain between a long refresh and the next frame charged that frame's gap to nobody (#515).
-const fresh = () => ({ ms: 0, stage: null, top: 0, ticks: [], driver: 0, longest: 0, kind: null, wave: null });
-let since = fresh(), ended = [], awaitingNext = null;
+const since = { ms: 0, stage: null, top: 0, ticks: [], driver: 0, longest: 0, kind: null, wave: null };
+// In place, so a frame with nothing to charge allocates nothing (#541).
+const clearSince = () => {
+  since.ms = 0; since.stage = null; since.top = 0; since.driver = 0; since.longest = 0; since.kind = null; since.wave = null;
+  since.ticks.length = 0;
+};
+const ended = [];
+let awaitingNext = null;
 reset();
 
 // A refresh opened inside another is part of it, so a clock tick and the tick it calls are one record.
@@ -60,6 +71,7 @@ export const refresh = (why, fn) => {
     since.ticks.push(rec.seq);
     if (top && rec.stages[top] > since.top) { since.top = rec.stages[top]; since.stage = top; }
     if (ms > since.longest) { since.longest = ms; since.kind = rec.kind; since.wave = rec.wave; }
+    if (decision) charge(decision, rec, t0, ms);
     mark("coach:idle");
     measure("coach:refresh", t0, ms);
   }
@@ -81,6 +93,28 @@ export const stage = (name, fn) => {
 
 export const note = fields => { if (open) Object.assign(open, fields); };
 
+// A decision (CONTEXT.md), every time relative to `at`. `drawn` is the end of the first refresh that came back with its
+// kind of card, and `late` the overlay's ms more than `LATE_MS` in (#519).
+export const decisionBegin = (kind, card, wave) => {
+  decisionEnd();
+  decision = { id: ++decisionSeq, kind, card, wave, at: r1(now()), ready: null, input: null, drawn: null, refreshes: 0, ms: 0, late: 0, end: null };
+  decisions.push(decision);
+};
+export const decisionAt = field => { if (decision && decision[field] === null) decision[field] = r1(now() - decision.at); };
+export const decisionEnd = () => {
+  if (!decision) return;
+  decision.end = r1(now() - decision.at);
+  decision = null;
+};
+const charge = (d, rec, t0, ms) => {
+  const end = t0 + ms;
+  d.refreshes++;
+  d.ms = r1(d.ms + ms);
+  d.late = r1(d.late + Math.max(0, end - Math.max(t0, d.at + LATE_MS)));
+  if (d.drawn === null && rec.kind === d.card) d.drawn = r1(end - d.at);
+  rec.decision = d.id;
+};
+
 // A hub command answered in the page: never the panel's work, so it opens no record (#499).
 const driver = fn => {
   const t0 = now();
@@ -100,8 +134,21 @@ const panelIn = (from, to) => {
   return r1(ms);
 };
 
-const bucketOf = gap => { const i = BUCKETS.findIndex(b => gap < b); return i < 0 ? BUCKETS.length : i; };
-let prev = null, raf = 0, live = true;
+const bucketOf = gap => {
+  let i = 0;
+  while (i < BUCKETS.length && gap >= BUCKETS[i]) i++;
+  return i;
+};
+let prev = null, raf = 0, live = true, hook = null;
+// Run at the end of every frame callback, so a refresh it opens is charged to the frame after (#518). Its own time
+// leaves those refreshes out.
+export const onFrame = fn => { hook = fn; };
+const runHook = t => {
+  const t0 = now(), overlay = since.ms;
+  try { hook(t); } catch {}
+  watch.frames++;
+  watch.ms += now() - t0 - (since.ms - overlay);
+};
 const frame = t => {
   if (!live) return;
   raf = requestAnimationFrame(frame);
@@ -110,17 +157,20 @@ const frame = t => {
     frames++;
     hist[bucketOf(gap)]++;
     if (awaitingNext) { awaitingNext.next = r1(gap); awaitingNext = null; }
-    for (const rec of ended) rec.frame = r1(gap);
+    for (let i = 0; i < ended.length; i++) ended[i].frame = r1(gap);
     if (ended.length) awaitingNext = ended[ended.length - 1];
     if (gap >= GAP_MS) {
       // `kind` and `wave` are the longest refresh's, which a drain may have handed back in the window before.
       gaps.push({ at: r1(prev), gap: r1(gap), panel: r1(since.ms), driver: r1(since.driver),
         stage: since.driver > since.top ? "driver" : since.stage, ticks: since.ticks, kind: since.kind, wave: since.wave });
+      // The gap keeps the array, and `clearSince` empties it in place.
+      since.ticks = [];
     }
   }
-  since = fresh();
-  ended = [];
+  clearSince();
+  ended.length = 0;
   prev = t;
+  if (hook) runHook(t);
 };
 // A hidden tab gets no frames, so the gap across it is the time away, not a stall.
 const onVisibility = () => { if (document.visibilityState === "hidden") { prev = null; hidden++; } };
@@ -174,7 +224,8 @@ export const meterStats = () => {
     refresh: summary(all.map(t => t.ms)),
     stages: Object.fromEntries(names.map(k => [k, summary(all.filter(t => k in t.stages).map(t => t.stages[k]))])),
     stalls: { n: g.length, ms: r1(g.reduce((a, x) => a + x.gap, 0)), panel: r1(g.reduce((a, x) => a + x.panel, 0)), driver: r1(g.reduce((a, x) => a + x.driver, 0)) },
-    ticks: all, gaps: g, events: events.all(), loaf: loaf.all(),
+    watch: { frames: watch.frames, ms: r1(watch.ms) },
+    ticks: all, gaps: g, events: events.all(), loaf: loaf.all(), decisions: decisions.all(),
   };
 };
 

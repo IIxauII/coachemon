@@ -1,0 +1,49 @@
+the prompt's message                 #1 command/battle w7 ready null input null drawn null end null
+command menu                         #1 command/battle w7 ready 16 input 16 drawn null end null
+fight menu                           ·
+target select                        ·
+commit window                        ·
+the enemy has chosen                 #1 command/battle w7 ready 16 input 16 drawn null end 80
+U-turn party screen                  ·
+next turn                            #2 command/battle w7 ready 0 input 0 drawn null end null
+double, slot 0                       #3 command/battle w7 ready 0 input 0 drawn null end null
+slot 0's target select               ·
+slot 1                               #4 command/battle w7 ready 0 input 0 drawn null end null
+slot 1's target select               ·
+cancel back to slot 0                #5 command/battle w7 ready 0 input 0 drawn null end null
+free switch, the question's text     #6 free-switch/battle w7 ready null input null drawn null end null
+free switch, yes or no               #6 free-switch/battle w7 ready 16 input 16 drawn null end null
+its party screen                     ·
+replacement, the faint's message     #7 replacement/battle w7 ready null input null drawn null end null
+replacement, party up                #7 replacement/battle w7 ready 16 input 16 drawn null end null
+shop, offers not out yet             #8 reward/rewards w7 ready null input null drawn null end null
+shop reveal                          #8 reward/rewards w7 ready 16 input null drawn null end null
+shop takes input                     #8 reward/rewards w7 ready 16 input 32 drawn null end null
+Revive's party screen                ·
+back after buying it                 #9 reward/rewards w7 ready 0 input 0 drawn null end null
+lock capsule toggled                 #10 reward/rewards w7 ready 0 input 0 drawn null end null
+transfer screen                      ·
+Leftovers handed over                #11 reward/rewards w7 ready null input null drawn null end null
+back from the transfer               #11 reward/rewards w7 ready 16 input 16 drawn null end null
+reroll                               #12 reward/rewards w7 ready 0 input 0 drawn null end null
+splice screen                        #13 fusion/fusion w7 ready 0 input 0 drawn null end null
+splice done                          #14 fusion/fusion w7 ready 0 input 0 drawn null end null
+back to the shop                     #15 reward/rewards w7 ready 0 input 0 drawn null end null
+auto-learn, three moves              #15 reward/rewards w7 ready 0 input 0 drawn null end 16
+already known                        ·
+learn, the prompt's message          #16 learn/learn w7 ready 0 input null drawn null end null
+learn, forget a move?                #16 learn/learn w7 ready 0 input 16 drawn null end null
+learn, the summary                   ·
+the clock drew its card              #16 learn/learn w7 ready 0 input 16 drawn 36 end null
+biome, blocked                       #17 biome/biome w7 ready 0 input null drawn null end null
+biome, open                          #17 biome/biome w7 ready 0 input 16 drawn null end null
+encounter, before its options        #18 encounter/encounter w7 ready null input null drawn null end null
+encounter, options out               #18 encounter/encounter w7 ready 16 input null drawn null end null
+encounter, open                      #18 encounter/encounter w7 ready 16 input 32 drawn null end null
+starter, loading                     #19 starter/starters w7 ready null input null drawn null end null
+starter, ready                       #19 starter/starters w7 ready 16 input 16 drawn null end null
+a command before the drain           #20 command/battle w8 ready 0 input 0 drawn null end null
+its menu after the drain             #20 command/battle w8 ready 0 input 0 drawn null end null
+the turn plays                       #20 command/battle w8 ready 0 input 0 drawn null end 32
+drained 20 then #20 command/battle w8 ready 0 input 0 drawn null end 32
+watch frames 200000 refreshes 0

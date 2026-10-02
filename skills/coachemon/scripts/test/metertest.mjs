@@ -172,3 +172,52 @@ const mount = () => {
   frame(9200);
   assert.equal(first.stats().frames.n, s.frames.n, "the replaced meter counts nothing more");
 }
+
+// ---- a decision records its card's arrival and the overlay's ms past 250 ms in, and rides into the next drain
+{
+  const { refresh, note, decisionBegin, decisionAt, decisionEnd } = mount();
+  __coachMeter.reset();
+  clock = 20000;
+  decisionBegin("command", "battle", 7);
+  clock = 20010; decisionAt("ready"); decisionAt("input");
+  clock = 20100;
+  refresh("clock", () => { note({ kind: "battle" }); clock += 40; });
+  clock = 20240;
+  refresh("clock", () => { note({ kind: "battle" }); clock += 30; });
+  const first = JSON.parse(JSON.stringify(__coachMeter.drain().decisions));
+  clock = 20500;
+  decisionEnd();
+  const [d] = __coachMeter.stats().decisions;
+  console.log(JSON.stringify(first), JSON.stringify(d));
+  assert.equal(d.id, first[0].id, "the open decision is in both drains");
+  assert.deepEqual([d.ready, d.input, d.drawn, d.late, d.end, d.refreshes], [10, 10, 140, 20, 500, 2]);
+}
+
+// ---- a decision whose card never came back has no `drawn`, and a new decision closes the last
+{
+  const { refresh, note, decisionBegin } = mount();
+  __coachMeter.reset();
+  clock = 30000;
+  decisionBegin("reward", "rewards", 9);
+  refresh("clock", () => { note({ kind: "battle" }); clock += 5; });
+  clock = 30300;
+  decisionBegin("biome", "biome", 9);
+  const [shop, biome] = __coachMeter.stats().decisions;
+  console.log(JSON.stringify([shop.drawn, shop.end, biome.end]));
+  assert.deepEqual([shop.drawn, shop.end, biome.end], [null, 300, null]);
+}
+
+// ---- the frame hook runs after the frame's gap is charged, and its own time leaves out the refreshes it opens
+{
+  const { refresh, onFrame } = mount();
+  __coachMeter.reset();
+  onFrame(() => { clock += 1; refresh("watch", () => { clock += 60; }); });
+  frame(40000);
+  frame(40016);
+  frame(40200);
+  onFrame(null);
+  const s = __coachMeter.stats();
+  console.log(JSON.stringify(s.watch), JSON.stringify(s.gaps.map(g => [g.gap, g.panel])));
+  assert.deepEqual(s.watch, { frames: 3, ms: 3 });
+  assert.equal(s.gaps.find(g => g.gap >= 100).panel, 60, "the refresh opened in a frame's callback is the next gap's");
+}
