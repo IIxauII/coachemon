@@ -75,6 +75,7 @@ const roadLater = () => {
   }, 0);
 };
 
+const build = road => watchKeep(tick(road));
 // A decision come back to is drawn from its kept card, which opens no refresh (#544).
 const showKept = () => {
   const card = watchKept();
@@ -91,7 +92,7 @@ onFrame(() => {
   framed = true;
   if (!look(scene())) return;
   cardGen++;
-  if (!showKept()) refresh("watch", () => { watchKeep(tick(false)); stage("stream", stream); });
+  if (!showKept()) refresh("watch", () => { build(false); stage("stream", stream); });
   if (roadOwed()) roadLater();
 });
 
@@ -106,7 +107,7 @@ const fallback = () => refresh("fallback", () => {
     watchForget();
   } else if (fresh) {
     cardGen++;
-    if (!showKept()) watchKeep(tick(true));
+    if (!showKept()) build(true);
     else if (roadOwed()) roadNow();
   } else {
     if (s?.ui) stage("journal", () => journalCheck(s, shownCard()));
@@ -117,7 +118,7 @@ const fallback = () => refresh("fallback", () => {
 const timer = setInterval(fallback, 1000);
 
 // The screen the overlay lands on, drawn whole; the decision it lands on counts as built.
-refresh("start", () => { look(scene()); watchKeep(tick(true)); stage("stream", stream); });
+refresh("start", () => { look(scene()); build(true); stage("stream", stream); });
 setRedraw(() => refresh("click", () => { cardGen++; watchKeep(redraw()); stage("stream", stream); }));
 meterFacts(() => {
   const loop = battleScene()?.game?.loop;

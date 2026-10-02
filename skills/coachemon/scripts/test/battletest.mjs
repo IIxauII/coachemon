@@ -177,4 +177,5 @@ for (const [label, sc] of Object.entries(scenarios)) {
   phase = { phaseName: "CommandPhase", fieldIndex: 0 };
   fallback();
   assert.equal(slot1(3, 4, [BattlerIndex.ENEMY]), "Venusaur Power Whip → Bisharp · 3 hits", `slot 0's KO on Bisharp moves slot 1's act off ${unlocked}`);
+  assert.equal(globalThis.__coachHud.last().field.slots[1].spare, true, "slot 1's hit on Bisharp is the spare one, behind slot 0's KO");
 }

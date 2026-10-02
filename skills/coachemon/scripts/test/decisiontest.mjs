@@ -3,7 +3,7 @@ import { PerformanceObserver as NodeObserver, performance as nodePerf } from "no
 import { setFlagsFromString } from "node:v8";
 import { runInNewContext } from "node:vm";
 import { bundle } from "../hud-bundle.mjs";
-import { BattlerIndex, PartyUiMode, UiMode } from "../../../../src/enums/generated.ts";
+import { BattlerIndex, Command, PartyUiMode, UiMode } from "../../../../src/enums/generated.ts";
 
 setFlagsFromString("--expose-gc");
 const gc = runInNewContext("gc");
@@ -99,6 +99,10 @@ const step = (label, change = () => {}, { road = true } = {}) => {
   return built;
 };
 const count = kind => decisions().filter(d => d.kind === kind).length;
+// Slot 0's command, a new object on every commit as the game writes it (game-code.md §25).
+const commit = (cursor, move) => {
+  g.battle.turnCommands[BattlerIndex.PLAYER] = { command: Command.FIGHT, cursor, move: { move, targets: [] }, targets: [BattlerIndex.ENEMY] };
+};
 const cards = () => events.filter(e => e.type === "coachemon:card").map(e => JSON.parse(e.detail));
 
 console.log("mounted with no game".padEnd(36), `| ${opened().join(" ")}`);
@@ -154,10 +158,8 @@ scene = game;
   assert.equal(__coachHud.summary().wave, 8);
 }
 
-// ---- in a double, slot 1 builds its own card, and cancelling back to slot 0 shows slot 0's again without a build
+// ---- in a double, slot 1 builds, a cancel shows slot 0's card unbuilt, and slot 0 picking again is a new slot 1
 {
-  // A new object on every commit, and a cancel leaves the old one standing (game-code.md §25).
-  const commit = (cursor, move) => { g.battle.turnCommands[BattlerIndex.PLAYER] = { command: 0, cursor, move: { move, targets: [] }, targets: [BattlerIndex.ENEMY] }; };
   step("double, slot 0", () => { g.battle.double = true; g.battle.turn = 3; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; });
   const slot0 = __coachHud.last();
   step("slot 0's target select", () => { g.phase = { phaseName: "SelectTargetPhase", fieldIndex: 0 }; g.mode = UiMode.TARGET_SELECT; });
@@ -191,7 +193,7 @@ scene = game;
   assert.equal(count("replacement"), 1);
 }
 
-// ---- a shop builds once its offers are out, and a buy, a lock toggle, an item transfer and a reroll each build again
+// ---- a shop builds when its offers are out, again on a buy, lock, transfer or reroll, and not on a splice backed out of
 {
   const offers = { options: [], awaitingActionInput: false };
   let shop = { phaseName: "SelectModifierPhase" };
@@ -217,9 +219,11 @@ scene = game;
   assert.equal(__coachHud.last(), rerolled, "the shop's card, shown again");
   assert.deepEqual(step("splice screen again", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), []);
   assert.equal(__coachHud.last()?.kind, "fusion");
+  step("back, and a Potion bought", () => { g.money = 300; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
+  assert.deepEqual(step("splice screen after the buy", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
   step("splice done, and paid for", () => { g.party = [full]; g.money = 150; });
   assert.deepEqual(step("back to the shop", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }), ["watch:rewards", "road:rewards"]);
-  assert.deepEqual([count("fusion"), count("reward")], [3, 7]);
+  assert.deepEqual([count("fusion"), count("reward")], [4, 8]);
   g.party = [full, three];
 }
 
@@ -288,7 +292,7 @@ scene = game;
 {
   const slot0 = __coachHud.last();
   g.battle.double = true;
-  g.battle.turnCommands = { [BattlerIndex.PLAYER]: { command: 0, cursor: 0, move: { move: 33, targets: [] }, targets: [BattlerIndex.ENEMY] } };
+  commit(0, 33);
   g.phase = { phaseName: "CommandPhase", fieldIndex: 1 };
   ticker();
   const slot1 = opened();

@@ -37,35 +37,37 @@ reroll                               #15 reward/rewards w8 ready 0 input 0 drawn
 splice screen                        #16 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
 splice backed out of                 #17 reward/rewards w8 ready 0 input 0 drawn 0 end null 
 splice screen again                  #18 fusion/fusion w8 ready 0 input 0 drawn 0 end null 
-splice done, and paid for            #19 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
-back to the shop                     #20 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
-auto-learn, three moves              #20 reward/rewards w8 ready 0 input 0 drawn 0 end 16 
+back, and a Potion bought            #19 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+splice screen after the buy          #20 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
+splice done, and paid for            #21 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
+back to the shop                     #22 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+auto-learn, three moves              #22 reward/rewards w8 ready 0 input 0 drawn 0 end 16 
 already known                        · 
-learn, the prompt's message          #21 learn/learn w8 ready 0 input null drawn 0 end null | watch:learn
-learn, forget a move?                #21 learn/learn w8 ready 0 input 16 drawn 0 end null 
+learn, the prompt's message          #23 learn/learn w8 ready 0 input null drawn 0 end null | watch:learn
+learn, forget a move?                #23 learn/learn w8 ready 0 input 16 drawn 0 end null 
 learn, the summary                   · 
 learn card Learn → forget Ember
-biome, blocked                       #22 biome/biome w8 ready 0 input null drawn 0 end null | watch:biome
-biome, open                          #22 biome/biome w8 ready 0 input 16 drawn 0 end null 
-encounter, before its options        #23 encounter/encounter w8 ready null input null drawn null end null 
-encounter, options out               #23 encounter/encounter w8 ready 16 input null drawn 16 end null | watch:encounter
-encounter, open                      #23 encounter/encounter w8 ready 16 input 32 drawn 16 end null 
-starter, loading                     #24 starter/starters w8 ready null input null drawn null end null 
-starter, ready                       #24 starter/starters w8 ready 16 input 16 drawn 16 end null | watch:starters
-a free switch, the card alone        #25 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
+biome, blocked                       #24 biome/biome w8 ready 0 input null drawn 0 end null | watch:biome
+biome, open                          #24 biome/biome w8 ready 0 input 16 drawn 0 end null 
+encounter, before its options        #25 encounter/encounter w8 ready null input null drawn null end null 
+encounter, options out               #25 encounter/encounter w8 ready 16 input null drawn 16 end null | watch:encounter
+encounter, open                      #25 encounter/encounter w8 ready 16 input 32 drawn 16 end null 
+starter, loading                     #26 starter/starters w8 ready null input null drawn null end null 
+starter, ready                       #26 starter/starters w8 ready 16 input 16 drawn 16 end null | watch:starters
+a free switch, the card alone        #27 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
 streamed battle 9 fight | road null
 streamed battle 9 fight | road boss next wave (W10)
-its party screen                     #25 free-switch/battle w9 ready 0 input 0 drawn 0 end null 
+its party screen                     #27 free-switch/battle w9 ready 0 input 0 drawn 0 end null 
 frames stop: fallback, then a new decision: fallback:battle, then fallback
 no frames: slot 1 fallback:battle, then slot 0 again fallback
-the frame after                      #29 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+the frame after                      #31 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle
 the phase throws                     · 
 fallback reports: phase unreadable
-the game reads again                 #29 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
-back to the title                    #29 command/battle w9 ready 0 input 0 drawn 0 end 48 
-a command before the drain           #30 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
-its menu after the drain             #30 command/battle w8 ready 0 input 0 drawn 0 end null 
-the turn plays                       #30 command/battle w8 ready 0 input 0 drawn 0 end 32 
-drained 30 then #30 command/battle w8 ready 0 input 0 drawn 0 end 32
+the game reads again                 #31 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
+back to the title                    #31 command/battle w9 ready 0 input 0 drawn 0 end 48 
+a command before the drain           #32 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+its menu after the drain             #32 command/battle w8 ready 0 input 0 drawn 0 end null 
+the turn plays                       #32 command/battle w8 ready 0 input 0 drawn 0 end 32 
+drained 32 then #32 command/battle w8 ready 0 input 0 drawn 0 end 32
 watch frames 200000 refreshes 0
 after stop: watch frames 0, refreshes 0

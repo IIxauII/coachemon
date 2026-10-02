@@ -1,5 +1,6 @@
 // Which decision (CONTEXT.md, `Decision`) the game is waiting on, looked at every frame from fields the game already shows and
-// never by hooking it, and handed to the meter's decision records (#518, #537). Allocates nothing per frame.
+// never by hooking it, and handed to the meter's decision records (#518, #537). Allocates nothing per frame. It also keeps
+// the cards of the last decisions built, so a decision come back to is shown without a build (#544).
 import { decisionAt, decisionBegin, decisionEnd } from "./01-meter.js";
 
 const CARD_OF = {
@@ -7,7 +8,7 @@ const CARD_OF = {
   learn: "learn", biome: "biome", encounter: "encounter", starter: "starters",
 };
 
-// `k1`…`k4` hold each kind's key from #537's table, in its order, and are compared by `===`.
+// `k1`…`k4` hold each kind's key from #537's table, in its order, then what #544 added to it, and are compared by `===`.
 const out = { kind: null, k1: null, k2: null, k3: null, k4: null, ready: false, input: false };
 const set = (kind, k1, k2, k3, k4, ready, input) => {
   out.kind = kind; out.k1 = k1; out.k2 = k2; out.k3 = k3; out.k4 = k4;
@@ -41,20 +42,20 @@ const detect = s => {
   switch (ph.phaseName) {
     case "CommandPhase":
     case "SelectTargetPhase":
-      // Slot 1's is keyed on slot 0's command object, which a cancel leaves standing and a commit replaces (#544,
-      // game-code.md §25).
+      // Slot 1 is keyed on slot 0's command object: a cancel leaves it standing, a commit replaces it (game-code.md §25).
       return set("command", b, b.turn, ph.fieldIndex, ph.fieldIndex ? b.turnCommands[BattlerIndex.PLAYER] ?? null : null,
         mode !== UiMode.MESSAGE && enemyFree(b), true);
     case "CheckSwitchPhase":
-      return set("free-switch", b, ph.fieldIndex, null, null, mode === UiMode.CONFIRM && enemyFree(b), true);
+      return set("free-switch", b, ph.fieldIndex, b.turn, null, mode === UiMode.CONFIRM && enemyFree(b), true);
     case "SwitchPhase":
-      if (!ph.isModal) return set("free-switch", b, ph.fieldIndex, null, null, mode === UiMode.PARTY && enemyFree(b), true);
+      if (!ph.isModal) return set("free-switch", b, ph.fieldIndex, b.turn, null, mode === UiMode.PARTY && enemyFree(b), true);
       // `doReturn` is a mid-turn switch-in pick: U-turn's, Baton Pass's or Wimp Out's (game-code.md §9).
       if (ph.doReturn) return none();
       return set("replacement", ph, null, null, null, mode === UiMode.PARTY && enemyFree(b), true);
     case "SelectModifierPhase": {
       const h = ui.getHandler();
-      if (mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE) return set("fusion", ph, s.getPlayerParty().length, null, null, true, true);
+      // Money as well: a buy between two visits that leaves the party's size alone is a new fusion decision (#544).
+      if (mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE) return set("fusion", ph, s.getPlayerParty().length, s.money, null, true, true);
       // A buy, a lock toggle or a transfer keeps the phase and asks anew (#524, #537).
       return set("reward", ph, s.money, s.lockModifierTiers === true, heldItems(s.modifiers ?? []),
         mode === UiMode.MODIFIER_SELECT && (h?.options?.length ?? 0) > 0, h?.awaitingActionInput === true);
@@ -103,7 +104,6 @@ export const watchFrame = s => {
 export const watchBuilt = () => built.kind !== null && same(cur, built);
 export const watchOpen = () => cur.kind !== null;
 
-// The cards of the last few decisions built, by key: coming back to one shows its card again (#544).
 const KEPT = 8;
 const kept = Array.from({ length: KEPT }, () => ({ ...NONE, card: null }));
 let keptAt = 0;
