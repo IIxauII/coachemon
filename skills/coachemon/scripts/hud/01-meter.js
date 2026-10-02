@@ -93,7 +93,7 @@ export const stage = (name, fn) => {
 
 export const note = fields => { if (open) Object.assign(open, fields); };
 
-// A decision (CONTEXT.md), every time relative to `at`. `drawn` is the end of the first refresh that came back with its
+// A decision (CONTEXT.md, `Decision`), every time relative to `at`. `drawn` is the end of the first refresh that came back with its
 // kind of card, and `late` the overlay's ms more than `LATE_MS` in (#519).
 export const decisionBegin = (kind, card, wave) => {
   decisionEnd();
@@ -140,8 +140,7 @@ const bucketOf = gap => {
   return i;
 };
 let prev = null, raf = 0, live = true, hook = null;
-// Run at the end of every frame callback, so a refresh it opens is charged to the frame after (#518). Its own time
-// leaves those refreshes out.
+// Run at the end of every frame callback, so a refresh it opens is charged to the frame after (#518).
 export const onFrame = fn => { hook = fn; };
 const runHook = t => {
   const t0 = now(), overlay = since.ms;

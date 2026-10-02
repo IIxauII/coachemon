@@ -52,7 +52,7 @@ scene = game;
 const frame = () => { clock += 16; const cb = frameCb; frameCb = null; cb?.(clock); };
 const decisions = () => __coachHud.stats().decisions;
 const fmt = d => `#${d.id} ${d.kind}/${d.card} w${d.wave} ready ${d.ready} input ${d.input} drawn ${d.drawn} end ${d.end}`;
-// One frame of the game in the state `change` leaves it in; prints the decision records that frame added or touched.
+// One frame of the game in the state `change` leaves it in; prints the newest record, or `·` when no record changed.
 let seen = "";
 const step = (label, change = () => {}) => {
   change();

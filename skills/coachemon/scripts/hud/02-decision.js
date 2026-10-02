@@ -1,4 +1,4 @@
-// Which decision (CONTEXT.md) the game is waiting on, looked at every frame from fields the game already shows and
+// Which decision (CONTEXT.md, `Decision`) the game is waiting on, looked at every frame from fields the game already shows and
 // never by hooking it, and handed to the meter's decision records (#518, #537). Allocates nothing per frame.
 import { decisionAt, decisionBegin, decisionEnd } from "./01-meter.js";
 
@@ -7,6 +7,7 @@ const CARD_OF = {
   learn: "learn", biome: "biome", encounter: "encounter", starter: "starters",
 };
 
+// `k1`…`k4` hold each kind's key from #537's table, in its order, and are compared by `===`.
 const out = { kind: null, k1: null, k2: null, k3: null, k4: null, ready: false, input: false };
 const set = (kind, k1, k2, k3, k4, ready, input) => {
   out.kind = kind; out.k1 = k1; out.k2 = k2; out.k3 = k3; out.k4 = k4;
@@ -56,7 +57,6 @@ const detect = s => {
         mode === UiMode.MODIFIER_SELECT && (h?.options?.length ?? 0) > 0, h?.awaitingActionInput === true);
     }
     case "LearnMovePhase": {
-      // Only a full moveset and a move it doesn't know ask (#537).
       const ms = s.getPlayerParty()[ph.partyMemberIndex]?.moveset;
       if (!ms || ms.length < 4 || knows(ms, ph.moveId)) return none();
       return set("learn", ph, null, null, null, true, mode === UiMode.CONFIRM || mode === UiMode.SUMMARY);
