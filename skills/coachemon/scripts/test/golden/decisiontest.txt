@@ -49,19 +49,32 @@ encounter, options out               #20 encounter/encounter w8 ready 16 input n
 encounter, open                      #20 encounter/encounter w8 ready 16 input 32 drawn 16 end null 
 starter, loading                     #21 starter/starters w8 ready null input null drawn null end null 
 starter, ready                       #21 starter/starters w8 ready 16 input 16 drawn 16 end null | watch:starters
-a free switch, the card alone        #22 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
+wave 12's free switch                #22 free-switch/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+the turn plays                       #22 free-switch/battle w12 ready 0 input 0 drawn 0 end 16 
+their mon faints                     · 
+a mid-turn learn                     #23 learn/learn w12 ready 0 input null drawn 0 end null | watch:learn
+the learn is dismissed               #23 learn/learn w12 ready 0 input null drawn 0 end 16 
+their next mon comes in              · | send-in:battle
+it lands                             · 
+turn 2's command                     #24 command/battle w12 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+we switch                            #24 command/battle w12 ready 0 input 0 drawn 0 end 16 
+ours comes in                        · | send-in:battle
+it lands                             · 
+send-in redraws read the turn as estimate, estimate, the watch's build as live
+a free switch, the card alone        #25 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
 streamed battle 9 fight | road null
 streamed battle 9 fight | road boss next wave (W10)
-its party screen                     #22 free-switch/battle w9 ready 0 input 0 drawn 0 end null 
+its party screen                     #25 free-switch/battle w9 ready 0 input 0 drawn 0 end null 
 frames stop: fallback, then a new decision: fallback:battle, then fallback
-the frame after                      #24 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+the frame after                      #27 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle
 the phase throws                     · 
 fallback reports: phase unreadable
-the game reads again                 #24 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
-back to the title                    #24 command/battle w9 ready 0 input 0 drawn 0 end 48 
-a command before the drain           #25 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
-its menu after the drain             #25 command/battle w8 ready 0 input 0 drawn 0 end null 
-the turn plays                       #25 command/battle w8 ready 0 input 0 drawn 0 end 32 
-drained 25 then #25 command/battle w8 ready 0 input 0 drawn 0 end 32
-watch frames 200000 refreshes 0
+the game reads again                 #27 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
+back to the title                    #27 command/battle w9 ready 0 input 0 drawn 0 end 48 
+a command before the drain           #28 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+its menu after the drain             #28 command/battle w8 ready 0 input 0 drawn 0 end null 
+the turn plays                       #28 command/battle w8 ready 0 input 0 drawn 0 end 32 
+drained 28 then #28 command/battle w8 ready 0 input 0 drawn 0 end 32
+shop: watch frames 200000 refreshes 0
+turn: watch frames 200000 refreshes 0
 after stop: watch frames 0, refreshes 0

@@ -1,6 +1,7 @@
 // `KIND` is the one place a kind meets its draw (#388). This file decides nothing about the card and formats nothing.
 import { note, refresh, stage } from "./01-meter.js";
-import { hasRoad, readCard, readRoad, roadLanded } from "./60-card.js";
+import { watchField } from "./02-decision.js";
+import { hasRoad, keepRoad, readCard, readRoad, roadLanded } from "./60-card.js";
 import { previewArm, previewCheck } from "./48-preview.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
 import { rerollArm, rerollCheck } from "./50-reroll.js";
@@ -96,14 +97,16 @@ const screenNote = (s, card) => note({ kind: card?.kind ?? null, wave: card?.wav
 // Only a card's own build arms, so a look-ahead read can't take the prediction's place.
 const armPreview = card => { if (card?.preview && card.preview.wave === card.wave + 1) previewArm(card.preview); };
 
-const body = road => {
+// The battle card the watch's field was taken from, which a learn card held since does not replace.
+let fieldCard = null;
+const body = (road, sendIn = false) => {
   try {
     failure = null;
     const s = battleScene();
     if (!s?.ui) { hideCard(); return; }
     // Before `readCard`: `previewArm` and `rerollArm` overwrite the prediction these two score.
     stage("check", () => { rerollCheck(s); previewCheck(s); });
-    const card = stage("read", () => readCard(s, accountRead(s), { road }));
+    const card = stage("read", () => readCard(s, accountRead(s), { road, estimate: sendIn }));
     screenNote(s, card);
     stage("arm", () => {
       armPreview(card);
@@ -111,13 +114,23 @@ const body = road => {
     });
     // Every build, whatever the card: the journal traces the fight and the rewards an encounter starts.
     stage("journal", () => journalCheck(s, card));
+    const replaced = fieldCard;
+    // A learn card keeps the field of the battle card before it, so a send-in after the learn still redraws (#537).
+    if (card?.kind !== "learn") {
+      fieldCard = card?.kind === "battle" ? card : null;
+      watchField(fieldCard && s);
+    }
     if (!card) { hideCard(); return; }
+    // After the arm: only a card's own build arms the preview.
+    if (sendIn) keepRoad(replaced, card);
     draw(card);
   } catch (e) { fail(e); }
 };
 
 // `road: false` builds the card alone, its road group left to `roadNow`.
 export const tick = (road = true) => refresh("tick", () => body(road));
+// Never asks the game (CONTEXT.md, `Turn read`).
+export const sentIn = () => refresh("tick", () => body(false, true));
 
 export const roadOwed = () => hasRoad(shown) && !roadLanded(shown);
 export const roadNow = () => {

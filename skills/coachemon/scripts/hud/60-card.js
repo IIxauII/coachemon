@@ -60,7 +60,7 @@ export const composeBattleCard = (turn, account) => {
 // Kept until the turn moves on, and never keyed on HP: HP runs down through the turn's animations, so an HP key would
 // rebuild the card from a scene halfway through resolving. Only a live turn's card is kept.
 let held = { key: null, card: null };
-const battleCard = (s, account) => readTurn(s, turn => {
+const battleCard = (s, account, estimate) => readTurn(s, turn => {
   const { wave, turn: t, enemySwitchCounter, party, foes } = turn.facts;
   // Who is in the battle as well as when it is: a wave 1 turn 1 of a new run is not the last run's, and a mon's
   // faint changes the field without changing the turn.
@@ -69,7 +69,7 @@ const battleCard = (s, account) => readTurn(s, turn => {
   const card = composeBattleCard(turn, account);
   if (turn.live) held = { key, card };
   return card;
-});
+}, { estimate });
 
 // Our side's 💀 / ⚠ tags. `after`: a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
@@ -107,10 +107,17 @@ export const readRoad = (s, card) => {
   });
   roads.add(card);
 };
+// A card redrawn between decisions takes the road group of the one it replaces, stale until the next decision.
+export const keepRoad = (from, to) => {
+  if (!roadLanded(from) || !hasRoad(to)) return;
+  to.preview = from.preview;
+  to.ahead = from.ahead;
+  roads.add(to);
+};
 
 // `account`: the run's own data, read once a refresh by 98-tick, which only the catch and Mystery Encounter cards weigh
-// a mon by. `road: false` leaves the road group to `readRoad`.
-export const readCard = (s, account, { road = true } = {}) => {
+// a mon by. `road: false` leaves the road group to `readRoad`; `estimate` reads a battle card's turn without the game.
+export const readCard = (s, account, { road = true, estimate = false } = {}) => {
   if (!s?.ui) return null;
   const handler = s.ui.getHandler();
   const starters = starterScreen(s);
@@ -136,7 +143,7 @@ export const readCard = (s, account, { road = true } = {}) => {
     const foes = s.getEnemyParty().filter(p => p.hp > 0);
     const party = s.getPlayerParty().filter(p => p.hp > 0);
     if (!b || !foes.length || !party.length) return null;
-    card = battleCard(s, account);
+    card = battleCard(s, account, estimate);
   }
   if (!card) return null;
   card.wave = s.currentBattle?.waveIndex ?? null;
