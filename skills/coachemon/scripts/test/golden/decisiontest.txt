@@ -1,49 +1,67 @@
-the prompt's message                 #1 command/battle w7 ready null input null drawn null end null
-command menu                         #1 command/battle w7 ready 16 input 16 drawn null end null
-fight menu                           ·
-target select                        ·
-commit window                        ·
-the enemy has chosen                 #1 command/battle w7 ready 16 input 16 drawn null end 80
-U-turn party screen                  ·
-next turn                            #2 command/battle w7 ready 0 input 0 drawn null end null
-double, slot 0                       #3 command/battle w7 ready 0 input 0 drawn null end null
-slot 0's target select               ·
-slot 1                               #4 command/battle w7 ready 0 input 0 drawn null end null
-slot 1's target select               ·
-cancel back to slot 0                #5 command/battle w7 ready 0 input 0 drawn null end null
-free switch, the question's text     #6 free-switch/battle w7 ready null input null drawn null end null
-free switch, yes or no               #6 free-switch/battle w7 ready 16 input 16 drawn null end null
-its party screen                     ·
-replacement, the faint's message     #7 replacement/battle w7 ready null input null drawn null end null
-replacement, party up                #7 replacement/battle w7 ready 16 input 16 drawn null end null
-shop, offers not out yet             #8 reward/rewards w7 ready null input null drawn null end null
-shop reveal                          #8 reward/rewards w7 ready 16 input null drawn null end null
-shop takes input                     #8 reward/rewards w7 ready 16 input 32 drawn null end null
-Revive's party screen                ·
-back after buying it                 #9 reward/rewards w7 ready 0 input 0 drawn null end null
-lock capsule toggled                 #10 reward/rewards w7 ready 0 input 0 drawn null end null
-transfer screen                      ·
-Leftovers handed over                #11 reward/rewards w7 ready null input null drawn null end null
-back from the transfer               #11 reward/rewards w7 ready 16 input 16 drawn null end null
-reroll                               #12 reward/rewards w7 ready 0 input 0 drawn null end null
-splice screen                        #13 fusion/fusion w7 ready 0 input 0 drawn null end null
-splice done                          #14 fusion/fusion w7 ready 0 input 0 drawn null end null
-back to the shop                     #15 reward/rewards w7 ready 0 input 0 drawn null end null
-auto-learn, three moves              #15 reward/rewards w7 ready 0 input 0 drawn null end 16
-already known                        ·
-learn, the prompt's message          #16 learn/learn w7 ready 0 input null drawn null end null
-learn, forget a move?                #16 learn/learn w7 ready 0 input 16 drawn null end null
-learn, the summary                   ·
-the clock drew its card              #16 learn/learn w7 ready 0 input 16 drawn 36 end null
-biome, blocked                       #17 biome/biome w7 ready 0 input null drawn null end null
-biome, open                          #17 biome/biome w7 ready 0 input 16 drawn null end null
-encounter, before its options        #18 encounter/encounter w7 ready null input null drawn null end null
-encounter, options out               #18 encounter/encounter w7 ready 16 input null drawn null end null
-encounter, open                      #18 encounter/encounter w7 ready 16 input 32 drawn null end null
-starter, loading                     #19 starter/starters w7 ready null input null drawn null end null
-starter, ready                       #19 starter/starters w7 ready 16 input 16 drawn null end null
-a command before the drain           #20 command/battle w8 ready 0 input 0 drawn null end null
-its menu after the drain             #20 command/battle w8 ready 0 input 0 drawn null end null
-the turn plays                       #20 command/battle w8 ready 0 input 0 drawn null end 32
-drained 20 then #20 command/battle w8 ready 0 input 0 drawn null end 32
+mounted with no game                 | start
+the prompt's message                 #1 command/battle w7 ready null input null drawn null end null 
+command menu                         #1 command/battle w7 ready 16 input 16 drawn 16 end null | watch:battle road:battle
+fight menu                           · 
+target select                        · 
+commit window                        · 
+the enemy has chosen                 #1 command/battle w7 ready 16 input 16 drawn 16 end 80 
+U-turn party screen                  · 
+next turn                            #2 command/battle w7 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+turn 3, the card alone               #3 command/battle w7 ready 0 input 0 drawn 0 end null | watch:battle
+pressed at once                      #3 command/battle w7 ready 0 input 0 drawn 0 end 16 
+the foe faints                       · 
+a level-up                           · 
+a new wave                           · 
+its first command                    #4 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+double, slot 0                       #5 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+slot 0's target select               · 
+slot 1                               #6 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle
+slot 1's target select               · 
+cancel back to slot 0                #7 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle
+free switch, the question's text     #8 free-switch/battle w8 ready null input null drawn null end null 
+free switch, yes or no               #8 free-switch/battle w8 ready 16 input 16 drawn 16 end null | watch:battle
+its party screen                     · 
+replacement, the faint's message     #9 replacement/battle w8 ready null input null drawn null end null 
+replacement, party up                #9 replacement/battle w8 ready 16 input 16 drawn 16 end null | watch:battle
+shop, offers not out yet             #10 reward/rewards w8 ready null input null drawn null end null 
+shop reveal                          #10 reward/rewards w8 ready 16 input null drawn 16 end null | watch:rewards road:rewards
+shop takes input                     #10 reward/rewards w8 ready 16 input 32 drawn 16 end null 
+Revive's party screen                · 
+back after buying it                 #11 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+lock capsule toggled                 #12 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+transfer screen                      · 
+Leftovers handed over                #13 reward/rewards w8 ready null input null drawn null end null 
+back from the transfer               #13 reward/rewards w8 ready 16 input 16 drawn 16 end null | watch:rewards road:rewards
+reroll                               #14 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+splice screen                        #15 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
+splice done                          #16 fusion/fusion w8 ready 0 input 0 drawn 0 end null | watch:fusion
+back to the shop                     #17 reward/rewards w8 ready 0 input 0 drawn 0 end null | watch:rewards road:rewards
+auto-learn, three moves              #17 reward/rewards w8 ready 0 input 0 drawn 0 end 16 
+already known                        · 
+learn, the prompt's message          #18 learn/learn w8 ready 0 input null drawn 0 end null | watch:learn
+learn, forget a move?                #18 learn/learn w8 ready 0 input 16 drawn 0 end null 
+learn, the summary                   · 
+learn card Learn → forget Ember
+biome, blocked                       #19 biome/biome w8 ready 0 input null drawn 0 end null | watch:biome
+biome, open                          #19 biome/biome w8 ready 0 input 16 drawn 0 end null 
+encounter, before its options        #20 encounter/encounter w8 ready null input null drawn null end null 
+encounter, options out               #20 encounter/encounter w8 ready 16 input null drawn 16 end null | watch:encounter
+encounter, open                      #20 encounter/encounter w8 ready 16 input 32 drawn 16 end null 
+starter, loading                     #21 starter/starters w8 ready null input null drawn null end null 
+starter, ready                       #21 starter/starters w8 ready 16 input 16 drawn 16 end null | watch:starters
+a free switch, the card alone        #22 free-switch/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
+streamed battle 9 fight | road null
+streamed battle 9 fight | road boss next wave (W10)
+its party screen                     #22 free-switch/battle w9 ready 0 input 0 drawn 0 end null 
+frames stop: fallback, then a new decision: fallback:battle, then fallback
+the frame after                      #24 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+the phase throws                     · 
+fallback reports: phase unreadable
+the game reads again                 #24 command/battle w9 ready 0 input 0 drawn 0 end null | watch:battle
+back to the title                    #24 command/battle w9 ready 0 input 0 drawn 0 end 48 
+a command before the drain           #25 command/battle w8 ready 0 input 0 drawn 0 end null | watch:battle road:battle
+its menu after the drain             #25 command/battle w8 ready 0 input 0 drawn 0 end null 
+the turn plays                       #25 command/battle w8 ready 0 input 0 drawn 0 end 32 
+drained 25 then #25 command/battle w8 ready 0 input 0 drawn 0 end 32
 watch frames 200000 refreshes 0
+after stop: watch frames 0, refreshes 0

@@ -1,4 +1,4 @@
-{"why":"clock","kind":"battle","wave":12,"ms":9,"stages":{"road":3,"read":5,"other":1}}
+{"why":"watch","kind":"battle","wave":12,"ms":9,"stages":{"road":3,"read":5,"other":1}}
 [{"at":1000,"gap":140,"panel":120,"driver":0,"stage":"road","ticks":[2],"kind":null,"wave":null},{"at":1156,"gap":244,"panel":0,"driver":0,"stage":null,"ticks":[],"kind":null,"wave":null}] {"frame":140,"next":16} {"n":3,"hidden":0,"under":{"20":1,"34":0,"50":0,"100":0,"250":2,"more":0}} {"n":2,"ms":384,"panel":120,"driver":0}
 [{"at":2000,"gap":100,"panel":20,"driver":40,"stage":"driver","ticks":[2],"kind":null,"wave":null},{"at":2116,"gap":84,"panel":0,"driver":0,"stage":null,"ticks":[],"kind":null,"wave":null}] {"n":2,"ms":184,"panel":20,"driver":40}
 {"ticks":1,"gaps":1,"then":{"ticks":0,"gaps":0,"frames":1}}

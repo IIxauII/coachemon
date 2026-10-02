@@ -37,7 +37,7 @@ const mount = () => {
 {
   const { refresh, stage, note } = mount();
   __coachMeter.reset();
-  refresh("clock", () => {
+  refresh("watch", () => {
     stage("read", () => { clock += 5; stage("road", () => { clock += 3; }); });
     refresh("tick", () => { note({ kind: "battle", wave: 12 }); clock += 1; });
   });
@@ -52,7 +52,7 @@ const mount = () => {
   const { refresh, stage } = mount();
   __coachMeter.reset();
   frame(1000);
-  refresh("clock", () => { stage("road", () => { clock += 110; }); stage("dom", () => { clock += 10; }); });
+  refresh("watch", () => { stage("road", () => { clock += 110; }); stage("dom", () => { clock += 10; }); });
   frame(1140);
   frame(1156);
   frame(1400);
@@ -68,7 +68,7 @@ const mount = () => {
   const { refresh, stage } = mount();
   __coachMeter.reset();
   frame(2000);
-  refresh("clock", () => stage("road", () => { clock += 20; }));
+  refresh("watch", () => stage("road", () => { clock += 20; }));
   const back = __coachMeter.driver(() => { clock += 40; return "reply"; });
   frame(2100);
   frame(2116);
@@ -88,7 +88,7 @@ const mount = () => {
   const { refresh } = mount();
   __coachMeter.reset();
   frame(3000);
-  refresh("clock", () => { clock += 60; });
+  refresh("watch", () => { clock += 60; });
   frame(3100);
   const first = __coachMeter.drain();
   frame(3116);
@@ -104,7 +104,7 @@ const mount = () => {
   const { refresh, stage, note } = mount();
   __coachMeter.reset();
   frame(4000);
-  refresh("clock", () => { note({ kind: "battle", wave: 25 }); stage("read", () => { clock += 7500; }); });
+  refresh("watch", () => { note({ kind: "battle", wave: 25 }); stage("read", () => { clock += 7500; }); });
   const drained = __coachMeter.driver(() => { clock += 38; return __coachMeter.drain(); });
   frame(11660);
   const [g] = __coachMeter.stats().gaps;
@@ -135,7 +135,7 @@ const mount = () => {
   const { refresh, stage } = mount();
   __coachMeter.reset();
   entries = 0;
-  for (let i = 0; i < 500; i++) refresh("clock", () => stage("read", () => { clock += 1; }));
+  for (let i = 0; i < 500; i++) refresh("watch", () => stage("read", () => { clock += 1; }));
   const s = __coachMeter.stats();
   console.log(JSON.stringify({ ticks: s.ticks.length, entries, refresh: s.refresh }));
   assert.equal(s.ticks.length, 120);
@@ -147,7 +147,7 @@ const mount = () => {
   const { refresh } = mount();
   __coachMeter.reset();
   clock = 5000;
-  refresh("clock", () => { clock += 80; });
+  refresh("watch", () => { clock += 80; });
   observed.event([{ startTime: 5010, duration: 200, processingStart: 5090, processingEnd: 5100, name: "keydown" }]);
   observed["long-animation-frame"]([{ startTime: 4990, duration: 150, blockingDuration: 100, renderStart: 5120,
     scripts: [{ duration: 78, sourceURL: "chrome-extension://abc/hud.js", sourceFunctionName: "body", invoker: "TimerHandler:setInterval" }] }]);
@@ -181,9 +181,9 @@ const mount = () => {
   decisionBegin("command", "battle", 7);
   clock = 20010; decisionAt("ready"); decisionAt("input");
   clock = 20100;
-  refresh("clock", () => { note({ kind: "battle" }); clock += 40; });
+  refresh("watch", () => { note({ kind: "battle" }); clock += 40; });
   clock = 20240;
-  refresh("clock", () => { note({ kind: "battle" }); clock += 30; });
+  refresh("watch", () => { note({ kind: "battle" }); clock += 30; });
   const first = JSON.parse(JSON.stringify(__coachMeter.drain().decisions));
   clock = 20500;
   decisionEnd();
@@ -199,7 +199,7 @@ const mount = () => {
   __coachMeter.reset();
   clock = 30000;
   decisionBegin("reward", "rewards", 9);
-  refresh("clock", () => { note({ kind: "battle" }); clock += 5; });
+  refresh("watch", () => { note({ kind: "battle" }); clock += 5; });
   clock = 30300;
   decisionBegin("biome", "biome", 9);
   const [shop, biome] = __coachMeter.stats().decisions;

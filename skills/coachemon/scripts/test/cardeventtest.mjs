@@ -31,7 +31,9 @@ const mv = ([n, t, p, c, a = 100]) => ({ name: n, type: TY.indexOf(t), power: p,
 const pk = (name, types, atk, spa, moves) => ({ name, level: 30, hp: 100, getMaxHp: () => 100, getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), getStat: i => ({ 1: atk, 3: spa }[i] ?? 100), getIconAtlasKey: () => "k", getIconId: () => 1, moveset: moves.map(m => ({ getMove: () => mv(m), getName: () => m[0], getMovePp: () => 10, ppUsed: 0 })) });
 
 const charmeleon = pk("Charmeleon", ["Fire"], 64, 80, [["Tackle","Normal",40,"P"],["Ember","Fire",40,"S"],["Dragon Breath","Dragon",60,"S"],["Scratch","Normal",40,"P"]]);
+// Each scene is a new decision to the watch: a fresh phase object, or a fresh battle.
 const learnScene = move => ({
+  phaseManager: { getCurrentPhase: (ph => () => ph)({ phaseName: "LearnMovePhase", partyMemberIndex: 0, moveId: -1 }) },
   currentBattle: { waveIndex: 12, double: false },
   ui: { getMode: () => 9, getHandler: () => ({ summaryUiMode: 1, pokemon: charmeleon, newMove: mv(move) }) },
   getEnemyParty: () => [], getPlayerParty: () => [charmeleon],
@@ -120,9 +122,9 @@ const errors = () => seen(EVENT.coachError);
   const battle = boss => {
     const foes = [fighter("Paras", 20, ["Bug","Grass"], [50,40,40,30,40,20], [["Scratch","Normal",40,"P"]], boss)];
     for (const f of foes) f.getOpponents = () => party;
-    return { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, ...foes],
-      currentBattle: { waveIndex: 20, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1 },
-      ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+    return { phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectTargetPhase", fieldIndex: 0 }) }, getField: () => [...party, ...foes],
+      currentBattle: { waveIndex: 20, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, turnCommands: {} },
+      ui: { getMode: () => 5, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
   };
   const before = cards().length;
   scene = battle(false);
