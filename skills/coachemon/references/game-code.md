@@ -42,7 +42,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Team audit | §17 |
 | Starter select | §23 |
 | DNA Splicers and fusion | §24 |
-| Menu cursors | §13 the encounter's options, §25 the command grid and the target cursor |
+| Menu cursors | §13 the encounter's options, §25 the command grid, the target cursor and a committed command's object |
 | The screens the MCP driver walks | §26 |
 | The canvas and its message window | §27 |
 | HUD API built on the above | Recommended API for the HUD |
@@ -2592,6 +2592,12 @@ member of `targets` (`:49`). UP goes to the first entry of `targets` at or above
 (`:110-119`), and LEFT/RIGHT step ±1 within 0↔1 or 2↔3 (`:120-129`). Nothing wraps. When `getMoveTargets` says
 `multiple` (`src/data/moves/move-utils.ts:85,92,108,113`) — side- and field-targeting moves as well as damaging spread
 moves — no direction moves it and ACTION sends every target (`:96`, `:106-107`). CANCEL answers `[]` (`:97`).
+
+**A committed command is a new object.** Every commit assigns a fresh literal to `currentBattle.turnCommands[fieldIndex]`:
+FIGHT (`src/phases/command-phase.ts:264-269,314`), BALL (`:449-453`), POKEMON and RUN (`:547-555`). The target screen
+writes its pick onto that same object (`src/phases/select-target-phase.ts:59`), or nulls the entry and asks the command
+again (`:57-58`). Cancelling slot 1's command queues `CommandPhase` 0 then 1 (`command-phase.ts:670-675`), so slot 0
+commits anew. While slot 1 is asked, slot 0's entry is one object, and a second ask of slot 1 sees a different one.
 
 ## 26. The screens the MCP driver walks: title, save slot, and who answers a prompt
 

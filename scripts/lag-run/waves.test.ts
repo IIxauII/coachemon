@@ -44,6 +44,18 @@ test("each wave reports its turn card, preview recomputes, shop card, overlay-ma
   assert.equal(row.overlayMs / row.hitchMs, 70 / 240);
 });
 
+test("a card shown again from the cache is not a turn card or a shop card (#544)", () => {
+  const cached = (t: ReturnType<typeof tick>) => ({ ...t, why: "cache" });
+  const [row] = perWave([
+    win(1, [
+      cached(tick(1, 100, 1, { wave: 1, phase: "SelectModifierPhase", kind: "rewards", drew: true })),
+      tick(2, 1100, 40, { wave: 1, phase: "CommandPhase", drew: true }),
+      cached(tick(3, 2100, 1, { wave: 1, phase: "CommandPhase", drew: true })),
+    ]),
+  ], [rec(1)], 1, true);
+  assert.deepEqual([row.turnCardMs, row.shopCard], [[40], null]);
+});
+
 test("a gap belongs to the wave of the refresh it held, else of the refresh before it (#508)", () => {
   const rows = perWave([
     win(1, [tick(1, 100, 3, { wave: 1, phase: "CommandPhase" }), tick(2, 1100, 40, { wave: 2, phase: "NextEncounterPhase", road: 30 })],

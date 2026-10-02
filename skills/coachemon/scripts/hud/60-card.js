@@ -60,16 +60,19 @@ export const composeBattleCard = (turn, account) => {
 // Kept until the turn moves on, and never keyed on HP: HP runs down through the turn's animations, so an HP key would
 // rebuild the card from a scene halfway through resolving. Only a live turn's card is kept.
 let held = { key: null, card: null };
-const battleCard = (s, account, estimate) => readTurn(s, turn => {
-  const { wave, turn: t, enemySwitchCounter, party, foes } = turn.facts;
+// @only tests: heldBattleCard
+export const heldBattleCard = (turn, account) => {
+  const { wave, turn: t, enemySwitchCounter, party, foes, command: c } = turn.facts;
   // Who is in the battle as well as when it is: a wave 1 turn 1 of a new run is not the last run's, and a mon's
-  // faint changes the field without changing the turn.
-  const key = [wave, t, enemySwitchCounter, ...party.map(p => p?.id), "|", ...foes.map(f => f?.id)].join(",");
+  // faint changes the field without changing the turn. Without slot 0's command, slot 1 was handed slot 0's card (#544).
+  const key = [wave, t, enemySwitchCounter, ...party.map(p => p?.id), "|", ...foes.map(f => f?.id),
+    "|", c ? [c.kind, c.cursor, c.move?.move, ...c.targets].join(" ") : ""].join(",");
   if (held.key === key && held.card) return held.card;
   const card = composeBattleCard(turn, account);
   if (turn.live) held = { key, card };
   return card;
-}, { estimate });
+};
+const battleCard = (s, account, estimate) => readTurn(s, turn => heldBattleCard(turn, account), { estimate });
 
 // Our side's 💀 / ⚠ tags. `after`: a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
