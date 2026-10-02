@@ -53,7 +53,10 @@ const detect = s => {
       return set("replacement", ph, null, null, null, mode === UiMode.PARTY && enemyFree(b), true);
     case "SelectModifierPhase": {
       const h = ui.getHandler();
-      if (mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE) return set("fusion", ph, s.getPlayerParty().length, null, null, true, true);
+      // The fusion card weighs moves and held items: a TM bought or an item moved between two visits is a new decision (#544).
+      if (mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE) {
+        return set("fusion", ph, s.getPlayerParty().length, s.money, heldItems(s.modifiers ?? []), true, true);
+      }
       // A buy, a lock toggle or a transfer keeps the phase and asks anew (#524, #537).
       return set("reward", ph, s.money, s.lockModifierTiers === true, heldItems(s.modifiers ?? []),
         mode === UiMode.MODIFIER_SELECT && (h?.options?.length ?? 0) > 0, h?.awaitingActionInput === true);

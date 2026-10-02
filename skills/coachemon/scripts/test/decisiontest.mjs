@@ -217,9 +217,13 @@ scene = game;
   assert.deepEqual(step("back to the shop, no splice", () => { g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }), ["cache:rewards"]);
   assert.equal(__coachHud.last(), shopCard, "the shop card as it was built");
   assert.deepEqual(step("splice screen again", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["cache:fusion"]);
+  step("back, and a TM bought", () => { g.money = 300; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
+  assert.deepEqual(step("splice screen after the buy", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
+  step("back, and Leftovers handed back", () => { g.modifiers[0].pokemonId = 11; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; });
+  assert.deepEqual(step("splice screen after the transfer", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.SPLICE }; }), ["watch:fusion"]);
   assert.deepEqual(step("spliced, and paid for", () => { g.party = [full]; g.money = 200; g.mode = UiMode.MODIFIER_SELECT; g.handler = offers; }),
     ["watch:rewards", "road:rewards"]);
-  assert.deepEqual([count("fusion"), count("reward"), watched() - before], [2, 7, 7]);
+  assert.deepEqual([count("fusion"), count("reward"), watched() - before], [4, 9, 11]);
   g.party = [full, three];
 }
 
