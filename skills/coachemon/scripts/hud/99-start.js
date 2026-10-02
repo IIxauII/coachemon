@@ -65,13 +65,13 @@ const look = s => {
 };
 const gone = s => !s?.ui || (!watchOpen() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
 
-// Every build takes a new id, so a press between the card and its road task leaves the road group to the next
-// decision (#487).
-let roadTimer = 0, buildId = 0;
+// Every card build takes a new generation, so a press between the card and its road task leaves the road group to the
+// next decision (#487).
+let roadTimer = 0, cardGen = 0;
 const roadLater = () => {
-  const id = buildId;
+  const id = cardGen;
   roadTimer = setTimeout(() => {
-    if (id === buildId && watchBuilt()) refresh("road", () => { roadNow(); stage("stream", stream); });
+    if (id === cardGen && watchBuilt()) refresh("road", () => { roadNow(); stage("stream", stream); });
   }, 0);
 };
 
@@ -80,7 +80,7 @@ let framed = false;
 onFrame(() => {
   framed = true;
   if (!look(scene())) return;
-  buildId++;
+  cardGen++;
   refresh("watch", () => { tick(false); stage("stream", stream); });
   if (roadOwed()) roadLater();
 });
@@ -95,7 +95,7 @@ const fallback = () => refresh("fallback", () => {
     lookFailed = null;
     watchForget();
   } else if (fresh) {
-    buildId++;
+    cardGen++;
     tick(true);
   } else {
     if (s?.ui) stage("journal", () => journalCheck(s, shownCard()));
@@ -107,7 +107,7 @@ const timer = setInterval(fallback, 1000);
 
 // The screen the overlay lands on, drawn whole; the decision it lands on counts as built.
 refresh("start", () => { look(scene()); tick(true); stage("stream", stream); });
-setRedraw(() => refresh("click", () => { buildId++; redraw(); stage("stream", stream); }));
+setRedraw(() => refresh("click", () => { cardGen++; redraw(); stage("stream", stream); }));
 meterFacts(() => {
   const loop = battleScene()?.game?.loop;
   // game-code.md §22.
