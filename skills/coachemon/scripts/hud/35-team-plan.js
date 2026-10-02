@@ -5,7 +5,7 @@ import { TYPES, effectiveness, iconOf, squeezeDist, typesOf } from "./01-core.js
 import { hitOn, koCurve, koTurns, useOf } from "./10-damage.js";
 import { actionOrder, afterSteals, attemptsLost, hitsOn, koBoost, koBoostText, koStageFactor, stealCounts, stealRates, threatFrom, tokenOdds, tokenShift } from "./30-planner.js";
 
-// @only tests: tpHealProfile, tpSendScore, tpFight, tpTables
+// @only tests: tpHealProfile, tpSendScore, tpFight, tpTables, tpActs
 const TP_BEAM = 24;
 const TP_TURNS = 15;
 const TP_BRANCHES = 4;
@@ -274,11 +274,24 @@ export const tpFight = (T, st, mi, fi, entry, over = null) => {
     standing = tpMerge(next.filter(b => b.p > 1e-6), TP_BRANCHES, T, mi, fi);
   }
   const mass = list => list.reduce((t, b) => t + b.p, 0);
+  // Collapsing a pool pair by pair with `tpMerge` froze the card for seconds: against a healer it runs to hundreds of
+  // branches (#527).
   const one = list => {
     if (!list.length) return null;
-    const b = tpMerge(list, 1, T, mi, fi)[0];
-    const turnsAt = list.reduce((t, x) => t + x.p * (x.turns ?? turns), 0) / (b.p || 1);
-    return { mh: b.mh < 1 ? 0 : b.mh, mb: b.mb, fh: b.fh < 1 ? 0 : b.fh, fs: b.fs, fb: b.fb, turns: Math.round(turnsAt), ox: b.ox, od: b.od, og: b.og, fd: b.fd, fg: b.fg };
+    let p = 0, mh = 0, fh = 0, ox = 0, od = 0, og = 0, fd = 0, fg = 0, t = 0;
+    const combos = new Map();
+    for (const b of list) {
+      p += b.p; mh += b.p * b.mh; fh += b.p * b.fh; t += b.p * b.turns;
+      ox += b.p * b.ox; od += b.p * b.od; og += b.p * b.og; fd += b.p * b.fd; fg += b.p * b.fg;
+      const k = `${b.fs},${b.mb},${b.fb}`;
+      const c = combos.get(k);
+      if (c) c.p += b.p; else combos.set(k, { p: b.p, b });
+    }
+    const mode = [...combos.values()].reduce((x, c) => (c.p > x.p ? c : x)).b;
+    const at = (sum, k) => (p > 0 ? sum / p : list[0][k]);
+    const mhAt = at(mh, "mh"), fhAt = at(fh, "fh");
+    return { mh: mhAt < 1 ? 0 : mhAt, mb: mode.mb, fh: fhAt < 1 ? 0 : fhAt, fs: mode.fs, fb: mode.fb, turns: Math.round(at(t, "turns")),
+      ox: at(ox, "ox"), od: at(od, "od"), og: at(og, "og"), fd: at(fd, "fd"), fg: at(fg, "fg") };
   };
   const ends = { win: one(pools.win), loss: one(pools.loss), stall: one(standing.map(b => ({ ...b, turns }))) };
   const pWin = mass(pools.win), pLoss = mass(pools.loss), pStall = Math.max(0, 1 - pWin - pLoss);
@@ -298,11 +311,14 @@ const tpMerge = (list, k, T, mi, fi) => {
     const w = f => (p > 0 ? (a[f] * a.p + b[f] * b.p) / p : a[f]);
     const big = a.p >= b.p ? a : b;
     out.splice(bj, 1);
-    out[bi] = { ...big, p, mh: w("mh"), fh: w("fh"), ox: w("ox"), od: w("od"), og: w("og"), fd: w("fd"), fg: w("fg"), ...(a.turns != null ? { turns: w("turns") } : {}) };
+    out[bi] = { ...big, p, mh: w("mh"), fh: w("fh"), ox: w("ox"), od: w("od"), og: w("og"), fd: w("fd"), fg: w("fg") };
   }
   return out;
 };
 const tpFoeLeft = r => r.pLoss * (r.ends.loss?.fh ?? 0) + r.pStall * (r.ends.stall?.fh ?? 0);
+// `r.fh` is a mean, and a float error puts it under `hp` with no hit landed: a strict `<` let summation order alone
+// flip the win-condition warning between "keep X healthy" and "chip it with X" (#527).
+export const tpActs = (r, hp) => hp - r.fh >= 1;
 
 const tpClone = st => ({ ...st, oh: st.oh.slice(), ob: st.ob.slice(), fh: st.fh.slice(), fs: st.fs.slice(), fb: st.fb.slice(),
   ox: st.ox.slice(), od: st.od.slice(), og: st.og.slice(), fd: st.fd.slice(), fg: st.fg.slice(),
@@ -446,7 +462,7 @@ const tpModel = (T, double, party, foes, facing) => {
   const matrix = foes.map((f, fi) => tpAlive(start.oh)
     .map(mi => {
       const r = tpFight(T, start, mi, fi, "free");
-      return { mi, per: (T.ours[mi][fi]?.dmg ?? 0) / f.hp, beats: r.fh < 1 && r.mh >= 1, acts: r.fh < f.hp };
+      return { mi, per: (T.ours[mi][fi]?.dmg ?? 0) / f.hp, beats: r.fh < 1 && r.mh >= 1, acts: tpActs(r, f.hp) };
     })
     .filter(a => a.beats || a.per >= 0.2)
     .sort((a, b) => b.per - a.per));
