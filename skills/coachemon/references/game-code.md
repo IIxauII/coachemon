@@ -2593,6 +2593,13 @@ member of `targets` (`:49`). UP goes to the first entry of `targets` at or above
 `multiple` (`src/data/moves/move-utils.ts:85,92,108,113`) — side- and field-targeting moves as well as damaging spread
 moves — no direction moves it and ACTION sends every target (`:96`, `:106-107`). CANCEL answers `[]` (`:97`).
 
+**Going back a slot.** CANCEL on slot 1's command menu runs `CommandPhase.cancel()`
+(`src/ui/handlers/command-ui-handler.ts:157`), which unshifts `CommandPhase(0)` then `CommandPhase(1)` and clears nothing
+(`src/phases/command-phase.ts:670-676`), so slot 0's old command stays in `turnCommands[0]` until it commits again. Each
+commit assigns a fresh object (`:86`, `:103`, `:314`, `:449`, `:547`). Two writes are in place: a ball or run at slot 1
+sets `.skip` on slot 0's object (`:455`, `:557`), and target selection sets `.targets` on the stored command, or nulls it
+and re-asks that slot on CANCEL (`src/phases/select-target-phase.ts:57-60`).
+
 ## 26. The screens the MCP driver walks: title, save slot, and who answers a prompt
 
 Read at the pinned tag (`v1.12.0.11`) for the MCP driver (`src/driver.ts`), not the HUD; nothing here is called from the

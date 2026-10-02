@@ -41,7 +41,8 @@ const detect = s => {
   switch (ph.phaseName) {
     case "CommandPhase":
     case "SelectTargetPhase":
-      // Slot 1's command is asked around slot 0's, which a cancel leaves standing and a commit replaces (#544).
+      // Slot 1's is keyed on slot 0's command object, which a cancel leaves standing and a commit replaces (#544,
+      // game-code.md §25).
       return set("command", b, b.turn, ph.fieldIndex, ph.fieldIndex ? b.turnCommands[BattlerIndex.PLAYER] ?? null : null,
         mode !== UiMode.MESSAGE && enemyFree(b), true);
     case "CheckSwitchPhase":

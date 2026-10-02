@@ -156,7 +156,7 @@ scene = game;
 
 // ---- in a double, slot 1 builds its own card, and cancelling back to slot 0 shows slot 0's again without a build
 {
-  // A new object on every commit, as `CommandPhase` writes it: a cancel leaves the old one standing.
+  // A new object on every commit, and a cancel leaves the old one standing (game-code.md §25).
   const commit = (cursor, move) => { g.battle.turnCommands[BattlerIndex.PLAYER] = { command: 0, cursor, move: { move, targets: [] }, targets: [BattlerIndex.ENEMY] }; };
   step("double, slot 0", () => { g.battle.double = true; g.battle.turn = 3; g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; });
   const slot0 = __coachHud.last();
