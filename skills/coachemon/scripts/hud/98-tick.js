@@ -133,5 +133,4 @@ export const roadNow = () => {
   } catch (e) { fail(e); }
 };
 
-// The whole card, road group included.
 export const redraw = () => { last = ""; body(true); };

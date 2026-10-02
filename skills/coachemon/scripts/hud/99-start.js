@@ -58,16 +58,20 @@ const stream = () => {
 };
 
 const scene = () => { try { return battleScene(); } catch { return null; } };
-// A scene that throws mid-read is no decision; the build that follows reports it.
-const look = s => { try { return watchFrame(s); } catch { return false; } };
+// A look that throws is no decision, and the fallback's next tick reports it: with frames, nothing else would.
+let lookFailed = null;
+const look = s => {
+  try { const fresh = watchFrame(s); lookFailed = null; return fresh; } catch (e) { lookFailed = e; return false; }
+};
 const gone = s => !s?.ui || (!watchOpen() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
 
-// A press between the card and its road task leaves the road group to the next decision (#487).
-let roadTimer = 0, builds = 0;
+// Every build takes a new id, so a press between the card and its road task leaves the road group to the next
+// decision (#487).
+let roadTimer = 0, buildId = 0;
 const roadLater = () => {
-  const id = ++builds;
+  const id = buildId;
   roadTimer = setTimeout(() => {
-    if (id === builds && watchBuilt()) refresh("road", () => { roadNow(); stage("stream", stream); });
+    if (id === buildId && watchBuilt()) refresh("road", () => { roadNow(); stage("stream", stream); });
   }, 0);
 };
 
@@ -76,6 +80,7 @@ let framed = false;
 onFrame(() => {
   framed = true;
   if (!look(scene())) return;
+  buildId++;
   refresh("watch", () => { tick(false); stage("stream", stream); });
   if (roadOwed()) roadLater();
 });
@@ -83,18 +88,26 @@ onFrame(() => {
 const fallback = () => refresh("fallback", () => {
   const quiet = !framed;
   framed = false;
-  let s, fresh, away;
-  try { s = battleScene(); fresh = quiet && look(s); away = gone(s); }
-  catch (e) { fail(e); watchForget(); stage("stream", stream); return; }
-  if (away) { hideCard(); watchForget(); return; }
-  if (fresh) { builds++; tick(true); } else stage("journal", () => journalCheck(s, shownCard()));
+  let s, fresh = false, away = false;
+  try { s = battleScene(); fresh = quiet && look(s); away = gone(s); } catch (e) { lookFailed = e; }
+  if (lookFailed) {
+    fail(lookFailed);
+    lookFailed = null;
+    watchForget();
+  } else if (fresh) {
+    buildId++;
+    tick(true);
+  } else {
+    if (s?.ui) stage("journal", () => journalCheck(s, shownCard()));
+    if (away) { hideCard(); watchForget(); }
+  }
   stage("stream", stream);
 });
 const timer = setInterval(fallback, 1000);
 
 // The screen the overlay lands on, drawn whole; the decision it lands on counts as built.
 refresh("start", () => { look(scene()); tick(true); stage("stream", stream); });
-setRedraw(() => refresh("click", () => { builds++; redraw(); stage("stream", stream); }));
+setRedraw(() => refresh("click", () => { buildId++; redraw(); stage("stream", stream); }));
 meterFacts(() => {
   const loop = battleScene()?.game?.loop;
   // game-code.md §22.

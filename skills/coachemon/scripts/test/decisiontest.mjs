@@ -220,7 +220,8 @@ scene = game;
   const d = decisions().at(-1);
   assert.deepEqual([d.kind, d.ready, d.input, d.drawn, d.refreshes], ["learn", 0, 16, 0, 1]);
   assert.equal(__coachHud.last()?.kind, "learn");
-  console.log(`learn card ${__coachHud.summary().learn}`);}
+  console.log(`learn card ${__coachHud.summary().learn}`);
+}
 
 // ---- a biome, an encounter and the starter screen build once ready, and open input once their block lifts
 {
@@ -256,7 +257,7 @@ scene = game;
   assert.equal(cards().length - before, 2, "nothing more until the next decision");
 }
 
-// ---- with no frames the fallback builds a new decision once, with frames it builds nothing, and the title takes the card down
+// ---- with no frames, the fallback builds a new decision once and the same one never
 {
   ticker();
   const framed = opened();
@@ -267,11 +268,30 @@ scene = game;
   const again = opened();
   console.log(`frames stop: ${framed.join(" ")}, then a new decision: ${quiet.join(" ")}, then ${again.join(" ")}`);
   assert.deepEqual([framed, quiet, again], [["fallback"], ["fallback:battle"], ["fallback"]]);
+}
+
+// ---- with frames, the fallback builds nothing and the watch builds on the frame after
+{
   frame();
   g.battle.turn = 3;
   ticker();
-  assert.deepEqual(opened(), ["fallback"], "a frame since the last tick: the watch builds, not the fallback");
+  assert.deepEqual(opened(), ["fallback"]);
   assert.deepEqual(step("the frame after", () => {}), ["watch:battle", "road:battle"]);
+}
+
+// ---- a look that keeps throwing is reported by the fallback, and the decision builds once the game reads again
+{
+  const cmd = g.phase;
+  step("the phase throws", () => { g.phase = { get phaseName() { throw new Error("phase unreadable"); } }; });
+  ticker();
+  const errors = events.filter(e => e.type === "coachemon:coach-error").map(e => JSON.parse(e.detail).message);
+  console.log(`fallback reports: ${errors.join(" · ")}`);
+  assert.deepEqual([opened(), errors], [["fallback:failed"], ["phase unreadable"]]);
+  assert.deepEqual(step("the game reads again", () => { g.phase = cmd; }), ["watch:battle"]);
+}
+
+// ---- the title with no decision open takes the card down on the fallback's next tick
+{
   step("back to the title", () => { g.phase = { phaseName: "TitlePhase" }; g.mode = UiMode.TITLE; g.handler = {}; });
   assert.equal(__coachHud.last()?.kind, "battle", "held until the fallback looks");
   ticker();

@@ -99,5 +99,4 @@ export const watchFrame = s => {
 
 export const watchBuilt = () => built.kind !== null && same(cur, built);
 export const watchOpen = () => cur.kind !== null;
-// The open decision builds again on its next ready frame.
 export const watchForget = () => copy(built, NONE);
