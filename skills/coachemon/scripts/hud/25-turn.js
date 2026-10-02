@@ -134,8 +134,9 @@ const sceneFacts = (s, env, live) => {
     modifiers: env.modifiers, enemyModifiers: env.enemyModifiers,
     balls: id => s?.pokeballCounts?.[id] ?? 0,
     mode: modeFlags(s, live, b.waveIndex ?? 0),
-    // Slot 0's command, as slot 1's command phase in a double sees it.
-    command: b.double && ph?.phaseName === "CommandPhase" && ph.fieldIndex === 1 && cmd && !cmd.skip
+    // Slot 0's command, as slot 1's command phase in a double sees it, its target screen included (#544).
+    command: b.double && (ph?.phaseName === "CommandPhase" || ph?.phaseName === "SelectTargetPhase") && ph.fieldIndex === 1
+      && cmd && !cmd.skip
       ? { kind: cmd.command, cursor: cmd.cursor, move: cmd.move, targets: cmd.targets?.length ? cmd.targets : cmd.move?.targets ?? [] }
       : null,
   };

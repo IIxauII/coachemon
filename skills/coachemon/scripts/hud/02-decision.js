@@ -7,7 +7,8 @@ const CARD_OF = {
   learn: "learn", biome: "biome", encounter: "encounter", starter: "starters",
 };
 
-// `k1`…`k4` hold each kind's key from #537's table, in its order, and are compared by `===`.
+// `k1`…`k4` hold each kind's key from #537's table, in its order, and are compared by `===`. #544 adds slot 0's command to
+// slot 1's command key, and money and the held items to the fusion key.
 const out = { kind: null, k1: null, k2: null, k3: null, k4: null, ready: false, input: false };
 const set = (kind, k1, k2, k3, k4, ready, input) => {
   out.kind = kind; out.k1 = k1; out.k2 = k2; out.k3 = k3; out.k4 = k4;
@@ -53,7 +54,7 @@ const detect = s => {
       return set("replacement", ph, null, null, null, mode === UiMode.PARTY && enemyFree(b), true);
     case "SelectModifierPhase": {
       const h = ui.getHandler();
-      // The fusion card weighs moves and held items: a TM bought or an item moved between two visits is a new decision (#544).
+      // Between two visits, money stands in for a purchase (a TM, an item) and the held items for a transfer (#544).
       if (mode === UiMode.PARTY && h?.partyUiMode === PartyUiMode.SPLICE) {
         return set("fusion", ph, s.getPlayerParty().length, s.money, heldItems(s.modifiers ?? []), true, true);
       }

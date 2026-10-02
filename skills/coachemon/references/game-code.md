@@ -42,7 +42,7 @@ what was only observed on a tab) is in §22, not in the sections.
 | Team audit | §17 |
 | Starter select | §23 |
 | DNA Splicers and fusion | §24 |
-| Menu cursors | §13 the encounter's options, §25 the command grid and the target cursor |
+| Menu cursors | §13 the encounter's options, §25 the command grid, the target cursor and a committed command's object |
 | The screens the MCP driver walks | §26 |
 | The canvas and its message window | §27 |
 | HUD API built on the above | Recommended API for the HUD |
