@@ -85,7 +85,7 @@ A choice the game is waiting on the player to make, of a kind the **coach** has 
 
 ## Watch
 
-How the **overlay** notices a **decision**: a look, every frame, at which decision the game is waiting on and with what key, read from what the game already shows, never by hooking it. A new decision has its **card** built at once; nothing between decisions builds one.
+How the **overlay** notices a **decision** and keeps its **card**: a look, every frame, at which decision the game is waiting on and with what key, read from what the game already shows, never by hooking it. A new decision has its card built at once, and the watch holds that card until the next decision: what the player opens or shuts redraws it as it is, a mon sent in redraws it once, and nothing else between decisions asks the game for a card. Coming back to a decision already built shows its card as it was.
 
 ## Card
 

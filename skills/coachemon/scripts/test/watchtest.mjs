@@ -1,3 +1,4 @@
+// The CLI feed, not the watch (CONTEXT.md, `Watch`): the watch's test is decisiontest.mjs.
 import { newWatchState, watchEvents } from "../watch.mjs";
 
 const foe = (name, lv = 12, hp = "40/40") => ({ name, lv, hp, types: ["Normal"], ability: "Run Away", passive: null, moves: [] });

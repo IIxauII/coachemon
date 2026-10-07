@@ -587,7 +587,7 @@ Bump when removing a command, renaming one, or changing what an existing argumen
 
 ### 11.1 The `card` event
 
-- **The HUD pushes a `card` event whenever the card it shows changes**: a new decision, or a changed verdict. It dispatches `coachemon:card` from `hud/98-tick.js`'s tick, deduplicated on `key` + `verdict`.
+- **The HUD pushes a `card` event whenever the card it shows changes**: a new decision, or a changed verdict. It dispatches `coachemon:card` from `hud/99-start.js`'s stream after every refresh the watch (`hud/98-watch.js`) opens, deduplicated on `key` + `verdict`.
 - Fields:
   - `kind`: `battle`, `learn`, `reward`, `biome` or `encounter` (the HUD's `rewards` card is sent as `reward`).
   - `key`: the dedupe key the HUD already derives per kind (wave for a battle; wave + pokémon + move for learn; wave + free reward names for rewards; wave for a biome choice; wave + encounter for an encounter).

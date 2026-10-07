@@ -355,14 +355,14 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
   assert.ok(lines(el).includes("Charmeleon"), "the icon falls back to the name");
   assert.ok(globalThis.__hud["90-render"].missedSprite(), "a wanted sprite that wasn't there is remembered");
   el.kids = undefined;
-  globalThis.__hud["98-tick"].tick();
+  globalThis.__hud["98-watch"].rebuild();
   assert.ok(el.kids, "the same card is drawn again while a sprite is still missing");
   const entry = () => globalThis.__coachHud.stats().facts.sprites.find(s => s.id === "k/1");
   const misses = entry().misses;
   assert.ok(misses >= 2, "every draw that wanted it counts");
   assert.equal(entry().found, false);
   Phaser.Display.Canvas.CanvasPool.pool[0].parent.game.textures = { exists: () => true, get: () => ({ has: () => true }), getBase64: () => "data:k" };
-  globalThis.__hud["98-tick"].tick();
+  globalThis.__hud["98-watch"].rebuild();
   assert.deepEqual(entry(), { id: "k/1", misses, found: true }, "a sprite that lands is kept, marked found");
 }
 
@@ -485,4 +485,25 @@ const lapras = pk("Lapras", ["Water","Ice"], 85, 85, [["Surf","Water",90,"S"],["
     assert.equal(state(el), "drawer");
     assert.equal(open(), "act");
   }
+}
+
+// ---- A click redraws the shown card from the watch's record and asks the game for nothing
+{
+  let reads = 0;
+  const scene = { phaseManager: { getCurrentPhase: () => null }, getField: () => [...party, foes[0]], currentBattle: { waveIndex: 15, turn: 1, double: false, enemySwitchCounter: 0, getBattlerCount: () => 1, trainer },
+    ui: { getMode: () => 0, getHandler: () => ({}) }, getPlayerParty: () => party, getEnemyParty: () => foes };
+  const el = mount(new Proxy(scene, { get: (t, k) => { reads++; return t[k]; } }), { expose: true });
+  const click = n => n.onclick({ stopPropagation() {} });
+  const before = reads, card = globalThis.__coachHud.last();
+  click(el.kids[2].children[1]);
+  click(el.kids[0].children[0]);
+  click(el.kids[0].children[1]);
+  click(el.kids[0]);
+  // Before `stats()`, whose facts read the game's loop.
+  const read = reads - before;
+  const clicks = globalThis.__coachHud.stats().ticks.filter(t => t.why === "click");
+  console.log(`== click\nscene reads ${read} · stages ${clicks.map(t => Object.keys(t.stages).join("+")).join(" ")}`);
+  assert.equal(read, 0, "a click reads nothing off the scene");
+  assert.equal(globalThis.__coachHud.last(), card, "the card is the one built, not a rebuild");
+  assert.deepEqual(clicks.map(t => "read" in t.stages), [false, false, false, false]);
 }

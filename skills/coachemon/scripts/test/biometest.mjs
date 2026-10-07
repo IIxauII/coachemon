@@ -117,7 +117,7 @@ const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave =
   const { setGameTables } = globalThis.__hud["04-game-tables"];
   const { spawnsFor, formsFor, spawnTimeOfDay } = globalThis.__hud["47-biome"];
   setGameTables(t);
-  globalThis.__hud["98-tick"].tick();
+  globalThis.__hud["98-watch"].rebuild();
   globalThis.__bm = { spawnsFor, formsFor, spawnTimeOfDay };
   return { el, scene, handler, model: () => globalThis.__coachHud.last() };
 };
@@ -237,7 +237,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   const landing = mount({ wave: 40, t: late });
   const before = landing.model().options[0].trainers;
   late.trainers = TRAINERS;
-  globalThis.__hud["98-tick"].tick();
+  globalThis.__hud["98-watch"].rebuild();
   console.log(`== trainer configs landing late\nbefore  ${JSON.stringify(before)}\nafter   ${JSON.stringify(landing.model().options[0].trainers)}`);
   assert.equal(before, null);
   assert.deepEqual(landing.model().options[0].trainers, want, "the trainers that landed after the card drew");

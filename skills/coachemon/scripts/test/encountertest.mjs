@@ -109,7 +109,7 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
   // again.
   if (tables) {
     globalThis.__hud["04-game-tables"].setGameTables(tables);
-    globalThis.__hud["98-tick"].tick();
+    globalThis.__hud["98-watch"].rebuild();
   }
   return { el, scene, forks, model: () => globalThis.__coachHud.last(), rnd };
 };

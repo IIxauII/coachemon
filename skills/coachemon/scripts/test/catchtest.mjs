@@ -58,7 +58,7 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   eval(bundle("hud", { expose: true }));
   const { catchAdvice, captureChance } = globalThis.__hud["45-catch"];
   const { readTurn } = globalThis.__hud["25-turn"];
-  const { accountRead } = globalThis.__hud["98-tick"];
+  const { accountRead } = globalThis.__hud["98-watch"];
   const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, readTurn, accountRead, drawCatch: globalThis.__hud["95-render-catch"].drawCatch, finalBstOf,
     setGameTables: globalThis.__hud["04-game-tables"].setGameTables };

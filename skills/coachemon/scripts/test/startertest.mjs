@@ -127,7 +127,7 @@ const mount = ({ limit = 10, chosen = [], valid = STARTERS, challenges = [], fre
   // estimate.
   if (withTables) {
     globalThis.__hud["04-game-tables"].setGameTables(tables);
-    globalThis.__hud["98-tick"].tick();
+    globalThis.__hud["98-watch"].rebuild();
   }
   return { el, model: globalThis.__coachHud.last(), summary: globalThis.__coachHud.summary() };
 };

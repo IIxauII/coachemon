@@ -42,8 +42,8 @@ export const composeBattleCard = (turn, account) => {
   }
   // Same turn the ⚔ line is answered on, so a returning switch-in is priced at base stat stages in both (#285).
   const team = trainer ? teamPlanner(arrivalTurn(turn)) : null;
-  // `pin` carries the live outcome the ⚔ line picked, so it stays off the card: the card's JSON is the panel's
-  // change signature (98-tick).
+  // `pin` carries the live outcome the ⚔ line picked, so it stays off the card, which is plain data read whole by
+  // `__coachHud.last()`.
   const { pin, ...model } = battleModel(turn, { team });
   const card = {
     ...model,
@@ -57,22 +57,7 @@ export const composeBattleCard = (turn, account) => {
   return card;
 };
 
-// Kept until the turn moves on, and never keyed on HP: HP runs down through the turn's animations, so an HP key would
-// rebuild the card from a scene halfway through resolving. Only a live turn's card is kept.
-let held = { key: null, card: null };
-// @only tests: heldBattleCard
-export const heldBattleCard = (turn, account) => {
-  const { wave, turn: t, enemySwitchCounter, party, foes, command: c } = turn.facts;
-  // Who is in the battle as well as when it is: a wave 1 turn 1 of a new run is not the last run's, and a mon's
-  // faint changes the field without changing the turn. Without slot 0's command, slot 1 was handed slot 0's card (#544).
-  const key = [wave, t, enemySwitchCounter, ...party.map(p => p?.id), "|", ...foes.map(f => f?.id),
-    "|", c ? [c.kind, c.cursor, c.move?.move, ...c.targets].join(" ") : ""].join(",");
-  if (held.key === key && held.card) return held.card;
-  const card = composeBattleCard(turn, account);
-  if (turn.live) held = { key, card };
-  return card;
-};
-const battleCard = (s, account, estimate) => readTurn(s, turn => heldBattleCard(turn, account), { estimate });
+const battleCard = (s, account, estimate) => readTurn(s, turn => composeBattleCard(turn, account), { estimate });
 
 // Our side's 💀 / ⚠ tags. `after`: a likely KO once the mon has acted.
 const dangerTags = m => (m.field ? [...m.field.slots.map(sl => [sl.name, sl.threat]), ...m.field.switches.map(sw => [sw.out?.name, sw.out?.threat])] : [])
@@ -98,28 +83,17 @@ const shopNote = (s, card) => note({ shop: {
 } });
 
 export const hasRoad = card => card?.kind === "battle" || card?.kind === "rewards";
-// Off the card, whose JSON is the panel's change signature (98-tick).
-const roads = new WeakSet();
-export const roadLanded = card => roads.has(card);
 // After the turn read has closed: the two reads are sequential, never nested (26-run).
-export const readRoad = (s, card) => {
-  readRun(s, run => {
-    card.preview = previewNext(run);
-    // The rewards card has already built its own.
-    card.ahead ??= aheadModel(run);
-  });
-  roads.add(card);
-};
-// A card redrawn between decisions takes the road group of the one it replaces, stale until the next decision.
-export const keepRoad = (from, to) => {
-  if (!roadLanded(from) || !hasRoad(to)) return;
-  to.preview = from.preview;
-  to.ahead = from.ahead;
-  roads.add(to);
-};
+export const readRoad = (s, card) => readRun(s, run => {
+  card.preview = previewNext(run);
+  // The rewards card has already built its own.
+  card.ahead ??= aheadModel(run);
+});
+export const keepRoad = (from, to) => { to.preview = from.preview; to.ahead = from.ahead; };
 
-// `account`: the run's own data, read once a refresh by 98-tick, which only the catch and Mystery Encounter cards weigh
-// a mon by. `road: false` leaves the road group to `readRoad`; `estimate` reads a battle card's turn without the game.
+// `account`: the run's own data, read once a refresh by 98-watch.js, which only the catch and Mystery Encounter cards
+// weigh a mon by. `road: false` leaves the road group to `readRoad`; `estimate` reads a battle card's turn without the
+// game.
 export const readCard = (s, account, { road = true, estimate = false } = {}) => {
   if (!s?.ui) return null;
   const handler = s.ui.getHandler();
@@ -223,7 +197,7 @@ const KINDS = {
   fusion: { event: null, key: wave, call: s => leading(s.fusion) },
 };
 
-// Derived, never spelled a second time (extension-distribution.md §11.1). 99-start gates `stream()` on it, and the
+// Derived, never spelled a second time (extension-distribution.md §11.1). `streamable` gates the stream on it, and the
 // relay keeps its own copy (`extension/src/relay/channel.ts`), pinned to this one by `cardtest.mjs`: a drift on the
 // `rewards` → `reward` rename would drop every shop card off the wire in silence (#388).
 export const EVENT_KINDS = Object.values(KINDS).map(k => k.event).filter(Boolean);
@@ -234,6 +208,11 @@ export const cardEvent = card => {
   if (!k) return null;
   const s = cardSummary(card);
   return { kind: k.event ?? card.kind, key: k.key(card), wave: card.wave ?? null, verdict: s ? k.call(s) : null };
+};
+// What the stream pushes and the relay's gate admits (extension-distribution.md §11.1).
+export const streamable = card => {
+  const ev = cardEvent(card);
+  return !!ev && EVENT_KINDS.indexOf(ev.kind) >= 0 && typeof ev.wave === "number" && typeof ev.key === "string" && typeof ev.verdict === "string";
 };
 
 // Pure, and never called by a draw.
