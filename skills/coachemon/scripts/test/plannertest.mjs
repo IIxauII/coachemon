@@ -1025,7 +1025,7 @@ const hydreigonSnorlax = () => [
     foeAt(3, "Toxapex", 80, ["Poison", "Water"], [300, 90, 180, 80, 180, 50], [["Scald", "Water", 80, "S"]]),
   ];
   const { scene } = render({ party, foes, live: true, double: true, dist: aimAtBoth, switches: () => new Map() });
-  const cardAt = (fieldIndex, turnCommands = []) => globalThis.__hud["60-card"].heldBattleCard(
+  const cardAt = (fieldIndex, turnCommands = []) => globalThis.__hud["60-card"].composeBattleCard(
     stubTurn({ party, foes, live: true, double: true, trainer: scene.facts.trainer, fieldIndex, turnCommands }), null);
   const aims = card => Object.fromEntries(card.field.slots.map(sl => [sl.name, sl.target?.name ?? null]));
   const slot0 = cardAt(0);

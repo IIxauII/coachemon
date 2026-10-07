@@ -1,3 +1,4 @@
+// The CLI feed's test. The watch itself (hud/98-watch.js) is tested by decisiontest.mjs.
 import { newWatchState, watchEvents } from "../watch.mjs";
 
 const foe = (name, lv = 12, hp = "40/40") => ({ name, lv, hp, types: ["Normal"], ability: "Run Away", passive: null, moves: [] });

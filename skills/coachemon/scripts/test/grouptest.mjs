@@ -19,7 +19,7 @@ const { drawStarters } = globalThis.__hud["96-render-starters"];
 const { drawFusion } = globalThis.__hud["96-render-fusion"];
 const { drawBiome } = globalThis.__hud["97-render-biome"];
 const { GROUP_IDS, MARKS, flatGroups, wireCard } = globalThis.__hud["90-render"];
-const { EVENT_KINDS, cardEvent } = globalThis.__hud["60-card"];
+const { EVENT_KINDS, cardEvent, streamable } = globalThis.__hud["60-card"];
 
 // The relay keeps its own copy of the ids: retiring or merging a group is done on both, or a card the panel draws
 // stops crossing the gate.
@@ -40,10 +40,6 @@ const glyphsIn = text => [...text].filter(ch => !/[\p{L}\p{N}\s]/u.test(ch) && !
 
 // Any string does: the relay checks that the key is there, not what is in it.
 const BUILD = "0.0.0+cafef00dbeef";
-// `99-start.js`'s `stream()` rule, restated rather than imported as a second opinion: loosening it there is done here
-// too, deliberately.
-const streams = ev => EVENT_KINDS.includes(ev.kind)
-  && typeof ev.wave === "number" && typeof ev.key === "string" && typeof ev.verdict === "string";
 // The gate is conditional, so without this a kind that quietly stopped producing an event would remove its own
 // coverage rather than fail (#388).
 const gated = new Set();
@@ -80,8 +76,8 @@ const show = (label, card, draw = drawBattle) => {
   }
   // Every card the panel would push crosses the relay's gate (extension-distribution.md §11.1): one whose shape can't
   // is drawn, and silently never sent (#388).
-  const ev = cardEvent(card);
-  if (ev && streams(ev)) {
+  if (streamable(card)) {
+    const ev = cardEvent(card);
     gated.add(ev.kind);
     assert.notEqual(cardBody({ build: BUILD, ...ev, ...wire }), null, `${label}: the relay refuses this card`);
   }

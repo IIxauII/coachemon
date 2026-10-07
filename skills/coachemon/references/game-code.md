@@ -892,7 +892,7 @@ Game calls are cited where they're named; unmarked names are HUD functions.
 
 ### Game tables (04-game-tables.js)
 The game's own tables, read once out of its loaded chunks (§22) and handed to every card that needs them. Each getter starts the read and answers `null` until it lands, so a caller never waits and never checks a flag of its own.
-- `gameTables()` → `{ biomes, species, biomeName, trainers, events, abilities, moves, eggMoves }`, or `null`. The biome card reads `biomes` / `species` / `biomeName` / `trainers`; the starter card reads `abilities` / `moves` / `eggMoves`; 98-tick reads `species`.
+- `gameTables()` → `{ biomes, species, biomeName, trainers, events, abilities, moves, eggMoves }`, or `null`. The biome card reads `biomes` / `species` / `biomeName` / `trainers`; the starter card reads `abilities` / `moves` / `eggMoves`; 98-watch reads `species`.
 - `gameEvents()` → the timed event manager, or `null`: the catch card's shiny multiplier and `partyLuck`'s two event terms (§12).
 - `gameRewardFns()` → `{ regenerate, options }`, the reward roll's two module functions for 50-reroll's preview (§19), or `null`. Kept apart from the tables: a build that renamed them still has biome data, and a build without biome data can still roll rewards.
 - `setGameTables` / `setRewardFns` are `@only tests`: the chunk scan finds nothing under node, so a test hands over what it would have found.

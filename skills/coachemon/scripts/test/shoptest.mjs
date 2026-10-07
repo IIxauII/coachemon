@@ -611,13 +611,13 @@ for (const [label, sc] of Object.entries(scenarios)) {
   eval(bundle("hud", { expose: true }));
   const hud = globalThis.__hud;
   const { rerollArm, rerollCheck, rerollStats } = hud["50-reroll"];
-  const { cardSummary } = hud["60-card"], { tick } = hud["98-tick"];
+  const { cardSummary } = hud["60-card"], { rebuild } = hud["98-watch"];
   const rewardsModel = (s, h) => hud["26-run"].readRun(s, run => hud["52-shop"].rewardsModel(run, h));
   globalThis.__sm = rewardsModel;
   globalThis.__api = { learnAdvice: hud["40-learn"].learnAdvice, doubleOdds: hud["49-ahead"].doubleOdds, rewardsModel, rerollArm, rerollCheck, rerollStats, cardSummary,
-    setRewardFns: hud["04-game-tables"].setRewardFns, tick, HELD: hud["51-items"].HELD, rewardContext: hud["51-items"].rewardContext };
+    setRewardFns: hud["04-game-tables"].setRewardFns, rebuild, HELD: hud["51-items"].HELD, rewardContext: hud["51-items"].rewardContext };
   // Under node the chunk scan finds no reward functions: hand them over and draw again.
-  if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.tick(); }
+  if (sc.pool) { globalThis.__api.setRewardFns(mockRewardFns(sc.pool, sc.rewardLog)); globalThis.__api.rebuild(); }
   const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.children.map(txt).join(" ") : "");
   console.log(`== ${label}\n` + wholeCard(el).map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : ""));
   const m = globalThis.__sm(scene, handler);

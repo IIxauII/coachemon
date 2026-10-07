@@ -95,3 +95,5 @@ closed · {"view":"drawer","closed":true,"group":"foes"}
 🎯 {Open coach}
 == remembers · reopened onto the strip
 strip
+== click
+scene reads 0 · stages groups+dom+stream+other groups+dom+stream+other groups+dom+stream+other groups+dom+stream+other

@@ -72,7 +72,7 @@ globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() 
 globalThis.setInterval = fn => { ticker = fn; return 0; };
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => null, setItem() {} };
-eval(bundle("hud"));
+eval(bundle("hud", { expose: true }));
 
 const frame = () => { clock += 16; const cb = frameCb; frameCb = null; cb?.(clock); };
 const runTasks = () => { while (tasks.length) tasks.shift()(); };
@@ -85,8 +85,13 @@ const opened = () => {
   if (t.length) seq = t.at(-1).seq;
   return t.map(r => `${r.why}${r.failed ? ":failed" : r.kind ? `:${r.kind}` : ""}`);
 };
+// The watch's lifecycle entries since the last call.
+const lifecycle = () => globalThis.__hud["98-watch"].watchLog();
+let logged = [];
+const tail = (built, log) => [built.length ? `| ${built.join(" ")}` : null, log.length ? `‖ ${log.join(", ")}` : null].filter(Boolean).join(" ");
 // One frame of the game in the state `change` leaves it in, then the tasks it queued unless `road` is false. Prints the
-// newest decision record, or `·` when no record changed, and the refreshes the step opened.
+// newest decision record, or `·` when no record changed, the refreshes the step opened and the lifecycle entries it
+// logged.
 let seen = "";
 const step = (label, change = () => {}, { road = true } = {}) => {
   change();
@@ -94,14 +99,15 @@ const step = (label, change = () => {}, { road = true } = {}) => {
   if (road) runTasks();
   const all = decisions(), now = JSON.stringify(all);
   const last = all.at(-1), built = opened();
-  console.log(label.padEnd(36), now === seen ? "·" : last ? fmt(last) : "", built.length ? `| ${built.join(" ")}` : "");
+  logged = lifecycle();
+  console.log(label.padEnd(36), now === seen ? "·" : last ? fmt(last) : "", tail(built, logged));
   seen = now;
   return built;
 };
 const count = kind => decisions().filter(d => d.kind === kind).length;
 const cards = () => events.filter(e => e.type === "coachemon:card").map(e => JSON.parse(e.detail));
 
-console.log("mounted with no game".padEnd(36), `| ${opened().join(" ")}`);
+console.log("mounted with no game".padEnd(36), tail(opened(), lifecycle()));
 scene = game;
 
 // ---- a command builds on its first ready frame, its road group in the task after, and its other screens build nothing
@@ -109,6 +115,7 @@ scene = game;
   const cmd = { phaseName: "CommandPhase", fieldIndex: 0 };
   assert.deepEqual(step("the prompt's message", () => { g.phase = cmd; g.mode = UiMode.MESSAGE; }), []);
   assert.deepEqual(step("command menu", () => { g.mode = UiMode.COMMAND; }), ["watch:battle", "road:battle"]);
+  assert.deepEqual(logged, ["built", "road landed"]);
   assert.deepEqual([decisions().at(-1).ready, decisions().at(-1).input], [16, 16]);
   assert.equal(__coachHud.last()?.kind, "battle");
   step("fight menu", () => { g.mode = UiMode.FIGHT; });
@@ -166,6 +173,7 @@ scene = game;
   assert.notEqual(slot1, slot0, "slot 1's card is its own");
   step("slot 1's target select", () => { g.phase = { phaseName: "SelectTargetPhase", fieldIndex: 1 }; g.mode = UiMode.TARGET_SELECT; });
   assert.deepEqual(step("cancel back to slot 0", () => { g.phase = { phaseName: "CommandPhase", fieldIndex: 0 }; g.mode = UiMode.COMMAND; }), ["cache:battle"]);
+  assert.deepEqual(logged, ["cached"], "a cached card comes back with its road, so none lands again");
   assert.equal(__coachHud.last(), slot0, "slot 0's card as it was built");
   assert.deepEqual([decisions().at(-1).ready, decisions().at(-1).drawn], [0, 0]);
   assert.deepEqual(step("slot 1 after slot 0 picks again", () => { g.battle.turnCommands[0] = fight(1, 52); g.phase = { phaseName: "CommandPhase", fieldIndex: 1 }; }),
@@ -188,7 +196,7 @@ scene = game;
 // ---- a replacement builds once its party screen is up
 {
   assert.deepEqual(step("replacement, the faint's message", () => { g.phase = { phaseName: "SwitchPhase", isModal: true, doReturn: false, fieldIndex: 0 }; g.mode = UiMode.MESSAGE; }), []);
-  assert.deepEqual(step("replacement, party up", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.FAINT_SWITCH }; }), ["watch:battle"]);
+  assert.deepEqual(step("replacement, party up", () => { g.mode = UiMode.PARTY; g.handler = { partyUiMode: PartyUiMode.FAINT_SWITCH }; }), ["watch:battle", "road:battle"]);
   assert.equal(count("replacement"), 1);
 }
 
@@ -275,6 +283,7 @@ scene = game;
   assert.deepEqual(step("the learn is dismissed", () => { g.phase = { phaseName: "FaintPhase" }; }), []);
   assert.equal(__coachHud.last()?.kind, "learn", "the learn card is held after it is dismissed");
   assert.deepEqual(step("their next mon comes in", () => { g.foes = [geodude, machop]; g.phase = { phaseName: "SwitchSummonPhase" }; }), ["send-in:battle"]);
+  assert.deepEqual(logged, ["redrawn"]);
   assert.deepEqual([__coachHud.last()?.kind, targets()], ["battle", ["Geodude"]]);
   assert.equal(__coachHud.last().ahead, opening, "the redraw keeps the road group of the battle card before the learn");
   assert.deepEqual(step("it lands", () => { g.phase = { phaseName: "TurnEndPhase" }; }), []);
@@ -322,7 +331,7 @@ scene = game;
   ticker();
   const again = opened();
   console.log(`frames stop: ${framed.join(" ")}, then a new decision: ${quiet.join(" ")}, then ${again.join(" ")}`);
-  assert.deepEqual([framed, quiet, again], [["fallback"], ["fallback:battle"], ["fallback"]]);
+  assert.deepEqual([framed, quiet, again, lifecycle()], [["fallback"], ["fallback:battle"], ["fallback"], ["built", "road landed"]]);
 }
 
 // ---- with no frames, a decision returned to shows the card the fallback built for it
@@ -335,7 +344,7 @@ scene = game;
   const slot1 = __coachHud.last();
   g.phase = { phaseName: "CommandPhase", fieldIndex: 0 };
   ticker();
-  assert.deepEqual([opened(), slot1 !== slot0, __coachHud.last() === slot0], [["fallback:battle", "fallback:battle"], true, true]);
+  assert.deepEqual([opened(), lifecycle(), slot1 !== slot0, __coachHud.last() === slot0], [["fallback:battle", "fallback:battle"], ["built", "road landed", "cached"], true, true]);
   g.battle.double = false;
   g.battle.turnCommands = {};
 }
@@ -356,8 +365,10 @@ scene = game;
   ticker();
   const errors = events.filter(e => e.type === "coachemon:coach-error").map(e => JSON.parse(e.detail).message);
   console.log(`fallback reports: ${errors.join(" · ")}`);
-  assert.deepEqual([opened(), errors], [["fallback:failed"], ["phase unreadable"]]);
-  assert.deepEqual(step("the game reads again", () => { g.phase = cmd; }), ["watch:battle"]);
+  assert.deepEqual([opened(), errors, lifecycle()], [["fallback:failed"], ["phase unreadable"], ["failed"]]);
+  assert.equal(__coachHud.last(), null, "the panel shows the failure, not a card");
+  // Built anew, its road in the task after: the failure forgot the decision's card.
+  assert.deepEqual(step("the game reads again", () => { g.phase = cmd; }), ["watch:battle", "road:battle"]);
 }
 
 // ---- the title with no decision open takes the card down on the fallback's next tick
@@ -365,7 +376,7 @@ scene = game;
   step("back to the title", () => { g.phase = { phaseName: "TitlePhase" }; g.mode = UiMode.TITLE; g.handler = {}; });
   assert.equal(__coachHud.last()?.kind, "battle", "held until the fallback looks");
   ticker();
-  assert.deepEqual([opened(), __coachHud.last()], [["fallback"], null]);
+  assert.deepEqual([opened(), lifecycle(), __coachHud.last()], [["fallback"], ["hidden"], null]);
 }
 
 // ---- a drain hands back the decisions so far, and the open one carries on into the next window
