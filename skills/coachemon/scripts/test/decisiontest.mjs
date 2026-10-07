@@ -367,7 +367,6 @@ scene = game;
   console.log(`fallback reports: ${errors.join(" · ")}`);
   assert.deepEqual([opened(), errors, lifecycle()], [["fallback:failed"], ["phase unreadable"], ["failed"]]);
   assert.equal(__coachHud.last(), null, "the panel shows the failure, not a card");
-  // Built anew, its road in the task after: the failure forgot the decision's card.
   assert.deepEqual(step("the game reads again", () => { g.phase = cmd; }), ["watch:battle", "road:battle"]);
 }
 

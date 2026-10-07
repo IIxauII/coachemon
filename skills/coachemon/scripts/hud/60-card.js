@@ -91,7 +91,7 @@ export const readRoad = (s, card) => readRun(s, run => {
 });
 export const keepRoad = (from, to) => { to.preview = from.preview; to.ahead = from.ahead; };
 
-// `account`: the run's own data, read once a refresh by 98-watch, which only the catch and Mystery Encounter cards
+// `account`: the run's own data, read once a refresh by 98-watch.js, which only the catch and Mystery Encounter cards
 // weigh a mon by. `road: false` leaves the road group to `readRoad`; `estimate` reads a battle card's turn without the
 // game.
 export const readCard = (s, account, { road = true, estimate = false } = {}) => {

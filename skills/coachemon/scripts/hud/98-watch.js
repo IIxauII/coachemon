@@ -1,6 +1,5 @@
-// The card from its first ready frame to the next decision (CONTEXT.md, `Watch`): the look at every frame, the build,
-// the hold, the cache by decision key, the road landing, the send-in redraw and the fallback clock. `KIND` is the one
-// place a kind meets its draw (#388). Nothing here decides what a card says.
+// The watch (CONTEXT.md, `Watch`): a decision's card from its first ready frame to the next decision, built once and
+// held, and asked of the game again only by a mon sent in. Nothing here decides what a card says.
 import { decisionAt, decisionBegin, decisionEnd, note, refresh, stage } from "./01-meter.js";
 import { detect } from "./02-decision.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
@@ -17,6 +16,7 @@ import { captionRewards, drawRewards } from "./96-render-rewards.js";
 import { captionStarters, drawStarters } from "./96-render-starters.js";
 import { captionBiome, drawBiome } from "./97-render-biome.js";
 
+// The one place a kind meets its draw (#388).
 const KIND = {
   battle: { draw: drawBattle, caption: captionBattle },
   rewards: { draw: drawRewards, caption: captionRewards },
@@ -148,7 +148,7 @@ const hide = () => {
 };
 const fail = e => {
   dropGame();
-  shown = { card: null, key: { ...NONE }, road: "none", version: ++versions, failure: e.message, groups: null };
+  shown = { ...record(null, false), failure: e.message };
   note({ failed: true });
   el.style.display = "block";
   el.textContent = `coach: ${e.message}`;
@@ -224,6 +224,10 @@ const decide = road => {
   if (road) land();
 };
 
+let after = () => {};
+// Every refresh the watch opens ends with `after`: the stream, which 99-start wires in.
+const run = (why, fn) => refresh(why, () => { fn(); after(); });
+
 const land = () => {
   const rec = shown;
   if (rec?.road !== "owed") return;
@@ -239,20 +243,20 @@ const land = () => {
     draw(rec);
   } catch (e) { fail(e); }
 };
-let after = () => {};
 // The road group lands in its own task, so a press between the card and the task leaves it to the next decision (#487).
+// A re-inject's `stop()` removes the panel, and a task queued before it then lands nothing.
 const landLater = () => {
   const rec = shown;
   setTimeout(() => {
-    if (shown === rec && rec.road === "owed" && isBuilt()) refresh("road", () => { land(); after(); });
+    if (shown === rec && rec.road === "owed" && isBuilt() && el.isConnected !== false) run("road", land);
   }, 0);
 };
 
 // A look that throws is no decision, and the fallback's next tick reports it: with frames, nothing else would.
 let lookFailed = null;
 const scene = () => { try { return battleScene(); } catch { return null; } };
-const fresh = s => { try { const f = look(s); lookFailed = null; return f; } catch (e) { lookFailed = e; return false; } };
-const sent = s => { try { return sentIn(s); } catch (e) { lookFailed = e; return false; } };
+const tryLook = s => { try { const fresh = look(s); lookFailed = null; return fresh; } catch (e) { lookFailed = e; return false; } };
+const trySentIn = s => { try { return sentIn(s); } catch (e) { lookFailed = e; return false; } };
 const gone = s => !s?.ui || (!open() && s.phaseManager?.getCurrentPhase?.()?.phaseName === "TitlePhase");
 
 // A frame since the last fallback tick: the watch is looking, so the fallback builds nothing.
@@ -260,40 +264,38 @@ let framed = false;
 export const watchFrame = () => {
   framed = true;
   const s = scene();
-  if (fresh(s)) {
-    refresh(cached() ? "cache" : "watch", () => { decide(false); after(); });
+  if (tryLook(s)) {
+    run(cached() ? "cache" : "watch", () => decide(false));
     if (shown?.road === "owed") landLater();
-  } else if (sent(s)) {
-    refresh("send-in", () => { build(false, true); after(); });
+  } else if (trySentIn(s)) {
+    run("send-in", () => build(false, true));
   }
 };
 
-export const watchFallback = () => refresh("fallback", () => {
+export const watchFallback = () => run("fallback", () => {
   const quiet = !framed;
   framed = false;
-  let s, f = false, away = false;
-  try { s = battleScene(); f = quiet && fresh(s); away = gone(s); } catch (e) { lookFailed = e; }
+  let s, fresh = false, away = false;
+  try { s = battleScene(); fresh = quiet && tryLook(s); away = gone(s); } catch (e) { lookFailed = e; }
   if (lookFailed) {
     fail(lookFailed);
     lookFailed = null;
     forget();
-  } else if (f) {
+  } else if (fresh) {
     decide(true);
   } else {
     if (s?.ui) stage("journal", () => journalCheck(s, shown?.card ?? null));
     if (away) { hide(); forget(); }
   }
-  after();
 });
 
-// The screen the overlay lands on, drawn whole; the decision it lands on counts as built. `then` runs at the end of
-// every refresh the watch opens.
+// The screen the overlay lands on, drawn whole; the decision it lands on counts as built.
 export const watchStart = then => {
   after = then;
-  refresh("start", () => { fresh(scene()); build(true); after(); });
+  run("start", () => { tryLook(scene()); build(true); });
 };
 
 // A tab, the caret or the ×: the shown card again in the new view, and nothing read from the game.
-setRedraw(() => refresh("click", () => { last = ""; if (shown?.card) draw(shown); after(); }));
+setRedraw(() => run("click", () => { last = ""; if (shown?.card) draw(shown); }));
 
-export const rebuild = () => refresh("watch", () => { build(true); after(); });
+export const rebuild = () => run("watch", () => build(true));

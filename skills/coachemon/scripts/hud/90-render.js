@@ -240,7 +240,7 @@ export const drawer = groups => {
     h("div", { ...PANE, border: `1px solid ${frameInk(open.id)}` }, ...pane(open))];
 };
 
-// What goes on the wire. **The plain text never dispatches on a kind**: which draw goes with which kind is 98-watch's
+// What goes on the wire. **The plain text never dispatches on a kind**: which draw goes with which kind is 98-watch.js's
 // one table. A second copy here, for the tests alone, let the panel change under a suite still drawing the old shape
 // (#388).
 export const flatGroups = groups => inOrder(groups)
@@ -271,7 +271,7 @@ const rowText = n => {
 };
 const clean = l => l.replace(/\s+/g, " ").trim();
 
-// 98-watch registers the refresh here, so a control can redraw without this file knowing what a card is.
+// 98-watch.js registers the refresh here, so a control can redraw without this file knowing what a card is.
 let redrawFn = () => {};
 export const setRedraw = fn => { redrawFn = fn; };
 
