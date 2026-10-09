@@ -22,6 +22,14 @@ What a run's wave numbers alone decide, before any roll: which waves are the fin
 
 The pokémon the player controls in the current run. The **active pokémon** is the one currently on the field; the rest are on the bench. Distinct from account-level collection data.
 
+## Dead weight
+
+A **party** member that holds a slot but can't battle at the next big fight: one a challenge bars from battle, or one
+fainted with nothing to bring it back first — no party heal before that fight and no shop on the way, or Hardcore. It
+counts for nothing when the party is judged, so replacing it costs only what the release destroys. A would-be newcomer
+a challenge would bar is dead weight the moment it joins. Every other member is judged at full health, fainted or hurt
+as it may be now; who can fight the battle in front of the party is a different question, asked of the members standing.
+
 ## Party profile
 
 The **party** judged as a whole rather than member by member: the types it hits super-effectively, the types it can't, the types several members are weak to, and its weakest member. Any would-be newcomer (a wild pokémon, a species in a biome, a trade offer) is judged against the profile, so every card gives the same reasons for the same pokémon.
