@@ -1,0 +1,126 @@
+// Runs inside the pinned clone, never this repo: `run.ts` copies it in and removes it again, so every `#…` import is
+// upstream's. Each case becomes a wild battle — the party on our side, the newcomer as the foe — and every scorer is
+// asked about the live objects, as the HUD would see them on a catch.
+import { readFileSync, writeFileSync } from "node:fs";
+import { timedEventManager } from "#app/global-event-manager";
+import { speciesDataRegistry } from "#app/global-species-data-registry";
+import { AbilityId } from "#enums/ability-id";
+import { BattleType } from "#enums/battle-type";
+import { MoveId } from "#enums/move-id";
+import { SpeciesId } from "#enums/species-id";
+import { PokemonMove } from "#moves/pokemon-move";
+import { GameManager } from "#test/framework/game-manager";
+import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
+
+// biome-ignore lint/suspicious/noExplicitAny: the HUD and the corpus are plain JS and JSON here.
+type Any = any;
+const g = globalThis as Any;
+const env = process.env;
+const CASES: Any[] = JSON.parse(readFileSync(env.COACH_CORPUS as string, "utf8"));
+const SCORERS: string[] = (env.COACH_SCORERS as string).split(",");
+const results: Any[] = [];
+
+function loadHud() {
+  if (g.__hud) {
+    return g.__hud;
+  }
+  g.window = globalThis;
+  // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
+  (0, eval)(readFileSync(env.COACH_BUNDLE as string, "utf8"));
+  g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager });
+  return g.__hud;
+}
+
+const enumOf = (e: Any, what: string, key: string): number => {
+  const v = e[key];
+  if (typeof v !== "number") {
+    throw new Error(`unknown ${what} ${key}`);
+  }
+  return v;
+};
+
+/** A corpus mon onto a live one: form, level, ability, then moves — the game's own level-up set when none are given. */
+function shape(p: Any, m: Any) {
+  if (m.form != null) {
+    const at = p.species.forms.findIndex((f: Any) => f.formKey === m.form);
+    if (at < 0) {
+      throw new Error(`${m.species} has no form ${m.form}`);
+    }
+    p.formIndex = at;
+  }
+  p.level = m.level;
+  if (m.ability != null) {
+    const want = enumOf(AbilityId, "ability", m.ability);
+    const at = [0, 1, 2].find(i => p.getSpeciesForm().getAbility(i) === want);
+    if (at == null) {
+      throw new Error(`${m.species} cannot have ${m.ability}`);
+    }
+    p.abilityIndex = at;
+  }
+  p.calculateStats();
+  p.hp = p.getMaxHp();
+  if (m.moves?.length) {
+    p.moveset = m.moves.map((k: string) => new PokemonMove(enumOf(MoveId, "move", k)));
+  } else {
+    p.generateAndPopulateMoveset();
+  }
+}
+
+const brief = (p: Any) => ({
+  name: p.name,
+  level: p.level,
+  moves: p.moveset.filter(Boolean).map((pm: Any) => pm.getName()),
+});
+
+describe("Coachemon newcomer corpus replay", () => {
+  let phaserGame: Phaser.Game;
+  let game: GameManager;
+  let scorers: Any[];
+
+  beforeAll(async () => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+    scorers = await Promise.all(SCORERS.map(async f => (await import(/* @vite-ignore */ f)).default));
+  });
+
+  beforeEach(() => {
+    game = new GameManager(phaserGame);
+  });
+
+  afterAll(() => {
+    writeFileSync(env.COACH_OUT as string, JSON.stringify(results, null, 1));
+  });
+
+  it.each(CASES.map(c => [c.id, c]))("%s", async (_id, c: Any) => {
+    const n = c.newcomer;
+    game.override
+      .battleStyle("single")
+      .battleType(BattleType.WILD)
+      .disableTrainerWaves()
+      .startingWave(c.wave ?? 30)
+      .startingLevel(Math.max(...c.party.map((m: Any) => m.level)))
+      .enemySpecies(enumOf(SpeciesId, "species", n.species))
+      .enemyLevel(n.level)
+      .enemyHealthSegments(1)
+      .shiny(false)
+      .enemyShiny(false)
+      .seed(c.id);
+    await game.classicMode.startBattle(...c.party.map((m: Any) => enumOf(SpeciesId, "species", m.species)));
+    // Seeded again here, so the generated movesets don't hang on how many draws starting the battle took.
+    game.override.seed(c.id);
+    const party = game.scene.getPlayerParty();
+    c.party.forEach((m: Any, i: number) => shape(party[i], m));
+    const newcomer = game.scene.getEnemyPokemon();
+    shape(newcomer, n);
+
+    const hud = loadHud();
+    const answers: Record<string, Any> = {};
+    for (const s of scorers) {
+      try {
+        answers[s.name] = s.score({ party, newcomer, hud, scene: game.scene, case: c });
+      } catch (err) {
+        answers[s.name] = { error: err instanceof Error ? err.message : String(err) };
+      }
+    }
+    results.push({ id: c.id, party: party.map(brief), newcomer: brief(newcomer), answers });
+  });
+});

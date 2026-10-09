@@ -1,0 +1,2861 @@
+[
+ {
+  "id": "lag-1001T1001-w10-hoothoot",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-01-20-198Z.jsonl",
+   "line": 357
+  },
+  "offer": "catch",
+  "wave": 10,
+  "party": [
+   {
+    "species": "LARVITAR",
+    "level": 9
+   },
+   {
+    "species": "MACHOP",
+    "level": 7
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 6
+   }
+  ],
+  "newcomer": {
+   "species": "HOOTHOOT",
+   "level": 8,
+   "types": [
+    "Normal",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "covers Ground weakness"
+   ],
+   "account": [
+    "new ability",
+    "IVs +34 on 3 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1001-w21-seedot",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-01-20-198Z.jsonl",
+   "line": 1007
+  },
+  "offer": "catch",
+  "wave": 21,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 16
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 13
+   },
+   {
+    "species": "LARVITAR",
+    "level": 13
+   }
+  ],
+  "newcomer": {
+   "species": "SEEDOT",
+   "level": 13,
+   "types": [
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "covers Ground/Water weakness",
+    "hits Ground/Water (no one else does)"
+   ],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-1001T1001-w23-cottonee",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-01-20-198Z.jsonl",
+   "line": 1049
+  },
+  "offer": "catch",
+  "wave": 23,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 16
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 14
+   },
+   {
+    "species": "LARVITAR",
+    "level": 13
+   }
+  ],
+  "newcomer": {
+   "species": "COTTONEE",
+   "level": 15,
+   "types": [
+    "Grass",
+    "Fairy"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "covers Ground/Water weakness",
+    "hits Ground/Water (no one else does)"
+   ],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-1001T1001-w27-cottonee",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-01-20-198Z.jsonl",
+   "line": 1332
+  },
+  "offer": "catch",
+  "wave": 27,
+  "party": [
+   {
+    "species": "GROWLITHE",
+    "level": 17
+   },
+   {
+    "species": "MACHOP",
+    "level": 20
+   },
+   {
+    "species": "LARVITAR",
+    "level": 18
+   }
+  ],
+  "newcomer": {
+   "species": "COTTONEE",
+   "level": 17,
+   "types": [
+    "Grass",
+    "Fairy"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "covers Ground/Water weakness"
+   ],
+   "account": [
+    "new ability"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1001-w28-miltank",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-01-20-198Z.jsonl",
+   "line": 1402
+  },
+  "offer": "catch",
+  "wave": 28,
+  "party": [
+   {
+    "species": "GROWLITHE",
+    "level": 18
+   },
+   {
+    "species": "MACHOP",
+    "level": 20
+   },
+   {
+    "species": "LARVITAR",
+    "level": 18
+   }
+  ],
+  "newcomer": {
+   "species": "MILTANK",
+   "level": 16,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1001-w29-petilil",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-01-20-198Z.jsonl",
+   "line": 1438
+  },
+  "offer": "catch",
+  "wave": 29,
+  "party": [
+   {
+    "species": "GROWLITHE",
+    "level": 19
+   },
+   {
+    "species": "MACHOP",
+    "level": 21
+   },
+   {
+    "species": "LARVITAR",
+    "level": 18
+   }
+  ],
+  "newcomer": {
+   "species": "PETILIL",
+   "level": 20,
+   "types": [
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "covers Ground/Water weakness",
+    "hits Ground/Water (no one else does)"
+   ],
+   "account": [
+    "IVs +38 on 4 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w9-taillow",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 272
+  },
+  "offer": "catch",
+  "wave": 9,
+  "party": [
+   {
+    "species": "LARVITAR",
+    "level": 8
+   },
+   {
+    "species": "MACHOP",
+    "level": 6
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 5
+   }
+  ],
+  "newcomer": {
+   "species": "TAILLOW",
+   "level": 7,
+   "types": [
+    "Normal",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "covers Ground weakness"
+   ],
+   "account": [
+    "IVs +18 on 1 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w10-skwovet",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 319
+  },
+  "offer": "catch",
+  "wave": 10,
+  "party": [
+   {
+    "species": "LARVITAR",
+    "level": 9
+   },
+   {
+    "species": "MACHOP",
+    "level": 6
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 6
+   },
+   {
+    "species": "TAILLOW",
+    "level": 7
+   }
+  ],
+  "newcomer": {
+   "species": "SKWOVET",
+   "level": 8,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-1001T1041-w13-rockruff",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 371
+  },
+  "offer": "catch",
+  "wave": 13,
+  "party": [
+   {
+    "species": "LARVITAR",
+    "level": 10
+   },
+   {
+    "species": "MACHOP",
+    "level": 6
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 6
+   },
+   {
+    "species": "TAILLOW",
+    "level": 7
+   },
+   {
+    "species": "SKWOVET",
+    "level": 8
+   }
+  ],
+  "newcomer": {
+   "species": "ROCKRUFF",
+   "level": 8,
+   "types": [
+    "Rock"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w14-sentret",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 406
+  },
+  "offer": "catch",
+  "wave": 14,
+  "party": [
+   {
+    "species": "LARVITAR",
+    "level": 10
+   },
+   {
+    "species": "MACHOP",
+    "level": 7
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 6
+   },
+   {
+    "species": "TAILLOW",
+    "level": 7
+   },
+   {
+    "species": "SKWOVET",
+    "level": 8
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 8
+   }
+  ],
+  "newcomer": {
+   "species": "SENTRET",
+   "level": 9,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "first shiny · +10 candy",
+    "new ability"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w17-pidove",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 488
+  },
+  "offer": "catch",
+  "wave": 17,
+  "party": [
+   {
+    "species": "LARVITAR",
+    "level": 12
+   },
+   {
+    "species": "MACHOP",
+    "level": 9
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 7
+   },
+   {
+    "species": "TAILLOW",
+    "level": 8
+   },
+   {
+    "species": "SKWOVET",
+    "level": 9
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 8
+   }
+  ],
+  "newcomer": {
+   "species": "PIDOVE",
+   "level": 11,
+   "types": [
+    "Normal",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Taillow",
+   "team": [
+    "covers Ground weakness"
+   ],
+   "account": [
+    "IVs +44 on 3 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w21-foongus",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 645
+  },
+  "offer": "catch",
+  "wave": 21,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 11
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 10
+   },
+   {
+    "species": "LARVITAR",
+    "level": 14
+   },
+   {
+    "species": "TAILLOW",
+    "level": 9
+   },
+   {
+    "species": "SKWOVET",
+    "level": 10
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 9
+   }
+  ],
+  "newcomer": {
+   "species": "FOONGUS",
+   "level": 14,
+   "types": [
+    "Grass",
+    "Poison"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Taillow",
+   "team": [
+    "covers Fighting/Water weakness",
+    "hits Ground/Water (no one else does)"
+   ],
+   "account": [
+    "IVs +33 on 4 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w23-combee",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 1009
+  },
+  "offer": "catch",
+  "wave": 23,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 11
+   },
+   {
+    "species": "TAILLOW",
+    "level": 9
+   },
+   {
+    "species": "LARVITAR",
+    "level": 14
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 11
+   },
+   {
+    "species": "SKWOVET",
+    "level": 10
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 10
+   }
+  ],
+  "newcomer": {
+   "species": "COMBEE",
+   "level": 15,
+   "types": [
+    "Bug",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Taillow",
+   "team": [
+    "covers Fighting/Ground weakness"
+   ],
+   "account": [
+    "IVs +45 on 3 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w24-lickitung",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 1132
+  },
+  "offer": "catch",
+  "wave": 24,
+  "party": [
+   {
+    "species": "LARVITAR",
+    "level": 15
+   },
+   {
+    "species": "TAILLOW",
+    "level": 10
+   },
+   {
+    "species": "MACHOP",
+    "level": 12
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 11
+   },
+   {
+    "species": "SKWOVET",
+    "level": 10
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 10
+   }
+  ],
+  "newcomer": {
+   "species": "LICKITUNG",
+   "level": 15,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Taillow",
+   "team": [
+    "stronger than Taillow (final BST ~501 vs ~400)"
+   ],
+   "account": [
+    "new ability",
+    "IVs +41 on 5 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w26-petilil",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 1761
+  },
+  "offer": "catch",
+  "wave": 26,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 18
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 11
+   },
+   {
+    "species": "TAILLOW",
+    "level": 12
+   },
+   {
+    "species": "LARVITAR",
+    "level": 17
+   },
+   {
+    "species": "SKWOVET",
+    "level": 12
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 12
+   }
+  ],
+  "newcomer": {
+   "species": "PETILIL",
+   "level": 16,
+   "types": [
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Taillow",
+   "team": [
+    "covers Ground/Water weakness",
+    "hits Ground/Water (no one else does)"
+   ],
+   "account": [
+    "new ability"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w27-petilil",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 1810
+  },
+  "offer": "catch",
+  "wave": 27,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 19
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 12
+   },
+   {
+    "species": "TAILLOW",
+    "level": 13
+   },
+   {
+    "species": "LARVITAR",
+    "level": 17
+   },
+   {
+    "species": "SKWOVET",
+    "level": 12
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 12
+   }
+  ],
+  "newcomer": {
+   "species": "PETILIL",
+   "level": 18,
+   "types": [
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Skwovet",
+   "team": [
+    "covers Ground/Water weakness",
+    "hits Ground/Water (no one else does)"
+   ],
+   "account": [
+    "new ability",
+    "IVs +26 on 4 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w29-cherubi",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 1882
+  },
+  "offer": "catch",
+  "wave": 29,
+  "party": [
+   {
+    "species": "LARVITAR",
+    "level": 17
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 12
+   },
+   {
+    "species": "TAILLOW",
+    "level": 14
+   },
+   {
+    "species": "MACHOP",
+    "level": 20
+   },
+   {
+    "species": "SKWOVET",
+    "level": 13
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 13
+   }
+  ],
+  "newcomer": {
+   "species": "CHERUBI",
+   "level": 18,
+   "types": [
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Skwovet",
+   "team": [
+    "covers Ground/Water weakness",
+    "hits Ground/Water (no one else does)"
+   ],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-1001T1041-w30-noibat",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 1918
+  },
+  "offer": "catch",
+  "wave": 30,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 20
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 13
+   },
+   {
+    "species": "TAILLOW",
+    "level": 14
+   },
+   {
+    "species": "LARVITAR",
+    "level": 18
+   },
+   {
+    "species": "SKWOVET",
+    "level": 13
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 13
+   }
+  ],
+  "newcomer": {
+   "species": "NOIBAT",
+   "level": 20,
+   "types": [
+    "Flying",
+    "Dragon"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Skwovet",
+   "team": [
+    "covers Fighting/Ground weakness"
+   ],
+   "account": [
+    "new ability",
+    "IVs +22 on 1 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w31-spinarak",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 1955
+  },
+  "offer": "catch",
+  "wave": 31,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 21
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 13
+   },
+   {
+    "species": "TAILLOW",
+    "level": 14
+   },
+   {
+    "species": "LARVITAR",
+    "level": 18
+   },
+   {
+    "species": "SKWOVET",
+    "level": 14
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 14
+   }
+  ],
+  "newcomer": {
+   "species": "SPINARAK",
+   "level": 21,
+   "types": [
+    "Bug",
+    "Poison"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Skwovet",
+   "team": [
+    "covers Fighting weakness"
+   ],
+   "account": [
+    "IVs +30 on 3 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w32-oddish",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 2006
+  },
+  "offer": "catch",
+  "wave": 32,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 21
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 14
+   },
+   {
+    "species": "TAILLOW",
+    "level": 15
+   },
+   {
+    "species": "LARVITAR",
+    "level": 18
+   },
+   {
+    "species": "SKWOVET",
+    "level": 14
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 14
+   }
+  ],
+  "newcomer": {
+   "species": "ODDISH",
+   "level": 19,
+   "types": [
+    "Grass",
+    "Poison"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Skwovet",
+   "team": [
+    "covers Fighting/Water weakness",
+    "hits Ground/Water/Fairy (no one else does)",
+    "stronger than Skwovet (final BST ~541 vs ~400)"
+   ],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1041-w34-kricketune",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T10-41-17-742Z.jsonl",
+   "line": 2093
+  },
+  "offer": "catch",
+  "wave": 34,
+  "party": [
+   {
+    "species": "MACHOP",
+    "level": 22
+   },
+   {
+    "species": "GROWLITHE",
+    "level": 15
+   },
+   {
+    "species": "TAILLOW",
+    "level": 16
+   },
+   {
+    "species": "LARVITAR",
+    "level": 19
+   },
+   {
+    "species": "SKWOVET",
+    "level": 15
+   },
+   {
+    "species": "ROCKRUFF",
+    "level": 15
+   }
+  ],
+  "newcomer": {
+   "species": "KRICKETUNE",
+   "level": 22,
+   "types": [
+    "Bug"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Skwovet",
+   "team": [
+    "covers Fighting/Ground weakness"
+   ],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1128-w4-cottonee",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T11-28-55-990Z.jsonl",
+   "line": 155
+  },
+  "offer": "catch",
+  "wave": 4,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 6
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 5
+   },
+   {
+    "species": "CHARMANDER",
+    "level": 5
+   }
+  ],
+  "newcomer": {
+   "species": "COTTONEE",
+   "level": 3,
+   "types": [
+    "Grass",
+    "Fairy"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "hits Fighting/Ground/Water (no one else does)"
+   ],
+   "account": [
+    "new ability",
+    "IVs +16 on 1 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1128-w9-wooloo",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T11-28-55-990Z.jsonl",
+   "line": 267
+  },
+  "offer": "catch",
+  "wave": 9,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 8
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 5
+   },
+   {
+    "species": "CHARMANDER",
+    "level": 5
+   },
+   {
+    "species": "COTTONEE",
+    "level": 4
+   }
+  ],
+  "newcomer": {
+   "species": "WOOLOO",
+   "level": 7,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1128-w13-zubat",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T11-28-55-990Z.jsonl",
+   "line": 388
+  },
+  "offer": "catch",
+  "wave": 13,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 13
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 8
+   },
+   {
+    "species": "CHARMANDER",
+    "level": 8
+   },
+   {
+    "species": "COTTONEE",
+    "level": 7
+   },
+   {
+    "species": "WOOLOO",
+    "level": 9
+   }
+  ],
+  "newcomer": {
+   "species": "ZUBAT",
+   "level": 9,
+   "types": [
+    "Poison",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "covers Fighting weakness",
+    "hits Ghost/Psychic (no one else does)"
+   ],
+   "account": [
+    "IVs +70 on 5 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1128-w19-nickit",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T11-28-55-990Z.jsonl",
+   "line": 583
+  },
+  "offer": "catch",
+  "wave": 19,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 16
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 11
+   },
+   {
+    "species": "CHARMANDER",
+    "level": 10
+   },
+   {
+    "species": "COTTONEE",
+    "level": 9
+   },
+   {
+    "species": "WOOLOO",
+    "level": 10
+   },
+   {
+    "species": "ZUBAT",
+    "level": 10
+   }
+  ],
+  "newcomer": {
+   "species": "NICKIT",
+   "level": 12,
+   "types": [
+    "Dark"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "IVs +36 on 4 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1128-w20-buneary",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T11-28-55-990Z.jsonl",
+   "line": 640
+  },
+  "offer": "catch",
+  "wave": 20,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 16
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 12
+   },
+   {
+    "species": "CHARMANDER",
+    "level": 10
+   },
+   {
+    "species": "COTTONEE",
+    "level": 9
+   },
+   {
+    "species": "WOOLOO",
+    "level": 10
+   },
+   {
+    "species": "ZUBAT",
+    "level": 10
+   }
+  ],
+  "newcomer": {
+   "species": "BUNEARY",
+   "level": 12,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1128-w28-rattata",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T11-28-55-990Z.jsonl",
+   "line": 960
+  },
+  "offer": "catch",
+  "wave": 28,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 22
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 15
+   },
+   {
+    "species": "CHARMANDER",
+    "level": 14
+   },
+   {
+    "species": "COTTONEE",
+    "level": 14
+   },
+   {
+    "species": "WOOLOO",
+    "level": 14
+   },
+   {
+    "species": "ZUBAT",
+    "level": 14
+   }
+  ],
+  "newcomer": {
+   "species": "RATTATA",
+   "level": 19,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new ability"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1153-w12-skwovet",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T11-53-18-994Z.jsonl",
+   "line": 446
+  },
+  "offer": "catch",
+  "wave": 12,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 8
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 6
+   },
+   {
+    "species": "CHARMANDER",
+    "level": 10
+   }
+  ],
+  "newcomer": {
+   "species": "SKWOVET",
+   "level": 8,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "hits Ghost/Psychic (no one else does)"
+   ],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-1001T1153-w19-pawmi",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T11-53-18-994Z.jsonl",
+   "line": 704
+  },
+  "offer": "catch",
+  "wave": 19,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 14
+   },
+   {
+    "species": "CHARMANDER",
+    "level": 12
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 10
+   },
+   {
+    "species": "SKWOVET",
+    "level": 10
+   }
+  ],
+  "newcomer": {
+   "species": "PAWMI",
+   "level": 13,
+   "types": [
+    "Electric"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "hits Flying/Water (no one else does)"
+   ],
+   "account": [
+    "first shiny · +5 candy"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1401-w1-happiny",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 17
+  },
+  "offer": "catch",
+  "wave": 1,
+  "party": [
+   {
+    "species": "SLAKOTH",
+    "level": 5
+   },
+   {
+    "species": "DRATINI",
+    "level": 5
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 5
+   },
+   {
+    "species": "FINNEON",
+    "level": 5
+   }
+  ],
+  "newcomer": {
+   "species": "HAPPINY",
+   "level": 2,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1401-w21-dewpider",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 674
+  },
+  "offer": "catch",
+  "wave": 21,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 16
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 9
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 11
+   },
+   {
+    "species": "FINNEON",
+    "level": 9
+   }
+  ],
+  "newcomer": {
+   "species": "DEWPIDER",
+   "level": 12,
+   "types": [
+    "Water",
+    "Bug"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "covers Ice weakness",
+    "hits Psychic/Dark (no one else does)"
+   ],
+   "account": [
+    "IVs +51 on 5 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1401-w27-marill",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 956
+  },
+  "offer": "catch",
+  "wave": 27,
+  "party": [
+   {
+    "species": "FINNEON",
+    "level": 16
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 13
+   },
+   {
+    "species": "DRATINI",
+    "level": 19
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 16
+   },
+   {
+    "species": "DEWPIDER",
+    "level": 15
+   }
+  ],
+  "newcomer": {
+   "species": "MARILL",
+   "level": 18,
+   "types": [
+    "Water",
+    "Fairy"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species + starter"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1401-w29-magikarp",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 1165
+  },
+  "offer": "catch",
+  "wave": 29,
+  "party": [
+   {
+    "species": "DEWPIDER",
+    "level": 18
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 16
+   },
+   {
+    "species": "DRATINI",
+    "level": 20
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 16
+   },
+   {
+    "species": "FINNEON",
+    "level": 21
+   }
+  ],
+  "newcomer": {
+   "species": "MAGIKARP",
+   "level": 17,
+   "types": [
+    "Water"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1401-w34-tympole",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 1344
+  },
+  "offer": "catch",
+  "wave": 34,
+  "party": [
+   {
+    "species": "FINNEON",
+    "level": 23
+   },
+   {
+    "species": "VIGOROTH",
+    "level": 18
+   },
+   {
+    "species": "DRATINI",
+    "level": 21
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 18
+   },
+   {
+    "species": "DEWPIDER",
+    "level": 20
+   }
+  ],
+  "newcomer": {
+   "species": "TYMPOLE",
+   "level": 22,
+   "types": [
+    "Water"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "hits Poison/Steel/Electric (no one else does)",
+    "stronger than Dewpider (final BST ~514 vs ~400)"
+   ],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-1001T1401-w37-shellos",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 2356
+  },
+  "offer": "catch",
+  "wave": 37,
+  "party": [
+   {
+    "species": "VIGOROTH",
+    "level": 20
+   },
+   {
+    "species": "FINNEON",
+    "level": 24
+   },
+   {
+    "species": "ARAQUANID",
+    "level": 22
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 19
+   },
+   {
+    "species": "TYMPOLE",
+    "level": 22
+   },
+   {
+    "species": "DRATINI",
+    "level": 23
+   }
+  ],
+  "newcomer": {
+   "species": "SHELLOS",
+   "level": 23,
+   "types": [
+    "Water"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1401-w38-croconaw",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 2395
+  },
+  "offer": "catch",
+  "wave": 38,
+  "party": [
+   {
+    "species": "VIGOROTH",
+    "level": 20
+   },
+   {
+    "species": "FINNEON",
+    "level": 25
+   },
+   {
+    "species": "ARAQUANID",
+    "level": 22
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 20
+   },
+   {
+    "species": "TYMPOLE",
+    "level": 23
+   },
+   {
+    "species": "DRATINI",
+    "level": 23
+   }
+  ],
+  "newcomer": {
+   "species": "CROCONAW",
+   "level": 23,
+   "types": [
+    "Water"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1401-w39-shellos",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 2425
+  },
+  "offer": "catch",
+  "wave": 39,
+  "party": [
+   {
+    "species": "VIGOROTH",
+    "level": 22
+   },
+   {
+    "species": "FINNEON",
+    "level": 25
+   },
+   {
+    "species": "ARAQUANID",
+    "level": 22
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 21
+   },
+   {
+    "species": "TYMPOLE",
+    "level": 23
+   },
+   {
+    "species": "DRATINI",
+    "level": 24
+   }
+  ],
+  "newcomer": {
+   "species": "SHELLOS",
+   "level": 24,
+   "types": [
+    "Water"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-1001T1401-w40-swalot",
+  "source": {
+   "kind": "lag-run",
+   "file": "2026-10-01T14-01-34-510Z.jsonl",
+   "line": 2511
+  },
+  "offer": "catch",
+  "wave": 40,
+  "party": [
+   {
+    "species": "VIGOROTH",
+    "level": 23
+   },
+   {
+    "species": "FINNEON",
+    "level": 25
+   },
+   {
+    "species": "ARAQUANID",
+    "level": 23
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 21
+   },
+   {
+    "species": "TYMPOLE",
+    "level": 24
+   },
+   {
+    "species": "DRATINI",
+    "level": 24
+   }
+  ],
+  "newcomer": {
+   "species": "SWALOT",
+   "level": 31,
+   "types": [
+    "Poison"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species + starter"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w2-sunkern",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 51
+  },
+  "offer": "catch",
+  "wave": 2,
+  "party": [
+   {
+    "species": "SLAKOTH",
+    "level": 6
+   },
+   {
+    "species": "DRATINI",
+    "level": 5
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 5
+   },
+   {
+    "species": "FINNEON",
+    "level": 5
+   }
+  ],
+  "newcomer": {
+   "species": "SUNKERN",
+   "level": 3,
+   "types": [
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w20-farfetchd",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 804
+  },
+  "offer": "catch",
+  "wave": 20,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 16
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 12
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 11
+   },
+   {
+    "species": "FINNEON",
+    "level": 10
+   },
+   {
+    "species": "SUNKERN",
+    "level": 11
+   }
+  ],
+  "newcomer": {
+   "species": "FARFETCHD",
+   "level": 12,
+   "types": [
+    "Normal",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "hits Fighting/Bug/Dark (no one else does)"
+   ],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w22-shroomish",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 951
+  },
+  "offer": "catch",
+  "wave": 22,
+  "party": [
+   {
+    "species": "SLAKOTH",
+    "level": 15
+   },
+   {
+    "species": "FINNEON",
+    "level": 10
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 12
+   },
+   {
+    "species": "DRATINI",
+    "level": 16
+   },
+   {
+    "species": "SUNKERN",
+    "level": 11
+   }
+  ],
+  "newcomer": {
+   "species": "SHROOMISH",
+   "level": 15,
+   "types": [
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w23-lickitung",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 1004
+  },
+  "offer": "catch",
+  "wave": 23,
+  "party": [
+   {
+    "species": "SLAKOTH",
+    "level": 15
+   },
+   {
+    "species": "FINNEON",
+    "level": 11
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 12
+   },
+   {
+    "species": "DRATINI",
+    "level": 16
+   },
+   {
+    "species": "SUNKERN",
+    "level": 12
+   },
+   {
+    "species": "SHROOMISH",
+    "level": 15
+   }
+  ],
+  "newcomer": {
+   "species": "LICKITUNG",
+   "level": 15,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Sunkern",
+   "team": [
+    "stronger than Sunkern (final BST ~501 vs ~400)"
+   ],
+   "account": [
+    "IVs +38 on 3 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w31-nidorina",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 1698
+  },
+  "offer": "catch",
+  "wave": 31,
+  "party": [
+   {
+    "species": "IVYSAUR",
+    "level": 22
+   },
+   {
+    "species": "FINNEON",
+    "level": 18
+   },
+   {
+    "species": "VIGOROTH",
+    "level": 25
+   },
+   {
+    "species": "DRATINI",
+    "level": 22
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 20
+   },
+   {
+    "species": "SHROOMISH",
+    "level": 21
+   }
+  ],
+  "newcomer": {
+   "species": "NIDORINA",
+   "level": 18,
+   "types": [
+    "Poison"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Shroomish",
+   "team": [
+    "covers Fighting weakness"
+   ],
+   "account": [
+    "new species + starter"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w32-vivillon",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 1740
+  },
+  "offer": "catch",
+  "wave": 32,
+  "party": [
+   {
+    "species": "IVYSAUR",
+    "level": 24
+   },
+   {
+    "species": "VIGOROTH",
+    "level": 26
+   },
+   {
+    "species": "FINNEON",
+    "level": 18
+   },
+   {
+    "species": "DRATINI",
+    "level": 23
+   },
+   {
+    "species": "NIDORINA",
+    "level": 18
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 21
+   }
+  ],
+  "newcomer": {
+   "species": "VIVILLON",
+   "level": 20,
+   "types": [
+    "Bug",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Finneon",
+   "team": [
+    "hits Poison/Dark (no one else does)"
+   ],
+   "account": [
+    "new form"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w34-paras",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 1911
+  },
+  "offer": "catch",
+  "wave": 34,
+  "party": [
+   {
+    "species": "IVYSAUR",
+    "level": 27
+   },
+   {
+    "species": "VIGOROTH",
+    "level": 27
+   },
+   {
+    "species": "VIVILLON",
+    "level": 22
+   },
+   {
+    "species": "DRATINI",
+    "level": 25
+   },
+   {
+    "species": "NIDORINA",
+    "level": 21
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 23
+   }
+  ],
+  "newcomer": {
+   "species": "PARAS",
+   "level": 21,
+   "types": [
+    "Bug",
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w40-pawniard",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 2467
+  },
+  "offer": "catch",
+  "wave": 40,
+  "party": [
+   {
+    "species": "VIGOROTH",
+    "level": 32
+   },
+   {
+    "species": "VENUSAUR",
+    "level": 32
+   },
+   {
+    "species": "VIVILLON",
+    "level": 26
+   },
+   {
+    "species": "NIDOQUEEN",
+    "level": 27
+   },
+   {
+    "species": "DRAGONAIR",
+    "level": 31
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 27
+   }
+  ],
+  "newcomer": {
+   "species": "PAWNIARD",
+   "level": 25,
+   "types": [
+    "Dark",
+    "Steel"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Vivillon",
+   "team": [
+    "covers Flying/Psychic weakness"
+   ],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w41-woobat",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 2496
+  },
+  "offer": "catch",
+  "wave": 41,
+  "party": [
+   {
+    "species": "DRAGONAIR",
+    "level": 31
+   },
+   {
+    "species": "VENUSAUR",
+    "level": 32
+   },
+   {
+    "species": "PAWNIARD",
+    "level": 25
+   },
+   {
+    "species": "NIDOQUEEN",
+    "level": 27
+   },
+   {
+    "species": "VIGOROTH",
+    "level": 32
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 27
+   }
+  ],
+  "newcomer": {
+   "species": "WOOBAT",
+   "level": 26,
+   "types": [
+    "Psychic",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Pawniard",
+   "team": [
+    "covers Fighting/Ground weakness",
+    "hits Fighting/Poison/Bug (no one else does)"
+   ],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-519-clock-1001T1604-w42-onix",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-clock-2026-10-01T16-04-27Z.jsonl",
+   "line": 2536
+  },
+  "offer": "catch",
+  "wave": 42,
+  "party": [
+   {
+    "species": "DRAGONAIR",
+    "level": 33
+   },
+   {
+    "species": "VENUSAUR",
+    "level": 32
+   },
+   {
+    "species": "WOOBAT",
+    "level": 26
+   },
+   {
+    "species": "NIDOQUEEN",
+    "level": 27
+   },
+   {
+    "species": "VIGOROTH",
+    "level": 32
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 27
+   }
+  ],
+  "newcomer": {
+   "species": "ONIX",
+   "level": 25,
+   "types": [
+    "Rock",
+    "Ground"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Woobat",
+   "team": [
+    "hits Flying/Ice (no one else does)"
+   ],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w7-lotad",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 123
+  },
+  "offer": "catch",
+  "wave": 7,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 7
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 5
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 5
+   },
+   {
+    "species": "FINNEON",
+    "level": 5
+   }
+  ],
+  "newcomer": {
+   "species": "LOTAD",
+   "level": 5,
+   "types": [
+    "Water",
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [
+    "hits Ghost/Psychic (no one else does)"
+   ],
+   "account": [
+    "new ability",
+    "IVs +49 on 4 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w15-happiny",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 425
+  },
+  "offer": "catch",
+  "wave": 15,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 13
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 8
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 7
+   },
+   {
+    "species": "FINNEON",
+    "level": 6
+   },
+   {
+    "species": "LOTAD",
+    "level": 7
+   }
+  ],
+  "newcomer": {
+   "species": "HAPPINY",
+   "level": 9,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w16-lickitung",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 480
+  },
+  "offer": "catch",
+  "wave": 16,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 13
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 8
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 8
+   },
+   {
+    "species": "FINNEON",
+    "level": 7
+   },
+   {
+    "species": "LOTAD",
+    "level": 8
+   },
+   {
+    "species": "HAPPINY",
+    "level": 9
+   }
+  ],
+  "newcomer": {
+   "species": "LICKITUNG",
+   "level": 11,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Happiny",
+   "team": [
+    "stronger than Happiny (final BST ~501 vs ~400)"
+   ],
+   "account": [
+    "new ability"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w17-buneary",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 520
+  },
+  "offer": "catch",
+  "wave": 17,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 15
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 9
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 8
+   },
+   {
+    "species": "FINNEON",
+    "level": 7
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 11
+   },
+   {
+    "species": "LOTAD",
+    "level": 8
+   }
+  ],
+  "newcomer": {
+   "species": "BUNEARY",
+   "level": 10,
+   "types": [
+    "Normal"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w23-combee",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 697
+  },
+  "offer": "catch",
+  "wave": 23,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 17
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 11
+   },
+   {
+    "species": "BULBASAUR",
+    "level": 11
+   },
+   {
+    "species": "FINNEON",
+    "level": 9
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 12
+   },
+   {
+    "species": "LOTAD",
+    "level": 11
+   }
+  ],
+  "newcomer": {
+   "species": "COMBEE",
+   "level": 15,
+   "types": [
+    "Bug",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Finneon",
+   "team": [
+    "covers Fighting weakness"
+   ],
+   "account": [
+    "IVs +30 on 3 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w28-venipede",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 1095
+  },
+  "offer": "catch",
+  "wave": 28,
+  "party": [
+   {
+    "species": "IVYSAUR",
+    "level": 16
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 14
+   },
+   {
+    "species": "COMBEE",
+    "level": 18
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 14
+   },
+   {
+    "species": "DRATINI",
+    "level": 21
+   },
+   {
+    "species": "LOMBRE",
+    "level": 14
+   }
+  ],
+  "newcomer": {
+   "species": "VENIPEDE",
+   "level": 18,
+   "types": [
+    "Bug",
+    "Poison"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": "Combee",
+   "team": [
+    "hits Flying/Ice (no one else does)"
+   ],
+   "account": []
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w31-kricketune",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 1232
+  },
+  "offer": "catch",
+  "wave": 31,
+  "party": [
+   {
+    "species": "IVYSAUR",
+    "level": 19
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 15
+   },
+   {
+    "species": "VENIPEDE",
+    "level": 19
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 16
+   },
+   {
+    "species": "DRATINI",
+    "level": 21
+   },
+   {
+    "species": "LOMBRE",
+    "level": 16
+   }
+  ],
+  "newcomer": {
+   "species": "KRICKETUNE",
+   "level": 19,
+   "types": [
+    "Bug"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w33-vivillon",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 1396
+  },
+  "offer": "catch",
+  "wave": 33,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 22
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 20
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 16
+   },
+   {
+    "species": "SLAKOTH",
+    "level": 16
+   },
+   {
+    "species": "LOMBRE",
+    "level": 17
+   },
+   {
+    "species": "VENIPEDE",
+    "level": 20
+   }
+  ],
+  "newcomer": {
+   "species": "VIVILLON",
+   "level": 21,
+   "types": [
+    "Bug",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new form"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w34-ninjask",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 1451
+  },
+  "offer": "catch",
+  "wave": 34,
+  "party": [
+   {
+    "species": "DRATINI",
+    "level": 24
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 21
+   },
+   {
+    "species": "LICKITUNG",
+    "level": 18
+   },
+   {
+    "species": "VIGOROTH",
+    "level": 18
+   },
+   {
+    "species": "LOMBRE",
+    "level": 18
+   },
+   {
+    "species": "VENIPEDE",
+    "level": 21
+   }
+  ],
+  "newcomer": {
+   "species": "NINJASK",
+   "level": 21,
+   "types": [
+    "Bug",
+    "Flying"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species",
+    "IVs +32 on 2 stats"
+   ]
+  }
+ },
+ {
+  "id": "lag-519-watch-1001T1654-w36-paras",
+  "source": {
+   "kind": "lag-run",
+   "file": "519-watch-2026-10-01T16-54-59Z.jsonl",
+   "line": 1663
+  },
+  "offer": "catch",
+  "wave": 36,
+  "party": [
+   {
+    "species": "LICKITUNG",
+    "level": 21
+   },
+   {
+    "species": "VIGOROTH",
+    "level": 21
+   },
+   {
+    "species": "WHIRLIPEDE",
+    "level": 22
+   },
+   {
+    "species": "IVYSAUR",
+    "level": 22
+   },
+   {
+    "species": "LOMBRE",
+    "level": 20
+   },
+   {
+    "species": "DRATINI",
+    "level": 25
+   }
+  ],
+  "newcomer": {
+   "species": "PARAS",
+   "level": 23,
+   "types": [
+    "Bug",
+    "Grass"
+   ]
+  },
+  "recorded": {
+   "verdict": "catch",
+   "replaces": null,
+   "team": [],
+   "account": [
+    "new species"
+   ]
+  }
+ }
+]

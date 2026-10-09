@@ -1,0 +1,735 @@
+{
+ "hb-all-water-drops-grass": {
+  "replaces": "Sunflora",
+  "upgrade": true,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "stronger than Sunflora (BST 540 vs 425)",
+   "party full: replaces Sunflora",
+   "weakest Sunflora final 425"
+  ]
+ },
+ "hb-all-water-grass-for-grass": {
+  "replaces": "Sunflora",
+  "upgrade": true,
+  "value": 3.5,
+  "verdict": "take",
+  "reasons": [
+   "covers Grass/Electric weakness",
+   "stronger than Sunflora (BST 525 vs 425)",
+   "party full: replaces Sunflora",
+   "weakest Sunflora final 425"
+  ]
+ },
+ "hb-only-ground-is-lowest": {
+  "replaces": "Dugtrio",
+  "upgrade": true,
+  "value": 3,
+  "verdict": "take",
+  "reasons": [
+   "covers Ice weakness",
+   "stronger than Dugtrio (BST 555 vs 425)",
+   "party full: replaces Dugtrio",
+   "weakest Dugtrio final 425"
+  ]
+ },
+ "hb-electric-weak-low-bst-fix": {
+  "replaces": "Raticate",
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Rock/Electric weakness",
+   "hits Steel/Electric/Ice (no one else does)",
+   "party full: replaces Raticate",
+   "weakest Raticate final 413"
+  ]
+ },
+ "hb-fourth-fire-stacks": {
+  "replaces": "Raticate",
+  "upgrade": true,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "stronger than Raticate (BST 525 vs 413)",
+   "party full: replaces Raticate",
+   "weakest Raticate final 413"
+  ]
+ },
+ "hb-dragonair-estimated-final": {
+  "replaces": "Raticate",
+  "upgrade": true,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "stronger than Raticate (final BST ~546 vs 413)",
+   "party full: replaces Raticate",
+   "weakest Raticate final 413"
+  ]
+ },
+ "hb-larvitar-far-behind": {
+  "replaces": "Raticate",
+  "upgrade": false,
+  "value": 1,
+  "verdict": "pass",
+  "reasons": [
+   "covers Flying weakness",
+   "party full: replaces Raticate",
+   "weakest Raticate final 413"
+  ]
+ },
+ "hb-weakest-holds-items": {
+  "replaces": "Delcatty",
+  "upgrade": true,
+  "value": 2.5,
+  "verdict": "take",
+  "reasons": [
+   "hits Normal/Dark (no one else does)",
+   "stronger than Delcatty (BST 525 vs 400)",
+   "party full: replaces Delcatty",
+   "weakest Delcatty final 400"
+  ]
+ },
+ "hb-free-slot-fair": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Ice weakness",
+   "hits Steel/Ice (no one else does)",
+   "weakest Pikachu final ~430"
+  ]
+ },
+ "hb-free-slot-filler": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Gardevoir final 518"
+  ]
+ },
+ "w145-breloom-for-metagross": {
+  "replaces": "Breloom",
+  "upgrade": true,
+  "value": 3.5,
+  "verdict": "take",
+  "reasons": [
+   "covers Flying/Psychic weakness",
+   "stronger than Breloom (BST 600 vs 460)",
+   "party full: replaces Breloom",
+   "weakest Breloom final 460"
+  ]
+ },
+ "w145-breloom-for-mamoswine": {
+  "replaces": "Breloom",
+  "upgrade": false,
+  "value": 1,
+  "verdict": "pass",
+  "reasons": [
+   "covers Electric weakness",
+   "party full: replaces Breloom",
+   "weakest Breloom final 460"
+  ]
+ },
+ "lag-1001T1001-w10-hoothoot": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 1,
+  "verdict": "pass",
+  "reasons": [
+   "covers Ground weakness",
+   "weakest Growlithe final ~460"
+  ]
+ },
+ "lag-1001T1001-w21-seedot": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Ground/Water weakness",
+   "hits Ground/Water (no one else does)",
+   "weakest Growlithe final ~460"
+  ]
+ },
+ "lag-1001T1001-w23-cottonee": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Ground/Water weakness",
+   "hits Ground/Water (no one else does)",
+   "weakest Growlithe final ~460"
+  ]
+ },
+ "lag-1001T1001-w27-cottonee": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Ground/Water weakness",
+   "hits Ground/Water (no one else does)",
+   "weakest Growlithe final ~460"
+  ]
+ },
+ "lag-1001T1001-w28-miltank": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Growlithe final ~460"
+  ]
+ },
+ "lag-1001T1001-w29-petilil": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Ground/Water weakness",
+   "hits Ground/Water (no one else does)",
+   "weakest Growlithe final ~460"
+  ]
+ },
+ "lag-1001T1041-w9-taillow": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 1,
+  "verdict": "pass",
+  "reasons": [
+   "covers Ground weakness",
+   "weakest Growlithe final ~460"
+  ]
+ },
+ "lag-1001T1041-w10-skwovet": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w13-rockruff": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w14-sentret": {
+  "replaces": "Taillow",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w17-pidove": {
+  "replaces": "Taillow",
+  "upgrade": false,
+  "value": 1,
+  "verdict": "pass",
+  "reasons": [
+   "covers Ground weakness",
+   "party full: replaces Taillow",
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w21-foongus": {
+  "replaces": "Taillow",
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Fighting/Water weakness",
+   "hits Ground/Water (no one else does)",
+   "party full: replaces Taillow",
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w23-combee": {
+  "replaces": "Taillow",
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Fighting/Ground weakness",
+   "party full: replaces Taillow",
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w24-lickitung": {
+  "replaces": "Taillow",
+  "upgrade": true,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "stronger than Taillow (final BST ~501 vs ~400)",
+   "party full: replaces Taillow",
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w26-petilil": {
+  "replaces": "Taillow",
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Ground/Water weakness",
+   "hits Ground/Water (no one else does)",
+   "party full: replaces Taillow",
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w27-petilil": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Ground/Water weakness",
+   "hits Ground/Water (no one else does)",
+   "party full: replaces Skwovet",
+   "weakest Skwovet final ~400"
+  ]
+ },
+ "lag-1001T1041-w29-cherubi": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Ground/Water weakness",
+   "hits Ground/Water (no one else does)",
+   "party full: replaces Skwovet",
+   "weakest Skwovet final ~400"
+  ]
+ },
+ "lag-1001T1041-w30-noibat": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Fighting/Ground weakness",
+   "party full: replaces Skwovet",
+   "weakest Skwovet final ~400"
+  ]
+ },
+ "lag-1001T1041-w31-spinarak": {
+  "replaces": "Taillow",
+  "upgrade": false,
+  "value": 1,
+  "verdict": "pass",
+  "reasons": [
+   "covers Fighting weakness",
+   "party full: replaces Taillow",
+   "weakest Taillow final ~400"
+  ]
+ },
+ "lag-1001T1041-w32-oddish": {
+  "replaces": "Skwovet",
+  "upgrade": true,
+  "value": 4,
+  "verdict": "take",
+  "reasons": [
+   "covers Fighting/Water weakness",
+   "hits Ground/Water/Fairy (no one else does)",
+   "stronger than Skwovet (final BST ~541 vs ~400)",
+   "party full: replaces Skwovet",
+   "weakest Skwovet final ~400"
+  ]
+ },
+ "lag-1001T1041-w34-kricketune": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Fighting/Ground weakness",
+   "party full: replaces Skwovet",
+   "weakest Skwovet final ~400"
+  ]
+ },
+ "lag-1001T1128-w4-cottonee": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Fighting/Ground/Rock (no one else does)",
+   "weakest Slakoth final ~500"
+  ]
+ },
+ "lag-1001T1128-w9-wooloo": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Cottonee final ~400"
+  ]
+ },
+ "lag-1001T1128-w13-zubat": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Fighting weakness",
+   "hits Ghost/Psychic (no one else does)",
+   "weakest Cottonee final ~400"
+  ]
+ },
+ "lag-1001T1128-w19-nickit": {
+  "replaces": "Cottonee",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Cottonee final ~400"
+  ]
+ },
+ "lag-1001T1128-w20-buneary": {
+  "replaces": "Cottonee",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Cottonee final ~400"
+  ]
+ },
+ "lag-1001T1128-w28-rattata": {
+  "replaces": "Cottonee",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Cottonee final ~400"
+  ]
+ },
+ "lag-1001T1153-w12-skwovet": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Ghost/Psychic (no one else does)",
+   "weakest Slakoth final ~500"
+  ]
+ },
+ "lag-1001T1153-w19-pawmi": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Flying/Water (no one else does)",
+   "weakest Skwovet final ~400"
+  ]
+ },
+ "lag-1001T1401-w1-happiny": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-1001T1401-w21-dewpider": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Ice weakness",
+   "hits Grass/Psychic/Dark (no one else does)",
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-1001T1401-w27-marill": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Dewpider final ~400"
+  ]
+ },
+ "lag-1001T1401-w29-magikarp": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Dewpider final ~400"
+  ]
+ },
+ "lag-1001T1401-w34-tympole": {
+  "replaces": null,
+  "upgrade": true,
+  "value": 2.5,
+  "verdict": "take",
+  "reasons": [
+   "hits Poison/Steel/Electric (no one else does)",
+   "stronger than Dewpider (final BST ~514 vs ~400)",
+   "weakest Dewpider final ~400"
+  ]
+ },
+ "lag-1001T1401-w37-shellos": {
+  "replaces": "Finneon",
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Flying/Ice (no one else does)",
+   "party full: replaces Finneon",
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-1001T1401-w38-croconaw": {
+  "replaces": "Finneon",
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Flying/Ghost (no one else does)",
+   "party full: replaces Finneon",
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-1001T1401-w39-shellos": {
+  "replaces": "Finneon",
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Poison/Steel/Electric (no one else does)",
+   "party full: replaces Finneon",
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-1001T1401-w40-swalot": {
+  "replaces": "Finneon",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-519-clock-1001T1604-w2-sunkern": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-519-clock-1001T1604-w20-farfetchd": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Fighting/Bug/Grass (no one else does)",
+   "weakest Sunkern final ~400"
+  ]
+ },
+ "lag-519-clock-1001T1604-w22-shroomish": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Sunkern final ~400"
+  ]
+ },
+ "lag-519-clock-1001T1604-w23-lickitung": {
+  "replaces": "Sunkern",
+  "upgrade": true,
+  "value": 2.5,
+  "verdict": "take",
+  "reasons": [
+   "hits Grass/Fairy (no one else does)",
+   "stronger than Sunkern (final BST ~501 vs ~400)",
+   "party full: replaces Sunkern",
+   "weakest Sunkern final ~400"
+  ]
+ },
+ "lag-519-clock-1001T1604-w31-nidorina": {
+  "replaces": "Shroomish",
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Fighting weakness",
+   "hits Normal/Steel/Ice (no one else does)",
+   "party full: replaces Shroomish",
+   "weakest Shroomish final ~405"
+  ]
+ },
+ "lag-519-clock-1001T1604-w32-vivillon": {
+  "replaces": "Finneon",
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Poison/Bug (no one else does)",
+   "party full: replaces Finneon",
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-519-clock-1001T1604-w34-paras": {
+  "replaces": "Vivillon",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Vivillon final 411"
+  ]
+ },
+ "lag-519-clock-1001T1604-w40-pawniard": {
+  "replaces": "Vivillon",
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Flying/Psychic weakness",
+   "party full: replaces Vivillon",
+   "weakest Vivillon final 411"
+  ]
+ },
+ "lag-519-clock-1001T1604-w41-woobat": {
+  "replaces": "Pawniard",
+  "upgrade": false,
+  "value": 2,
+  "verdict": "take",
+  "reasons": [
+   "covers Fighting/Ground weakness",
+   "hits Fighting/Poison (no one else does)",
+   "party full: replaces Pawniard",
+   "weakest Pawniard final ~450"
+  ]
+ },
+ "lag-519-clock-1001T1604-w42-onix": {
+  "replaces": "Woobat",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Woobat final ~433"
+  ]
+ },
+ "lag-519-watch-1001T1654-w7-lotad": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Ghost/Psychic (no one else does)",
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-519-watch-1001T1654-w15-happiny": {
+  "replaces": null,
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-519-watch-1001T1654-w16-lickitung": {
+  "replaces": "Happiny",
+  "upgrade": true,
+  "value": 2.5,
+  "verdict": "take",
+  "reasons": [
+   "hits Grass/Fairy (no one else does)",
+   "stronger than Happiny (final BST ~501 vs ~400)",
+   "party full: replaces Happiny",
+   "weakest Happiny final ~400"
+  ]
+ },
+ "lag-519-watch-1001T1654-w17-buneary": {
+  "replaces": "Finneon",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-519-watch-1001T1654-w23-combee": {
+  "replaces": "Finneon",
+  "upgrade": false,
+  "value": 1.5,
+  "verdict": "pass",
+  "reasons": [
+   "covers Fighting weakness",
+   "hits Fighting/Bug/Dark (no one else does)",
+   "party full: replaces Finneon",
+   "weakest Finneon final ~440"
+  ]
+ },
+ "lag-519-watch-1001T1654-w28-venipede": {
+  "replaces": "Combee",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Combee final ~400"
+  ]
+ },
+ "lag-519-watch-1001T1654-w31-kricketune": {
+  "replaces": "Lombre",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Lombre final ~450"
+  ]
+ },
+ "lag-519-watch-1001T1654-w33-vivillon": {
+  "replaces": "Lombre",
+  "upgrade": false,
+  "value": 0.5,
+  "verdict": "pass",
+  "reasons": [
+   "hits Fighting/Bug (no one else does)",
+   "party full: replaces Lombre",
+   "weakest Lombre final ~450"
+  ]
+ },
+ "lag-519-watch-1001T1654-w34-ninjask": {
+  "replaces": "Lombre",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Lombre final ~450"
+  ]
+ },
+ "lag-519-watch-1001T1654-w36-paras": {
+  "replaces": "Lombre",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "weakest Lombre final ~450"
+  ]
+ }
+}

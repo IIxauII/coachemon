@@ -1,0 +1,197 @@
+[
+ {
+  "id": "hb-all-water-drops-grass",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 45,
+  "probe": "The known failure. Five Waters and one weaker Grass member, offered a sixth Water with more BST. Dropping Sunflora leaves six members weak to Grass and Electric and nothing that resists either: a team-aware judgment should not call this an upgrade.",
+  "party": [
+   { "species": "BLASTOISE", "level": 40, "moves": ["SURF", "ICE_BEAM", "BITE"] },
+   { "species": "VAPOREON", "level": 40, "moves": ["SURF", "AURORA_BEAM", "QUICK_ATTACK"] },
+   { "species": "GYARADOS", "level": 40, "moves": ["WATERFALL", "BITE"] },
+   { "species": "LAPRAS", "level": 40, "moves": ["SURF", "ICE_BEAM", "BODY_SLAM"] },
+   { "species": "STARMIE", "level": 40, "moves": ["SURF", "PSYCHIC"] },
+   { "species": "SUNFLORA", "level": 40, "moves": ["GIGA_DRAIN", "SOLAR_BEAM"] }
+  ],
+  "newcomer": { "species": "MILOTIC", "level": 40 }
+ },
+ {
+  "id": "hb-all-water-grass-for-grass",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 45,
+  "probe": "Control for the case above: the same party offered a stronger Grass type. The swap keeps the team's only Grass answer and gains 100 BST, so it should still read as an upgrade.",
+  "party": [
+   { "species": "BLASTOISE", "level": 40, "moves": ["SURF", "ICE_BEAM", "BITE"] },
+   { "species": "VAPOREON", "level": 40, "moves": ["SURF", "AURORA_BEAM", "QUICK_ATTACK"] },
+   { "species": "GYARADOS", "level": 40, "moves": ["WATERFALL", "BITE"] },
+   { "species": "LAPRAS", "level": 40, "moves": ["SURF", "ICE_BEAM", "BODY_SLAM"] },
+   { "species": "STARMIE", "level": 40, "moves": ["SURF", "PSYCHIC"] },
+   { "species": "SUNFLORA", "level": 40, "moves": ["GIGA_DRAIN", "SOLAR_BEAM"] }
+  ],
+  "newcomer": { "species": "VENUSAUR", "level": 40, "moves": ["GIGA_DRAIN", "SLUDGE_BOMB"] }
+ },
+ {
+  "id": "hb-only-ground-is-lowest",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 48,
+  "probe": "The lowest-BST member is the only answer to a type. Dugtrio is the party's one Electric immunity and one Ground attacker; four members are weak to Electric. Arcanine has more BST but repeats Charizard's Fire, so a team-aware judgment should weigh what is lost, not call it a clear upgrade.",
+  "party": [
+   { "species": "GYARADOS", "level": 45, "moves": ["WATERFALL", "BITE"] },
+   { "species": "CHARIZARD", "level": 45, "moves": ["FLAMETHROWER", "AIR_SLASH"] },
+   { "species": "PIDGEOT", "level": 45, "moves": ["AIR_SLASH", "QUICK_ATTACK"] },
+   { "species": "GENGAR", "level": 45, "moves": ["SHADOW_BALL", "SLUDGE_BOMB"] },
+   { "species": "ALAKAZAM", "level": 45, "moves": ["PSYCHIC", "SHADOW_BALL"] },
+   { "species": "DUGTRIO", "level": 45, "moves": ["EARTHQUAKE", "SLASH"] }
+  ],
+  "newcomer": { "species": "ARCANINE", "level": 45, "moves": ["FLAMETHROWER", "CRUNCH"] }
+ },
+ {
+  "id": "hb-electric-weak-low-bst-fix",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 42,
+  "probe": "Below the upgrade bar but fixes a shared weakness. Four members are weak to Electric. Marowak has less BST than the weakest member, yet it is immune to Electric and adds Ground: swapping it for Raticate should improve the team.",
+  "party": [
+   { "species": "GYARADOS", "level": 40, "moves": ["WATERFALL", "BITE"] },
+   { "species": "PELIPPER", "level": 40, "moves": ["SURF", "WING_ATTACK"] },
+   { "species": "PIDGEOT", "level": 40, "moves": ["AIR_SLASH", "QUICK_ATTACK"] },
+   { "species": "LAPRAS", "level": 40, "moves": ["SURF", "ICE_BEAM"] },
+   { "species": "STARMIE", "level": 40, "moves": ["SURF", "PSYCHIC"] },
+   { "species": "RATICATE", "level": 40, "moves": ["HYPER_FANG", "CRUNCH"] }
+  ],
+  "newcomer": { "species": "MAROWAK", "level": 40, "moves": ["BONEMERANG", "ROCK_SLIDE"] }
+ },
+ {
+  "id": "hb-fourth-fire-stacks",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 38,
+  "probe": "Stacking. Three Fires already, offered a fourth that clears the upgrade bar over Raticate. The swap stacks Water, Ground and Rock weaknesses on four members: a soft-capped model should resist it.",
+  "party": [
+   { "species": "ARCANINE", "level": 35, "moves": ["FLAME_WHEEL", "CRUNCH"] },
+   { "species": "NINETALES", "level": 35, "moves": ["FLAMETHROWER", "QUICK_ATTACK"] },
+   { "species": "RAPIDASH", "level": 35, "moves": ["FLAME_WHEEL", "STOMP"] },
+   { "species": "PIDGEOT", "level": 35, "moves": ["WING_ATTACK", "QUICK_ATTACK"] },
+   { "species": "GOLDUCK", "level": 35, "moves": ["SURF", "CONFUSION"] },
+   { "species": "RATICATE", "level": 35, "moves": ["HYPER_FANG", "CRUNCH"] }
+  ],
+  "newcomer": { "species": "FLAREON", "level": 35, "moves": ["FIRE_FANG", "QUICK_ATTACK"] }
+ },
+ {
+  "id": "hb-dragonair-estimated-final",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 46,
+  "probe": "Projected BST against live strength. Dragonair is called an upgrade on an estimated final BST, but Dragonite is 15 levels away (L55) and Dragonair at L40 is weaker now than the Raticate it replaces would be at the next boss. Tests evolution distance and catch-up.",
+  "party": [
+   { "species": "CHARIZARD", "level": 45, "moves": ["FLAMETHROWER", "AIR_SLASH"] },
+   { "species": "BLASTOISE", "level": 45, "moves": ["SURF", "BITE"] },
+   { "species": "VENUSAUR", "level": 45, "moves": ["GIGA_DRAIN", "SLUDGE_BOMB"] },
+   { "species": "JOLTEON", "level": 45, "moves": ["THUNDERBOLT", "QUICK_ATTACK"] },
+   { "species": "MACHAMP", "level": 45, "moves": ["CROSS_CHOP", "ROCK_SLIDE"] },
+   { "species": "RATICATE", "level": 45, "moves": ["HYPER_FANG", "CRUNCH"] }
+  ],
+  "newcomer": { "species": "DRAGONAIR", "level": 40 }
+ },
+ {
+  "id": "hb-larvitar-far-behind",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 46,
+  "probe": "A future powerhouse far under-levelled. Larvitar's line ends at 600 BST but it is 25 levels behind; today's level gap of 10 rules out the upgrade. Tests how a model prices catch-up time (cubic EXP curves, only participants gain).",
+  "party": [
+   { "species": "CHARIZARD", "level": 45, "moves": ["FLAMETHROWER", "AIR_SLASH"] },
+   { "species": "BLASTOISE", "level": 45, "moves": ["SURF", "BITE"] },
+   { "species": "VENUSAUR", "level": 45, "moves": ["GIGA_DRAIN", "SLUDGE_BOMB"] },
+   { "species": "JOLTEON", "level": 45, "moves": ["THUNDERBOLT", "QUICK_ATTACK"] },
+   { "species": "MACHAMP", "level": 45, "moves": ["CROSS_CHOP", "ROCK_SLIDE"] },
+   { "species": "RATICATE", "level": 45, "moves": ["HYPER_FANG", "CRUNCH"] }
+  ],
+  "newcomer": { "species": "LARVITAR", "level": 20 }
+ },
+ {
+  "id": "hb-weakest-holds-items",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 52,
+  "probe": "Release cost. The weakest member carries the run's items, and release deletes them. The swap is a clean BST upgrade on paper. `held` is case data only: the replay does not put the items on the live mon.",
+  "party": [
+   { "species": "GARCHOMP", "level": 50, "moves": ["EARTHQUAKE", "DRAGON_CLAW"] },
+   { "species": "SNORLAX", "level": 50, "moves": ["BODY_SLAM", "CRUNCH"] },
+   { "species": "LAPRAS", "level": 50, "moves": ["SURF", "ICE_BEAM"] },
+   { "species": "MAGNEZONE", "level": 50, "moves": ["THUNDERBOLT", "FLASH_CANNON"] },
+   { "species": "ROSERADE", "level": 50, "moves": ["GIGA_DRAIN", "SLUDGE_BOMB"] },
+   { "species": "DELCATTY", "level": 50, "moves": ["DOUBLE_EDGE", "FAKE_OUT"],
+     "held": ["LEFTOVERS", "SHELL_BELL", "QUICK_CLAW", "KINGS_ROCK", "SOOTHE_BELL"] }
+  ],
+  "newcomer": { "species": "LUCARIO", "level": 50, "moves": ["AURA_SPHERE", "FLASH_CANNON"] }
+ },
+ {
+  "id": "hb-free-slot-fair",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 22,
+  "probe": "Free slot, decent newcomer. Four members, so nothing is replaced. Whether to fill now or hold the slot open is a separate question from the swap.",
+  "party": [
+   { "species": "IVYSAUR", "level": 22 },
+   { "species": "WARTORTLE", "level": 22 },
+   { "species": "PIDGEOTTO", "level": 21 },
+   { "species": "PIKACHU", "level": 20 }
+  ],
+  "newcomer": { "species": "GROWLITHE", "level": 19 }
+ },
+ {
+  "id": "hb-free-slot-filler",
+  "source": { "kind": "hand-built" },
+  "offer": "catch",
+  "wave": 55,
+  "probe": "Free slot, weak newcomer. Five strong members and one open slot, offered a 410-BST filler at their level. Tests opportunity cost: filling now against holding out for something better.",
+  "party": [
+   { "species": "GARCHOMP", "level": 52, "moves": ["EARTHQUAKE", "DRAGON_CLAW"] },
+   { "species": "GYARADOS", "level": 52, "moves": ["WATERFALL", "CRUNCH"] },
+   { "species": "ARCANINE", "level": 52, "moves": ["FLAMETHROWER", "EXTREME_SPEED"] },
+   { "species": "GARDEVOIR", "level": 52, "moves": ["PSYCHIC", "MOONBLAST"] },
+   { "species": "MAGNEZONE", "level": 52, "moves": ["THUNDERBOLT", "FLASH_CANNON"] }
+  ],
+  "newcomer": { "species": "BIBAREL", "level": 50 }
+ },
+ {
+  "id": "w145-breloom-for-metagross",
+  "source": { "kind": "doc", "file": "docs/w145-ivy-rayquaza.md", "note": "the party is real (Ivy at wave 145); the newcomer is hand-picked" },
+  "offer": "catch",
+  "wave": 145,
+  "road": "W150: Rayquaza boss, Dragon/Flying; Ivy's Torterra boss, Grass/Ground",
+  "probe": "Late game, real party. Breloom has the lowest BST and would be released, but it is the party's only Grass attacker and only sleep (Spore), and the only member resisting all of Torterra's moves. Metagross clears the upgrade bar.",
+  "party": [
+   { "species": "ALOLA_RAICHU", "level": 130, "ability": "SURGE_SURFER", "moves": ["THUNDERBOLT", "BEAT_UP", "PSYCHIC", "MOONBLAST"],
+     "held": ["FOCUS_BAND", "MAGNET", "SOOTHE_BELL", "LANSAT_BERRY", "SALAC_BERRY", "GANLON_BERRY", "SITRUS_BERRY"] },
+   { "species": "CRAWDAUNT", "level": 129, "ability": "HYPER_CUTTER", "moves": ["CRABHAMMER", "CLOSE_COMBAT", "CRUNCH", "NIGHT_SLASH"] },
+   { "species": "TENTACRUEL", "level": 129, "ability": "LIQUID_OOZE", "moves": ["HYDRO_PUMP", "SURF", "POISON_JAB", "SLUDGE_WAVE"], "held": ["LUM_BERRY"] },
+   { "species": "BRELOOM", "level": 129, "ability": "EFFECT_SPORE", "moves": ["SPORE", "SKY_UPPERCUT", "SEED_BOMB", "DRAIN_PUNCH"], "held": ["HARD_STONE", "SILK_SCARF"] },
+   { "species": "DRAGONITE", "level": 129, "form": "mega", "ability": "MULTISCALE", "moves": ["EXTREME_SPEED", "HYPER_VOICE", "HYPER_BEAM", "DRAGON_HAMMER"],
+     "held": ["LEPPA_BERRY"] },
+   { "species": "QUAQUAVAL", "level": 129, "ability": "TORRENT", "moves": ["LIQUIDATION", "AQUA_STEP", "CLOSE_COMBAT", "MEGA_KICK"],
+     "held": ["MYSTIC_WATER", "SILK_SCARF", "WIDE_LENS"] }
+  ],
+  "newcomer": { "species": "METAGROSS", "level": 125 }
+ },
+ {
+  "id": "w145-breloom-for-mamoswine",
+  "source": { "kind": "doc", "file": "docs/w145-ivy-rayquaza.md", "note": "the party is real (Ivy at wave 145); the newcomer is hand-picked" },
+  "offer": "catch",
+  "wave": 145,
+  "road": "W150: Rayquaza boss, Dragon/Flying (4× weak to Ice); Ivy's Torterra boss, Grass/Ground (4× weak to Ice)",
+  "probe": "Known road ahead. Mamoswine misses the upgrade bar on BST, but Ice hits both coming bosses 4×, and nothing on the team carries an Ice move. Tests the road-ahead term against generic strength.",
+  "party": [
+   { "species": "ALOLA_RAICHU", "level": 130, "ability": "SURGE_SURFER", "moves": ["THUNDERBOLT", "BEAT_UP", "PSYCHIC", "MOONBLAST"] },
+   { "species": "CRAWDAUNT", "level": 129, "ability": "HYPER_CUTTER", "moves": ["CRABHAMMER", "CLOSE_COMBAT", "CRUNCH", "NIGHT_SLASH"] },
+   { "species": "TENTACRUEL", "level": 129, "ability": "LIQUID_OOZE", "moves": ["HYDRO_PUMP", "SURF", "POISON_JAB", "SLUDGE_WAVE"] },
+   { "species": "BRELOOM", "level": 129, "ability": "EFFECT_SPORE", "moves": ["SPORE", "SKY_UPPERCUT", "SEED_BOMB", "DRAIN_PUNCH"] },
+   { "species": "DRAGONITE", "level": 129, "form": "mega", "ability": "MULTISCALE", "moves": ["EXTREME_SPEED", "HYPER_VOICE", "HYPER_BEAM", "DRAGON_HAMMER"] },
+   { "species": "QUAQUAVAL", "level": 129, "ability": "TORRENT", "moves": ["LIQUIDATION", "AQUA_STEP", "CLOSE_COMBAT", "MEGA_KICK"] }
+  ],
+  "newcomer": { "species": "MAMOSWINE", "level": 127, "moves": ["ICICLE_CRASH", "EARTHQUAKE", "ICE_SHARD"] }
+ }
+]
