@@ -1,0 +1,297 @@
+{
+  "setup": {
+    "wave": 27,
+    "wild": "Pikachu",
+    "wildLevel": 17,
+    "party": [
+      "Blastoise L30 Water Pulse/Flash Cannon/Protect/Tail Whip",
+      "Charizard L30 Fire Fang/Air Slash/Sunny Day/Dragon Breath",
+      "Venusaur L30 Petal Blizzard/Seed Bomb/Leech Seed/Take Down",
+      "Pikachu L30 Nuzzle/Electric Terrain/Slam/Double Kick",
+      "Gengar L30 Hex/Smog/Curse/Mean Look",
+      "Snorlax L30 Covet/Rest/Screech/Defense Curl"
+    ]
+  },
+  "today.partyProfile": {
+    "n": 200,
+    "p50": 0.4393,
+    "p95": 1.3652,
+    "max": 4.0113
+  },
+  "today.partyReasons(per candidate, weakest)": {
+    "n": 200,
+    "p50": 0.0025,
+    "p95": 0.0045,
+    "max": 0.0127
+  },
+  "today.profile+reasons, 6 swaps": {
+    "n": 200,
+    "p50": 0.433,
+    "p95": 1.2831,
+    "max": 1.9842
+  },
+  "finalBstOf(live mon)": {
+    "n": 200,
+    "p50": 0.0005,
+    "p95": 0.0006,
+    "max": 0.014
+  },
+  "build 6 EnemyPokemon from species+level": {
+    "cold": [
+      2.252
+    ]
+  },
+  "build 1 EnemyPokemon from species+level (+destroy)": {
+    "n": 50,
+    "p50": 0.3981,
+    "p95": 1.1785,
+    "max": 2.1377
+  },
+  "typechart coverage, 7 teams × 6 threats": {
+    "n": 200,
+    "p50": 0.1027,
+    "p95": 0.3127,
+    "max": 1.1148
+  },
+  "approxOutcomes 1 pair, 1 direction": {
+    "n": 500,
+    "p50": 0.0394,
+    "p95": 0.072,
+    "max": 0.2838
+  },
+  "approx duel matrix uncached, 7 teams × 6 × 6 × 2 dirs": {
+    "n": 20,
+    "p50": 29.963,
+    "p95": 45.7191,
+    "max": 45.7191
+  },
+  "approx duel matrix memoised (7 rows × 6 threats × 2 dirs)": {
+    "n": 50,
+    "p50": 4.0364,
+    "p95": 5.7908,
+    "max": 6.875
+  },
+  "approxSample": {
+    "name": "Water Pulse",
+    "dmg": 11.61111111111111,
+    "pKo": 0,
+    "live": false,
+    "keys": [
+      "raw",
+      "name",
+      "type",
+      "cat",
+      "e",
+      "priority",
+      "spread",
+      "spreadApplied",
+      "traits",
+      "semi",
+      "self",
+      "acc",
+      "crit",
+      "dist",
+      "perHit",
+      "targetHp",
+      "expected",
+      "uncapped",
+      "max",
+      "pKo",
+      "revive",
+      "costs",
+      "notes",
+      "live",
+      "use",
+      "focus",
+      "flinch",
+      "drain",
+      "dmg"
+    ]
+  },
+  "koCurve+koTurns 1 pair": {
+    "n": 500,
+    "p50": 0.0256,
+    "p95": 0.0662,
+    "max": 0.5561
+  },
+  "held-item price, whole party": {
+    "n": 200,
+    "p50": 0.0022,
+    "p95": 0.0075,
+    "max": 0.0112
+  },
+  "randbatsShape": {
+    "keys": [
+      "m",
+      "r",
+      "s",
+      "d",
+      "e",
+      "f"
+    ],
+    "singles": 780
+  },
+  "randbats sets → move objects, 1 species": {
+    "n": 200,
+    "p50": 0.0009,
+    "p95": 0.001,
+    "max": 0.0068
+  },
+  "bigFightsAhead(30 waves)": {
+    "n": 200,
+    "p50": 0.0025,
+    "p95": 0.013,
+    "max": 0.0783
+  },
+  "aheadModel cold (incl. preview of next big fight)": {
+    "cold": [
+      8.315,
+      2.479,
+      2.944,
+      2.866,
+      2.616,
+      4.007
+    ]
+  },
+  "teamAudit cold": {
+    "cold": [
+      52.923,
+      4.395,
+      5.523,
+      6.484,
+      4.381,
+      3.809
+    ]
+  },
+  "previewFor next wave cold": {
+    "cold": [
+      1.377,
+      2.163,
+      1.019,
+      0.953,
+      1.414,
+      0.895
+    ]
+  },
+  "previewFor +5 waves cold": {
+    "cold": [
+      3.534,
+      0.751,
+      0.867,
+      1.202,
+      0.614,
+      0.669
+    ]
+  },
+  "aheadModel warm (memo)": {
+    "cold": [
+      0.017,
+      0.002,
+      0.003,
+      0.003,
+      0.004,
+      0.003
+    ]
+  },
+  "rosters": [
+    {
+      "next": 30,
+      "kind": "gym",
+      "foes": [
+        "Heatmor L20",
+        "Pignite L21",
+        "Pansear L22"
+      ],
+      "conf": false
+    },
+    {
+      "next": 30,
+      "kind": "gym",
+      "foes": [
+        "Pidove L20",
+        "Minccino L21",
+        "Herdier L22"
+      ],
+      "conf": false
+    },
+    {
+      "next": 30,
+      "kind": "gym",
+      "foes": [
+        "Pidove L20",
+        "Minccino L21",
+        "Herdier L22"
+      ],
+      "conf": false
+    },
+    {
+      "next": 30,
+      "kind": "gym",
+      "foes": [
+        "Maractus L20",
+        "Servine L21",
+        "Pansage L22"
+      ],
+      "conf": false
+    },
+    {
+      "next": 30,
+      "kind": "gym",
+      "foes": [
+        "Pidove L20",
+        "Minccino L21",
+        "Herdier L22"
+      ],
+      "conf": false
+    },
+    {
+      "next": 30,
+      "kind": "gym",
+      "foes": [
+        "Heatmor L20",
+        "Pignite L21",
+        "Pansear L22"
+      ],
+      "conf": false
+    }
+  ],
+  "previewRow": {
+    "name": "Basculin",
+    "icon": [
+      "pokemon_icons_5",
+      "550-red-striped"
+    ],
+    "level": 20,
+    "types": [
+      "Water"
+    ],
+    "ability": "Reckless",
+    "passive": null,
+    "hp": 59,
+    "stats": [
+      39,
+      31,
+      42,
+      28,
+      50
+    ],
+    "segments": 0,
+    "shiny": false,
+    "moves": [
+      "Aqua Jet",
+      "Chip Away",
+      "Tail Whip",
+      "Bite"
+    ],
+    "attackTypes": [
+      "Water",
+      "Normal",
+      "Dark"
+    ],
+    "statusMoves": [
+      "Tail Whip"
+    ],
+    "healMoves": []
+  },
+  "stubError": "TypeError: pokemon.canApplyAbility is not a function\n    at applySingleAbAttrs (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/src/data/abilities/apply-ab-attrs.ts:28:16)\n    at applyAbAttrsInternal (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/src/data/abilities/apply-ab-attrs.ts:99:5)\n    at applyAbAttrs (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/src/data/abilities/apply-ab-attrs.ts:116:3)\n    at FlinchAttr.getMoveChance (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/src/data/moves/move.ts:1761:5)\n    at flinchChance (eval at loadHud (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/test/tests/bench558.test.ts:18:7), <anonymous>:1397:57)\n    at fromApprox (eval at loadHud (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/test/tests/bench558.test.ts:18:7), <anonymous>:1893:81)\n    at approxOutcome (eval at loadHud (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/test/tests/bench558.test.ts:18:7), <anonymous>:1932:54)\n    at eval (eval at loadHud (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/test/tests/bench558.test.ts:18:7), <anonymous>:1933:70)\n    at Array.map (<anonymous>)\n    at Object.approxOutcomes (eval at loadHud (/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/test/tests/bench558.test.ts:18:7), <anonymous>:1933:60)"
+}
