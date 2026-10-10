@@ -16,13 +16,13 @@ export const isCoverage = mv => mv.category !== MoveCategory.STATUS && (mv.power
 export const damagingTypes = p => [...new Set(movesOf(p).filter(isCoverage).map(mv => TYPES[mv.type]).filter(Boolean))];
 export const typesOfSpecies = sp => [sp?.type1, sp?.type2].filter(t => t != null).map(t => TYPES[t]).filter(Boolean);
 
-const formOf = (sp, i) => (i != null && Array.isArray(sp?.forms) && sp.forms.length ? sp.forms[i] ?? sp : sp);
+export const formOf = (sp, i) => (i != null && Array.isArray(sp?.forms) && sp.forms.length ? sp.forms[i] ?? sp : sp);
 // `calculateBaseStats` logs "Applied …" to the page's console once per vitamin, Shuckle Juice or Old Gateau, every
 // tick, so it is cached against `level` and `stats`, which whatever moves its answer recalculates (game-code.md §20).
 // `calculateStats` floors, though, so a +1 base stat on a low-level mon can leave `stats` as they were and go unseen.
 // A copy goes out each time, as the game's own call does, or a caller's mutation poisons the cache.
 const baseStatsCache = new WeakMap();
-const baseStatsOf = mon => {
+export const baseStatsOf = mon => {
   if (!mon || typeof mon !== "object") return undefined;
   const key = `${mon.level}|${(mon.stats ?? []).join(",")}`;
   const hit = baseStatsCache.get(mon);

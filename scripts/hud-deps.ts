@@ -313,6 +313,16 @@ export const HUD_DEPS = {
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getRootSpeciesId`,
   ],
 
+  /** game-code.md §24. */
+  "09-combatant.js": [
+    `${P}#Pokemon.calculateStats`,
+    `${P}#Pokemon.getAbility`,
+    `${P}#Pokemon.hasPassive`,
+    `${P}#Pokemon.getTypes`,
+    `src/data/pokemon-species.ts#PokemonSpeciesForm.getAbility`,
+    `src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr.canApply`,
+  ],
+
   /** game-code.md §13. */
   "44-safari.js": [
     `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#summonSafariPokemon`,
