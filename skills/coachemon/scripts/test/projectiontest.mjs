@@ -3,7 +3,37 @@
 // Wave 62 is 8 waves short of the boss on 70, where the cap stands at 56.
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
-import { party } from "./fixtures/party.mjs";
+import { party, species, SPECIES } from "./fixtures/party.mjs";
+
+// The species registry the chunk scan hands over (game-code.md §23): `getSpecies(id)`, and `getEvolutions(id)` whose
+// entries carry a `level`, an `item` and a `condition`. Dratini's line is levelled, Golbat's conditional, Magneton's
+// held behind an item, and Tyrogue's two branches carry nothing to tell them apart.
+let validated = 0;
+const SP = {
+  dratini: species(147, "Dratini", ["Dragon"], 300),
+  dragonair: species(148, "Dragonair", ["Dragon"], 420, { root: 147 }),
+  dragonite: species(149, "Dragonite", ["Dragon", "Flying"], 600, { root: 147 }),
+  golbat: species(42, "Golbat", ["Poison", "Flying"], 455, { root: 41 }),
+  crobat: species(169, "Crobat", ["Poison", "Flying"], 535, { root: 41 }),
+  magneton: species(82, "Magneton", ["Electric", "Steel"], 465, { root: 81 }),
+  magnezone: species(462, "Magnezone", ["Electric", "Steel"], 535, { root: 81 }),
+  tyrogue: species(236, "Tyrogue", ["Fighting"], 210),
+  hitmonlee: species(106, "Hitmonlee", ["Fighting"], 455, { root: 236 }),
+  hitmonchan: species(107, "Hitmonchan", ["Fighting"], 455, { root: 236 }),
+};
+const EVOS = {
+  147: [{ speciesId: 148, level: 35 }],
+  148: [{ speciesId: 149, level: 45 }],
+  // Crobat's own friendship check, which holds for the Golbat below and is never asked all the same.
+  42: [{ speciesId: 169, level: 40, condition: { validate: () => { validated++; return true; } } }],
+  82: [{ speciesId: 462, level: 1, item: "THUNDER_STONE" }],
+  129: [{ speciesId: 130, level: 20 }],
+  236: [{ speciesId: 106, level: 40 }, { speciesId: 107, level: 40 }],
+};
+const REG = {
+  getSpecies: id => Object.values(SP).find(sp => sp.speciesId === id) ?? null,
+  getEvolutions: id => EVOS[id] ?? [],
+};
 
 class ExpShareModifier {}
 const mk = (C, f) => Object.assign(new C(), f);
@@ -33,6 +63,9 @@ const drawsBefore = draws;
 const row = (label, cells) => console.log(`${label.padEnd(26)}${[].concat(cells).join("  ")}`);
 // A projected level, with the mark the cap leaves on it.
 const at = (p, x, opts) => { const r = p.of(x, opts); return `${r.was}→${r.level}${r.capped ? "=cap" : ""}`; };
+// The species a projection says the mon stands as at the fight, and the line it walked to get there.
+const name = r => (r.evolved.length ? `${r.evolved.map(sp => sp.name).join("→")} (evolved)`
+  : `${r.species?.name ?? "—"} (as it is)`);
 
 // ---- The level cap by wave, which is where the EXP stream is calibrated from
 {
@@ -174,6 +207,77 @@ const at = (p, x, opts) => { const r = p.of(x, opts); return `${r.was}→${r.lev
     "an EXP stream is a model of what the run will do, never a read of it (CONTEXT.md, `Confidence`)");
   assert.equal(levelProjection(scene, { from: 62 }).of(party()[0]).confidence, "estimate",
     "a projection over no waves at all is an estimate too");
+}
+
+// ---- An evolution counts only where it lands by the fight, and the level that lands it is the projected one
+{
+  // The three projections below are the same EXP model as above, from wave 62 to the boss on 70: a mon at level 30
+  // reaches 34 on a fifth of a participant's share, 37 on two fifths, and 45 fighting every wave itself.
+  const dratini = { name: "Dratini", id: "147:30", level: 30, species: SP.dratini };
+  const to = mods => { scene.modifiers = mods; return levelProjection(scene, { from: 62, fight: 70 }); };
+  const BENCHED = [expAll(1)], FED = [expAll(2)];
+
+  console.log("== an evolution by the next big fight");
+  // Before the registry lands there is no evolved species to score at all, so nothing evolves.
+  assert.equal(to([]).of(dratini, { participant: true }).species, SP.dratini, "no species registry, no evolution");
+  assert.deepEqual(to([]).of(dratini, { participant: true }).evolved, []);
+  globalThis.__hud["04-game-tables"].setGameTables({ species: REG });
+
+  const stands = to(BENCHED).of(dratini);
+  const once = to(FED).of(dratini);
+  const whole = to([]).of(dratini, { participant: true });
+  row("Dratini, benched", [`L${stands.was}→${stands.level}`, name(stands)]);
+  row("…two EXP. All stacks", [`L${once.was}→${once.level}`, name(once)]);
+  row("…fighting every wave", [`L${whole.was}→${whole.level}`, name(whole)]);
+  assert.deepEqual([stands.level, once.level, whole.level], [34, 37, 45]);
+  assert.equal(stands.species, SP.dratini, "Dragonair is one level out of reach at 34, so the mon is scored as it is");
+  assert.deepEqual(stands.evolved, []);
+  assert.equal(once.species, SP.dragonair, "at 37 the level has landed…");
+  assert.deepEqual(once.evolved, [SP.dragonair]);
+  assert.equal(whole.species, SP.dragonite, "…and at 45 the whole line has");
+  assert.deepEqual(whole.evolved, [SP.dragonair, SP.dragonite], "every species it passes through, in order");
+  assert.equal(whole.form, 0, "the registry names a species, not a form");
+  assert.equal(whole.confidence, "estimate", "an evolution read off a projected level is no more than an estimate");
+
+  // A condition is refused on purpose, and it does not matter that this one holds: a condition reads the mon as it
+  // stands now, where the question is whether it holds at the fight. The evolution's own `validate` is never called.
+  const golbat = { name: "Golbat", id: "42:30", level: 30, species: SP.golbat, friendship: 255 };
+  const gone = to([]).of(golbat, { participant: true });
+  row("Golbat, friendship 255", [`L${gone.was}→${gone.level}`, name(gone)]);
+  assert.equal(gone.species, SP.golbat, "Crobat's level is reached at 45 and its condition is refused anyway");
+  assert.deepEqual(gone.evolved, []);
+  assert.equal(validated, 0, "and nothing asked the condition to validate itself");
+
+  // Luck is not counted: an evolution item is applied the moment it is drawn, so it is never held and never in the
+  // bag (game-code.md §15), and a line waiting on one never lands.
+  const magneton = { name: "Magneton", id: "82:30", level: 30, species: SP.magneton };
+  const stone = to([]).of(magneton, { participant: true });
+  row("Magneton, no stone", [`L${stone.was}→${stone.level}`, name(stone)]);
+  assert.equal(stone.species, SP.magneton, "a Thunder Stone has to be drawn, which is luck");
+
+  // A member standing past its own evolution level has not evolved for a reason the coach cannot read, and the
+  // projection does not evolve it either. The fixture's Magikarp is eleven levels past Gyarados' 20.
+  const karp = party()[3];
+  const unevolved = to(FED).of(karp, { participant: true });
+  row("Magikarp, L35 past 20", [`L${unevolved.was}→${unevolved.level}`, name(unevolved)]);
+  assert.equal(unevolved.species, SPECIES.magikarp, "whatever is holding it back is not a thing the coach can see");
+  assert.deepEqual(unevolved.evolved, []);
+
+  // The player may switch a member's evolutions off, and a branch with no condition on either side — which no line
+  // in the game has — is refused rather than guessed at.
+  const paused = to([]).of({ ...dratini, pauseEvolutions: true }, { participant: true });
+  const forked = to([]).of({ name: "Tyrogue", id: "236:30", level: 30, species: SP.tyrogue }, { participant: true });
+  assert.equal(paused.species, SP.dratini, "evolutions paused on the member");
+  assert.equal(forked.species, SP.tyrogue, "two landing branches, and no way to tell which the game would take");
+  row("paused / a bare branch", [name(paused), name(forked)]);
+
+  // A stand-in with no species yet, and a member going nowhere.
+  assert.equal(to([]).of({ level: 30 }, { participant: true }).species, null, "nothing to evolve");
+  assert.deepEqual(to([]).of({ level: 30 }, { participant: true }).evolved, []);
+  const held = to([]).of({ level: 30, species: SP.dratini, formIndex: 2 });
+  assert.equal(held.species, SP.dratini, "no EXP at all, so no level and no evolution");
+  assert.equal(held.form, 2, "and the member keeps the form it is standing in");
+  scene.modifiers = [];
 }
 
 // ---- Projecting a level draws nothing and breaches nothing
