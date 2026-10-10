@@ -205,6 +205,7 @@ const context = (s, me, options, account) => {
   const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
   // The game's `getHighestLevelPlayerPokemon(false, true)`, fainted included (game-code.md §13).
   const best = party.reduce((t, p) => Math.max(t, p.level ?? 0), 0) || (top?.level ?? 1);
+  // Whole-party counts, because what reads them is a full heal and revive: the party the game would mend.
   const maxHp = party.reduce((t, p) => t + tryDo(() => p.getMaxHp(), 0), 0);
   const wounded = maxHp ? party.reduce((t, p) => t + Math.max(tryDo(() => p.getMaxHp(), 0) - p.hp, 0), 0) / maxHp : 0;
   const fainted = party.filter(p => p.hp <= 0).length;
