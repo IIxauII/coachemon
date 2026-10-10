@@ -8,8 +8,11 @@ Sudowoodo         Steel
 == weaknesses and holes
 weak to           Fighting  Grass  Electric
 holes             Normal  Fighting  Bug  Water  Ice  Dark  Fairy
-== weakest
+== lightest
 Magikarp          final 400~  L35
+== weakest
+told nothing      null
+told Garchomp     Garchomp  1.5 turns
 == matchups
 hit Magnezone     Garchomp
 weak to Electric  Lapras  Magikarp
