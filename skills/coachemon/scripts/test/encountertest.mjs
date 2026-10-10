@@ -315,38 +315,18 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(seen), ["take", "off", "ok"]);
 }
 
-// ---- GTS: the best offer for a mon that isn't the carry, by final BST.
+// ---- GTS: a card with no species table to build a threat set from claims no call at all, where it used to rank the
+// three offers by final BST. The judged blocks are at the foot of this file, with the species table the judgment
+// needs (#586).
 {
   const party = team();
   const offers = new Map(party.map(p => [p.id, [{ species: species(1, "Rattata", ["Normal"], 253) }, { species: species(2, p === party[0] ? "Mewtwo" : "Salamence", ["Dragon", "Flying"], p === party[0] ? 680 : 600) }]]));
-  const m = show("gts", { type: 29, labels: ["Trade", "Wonder Trade", "Item Trade", "Leave"], options: [option({ mode: 1 }), option({ mode: 1 }), option(), option()],
+  const m = show("gts, no team read", { type: 29, labels: ["Trade", "Wonder Trade", "Item Trade", "Leave"], options: [option({ mode: 1 }), option({ mode: 1 }), option(), option()],
     misc: { tradeOptionsMap: offers }, party }).model();
-  assert.equal(m.options[0].outcome, "trade: best offer Jolteon → Salamence (final BST +75)");
-  assert.equal(m.options[0].verdict, "ok", "+75 isn't an upgrade; the carry's Mewtwo offer isn't considered");
-}
-
-// ---- GTS judges a trade against the party at the next big fight, not the members standing now (#571): a member
-// fainted today but healed before the fight is still a mon you can trade away, and under Hardcore it is dead weight
-// and no trade at all.
-{
-  const offers = party => new Map(party.map(p => [p.id, [{ species: species(1, "Rattata", ["Normal"], 253) },
-    { species: species(2, p === party[0] ? "Mewtwo" : "Salamence", ["Dragon", "Flying"], p === party[0] ? 680 : 600) }]]));
-  const gts = extra => {
-    const party = team();
-    party[2].hp = 0; // Jolteon is down, and holds the best offer of the three
-    return { type: 29, labels: ["Trade", "Wonder Trade", "Item Trade", "Leave"],
-      options: [option({ mode: 1 }), option({ mode: 1 }), option(), option()],
-      misc: { tradeOptionsMap: offers(party) }, party, ...extra };
-  };
-  const heal = show("gts, the fainted member is healed before the next big fight",
-    gts({ gameMode: { isFixedBattle: () => false } })).model();
-  assert.equal(heal.options[0].outcome, "trade: best offer Jolteon → Salamence (final BST +75)",
-    "W31's heal comes before the W40 boss, so Jolteon counts and its +75 beats Lapras's +65");
-  const hardcore = show("gts, Hardcore leaves the fainted member dead weight",
-    gts({ gameMode: { isFixedBattle: () => false, challenges: [{ id: 9, value: 1 }] } })).model();
-  assert.equal(hardcore.options[0].outcome, "trade: best offer Lapras → Salamence (final BST +65)",
-    "no way back for Jolteon: it is dead weight and not a mon to trade");
-  assert.equal(hardcore.options[0].verdict, "ok");
+  assert.equal(m.options[0].outcome, "trade a mon for one of 3 offers", "no offer named, none having been priced");
+  assert.equal(m.options[0].verdict, null, "and no verdict claimed off a comparison the card no longer makes");
+  assert.match(m.options[0].why, /^no team read here: /);
+  assert.deepEqual(m.offers, [], "an offer the judgment couldn't reach is carried as no offer rather than emptily");
 }
 
 // ---- Lost at Sea: a Surf learner guides for free; the storm option chips everyone.
@@ -1061,5 +1041,109 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.equal(turn.minigame.wanted, (turn.offers[0].verdict === "take" || turn.offers[0].verdict === "swap")
     || turn.offers[0].account.value >= turn.offers[0].account.show,
     "`wanted` is either axis alone and never the sum of the two");
+}
+
+// ---- GTS: every offer judged with the traded member as the forced replacement, and the offers ranked by net value
+// (#586, story 23). The final-BST comparison the card ranked by is gone: it asked what the mon coming in was worth
+// and nothing about what the team loses by the mon going out, which is the half a trade is made of.
+{
+  const fight = { isFixedBattle: () => false };
+  // A trade offer is a species and nothing more — a stand-in, built the way the game builds a wild mon and marked
+  // estimate (#580) — so each carries the base stats a duel reads and the level-up learnset a stand-in's four moves
+  // come off. The move ids are the shared move table's own, which makes them plain 80-power attacks: what an offer
+  // brings is judgmenttest's subject, not this file's.
+  const LEARNSET = [[1, 1], [8, 2], [16, 3], [24, 4], [32, 5]];
+  const offer = (id, name, types, base) => ({
+    species: species(id, name, types, base.reduce((t, x) => t + x, 0),
+      { baseStats: base, ability1: { name: "Intimidate" }, getLevelMoves: () => LEARNSET }),
+  });
+  const RATTATA = [30, 56, 35, 25, 35, 72], SALAMENCE = [95, 135, 80, 110, 80, 100], MEWTWO = [106, 110, 90, 154, 90, 130];
+  const rattata = () => offer(19, "Rattata", ["Normal"], RATTATA);
+  const salamence = () => offer(373, "Salamence", ["Dragon", "Flying"], SALAMENCE);
+  const mewtwo = () => offer(150, "Mewtwo", ["Psychic"], MEWTWO);
+  // The game lists its own offers per member (`tradeOptionsMap`), which is what decides who can be traded away at
+  // all: two apiece here, the Mewtwo against the party's carry.
+  const allOffers = party => new Map(party.map(p => [p.id,
+    [rattata(), p === party[0] ? mewtwo() : salamence()]]));
+  // Three of the six members carry offers, as the game lists them: a pair against the carry, one against the member
+  // behind it, a pair against the party's makeweight.
+  const someOffers = party => new Map([[party[0].id, [rattata(), mewtwo()]],
+    [party[1].id, [salamence()]], [party[5].id, [rattata(), salamence()]]]);
+  const spare = (name, level) => pk(name, ["Water"], level, { base: [20, 10, 55, 15, 20, 80], bst: 200,
+    moves: [["Tackle", "Normal", 40, "P"]] });
+  const six = () => [...team(), spare("Feebas", 40), spare("Luvdisc", 40), spare("Magikarp", 40)];
+  const gts = (party, { offers = allOffers(party), ...extra } = {}) => ({ type: 29,
+    labels: ["Trade", "Wonder Trade", "Item Trade", "Leave"],
+    options: [option({ mode: 1 }), option({ mode: 1 }), option(), option()],
+    misc: { tradeOptionsMap: offers }, party, tables: threatTables(), gameMode: fight, ...extra });
+  // The whole ranking the model carries, best first: the member each trade gives away, the mon it brings in, the call
+  // on that trade, and the net value it was ranked by — ΔV less what releasing the traded member destroys — each
+  // figure in the tenth of a turn the judgment's margin is set in.
+  const t1 = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(1)}`;
+  const ranked = m => (m.offers ?? []).map(o => `  ${o.gives} → ${o.name}: ${o.text}`
+    + ` · net ${t1(o.net)} (ΔV ${t1(o.delta)} − release ${t1(o.release)}) · ${o.confidence}`
+    + `${o.reasons.length ? `\n      ${o.reasons.join("; ")}` : ""}`).join("\n");
+  const shown = m => { console.log(ranked(m)); return m; };
+
+  const party = six();
+  const all = show("gts, every offer judged and ranked by net value", gts(party, { offers: someOffers(party) }));
+  const m = shown(all.model());
+  assert.equal(m.offers.length, 5, "two offers against the carry, one behind it, two against the makeweight");
+  for (const o of m.offers) {
+    assert.equal(o.confidence, "estimate", `${o.name} is a mon nobody has met: a stand-in, and marked one`);
+    assert.equal(o.text, o.verdict === "swap" ? `swap for ${o.gives}` : "skip",
+      `the member leaving is the member the trade gives away and no other: ${JSON.stringify(o)}`);
+  }
+  const nets = m.offers.map(o => o.net);
+  assert.deepEqual(nets, [...nets].sort((a, b) => b - a), `ranked by net value: ${nets.join(", ")}`);
+  // Net value, not the biggest final BST: the Salamence for the makeweight leads, while the Mewtwo — the heaviest mon
+  // on offer, and the one the old final-BST ranking put top — is a trade the team gains nothing by, the member it
+  // would cost being the carry.
+  assert.equal(`${m.offers[0].gives} → ${m.offers[0].name}`, "Magikarp → Salamence");
+  assert.ok(m.offers[0].net > 0.1 && m.offers[0].verdict === "swap",
+    `the leading trade clears the margin: net ${m.offers[0].net}`);
+  assert.ok(m.offers.some(o => o.name === "Mewtwo" && o.net < m.offers[0].net),
+    "the biggest mon on offer is not the best offer");
+  assert.equal(m.options[0].outcome,
+    `trade: best offer ${m.offers[0].gives} → ${m.offers[0].name} (net ${t1(m.offers[0].net)} turns)`,
+    "and the row names the best of them with the figure it was ranked by");
+  assert.equal(m.options[0].verdict, m.offers[0].verdict === "swap" ? "take" : "ok");
+  // A viewer following in plain text gets the same order, best trade first (story 40).
+  assert.ok(globalThis.__coachHud.summary().encounter.includes(` · ${m.offers[0].name}: ${m.offers[0].text}`),
+    `the summary says the offers it judged: ${globalThis.__coachHud.summary().encounter}`);
+
+  // The forced replacement skips the search: the game lists a trade against the carry alone, so the carry is the
+  // member that leaves — even though a search of its own would have emptied another slot, and even though the carry
+  // is the member the party loses most by. The old card skipped the carry's offers by fiat; the judgment prices them.
+  const one = six();
+  const carry = show("gts, one offer against the carry, which is the member that leaves",
+    gts(one, { offers: new Map([[one[0].id, [salamence()]]]) }));
+  const forced = shown(carry.model());
+  assert.equal(forced.offers.length, 1, "one offer listed, one trade judged");
+  assert.equal(forced.offers[0].gives, "Garchomp", "the member the game lists the offer against");
+  const weakest = ladder(carry.scene).split(" ")[0];
+  const free = globalThis.__hud["26-run"].readRun(carry.scene, run => globalThis.__hud["12-value"]
+    .judgeNewcomer(run, { species: salamence().species, level: one[0].level }));
+  assert.equal(free.replaced.name, weakest,
+    "the slot the same newcomer's own search empties is the member the party loses least by");
+  assert.notEqual(weakest, "Garchomp", "which is not the carry: the trade is forced past the search");
+  assert.equal(forced.offers[0].text, forced.offers[0].verdict === "swap" ? "swap for Garchomp" : "skip",
+    "so the trade is priced on Garchomp's slot and the search is never run");
+
+  // The party at the next big fight decides who can be traded away (#571): a member fainted today but healed before
+  // the fight is a mon to give away like any other, and under Hardcore it is dead weight and no trade at all.
+  const fainted = extra => {
+    const down = team();
+    down[2].hp = 0; // Jolteon is down
+    return gts(down, extra);
+  };
+  const heal = shown(show("gts, the fainted member is healed before the next big fight", fainted()).model());
+  assert.ok(heal.offers.some(o => o.gives === "Jolteon"),
+    "W31's heal comes before the W40 boss, so Jolteon is on its feet and its offers are trades");
+  const hardcore = shown(show("gts, Hardcore leaves the fainted member dead weight",
+    fainted({ gameMode: { isFixedBattle: () => false, challenges: [{ id: 9, value: 1 }] } })).model());
+  assert.ok(hardcore.offers.length > 0 && hardcore.offers.every(o => o.gives !== "Jolteon"),
+    "no way back for Jolteon: it is dead weight and not a mon to trade");
+  assert.equal(hardcore.options[0].outcome.startsWith("trade: best offer Jolteon"), false);
 }
 console.log("ok");
