@@ -1,9 +1,9 @@
 // Biome route advisor: when the game offers a choice of next biome (the party holds a Map), which one suits the party.
 // Mystery Encounter waves are not modelled.
 import { TYPES, effectiveness } from "./01-core.js";
-import { healRevives, poolAnchorWave, trainerOdds, waveKind } from "./03-calendar.js";
+import { bigFightsAhead, poolAnchorWave, trainerOdds, waveKind } from "./03-calendar.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
-import { partyLuck, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
+import { partyAtFight, partyLuck, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
 
 // `generateNonBossBiomeTier` / `generateBossBiomeTier`'s cuts (game-code.md §10).
 const TIER_CUTS = [156, 32, 6, 1, 0];
@@ -379,10 +379,14 @@ const edgeOver = (a, b) => {
 // card first drew, and a model built without them has to be rebuilt (#381).
 export const biomeModel = (run, h) => {
   const s = run.scene;
+  const wave = run.facts.wave;
   const tables = readTables();
   const labels = h.config.options.map(o => String(o.label ?? ""));
   const everyone = run.facts.party;
-  const party = healRevives(s) ? everyone : everyone.filter(p => p.hp > 0);
+  // The party at the next big fight (CONTEXT.md, `Dead weight`): a heal or a shop on the way is a way back, so the
+  // old "everyone when heals revive, else standing" special case is gone (#570).
+  const fight = bigFightsAhead(s, wave + 1)[0]?.wave ?? null;
+  const party = partyAtFight(s, everyone, { from: wave, fight }).members;
   const key = JSON.stringify([tablesPresent(tables), labels, party.map(p => [p.id, p.moveset.filter(Boolean).map(m => m.moveId ?? tryDo(() => m.getName()))]),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value])]);
   const value = run.memo("biome", key, () => build(run, tables, labels, everyone, party));
