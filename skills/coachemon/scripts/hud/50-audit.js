@@ -1,7 +1,9 @@
 // A finding (CONTEXT.md, `Team audit`; game-code.md §17) is `{ kind, level, text, mon? }`: `level` "high" for what
 // loses fights, "low" for what only costs tempo.
 import { TYPES, abilitiesOf, effectiveness, typesOf, vs } from "./01-core.js";
+import { gameTables } from "./04-game-tables.js";
 import { partyAtFight } from "./08-party.js";
+import { weakestMember } from "./12-value.js";
 import { isDamaging, isFixed, learnAdvice, learnMoveById, slotScores } from "./40-learn.js";
 import { doubleOdds } from "./49-ahead.js";
 
@@ -176,11 +178,29 @@ const deadStatus = (party, foes, wave) => party.flatMap(p => movesOf(p).filter(m
     text: `${p.name}: ${nameOf(mv)} can't land on ${n} of ${foes.length} foes at W${wave}` }] : [];
 }));
 
-const weakestLink = (party, foes, wave) => {
-  const idle = party.filter(p => !foes.some(f => answersTo(p, f).length));
-  if (!idle.length || idle.length === party.length || party.length < 4) return [];
-  return [{ kind: "link", level: "low",
-    text: `${list(idle.map(p => p.name), 2)} ${idle.length === 1 ? "answers" : "answer"} nothing at W${wave} — first to replace` }];
+const MIN_PARTY = 4; // a party this small has nobody to spare, which is the gate the rule below replaces kept
+
+/**
+ * First to replace: the weakest member (CONTEXT.md, `Party profile`) — the one the party loses the least team value
+ * by, with no newcomer in view (#567, story 29). It replaces the rule that named whoever answered no foe of the next
+ * big fight, which asked the wrong question twice over: a member that answers nothing can still be the one the party
+ * would miss most, and a member that answers a foe can still be the cheapest slot to give up.
+ *
+ * Dead weight is weakest at zero, and is said to be dead weight rather than priced. A live member the party is no
+ * worse off without — a cost at or below zero, which quadratic exposure makes possible — is said that way rather than
+ * priced too, and both are `high`: a slot that holds nothing loses fights. One that costs something to lose is only
+ * tempo, and its cost is the one number shown — a whole team value can itself be negative, and a share of a negative
+ * total tells the player nothing.
+ */
+const firstToReplace = (run, roster, fight) => {
+  if (roster.length < MIN_PARTY) return [];
+  const w = weakestMember(run, { fight });
+  if (w.unavailable || !w.mon) return [];
+  const at = w.wave;
+  return [{ kind: "link", level: w.dead || w.cost <= 0 ? "high" : "low", mon: w.name,
+    text: w.dead ? `${w.name} is dead weight at W${at} — first to replace`
+      : w.cost <= 0 ? `the party is no worse off without ${w.name} at W${at} — first to replace`
+        : `${w.name} costs the party least to lose at W${at}, ${w.cost.toFixed(1)} turns — first to replace` }];
 };
 
 // `ahead` is `aheadModel`'s. The memo key holds what the audit reads beyond the run key: the roster and each moveset.
@@ -189,13 +209,18 @@ export const teamAudit = (run, ahead) => {
   if (!party.length) return null;
   const next = ahead?.next;
   const foes = next?.foes?.length ? next.foes : [];
-  const key = JSON.stringify([next?.wave, foes.map(f => [f.name, f.level]), party.map(p => [p.id, (p.moveset ?? []).map(m => m?.moveId)])]);
+  // The species table lands partway through a run, and "first to replace" cannot be priced before it does: an audit
+  // taken without one must not be served back once it has arrived (#582).
+  const key = JSON.stringify([next?.wave, foes.map(f => [f.name, f.level]), party.map(p => [p.id, (p.moveset ?? []).map(m => m?.moveId)]),
+    tryDo(() => typeof gameTables().species.getAllSpecies === "function", false)]);
   return run.memo("audit", key, () => build(run, party, next, foes));
 };
 const build = (run, all, next, foes) => {
   const s = run.scene;
   const wave = run.facts.wave;
-  // A check added below reads `party`, never `all`: every finding is about the team at `next`.
+  // A check added below reads `party`, never `all`: every finding is about the team at `next`. `firstToReplace` is
+  // the one exception, and reads neither — it ranks the slots the judgment ranks, dead weight among them, and is
+  // handed `all` only to count how many slots the roster holds.
   const party = partyAtFight(s, all, { from: wave, fight: next?.wave ?? null }).members;
   const double = tryDo(() => doubleOdds(s, wave + 1), 0);
   const findings = [];
@@ -212,8 +237,10 @@ const build = (run, all, next, foes) => {
     if (fix) fixes.set(p.name, fix);
     findings.push(...slots);
   }
-  if (foes.length) findings.push(...deadStatus(party, foes, next.wave), ...weakestLink(party, foes, next.wave));
-  findings.push(...levelSpread(s, party), ...expAtCap(s, party));
+  if (foes.length) findings.push(...deadStatus(party, foes, next.wave));
+  // Outside the `foes` guard: which member the party loses least by is a team-value question, which the standard
+  // threats answer whether or not the next fight's roster can be previewed (#582).
+  findings.push(...firstToReplace(run, all, next?.wave ?? null), ...levelSpread(s, party), ...expAtCap(s, party));
   const rank = f => (f.level === "high" ? 0 : f.kind === "coverage" ? 2 : 1);
   const sorted = findings.map((f, i) => ({ ...f, i })).sort((a, b) => rank(a) - rank(b) || a.i - b.i).map(({ i, ...f }) => f);
   for (const [mon, fix] of fixes) {
