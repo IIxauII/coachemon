@@ -1,0 +1,635 @@
+// Judging a newcomer by what the party is worth against the standard threats (#578). The threat side is the real
+// join the HUD does in the page — real species with real base stats, every one of them a species the randbats
+// snapshot lists, and their four slots the snapshot's own set — while the moves those slots name are given a real
+// type, power, category and priority here, which is what a duel reads them for. The *party* side is the fixture's
+// own: real species with their real rows, deliberately outside the registry below, so no member of ours can be
+// drawn as a threat against itself.
+import assert from "node:assert/strict";
+import { bundle } from "../hud-bundle.mjs";
+import { mon, species, TY } from "./fixtures/party.mjs";
+
+const STATUS = 2; // the game's `MoveCategory.STATUS`
+const SINGLE_TYPE = 1, LIMITED_SUPPORT = 8, HARDCORE = 9; // `Challenges`, which only the bundle's prelude holds
+
+// `[speciesId, name, types, baseStats]`, by the game's own species ids — which order the pool, and so break every
+// tie in the pick. Magikarp is the one species here the snapshot files under what it evolves into, so it never
+// reaches the pool: it is in the registry for the evolution a projection walks, and nothing else.
+const DEX = [
+  [3, "Venusaur", ["Grass", "Poison"], [80, 82, 83, 100, 100, 80]],
+  [12, "Butterfree", ["Bug", "Flying"], [60, 45, 50, 90, 80, 70]],
+  [15, "Beedrill", ["Bug", "Poison"], [65, 90, 40, 45, 80, 75]],
+  [18, "Pidgeot", ["Normal", "Flying"], [83, 80, 75, 70, 70, 101]],
+  [20, "Raticate", ["Normal"], [55, 81, 60, 50, 70, 97]],
+  [22, "Fearow", ["Normal", "Flying"], [65, 90, 65, 61, 61, 100]],
+  [24, "Arbok", ["Poison"], [60, 95, 69, 65, 79, 80]],
+  [28, "Sandslash", ["Ground"], [75, 100, 110, 45, 55, 65]],
+  [31, "Nidoqueen", ["Poison", "Ground"], [90, 92, 87, 75, 85, 76]],
+  [36, "Clefable", ["Fairy"], [95, 70, 73, 95, 90, 60]],
+  [38, "Ninetales", ["Fire"], [73, 76, 75, 81, 100, 100]],
+  [51, "Dugtrio", ["Ground"], [35, 100, 50, 50, 70, 120]],
+  [53, "Persian", ["Normal"], [65, 70, 60, 65, 65, 115]],
+  [55, "Golduck", ["Water", "Psychic"], [80, 82, 78, 95, 80, 85]],
+  [59, "Arcanine", ["Fire"], [90, 110, 80, 100, 80, 95]],
+  [65, "Alakazam", ["Psychic"], [55, 50, 45, 135, 95, 120]],
+  [68, "Machamp", ["Fighting"], [90, 130, 80, 65, 85, 55]],
+  [71, "Victreebel", ["Grass", "Poison"], [80, 105, 65, 100, 70, 70]],
+  [73, "Tentacruel", ["Water", "Poison"], [80, 70, 65, 80, 120, 100]],
+  [76, "Golem", ["Rock", "Ground"], [80, 120, 130, 55, 65, 45]],
+  [78, "Rapidash", ["Fire"], [65, 100, 70, 80, 80, 105]],
+  [87, "Dewgong", ["Water", "Ice"], [90, 70, 80, 70, 95, 70]],
+  [89, "Muk", ["Poison"], [105, 105, 75, 65, 100, 50]],
+  [91, "Cloyster", ["Water", "Ice"], [50, 95, 180, 85, 45, 70]],
+  [94, "Gengar", ["Ghost", "Poison"], [60, 65, 60, 130, 75, 110]],
+  [97, "Hypno", ["Psychic"], [85, 73, 70, 73, 115, 67]],
+  [99, "Kingler", ["Water"], [55, 130, 115, 50, 50, 75]],
+  [101, "Electrode", ["Electric"], [60, 50, 70, 80, 80, 150]],
+  [103, "Exeggutor", ["Grass", "Psychic"], [95, 95, 85, 125, 75, 55]],
+  [105, "Marowak", ["Ground"], [60, 80, 110, 50, 80, 45]],
+  [110, "Weezing", ["Poison"], [65, 90, 120, 85, 70, 60]],
+  [119, "Seaking", ["Water"], [80, 92, 65, 65, 80, 68]],
+  [121, "Starmie", ["Water", "Psychic"], [60, 75, 85, 100, 85, 115]],
+  [124, "Jynx", ["Ice", "Psychic"], [65, 50, 35, 115, 95, 95]],
+  [129, "Magikarp", ["Water"], [20, 10, 55, 15, 20, 80]],
+  [130, "Gyarados", ["Water", "Flying"], [95, 125, 79, 60, 100, 81]],
+  [131, "Lapras", ["Water", "Ice"], [130, 85, 80, 85, 95, 60]],
+  [134, "Vaporeon", ["Water"], [130, 65, 60, 110, 95, 65]],
+  [135, "Jolteon", ["Electric"], [65, 65, 60, 110, 95, 130]],
+  [136, "Flareon", ["Fire"], [65, 130, 60, 95, 110, 65]],
+  [142, "Aerodactyl", ["Rock", "Flying"], [80, 105, 65, 60, 75, 130]],
+  [143, "Snorlax", ["Normal"], [160, 110, 65, 65, 110, 30]],
+  [149, "Dragonite", ["Dragon", "Flying"], [91, 134, 95, 100, 100, 80]],
+  [169, "Crobat", ["Poison", "Flying"], [85, 90, 80, 70, 80, 130]],
+  [181, "Ampharos", ["Electric"], [90, 75, 85, 115, 90, 55]],
+  [197, "Umbreon", ["Dark"], [95, 65, 110, 60, 130, 65]],
+  [205, "Forretress", ["Bug", "Steel"], [75, 90, 140, 60, 60, 40]],
+  [208, "Steelix", ["Steel", "Ground"], [75, 85, 200, 55, 65, 30]],
+  [210, "Granbull", ["Fairy"], [90, 120, 75, 60, 60, 45]],
+  [212, "Scizor", ["Bug", "Steel"], [70, 130, 100, 55, 80, 65]],
+  [213, "Shuckle", ["Bug", "Rock"], [20, 10, 230, 10, 230, 5]],
+  [214, "Heracross", ["Bug", "Fighting"], [80, 125, 75, 40, 95, 85]],
+  [225, "Delibird", ["Ice", "Flying"], [45, 55, 45, 65, 45, 75]],
+  [227, "Skarmory", ["Steel", "Flying"], [65, 80, 140, 40, 70, 70]],
+  [229, "Houndoom", ["Dark", "Fire"], [75, 90, 50, 110, 80, 95]],
+  [230, "Kingdra", ["Water", "Dragon"], [75, 95, 95, 95, 95, 85]],
+  [232, "Donphan", ["Ground"], [90, 120, 120, 60, 60, 50]],
+  [241, "Miltank", ["Normal"], [95, 80, 105, 40, 70, 100]],
+  [242, "Blissey", ["Normal"], [255, 10, 10, 75, 135, 55]],
+  [248, "Tyranitar", ["Rock", "Dark"], [100, 134, 110, 95, 100, 61]],
+  [286, "Breloom", ["Grass", "Fighting"], [60, 130, 80, 60, 60, 70]],
+  [297, "Hariyama", ["Fighting"], [144, 120, 60, 40, 60, 50]],
+  [302, "Sableye", ["Dark", "Ghost"], [50, 75, 75, 65, 65, 50]],
+  [303, "Mawile", ["Steel", "Fairy"], [50, 85, 85, 55, 55, 50]],
+  [306, "Aggron", ["Steel", "Rock"], [70, 110, 180, 60, 60, 50]],
+  [330, "Flygon", ["Ground", "Dragon"], [80, 100, 80, 80, 80, 100]],
+  [334, "Altaria", ["Dragon", "Flying"], [75, 70, 90, 70, 105, 80]],
+  [350, "Milotic", ["Water"], [95, 60, 79, 100, 125, 81]],
+  [373, "Salamence", ["Dragon", "Flying"], [95, 135, 80, 110, 80, 100]],
+  [376, "Metagross", ["Steel", "Psychic"], [80, 135, 130, 95, 90, 70]],
+  [426, "Drifblim", ["Ghost", "Flying"], [150, 80, 44, 90, 54, 80]],
+  [429, "Mismagius", ["Ghost"], [60, 60, 60, 105, 105, 105]],
+  [430, "Honchkrow", ["Dark", "Flying"], [100, 125, 52, 105, 52, 71]],
+  [437, "Bronzong", ["Steel", "Psychic"], [67, 89, 116, 79, 116, 33]],
+  [445, "Garchomp", ["Dragon", "Ground"], [108, 130, 95, 80, 85, 102]],
+  [448, "Lucario", ["Fighting", "Steel"], [70, 110, 70, 115, 70, 90]],
+  [461, "Weavile", ["Dark", "Ice"], [70, 120, 65, 45, 85, 125]],
+  [462, "Magnezone", ["Electric", "Steel"], [70, 70, 115, 130, 90, 60]],
+  [463, "Lickilicky", ["Normal"], [110, 85, 95, 80, 95, 50]],
+  [464, "Rhyperior", ["Ground", "Rock"], [115, 140, 130, 55, 55, 40]],
+  [465, "Tangrowth", ["Grass"], [100, 100, 125, 110, 50, 50]],
+  [466, "Electivire", ["Electric"], [75, 123, 67, 95, 85, 95]],
+  [467, "Magmortar", ["Fire"], [75, 95, 67, 125, 95, 83]],
+  [468, "Togekiss", ["Fairy", "Flying"], [85, 50, 95, 120, 115, 80]],
+  [472, "Gliscor", ["Ground", "Flying"], [75, 95, 125, 45, 75, 95]],
+  [473, "Mamoswine", ["Ice", "Ground"], [110, 130, 80, 70, 60, 80]],
+  [477, "Dusknoir", ["Ghost"], [45, 100, 135, 65, 135, 45]],
+  [478, "Froslass", ["Ice", "Ghost"], [70, 80, 70, 80, 70, 110]],
+  [530, "Excadrill", ["Ground", "Steel"], [110, 135, 60, 50, 65, 88]],
+  [534, "Conkeldurr", ["Fighting"], [105, 140, 95, 55, 65, 45]],
+  [598, "Ferrothorn", ["Grass", "Steel"], [74, 94, 131, 54, 116, 20]],
+  [609, "Chandelure", ["Ghost", "Fire"], [60, 55, 90, 145, 90, 80]],
+  [612, "Haxorus", ["Dragon"], [76, 147, 90, 60, 70, 97]],
+  [635, "Hydreigon", ["Dark", "Dragon"], [92, 105, 90, 125, 90, 98]],
+  [637, "Volcarona", ["Bug", "Fire"], [85, 60, 65, 135, 105, 100]],
+];
+// The one line a projection walks here: level 20, no item and no condition, so the coach can read that it lands.
+const EVOS = { 129: [{ speciesId: 130, level: 20 }] };
+const sum = xs => xs.reduce((t, x) => t + x, 0);
+const SPECIES_BY_ID = new Map(DEX.map(([id, name, types, base]) =>
+  [id, species(id, name, types, sum(base), { base, evos: (EVOS[id] ?? []).map(e => [e.speciesId, e.level]) })]));
+// The game's registry, as `04-game-tables` finds it. Deliberately not in id order: the pool is what sorts the pick.
+const SPECIES = {
+  getSpecies: id => SPECIES_BY_ID.get(id) ?? null,
+  getAllSpecies: () => [...SPECIES_BY_ID.values()].reverse(),
+  getEvolutions: id => EVOS[id] ?? [],
+};
+const ABILITIES = [];
+
+// ---- The move table the game's own stands in for.
+// Every move the snapshot names is in it, from id 1, because a set indexes it. A status move — these, by name, are
+// the snapshot's — carries no power; everything else is an attack, and one a threat actually brings is given its own
+// type, power, category and priority below, since that is what the duel scores. The assertion under `MOVES` holds
+// the table to that: a move any threat carries and this file has not typed fails the test rather than duelling as a
+// Normal 80.
+const STATUS_MOVES = ["Agility", "Aurora Veil", "Belly Drum", "Bulk Up", "Calm Mind", "Coil", "Cosmic Power", "Curse",
+  "Defog", "Destiny Bond", "Dragon Dance", "Encore", "Glare", "Haze", "Heal Bell", "Hone Claws", "Hypnosis",
+  "Iron Defense", "Leech Seed", "Lovely Kiss", "Milk Drink", "Moonlight", "Morning Sun", "Nasty Plot", "Pain Split",
+  "Protect", "Quiver Dance", "Rapid Spin", "Recover", "Rest", "Roar", "Rock Polish", "Roost", "Shell Smash",
+  "Sleep Powder", "Sleep Talk", "Snowscape", "Soft-Boiled", "Spikes", "Spore", "Stealth Rock", "Sticky Web",
+  "Strength Sap", "Substitute", "Swords Dance", "Synthesis", "Taunt", "Thunder Wave", "Toxic", "Toxic Spikes",
+  "Trick", "Trick Room", "Will-O-Wisp", "Wish"];
+// `name: [type, power, category, priority]`. The six moves the game prices from the situation carry its own power of
+// −1, which the duel reads as an attack it cannot score.
+const FACTS = {
+  "Accelerock": ["Rock", 40, "P", 1], "Aerial Ace": ["Flying", 60, "P"], "Air Slash": ["Flying", 75, "S"],
+  "Ancient Power": ["Rock", 60, "S"], "Aqua Jet": ["Water", 40, "P", 1], "Aqua Tail": ["Water", 90, "P"],
+  "Aura Sphere": ["Fighting", 80, "S"], "Avalanche": ["Ice", 60, "P", -4], "Beat Up": ["Dark", 10, "P"],
+  "Bite": ["Dark", 60, "P"], "Blizzard": ["Ice", 110, "S"], "Body Press": ["Fighting", 80, "P"],
+  "Body Slam": ["Normal", 85, "P"], "Boomburst": ["Normal", 140, "S"], "Brave Bird": ["Flying", 120, "P"],
+  "Brick Break": ["Fighting", 75, "P"], "Bug Bite": ["Bug", 60, "P"], "Bug Buzz": ["Bug", 90, "S"],
+  "Bullet Punch": ["Steel", 40, "P", 1], "Bullet Seed": ["Grass", 25, "P"], "Close Combat": ["Fighting", 120, "P"],
+  "Crabhammer": ["Water", 100, "P"], "Cross Chop": ["Fighting", 100, "P"], "Crunch": ["Dark", 80, "P"],
+  "Dark Pulse": ["Dark", 80, "S"], "Dazzling Gleam": ["Fairy", 80, "S"], "Discharge": ["Electric", 80, "S"],
+  "Double-Edge": ["Normal", 120, "P"], "Draco Meteor": ["Dragon", 130, "S"], "Dragon Claw": ["Dragon", 80, "P"],
+  "Dragon Darts": ["Dragon", 50, "P"], "Dragon Pulse": ["Dragon", 85, "S"], "Dragon Tail": ["Dragon", 60, "P", -6],
+  "Drain Punch": ["Fighting", 75, "P"], "Drill Peck": ["Flying", 80, "P"], "Drill Run": ["Ground", 80, "P"],
+  "Dual Wingbeat": ["Flying", 40, "P"], "Earth Power": ["Ground", 90, "S"], "Earthquake": ["Ground", 100, "P"],
+  "Energy Ball": ["Grass", 90, "S"], "Explosion": ["Normal", 250, "P"], "Extreme Speed": ["Normal", 80, "P", 2],
+  "Facade": ["Normal", 70, "P"], "Fake Out": ["Normal", 40, "P", 3], "Fire Blast": ["Fire", 110, "S"],
+  "Fire Fang": ["Fire", 65, "P"], "Fire Punch": ["Fire", 75, "P"], "First Impression": ["Bug", 90, "P", 2],
+  "Flamethrower": ["Fire", 90, "S"], "Flare Blitz": ["Fire", 120, "P"], "Flash Cannon": ["Steel", 80, "S"],
+  "Flip Turn": ["Water", 60, "P"], "Focus Blast": ["Fighting", 120, "S"], "Foul Play": ["Dark", 95, "P"],
+  "Freeze-Dry": ["Ice", 70, "S"], "Giga Drain": ["Grass", 75, "S"], "Grass Knot": ["Grass", -1, "S"],
+  "Gunk Shot": ["Poison", 120, "P"], "Gyro Ball": ["Steel", -1, "P"], "Head Smash": ["Rock", 150, "P"],
+  "Headbutt": ["Normal", 70, "P"], "Heat Wave": ["Fire", 95, "S"], "Heavy Slam": ["Steel", -1, "P"],
+  "Hex": ["Ghost", 65, "S"], "High Horsepower": ["Ground", 95, "P"], "High Jump Kick": ["Fighting", 130, "P"],
+  "Hurricane": ["Flying", 110, "S"], "Hydro Pump": ["Water", 110, "S"], "Hyper Voice": ["Normal", 90, "S"],
+  "Ice Beam": ["Ice", 90, "S"], "Ice Fang": ["Ice", 65, "P"], "Ice Punch": ["Ice", 75, "P"],
+  "Ice Shard": ["Ice", 40, "P", 1], "Ice Spinner": ["Ice", 80, "P"], "Icicle Crash": ["Ice", 85, "P"],
+  "Icicle Spear": ["Ice", 25, "P"], "Icy Wind": ["Ice", 55, "S"], "Iron Head": ["Steel", 80, "P"],
+  "Judgment": ["Normal", 100, "S"], "Knock Off": ["Dark", 65, "P"], "Leaf Blade": ["Grass", 90, "P"],
+  "Leaf Storm": ["Grass", 130, "S"], "Leech Life": ["Bug", 80, "P"], "Liquidation": ["Water", 85, "P"],
+  "Low Kick": ["Fighting", -1, "P"], "Mach Punch": ["Fighting", 40, "P", 1], "Megahorn": ["Bug", 120, "P"],
+  "Meteor Beam": ["Rock", 120, "S"], "Mirror Coat": ["Psychic", -1, "S"], "Moonblast": ["Fairy", 95, "S"],
+  "Mud Shot": ["Ground", 55, "S"], "Muddy Water": ["Water", 90, "S"], "Night Shade": ["Ghost", -1, "S"],
+  "Night Slash": ["Dark", 70, "P"], "Outrage": ["Dragon", 120, "P"], "Overheat": ["Fire", 130, "S"],
+  "Petal Blizzard": ["Grass", 90, "P"], "Play Rough": ["Fairy", 90, "P"], "Poison Jab": ["Poison", 80, "P"],
+  "Poltergeist": ["Ghost", 110, "P"], "Power Gem": ["Rock", 80, "S"], "Power Whip": ["Grass", 120, "P"],
+  "Psychic": ["Psychic", 90, "S"], "Psychic Fangs": ["Psychic", 85, "P"], "Psychic Noise": ["Psychic", 75, "S"],
+  "Psycho Cut": ["Psychic", 70, "P"], "Psyshock": ["Psychic", 80, "S"], "Pursuit": ["Dark", 40, "P"],
+  "Quick Attack": ["Normal", 40, "P", 1], "Rage Fist": ["Ghost", 50, "P"], "Return": ["Normal", 102, "P"],
+  "Rock Blast": ["Rock", 25, "P"], "Rock Slide": ["Rock", 75, "P"], "Rock Tomb": ["Rock", 60, "P"],
+  "Scald": ["Water", 80, "S"], "Scale Shot": ["Dragon", 25, "P"], "Seed Bomb": ["Grass", 80, "P"],
+  "Seismic Toss": ["Fighting", -1, "P"], "Shadow Ball": ["Ghost", 80, "S"], "Shadow Claw": ["Ghost", 70, "P"],
+  "Shadow Sneak": ["Ghost", 40, "P", 1], "Sludge Bomb": ["Poison", 90, "S"], "Sludge Wave": ["Poison", 95, "S"],
+  "Spirit Shackle": ["Ghost", 80, "P"], "Stomping Tantrum": ["Ground", 75, "P"], "Stone Edge": ["Rock", 100, "P"],
+  "Stored Power": ["Psychic", 20, "S"], "Sucker Punch": ["Dark", 70, "P", 1], "Super Fang": ["Normal", -1, "P"],
+  "Superpower": ["Fighting", 120, "P"], "Surf": ["Water", 90, "S"], "Tail Slap": ["Normal", 25, "P"],
+  "Tera Blast": ["Normal", 80, "S"], "Throat Chop": ["Dark", 80, "P"], "Thunder": ["Electric", 110, "S"],
+  "Thunder Fang": ["Electric", 65, "P"], "Thunder Punch": ["Electric", 75, "P"],
+  "Thunderbolt": ["Electric", 90, "S"], "Trailblaze": ["Grass", 50, "P"], "Tri Attack": ["Normal", 80, "S"],
+  "Triple Axel": ["Ice", 20, "P"], "U-turn": ["Bug", 70, "P"], "Vacuum Wave": ["Fighting", 40, "S", 1],
+  "Volt Switch": ["Electric", 70, "S"], "Waterfall": ["Water", 80, "P"], "Wave Crash": ["Water", 120, "P"],
+  "Wild Charge": ["Electric", 90, "P"], "Wood Hammer": ["Grass", 120, "P"], "X-Scissor": ["Bug", 80, "P"],
+  "Zen Headbutt": ["Psychic", 80, "P"],
+};
+const CAT = { P: 0, S: 1 };
+
+let draws = 0, sets = 0;
+globalThis.window = globalThis;
+globalThis.Phaser = {
+  Math: { RND: { _s: "!rnd,live",
+    state(v) { if (v !== undefined) { sets++; this._s = v; } return this._s; },
+    integerInRange() { draws++; return 0; }, realInRange() { draws++; return 0; }, frac() { draws++; return 0; },
+    pick(a) { draws++; return a[0]; }, shuffle(a) { draws++; return a; } } },
+  Display: { Canvas: { CanvasPool: { pool: [] } } },
+};
+const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
+globalThis.document = { documentElement: { dataset: {}, appendChild() {} }, body: { appendChild() {} }, createElement: node };
+globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
+globalThis.localStorage = { getItem: () => "full", setItem() {} };
+eval(bundle("hud", { expose: true }));
+const { RANDBATS } = globalThis.__hud["05-randbats"];
+const { standardThreats } = globalThis.__hud["11-threats"];
+const { BACKUP, CLAMP, EXPOSURE, MARGIN, PARTY_SIZE, REVENGE, SWITCH_IN, judgeNewcomer, teamValue } = globalThis.__hud["12-value"];
+const { combatantOf } = globalThis.__hud["09-combatant"];
+const { readRun } = globalThis.__hud["26-run"];
+const { sandboxBreachCount } = globalThis.__hud["01-core"];
+
+const MOVES = [null];
+for (const name of RANDBATS.m) {
+  const f = FACTS[name];
+  const status = STATUS_MOVES.includes(name);
+  MOVES.push({ id: MOVES.length, name, type: TY.indexOf(f ? f[0] : "Normal"), power: status ? 0 : f ? f[1] : 80,
+    accuracy: 100, category: status ? STATUS : CAT[f?.[2] ?? "P"], pp: 10, moveTarget: 3, priority: f?.[3] ?? 0,
+    flags: 0, attrs: [] });
+}
+globalThis.__hud["04-game-tables"].setGameTables({ species: SPECIES, moves: MOVES, abilities: ABILITIES });
+
+// ---- Our side: real species with their real rows, none of them in the registry above.
+const ours = (id, name, types, base) => species(id, name, types, sum(base), { base });
+const OURS = {
+  blastoise: ours(9, "Blastoise", ["Water"], [79, 83, 100, 85, 105, 78]),
+  charizard: ours(6, "Charizard", ["Fire", "Flying"], [78, 84, 78, 109, 85, 100]),
+  dodrio: ours(85, "Dodrio", ["Normal", "Flying"], [60, 110, 70, 60, 60, 100]),
+  empoleon: ours(395, "Empoleon", ["Water", "Steel"], [84, 86, 88, 111, 101, 60]),
+  feraligatr: ours(160, "Feraligatr", ["Water"], [85, 105, 100, 79, 83, 78]),
+  hitmonlee: ours(106, "Hitmonlee", ["Fighting"], [50, 120, 53, 35, 110, 87]),
+  kangaskhan: ours(115, "Kangaskhan", ["Normal"], [105, 95, 80, 40, 80, 90]),
+  lanturn: ours(171, "Lanturn", ["Water", "Electric"], [125, 58, 58, 76, 76, 67]),
+  ludicolo: ours(272, "Ludicolo", ["Water", "Grass"], [80, 70, 70, 90, 100, 70]),
+  meganium: ours(154, "Meganium", ["Grass"], [80, 82, 100, 83, 100, 80]),
+  nidoking: ours(34, "Nidoking", ["Poison", "Ground"], [81, 102, 77, 85, 75, 85]),
+  politoed: ours(186, "Politoed", ["Water"], [90, 75, 75, 90, 100, 70]),
+  poliwrath: ours(62, "Poliwrath", ["Water", "Fighting"], [90, 95, 95, 70, 90, 70]),
+  roserade: ours(407, "Roserade", ["Grass", "Poison"], [60, 70, 65, 125, 105, 90]),
+  sceptile: ours(254, "Sceptile", ["Grass"], [70, 85, 65, 105, 85, 120]),
+  sunflora: ours(192, "Sunflora", ["Grass"], [75, 75, 55, 105, 85, 30]),
+  swampert: ours(260, "Swampert", ["Water", "Ground"], [100, 110, 90, 85, 90, 60]),
+  typhlosion: ours(157, "Typhlosion", ["Fire"], [78, 84, 78, 109, 85, 100]),
+  wailord: ours(321, "Wailord", ["Water"], [170, 90, 45, 90, 45, 60]),
+};
+// The moves of ours the duels below run on, as the fixture takes them: `[name, type, power, category]`.
+const M = {
+  surf: ["Surf", "Water", 90, "S"],
+  waterfall: ["Waterfall", "Water", 80, "P"],
+  iceBeam: ["Ice Beam", "Ice", 90, "S"],
+  energyBall: ["Energy Ball", "Grass", 90, "S"],
+  gigaDrain: ["Giga Drain", "Grass", 75, "S"],
+  sludgeBomb: ["Sludge Bomb", "Poison", 90, "S"],
+  earthquake: ["Earthquake", "Ground", 100, "P"],
+  bodySlam: ["Body Slam", "Normal", 85, "P"],
+  crunch: ["Crunch", "Dark", 80, "P"],
+  thunderbolt: ["Thunderbolt", "Electric", 90, "S"],
+  flamethrower: ["Flamethrower", "Fire", 90, "S"],
+  closeCombat: ["Close Combat", "Fighting", 120, "P"],
+  drillPeck: ["Drill Peck", "Flying", 80, "P"],
+  tackle: ["Tackle", "Normal", 40, "P"],
+};
+
+// ---- The run the judgment reads: wave 44, every tenth wave a boss, so the next big fight ahead is wave 50.
+const sceneOf = (party, { challenges = [], modifiers = [], wave = 44, seed = "judge-1" } = {}) => ({
+  seed, modifiers, enemyModifiers: [], currentBattle: { waveIndex: wave }, arena: { biomeId: 3 },
+  gameMode: { isBoss: w => w % 10 === 0, isFixedBattle: () => false, hasTrainers: true, challenges },
+  getPlayerParty: () => party, getEnemyParty: () => [], game: { config: { gameVersion: "1.12.0.11" } },
+});
+const expShare = stacks => ({ constructor: { name: "ExpShareModifier" }, getStackCount: () => stacks });
+const luckyEgg = p => ({ pokemonId: p.id, type: { id: "LUCKY_EGG" }, getStackCount: () => 1 });
+
+const judge = (party, newcomer, opts = {}, sceneOpts = {}) =>
+  readRun(sceneOf(party, sceneOpts), run => judgeNewcomer(run, newcomer, opts));
+
+// ΔV, the release and the net value, in tenths of a turn, which is the grain the margin is set in.
+const t1 = x => { const v = Math.round(x * 10) / 10 || 0; return `${v > 0 ? "+" : v < 0 ? "-" : " "}${Math.abs(v).toFixed(1)}`; };
+const show = (label, j) => console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} ${(j.replaced?.name ?? "-").padEnd(11)}`
+  + ` dV ${t1(j.delta)}  release ${j.release.toFixed(1)}  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+
+// Where the page's RNG stood before a single judgment ran, which is where the last assertion finds it again.
+const drawsBefore = draws, setsBefore = sets, rndBefore = Phaser.Math.RND.state();
+
+console.log(`== constants: clamp ${CLAMP}  backup ${BACKUP}  revenge ${REVENGE}  switch-in ${SWITCH_IN}`
+  + `  margin ${MARGIN}  exposure ${[1, 2, 3, 4].map(n => EXPOSURE(n).toFixed(1)).join("/")}  party ${PARTY_SIZE}`);
+
+// ---- Every move a threat brings is one this file has typed
+{
+  const set = readRun(sceneOf([]), run => standardThreats(run, { fight: 50 }));
+  const carried = new Set(set.threats.flatMap(t => t.combatant.moveset.map(pm => pm.getName())));
+  const untyped = [...carried].filter(name => !FACTS[name] && !STATUS_MOVES.includes(name)).sort();
+  assert.deepEqual(untyped, [], "a move a threat duels with carries its own type, power and category");
+  console.log(`== wave ${set.wave}: ${set.threats.length} threats at level ${set.level}, ${carried.size} moves between them`);
+}
+
+// ---- The rows of one party, threat by threat: the answer, the backup, who the threat beats, and the row's value
+const CAP = 38; // `levelCapAt` at wave 50, which is where a party that has kept pace stands
+const WATERS = () => [
+  mon(OURS.blastoise, CAP, [M.surf, M.iceBeam, M.bodySlam], { ability: "Torrent" }),
+  mon(OURS.feraligatr, CAP, [M.waterfall, M.crunch, M.iceBeam], { ability: "Torrent" }),
+  mon(OURS.politoed, CAP, [M.surf, M.iceBeam, M.bodySlam], { ability: "Water Absorb" }),
+  mon(OURS.wailord, CAP, [M.surf, M.bodySlam, M.iceBeam], { ability: "Water Veil" }),
+  mon(OURS.lanturn, CAP, [M.surf, M.thunderbolt, M.iceBeam], { ability: "Volt Absorb" }),
+  mon(OURS.meganium, CAP, [M.energyBall, M.bodySlam, M.earthquake], { ability: "Overgrow" }),
+];
+{
+  const party = WATERS();
+  const j = judge(party, mon(OURS.swampert, CAP, [M.surf, M.waterfall], { ability: "Torrent" }));
+  console.log(`== the all-Water party's rows, V ${j.before.v.toFixed(2)} over ${j.before.rows.length} threats`);
+  for (const r of j.before.rows) {
+    console.log(`  ${r.threat.padEnd(14)} ${r.answer.name.padEnd(11)} s ${t1(r.answer.s)}`
+      + ` backup ${r.backup.name.padEnd(11)} ${t1(r.backup.s)}  beaten ${r.beaten.length}`
+      + `${r.revenge ? " revenge" : ""}${r.switchIn ? " switch-in" : ""}  row ${t1(r.value)}`);
+    assert.equal(r.value, r.answer.s + BACKUP * r.backup.s + (r.revenge ? REVENGE : 0) + (r.switchIn ? SWITCH_IN : 0)
+      - EXPOSURE(r.beaten.length), `${r.threat}: the row is the answer, the backup, the credits and the exposure`);
+  }
+  assert.equal(j.before.v, j.before.rows.reduce((t, r) => t + r.value, 0) / j.before.rows.length,
+    "V is the mean over the threats, so the roster half can be given equal say (#592)");
+
+  // The same six through the module's own seam, as a card below will read them: a party already at the cap gains
+  // nothing on the way to the fight, so `teamValue` over the adapter's combatants is what the judgment read.
+  const direct = readRun(sceneOf(party), run => teamValue(run, standardThreats(run, { fight: 50 }),
+    party.map(p => ({ name: p.name, combatant: combatantOf({ mon: p, level: CAP, species: p.species }) }))));
+  assert.equal(direct.v, j.before.v, "and `teamValue` over those combatants is the very value it judged against");
+  assert.equal(direct.confidence, "exact", "the standard threats being exactly what the game would field");
+  assert.equal(j.confidence, "estimate", "while the judgment is only ever as sure as the projection behind it");
+}
+
+// ---- One lopsided duel is clamped, and no pair score ever stands outside the clamp
+{
+  const j = judge(WATERS(), mon(OURS.swampert, CAP, [M.surf, M.waterfall], { ability: "Torrent" }));
+  const pairs = j.before.rows.flatMap(r => [r.answer, r.backup]);
+  assert.ok(pairs.every(p => Math.abs(p.s) <= CLAMP), "every pair score is inside the clamp");
+  const clamped = pairs.filter(p => Math.abs(p.raw) > CLAMP);
+  assert.ok(clamped.length > 0, "and at least one duel was lopsided enough to need it");
+  const worst = clamped.reduce((b, p) => (Math.abs(p.raw) > Math.abs(b.raw) ? p : b));
+  console.log(`== clamped: ${clamped.length} of ${pairs.length} pairs, the worst ${worst.name} raw ${t1(worst.raw)}`
+    + ` -> s ${t1(worst.s)}`);
+  assert.equal(Math.abs(worst.s), CLAMP);
+}
+
+// ---- An all-Water party keeps the one member that answers what Water cannot
+{
+  const party = WATERS();
+  const j = judge(party, mon(OURS.swampert, CAP, [M.surf, M.waterfall], { ability: "Torrent" }));
+  console.log("== another Water into the all-Water party");
+  show("Swampert", j);
+  const answers = name => j.before.rows.filter(r => r.answer.name === name).length;
+  const order = [...j.tried].sort((a, b) => a.delta - b.delta).map(x => x.slot.name);
+  console.log(`  cheapest to release last: ${order.map(n => `${n} (${answers(n)})`).join(", ")}`);
+  assert.notEqual(j.replaced?.name, "Meganium", "the Grass member is not the one the search picks");
+  // Only the party's own best answer is worth more to it than its one Grass member: of the six, those two are the
+  // ones the search is least willing to release.
+  assert.deepEqual(order.slice(0, 2), ["Feraligatr", "Meganium"]);
+  assert.ok(answers("Meganium") >= 4, "which is what it answers that no Water of theirs does");
+}
+
+// ---- The lowest-BST member is kept while it is the only answer to anything, and a heavier double goes instead
+{
+  // Poliwrath is the lightest of the six and the only Fighting among them; Typhlosion is the heaviest and brings
+  // Charizard's Fire a second time.
+  const party = [
+    mon(OURS.charizard, CAP, [M.flamethrower, M.drillPeck], { ability: "Blaze" }),
+    mon(OURS.typhlosion, CAP, [M.flamethrower, M.bodySlam], { ability: "Blaze" }),
+    mon(OURS.sceptile, CAP, [M.energyBall, M.bodySlam], { ability: "Overgrow" }),
+    mon(OURS.empoleon, CAP, [M.surf, M.iceBeam], { ability: "Torrent" }),
+    mon(OURS.roserade, CAP, [M.energyBall, M.sludgeBomb], { ability: "Natural Cure" }),
+    mon(OURS.poliwrath, CAP, [M.closeCombat, M.waterfall], { ability: "Water Absorb" }),
+  ];
+  const j = judge(party, mon(OURS.swampert, CAP, [M.surf, M.earthquake], { ability: "Torrent" }),
+    {}, { seed: "judge-bst" });
+  console.log("== the lightest member of six, against the heaviest newcomer of the lot");
+  show("Swampert", j);
+  const answers = name => j.before.rows.filter(r => r.answer.name === name).length;
+  const beaten = name => j.before.rows.filter(r => r.beaten.includes(name)).length;
+  const byName = new Map(j.tried.map(x => [x.slot.name, x.delta]));
+  const order = [...byName].sort((a, b) => a[1] - b[1]).map(([n]) => n);
+  console.log(`  cheapest to release last: ${order.map(n => `${n} (answers ${answers(n)}, beaten ${beaten(n)})`).join(", ")}`);
+  assert.equal(Math.min(...party.map(p => p.species.baseTotal)), OURS.poliwrath.baseTotal,
+    "Poliwrath is the lightest of the six by base-stat total");
+  assert.notEqual(j.replaced?.name, "Poliwrath", "and not the one the search releases");
+  const released = party.find(p => p.name === j.replaced.name);
+  assert.ok(released.species.baseTotal > OURS.poliwrath.baseTotal,
+    "what goes is heavier than the lightest: a base-stat total is not what the judgment weighs");
+  assert.ok(answers("Poliwrath") >= 3 && answers("Poliwrath") > answers(released.name),
+    "the lightest stays because it answers threats the heavier member it keeps its slot over does not");
+}
+
+// ---- A newcomer that stacks the party's weakness is worth less than one of the same weight that covers it
+{
+  const party = () => [
+    mon(OURS.blastoise, CAP, [M.surf, M.bodySlam], { ability: "Torrent" }),
+    mon(OURS.feraligatr, CAP, [M.waterfall, M.bodySlam], { ability: "Torrent" }),
+    mon(OURS.politoed, CAP, [M.surf, M.bodySlam], { ability: "Water Absorb" }),
+    mon(OURS.wailord, CAP, [M.surf, M.bodySlam], { ability: "Water Veil" }),
+    mon(OURS.lanturn, CAP, [M.surf, M.bodySlam], { ability: "Volt Absorb" }),
+    mon(OURS.swampert, CAP, [M.surf, M.bodySlam], { ability: "Torrent" }),
+  ];
+  // Two newcomers of the same base-stat total, at the same level, with the same two moves bar their type.
+  assert.equal(OURS.empoleon.baseTotal, OURS.sceptile.baseTotal, "the same weight, so only the typing differs");
+  const stacks = judge(party(), mon(OURS.empoleon, CAP, [M.surf, M.bodySlam], { ability: "Torrent" }),
+    {}, { seed: "judge-stack" });
+  const covers = judge(party(), mon(OURS.sceptile, CAP, [M.energyBall, M.bodySlam], { ability: "Overgrow" }),
+    {}, { seed: "judge-stack" });
+  console.log("== a sixth Water, or the Grass the six of them are missing");
+  show("Empoleon (Water/Steel)", stacks);
+  show("Sceptile (Grass)", covers);
+  const beaten = j => j.after.rows.reduce((t, r) => t + r.beaten.length, 0);
+  console.log(`  members the threats beat: ${beaten(stacks)} with the Water, ${beaten(covers)} with the Grass`);
+  assert.ok(covers.delta > stacks.delta, "the one that covers the hole is worth more than the one that stacks it");
+  assert.ok(beaten(stacks) > beaten(covers), "the stacking newcomer loses where the party already loses");
+}
+
+// ---- An evolution the projection cannot see landing by the fight leaves the newcomer as it stands
+{
+  const party = WATERS().slice(0, 5);
+  // It carries the line's own STAB, which it keeps through the evolution: what the evolution changes is the 115
+  // points of Attack behind it.
+  const karp = () => mon(SPECIES.getSpecies(129), 10, [M.waterfall], { ability: "Swift Swim" });
+  const share = { modifiers: [expShare(1)], seed: "judge-evo" };
+  const at50 = judge(party, karp(), {}, share);
+  const at60 = judge(party, karp(), { fight: 60 }, share);
+  // Five EXP shares carry it most of the way to the cap, where the line it crosses is worth something; and the same
+  // mon with its evolutions switched off is the one thing the player can do to stop a line the projection can see
+  // landing, which is the control.
+  const fed = { modifiers: [expShare(5)], seed: "judge-evo-fed" };
+  const evolved = judge(party, karp(), {}, fed);
+  const paused = judge(party, mon(SPECIES.getSpecies(129), 10, [M.waterfall],
+    { ability: "Swift Swim", pauseEvolutions: true }), {}, fed);
+  const stands = j => `${j.newcomer.projection.species.name} L${j.newcomer.projection.level}`
+    + ` [${j.newcomer.combatant.getTypes().map(t => TY[t]).join("/")}] ${j.newcomer.combatant.getMaxHp()} hp`;
+  console.log("== a Magikarp at level 10, one EXP share, judged at two fights");
+  console.log(`  at the fight on 50 it stands as ${stands(at50)}`);
+  console.log(`  at the fight on 60 it stands as ${stands(at60)}`);
+  console.log(`  on five shares it reaches the fight on 50 as ${stands(evolved)}`);
+  console.log(`  and with its evolutions paused, ${stands(paused)}`);
+  show("at the next big fight", at50);
+  show("at the one after", at60);
+  show("five shares", evolved);
+  show("five shares, paused", paused);
+  assert.deepEqual(at50.newcomer.projection.evolved, [], "level 19 by wave 50: the line does not land by then");
+  assert.equal(at50.newcomer.projection.species.name, "Magikarp", "so it is duelled as the Magikarp it still is");
+  assert.equal(at60.newcomer.projection.evolved.map(sp => sp.name).join(), "Gyarados", "by wave 60 it does land");
+  assert.equal(at60.newcomer.projection.species.name, "Gyarados");
+  assert.equal(at60.newcomer.name, "Magikarp", "the mon keeps its own name through it");
+  assert.deepEqual(paused.newcomer.projection.evolved, [], "a paused line lands nowhere");
+  assert.equal(paused.newcomer.projection.level, evolved.newcomer.projection.level, "at the very same level");
+  assert.ok(evolved.delta > paused.delta, "a Gyarados at that level is worth more to them than a Magikarp at it");
+}
+
+// ---- A newcomer far below the party's level, and what EXP share and a Lucky Egg do for it
+{
+  const party = WATERS().slice(0, 5);
+  const karp = () => mon(SPECIES.getSpecies(129), 10, [M.tackle], { ability: "Swift Swim" });
+  const egg = karp();
+  const runs = [
+    ["nothing", karp(), []],
+    ["Lucky Egg alone", egg, [luckyEgg(egg)]],
+    ["one EXP share", karp(), [expShare(1)]],
+    ["EXP share and Lucky Egg", egg, [expShare(1), luckyEgg(egg)]],
+    ["five EXP shares", karp(), [expShare(5)]],
+  ];
+  console.log("== a level 10 newcomer into a party at the cap");
+  const levels = [];
+  // A seed each: the run key carries the modifier *count*, so a Lucky Egg run and an EXP share run would otherwise
+  // share one memo (26-run's `runKeyOf`).
+  for (const [i, [label, nc, modifiers]] of runs.entries()) {
+    const j = judge(party, nc, {}, { modifiers, seed: `judge-exp-${i}` });
+    levels.push(j.newcomer.projection.level);
+    console.log(`  ${label.padEnd(24)} L${String(j.newcomer.projection.level).padEnd(3)} ${j.newcomer.name.padEnd(9)}`
+      + ` ${j.verdict.padEnd(5)} dV ${t1(j.delta)}`);
+  }
+  assert.equal(levels[0], 10, "a bench share of nothing is nothing");
+  assert.equal(levels[1], 10, "and a Lucky Egg multiplies it (game-code.md §17), so it is nothing too");
+  assert.ok(levels[2] > levels[0] && levels[3] > levels[2], "a share moves it, and the egg moves the share");
+  assert.ok(levels[4] > levels[3], "and five shares is the whole of one wave's EXP");
+  assert.ok(levels[4] <= 38, "no projection reaches past the cap at the fight");
+}
+
+// ---- A free slot is taken when the newcomer is worth more than the margin, and skipped when it is not
+{
+  const party = WATERS().slice(0, 4);
+  console.log("== four members and two free slots");
+  const good = judge(party, mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam, M.surf, M.bodySlam],
+    { ability: "Overgrow" }), {}, { seed: "judge-slot" });
+  const bad = judge(party, mon(OURS.sunflora, 20, [M.tackle], { ability: "Chlorophyll" }), {}, { seed: "judge-slot" });
+  const beaten = (j, name) => j.after.rows.filter(r => r.beaten.includes(name)).length;
+  show("Sceptile at the cap", good);
+  show("Sunflora at level 20", bad);
+  console.log(`  of ${good.after.rows.length} threats, the one is beaten by ${beaten(good, "Sceptile")}`
+    + ` and the other by ${beaten(bad, "Sunflora")}`);
+  assert.equal(good.verdict, "take", "a free slot costs nothing to fill, so anything past the margin is taken");
+  assert.equal(good.replaced, null, "there being nobody to release");
+  assert.equal(good.release, 0);
+  assert.equal(good.net, good.delta, "so the net value is the whole of ΔV");
+  assert.equal(good.tried, undefined, "and no swap was searched");
+  assert.equal(bad.verdict, "skip");
+  assert.ok(bad.delta <= MARGIN, "a newcomer the threats beat is not worth even a free slot");
+}
+
+// ---- Dead weight contributes nothing, and the slot it holds is the plain case a swap takes
+// Five at the cap, each of them worth keeping, and a sixth that went down. The five matter: against a party whose
+// every live member earns its slot, the cheapest slot to take is the one nobody is standing in.
+const FAINTED = () => [
+  mon(OURS.blastoise, CAP, [M.surf, M.iceBeam, M.bodySlam], { ability: "Torrent" }),
+  mon(OURS.feraligatr, CAP, [M.waterfall, M.crunch, M.iceBeam], { ability: "Torrent" }),
+  mon(OURS.charizard, CAP, [M.flamethrower, M.drillPeck], { ability: "Blaze" }),
+  mon(OURS.wailord, CAP, [M.surf, M.bodySlam, M.iceBeam], { ability: "Water Veil", hp: 0, allowed: false }),
+  mon(OURS.typhlosion, CAP, [M.flamethrower, M.bodySlam], { ability: "Blaze" }),
+  mon(OURS.meganium, CAP, [M.energyBall, M.bodySlam, M.earthquake], { ability: "Overgrow" }),
+];
+{
+  console.log("== a fainted member, under three calendars");
+  const nc = () => mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam, M.surf, M.bodySlam], { ability: "Overgrow" });
+  const hardcore = judge(FAINTED(), nc(), {}, { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  const noSupport = judge(FAINTED(), nc(), {}, { challenges: [{ id: LIMITED_SUPPORT, value: 3 }], seed: "judge-ls" });
+  // Limited Support 2 takes the shops and leaves the heals, so wave 51's heal is the only way back — out of reach of
+  // the fight on 50, and in reach of the one on 60.
+  const healDue = judge(FAINTED(), nc(), { fight: 60 },
+    { challenges: [{ id: LIMITED_SUPPORT, value: 2 }], seed: "judge-heal" });
+  show("Hardcore", hardcore);
+  show("no heal, no shop", noSupport);
+  show("a heal due before the fight", healDue);
+  const five = FAINTED().filter(p => p.hp > 0).length;
+  for (const j of [hardcore, noSupport]) {
+    const dead = j.tried.find(x => x.slot.name === "Wailord");
+    assert.equal(dead.slot.dead, "fainted", "with no way back, the member that went down stays down");
+    assert.equal(dead.slot.combatant, null, "holding its slot with nothing to duel with");
+    assert.equal(j.before.rows.length, j.after.rows.length, "the threats are the same set either way");
+    assert.ok(j.before.rows.every(r => r.answer.name !== "Wailord" && !r.beaten.includes("Wailord")),
+      "it answers no threat and is exposed to none: dead weight contributes nothing");
+  }
+  assert.equal(hardcore.before.v, noSupport.before.v, "and the two calendars that strand it agree on what the five are worth");
+  // Taking the empty slot grows the party from five to six, and exposure is quadratic in the members a threat beats
+  // (`EXPOSURE`), so a sixth that loses more duels than it answers is worth less to the team than the slot standing
+  // empty. The search prices that, which is why the swap it picks is not always the dead slot.
+  console.log(`  every slot the search tried, against ${five} live members:`);
+  console.log(`    ${hardcore.tried.map(x => `${x.slot.name}${x.slot.dead ? "†" : ""} ${t1(x.delta)}`).join("  ")}`);
+  assert.ok(hardcore.tried.length === PARTY_SIZE, "the search tried every slot, the dead one included");
+
+  assert.equal(healDue.tried.find(x => x.slot.name === "Wailord").slot.dead, null,
+    "a heal before the fight puts it back on its feet, and it duels for its slot like anyone");
+  assert.equal(healDue.plain, null, "so there is nothing plain left to say");
+  assert.ok(healDue.before.rows.some(r => r.answer.name === "Wailord" || r.beaten.includes("Wailord")),
+    "and it stands in the rows it was absent from");
+
+  // The dead slot named outright — a trade that takes the fainted member — is the plain case (#579 words it).
+  const forced = judge(FAINTED(), nc(), { replace: "Wailord" },
+    { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  show("Hardcore, the corpse named", forced);
+  assert.equal(forced.plain.kind, "dead weight");
+  assert.equal(forced.plain.why, "fainted");
+  assert.equal(forced.verdict, "swap", "nothing was given up, so anything past the margin is an improvement");
+  assert.ok(forced.net > MARGIN);
+
+  // A barred member is dead weight at full health, whatever the calendar says.
+  const barred = FAINTED();
+  barred[3] = mon(OURS.wailord, CAP, [M.surf, M.bodySlam, M.iceBeam], { ability: "Water Veil", barred: true });
+  const j = judge(barred, nc(), { replace: "Wailord" },
+    { challenges: [{ id: SINGLE_TYPE, value: 10 }], seed: "judge-barred-member" });
+  show("a barred member, named", j);
+  assert.equal(j.replaced.dead, "barred", "at full health, and still not on the party the fight is fought with");
+  assert.equal(j.plain.kind, "dead weight");
+  assert.equal(j.plain.why, "barred");
+}
+
+// ---- A newcomer the challenge bars is dead weight on arrival, and never an improvement
+{
+  const j = judge(WATERS(), mon(OURS.meganium, CAP, [M.energyBall, M.bodySlam, M.earthquake], { barred: true }),
+    {}, { challenges: [{ id: SINGLE_TYPE, value: 10 }], seed: "judge-barred" });
+  console.log("== a newcomer Single Type bars");
+  show("Meganium, barred", j);
+  assert.equal(j.plain.kind, "barred");
+  assert.equal(j.verdict, "skip");
+  assert.equal(j.delta, 0);
+  assert.equal(j.after, null, "nothing was scored with it on the party: it would not be on it");
+  assert.equal(j.tried, undefined, "and no swap was searched for a newcomer that cannot be on the party");
+  assert.equal(j.before.rows.length, j.before.rows.filter(r => r.answer).length, "the party's own rows stand either way");
+}
+
+// ---- A forced replacement skips the search and judges the one swap it was given
+{
+  const party = WATERS();
+  const j = judge(party, mon(OURS.swampert, CAP, [M.surf, M.waterfall], { ability: "Torrent" }),
+    { replace: "Meganium" }, { seed: "judge-forced" });
+  console.log("== the replacement forced, as a trade forces it");
+  show("Swampert for Meganium", j);
+  assert.equal(j.tried.length, 1, "one swap tried, not six");
+  assert.equal(j.replaced.name, "Meganium");
+}
+
+// ---- Speed is worth one hit: a fast newcomer and a slow one of the same bulk and power score differently
+{
+  const party = WATERS();
+  const base = [140, 110, 90, 110, 90, 0];
+  const stand = spd => ({ mon: mon(OURS.blastoise, CAP, [M.surf, M.bodySlam], { ability: "Torrent" }),
+    stats: [...base.slice(0, 5), spd] });
+  const fast = judge(party, stand(140), {}, { seed: "judge-speed" });
+  const slow = judge(party, stand(40), {}, { seed: "judge-speed" });
+  const first = j => j.after.rows.filter(r => r.answer.first === true).length;
+  console.log("== the same bulk and power, at two speeds");
+  show("speed 140", fast);
+  show("speed 40", slow);
+  console.log(`  rows whose answer moves first: ${first(fast)} fast, ${first(slow)} slow`);
+  assert.ok(fast.delta > slow.delta, "moving first is one fewer hit taken (story 36)");
+  assert.ok(first(fast) > first(slow));
+}
+
+// ---- The full swap search over six members, inside the cost budget
+{
+  const party = WATERS();
+  const nc = () => mon(OURS.swampert, CAP, [M.surf, M.earthquake], { ability: "Torrent" });
+  const run = seed => { const t = performance.now(); judge(party, nc(), {}, { seed }); return performance.now() - t; };
+  const cold = run("judge-cost");
+  const warm = run("judge-cost");
+  // The budget is 4 ms memoised and 22–30 ms uncached (#567). The ceilings here are several times that: a loaded
+  // machine is slower than the page, and a golden that fails on load would say nothing about the search.
+  assert.ok(cold < 150, `a full swap search over six members, uncached: ${cold.toFixed(1)} ms`);
+  assert.ok(warm < 25, `and the same search off the memo: ${warm.toFixed(1)} ms`);
+  console.log("== the full swap search over six members is inside the budget, cold and memoised");
+}
+
+// ---- Judging a newcomer draws nothing and breaches nothing
+assert.equal(draws - drawsBefore, 0, "the run's RNG was never asked");
+assert.equal(Phaser.Math.RND.state(), rndBefore, "and its stream stands where it stood");
+assert.ok(sets - setsBefore > 0, "the run read's sandbox put it back, which is the only write to it");
+assert.equal(sandboxBreachCount(), 0);
+assert.equal(globalThis.__coachHud.stats().breaches, 0);
+
+console.log("judgment: ok");
