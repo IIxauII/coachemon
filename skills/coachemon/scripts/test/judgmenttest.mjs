@@ -210,7 +210,7 @@ globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { RANDBATS } = globalThis.__hud["05-randbats"];
 const { standardThreats } = globalThis.__hud["11-threats"];
-const { BACKUP, CLAMP, EXPOSURE, MARGIN, PARTY_SIZE, REVENGE, SWITCH_IN, judgeNewcomer, teamValue } = globalThis.__hud["12-value"];
+const { BACKUP, CLAMP, EXPOSURE, MARGIN, MAX_REASONS, PARTY_SIZE, REVENGE, SWITCH_IN, judgeNewcomer, teamValue } = globalThis.__hud["12-value"];
 const { combatantOf } = globalThis.__hud["09-combatant"];
 const { readRun } = globalThis.__hud["26-run"];
 const { sandboxBreachCount } = globalThis.__hud["01-core"];
@@ -280,8 +280,40 @@ const judge = (party, newcomer, opts = {}, sceneOpts = {}) =>
 
 // ΔV, the release and the net value, in tenths of a turn, which is the grain the margin is set in.
 const t1 = x => { const v = Math.round(x * 10) / 10 || 0; return `${v > 0 ? "+" : v < 0 ? "-" : " "}${Math.abs(v).toFixed(1)}`; };
-const show = (label, j) => console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} ${(j.replaced?.name ?? "-").padEnd(11)}`
-  + ` dV ${t1(j.delta)}  release ${j.release.toFixed(1)}  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+// Every judgment printed below is held to #579's four rules, whatever else the probe it belongs to asserts: at most
+// two reasons, each naming a threat of the very rows the verdict came off, each a move the judgment would not itself
+// call noise, and not one of them pointing the other way from the call it explains.
+const checkReasons = (label, j) => {
+  const gain = j.verdict !== "skip";
+  assert.ok(j.reasons.length <= MAX_REASONS, `${label}: at most ${MAX_REASONS} reasons, not ${j.reasons.length}`);
+  assert.deepEqual([...new Set(j.reasons.map(r => r.threat))].length, j.reasons.length,
+    `${label}: two reasons are two threats, not one threat twice`);
+  for (const r of j.reasons) {
+    const row = (j.after?.rows ?? []).find(x => x.threat === r.threat);
+    assert.ok(row, `${label}: "${r.text}" names a threat of the rows the verdict was read off`);
+    assert.equal(r.kind, row.kind, `${label}: and names it by type or archetype`);
+    assert.ok(["type", "archetype"].includes(r.kind));
+    assert.ok(r.text.includes(r.threat), `${label}: "${r.text}" says which threat it is about`);
+    assert.ok(["answer", "backup", "exposure"].includes(r.part),
+      `${label}: a reason is an answer, a backup or an exposure`);
+    assert.equal(r.gain, gain, `${label}: "${r.text}" points the other way from ${j.verdict}`);
+    assert.equal(r.delta > 0, gain, `${label}: "${r.text}" is worth ${t1(r.delta)} to a ${j.verdict}`);
+    assert.ok(Math.abs(r.delta) >= MARGIN, `${label}: "${r.text}" moved less than the margin`);
+  }
+  if (j.plain) {
+    assert.ok(["dead weight", "barred"].includes(j.plain.kind), `${label}: ${j.plain.kind} is not a plain case`);
+    assert.ok(j.plain.text.length > 0 && !/\bundefined\b/.test(j.plain.text), `${label}: ${j.plain.text}`);
+  }
+};
+const show = (label, j) => {
+  console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} ${(j.replaced?.name ?? "-").padEnd(11)}`
+    + ` dV ${t1(j.delta)}  release ${j.release.toFixed(1)}  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+  if (j.plain) console.log(`      ! ${j.plain.text}`);
+  for (const r of j.reasons) {
+    console.log(`      ${r.gain ? "+" : "-"} ${`${r.threat} ${r.part}`.padEnd(22)} ${t1(r.delta)}  ${r.text}`);
+  }
+  checkReasons(label, j);
+};
 
 // Where the page's RNG stood before a single judgment ran, which is where the last assertion finds it again.
 const drawsBefore = draws, setsBefore = sets, rndBefore = Phaser.Math.RND.state();
@@ -471,6 +503,7 @@ const WATERS = (level = CAP) => [
   // keys that name it, not out of a run key per scenario (26-run's `runKeyOf` carries the modifier *count* alone).
   for (const [label, nc, modifiers] of runs) {
     const j = judge(party, nc, {}, { modifiers, seed: "judge-exp" });
+    checkReasons(label, j);
     levels.push(j.newcomer.projection.level);
     console.log(`  ${label.padEnd(24)} L${String(j.newcomer.projection.level).padEnd(3)} ${j.newcomer.name.padEnd(9)}`
       + ` ${j.verdict.padEnd(5)} dV ${t1(j.delta)}`);
@@ -624,6 +657,41 @@ const FAINTED = () => [
   assert.equal(j.replaced.name, "Meganium");
 }
 
+// ---- The reason the decision words itself: the swap that gives away the only answer to a type says so
+// Five Grass members the Grass threat of the set is at home among, and the one Fire that answers it.
+const GRASSES = () => [
+  mon(OURS.charizard, CAP, [M.flamethrower, M.drillPeck], { ability: "Blaze" }),
+  mon(OURS.meganium, CAP, [M.energyBall, M.bodySlam], { ability: "Overgrow" }),
+  mon(OURS.sceptile, CAP, [M.energyBall, M.bodySlam], { ability: "Overgrow" }),
+  mon(OURS.sunflora, CAP, [M.gigaDrain, M.bodySlam], { ability: "Chlorophyll" }),
+  mon(OURS.roserade, CAP, [M.energyBall, M.sludgeBomb], { ability: "Natural Cure" }),
+  mon(OURS.ludicolo, CAP, [M.surf, M.energyBall], { ability: "Swift Swim" }),
+];
+{
+  // A trade forced on that member — a GTS offer naming the member it takes — is the swap that empties the row
+  // outright rather than handing it down to a backup.
+  const party = GRASSES();
+  const j = judge(party, mon(OURS.blastoise, CAP, [M.surf, M.bodySlam], { ability: "Torrent" }),
+    { replace: "Charizard" }, { seed: "judge-only-answer" });
+  console.log("== the only answer to the Grass threat traded away, among five Grass members");
+  show("Blastoise for Charizard", j);
+  const was = name => j.before.rows.find(r => r.threat === name);
+  const now = name => j.after.rows.find(r => r.threat === name);
+  for (const name of ["Grass", "Flying"]) {
+    console.log(`  ${name.padEnd(7)} ${was(name).answer.name} ${t1(was(name).answer.s)},`
+      + ` beating ${was(name).beaten.length} of ${was(name).of}, and after the trade`
+      + ` ${now(name).answer.name} ${t1(now(name).answer.s)}, beating ${now(name).beaten.length}`
+      + ` of ${now(name).of}`);
+  }
+  assert.equal(was("Grass").answer.name, "Charizard", "the Fire is the party's answer to the Grass threat");
+  assert.ok(was("Grass").answer.s > 0 && now("Grass").answer.s <= 0, "and the trade leaves the party none");
+  assert.equal(j.verdict, "skip", "which is why the trade is one to turn down");
+  // The two phrasings the decision names outright, on the call they explain (#567).
+  assert.deepEqual(j.reasons.map(r => r.text), ["no answer left to Grass", "Flying now beats 6 of 6"]);
+  assert.deepEqual(j.reasons.map(r => r.part), ["answer", "exposure"]);
+  assert.deepEqual(j.reasons.map(r => r.gain), [false, false], "both losses, on the call that turns it down");
+}
+
 // ---- Speed is worth one hit: a fast newcomer and a slow one of the same bulk and power score differently
 {
   const party = WATERS();
@@ -639,6 +707,62 @@ const FAINTED = () => [
   console.log(`  rows whose answer moves first: ${first(fast)} fast, ${first(slow)} slow`);
   assert.ok(fast.delta > slow.delta, "moving first is one fewer hit taken (story 36)");
   assert.ok(first(fast) > first(slow));
+}
+
+// ---- The whole vocabulary a reason is said in, swept out of every swap the two parties above allow
+{
+  // Each judgment above pins the words of its own call; this sweeps the two parties against three newcomers each,
+  // every slot forced in turn, and pins the *shapes* those calls are said in — the threat under an X and its counts
+  // under an n. A phrasing this file has never read is then a golden diff rather than a surprise on a card.
+  const sweeps = [["the Water six", WATERS], ["the Grass six", GRASSES]];
+  const comers = [
+    ["Blastoise", () => mon(OURS.blastoise, CAP, [M.surf, M.bodySlam], { ability: "Torrent" })],
+    ["Sunflora", () => mon(OURS.sunflora, CAP, [M.gigaDrain, M.bodySlam], { ability: "Chlorophyll" })],
+    ["Kangaskhan", () => mon(OURS.kangaskhan, CAP, [M.bodySlam], { ability: "Early Bird" })],
+    // Two worth having, so the sweep reads the gains as well as the losses.
+    ["Sceptile", () => mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam, M.surf, M.bodySlam],
+      { ability: "Overgrow" })],
+    ["Swampert", () => mon(OURS.swampert, CAP, [M.earthquake, M.iceBeam, M.surf, M.bodySlam],
+      { ability: "Torrent" })],
+    ["Charizard", () => mon(OURS.charizard, CAP, [M.flamethrower, M.drillPeck, M.crunch, M.bodySlam],
+      { ability: "Blaze" })],
+  ];
+  const seen = new Map();
+  let judged = 0, reasons = 0;
+  for (const [label, party] of sweeps) {
+    for (const victim of party().map(p => p.name)) {
+      for (const [name, nc] of comers) {
+        const j = judge(party(), nc(), { replace: victim }, { seed: "judge-vocab" });
+        checkReasons(`${label} -${victim} +${name}`, j);
+        judged++;
+        reasons += j.reasons.length;
+        for (const r of j.reasons) {
+          const shape = r.text.replace(r.kind === "archetype" ? `the ${r.threat}` : r.threat, "X")
+            .replace(/\d+/g, "n");
+          const at = seen.get(shape) ?? { n: 0, gain: r.gain, part: r.part };
+          seen.set(shape, { ...at, n: at.n + 1 });
+          assert.equal(at.gain ?? r.gain, r.gain, `"${shape}" is a gain in one call and a loss in another`);
+        }
+      }
+    }
+  }
+  console.log(`== ${reasons} reasons over ${judged} forced swaps, in ${seen.size} phrasings:`);
+  const order = [...seen].sort(([x, a], [y, b]) =>
+    Number(b.gain) - Number(a.gain) || a.part.localeCompare(b.part) || x.localeCompare(y));
+  for (const [shape, at] of order) {
+    console.log(`  ${at.gain ? "+" : "-"} ${at.part.padEnd(8)} ${String(at.n).padStart(3)}  ${shape}`);
+  }
+  assert.deepEqual([...new Set(order.map(([, at]) => `${at.gain ? "gain" : "loss"} ${at.part}`))].sort(),
+    ["gain answer", "gain backup", "gain exposure", "loss answer", "loss backup", "loss exposure"],
+    "the sweep reads every part of a row, moving either way, so no phrasing goes unread");
+  // Every phrasing says which threat it is about and which way the row went, and nothing says both ways at once.
+  for (const [shape, at] of order) {
+    assert.ok(shape.includes("X"), `"${shape}" names no threat`);
+    assert.ok(/^(an answer|a backup|a better|a weaker|no answer|no backup|nearer|further from|X now beats)/.test(shape),
+      `"${shape}" is outside the vocabulary this file has read`);
+    assert.equal(/\bdown from\b/.test(shape), at.gain && at.part === "exposure",
+      `"${shape}" counts down only where the exposure it reads fell`);
+  }
 }
 
 // ---- The full swap search over six members, inside the cost budget
