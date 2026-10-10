@@ -327,6 +327,12 @@ export const HUD_DEPS = {
     `src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr.canApply`,
   ],
 
+  /** game-code.md §15, §17. */
+  "09-projection.js": [
+    `${SCENE}#BattleScene.getMaxExpLevel`,
+    `${SCENE}#BattleScene.applyPartyExp`,
+  ],
+
   /** game-code.md §13. */
   "44-safari.js": [
     `src/data/mystery-encounters/encounters/safari-zone-encounter.ts#summonSafariPokemon`,
