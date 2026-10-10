@@ -21,6 +21,13 @@ const abilityNameOf = x => nameOf(abilityOf(x));
 // An ability given by name alone carries no attrs, and is taken at its word.
 const worksFused = ab => !(ab?.attrs ?? []).some(a => a?.constructor?.name === "NoFusionAbilityAbAttr");
 
+// A stat row handed over whole rather than computed: six `Stat`-indexed numbers, or null for anything else.
+const statRowOf = xs => {
+  if (!Array.isArray(xs) || xs.length < 6) return null;
+  const row = xs.slice(0, 6);
+  return row.every(x => typeof x === "number" && Number.isFinite(x) && x >= 0) ? row.map(x => Math.floor(x)) : null;
+};
+
 // `calculateStats`, re-implemented (game-code.md §24).
 const statsAt = (base, level, ivs, nature, ability) => {
   const fx = natureOf(nature);
@@ -74,6 +81,8 @@ const fusedTypes = (a, b) => {
  *   `species`  a `PokemonSpecies`, `form` its form index
  *   `level`    the level the stats are computed at
  *   `ivs`      six IVs, `nature` a `Nature`; neutral where unknown
+ *   `stats`    a `Stat`-indexed stat row given outright, for a combatant with no species to compute one from — a
+ *              **preview**'s foe. It wins over the base stats, the IVs and the nature, which then only name the mon
  *   `moves`    move ids, at full PP; the live moveset where absent
  *   `ability`  an ability name or id, `passive` the same; null for none, absent for the species' or the member's own
  *   `attrs`    ability attr names beyond `ATTRS_BY_ABILITY`, for a combatant with no live member behind it
@@ -101,11 +110,12 @@ export const combatantOf = (spec = {}) => {
   // The passive stays the base half's, fused or not (game-code.md §24).
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)
     : mon && tryDo(() => mon.hasPassive(), false) ? abilityNameOf(tryDo(() => mon.getPassiveAbility())) : null;
+  const given = statRowOf(spec.stats);
   // A live member's own call folds in its vitamins, its fusion and the Flip Stat challenge (game-code.md §20).
-  const base = other ? fusedBase(form?.baseStats, other.base) : (mon && baseStatsOf(mon)) ?? form?.baseStats;
-  if (!Array.isArray(base) || base.length < 6) return null;
+  const base = given ? null : other ? fusedBase(form?.baseStats, other.base) : (mon && baseStatsOf(mon)) ?? form?.baseStats;
+  if (!given && !(Array.isArray(base) && base.length >= 6)) return null;
 
-  const stats = statsAt(base, level, ivs, nature, ability);
+  const stats = given ?? statsAt(base, level, ivs, nature, ability);
   const maxHp = Math.max(1, stats[Stat.HP]);
   const hp = Math.max(0, Math.min(maxHp, spec.hp ?? maxHp));
   const ownTypes = spec.types ?? (mon ? tryDo(() => mon.getTypes()) : null)

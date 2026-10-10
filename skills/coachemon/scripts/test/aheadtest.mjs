@@ -26,12 +26,14 @@ const MOVES = {
   // Power −1 is a move the game prices from the situation.
   "Gyro Ball": ["Steel", 0, -1],
 };
-const gameMove = name => ({ name, type: TY.indexOf(MOVES[name][0]), category: MOVES[name][1], power: MOVES[name][2] });
+// Every move the game knows has an id, and a slot on a mon holds it: a preview row carries those ids over (#574).
+const MOVE_IDS = Object.fromEntries(Object.keys(MOVES).map((n, i) => [n, i + 1]));
+const gameMove = name => ({ id: MOVE_IDS[name], name, type: TY.indexOf(MOVES[name][0]), category: MOVES[name][1], power: MOVES[name][2] });
 const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => ({
   species: sp, name: sp.name, level, bossSegments: boss, shiny: false,
   getTypes: () => sp.types, getAbility: () => ({ name: "Sturdy" }), hasPassive: () => false,
   getMaxHp: () => 50 + level * 2, getStat: i => 20 + level + i, getIconAtlasKey: () => "k", getIconId: () => String(sp.speciesId),
-  moveset: moves.map(n => ({ getName: () => n, getMove: () => gameMove(n) })),
+  moveset: moves.map(n => ({ moveId: MOVE_IDS[n], getName: () => n, getMove: () => gameMove(n) })),
   destroy() { destroyed++; },
 });
 
