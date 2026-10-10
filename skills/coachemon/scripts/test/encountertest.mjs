@@ -913,4 +913,153 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   const broke = mount(funAndGames({ money: waveMoney(30, 1.5) + 100 })).model();
   assert.deepEqual(verdicts(broke), ["avoid", "take"]);
 }
+
+// ---- One judgment, four cards that offer a mon (#585): the Safari fee's preview and its minigame turns, the
+// Salesman's mon, the Uncommon Breed and the Dancing Lessons one. Each mount here hands over the species table and a
+// next big fight, which is what the judgment needs — the threat set to duel and the party to duel with (#571) — so
+// every row says the verdict and the reasons it was read off. The blocks above hand over neither, and show what a row
+// says then: the account half alone, with no verdict claimed.
+{
+  const fight = { isFixedBattle: () => false };
+  // The offers the model carries for the text summary, with the two axes as they are kept: the team's call and the
+  // reasons it was read off, then what the mon is worth to the **account** alone against the account's own bar. The
+  // two are never summed, and either alone can want a mon (story 27).
+  const offers = m => (m.offers ?? []).map(o => `offer ${o.name}: team ${o.text ?? `none — ${o.unavailable}`}`
+    + `${o.reasons.length ? ` (${o.reasons.join("; ")})` : ""} · account ${o.account.value} of ${o.account.show}`
+    + `${o.confidence ? ` · ${o.confidence}` : ""}`).join("\n");
+  const shown = m => { console.log(offers(m)); return m; };
+  // The same mon through the catch card's own entry: 60-card lands the road with `catchLand`, which is where the catch
+  // card asks `teamVerdict` (#584), and the answer it lands has to be the answer an offer shows. `turn` stands in for
+  // the turn-read half of a catch target, which this harness's scene cannot produce — the rest is the card's code.
+  const catchCardTeam = (sc, foe) => globalThis.__hud["26-run"].readRun(sc, run =>
+    globalThis.__hud["45-catch"].catchLand(run, { targets: [{ id: foe.id, turn: { limited: false, full: false,
+      value: 0, p: 0, main: [], reasons: [], tips: [], escape: null, any: false, multi: false } }] }).targets[0]);
+
+  // Uncommon Breed: the charm takes the Eevee, and the team's call on it leads the row.
+  const EEVEE = [55, 55, 50, 45, 65, 55];
+  const eevee = () => ({ ...pk("Eevee", ["Normal"], 38, { id: 133, bst: 325, base: EEVEE, moves: [["Bite", "Dark", 60, "P"], ["Swift", "Normal", 60, "S"]] }),
+    species: species(133, "Eevee", ["Normal"], 325, { baseStats: EEVEE, catchRate: 45 }),
+    shiny: false, abilityIndex: 0, gender: 0, variant: 0, formIndex: 0 });
+  const breed = extra => ({ type: 28, labels: ["Battle", "Berries", "Charm"],
+    options: [option(), option({ mode: 3, requirements: [make("PersistentModifierRequirement", {})] }), option({ mode: 3, primary: [moveReq(["ATTRACT"])] })],
+    misc: { pokemon: eevee() }, configs: [{ pokemonConfigs: [{ species: species(133, "Eevee", ["Normal"], 325), level: 38 }] }],
+    party: [...team(), pk("Milotic", ["Water"], 36, { base: [95, 60, 79, 100, 125, 81], bst: 540, moves: [["Attract", "Normal", 0, "X", "ATTRACT"]] })],
+    tables: threatTables(), gameMode: fight, ...extra });
+  const charm = shown(show("uncommon breed, judged", breed()).model());
+  assert.equal(charm.offers.length, 1, "one mon offered, one judgment");
+  assert.ok(charm.offers[0].verdict, `the judgment is reachable here, so the offer carries a verdict: ${JSON.stringify(charm.offers[0])}`);
+  assert.ok(charm.options[2].why.startsWith(`team: ${charm.offers[0].text}`),
+    `the row leads with the team's call: ${charm.options[2].why}`);
+  for (const r of charm.offers[0].reasons) assert.ok(charm.options[2].why.includes(r), `the row carries ${r}`);
+
+  // The Pokémon Salesman: the same judgment on the mon the price buys.
+  const LARVESTA = [55, 85, 55, 50, 55, 60];
+  const sale = extra => ({ type: 13, tier: 19, money: 50000, labels: ["Buy", "Leave"],
+    options: [option({ mode: 1, requirements: [money$(4)] }), option()],
+    misc: { price: waveMoney(30, 4),
+      pokemon: { ...pk("Larvesta", ["Bug", "Fire"], 5, { id: 636, bst: 360, base: LARVESTA, moves: [["Ember", "Fire", 40, "S"], ["String Shot", "Bug", 0, "X"]] }),
+        species: species(636, "Larvesta", ["Bug", "Fire"], 360, { baseStats: LARVESTA, catchRate: 45 }),
+        shiny: false, abilityIndex: 2, variant: 0, formIndex: 0 } },
+    tables: threatTables(), gameMode: fight, ...extra });
+  const bought = shown(show("salesman, judged", sale()).model());
+  assert.ok(bought.offers[0].verdict, "the mon on sale is judged, not guessed");
+  assert.ok(bought.options[0].why.includes(`team: ${bought.offers[0].text}`),
+    `the buy row carries the team's call: ${bought.options[0].why}`);
+  // Already caught: the account half drops to nothing while the team half is unmoved, which is what keeping the two
+  // axes apart means — a mon the dex is done with can still be a mon the team wants (story 27).
+  const owned = shown(show("salesman, judged, already caught", sale({ dex: { 636: { caughtAttr: 255n } } })).model());
+  assert.equal(owned.offers[0].account.value, 0, "nothing left for the account in a species it owns");
+  assert.equal(owned.offers[0].text, bought.offers[0].text, "the team's call is the account's business in neither direction");
+
+  // Dancing Lessons: the Oricorio is on the field as well as on the card, so the catch card's own landing can be
+  // asked about the very same mon — one answer, whichever card offers it (story 22).
+  const ORICORIO = [75, 70, 70, 98, 70, 93];
+  const oricorio = () => {
+    const o = pk("Oricorio", ["Fire", "Flying"], 34, { id: 741, bst: 476, base: ORICORIO,
+      moves: [["Revelation Dance", "Fire", 100, "S"], ["Air Slash", "Flying", 75, "S"]] });
+    o.shiny = false;
+    return o;
+  };
+  const dancer = () => pk("Lopunny", ["Normal"], 37, { base: [65, 76, 84, 54, 96, 105], bst: 480,
+    moves: [["Swords Dance", "Normal", 0, "X", "SWORDS_DANCE"], ["Return", "Normal", 85, "P"]] });
+  const spare = (name, level) => pk(name, ["Water"], level, { base: [20, 10, 55, 15, 20, 80], bst: 200,
+    moves: [["Tackle", "Normal", 40, "P"]] });
+  const dancing = (party, mon, extra = {}) => ({ type: 22, tier: GREAT, labels: ["Battle", "Learn", "Dance"],
+    catchAllowed: true, options: [option(), option(), option({ mode: 3, primary: [moveReq(["SWORDS_DANCE"])] })],
+    configs: [{ pokemonConfigs: [{ species: species(741, "Oricorio", ["Fire", "Flying"], 476), isBoss: true }] }],
+    enemy: [mon], party, tables: threatTables(), gameMode: fight, ...extra });
+  // A party with room and little in it: the team wants the dancer, and the row says so ahead of the dex reason.
+  const wantMon = oricorio();
+  const wanted = show("dancing lessons, judged, the team wants it",
+    dancing([spare("Magikarp", 12), dancer()], wantMon));
+  const dance = shown(wanted.model());
+  assert.equal(dance.offers[0].verdict, "take", "a party with room gains a member outright");
+  assert.ok(dance.options[2].why.startsWith("team: take"), `the dance row leads with it: ${dance.options[2].why}`);
+  // A viewer following in plain text gets the same call off the summary, reasons and all (story 40).
+  assert.ok(globalThis.__coachHud.summary().encounter.endsWith(
+    " · Oricorio: take, a backup to Fighting at last, a backup to Flying at last"),
+  `the summary carries the verdict and the reasons it was read off: ${globalThis.__coachHud.summary().encounter}`);
+  // The same mon, through the catch card's own entry: one answer, down to the reasons and the confidence.
+  const landed = catchCardTeam(wanted.scene, wantMon);
+  console.log(`catch card: ${landed.why}\ncatch card: ${landed.reasons.filter(r => r.kind === "team").map(r => r.text).join(" · ")}`);
+  assert.deepEqual({ verdict: landed.team.verdict, text: landed.team.text, reasons: landed.team.reasons.slice(0, 2) },
+    { verdict: dance.offers[0].verdict, text: dance.offers[0].text, reasons: dance.offers[0].reasons },
+    "the catch card's landed verdict and the offer's are one answer");
+  assert.equal(landed.team.confidence, dance.offers[0].confidence, "and read with the same confidence");
+  // Already caught, and the team still wants it: account value is nothing, `wanted` is true from the team axis on its
+  // own, and the row says the team's call with no dex reason behind it (story 28).
+  const sameSpecies = shown(mount(dancing([spare("Magikarp", 12), dancer()], oricorio(),
+    { dex: { 741: { caughtAttr: 255n } } })).model());
+  assert.equal(sameSpecies.offers[0].account.value, 0, "the account is done with this species");
+  assert.equal(sameSpecies.offers[0].verdict, "take");
+  assert.equal(sameSpecies.options[2].why, "team: take, a backup to Fighting at last, a backup to Flying at last",
+    "the team's call and its reasons, and nothing of the account's");
+  assert.equal(verdicts(sameSpecies)[2], "take", "a mon the team wants is wanted whatever the dex says");
+  // A full party: the call names the member the swap costs, and it is the same name on both cards.
+  const fullMon = oricorio();
+  const full = show("dancing lessons, judged, a full party swaps",
+    dancing([...team(), dancer(), spare("Feebas", 14), spare("Luvdisc", 15)], fullMon));
+  const swap = shown(full.model());
+  assert.equal(swap.offers[0].verdict, "swap", "six stand already, so a newcomer costs a member");
+  assert.match(swap.offers[0].text, /^swap for /);
+  assert.equal(catchCardTeam(full.scene, fullMon).team.text, swap.offers[0].text,
+    "the member a swap costs is the same member on the catch card");
+
+  // Safari Zone: the three the fee buys are judged as each is replayed, and the turn judges the one in front of us.
+  const starter = (id, name, base, cost = 1, extra = {}) =>
+    ({ ...species(id, name, ["Normal"], base.reduce((t, x) => t + x, 0),
+      { catchRate: 45, abilityHidden: 0, baseStats: base, ...extra }), starterCost: cost });
+  const STARTERS = [starter(19, "Rattata", [30, 56, 35, 25, 35, 72]), starter(16, "Pidgey", [40, 45, 40, 35, 35, 56]),
+    starter(10, "Caterpie", [45, 30, 35, 20, 20, 45])];
+  const base = threatTables();
+  // The threat set is the species table's own; the starter band the fee draws from is the starter table's. Both are
+  // the one table a mount hands over, so the preview replays real mons *and* the judgment has threats to duel.
+  const safariTables = () => ({ ...base,
+    species: { ...base.species, getAllStarters: () => STARTERS,
+      getStarterCost: id => STARTERS.find(s => s.speciesId === id)?.starterCost ?? 0,
+      getSpecies: id => STARTERS.find(s => s.speciesId === id) ?? base.species.getSpecies(id) },
+    events: { getAllValidEventEncounters: () => [], getShinyCatchMultiplier: () => 2 } });
+  const draws = { 90000: [0, 5000], 60000: [1, 10], 30000: [2, 4000] };
+  const fee = shown(show("safari zone, the three judged", { type: 9, tier: GREAT, labels: ["Pay", "Leave"], wave: 30,
+    draws, tables: safariTables(), gameMode: fight,
+    options: [option({ mode: 1, requirements: [money$(2)] }), option()] }).model());
+  assert.equal(fee.offers.length, 3, "three mons replayed, three judgments");
+  assert.deepEqual(fee.offers.map(o => o.name), ["Rattata", "Pidgey", "Caterpie"], "in summon order");
+  for (const o of fee.offers) assert.ok(o.verdict, `${o.name} is judged inside the replay: ${JSON.stringify(o)}`);
+
+  const NIDORINA = [70, 62, 67, 55, 55, 56];
+  const nidorina = { ...pk("Nidorina", ["Poison"], 32, { id: 30, bst: 365, base: NIDORINA }),
+    species: species(30, "Nidorina", ["Poison"], 365, { baseStats: NIDORINA, catchRate: 45 }),
+    shiny: false, abilityIndex: 0, variant: 0, formIndex: 0 };
+  const turn = shown(show("safari zone, a minigame turn judged", { type: 9, tier: GREAT, wave: 30,
+    labels: ["Throw a ball", "Throw bait", "Throw mud", "Flee"], draws, tables: safariTables(), gameMode: fight,
+    options: [option({ mode: 1, requirements: [money$(2)] }), option()], menu: [option(), option(), option(), option()],
+    misc: { pokemon: nidorina, safariPokemonRemaining: 2, catchStage: 0, fleeStage: 0 } }).model());
+  assert.equal(turn.offers.length, 1, "the turn is about one mon, judged as the fee judged the three");
+  assert.equal(turn.offers[0].name, "Nidorina");
+  assert.ok(turn.offers[0].verdict, "the turn's mon carries a verdict of its own");
+  assert.equal(turn.minigame.wanted, (turn.offers[0].verdict === "take" || turn.offers[0].verdict === "swap")
+    || turn.offers[0].account.value >= turn.offers[0].account.show,
+    "`wanted` is either axis alone and never the sum of the two");
+}
 console.log("ok");

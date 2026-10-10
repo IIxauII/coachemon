@@ -62,7 +62,9 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   const { accountRead } = globalThis.__hud["98-watch"];
   const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, readTurn, readRun, accountRead, catchLand, keepCatchTeam, RANDBATS: globalThis.__hud["05-randbats"].RANDBATS,
-    catchWorth: globalThis.__hud["45-catch"].catchWorth,
+    // The upgrade reader the "stronger than" block below asks, which is `08-party`'s own: `catchWorth` wrapped it
+    // until #585 retired that wrapper with the encounter card's team reasons.
+    party: globalThis.__hud["08-party"], core: globalThis.__hud["01-core"],
     drawCatch: globalThis.__hud["95-render-catch"].drawCatch, catchSummary: globalThis.__hud["45-catch"].catchSummary, finalBstOf,
     sandboxBreachCount: globalThis.__hud["01-core"].sandboxBreachCount, setGameTables: globalThis.__hud["04-game-tables"].setGameTables };
   // One call: `setGameTables` replaces the tables wholesale, so a second would drop what the first put there.
@@ -383,11 +385,24 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   show("hidden ability", advice);
 }
 // ---- "Stronger than" compares lines and levels, not current stages
-// `catchWorth` is the reader asked here, not the catch card: the party-upgrade reasons are the *encounter* card's,
-// and as of #584 the catch card's team half is the judgment's instead (#585 moves this reader onto it too).
+// `partyReasons`' upgrade test is the reader asked here, not the catch card. These reasons were always the *encounter*
+// card's: the catch card's team half became the judgment's in #584, and #585 moved the encounter card's onto the
+// judgment too, which retired `catchWorth` — the wrapper that turned this reason into a sentence. The sentence is
+// built here instead, off the same reason the same reader still hands back, so every comparison below is the
+// comparison it always was.
 const upgradeOf = (party, foe, counts) => {
   const { scene } = run({ party, foes: [foe], counts });
-  return globalThis.__ca.catchWorth(globalThis.__ca.accountRead(scene), foe).reasons.find(t => t.startsWith("stronger than")) ?? null;
+  const { partyProfile, partyReasons, damagingTypes } = globalThis.__ca.party;
+  const { abilitiesOf, typesOf } = globalThis.__ca.core;
+  const all = globalThis.__ca.accountRead(scene).party.filter(Boolean);
+  const reasons = partyReasons(partyProfile(all), { species: foe.species, fusion: foe.fusionSpecies ?? null,
+    level: foe.level, types: typesOf(foe), abilities: abilitiesOf(foe), moveTypes: damagingTypes(foe) });
+  if (reasons.some(r => r.kind === "dupe")) return null;
+  const up = reasons.find(r => r.kind === "upgrade");
+  const bst = x => (x.estimated ? `~${x.final}` : `${x.final}`);
+  return up
+    ? `stronger than ${up.against.name} (${up.estimated || up.against.estimated ? "final " : ""}BST ${bst(up)} vs ${bst(up.against)})`
+    : null;
 };
 {
   const member = (name, lv, bst, id, evos) => mon(name, lv, ["Bug","Poison"], "Swarm", [90,60,60,60,60,60], [["Poison Sting","Poison",15,"P"]], true, undefined, { id, bst, evos });
