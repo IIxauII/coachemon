@@ -3,7 +3,7 @@
 import { TYPES, effectiveness } from "./01-core.js";
 import { bigFightsAhead, poolAnchorWave, trainerOdds, waveKind } from "./03-calendar.js";
 import { gameEvents, gameTables } from "./04-game-tables.js";
-// No `partyReasons`: the covers/upgrade/hole tags are not read here any more, the judgment having replaced them (#587).
+// No `partyReasons`: the judgment replaced the covers/upgrade/hole tags here (#587), and the function is gone (#593).
 import { partyAtFight, partyLuck, partyProfile, typesOfSpecies } from "./08-party.js";
 import { teamVerdict } from "./45-catch.js";
 
@@ -343,7 +343,7 @@ const judge = (run, id, profile, level, wave, luck, fightWave) => {
   const catches = new Map();
   for (const e of spawnList) {
     if (e.tier > BiomePoolTier.ULTRA_RARE || !(e.wild > 0)) continue;
-    // A species already on the team is no catch at all — the one thing the dropped `partyReasons` call still had to
+    // A species already on the team is no catch at all — the one thing the dropped `partyReasons` call had left to
     // say here, and a tally rather than a score, so the profile's own roots say it (CONTEXT.md, `Party profile`).
     if (profile.roots.has(rootOfSpecies(e.sp))) continue;
     const team = catchJudgment(run, e.sp, fightWave);
