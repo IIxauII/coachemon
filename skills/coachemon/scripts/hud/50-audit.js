@@ -195,7 +195,7 @@ export const teamAudit = (run, ahead) => {
 const build = (run, all, next, foes) => {
   const s = run.scene;
   const wave = run.facts.wave;
-  // Every check below judges the team at `next`, so every one of them reads the party at that fight.
+  // A check added below reads `party`, never `all`: every finding is about the team at `next`.
   const party = partyAtFight(s, all, { from: wave, fight: next?.wave ?? null }).members;
   const double = tryDo(() => doubleOdds(s, wave + 1), 0);
   const findings = [];

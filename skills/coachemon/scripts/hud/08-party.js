@@ -85,10 +85,9 @@ const UPGRADE_BST = 100, UPGRADE_FLOOR = 400, UPGRADE_LEVEL_GAP = 10;
 const HOLE_MIN_PARTY = 3, HOLE_MIN_TYPES = 2;
 
 /**
- * The party at the next big fight (CONTEXT.md, `Dead weight`), which every reader judging the team at that fight
- * reads. A member in `members` counts at full health however hurt it is now; `dead` is the dead weight, holding its
- * slot at zero. `from` is the wave the run stands on and `fight` the wave of the fight to reach — without one,
- * nothing is out of reach and only a challenge bars a member.
+ * The party at the next big fight (CONTEXT.md, `Dead weight`): `members` counts every member at full health however
+ * hurt it is now, and `dead` is the dead weight holding its slot at zero. `from` is the wave the run stands on and
+ * `fight` the wave to reach — with no `fight`, nothing is out of reach and only a challenge bars a member.
  */
 export const partyAtFight = (s, party, { from = 0, fight = null } = {}) => {
   const revive = reviveBefore(s, from, fight);
