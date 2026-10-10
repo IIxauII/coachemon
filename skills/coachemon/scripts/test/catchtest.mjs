@@ -62,9 +62,6 @@ const run = ({ party, foes, phase = null, trainer = null, counts = { 0: 5, 1: 0,
   const { accountRead } = globalThis.__hud["98-watch"];
   const { finalBstOf } = globalThis.__hud["08-party"];
   globalThis.__ca = { catchAdvice, captureChance, readTurn, readRun, accountRead, catchLand, keepCatchTeam, RANDBATS: globalThis.__hud["05-randbats"].RANDBATS,
-    // The upgrade reader the "stronger than" block below asks, which is `08-party`'s own: `catchWorth` wrapped it
-    // until #585 retired that wrapper with the encounter card's team reasons.
-    party: globalThis.__hud["08-party"], core: globalThis.__hud["01-core"],
     drawCatch: globalThis.__hud["95-render-catch"].drawCatch, catchSummary: globalThis.__hud["45-catch"].catchSummary, finalBstOf,
     sandboxBreachCount: globalThis.__hud["01-core"].sandboxBreachCount, setGameTables: globalThis.__hud["04-game-tables"].setGameTables };
   // One call: `setGameTables` replaces the tables wholesale, so a second would drop what the first put there.
@@ -384,41 +381,17 @@ const glameow = (extra = {}) => mon("Glameow", 16, ["Normal"], "Limber", [50,35,
   assert.ok(globalThis.__ca.drawCatch(advice).length, "card drawn");
   show("hidden ability", advice);
 }
-// ---- "Stronger than" compares lines and levels, not current stages
-// `partyReasons`' upgrade test is the reader asked here, not the catch card. These reasons were always the *encounter*
-// card's: the catch card's team half became the judgment's in #584, and #585 moved the encounter card's onto the
-// judgment too, which retired `catchWorth` — the wrapper that turned this reason into a sentence. The sentence is
-// built here instead, off the same reason the same reader still hands back, so every comparison below is the
-// comparison it always was.
-const upgradeOf = (party, foe, counts) => {
-  const { scene } = run({ party, foes: [foe], counts });
-  const { partyProfile, partyReasons, damagingTypes } = globalThis.__ca.party;
-  const { abilitiesOf, typesOf } = globalThis.__ca.core;
-  const all = globalThis.__ca.accountRead(scene).party.filter(Boolean);
-  const reasons = partyReasons(partyProfile(all), { species: foe.species, fusion: foe.fusionSpecies ?? null,
-    level: foe.level, types: typesOf(foe), abilities: abilitiesOf(foe), moveTypes: damagingTypes(foe) });
-  if (reasons.some(r => r.kind === "dupe")) return null;
-  const up = reasons.find(r => r.kind === "upgrade");
-  const bst = x => (x.estimated ? `~${x.final}` : `${x.final}`);
-  return up
-    ? `stronger than ${up.against.name} (${up.estimated || up.against.estimated ? "final " : ""}BST ${bst(up)} vs ${bst(up.against)})`
-    : null;
-};
+// ---- A member whose line still grows, and the card it draws
+// The "stronger than" sentence this block used to check is gone with the old judgment (#593): it was built here off
+// `partyReasons`' upgrade reason — the +100 final-BST bar that stood in for the member a swap replaces — and the
+// reader it asked no longer exists. What the catch card itself says about the team is the judgment's, landed with the
+// road, which the "team landed"/"team says no" blocks above pin. The card below is kept as it was drawn, so the
+// golden still shows a wild Charmander judged against a party whose second member is a final form.
 {
   const member = (name, lv, bst, id, evos) => mon(name, lv, ["Bug","Poison"], "Swarm", [90,60,60,60,60,60], [["Poison Sting","Poison",15,"P"]], true, undefined, { id, bst, evos });
   const counts = { 0: 10, 1: 5, 2: 0, 3: 0, 4: 0 };
-  const spinarak = member("Spinarak", 20, 190, 167, [[168, 22]]);
-  const wild = mon("Lickitung", 21, ["Normal"], "Oblivious", [100,60,70,60,70,30], [["Lick","Ghost",30,"P"]], true, 50, { id: 108, bst: 430 });
-  assert.equal(upgradeOf([venusaur(), spinarak], wild, counts), null, "Spinarak's line isn't weaker than a 430 wild");
-  const noEvo = member("Spinarak", 20, 190, 167, []);
-  assert.match(upgradeOf([venusaur(), noEvo], wild, counts) ?? "", /stronger than Spinarak \(BST 430 vs 190\)/);
-  const pikachu = mon("Pikachu", 45, ["Electric"], "Static", [90,60,50,60,60,90], [["Spark","Electric",65,"P"]], true, undefined, { id: 25, bst: 320 });
-  const lowPidgeot = mon("Pidgeot", 15, ["Normal","Flying"], "Keen Eye", [60,40,40,40,40,50], [["Gust","Flying",40,"S"]], true, 30, { id: 18, bst: 479 });
-  assert.equal(upgradeOf([venusaur(), pikachu], lowPidgeot, counts), null, "too far below our levels");
   const final400 = member("Ariados", 30, 400, 168, []);
   const charmander = mon("Charmander", 28, ["Fire"], "Blaze", [70,50,40,55,45,60], [["Ember","Fire",40,"S"]], true, 30, { id: 4, bst: 309, evos: [[5, 16], [6, 36]] });
-  const text = upgradeOf([venusaur(), final400], charmander, counts);
-  assert.match(text ?? "", /stronger than Ariados \(final BST ~\d+ vs 400\)/, text);
   const grows = run({ party: [venusaur(), final400], foes: [charmander], counts }).advice;
   jsonSafe(grows, "final BST");
   show("unevolved upgrade", grows);
@@ -429,13 +402,16 @@ const upgradeOf = (party, foe, counts) => {
   const fused = mon("Rattwo", 45, ["Normal","Psychic"], "Guts", [140,90,70,100,70,120], [["Tackle","Normal",40,"P"]], true, undefined,
     { id: 19, bst: 253 }, { fusionSpecies: mewtwo });
   const wild = mon("Tauros", 44, ["Normal"], "Intimidate", [120,100,95,40,70,110], [["Tackle","Normal",40,"P"]], true, 60, { id: 128, bst: 490 });
-  const counts = { 0: 10, 1: 5, 2: 0, 3: 0, 4: 0 };
-  assert.equal(upgradeOf([venusaur(), fused], wild, counts), null, "the fused pair (467) isn't weaker than a 490");
+  // `finalBstOf` outlives the old judgment — the starter card still reads a line's final form off it (#593) — so the
+  // fact the retired "stronger than" sentence rested on is asserted on the reader itself: the pair is worth the
+  // average of its halves, and the base species alone is worth only its own line.
+  assert.equal(globalThis.__ca.finalBstOf(fused).final, Math.ceil((253 + 680) / 2), "the pair, not Rattata's 253");
+  const unfused = { ...fused, fusionSpecies: undefined };
+  assert.equal(globalThis.__ca.finalBstOf(unfused).final, 253, "and without the other half it is Rattata's line alone");
+  assert.ok(globalThis.__ca.finalBstOf(unfused).final < (wild.species.baseTotal ?? 490), "which the 490 wild beats");
   // Per-stat when both species carry baseStats: ceil((30+106)/2) + … for Rattata's 30/56/35/25/35/72.
   const perStat = { ...fused, species: { ...fused.species, baseStats: [30, 56, 35, 25, 35, 72] } };
   assert.equal(globalThis.__ca.finalBstOf(perStat).final, [68, 83, 63, 90, 63, 101].reduce((t, x) => t + x, 0));
-  const unfused = { ...fused, fusionSpecies: undefined };
-  assert.match(upgradeOf([venusaur(), unfused], wild, counts) ?? "", /stronger than Rattwo \(BST 490 vs 253\)/);
 }
 
 // ---- A shiny fusion half counts as shiny, and an event's multiplier replaces ×2
