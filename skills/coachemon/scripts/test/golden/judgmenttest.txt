@@ -26,13 +26,21 @@
 == clamped: 5 of 44 pairs, the worst Feraligatr raw +4.0 -> s +3.0
 == another Water into the all-Water party
   Swampert                       swap  Wailord     dV +0.6  release 0.0  net +0.6  
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
   cheapest to release last: Feraligatr (8), Meganium (5), Blastoise (7), Politoed (1), Lanturn (1), Wailord (0)
 == the lightest member of six, against the heaviest newcomer of the lot
   Swampert                       swap  Roserade    dV +0.5  release 0.0  net +0.5  
+      + Electric exposure      +2.2  Electric now beats 5 of 6, down from 6
+      + Fire answer            +2.0  an answer to Fire at last
   cheapest to release last: Charizard (answers 8, beaten 5), Typhlosion (answers 2, beaten 8), Empoleon (answers 4, beaten 7), Poliwrath (answers 3, beaten 7), Sceptile (answers 4, beaten 9), Roserade (answers 1, beaten 12)
 == a sixth Water, or the Grass the six of them are missing
   Empoleon (Water/Steel)         swap  Wailord     dV +0.4  release 0.0  net +0.4  
+      + Normal answer          +2.4  an answer to Normal at last
+      + Ghost exposure         +2.2  Ghost now beats 5 of 6, down from 6
   Sceptile (Grass)               swap  Wailord     dV +0.8  release 0.0  net +0.8  
+      + Ghost exposure         +2.2  Ghost now beats 5 of 6, down from 6
+      + physical wall exposure +1.8  the physical wall now beats 4 of 6, down from 5
   members the threats beat: 60 with the Water, 59 with the Grass
 == a Magikarp at level 10, one EXP share, judged at two fights
   at the fight on 50 it stands as Magikarp L19 [Water] 39 hp
@@ -40,38 +48,97 @@
   on five shares it reaches the fight on 50 as Gyarados L32 [Water/Flying] 107 hp
   and with its evolutions paused, Magikarp L32 [Water] 59 hp
   at the next big fight          skip  -           dV -1.0  release 0.0  net -1.0  
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   at the one after               skip  -           dV -2.0  release 0.0  net -2.0  
+      - Normal exposure        -2.2  Normal now beats 6 of 6
+      - Poison exposure        -2.2  Poison now beats 6 of 6
   five shares                    skip  -           dV -0.9  release 0.0  net -0.9  
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   five shares, paused            skip  -           dV -1.0  release 0.0  net -1.0  
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
 == a level 10 newcomer into a party at the cap
   nothing                  L10  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   Lucky Egg alone          L10  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   one EXP share            L19  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   EXP share and Lucky Egg  L21  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   five EXP shares          L32  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
 == one run key, the Lucky Egg on the first member and then the last, and then Pokérus with it
   egg on Blastoise   Blastoise L20, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
   egg on Meganium    Blastoise L18, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L20
   and Pokérus        Blastoise L23, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
 == four members and two free slots
   Sceptile at the cap            take  -           dV +0.4  release 0.0  net +0.4  
+      + Grass answer           +2.1  nearer an answer to Grass
+      + physical wall answer   +1.6  an answer to the physical wall at last
   Sunflora at level 20           skip  -           dV -0.8  release 0.0  net -0.8  
+      - Poison exposure        -1.8  Poison now beats 5 of 5
+      - Grass exposure         -1.8  Grass now beats 5 of 5
   of 22 threats, the one is beaten by 4 and the other by 22
 == a fainted member, under three calendars
   Hardcore                       swap  Blastoise   dV +0.5  release 0.0  net +0.5  
+      + Fire exposure          +1.4  Fire now beats 3 of 5, down from 4
+      + physical wall exposure +1.4  the physical wall now beats 3 of 5, down from 4
   no heal, no shop               swap  Blastoise   dV +0.5  release 0.0  net +0.5  
+      + Fire exposure          +1.4  Fire now beats 3 of 5, down from 4
+      + physical wall exposure +1.4  the physical wall now beats 3 of 5, down from 4
   a heal due before the fight    swap  Wailord     dV +0.3  release 0.0  net +0.3  
+      + Dragon exposure        +2.2  Dragon now beats 5 of 6, down from 6
+      + Water answer           +1.9  nearer an answer to Water
   every slot the search tried, against 5 live members:
     Blastoise +0.5  Feraligatr +0.2  Charizard +0.1  Wailord† +0.2  Typhlosion +0.3  Meganium +0.5
   Hardcore, the corpse named     swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+      ! Wailord is dead weight: fainted with no way back
+      + Normal answer          +1.0  an answer to Normal at last
+      + physical wall answer   +0.8  a better answer to the physical wall
   a barred member, named         swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+      ! Wailord is dead weight: a challenge bars it
+      + Normal answer          +1.0  an answer to Normal at last
+      + physical wall answer   +0.8  a better answer to the physical wall
 == a newcomer Single Type bars
   Meganium, barred               skip  -           dV  0.0  release 0.0  net  0.0  barred
+      ! a challenge bars Meganium: dead weight the moment it joins
 == the replacement forced, as a trade forces it
   Swampert for Meganium          swap  Meganium    dV +0.2  release 0.0  net +0.2  
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+== the only answer to the Grass threat traded away, among five Grass members
+  Blastoise for Charizard        skip  Charizard   dV -1.3  release 0.0  net -1.3  
+      - Grass answer           -5.0  no answer left to Grass
+      - Flying exposure        -2.2  Flying now beats 6 of 6
+  Grass   Charizard +3.0, beating 5 of 6, and after the trade Roserade -2.0, beating 6 of 6
+  Flying  Charizard  0.0, beating 5 of 6, and after the trade Blastoise -0.1, beating 6 of 6
 == the same bulk and power, at two speeds
   speed 140                      swap  Lanturn     dV +2.4  release 0.0  net +2.4  
+      + physical wall answer   +3.0  an answer to the physical wall at last
+      + Normal answer          +3.0  an answer to Normal at last
   speed 40                       swap  Lanturn     dV +1.0  release 0.0  net +1.0  
+      + Poison exposure        +2.2  Poison now beats 5 of 6, down from 6
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
   rows whose answer moves first: 22 fast, 10 slow
+== 137 reasons over 72 forced swaps, in 11 phrasings:
+  + answer     6  a better answer to X
+  + answer     5  an answer to X at last
+  + backup     5  a backup to X at last
+  + backup     1  nearer a backup to X
+  + exposure  71  X now beats n of n, down from n
+  - answer     5  a weaker answer to X
+  - answer     1  further from an answer to X
+  - answer    11  no answer left to X
+  - backup     2  a weaker backup to X
+  - backup     1  no backup left to X
+  - exposure  29  X now beats n of n
 == the full swap search over six members is inside the budget, cold and memoised
 judgment: ok

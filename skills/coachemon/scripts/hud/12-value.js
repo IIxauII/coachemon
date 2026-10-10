@@ -85,6 +85,9 @@ const pairOf = (run, env, m, t) => run.memo("pair", `${m.key}|${t.key}`, () => p
  *
  * Dead weight is not among `pairs` at all, so it neither answers a threat nor is exposed to one (CONTEXT.md, `Dead
  * weight`) — and a party with nobody left scores a flat zero rather than a loss, there being nothing to sweep.
+ *
+ * `of` is how many members stood in the row, which is the party a reason's exposure is counted out of: dead weight is
+ * not one of them, so "beats 4 of 5" is of the five that can fight.
  */
 const rowOf = (threat, pairs) => {
   const ranked = [...pairs].sort((a, b) => b.s - a.s);
@@ -92,7 +95,7 @@ const rowOf = (threat, pairs) => {
   const revenge = pairs.some(x => x.revenge), switchIn = pairs.some(x => x.switchIn);
   return {
     threat: threat.label, kind: threat.kind,
-    answer: ranked[0] ?? null, backup: ranked[1] ?? null, beaten: beaten.map(x => x.name),
+    answer: ranked[0] ?? null, backup: ranked[1] ?? null, beaten: beaten.map(x => x.name), of: pairs.length,
     revenge, switchIn,
     value: (ranked[0]?.s ?? 0) + BACKUP * (ranked[1]?.s ?? 0) + (revenge ? REVENGE : 0) + (switchIn ? SWITCH_IN : 0)
       - EXPOSURE(beaten.length),
@@ -178,14 +181,94 @@ const newcomerOf = (run, fight, spec) => {
 
 const RELEASE = 0; // #581 prices the held items a release destroys; until then a release costs nothing
 
+export const MAX_REASONS = 2; // "up to two reasons" (#567)
+
+// A threat is named by what it stands for and nothing else: a type under its own name, a stat shape under `the` and
+// its label, which is what makes either read as a sentence. Not the species standing for it — a reason the player can
+// argue with is about Electric, not about the Jolteon the pick happened to land on.
+const named = row => (row.kind === "archetype" ? `the ${row.threat}` : row.threat);
+
+const sOf = p => p?.s ?? 0;
+
+/**
+ * What one threat's row says moved, as the three parts of the row's value that can move: the answer's margin, the
+ * discounted backup, and the exposure the row is docked. All three are in turns, so the largest of them is the part
+ * worth saying — and a gain is positive in each, exposure included, since the row subtracts it.
+ *
+ * The credits are left out: `revenge` and `switchIn` are flat and earned by whoever happens to be on the party, so a
+ * reason built on one would say the swap changed a threat when all it changed was which member pays for it.
+ */
+const partsOf = (b, a) => [
+  { part: "answer", d: sOf(a.answer) - sOf(b.answer) },
+  { part: "backup", d: BACKUP * (sOf(a.backup) - sOf(b.backup)) },
+  { part: "exposure", d: EXPOSURE(b.beaten.length) - EXPOSURE(a.beaten.length) },
+];
+
+/**
+ * The words, pinned by the goldens (#567): the two the decision names outright are "no answer left to Electric" and
+ * "Electric now beats 4 of 6", and the rest are those two read the other way.
+ *
+ * An answer and a backup are said on whether the party has one at all — a margin over the threat, which is what makes
+ * it an answer — and not on the turns alone. A party that loses to a threat by less than it did has gained something,
+ * but it has not gained a *better answer*: it has none to be better, and a card that said so would be read as a
+ * promise the duel does not keep.
+ */
+const wordsOf = (part, gain, b, a) => {
+  const who = named(a);
+  if (part === "exposure") {
+    const n = `${who} now beats ${a.beaten.length} of ${a.of}`;
+    return gain ? `${n}, down from ${b.beaten.length}` : n;
+  }
+  const one = part === "answer" ? "an answer" : "a backup"; // the article the noun takes, where it needs one
+  const had = sOf(b[part]) > 0, has = sOf(a[part]) > 0;
+  if (gain) return has ? (had ? `a better ${part} to ${who}` : `${one} to ${who} at last`) : `nearer ${one} to ${who}`;
+  return had ? (has ? `a weaker ${part} to ${who}` : `no ${part} left to ${who}`) : `further from ${one} to ${who}`;
+};
+
+/**
+ * Up to `MAX_REASONS` reasons for the call: each a threat whose answer, backup or exposure moved most between the
+ * before and after rows, named by type or archetype, as a gain or a loss.
+ *
+ * They are read off the very rows the verdict was, so a reason can never argue with the call it explains (#567, story
+ * 20): `gain` is the direction of the call — take and swap are gains, skip is a loss — and a change the other way is
+ * not a reason for it. A move smaller than `MARGIN` is not a reason either: the margin is what the judgment already
+ * calls noise, and the goldens print to the tenth of a turn it is set in.
+ *
+ * One reason per threat, the biggest of its three parts, so two reasons are two threats rather than one twice.
+ */
+const reasonsOf = (before, after, gain) => {
+  if (!after) return [];
+  return before.rows
+    .map((b, i) => {
+      const a = after.rows[i];
+      if (!a || a.threat !== b.threat) return null;
+      const best = partsOf(b, a).reduce((x, y) => (Math.abs(y.d) > Math.abs(x.d) ? y : x));
+      return { ...best, b, a };
+    })
+    .filter(x => x && (gain ? x.d >= MARGIN : x.d <= -MARGIN))
+    // Stable, so a tie between two threats falls to the one the threat set lists first.
+    .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))
+    .slice(0, MAX_REASONS)
+    .map(x => ({ threat: x.a.threat, kind: x.a.kind, part: x.part, gain, delta: x.d,
+      text: wordsOf(x.part, gain, x.b, x.a) }));
+};
+
+// The two plain cases, said plainly (#567, story 17): a member that holds its slot for nothing, and a newcomer that
+// would hold one for nothing the moment it joined.
+const plainDead = (name, why) => ({ kind: "dead weight", name, why,
+  text: `${name ?? "it"} is dead weight: ${why === "barred" ? "a challenge bars it" : "fainted with no way back"}` });
+const plainBarred = name => ({ kind: "barred", name,
+  text: `a challenge bars ${name ?? "it"}: dead weight the moment it joins` });
+
 /**
  * Judge a newcomer by the team value its swap makes (#567). `newcomer` is a live mon, or a spec the combatant
  * adapter builds; `replace` forces the member that leaves, for a GTS offer where the traded member is the one going,
  * and skips the search. `fight` overrides the wave to judge at, which is otherwise the next big fight ahead.
  *
  * The verdict is `take` for a free slot, `swap` with the member the search picked, or `skip`. `replaced` carries the
- * search's pick whether or not the swap clears the margin, so a card can say who would have gone. Reasons are #579's
- * and the roster half of the threat set is #592's, so what comes back here is judged on the standard threats alone.
+ * search's pick whether or not the swap clears the margin, so a card can say who would have gone. `reasons` are the
+ * threats the call is read off, and `plain` the one case that needs no threat at all. The roster half of the threat
+ * set is #592's, so what comes back here is judged on the standard threats alone.
  */
 export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = {}) => {
   const s = run?.scene ?? null;
@@ -199,20 +282,23 @@ export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = 
   const nc = newcomerOf(run, at, spec);
   const out = {
     fight: at, wave: set.wave, verdict: "skip", replaced: null, delta: 0, release: RELEASE, margin: MARGIN, net: 0,
-    plain: null, before, after: null, newcomer: nc,
+    reasons: [], plain: null, before, after: null, newcomer: nc,
     confidence: weakestOf(set.confidence, party.confidence, nc.confidence),
   };
   if (set.unavailable || !nc.combatant) {
     return { ...out, unavailable: set.unavailable ?? "the newcomer has no stats to duel with" };
   }
-  if (nc.barred) return { ...out, plain: { kind: "barred", name: nc.name } };
+  // Nothing is scored with a barred newcomer on the party, so there are no rows to read a reason off: the bar is the
+  // whole of what the card has to say.
+  if (nc.barred) return { ...out, plain: plainBarred(nc.name) };
 
   const joining = { name: nc.name, combatant: nc.combatant };
   if (party.slots.length < PARTY_SIZE) {
     const after = teamValue(run, set, [...live, joining]);
     const delta = after.v - before.v;
     // Holding a free slot open costs nothing, so there is no release to net off (#567).
-    return { ...out, verdict: delta > MARGIN ? "take" : "skip", delta, net: delta, after };
+    const verdict = delta > MARGIN ? "take" : "skip";
+    return { ...out, verdict, delta, net: delta, after, reasons: reasonsOf(before, after, verdict !== "skip") };
   }
 
   const forced = replace ? party.slots.filter(x => x.mon === replace || x.name === replace) : party.slots;
@@ -229,8 +315,8 @@ export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = 
   return {
     ...out, verdict, delta: best.delta, release: best.release, net, after: best.after, tried,
     replaced: { mon: best.slot.mon, name: best.slot.name, dead: best.slot.dead },
+    reasons: reasonsOf(before, best.after, verdict !== "skip"),
     // The plain case is dead weight *replaced*: a card that isn't swapping it has nothing plain to say about it.
-    plain: verdict === "swap" && best.slot.dead
-      ? { kind: "dead weight", name: best.slot.name, why: best.slot.dead } : null,
+    plain: verdict === "swap" && best.slot.dead ? plainDead(best.slot.name, best.slot.dead) : null,
   };
 };
