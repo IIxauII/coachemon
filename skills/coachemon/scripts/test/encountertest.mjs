@@ -48,9 +48,12 @@ const lines = el => wholeCard(el)
 
 // Scripted fork draws: `draws[offset]` is the sequence a fork sown at that offset yields (taken modulo the range);
 // a fork at an unscripted offset yields 0s. `forks` records every offset sown.
+// `gameMode`: left out, the run calendar reads no next big fight and the party at it is everyone a challenge allows.
+// `{ isFixedBattle: () => false }` is enough for `bigFightsAhead`; `challenges` carries Hardcore (id 9) and Limited
+// Support (id 8).
 const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000, draws = {}, misc = null, configs = [],
   tier = 66, catchAllowed = false, seedOffset = 30512, biome = 3, balls = [10, 10, 10, 0, 0], modifiers = [], dex = {}, menu = options,
-  tokens = {}, enemy = [], tables = null } = {}) => {
+  tokens = {}, enemy = [], tables = null, gameMode } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const forks = [];
@@ -76,7 +79,7 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
   const scene = {
     phaseManager: { getCurrentPhase: () => ({ phaseName: "MysteryEncounterPhase" }), pushPhase() {}, unshiftNew() {}, queueMessage() {} },
     currentBattle: { waveIndex: wave, mysteryEncounter: me, enemyLevels: [wave + 2], getLevelForWave: () => wave + 2 },
-    arena: { biomeId: biome },
+    arena: { biomeId: biome }, gameMode,
     // The real one rolls shiny inside the constructor (game-code.md §13); this double doesn't, so only the two rerolls
     // are pinned here.
     addEnemyPokemon: (sp, level) => {
@@ -153,6 +156,13 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(blind.options[0].outcome, /^70% items/);
   assert.equal(blind.options[0].exact, false);
   assert.equal(blind.pick, -1, "no seed, no call on a gamble");
+  // The victim is the game's own `getHighestLevelPlayerPokemon(true, false)`, which skips a fainted mon — whatever
+  // the party at the next big fight makes of it, and whichever member that team would miss most (#571).
+  const down = team();
+  down[0].hp = 0; // Garchomp, the party's L40 best, is down and due W31's heal
+  const m2 = show("chest, trap skips the fainted top mon", chest({ draws: { 30512: [12] }, party: down,
+    gameMode: { isFixedBattle: () => false } })).model();
+  assert.match(m2.options[0].outcome, /^trap: Lapras faints/, "L38 Lapras is the highest level still standing");
 }
 
 // ---- Department Store Sale: each option's rolls come from the option fork (offset ×500), re-sown per option.
@@ -187,6 +197,18 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(hard.options[1].why, /^needs a Thief/);
   const easy = mount(fof(team(), 40)).model();
   assert.deepEqual(verdicts(easy), ["take", "off", "ok"], "our level and Garchomp hits it SE: fight");
+  // The fight in front of the party is fought by the members standing, not by the team at the next big fight (#571):
+  // Lapras's Ice Beam and Jolteon's Thunderbolt both hit a Flying boss SE, and neither of them can be sent out.
+  const down = team();
+  down[1].hp = 0; down[2].hp = 0;
+  const flying = { type: 3, labels: ["Battle", "Steal", "Leave"],
+    options: [option(), option({ mode: 3, primary: [moveReq(["THIEF"])] }), option()],
+    misc: { type: { name: "Leftovers" } }, party: down, gameMode: { isFixedBattle: () => false },
+    configs: [{ pokemonConfigs: [{ species: species(9, "Drifblim", ["Ghost", "Flying"], 498), level: 40, isBoss: true }] }] };
+  const beaten = show("fight or flight, two down and a heal before the next big fight", flying).model();
+  assert.match(beaten.options[0].why, /^L40 boss vs your L40, nothing hits it SE/,
+    "the two that hit it SE are fainted, however healed they will be by W40");
+  assert.deepEqual(verdicts(beaten), ["avoid", "off", "take"]);
 }
 
 // ---- Fiery Fallout: who the search burns is the option fork's first draw over the burnable non-Fire mons.
@@ -284,6 +306,30 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
     misc: { tradeOptionsMap: offers }, party }).model();
   assert.equal(m.options[0].outcome, "trade: best offer Jolteon → Salamence (final BST +75)");
   assert.equal(m.options[0].verdict, "ok", "+75 isn't an upgrade; the carry's Mewtwo offer isn't considered");
+}
+
+// ---- GTS judges a trade against the party at the next big fight, not the members standing now (#571): a member
+// fainted today but healed before the fight is still a mon you can trade away, and under Hardcore it is dead weight
+// and no trade at all.
+{
+  const offers = party => new Map(party.map(p => [p.id, [{ species: species(1, "Rattata", ["Normal"], 253) },
+    { species: species(2, p === party[0] ? "Mewtwo" : "Salamence", ["Dragon", "Flying"], p === party[0] ? 680 : 600) }]]));
+  const gts = extra => {
+    const party = team();
+    party[2].hp = 0; // Jolteon is down, and holds the best offer of the three
+    return { type: 29, labels: ["Trade", "Wonder Trade", "Item Trade", "Leave"],
+      options: [option({ mode: 1 }), option({ mode: 1 }), option(), option()],
+      misc: { tradeOptionsMap: offers(party) }, party, ...extra };
+  };
+  const heal = show("gts, the fainted member is healed before the next big fight",
+    gts({ gameMode: { isFixedBattle: () => false } })).model();
+  assert.equal(heal.options[0].outcome, "trade: best offer Jolteon → Salamence (final BST +75)",
+    "W31's heal comes before the W40 boss, so Jolteon counts and its +75 beats Lapras's +65");
+  const hardcore = show("gts, Hardcore leaves the fainted member dead weight",
+    gts({ gameMode: { isFixedBattle: () => false, challenges: [{ id: 9, value: 1 }] } })).model();
+  assert.equal(hardcore.options[0].outcome, "trade: best offer Lapras → Salamence (final BST +65)",
+    "no way back for Jolteon: it is dead weight and not a mon to trade");
+  assert.equal(hardcore.options[0].verdict, "ok");
 }
 
 // ---- Lost at Sea: a Surf learner guides for free; the storm option chips everyone.
@@ -419,6 +465,30 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   const carry = mount(deal({ 30512: [0], [30512 * 500]: [2] })).model();
   assert.deepEqual(verdicts(carry), ["avoid", "take"]);
   assert.match(carry.options[0].outcome, /Garchomp is taken for good → .*starter tier 9–10/);
+}
+
+// ---- The Dark Deal's pool mirrors the game's filter over the whole party, while "your weakest link" is judged
+// against the party at the next big fight (#571): the two sets disagree about a fainted member, and each keeps its
+// own answer.
+{
+  const fainted = extra => {
+    const party = team();
+    party[2].hp = 0; // Jolteon, the lowest final BST of the three, is down
+    return { type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option(), option()],
+      draws: { 30512: [1], [30512 * 500]: [70] }, party, ...extra };
+  };
+  const heal = show("dark deal, the fainted weakest link is healed before the next big fight",
+    fainted({ gameMode: { isFixedBattle: () => false } })).model();
+  assert.match(heal.options[0].outcome, /Lapras is taken for good/,
+    "two members still stand, so the game draws from them and never from fainted Jolteon");
+  assert.deepEqual(verdicts(heal), ["ok", "ok"]);
+  assert.equal(heal.options[0].why, "L38 Lapras for a legendary", "Jolteon is back by W40, so it is still the weakest");
+  const hardcore = show("dark deal, Hardcore makes the fainted member dead weight",
+    fainted({ gameMode: { isFixedBattle: () => false, challenges: [{ id: 9, value: 1 }] } })).model();
+  assert.match(hardcore.options[0].outcome, /Lapras is taken for good/, "the same pool: the game's filter is unmoved");
+  assert.deepEqual(verdicts(hardcore), ["take", "ok"]);
+  assert.equal(hardcore.options[0].why, "Lapras is your weakest link",
+    "Jolteon is dead weight, so of the team at the fight Lapras is the one the party would miss least");
 }
 
 // ---- A Trainer's Test: an Elite Four party for an Epic egg, or a full heal for declining.

@@ -14,6 +14,14 @@ Options
 ⚔ boss · costs Garchomp a revive
 ★ Leave — shop only, no reward
 summary Mysterious Chest: take Leave — shop only, no reward · avoid Open it
+== chest, trap skips the fainted top mon
+⌃ {Hide the drawer} × {Close}
+🎭 Mysterious Chest common Mysterious Chest: take Leave — shop only, no reward · avoid Open it
+Options
+✗ Open it fixed {fixed by the run seed: this is what happens} — trap: Lapras faints, then a Gimmighoul boss fight
+⚔ boss · costs Lapras a revive
+★ Leave — shop only, no reward
+summary Mysterious Chest: take Leave — shop only, no reward · avoid Open it
 == store
 ⌃ {Hide the drawer} × {Close}
 🎭 Department Store Sale common Department Store Sale: take Vitamins — pick of 3: 2 vitamins, 1 PP Up
@@ -35,6 +43,16 @@ Options
 by Sneasel · free
 · Leave — shop only, no reward
 summary Fight or Flight: take Steal — Leftovers (Great tier), no fight, EXP
+== fight or flight, two down and a heal before the next big fight
+⌃ {Hide the drawer} × {Close}
+🎭 Fight or Flight common Fight or Flight: take Leave — shop only, no reward · avoid Battle
+Options
+✗ Battle — fight Drifblim (+2 to a random stat) for Leftovers; catchable
+⚔ boss · L40 boss vs your L40, nothing hits it SE
+· off Steal — Leftovers (Great tier), no fight, EXP
+needs a Thief / Covet / Knock Off / Pluck / Trick / Switcheroo user
+★ Leave — shop only, no reward
+summary Fight or Flight: take Leave — shop only, no reward · avoid Battle
 == fiery fallout
 ⌃ {Hide the drawer} × {Close}
 🎭 Fiery Fallout common Fiery Fallout: take Fire help — no fight: your lead gets a type booster + rewards, EXP · avoid Search
@@ -102,6 +120,28 @@ summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and
 🎭 Global Trade System common Global Trade System: your call
 Options
 · Trade — trade: best offer Jolteon → Salamence (final BST +75)
+no clear upgrade
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: your call
+== gts, the fainted member is healed before the next big fight
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: your call
+Options
+· Trade — trade: best offer Jolteon → Salamence (final BST +75)
+no clear upgrade
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: your call
+== gts, Hardcore leaves the fainted member dead weight
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: your call
+Options
+· Trade — trade: best offer Lapras → Salamence (final BST +65)
 no clear upgrade
 · Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
 a gamble
@@ -197,6 +237,22 @@ Options
 ⚔ boss · Jolteon is your weakest link
 · Refuse — shop only, no reward
 summary Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+== dark deal, the fainted weakest link is healed before the next big fight
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: your call
+Options
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · L38 Lapras for a legendary
+· Refuse — shop only, no reward
+summary Dark Deal: your call
+== dark deal, Hardcore makes the fainted member dead weight
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: take Deal — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+Options
+★ Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · Lapras is your weakest link
+· Refuse — shop only, no reward
+summary Dark Deal: take Deal — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
 == a trainer's test
 ⌃ {Hide the drawer} × {Close}
 🎭 A Trainer's Test rogue A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards

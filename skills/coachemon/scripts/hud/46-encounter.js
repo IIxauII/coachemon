@@ -2,7 +2,8 @@
 // calls `meetsRequirements()`, which writes and can draw, and replays only the draws a closure makes before its first
 // `await`: past that the card gives odds (game-code.md §13).
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
-import { finalBstOf, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
+import { bigFightsAhead } from "./03-calendar.js";
+import { finalBstOf, partyAtFight, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
 import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
 import { catchWorth } from "./45-catch.js";
 
@@ -130,10 +131,26 @@ const context = (s, me, options, account) => {
   const b = s.currentBattle;
   const wave = b.waveIndex;
   const party = s.getPlayerParty().filter(Boolean);
-  const alive = party.filter(p => p.hp > 0 && tryDo(() => p.isAllowedInBattle(), true));
-  // The game's `getHighestLevelPlayerPokemon(true, false)` (game-code.md §13).
-  const top = alive.reduce((t, p) => (!t || p.level > t.level ? p : t), null);
-  const profile = partyProfile(alive);
+  // Three questions, three party sets, and no reader here reads a fourth (#571). The team at the next big fight is
+  // what a newcomer offer or a trade is judged against: every member at full health, dead weight at zero
+  // (CONTEXT.md, `Dead weight`). The standing, challenge-allowed members are who can be sent at the foe in front of
+  // the party — and the same members the game's own "every allowed mon" rows walk. A reader mirroring a pick the
+  // game itself makes filters `party`, the whole party, exactly as the game filters it (game-code.md §13).
+  const nextBig = bigFightsAhead(s, wave + 1)[0]?.wave ?? null;
+  const atFight = partyAtFight(s, party, { from: wave, fight: nextBig });
+  const standing = party.filter(p => p.hp > 0
+    && tryDo(() => p.isAllowedInBattle(), true) && tryDo(() => p.isAllowedInChallenge(), true));
+  // The game's `getHighestLevelPlayerPokemon(true, false)` (game-code.md §13): it skips a challenge-barred mon and a
+  // fainted one, and a tie goes to the member nearer the front.
+  const top = party.reduce((t, p) => (p.hp > 0 && tryDo(() => p.isAllowedInChallenge(), true)
+    && (!t || p.level > t.level) ? p : t), null);
+  // The party profile (CONTEXT.md) is of the team at the next big fight, since its weakest member is a team-value
+  // question. `fighters` is the same tally over the standing members, which is all `fight` asks of the party.
+  const profile = partyProfile(atFight.members);
+  const fighters = partyProfile(standing);
+  // Who the party would miss most. Like `profile.weakest` it judges the party rather than mirroring a pick, so it
+  // reads the team at the next big fight and not `top`, the game's highest-level standing mon.
+  const strongest = atFight.members.reduce((t, p) => (!t || (p.level ?? 0) > (t.level ?? 0) ? p : t), null);
   const waveMoney = mult => tryDo(() => s.getWaveMoneyAmount(mult), 0);
   const coins = (s.modifiers ?? []).filter(m => m?.constructor?.name === "MoneyMultiplierModifier")
     .reduce((t, m) => t + (tryDo(() => m.getStackCount()) ?? m.stackCount ?? 1), 0);
@@ -156,9 +173,9 @@ const context = (s, me, options, account) => {
       level, boss: !!pc.isBoss, bars: pc.bossSegments ?? 0, estimated: !pc.level };
   };
   const fight = (f, { double = false } = {}) => {
-    if (!f || !alive.length) return { hard: false, text: "" };
-    const hitters = profile.hitters(f);
-    const weak = [...new Set(f.types.flatMap(t => profile.weakTo(t)))];
+    if (!f || !standing.length) return { hard: false, text: "" };
+    const hitters = fighters.hitters(f);
+    const weak = [...new Set(f.types.flatMap(t => fighters.weakTo(t)))];
     const gap = f.level - top.level;
     const hard = gap >= HARD_LEVEL_GAP || (!hitters.length && gap >= (f.boss ? -BOSS_LEVEL_EDGE : 0));
     const who = `${double ? "2× " : ""}${f.estimated ? "~" : ""}L${f.level}${f.boss ? " boss" : ""}${f.bars > 1 ? ` (${f.bars} bars)` : ""} vs your L${top.level}`;
@@ -175,8 +192,8 @@ const context = (s, me, options, account) => {
   };
   // `mons: null`: a team size nothing here settles (game-code.md §13), so the level gap alone decides.
   const gauntlet = (t, { mons = t?.size ?? 0, ours = null } = {}) => {
-    if (!t || !alive.length) return { hard: false, text: "" };
-    const fit = ours ?? alive.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.5).length;
+    if (!t || !standing.length) return { hard: false, text: "" };
+    const fit = ours ?? standing.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.5).length;
     const gap = t.level - top.level;
     return { hard: gap >= HARD_LEVEL_GAP || (mons != null && mons > fit * MONS_EACH), fit,
       text: `${mons == null ? "their own team" : plural(mons, "mon")} at ~L${t.level} vs your L${top.level}, ${fit} of yours fit to fight` };
@@ -188,6 +205,7 @@ const context = (s, me, options, account) => {
   const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
   // The game's `getHighestLevelPlayerPokemon(false, true)`, fainted included (game-code.md §13).
   const best = party.reduce((t, p) => Math.max(t, p.level ?? 0), 0) || (top?.level ?? 1);
+  // Whole-party counts, because what reads them is a full heal and revive: the party the game would mend.
   const maxHp = party.reduce((t, p) => t + tryDo(() => p.getMaxHp(), 0), 0);
   const wounded = maxHp ? party.reduce((t, p) => t + Math.max(tryDo(() => p.getMaxHp(), 0) - p.hp, 0), 0) / maxHp : 0;
   const fainted = party.filter(p => p.hp <= 0).length;
@@ -196,7 +214,7 @@ const context = (s, me, options, account) => {
     const m = held(name);
     return !!m && (tryDo(() => m.getStackCount()) ?? m.stackCount ?? 0) >= (tryDo(() => m.getMaxStackCount()) ?? Infinity);
   };
-  return { s, account, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare,
+  return { s, account, me, b, wave, party, atFight, standing, top, strongest, profile, waveMoney, coins, opt, foe, fight, spare,
     trainer, gauntlet, roomFor, best, wounded, fainted, held, maxed, token: k => strip(me.dialogueTokens?.[k]) || null,
     pre: seeded(1), during: seeded(500), post: seeded(2000) };
 };
@@ -209,7 +227,7 @@ const RULES = {
   [TRAINING]: c => {
     const bars = (every, cap) => Math.min(2 + Math.floor(c.wave / every), cap);
     const room = p => (p.ivs ?? []).reduce((t, iv) => t + Math.max(31 - iv, 0), 0);
-    const fit = c.alive.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
+    const fit = c.standing;
     const pickBy = score => fit.map(p => ({ p, v: score(p) })).filter(x => x.v > 0).reduce((t, x) => (!t || x.v > t.v ? x : t), null);
     const ivs = pickBy(p => (p.ivs ? room(p) : 0));
     const nature = pickBy(p => {
@@ -333,7 +351,9 @@ const RULES = {
     const taken = k != null ? pool[k] : null;
     const roll = c.during(() => int(100));
     const tier = roll == null ? null : roll >= 65 ? "6" : roll >= 15 ? "7" : roll >= 5 ? "8" : "9–10";
-    const carry = taken && taken === c.top;
+    // The pool above mirrors the game's filter; which member the party would miss, or not, is judged against the
+    // team at the next big fight (#571).
+    const carry = taken && taken === c.strongest;
     const spare = taken && taken === c.profile.weakest?.mon;
     const prize = `5 Rogue Balls + a catchable legendary boss${tier ? ` (starter tier ${tier})` : ""} of its types, holding its items`;
     return [
@@ -444,7 +464,7 @@ const RULES = {
 
   [VITAMINS]: c => {
     const [cheap, dear] = [c.opt(0).cost ?? c.waveMoney(1.5), c.opt(1).cost ?? c.waveMoney(5)];
-    const carry = c.alive.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.51)
+    const carry = c.standing.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.51)
       .reduce((t, p) => (!t || p.level > t.level ? p : t), null);
     let nature = null;
     if (carry) {
@@ -469,7 +489,8 @@ const RULES = {
 
   [LOST_AT_SEA]: c => {
     const guided = c.opt(0).enabled || c.opt(1).enabled;
-    const low = c.alive.filter(p => p.hp - Math.floor(p.getMaxHp() * 0.25) <= p.getMaxHp() * 0.25).map(p => p.name);
+    // "Every allowed mon" takes the chip (game-code.md §13), which is the standing, challenge-allowed members.
+    const low = c.standing.filter(p => p.hp - Math.floor(p.getMaxHp() * 0.25) <= p.getMaxHp() * 0.25).map(p => p.name);
     return [
       { outcome: "sail through free, EXP", verdict: "take", needs: "a mon that can learn Surf" },
       { outcome: "fly out free, EXP", verdict: c.opt(0).enabled ? "ok" : "take", needs: "a mon that can learn Fly" },
@@ -481,7 +502,8 @@ const RULES = {
   [FALLOUT]: c => {
     const f = c.foe(0);
     const fight = c.fight(f, { double: true });
-    const allowed = c.alive;
+    // "Every allowed non-Fire mon" takes the 20% and one of them is burned (game-code.md §13).
+    const allowed = c.standing;
     const nonFire = allowed.filter(p => !tryDo(() => p.isOfType(PokemonType.FIRE, { includeTeraType: false }), typesOf(p).includes("Fire")));
     const burnable = nonFire.filter(p => !p.status?.effect);
     const idx = burnable.length ? c.during(() => int(burnable.length)) : null;
@@ -537,7 +559,7 @@ const RULES = {
   [PART_TIMER]: c => {
     const pay = mult => { const v = c.waveMoney(mult); return v + Math.floor(v * 0.2 * c.coins); };
     const clamp = x => Math.min(Math.max(2.5 * (1 + x), 1), 4);
-    const workers = c.alive.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
+    const workers = c.standing;
     const best = score => workers.map(p => ({ p, mult: score(p) })).reduce((t, x) => (!t || x.mult > t.mult ? x : t), null);
     const deliver = best(p => { const base = Math.floor(196 * p.level * 0.01) + 5; return clamp((p.getStat(Stat.SPD) - base) / base); });
     const lift = best(p => {
@@ -594,9 +616,12 @@ const RULES = {
   [GTS]: c => {
     const offers = c.me.misc?.tradeOptionsMap;
     let best = null;
+    // A trade is a newcomer offer, so it is judged against the team at the next big fight (#571): a member fainted
+    // now but back on its feet by then is a candidate to give away, and dead weight is not — it is worth nothing to
+    // the team, which final BST cannot say and the team-value judgment will.
     if (offers?.get) {
-      for (const p of c.alive) {
-        if (p === c.top) continue; // trading the carry away is never the upgrade it looks like
+      for (const p of c.atFight.members) {
+        if (p === c.strongest) continue; // trading the carry away is never the upgrade it looks like
         for (const e of offers.get(p.id) ?? []) {
           const cand = { species: e.species, level: p.level, types: typesOfSpecies(e.species) };
           const up = partyReasons(c.profile, cand, { replacing: p }).some(r => r.kind === "upgrade");
@@ -848,7 +873,8 @@ const build = (s, h, account) => {
 };
 
 // The memo key holds what the card reads beyond the run key (the wave, the modifier count, each member's level and
-// standing): a read in neither goes stale.
+// standing): a read in neither goes stale. The challenges are in it because the party at the next big fight turns on
+// them — Hardcore and Limited Support decide whether a fainted member has a way back (#571).
 export const encounterModel = (run, h, account) => {
   const s = run.scene;
   const me = s.currentBattle.mysteryEncounter;
@@ -858,6 +884,7 @@ export const encounterModel = (run, h, account) => {
     // The chunk scan lands asynchronously, and nothing else in this key moves when it does.
     tryDo(() => safariReady(s), false),
     h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []),
+    (s.gameMode?.challenges ?? []).map(c => [c.id, c.value]),
     party.map(p => [p.id, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
   const value = run.memo("encounter", key, () => build(s, h, account));
   if (value.kind) return value;
