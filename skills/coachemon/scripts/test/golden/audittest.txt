@@ -27,6 +27,34 @@ Team audit
 · coverage nothing hits Flying/Poison/Water/Electric +3 super-effectively
 mushroom Memory Mushroom: 18 Minccino · relearn Take Down over Helping Hand · +84 power | 5× Poké Ball: -4 you have 20
 summary 10 issues: Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand); Diglett: no Ground attack (no STAB) (relearn Bulldoze); Diglett L12/Houndour L16/Wiglett L16 trail Fletchinder L23 — lead them on easy waves
+== wave 29 whitney, diglett fainted under hardcore
+★ Memory Mushroom Minccino relearn Take Down over Helping Hand · +84 power
+Others
+· 5× Poké Ball you have 20
+10 issues: 2 of 5 weak to Rock (Fletchinder ×4), nobody resists; 2 of 5 weak to Electric, nobody resists; Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand)
+Team audit
+✗ 2 of 5 weak to Rock (Fletchinder ×4), nobody resists
+✗ 2 of 5 weak to Electric, nobody resists
+✗ Minccino: 1 attack, 3 status moves
+↺ Memory Mushroom: relearn Take Down over Helping Hand · +84 power
+✗ Houndour L16/Wiglett L16 trail Fletchinder L23 — lead them on easy waves
+· Minccino: Baby-Doll Eyes does little (foe Atk −1)
+· Minccino: Helping Hand does little (helping hand)
+· Houndour: Howl boosts Atk, it attacks with SpA
+· Houndour: Leer does little (foe Def −1)
++2 more
+✗ weakness 2 of 5 weak to Rock (Fletchinder ×4), nobody resists
+✗ weakness 2 of 5 weak to Electric, nobody resists
+✗ slot Minccino: 1 attack, 3 status moves ↺ Take Down over Helping Hand +84
+✗ levels Houndour L16/Wiglett L16 trail Fletchinder L23 — lead them on easy waves
+· slot Minccino: Baby-Doll Eyes does little (foe Atk −1)
+· slot Minccino: Helping Hand does little (helping hand)
+· slot Houndour: Howl boosts Atk, it attacks with SpA
+· slot Houndour: Leer does little (foe Def −1)
+· slot Wiglett: Water Gun is special on SpA 25 (Atk 40)
+· coverage nothing hits Flying/Poison/Water/Electric +3 super-effectively
+mushroom Memory Mushroom: 18 Minccino · relearn Take Down over Helping Hand · +84 power | 5× Poké Ball: -4 you have 20
+summary 10 issues: 2 of 5 weak to Rock (Fletchinder ×4), nobody resists; 2 of 5 weak to Electric, nobody resists; Minccino: 1 attack, 3 status moves (relearn Take Down over Helping Hand)
 == wave 164 guzma
 ★ 5× Poké Ball least bad · you have 20
 12 issues: Araquanid (W165) has one answer: Crobat Wing Attack; Flygon (W165) has one answer: Dudunsparce Blizzard (70%); only Crobat outspeeds Flygon (Spe 404) at W165 · no priority attack

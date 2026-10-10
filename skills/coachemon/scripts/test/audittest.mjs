@@ -59,19 +59,24 @@ const pk = (name, level, types, moves, s, f = {}) => ({
   getLearnableLevelMoves: () => (f.learnable ?? []).map(id => [1, id]),
 });
 
+const whitneyParty = ({ diglett = {} } = {}) => [
+  pk("Fletchinder", 23, ["Fire", "Flying"], [M.flameCharge, M.acrobatics], [60, 50, 50, 45, 80]),
+  pk("Minccino", 22, ["Normal"], [M.pound, M.babyDollEyes, M.helpingHand, M.sing], [50, 40, 40, 40, 70], { learnable: [M.takeDown] }),
+  pk("Oinkologne", 19, ["Normal"], [M.takeDown], [55, 50, 40, 45, 40]),
+  pk("Houndour", 16, ["Dark", "Fire"], [M.howl, M.leer, M.ember, M.bite], [35, 25, 45, 35, 40]),
+  pk("Wiglett", 16, ["Water"], [M.waterGun], [40, 30, 25, 30, 60]),
+  pk("Diglett", 12, ["Ground"], [M.scratch, M.sandAttack], [30, 20, 20, 25, 50], { learnable: [M.mudSlap, M.bulldoze], ...diglett }),
+];
+const whitneyFree = () => [
+  mk(RememberMoveModifierType, { name: "Memory Mushroom", iconImage: "memory_mushroom", tier: 1, selectFilter: p => (p.getLearnableLevelMoves().length ? null : "no effect") }),
+  mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 }),
+];
+
 const scenarios = {
   "wave 29 whitney": {
     wave: 29,
-    party: () => [
-      pk("Fletchinder", 23, ["Fire", "Flying"], [M.flameCharge, M.acrobatics], [60, 50, 50, 45, 80]),
-      pk("Minccino", 22, ["Normal"], [M.pound, M.babyDollEyes, M.helpingHand, M.sing], [50, 40, 40, 40, 70], { learnable: [M.takeDown] }),
-      pk("Oinkologne", 19, ["Normal"], [M.takeDown], [55, 50, 40, 45, 40]),
-      pk("Houndour", 16, ["Dark", "Fire"], [M.howl, M.leer, M.ember, M.bite], [35, 25, 45, 35, 40]),
-      pk("Wiglett", 16, ["Water"], [M.waterGun], [40, 30, 25, 30, 60]),
-      pk("Diglett", 12, ["Ground"], [M.scratch, M.sandAttack], [30, 20, 20, 25, 50], { learnable: [M.mudSlap, M.bulldoze] }),
-    ],
-    free: [mk(RememberMoveModifierType, { name: "Memory Mushroom", iconImage: "memory_mushroom", tier: 1, selectFilter: p => (p.getLearnableLevelMoves().length ? null : "no effect") }),
-      mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
+    party: () => whitneyParty(),
+    free: whitneyFree(),
     expect: (a, m) => {
       const t = a.findings.map(f => f.text);
       assert.ok(t.includes("Minccino: 1 attack, 3 status moves"), t.join("\n"));
@@ -89,6 +94,21 @@ const scenarios = {
       assert.match(mush.why, /relearn Take Down over (Helping Hand|Baby-Doll Eyes)/);
       assert.equal(a.findings.find(f => f.mon === "Minccino").text, "Minccino: 1 attack, 3 status moves", "the relearn hangs on the member's top finding");
       assert.equal(a.findings.find(f => f.mon === "Minccino").relearn?.move, "Take Down");
+    },
+  },
+  // Hardcore is `Challenges.HARDCORE`, whose number only the bundle's prelude holds.
+  "wave 29 whitney, diglett fainted under hardcore": {
+    wave: 29, challenges: [{ id: 9, value: 1 }],
+    party: () => whitneyParty({ diglett: { hp: 0 } }),
+    free: whitneyFree(),
+    expect: (a, m) => {
+      const t = a.findings.map(f => f.text);
+      assert.deepEqual(t.filter(x => /Diglett/.test(x)), [], `Diglett holds its slot at zero: ${t.join("\n")}`);
+      assert.ok(t.includes("Minccino: 1 attack, 3 status moves"), t.join("\n"));
+      assert.ok(t.some(x => /Houndour L16\/Wiglett L16 trail Fletchinder L23/.test(x)), t.join("\n"));
+      assert.ok(t.includes("2 of 5 weak to Electric, nobody resists"),
+        "five counted, and the Ground immunity that answered Electric left with Diglett");
+      assert.equal(m.free[0].holder.name, "Minccino", "the mushroom still goes to the best relearn");
     },
   },
   "wave 164 guzma": {
@@ -158,7 +178,9 @@ for (const [label, sc] of Object.entries(scenarios)) {
   const handler = { options: sc.free.map(opt), shopOptionsRows: [], rerollCost: 1000 };
   const scene = { money: 500, pokeballCounts: { 0: 20 }, modifiers: sc.modifiers ?? [], currentBattle: { waveIndex: sc.wave, double: false },
     ui: { getMode: () => 6, getHandler: () => handler }, getPlayerParty: () => party, getEnemyParty: () => [],
-    ...(sc.cap ? { getMaxExpLevel: () => sc.cap } : {}) };
+    ...(sc.cap ? { getMaxExpLevel: () => sc.cap } : {}),
+    // Only where a scenario names challenges: a `gameMode` the others never had would move what they read.
+    ...(sc.challenges ? { gameMode: { isClassic: true, challenges: sc.challenges } } : {}) };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
