@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { bundle } from "../hud-bundle.mjs";
 import { wholeCard } from "./panel.mjs";
+import { GAME_PROTO } from "./game-proto.mjs";
 
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 const cat = { P: 0, S: 1, X: 2 };
@@ -60,9 +61,11 @@ const lines = el => wholeCard(el)
 // `gameMode`: left out, the run calendar reads no next big fight and the party at it is everyone a challenge allows.
 // `{ isFixedBattle: () => false }` is enough for `bigFightsAhead`; `challenges` carries Hardcore (id 9) and Limited
 // Support (id 8).
+// `field`: the party's lead and the first enemy stand on the field of a wild single battle, so the catch card's turn
+// read can be taken off the same scene as the encounter card.
 const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000, draws = {}, misc = null, configs = [],
   tier = 66, catchAllowed = false, seedOffset = 30512, biome = 3, balls = [10, 10, 10, 0, 0], modifiers = [], dex = {}, menu = options,
-  tokens = {}, enemy = [], tables = null, gameMode } = {}) => {
+  tokens = {}, enemy = [], tables = null, gameMode, field = false } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const forks = [];
@@ -111,6 +114,18 @@ const mount = ({ type, labels, options, party = team(), wave = 30, money = 5000,
       rnd.state(saved);
     },
   };
+  if (field) {
+    const [ours, theirs] = [party[0], enemy[0]];
+    for (const [p, opponent] of [[ours, theirs], [theirs, ours]]) {
+      Object.setPrototypeOf(p, GAME_PROTO);
+      Object.assign(p, { isOnField: () => true, getMoveQueue: () => [], isTrapped: () => false, trainerSlot: 0,
+        summonData: { statStages: [0, 0, 0, 0, 0, 0, 0] }, isBoss: () => false, bossSegments: 0, bossSegmentIndex: 0,
+        getOpponents: () => [opponent] });
+    }
+    scene.getField = () => [ours, theirs];
+    Object.assign(scene.currentBattle, { turn: 1, double: false, battleType: 0, enemySwitchCounter: 0,
+      getBattlerCount: () => 1, trainer: null });
+  }
   globalThis.Phaser = { Math: { RND: rnd }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
   globalThis.document = { documentElement: { dataset: {} }, body: { appendChild: e => (el = e) }, createElement: node };
@@ -943,12 +958,16 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
     + `${o.reasons.length ? ` (${o.reasons.join("; ")})` : ""} · account ${o.account.value} of ${o.account.show}`
     + `${o.confidence ? ` · ${o.confidence}` : ""}`).join("\n");
   const shown = m => { console.log(offers(m)); return m; };
-  // The same mon through the catch card's own entry: 60-card lands the road with `catchLand`, which is where the catch
-  // card asks `teamVerdict` (#584), and the answer it lands has to be the answer an offer shows. `turn` stands in for
-  // the turn-read half of a catch target, which this harness's scene cannot produce — the rest is the card's code.
-  const catchCardTeam = (sc, foe) => globalThis.__hud["26-run"].readRun(sc, run =>
-    globalThis.__hud["45-catch"].catchLand(run, { targets: [{ id: foe.id, turn: { limited: false, full: false,
-      value: 0, p: 0, main: [], reasons: [], tips: [], escape: null, any: false, multi: false } }] }).targets[0]);
+  // The same mon through the catch card's own entry, as 60-card builds it: the turn read's `catchAdvice`, then the
+  // road's `catchLand`, which is where the catch card asks `teamVerdict` (#584). The answer it lands has to be the
+  // answer an offer shows. It needs the mount's `field`, which puts the mon in front of the party's lead.
+  const catchCard = (sc, foe) => {
+    const { readTurn } = globalThis.__hud["25-turn"], { catchAdvice, catchLand } = globalThis.__hud["45-catch"];
+    const advice = readTurn(sc, turn => catchAdvice(turn, globalThis.__hud["98-watch"].accountRead(sc)));
+    assert.ok(advice?.targets?.length, `the turn read finds a catch target: ${JSON.stringify(advice)}`);
+    const landed = globalThis.__hud["26-run"].readRun(sc, run => catchLand(run, advice));
+    return landed.targets.find(t => t.id === foe.id);
+  };
 
   // Uncommon Breed: the charm takes the Eevee, and the team's call on it leads the row.
   const EEVEE = [55, 55, 50, 45, 65, 55];
@@ -1002,7 +1021,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   const dancing = (party, mon, extra = {}) => ({ type: 22, tier: GREAT, labels: ["Battle", "Learn", "Dance"],
     catchAllowed: true, options: [option(), option(), option({ mode: 3, primary: [moveReq(["SWORDS_DANCE"])] })],
     configs: [{ pokemonConfigs: [{ species: species(741, "Oricorio", ["Fire", "Flying"], 476), isBoss: true }] }],
-    enemy: [mon], party, tables: threatTables(), gameMode: fight, ...extra });
+    enemy: [mon], party, tables: threatTables(), gameMode: fight, field: true, ...extra });
   // A party with room and little in it: the team wants the dancer, and the row says so ahead of the dex reason.
   const wantMon = oricorio();
   const wanted = show("dancing lessons, judged, the team wants it",
@@ -1015,7 +1034,9 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
     " · Oricorio: take, a backup to Fighting at last, a backup to Flying at last"),
   `the summary carries the verdict and the reasons it was read off: ${globalThis.__coachHud.summary().encounter}`);
   // The same mon, through the catch card's own entry: one answer, down to the reasons and the confidence.
-  const landed = catchCardTeam(wanted.scene, wantMon);
+  const landed = catchCard(wanted.scene, wantMon);
+  assert.deepEqual(landed.turn.tips, ["lower its HP with Tackle (won't KO)"],
+    "the turn half is read off the field — the lead's Tackle against the Oricorio's HP — not stood in for");
   console.log(`catch card: ${landed.why}\ncatch card: ${landed.reasons.filter(r => r.kind === "team").map(r => r.text).join(" · ")}`);
   assert.deepEqual({ verdict: landed.team.verdict, text: landed.team.text, reasons: landed.team.reasons.slice(0, 2) },
     { verdict: dance.offers[0].verdict, text: dance.offers[0].text, reasons: dance.offers[0].reasons },
@@ -1037,7 +1058,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   const swap = shown(full.model());
   assert.equal(swap.offers[0].verdict, "swap", "six stand already, so a newcomer costs a member");
   assert.match(swap.offers[0].text, /^swap for /);
-  assert.equal(catchCardTeam(full.scene, fullMon).team.text, swap.offers[0].text,
+  assert.equal(catchCard(full.scene, fullMon).team.text, swap.offers[0].text,
     "the member a swap costs is the same member on the catch card");
 
   // Safari Zone: the three the fee buys are judged as each is replayed, and the turn judges the one in front of us.

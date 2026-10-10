@@ -436,7 +436,7 @@ Notes
 · balls work in its battle
 summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: take, a backup to Fighting at last, a backup to Flying at last
 offer Oricorio: team take (a backup to Fighting at last; a backup to Flying at last) · account 3 of 2 · estimate
-catch card: team: take
+catch card: team: take, new species, lower its HP with Tackle (won't KO)
 catch card: take · a backup to Fighting at last · a backup to Flying at last
 offer Oricorio: team take (a backup to Fighting at last; a backup to Flying at last) · account 0 of 2 · estimate
 == dancing lessons, judged, a full party swaps
