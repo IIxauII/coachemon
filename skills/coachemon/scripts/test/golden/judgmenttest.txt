@@ -123,11 +123,19 @@
   three Mystic Water             swap  Lanturn     dV +0.5  release 0.0  net +0.5  
       + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
       + Ghost exposure         +1.8  Ghost now beats 4 of 6, down from 5
+  three Miracle Seed             swap  Wailord     dV +0.6  release 0.0  net +0.6  
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+      + Fire exposure          +1.8  Fire now beats 4 of 6, down from 5
   nothing       Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 0 items 0.00+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
   one Leftovers Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.10+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
   five          Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.50+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
   vitamins      Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 0 items 0.00+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
-  Mystic Water  Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.00+0.28, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
+  Mystic Water  Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.00+0.18, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
+  Miracle Seed  Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 0 items 0.00+0.00, Lanturn 0 items 0.00+0.00, Meganium 1 item 0.00+0.00
+  the seed with an heir to it    swap  Wailord     dV +0.5  release 0.0  net +0.5  
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+      + Fire exposure          +1.8  Fire now beats 4 of 6, down from 5
+  Meganium's slot: 0.00 with no Grass behind it, 0.08 with Sceptile behind it
   the cheapest two carrying      swap  Politoed    dV +0.5  release 0.0  net +0.5  
       + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
       + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5

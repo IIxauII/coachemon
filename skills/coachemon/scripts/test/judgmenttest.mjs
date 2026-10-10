@@ -661,6 +661,8 @@ const FAINTED = () => [
   const leftovers = n => itemOf("TurnHealModifier", n);
   // Mystic Water, +20 % per stack to the holder's Water moves, which *is* a multiplier the duel reads.
   const mysticWater = n => itemOf("AttackTypeBoosterModifier", n, { moveType: TY.indexOf("Water") });
+  // A Miracle Seed, the same item for Grass moves — and in this party, an item one member alone has a move for.
+  const miracleSeed = n => itemOf("AttackTypeBoosterModifier", n, { moveType: TY.indexOf("Grass") });
   // A vitamin: the points are in the live mon's own stats already, and the item does not move house with it.
   const vitamin = n => itemOf("BaseStatModifier", n, { stats: [1], multiplier: 1 + 0.1 * n, isTransferable: false });
 
@@ -679,14 +681,17 @@ const FAINTED = () => [
   const five = wailordHolds([leftovers(5)]);
   const invested = wailordHolds([vitamin(3)]);
   const booster = wailordHolds([mysticWater(3)]);
+  // The same booster for a type the party has one move of: Meganium's Energy Ball, and nothing behind it.
+  const seeded = judge(WATERS().map(p => (p.name === "Meganium" ? carrying(p, [miracleSeed(3)]) : p)), nc(), {}, SEED);
   console.log("== the slot the search would empty, and what emptying it would destroy");
   show("holding nothing", bare);
   show("one Leftovers", one);
   show("five Leftovers", five);
   show("three vitamins", invested);
   show("three Mystic Water", booster);
+  show("three Miracle Seed", seeded);
   for (const [label, j] of [["nothing", bare], ["one Leftovers", one], ["five", five], ["vitamins", invested],
-      ["Mystic Water", booster]]) {
+      ["Mystic Water", booster], ["Miracle Seed", seeded]]) {
     console.log(`  ${label.padEnd(13)} ${costs(j)}`);
     assert.equal(j.net, j.delta - j.release, `${label}: the net value is ΔV less what the release destroys`);
     assert.equal(j.verdict === "swap", j.net > MARGIN, `${label}: a swap is an improvement past the margin`);
@@ -713,15 +718,40 @@ const FAINTED = () => [
   assert.equal(invested.replaced.name, bare.replaced.name, "so the search is the very one it ran off a bare party");
   assert.equal(invested.delta, bare.delta, "and not one duel of it came out differently");
 
-  // A booster the adapter can price costs what the duels say it is worth rather than the flat charge: the holder is
-  // scored with the items and then without them, which is also why the holder itself duels better for having it.
+  // A booster the adapter can price costs what the duels say it is worth rather than the flat charge — and what it is
+  // worth is what it is worth to the party that *stays*: the member answering each threat once the swap is made is
+  // rebuilt holding the gone items on top of its own, and the row is charged what that answer gains by them. Three
+  // stacks of a Water booster off a party of Waters lands on whoever answers next, so the slot is dear to empty.
   const priced = slotOf(booster, "Wailord");
   assert.equal(priced.cost.flat, 0, "nothing flat about an item the duel was given");
   assert.equal(priced.cost.cost, priced.cost.flat + priced.cost.worth, "the cost being the two halves together");
   assert.ok(priced.cost.worth > UNKNOWN_ITEM,
-    "three stacks of a Water booster on a Water member is worth more than one unpriceable stack");
-  assert.ok(priced.delta < bare.delta, "and the member is dearer to release for holding it");
-  assert.equal(booster.replaced.name, "Lanturn", "so this slot too goes to the member behind it");
+    "three stacks of a Water booster handed to five Waters is worth more than one unpriceable stack");
+  assert.ok(priced.delta < bare.delta, "the party being worth more for one of its own holding it");
+  assert.ok(priced.delta - priced.release < bare.delta, "so the slot is dearer to empty for what it carries");
+  assert.equal(booster.replaced.name, "Lanturn", "and this slot too goes to the member behind it");
+
+  // The other way round: an item nothing left in the party could use costs about nothing to release, however much it
+  // was worth to the member carrying it. Meganium is the one member of the six with a Grass move, so a Miracle Seed
+  // lifts its own duels — the party is worth more for its holding one — and the moment it goes there is nobody left
+  // to hand the seed to. A release destroys what the party loses, not what the released member had.
+  const stranded = slotOf(seeded, "Meganium");
+  assert.ok(seeded.before.v > bare.before.v, "the seed is worth something to the party while Meganium holds it");
+  assert.equal(stranded.cost.items, 1, "and it is transferable, so the release does take it");
+  assert.equal(stranded.cost.flat, 0, "the adapter prices it, so none of it is charged flat");
+  assert.equal(stranded.cost.worth, 0, "and it is worth nothing to the five Waters that stay: no Grass move between them");
+  assert.equal(stranded.cost.cost, 0, "which is the whole of what releasing it costs");
+
+  // The same seed on the same member, with one Water of the six traded for a Grass that stays: now there is somebody
+  // to hand it to, and the slot costs what the seed is worth to them.
+  const heir = judge(WATERS().map(p => (p.name === "Lanturn"
+    ? mon(OURS.sceptile, CAP, [M.energyBall, M.bodySlam], { ability: "Overgrow" })
+    : p.name === "Meganium" ? carrying(p, [miracleSeed(3)]) : p)), nc(), {}, SEED);
+  show("the seed with an heir to it", heir);
+  console.log(`  Meganium's slot: ${stranded.cost.worth.toFixed(2)} with no Grass behind it,`
+    + ` ${slotOf(heir, "Meganium").cost.worth.toFixed(2)} with Sceptile behind it`);
+  assert.ok(slotOf(heir, "Meganium").cost.worth > 0,
+    "the very item that cost nothing to release costs something once a member that can use it stays");
 
   // The cost orders the whole search and not just its first two: with the two cheapest slots carrying, the member
   // behind both of them is the one released.
