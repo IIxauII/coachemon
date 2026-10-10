@@ -114,7 +114,8 @@ export const readCard = (s, account, { road = true, estimate = false } = {}) => 
     // The roster the rewards card judges a TM against, so the two cards weigh a move alike.
     card = readRun(s, run => learnModel({ ...learn, roster: learnRoster(aheadModel(run)) }));
   } else if (spliceScreen(s, handler)) {
-    card = fusionModel(s, handler);
+    // Inside a run read, like the learn card above: the fusion judgment runs there and nowhere else (#589).
+    card = readRun(s, run => fusionModel(run, handler));
   } else if (rewards) {
     card = stage("shop.run", () => readRun(s, run => stage("shop.model", () => rewardsModel(run, rewards))));
     shopNote(s, card);

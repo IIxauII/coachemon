@@ -2532,8 +2532,10 @@ before it shows `TITLE` (`src/phases/title-phase.ts:36-50`); the mode stays `STA
 
 ## 24. DNA Splicers: who can be fused, pick order, and what a fusion is
 
-Read at the pinned tag (`v1.12.0.11`). The fusion advisor (`49-fusion.js`) re-implements everything below from species
-data and calls only pure reads (species forms, `getAbility`, the select filter), so it runs outside `sandbox`. The game
+Read at the pinned tag (`v1.12.0.11`). The fusion advisor (`49-fusion.js`) reads the run: the pairs come from the
+fusion judgment in `12-value.js`, and what it adds on top is everything below — who can be fused, the pick order, and
+what the fused mon is — from species data and pure reads (species forms, `getAbility`, the select filter). It is built
+inside the run read's `sandbox` and opens no `sandbox` of its own. The game
 has no fusion preview: the party screen offers only APPLY / SPLICE / UNSPLICE (`src/ui/handlers/party-ui-handler.ts:1456-1468`).
 
 **The item.** `DNA_SPLICERS` is a `FusePokemonModifierType` (`src/modifier/modifier-type.ts:1263-1283`, `:2197`); its
