@@ -61,10 +61,20 @@
       - Grass exposure         -2.2  Grass now beats 6 of 6
 == a level 10 newcomer into a party at the cap
   nothing                  L10  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   Lucky Egg alone          L10  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   one EXP share            L19  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   EXP share and Lucky Egg  L21  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
   five EXP shares          L32  Magikarp  skip  dV -1.0
+      - Poison exposure        -2.2  Poison now beats 6 of 6
+      - Grass exposure         -2.2  Grass now beats 6 of 6
 == one run key, the Lucky Egg on the first member and then the last, and then Pokérus with it
   egg on Blastoise   Blastoise L20, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
   egg on Meganium    Blastoise L18, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L20

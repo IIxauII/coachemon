@@ -305,14 +305,18 @@ const checkReasons = (label, j) => {
     assert.ok(j.plain.text.length > 0 && !/\bundefined\b/.test(j.plain.text), `${label}: ${j.plain.text}`);
   }
 };
-const show = (label, j) => {
-  console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} ${(j.replaced?.name ?? "-").padEnd(11)}`
-    + ` dV ${t1(j.delta)}  release ${j.release.toFixed(1)}  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+// The plain case, if there is one, and then the words of each reason with the row and the turns it was read off.
+const said = (label, j) => {
   if (j.plain) console.log(`      ! ${j.plain.text}`);
   for (const r of j.reasons) {
     console.log(`      ${r.gain ? "+" : "-"} ${`${r.threat} ${r.part}`.padEnd(22)} ${t1(r.delta)}  ${r.text}`);
   }
   checkReasons(label, j);
+};
+const show = (label, j) => {
+  console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} ${(j.replaced?.name ?? "-").padEnd(11)}`
+    + ` dV ${t1(j.delta)}  release ${j.release.toFixed(1)}  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+  said(label, j);
 };
 
 // Where the page's RNG stood before a single judgment ran, which is where the last assertion finds it again.
@@ -503,10 +507,10 @@ const WATERS = (level = CAP) => [
   // keys that name it, not out of a run key per scenario (26-run's `runKeyOf` carries the modifier *count* alone).
   for (const [label, nc, modifiers] of runs) {
     const j = judge(party, nc, {}, { modifiers, seed: "judge-exp" });
-    checkReasons(label, j);
     levels.push(j.newcomer.projection.level);
     console.log(`  ${label.padEnd(24)} L${String(j.newcomer.projection.level).padEnd(3)} ${j.newcomer.name.padEnd(9)}`
       + ` ${j.verdict.padEnd(5)} dV ${t1(j.delta)}`);
+    said(label, j);
   }
   assert.equal(levels[0], 10, "a bench share of nothing is nothing");
   assert.equal(levels[1], 10, "and a Lucky Egg multiplies it (game-code.md §17), so it is nothing too");
