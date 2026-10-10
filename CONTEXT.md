@@ -372,3 +372,20 @@ so its stat row is handed over whole rather than computed, and the row is what t
 the one combatant built out of two: the base half's level, IVs, nature, moves and passive, the other
 half's ability, and half of every base stat off each half's species — so the investment either half has been fed is
 left behind, the game folding a fusion's base stats out of the species' own.
+
+## Level projection
+
+The level a **party** member, or a would-be newcomer, stands at by the time the run reaches the next big fight: the
+waves between it and now come off the **run calendar**, and each of them is worth an EXP a model supplies rather than
+the game. What the projection does read off the run is how the EXP is split — a mon that fights a wave takes a
+participant's share, a mon on the bench only the share EXP. All hands it — along with a Lucky Egg, a Golden Egg and
+Pokérus, and the **level cap**, which no projection ever passes: a member already at the cap gains nothing, and the
+share it would have taken is lost rather than passed to the members below it. A mon whose place in the fighting is not
+stated is projected on the bench share alone, in keeping with a **combatant**'s unknowns being neutral, never
+favourable. A projection is always an *estimate*, and that is what it carries into the judgment that reads it.
+
+## Level cap
+
+The highest level a pokémon in a run can be given EXP towards. It is a function of the wave alone, rounded up to its
+decade, and it is about the level of that decade's boss; Daily runs sit well above Classic's. A Rare Candy is the only
+way past it.
