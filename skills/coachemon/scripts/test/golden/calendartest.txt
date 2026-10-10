@@ -21,6 +21,10 @@ limited support 2         heal 21  revives true
 limited support 3         heal none  revives false
 hardcore                  heal 21  revives false
 hardcore + ls 1           heal none  revives false
+== challengeOn, positive / zero / negative
+hardcore 1                on true  revives false
+hardcore 0                on false  revives true
+hardcore -1               on true  revives false
 == trainer odds, trainerChance 8
 waves 41–50               41:0.000  42:0.125  43:0.109  44:0.096  47:0.096  48:0.000  49:0.000  50:1.000
 == trainer odds, daily
