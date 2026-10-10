@@ -188,7 +188,7 @@ After, three:
 ```js
 // Fighting, Grass and Electric are shared weaknesses — two members weak, fewer resisting — while Ice is not: only
 // Garchomp is weak to it and Lapras resists it. Normal, Fighting, Bug, Water, Ice, Dark and Fairy are holes. Magikarp
-// is the weakest member by an *estimated* final BST, not its own.
+// is the one member still to evolve, so its final BST, and a fusion's that takes it, is an estimate.
 ```
 
 This is the premise many asserts read and no one assert could carry, which is what puts a contract at module scope; and
