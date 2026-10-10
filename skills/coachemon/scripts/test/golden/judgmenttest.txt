@@ -220,5 +220,37 @@
       + Dark answer            +2.4  nearer an answer to Dark
       + bulky attacker exposure +2.2  the bulky attacker now beats 5 of 6, down from 6
   a stand-in offered at L12 is judged at L12 knowing Quick Attack, Agility, Aqua Tail
+== the all-Water six, the two halves of one fusion
+  the mon the Splicer would make: Lanturn L38 [Water/Electric] 135 hp, ability Water Absorb
+  Lanturn ← Politoed             fuse  dV +0.9  release 0.0  net +0.9  
+      + Flying exposure        +3.2  Flying now beats 3 of 5, down from 5
+      + Poison exposure        +2.2  Poison now beats 5 of 5, down from 6
+  a member with itself           skip  unjudged: a fusion is two members of the party
+  a member not on the party      skip  unjudged: a fusion is two members of the party
+  a base that is dead weight     skip  unjudged: the base is dead weight: fainted
+== every pair of the six ranked by net value, and then with one of them carrying
+  nothing held                   Lanturn ← Politoed 0.89   Lanturn ← Wailord 0.88   Lanturn ← Blastoise 0.86
+  2 Leftovers on Politoed        Lanturn ← Wailord 0.88   Lanturn ← Blastoise 0.86   Blastoise ← Wailord 0.78
+  Lanturn ← Politoed, 10 Leftovers skip  dV +0.9  release 1.0  net -0.1  
+      - Dragon backup          -0.2  a weaker backup to Dragon
+== three members, each answering what the other two cannot: every pair of them
+  Sceptile ← Charizard           skip  dV -0.8  release 0.0  net -0.8  
+      - Steel answer           -2.2  no answer left to Steel
+      - special wall answer    -2.0  a weaker answer to the special wall
+  Charizard ← Sceptile           skip  dV -0.8  release 0.0  net -0.8  
+      - special wall answer    -2.0  a weaker answer to the special wall
+      - Dragon backup          -1.7  no backup left to Dragon
+  Swampert ← Sceptile            skip  dV -0.9  release 0.0  net -0.9  
+      - Fire answer            -2.5  no answer left to Fire
+      - Ground backup          -1.5  no backup left to Ground
+  Charizard ← Swampert           skip  dV -1.0  release 0.0  net -1.0  
+      - Fire answer            -2.0  no answer left to Fire
+      - Fairy answer           -2.0  a weaker answer to Fairy
+  Swampert ← Charizard           skip  dV -1.0  release 0.0  net -1.0  
+      - Grass answer           -3.5  no answer left to Grass
+      - Fire answer            -2.0  no answer left to Fire
+  Sceptile ← Swampert            skip  dV -1.1  release 0.0  net -1.1  
+      - Fire answer            -4.0  no answer left to Fire
+      - Ground backup          -1.5  no backup left to Ground
 == the full swap search over six members is inside the budget, cold and memoised
 judgment: ok
