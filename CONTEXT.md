@@ -363,7 +363,10 @@ The battle as it would stand one move from now: our stat stages after a Swords D
 A pokémon as a duel is scored: its stats at a level, its types, its ability and passive, the moves it can use, the
 **boss bars** it stands behind and the health it has left. Most of what the coach weighs is not a pokémon on the field
 — a standard threat, a stand-in for a newcomer, a foe in a **preview**, a **party** member at the level it will reach
-by the next big fight — so each is built into a combatant first, and the duel never learns which kind it was handed.
-What is known of a live member is kept: its IVs, its nature, its moves, its ability, its passive and the stat
-investment it has been fed. What is unknown is neutral, never favourable. A combatant is built off the field and
-carries base stat stages, even where the member behind it is standing on raised ones.
+by the next big fight, a **fusion** the player hasn't committed — so each is built into a combatant first, and the duel
+never learns which kind it was handed. What is known of a live member is kept: its IVs, its nature, its moves, its
+ability, its passive and the stat investment it has been fed. What is unknown is neutral, never favourable. A
+combatant is built off the field and carries base stat stages, even where the member behind it is standing on raised
+ones. A fusion is the one combatant built out of two: the base half's level, IVs, nature, moves and passive, the other
+half's ability, and half of every base stat off each half's species — so the investment either half has been fed is
+left behind, the game folding a fusion's base stats out of the species' own.

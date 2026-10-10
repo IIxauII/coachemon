@@ -316,9 +316,13 @@ export const HUD_DEPS = {
   /** game-code.md §24. */
   "09-combatant.js": [
     `${P}#Pokemon.calculateStats`,
+    `${P}#Pokemon.calculateBaseStats`,
     `${P}#Pokemon.getAbility`,
+    `${P}#Pokemon.canApplyAbility`,
     `${P}#Pokemon.hasPassive`,
     `${P}#Pokemon.getTypes`,
+    `${P}#Pokemon.getBaseTypes`,
+    `${P}#PlayerPokemon.fuse`,
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getAbility`,
     `src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr.canApply`,
   ],
