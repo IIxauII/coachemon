@@ -873,7 +873,8 @@ const build = (s, h, account) => {
 };
 
 // The memo key holds what the card reads beyond the run key (the wave, the modifier count, each member's level and
-// standing): a read in neither goes stale.
+// standing): a read in neither goes stale. The challenges are in it because the party at the next big fight turns on
+// them — Hardcore and Limited Support decide whether a fainted member has a way back (#571).
 export const encounterModel = (run, h, account) => {
   const s = run.scene;
   const me = s.currentBattle.mysteryEncounter;
@@ -883,6 +884,7 @@ export const encounterModel = (run, h, account) => {
     // The chunk scan lands asynchronously, and nothing else in this key moves when it does.
     tryDo(() => safariReady(s), false),
     h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []),
+    (s.gameMode?.challenges ?? []).map(c => [c.id, c.value]),
     party.map(p => [p.id, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
   const value = run.memo("encounter", key, () => build(s, h, account));
   if (value.kind) return value;
