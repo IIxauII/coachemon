@@ -1,4 +1,4 @@
-== constants: clamp 3  backup 0.5  revenge 0.5  switch-in 0.25  margin 0.1  exposure 0.2/0.8/1.8/3.2  party 6
+== constants: clamp 3  backup 0.5  revenge 0.5  switch-in 0.25  margin 0.1  exposure 0.2/0.8/1.8/3.2  unknown item 0.1  party 6
 == wave 50: 22 threats at level 38, 62 moves between them
 == the all-Water party's rows, V -0.39 over 22 threats
   Normal         Blastoise   s  0.0 backup Feraligatr   0.0  beaten 2  row -0.8
@@ -105,6 +105,46 @@
       + physical wall answer   +0.8  a better answer to the physical wall
   a barred member, named         swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
       ! Wailord is dead weight: a challenge bars it
+      + Normal answer          +1.0  an answer to Normal at last
+      + physical wall answer   +0.8  a better answer to the physical wall
+== the slot the search would empty, and what emptying it would destroy
+  holding nothing                swap  Wailord     dV +0.6  release 0.0  net +0.6  
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+  one Leftovers                  swap  Lanturn     dV +0.6  release 0.0  net +0.6  
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+  five Leftovers                 swap  Lanturn     dV +0.6  release 0.0  net +0.6  
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+  three vitamins                 swap  Wailord     dV +0.6  release 0.0  net +0.6  
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+  three Mystic Water             swap  Lanturn     dV +0.5  release 0.0  net +0.5  
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+      + Ghost exposure         +1.8  Ghost now beats 4 of 6, down from 5
+  nothing       Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 0 items 0.00+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
+  one Leftovers Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.10+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
+  five          Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.50+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
+  vitamins      Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 0 items 0.00+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
+  Mystic Water  Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.00+0.28, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
+== all six of them carrying, one stack each and then six
+  one Leftovers each             swap  Wailord     dV +0.6  release 0.1  net +0.5  
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
+  six Leftovers each             skip  Wailord     dV +0.6  release 0.6  net  0.0  
+      - Dragon exposure        -1.0  Dragon now beats 3 of 6
+      - Fighting exposure      -0.6  Fighting now beats 2 of 6
+== the fainted member named, holding nothing, one Leftovers, and three vitamins
+  a corpse                       swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+      ! Wailord is dead weight: fainted with no way back
+      + Normal answer          +1.0  an answer to Normal at last
+      + physical wall answer   +0.8  a better answer to the physical wall
+  a corpse carrying              skip  Wailord     dV +0.2  release 0.1  net +0.1  
+      - Electric exposure      -1.8  Electric now beats 5 of 6
+      - Poison exposure        -1.4  Poison now beats 4 of 6
+  a corpse's investment          swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+      ! Wailord is dead weight: fainted with no way back
       + Normal answer          +1.0  an answer to Normal at last
       + physical wall answer   +0.8  a better answer to the physical wall
 == a newcomer Single Type bars
