@@ -28,18 +28,35 @@ let destroyed = 0;
 const species = id => ({ speciesId: id, name: SPECIES[id][0], baseTotal: SPECIES[id][2],
   types: SPECIES[id][1].map(t => TY.indexOf(t)) });
 
-// A bare name is a move the preview can't read past its name; an array is one it can, in `fixtures/party.mjs`'s form.
+// A bare name is a move the preview can't read past its name — no id and no `getMove`; an array is one it can, in
+// `fixtures/party.mjs`'s form, and goes into `MOVES` under the id the game would give it, which is where a combatant
+// rebuilt from a preview row looks its moveset up (#574).
 const CAT = { P: 0, S: 1, X: 2 };
-const fakeMove = m => (typeof m === "string" ? { getName: () => m } : {
-  getName: () => m[0],
-  getMove: () => ({ name: m[0], type: TY.indexOf(m[1]), power: m[2], category: CAT[m[3] ?? "P"],
-    attrs: (m[4] ?? []).map(a => new ATTRS[a]()) }),
-});
+const MOVES = [];
+const moveIds = new Map();
+const idOf = name => { if (!moveIds.has(name)) moveIds.set(name, moveIds.size + 1); return moveIds.get(name); };
+const fakeMove = m => {
+  if (typeof m === "string") return { getName: () => m };
+  const id = idOf(m[0]);
+  const mv = (MOVES[id] = { id, name: m[0], type: TY.indexOf(m[1]), power: m[2], category: CAT[m[3] ?? "P"],
+    accuracy: 100, pp: 10, moveTarget: 3, priority: 0, flags: 0, attrs: (m[4] ?? []).map(a => new ATTRS[a]()) });
+  return { moveId: id, getName: () => mv.name, getMove: () => mv, getMovePp: () => mv.pp, ppUsed: 0 };
+};
 
+// `getStat(Stat.HP)` is what `getMaxHp` answers (game-code.md §24), so the two agree here as they do on a live mon.
 const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => ({
-  species: sp, name: sp.name, level, bossSegments: boss, shiny: false,
+  id: sp.speciesId * 1000 + level, species: sp, name: sp.name, level, bossSegments: boss,
+  bossSegmentIndex: boss ? boss - 1 : 0, shiny: false,
   getTypes: () => sp.types, getAbility: () => ({ name: "Sturdy" }), hasPassive: () => false,
-  getMaxHp: () => 50 + level * 2, getStat: i => 20 + level + i, getIconAtlasKey: () => "k", getIconId: () => String(sp.speciesId),
+  // Sturdy's own attr, the one ability the approx duel asks for by attr rather than by name (game-code.md §8).
+  hasAbilityWithAttr: a => a === "PreDefendFullHpEndureAbAttr",
+  getMaxHp: () => 50 + level * 2, getStat: i => (i === 0 ? 50 + level * 2 : 20 + level + i),
+  getIconAtlasKey: () => "k", getIconId: () => String(sp.speciesId),
+  hp: 50 + level * 2, getHeldItems: () => [], getTag: () => null,
+  isBoss: () => boss > 0, isPlayer: () => false, isOnField: () => false,
+  summonData: { statStages: [0, 0, 0, 0, 0, 0, 0], abilitiesApplied: new Set(), tags: [] },
+  waveData: { abilitiesApplied: new Set(), abilityRevealed: true, endured: false },
+  turnData: { hitCount: 0, hitsLeft: -1, moveEffectiveness: null },
   moveset: moves.map(fakeMove),
   destroy() { destroyed++; },
 });
@@ -200,7 +217,12 @@ const mount = opts => {
   const { drawPreview } = globalThis.__hud["95-render-preview"], { previewSummary } = globalThis.__hud["48-preview"];
   const { readRun } = globalThis.__hud["26-run"];
   const onRun = fn => (s, ...a) => readRun(s, run => fn(run, ...a));
-  return { scene, offsets, pv: { previewFor: onRun(previewFor), previewNext: onRun(previewNext), previewArm, previewCheck, previewStats, drawPreview, previewSummary } };
+  // The move table a combatant looks a move id up in; the fake has no game chunk to scan for one.
+  globalThis.__hud["04-game-tables"].setGameTables({ moves: MOVES, abilities: [] });
+  const { combatantOf, duelEnv } = globalThis.__hud["09-combatant"];
+  const { approxOutcomes } = globalThis.__hud["10-damage"];
+  return { scene, offsets, duel: { combatantOf, env: duelEnv(scene), approxOutcomes },
+    pv: { previewFor: onRun(previewFor), previewNext: onRun(previewNext), previewArm, previewCheck, previewStats, drawPreview, previewSummary } };
 };
 
 const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.double, levels: m.levels,
@@ -424,6 +446,39 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
     `variable power counts, fixed damage doesn't, one entry per move: ${JSON.stringify(foe.attackTypes)}`);
   assert.deepEqual(foe.statusMoves, ["Iron Defense"], `and the status move is still only a status move: ${JSON.stringify(foe.statusMoves)}`);
   console.log(`== foe attacks ${JSON.stringify(foe.attackTypes)}`);
+}
+
+// ---- A previewed foe carries the stat row and the move ids a combatant is rebuilt from (#574).
+{
+  const foeMoves = [["Rock Slide", "Rock", 75], ["Earthquake", "Ground", 100], ["Iron Defense", "Steel", -1, "X"]];
+  const { scene, pv, duel } = mount({ wave: 12, foeMoves });
+  const row = pv.previewNext(scene).foes[0];
+  console.log(`== row for a combatant ${JSON.stringify({ name: row.name, level: row.level, maxHp: row.maxHp,
+    stats: row.stats, moves: row.moves, moveIds: row.moveIds })}`);
+  assert.equal(row.moveIds.length, row.moves.length, "an id for every move the row names");
+
+  // The same wave, played: the row describes the foe the game goes on to build, and rebuilds it as a combatant.
+  const foe = playWave(scene, 13).enemyParty[0];
+  assert.equal(foe.name, row.name);
+  const rebuilt = duel.combatantOf({ name: row.name, level: row.level, stats: [row.maxHp, ...row.stats],
+    types: row.types.map(t => TY.indexOf(t)), ability: row.ability, passive: row.passive, moves: row.moveIds,
+    boss: row.segments, player: false });
+  assert.deepEqual(rebuilt.stats, [foe.getMaxHp(), ...[1, 2, 3, 4, 5].map(i => foe.getStat(i))], "the live foe's own stat row");
+  assert.deepEqual(rebuilt.moveset.map(pm => pm.getName()), row.moves, "and its moveset, looked up by id");
+
+  // A Rock Slide into a Poison/Flying foe hits for more than its whole health, so the row's Sturdy has to endure on
+  // both sides of the comparison as well.
+  const target = duel.combatantOf({ name: "ours", level: 20, stats: [120, 400, 60, 70, 60, 65],
+    types: [TY.indexOf("Water")], ability: "Torrent", moves: [idOf("Rock Slide")], player: true });
+  assert.equal(JSON.stringify(duel.approxOutcomes(duel.env, rebuilt, target)),
+    JSON.stringify(duel.approxOutcomes(duel.env, foe, target)), "the rebuilt foe hits as the live one does, move by move");
+  assert.equal(JSON.stringify(duel.approxOutcomes(duel.env, target, rebuilt)),
+    JSON.stringify(duel.approxOutcomes(duel.env, target, foe)), "and takes a hit the same way");
+  const into = duel.approxOutcomes(duel.env, target, rebuilt)[0];
+  assert.equal(into.pKo, 0, `Sturdy holds, off the row's ability name alone: ${JSON.stringify(into.pKo)}`);
+  console.log(`== rebuilt ${rebuilt.stats.join("/")} | out `
+    + duel.approxOutcomes(duel.env, rebuilt, target).map(o => `${o.name} ×${o.e} ${o.max}`).join(", ")
+    + ` | in ${into.name} ×${into.e} ${into.max} pKo ${into.pKo}`);
 }
 
 // ---- The card and its one-line summary.

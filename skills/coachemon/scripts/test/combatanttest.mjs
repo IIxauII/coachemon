@@ -236,6 +236,37 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.deepEqual(combatantOf({ species: GARCHOMP, level: 50 }).moveset, [], "no moves and no live member: nothing to use");
 }
 
+// ---- A stat row given outright is the combatant's own, there being no species to compute one from
+{
+  // What a preview row hands over (#574): the stats the game itself left on the mon, `Stat`-indexed, and move ids.
+  const ROW = [238, 115, 116, 117, 118, 119];
+  const c = combatantOf({ name: "Garchomp", stats: ROW, level: 94, types: [15, 4], ability: 8,
+    moves: [EARTHQUAKE, DRAGON_CLAW], player: false });
+  assert.deepEqual(c.stats, ROW, "the row as given, never recomputed");
+  assert.equal(c.getMaxHp(), 238, "`Stat.HP`'s entry is the max HP");
+  assert.equal(c.hp, 238, "and it stands at full health");
+  assert.equal(c.species, null, "with no species behind it");
+  assert.deepEqual(c.getTypes(), [15, 4]);
+  assert.equal(c.getAbility().name, "Sand Veil");
+  assert.deepEqual(c.moveset.map(pm => pm.moveId), [EARTHQUAKE, DRAGON_CLAW]);
+
+  // It duels exactly as the live mon whose row it is.
+  const mon = live("Garchomp", GARCHOMP, 94, ROW, { ability: "Sand Veil", moves: [EARTHQUAKE, DRAGON_CLAW], player: false });
+  const target = combatantOf({ species: SNORLAX, level: 94, moves: [BODY_SLAM] });
+  assert.equal(JSON.stringify(approxOutcomes(env, c, target)), JSON.stringify(approxOutcomes(env, mon, target)), "ours, move by move");
+  assert.equal(JSON.stringify(approxOutcomes(env, target, c)), JSON.stringify(approxOutcomes(env, target, mon)), "and the foe's into it");
+  console.log(`given row L94 ${row(c)} | ${shown(duel(c, target))}`);
+
+  // The row wins over everything a stat is otherwise computed from, and anything short of six numbers is no row.
+  assert.deepEqual(combatantOf({ species: GARCHOMP, level: 50, ivs: [31, 31, 31, 31, 31, 31], stats: ROW }).stats, ROW);
+  assert.deepEqual(combatantOf({ stats: [1, 2, 3, 4, 5] }), null, "five numbers are no stat row");
+  assert.deepEqual(combatantOf({ stats: [1, 2, 3, 4, 5, null] }), null, "nor is a gap in one");
+  assert.equal(combatantOf({ stats: ROW, hp: 100 }).hp, 100, "health still stands where it is put");
+  assert.equal(combatantOf({ stats: [0, 0, 0, 0, 0, 0] }).getMaxHp(), 1, "and max HP has the same floor of 1");
+  assert.notEqual(c.key, combatantOf({ name: "Garchomp", stats: [238, 115, 116, 117, 118, 120], level: 94,
+    types: [15, 4], ability: 8, moves: [EARTHQUAKE, DRAGON_CLAW], player: false }).key, "a row apart is a duel apart");
+}
+
 // ---- Boss bars clamp a hit on the combatant they are given to, and the bar it stands on says which
 {
   const atk = combatantOf({ species: GARCHOMP, level: 50, ivs: [31, 31, 31, 31, 31, 31], nature: 3, moves: [EARTHQUAKE] });
