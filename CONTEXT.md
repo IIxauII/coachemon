@@ -401,3 +401,13 @@ where the question is whether it holds at the fight; and any at all on a member 
 The highest level a pokémon in a run can be given EXP towards. It is a function of the wave alone, rounded up to its
 decade, and it is about the level of that decade's boss; Daily runs sit well above Classic's. A Rare Candy is the only
 way past it.
+
+## Stand-in
+
+A would-be newcomer with no pokémon behind it — a species the player could catch in a biome they might pick, a trade
+offer — judged as the **combatant** the game would hand them if they took it: the level a wild spawn joins at on this
+wave, which is most of the way to the **level cap** but not at it, the last four level-up moves its learnset hands out
+at that level, the species' default ability, no passive, and neutral IVs and nature. A stand-in is judged exactly as a
+live catch is, and its answer is marked an *estimate*, because none of the five is the mon the player would actually
+be handed. The **moveset prior** is deliberately not the moves: a competitive set is nothing like what a wild spawn
+turns up knowing, and a biome sold on one would promise a catch that does not exist.
