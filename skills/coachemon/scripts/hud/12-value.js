@@ -288,6 +288,50 @@ const releaseOf = (run, env, set, slot, stay) => {
   return { ...out, cost: flat + worth, worth };
 };
 
+/**
+ * The weakest member (CONTEXT.md, `Party profile`): the member whose loss costs the party the least team value, with
+ * no newcomer in view. It is the one answer the party profile's `weakest`, the team audit's "first to replace" and
+ * the Dark Deal's "your weakest link" all name, so the three can never disagree about who is expendable (#567,
+ * stories 29 and 31).
+ *
+ * A loss is priced the way the swap search prices a replacement, with the slot left empty rather than filled: V of
+ * the party, less V of the party without that member. The figure is a *cost*, and a negative one is a party better
+ * off for the loss — exposure is quadratic in the members a threat beats (`EXPOSURE`), so a member that loses more
+ * duels than it answers can be worth less to the team than the slot standing empty.
+ *
+ * Dead weight is weakest, at zero: it stands in no threat's row, so the party loses nothing at all by it, and it
+ * goes ahead of every live member however cheap that member is to lose. What a release would destroy is not in the
+ * figure — that is the price of a *swap*, which `judgeNewcomer` nets off its own ΔV, and it would make a member
+ * dearer to lose for carrying items the party keeps either way.
+ *
+ * `ranked` is every slot weakest first, so a reader can name the next one along; `mon`, `name`, `dead` and `cost`
+ * are the first of them, and `v` what the party is worth whole.
+ */
+export const weakestMember = (run, { fight = null } = {}) => {
+  const s = run?.scene ?? null;
+  const here = waveOf(run);
+  const at = fight ?? nextBigFight(s, here);
+  const set = standardThreats(run, { fight: at ?? here });
+  const party = slotsAt(run, at);
+  const live = party.slots.filter(x => x.combatant);
+  const out = { fight: at, wave: set.wave, mon: null, name: null, dead: null, cost: 0, v: 0, ranked: [],
+    confidence: weakestOf(set.confidence, party.confidence) };
+  if (set.unavailable) return { ...out, unavailable: set.unavailable };
+  // The slots come off a memo of their own, so what varies within one run key is the fight and the slots it built.
+  const key = JSON.stringify([at, party.slots.map(x => [x.name, x.dead, x.combatant?.key ?? null])]);
+  return { ...out, ...run.memo("weakest", key, () => rank(run, set, party, live)) };
+};
+const rank = (run, set, party, live) => {
+  const whole = teamValue(run, set, live);
+  const ranked = party.slots
+    .map(slot => ({ mon: slot.mon, name: slot.name, dead: slot.dead,
+      cost: slot.dead ? 0 : whole.v - teamValue(run, set, live.filter(x => x !== slot)).v }))
+    // Dead weight first, whatever a live member costs; then the cheapest live member to lose. Stable, so two slots
+    // that cost the same fall to the one the party lists first.
+    .sort((a, b) => (a.dead ? 0 : 1) - (b.dead ? 0 : 1) || a.cost - b.cost);
+  return { v: whole.v, ranked, ...(ranked[0] ?? {}) };
+};
+
 export const MAX_REASONS = 2; // "up to two reasons" (#567)
 
 // A threat is named by what it stands for and nothing else: a type under its own name, a stat shape under `the` and

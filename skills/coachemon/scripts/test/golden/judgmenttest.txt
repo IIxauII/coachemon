@@ -107,6 +107,18 @@
       ! Wailord is dead weight: a challenge bars it
       + Normal answer          +1.0  an answer to Normal at last
       + physical wall answer   +0.8  a better answer to the physical wall
+== the weakest member of each fixture party
+  all-Water, one Grass           Wailord     costs -0.8  
+    Wailord -0.8  Lanturn -0.8  Politoed -0.7  Blastoise -0.5  Meganium -0.3  Feraligatr -0.1
+  Hardcore, Wailord down         Wailord     costs  0.0  fainted
+    Wailord†  0.0  Blastoise -0.3  Meganium -0.2  Typhlosion -0.1  Feraligatr  0.0  Charizard +0.1
+  no heal, no shop               Wailord     costs  0.0  fainted
+    Wailord†  0.0  Blastoise -0.3  Meganium -0.2  Typhlosion -0.1  Feraligatr  0.0  Charizard +0.1
+  a heal due before the fight    Wailord     costs -1.7  
+    Wailord -1.7  Blastoise -1.7  Feraligatr -1.6  Meganium -1.5  Typhlosion -1.0  Charizard -0.9
+  a barred member, at full health Wailord     costs  0.0  barred
+    Wailord†  0.0  Blastoise -0.3  Meganium -0.2  Typhlosion -0.1  Feraligatr  0.0  Charizard +0.1
+  a Grass newcomer swaps Meganium, while the weakest member is Wailord
 == the slot the search would empty, and what emptying it would destroy
   holding nothing                swap  Wailord     dV +0.6  release 0.0  net +0.6  
       + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
