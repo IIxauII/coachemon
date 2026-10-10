@@ -5,20 +5,21 @@
 import { stat } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
 import { formOf, partyAtFight } from "./08-party.js";
-import { combatantOf, duelEnv } from "./09-combatant.js";
+import { combatantOf, duelEnv, itemKeyOf, pricesItem } from "./09-combatant.js";
 import { levelCapAt, levelProjection } from "./09-projection.js";
 import { approxOutcomes, barBreakFactors, koChanceAt, koCurve, koTurns, targetFacts, useOf } from "./10-damage.js";
 import { standardThreats } from "./11-threats.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
-// All six in turns, and a change to any of them is a golden diff someone reviews (#567).
+// All seven in turns, and a change to any of them is a golden diff someone reviews (#567).
 export const CLAMP = 3;
 export const BACKUP = 0.5;
 export const REVENGE = 0.5;
 export const SWITCH_IN = 0.25;
 export const EXPOSURE = n => 0.2 * n * n;
 export const MARGIN = 0.1;
+export const UNKNOWN_ITEM = 0.1;
 
 // The health a revenge kill comes in on, and the share of our own health the hit a switch-in takes has to stay under.
 const WEAKENED = 0.5, SWITCH_IN_HP = 1 / 3;
@@ -137,18 +138,47 @@ const slotsAt = (run, fight) => {
   const party = (run?.facts?.party ?? []).filter(Boolean);
   const proj = levelProjection(s, { from: here, fight });
   const key = JSON.stringify([fight, here, proj.expAll,
-    party.map(mon => [...proj.inputs(mon), (mon.moveset ?? []).map(m => m?.moveId ?? null)])]);
+    party.map(mon => [...proj.inputs(mon), (mon.moveset ?? []).map(m => m?.moveId ?? null),
+      heldOf(mon).map(itemKeyOf)])]);
   return run.memo("value-party", key, () => build(s, party, proj, { here, fight }));
 };
+
+const heldOf = mon => (tryDo(() => mon.getHeldItems(), []) ?? []).filter(Boolean);
+// 30-planner's own read: an item that says nothing about itself is taken as transferable, which is what the game's
+// own default is.
+const goesWithIt = m => m.isTransferable !== false;
+
+/**
+ * What releasing `mon` would destroy: `items` is how many of them go with it, `gone` the ones the adapter can price,
+ * which `releaseOf` hands to the member that stays, and `unpriced` the stacks nothing prices — each copy is an item
+ * the release destroys, so three of a thing is three times the flat charge.
+ *
+ * The investment the member was fed stays with it and is in neither: a vitamin does not move house
+ * (`isTransferable`), it is in the member's live stats already, and the release destroys the member either way, so it
+ * is never counted twice (#567).
+ */
+const releasedBy = mon => {
+  const gone = heldOf(mon).filter(goesWithIt);
+  const unpriced = gone.filter(m => !pricesItem(m)).reduce((t, m) => t + stacksOf(m), 0);
+  return { items: gone.length, unpriced, gone: gone.filter(pricesItem) };
+};
+const stacksOf = m => Math.max(1, Math.floor(tryDo(() => m.getStackCount(), m?.stackCount ?? 1) ?? 1));
 
 const build = (s, party, proj, { here, fight }) => {
   const at = partyAtFight(s, party, { from: here, fight });
   const slots = party.map(mon => {
     const dead = at.dead.find(d => d.mon === mon);
-    if (dead) return { mon, name: mon.name ?? null, dead: dead.why, combatant: null, projection: null };
-    const p = proj.of(mon, { participant: true, participants: at.members.length });
-    return { mon, name: mon.name ?? null, dead: null, projection: p,
-      combatant: combatantOf({ mon, level: p.level, species: p.species, form: p.form }) };
+    // A member that cannot fight earns no participant's share of the EXP on the way, so what its items are worth is
+    // priced on it at the level the bench carries it to — the newcomer's own projection.
+    const p = dead ? proj.of(mon) : proj.of(mon, { participant: true, participants: at.members.length });
+    const spec = { level: p.level, species: p.species, form: p.form };
+    const release = releasedBy(mon);
+    // The member as it would stand holding `extra` on top of its own, which is how a release is priced on whoever
+    // stays: the items the party keeps are the items the duel is re-run with.
+    const holding = extra => combatantOf({ ...spec, mon, items: [...heldOf(mon), ...extra] });
+    if (dead) return { mon, name: mon.name ?? null, dead: dead.why, combatant: null, projection: null, release };
+    return { mon, name: mon.name ?? null, dead: null, projection: p, release, holding,
+      combatant: combatantOf({ ...spec, mon }) };
   });
   return { fight, slots, revive: at.revive, confidence: proj.confidence };
 };
@@ -207,17 +237,56 @@ const newcomerOf = (run, fight, spec) => {
   const moves = spec.moves ?? (standIn ? learnsetMoves(species, form, level) : undefined);
   const p = levelProjection(s, { from: waveOf(run), fight })
     .of(mon ?? { species, formIndex: form, level });
-  const combatant = combatantOf({ ...spec, mon, moves, level: p.level, species: p.species ?? species,
-    form: p.form ?? form });
+  const built = items => combatantOf({ ...spec, mon, moves, level: p.level, species: p.species ?? species,
+    form: p.form ?? form, ...(items ? { items } : {}) });
+  const combatant = built(null);
+  const own = spec.items ?? (mon ? heldOf(mon) : []);
   return {
     combatant, projection: p, standIn, name: combatant?.name ?? null,
+    // A newcomer is one of the members that stay, so a release can be priced on it too (#581).
+    holding: extra => built([...own, ...extra]),
     // A newcomer a challenge bars is dead weight the moment it joins (CONTEXT.md, `Dead weight`).
     barred: mon ? !tryDo(() => mon.isAllowedInChallenge(), true) : false,
     confidence: standIn ? weakestOf(p.confidence, CONFIDENCE.estimate) : p.confidence,
   };
 };
 
-const RELEASE = 0; // #581 prices the held items a release destroys; until then a release costs nothing
+/**
+ * The release cost of one slot: the turns the member's **transferable** held items would add to the best remaining
+ * member's threat row, which is where they would go if the member stayed and the player moved them (#567, story 10).
+ *
+ * `stay` is the party after the swap, the newcomer among it. Threat by threat, the items are handed to the member
+ * whose pair score is that row's answer — rebuilt through the adapter holding its own and the gone ones together —
+ * and the row is charged what the answer gains by them, never less than nothing. So what a release destroys is what
+ * the gone items are worth *to the party that stays*: an item nothing left can use costs about nothing to release,
+ * whatever it was worth to the member that carried it. A Thick Club leaves with the only Marowak.
+ *
+ * The mean over the threats, so the cost is in the turns per threat `teamValue` is, and ΔV can be netted against it.
+ *
+ * An item the adapter cannot price is charged a flat `UNKNOWN_ITEM` rather than taken as free: the duel is a race to
+ * a KO, so a Leftovers or a Shell Bell does nothing in it that a stat multiplier could stand in for.
+ */
+const releaseOf = (run, env, set, slot, stay) => {
+  const r = slot.release;
+  const flat = UNKNOWN_ITEM * r.unpriced;
+  const out = { items: r.items, unpriced: r.unpriced, flat };
+  const threats = set?.threats ?? [];
+  if (!r.gone.length || !threats.length || !stay?.length) return { ...out, cost: flat, worth: 0 };
+  // One rebuild per member of the party that stays, however many threats ask for it.
+  const laden = new Map();
+  const withGone = m => {
+    if (!laden.has(m)) laden.set(m, tryDo(() => m.holding(r.gone)));
+    return laden.get(m);
+  };
+  const sOn = (c, th) => (c ? pairOf(run, env, c, th.combatant).s : null);
+  const worth = threats.reduce((t, th) => {
+    const best = stay.reduce((b, m) => (!b || sOn(m.combatant, th) > sOn(b.combatant, th) ? m : b), null);
+    const was = sOn(best.combatant, th);
+    const now = sOn(withGone(best), th);
+    return t + (now === null ? 0 : Math.max(0, now - was));
+  }, 0) / threats.length;
+  return { ...out, cost: flat + worth, worth };
+};
 
 export const MAX_REASONS = 2; // "up to two reasons" (#567)
 
@@ -304,9 +373,10 @@ const plainBarred = name => ({ kind: "barred", name,
  * and skips the search. `fight` overrides the wave to judge at, which is otherwise the next big fight ahead.
  *
  * The verdict is `take` for a free slot, `swap` with the member the search picked, or `skip`. `replaced` carries the
- * search's pick whether or not the swap clears the margin, so a card can say who would have gone. `reasons` are the
- * threats the call is read off, and `plain` the one case that needs no threat at all. The roster half of the threat
- * set is #592's, so what comes back here is judged on the standard threats alone.
+ * search's pick whether or not the swap clears the margin, so a card can say who would have gone. `release` is what
+ * that release destroys and `cost` its parts, `net` is ΔV less the release, `reasons` are the threats the call is read
+ * off, and `plain` the one case that needs no threat at all. The roster half of the threat set is #592's, so what
+ * comes back here is judged on the standard threats alone.
  */
 export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = {}) => {
   const s = run?.scene ?? null;
@@ -319,7 +389,7 @@ export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = 
   const spec = specOf(newcomer);
   const nc = newcomerOf(run, at, spec);
   const out = {
-    fight: at, wave: set.wave, verdict: "skip", replaced: null, delta: 0, release: RELEASE, margin: MARGIN, net: 0,
+    fight: at, wave: set.wave, verdict: "skip", replaced: null, delta: 0, release: 0, margin: MARGIN, net: 0,
     reasons: [], plain: null, before, after: null, newcomer: nc,
     confidence: weakestOf(set.confidence, party.confidence, nc.confidence),
   };
@@ -330,7 +400,7 @@ export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = 
   // whole of what the card has to say.
   if (nc.barred) return { ...out, plain: plainBarred(nc.name) };
 
-  const joining = { name: nc.name, combatant: nc.combatant };
+  const joining = { name: nc.name, combatant: nc.combatant, holding: nc.holding };
   if (party.slots.length < PARTY_SIZE) {
     const after = teamValue(run, set, [...live, joining]);
     const delta = after.v - before.v;
@@ -342,16 +412,21 @@ export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = 
   const forced = replace ? party.slots.filter(x => x.mon === replace || x.name === replace) : party.slots;
   // The pair scores are memoised per member and threat, so swapping a slot out re-reads the rows rather than the
   // duels: a full search over six members is the budget's uncached cost once (#567).
+  const env = duelEnv(s);
   const tried = forced.map(slot => {
-    const after = teamValue(run, set, [...live.filter(x => x !== slot), joining]);
-    return { slot, after, delta: after.v - before.v, release: RELEASE };
+    const stay = [...live.filter(x => x !== slot), joining];
+    const after = teamValue(run, set, stay);
+    const cost = releaseOf(run, env, set, slot, stay);
+    return { slot, after, delta: after.v - before.v, release: cost.cost, cost };
   });
+  // The release is netted off inside the search as well as outside it: a member worth a little less than another to
+  // the team, but carrying what the team would lose, is the dearer of the two to release (#567, story 10).
   const best = tried.reduce((b, x) => (!b || x.delta - x.release > b.delta - b.release ? x : b), null);
   if (!best) return { ...out, unavailable: "no member to replace" };
   const net = best.delta - best.release;
   const verdict = net > MARGIN ? "swap" : "skip";
   return {
-    ...out, verdict, delta: best.delta, release: best.release, net, after: best.after, tried,
+    ...out, verdict, delta: best.delta, release: best.release, cost: best.cost, net, after: best.after, tried,
     replaced: { mon: best.slot.mon, name: best.slot.name, dead: best.slot.dead },
     reasons: reasonsOf(before, best.after, verdict !== "skip"),
     // The plain case is dead weight *replaced*: a card that isn't swapping it has nothing plain to say about it.
