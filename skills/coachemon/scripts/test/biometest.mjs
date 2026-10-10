@@ -279,6 +279,17 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.ok(!hard.options[1].reasons.some(r => /Snorlax/.test(r.text)), JSON.stringify(hard.options[1].reasons));
 }
 
+// ---- A shop on the way is a way back too, not only a heal: Limited Support 1 removes the heal but still shops every
+// wave, so Snorlax counts at full health where the old special case (heals only) would have called it fainted (#570)
+{
+  const party = team({ lax: { hp: 0 } });
+  const { el } = mount({ party, gameMode: { isFixedBattle: () => false, challenges: [{ id: 8, value: 1 }] } });
+  console.log(`== Limited Support 1, no heal but a shop on the way revives Snorlax\n${lines(el)}`);
+  const m = globalThis.__coachHud.last();
+  assert.equal(m.fainted, 0, "the shop ahead of W40 is a way back");
+  assert.ok(m.options[1].reasons.some(r => /Snorlax/.test(r.text)), JSON.stringify(m.options[1].reasons));
+}
+
 // ---- A near tie gets a pick anyway, by the unrounded score, and says what decided it
 {
   const { el } = mount({ labels: ["Swamp", "Marsh"] });

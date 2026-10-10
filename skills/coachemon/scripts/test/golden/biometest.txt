@@ -73,6 +73,26 @@ Biomes
 · onward: rare Laboratory (1/3) · Factory
 Notes
 ⚠ judged without 1 fainted — no revive at the next heal
+== Limited Support 1, no heal but a shop on the way revives Snorlax
+⌃ {Hide the drawer} × {Close}
+🗺 Next biome from Tall Grass Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
+Biomes
+★ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
+· mostly Quagsire 18% · Arbok 17% · Gulpin 17%
+· trainers 8%: Parasol Lady · Black Belt
+✓ 2 mons hit SE
+★ catch Toxicroak covers Fighting · hits Normal/Ice · new
+👑 W40 boss: Toxapex 100%
+· onward: Graveyard · Tall Grass
+· Construction Site Fighting 60% Steel 40% Electric 28% 77 {offense 100 · defense -23 · catches 100 · big fight 0}
+· mostly Machoke 31% · Magneton 28% · Gurdurr 26%
+· trainers 10%: Black Belt
+✗ Snorlax & Lapras weak
+✓ Alakazam resists
+✓ 2 mons hit SE
+★ catch Machoke hits Normal/Ice · new
+👑 W40 boss: Gurdurr 100%
+· onward: rare Laboratory (1/3) · Factory
 == swamp vs marsh
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome from Tall Grass Swamp 85 · Marsh 86 pick — edges Swamp on offense, 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new)
