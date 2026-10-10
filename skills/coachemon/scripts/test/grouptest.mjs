@@ -108,10 +108,14 @@ const ahead = { next: { wave: 95, in: 6, label: "gym leader", trainer: null, exa
   luck: { value: 3, grade: "C", upgradePct: 6 }, eternatus: null };
 const catchAdvice = {
   targets: [
-    { icon: null, name: "Toxicroak", verdict: "catch", why: "new species, covers Ground weakness",
+    // The road has landed, so this target carries its team verdict (#584).
+    { icon: null, name: "Toxicroak", verdict: "catch", why: "team: swap for Zubat, new species",
       best: { ball: "Ultra Ball", short: "UB", key: "ub", count: 4, p: 0.62 },
       chance: [{ ball: "Great Ball", short: "GB", key: "gb", count: 9, p: 0.44 }, { ball: "Ultra Ball", short: "UB", key: "ub", count: 4, p: 0.62 }],
-      reasons: [{ kind: "account", text: "not in the dex" }, { kind: "team", text: "resists Ground" }] },
+      team: { verdict: "swap", text: "swap for Zubat", reasons: ["Ground now beats 1 of 6, down from 2"], replaced: { icon: null, name: "Zubat" } },
+      replace: { icon: null, name: "Zubat" },
+      reasons: [{ kind: "account", text: "not in the dex" }, { kind: "team", text: "swap for Zubat" },
+        { kind: "team", text: "Ground now beats 1 of 6, down from 2" }] },
     { icon: null, name: "Zubat", verdict: "skip", why: "nothing new", best: null, chance: [], reasons: [] },
   ],
 };
@@ -129,7 +133,8 @@ const catchAdvice = {
   const { groups } = show("wild · threat turn needing a switch", card);
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "catch", "road"]);
   assert.equal(groups[1].summary, "💀 Charizard ← Lycanroc Stone Edge");
-  assert.equal(groups[2].summary, "catch Toxicroak — Ultra 62%");
+  // The verdict and its reasons ride the group's own line, so a plain-text viewer gets the call (#584, story 40).
+  assert.equal(groups[2].summary, "catch Toxicroak — Ultra 62% · swap for Zubat · Ground now beats 1 of 6, down from 2");
   assert.ok(groups[3].summary.includes(" · gym leader in 6 (W95) watch"), groups[3].summary);
 }
 
@@ -152,8 +157,10 @@ const catchAdvice = {
   const card = battle({ weak: [["Fire", 2]], catch: { targets: [
     { icon: null, name: "Zubat", verdict: "maybe", why: "covers Flying", best: { ball: "Great Ball", short: "GB", key: "gb", count: 9, p: 0.44 },
       chance: [{ ball: "Great Ball", short: "GB", key: "gb", count: 9, p: 0.44 }],
-      reasons: [{ kind: "account", text: "not in the dex" }, { kind: "team", text: "covers Flying" },
-        { kind: "escape", text: "ends a fight that costs a member" }] },
+      // This one's road is still owed, so the group says the team read is coming rather than going quiet (story 26).
+      team: null, replace: null,
+      reasons: [{ kind: "account", text: "not in the dex" }, { kind: "escape", text: "ends a fight that costs a member" },
+        { kind: "team", text: "verdict coming with the road" }] },
   ] } });
   const { groups, text } = show("wild · a maybe, which is not a catch verdict", card);
   assert.deepEqual(groups.map(g => g.id), ["act", "foes", "catch"]);

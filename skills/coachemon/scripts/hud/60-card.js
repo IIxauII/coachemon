@@ -8,7 +8,7 @@ import { readRun } from "./26-run.js";
 import { arrivalTurn, battleModel } from "./30-planner.js";
 import { teamPlanner } from "./35-team-plan.js";
 import { learnModel, learnSummary } from "./40-learn.js";
-import { catchAdvice } from "./45-catch.js";
+import { catchAdvice, catchLand, keepCatchTeam } from "./45-catch.js";
 import { encounterModel, encounterSummary } from "./46-encounter.js";
 import { biomeModel, biomeSummary } from "./47-biome.js";
 import { previewNext, previewSummary } from "./48-preview.js";
@@ -83,13 +83,20 @@ const shopNote = (s, card) => note({ shop: {
 } });
 
 export const hasRoad = card => card?.kind === "battle" || card?.kind === "rewards";
-// After the turn read has closed: the two reads are sequential, never nested (26-run).
+// After the turn read has closed: the two reads are sequential, never nested (26-run). The catch card's team verdict
+// rides this landing for exactly that reason — a turn read cannot open a run read (#584) — and the battle verdict is
+// taken again once it has, since `catch` is reached from the team axis as well as the account one (story 28).
 export const readRoad = (s, card) => readRun(s, run => {
   card.preview = previewNext(run);
   // The rewards card has already built its own.
   card.ahead ??= aheadModel(run);
+  if (card.catch) { catchLand(run, card.catch); card.verdict = verdictOf(card); }
 });
-export const keepRoad = (from, to) => { to.preview = from.preview; to.ahead = from.ahead; };
+export const keepRoad = (from, to) => {
+  to.preview = from.preview;
+  to.ahead = from.ahead;
+  if (to.catch && from.catch) { keepCatchTeam(from.catch, to.catch); to.verdict = verdictOf(to); }
+};
 
 // `account`: the run's own data, read once a refresh by 98-watch.js, which only the catch and Mystery Encounter cards
 // weigh a mon by. `road: false` leaves the road group to `readRoad`; `estimate` reads a battle card's turn without the
