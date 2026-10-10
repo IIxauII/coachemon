@@ -122,13 +122,24 @@ const nextBigFight = (s, here) => bigFightsAhead(s, here)[0]?.wave ?? null;
  *
  * The members fight the waves in between and share their EXP, which is the one routing the coach can read: a bench
  * share each would project a party that never fights.
+ *
+ * The memo key holds what this reads beyond the run key (26-run.js), which is the projection's own run-wide and
+ * per-member inputs — the run key carries the modifier *count*, so an EXP share stacking up, a Lucky Egg handed from
+ * one member to another or Pokérus turning up would all leave it fixed — and each moveset, which the combatant the
+ * slot carries reads and the run key does not either.
  */
-const slotsAt = (run, fight) => run.memo("value-party", String(fight), () => {
+const slotsAt = (run, fight) => {
   const s = run?.scene ?? null;
   const here = waveOf(run);
   const party = (run?.facts?.party ?? []).filter(Boolean);
-  const at = partyAtFight(s, party, { from: here, fight });
   const proj = levelProjection(s, { from: here, fight });
+  const key = JSON.stringify([fight, here, proj.expAll,
+    party.map(mon => [...proj.inputs(mon), (mon.moveset ?? []).map(m => m?.moveId ?? null)])]);
+  return run.memo("value-party", key, () => build(s, party, proj, { here, fight }));
+};
+
+const build = (s, party, proj, { here, fight }) => {
+  const at = partyAtFight(s, party, { from: here, fight });
   const slots = party.map(mon => {
     const dead = at.dead.find(d => d.mon === mon);
     if (dead) return { mon, name: mon.name ?? null, dead: dead.why, combatant: null, projection: null };
@@ -137,7 +148,7 @@ const slotsAt = (run, fight) => run.memo("value-party", String(fight), () => {
       combatant: combatantOf({ mon, level: p.level, species: p.species, form: p.form }) };
   });
   return { fight, slots, revive: at.revive, confidence: proj.confidence };
-});
+};
 
 const isLive = x => !!x && (Array.isArray(x.moveset) || typeof x.getTypes === "function");
 const specOf = x => (x?.mon ? x : isLive(x) ? { mon: x } : x ?? {});

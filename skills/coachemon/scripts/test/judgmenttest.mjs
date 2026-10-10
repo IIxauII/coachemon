@@ -300,13 +300,13 @@ console.log(`== constants: clamp ${CLAMP}  backup ${BACKUP}  revenge ${REVENGE} 
 
 // ---- The rows of one party, threat by threat: the answer, the backup, who the threat beats, and the row's value
 const CAP = 38; // `levelCapAt` at wave 50, which is where a party that has kept pace stands
-const WATERS = () => [
-  mon(OURS.blastoise, CAP, [M.surf, M.iceBeam, M.bodySlam], { ability: "Torrent" }),
-  mon(OURS.feraligatr, CAP, [M.waterfall, M.crunch, M.iceBeam], { ability: "Torrent" }),
-  mon(OURS.politoed, CAP, [M.surf, M.iceBeam, M.bodySlam], { ability: "Water Absorb" }),
-  mon(OURS.wailord, CAP, [M.surf, M.bodySlam, M.iceBeam], { ability: "Water Veil" }),
-  mon(OURS.lanturn, CAP, [M.surf, M.thunderbolt, M.iceBeam], { ability: "Volt Absorb" }),
-  mon(OURS.meganium, CAP, [M.energyBall, M.bodySlam, M.earthquake], { ability: "Overgrow" }),
+const WATERS = (level = CAP) => [
+  mon(OURS.blastoise, level, [M.surf, M.iceBeam, M.bodySlam], { ability: "Torrent" }),
+  mon(OURS.feraligatr, level, [M.waterfall, M.crunch, M.iceBeam], { ability: "Torrent" }),
+  mon(OURS.politoed, level, [M.surf, M.iceBeam, M.bodySlam], { ability: "Water Absorb" }),
+  mon(OURS.wailord, level, [M.surf, M.bodySlam, M.iceBeam], { ability: "Water Veil" }),
+  mon(OURS.lanturn, level, [M.surf, M.thunderbolt, M.iceBeam], { ability: "Volt Absorb" }),
+  mon(OURS.meganium, level, [M.energyBall, M.bodySlam, M.earthquake], { ability: "Overgrow" }),
 ];
 {
   const party = WATERS();
@@ -467,10 +467,10 @@ const WATERS = () => [
   ];
   console.log("== a level 10 newcomer into a party at the cap");
   const levels = [];
-  // A seed each: the run key carries the modifier *count*, so a Lucky Egg run and an EXP share run would otherwise
-  // share one memo (26-run's `runKeyOf`).
-  for (const [i, [label, nc, modifiers]] of runs.entries()) {
-    const j = judge(party, nc, {}, { modifiers, seed: `judge-exp-${i}` });
+  // One seed for all five, so every read keys the same run: what the EXP routing moves has to come out of the memo
+  // keys that name it, not out of a run key per scenario (26-run's `runKeyOf` carries the modifier *count* alone).
+  for (const [label, nc, modifiers] of runs) {
+    const j = judge(party, nc, {}, { modifiers, seed: "judge-exp" });
     levels.push(j.newcomer.projection.level);
     console.log(`  ${label.padEnd(24)} L${String(j.newcomer.projection.level).padEnd(3)} ${j.newcomer.name.padEnd(9)}`
       + ` ${j.verdict.padEnd(5)} dV ${t1(j.delta)}`);
@@ -480,6 +480,36 @@ const WATERS = () => [
   assert.ok(levels[2] > levels[0] && levels[3] > levels[2], "a share moves it, and the egg moves the share");
   assert.ok(levels[4] > levels[3], "and five shares is the whole of one wave's EXP");
   assert.ok(levels[4] <= 38, "no projection reaches past the cap at the fight");
+}
+
+// ---- One run key, three EXP routings for the party itself, each read answered with its own levels
+{
+  // The run key holds each member's species, level, luck and whether it stands, plus the modifier *count* (26-run's
+  // `runKeyOf`). None of the three reads below moves any of it — six members at one level, one modifier each time —
+  // while what the projection reads changes every time: which member holds the Lucky Egg, and whether a member has
+  // Pokérus. So all three share one memo bucket, and the memo keyed on the run key alone would hand the second and
+  // third reads the levels the first one was projected with.
+  const LOW = 10; // far enough under the cap that 40 % of a participant's share is worth whole levels
+  const read = ({ egg = 0, rus = -1 } = {}) => {
+    const party = WATERS(LOW).map((p, i) => (i === rus ? { ...p, pokerus: true } : p));
+    const j = judge(party, mon(OURS.swampert, CAP, [M.surf, M.earthquake], { ability: "Torrent" }),
+      {}, { modifiers: [luckyEgg(party[egg])], seed: "judge-memo" });
+    return j.tried.map(x => x.slot.projection.level);
+  };
+  const held = read();
+  const moved = read({ egg: 5 });
+  const rus = read({ rus: 0 });
+  const bare = held[1]; // the four members carrying nothing, which every read projects alike
+  console.log("== one run key, the Lucky Egg on the first member and then the last, and then Pokérus with it");
+  for (const [label, levels] of [["egg on Blastoise", held], ["egg on Meganium", moved], ["and Pokérus", rus]]) {
+    console.log(`  ${label.padEnd(18)} ${WATERS(LOW).map((p, i) => `${p.name} L${levels[i]}`).join(", ")}`);
+  }
+  assert.ok(held[0] > bare, "the member holding the egg is projected past the five who hold nothing");
+  assert.deepEqual(held.slice(1), [bare, bare, bare, bare, bare], "and the egg moves nobody else");
+  assert.deepEqual(moved, [bare, bare, bare, bare, bare, held[0]],
+    "the egg handed to the last member moves that one instead, which the run key cannot tell apart");
+  assert.ok(rus[0] > held[0], "and Pokérus on the holder is half a share again on top of the egg");
+  assert.deepEqual(rus.slice(1), held.slice(1), "while the five without it stand where they stood");
 }
 
 // ---- A free slot is taken when the newcomer is worth more than the margin, and skipped when it is not

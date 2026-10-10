@@ -49,6 +49,10 @@
   one EXP share            L19  Magikarp  skip  dV -1.0
   EXP share and Lucky Egg  L21  Magikarp  skip  dV -1.0
   five EXP shares          L32  Magikarp  skip  dV -1.0
+== one run key, the Lucky Egg on the first member and then the last, and then Pokérus with it
+  egg on Blastoise   Blastoise L20, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
+  egg on Meganium    Blastoise L18, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L20
+  and Pokérus        Blastoise L23, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
 == four members and two free slots
   Sceptile at the cap            take  -           dV +0.4  release 0.0  net +0.4  
   Sunflora at level 20           skip  -           dV -0.8  release 0.0  net -0.8  
