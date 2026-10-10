@@ -414,7 +414,8 @@ const plainBarred = name => ({ kind: "barred", name,
 /**
  * Judge a newcomer by the team value its swap makes (#567). `newcomer` is a live mon, or a spec the combatant
  * adapter builds; `replace` forces the member that leaves, for a GTS offer where the traded member is the one going,
- * and skips the search. `fight` overrides the wave to judge at, which is otherwise the next big fight ahead.
+ * and skips the search — and with it the free-slot branch, since a member goes out whatever the party's size.
+ * `fight` overrides the wave to judge at, which is otherwise the next big fight ahead.
  *
  * The verdict is `take` for a free slot, `swap` with the member the search picked, or `skip`. `replaced` carries the
  * search's pick whether or not the swap clears the margin, so a card can say who would have gone. `release` is what
@@ -445,7 +446,9 @@ export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = 
   if (nc.barred) return { ...out, plain: plainBarred(nc.name) };
 
   const joining = { name: nc.name, combatant: nc.combatant, holding: nc.holding };
-  if (party.slots.length < PARTY_SIZE) {
+  // A forced replacement is a member leaving, so there is no free slot to fill however short the party is: a GTS
+  // trade hands one mon over for another and the party it leaves behind is the same size (#586).
+  if (!replace && party.slots.length < PARTY_SIZE) {
     const after = teamValue(run, set, [...live, joining]);
     const delta = after.v - before.v;
     // Holding a free slot open costs nothing, so there is no release to net off (#567).

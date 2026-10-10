@@ -4,7 +4,7 @@
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
-import { finalBstOf, partyAtFight, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
+import { partyAtFight, partyProfile } from "./08-party.js";
 import { weakestMember } from "./12-value.js";
 import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
 import { accountWorth, teamVerdict } from "./45-catch.js";
@@ -56,6 +56,8 @@ const strip = t => String(t ?? "").replace(/\[\/?[^\]]*\]/g, "").replace(/\s+/g,
 const money = n => `$${Math.round(n).toLocaleString("en-US")}`;
 const pct = x => (x >= 0.995 ? "100%" : x > 0 && x < 0.005 ? "<1%" : `${Math.round(x * 100)}%`);
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+// A team-value figure as a card says it, signed and in the tenth of a turn the judgment's margin is set in (#567).
+const turnsOf = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(1)} turns`;
 const joinNames = names => (names.length > 2 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names.join(" & "));
 // The game's `randSeedInt`, on whatever stream is sown (game-code.md §11).
 const int = (range, min = 0) => (range <= 1 ? min : Phaser.Math.RND.integerInRange(min, range - 1 + min));
@@ -127,6 +129,36 @@ const safariThree = c => {
   if (!out.mons) return out;
   return { mons: out.mons.map(m => ({ ...m, wanted: !!m.offer?.wanted })) };
 };
+/**
+ * One GTS offer, judged as the newcomer it would be if the player took the trade (#586, story 23).
+ *
+ * The mon coming in is a **stand-in**: nobody has met it, so it is built the way the game builds a wild one and
+ * carries `estimate` whatever its other inputs say (#580). It arrives at the level the offer names, or at the traded
+ * member's own where the offer names none, which is the level the trade hands it over at.
+ *
+ * The mon going out is the forced replacement: a trade is a swap whose member is already chosen, so the judgment's
+ * search is skipped and what comes back prices this trade and no other — ΔV with that member gone and the offer in
+ * its slot, net of what releasing it destroys (#581).
+ *
+ * `net` is what the offers are ranked by. It is 0 on an offer the judgment couldn't reach, which `verdict` says apart
+ * from an offer it reached and priced at nothing.
+ */
+const tradeOf = (run, member, offer) => {
+  const species = offer?.species ?? null;
+  if (!species || !member) return null;
+  const spec = { species, form: offer.formIndex ?? 0, level: offer.level ?? member.level };
+  const team = tryDo(() => teamVerdict(run, spec, { replace: member })) ?? null;
+  const name = tryDo(() => species.getName(), offer.name) ?? offer.name ?? null;
+  return {
+    member, name, net: team?.net ?? 0, verdict: team?.verdict ?? null,
+    // The same plain data an offered mon carries (`offerOf`), with the account axis left out: a trade is not a buy,
+    // and what the species is worth to the account is the catch card's question and not this row's.
+    card: { name, verdict: team?.verdict ?? null, text: team?.text ?? null, reasons: team?.reasons?.slice(0, 2) ?? [],
+      gives: member.name ?? null, delta: team?.delta ?? 0, release: team?.release ?? 0, net: team?.net ?? 0,
+      confidence: team?.confidence ?? null, unavailable: team?.unavailable ?? null },
+  };
+};
+
 const safariName = m => `${m.name}${m.shiny ? " shiny" : ""} L${m.level ?? "?"}${m.hiddenAbility ? " (hidden ability)" : ""}`;
 const worthWhy = o => o?.why ?? "nothing new";
 const SAFARI_MENU = "ball, bait, mud or run each time, each turn judged as it comes";
@@ -249,6 +281,7 @@ const context = (run, me, options, account) => {
   };
   return { s, account, me, b, wave, party, atFight, standing, top, strongest, profile, waveMoney, coins, opt, foe, fight, spare,
     offer: mon => offerOf(run, account, mon),
+    trade: (member, offer) => tradeOf(run, member, offer),
     trainer, gauntlet, roomFor, best, wounded, fainted, held, maxed, token: k => strip(me.dialogueTokens?.[k]) || null,
     pre: seeded(1), during: seeded(500), post: seeded(2000) };
 };
@@ -655,29 +688,40 @@ const RULES = {
 
   [GTS]: c => {
     const offers = c.me.misc?.tradeOptionsMap;
-    let best = null;
     // A trade is a newcomer offer, so it is judged against the team at the next big fight (#571): a member fainted
     // now but back on its feet by then is a candidate to give away, and dead weight is not — it is worth nothing to
-    // the team, which final BST cannot say and the team-value judgment will.
+    // the team, so the game's own offers on it are no trade at all.
+    const judged = [];
     if (offers?.get) {
       for (const p of c.atFight.members) {
-        if (p === c.strongest) continue; // trading the carry away is never the upgrade it looks like
         for (const e of offers.get(p.id) ?? []) {
-          const cand = { species: e.species, level: p.level, types: typesOfSpecies(e.species) };
-          const up = partyReasons(c.profile, cand, { replacing: p }).some(r => r.kind === "upgrade");
-          const gain = finalBstOf(cand).final - finalBstOf(p).final;
-          if (!best || (up && !best.up) || (up === best.up && gain > best.gain)) best = { p, e, gain, up };
+          const t = c.trade(p, e);
+          if (t) judged.push(t);
         }
       }
     }
-    const upgrade = !!best?.up;
-    return [
-      { outcome: best ? `trade: best offer ${best.p.name} → ${tryDo(() => best.e.species.getName(), best.e.name)} (final BST ${best.gain >= 0 ? "+" : ""}${best.gain})` : "trade a mon for one of 3 offers",
-        verdict: upgrade ? "take" : "ok", why: upgrade ? "same level, stronger line" : "no clear upgrade" },
-      { outcome: "wonder trade: a random mon at the same level (better shiny / hidden ability odds)", verdict: null, why: "a gamble" },
-      { outcome: "trade a held item for a random item one tier up", verdict: null },
-      LEAVE,
-    ];
+    // Ranked by **net value** — what the team gains by the swap, less what releasing the traded member destroys — and
+    // not by the biggest final BST, which asked nothing about what the team loses by the mon going out (#586, story
+    // 23). A stable sort, so two offers worth the same fall to the member the party lists first.
+    const ranked = judged.filter(t => t.verdict).sort((a, b) => b.net - a.net);
+    const best = ranked[0] ?? null;
+    const worth = best?.verdict === "swap";
+    const unread = judged.find(t => t.card.unavailable)?.card.unavailable ?? null;
+    return {
+      // Every offer the judgment reached, best first, so a viewer reading the summary gets the order to trade in.
+      offers: ranked.map(t => t.card),
+      rows: [
+        { outcome: best ? `trade: best offer ${best.member.name} → ${best.name} (net ${turnsOf(best.net)})`
+          : "trade a mon for one of 3 offers",
+        verdict: best ? (worth ? "take" : "ok") : null,
+        why: best ? (best.card.reasons.length ? best.card.reasons.join(", ")
+          : worth ? "the team gains more than the release costs" : "no offer clears the margin")
+          : unread ? `no team read here: ${unread}` : null },
+        { outcome: "wonder trade: a random mon at the same level (better shiny / hidden ability odds)", verdict: null, why: "a gamble" },
+        { outcome: "trade a held item for a random item one tier up", verdict: null },
+        LEAVE,
+      ],
+    };
   },
 
   [CHALLENGERS]: c => {
