@@ -1,67 +1,69 @@
 == full party
 ⌃ ×
-🧬 Splice Azumarill ← Salamence (+1.6) · pick Azumarill first, then Salamence
+🧬 Splice Azumarill ← Salamence (+1.6 turns) · pick Azumarill first, then Salamence
 Fusions
-★ Azumarill Azumarill ← Salamence Salamence +1.6
+★ Azumarill Azumarill ← Salamence Salamence +1.6 turns
 Water Flying Bug now beats 3 of 5, down from 5 · the physical wall now beats 3 of 5, down from 5 · ΔV +1.6 turns · spends Salamence L22 · Azumarill BST 420 → 511 · offers Dragon Rush/Bounce
-· Mimikyu Mimikyu ← Salamence Salamence +1.4
+· Mimikyu Mimikyu ← Salamence Salamence +1.4 turns
 Ghost Flying Psychic now beats 2 of 5, down from 4 · Flying now beats 4 of 5, down from 5 · ΔV +1.4 turns · spends Salamence L22 · Mimikyu BST 476 → 539 · offers Dragon Rush/Bounce
-· Salamence Salamence ← Magikarp Magikarp +1.3
+· Salamence Salamence ← Magikarp Magikarp +1.3 turns
 Dragon Water Flying now beats 4 of 5, down from 5 · Bug now beats 4 of 5, down from 5 · ΔV +1.3 turns · spends Magikarp L20 · Salamence BST 600 → 402 · offers Tackle · Magikarp still evolves
-summary Azumarill ← Salamence (+1.6) · pick Azumarill first, then Salamence
+summary Azumarill ← Salamence (+1.6 turns) · pick Azumarill first, then Salamence
 == Magikarp picked first
 ⌃ ×
-🧬 Splice Magikarp with Magikarp ← Salamence (+1.3) · back out: Azumarill ← Salamence is better (+1.6)
+🧬 Splice Magikarp with Magikarp ← Salamence (+1.3 turns) · back out: Azumarill ← Salamence is better (+1.6 turns)
 Fusions
-★ Magikarp Magikarp ← Salamence Salamence +1.3
+★ Magikarp Magikarp ← Salamence Salamence +1.3 turns
 Water Flying Flying now beats 4 of 5, down from 5 · Bug now beats 4 of 5, down from 5 · ΔV +1.3 turns · spends Salamence L22 · Magikarp BST 200 → 402 · offers Dragon Rush/Bounce · Magikarp still evolves
-· Magikarp Magikarp ← Mimikyu Mimikyu +1.3
+· Magikarp Magikarp ← Mimikyu Mimikyu +1.3 turns
 Water Fairy Flying now beats 4 of 5, down from 5 · Bug now beats 4 of 5, down from 5 · ΔV +1.3 turns · spends Mimikyu L30 · Disguise doesn't work fused · Magikarp BST 200 → 340 · offers Shadow Claw · Magikarp still evolves
-· Magikarp Magikarp ← Azumarill Azumarill +0.6
+· Magikarp Magikarp ← Azumarill Azumarill +0.6 turns
 Water Fairy Flying now beats 4 of 5, down from 5 · Bug now beats 4 of 5, down from 5 · ΔV +0.6 turns · spends Azumarill L42 · Magikarp BST 200 → 311 · offers Aqua Tail/Play Rough · Magikarp still evolves
-summary Magikarp ← Salamence (+1.3) · back out: Azumarill ← Salamence is better (+1.6)
+summary Magikarp ← Salamence (+1.3 turns) · back out: Azumarill ← Salamence is better (+1.6 turns)
 == Hardcore, Salamence fainted
 ⌃ ×
-🧬 Splice Azumarill ← Mimikyu (+0.9) · pick Azumarill first, then Mimikyu
+🧬 Splice Azumarill ← Mimikyu (+0.9 turns) · pick Azumarill first, then Mimikyu
 Fusions
-★ Azumarill Azumarill ← Mimikyu Mimikyu +0.9
+★ Azumarill Azumarill ← Mimikyu Mimikyu +0.9 turns
 Water Fairy the physical wall now beats 2 of 4, down from 4 · Flying now beats 3 of 4, down from 4 · ΔV +0.9 turns · spends Mimikyu L30 · Disguise doesn't work fused · Azumarill BST 420 → 449 · offers Shadow Claw
-· Magikarp Magikarp ← Mimikyu Mimikyu +0.9
+· Magikarp Magikarp ← Mimikyu Mimikyu +0.9 turns
 Water Fairy Flying now beats 3 of 4, down from 4 · Bug now beats 3 of 4, down from 4 · ΔV +0.9 turns · spends Mimikyu L30 · Disguise doesn't work fused · Magikarp BST 200 → 340 · offers Shadow Claw · Magikarp still evolves
-· Mimikyu Mimikyu ← Magikarp Magikarp +0.9
+· Mimikyu Mimikyu ← Magikarp Magikarp +0.9 turns
 Ghost Water Flying now beats 3 of 4, down from 4 · Bug now beats 3 of 4, down from 4 · ΔV +0.9 turns · spends Magikarp L20 · Mimikyu BST 476 → 340 · offers Tackle · Magikarp still evolves
-summary Azumarill ← Mimikyu (+0.9) · pick Azumarill first, then Mimikyu
+summary Azumarill ← Mimikyu (+0.9 turns) · pick Azumarill first, then Mimikyu
 == two members
 ⌃ ×
-🧬 Splice Garchomp ← Magikarp (−0.7) · no fusion worth a member — back out, the Splicer stays unspent
+🧬 Splice Garchomp ← Magikarp (−0.7 turns) · no fusion worth a member — back out, the Splicer stays unspent
 Fusions
-· Garchomp Garchomp ← Magikarp Magikarp −0.7
+· Garchomp Garchomp ← Magikarp Magikarp −0.7 turns
 Dragon Water no answer left to Normal · no answer left to Flying · ΔV −0.7 turns · spends Magikarp L20 · Garchomp BST 600 → 401 · offers Tackle · Magikarp still evolves · keeps passive Sand Force
-· Magikarp Magikarp ← Garchomp Garchomp −4.3
+· Magikarp Magikarp ← Garchomp Garchomp −4.3 turns
 Water Ground no answer left to Normal · no answer left to Fighting · ΔV −4.3 turns · spends Garchomp L50 · Magikarp BST 200 → 401 · offers Dragon Claw/Earthquake · Magikarp still evolves
-summary Garchomp ← Magikarp (−0.7) · no fusion worth a member — back out, the Splicer stays unspent
+summary Garchomp ← Magikarp (−0.7 turns) · no fusion worth a member — back out, the Splicer stays unspent
 == Spliced Endless
 ⌃ ×
-🧬 Splice Garchomp ← Azumarill (+6.7) · pick Garchomp first, then Azumarill
+🧬 Splice Garchomp ← Azumarill (+6.7 turns) · pick Garchomp first, then Azumarill
 Fusions
-★ Garchomp Garchomp ← Azumarill Azumarill +6.7
+★ Garchomp Garchomp ← Azumarill Azumarill +6.7 turns
 Dragon Fairy an answer to Fairy at last · an answer to Flying at last · ΔV +6.7 turns · spends Azumarill L42 · Garchomp BST 301 → 511 · offers Aqua Tail/Play Rough · keeps passive Sand Force
-· Garchomp Garchomp ← Snorlax Snorlax +6.4
+· Garchomp Garchomp ← Snorlax Snorlax +6.4 turns
 Dragon Normal an answer to Flying at last · an answer to Dark at last · ΔV +6.4 turns · spends Snorlax L45 · Garchomp BST 301 → 571 · offers Body Slam · keeps passive Sand Force
-· Garchomp Garchomp ← Salamence Salamence +6.4
+· Garchomp Garchomp ← Salamence Salamence +6.4 turns
 Dragon Flying an answer to Normal at last · an answer to Flying at last · ΔV +6.4 turns · spends Salamence L22 · Garchomp BST 301 → 602 · offers Dragon Rush/Bounce · keeps passive Sand Force
 Notes
 Spliced Endless: unfused mons run on half their base stats
-summary Garchomp ← Azumarill (+6.7) · pick Garchomp first, then Azumarill
+summary Garchomp ← Azumarill (+6.7 turns) · pick Garchomp first, then Azumarill
 == Snorlax ← Mimikyu
 ΔV +0.6 turns · spends Mimikyu L30 · Disguise doesn't work fused · Snorlax BST 540 → 510 · offers Shadow Claw
 an answer to Fairy at last · a better answer to Poison
+== Azumarill's passive unreadable
+30 pairs → 25 · unread null
 == party screen, not splicing
 kind null
 == rewards, full party
 ⌃ ×
 🛒 $500 nothing affordable take DNA Splicers → Azumarill
-★ DNA Splicers Azumarill fuse Azumarill ← Salamence · +1.6 · Bug now beats 3 of 5, down from 5
+★ DNA Splicers Azumarill fuse Azumarill ← Salamence · +1.6 turns · Bug now beats 3 of 5, down from 5
 Others
 · Potion party healthy
 5 issues: 2 of 6 weak to Fairy, nobody resists; Magikarp: no Water attack (no STAB); the party is no worse off without Salamence at W52 — first to replace
@@ -75,7 +77,7 @@ summary take DNA Splicers → Azumarill
 == rewards, two members
 ⌃ ×
 🛒 $500 nothing affordable take DNA Splicers
-★ DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −0.7
+★ DNA Splicers least bad · no fusion worth a member · best Garchomp ← Magikarp −0.7 turns
 Others
 · Potion party healthy
 3 issues: Magikarp: no Water attack (no STAB); Magikarp L20 trail Garchomp L50 — lead it on easy waves; nothing hits Fighting/Flying/Ground/Bug +7 super-effectively

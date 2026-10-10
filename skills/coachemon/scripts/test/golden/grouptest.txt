@@ -136,11 +136,11 @@ notes | Notes | —
 act | Now | nothing to add
     ✓ picked: Gible · team full
 == fusion · two candidates and a Spliced note
-act | Now | Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite
+act | Now | Garchomp ← Dragonite (+2.1 turns) · pick Garchomp first, then Dragonite
 options | Fusions | —
-    ★ Garchomp Garchomp ← Dragonite Dragonite +21
+    ★ Garchomp Garchomp ← Dragonite Dragonite +2.1 turns
     Dragon Ground +42 BST
-    · Garchomp Garchomp ← Lapras Lapras +4
+    · Garchomp Garchomp ← Lapras Lapras +0.4 turns
     Dragon Ground loses Ice
 notes | Notes | —
     Spliced Endless: unfused mons run on half their base stats

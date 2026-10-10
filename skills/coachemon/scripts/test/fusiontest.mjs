@@ -243,6 +243,31 @@ let best;
   untouched("Snorlax ← Mimikyu");
 }
 
+// ---- A pair the card cannot put in words is dropped, and never takes the card with it: the memo keeps whatever
+// `build` hands back for the whole run key, so one pair must not decide the rest (#589). Azumarill's passive read
+// throws, which only the card's own description of a pair asks — the duels read a member through the combatant
+// adapter, which takes a throw as no passive — so every pair on an Azumarill base goes, and only those.
+{
+  const named = o => o.options.map(f => `${f.a.name} ← ${f.b.name}`);
+  // Each mount loads a bundle of its own, run memo and all, so the pairs are read through the bundle that drew the
+  // card: the two parties share a run key, and one memo would hand the second the first's pairs.
+  const pairs = sc => globalThis.__ft.readRun(sc, run => globalThis.__ft.fusionOptions(run));
+  const all = pairs(mount({}).scene);
+  const members = party();
+  members.find(p => p.name === "Azumarill").hasPassive = () => { throw new Error("no passive to read"); };
+  const { scene, model: m } = mount({ members });
+  const some = pairs(scene);
+  console.log(`== Azumarill's passive unreadable\n${all.options.length} pairs → ${some.options.length} · unread ${some.unread}`);
+  assert.equal(some.unread, null, "one pair the card cannot describe is no reason to read nothing");
+  assert.ok(some.options.every(f => f.a.name !== "Azumarill"), "every pair on an Azumarill base is dropped");
+  assert.ok(some.options.some(f => f.b.name === "Azumarill"), "and Azumarill is still a half the other bases can spend");
+  assert.deepEqual(named(some), named(all).filter(n => !n.startsWith("Azumarill ")), "the rest rank exactly as before");
+  assert.equal(m.kind, "fusion");
+  assert.equal(`${m.rows[0].base.name} ← ${m.rows[0].other.name}`, named(some)[0],
+    "and the card still draws, led by the best pair left — the healthy party's best was an Azumarill base");
+  untouched("Azumarill's passive unreadable");
+}
+
 // ---- Another party screen (a plain check) draws no fusion card.
 {
   const { model } = mount({ partyUiMode: 11 });
