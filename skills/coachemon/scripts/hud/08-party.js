@@ -1,6 +1,7 @@
 // The party judged as a whole, and whether a newcomer is worth it to it. Nothing here draws, and nothing weighs:
 // `partyReasons` hands back reasons with no numbers on them, and what each is worth is the asking card's.
 import { TYPES, vs, effectiveness, defenderOf, typesOf, hasAttr } from "./01-core.js";
+import { reviveBefore } from "./03-calendar.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
@@ -82,6 +83,24 @@ const rootOf = x => tryDo(() => x.species.getRootSpeciesId(true), x?.species?.sp
 
 const UPGRADE_BST = 100, UPGRADE_FLOOR = 400, UPGRADE_LEVEL_GAP = 10;
 const HOLE_MIN_PARTY = 3, HOLE_MIN_TYPES = 2;
+
+/**
+ * The party at the next big fight (CONTEXT.md, `Dead weight`), which every reader judging the team at that fight
+ * reads. A member in `members` counts at full health however hurt it is now; `dead` is the dead weight, holding its
+ * slot at zero. `from` is the wave the run stands on and `fight` the wave of the fight to reach — without one,
+ * nothing is out of reach and only a challenge bars a member.
+ */
+export const partyAtFight = (s, party, { from = 0, fight = null } = {}) => {
+  const revive = reviveBefore(s, from, fight);
+  const members = [], dead = [];
+  for (const p of (party ?? []).filter(Boolean)) {
+    const why = !tryDo(() => p.isAllowedInChallenge(), true) ? "barred"
+      : (p.hp ?? 0) <= 0 && !revive ? "fainted" : null;
+    if (why) dead.push({ mon: p, name: p.name ?? null, why });
+    else members.push(p);
+  }
+  return { members, dead, revive };
+};
 
 // `luck` is `partyLuck` of the members alone, with no Daily roll and no event terms: a card that spends against luck
 // calls `partyLuck` itself.
