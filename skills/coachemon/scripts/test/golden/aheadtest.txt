@@ -23,6 +23,16 @@ Next big fight Rival 2 next wave W25
 · luck 2 (C+) — 4.7% tier upgrade per reward
 summary "Rival 2 next wave (W25) risky — nothing hits Garchomp/Lucario super-effectively; they're +5 levels on us; 2 big fights before the next full heal"
 == variable power {"threats":[{"type":"Steel","n":2}],"verdict":"risky"}
+== fainted, shop on W24 {"verdict":"ready","hitters":["Milotic","Lucario"],"unanswered":[]}
+== fainted under hardcore {"verdict":"watch","hitters":["Lucario"],"unanswered":["Garchomp"]}
+== card
+Next big fight Rival 2 next wave W25
+· it pays Ultra · Great · Great
+✗ nothing hits Garchomp super-effectively
+✓ we're +5 levels on them
+✗ only Lucario hits super-effectively
+✗ 2 big fights before the next full heal (W31)
+· luck 2 (C+) — 4.7% tier upgrade per reward
 == luck {"value":14,"grade":"SSS","upgradePct":14.3}
 == pinned rewards after wave 25 {"tiers":["Ultra","Great","Great"],"luckUpgrades":false}
 == eternatus {"foe":"Eternatus","bars":3,"facts":["phase 1 can't be KO'd — damage is capped at 1 HP, so it always reaches Eternamax","Eternamax steals one held item per turn (Mini Black Hole) and the fight turns double","Eternamax's Recover has 1 PP (ppUp −4): it can heal half its bar exactly once","phase 1's Cosmic Power raises its defences every use — stalling makes it worse","it carries no held items in phase 1 and has no passive ability","Milotic carries 5 held items — spread them before 200"]}
