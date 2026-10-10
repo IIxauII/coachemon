@@ -211,7 +211,7 @@ eval(bundle("hud", { expose: true }));
 const { RANDBATS } = globalThis.__hud["05-randbats"];
 const { standardThreats } = globalThis.__hud["11-threats"];
 const { BACKUP, CATCH_LEVEL, CLAMP, EXPOSURE, MARGIN, MAX_REASONS, PARTY_SIZE, REVENGE, SWITCH_IN, UNKNOWN_ITEM,
-  judgeNewcomer, teamValue, weakestMember } = globalThis.__hud["12-value"];
+  judgeFusionPair, judgeNewcomer, teamValue, weakestMember } = globalThis.__hud["12-value"];
 const { combatantOf } = globalThis.__hud["09-combatant"];
 const { levelCapAt } = globalThis.__hud["09-projection"];
 const { readRun } = globalThis.__hud["26-run"];
@@ -1082,6 +1082,134 @@ const GRASSES = () => [
   assert.equal(named.newcomer.projection.was, 12, "the level it was offered at, not the one the wave would spawn");
   assert.deepEqual(named.newcomer.combatant.moveset.map(pm => pm.getName()), ["Quick Attack", "Agility", "Aqua Tail"],
     "and the learnset read at that level, which is three moves and not four");
+}
+
+// ---- A fusion pair: the freed slot stands empty, and the other half is spent for it (#588)
+// ΔV = V(party − base − other half + fused) − V(party), so the party a fusion leaves is one member shorter than the
+// one it was judged against: the base's slot carries the mon the Splicer would make and the other half's stands
+// empty. An improvement is ΔV less the other half's release cost past the margin (story 24).
+{
+  const fuse = (party, base, other, opts = {}, sceneOpts = {}) =>
+    readRun(sceneOf(party, sceneOpts), run => judgeFusionPair(run, base, other, opts));
+  const showFusion = (label, j) => {
+    console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} dV ${t1(j.delta)}  release ${j.release.toFixed(1)}`
+      + `  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+    said(label, j);
+  };
+  // Every pair of a party, best net first, which is the order the fusion card will rank them in.
+  const pairs = (party, sceneOpts = {}) => {
+    const names = party().map(p => p.name);
+    const all = [];
+    for (const base of names) for (const other of names) {
+      if (base !== other) all.push(fuse(party(), base, other, {}, sceneOpts));
+    }
+    return all.sort((x, y) => y.net - x.net);
+  };
+  const order = j => `${j.base.name} ← ${j.other.name}`;
+  const SEED = { seed: "judge-fuse" };
+
+  const party = WATERS();
+  const j = fuse(party, "Lanturn", "Politoed", {}, SEED);
+  console.log("== the all-Water six, the two halves of one fusion");
+  console.log(`  the mon the Splicer would make: ${j.fused.name} L${j.fused.projection.level}`
+    + ` [${j.fused.combatant.getTypes().map(t => TY[t]).join("/")}] ${j.fused.combatant.getMaxHp()} hp,`
+    + ` ability ${j.fused.combatant.getAbility()?.name ?? "-"}`);
+  showFusion(order(j), j);
+  assert.equal(j.base.name, "Lanturn", "the member picked first is the base, which the fusion is named after");
+  assert.equal(j.other.name, "Politoed", "and the second is the other half, which leaves the party for good");
+  assert.equal(j.fused.name, "Lanturn", "the base keeps its own name through it");
+  assert.equal(j.fused.combatant.getAbility().name, "Water Absorb", "while the other half lends its ability");
+  assert.deepEqual(j.fused.combatant.key,
+    combatantOf({ mon: party.find(p => p.name === "Lanturn"), level: CAP,
+      species: OURS.lanturn, form: 0, fuse: { mon: party.find(p => p.name === "Politoed") } }).key,
+    "and the mon duelled is the combatant adapter's own fusion of the two halves (#573)");
+
+  // The freed slot: six members stood in the rows the party was judged by, five in the rows it is judged by after.
+  assert.deepEqual([...new Set(j.before.rows.map(r => r.of))], [PARTY_SIZE], "six members before the fusion");
+  assert.deepEqual([...new Set(j.after.rows.map(r => r.of))], [PARTY_SIZE - 1],
+    "five after it: two members went in, one came out, and nothing fills the slot");
+  for (const r of j.after.rows) {
+    assert.ok(!r.beaten.includes("Politoed") && r.answer.name !== "Politoed",
+      "the other half answers no threat and is exposed to none: it is not on the party it left");
+  }
+  assert.equal(j.delta, j.after.v - j.before.v, "ΔV is what the fusion changes about the party's team value");
+  assert.equal(j.net, j.delta - j.release, "and the net value is ΔV less what the release destroys");
+  assert.equal(j.verdict === "fuse", j.net > MARGIN, "which is an improvement past the margin, and a skip under it");
+  assert.equal(j.confidence, "estimate", "as sure as the projection behind the party, like every judgment here");
+
+  // What is not a pair at all. A base that is dead weight is the one of these that could have been given a verdict:
+  // the fused mon comes out on the halves' mean share of the base's pre-fusion max HP, so a healthy other half puts
+  // a fainted base back on its feet (game-code.md §24) and the slot the fusion leaves is not dead weight at all.
+  const corpse = fuse(FAINTED(), "Wailord", "Blastoise", {},
+    { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  for (const [label, bad] of [["a member with itself", fuse(party, "Lanturn", "Lanturn", {}, SEED)],
+      ["a member not on the party", fuse(party, "Lanturn", "Gyarados", {}, SEED)],
+      ["a base that is dead weight", corpse]]) {
+    console.log(`  ${label.padEnd(30)} ${bad.verdict.padEnd(5)} unjudged: ${bad.unavailable}`);
+    assert.ok(bad.unavailable, `${label}: no pair, and no verdict read off a party the fusion would not leave`);
+    assert.equal(bad.after, null);
+    assert.equal(bad.delta, 0);
+  }
+
+  // ---- The other half's held items tip a pair
+  // The ranking is by net value, so what the other half is carrying orders the pairs as surely as what the fusion is
+  // worth: two pairs within a stack of each other swap places the moment one of them spends a member with pockets.
+  const carrying = (p, items) => ({ ...p, getHeldItems: () => items });
+  // Leftovers heals between turns, which is outside the race to a KO a duel is scored on: the adapter can give the
+  // duel nothing of it, so every stack is charged the flat `UNKNOWN_ITEM` (#581).
+  const leftovers = n => {
+    const C = class {};
+    Object.defineProperty(C, "name", { value: "TurnHealModifier" });
+    return Object.assign(new C(), { getStackCount: () => n });
+  };
+  const holding = (name, items) => () => WATERS().map(p => (p.name === name ? carrying(p, items) : p));
+  // The ranking is printed to the hundredth of a turn, the three pairs at the head of it standing within one stack
+  // of each other: at the tenth the margin is set in, the order the item moves would not be readable.
+  const top = (label, rows) => {
+    console.log(`  ${label.padEnd(30)} ${rows.slice(0, 3).map(x => `${order(x)} ${x.net.toFixed(2)}`).join("   ")}`);
+  };
+  const bare = pairs(WATERS, SEED);
+  console.log("== every pair of the six ranked by net value, and then with one of them carrying");
+  top("nothing held", bare);
+  const first = bare[0], second = bare.find(x => x.other.name !== first.other.name && x.base.name !== first.other.name);
+  // Two stacks on the other half of the best pair is more than the pairs behind it stand off it.
+  const STACKS = 2;
+  const laden = pairs(holding(first.other.name, [leftovers(STACKS)]), SEED);
+  top(`${STACKS} Leftovers on ${first.other.name}`, laden);
+  const same = laden.find(x => order(x) === order(first));
+  assert.ok(first.net - second.net < STACKS * UNKNOWN_ITEM,
+    `${order(first)} led ${order(second)} by less than ${STACKS} stacks of an item the duel cannot be given`);
+  assert.equal(same.delta, first.delta, "the pair is worth the same change in team value: no duel read the item");
+  assert.equal(same.release, STACKS * UNKNOWN_ITEM, "and the release costs a flat charge a stack");
+  assert.equal(same.net, same.delta - same.release);
+  assert.notEqual(order(laden[0]), order(first), "so the pair that led the ranking no longer leads it");
+  assert.equal(order(laden[0]), order(second), "the pair behind it does");
+  // And enough of it turns the best fusion of the six into one to turn down.
+  const DEAR = 10;
+  const dear = fuse(holding(first.other.name, [leftovers(DEAR)])(), first.base.name, first.other.name, {}, SEED);
+  showFusion(`${order(first)}, ${DEAR} Leftovers`, dear);
+  assert.equal(first.verdict, "fuse", "a pair worth making off a party carrying nothing");
+  assert.equal(dear.delta, first.delta, "is the very same fusion");
+  assert.equal(dear.release, DEAR * UNKNOWN_ITEM);
+  assert.equal(dear.verdict, "skip", "and one to turn down once the member it spends is carrying");
+
+  // ---- A party where no pair clears the margin: the Splicer stays unspent (story 25)
+  // Three members at the cap, each of them the party's own answer to a stretch of the threat set. Spending one for
+  // the mean of two base-stat rows is a loss whichever pair is picked, and the two members left have no third to
+  // back them up.
+  const THREE = () => [
+    mon(OURS.charizard, CAP, [M.flamethrower, M.drillPeck, M.crunch, M.bodySlam], { ability: "Blaze" }),
+    mon(OURS.swampert, CAP, [M.surf, M.iceBeam, M.bodySlam, M.earthquake], { ability: "Torrent" }),
+    mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam, M.surf, M.bodySlam], { ability: "Overgrow" }),
+  ];
+  const none = pairs(THREE, { seed: "judge-fuse-three" });
+  console.log("== three members, each answering what the other two cannot: every pair of them");
+  for (const x of none) showFusion(order(x), x);
+  assert.equal(none.length, 6, "three members make six ordered pairs");
+  assert.ok(none.every(x => x.verdict === "skip"), "and not one of them is an improvement");
+  assert.ok(none[0].net <= MARGIN, "the best of them short of the margin, which is a card that says back out");
+  assert.ok(none.every(x => x.release === 0), "none of the three carrying anything to destroy");
+  assert.ok(none.every(x => x.delta < 0), "every pair of them worth less to the team than the three as they stand");
 }
 
 // ---- The full swap search over six members, inside the cost budget

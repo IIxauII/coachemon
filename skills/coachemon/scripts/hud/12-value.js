@@ -480,3 +480,73 @@ export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = 
     plain: verdict === "swap" && best.slot.dead ? plainDead(best.slot.name, best.slot.dead) : null,
   };
 };
+
+const slotRef = slot => (slot ? { mon: slot.mon, name: slot.name, dead: slot.dead } : null);
+
+/**
+ * Judge a fusion pair (#567, story 24): ΔV = V(party − base − other half + fused) − V(party), with the freed slot
+ * empty, and an improvement when ΔV less the other half's release cost clears the margin. `base` and `other` are
+ * each a member or a member's name, as `judgeNewcomer`'s `replace` is; `fight` overrides the wave to judge at.
+ *
+ * A fusion spends a member, so the party it leaves is one shorter: the base's slot carries the fused mon, the other
+ * half's stands empty and nothing fills it. It is the one judgment that shrinks the party, which is why `after`'s
+ * rows are counted out of one member fewer than `before`'s — and a good part of why a fusion can be worth making at
+ * all, exposure being quadratic in the members a threat beats (`EXPOSURE`).
+ *
+ * The fused combatant is the adapter's (#573), which is the mon the Splicer would make: the base keeps its level,
+ * IVs, nature, moves, passive and its own held items, and the other half lends half of every base stat, a type and
+ * its ability (CONTEXT.md, `Fusion`).
+ *
+ * The shape is `judgeNewcomer`'s bar the names: `verdict` is `fuse` or `skip`, `other` is the member that leaves —
+ * `replaced` read for the half the fusion spends — and `fused` what the pair would leave behind.
+ *
+ * `release` is **the other half's release cost**, which is the spec's rule and not the game's: the game moves every
+ * held item of the other half over to the fused mon, `isTransferable` unchecked and up to the base's stack limits,
+ * and loses only the overflow (game-code.md §24), so an item the spec charges for is one the party mostly keeps.
+ * Flagged for review rather than decided here, no card reading this yet.
+ */
+export const judgeFusionPair = (run, base, other, { fight = null } = {}) => {
+  const s = run?.scene ?? null;
+  const here = waveOf(run);
+  const at = fight ?? nextBigFight(s, here);
+  const set = standardThreats(run, { fight: at ?? here });
+  const party = slotsAt(run, at);
+  const live = party.slots.filter(x => x.combatant);
+  const before = teamValue(run, set, live);
+  const pick = x => (x == null ? null : party.slots.find(slot => slot.mon === x || slot.name === x) ?? null);
+  const a = pick(base), b = pick(other);
+  const out = {
+    fight: at, wave: set.wave, verdict: "skip", base: slotRef(a), other: slotRef(b),
+    delta: 0, release: 0, margin: MARGIN, net: 0, reasons: [], plain: null, before, after: null, fused: null,
+    confidence: weakestOf(set.confidence, party.confidence),
+  };
+  if (set.unavailable) return { ...out, unavailable: set.unavailable };
+  if (!a || !b || a === b) return { ...out, unavailable: "a fusion is two members of the party" };
+  // The Splicer's filter refuses a half that is a fusion already, either of them (game-code.md §24).
+  if (a.mon?.fusionSpecies || b.mon?.fusionSpecies) return { ...out, unavailable: "the Splicer refuses a fusion" };
+  // A base that is dead weight is a pair this cannot price, rather than the skip it looks like: the fused mon comes
+  // out on the two halves' mean share of the base's pre-fusion max HP, so a healthy other half puts a fainted base
+  // back on its feet (game-code.md §24) and the slot the fusion leaves is no longer dead weight at all.
+  if (a.dead) return { ...out, unavailable: `the base is dead weight: ${a.dead}` };
+
+  const spec = { mon: a.mon, level: a.projection.level, species: a.projection.species, form: a.projection.form,
+    fuse: { mon: b.mon } };
+  const fused = combatantOf(spec);
+  if (!fused) return { ...out, unavailable: "the fusion has no stats to duel with" };
+  // The fused mon is one of the members that stay, so a release is priced on it like any other (#581).
+  const joining = { name: fused.name, combatant: fused,
+    holding: extra => combatantOf({ ...spec, items: [...heldOf(a.mon), ...extra] }) };
+  const stay = [...live.filter(x => x !== a && x !== b), joining];
+  const after = teamValue(run, set, stay);
+  const delta = after.v - before.v;
+  const cost = releaseOf(run, duelEnv(s), set, b, stay);
+  const net = delta - cost.cost;
+  const verdict = net > MARGIN ? "fuse" : "skip";
+  return {
+    ...out, verdict, delta, release: cost.cost, cost, net, after,
+    fused: { combatant: fused, projection: a.projection, name: fused.name },
+    reasons: reasonsOf(before, after, verdict !== "skip"),
+    // The plain case is the dead weight a fusion *spends*: a pair it turns down has nothing plain to say about it.
+    plain: verdict === "fuse" && b.dead ? plainDead(b.name, b.dead) : null,
+  };
+};
