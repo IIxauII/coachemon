@@ -12,7 +12,10 @@ const nameOf = x => String(x?.name ?? "").replace(/ \((N|P)\)$/, "");
 // A team-value figure in the tenth of a turn the judgment's margin is set in, which 46-encounter and 47-biome print
 // the same way: the card's figures are the judgment's own, rounded once here and nowhere else.
 const r1 = x => Math.round((x ?? 0) * 10) / 10;
-export const signed = n => `${n >= 0 ? "+" : "−"}${Math.abs(n)}`;
+export const signed = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(1)}`;
+// The figure with its unit, wherever a pair's ΔV is printed on its own: a bare number on a card whose other newcomer
+// cards all say "turns" would read as the percent of a carry's power the retired scale was in (#589).
+export const inTurns = n => `${signed(n)} turns`;
 
 const attacksOf = p => (p.moveset ?? []).filter(Boolean).map(pm => tryDo(() => pm.getMove())).filter(mv => mv && mv.category !== MoveCategory.STATUS && mv.power !== 0);
 const baseOf = p => [...(tryDo(() => p.getSpeciesForm(true), p.species)?.baseStats ?? [])];
@@ -54,10 +57,9 @@ const fusionOf = (a, b, j, spliced) => {
   const items = j.cost?.items ?? 0;
   const evolves = [a, b].filter(p => tryDo(() => p.species.getEvolutionLevels().length, 0) > 0).map(p => p.name);
   const notes = [
-    // The unit, said once on the line the figure is on: the row prints `signed(value)` alone, and a bare number on a
-    // card whose other newcomer cards all say "turns" would read as the percent of a carry's power it used to be.
-    // The spec charges a release for the other half's items while the game moves them over, which is why the figure
-    // and the note below are both said: the one is what the judgment netted off, the other what the game does (#588).
+    // ΔV again, beside what the release nets off it, which the row has no room for. The spec charges a release for
+    // the other half's items while the game moves them over, which is why the figure and the note below are both
+    // said: the one is what the judgment netted off, the other what the game does (#588).
     `ΔV ${signed(r1(j.delta))} turns${j.release ? `, net ${signed(r1(j.net))} after a ${Math.abs(r1(j.release)).toFixed(1)} release` : ""}`,
     `spends ${b.name} L${b.level}${b.hp > 0 ? "" : " (fainted)"}`,
     !ability && lent ? `${lent} doesn't work fused` : null,
@@ -143,8 +145,8 @@ export const splicerReward = (run, t) => {
   if (!options.length) return { v: -6, why: unread ? `no team read here: ${unread}` : "nobody left to fuse" };
   const row = fusionRow(options[0]);
   const order = `${row.base.name} ← ${row.other.name}`;
-  if (!row.fuse) return { v: -2, why: `no fusion worth a member · best ${order} ${signed(row.value)}` };
-  return { v: 12 + Math.min(25, row.net), why: [`fuse ${order} · ${signed(row.value)}`, row.why[0]].filter(Boolean).join(" · "),
+  if (!row.fuse) return { v: -2, why: `no fusion worth a member · best ${order} ${inTurns(row.value)}` };
+  return { v: 12 + Math.min(25, row.net), why: [`fuse ${order} · ${inTurns(row.value)}`, row.why[0]].filter(Boolean).join(" · "),
     holder: { icon: row.base.icon, name: row.base.name } };
 };
 
@@ -174,11 +176,11 @@ export const fusionCall = m => {
     if (m.unread) return `no team read here: ${m.unread}`;
     return m.picked ? `nothing to fuse ${m.picked.name} with` : "no two members can be fused";
   }
-  if (m.better) return `back out: ${m.better.base.name} ← ${m.better.other.name} is better (${signed(m.better.value)})`;
+  if (m.better) return `back out: ${m.better.base.name} ← ${m.better.other.name} is better (${inTurns(m.better.value)})`;
   // Story 25: no pair clears the margin, so the member is spent for nothing and the Splicer is better left unspent.
   if (!top.fuse) return "no fusion worth a member — back out, the Splicer stays unspent";
   return m.picked ? `then pick ${top.other.name}` : `pick ${top.base.name} first, then ${top.other.name}`;
 };
 
 export const fusionSummary = m =>
-  [m.rows[0] ? `${m.rows[0].base.name} ← ${m.rows[0].other.name} (${signed(m.rows[0].value)})` : null, fusionCall(m)].filter(Boolean).join(" · ");
+  [m.rows[0] ? `${m.rows[0].base.name} ← ${m.rows[0].other.name} (${inTurns(m.rows[0].value)})` : null, fusionCall(m)].filter(Boolean).join(" · ");
