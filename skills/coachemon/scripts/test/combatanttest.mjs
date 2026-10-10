@@ -6,7 +6,7 @@ import { bundle } from "../hud-bundle.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // `abilities` and `moves` are indexed by id, as the game's own tables are.
 const ABILITIES = [];
-for (const [id, name] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [39, "Rough Skin"]]) ABILITIES[id] = { name };
+for (const [id, name] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [26, "Levitate"], [39, "Rough Skin"]]) ABILITIES[id] = { name };
 const MOVES = [];
 const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100 } = {}) =>
   (MOVES[id] = { id, name, type: TY.indexOf(type), power, accuracy: acc, category: cat, pp, moveTarget: 3, priority: 0, flags: 0, attrs: [] });
@@ -23,6 +23,9 @@ const species = (id, name, types, baseStats, ability1) => ({
 });
 const GARCHOMP = species(445, "Garchomp", ["Dragon", "Ground"], [108, 130, 95, 80, 85, 102], 8);
 const SNORLAX = species(143, "Snorlax", ["Normal"], [160, 110, 65, 65, 110, 30], 17);
+// Heat Rotom's base stats and its second type are the form's, not the species'.
+const ROTOM = species(479, "Rotom", ["Electric", "Ghost"], [50, 50, 77, 95, 77, 91], 26);
+ROTOM.forms = [{ ...ROTOM }, { ...ROTOM, baseStats: [50, 65, 107, 105, 107, 86], type2: TY.indexOf("Fire") }];
 
 const pmOf = id => ({ moveId: id, getMove: () => MOVES[id], getName: () => MOVES[id].name, getMovePp: () => MOVES[id].pp, ppUsed: 0 });
 // A live member, shaped as the game's own: `base` is what its `calculateBaseStats()` answers, so a vitamin shows up
@@ -105,6 +108,18 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.equal(combatantOf({ species: GARCHOMP, level: 50, ability: "Wonder Guard" }).stats[0], 1, "Wonder Guard caps HP at 1");
   assert.equal(combatantOf({ level: 50 }), null, "nothing to compute from");
   for (const level of [35, 50, 100]) console.log(`garchomp L${level} neutral ${row(at(level))}`);
+}
+
+// ---- A form brings its own base stats, types and ability, and no form index is the first
+{
+  const at = form => combatantOf({ species: ROTOM, level: 50, form });
+  assert.deepEqual(at(undefined).stats, [117, 62, 89, 107, 89, 103]);
+  assert.deepEqual(at(1).stats, [117, 77, 119, 117, 119, 98]);
+  assert.deepEqual(at(undefined).getTypes(), [12, 7]);
+  assert.deepEqual(at(1).getTypes(), [12, 9], "Electric/Fire");
+  assert.equal(at(1).getAbility().name, "Levitate", "the form's own ability, where none is given");
+  assert.equal(at(9).stats[1], 62, "a form index the species hasn't got falls back to the species");
+  console.log(`rotom ${row(at(undefined))} | heat ${row(at(1))}`);
 }
 
 // ---- Unknown IVs and nature are neutral, and a known pair moves the stats the game's way
