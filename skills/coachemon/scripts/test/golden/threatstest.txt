@@ -1,0 +1,143 @@
+unavailable: the game's species table hasn't been read yet
+== wave 10: level 10, band 300 ±60 (240–360)
+  Normal         Raticate    BST 413 Normal          32/22/18/16/20/25           Crunch, Facade, Stomping Tantrum, Sucker Punch
+  Fighting       Breloom     BST 460 Grass/Fighting  33/32/22/18/18/20           Bullet Seed, Mach Punch, Rock Tomb, Spore
+  Flying         Delibird    BST 330 Ice/Flying      30/17/15/19/15/21           Brave Bird, Freeze-Dry, Rapid Spin, Spikes
+  Poison         Beedrill    BST 395 Bug/Poison      34/24/14/15/22/21           Knock Off, Poison Jab, U-turn, Defog
+  Ground         Dugtrio     BST 425 Ground          28/26/16/16/20/30           Earthquake, Stone Edge, Sucker Punch, Swords Dance
+  Rock           Golem       BST 495 Rock/Ground     37/30/32/17/19/15           Earthquake, Explosion, Stone Edge, Rock Polish
+  Bug            Shedinja    BST 236 Bug/Ghost       21/24/15/12/12/14           Poltergeist, Shadow Sneak, X-Scissor, Swords Dance
+  Ghost          Sableye     BST 380 Dark/Ghost      31/21/21/19/19/16           Knock Off, Encore, Recover, Thunder Wave
+  Steel          Mawile      BST 380 Steel/Fairy     31/23/23/17/17/16           Iron Head, Knock Off, Play Rough, Sucker Punch
+  Fire           Rapidash    BST 500 Fire            34/26/20/22/22/27           Flare Blitz, High Horsepower, Wild Charge, Morning Sun
+  Water          Seaking     BST 450 Water           37/24/19/19/22/20           Drill Run, Flip Turn, Knock Off, Megahorn
+  Grass          Ferrothorn  BST 489 Grass/Steel     36/25/32/17/29/10           Gyro Ball, Power Whip, Leech Seed, Spikes
+  Electric       Electrode   BST 490 Electric        33/16/20/22/22/36           Explosion, Foul Play, Thunderbolt, Volt Switch
+  Psychic        Jynx        BST 455 Ice/Psychic     34/16/13/29/25/25           Focus Blast, Ice Beam, Psyshock, Lovely Kiss
+  Ice            Dewgong     BST 475 Water/Ice       39/20/22/20/25/20           Flip Turn, Hydro Pump, Ice Beam, Knock Off
+  Dragon         Altaria     BST 490 Dragon/Flying   36/20/24/20/27/22           Brave Bird, Earthquake, Defog, Haze
+  Dark           Houndoom    BST 500 Dark/Fire       36/24/16/28/22/25           Dark Pulse, Fire Blast, Sludge Bomb, Sucker Punch
+  Fairy          Granbull    BST 450 Fairy           39/30/21/18/18/15           Earthquake, Play Rough, Encore, Thunder Wave
+  fast sweeper   Fearow      BST 442 Normal/Flying   34/24/19/18/18/26           Double-Edge, Drill Peck, Drill Run, Return
+  physical wall  Sandslash   BST 450 Ground          36/26/28/15/17/19           Earthquake, Knock Off, Stone Edge, Rapid Spin
+  special wall   Persian     BST 440 Normal          34/20/18/19/19/29           Double-Edge, Fake Out, Knock Off, U-turn
+  bulky attacker Marowak     BST 425 Ground          33/22/28/16/22/15           Double-Edge, Earthquake, Knock Off, Stone Edge
+== wave 30: level 24, band 367 ±60 (307–427)
+  Normal         Raticate    BST 413 Normal          64/47/37/32/42/55           Crunch, Facade, Stomping Tantrum, Sucker Punch
+  Fighting       Breloom     BST 460 Grass/Fighting  66/71/47/37/37/42           Bullet Seed, Mach Punch, Rock Tomb, Spore
+  Flying         Butterfree  BST 395 Bug/Flying      66/30/32/51/47/42           Air Slash, Bug Buzz, Quiver Dance, Sleep Powder
+  Poison         Beedrill    BST 395 Bug/Poison      68/51/27/30/47/44           Knock Off, Poison Jab, U-turn, Defog
+  Ground         Dugtrio     BST 425 Ground          54/56/32/32/42/66           Earthquake, Stone Edge, Sucker Punch, Swords Dance
+  Rock           Golem       BST 495 Rock/Ground     76/66/71/35/39/30           Earthquake, Explosion, Stone Edge, Rock Polish
+  Bug            Forretress  BST 465 Bug/Steel       73/51/75/37/37/27           Iron Head, Volt Switch, Rapid Spin, Spikes
+  Ghost          Sableye     BST 380 Dark/Ghost      61/44/44/39/39/32           Knock Off, Encore, Recover, Thunder Wave
+  Steel          Mawile      BST 380 Steel/Fairy     61/49/49/35/35/32           Iron Head, Knock Off, Play Rough, Sucker Punch
+  Fire           Rapidash    BST 500 Fire            68/56/42/47/47/59           Flare Blitz, High Horsepower, Wild Charge, Morning Sun
+  Water          Seaking     BST 450 Water           76/52/39/39/47/41           Drill Run, Flip Turn, Knock Off, Megahorn
+  Grass          Ferrothorn  BST 489 Grass/Steel     73/53/71/34/64/18           Gyro Ball, Power Whip, Leech Seed, Spikes
+  Electric       Electrode   BST 490 Electric        66/32/42/47/47/80           Explosion, Foul Play, Thunderbolt, Volt Switch
+  Psychic        Jynx        BST 455 Ice/Psychic     68/32/25/63/54/54           Focus Blast, Ice Beam, Psyshock, Lovely Kiss
+  Ice            Delibird    BST 330 Ice/Flying      59/35/30/39/30/44           Brave Bird, Freeze-Dry, Rapid Spin, Spikes
+  Dragon         Altaria     BST 490 Dragon/Flying   73/42/51/42/59/47           Brave Bird, Earthquake, Defog, Haze
+  Dark           Houndoom    BST 500 Dark/Fire       73/51/32/61/47/54           Dark Pulse, Fire Blast, Sludge Bomb, Sucker Punch
+  Fairy          Granbull    BST 450 Fairy           80/66/44/37/37/30           Earthquake, Play Rough, Encore, Thunder Wave
+  fast sweeper   Fearow      BST 442 Normal/Flying   68/51/39/37/37/56           Double-Edge, Drill Peck, Drill Run, Return
+  physical wall  Dewgong     BST 475 Water/Ice       80/42/47/42/54/42           Flip Turn, Hydro Pump, Ice Beam, Knock Off
+  special wall   Pidgeot     BST 479 Normal/Flying   77/47/44/42/42/57           Brave Bird, Heat Wave, Return, U-turn
+  bulky attacker Marowak     BST 425 Ground          66/47/61/32/47/30           Double-Edge, Earthquake, Knock Off, Stone Edge
+== wave 50: level 38, band 433 ±60 (373–493)
+  Normal         Persian     BST 440 Normal          103/63/56/60/60/98          Double-Edge, Fake Out, Knock Off, U-turn
+  Fighting       Breloom     BST 460 Grass/Fighting  99/109/71/56/56/63          Bullet Seed, Mach Punch, Rock Tomb, Spore
+  Flying         Fearow      BST 442 Normal/Flying   103/79/60/57/57/86          Double-Edge, Drill Peck, Drill Run, Return
+  Poison         Arbok       BST 448 Poison          99/82/63/60/70/71           Earthquake, Gunk Shot, Trailblaze, Coil
+  Ground         Dugtrio     BST 425 Ground          80/86/48/48/63/101          Earthquake, Stone Edge, Sucker Punch, Swords Dance
+  Rock           Golem       BST 495 Rock/Ground     114/101/109/52/60/44        Earthquake, Explosion, Stone Edge, Rock Polish
+  Bug            Forretress  BST 465 Bug/Steel       110/79/117/56/56/41         Iron Head, Volt Switch, Rapid Spin, Spikes
+  Ghost          Froslass    BST 480 Ice/Ghost       106/71/63/71/63/94          Poltergeist, Triple Axel, Destiny Bond, Spikes
+  Steel          Skarmory    BST 465 Steel/Flying    103/71/117/41/63/63         Body Press, Brave Bird, Roost, Spikes
+  Fire           Rapidash    BST 500 Fire            103/86/63/71/71/90          Flare Blitz, High Horsepower, Wild Charge, Morning Sun
+  Water          Seaking     BST 450 Water           114/80/60/60/71/62          Drill Run, Flip Turn, Knock Off, Megahorn
+  Grass          Ferrothorn  BST 489 Grass/Steel     109/82/110/51/98/25         Gyro Ball, Power Whip, Leech Seed, Spikes
+  Electric       Electrode   BST 490 Electric        99/48/63/71/71/124          Explosion, Foul Play, Thunderbolt, Volt Switch
+  Psychic        Jynx        BST 455 Ice/Psychic     103/48/37/98/82/82          Focus Blast, Ice Beam, Psyshock, Lovely Kiss
+  Ice            Dewgong     BST 475 Water/Ice       122/63/71/63/82/63          Flip Turn, Hydro Pump, Ice Beam, Knock Off
+  Dragon         Altaria     BST 490 Dragon/Flying   110/63/79/63/90/71          Brave Bird, Earthquake, Defog, Haze
+  Dark           Sableye     BST 380 Dark/Ghost      91/67/67/60/60/48           Knock Off, Encore, Recover, Thunder Wave
+  Fairy          Granbull    BST 450 Fairy           122/101/67/56/56/44         Earthquake, Play Rough, Encore, Thunder Wave
+  fast sweeper   Raticate    BST 413 Normal          95/72/56/48/63/84           Crunch, Facade, Stomping Tantrum, Sucker Punch
+  physical wall  Miltank     BST 490 Normal          125/71/90/41/63/86          Body Slam, Earthquake, Curse, Heal Bell
+  special wall   Clefable    BST 483 Fairy           125/63/66/82/79/56          Fire Blast, Moonblast, Calm Mind, Moonlight
+  bulky attacker Marowak     BST 425 Ground          99/71/94/48/71/44           Double-Edge, Earthquake, Knock Off, Stone Edge
+== wave 70: level 56, band 500 ±60 (440–560)
+  Normal         Miltank     BST 490 Normal          180/103/131/58/91/125       Body Slam, Earthquake, Curse, Heal Bell
+  Fighting       Heracross   BST 500 Bug/Fighting    164/153/97/58/119/108       Close Combat, Earthquake, Knock Off, Megahorn
+  Flying         Drifblim    BST 498 Ghost/Flying    242/103/62/114/73/103       Air Slash, Shadow Ball, Calm Mind, Defog
+  Poison         Muk         BST 500 Poison          192/131/97/86/125/69        Drain Punch, Gunk Shot, Ice Punch, Knock Off
+  Ground         Donphan     BST 500 Ground          175/147/147/80/80/69        Earthquake, Ice Shard, Ice Spinner, Knock Off
+  Rock           Golem       BST 495 Rock/Ground     164/147/159/75/86/63        Earthquake, Explosion, Stone Edge, Rock Polish
+  Bug            Scizor      BST 500 Bug/Steel       152/159/125/75/103/86       Bug Bite, Bullet Punch, Close Combat, Knock Off
+  Ghost          Gengar      BST 500 Ghost/Poison    141/86/80/159/97/136        Focus Blast, Shadow Ball, Sludge Wave, Nasty Plot
+  Steel          Bronzong    BST 500 Steel/Psychic   149/113/143/101/143/50      Body Press, Iron Head, Psychic Noise, Iron Defense
+  Fire           Rapidash    BST 500 Fire            147/125/91/103/103/131      Flare Blitz, High Horsepower, Wild Charge, Morning Sun
+  Water          Golduck     BST 500 Water/Psychic   164/105/100/119/103/108     Grass Knot, Hydro Pump, Ice Beam, Encore
+  Grass          Victreebel  BST 490 Grass/Poison    164/131/86/125/91/91        Poison Jab, Power Whip, Sucker Punch, Swords Dance
+  Electric       Electrode   BST 490 Electric        141/69/91/103/103/181       Explosion, Foul Play, Thunderbolt, Volt Switch
+  Psychic        Alakazam    BST 500 Psychic         136/69/63/164/119/147       Counter, Focus Blast, Psychic, Psyshock
+  Ice            Weavile     BST 510 Dark/Ice        152/147/86/63/108/153       Ice Shard, Knock Off, Low Kick, Triple Axel
+  Dragon         Altaria     BST 490 Dragon/Flying   158/91/114/91/131/103       Brave Bird, Earthquake, Defog, Haze
+  Dark           Houndoom    BST 500 Dark/Fire       158/114/69/136/103/119      Dark Pulse, Fire Blast, Sludge Bomb, Sucker Punch
+  Fairy          Clefable    BST 483 Fairy           180/91/95/119/114/80        Fire Blast, Moonblast, Calm Mind, Moonlight
+  fast sweeper   Jolteon     BST 525 Electric        147/86/80/136/119/159       Alluring Voice, Shadow Ball, Thunderbolt, Volt Switch
+  physical wall  Rhyperior   BST 535 Ground/Rock     203/170/159/75/75/58        Earthquake, Ice Punch, Megahorn, Stone Edge
+  special wall   Blissey     BST 540 Normal          360/24/24/97/164/75         Seismic Toss, Heal Bell, Soft-Boiled, Stealth Rock
+  bulky attacker Dusknoir    BST 525 Ghost           124/125/164/86/164/63       Earthquake, Leech Life, Poltergeist, Shadow Sneak
+== wave 100: level 84, band 600 ±60 (540–660)
+  Normal         Snorlax     BST 540 Normal          375/202/126/126/202/68      Body Slam, Curse, Rest, Sleep Talk
+  Fighting       Lucario     BST 525 Fighting/Steel  224/202/135/210/135/168     Close Combat, Extreme Speed, Meteor Mash, Stone Edge
+  Flying         Dragonite   BST 600 Dragon/Flying   259/242/177/185/185/152     Earthquake, Outrage, Dragon Dance, Roost
+  Poison         Crobat      BST 535 Poison/Flying   249/168/152/135/152/236     Brave Bird, Super Fang, U-turn, Defog
+  Ground         Garchomp    BST 600 Dragon/Ground   288/236/177/152/160/188     Dragon Tail, Earthquake, Outrage, Spikes
+  Rock           Tyranitar   BST 600 Rock/Dark       274/242/202/177/185/120     Earthquake, Ice Punch, Knock Off, Stone Edge
+  Bug            Volcarona   BST 550 Bug/Fire        249/118/126/244/194/185     Bug Buzz, Fiery Dance, Fire Blast, Giga Drain
+  Ghost          Dusknoir    BST 525 Ghost           182/185/244/126/244/93      Earthquake, Leech Life, Poltergeist, Shadow Sneak
+  Steel          Metagross   BST 600 Steel/Psychic   241/244/236/177/168/135     Earthquake, Heavy Slam, Knock Off, Psychic Fangs
+  Fire           Arcanine    BST 555 Fire            257/202/152/185/152/177     Close Combat, Extreme Speed, Flare Blitz, Morning Sun
+  Water          Gyarados    BST 540 Water/Flying    266/227/150/118/185/153     Earthquake, Stone Edge, Temper Flare, Waterfall
+  Grass          Tangrowth   BST 535 Grass           274/185/227/202/101/101     Earthquake, Giga Drain, Knock Off, Leaf Storm
+  Electric       Electivire  BST 540 Electric        232/224/130/177/160/177     Earthquake, Ice Punch, Supercell Slam, Bulk Up
+  Psychic        Exeggutor   BST 530 Grass/Psychic   266/177/160/227/143/110     Giga Drain, Psychic, Psyshock, Calm Mind
+  Ice            Lapras      BST 535 Water/Ice       325/160/152/160/177/118     Earthquake, Icicle Spear, Waterfall, Dragon Dance
+  Dragon         Salamence   BST 600 Dragon/Flying   266/244/152/202/152/185     Dual Wingbeat, Earthquake, Outrage, Dragon Dance
+  Dark           Hydreigon   BST 600 Dark/Dragon     261/194/168/227/168/182     Dark Pulse, Draco Meteor, Fire Blast, Flash Cannon
+  Fairy          Togekiss    BST 545 Fairy/Flying    249/101/177/219/210/152     Air Slash, Aura Sphere, Nasty Plot, Roost
+  fast sweeper   Haxorus     BST 540 Dragon          234/264/168/118/135/180     Close Combat, Earthquake, Iron Head, Outrage
+  physical wall  Rhyperior   BST 535 Ground/Rock     299/252/236/110/110/84      Earthquake, Ice Punch, Megahorn, Stone Edge
+  special wall   Blissey     BST 540 Normal          535/34/34/143/244/110       Seismic Toss, Heal Bell, Soft-Boiled, Stealth Rock
+  bulky attacker Kingdra     BST 540 Water/Dragon    232/177/177/177/177/160     Outrage, Waterfall, Wave Crash, Dragon Dance
+== wave 150: level 138, band 600 ±60 (540–660)
+  Normal         Snorlax     BST 540 Normal          610/329/205/205/329/108     Body Slam, Curse, Rest, Sleep Talk
+  Fighting       Lucario     BST 525 Fighting/Steel  361/329/218/343/218/274     Close Combat, Extreme Speed, Meteor Mash, Stone Edge
+  Flying         Dragonite   BST 600 Dragon/Flying   419/395/287/301/301/246     Earthquake, Outrage, Dragon Dance, Roost
+  Poison         Crobat      BST 535 Poison/Flying   403/274/246/218/246/384     Brave Bird, Super Fang, U-turn, Defog
+  Ground         Garchomp    BST 600 Dragon/Ground   466/384/287/246/260/307     Dragon Tail, Earthquake, Outrage, Spikes
+  Rock           Tyranitar   BST 600 Rock/Dark       444/395/329/287/301/194     Earthquake, Ice Punch, Knock Off, Stone Edge
+  Bug            Volcarona   BST 550 Bug/Fire        403/191/205/398/315/301     Bug Buzz, Fiery Dance, Fire Blast, Giga Drain
+  Ghost          Dusknoir    BST 525 Ghost           292/301/398/205/398/149     Earthquake, Leech Life, Poltergeist, Shadow Sneak
+  Steel          Metagross   BST 600 Steel/Psychic   389/398/384/287/274/218     Earthquake, Heavy Slam, Knock Off, Psychic Fangs
+  Fire           Arcanine    BST 555 Fire            417/329/246/301/246/287     Close Combat, Extreme Speed, Flare Blitz, Morning Sun
+  Water          Gyarados    BST 540 Water/Flying    430/370/243/191/301/249     Earthquake, Stone Edge, Temper Flare, Waterfall
+  Grass          Tangrowth   BST 535 Grass           444/301/370/329/163/163     Earthquake, Giga Drain, Knock Off, Leaf Storm
+  Electric       Electivire  BST 540 Electric        375/365/210/287/260/287     Earthquake, Ice Punch, Supercell Slam, Bulk Up
+  Psychic        Exeggutor   BST 530 Grass/Psychic   430/287/260/370/232/177     Giga Drain, Psychic, Psyshock, Calm Mind
+  Ice            Lapras      BST 535 Water/Ice       527/260/246/260/287/191     Earthquake, Icicle Spear, Waterfall, Dragon Dance
+  Dragon         Salamence   BST 600 Dragon/Flying   430/398/246/329/246/301     Dual Wingbeat, Earthquake, Outrage, Dragon Dance
+  Dark           Hydreigon   BST 600 Dark/Dragon     422/315/274/370/274/296     Dark Pulse, Draco Meteor, Fire Blast, Flash Cannon
+  Fairy          Togekiss    BST 545 Fairy/Flying    403/163/287/356/343/246     Air Slash, Aura Sphere, Nasty Plot, Roost
+  fast sweeper   Haxorus     BST 540 Dragon          378/431/274/191/218/293     Close Combat, Earthquake, Iron Head, Outrage
+  physical wall  Rhyperior   BST 535 Ground/Rock     486/412/384/177/177/136     Earthquake, Ice Punch, Megahorn, Stone Edge
+  special wall   Blissey     BST 540 Normal          872/53/53/232/398/177       Seismic Toss, Heal Bell, Soft-Boiled, Stealth Rock
+  bulky attacker Kingdra     BST 540 Water/Dragon    375/287/287/287/287/260     Outrage, Waterfall, Wave Crash, Dragon Dance
+next big fight: wave 50, level 38, band 433
+no fight: wave 44, level 38, band 413, 22 threats
+band by wave: w10 300  w30 367  w50 433  w70 500  w100 600  w150 600
+threats: ok
