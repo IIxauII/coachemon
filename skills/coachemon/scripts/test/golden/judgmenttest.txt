@@ -128,6 +128,9 @@
   five          Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.50+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
   vitamins      Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 0 items 0.00+0.00, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
   Mystic Water  Blastoise 0 items 0.00+0.00, Feraligatr 0 items 0.00+0.00, Politoed 0 items 0.00+0.00, Wailord 1 item 0.00+0.28, Lanturn 0 items 0.00+0.00, Meganium 0 items 0.00+0.00
+  the cheapest two carrying      swap  Politoed    dV +0.5  release 0.0  net +0.5  
+      + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6
+      + Flying exposure        +1.8  Flying now beats 4 of 6, down from 5
 == all six of them carrying, one stack each and then six
   one Leftovers each             swap  Wailord     dV +0.6  release 0.1  net +0.5  
       + physical wall exposure +2.2  the physical wall now beats 5 of 6, down from 6

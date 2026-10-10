@@ -723,6 +723,15 @@ const FAINTED = () => [
   assert.ok(priced.delta < bare.delta, "and the member is dearer to release for holding it");
   assert.equal(booster.replaced.name, "Lanturn", "so this slot too goes to the member behind it");
 
+  // The cost orders the whole search and not just its first two: with the two cheapest slots carrying, the member
+  // behind both of them is the one released.
+  const twoHold = judge(WATERS().map(p => (["Wailord", "Lanturn"].includes(p.name) ? carrying(p, [leftovers(1)]) : p)),
+    nc(), {}, SEED);
+  show("the cheapest two carrying", twoHold);
+  assert.equal(twoHold.replaced.name, "Politoed", "the third-cheapest slot, which carries nothing");
+  assert.ok(slotOf(twoHold, "Politoed").delta < slotOf(twoHold, "Wailord").delta,
+    "worth less to the team than either of them, and cheaper than both once the items are counted");
+
   // Six slots carrying the same thing: no slot is cheaper than another, the cost comes straight off the net, and the
   // swap the party would have made carrying nothing is one it should turn down.
   const carried = n => allHold([leftovers(n)]);
