@@ -4,8 +4,7 @@
 //
 // The team verdict is the other half, and it is not here: a turn read cannot open a run read, so `catchLand` attaches
 // the judgment when the road lands, through the same owed/landed road the battle card's preview rides (#584).
-import { abilitiesOf, hasAttr, iconOf, typesOf } from "./01-core.js";
-import { damagingTypes, partyProfile, partyReasons } from "./08-party.js";
+import { abilitiesOf, hasAttr, iconOf } from "./01-core.js";
 import { koCurve, koTurn, useOf } from "./10-damage.js";
 import { PARTY_SIZE, judgeNewcomer } from "./12-value.js";
 import { exchange, threatFrom } from "./30-planner.js";
@@ -77,36 +76,6 @@ const masterBlocked = turn => {
 // whole of the team part, landed road or not (game-code.md §20).
 const LIMITED = "Limited Catch: won't join the party";
 const limitedCatch = turn => !!turn.facts.mode.limitedCatch && turn.facts.wave % 10 !== 1;
-
-// The encounter card's own reader, which #585 moves onto the judgment: the catch card is off it as of #584.
-const teamReasons = (account, foe, limited) => {
-  const all = account.party.filter(Boolean);
-  const out = [];
-  if (limited) return { out: [{ kind: "team", text: LIMITED, w: 0 }], replace: null };
-  if (!all.length) return { out, replace: null };
-
-  const profile = partyProfile(all);
-  const reasons = partyReasons(profile, { species: foe.species, fusion: foe.fusionSpecies ?? null, level: foe.level,
-    types: typesOf(foe), abilities: abilitiesOf(foe), moveTypes: damagingTypes(foe) });
-  if (reasons.some(r => r.kind === "dupe")) return { out, replace: null };
-
-  const show = x => (x.estimated ? `~${x.final}` : `${x.final}`);
-  for (const r of reasons) {
-    if (r.kind === "covers") out.push({ kind: "team", text: `covers ${r.types.slice(0, 2).join("/")} weakness`, w: r.types.length > 1 ? 1.5 : 1 });
-    if (r.kind === "hole") out.push({ kind: "team", text: `hits ${r.types.slice(0, 3).join("/")} (no one else does)`, w: 0.5 });
-    if (r.kind === "upgrade") {
-      out.push({ kind: "team", w: 2,
-        text: `stronger than ${r.against.name} (${r.estimated || r.against.estimated ? "final " : ""}BST ${show(r)} vs ${show(r.against)})` });
-    }
-  }
-  // The lightest member by final BST, not the weakest member: the weakest is a team-value question, which only a
-  // run read can ask. The catch card is off this reader as of #584 — it names the replaced member off the judgment —
-  // and the encounter card follows in #585, which retires the whole of this function.
-  const lightest = profile.lightest?.mon ?? null;
-  const replace = all.length >= 6 && out.length && lightest ? { icon: iconOf(lightest), name: lightest.name } : null;
-  if (replace) out.push({ kind: "team", text: `party full: replaces ${lightest.name}`, w: 0 });
-  return { out, replace };
-};
 
 const rootOf = p => tryDo(() => p.species.getRootSpeciesId(true), p.species?.speciesId) ?? p.species?.speciesId;
 // Candy goes to the prevolution-free species, not the first starter `rootOf` stops at: the two differ only on Pikachu's
@@ -297,10 +266,14 @@ const settle = t => {
 const r1 = x => Math.round((x ?? 0) * 10) / 10;
 
 /**
- * The judgment on one foe, as the card says it (#567): the verdict first, then its reasons and the plain case, and
- * the figures rounded to the tenth of a turn the margin is set in.
+ * The judgment on one foe or offered mon, as a card says it (#567): the verdict first, then its reasons and the plain
+ * case, and the figures rounded to the tenth of a turn the margin is set in.
+ *
+ * Every newcomer card reads this one function, so a mon gets the same answer whichever card offers it (#585, story
+ * 22): the catch card attaches it when the road lands, and the encounter card's offers — the Safari preview and its
+ * turns, the Salesman's mon, the Uncommon Breed and the Dancing Lessons mon — call it inside their own run read.
  */
-const teamVerdict = (run, foe) => {
+export const teamVerdict = (run, foe) => {
   const j = judgeNewcomer(run, foe);
   const blank = { verdict: null, text: null, replaced: null, reasons: [], fight: j.fight ?? null,
     delta: 0, release: 0, net: 0, confidence: j.confidence ?? null };
@@ -440,7 +413,16 @@ export const catchSummary = c => {
   return [`catch ${t.name}${odds}`, ...teamLines(t).map(r => r.text)].join(" · ");
 };
 
-export const catchWorth = (account, foe) => {
-  const reasons = [...accountReasons(account, foe), ...teamReasons(account, foe, false).out];
+/**
+ * What a mon is worth to the **account** and nothing else — a new species, a shiny, candy, IVs — with `show` the bar
+ * that value clears on its own (#567, story 27). It is the half of a newcomer's worth a card can read without a run
+ * read, and it is never summed with team value: the two axes are shown apart, and either alone can want a mon.
+ *
+ * The encounter card's offers read it beside `teamVerdict` (#585). It replaces `catchWorth`, which added the two
+ * halves into one number and put the lightest member by final BST in the place of the member a swap would really
+ * cost: a mon was wanted by the sum of a dex reason and a BST comparison, which is neither axis.
+ */
+export const accountWorth = (account, foe) => {
+  const reasons = accountReasons(account, foe);
   return { value: reasons.reduce((t, r) => t + r.w, 0), reasons: reasons.map(r => r.text), show: SHOW };
 };
