@@ -12,7 +12,7 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { partyProfile, partyReasons, damagingTypes, finalBstOf, partyLuck, typesOfSpecies } = globalThis.__hud["08-party"];
+const { partyAtFight, partyProfile, partyReasons, damagingTypes, finalBstOf, partyLuck, typesOfSpecies } = globalThis.__hud["08-party"];
 
 const row = (label, cells) => console.log(`${label.padEnd(18)}${[].concat(cells).join("  ")}`);
 // A reason without the live mons hanging off it, so it prints and compares as data.
@@ -75,6 +75,65 @@ const flatten = rs => rs.map(flat);
   assert.deepEqual(profile.weakTo("Electric").map(p => p.name), ["Lapras", "Magikarp"], "Garchomp is Ground: immune, not weak");
   const levitator = { types: ["Steel"], abilities: ["Levitate"] };
   assert.deepEqual(profile.hitters(levitator).map(p => p.name), [], "Levitate takes Earthquake away, and nothing else hits Steel");
+}
+
+// ---- The party at the next big fight: every member at full health, and dead weight holding its slot at zero.
+{
+  const LIMITED_SUPPORT = 8, HARDCORE = 9; // `Challenges`, which only the bundle's prelude holds
+  const scene = (...challenges) => ({ gameMode: { isClassic: true, challenges } });
+  const limited = value => scene({ id: LIMITED_SUPPORT, value });
+  const karp = opts => mon(SPECIES.magikarp, 35, [["Tackle", "Normal", 40, "P"]], opts);
+  const at = (s, member, from, fight) => partyAtFight(s, [...party().slice(0, 3), member], { from, fight });
+  const show = (label, r) => row(label, [`up ${r.members.map(p => p.name).join("/")}`,
+    `zero ${r.dead.length ? r.dead.map(d => `${d.name}:${d.why}`).join(",") : "—"}`,
+    r.revive ? `back on W${r.revive.wave} (${r.revive.kind})` : "no way back"]);
+  console.log("== the party at the next big fight");
+
+  // A challenge bars a member whatever its health and whatever lies ahead.
+  const bar = at(scene(), karp({ barred: true }), 24, 25);
+  show("barred", bar);
+  assert.deepEqual(bar.members.map(p => p.name), ["Garchomp", "Snorlax", "Lapras"]);
+  assert.deepEqual(bar.dead.map(d => [d.name, d.why]), [["Magikarp", "barred"]]);
+
+  // Fainted with no way back: Hardcore, or no heal and no shop before the fight.
+  const hard = at(scene({ id: HARDCORE, value: 1 }), karp({ hp: 0 }), 24, 25);
+  show("fainted hardcore", hard);
+  assert.deepEqual(hard.dead.map(d => [d.name, d.why]), [["Magikarp", "fainted"]], "Hardcore keeps the heal from reviving");
+  const stranded = at(limited(3), karp({ hp: 0 }), 24, 25);
+  show("fainted stranded", stranded);
+  assert.deepEqual(stranded.dead.map(d => [d.name, d.why]), [["Magikarp", "fainted"]], "Limited Support 3 removes both");
+
+  // A way back before the fight, and the member counts at full health however hurt it is now.
+  const healed = at(scene(), karp({ hp: 0 }), 20, 25);
+  show("fainted, heal W21", healed);
+  assert.deepEqual(healed.dead, [], "the W21 heal is before the fight");
+  assert.deepEqual(healed.revive, { kind: "heal", wave: 21 });
+  const shopped = at(limited(1), karp({ hp: 0 }), 24, 25);
+  show("fainted, shop W24", shopped);
+  assert.deepEqual(shopped.dead, [], "no heal under Limited Support 1, but W24's clear still opens the shop row");
+  assert.deepEqual(shopped.revive, { kind: "shop", wave: 24 });
+
+  // Out of reach is dead weight all the same: the heal lands after the fight.
+  const late = at(limited(2), karp({ hp: 0 }), 24, 25);
+  show("heal too late", late);
+  assert.deepEqual(late.dead.map(d => [d.name, d.why]), [["Magikarp", "fainted"]], "W31's heal is past W25, and 2 removes the shop");
+  assert.deepEqual(at(limited(2), karp({ hp: 0 }), 24, 31).dead, [], "the same heal counts for a fight on W31");
+
+  // Luck is not a way back: nothing here reads a held item or the bag (#569).
+  const seeded = karp({ hp: 0 });
+  const rescued = { ...scene({ id: HARDCORE, value: 1 }),
+    modifiers: [{ constructor: { name: "PokemonInstantReviveModifier" }, pokemonId: seeded.id },
+      { constructor: { name: "ReviveModifier" } }] };
+  show("seed and a Revive", partyAtFight(rescued, [...party().slice(0, 3), seeded], { from: 24, fight: 25 }));
+  assert.deepEqual(partyAtFight(rescued, [...party().slice(0, 3), seeded], { from: 24, fight: 25 }).dead.map(d => d.name),
+    ["Magikarp"], "a held Reviver Seed and a Revive in the bag rescue nobody");
+
+  // No fight to reach: nothing is out of reach, so only a challenge bars a member.
+  const open = partyAtFight(scene(), [karp({ hp: 0 }), mon(SPECIES.sudowoodo, 40, [], { barred: true })], {});
+  show("no fight named", open);
+  assert.deepEqual(open.dead.map(d => [d.name, d.why]), [["Sudowoodo", "barred"]], "a heal ahead and no fight to beat it to");
+  assert.deepEqual(partyAtFight(scene(), null, {}), { members: [], dead: [], revive: { kind: "heal", wave: 1 } },
+    "no party is no dead weight");
 }
 
 // ---- `partyReasons`: reasons with no weights, against the weakest member by default.

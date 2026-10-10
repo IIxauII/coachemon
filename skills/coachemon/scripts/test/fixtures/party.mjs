@@ -23,8 +23,11 @@ export const species = (id, name, types, bst, { evos = [], root = id } = {}) => 
   getName: () => name,
 });
 
-/** `moves`: `[name, type, power, category, attrs?]`. `power` −1 is a move the game prices from the situation. */
-export const mon = (sp, level, moves, { ability = "Pressure", passive = null, luck = 0, allowed = true, hp = 100 } = {}) => ({
+/**
+ * `moves`: `[name, type, power, category, attrs?]`. `power` −1 is a move the game prices from the situation.
+ * `allowed` is `isAllowedInBattle` (fainted or barred), `barred` only `isAllowedInChallenge`.
+ */
+export const mon = (sp, level, moves, { ability = "Pressure", passive = null, luck = 0, allowed = true, barred = false, hp = 100 } = {}) => ({
   name: sp.name, species: sp, level, hp, id: `${sp.speciesId}:${level}`,
   getTypes: () => [sp.type1, sp.type2].filter(t => t != null),
   getAbility: () => ({ name: ability }),
@@ -32,6 +35,7 @@ export const mon = (sp, level, moves, { ability = "Pressure", passive = null, lu
   getPassiveAbility: () => ({ name: passive }),
   getLuck: () => luck,
   isAllowedInBattle: () => allowed,
+  isAllowedInChallenge: () => !barred,
   moveset: moves.map(([name, type, power, cat, attrs = []]) => ({
     getName: () => name,
     getMove: () => ({ name, type: TY.indexOf(type), power, category: CAT[cat], attrs, accuracy: 100 }),

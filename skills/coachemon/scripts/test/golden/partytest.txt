@@ -13,6 +13,15 @@ Magikarp          final 400~  L35
 == matchups
 hit Magnezone     Garchomp
 weak to Electric  Lapras  Magikarp
+== the party at the next big fight
+barred            up Garchomp/Snorlax/Lapras  zero Magikarp:barred  back on W24 (shop)
+fainted hardcore  up Garchomp/Snorlax/Lapras  zero Magikarp:fainted  no way back
+fainted stranded  up Garchomp/Snorlax/Lapras  zero Magikarp:fainted  no way back
+fainted, heal W21 up Garchomp/Snorlax/Lapras/Magikarp  zero —  back on W21 (heal)
+fainted, shop W24 up Garchomp/Snorlax/Lapras/Magikarp  zero —  back on W24 (shop)
+heal too late     up Garchomp/Snorlax/Lapras  zero Magikarp:fainted  no way back
+seed and a Revive up Garchomp/Snorlax/Lapras  zero Magikarp:fainted  no way back
+no fight named    up Magikarp  zero Sudowoodo:barred  back on W1 (heal)
 == reasons
 Lucario L45       covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Magikarp 400~
 vs Snorlax        covers Grass  hole Normal/Ice/Dark/Fairy
