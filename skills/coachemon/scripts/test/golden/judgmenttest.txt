@@ -1,0 +1,77 @@
+== constants: clamp 3  backup 0.5  revenge 0.5  switch-in 0.25  margin 0.1  exposure 0.2/0.8/1.8/3.2  party 6
+== wave 50: 22 threats at level 38, 62 moves between them
+== the all-Water party's rows, V -0.39 over 22 threats
+  Normal         Blastoise   s  0.0 backup Feraligatr   0.0  beaten 2  row -0.8
+  Fighting       Blastoise   s +3.0 backup Feraligatr  +3.0  beaten 1 revenge switch-in  row +5.1
+  Flying         Feraligatr  s  0.0 backup Blastoise   -0.1  beaten 5  row -5.1
+  Poison         Feraligatr  s -0.2 backup Meganium    -0.6  beaten 6  row -7.6
+  Ground         Meganium    s +2.0 backup Blastoise   +1.0  beaten 1  row +2.3
+  Rock           Blastoise   s +2.0 backup Feraligatr  +2.0  beaten 0 revenge  row +3.5
+  Bug            Blastoise   s +3.0 backup Politoed    +3.0  beaten 1 revenge  row +4.8
+  Ghost          Feraligatr  s  0.0 backup Politoed    -0.2  beaten 5  row -5.1
+  Steel          Blastoise   s +1.8 backup Lanturn     +1.2  beaten 2 revenge  row +2.1
+  Fire           Feraligatr  s +0.4 backup Politoed    -0.6  beaten 5  row -4.9
+  Water          Feraligatr  s +1.9 backup Meganium    +1.0  beaten 3 revenge  row +1.1
+  Grass          Meganium    s +0.1 backup Blastoise   -2.6  beaten 5  row -6.2
+  Electric       Meganium    s  0.0 backup Feraligatr  -1.0  beaten 5  row -5.5
+  Psychic        Feraligatr  s +1.0 backup Blastoise   -0.1  beaten 5  row -4.0
+  Ice            Lanturn     s +3.0 backup Feraligatr  +3.0  beaten 1 revenge switch-in  row +5.0
+  Dragon         Politoed    s +0.4 backup Wailord     +0.4  beaten 2  row -0.2
+  Dark           Blastoise   s +3.0 backup Feraligatr  +3.0  beaten 0 revenge  row +5.0
+  Fairy          Blastoise   s +1.3 backup Meganium    +1.1  beaten 0 revenge  row +2.3
+  fast sweeper   Feraligatr  s +1.2 backup Blastoise   +1.0  beaten 1  row +1.5
+  physical wall  Meganium    s  0.0 backup Blastoise    0.0  beaten 6  row -7.2
+  special wall   Feraligatr  s +1.0 backup Politoed    +1.0  beaten 2  row +0.7
+  bulky attacker Meganium    s +3.0 backup Politoed    +2.6  beaten 0 revenge  row +4.8
+== clamped: 5 of 44 pairs, the worst Feraligatr raw +4.0 -> s +3.0
+== another Water into the all-Water party
+  Swampert                       swap  Wailord     dV +0.6  release 0.0  net +0.6  
+  cheapest to release last: Feraligatr (8), Meganium (5), Blastoise (7), Politoed (1), Lanturn (1), Wailord (0)
+== the lightest member of six, against the heaviest newcomer of the lot
+  Swampert                       swap  Roserade    dV +0.5  release 0.0  net +0.5  
+  cheapest to release last: Charizard (answers 8, beaten 5), Typhlosion (answers 2, beaten 8), Empoleon (answers 4, beaten 7), Poliwrath (answers 3, beaten 7), Sceptile (answers 4, beaten 9), Roserade (answers 1, beaten 12)
+== a sixth Water, or the Grass the six of them are missing
+  Empoleon (Water/Steel)         swap  Wailord     dV +0.4  release 0.0  net +0.4  
+  Sceptile (Grass)               swap  Wailord     dV +0.8  release 0.0  net +0.8  
+  members the threats beat: 60 with the Water, 59 with the Grass
+== a Magikarp at level 10, one EXP share, judged at two fights
+  at the fight on 50 it stands as Magikarp L19 [Water] 39 hp
+  at the fight on 60 it stands as Gyarados L27 [Water/Flying] 92 hp
+  on five shares it reaches the fight on 50 as Gyarados L32 [Water/Flying] 107 hp
+  and with its evolutions paused, Magikarp L32 [Water] 59 hp
+  at the next big fight          skip  -           dV -1.0  release 0.0  net -1.0  
+  at the one after               skip  -           dV -2.0  release 0.0  net -2.0  
+  five shares                    skip  -           dV -0.9  release 0.0  net -0.9  
+  five shares, paused            skip  -           dV -1.0  release 0.0  net -1.0  
+== a level 10 newcomer into a party at the cap
+  nothing                  L10  Magikarp  skip  dV -1.0
+  Lucky Egg alone          L10  Magikarp  skip  dV -1.0
+  one EXP share            L19  Magikarp  skip  dV -1.0
+  EXP share and Lucky Egg  L21  Magikarp  skip  dV -1.0
+  five EXP shares          L32  Magikarp  skip  dV -1.0
+== one run key, the Lucky Egg on the first member and then the last, and then Pokérus with it
+  egg on Blastoise   Blastoise L20, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
+  egg on Meganium    Blastoise L18, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L20
+  and Pokérus        Blastoise L23, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
+== four members and two free slots
+  Sceptile at the cap            take  -           dV +0.4  release 0.0  net +0.4  
+  Sunflora at level 20           skip  -           dV -0.8  release 0.0  net -0.8  
+  of 22 threats, the one is beaten by 4 and the other by 22
+== a fainted member, under three calendars
+  Hardcore                       swap  Blastoise   dV +0.5  release 0.0  net +0.5  
+  no heal, no shop               swap  Blastoise   dV +0.5  release 0.0  net +0.5  
+  a heal due before the fight    swap  Wailord     dV +0.3  release 0.0  net +0.3  
+  every slot the search tried, against 5 live members:
+    Blastoise +0.5  Feraligatr +0.2  Charizard +0.1  Wailord† +0.2  Typhlosion +0.3  Meganium +0.5
+  Hardcore, the corpse named     swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+  a barred member, named         swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+== a newcomer Single Type bars
+  Meganium, barred               skip  -           dV  0.0  release 0.0  net  0.0  barred
+== the replacement forced, as a trade forces it
+  Swampert for Meganium          swap  Meganium    dV +0.2  release 0.0  net +0.2  
+== the same bulk and power, at two speeds
+  speed 140                      swap  Lanturn     dV +2.4  release 0.0  net +2.4  
+  speed 40                       swap  Lanturn     dV +1.0  release 0.0  net +1.0  
+  rows whose answer moves first: 22 fast, 10 slow
+== the full swap search over six members is inside the budget, cold and memoised
+judgment: ok
