@@ -174,14 +174,15 @@ const scenarios = {
       pk("Comfey", 162, ["Fairy"], [M.playRough, M.synthesis, M.gigaDrain, M.petalDance], [223, 307, 312, 405, 339], [51, 52, 90, 82, 110, 100]),
       pk("Dudunsparce", 162, ["Normal"], [M.boomburst, M.hyperDrill, M.drillRun, M.blizzard], [353, 278, 301, 269, 225], [125, 100, 80, 85, 75, 55]),
     ],
-    // `stats`: [Atk, Def, SpA, SpD, Spe], as 48-preview's `foeOf` hands them over.
+    // `stats`: the `Stat`-indexed row [HP, Atk, Def, SpA, SpD, Spe], as 48-preview's `foeOf` hands it over. HP is
+    // the game's formula at 31 IVs off each species' own base HP; the audit reads only Speed.
     ahead: { next: { wave: 165, in: 1, kind: "fixed", label: "fixed battle", trainer: "Guzma", foes: [
-      { name: "Golisopod", level: 153, types: ["Bug", "Steel"], ability: "Shell Armor", stats: [581, 568, 289, 456, 176] },
-      { name: "Kleavor", level: 150, types: ["Bug", "Rock"], ability: "Sharpness", stats: [437, 315, 165, 278, 303] },
-      { name: "Araquanid", level: 150, types: ["Water", "Bug"], ability: "Water Bubble", stats: [270, 350, 215, 444, 174] },
-      { name: "Xurkitree", level: 153, types: ["Electric"], ability: "Beast Boost", stats: [318, 274, 578, 286, 254] },
-      { name: "Flygon", level: 153, types: ["Ground", "Dragon"], ability: "Levitate", passive: "Adaptability", stats: [312, 334, 315, 315, 404] },
-      { name: "Buzzwole", level: 159, types: ["Bug", "Fighting"], ability: "Beast Boost", stats: [478, 478, 201, 245, 334] },
+      { name: "Golisopod", level: 153, types: ["Bug", "Steel"], ability: "Shell Armor", stats: [439, 581, 568, 289, 456, 176] },
+      { name: "Kleavor", level: 150, types: ["Bug", "Rock"], ability: "Sharpness", stats: [416, 437, 315, 165, 278, 303] },
+      { name: "Araquanid", level: 150, types: ["Water", "Bug"], ability: "Water Bubble", stats: [410, 270, 350, 215, 444, 174] },
+      { name: "Xurkitree", level: 153, types: ["Electric"], ability: "Beast Boost", stats: [464, 318, 274, 578, 286, 254] },
+      { name: "Flygon", level: 153, types: ["Ground", "Dragon"], ability: "Levitate", passive: "Adaptability", stats: [455, 312, 334, 315, 315, 404] },
+      { name: "Buzzwole", level: 159, types: ["Bug", "Fighting"], ability: "Beast Boost", stats: [558, 478, 478, 201, 245, 334] },
     ] } },
     free: [mk(AddPokeballModifierType, { name: "5× Poké Ball", iconImage: "pb", tier: 0, pokeballType: 0 })],
     expect: (a, m, summary, party) => {
