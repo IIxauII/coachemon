@@ -362,10 +362,14 @@ The battle as it would stand one move from now: our stat stages after a Swords D
 
 A pokémon as a duel is scored: its stats at a level, its types, its ability and passive, the moves it can use, the
 **boss bars** it stands behind and the health it has left. Most of what the coach weighs is not a pokémon on the field
-— a standard threat, a stand-in for a newcomer, a foe in a **preview**, a **party** member at the level it will reach
-by the next big fight, a **fusion** the player hasn't committed — so each is built into a combatant first, and the duel
-never learns which kind it was handed. What is known of a live member is kept: its IVs, its nature, its moves, its
-ability, its passive and the stat investment it has been fed. What is unknown is neutral, never favourable. A
+— a standard threat, a stand-in for a newcomer, a foe in a **preview**, a **party** member at the level, and in the
+form, it will reach by the next big fight, a **fusion** the player hasn't committed — so each is built into a
+combatant first, and the duel never learns which kind it was handed. What is known of a live member is kept: its IVs,
+its nature, its moves, its ability, its passive and the stat investment it has been fed. What is unknown is neutral,
+never favourable. The one thing a member can lose on the way is what belongs to the species rather than to it: a
+member judged in the form it evolves into (see **Level projection**) brings the evolved species' base stats, typing,
+passive and ability — the last at the member's own ability index, which an evolution keeps — and leaves its own
+base-stat row behind, so the investment it has been fed does not reach the form it will be. A
 combatant is built off the field and carries base stat stages, even where the member behind it is standing on raised
 ones. A foe in a preview is the one built from no species at all — a preview holds plain data, never a game object —
 so its stat row is handed over whole rather than computed, and the row is what the duel then scores it by. A fusion is
@@ -383,6 +387,14 @@ Pokérus, and the **level cap**, which no projection ever passes: a member alrea
 share it would have taken is lost rather than passed to the members below it. A mon whose place in the fighting is not
 stated is projected on the bench share alone, in keeping with a **combatant**'s unknowns being neutral, never
 favourable. A projection is always an *estimate*, and that is what it carries into the judgment that reads it.
+
+The projection also answers which *species* the mon stands as at that fight, since a level is what carries a line
+forward: an evolution counts only where it can be read to land by then, and otherwise the mon is scored as it is, a
+distant final form inflating nobody's worth. What lands is an evolution whose level is above where the mon stands now
+and at or below the projected one. What does not: a level the mon is already past, since a member standing past its own
+evolution level has not evolved for a reason the coach cannot see; one waiting on an item, which has to be drawn, and
+luck is not counted; one carrying a condition, refused on purpose, because a condition reads the mon as it stands now
+where the question is whether it holds at the fight; and any at all on a member whose evolutions the player has paused.
 
 ## Level cap
 

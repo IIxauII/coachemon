@@ -324,13 +324,16 @@ export const HUD_DEPS = {
     `${P}#Pokemon.getBaseTypes`,
     `${P}#PlayerPokemon.fuse`,
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getAbility`,
+    `src/data/pokemon-species.ts#PokemonSpeciesForm.getPassiveAbility`,
     `src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr.canApply`,
   ],
 
-  /** game-code.md §15, §17. */
+  /** game-code.md §15, §17, §23. */
   "09-projection.js": [
     `${SCENE}#BattleScene.getMaxExpLevel`,
     `${SCENE}#BattleScene.applyPartyExp`,
+    `src/data/species-data-registry.ts#SpeciesDataRegistry.getEvolutions`,
+    `src/data/species-data-registry.ts#SpeciesDataRegistry.getSpecies`,
   ],
 
   /** game-code.md §13. */

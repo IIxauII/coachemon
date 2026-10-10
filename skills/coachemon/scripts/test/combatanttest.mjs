@@ -9,7 +9,8 @@ const ABILITIES = [];
 // Disguise is one of the abilities that doesn't work on a fusion, and carries the attr the game refuses it by.
 const NO_FUSION = [{ constructor: { name: "NoFusionAbilityAbAttr" } }];
 for (const [id, name, attrs = []] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [26, "Levitate"],
-  [39, "Rough Skin"], [61, "Shed Skin"], [209, "Disguise", NO_FUSION]]) ABILITIES[id] = { name, attrs };
+  [39, "Rough Skin"], [61, "Shed Skin"], [110, "Inner Focus"], [136, "Multiscale"],
+  [209, "Disguise", NO_FUSION]]) ABILITIES[id] = { name, attrs };
 const MOVES = [];
 const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100 } = {}) =>
   (MOVES[id] = { id, name, type: TY.indexOf(type), power, accuracy: acc, category: cat, pp, moveTarget: 3, priority: 0, flags: 0, attrs: [] });
@@ -27,6 +28,11 @@ const species = (id, name, types, baseStats, ability1) => ({
 const GARCHOMP = species(445, "Garchomp", ["Dragon", "Ground"], [108, 130, 95, 80, 85, 102], 8);
 const SNORLAX = species(143, "Snorlax", ["Normal"], [160, 110, 65, 65, 110, 30], 17);
 const DRATINI = species(147, "Dratini", ["Dragon"], [41, 64, 45, 50, 50, 50], 61);
+// The species Dratini stands as once the projection says its line lands (#576): its own abilities, by the index an
+// evolution keeps, and a passive of its own.
+const DRAGONITE = species(149, "Dragonite", ["Dragon", "Flying"], [91, 134, 95, 100, 100, 80], 110);
+DRAGONITE.getAbility = i => (i === 1 ? 136 : 110);
+DRAGONITE.getPassiveAbility = () => 39;
 // Heat Rotom's base stats and its second type are the form's, not the species'.
 const ROTOM = species(479, "Rotom", ["Electric", "Ghost"], [50, 50, 77, 95, 77, 91], 26);
 ROTOM.forms = [{ ...ROTOM }, { ...ROTOM, baseStats: [50, 65, 107, 105, 107, 86], type2: TY.indexOf("Fire") }];
@@ -116,6 +122,46 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.equal(combatantOf({ species: GARCHOMP, level: 50, ability: "Wonder Guard" }).stats[0], 1, "Wonder Guard caps HP at 1");
   assert.equal(combatantOf({ level: 50 }), null, "nothing to compute from");
   for (const level of [35, 50, 100]) console.log(`garchomp L${level} neutral ${row(at(level))}`);
+}
+
+// ---- A member judged as the species it evolves into by the next big fight is scored as that species
+{
+  const IVS = [31, 31, 31, 31, 31, 31];
+  const L30 = [73, 52, 41, 44, 44, 44];
+  const mon = live("Dratini", DRATINI, 30, L30, { ivs: IVS, moves: [DRAGON_CLAW], ability: "Shed Skin",
+    passive: "Marvel Scale", attrs: ["PreDefendFullHpEndureAbAttr"] });
+  const evolved = combatantOf({ mon, level: 45, species: DRAGONITE });
+  // Dragonite's own base stats at level 45 with the Dratini's 31 IVs and its neutral nature.
+  assert.deepEqual(evolved.stats, [150, 139, 104, 108, 108, 90], "the species it will be, at the level it will be it");
+  assert.deepEqual(evolved.getTypes(), [15, 2], "Dragon/Flying, not the Dratini's Dragon");
+  assert.equal(evolved.getAbility().name, "Inner Focus", "the evolved species' ability, not the member's Shed Skin");
+  assert.equal(evolved.getPassiveAbility().name, "Rough Skin", "and its own passive: a passive is the species'");
+  assert.equal(evolved.hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), false,
+    "the member's own ability is gone, and its attrs with it");
+  assert.deepEqual(evolved.moveset.map(pm => pm.moveId), [DRAGON_CLAW], "the moves it actually knows come along");
+  assert.deepEqual([evolved.level, evolved.species, evolved.formIndex], [45, DRAGONITE, 0]);
+  console.log(`dratini → dragonite L45 ${row(evolved)} | ${TY[evolved.getTypes()[0]]}/${TY[evolved.getTypes()[1]]} | ${evolved.getAbility().name}`);
+
+  // An evolution keeps the member's ability index, so a hidden or second ability carries over as that index.
+  const second = live("Dratini", DRATINI, 30, L30, { ivs: IVS, ability: "Shed Skin" });
+  second.abilityIndex = 1;
+  assert.equal(combatantOf({ mon: second, level: 45, species: DRAGONITE }).getAbility().name, "Multiscale");
+  // A species that cannot be asked answers off its first ability, and leaves a passive it can't name unknown.
+  const plain = combatantOf({ mon, level: 45, species: species(148, "Dragonair", ["Dragon"], [61, 84, 65, 70, 70, 70], 61) });
+  assert.equal(plain.getAbility().name, "Shed Skin", "Dragonair's `ability1`");
+  assert.equal(plain.hasPassive(), false, "unknown is neutral, never the member's own");
+  assert.deepEqual(plain.stats, [123, 94, 77, 81, 81, 81], "and off its own base stats");
+
+  // The investment the member has been fed is left behind with its own base-stat row, as a fusion's is: that row
+  // answers for the species it is now, never for the one it will be.
+  const fed = live("Dratini", DRATINI, 30, [85, 52, 41, 44, 44, 44], { ivs: IVS, base: [61, 64, 45, 50, 50, 50] });
+  assert.deepEqual(combatantOf({ mon: fed }).stats, [85, 52, 41, 44, 44, 44], "20 base HP of Protein, while it is a Dratini");
+  assert.deepEqual(combatantOf({ mon: fed, level: 45, species: DRAGONITE }).stats, evolved.stats, "and nothing of it once it is a Dragonite");
+
+  // The member as itself, and the member as what it will be, are two duels.
+  assert.notEqual(evolved.key, combatantOf({ mon, level: 45 }).key);
+  assert.equal(combatantOf({ mon, level: 45, species: DRATINI }).key, combatantOf({ mon, level: 45 }).key,
+    "its own species given over is no evolution at all");
 }
 
 // ---- A form brings its own base stats, types and ability, and no form index is the first
