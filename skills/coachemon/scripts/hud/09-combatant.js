@@ -39,6 +39,100 @@ const statsAt = (base, level, ivs, nature, ability) => {
   });
 };
 
+const stacksOf = m => Math.max(1, Math.floor(tryDo(() => m.getStackCount(), m?.stackCount ?? 1) ?? 1));
+
+/**
+ * What a held item does to the mon holding it, where anything here can price it at all, by the game's own class
+ * (game-code.md §15) and nearest class first up the chain:
+ *   `stat`       a stat multiplier, which the adapter folds into the stat row
+ *   `evolution`  the same, while the species it holds for can still evolve (an Eviolite)
+ *   `species`    the same, for the species it was made for (a Light Ball, a Thick Club, the DeepSea pair)
+ *   `power`      a move-power multiplier on its own type (a type booster), which the adapter folds into the moveset
+ *   `duel`       an item the approx matrix reads off `getHeldItems` itself — a Focus Band's save, a Reviver Seed's
+ *                second life — so there is nothing left for the adapter to apply
+ *
+ * An item outside this table is one nothing here prices: the matrix never reads it and the adapter cannot turn it
+ * into a stat or a multiplier, so what it is worth has to be charged flat rather than taken as free (12-value's
+ * `UNKNOWN_ITEM`). Leftovers and a Shell Bell are the plainest of them: the duel is a race to a KO and carries no
+ * end of turn to heal on.
+ */
+const PRICED = {
+  EvolutionStatBoosterModifier: "evolution",
+  SpeciesStatBoosterModifier: "species",
+  StatBoosterModifier: "stat",
+  AttackTypeBoosterModifier: "power",
+  SurviveDamageModifier: "duel",
+  PokemonInstantReviveModifier: "duel",
+};
+const pricingOf = m => {
+  for (let c = m?.constructor; c?.name; c = Object.getPrototypeOf(c)) if (PRICED[c.name]) return PRICED[c.name];
+  return null;
+};
+// @only 12-value, tests: pricesItem
+export const pricesItem = m => !!pricingOf(m);
+
+const canEvolve = sp => (tryDo(() => sp.getEvolutionLevels(), []) ?? []).length > 0;
+
+/**
+ * `row` with every stat multiplier the held items carry applied to it. The game applies these in `getEffectiveStat`
+ * rather than in `calculateStats`, so they go on the row the combatant hands over: the row is the whole of what the
+ * duel reads a stat off.
+ *
+ * A booster that will not say how much it multiplies by moves nothing, and one that names no species is taken at its
+ * word, as an ability given by name alone is. An Eviolite holds only while the species can still evolve, and at the
+ * game's ×1.25 where one half of a fusion can and the other cannot (game-code.md §15).
+ */
+const boostStats = (row, items, { species, fusionSpecies }) => {
+  const mult = [1, 1, 1, 1, 1, 1];
+  let any = false;
+  for (const m of items) {
+    const how = pricingOf(m);
+    if (how !== "stat" && how !== "evolution" && how !== "species") continue;
+    const stats = Array.isArray(m.stats) ? m.stats : [];
+    let by = typeof m.multiplier === "number" && m.multiplier > 0 ? m.multiplier : 1;
+    if (how === "evolution") {
+      const halves = fusionSpecies ? [species, fusionSpecies] : [species];
+      const n = halves.filter(canEvolve).length;
+      by = n === halves.length ? by : n ? 1.25 : 1;
+    }
+    if (how === "species" && Array.isArray(m.species)
+      && !m.species.includes(species?.speciesId) && !m.species.includes(fusionSpecies?.speciesId)) continue;
+    for (const s of stats) {
+      if (typeof s !== "number" || !(s >= 0) || s > 5) continue;
+      mult[s] *= by;
+      any = any || by !== 1;
+    }
+  }
+  return any ? row.map((v, s) => (mult[s] === 1 ? v : Math.max(1, Math.floor(v * mult[s])))) : row;
+};
+
+// The power each move type's boosters multiply by: `floor(power × (1 + 0.2 × stacks))` (game-code.md §15).
+const powerBoosts = items => {
+  const by = new Map();
+  for (const m of items) {
+    if (pricingOf(m) !== "power" || typeof m.moveType !== "number") continue;
+    by.set(m.moveType, (by.get(m.moveType) ?? 1) * (1 + 0.2 * stacksOf(m)));
+  }
+  return by;
+};
+/**
+ * `pm` with its move's power multiplied, for a slot a type booster lifts. The move object keeps its own prototype —
+ * the duel asks it for `hasFlag` and reads its attrs — so only the power is laid over it. A move the game prices
+ * from the situation (power −1) carries no power to lift.
+ */
+const boostSlot = (pm, by) => {
+  const mv = tryDo(() => pm.getMove());
+  const f = mv ? by.get(mv.type) : null;
+  if (!f || !(mv.power > 0)) return pm;
+  const lifted = Object.create(mv, { power: { value: Math.floor(mv.power * f), enumerable: true } });
+  return Object.create(pm, { getMove: { value: () => lifted } });
+};
+
+// What a held item is to a combatant's key and to a memo keyed on it: the class the duel and the adapter price it by,
+// how many of it, and the fields either reads.
+export const itemKeyOf = m => [m?.constructor?.name ?? null, stacksOf(m), pricingOf(m), m?.stats ?? null,
+  m?.multiplier ?? null, m?.moveType ?? null, m?.species ?? null, m?.isTransferable ?? null];
+
 // A slot built from a move id has none of its PP spent, which is what `plainUsable` reads it by.
 const slotOf = (id, table) => {
   const mv = table?.[id];
@@ -89,6 +183,11 @@ const fusedTypes = (a, b) => {
  *   `stats`    a `Stat`-indexed stat row given outright, for a combatant with no species to compute one from — a
  *              **preview**'s foe. It wins over the base stats, the IVs and the nature, which then only name the mon
  *   `moves`    move ids, at full PP; the live moveset where absent
+ *   `items`    the held items it carries, the live member's own where absent and none where there is no member. The
+ *              ones the adapter can price (`PRICED`) are applied here, as the stat and power multipliers the game
+ *              applies them as; the whole list is handed on through `getHeldItems`, which is where the duel reads
+ *              the few it prices itself. A member scored without its items — what a release destroys — is the same
+ *              spec with `items` cut down to what stays behind
  *   `ability`  an ability name or id, `passive` the same; null for none, absent for the species' or the member's own
  *   `attrs`    ability attr names beyond `ATTRS_BY_ABILITY`, for a combatant with no live member behind it
  *   `boss`     boss bars, `bar` the bar it stands on; `hp` its health, full where absent
@@ -132,15 +231,20 @@ export const combatantOf = (spec = {}) => {
   const base = given ? null : other ? fusedBase(form?.baseStats, other.base) : own ?? form?.baseStats;
   if (!given && !(Array.isArray(base) && base.length >= 6)) return null;
 
-  const stats = given ?? statsAt(base, level, ivs, nature, ability);
+  const fusionSpecies = other?.species ?? mon?.fusionSpecies ?? null;
+  const fusionFormIndex = fusionSpecies ? other?.formIndex ?? mon?.fusionFormIndex ?? 0 : null;
+  const held = (spec.items ?? (mon ? tryDo(() => mon.getHeldItems(), []) : []) ?? []).filter(Boolean);
+  const stats = boostStats(given ?? statsAt(base, level, ivs, nature, ability), held, { species, fusionSpecies });
   const maxHp = Math.max(1, stats[Stat.HP]);
   const hp = Math.max(0, Math.min(maxHp, spec.hp ?? maxHp));
   const ownTypes = spec.types ?? (mon && !evolved ? tryDo(() => mon.getTypes()) : null)
     ?? [form?.type1, form?.type2].filter(t => t != null && t >= 0);
   const types = other ? fusedTypes({ type1: ownTypes[0] ?? null, type2: ownTypes[1] ?? null }, other) : ownTypes;
-  const moveset = Array.isArray(spec.moves)
+  const powers = powerBoosts(held);
+  const slots = Array.isArray(spec.moves)
     ? spec.moves.map(id => slotOf(id, tryDo(() => gameTables().moves))).filter(Boolean)
     : (mon?.moveset ?? []).filter(Boolean);
+  const moveset = powers.size ? slots.map(pm => boostSlot(pm, powers)) : slots;
   const bars = Math.max(0, Math.floor(spec.boss ?? mon?.bossSegments ?? 0));
   const bar = Math.max(0, Math.min(bars ? bars - 1 : 0, spec.bar ?? (bars ? bars - 1 : 0)));
   const stages = spec.stages ?? BASE_STAGES;
@@ -152,13 +256,13 @@ export const combatantOf = (spec = {}) => {
   const hasAttr = spec.ability === undefined && !other && !evolved && mon
     ? a => tryDo(() => mon.hasAbilityWithAttr(a), false)
     : a => attrs.has(a);
-  const fusionSpecies = other?.species ?? mon?.fusionSpecies ?? null;
-  const fusionFormIndex = fusionSpecies ? other?.formIndex ?? mon?.fusionFormIndex ?? 0 : null;
-
   return {
-    // Everything the duel reads, so a pair score memoised on it cannot be served to a different duel.
+    // Everything the duel reads, so a pair score memoised on it cannot be served to a different duel. The held items
+    // are in it whole: the boosted stats and moveset above carry only the ones the adapter prices, while the duel
+    // reads the rest off `getHeldItems` for itself.
     key: JSON.stringify([species?.speciesId ?? null, fusionSpecies ? [fusionSpecies.speciesId ?? null, fusionFormIndex] : null,
-      formIndex, level, stats, types, ability, passive, [...attrs], moveset.map(slotKey), hp, maxHp, bars, bar, stages, player]),
+      formIndex, level, stats, types, ability, passive, [...attrs], moveset.map(slotKey), hp, maxHp, bars, bar, stages, player,
+      held.map(itemKeyOf)]),
     name: spec.name ?? mon?.name ?? tryDo(() => species.getName(formIndex), species?.name),
     id: spec.id ?? mon?.id ?? null,
     species, fusionSpecies, fusionFormIndex, formIndex, level, stats, hp, moveset,
@@ -173,7 +277,7 @@ export const combatantOf = (spec = {}) => {
     hasPassive: () => !!passive,
     getPassiveAbility: () => (passive ? { name: passive } : null),
     hasAbilityWithAttr: hasAttr,
-    getHeldItems: () => (mon ? tryDo(() => mon.getHeldItems(), []) ?? [] : []),
+    getHeldItems: () => held,
     getTag: () => null,
     isBoss: () => bars > 0,
     isPlayer: () => !!player,
