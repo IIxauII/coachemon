@@ -79,8 +79,9 @@ const canEvolve = sp => (tryDo(() => sp.getEvolutionLevels(), []) ?? []).length 
  * duel reads a stat off.
  *
  * A booster that will not say how much it multiplies by moves nothing, and one that names no species is taken at its
- * word, as an ability given by name alone is. An Eviolite holds only while the species can still evolve, and at the
- * game's ×1.25 where one half of a fusion can and the other cannot (game-code.md §15).
+ * word, as an ability given by name alone is. An Eviolite holds only while the species can still evolve, and at half
+ * its lift — the game's own `1 + (multiplier - 1) / 2`, which is ×1.25 for the Eviolite's ×1.5 — where one half of a
+ * fusion can and the other cannot (game-code.md §15).
  */
 const boostStats = (row, items, { species, fusionSpecies }) => {
   const mult = [1, 1, 1, 1, 1, 1];
@@ -93,7 +94,7 @@ const boostStats = (row, items, { species, fusionSpecies }) => {
     if (how === "evolution") {
       const halves = fusionSpecies ? [species, fusionSpecies] : [species];
       const n = halves.filter(canEvolve).length;
-      by = n === halves.length ? by : n ? 1.25 : 1;
+      by = n === halves.length ? by : n ? 1 + (by - 1) / 2 : 1;
     }
     if (how === "species" && Array.isArray(m.species)
       && !m.species.includes(species?.speciesId) && !m.species.includes(fusionSpecies?.speciesId)) continue;

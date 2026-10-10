@@ -313,7 +313,7 @@ export const HUD_DEPS = {
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getRootSpeciesId`,
   ],
 
-  /** game-code.md §24. */
+  /** game-code.md §15, §24. */
   "09-combatant.js": [
     `${P}#Pokemon.calculateStats`,
     `${P}#Pokemon.calculateBaseStats`,
@@ -326,6 +326,15 @@ export const HUD_DEPS = {
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getAbility`,
     `src/data/pokemon-species.ts#PokemonSpeciesForm.getPassiveAbility`,
     `src/data/abilities/ab-attrs.ts#PreDefendFullHpEndureAbAttr.canApply`,
+    // The held items the adapter prices (`PRICED`), which it re-implements as the multipliers the game applies: the
+    // stat boosters where `getEffectiveStat` applies them, the Eviolite's half lift for a half-evolved fusion, the
+    // species gate a Thick Club is held to, and a type booster's move power.
+    `${P}#Pokemon.getEffectiveStat`,
+    `src/modifier/modifier.ts#StatBoosterModifier.apply`,
+    `src/modifier/modifier.ts#EvolutionStatBoosterModifier.apply`,
+    `src/modifier/modifier.ts#SpeciesStatBoosterModifier.shouldApply`,
+    `src/modifier/modifier.ts#AttackTypeBoosterModifier.apply`,
+    `src/data/pokemon-species.ts#PokemonSpecies.getEvolutionLevels`,
   ],
 
   /** game-code.md §15, §17, §23. */
