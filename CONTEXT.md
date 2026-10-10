@@ -401,3 +401,30 @@ where the question is whether it holds at the fight; and any at all on a member 
 The highest level a pokémon in a run can be given EXP towards. It is a function of the wave alone, rounded up to its
 decade, and it is about the level of that decade's boss; Daily runs sit well above Classic's. A Rare Candy is the only
 way past it.
+
+## Team value
+
+What the **party** is worth against the fights ahead, in **turn score**: the one number a catch, a release or a swap is
+judged by, so that every such call is priced in the same currency instead of argued over the type chart. It is read one
+threat at a time and averaged over them — the standard threats the coach keeps for a wave, and the roster of the next
+big fight where that can be read — so a team is never good in the abstract, only against something.
+
+A threat's row is led by its **answer**: the member that beats it by the widest margin, a duel's margin being the turns
+the threat needs to fell that member less the turns that member needs to fell it, with moving first worth one hit either
+way. A second answer earns a fraction of its own margin, since a team whose only answer can be lost is thinner than one
+holding a spare. Credit is added for a member fast enough to take the threat off the field once it has been worn down,
+and for one that loses the duel outright but can still absorb its best hit and come back out. Against all of it stands
+what the threat beats — the members it wins the race against — charged faster than one for one, because a threat that
+beats four of six is worse than twice a threat that beats two. **Dead weight** earns a row nothing, not a little.
+
+A single lopsided duel is clamped, so a member that happens to wall one threat cannot carry a team that loses
+everywhere else. Every weight is in turns before it is given a number, and the value carries the **confidence** of the
+weakest thing it was read from: a **level projection** is an estimate, and so is anything built on one.
+
+## Dead weight
+
+A **party** member that cannot fight at the next big fight: fainted with no heal, no shop and no revive reachable
+before that fight on the **run calendar**, or barred by a challenge the run was started under. It keeps its slot and
+contributes nothing at all to **team value** — a mon that cannot be sent out is an **answer** to nothing. Which of the
+two it is always said, because they are undone differently: a faint by a revive the player can still reach, a bar not
+at all while the run lasts.
