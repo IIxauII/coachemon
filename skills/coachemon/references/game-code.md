@@ -1280,7 +1280,7 @@ for whether a boss is next, the catch card for the run's last wave:
 
 | Rule | Source | Waves |
 |---|---|---|
-| `gameMode.isWaveFinal(w)` | `src/game-mode.ts:296` | classic and challenge 200; daily 50; endless every 250 |
+| `gameMode.isWaveFinal(w)` | `src/game-mode.ts:296` | classic and challenge 200; daily 50; endless every 250, a final boss the run carries on past (`src/phases/victory-phase.ts:57`) |
 | `gameMode.isFixedBattle(w)` | `src/game-mode.ts:357`, table `classicFixedBattles` (`src/data/trainers/fixed-battle-configs.ts:24`, waves `src/enums/fixed-boss-waves.ts`) | 5 youngster; rival 8/25/55/95/145/195; evil team 35/62/64/66/112/114/115/164/165; Elite Four 182/184/186/188; champion 190 |
 | the gym rule | `src/game-mode.ts:217`, the early return in `isWaveTrainer` | `w % 30 === (offsetGym ? 0 : 20)`, except the final wave |
 | `gameMode.isBoss(w)` | `src/game-mode.ts:313` | every tenth wave |

@@ -21,8 +21,8 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, challengeOn, trainerOdds, hasTrainers, kindIsRolled,
-  isGruntWave, poolAnchorWave, arenaRebuiltBetween } = globalThis.__hud["03-calendar"];
+const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, reviveBefore, challengeOn, trainerOdds, hasTrainers,
+  kindIsRolled, isGruntWave, poolAnchorWave, arenaRebuiltBetween } = globalThis.__hud["03-calendar"];
 
 const row = (label, cells) => console.log(`${label.padEnd(26)}${cells.join("  ")}`);
 const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
@@ -63,7 +63,7 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   row("endless", kinds(e, [20, 200, 210, 250, 500]));
   assert.equal(waveKind(d, 50), "final", "the Daily run ends at 50, which the gym rule would otherwise claim");
   assert.equal(waveKind(d, 20), "gym");
-  assert.equal(waveKind(e, 250), "final", "Endless ends every 250th wave");
+  assert.equal(waveKind(e, 250), "final", "Endless meets a final boss every 250th wave, and carries on past it");
   assert.equal(waveKind(e, 210), "boss", "210 is only a tenth wave");
   assert.equal(waveKind(e, 20), "boss", "Endless has no trainers, so no gym wave — only a tenth wave");
   assert.equal(waveKind(e, 200), "boss");
@@ -158,6 +158,43 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
     "a negative value is still on, not off: the calendar and the shop must agree");
   assert.equal(healRevives(scene("classic", { challenges: [{ id: HARDCORE, value: -1 }] })), false,
     "so a negative Hardcore value still turns off revives, agreeing with the shop's `isHardcore`");
+}
+
+// ---- A way back is looked for up to the wave the run ends on, which Endless never reaches
+{
+  const way = r => (r ? `${r.kind} ${r.wave}` : "none");
+  const ls = value => [{ id: LIMITED_SUPPORT, value }];
+  const c = scene("classic"), ls2 = scene("classic", { challenges: ls(2) });
+  console.log("== reviveBefore, the last waves");
+  row("classic", [195, 199, 200].map(w => `${w}→${way(reviveBefore(c, w))}`));
+  assert.deepEqual(reviveBefore(c, 195), { kind: "shop", wave: 195 }, "no heal is left, but 195's own clear opens a shop");
+  assert.deepEqual(reviveBefore(c, 199), { kind: "shop", wave: 199 });
+  assert.equal(reviveBefore(c, 200), null, "the run ends on 200: no heal comes after it, and no shop either");
+  assert.equal(reviveBefore(ls2, 192, 200), null, "past the last heal, with no shop, nothing comes before the final");
+  const d = scene("daily"), dls2 = scene("daily", { challenges: ls(2) });
+  row("daily", [`48→${way(reviveBefore(d, 48))}`, `48, ls 2→${way(reviveBefore(dls2, 48))}`]);
+  assert.deepEqual(reviveBefore(d, 48), { kind: "shop", wave: 48 }, "Daily ends on 50, so its X1 heal never comes");
+  assert.equal(reviveBefore(dls2, 48), null);
+
+  const e = scene("endless"), els2 = scene("endless", { challenges: ls(2) });
+  console.log("== reviveBefore, Endless's 250th wave");
+  row("endless", [`249→${way(reviveBefore(e, 249))}`, `245 to 260, ls 2→${way(reviveBefore(els2, 245, 260))}`]);
+  assert.deepEqual(reviveBefore(e, 249), { kind: "heal", wave: 251 }, "the run carries on past 250 and heals entering 251");
+  assert.deepEqual(reviveBefore(els2, 245, 260), { kind: "heal", wave: 251 },
+    "so a member fainted before the 250 boss is back for 260, though no shop opens on the way");
+  assert.deepEqual(bigFightsAhead(e, 241, 30).map(f => [f.wave, f.kind]), [[250, "final"], [260, "boss"], [270, "boss"]],
+    "the schedule walks on past it too");
+
+  // Standing on an X0: its own clear opens no shop, except under Limited Support 1, which queues one in the heal's place.
+  console.log("== reviveBefore, from an X0");
+  for (const value of [0, 1, 2, 3]) row(`limited support ${value}`, [`40→${way(reviveBefore(scene("classic", { challenges: ls(value) }), 40))}`]);
+  assert.deepEqual(reviveBefore(c, 40), { kind: "heal", wave: 41 });
+  assert.deepEqual(reviveBefore(scene("classic", { challenges: ls(1) }), 40), { kind: "shop", wave: 40 },
+    "no heal, but the X1 transition's rewards screen counts as 40's shop");
+  assert.deepEqual(reviveBefore(ls2, 40), { kind: "heal", wave: 41 }, "the heal stays, the shop does not");
+  assert.equal(reviveBefore(scene("classic", { challenges: ls(3) }), 40), null, "value 3 removes both");
+  assert.equal(reviveBefore(scene("classic", { challenges: [{ id: HARDCORE, value: 1 }] }), 40), null,
+    "and Hardcore brings no one back however the calendar falls");
 }
 
 // ---- Trainer odds roll with a two-wave look-back and stop beside a gym or fixed battle (game-code.md §10)
