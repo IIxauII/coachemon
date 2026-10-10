@@ -234,6 +234,33 @@ Options
 · Refuse — shop only, no reward
 summary Dark Deal: your call
 weakest first  Jolteon fainted 0.0 · Lapras 1.4 · Garchomp 1.9
+== dark deal, the heal comes before the next big fight
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: your call
+Options
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · L38 Lapras for a legendary
+· Refuse — shop only, no reward
+summary Dark Deal: your call
+next big fight  gym 50 · weakest first  Jolteon 0.2 · Lapras 0.8 · Garchomp 1.8
+== dark deal, the next big fight comes before the heal
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: take Refuse — shop only, no reward · avoid Deal
+Options
+✗ Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · Lapras is your strongest
+★ Refuse — shop only, no reward
+summary Dark Deal: take Refuse — shop only, no reward · avoid Deal
+next big fight  gym 50 · weakest first  Garchomp fainted 0.0 · Jolteon 0.7 · Lapras 1.8
+== dark deal, no next big fight to be back for
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: your call
+Options
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · L38 Lapras for a legendary
+· Refuse — shop only, no reward
+summary Dark Deal: your call
+next big fight  none · weakest first  Jolteon 0.2 · Lapras 0.9 · Garchomp 2.1
 == a trainer's test
 ⌃ {Hide the drawer} × {Close}
 🎭 A Trainer's Test rogue A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards

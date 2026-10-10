@@ -538,6 +538,41 @@ const threatTables = () => {
     "dead weight is weakest, at zero, and said to be dead weight rather than priced");
 }
 
+// ---- Whether a fainted member is back for the next big fight is the calendar's to say, from the card's own entry
+// point: under Limited Support 2 there is a heal and no shop, so it turns on whether the heal comes before the fight.
+// Garchomp, the strongest, is down, and the deal draws Lapras from the two standing — which is "your strongest" only
+// when Garchomp is dead weight at that fight (#571).
+{
+  const LS2 = [{ id: 8, value: 2 }];
+  const CLASSIC = { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0,
+    isFixedBattle: w => [5, 8, 25, 35, 55, 62, 64, 66, 95].includes(w), challenges: LS2 };
+  const downed = (wave, gameMode) => {
+    const party = team();
+    party[0].hp = 0;
+    return { type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option(), option()],
+      draws: { 30512: [0], [30512 * 500]: [70] }, party, wave, gameMode, tables: threatTables() };
+  };
+  const case_ = (title, wave, gameMode) => {
+    const r = show(`dark deal, ${title}`, downed(wave, gameMode));
+    const fight = globalThis.__hud["03-calendar"].bigFightsAhead(r.scene, wave + 1)[0] ?? null;
+    console.log(`next big fight  ${fight ? `${fight.kind} ${fight.wave}` : "none"} · weakest first  ${ladder(r.scene)}`);
+    return { m: r.model(), fight };
+  };
+  const before = case_("the heal comes before the next big fight", 40, CLASSIC);
+  assert.deepEqual(before.fight, { wave: 50, kind: "gym" }, "the classic gym on 50, with W41's heal ahead of it");
+  assert.match(before.m.options[0].outcome, /^Lapras is taken for good/);
+  assert.notEqual(before.m.options[0].why, "Lapras is your strongest", "Garchomp is back for the gym, and still the carry");
+  const after = case_("the next big fight comes before the heal", 42, CLASSIC);
+  assert.deepEqual(after.fight, { wave: 50, kind: "gym" });
+  assert.equal(after.m.options[0].why, "Lapras is your strongest",
+    "no shop and no heal before 50: Garchomp is dead weight there, so Lapras is the carry the deal would take");
+  assert.deepEqual(verdicts(after.m), ["avoid", "take"]);
+  const none = case_("no next big fight to be back for", 42, { challenges: LS2 });
+  assert.equal(none.fight, null, "a mode with no schedule names no fight");
+  assert.notEqual(none.m.options[0].why, "Lapras is your strongest",
+    "with no fight to reach, W51's heal counts: Garchomp is a member again");
+}
+
 // ---- A Trainer's Test: an Elite Four party for an Epic egg, or a full heal for declining.
 {
   const test = (party, level = 1) => ({ type: 17, tier: 3, wave: 60, labels: ["Accept", "Decline"], options: [option(), option()], party,
