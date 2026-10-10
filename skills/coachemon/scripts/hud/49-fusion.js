@@ -1,6 +1,7 @@
 // Which two members a DNA Splicer should fuse, in which order, and whether any fusion is worth the member it spends.
 // The pairs are ranked by the fusion judgment (#588), so this module scores nothing itself: it reads the run, orders
-// what comes back and says it in words. Every read here is pure, so no `sandbox` (game-code.md §24).
+// what comes back and says it in words. It is built inside the run read's `sandbox` and opens none of its own
+// (game-code.md §24).
 import { TYPES, iconOf } from "./01-core.js";
 import { standardThreats } from "./11-threats.js";
 import { judgeFusionPair } from "./12-value.js";

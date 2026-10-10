@@ -158,12 +158,21 @@ const txt = n => (n == null ? "" : typeof n === "string" ? n : n.children ? n.ch
 const lines = el => wholeCard(el)
   .map(txt).map(t => t.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n") + (el.textContent ? `\nTEXT ${el.textContent}` : "");
 
+// The card is built inside a run read now, so it opens a `sandbox` where it used to open none: every case asserts
+// what the sibling card tests assert of that seam — the sandbox was restored and the run's own RNG stream never
+// advanced, because a run read may never change what the run would have done (#589).
+const untouched = label => {
+  assert.equal(globalThis.__coachHud.stats().breaches, 0, `${label}: sandbox restored`);
+  assert.equal(globalThis.Phaser.Math.RND.state(), "!rnd,0", `${label}: RNG untouched`);
+};
+
 const show = (label, opts) => {
   const last = mount(opts);
   console.log(`== ${label}\n${lines(last.el)}`);
   const m = last.model;
   assert.equal(JSON.stringify(JSON.parse(JSON.stringify(m))), JSON.stringify(m), `${label}: JSON-safe`);
   console.log(`summary ${opts.screen === "rewards" ? last.summary?.rewards : last.summary?.fusion}`);
+  untouched(label);
   return m;
 };
 
@@ -222,6 +231,7 @@ let best;
   assert.equal(f.ability, null);
   assert.ok(f.notes.some(n => /Disguise doesn't work fused/.test(n)), JSON.stringify(f.notes));
   console.log(`== Snorlax ← Mimikyu\n${f.notes.join(" · ")}\n${f.why.join(" · ")}`);
+  untouched("Snorlax ← Mimikyu");
 }
 
 // ---- Another party screen (a plain check) draws no fusion card.
@@ -229,6 +239,7 @@ let best;
   const { model } = mount({ partyUiMode: 11 });
   assert.notEqual(model?.kind, "fusion");
   console.log(`== party screen, not splicing\nkind ${model?.kind ?? null}`);
+  untouched("party screen, not splicing");
 }
 
 // ---- The rewards screen: the Splicer is taken for its best fusion, and passed over when none is worth a slot.
