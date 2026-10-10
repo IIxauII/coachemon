@@ -8,9 +8,10 @@ const cat = { P: 0, S: 1, X: 2 };
 const species = (id, name, types, bst, extra = {}) => ({ speciesId: id, name, type1: TY.indexOf(types[0]), type2: types[1] ? TY.indexOf(types[1]) : null,
   baseTotal: bst, getEvolutionLevels: () => [], getRootSpeciesId: () => id, getName: () => name, getIconAtlasKey: () => "k", getIconId: () => String(id), ...extra });
 let nextId = 1;
-// `stats`: [hp, atk, def, spa, spd, spe].
-const pk = (name, types, level, { stats = [100, 80, 80, 80, 80, 80], hp, bst = 500, moves = [], nature = 0, status = 0, ability = "x", id, ivs, held = [] } = {}) => {
-  const sp = species(id ?? 100 + nextId, name, types, bst);
+// `stats`: [hp, atk, def, spa, spd, spe]. `base` is the species' own base-stat row, which only a mon a duel has to
+// read declares: without one the combatant adapter hands back nothing and no team value can be put on the member.
+const pk = (name, types, level, { stats = [100, 80, 80, 80, 80, 80], hp, bst = 500, moves = [], nature = 0, status = 0, ability = "x", id, ivs, held = [], base = null } = {}) => {
+  const sp = species(id ?? 100 + nextId, name, types, bst, base ? { baseStats: base } : {});
   const p = {
     id: id ?? nextId++, name, level, species: sp, nature, status: status ? { effect: status } : null,
     hp: hp ?? stats[0], getMaxHp: () => stats[0], getHpRatio: () => p.hp / stats[0], getStat: i => stats[i],
@@ -18,14 +19,22 @@ const pk = (name, types, level, { stats = [100, 80, 80, 80, 80, 80], hp, bst = 5
     isAllowedInBattle: () => p.hp > 0, isAllowedInChallenge: () => true, isOfType: t => p.getTypes().includes(t),
     canSetStatus: () => true, getSpeciesForm: () => ({ getBaseStatTotal: () => bst }),
     getIconAtlasKey: () => "k", getIconId: () => name, getNameToRender: () => name, ivs, getHeldItems: () => held,
-    moveset: moves.map(([n, t, pw, c, moveId]) => ({ moveId: moveId ?? n, getName: () => n, getMove: () => ({ name: n, type: TY.indexOf(t), power: pw, category: cat[c] }) })),
+    ...(base ? { calculateBaseStats: () => base.slice() } : {}),
+    // A slot carries what a duel reads as well as what a card reads: the PP left, and the move's own accuracy,
+    // target and priority. Without them nothing can be put on the member against a threat (#582).
+    moveset: moves.map(([n, t, pw, c, moveId]) => ({ moveId: moveId ?? n, ppUsed: 0, getMovePp: () => 10,
+      getName: () => n,
+      getMove: () => ({ name: n, type: TY.indexOf(t), power: pw, category: cat[c], accuracy: 100, pp: 10,
+        moveTarget: 3, priority: 0, flags: 0, attrs: [] }) })),
   };
   return p;
 };
+// The three carry their species' real base-stat rows, each summing to the `bst` already declared beside it, so every
+// BST the cards read is where it was and a duel can now be fought over them too (#582).
 const team = () => [
-  pk("Garchomp", ["Dragon", "Ground"], 40, { stats: [150, 130, 95, 80, 85, 102], bst: 600, nature: 3, moves: [["Earthquake", "Ground", 100, "P"], ["Dragon Claw", "Dragon", 80, "P"]] }),
-  pk("Lapras", ["Water", "Ice"], 38, { stats: [170, 85, 80, 85, 95, 60], bst: 535, moves: [["Surf", "Water", 90, "S"], ["Ice Beam", "Ice", 90, "S"]] }),
-  pk("Jolteon", ["Electric"], 36, { stats: [100, 65, 60, 110, 95, 130], bst: 525, ability: "Volt Absorb", moves: [["Thunderbolt", "Electric", 90, "S"]] }),
+  pk("Garchomp", ["Dragon", "Ground"], 40, { stats: [150, 130, 95, 80, 85, 102], base: [108, 130, 95, 80, 85, 102], bst: 600, nature: 3, moves: [["Earthquake", "Ground", 100, "P"], ["Dragon Claw", "Dragon", 80, "P"]] }),
+  pk("Lapras", ["Water", "Ice"], 38, { stats: [170, 85, 80, 85, 95, 60], base: [130, 85, 80, 85, 95, 60], bst: 535, moves: [["Surf", "Water", 90, "S"], ["Ice Beam", "Ice", 90, "S"]] }),
+  pk("Jolteon", ["Electric"], 36, { stats: [100, 65, 60, 110, 95, 130], base: [65, 65, 60, 110, 95, 130], bst: 525, ability: "Volt Absorb", moves: [["Thunderbolt", "Electric", 90, "S"]] }),
 ];
 
 const teamAt = level => team().map(p => Object.assign(p, { level }));
@@ -130,6 +139,14 @@ const show = (title, args) => {
   return r;
 };
 const verdicts = m => m.options.map(o => o.verdict);
+// What the Dark Deal's "your weakest link" is reading, which no row of the card prints in full: the whole party
+// ranked weakest first, with what each would cost the team to lose, dead weight ahead of everyone at zero (#582).
+// Read at the fight the card reads it at, so the ladder is the card's own answer and not a second question.
+const ladder = sc => globalThis.__hud["26-run"].readRun(sc, run => globalThis.__hud["12-value"].weakestMember(run,
+  { fight: globalThis.__hud["03-calendar"].bigFightsAhead(sc, sc.currentBattle.waveIndex + 1)[0]?.wave ?? null }))
+  .ranked.map(r => `${r.name}${r.dead ? ` ${r.dead}` : ""} ${turns(r.cost)}`).join(" · ");
+// A cost rounds to a tenth of a turn, and one just under zero rounds to zero rather than to a minus sign.
+const turns = n => (n.toFixed(1) === "-0.0" ? "0.0" : n.toFixed(1));
 
 // ---- Mysterious Chest: the trap roll is the pre-option fork's first draw (offset ×1).
 const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [option(), option()], ...extra });
@@ -452,43 +469,93 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.match(m.options[0].why, /lose and the party comes back/);
 }
 
+// The species table the standard threats are built against, which is what puts a team value — and so a weakest
+// member — on the party at all (#582). Eighteen real species with their real base stats, one for every type, each a
+// species the randbats snapshot in the bundle lists so the join the HUD does in the page is the join here. The move
+// table is the snapshot's own names, every one an untyped attack of 80: what a threat brings is not this file's
+// subject, and threatstest and judgmenttest pin that side.
+const THREAT_DEX = [
+  [3, "Venusaur", ["Grass", "Poison"], [80, 82, 83, 100, 100, 80]],
+  [59, "Arcanine", ["Fire"], [90, 110, 80, 100, 80, 95]],
+  [65, "Alakazam", ["Psychic"], [55, 50, 45, 135, 95, 120]],
+  [68, "Machamp", ["Fighting"], [90, 130, 80, 65, 85, 55]],
+  [76, "Golem", ["Rock", "Ground"], [80, 120, 130, 55, 65, 45]],
+  [94, "Gengar", ["Ghost", "Poison"], [60, 65, 60, 130, 75, 110]],
+  [121, "Starmie", ["Water", "Psychic"], [60, 75, 85, 100, 85, 115]],
+  [130, "Gyarados", ["Water", "Flying"], [95, 125, 79, 60, 100, 81]],
+  [143, "Snorlax", ["Normal"], [160, 110, 65, 65, 110, 30]],
+  [149, "Dragonite", ["Dragon", "Flying"], [91, 134, 95, 100, 100, 80]],
+  [197, "Umbreon", ["Dark"], [95, 65, 110, 60, 130, 65]],
+  [205, "Forretress", ["Bug", "Steel"], [75, 90, 140, 60, 60, 40]],
+  [210, "Granbull", ["Fairy"], [90, 120, 75, 60, 60, 45]],
+  [212, "Scizor", ["Bug", "Steel"], [70, 130, 100, 55, 80, 65]],
+  [462, "Magnezone", ["Electric", "Steel"], [70, 70, 115, 130, 90, 60]],
+  [473, "Mamoswine", ["Ice", "Ground"], [110, 130, 80, 70, 60, 80]],
+];
+// Lazy: the snapshot comes out of the bundle, which only a mount has evaluated. Every mount re-evaluates it, and the
+// move names and their order are the same snapshot each time.
+const threatTables = () => {
+  const dex = THREAT_DEX.map(([id, name, types, base]) =>
+    species(id, name, types, base.reduce((t, x) => t + x, 0), { baseStats: base }));
+  const moves = [null];
+  for (const name of globalThis.__hud["05-randbats"].RANDBATS.m) {
+    moves.push({ id: moves.length, name, type: 0, power: 80, accuracy: 100, category: 0, pp: 10, moveTarget: 3,
+      priority: 0, flags: 0, attrs: [] });
+  }
+  return { species: { getAllSpecies: () => dex, getSpecies: id => dex.find(s => s.speciesId === id) ?? null }, moves };
+};
+
 // ---- Dark Deal: which member it takes is the pre-option fork's draw, the boss's tier the option fork's.
 {
-  const deal = draws => ({ type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option(), option()], draws });
-  const { forks, model } = show("dark deal, it takes the weakest", deal({ 30512: [2], [30512 * 500]: [70] }));
+  const deal = draws => ({ type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option(), option()], draws,
+    tables: threatTables() });
+  const { forks, model, scene } = show("dark deal, it takes the weakest", deal({ 30512: [2], [30512 * 500]: [70] }));
   assert.ok(forks.includes(30512) && forks.includes(30512 * 500), `both forks: ${forks}`);
+  console.log(`weakest first  ${ladder(scene)}`);
   const m = model();
   assert.deepEqual(verdicts(m), ["take", "ok"]);
   assert.match(m.options[0].outcome, /Jolteon is taken for good → .*starter tier 6/);
   assert.equal(m.options[0].exact, true);
+  // The judgment and the card name the same member, which is the whole point of the rule (#582): what the card calls
+  // "your weakest link" is the head of the ladder above, and not a BST read of its own.
+  assert.equal(m.options[0].why, "Jolteon is your weakest link");
+  assert.match(ladder(scene), /^Jolteon /, "the member the party loses least by, with no newcomer in view");
   // It rolled the carry instead: the same deal, the opposite call.
   const carry = mount(deal({ 30512: [0], [30512 * 500]: [2] })).model();
   assert.deepEqual(verdicts(carry), ["avoid", "take"]);
   assert.match(carry.options[0].outcome, /Garchomp is taken for good → .*starter tier 9–10/);
 }
 
-// ---- The Dark Deal's pool mirrors the game's filter over the whole party, while "your weakest link" is judged
-// against the party at the next big fight (#571): the two sets disagree about a fainted member, and each keeps its
-// own answer.
+// ---- The Dark Deal's pool mirrors the game's filter over the whole party, while "your weakest link" is the weakest
+// member (#582): the two sets disagree about a fainted member, and each keeps its own answer. A heal before the next
+// big fight leaves it a member priced like any other; Hardcore leaves it dead weight, which is weakest at zero —
+// and either way the member the game draws is not the one the party loses least by, so the deal is no bargain.
 {
   const fainted = extra => {
     const party = team();
-    party[2].hp = 0; // Jolteon, the lowest final BST of the three, is down
+    party[2].hp = 0; // Jolteon, the cheapest of the three to lose, is down
     return { type: 2, tier: 3, labels: ["Deal", "Refuse"], options: [option(), option()],
-      draws: { 30512: [1], [30512 * 500]: [70] }, party, ...extra };
+      draws: { 30512: [1], [30512 * 500]: [70] }, party, tables: threatTables(), ...extra };
   };
   const heal = show("dark deal, the fainted weakest link is healed before the next big fight",
-    fainted({ gameMode: { isFixedBattle: () => false } })).model();
-  assert.match(heal.options[0].outcome, /Lapras is taken for good/,
+    fainted({ gameMode: { isFixedBattle: () => false } }));
+  console.log(`weakest first  ${ladder(heal.scene)}`);
+  const healed = heal.model();
+  assert.match(healed.options[0].outcome, /Lapras is taken for good/,
     "two members still stand, so the game draws from them and never from fainted Jolteon");
-  assert.deepEqual(verdicts(heal), ["ok", "ok"]);
-  assert.equal(heal.options[0].why, "L38 Lapras for a legendary", "Jolteon is back by W40, so it is still the weakest");
-  const hardcore = show("dark deal, Hardcore makes the fainted member dead weight",
-    fainted({ gameMode: { isFixedBattle: () => false, challenges: [{ id: 9, value: 1 }] } })).model();
+  assert.deepEqual(verdicts(healed), ["ok", "ok"]);
+  assert.equal(healed.options[0].why, "L38 Lapras for a legendary", "Jolteon is back by W40, so it is still the weakest");
+  assert.match(ladder(heal.scene), /^Jolteon 0\.0 ·/, "revived, it is a member the duels price — at nothing here");
+  const hard = show("dark deal, Hardcore makes the fainted member dead weight",
+    fainted({ gameMode: { isFixedBattle: () => false, challenges: [{ id: 9, value: 1 }] } }));
+  console.log(`weakest first  ${ladder(hard.scene)}`);
+  const hardcore = hard.model();
   assert.match(hardcore.options[0].outcome, /Lapras is taken for good/, "the same pool: the game's filter is unmoved");
-  assert.deepEqual(verdicts(hardcore), ["take", "ok"]);
-  assert.equal(hardcore.options[0].why, "Lapras is your weakest link",
-    "Jolteon is dead weight, so of the team at the fight Lapras is the one the party would miss least");
+  assert.deepEqual(verdicts(hardcore), ["ok", "ok"]);
+  assert.equal(hardcore.options[0].why, "L38 Lapras for a legendary",
+    "Jolteon is dead weight and so the weakest member: Lapras is not the weakest link and the deal is not a bargain");
+  assert.match(ladder(hard.scene), /^Jolteon fainted 0\.0 ·/,
+    "dead weight is weakest, at zero, and said to be dead weight rather than priced");
 }
 
 // ---- A Trainer's Test: an Elite Four party for an Epic egg, or a full heal for declining.

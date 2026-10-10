@@ -52,16 +52,37 @@ const flatten = rs => rs.map(flat);
   assert.ok(!profile.holes.includes("Ghost"), "Snorlax's Crunch hits Ghost");
 }
 
-// ---- The weakest member: the lowest final BST, not the lowest BST now, and the lower level breaking a tie.
+// ---- The lightest member: the lowest final BST, not the lowest BST now, and the lower level breaking a tie. It is
+// not the weakest member and no longer claims to be — the weakest is what the party loses least by, which only a run
+// read can price (#582).
 {
   const profile = partyProfile(party());
-  console.log("== weakest");
-  row(profile.weakest.mon.name, [`final ${profile.weakest.final}${profile.weakest.estimated ? "~" : ""}`, `L${profile.weakest.level}`]);
-  assert.equal(profile.weakest.mon.name, "Magikarp");
-  assert.equal(profile.weakest.final, 400, "one stage left: max(200×1.3, 200+110, 400)");
-  assert.equal(profile.weakest.estimated, true, "the game only says a line has an evolution, not what it grows into");
+  console.log("== lightest");
+  row(profile.lightest.mon.name, [`final ${profile.lightest.final}${profile.lightest.estimated ? "~" : ""}`, `L${profile.lightest.level}`]);
+  assert.equal(profile.lightest.mon.name, "Magikarp");
+  assert.equal(profile.lightest.final, 400, "one stage left: max(200×1.3, 200+110, 400)");
+  assert.equal(profile.lightest.estimated, true, "the game only says a line has an evolution, not what it grows into");
   const twins = [mon(SPECIES.lapras, 40, [["Surf", "Water", 90, "S"]]), mon(SPECIES.lapras, 30, [["Surf", "Water", 90, "S"]])];
-  assert.equal(partyProfile(twins).weakest.level, 30, "a tie on final BST goes to the lower level");
+  assert.equal(partyProfile(twins).lightest.level, 30, "a tie on final BST goes to the lower level");
+}
+
+// ---- The weakest member is handed in or it is absent: this file never opens a run read, so no profile it builds has
+// one. Which member it is, and what it costs to lose, is 12-value's `weakestMember` and judgmenttest's to pin (#582).
+{
+  const team = party();
+  const bare = partyProfile(team);
+  const told = partyProfile(team, { weakest: { mon: team[0], name: "Garchomp", cost: 1.5, dead: null } });
+  console.log("== weakest");
+  row("told nothing", [String(bare.weakest)]);
+  row("told Garchomp", [told.weakest.name, `${told.weakest.cost} turns`]);
+  assert.equal(bare.weakest, null, "a reader holding only a profile gets no weakest member at all");
+  assert.equal(told.weakest.mon, team[0], "and the one handed in comes back untouched, cost and all");
+  assert.notEqual(bare.lightest.mon, told.weakest.mon, "the two answers are free to disagree, and here they do");
+  // The tallies are the profile's own and the handing-in moves none of them.
+  for (const key of ["ourTypes", "weakTypes", "holes"]) assert.deepEqual(told[key], bare[key], key);
+  assert.deepEqual(told.members, bare.members);
+  assert.deepEqual(told.attacks, bare.attacks);
+  assert.equal(told.luck, bare.luck);
 }
 
 // ---- The two matchup queries: who hits a foe, and who is weak to a type.
@@ -131,7 +152,7 @@ const flatten = rs => rs.map(flat);
     "no party is no dead weight");
 }
 
-// ---- `partyReasons`: reasons with no weights, against the weakest member by default.
+// ---- `partyReasons`: reasons with no weights, against the lightest member by default.
 {
   const team = party();
   const profile = partyProfile(team);
@@ -262,6 +283,7 @@ const flatten = rs => rs.map(flat);
 {
   const empty = partyProfile([]);
   assert.deepEqual(empty.weakTypes, []);
+  assert.equal(empty.lightest, null);
   assert.equal(empty.weakest, null);
   assert.deepEqual(partyReasons(empty, { species: SPECIES.lucario, level: 20, types: ["Fighting"] }), []);
   assert.deepEqual(partyReasons(partyProfile(party()), null), []);

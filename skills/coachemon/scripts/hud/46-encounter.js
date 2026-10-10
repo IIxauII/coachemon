@@ -3,7 +3,9 @@
 // `await`: past that the card gives odds (game-code.md §13).
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
+import { gameTables } from "./04-game-tables.js";
 import { finalBstOf, partyAtFight, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
+import { weakestMember } from "./12-value.js";
 import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
 import { catchWorth } from "./45-catch.js";
 
@@ -127,7 +129,8 @@ const safariPlay = rate => {
   return (c, f) => moves(clampStage(c), clampStage(f));
 };
 
-const context = (s, me, options, account) => {
+const context = (run, me, options, account) => {
+  const s = run.scene;
   const b = s.currentBattle;
   const wave = b.waveIndex;
   const party = s.getPlayerParty().filter(Boolean);
@@ -145,8 +148,9 @@ const context = (s, me, options, account) => {
   const top = party.reduce((t, p) => (p.hp > 0 && tryDo(() => p.isAllowedInChallenge(), true)
     && (!t || p.level > t.level) ? p : t), null);
   // The party profile (CONTEXT.md) is of the team at the next big fight, since its weakest member is a team-value
-  // question. `fighters` is the same tally over the standing members, which is all `fight` asks of the party.
-  const profile = partyProfile(atFight.members);
+  // question — and the answer is handed in, because only a run read can ask it (#582). `fighters` is the same tally
+  // over the standing members, which is all `fight` asks of the party, and asks nothing of the weakest member.
+  const profile = partyProfile(atFight.members, { weakest: weakestMember(run, { fight: nextBig }) });
   const fighters = partyProfile(standing);
   // Who the party would miss most. Like `profile.weakest` it judges the party rather than mirroring a pick, so it
   // reads the team at the next big fight and not `top`, the game's highest-level standing mon.
@@ -840,7 +844,8 @@ const OVERRIDES = {
   },
 };
 
-const build = (s, h, account) => {
+const build = (run, h, account) => {
+  const s = run.scene;
   const me = s.currentBattle.mysteryEncounter;
   const party = s.getPlayerParty().filter(Boolean);
   const options = readOptions(s, h, me, party);
@@ -853,7 +858,7 @@ const build = (s, h, account) => {
   let minigame = null;
   if (rule) {
     try {
-      const out = rule(context(s, me, options, account));
+      const out = rule(context(run, me, options, account));
       if (Array.isArray(out)) judged = out;
       else if (out) { judged = out.rows; minigame = out.state ?? null; notes.push(...(out.notes ?? [])); }
     } catch (e) { notes.push(`couldn't judge this encounter: ${e.message}`); }
@@ -883,10 +888,13 @@ export const encounterModel = (run, h, account) => {
     [me.misc?.safariPokemonRemaining, me.misc?.catchStage, me.misc?.fleeStage, tryDo(() => me.misc?.pokemon?.id)],
     // The chunk scan lands asynchronously, and nothing else in this key moves when it does.
     tryDo(() => safariReady(s), false),
+    // The species table lands partway through a run as well, and the weakest member cannot be priced before it does:
+    // a card judged without one must not be served back once it has arrived (#582).
+    tryDo(() => typeof gameTables().species.getAllSpecies === "function", false),
     h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []),
     (s.gameMode?.challenges ?? []).map(c => [c.id, c.value]),
     party.map(p => [p.id, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
-  const value = run.memo("encounter", key, () => build(s, h, account));
+  const value = run.memo("encounter", key, () => build(run, h, account));
   if (value.kind) return value;
   const type = me.encounterType;
   return { kind: "encounter", type, name: NAMES[type] ?? `Encounter #${type}`, tier: TIERS[me.encounterTier] ?? null,
