@@ -36,8 +36,8 @@ const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => ({
 });
 
 let nextId = 1;
-const pk = (name, level, types, moves, luck = 1) => ({
-  id: nextId++, name, level, hp: 100, luck,
+const pk = (name, level, types, moves, luck = 1, hp = 100) => ({
+  id: nextId++, name, level, hp, luck,
   getMaxHp: () => 100, getLuck: () => luck, isAllowedInBattle: () => true,
   getTypes: () => types.map(t => TY.indexOf(t)), getAbility: () => ({ name: "x" }), hasPassive: () => false,
   species: { speciesId: 90 + nextId, baseTotal: 500, getEvolutionLevels: () => [] },
@@ -212,6 +212,26 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.deepEqual(m4.readiness.threats.map(x => x.type), ["Steel"], `a variable-power STAB is a threat: ${JSON.stringify(m4.readiness.threats)}`);
   assert.ok(m4.readiness.notes.some(n => n.text === "2 of us weak to Steel"), JSON.stringify(m4.readiness.notes.map(n => n.text)));
   console.log(`== variable power ${JSON.stringify({ threats: m4.readiness.threats, verdict: m4.readiness.verdict })}`);
+}
+
+// ---- Readiness judges the party at the fight: a fainted member with a way back counts, dead weight does not
+{
+  const hurt = () => [pk("Milotic", 18, ["Water"], ["Surf", "Ice Beam"], 1, 0),
+    pk("Lucario", 18, ["Fighting", "Steel"], ["Earthquake"])];
+  const shown = r => JSON.stringify({ verdict: r.verdict, hitters: r.hitters, unanswered: r.unanswered });
+  const { scene, ah } = mount({ wave: 24, party: hurt() });
+  const m = ah.aheadModel(scene);
+  console.log(`== fainted, shop on W24 ${shown(m.readiness)}`);
+  assert.equal(m.readiness.verdict, "ready", "W24's own clear opens the shop row, so the Revive is there before W25");
+  assert.deepEqual(m.readiness.hitters, ["Milotic", "Lucario"], "counted at full health, hurt as it is now");
+
+  const { scene: s2, ah: ah2 } = mount({ wave: 24, party: hurt(), challenges: [{ id: 9, value: 1 }] });
+  const m2 = ah2.aheadModel(s2);
+  console.log(`== fainted under hardcore ${shown(m2.readiness)}`);
+  assert.deepEqual(m2.readiness.hitters, ["Lucario"], "Hardcore takes the Revive off the row: Milotic holds its slot at zero");
+  assert.deepEqual(m2.readiness.unanswered, ["Garchomp"], "its Ice Beam went with it");
+  assert.equal(m2.readiness.verdict, "watch");
+  console.log(`== card\n${card(ah2, m2)}`);
 }
 
 // ---- Party luck buys a tier-upgrade chance, which a wave with pinned rewards denies

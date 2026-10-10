@@ -1,6 +1,7 @@
 // A finding (CONTEXT.md, `Team audit`; game-code.md §17) is `{ kind, level, text, mon? }`: `level` "high" for what
 // loses fights, "low" for what only costs tempo.
 import { TYPES, abilitiesOf, effectiveness, typesOf, vs } from "./01-core.js";
+import { partyAtFight } from "./08-party.js";
 import { isDamaging, isFixed, learnAdvice, learnMoveById, slotScores } from "./40-learn.js";
 import { doubleOdds } from "./49-ahead.js";
 
@@ -191,9 +192,11 @@ export const teamAudit = (run, ahead) => {
   const key = JSON.stringify([next?.wave, foes.map(f => [f.name, f.level]), party.map(p => [p.id, (p.moveset ?? []).map(m => m?.moveId)])]);
   return run.memo("audit", key, () => build(run, party, next, foes));
 };
-const build = (run, party, next, foes) => {
+const build = (run, all, next, foes) => {
   const s = run.scene;
   const wave = run.facts.wave;
+  // A check added below reads `party`, never `all`: every finding is about the team at `next`.
+  const party = partyAtFight(s, all, { from: wave, fight: next?.wave ?? null }).members;
   const double = tryDo(() => doubleOdds(s, wave + 1), 0);
   const findings = [];
   if (foes.length) {
