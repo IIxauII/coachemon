@@ -78,7 +78,12 @@ const fusedTypes = (a, b) => {
 /**
  * A duel-ready combatant, or null when there are no base stats to compute from. `spec`:
  *   `mon`      a live member every field below falls back to, judged at `level` rather than its own
- *   `species`  a `PokemonSpecies`, `form` its form index
+ *   `species`  a `PokemonSpecies`, `form` its form index. A species over a live member is that member judged as the
+ *              form it evolves into by the next big fight (CONTEXT.md, `Level projection`): the species then decides
+ *              the base stats, the typing, the ability — at the member's own ability index, which an evolution keeps
+ *              — and the passive, and the member keeps its level as given, its IVs, its nature and its moves. The
+ *              stat investment it has been fed is left behind with its own base-stat row, as a fusion's is, that row
+ *              answering for the species it is now rather than the one it will be
  *   `level`    the level the stats are computed at
  *   `ivs`      six IVs, `nature` a `Nature`; neutral where unknown
  *   `stats`    a `Stat`-indexed stat row given outright, for a combatant with no species to compute one from — a
@@ -103,22 +108,34 @@ export const combatantOf = (spec = {}) => {
   const nature = spec.nature ?? tryDo(() => mon.getNature(), mon?.nature) ?? NEUTRAL_NATURE;
   const other = spec.fuse ? halfOf(spec.fuse) : null;
   if (other && mon?.fusionSpecies) return null; // the Splicer's filter refuses a fusion (game-code.md §24)
+  // A member judged as the species it evolves into: everything the species itself decides comes off the form from
+  // here on, and nothing of it off the member.
+  const evolved = !!(mon && species && species !== mon.species);
+  // An evolution keeps the member's ability *index*, so the evolved species' ability at that index is the one it
+  // comes out with (game-code.md §23).
+  const evolvedAbility = () => tryDo(() => form.getAbility(mon.abilityIndex ?? 0)) ?? form?.ability1;
   const ability = spec.ability !== undefined ? abilityNameOf(spec.ability)
     : other ? (worksFused(other.ability) ? nameOf(other.ability) : null)
-      : mon ? abilityNameOf(tryDo(() => mon.getAbility(true)))
-        : abilityNameOf(form?.ability1);
-  // The passive stays the base half's, fused or not (game-code.md §24).
+      : evolved ? abilityNameOf(evolvedAbility())
+        : mon ? abilityNameOf(tryDo(() => mon.getAbility(true)))
+          : abilityNameOf(form?.ability1);
+  // The passive stays the base half's, fused or not (game-code.md §24), but it is the *species*' own, so an evolved
+  // member brings the evolved species' passive rather than the one it has now (game-code.md §23).
   const passive = spec.passive !== undefined ? abilityNameOf(spec.passive)
-    : mon && tryDo(() => mon.hasPassive(), false) ? abilityNameOf(tryDo(() => mon.getPassiveAbility())) : null;
+    : mon && tryDo(() => mon.hasPassive(), false)
+      ? abilityNameOf(evolved ? tryDo(() => species.getPassiveAbility(formIndex)) : tryDo(() => mon.getPassiveAbility()))
+      : null;
   const given = statRowOf(spec.stats);
-  // A live member's own call folds in its vitamins, its fusion and the Flip Stat challenge (game-code.md §20).
-  const base = given ? null : other ? fusedBase(form?.baseStats, other.base) : (mon && baseStatsOf(mon)) ?? form?.baseStats;
+  // A live member's own call folds in its vitamins, its fusion and the Flip Stat challenge (game-code.md §20) — all
+  // of them read off the species it is now, which is why an evolved member computes from the form's base stats.
+  const own = evolved ? null : mon && baseStatsOf(mon);
+  const base = given ? null : other ? fusedBase(form?.baseStats, other.base) : own ?? form?.baseStats;
   if (!given && !(Array.isArray(base) && base.length >= 6)) return null;
 
   const stats = given ?? statsAt(base, level, ivs, nature, ability);
   const maxHp = Math.max(1, stats[Stat.HP]);
   const hp = Math.max(0, Math.min(maxHp, spec.hp ?? maxHp));
-  const ownTypes = spec.types ?? (mon ? tryDo(() => mon.getTypes()) : null)
+  const ownTypes = spec.types ?? (mon && !evolved ? tryDo(() => mon.getTypes()) : null)
     ?? [form?.type1, form?.type2].filter(t => t != null && t >= 0);
   const types = other ? fusedTypes({ type1: ownTypes[0] ?? null, type2: ownTypes[1] ?? null }, other) : ownTypes;
   const moveset = Array.isArray(spec.moves)
@@ -131,8 +148,8 @@ export const combatantOf = (spec = {}) => {
   const attrs = new Set([...(spec.attrs ?? []), ...(ATTRS_BY_ABILITY[ability] ?? []), ...(ATTRS_BY_ABILITY[passive] ?? [])]);
   // An overridden ability is no longer the live member's, so only an untouched one may answer off the member. A
   // fusion answers by name too: its ability is the other half's and its passive the base's, and neither mon alone
-  // holds both.
-  const hasAttr = spec.ability === undefined && !other && mon
+  // holds both. An evolved member's pair is the evolved species', which the member cannot be asked about either.
+  const hasAttr = spec.ability === undefined && !other && !evolved && mon
     ? a => tryDo(() => mon.hasAbilityWithAttr(a), false)
     : a => attrs.has(a);
   const fusionSpecies = other?.species ?? mon?.fusionSpecies ?? null;
