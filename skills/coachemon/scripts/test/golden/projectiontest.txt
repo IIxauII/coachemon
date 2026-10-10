@@ -1,0 +1,23 @@
+== level cap
+classic                   w10 10  w20 16  w30 24  w50 38  w70 56  w80 64  w200 200
+daily                     w10 32  w30 52  w50 74
+== party to the boss on 70
+no EXP. All, benched      Garchomp 50→50  Snorlax 48→48  Lapras 47→47  Magikarp 35→35
+EXP. All ×2, benched      Garchomp 50→53  Snorlax 48→51  Lapras 47→50  Magikarp 35→41
+fighting them alone       Garchomp 50→56=cap  Snorlax 48→56=cap  Lapras 47→55  Magikarp 35→48
+one of two fighting       Garchomp 50→54  Snorlax 48→52  Lapras 47→51  Magikarp 35→42
+== at the cap
+L56, every multiplier     56→56=cap  gained 0
+== a newcomer 12 levels behind
+benched, no EXP. All      L38→38  +0  18 under the cap  estimate
+benched, EXP. All ×1      L38→40  +2  16 under the cap  estimate
+…and a Lucky Egg          L38→42  +4  14 under the cap  estimate
+…a Golden Egg instead     L38→43  +5  13 under the cap  estimate
+…Pokérus and a Lucky Egg  L38→43  +5  13 under the cap  estimate
+benched, EXP. All ×5      L38→49  +11  7 under the cap  estimate
+fighting every wave       L38→49  +11  7 under the cap  estimate
+== the cap at every wave
+force-fed from w62        w64 cap 56 → 56  w66 cap 56 → 56  w68 cap 56 → 56  w70 cap 56 → 56  w72 cap 64 → 60
+w68→78, cap 64            Garchomp 50→63  Snorlax 48→61  Lapras 47→61  Magikarp 35→55  Garchomp 50→64=cap
+== nothing to reach: ok
+projection: ok
