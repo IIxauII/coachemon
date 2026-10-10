@@ -2,6 +2,7 @@
 // The pairs are ranked by the fusion judgment (#588), so this module scores nothing itself: it reads the run, orders
 // what comes back and says it in words. Every read here is pure, so no `sandbox` (game-code.md §24).
 import { TYPES, iconOf } from "./01-core.js";
+import { standardThreats } from "./11-threats.js";
 import { judgeFusionPair } from "./12-value.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
@@ -41,6 +42,10 @@ const fusionOf = (a, b, j, spliced) => {
   const fused = j.fused?.combatant ?? null;
   const bst = bstPair(a, b, spliced);
   const ability = nameOf(fused?.getAbility?.()) || null;
+  // The fused mon's ability is the other half's, so an ability `canApplyAbility` refuses on a fusion — Disguise, Zen
+  // Mode, Schooling, Stance Change (game-code.md §24) — leaves it with none at all. The adapter already refuses it,
+  // and a player picking that half has to be told why the fusion comes out blank.
+  const lent = nameOf(tryDo(() => b.getAbility(true)) ?? tryDo(() => b.getAbility()));
   const known = new Set((a.moveset ?? []).map(m => m?.moveId));
   const offered = attacksOf(b).filter(mv => !known.has(mv.id)).map(nameOf);
   const items = j.cost?.items ?? 0;
@@ -52,6 +57,7 @@ const fusionOf = (a, b, j, spliced) => {
     // and the note below are both said: the one is what the judgment netted off, the other what the game does (#588).
     `ΔV ${signed(r1(j.delta))} turns${j.release ? `, net ${signed(r1(j.net))} after a ${Math.abs(r1(j.release)).toFixed(1)} release` : ""}`,
     `spends ${b.name} L${b.level}${b.hp > 0 ? "" : " (fainted)"}`,
+    !ability && lent ? `${lent} doesn't work fused` : null,
     bst.before != null && bst.after != null && bst.before !== bst.after ? `${a.name} BST ${bst.before} → ${bst.after}` : null,
     offered.length ? `offers ${offered.slice(0, 2).join("/")}${offered.length > 2 ? ` +${offered.length - 2}` : ""}` : null,
     items ? `${items} held item${items > 1 ? "s" : ""} move over` : null,
@@ -75,15 +81,19 @@ const fusionOf = (a, b, j, spliced) => {
  * varies within one run key (26-run.js) — which members the Splicer will take, and the form, ability, nature and
  * moveset the run key does not carry.
  *
- * `unread` is the first thing the judgment could not reach, for a card that has no pair to show and has to say why
- * rather than go quiet: the game's species table lands partway through a run, and until it does there is no threat
- * set to judge a fusion against.
+ * `unread` is what the judgment could not reach, for a card that has no pair to show and has to say why rather than
+ * go quiet: the game's species table lands partway through a run, and until it does there is no threat set to judge
+ * a fusion against. It is asked *before* the memo and never memoised with the pairs, exactly as 11-threats refuses
+ * to memoise an answer taken before the tables landed — the party screen opens on the same run key either side of
+ * that moment, and a memo filled in from the earlier side would answer for the rest of the run.
  */
 export const fusionOptions = (run, { allowed = () => null } = {}) => {
   const s = run.scene;
   const party = (run.facts?.party ?? []).filter(Boolean);
   const spliced = !!s?.gameMode?.isSplicedOnly;
   const pickable = party.filter(p => !p.fusionSpecies && tryDo(() => allowed(p), null) == null);
+  const unread = standardThreats(run).unavailable ?? null;
+  if (unread) return { spliced, options: [], pickable: pickable.length, unread };
   const key = JSON.stringify([spliced, pickable.map(p => p.id), party.map(p => [p.id, p.species?.speciesId, p.formIndex,
     p.fusionSpecies?.speciesId ?? null, p.abilityIndex, p.level, p.hp > 0, p.nature, (p.moveset ?? []).map(m => m?.moveId)])]);
   return run.memo("fusion", key, () => build(run, party, pickable, spliced));
@@ -91,21 +101,19 @@ export const fusionOptions = (run, { allowed = () => null } = {}) => {
 
 const build = (run, party, pickable, spliced) => {
   const options = [];
-  let unread = null;
   for (const a of pickable) {
     for (const b of pickable) {
       if (a === b) continue;
       const j = tryDo(() => judgeFusionPair(run, a, b));
-      if (!j) continue;
       // A pair the judgment refuses — a base that is dead weight, a half that is fused already — is no option at
-      // all, and the threat set it could not read is the one thing a card with no options has to say.
-      if (j.unavailable) { unread ??= j.unavailable; continue; }
+      // all: it is a pair the Splicer would make and the coach cannot price, not a pair it turns down.
+      if (!j || j.unavailable) continue;
       options.push(fusionOf(a, b, j, spliced));
     }
   }
   // Ranked by ΔV (#567, story 24), and stable, so two pairs worth the same fall to the base the party lists first.
   options.sort((x, y) => y.value - x.value);
-  return { spliced, options, pickable: pickable.length, unread };
+  return { spliced, options, pickable: pickable.length, unread: null };
 };
 
 export const fusionRow = f => ({
