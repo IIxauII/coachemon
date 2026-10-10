@@ -125,7 +125,7 @@ export const rewardsModel = (run, h) => {
   const owned = name => (s.modifiers ?? []).some(m => m?.constructor?.name === name);
 
   const balls = s.pokeballCounts ?? {};
-  const rctx = stage("shop.context", () => rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1) }));
+  const rctx = stage("shop.context", () => rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1), run }));
   const judge = (t, tmStage = "shop.tm") => {
     const tier = shopTier(t);
     let v = (tier ?? 0) * 10;
