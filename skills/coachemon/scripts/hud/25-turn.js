@@ -3,7 +3,7 @@
 // memoised under one key. 10-damage and 20-enemy-ai know how to ask the game; this file decides when.
 import { TYPES, awaitingDecision, closeRead, effectiveness, openRead, sandbox, stat, typesOf } from "./01-core.js";
 import { note } from "./01-meter.js";
-import { waveKind } from "./03-calendar.js";
+import { challengeOn, waveKind } from "./03-calendar.js";
 import { moveTraits } from "./07-move-traits.js";
 import { approxOutcome, approxOutcomes, barBreakFactors, sceneOutcome, sceneOutcomes, sceneStatusMoves, sceneStopped, sceneTurnEndHp, stateOf, targetFacts } from "./10-damage.js";
 import { aiTargetScore, approxDistribution, sceneDistribution, sceneExactMoves, sceneReplayAI, sceneSendInScore, sceneSwitches, skipsTurn } from "./20-enemy-ai.js";
@@ -99,7 +99,10 @@ const sceneEnv = s => {
 
 const modeFlags = (s, live, wave) => {
   const mode = s?.gameMode ?? {};
-  const has = (id, value) => (mode.challenges ?? []).some(c => c.id === id && (value == null ? c.value > 0 : c.value === value));
+  // A specific value is matched exactly; with none given, the shared on/off predicate decides (game-code.md §16).
+  const has = (id, value) => value == null
+    ? challengeOn({ gameMode: mode }, id)
+    : (mode.challenges ?? []).some(c => c.id === id && c.value === value);
   const call = (fn, fallback) => (live ? tryDo(fn, fallback) : fallback);
   const lastWave = () => waveKind(s, wave) === "final";
   return {

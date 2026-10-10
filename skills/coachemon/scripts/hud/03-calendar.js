@@ -43,6 +43,9 @@ export const bigFightsAhead = (s, from, n = SPAN) => {
 };
 
 const challengeValue = (s, id) => (s?.gameMode?.challenges ?? []).find(c => c?.id === id)?.value ?? 0;
+// A challenge is on at any value but zero, never only a positive one: the one predicate `GameMode.hasChallenge`
+// itself uses (game-code.md §16), and the one every reader of a challenge's on/off state reads here.
+export const challengeOn = (s, id) => challengeValue(s, id) !== 0;
 // (game-code.md §12)
 const healsAtAll = s => ![1, 3].includes(challengeValue(s, Challenges.LIMITED_SUPPORT));
 
@@ -57,7 +60,7 @@ export const nextHeal = (s, from) => {
   return null;
 };
 
-export const healRevives = s => healsAtAll(s) && challengeValue(s, Challenges.HARDCORE) <= 0;
+export const healRevives = s => healsAtAll(s) && !challengeOn(s, Challenges.HARDCORE);
 
 // `isWaveTrainer`'s look-back (game-code.md §10). `blocked`: the wave never reaches its own roll; `before`: the earlier
 // waves in the window that roll first.

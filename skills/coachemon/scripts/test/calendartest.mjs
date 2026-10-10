@@ -21,7 +21,7 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, trainerOdds, hasTrainers, kindIsRolled,
+const { waveKind, isBossWave, bigFightsAhead, nextHeal, healRevives, challengeOn, trainerOdds, hasTrainers, kindIsRolled,
   isGruntWave, poolAnchorWave, arenaRebuiltBetween } = globalThis.__hud["03-calendar"];
 
 const row = (label, cells) => console.log(`${label.padEnd(26)}${cells.join("  ")}`);
@@ -145,6 +145,19 @@ const kinds = (s, waves) => waves.map(w => `${w}:${waveKind(s, w) ?? "—"}`);
   const hard = scene("classic", { challenges: [{ id: HARDCORE, value: 1 }] });
   assert.equal(nextHeal(hard, 12), 21, "Hardcore still heals");
   assert.equal(healRevives(hard), false, "…it just doesn't revive");
+  // `challengeOn` is the one predicate the calendar and the shop both read: on at any value but zero, a negative one
+  // included, matching the game's own `GameMode.hasChallenge` (game-code.md §16).
+  console.log("== challengeOn, positive / zero / negative");
+  for (const value of [1, 0, -1]) {
+    const c = scene("classic", { challenges: [{ id: HARDCORE, value }] });
+    row(`hardcore ${value}`, [`on ${challengeOn(c, HARDCORE)}`, `revives ${healRevives(c)}`]);
+  }
+  assert.equal(challengeOn(scene("classic", { challenges: [{ id: HARDCORE, value: 1 }] }), HARDCORE), true);
+  assert.equal(challengeOn(scene("classic", { challenges: [{ id: HARDCORE, value: 0 }] }), HARDCORE), false);
+  assert.equal(challengeOn(scene("classic", { challenges: [{ id: HARDCORE, value: -1 }] }), HARDCORE), true,
+    "a negative value is still on, not off: the calendar and the shop must agree");
+  assert.equal(healRevives(scene("classic", { challenges: [{ id: HARDCORE, value: -1 }] })), false,
+    "so a negative Hardcore value still turns off revives, agreeing with the shop's `isHardcore`");
 }
 
 // ---- Trainer odds roll with a two-wave look-back and stop beside a gym or fixed battle (game-code.md §10)
