@@ -99,7 +99,13 @@ export const fusionOptions = (run, { allowed = () => null } = {}) => {
   if (unread) return { spliced, options: [], pickable: pickable.length, unread };
   const key = JSON.stringify([spliced, pickable.map(p => p.id), party.map(p => [p.id, p.species?.speciesId, p.formIndex,
     p.fusionSpecies?.speciesId ?? null, p.abilityIndex, p.level, p.hp > 0, p.nature, (p.moveset ?? []).map(m => m?.moveId)])]);
-  return run.memo("fusion", key, () => build(run, party, pickable, spliced));
+  const value = run.memo("fusion", key, () => build(run, party, pickable, spliced));
+  // The memo hands a throw back as `{ unavailable }` (26-run.js), so what comes back is not always a pair list, and
+  // a caller handed one raw would read `options.filter` off nothing — the fusion card and the rewards card with it,
+  // for as long as the run key lives. An answer that came back unread is said as one more thing the judgment could
+  // not reach, which is what 46-encounter and 47-biome do with the same seam.
+  if (!value.options) return { spliced, options: [], pickable: pickable.length, unread: value.unavailable ?? "fusion: no pairs read" };
+  return value;
 };
 
 const build = (run, party, pickable, spliced) => {
@@ -109,9 +115,11 @@ const build = (run, party, pickable, spliced) => {
       if (a === b) continue;
       const j = tryDo(() => judgeFusionPair(run, a, b));
       // A pair the judgment refuses — a base that is dead weight, a half that is fused already — is no option at
-      // all: it is a pair the Splicer would make and the coach cannot price, not a pair it turns down.
-      if (!j || j.unavailable) continue;
-      options.push(fusionOf(a, b, j, spliced));
+      // all: it is a pair the Splicer would make and the coach cannot price, not a pair it turns down. A pair this
+      // module cannot say in words is dropped the same way: a throw out of `build` is what the memo keeps as the
+      // card's whole answer, so one pair must never be able to decide the rest of them.
+      const f = j && !j.unavailable ? tryDo(() => fusionOf(a, b, j, spliced)) : null;
+      if (f) options.push(f);
     }
   }
   // Ranked by ΔV (#567, story 24), and stable, so two pairs worth the same fall to the base the party lists first.
