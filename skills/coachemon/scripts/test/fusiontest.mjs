@@ -122,6 +122,8 @@ const splicers = () => Object.assign(new FusePokemonModifierType(), { name: "DNA
   selectFilter: p => (p.fusionSpecies ? "no effect" : null) });
 const potion = () => Object.assign(new PokemonHpRestoreModifierType(), { name: "Potion", iconImage: "potion", tier: 0, restorePoints: 20, restorePercent: 10 });
 
+const HARDCORE = 9; // `Challenges`, which only the bundle's prelude holds
+
 // `screen`: "party" or "rewards". `partyUiMode` 9 is SPLICE.
 const mount = ({ screen = "party", spliced = false, members = party(spliced), picked = null, partyUiMode = 9, hardcore = false, free = [] }) => {
   let el;
@@ -138,7 +140,10 @@ const mount = ({ screen = "party", spliced = false, members = party(spliced), pi
     ui: { getMode: () => (screen === "party" ? 8 : 6), getHandler: () => handler },
     phaseManager: { getCurrentPhase: () => ({ phaseName: "SelectModifierPhase" }) },
     getPlayerParty: () => members, getEnemyParty: () => [],
-    gameMode: { isSplicedOnly: spliced, challenges: hardcore ? [{ id: 12, value: 1 }] : [] },
+    // The challenge list is what the judgment reads Hardcore off, through the shared predicate (03-calendar), so the
+    // id has to be the real one: with any other number a fainted member finds a shop before wave 60 and is counted
+    // at full health, and the case labelled Hardcore would judge the same party as the others (#589).
+    gameMode: { isSplicedOnly: spliced, challenges: hardcore ? [{ id: HARDCORE, value: 1 }] : [] },
   };
   globalThis.Phaser = { Math: { RND: { _s: "!rnd,0", state(v) { if (v !== undefined) this._s = v; return this._s; } } }, Display: { Canvas: { CanvasPool: { pool: [{ parent: { game: { scene: { getScene: () => scene }, textures: { exists: () => false } } } }] } } } };
   const node = () => { const n = { style: {}, children: [], addEventListener() {}, remove() {}, append(...k) { n.children.push(...k); }, replaceChildren(...k) { n.kids = k; } }; return n; };
@@ -196,12 +201,16 @@ let best;
   assert.ok(m.better && m.better.base.name === best.base.name, "a better fusion elsewhere");
 }
 
-// ---- Hardcore's filter keeps a fainted member out of both picks.
+// ---- Hardcore's filter keeps a fainted member out of both picks, and the judgment writes it off entirely.
 {
   const members = party();
   members[1].hp = 0;
   const m = show("Hardcore, Salamence fainted", { members, hardcore: true });
   assert.ok(m.rows.every(r => r.base.name !== "Salamence" && r.other.name !== "Salamence"));
+  // Under Hardcore there is no way back, so the fainted Salamence is dead weight: it holds its slot at zero and a
+  // threat's exposure is counted over the four members left after the fusion, where every other case here counts
+  // five (#589). A reason naming five would mean Salamence was counted at full health and the case is not Hardcore.
+  assert.ok(m.rows[0].why.some(w => /\bof 4\b/.test(w)), m.rows[0].why.join(" · "));
 }
 
 // ---- Fusing a party of two leaves one, so no fusion is worth it and the call is to back out.

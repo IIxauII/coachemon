@@ -32,7 +32,9 @@ const bstPair = (a, b, spliced) => {
  *
  * `value` is **ΔV** — what the party is worth with the fused mon in the base's slot and the other half's slot left
  * empty, against what it is worth now — and `net` is ΔV less what releasing the other half destroys, which is what
- * decides the call. The pairs are ranked by ΔV (#567, story 24).
+ * decides the call. Both are the judgment's own figures, unrounded: the pairs are ranked by ΔV itself (#567, story
+ * 24), and `fusionRow` rounds to the tenth of a turn the card prints. Rounding before the sort would tie every pair
+ * within a tenth of a turn and fall back to party order, which is how a weak base wins a rank it didn't earn.
  *
  * `why` is the judgment's own reasons, so a reason can never argue with the call it explains: each names a threat
  * whose answer, backup or exposure moved most. The rest — the typing, the ability, the BST, the moves the other half
@@ -66,7 +68,7 @@ const fusionOf = (a, b, j, spliced) => {
     a.hasPassive?.() ? `keeps passive ${nameOf(tryDo(() => a.getPassiveAbility()))}` : null,
   ].filter(Boolean);
   return {
-    a, b, value: r1(j.delta), release: r1(j.release), net: r1(j.net), fuse: j.verdict === "fuse",
+    a, b, value: j.delta, release: j.release, net: j.net, fuse: j.verdict === "fuse",
     types: (tryDo(() => fused.getTypes(), []) ?? []).map(t => TYPES[t]).filter(Boolean),
     ability, bst: bst.after,
     why: [...(j.plain ? [j.plain.text] : []), ...j.reasons.map(r => r.text)],
@@ -119,7 +121,7 @@ const build = (run, party, pickable, spliced) => {
 
 export const fusionRow = f => ({
   base: { name: f.a.name, icon: iconOf(f.a), level: f.a.level }, other: { name: f.b.name, icon: iconOf(f.b), level: f.b.level },
-  value: f.value, release: f.release, net: f.net, fuse: f.fuse, types: f.types, ability: f.ability, bst: f.bst,
+  value: r1(f.value), release: r1(f.release), net: r1(f.net), fuse: f.fuse, types: f.types, ability: f.ability, bst: f.bst,
   why: f.why.slice(0, 2), notes: f.notes, confidence: f.confidence,
 });
 
