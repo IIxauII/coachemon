@@ -6,7 +6,10 @@ import { bundle } from "../hud-bundle.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // `abilities` and `moves` are indexed by id, as the game's own tables are.
 const ABILITIES = [];
-for (const [id, name] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [26, "Levitate"], [39, "Rough Skin"]]) ABILITIES[id] = { name };
+// Disguise is one of the abilities that doesn't work on a fusion, and carries the attr the game refuses it by.
+const NO_FUSION = [{ constructor: { name: "NoFusionAbilityAbAttr" } }];
+for (const [id, name, attrs = []] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [26, "Levitate"],
+  [39, "Rough Skin"], [61, "Shed Skin"], [209, "Disguise", NO_FUSION]]) ABILITIES[id] = { name, attrs };
 const MOVES = [];
 const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100 } = {}) =>
   (MOVES[id] = { id, name, type: TY.indexOf(type), power, accuracy: acc, category: cat, pp, moveTarget: 3, priority: 0, flags: 0, attrs: [] });
@@ -23,6 +26,7 @@ const species = (id, name, types, baseStats, ability1) => ({
 });
 const GARCHOMP = species(445, "Garchomp", ["Dragon", "Ground"], [108, 130, 95, 80, 85, 102], 8);
 const SNORLAX = species(143, "Snorlax", ["Normal"], [160, 110, 65, 65, 110, 30], 17);
+const DRATINI = species(147, "Dratini", ["Dragon"], [41, 64, 45, 50, 50, 50], 61);
 // Heat Rotom's base stats and its second type are the form's, not the species'.
 const ROTOM = species(479, "Rotom", ["Electric", "Ghost"], [50, 50, 77, 95, 77, 91], 26);
 ROTOM.forms = [{ ...ROTOM }, { ...ROTOM, baseStats: [50, 65, 107, 105, 107, 86], type2: TY.indexOf("Fire") }];
@@ -30,12 +34,16 @@ ROTOM.forms = [{ ...ROTOM }, { ...ROTOM, baseStats: [50, 65, 107, 105, 107, 86],
 const pmOf = id => ({ moveId: id, getMove: () => MOVES[id], getName: () => MOVES[id].name, getMovePp: () => MOVES[id].pp, ppUsed: 0 });
 // A live member, shaped as the game's own: `base` is what its `calculateBaseStats()` answers, so a vitamin shows up
 // there and nowhere else, and `stats` is the array the game left on it at `level`.
+// `fusion` is the other half of a fusion the game has already made: `base` is then the fused base stats its
+// `calculateBaseStats()` answers, `types` its fused types and `ability` the other half's (game-code.md §24).
 const live = (name, sp, level, stats, { ivs, nature = 0, moves = [], ability = "x", passive = null, attrs = [], hp,
-  boss = 0, player = true, stages = [0, 0, 0, 0, 0, 0, 0], items = [], base = null, formIndex = 0, id = 1 } = {}) => ({
+  boss = 0, player = true, stages = [0, 0, 0, 0, 0, 0, 0], items = [], base = null, formIndex = 0, id = 1,
+  abilityAttrs = [], types = null, fusion = null, fusionFormIndex = 0 } = {}) => ({
   id, name, level, species: sp, formIndex, ivs, stats, hp: hp ?? stats[0], moveset: moves.map(pmOf),
+  fusionSpecies: fusion, fusionFormIndex,
   getMaxHp: () => stats[0], getStat: i => stats[i] ?? 0, getNature: () => nature,
-  getTypes: () => [sp.type1, sp.type2].filter(t => t != null),
-  getAbility: () => ({ name: ability }), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
+  getTypes: () => types ?? [sp.type1, sp.type2].filter(t => t != null),
+  getAbility: () => ({ name: ability, attrs: abilityAttrs }), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
   hasAbilityWithAttr: a => attrs.includes(a), getHeldItems: () => items, getTag: () => null,
   calculateBaseStats: () => (base ?? sp.baseStats).slice(),
   summonData: { statStages: stages, abilitiesApplied: new Set(), tags: [] },
@@ -120,6 +128,90 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.equal(at(1).getAbility().name, "Levitate", "the form's own ability, where none is given");
   assert.equal(at(9).stats[1], 62, "a form index the species hasn't got falls back to the species");
   console.log(`rotom ${row(at(undefined))} | heat ${row(at(1))}`);
+}
+
+// ---- A fusion of two halves is the mon the Splicer would make: the fused base stats, types and ability
+{
+  // Garchomp ← Snorlax: base stats `ceil((a + b) / 2)` stat by stat, so [134, 120, 80, 73, 98, 66], which at level 50
+  // with 31 IVs and a neutral nature is the row below. Type 1 is the base's Dragon and Snorlax's only type is the
+  // second, and the ability is Snorlax's Immunity (game-code.md §24).
+  const FUSED_BASE = [134, 120, 80, 73, 98, 66];
+  const FUSED = [209, 140, 100, 93, 118, 86];
+  const ivs = [31, 31, 31, 31, 31, 31];
+  const moves = [EARTHQUAKE, DRAGON_CLAW];
+  const chomp = live("Garchomp", GARCHOMP, 50, [183, 150, 115, 100, 105, 122], { ivs, ability: "Sand Veil", moves });
+  const lax = live("Snorlax", SNORLAX, 45, [212, 117, 77, 77, 117, 45], { ivs, ability: "Immunity", id: 2 });
+  // The same pair once the player has committed the Splicer: one party member, fused, at the base's level.
+  const spliced = live("Garchomp", GARCHOMP, 50, FUSED, { ivs, ability: "Immunity", moves, base: FUSED_BASE,
+    types: [15, 0], fusion: SNORLAX });
+
+  const target = combatantOf({ species: SNORLAX, level: 50, moves: [BODY_SLAM], player: false });
+  const hypo = combatantOf({ mon: chomp, fuse: { mon: lax } });
+  assert.deepEqual(hypo.stats, FUSED, "the fused base stats, at the base half's level");
+  assert.deepEqual(hypo.getTypes(), [15, 0], "Dragon/Normal");
+  assert.equal(hypo.getAbility().name, "Immunity", "the other half's ability");
+  assert.equal(hypo.fusionSpecies, SNORLAX);
+  assert.deepEqual(combatantOf({ mon: spliced }).stats, FUSED, "and the committed fusion computes to the same row");
+  assert.equal(JSON.stringify(approxOutcomes(env, hypo, target)), JSON.stringify(approxOutcomes(env, spliced, target)),
+    "the hypothetical fusion duels as the live fused mon does, move by move");
+  assert.equal(JSON.stringify(approxOutcomes(env, target, hypo)), JSON.stringify(approxOutcomes(env, target, spliced)),
+    "and takes the foe's the same way");
+  assert.equal(hypo.key, combatantOf({ mon: spliced }).key, "so the two are one duel, and share its memo entry");
+  assert.notEqual(hypo.key, combatantOf({ mon: chomp }).key, "the unfused base half is not");
+  console.log(`garchomp ← snorlax ${row(hypo)} | ${TY[hypo.getTypes()[0]]}/${TY[hypo.getTypes()[1]]} | ${hypo.getAbility().name}`);
+
+  // The other way round the halves weigh the same, and nothing else does.
+  const other = combatantOf({ species: SNORLAX, level: 50, ivs, fuse: { species: GARCHOMP } });
+  assert.deepEqual(other.stats, FUSED, "half of every base stat, whichever half is the base");
+  assert.deepEqual(other.getTypes(), [0, 4], "Normal/Ground");
+  assert.equal(other.getAbility().name, "Sand Veil");
+  console.log(`snorlax ← garchomp ${row(other)} | ${TY[other.getTypes()[0]]}/${TY[other.getTypes()[1]]} | ${other.getAbility().name}`);
+
+  // The base half keeps its level, its IVs, its nature, its moves and its passive (CONTEXT.md, `Fusion`).
+  const own = live("Garchomp", GARCHOMP, 50, [183, 165, 115, 90, 105, 122], { ivs, nature: 3, moves,
+    ability: "Sand Veil", passive: "Sand Force" });
+  const kept = combatantOf({ mon: own, fuse: { mon: live("Snorlax", SNORLAX, 45, [212, 117, 77, 77, 117, 45], { ability: "Immunity", passive: "Early Bird", id: 2 }) } });
+  assert.deepEqual(kept.stats, [209, 154, 100, 83, 118, 86], "Adamant on the fused base stats");
+  assert.deepEqual(kept.moveset.map(pm => pm.moveId), moves, "the base's moveset, not the other half's");
+  assert.equal(kept.getPassiveAbility().name, "Sand Force", "the base's passive stays, the other half's doesn't come");
+  assert.equal(combatantOf({ mon: own, level: 60, fuse: { mon: lax } }).level, 60, "a fusion is projected like any member");
+
+  // A form brings its own half (Heat Rotom's base stats, and the Fire it has over the base's typing).
+  const heat = combatantOf({ species: GARCHOMP, level: 50, fuse: { species: ROTOM, form: 1 } });
+  assert.deepEqual(heat.stats, [146, 110, 113, 105, 108, 106]);
+  assert.deepEqual(heat.getTypes(), [15, 9], "Dragon/Fire");
+  assert.equal(heat.getAbility().name, "Levitate", "the form's own ability");
+  assert.deepEqual(heat.fusionFormIndex, 1, "and the key tells it from the other Rotom");
+  assert.notEqual(heat.key, combatantOf({ species: GARCHOMP, level: 50, fuse: { species: ROTOM } }).key);
+  console.log(`garchomp ← heat rotom ${row(heat)} | ${TY[heat.getTypes()[0]]}/${TY[heat.getTypes()[1]]} | ${heat.getAbility().name}`);
+
+  // A half whose only type the base already has gives its typing away for nothing, either way round.
+  const dra = combatantOf({ species: GARCHOMP, level: 50, fuse: { species: DRATINI } });
+  assert.deepEqual(dra.getTypes(), [15, 4], "the base's own Ground stands as the second type");
+  assert.deepEqual(combatantOf({ species: DRATINI, level: 50, fuse: { species: GARCHOMP } }).getTypes(), [15, 4], "Dragon/Ground from the other side too");
+  assert.deepEqual(dra.stats, [142, 109, 82, 77, 80, 88], "off the fused base stats [75, 97, 70, 65, 68, 76]");
+  assert.equal(dra.getAbility().name, "Shed Skin");
+  console.log(`garchomp ← dratini ${row(dra)} | ${TY[dra.getTypes()[0]]}/${TY[dra.getTypes()[1]]} | ${dra.getAbility().name}`);
+
+  // An ability that doesn't work fused leaves the fusion with none at all — the base's is not handed back.
+  const hidden = combatantOf({ species: GARCHOMP, level: 50, fuse: { species: SNORLAX, ability: 209 } });
+  assert.equal(hidden.getAbility(), null, "Disguise carries NoFusionAbilityAbAttr");
+  const disguised = live("Dratini", DRATINI, 30, [73, 52, 41, 44, 44, 44], { ability: "Disguise", abilityAttrs: NO_FUSION, id: 3 });
+  assert.equal(combatantOf({ mon: chomp, fuse: { mon: disguised } }).getAbility(), null, "off a live half as well");
+  assert.equal(combatantOf({ species: GARCHOMP, level: 50, fuse: { species: SNORLAX }, ability: 5 }).getAbility().name, "Sturdy",
+    "an ability given outright still wins");
+
+  // A fusion's attrs answer by name: its ability is the other half's and its passive the base's, so neither member
+  // alone can be asked.
+  const sturdy = live("Snorlax", SNORLAX, 45, [212, 117, 77, 77, 117, 45], { ability: "Sturdy", attrs: ["PreDefendFullHpEndureAbAttr"], id: 2 });
+  assert.equal(combatantOf({ mon: chomp, fuse: { mon: sturdy } }).hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), true, "a fused Sturdy endures");
+  assert.equal(combatantOf({ mon: chomp, fuse: { mon: lax } }).hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), false,
+    "and the base half's own attrs are gone with its ability");
+
+  // Nothing to fuse, and nothing that may be fused.
+  assert.equal(combatantOf({ level: 50, fuse: { species: SNORLAX } }), null, "no base half");
+  assert.equal(combatantOf({ species: GARCHOMP, level: 50, fuse: {} }), null, "no other half");
+  assert.equal(combatantOf({ mon: spliced, fuse: { species: DRATINI } }), null, "the Splicer's filter refuses a fusion");
 }
 
 // ---- Unknown IVs and nature are neutral, and a known pair moves the stats the game's way

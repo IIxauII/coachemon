@@ -4,6 +4,10 @@ garchomp L35 neutral 125/101/76/66/69/81
 garchomp L50 neutral 175/142/107/92/97/114
 garchomp L100 neutral 341/280/210/180/190/224
 rotom 117/62/89/107/89/103 | heat 117/77/119/117/119/98
+garchomp ← snorlax 209/140/100/93/118/86 | Dragon/Normal | Immunity
+snorlax ← garchomp 209/140/100/93/118/86 | Normal/Ground | Sand Veil
+garchomp ← heat rotom 146/110/113/105/108/106 | Dragon/Fire | Levitate
+garchomp ← dratini 142/109/82/77/80/88 | Dragon/Ground | Shed Skin
 garchomp L50 adamant 31s 183/165/115/90/105/122
 snorlax 227/122/77/77/122/42 | 1 bar 144 | 2 bars 113 | 2 bars, last 144
 keys apart: 16
