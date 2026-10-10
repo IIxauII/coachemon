@@ -56,6 +56,8 @@ summary Garchomp ← Azumarill (+6.7) · pick Garchomp first, then Azumarill
 == Snorlax ← Mimikyu
 ΔV +0.6 turns · spends Mimikyu L30 · Disguise doesn't work fused · Snorlax BST 540 → 510 · offers Shadow Claw
 an answer to Fairy at last · a better answer to Poison
+== Azumarill's passive unreadable
+30 pairs → 25 · unread null
 == party screen, not splicing
 kind null
 == rewards, full party
