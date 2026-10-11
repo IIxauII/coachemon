@@ -213,7 +213,8 @@ const mount = opts => {
   globalThis.clearInterval = () => {};
   globalThis.localStorage = { getItem: () => "full", setItem() {} };
   eval(bundle("hud", { expose: true }));
-  const { previewFor, previewNext, previewArm, previewCheck, previewStats } = globalThis.__hud["48-preview"];
+  const { previewFor, previewNext, previewArm, previewCheck, previewStats, previewActual, previewGrade } =
+    globalThis.__hud["48-preview"];
   const { drawPreview } = globalThis.__hud["95-render-preview"], { previewSummary } = globalThis.__hud["48-preview"];
   const { readRun } = globalThis.__hud["26-run"];
   const onRun = fn => (s, ...a) => readRun(s, run => fn(run, ...a));
@@ -222,7 +223,8 @@ const mount = opts => {
   const { combatantOf, duelEnv } = globalThis.__hud["09-combatant"];
   const { approxOutcomes } = globalThis.__hud["10-damage"];
   return { scene, offsets, duel: { combatantOf, env: duelEnv(scene), approxOutcomes },
-    pv: { previewFor: onRun(previewFor), previewNext: onRun(previewNext), previewArm, previewCheck, previewStats, drawPreview, previewSummary } };
+    pv: { previewFor: onRun(previewFor), previewNext: onRun(previewNext), previewArm, previewCheck, previewStats, previewActual,
+      previewGrade, drawPreview, previewSummary } };
 };
 
 const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.double, levels: m.levels,
@@ -337,6 +339,33 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   assert.ok(after.missed.includes("foes"), `a field that has missed is marked: ${JSON.stringify(after.missed)}`);
   console.log(`== marked ${JSON.stringify(after.missed)}`);
   assert.equal(next.wave, 14);
+}
+
+// ---- A read from further out is graded by the tally's own comparison, and grading it leaves the tally alone (#590).
+{
+  const { scene, pv } = mount({ wave: 12 });
+  const far = pv.previewFor(scene, 14);
+  playWave(scene, 13);
+  playWave(scene, 14);
+  const same = pv.previewGrade(far, pv.previewActual(scene));
+  assert.deepEqual(same.wrong, [], `an unchanged run plays the wave read two out: ${JSON.stringify(same)}`);
+  scene.currentBattle = new FakeBattle(scene.gameMode, { waveIndex: 14, battleType: 0, double: true });
+  scene.currentBattle.enemyParty = [mon(species(6), 99), mon(species(5), 99)];
+  const off = pv.previewGrade(far, pv.previewActual(scene));
+  assert.ok(off.wrong.includes("foes") && off.wrong.includes("levels"), `a wrong wave is graded wrong: ${JSON.stringify(off)}`);
+  assert.equal(pv.previewStats().checked, 0, "grading is not scoring");
+  console.log(`== graded from two out ${JSON.stringify({ same: same.right, off: off.wrong })}`);
+}
+
+// ---- A Mystery Encounter fields no foes, so a right call on one has no levels to get wrong (#590).
+{
+  const { scene, pv } = mount({ wave: 12, meRate: 256 });
+  const me = pv.previewNext(scene);
+  playWave(scene, 13);
+  const graded = pv.previewGrade(me, pv.previewActual(scene));
+  assert.equal(graded.actual.type, "me");
+  assert.deepEqual(graded.wrong, [], `a right ME call is graded right: ${JSON.stringify(graded)}`);
+  console.log(`== mystery encounter graded on ${JSON.stringify(graded.right)}`);
 }
 
 // ---- A build that has moved past the pin: the card says so rather than guessing.

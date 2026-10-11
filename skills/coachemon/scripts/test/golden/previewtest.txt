@@ -134,6 +134,8 @@
 == gym confidence {"type":"exact","trainer":"replay","foes":"replay","double":"replay","levels":"replay"}
 == tally after a hit and a miss {"checked":2,"hit":{"type":2,"trainer":0,"foes":1,"double":1,"levels":1},"miss":{"type":0,"trainer":1,"foes":1,"double":1,"levels":1}}
 == marked ["foes","double","levels"]
+== graded from two out {"same":["type","trainer","foes","double","levels"],"off":["type","trainer","foes","double","levels"]}
+== mystery encounter graded on ["type","double"]
 == unavailable {"kind":"preview","wave":13,"unavailable":"the live build has no generateNewBattleTrainer"}
 == wild spawn args [[0,3]]
 == tally with a look-ahead in flight {"checked":1,"miss":{"type":0,"trainer":0,"foes":0,"double":0,"levels":0}}

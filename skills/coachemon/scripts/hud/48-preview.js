@@ -193,31 +193,49 @@ let predicted = null;
 export const previewArm = value => { if (value && !value.unavailable) predicted = { ...value, scored: false }; };
 
 const speciesKey = foes => foes.map(f => f.name).sort().join(",");
-export const previewCheck = s => {
+// The wave the game is playing, in the fields a preview is graded on; null until its foes are out.
+export const previewActual = s => {
   const b = s?.currentBattle;
-  if (!predicted || !b || b.waveIndex !== predicted.wave || predicted.scored) return;
+  if (!b) return null;
   const party = tryDo(() => s.getEnemyParty(), []) ?? [];
-  if (!party.length && !b.isBattleMysteryEncounter?.()) return;
-  const actual = {
+  if (!party.length && !b.isBattleMysteryEncounter?.()) return null;
+  return {
+    wave: b.waveIndex,
     type: b.isBattleMysteryEncounter?.() ? "me" : b.trainer ? "trainer" : "wild",
     trainer: b.trainer ? trainerName(b.trainer) : null,
     foes: speciesKey(party.map(foeOf)),
     double: !!b.double,
     levels: party.map(p => p.level).join(","),
   };
+};
+// Scores nothing: the tally is `previewCheck`'s alone.
+export const previewGrade = (m, actual) => {
   const mine = {
-    type: predicted.type, trainer: predicted.trainer?.name ?? null, foes: speciesKey(predicted.foes),
-    double: predicted.double, levels: predicted.levels.join(","),
+    type: m.type, trainer: m.trainer?.name ?? null, foes: speciesKey(m.foes),
+    double: m.double, levels: m.levels.join(","),
   };
-  const wrong = [];
+  const right = [], wrong = [];
   for (const f of FIELDS) {
     if (f === "trainer" && mine.type !== "trainer") continue;
-    if (f === "foes" && mine.type === "me") continue;
-    if (String(mine[f]) === String(actual[f])) stats.hit[f]++;
-    else { stats.miss[f]++; wrong.push(f); }
+    // An ME fields no foes, so the battle levels its read carries always graded wrong, and marked a right call `!`
+    // (#590).
+    if ((f === "foes" || f === "levels") && mine.type === "me") continue;
+    (String(mine[f]) === String(actual[f]) ? right : wrong).push(f);
   }
+  return { right, wrong, mine, actual };
+};
+export const previewCheck = s => {
+  if (!predicted || predicted.scored || s?.currentBattle?.waveIndex !== predicted.wave) return;
+  const actual = previewActual(s);
+  if (!actual) return;
+  const { right, wrong, mine } = previewGrade(predicted, actual);
+  for (const f of right) stats.hit[f]++;
+  for (const f of wrong) stats.miss[f]++;
   stats.checked++;
-  if (wrong.length) stats.last = { wave: b.waveIndex, wrong, mine, actual };
+  if (wrong.length) {
+    const { wave, ...seen } = actual;
+    stats.last = { wave, wrong, mine, actual: seen };
+  }
   predicted.scored = true;
 };
 export const previewStats = () => ({ ...stats, hit: { ...stats.hit }, miss: { ...stats.miss } });
