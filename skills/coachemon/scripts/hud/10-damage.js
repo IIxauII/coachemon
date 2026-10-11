@@ -192,19 +192,21 @@ const drainRatio = (env, atk, def, t) => {
   if (atk.getTag?.("HEAL_BLOCK")) return 0;
   return ratio * charm;
 };
-// Per landed use, whatever the order: whether the user moves first is the planner's call.
 // game-less-backed: the game's own chance reads both sides' abilities through `canApplyAbility`, which the adapter's
-// combatants lack, and a throw here zeroed every duel of a member that knows a flinch move (#583). Off the field there
-// is no arena, so the abilities are all that move it (game-code.md §8).
-const lives = p => typeof p?.canApplyAbility === "function";
+// combatants lack, and a throw here zeroed every duel of a member that knows a flinch move (#583). The Pledge rainbow
+// is left out on purpose: an off-field duel has no arena (game-code.md §8).
+const appliesAbilities = p => typeof p?.canApplyAbility === "function";
 const effectChance = (atk, def, fl, move, ignoreAbility) => {
-  if (typeof fl.getMoveChance === "function" && lives(atk) && lives(def)) return fl.getMoveChance(atk, def, move, false, false);
+  if (typeof fl.getMoveChance === "function" && appliesAbilities(atk) && appliesAbilities(def)) {
+    return fl.getMoveChance(atk, def, move, false, false);
+  }
   const c = fl.effectChanceOverride ?? move.chance ?? -1;
   if (c <= 0) return c;
   const mine = abilitiesOf(atk);
   if (mine.includes("Sheer Force") || (!ignoreAbility && abilitiesOf(def).includes("Shield Dust"))) return 0;
   return mine.includes("Serene Grace") ? Math.min(100, c * 2) : c;
 };
+// Per landed use, whatever the order: whether the user moves first is the planner's call.
 const flinchChance = (atk, def, move, ignoreAbility) => {
   const fl = attrs(move, "FlinchAttr")[0];
   if (!fl || (!ignoreAbility && abilitiesOf(def).includes("Inner Focus"))) return 0;
