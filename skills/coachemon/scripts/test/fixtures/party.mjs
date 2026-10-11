@@ -1,6 +1,6 @@
 // Fighting, Grass and Electric are shared weaknesses — two members weak, fewer resisting — while Ice is not: only
 // Garchomp is weak to it and Lapras resists it. Normal, Fighting, Bug, Water, Ice, Dark and Fairy are holes. Magikarp
-// is the weakest member by an *estimated* final BST, not its own.
+// is the one member still to evolve, so its final BST, and a fusion's that takes it, is an estimate.
 
 export const TY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water",
   "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy"];
@@ -13,28 +13,41 @@ export const ATTRS = { FixedDamageAttr, GyroBallPowerAttr };
 
 /**
  * `evos`: `[[speciesId, level], …]`, as `getEvolutionLevels` returns them. `root` is the line's first member: a catch
- * sharing it is a duplicate.
+ * sharing it is a duplicate. `base` is the species' own base-stat row, which a duel needs and a type tally doesn't —
+ * and which a fusion's BST is averaged from per stat rather than in total, so only a test that duels declares it.
  */
-export const species = (id, name, types, bst, { evos = [], root = id } = {}) => ({
-  speciesId: id, name, baseTotal: bst,
+export const species = (id, name, types, bst, { evos = [], root = id, base = null } = {}) => ({
+  speciesId: id, name, baseTotal: bst, baseStats: base,
   type1: TY.indexOf(types[0]), type2: types[1] == null ? null : TY.indexOf(types[1]),
   getEvolutionLevels: () => evos,
   getRootSpeciesId: () => root,
   getName: () => name,
 });
 
-/** `moves`: `[name, type, power, category, attrs?]`. `power` −1 is a move the game prices from the situation. */
-export const mon = (sp, level, moves, { ability = "Pressure", passive = null, luck = 0, allowed = true, hp = 100 } = {}) => ({
-  name: sp.name, species: sp, level, hp, id: `${sp.speciesId}:${level}`,
+/**
+ * `moves`: `[name, type, power, category, attrs?]`. `power` −1 is a move the game prices from the situation.
+ * `allowed` is `isAllowedInBattle` (fainted or barred), `barred` only `isAllowedInChallenge`. `ivs` and `items` are
+ * what a duel and a release read; `pokerus` and `pauseEvolutions` are what an EXP projection reads, a Lucky Egg being
+ * the scene's.
+ */
+export const mon = (sp, level, moves, { ability = "Pressure", passive = null, luck = 0, allowed = true, barred = false,
+  hp = 100, ivs = null, items = [], pokerus = false, pauseEvolutions = false } = {}) => ({
+  name: sp.name, species: sp, level, hp, id: `${sp.speciesId}:${level}`, ivs, pokerus, pauseEvolutions,
   getTypes: () => [sp.type1, sp.type2].filter(t => t != null),
   getAbility: () => ({ name: ability }),
   hasPassive: () => !!passive,
   getPassiveAbility: () => ({ name: passive }),
   getLuck: () => luck,
   isAllowedInBattle: () => allowed,
-  moveset: moves.map(([name, type, power, cat, attrs = []]) => ({
+  isAllowedInChallenge: () => !barred,
+  isPlayer: () => true,
+  getHeldItems: () => items,
+  calculateBaseStats: () => (sp.baseStats ?? []).slice(),
+  moveset: moves.map(([name, type, power, cat, attrs = []], i) => ({
+    moveId: i + 1, ppUsed: 0, getMovePp: () => 10,
     getName: () => name,
-    getMove: () => ({ name, type: TY.indexOf(type), power, category: CAT[cat], attrs, accuracy: 100 }),
+    getMove: () => ({ name, type: TY.indexOf(type), power, category: CAT[cat], attrs, accuracy: 100, pp: 10,
+      moveTarget: 3, priority: 0, flags: 0 }),
   })),
 });
 

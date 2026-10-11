@@ -9,19 +9,20 @@ Sudowoodo         Steel
 weak to           Fighting  Grass  Electric
 holes             Normal  Fighting  Bug  Water  Ice  Dark  Fairy
 == weakest
-Magikarp          final 400~  L35
+told nothing      null
+told Garchomp     Garchomp  1.5 turns
 == matchups
 hit Magnezone     Garchomp
 weak to Electric  Lapras  Magikarp
-== reasons
-Lucario L45       covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Magikarp 400~
-vs Snorlax        covers Grass  hole Normal/Ice/Dark/Fairy
-Lucario L20       covers Grass  hole Normal/Ice/Dark/Fairy
-Sudowoodo         hole Bug/Ice
-Gyarados          dupe  covers Fighting  hole Fighting/Bug  upgrade 540 over Magikarp 400~
-== one species, both cards
-biome             covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Magikarp 400~
-catch             covers Grass  hole Normal/Ice/Dark/Fairy  upgrade 525 over Magikarp 400~
+== the party at the next big fight
+barred            up Garchomp/Snorlax/Lapras  zero Magikarp:barred  back on W24 (shop)
+fainted hardcore  up Garchomp/Snorlax/Lapras  zero Magikarp:fainted  no way back
+fainted stranded  up Garchomp/Snorlax/Lapras  zero Magikarp:fainted  no way back
+fainted, heal W21 up Garchomp/Snorlax/Lapras/Magikarp  zero —  back on W21 (heal)
+fainted, shop W24 up Garchomp/Snorlax/Lapras/Magikarp  zero —  back on W24 (shop)
+heal too late     up Garchomp/Snorlax/Lapras  zero Magikarp:fainted  no way back
+seed and a Revive up Garchomp/Snorlax/Lapras  zero Magikarp:fainted  no way back
+no fight named    up Magikarp  zero Sudowoodo:barred  back on W1 (heal)
 == luck and fusions
 luck              6
 daily luck        11

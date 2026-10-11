@@ -15,6 +15,9 @@ const isFinalWave = (s, w) => {
   return tryDo(() => gm.isWaveFinal(w),
     !!gm && (gm.isDaily ? w === 50 : gm.isEndless ? w % 250 === 0 : !!gm.isClassic && w === 200));
 };
+// The run ends on its final wave in every mode but Endless, whose every 250th is a final boss the run carries on past
+// (`VictoryPhase`, src/phases/victory-phase.ts:57). A walk ahead stops here, never at a final wave alone.
+const runEndsAt = (s, w) => isFinalWave(s, w) && !s?.gameMode?.isEndless;
 
 // game-less-backed
 // Ask this, not `waveKind`, whether a wave is a boss wave: `waveKind` answers "gym" for 20, which is both.
@@ -37,7 +40,7 @@ export const bigFightsAhead = (s, from, n = SPAN) => {
   for (let w = from; w < from + n; w++) {
     const kind = waveKind(s, w);
     if (kind) out.push({ wave: w, kind });
-    if (kind === "final") break;
+    if (runEndsAt(s, w)) break;
   }
   return out;
 };
@@ -54,13 +57,42 @@ const HEAL_HORIZON = 60;
 export const nextHeal = (s, from) => {
   if (!healsAtAll(s)) return null;
   for (let w = from; w < from + HEAL_HORIZON; w++) {
-    if (isFinalWave(s, w)) return null;
+    // The heal comes on the way into `w`, so it is lost when the clear before it ended the run.
+    if (runEndsAt(s, w - 1)) return null;
     if (w % 10 === 1) return w;
   }
   return null;
 };
 
 export const healRevives = s => healsAtAll(s) && !challengeOn(s, Challenges.HARDCORE);
+
+const SHOP_HORIZON = 12;
+const shopsAtAll = s => ![2, 3].includes(challengeValue(s, Challenges.LIMITED_SUPPORT));
+// No rewards screen after an X0 clear, and so no shop row — except under Limited Support 1, whose X1 transition
+// queues one in the removed heal's place (game-code.md §12).
+const shopAfter = (s, w) => w % 10 !== 0 || challengeValue(s, Challenges.LIMITED_SUPPORT) === 1;
+// game-less-backed
+const nextShop = (s, from) => {
+  if (!shopsAtAll(s)) return null;
+  for (let w = Math.max(1, from); w < from + SHOP_HORIZON; w++) {
+    if (runEndsAt(s, w)) return null;
+    if (shopAfter(s, w)) return w;
+  }
+  return null;
+};
+
+// The way a fainted member gets back on its feet before the big fight on wave `fight`. Luck is never one: a drawn
+// Revive, a Reviver Seed and Sacred Ash don't count, and money is not priced (#569). `from` is the wave the run
+// stands on — its own clear still opens a shop, while the heal it entered on is behind it. With no `fight` to reach,
+// any way back ahead counts.
+export const reviveBefore = (s, from, fight = null) => {
+  if (challengeOn(s, Challenges.HARDCORE)) return null;
+  const heal = nextHeal(s, from + 1);
+  if (heal != null && (fight == null || heal <= fight)) return { kind: "heal", wave: heal };
+  const shop = nextShop(s, from);
+  if (shop != null && (fight == null || shop < fight)) return { kind: "shop", wave: shop };
+  return null;
+};
 
 // `isWaveTrainer`'s look-back (game-code.md §10). `blocked`: the wave never reaches its own roll; `before`: the earlier
 // waves in the window that roll first.
