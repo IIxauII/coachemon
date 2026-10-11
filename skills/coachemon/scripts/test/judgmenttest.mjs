@@ -210,8 +210,10 @@ globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { RANDBATS } = globalThis.__hud["05-randbats"];
 const { standardThreats } = globalThis.__hud["11-threats"];
-const { BACKUP, CLAMP, EXPOSURE, MARGIN, PARTY_SIZE, REVENGE, SWITCH_IN, judgeNewcomer, teamValue } = globalThis.__hud["12-value"];
+const { BACKUP, CATCH_LEVEL, CLAMP, EXPOSURE, MARGIN, MAX_REASONS, PARTY_SIZE, REVENGE, SWITCH_IN, UNKNOWN_ITEM,
+  judgeFusionPair, judgeNewcomer, teamValue, weakestMember } = globalThis.__hud["12-value"];
 const { combatantOf } = globalThis.__hud["09-combatant"];
+const { levelCapAt } = globalThis.__hud["09-projection"];
 const { readRun } = globalThis.__hud["26-run"];
 const { sandboxBreachCount } = globalThis.__hud["01-core"];
 
@@ -264,6 +266,9 @@ const M = {
   closeCombat: ["Close Combat", "Fighting", 120, "P"],
   drillPeck: ["Drill Peck", "Flying", 80, "P"],
   tackle: ["Tackle", "Normal", 40, "P"],
+  // The four a stand-in's learnset hands it below, so a live mon can be built with the very same set.
+  aquaTail: ["Aqua Tail", "Water", 90, "P"],
+  dragonPulse: ["Dragon Pulse", "Dragon", 85, "S"],
 };
 
 // ---- The run the judgment reads: wave 44, every tenth wave a boss, so the next big fight ahead is wave 50.
@@ -280,14 +285,51 @@ const judge = (party, newcomer, opts = {}, sceneOpts = {}) =>
 
 // ΔV, the release and the net value, in tenths of a turn, which is the grain the margin is set in.
 const t1 = x => { const v = Math.round(x * 10) / 10 || 0; return `${v > 0 ? "+" : v < 0 ? "-" : " "}${Math.abs(v).toFixed(1)}`; };
-const show = (label, j) => console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} ${(j.replaced?.name ?? "-").padEnd(11)}`
-  + ` dV ${t1(j.delta)}  release ${j.release.toFixed(1)}  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+// Every judgment printed below is held to #579's four rules, whatever else the probe it belongs to asserts: at most
+// two reasons, each naming a threat of the very rows the verdict came off, each a move the judgment would not itself
+// call noise, and not one of them pointing the other way from the call it explains.
+const checkReasons = (label, j) => {
+  const gain = j.verdict !== "skip";
+  assert.ok(j.reasons.length <= MAX_REASONS, `${label}: at most ${MAX_REASONS} reasons, not ${j.reasons.length}`);
+  assert.deepEqual([...new Set(j.reasons.map(r => r.threat))].length, j.reasons.length,
+    `${label}: two reasons are two threats, not one threat twice`);
+  for (const r of j.reasons) {
+    const row = (j.after?.rows ?? []).find(x => x.threat === r.threat);
+    assert.ok(row, `${label}: "${r.text}" names a threat of the rows the verdict was read off`);
+    assert.equal(r.kind, row.kind, `${label}: and names it by type or archetype`);
+    assert.ok(["type", "archetype"].includes(r.kind));
+    assert.ok(r.text.includes(r.threat), `${label}: "${r.text}" says which threat it is about`);
+    assert.ok(["answer", "backup", "exposure"].includes(r.part),
+      `${label}: a reason is an answer, a backup or an exposure`);
+    assert.equal(r.gain, gain, `${label}: "${r.text}" points the other way from ${j.verdict}`);
+    assert.equal(r.delta > 0, gain, `${label}: "${r.text}" is worth ${t1(r.delta)} to a ${j.verdict}`);
+    assert.ok(Math.abs(r.delta) >= MARGIN, `${label}: "${r.text}" moved less than the margin`);
+  }
+  if (j.plain) {
+    assert.ok(["dead weight", "barred"].includes(j.plain.kind), `${label}: ${j.plain.kind} is not a plain case`);
+    assert.ok(j.plain.text.length > 0 && !/\bundefined\b/.test(j.plain.text), `${label}: ${j.plain.text}`);
+  }
+};
+// The plain case, if there is one, and then the words of each reason with the row and the turns it was read off.
+const said = (label, j) => {
+  if (j.plain) console.log(`      ! ${j.plain.text}`);
+  for (const r of j.reasons) {
+    console.log(`      ${r.gain ? "+" : "-"} ${`${r.threat} ${r.part}`.padEnd(22)} ${t1(r.delta)}  ${r.text}`);
+  }
+  checkReasons(label, j);
+};
+const show = (label, j) => {
+  console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} ${(j.replaced?.name ?? "-").padEnd(11)}`
+    + ` dV ${t1(j.delta)}  release ${j.release.toFixed(1)}  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+  said(label, j);
+};
 
 // Where the page's RNG stood before a single judgment ran, which is where the last assertion finds it again.
 const drawsBefore = draws, setsBefore = sets, rndBefore = Phaser.Math.RND.state();
 
 console.log(`== constants: clamp ${CLAMP}  backup ${BACKUP}  revenge ${REVENGE}  switch-in ${SWITCH_IN}`
-  + `  margin ${MARGIN}  exposure ${[1, 2, 3, 4].map(n => EXPOSURE(n).toFixed(1)).join("/")}  party ${PARTY_SIZE}`);
+  + `  margin ${MARGIN}  exposure ${[1, 2, 3, 4].map(n => EXPOSURE(n).toFixed(1)).join("/")}`
+  + `  unknown item ${UNKNOWN_ITEM}  party ${PARTY_SIZE}`);
 
 // ---- Every move a threat brings is one this file has typed
 {
@@ -474,6 +516,7 @@ const WATERS = (level = CAP) => [
     levels.push(j.newcomer.projection.level);
     console.log(`  ${label.padEnd(24)} L${String(j.newcomer.projection.level).padEnd(3)} ${j.newcomer.name.padEnd(9)}`
       + ` ${j.verdict.padEnd(5)} dV ${t1(j.delta)}`);
+    said(label, j);
   }
   assert.equal(levels[0], 10, "a bench share of nothing is nothing");
   assert.equal(levels[1], 10, "and a Lucky Egg multiplies it (game-code.md §17), so it is nothing too");
@@ -599,6 +642,232 @@ const FAINTED = () => [
   assert.equal(j.plain.why, "barred");
 }
 
+// ---- The weakest member: who the party loses least by, with no newcomer in view (#582)
+// The same answer the party profile's `weakest`, the audit's "first to replace" and the Dark Deal's weakest link
+// all read, so none of the three can name a different member. Dead weight is weakest at zero, and goes first
+// however cheap a live member is to lose.
+{
+  const weakest = (party, opts = {}, sceneOpts = {}) =>
+    readRun(sceneOf(party, sceneOpts), run => weakestMember(run, opts));
+  // Every slot, weakest first, with what the party loses by it in turns per threat.
+  const ladder = (label, w) => {
+    console.log(`  ${label.padEnd(30)} ${(w.name ?? "-").padEnd(11)} costs ${t1(w.cost)}  ${w.dead ?? ""}`);
+    console.log(`    ${w.ranked.map(x => `${x.name}${x.dead ? "†" : ""} ${t1(x.cost)}`).join("  ")}`);
+    assert.deepEqual(w.ranked.map(x => !!x.dead).sort((a, b) => Number(b) - Number(a)), w.ranked.map(x => !!x.dead),
+      `${label}: dead weight first`);
+    const live = w.ranked.filter(x => !x.dead);
+    assert.deepEqual([...live].sort((a, b) => a.cost - b.cost).map(x => x.name), live.map(x => x.name),
+      `${label}: then the cheapest live member to lose`);
+    assert.deepEqual({ name: w.name, dead: w.dead, cost: w.cost },
+      { name: w.ranked[0].name, dead: w.ranked[0].dead, cost: w.ranked[0].cost },
+      `${label}: and the weakest member is the first of them`);
+    for (const x of w.ranked) assert.equal(x.dead ? x.cost : 0, 0, `${label}: dead weight costs nothing to lose`);
+  };
+  console.log("== the weakest member of each fixture party");
+  const waters = weakest(WATERS());
+  ladder("all-Water, one Grass", waters);
+  assert.notEqual(waters.name, "Meganium", "the one member that answers what Water cannot is not the weakest");
+  assert.equal(waters.dead, null, "every one of the six can fight, so the weakest is a live member");
+  assert.equal(waters.ranked.length, PARTY_SIZE, "and every slot is on the ladder");
+
+  const hardcore = weakest(FAINTED(), {}, { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  ladder("Hardcore, Wailord down", hardcore);
+  assert.equal(hardcore.name, "Wailord", "a member with no way back is weakest whatever the five are worth");
+  assert.equal(hardcore.dead, "fainted");
+  assert.equal(hardcore.cost, 0, "the party loses nothing at all by a slot nobody is standing in");
+
+  const noSupport = weakest(FAINTED(), {}, { challenges: [{ id: LIMITED_SUPPORT, value: 3 }], seed: "judge-ls" });
+  ladder("no heal, no shop", noSupport);
+  assert.equal(noSupport.name, "Wailord", "the other calendar that strands it says the same");
+  assert.equal(noSupport.v, hardcore.v, "and the two agree on what the party is worth");
+
+  // Limited Support 2 leaves wave 51's heal, which is out of reach of the fight on 50 and in reach of the one on 60.
+  const healDue = weakest(FAINTED(), { fight: 60 }, { challenges: [{ id: LIMITED_SUPPORT, value: 2 }], seed: "judge-heal" });
+  ladder("a heal due before the fight", healDue);
+  assert.ok(healDue.ranked.every(x => !x.dead), "back on its feet, it duels for its slot like anyone");
+  // It is still the member the party loses least by — but as a member now, at what its duels are worth, and not at
+  // the flat zero a slot nobody is standing in holds.
+  assert.equal(healDue.ranked.find(x => x.name === "Wailord").cost, healDue.cost);
+  assert.notEqual(healDue.cost, 0, "priced on the duels it fights, not on the slot it holds");
+
+  const barred = FAINTED();
+  barred[3] = mon(OURS.wailord, CAP, [M.surf, M.bodySlam, M.iceBeam], { ability: "Water Veil", barred: true });
+  const bar = weakest(barred, {}, { challenges: [{ id: SINGLE_TYPE, value: 10 }], seed: "judge-barred-member" });
+  ladder("a barred member, at full health", bar);
+  assert.equal(bar.name, "Wailord");
+  assert.equal(bar.dead, "barred", "a challenge bars it, so the fight is fought without it");
+
+  // The weakest member and a swap's pick are two questions off one party set, and they need not agree: the member
+  // the newcomer should replace is the one *its own* swap picks, since the newcomer may cover what that member
+  // covered (CONTEXT.md, `Party profile`). So a card that names a replacement names the search's pick, and only a
+  // card asking who is expendable — the audit, the Dark Deal — names the weakest.
+  const j = judge(FAINTED(), mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam], { ability: "Overgrow" }), {},
+    { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  console.log(`  a Grass newcomer swaps ${j.replaced.name}, while the weakest member is ${hardcore.name}`);
+  assert.deepEqual(j.tried.map(x => x.slot.name).sort(), hardcore.ranked.map(x => x.name).sort(),
+    "both read the same six slots");
+  assert.equal(hardcore.v, j.before.v, "and the same party value behind them");
+}
+
+// ---- What a release destroys: the items the member it takes would have handed on (#581)
+// A released member leaves with everything transferable it holds, so two slots worth the same to the team are not
+// equally cheap to empty. The approx duel models no item at all, so the adapter prices the ones it can as the
+// multipliers they are (game-code.md §15) and charges a flat `UNKNOWN_ITEM` for every stack it cannot — and a swap
+// worth taking off a party carrying nothing is one to turn down off a party carrying (stories 10, 15).
+{
+  // `getHeldItems` is the whole of what a duel and a release read off a member, so this is a member carrying.
+  const carrying = (p, items) => ({ ...p, getHeldItems: () => items });
+  // A held item as the game keeps one: the modifier's own class is what the adapter prices it by, and its stack
+  // count how many of it the member holds.
+  const itemOf = (cls, stacks, fields = {}) => {
+    const C = class {};
+    Object.defineProperty(C, "name", { value: cls });
+    return Object.assign(new C(), { getStackCount: () => stacks, ...fields });
+  };
+  // Leftovers heals between turns, which is outside the race to the KO a duel is scored on: nothing it can price.
+  const leftovers = n => itemOf("TurnHealModifier", n);
+  // Mystic Water, +20 % per stack to the holder's Water moves, which *is* a multiplier the duel reads.
+  const mysticWater = n => itemOf("AttackTypeBoosterModifier", n, { moveType: TY.indexOf("Water") });
+  // A Miracle Seed, the same item for Grass moves — and in this party, an item one member alone has a move for.
+  const miracleSeed = n => itemOf("AttackTypeBoosterModifier", n, { moveType: TY.indexOf("Grass") });
+  // A vitamin: the points are in the live mon's own stats already, and the item does not move house with it.
+  const vitamin = n => itemOf("BaseStatModifier", n, { stats: [1], multiplier: 1 + 0.1 * n, isTransferable: false });
+
+  const SEED = { seed: "judge-release" };
+  const nc = () => mon(OURS.swampert, CAP, [M.surf, M.waterfall], { ability: "Torrent" });
+  const wailordHolds = items =>
+    judge(WATERS().map(p => (p.name === "Wailord" ? carrying(p, items) : p)), nc(), {}, SEED);
+  const allHold = items => judge(WATERS().map(p => carrying(p, items)), nc(), {}, SEED);
+  const slotOf = (j, name) => j.tried.find(x => x.slot.name === name);
+  const costs = j => j.tried.map(x =>
+    `${x.slot.name} ${x.cost.items} item${x.cost.items === 1 ? "" : "s"}`
+    + ` ${x.cost.flat.toFixed(2)}+${x.cost.worth.toFixed(2)}`).join(", ");
+
+  const bare = wailordHolds([]);
+  const one = wailordHolds([leftovers(1)]);
+  const five = wailordHolds([leftovers(5)]);
+  const invested = wailordHolds([vitamin(3)]);
+  const booster = wailordHolds([mysticWater(3)]);
+  // The same booster for a type the party has one move of: Meganium's Energy Ball, and nothing behind it.
+  const seeded = judge(WATERS().map(p => (p.name === "Meganium" ? carrying(p, [miracleSeed(3)]) : p)), nc(), {}, SEED);
+  console.log("== the slot the search would empty, and what emptying it would destroy");
+  show("holding nothing", bare);
+  show("one Leftovers", one);
+  show("five Leftovers", five);
+  show("three vitamins", invested);
+  show("three Mystic Water", booster);
+  show("three Miracle Seed", seeded);
+  for (const [label, j] of [["nothing", bare], ["one Leftovers", one], ["five", five], ["vitamins", invested],
+      ["Mystic Water", booster], ["Miracle Seed", seeded]]) {
+    console.log(`  ${label.padEnd(13)} ${costs(j)}`);
+    assert.equal(j.net, j.delta - j.release, `${label}: the net value is ΔV less what the release destroys`);
+    assert.equal(j.verdict === "swap", j.net > MARGIN, `${label}: a swap is an improvement past the margin`);
+  }
+  assert.equal(bare.replaced.name, "Wailord", "the slot the search empties when none of the six carries anything");
+  assert.equal(bare.release, 0, "which costs nothing to empty");
+  assert.ok(bare.delta - slotOf(bare, "Lanturn").delta < UNKNOWN_ITEM,
+    "and the slot behind it is worth less to the team than one stack of an item the duel cannot price");
+
+  // So one Leftovers on the member the search had picked is enough to send it to the member behind it.
+  assert.equal(slotOf(one, "Wailord").cost.cost, UNKNOWN_ITEM, "an item a duel cannot be given costs the flat charge");
+  assert.equal(slotOf(one, "Wailord").cost.worth, 0, "none of it priced, so none of it read off a duel");
+  assert.equal(slotOf(one, "Wailord").delta, bare.delta, "the member duels as it did: the item was never in the duel");
+  assert.equal(one.replaced.name, "Lanturn", "and the search releases the member behind it instead");
+  assert.equal(one.release, 0, "that one carrying nothing");
+  assert.ok(one.delta < bare.delta, "which is worth less to the party than the slot it passed over");
+  assert.equal(slotOf(five, "Wailord").cost.cost, 5 * UNKNOWN_ITEM, "five stacks of it is five charges");
+  assert.equal(slotOf(five, "Wailord").cost.items, 1, "of the one item");
+
+  // The vitamin is investment, not an item that moves house: the party keeps it whoever goes, so it is not counted
+  // against the release, and what it bought is in the live stats the duel already read.
+  assert.equal(slotOf(invested, "Wailord").cost.cost, 0, "an untransferable item is not counted");
+  assert.equal(slotOf(invested, "Wailord").cost.items, 0, "nothing of it goes with the member");
+  assert.equal(invested.replaced.name, bare.replaced.name, "so the search is the very one it ran off a bare party");
+  assert.equal(invested.delta, bare.delta, "and not one duel of it came out differently");
+
+  // A booster the adapter can price costs what the duels say it is worth rather than the flat charge — and what it is
+  // worth is what it is worth to the party that *stays*: the member answering each threat once the swap is made is
+  // rebuilt holding the gone items on top of its own, and the row is charged what that answer gains by them. Three
+  // stacks of a Water booster off a party of Waters lands on whoever answers next, so the slot is dear to empty.
+  const priced = slotOf(booster, "Wailord");
+  assert.equal(priced.cost.flat, 0, "nothing flat about an item the duel was given");
+  assert.equal(priced.cost.cost, priced.cost.flat + priced.cost.worth, "the cost being the two halves together");
+  assert.ok(priced.cost.worth > UNKNOWN_ITEM,
+    "three stacks of a Water booster handed to five Waters is worth more than one unpriceable stack");
+  assert.ok(priced.delta < bare.delta, "the party being worth more for one of its own holding it");
+  assert.ok(priced.delta - priced.release < bare.delta, "so the slot is dearer to empty for what it carries");
+  assert.equal(booster.replaced.name, "Lanturn", "and this slot too goes to the member behind it");
+
+  // The other way round: an item nothing left in the party could use costs about nothing to release, however much it
+  // was worth to the member carrying it. Meganium is the one member of the six with a Grass move, so a Miracle Seed
+  // lifts its own duels — the party is worth more for its holding one — and the moment it goes there is nobody left
+  // to hand the seed to. A release destroys what the party loses, not what the released member had.
+  const stranded = slotOf(seeded, "Meganium");
+  assert.ok(seeded.before.v > bare.before.v, "the seed is worth something to the party while Meganium holds it");
+  assert.equal(stranded.cost.items, 1, "and it is transferable, so the release does take it");
+  assert.equal(stranded.cost.flat, 0, "the adapter prices it, so none of it is charged flat");
+  assert.equal(stranded.cost.worth, 0, "and it is worth nothing to the five Waters that stay: no Grass move between them");
+  assert.equal(stranded.cost.cost, 0, "which is the whole of what releasing it costs");
+
+  // The same seed on the same member, with one Water of the six traded for a Grass that stays: now there is somebody
+  // to hand it to, and the slot costs what the seed is worth to them.
+  const heir = judge(WATERS().map(p => (p.name === "Lanturn"
+    ? mon(OURS.sceptile, CAP, [M.energyBall, M.bodySlam], { ability: "Overgrow" })
+    : p.name === "Meganium" ? carrying(p, [miracleSeed(3)]) : p)), nc(), {}, SEED);
+  show("the seed with an heir to it", heir);
+  console.log(`  Meganium's slot: ${stranded.cost.worth.toFixed(2)} with no Grass behind it,`
+    + ` ${slotOf(heir, "Meganium").cost.worth.toFixed(2)} with Sceptile behind it`);
+  assert.ok(slotOf(heir, "Meganium").cost.worth > 0,
+    "the very item that cost nothing to release costs something once a member that can use it stays");
+
+  // The cost orders the whole search and not just its first two: with the two cheapest slots carrying, the member
+  // behind both of them is the one released.
+  const twoHold = judge(WATERS().map(p => (["Wailord", "Lanturn"].includes(p.name) ? carrying(p, [leftovers(1)]) : p)),
+    nc(), {}, SEED);
+  show("the cheapest two carrying", twoHold);
+  assert.equal(twoHold.replaced.name, "Politoed", "the third-cheapest slot, which carries nothing");
+  assert.ok(slotOf(twoHold, "Politoed").delta < slotOf(twoHold, "Wailord").delta,
+    "worth less to the team than either of them, and cheaper than both once the items are counted");
+
+  // Six slots carrying the same thing: no slot is cheaper than another, the cost comes straight off the net, and the
+  // swap the party would have made carrying nothing is one it should turn down.
+  const carried = n => allHold([leftovers(n)]);
+  const [cheap, dear] = [carried(1), carried(6)];
+  console.log("== all six of them carrying, one stack each and then six");
+  show("one Leftovers each", cheap);
+  show("six Leftovers each", dear);
+  assert.equal(bare.verdict, "swap");
+  assert.equal(cheap.verdict, "swap", "one stack each leaves the swap well past the margin");
+  assert.equal(dear.verdict, "skip", "six of it does not: ΔV − release cost > margin is what an improvement is");
+  assert.equal(dear.delta, bare.delta, "the same swap, worth the same change in team value");
+  assert.equal(dear.replaced.name, bare.replaced.name, "out of the same member's slot");
+  for (const [n, j] of [[1, cheap], [6, dear]]) {
+    assert.equal(j.release, n * UNKNOWN_ITEM, `${n} unpriceable stacks cost ${n} charges`);
+    assert.deepEqual([...new Set(j.tried.map(x => x.release))], [n * UNKNOWN_ITEM], "every slot of the six alike");
+  }
+
+  // Replacing dead weight costs only its release cost (story 15): the corpse is worth nothing to give up, so what
+  // the swap pays for is what it is carrying — and here one stack of it is enough to turn the swap down.
+  const corpse = items => judge(FAINTED().map(p => (p.name === "Wailord" ? carrying(p, items) : p)),
+    mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam, M.surf, M.bodySlam], { ability: "Overgrow" }),
+    { replace: "Wailord" }, { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  const [empty, pockets, spent] = [corpse([]), corpse([leftovers(1)]), corpse([vitamin(3)])];
+  console.log("== the fainted member named, holding nothing, one Leftovers, and three vitamins");
+  show("a corpse", empty);
+  show("a corpse carrying", pockets);
+  show("a corpse's investment", spent);
+  assert.equal(empty.replaced.dead, "fainted");
+  assert.equal(empty.release, 0, "dead weight is free to release");
+  assert.equal(empty.verdict, "swap", "so anything past the margin takes the slot");
+  assert.equal(pockets.delta, empty.delta, "what it carries changes nothing about what the party is worth");
+  assert.equal(pockets.release, UNKNOWN_ITEM, "and is the whole of what the release costs");
+  assert.equal(pockets.net, empty.delta - UNKNOWN_ITEM, "which is all that stands between the two calls");
+  assert.equal(pockets.verdict, "skip", "and more than the slot was worth: a corpse with pockets is not free");
+  assert.equal(pockets.plain, null, "a card that is not swapping it has nothing plain to say about it");
+  assert.equal(spent.release, 0, "while what was spent on it was never the release's to destroy");
+  assert.equal(spent.verdict, empty.verdict, "so the investment leaves the call where it found it");
+}
+
 // ---- A newcomer the challenge bars is dead weight on arrival, and never an improvement
 {
   const j = judge(WATERS(), mon(OURS.meganium, CAP, [M.energyBall, M.bodySlam, M.earthquake], { barred: true }),
@@ -624,6 +893,41 @@ const FAINTED = () => [
   assert.equal(j.replaced.name, "Meganium");
 }
 
+// ---- The reason the decision words itself: the swap that gives away the only answer to a type says so
+// Five Grass members the Grass threat of the set is at home among, and the one Fire that answers it.
+const GRASSES = () => [
+  mon(OURS.charizard, CAP, [M.flamethrower, M.drillPeck], { ability: "Blaze" }),
+  mon(OURS.meganium, CAP, [M.energyBall, M.bodySlam], { ability: "Overgrow" }),
+  mon(OURS.sceptile, CAP, [M.energyBall, M.bodySlam], { ability: "Overgrow" }),
+  mon(OURS.sunflora, CAP, [M.gigaDrain, M.bodySlam], { ability: "Chlorophyll" }),
+  mon(OURS.roserade, CAP, [M.energyBall, M.sludgeBomb], { ability: "Natural Cure" }),
+  mon(OURS.ludicolo, CAP, [M.surf, M.energyBall], { ability: "Swift Swim" }),
+];
+{
+  // A trade forced on that member — a GTS offer naming the member it takes — is the swap that empties the row
+  // outright rather than handing it down to a backup.
+  const party = GRASSES();
+  const j = judge(party, mon(OURS.blastoise, CAP, [M.surf, M.bodySlam], { ability: "Torrent" }),
+    { replace: "Charizard" }, { seed: "judge-only-answer" });
+  console.log("== the only answer to the Grass threat traded away, among five Grass members");
+  show("Blastoise for Charizard", j);
+  const was = name => j.before.rows.find(r => r.threat === name);
+  const now = name => j.after.rows.find(r => r.threat === name);
+  for (const name of ["Grass", "Flying"]) {
+    console.log(`  ${name.padEnd(7)} ${was(name).answer.name} ${t1(was(name).answer.s)},`
+      + ` beating ${was(name).beaten.length} of ${was(name).of}, and after the trade`
+      + ` ${now(name).answer.name} ${t1(now(name).answer.s)}, beating ${now(name).beaten.length}`
+      + ` of ${now(name).of}`);
+  }
+  assert.equal(was("Grass").answer.name, "Charizard", "the Fire is the party's answer to the Grass threat");
+  assert.ok(was("Grass").answer.s > 0 && now("Grass").answer.s <= 0, "and the trade leaves the party none");
+  assert.equal(j.verdict, "skip", "which is why the trade is one to turn down");
+  // The two phrasings the decision names outright, on the call they explain (#567).
+  assert.deepEqual(j.reasons.map(r => r.text), ["no answer left to Grass", "Flying now beats 6 of 6"]);
+  assert.deepEqual(j.reasons.map(r => r.part), ["answer", "exposure"]);
+  assert.deepEqual(j.reasons.map(r => r.gain), [false, false], "both losses, on the call that turns it down");
+}
+
 // ---- Speed is worth one hit: a fast newcomer and a slow one of the same bulk and power score differently
 {
   const party = WATERS();
@@ -639,6 +943,273 @@ const FAINTED = () => [
   console.log(`  rows whose answer moves first: ${first(fast)} fast, ${first(slow)} slow`);
   assert.ok(fast.delta > slow.delta, "moving first is one fewer hit taken (story 36)");
   assert.ok(first(fast) > first(slow));
+}
+
+// ---- The whole vocabulary a reason is said in, swept out of every swap the two parties above allow
+{
+  // Each judgment above pins the words of its own call; this sweeps the two parties against three newcomers each,
+  // every slot forced in turn, and pins the *shapes* those calls are said in — the threat under an X and its counts
+  // under an n. A phrasing this file has never read is then a golden diff rather than a surprise on a card.
+  const sweeps = [["the Water six", WATERS], ["the Grass six", GRASSES]];
+  const comers = [
+    ["Blastoise", () => mon(OURS.blastoise, CAP, [M.surf, M.bodySlam], { ability: "Torrent" })],
+    ["Sunflora", () => mon(OURS.sunflora, CAP, [M.gigaDrain, M.bodySlam], { ability: "Chlorophyll" })],
+    ["Kangaskhan", () => mon(OURS.kangaskhan, CAP, [M.bodySlam], { ability: "Early Bird" })],
+    // Two worth having, so the sweep reads the gains as well as the losses.
+    ["Sceptile", () => mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam, M.surf, M.bodySlam],
+      { ability: "Overgrow" })],
+    ["Swampert", () => mon(OURS.swampert, CAP, [M.earthquake, M.iceBeam, M.surf, M.bodySlam],
+      { ability: "Torrent" })],
+    ["Charizard", () => mon(OURS.charizard, CAP, [M.flamethrower, M.drillPeck, M.crunch, M.bodySlam],
+      { ability: "Blaze" })],
+  ];
+  const seen = new Map();
+  let judged = 0, reasons = 0;
+  for (const [label, party] of sweeps) {
+    for (const victim of party().map(p => p.name)) {
+      for (const [name, nc] of comers) {
+        const j = judge(party(), nc(), { replace: victim }, { seed: "judge-vocab" });
+        checkReasons(`${label} -${victim} +${name}`, j);
+        judged++;
+        reasons += j.reasons.length;
+        for (const r of j.reasons) {
+          const shape = r.text.replace(r.kind === "archetype" ? `the ${r.threat}` : r.threat, "X")
+            .replace(/\d+/g, "n");
+          const at = seen.get(shape) ?? { n: 0, gain: r.gain, part: r.part };
+          seen.set(shape, { ...at, n: at.n + 1 });
+          assert.equal(at.gain ?? r.gain, r.gain, `"${shape}" is a gain in one call and a loss in another`);
+        }
+      }
+    }
+  }
+  console.log(`== ${reasons} reasons over ${judged} forced swaps, in ${seen.size} phrasings:`);
+  const order = [...seen].sort(([x, a], [y, b]) =>
+    Number(b.gain) - Number(a.gain) || a.part.localeCompare(b.part) || x.localeCompare(y));
+  for (const [shape, at] of order) {
+    console.log(`  ${at.gain ? "+" : "-"} ${at.part.padEnd(8)} ${String(at.n).padStart(3)}  ${shape}`);
+  }
+  assert.deepEqual([...new Set(order.map(([, at]) => `${at.gain ? "gain" : "loss"} ${at.part}`))].sort(),
+    ["gain answer", "gain backup", "gain exposure", "loss answer", "loss backup", "loss exposure"],
+    "the sweep reads every part of a row, moving either way, so no phrasing goes unread");
+  // Every phrasing says which threat it is about and which way the row went, and nothing says both ways at once.
+  for (const [shape, at] of order) {
+    assert.ok(shape.includes("X"), `"${shape}" names no threat`);
+    assert.ok(/^(an answer|a backup|a better|a weaker|no answer|no backup|nearer|further from|X now beats)/.test(shape),
+      `"${shape}" is outside the vocabulary this file has read`);
+    assert.equal(/\bdown from\b/.test(shape), at.gain && at.part === "exposure",
+      `"${shape}" counts down only where the exposure it reads fell`);
+  }
+}
+
+// ---- A stand-in newcomer: a species and a form, with nothing alive behind it (#580)
+{
+  // A species the game's registry knows and the randbats snapshot does not. The snapshot lists no not-fully-evolved
+  // species (05-randbats' own `e`), so a species added here reaches `getSpecies` without reaching the threat pool:
+  // the stand-in is judged against the same threats every probe above was, and never against one of its own name.
+  const idOf = new Map();
+  MOVES.forEach((mv, id) => { if (mv && !idOf.has(mv.name)) idOf.set(mv.name, id); });
+  // `[level, moveId]`, as the game's `getLevelMoves` hands it over. Level 35 is above the level a catch on this wave
+  // joins at, and the two oldest entries are the ones the four slots push out.
+  const LEARNSET = [[1, "Quick Attack"], [5, "Agility"], [11, "Aqua Tail"], [17, "Crunch"], [23, "Dragon Pulse"],
+    [29, "Ice Beam"], [35, "Outrage"]];
+  const DRAGONAIR = {
+    ...species(148, "Dragonair", ["Dragon"], 420, { base: [61, 84, 65, 70, 70, 70] }),
+    ability1: { name: "Shed Skin" }, // the species' default, which a wild spawn comes out with
+    getLevelMoves: () => LEARNSET.map(([lv, name]) => [lv, idOf.get(name)]),
+  };
+  SPECIES_BY_ID.set(148, DRAGONAIR);
+  assert.ok(!readRun(sceneOf([]), run => standardThreats(run, { fight: 50 }))
+    .threats.some(t => t.species.speciesId === 148), "a stand-in's species is no threat of the set it is judged by");
+
+  const party = WATERS();
+  const j = judge(party, { species: DRAGONAIR }, {}, { seed: "judge-stand-in" });
+  const nc = j.newcomer;
+  const names = nc.combatant.moveset.map(pm => pm.getName());
+  const cap = levelCapAt(null, 44); // the cap on the wave the catch happens on, not the one at the fight
+  console.log("== a stand-in Dragonair, with no live mon behind it");
+  console.log(`  caught at L${nc.projection.was}, ${(nc.projection.was / cap).toFixed(2)} of the cap ${cap},`
+    + ` and judged at L${nc.projection.level} knowing ${names.join(", ")}`);
+  console.log(`  ability ${nc.combatant.getAbility()?.name ?? "-"},`
+    + ` passive ${nc.combatant.getPassiveAbility()?.name ?? "-"}, stand-in ${nc.standIn}, ${j.confidence}`);
+  show("Dragonair, a stand-in", j);
+  assert.equal(nc.standIn, true, "nothing alive behind it, which is what the card marks");
+  assert.equal(nc.confidence, "estimate", "so none of its four inputs is the mon the player would be handed");
+  assert.equal(j.confidence, "estimate");
+  assert.equal(nc.projection.was, Math.round(CATCH_LEVEL * cap), "it joins at the expected catch level for the wave");
+  assert.ok(nc.projection.was / cap >= 0.75 && nc.projection.was / cap <= 0.8, "which is 0.75-0.8 of the cap (#567)");
+  assert.deepEqual(names, ["Aqua Tail", "Crunch", "Dragon Pulse", "Ice Beam"],
+    "and knows the last four level-up moves of its learnset at that level");
+  assert.deepEqual(names, LEARNSET.filter(([lv]) => lv <= nc.projection.was).slice(-4).map(([, name]) => name),
+    "the two oldest pushed out of the four slots, and level 35 still ahead of it");
+  assert.equal(nc.combatant.hasPassive(), false, "a wild spawn comes with no passive");
+  assert.equal(nc.combatant.getAbility().name, "Shed Skin", "and with the species' default ability");
+
+  // A stand-in is an estimate of a mon, so the mon it estimates has to come out with the same answer: the same
+  // species at the same level, the same four moves, that ability and no passive — alive this time, and judged live.
+  // Both are `estimate`, the projection behind either making them so; the flag is what tells a card which it holds.
+  const live = mon(DRAGONAIR, nc.projection.level, [M.aquaTail, M.crunch, M.dragonPulse, M.iceBeam],
+    { ability: "Shed Skin" });
+  const twin = judge(party, live, {}, { seed: "judge-stand-in" });
+  show("Dragonair, alive", twin);
+  assert.equal(twin.newcomer.standIn, false);
+  assert.deepEqual([...nc.combatant.stats], [...twin.newcomer.combatant.stats],
+    "the stand-in's neutral IVs and nature are the live mon's own");
+  assert.equal(twin.verdict, j.verdict, "a stand-in and a live mon of the same build get the same verdict");
+  assert.equal(t1(twin.delta), t1(j.delta), "worth the same change in team value");
+  assert.equal(twin.replaced?.name ?? null, j.replaced?.name ?? null, "out of the same member's slot");
+  assert.deepEqual(twin.reasons.map(r => r.text), j.reasons.map(r => r.text), "said in the same words");
+
+  // And again on a call that goes the other way, so the agreement is not two skips agreeing to do nothing: the same
+  // six far enough below the cap that a level 30 catch is worth having, judged as a stand-in and then alive.
+  const low = WATERS(16);
+  const wanted = judge(low, { species: DRAGONAIR }, {}, { seed: "judge-stand-in-low" });
+  const wantedLive = judge(low, mon(DRAGONAIR, wanted.newcomer.projection.level,
+    [M.aquaTail, M.crunch, M.dragonPulse, M.iceBeam], { ability: "Shed Skin" }), {}, { seed: "judge-stand-in-low" });
+  console.log("== the same stand-in into six members at level 16, and the live mon it estimates");
+  show("Dragonair, a stand-in", wanted);
+  show("Dragonair, alive", wantedLive);
+  assert.notEqual(wanted.verdict, "skip", "a catch above the party's own level is one to take");
+  assert.equal(wantedLive.verdict, wanted.verdict, "which the live mon of that build is told too");
+  assert.equal(t1(wantedLive.delta), t1(wanted.delta));
+  assert.equal(wantedLive.replaced?.name ?? null, wanted.replaced?.name ?? null);
+  assert.deepEqual(wantedLive.reasons.map(r => r.text), wanted.reasons.map(r => r.text));
+
+  // A spec that names a level of its own keeps it: a Safari offer or a trade knows the mon's level, and only a
+  // species the player has not met yet falls back to what the wave would spawn.
+  const named = judge(party, { species: DRAGONAIR, level: 12 }, {}, { seed: "judge-stand-in" });
+  console.log(`  a stand-in offered at L12 is judged at L${named.newcomer.projection.level}`
+    + ` knowing ${named.newcomer.combatant.moveset.map(pm => pm.getName()).join(", ")}`);
+  assert.equal(named.newcomer.projection.was, 12, "the level it was offered at, not the one the wave would spawn");
+  assert.deepEqual(named.newcomer.combatant.moveset.map(pm => pm.getName()), ["Quick Attack", "Agility", "Aqua Tail"],
+    "and the learnset read at that level, which is three moves and not four");
+}
+
+// ---- A fusion pair: the freed slot stands empty, and the other half is spent for it (#588)
+// ΔV = V(party − base − other half + fused) − V(party), so the party a fusion leaves is one member shorter than the
+// one it was judged against: the base's slot carries the mon the Splicer would make and the other half's stands
+// empty. An improvement is ΔV less the other half's release cost past the margin (story 24).
+{
+  const fuse = (party, base, other, opts = {}, sceneOpts = {}) =>
+    readRun(sceneOf(party, sceneOpts), run => judgeFusionPair(run, base, other, opts));
+  const showFusion = (label, j) => {
+    console.log(`  ${label.padEnd(30)} ${j.verdict.padEnd(5)} dV ${t1(j.delta)}  release ${j.release.toFixed(1)}`
+      + `  net ${t1(j.net)}  ${j.plain ? j.plain.kind : ""}`);
+    said(label, j);
+  };
+  // Every pair of a party, best net first, which is the order the fusion card will rank them in.
+  const pairs = (party, sceneOpts = {}) => {
+    const names = party().map(p => p.name);
+    const all = [];
+    for (const base of names) for (const other of names) {
+      if (base !== other) all.push(fuse(party(), base, other, {}, sceneOpts));
+    }
+    return all.sort((x, y) => y.net - x.net);
+  };
+  const order = j => `${j.base.name} ← ${j.other.name}`;
+  const SEED = { seed: "judge-fuse" };
+
+  const party = WATERS();
+  const j = fuse(party, "Lanturn", "Politoed", {}, SEED);
+  console.log("== the all-Water six, the two halves of one fusion");
+  console.log(`  the mon the Splicer would make: ${j.fused.name} L${j.fused.projection.level}`
+    + ` [${j.fused.combatant.getTypes().map(t => TY[t]).join("/")}] ${j.fused.combatant.getMaxHp()} hp,`
+    + ` ability ${j.fused.combatant.getAbility()?.name ?? "-"}`);
+  showFusion(order(j), j);
+  assert.equal(j.base.name, "Lanturn", "the member picked first is the base, which the fusion is named after");
+  assert.equal(j.other.name, "Politoed", "and the second is the other half, which leaves the party for good");
+  assert.equal(j.fused.name, "Lanturn", "the base keeps its own name through it");
+  assert.equal(j.fused.combatant.getAbility().name, "Water Absorb", "while the other half lends its ability");
+  assert.deepEqual(j.fused.combatant.key,
+    combatantOf({ mon: party.find(p => p.name === "Lanturn"), level: CAP,
+      species: OURS.lanturn, form: 0, fuse: { mon: party.find(p => p.name === "Politoed") } }).key,
+    "and the mon duelled is the combatant adapter's own fusion of the two halves (#573)");
+
+  // The freed slot: six members stood in the rows the party was judged by, five in the rows it is judged by after.
+  assert.deepEqual([...new Set(j.before.rows.map(r => r.of))], [PARTY_SIZE], "six members before the fusion");
+  assert.deepEqual([...new Set(j.after.rows.map(r => r.of))], [PARTY_SIZE - 1],
+    "five after it: two members went in, one came out, and nothing fills the slot");
+  for (const r of j.after.rows) {
+    assert.ok(!r.beaten.includes("Politoed") && r.answer.name !== "Politoed",
+      "the other half answers no threat and is exposed to none: it is not on the party it left");
+  }
+  assert.equal(j.delta, j.after.v - j.before.v, "ΔV is what the fusion changes about the party's team value");
+  assert.equal(j.net, j.delta - j.release, "and the net value is ΔV less what the release destroys");
+  assert.equal(j.verdict === "fuse", j.net > MARGIN, "which is an improvement past the margin, and a skip under it");
+  assert.equal(j.confidence, "estimate", "as sure as the projection behind the party, like every judgment here");
+
+  // What is not a pair at all. A base that is dead weight is the one of these that could have been given a verdict:
+  // the fused mon comes out on the halves' mean share of the base's pre-fusion max HP, so a healthy other half puts
+  // a fainted base back on its feet (game-code.md §24) and the slot the fusion leaves is not dead weight at all.
+  const corpse = fuse(FAINTED(), "Wailord", "Blastoise", {},
+    { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  for (const [label, bad] of [["a member with itself", fuse(party, "Lanturn", "Lanturn", {}, SEED)],
+      ["a member not on the party", fuse(party, "Lanturn", "Gyarados", {}, SEED)],
+      ["a base that is dead weight", corpse]]) {
+    console.log(`  ${label.padEnd(30)} ${bad.verdict.padEnd(5)} unjudged: ${bad.unavailable}`);
+    assert.ok(bad.unavailable, `${label}: no pair, and no verdict read off a party the fusion would not leave`);
+    assert.equal(bad.after, null);
+    assert.equal(bad.delta, 0);
+  }
+
+  // ---- The other half's held items tip a pair
+  // The ranking is by net value, so what the other half is carrying orders the pairs as surely as what the fusion is
+  // worth: two pairs within a stack of each other swap places the moment one of them spends a member with pockets.
+  const carrying = (p, items) => ({ ...p, getHeldItems: () => items });
+  // Leftovers heals between turns, which is outside the race to a KO a duel is scored on: the adapter can give the
+  // duel nothing of it, so every stack is charged the flat `UNKNOWN_ITEM` (#581).
+  const leftovers = n => {
+    const C = class {};
+    Object.defineProperty(C, "name", { value: "TurnHealModifier" });
+    return Object.assign(new C(), { getStackCount: () => n });
+  };
+  const holding = (name, items) => () => WATERS().map(p => (p.name === name ? carrying(p, items) : p));
+  // The ranking is printed to the hundredth of a turn, the three pairs at the head of it standing within one stack
+  // of each other: at the tenth the margin is set in, the order the item moves would not be readable.
+  const top = (label, rows) => {
+    console.log(`  ${label.padEnd(30)} ${rows.slice(0, 3).map(x => `${order(x)} ${x.net.toFixed(2)}`).join("   ")}`);
+  };
+  const bare = pairs(WATERS, SEED);
+  console.log("== every pair of the six ranked by net value, and then with one of them carrying");
+  top("nothing held", bare);
+  const first = bare[0], second = bare.find(x => x.other.name !== first.other.name && x.base.name !== first.other.name);
+  // Two stacks on the other half of the best pair is more than the pairs behind it stand off it.
+  const STACKS = 2;
+  const laden = pairs(holding(first.other.name, [leftovers(STACKS)]), SEED);
+  top(`${STACKS} Leftovers on ${first.other.name}`, laden);
+  const same = laden.find(x => order(x) === order(first));
+  assert.ok(first.net - second.net < STACKS * UNKNOWN_ITEM,
+    `${order(first)} led ${order(second)} by less than ${STACKS} stacks of an item the duel cannot be given`);
+  assert.equal(same.delta, first.delta, "the pair is worth the same change in team value: no duel read the item");
+  assert.equal(same.release, STACKS * UNKNOWN_ITEM, "and the release costs a flat charge a stack");
+  assert.equal(same.net, same.delta - same.release);
+  assert.notEqual(order(laden[0]), order(first), "so the pair that led the ranking no longer leads it");
+  assert.equal(order(laden[0]), order(second), "the pair behind it does");
+  // And enough of it turns the best fusion of the six into one to turn down.
+  const DEAR = 10;
+  const dear = fuse(holding(first.other.name, [leftovers(DEAR)])(), first.base.name, first.other.name, {}, SEED);
+  showFusion(`${order(first)}, ${DEAR} Leftovers`, dear);
+  assert.equal(first.verdict, "fuse", "a pair worth making off a party carrying nothing");
+  assert.equal(dear.delta, first.delta, "is the very same fusion");
+  assert.equal(dear.release, DEAR * UNKNOWN_ITEM);
+  assert.equal(dear.verdict, "skip", "and one to turn down once the member it spends is carrying");
+
+  // ---- A party where no pair clears the margin: the Splicer stays unspent (story 25)
+  // Three members at the cap, each of them the party's own answer to a stretch of the threat set. Spending one for
+  // the mean of two base-stat rows is a loss whichever pair is picked, and the two members left have no third to
+  // back them up.
+  const THREE = () => [
+    mon(OURS.charizard, CAP, [M.flamethrower, M.drillPeck, M.crunch, M.bodySlam], { ability: "Blaze" }),
+    mon(OURS.swampert, CAP, [M.surf, M.iceBeam, M.bodySlam, M.earthquake], { ability: "Torrent" }),
+    mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam, M.surf, M.bodySlam], { ability: "Overgrow" }),
+  ];
+  const none = pairs(THREE, { seed: "judge-fuse-three" });
+  console.log("== three members, each answering what the other two cannot: every pair of them");
+  for (const x of none) showFusion(order(x), x);
+  assert.equal(none.length, 6, "three members make six ordered pairs");
+  assert.ok(none.every(x => x.verdict === "skip"), "and not one of them is an improvement");
+  assert.ok(none[0].net <= MARGIN, "the best of them short of the margin, which is a card that says back out");
+  assert.ok(none.every(x => x.release === 0), "none of the three carrying anything to destroy");
+  assert.ok(none.every(x => x.delta < 0), "every pair of them worth less to the team than the three as they stand");
 }
 
 // ---- The full swap search over six members, inside the cost budget

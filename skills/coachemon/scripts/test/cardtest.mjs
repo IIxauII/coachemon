@@ -80,7 +80,7 @@ const verdictOf = m => cardSummary(m).verdict;
     encounter: { kind: "encounter", wave: 31, name: "Mysterious Chest", known: true, pick: 0,
       options: [{ label: "Open it", verdict: "take", outcome: "pick of 3 Ultra items" }, { label: "Leave", verdict: "avoid" }] },
     starters: { kind: "starters", wave: null, limit: 10, picks: [{ label: "best", cost: 10, weak: [], members: [{ name: "Gible", role: "carry" }] }] },
-    fusion: { kind: "fusion", wave: 40, picked: null, better: null, rows: [{ base: { name: "Garchomp" }, other: { name: "Dragonite" }, value: 21, fuse: true }] },
+    fusion: { kind: "fusion", wave: 40, picked: null, better: null, rows: [{ base: { name: "Garchomp" }, other: { name: "Dragonite" }, value: 2.1, fuse: true }] },
   };
   const declared = summaryKeys();
   for (const [kind, model] of Object.entries(kinds)) {

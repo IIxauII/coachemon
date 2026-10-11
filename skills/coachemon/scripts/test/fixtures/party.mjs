@@ -1,6 +1,6 @@
 // Fighting, Grass and Electric are shared weaknesses — two members weak, fewer resisting — while Ice is not: only
 // Garchomp is weak to it and Lapras resists it. Normal, Fighting, Bug, Water, Ice, Dark and Fairy are holes. Magikarp
-// is the weakest member by an *estimated* final BST, not its own.
+// is the one member still to evolve, so its final BST, and a fusion's that takes it, is an estimate.
 
 export const TY = ["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel", "Fire", "Water",
   "Grass", "Electric", "Psychic", "Ice", "Dragon", "Dark", "Fairy"];
