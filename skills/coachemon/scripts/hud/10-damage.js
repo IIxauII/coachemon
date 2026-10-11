@@ -78,7 +78,7 @@ const bossSegmentDamage = (dmg, hp, segSize, minIdx = 0, idx) => {
 const STURDY_VS_FIXED_FROM = null;
 const fixedIgnoresSturdy = env => !STURDY_VS_FIXED_FROM || !versionAtLeast(gameVersionOf(env.s), STURDY_VS_FIXED_FROM);
 
-// @only 25-turn, tests: targetFacts
+// @only 25-turn, 12-value, tests: targetFacts
 export const targetFacts = (env, t, ignoreAbility = false) => {
   const maxHp = t.getMaxHp();
   const segs = t.bossSegments > 0 && (t.isBoss?.() ?? true) ? t.bossSegments : 0;

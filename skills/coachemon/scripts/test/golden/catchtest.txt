@@ -2,40 +2,68 @@
 ≈ Pikachu maybe: break its bars first — only a Master Ball works now, new species
 Poké ×5 0% Great ×5 0% Ultra ×5 0% Master ×1 100%
 · account new species
+· team verdict coming with the road
 == new species
 ★ Pikachu catch: Poké 77% — new species
 Poké ×5 77% Great ×3 96% Ultra ×2 100% Rogue ×1 100% Master ×1 100%
 · account new species
+· team verdict coming with the road
 == skip
 
 == escape
 ★ Arcanine catch: Ultra 65% — ends it: we can't KO it, it KOs Venusaur
 Poké ×5 44% Ultra ×5 65%
 · escape ends it: we can't KO it, it KOs Venusaur
-== team
-★ Pidgeot catch: Ultra 50% — new species, stronger than Pikachu (BST 479 vs 320), sleep/paralyse it for better odds
+· team verdict coming with the road
+== team pending
+★ Pidgeot catch: Ultra 50% — new species, sleep/paralyse it for better odds
 Poké ×5 34% Great ×5 42% Ultra ×5 50%
 · account new species
-· team covers Ground weakness
-· team hits Fighting/Bug/Grass (no one else does)
-· team stronger than Pikachu (BST 479 vs 320)
+· team verdict coming with the road
+== team landed
+★ Pidgeot catch: Ultra 50% — team: swap for Pikachu, new species, sleep/paralyse it for better odds
+Poké ×5 34% Great ×5 42% Ultra ×5 50%
+· account new species
+· team swap for Pikachu
+· team Poison now beats 2 of 6, down from 3
+· team Ghost now beats 2 of 6, down from 3
+== team says no
+★ Pidgey catch: Poké 86% — new species
+Poké ×5 86% Great ×5 100% Ultra ×5 100%
+· account new species
+· team skip
+· team Flying now beats 1 of 6
+· team Water now beats 1 of 6
 · team party full: replaces Pikachu
+== team axis alone
+★ Tyranitar catch: Poké 21% — team: take, ends it: 6 turns to KO, lower its HP with Venusaur's Tackle (won't KO)
+Poké ×10 21%
+· escape ends it: 6 turns to KO
+· team take
+· team a backup to Bug at last
+· team a backup to Steel at last
+summary: catch Tyranitar — Poké 21% · take · a backup to Bug at last · a backup to Steel at last
+== limited catch
+★ Pikachu catch: Poké 77% — new species
+Poké ×10 77%
+· account new species
+· team Limited Catch: won't join the party
 == common owned
 
 == hidden ability
 ★ Glameow catch: Great 70% — new hidden ability
 Poké ×10 56% Great ×3 70% Ultra ×3 82% Rogue ×2 100% Master ×1 100%
 · account new hidden ability
+· team verdict coming with the road
 == unevolved upgrade
 ★ Charmander catch: Great 40% — ends it: 3 turns to KO, new species, sleep/paralyse it for better odds
 Poké ×10 31% Great ×5 40%
 · account new species
-· team covers Fire weakness
-· team stronger than Ariados (final BST ~529 vs 400)
 · escape ends it: 3 turns to KO
+· team verdict coming with the road
 == challenge final boss
-≈ Eternatus maybe: break its bars first — no ball works on this boss, new species, stronger than Venusaur (BST 690 vs 525)
+≈ Eternatus maybe: break its bars first — no ball works on this boss, new species
 Poké ×5 0% Master ×1 0%
 · account new species
-· team stronger than Venusaur (BST 690 vs 525)
+· team verdict coming with the road
 ok

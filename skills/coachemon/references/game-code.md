@@ -904,14 +904,13 @@ The game's own tables, read once out of its loaded chunks (§22) and handed to e
 - What a trait is *worth* stays with the caller: 10-damage's `reliability`, the learn card's multipliers, the planner's benefit nudge.
 
 ### Party profile (08-party.js)
-The **party** judged as a whole, and one query for whether a newcomer is worth it. Four cards asked those two questions with four copies of the answer; the copies are gone. Weights stay with each card — a reason has no number on it.
-- `partyAtFight(s, party, { from, fight })` → `{ members, dead, revive }`, the one definition of the **party at the next big fight** (CONTEXT.md, `Dead weight`), read by every reader that judges the team at that fight — the team audit's checks and the road-ahead readiness. `members` holds every member at full health however hurt it is now; `dead` is `[{ mon, name, why: "barred" | "fainted" }]`, the **dead weight** holding its slot at zero: a member a challenge bars (`Pokemon.isAllowedInChallenge`), or one fainted with no `reviveBefore` way back. `revive` is that way back, for a card that wants to say when the slot fills again. Without a `fight` nothing is out of reach, so only a challenge bars a member.
-- `partyProfile(party)` → `{ attacks, ourTypes, weakTypes, holes, weakest, roots, luck, members, hitters(defender), weakTo(type) }`.
+The **party** judged as a whole: type tallies, luck, and the set of the party that reaches the next big fight. Nothing here scores. Whether a newcomer is worth it was once a query of this file's — `partyReasons`, whose `upgrade` reason was a +100 final-BST bar against the `lightest` member — and is now 12-value's judgment, which prices what the team loses inside a run read; both are deleted (#593).
+- `partyAtFight(s, party, { from, fight })` → `{ members, dead, revive }`, the one definition of the **party at the next big fight** (CONTEXT.md, `Dead weight`), read by every reader that judges the team at that fight — the team audit's checks, the road-ahead readiness, the biome card's party (#570), and on the encounter card the newcomer questions: GTS's trade candidates and the Dark Deal's weakest link and carry (#571). A card that instead asks who can fight the battle in front of the party keeps its own standing set, and one mirroring a pick the game makes filters the whole party exactly as the game does. `members` holds every member at full health however hurt it is now; `dead` is `[{ mon, name, why: "barred" | "fainted" }]`, the **dead weight** holding its slot at zero: a member a challenge bars (`Pokemon.isAllowedInChallenge`), or one fainted with no `reviveBefore` way back. `revive` is that way back, for a card that wants to say when the slot fills again. Without a `fight` nothing is out of reach, so only a challenge bars a member.
+- `partyProfile(party, { weakest })` → `{ attacks, ourTypes, weakTypes, holes, weakest, roots, luck, members, hitters(defender), weakTo(type) }`.
   - `attacks` — per member, `[{ t, stab }]`: the types it hits for damage, `stab` 1.5 on its own types. `ourTypes` flattens it.
   - `weakTypes` — attacking types two or more members are weak to and more are weak to than resist. `holes` — defending types nothing on the team hits super-effectively.
-  - `weakest` — `{ mon, final, estimated, level }`, the lowest final BST with the lower level breaking a tie. `roots` — the party's root species ids (`Pokemon.getRootSpeciesId`), which is what makes a catch a duplicate. `luck` — `partyLuck` of the members alone (no scene, so no Daily roll and no event terms: the floor). All three are worked out on first read, so a caller that wants only coverage pays for nothing else.
+  - `weakest` — the **weakest member** (CONTEXT.md), 12-value's `weakestMember` answer handed in by the caller and null when it isn't: it is priced inside a run read, which lives above this file, so a reader holding only a profile has none (#582). There is no `lightest` any more: the lowest final BST was the old judgment's stand-in for the member a swap replaces, and nothing reads it (#593). `roots` — the party's root species ids (`Pokemon.getRootSpeciesId`), which is what makes a catch a duplicate. `luck` — `partyLuck` of the members alone (no scene, so no Daily roll and no event terms: the floor). Both are worked out on first read, so a caller that wants only coverage pays for neither.
   - `hitters(defender)` / `weakTo(type)` — the members that hit it super-effectively, and the members that type hits super-effectively. The two matchup queries every card asks.
-- `partyReasons(profile, cand, { replacing })` → `[{ kind: "covers" | "hole" | "upgrade" | "dupe", … }]`, against `replacing` (default: the weakest member). `cand` is `{ species, fusion?, level, types, moveTypes? }` — a species with no moveset lets its own types stand in, so the same species at the same level gets the same reasons on the catch card and the biome card. Thresholds: a `hole` wants a party of 3 and 2 types, an `upgrade` a final BST over 400, 100 above the member replaced and no more than 10 levels behind it.
 - `isCoverage(mv)` → whether one move hits for damage off the type chart, the rule the two below are built on and the one rule for both sides of the field: the wave preview filters a **foe**'s moveset with it (48-preview's `attackTypes`), where it read `power > 0` until #266 and so lost a Steel foe whose STAB is Gyro Ball.
 - `damagingTypes(p)` → the types a mon can hit for damage. **Variable power counts** (`power === -1`: Grass Knot, Gyro Ball) and **fixed damage does not** (§4.3 — it ignores the chart), which is how the learn card always read it and how the catch, biome and look-ahead cards now do.
 - `finalBstOf(x)` → `{ bst, final, estimated }` for a live mon, a `{ species, fusion }` pair or a bare species: a line's final evolution's BST, estimated from `PokemonSpecies.getEvolutionLevels()`, a fusion averaging both halves (`Pokemon.calculateBaseStats`).
@@ -1281,7 +1280,7 @@ for whether a boss is next, the catch card for the run's last wave:
 
 | Rule | Source | Waves |
 |---|---|---|
-| `gameMode.isWaveFinal(w)` | `src/game-mode.ts:296` | classic and challenge 200; daily 50; endless every 250 |
+| `gameMode.isWaveFinal(w)` | `src/game-mode.ts:296` | classic and challenge 200; daily 50; endless every 250, a final boss the run carries on past (`src/phases/victory-phase.ts:57`) |
 | `gameMode.isFixedBattle(w)` | `src/game-mode.ts:357`, table `classicFixedBattles` (`src/data/trainers/fixed-battle-configs.ts:24`, waves `src/enums/fixed-boss-waves.ts`) | 5 youngster; rival 8/25/55/95/145/195; evil team 35/62/64/66/112/114/115/164/165; Elite Four 182/184/186/188; champion 190 |
 | the gym rule | `src/game-mode.ts:217`, the early return in `isWaveTrainer` | `w % 30 === (offsetGym ? 0 : 20)`, except the final wave |
 | `gameMode.isBoss(w)` | `src/game-mode.ts:313` | every tenth wave |
@@ -2532,8 +2531,10 @@ before it shows `TITLE` (`src/phases/title-phase.ts:36-50`); the mode stays `STA
 
 ## 24. DNA Splicers: who can be fused, pick order, and what a fusion is
 
-Read at the pinned tag (`v1.12.0.11`). The fusion advisor (`49-fusion.js`) re-implements everything below from species
-data and calls only pure reads (species forms, `getAbility`, the select filter), so it runs outside `sandbox`. The game
+Read at the pinned tag (`v1.12.0.11`). The fusion advisor (`49-fusion.js`) reads the run: the pairs come from the
+fusion judgment in `12-value.js`, and what it adds on top is everything below — who can be fused, the pick order, and
+what the fused mon is — from species data and pure reads (species forms, `getAbility`, the select filter). It is built
+inside the run read's `sandbox` and opens no `sandbox` of its own. The game
 has no fusion preview: the party screen offers only APPLY / SPLICE / UNSPLICE (`src/ui/handlers/party-ui-handler.ts:1456-1468`).
 
 **The item.** `DNA_SPLICERS` is a `FusePokemonModifierType` (`src/modifier/modifier-type.ts:1263-1283`, `:2197`); its
