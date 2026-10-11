@@ -1,5 +1,6 @@
-// The party judged as a whole, and whether a newcomer is worth it to it. Nothing here draws, and nothing weighs:
-// `partyReasons` hands back reasons with no numbers on them, and what each is worth is the asking card's.
+// The party judged as a whole: the types it hits, the types it fears, its luck, and the set of it that reaches the
+// next big fight. Nothing here draws and nothing scores — whether a newcomer is worth it is 12-value's judgment,
+// which prices what the team loses inside a run read. The tallies below are only the words a reason is said in (#593).
 import { TYPES, vs, effectiveness, defenderOf, typesOf, hasAttr } from "./01-core.js";
 import { reviveBefore } from "./03-calendar.js";
 
@@ -81,9 +82,6 @@ export const partyLuck = (party, s = null, event = null) => {
 
 const rootOf = x => tryDo(() => x.species.getRootSpeciesId(true), x?.species?.speciesId) ?? x?.species?.speciesId;
 
-const UPGRADE_BST = 100, UPGRADE_FLOOR = 400, UPGRADE_LEVEL_GAP = 10;
-const HOLE_MIN_PARTY = 3, HOLE_MIN_TYPES = 2;
-
 /**
  * The party at the next big fight (CONTEXT.md, `Dead weight`): `members` counts every member at full health however
  * hurt it is now, and `dead` is the dead weight holding its slot at zero. `from` is the wave the run stands on and
@@ -101,9 +99,19 @@ export const partyAtFight = (s, party, { from = 0, fight = null } = {}) => {
   return { members, dead, revive };
 };
 
-// `luck` is `partyLuck` of the members alone, with no Daily roll and no event terms: a card that spends against luck
-// calls `partyLuck` itself.
-export const partyProfile = party => {
+/**
+ * The party judged as a whole (CONTEXT.md, `Party profile`): the types it hits, the types it can't, the types
+ * several members are weak to — and its **weakest member**, which is a team-value question and not a tally.
+ *
+ * So `weakest` is handed in rather than worked out here: it is 12-value's `weakestMember` answer, `mon` and all,
+ * which runs inside a run read and lives above this file. A reader holding only a profile has none, which is the
+ * point — the weakest member comes out of a run read or it doesn't come at all (#582). The tallies never score
+ * anything and are only the vocabulary a reason is phrased in.
+ *
+ * `luck` is `partyLuck` of the members alone, with no Daily roll and no event terms: a card that spends against luck
+ * calls `partyLuck` itself.
+ */
+export const partyProfile = (party, { weakest = null } = {}) => {
   const members = (party ?? []).filter(Boolean);
   const attacks = members.map(p => {
     const own = typesOf(p);
@@ -115,19 +123,11 @@ export const partyProfile = party => {
     const d = defenderOf(defender);
     return members.filter((_, i) => attacks[i].some(a => effectiveness(a.t, d) >= 2));
   };
+  // `roots` and `luck` on first read only, so a caller after coverage alone pays for neither.
   let lazy = null;
   const rest = () => {
     if (lazy) return lazy;
-    const fin = members.map(finalBstOf);
-    let at = -1;
-    members.forEach((p, i) => {
-      if (at < 0 || fin[i].final < fin[at].final || (fin[i].final === fin[at].final && (p.level ?? 0) < (members[at].level ?? 0))) at = i;
-    });
-    lazy = {
-      weakest: at < 0 ? null : { mon: members[at], final: fin[at].final, estimated: fin[at].estimated, level: members[at].level ?? 0 },
-      roots: new Set(members.map(rootOf)),
-      luck: partyLuck(members),
-    };
+    lazy = { roots: new Set(members.map(rootOf)), luck: partyLuck(members) };
     return lazy;
   };
   return {
@@ -137,38 +137,8 @@ export const partyProfile = party => {
       return n >= 2 && n > members.filter(p => effectiveness(t, p) <= 0.5).length;
     }),
     holes: TYPES.filter(d => !ourTypes.some(t => vs(t, d) >= 2)),
-    get weakest() { return rest().weakest; },
+    weakest,
     get roots() { return rest().roots; },
     get luck() { return rest().luck; },
   };
-};
-
-// `cand`: `{ species, fusion?, level, types, moveTypes?, abilities? }`. A live mon works only if the caller passes its
-// `types`: they are never read off it.
-export const partyReasons = (profile, cand, { replacing = profile?.weakest?.mon ?? null } = {}) => {
-  const out = [];
-  if (!profile?.members.length || !cand) return out;
-  const types = cand.types ?? [];
-  const def = { types, abilities: cand.abilities ?? [] };
-  if (profile.roots.has(rootOf(cand))) out.push({ kind: "dupe" });
-
-  const covers = profile.weakTypes.filter(t => effectiveness(t, def) <= 0.5);
-  if (covers.length) out.push({ kind: "covers", types: covers });
-
-  if (profile.members.length >= HOLE_MIN_PARTY) {
-    const theirs = cand.moveTypes?.length ? cand.moveTypes : types;
-    const adds = profile.holes.filter(d => theirs.some(t => vs(t, d) >= 2));
-    if (adds.length >= HOLE_MIN_TYPES) out.push({ kind: "hole", types: adds });
-  }
-
-  const against = replacing ? { mon: replacing, ...finalBstOf(replacing), level: replacing.level ?? 0 } : null;
-  if (against?.final) {
-    const mine = finalBstOf(cand);
-    if (mine.final >= UPGRADE_FLOOR && mine.final >= against.final + UPGRADE_BST
-      && (cand.level ?? 0) >= against.level - UPGRADE_LEVEL_GAP) {
-      out.push({ kind: "upgrade", final: mine.final, estimated: mine.estimated,
-        against: { mon: against.mon, name: against.mon?.name ?? null, final: against.final, estimated: against.estimated } });
-    }
-  }
-  return out;
 };
