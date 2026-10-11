@@ -210,8 +210,10 @@ globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { RANDBATS } = globalThis.__hud["05-randbats"];
 const { standardThreats } = globalThis.__hud["11-threats"];
-const { BACKUP, CLAMP, EXPOSURE, MARGIN, MAX_REASONS, PARTY_SIZE, REVENGE, SWITCH_IN, judgeNewcomer, teamValue } = globalThis.__hud["12-value"];
+const { BACKUP, CATCH_LEVEL, CLAMP, EXPOSURE, MARGIN, MAX_REASONS, PARTY_SIZE, REVENGE, SWITCH_IN, judgeNewcomer,
+  teamValue } = globalThis.__hud["12-value"];
 const { combatantOf } = globalThis.__hud["09-combatant"];
+const { levelCapAt } = globalThis.__hud["09-projection"];
 const { readRun } = globalThis.__hud["26-run"];
 const { sandboxBreachCount } = globalThis.__hud["01-core"];
 
@@ -264,6 +266,9 @@ const M = {
   closeCombat: ["Close Combat", "Fighting", 120, "P"],
   drillPeck: ["Drill Peck", "Flying", 80, "P"],
   tackle: ["Tackle", "Normal", 40, "P"],
+  // The four a stand-in's learnset hands it below, so a live mon can be built with the very same set.
+  aquaTail: ["Aqua Tail", "Water", 90, "P"],
+  dragonPulse: ["Dragon Pulse", "Dragon", 85, "S"],
 };
 
 // ---- The run the judgment reads: wave 44, every tenth wave a boss, so the next big fight ahead is wave 50.
@@ -767,6 +772,89 @@ const GRASSES = () => [
     assert.equal(/\bdown from\b/.test(shape), at.gain && at.part === "exposure",
       `"${shape}" counts down only where the exposure it reads fell`);
   }
+}
+
+// ---- A stand-in newcomer: a species and a form, with nothing alive behind it (#580)
+{
+  // A species the game's registry knows and the randbats snapshot does not. The snapshot lists no not-fully-evolved
+  // species (05-randbats' own `e`), so a species added here reaches `getSpecies` without reaching the threat pool:
+  // the stand-in is judged against the same threats every probe above was, and never against one of its own name.
+  const idOf = new Map();
+  MOVES.forEach((mv, id) => { if (mv && !idOf.has(mv.name)) idOf.set(mv.name, id); });
+  // `[level, moveId]`, as the game's `getLevelMoves` hands it over. Level 35 is above the level a catch on this wave
+  // joins at, and the two oldest entries are the ones the four slots push out.
+  const LEARNSET = [[1, "Quick Attack"], [5, "Agility"], [11, "Aqua Tail"], [17, "Crunch"], [23, "Dragon Pulse"],
+    [29, "Ice Beam"], [35, "Outrage"]];
+  const DRAGONAIR = {
+    ...species(148, "Dragonair", ["Dragon"], 420, { base: [61, 84, 65, 70, 70, 70] }),
+    ability1: { name: "Shed Skin" }, // the species' default, which a wild spawn comes out with
+    getLevelMoves: () => LEARNSET.map(([lv, name]) => [lv, idOf.get(name)]),
+  };
+  SPECIES_BY_ID.set(148, DRAGONAIR);
+  assert.ok(!readRun(sceneOf([]), run => standardThreats(run, { fight: 50 }))
+    .threats.some(t => t.species.speciesId === 148), "a stand-in's species is no threat of the set it is judged by");
+
+  const party = WATERS();
+  const j = judge(party, { species: DRAGONAIR }, {}, { seed: "judge-stand-in" });
+  const nc = j.newcomer;
+  const names = nc.combatant.moveset.map(pm => pm.getName());
+  const cap = levelCapAt(null, 44); // the cap on the wave the catch happens on, not the one at the fight
+  console.log("== a stand-in Dragonair, with no live mon behind it");
+  console.log(`  caught at L${nc.projection.was}, ${(nc.projection.was / cap).toFixed(2)} of the cap ${cap},`
+    + ` and judged at L${nc.projection.level} knowing ${names.join(", ")}`);
+  console.log(`  ability ${nc.combatant.getAbility()?.name ?? "-"},`
+    + ` passive ${nc.combatant.getPassiveAbility()?.name ?? "-"}, stand-in ${nc.standIn}, ${j.confidence}`);
+  show("Dragonair, a stand-in", j);
+  assert.equal(nc.standIn, true, "nothing alive behind it, which is what the card marks");
+  assert.equal(nc.confidence, "estimate", "so none of its four inputs is the mon the player would be handed");
+  assert.equal(j.confidence, "estimate");
+  assert.equal(nc.projection.was, Math.round(CATCH_LEVEL * cap), "it joins at the expected catch level for the wave");
+  assert.ok(nc.projection.was / cap >= 0.75 && nc.projection.was / cap <= 0.8, "which is 0.75-0.8 of the cap (#567)");
+  assert.deepEqual(names, ["Aqua Tail", "Crunch", "Dragon Pulse", "Ice Beam"],
+    "and knows the last four level-up moves of its learnset at that level");
+  assert.deepEqual(names, LEARNSET.filter(([lv]) => lv <= nc.projection.was).slice(-4).map(([, name]) => name),
+    "the two oldest pushed out of the four slots, and level 35 still ahead of it");
+  assert.equal(nc.combatant.hasPassive(), false, "a wild spawn comes with no passive");
+  assert.equal(nc.combatant.getAbility().name, "Shed Skin", "and with the species' default ability");
+
+  // A stand-in is an estimate of a mon, so the mon it estimates has to come out with the same answer: the same
+  // species at the same level, the same four moves, that ability and no passive — alive this time, and judged live.
+  // Both are `estimate`, the projection behind either making them so; the flag is what tells a card which it holds.
+  const live = mon(DRAGONAIR, nc.projection.level, [M.aquaTail, M.crunch, M.dragonPulse, M.iceBeam],
+    { ability: "Shed Skin" });
+  const twin = judge(party, live, {}, { seed: "judge-stand-in" });
+  show("Dragonair, alive", twin);
+  assert.equal(twin.newcomer.standIn, false);
+  assert.deepEqual([...nc.combatant.stats], [...twin.newcomer.combatant.stats],
+    "the stand-in's neutral IVs and nature are the live mon's own");
+  assert.equal(twin.verdict, j.verdict, "a stand-in and a live mon of the same build get the same verdict");
+  assert.equal(t1(twin.delta), t1(j.delta), "worth the same change in team value");
+  assert.equal(twin.replaced?.name ?? null, j.replaced?.name ?? null, "out of the same member's slot");
+  assert.deepEqual(twin.reasons.map(r => r.text), j.reasons.map(r => r.text), "said in the same words");
+
+  // And again on a call that goes the other way, so the agreement is not two skips agreeing to do nothing: the same
+  // six far enough below the cap that a level 30 catch is worth having, judged as a stand-in and then alive.
+  const low = WATERS(16);
+  const wanted = judge(low, { species: DRAGONAIR }, {}, { seed: "judge-stand-in-low" });
+  const wantedLive = judge(low, mon(DRAGONAIR, wanted.newcomer.projection.level,
+    [M.aquaTail, M.crunch, M.dragonPulse, M.iceBeam], { ability: "Shed Skin" }), {}, { seed: "judge-stand-in-low" });
+  console.log("== the same stand-in into six members at level 16, and the live mon it estimates");
+  show("Dragonair, a stand-in", wanted);
+  show("Dragonair, alive", wantedLive);
+  assert.notEqual(wanted.verdict, "skip", "a catch above the party's own level is one to take");
+  assert.equal(wantedLive.verdict, wanted.verdict, "which the live mon of that build is told too");
+  assert.equal(t1(wantedLive.delta), t1(wanted.delta));
+  assert.equal(wantedLive.replaced?.name ?? null, wanted.replaced?.name ?? null);
+  assert.deepEqual(wantedLive.reasons.map(r => r.text), wanted.reasons.map(r => r.text));
+
+  // A spec that names a level of its own keeps it: a Safari offer or a trade knows the mon's level, and only a
+  // species the player has not met yet falls back to what the wave would spawn.
+  const named = judge(party, { species: DRAGONAIR, level: 12 }, {}, { seed: "judge-stand-in" });
+  console.log(`  a stand-in offered at L12 is judged at L${named.newcomer.projection.level}`
+    + ` knowing ${named.newcomer.combatant.moveset.map(pm => pm.getName()).join(", ")}`);
+  assert.equal(named.newcomer.projection.was, 12, "the level it was offered at, not the one the wave would spawn");
+  assert.deepEqual(named.newcomer.combatant.moveset.map(pm => pm.getName()), ["Quick Attack", "Agility", "Aqua Tail"],
+    "and the learnset read at that level, which is three moves and not four");
 }
 
 // ---- The full swap search over six members, inside the cost budget

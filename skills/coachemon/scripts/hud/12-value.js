@@ -4,9 +4,9 @@
 // nothing: every duel is the approx matrix over combatants the adapter built off the field.
 import { stat } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
-import { partyAtFight } from "./08-party.js";
+import { formOf, partyAtFight } from "./08-party.js";
 import { combatantOf, duelEnv } from "./09-combatant.js";
-import { levelProjection } from "./09-projection.js";
+import { levelCapAt, levelProjection } from "./09-projection.js";
 import { approxOutcomes, barBreakFactors, koChanceAt, koCurve, koTurns, targetFacts, useOf } from "./10-damage.js";
 import { standardThreats } from "./11-threats.js";
 
@@ -156,26 +156,64 @@ const build = (s, party, proj, { here, fight }) => {
 const isLive = x => !!x && (Array.isArray(x.moveset) || typeof x.getTypes === "function");
 const specOf = x => (x?.mon ? x : isLive(x) ? { mon: x } : x ?? {});
 
+// The share of the level cap a wild mon spawns at (#567: ~0.75–0.8 of it), at the top of that band, and a golden diff
+// to change like the six above.
+export const CATCH_LEVEL = 0.8;
+
+export const catchLevelAt = (s, wave) => Math.max(1, Math.round(CATCH_LEVEL * levelCapAt(s, wave)));
+
+const STAND_IN_SLOTS = 4; // what the game gives a mon, and what the duel reads
+
+/**
+ * The last `STAND_IN_SLOTS` level-up moves `species`' learnset hands out at or below `level`, in learnset order.
+ *
+ * The randbats snapshot is deliberately not read here. It is a prior for breaking ties between movesets the coach
+ * cannot see (CONTEXT.md, `Moveset prior`), and a competitive set is nothing like what a wild spawn turns up knowing:
+ * a biome sold on one would promise a catch that does not exist (#567, out of scope).
+ */
+const learnsetMoves = (species, form, level) => {
+  const f = formOf(species, form);
+  const rows = tryDo(() => (typeof f?.getLevelMoves === "function" ? f : species).getLevelMoves(), []) ?? [];
+  return rows
+    .filter(r => Array.isArray(r) && typeof r[1] === "number" && (r[0] ?? 0) <= level)
+    .slice(-STAND_IN_SLOTS)
+    .map(r => r[1]);
+};
+
 /**
  * The newcomer as a combatant, at the level it reaches by the fight. It joins on the bench, so only EXP share, a
  * Lucky Egg and its own distance from the cap catch it up (#567, story 7).
  *
- * A spec with no live mon behind it is built from what it names and marked `estimate`; the wild-spawn build a biome
- * species or a trade offer needs — its catch level, its learnset moves, no passive — is #580's.
+ * A spec with no live mon behind it is a **stand-in** — a biome species, a trade offer — and is built the way the game
+ * builds a wild mon (#580): the expected catch level for the wave the run stands on where the spec names no level of
+ * its own, the last four level-up learnset moves at that level, the species' default ability, no passive, and the
+ * adapter's neutral IVs and nature. It is marked `standIn` and carries `estimate`, whatever its other inputs say,
+ * because not one of those is the mon the player would actually be handed.
+ *
+ * The moves are the ones it is caught *with*, not the ones it would have learnt by the fight: a live member is judged
+ * on the moves it knows now too (#567, story 9), and a card that promised a move the mon has yet to learn would be
+ * read as a promise the duel does not keep.
  */
 const newcomerOf = (run, fight, spec) => {
   const s = run?.scene ?? null;
   const mon = spec.mon ?? null;
-  const level = Math.max(1, Math.floor(spec.level ?? mon?.level ?? 1));
+  const standIn = !mon;
+  const species = spec.species ?? mon?.species ?? null;
+  const form = spec.form ?? mon?.formIndex ?? 0;
+  // An offer that names a level — a Safari mon, a trade — keeps it; only a species nobody has met falls back to what
+  // the wave would spawn.
+  const level = Math.max(1, Math.floor(spec.level ?? mon?.level ?? (standIn ? catchLevelAt(s, waveOf(run)) : 1)));
+  // An explicit `moves` wins, for an offer that names the set the mon comes with.
+  const moves = spec.moves ?? (standIn ? learnsetMoves(species, form, level) : undefined);
   const p = levelProjection(s, { from: waveOf(run), fight })
-    .of(mon ?? { species: spec.species ?? null, formIndex: spec.form ?? 0, level });
-  const combatant = combatantOf({ ...spec, mon, level: p.level, species: p.species ?? spec.species,
-    form: p.form ?? spec.form });
+    .of(mon ?? { species, formIndex: form, level });
+  const combatant = combatantOf({ ...spec, mon, moves, level: p.level, species: p.species ?? species,
+    form: p.form ?? form });
   return {
-    combatant, projection: p, name: combatant?.name ?? null,
+    combatant, projection: p, standIn, name: combatant?.name ?? null,
     // A newcomer a challenge bars is dead weight the moment it joins (CONTEXT.md, `Dead weight`).
     barred: mon ? !tryDo(() => mon.isAllowedInChallenge(), true) : false,
-    confidence: mon ? p.confidence : weakestOf(p.confidence, CONFIDENCE.estimate),
+    confidence: standIn ? weakestOf(p.confidence, CONFIDENCE.estimate) : p.confidence,
   };
 };
 

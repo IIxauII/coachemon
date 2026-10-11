@@ -140,5 +140,22 @@
   - backup     2  a weaker backup to X
   - backup     1  no backup left to X
   - exposure  29  X now beats n of n
+== a stand-in Dragonair, with no live mon behind it
+  caught at L30, 0.79 of the cap 38, and judged at L30 knowing Aqua Tail, Crunch, Dragon Pulse, Ice Beam
+  ability Shed Skin, passive -, stand-in true, estimate
+  Dragonair, a stand-in          skip  Lanturn     dV -0.2  release 0.0  net -0.2  
+      - Steel exposure         -1.0  Steel now beats 3 of 6
+      - special wall exposure  -1.0  the special wall now beats 3 of 6
+  Dragonair, alive               skip  Lanturn     dV -0.2  release 0.0  net -0.2  
+      - Steel exposure         -1.0  Steel now beats 3 of 6
+      - special wall exposure  -1.0  the special wall now beats 3 of 6
+== the same stand-in into six members at level 16, and the live mon it estimates
+  Dragonair, a stand-in          swap  Blastoise   dV +0.7  release 0.0  net +0.7  
+      + Dark answer            +2.4  nearer an answer to Dark
+      + bulky attacker exposure +2.2  the bulky attacker now beats 5 of 6, down from 6
+  Dragonair, alive               swap  Blastoise   dV +0.7  release 0.0  net +0.7  
+      + Dark answer            +2.4  nearer an answer to Dark
+      + bulky attacker exposure +2.2  the bulky attacker now beats 5 of 6, down from 6
+  a stand-in offered at L12 is judged at L12 knowing Quick Attack, Agility, Aqua Tail
 == the full swap search over six members is inside the budget, cold and memoised
 judgment: ok
