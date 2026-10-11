@@ -56,7 +56,9 @@ const natureValue = (p, n) => {
   return fx.upStat ? 0.1 * (statWeight(p, fx.upStat) - statWeight(p, fx.downStat)) : 0;
 };
 
-export const rewardContext = (s, alive, { bossNext = false, gauntlet = false, double = 0 } = {}) => {
+// `run` is the run read the shop was built in, which the Splicer's own value is judged inside: the fusion judgment
+// runs in a run read and nowhere else (#589). A context built without one prices no Splicer.
+export const rewardContext = (s, alive, { bossNext = false, gauntlet = false, double = 0, run = null } = {}) => {
   const wave = s.currentBattle?.waveIndex ?? 0;
   // game-less-backed
   const capOf = () => {
@@ -74,7 +76,7 @@ export const rewardContext = (s, alive, { bossNext = false, gauntlet = false, do
   const stacks = (p, id) => tryDo(() => holds(p, id)?.getStackCount(), holds(p, id)?.stackCount ?? 0) ?? 0;
   const owned = id => (s.modifiers ?? []).some(m => m?.type?.id === id);
   const role = p => (!carry || p === carry ? 1 : Math.max(0.4, Math.min(1, p.level / Math.max(1, carry.level))));
-  return { s, wave, cap, carry, alive, bossNext, gauntlet, double, held, holds, stacks, owned, role,
+  return { s, run, wave, cap, carry, alive, bossNext, gauntlet, double, held, holds, stacks, owned, role,
     bulkShare: p => bulk(p) / maxBulk, speedShare: p => statOf(p, Stat.SPD) / maxSpeed };
 };
 
@@ -205,7 +207,7 @@ export const rewardValue = (t, ctx, users) => {
     const best = bestHolder(pool, ctx, fit);
     return best ? verdict(best, "", pool) : { v: -3, why: `${label} · no better for anyone`, users: pool.map(p => p.name) };
   }
-  if (cls("FusePokemonModifierType")) return splicerReward(ctx.s, t);
+  if (cls("FusePokemonModifierType")) return splicerReward(ctx.run, t);
   if (id === "ABILITY_CHARM") {
     return { v: ctx.wave >= 150 ? 1 : 5, why: "hidden abilities on wild mons more often (catching only)" };
   }
