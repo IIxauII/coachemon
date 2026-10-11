@@ -55,11 +55,16 @@ const foeData = (p, moves) => {
     types: tryDo(() => typesOf(p), []),
     ability: tryDo(() => p.getAbility()?.name),
     passive: p.hasPassive?.() ? tryDo(() => p.getPassiveAbility()?.name) : null,
-    hp: tryDo(() => p.getMaxHp()),
-    stats: tryDo(() => [Stat.ATK, Stat.DEF, Stat.SPATK, Stat.SPDEF, Stat.SPD].map(i => p.getStat(i))),
+    // The `Stat`-indexed row a combatant is rebuilt from whole, this row carrying no species to compute one from.
+    // `Stat.HP`'s entry is `getMaxHp`, which is what answers it (game-code.md §24).
+    stats: tryDo(() => [Stat.HP, Stat.ATK, Stat.DEF, Stat.SPATK, Stat.SPDEF, Stat.SPD]
+      .map(i => (i === Stat.HP ? p.getMaxHp() : p.getStat(i)))),
     segments: p.bossSegments ?? 0,
     shiny: !!p.shiny,
     moves: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getName())).filter(Boolean),
+    // The ids behind those names, which no display name can be turned back into: a combatant's moveset is built from
+    // move ids, so a row with names alone leaves a previewed foe nothing to attack with.
+    moveIds: (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.moveId ?? m.getMove()?.id)).filter(id => id != null),
     // One entry per attacking move, repeats kept, so a share of it is a share of the moveset (#266).
     attackTypes: attacks,
     statusMoves: moves.filter(mv => mv.category === MoveCategory.STATUS).map(moveLabel),

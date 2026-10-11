@@ -2,9 +2,12 @@
 // calls `meetsRequirements()`, which writes and can draw, and replays only the draws a closure makes before its first
 // `await`: past that the card gives odds (game-code.md §13).
 import { TYPES, abilityValue, natureOf, stage, typesOf } from "./01-core.js";
-import { finalBstOf, partyProfile, partyReasons, typesOfSpecies } from "./08-party.js";
+import { bigFightsAhead } from "./03-calendar.js";
+import { gameTables } from "./04-game-tables.js";
+import { partyAtFight, partyProfile } from "./08-party.js";
+import { weakestMember } from "./12-value.js";
 import { SAFARI_MONS, safariMonData, safariPreview, safariReady } from "./44-safari.js";
-import { catchWorth } from "./45-catch.js";
+import { accountWorth, teamVerdict } from "./45-catch.js";
 
 // Indexed by `MysteryEncounterType`: keep it in enum order.
 const NAMES = ["Mysterious Challengers", "Mysterious Chest", "Dark Deal", "Fight or Flight", "Slumbering Snorlax",
@@ -53,6 +56,8 @@ const strip = t => String(t ?? "").replace(/\[\/?[^\]]*\]/g, "").replace(/\s+/g,
 const money = n => `$${Math.round(n).toLocaleString("en-US")}`;
 const pct = x => (x >= 0.995 ? "100%" : x > 0 && x < 0.005 ? "<1%" : `${Math.round(x * 100)}%`);
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+// A team-value figure as a card says it, signed and in the tenth of a turn the judgment's margin is set in (#567).
+const turnsOf = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(1)} turns`;
 const joinNames = names => (names.length > 2 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names.join(" & "));
 // The game's `randSeedInt`, on whatever stream is sown (game-code.md §11).
 const int = (range, min = 0) => (range <= 1 ? min : Phaser.Math.RND.integerInRange(min, range - 1 + min));
@@ -88,15 +93,74 @@ const safariFlee = (rate, st) => Math.min(1, Math.max(0, Math.ceil(((255 * 255 -
 // Bait's flee +1 and mud's catch −1 (game-code.md §13).
 const BAIT_FLEES = 0.8, MUD_DULLS = 0.8;
 
-// `catchWorth` is asked inside the replay's callback: the replay drops its live objects once the callback returns.
-const safariThree = c => {
-  const out = safariPreview(c.s, p => ({ ...safariMonData(p), worth: tryDo(() => catchWorth(c.account, p)) }));
-  if (!out.mons) return out;
-  return { mons: out.mons.map(m => ({ ...m, wanted: worthKeeping(m.worth) })) };
+/**
+ * A mon one of the cards offers — a Safari mon, the Salesman's, the Uncommon Breed, the Dancing Lessons one — judged
+ * on both axes, which are read apart and never summed (#585, story 22).
+ *
+ * The **team** half is the judgment every newcomer card reads, on the party at the next big fight, so a mon gets the
+ * same answer here as on the catch card. The **account** half is what the mon is worth to the account alone. `wanted`
+ * is true from either half on its own: the team saying take or swap, or account value clearing its own bar.
+ *
+ * `why` is the line a row shows, in the catch card's own order — the team's call first, then up to two of its
+ * reasons, then up to two account ones. A judgment the run read cannot reach (no species table yet, so no threat set)
+ * leaves the team half out rather than claiming a verdict.
+ */
+const offerOf = (run, account, mon) => {
+  if (!mon) return null;
+  const worth = tryDo(() => accountWorth(account, mon)) ?? { value: 0, reasons: [], show: Infinity };
+  const team = tryDo(() => teamVerdict(run, mon));
+  const verdict = team?.verdict ?? null;
+  const reasons = (team?.reasons ?? []).slice(0, 2);
+  const words = [...(verdict ? [`team: ${team.text}`, ...reasons] : []), ...worth.reasons.slice(0, 2)];
+  return {
+    mon, team, account: worth,
+    wanted: verdict === "take" || verdict === "swap" || worth.value >= worth.show,
+    why: words.length ? words.join(", ") : "nothing new",
+    // What the model carries for the text summary: plain data, the two axes still apart.
+    card: { name: tryDo(() => mon.getNameToRender(), mon.name) ?? mon.name ?? null, verdict,
+      text: team?.text ?? null, reasons, account: { value: worth.value, show: worth.show },
+      confidence: team?.confidence ?? null, unavailable: team?.unavailable ?? null },
+  };
 };
-const worthKeeping = worth => !!worth && worth.value >= worth.show;
+
+// The judgment is asked inside the replay's callback: the replay drops its live objects once the callback returns.
+const safariThree = c => {
+  const out = safariPreview(c.s, p => ({ ...safariMonData(p), offer: c.offer(p) }));
+  if (!out.mons) return out;
+  return { mons: out.mons.map(m => ({ ...m, wanted: !!m.offer?.wanted })) };
+};
+/**
+ * One GTS offer, judged as the newcomer it would be if the player took the trade (#586, story 23).
+ *
+ * The mon coming in is a **stand-in**: nobody has met it, so it is built the way the game builds a wild one and
+ * carries `estimate` whatever its other inputs say (#580). It arrives at the level the offer names, or at the traded
+ * member's own where the offer names none, which is the level the trade hands it over at.
+ *
+ * The mon going out is the forced replacement: a trade is a swap whose member is already chosen, so the judgment's
+ * search is skipped and what comes back prices this trade and no other — ΔV with that member gone and the offer in
+ * its slot, net of what releasing it destroys (#581).
+ *
+ * `net` is what the offers are ranked by. It is 0 on an offer the judgment couldn't reach, which `verdict` says apart
+ * from an offer it reached and priced at nothing.
+ */
+const tradeOf = (run, member, offer) => {
+  const species = offer?.species ?? null;
+  if (!species || !member) return null;
+  const spec = { species, form: offer.formIndex ?? 0, level: offer.level ?? member.level };
+  const team = tryDo(() => teamVerdict(run, spec, { replace: member })) ?? null;
+  const name = tryDo(() => species.getName(), offer.name) ?? offer.name ?? null;
+  return {
+    member, name, net: team?.net ?? 0, verdict: team?.verdict ?? null,
+    // The same plain data an offered mon carries (`offerOf`), with the account axis left out: a trade is not a buy,
+    // and what the species is worth to the account is the catch card's question and not this row's.
+    card: { name, verdict: team?.verdict ?? null, text: team?.text ?? null, reasons: team?.reasons?.slice(0, 2) ?? [],
+      gives: member.name ?? null, delta: team?.delta ?? 0, release: team?.release ?? 0, net: team?.net ?? 0,
+      confidence: team?.confidence ?? null, unavailable: team?.unavailable ?? null },
+  };
+};
+
 const safariName = m => `${m.name}${m.shiny ? " shiny" : ""} L${m.level ?? "?"}${m.hiddenAbility ? " (hidden ability)" : ""}`;
-const worthWhy = worth => (worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new");
+const worthWhy = o => o?.why ?? "nothing new";
 const SAFARI_MENU = "ball, bait, mud or run each time, each turn judged as it comes";
 
 // Each move's chance that this mon is eventually caught under best play, from a stage pair (game-code.md §13).
@@ -126,14 +190,32 @@ const safariPlay = rate => {
   return (c, f) => moves(clampStage(c), clampStage(f));
 };
 
-const context = (s, me, options, account) => {
+const context = (run, me, options, account) => {
+  const s = run.scene;
   const b = s.currentBattle;
   const wave = b.waveIndex;
   const party = s.getPlayerParty().filter(Boolean);
-  const alive = party.filter(p => p.hp > 0 && tryDo(() => p.isAllowedInBattle(), true));
-  // The game's `getHighestLevelPlayerPokemon(true, false)` (game-code.md §13).
-  const top = alive.reduce((t, p) => (!t || p.level > t.level ? p : t), null);
-  const profile = partyProfile(alive);
+  // Three questions, three party sets, and no reader here reads a fourth (#571). The team at the next big fight is
+  // what a newcomer offer or a trade is judged against: every member at full health, dead weight at zero
+  // (CONTEXT.md, `Dead weight`). The standing, challenge-allowed members are who can be sent at the foe in front of
+  // the party — and the same members the game's own "every allowed mon" rows walk. A reader mirroring a pick the
+  // game itself makes filters `party`, the whole party, exactly as the game filters it (game-code.md §13).
+  const nextBig = bigFightsAhead(s, wave + 1)[0]?.wave ?? null;
+  const atFight = partyAtFight(s, party, { from: wave, fight: nextBig });
+  const standing = party.filter(p => p.hp > 0
+    && tryDo(() => p.isAllowedInBattle(), true) && tryDo(() => p.isAllowedInChallenge(), true));
+  // The game's `getHighestLevelPlayerPokemon(true, false)` (game-code.md §13): it skips a challenge-barred mon and a
+  // fainted one, and a tie goes to the member nearer the front.
+  const top = party.reduce((t, p) => (p.hp > 0 && tryDo(() => p.isAllowedInChallenge(), true)
+    && (!t || p.level > t.level) ? p : t), null);
+  // The party profile (CONTEXT.md) is of the team at the next big fight, since its weakest member is a team-value
+  // question — and the answer is handed in, because only a run read can ask it (#582). `fighters` is the same tally
+  // over the standing members, which is all `fight` asks of the party, and asks nothing of the weakest member.
+  const profile = partyProfile(atFight.members, { weakest: weakestMember(run, { fight: nextBig }) });
+  const fighters = partyProfile(standing);
+  // Who the party would miss most. Like `profile.weakest` it judges the party rather than mirroring a pick, so it
+  // reads the team at the next big fight and not `top`, the game's highest-level standing mon.
+  const strongest = atFight.members.reduce((t, p) => (!t || (p.level ?? 0) > (t.level ?? 0) ? p : t), null);
   const waveMoney = mult => tryDo(() => s.getWaveMoneyAmount(mult), 0);
   const coins = (s.modifiers ?? []).filter(m => m?.constructor?.name === "MoneyMultiplierModifier")
     .reduce((t, m) => t + (tryDo(() => m.getStackCount()) ?? m.stackCount ?? 1), 0);
@@ -156,9 +238,9 @@ const context = (s, me, options, account) => {
       level, boss: !!pc.isBoss, bars: pc.bossSegments ?? 0, estimated: !pc.level };
   };
   const fight = (f, { double = false } = {}) => {
-    if (!f || !alive.length) return { hard: false, text: "" };
-    const hitters = profile.hitters(f);
-    const weak = [...new Set(f.types.flatMap(t => profile.weakTo(t)))];
+    if (!f || !standing.length) return { hard: false, text: "" };
+    const hitters = fighters.hitters(f);
+    const weak = [...new Set(f.types.flatMap(t => fighters.weakTo(t)))];
     const gap = f.level - top.level;
     const hard = gap >= HARD_LEVEL_GAP || (!hitters.length && gap >= (f.boss ? -BOSS_LEVEL_EDGE : 0));
     const who = `${double ? "2× " : ""}${f.estimated ? "~" : ""}L${f.level}${f.boss ? " boss" : ""}${f.bars > 1 ? ` (${f.bars} bars)` : ""} vs your L${top.level}`;
@@ -175,8 +257,8 @@ const context = (s, me, options, account) => {
   };
   // `mons: null`: a team size nothing here settles (game-code.md §13), so the level gap alone decides.
   const gauntlet = (t, { mons = t?.size ?? 0, ours = null } = {}) => {
-    if (!t || !alive.length) return { hard: false, text: "" };
-    const fit = ours ?? alive.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.5).length;
+    if (!t || !standing.length) return { hard: false, text: "" };
+    const fit = ours ?? standing.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.5).length;
     const gap = t.level - top.level;
     return { hard: gap >= HARD_LEVEL_GAP || (mons != null && mons > fit * MONS_EACH), fit,
       text: `${mons == null ? "their own team" : plural(mons, "mon")} at ~L${t.level} vs your L${top.level}, ${fit} of yours fit to fight` };
@@ -188,6 +270,7 @@ const context = (s, me, options, account) => {
   const spare = cost => s.money - cost - RESERVE_WAVES * waveMoney(1);
   // The game's `getHighestLevelPlayerPokemon(false, true)`, fainted included (game-code.md §13).
   const best = party.reduce((t, p) => Math.max(t, p.level ?? 0), 0) || (top?.level ?? 1);
+  // Whole-party counts, because what reads them is a full heal and revive: the party the game would mend.
   const maxHp = party.reduce((t, p) => t + tryDo(() => p.getMaxHp(), 0), 0);
   const wounded = maxHp ? party.reduce((t, p) => t + Math.max(tryDo(() => p.getMaxHp(), 0) - p.hp, 0), 0) / maxHp : 0;
   const fainted = party.filter(p => p.hp <= 0).length;
@@ -196,7 +279,9 @@ const context = (s, me, options, account) => {
     const m = held(name);
     return !!m && (tryDo(() => m.getStackCount()) ?? m.stackCount ?? 0) >= (tryDo(() => m.getMaxStackCount()) ?? Infinity);
   };
-  return { s, account, me, b, wave, party, alive, top, profile, waveMoney, coins, opt, foe, fight, spare,
+  return { s, account, me, b, wave, party, atFight, standing, top, strongest, profile, waveMoney, coins, opt, foe, fight, spare,
+    offer: mon => offerOf(run, account, mon),
+    trade: (member, offer) => tradeOf(run, member, offer),
     trainer, gauntlet, roomFor, best, wounded, fainted, held, maxed, token: k => strip(me.dialogueTokens?.[k]) || null,
     pre: seeded(1), during: seeded(500), post: seeded(2000) };
 };
@@ -209,7 +294,7 @@ const RULES = {
   [TRAINING]: c => {
     const bars = (every, cap) => Math.min(2 + Math.floor(c.wave / every), cap);
     const room = p => (p.ivs ?? []).reduce((t, iv) => t + Math.max(31 - iv, 0), 0);
-    const fit = c.alive.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
+    const fit = c.standing;
     const pickBy = score => fit.map(p => ({ p, v: score(p) })).filter(x => x.v > 0).reduce((t, x) => (!t || x.v > t.v ? x : t), null);
     const ivs = pickBy(p => (p.ivs ? room(p) : 0));
     const nature = pickBy(p => {
@@ -241,19 +326,22 @@ const RULES = {
   [SALESMAN]: c => {
     const mon = c.me.misc?.pokemon;
     const price = c.me.misc?.price ?? c.opt(0).cost ?? c.waveMoney(4);
-    const worth = mon ? tryDo(() => catchWorth(c.account, mon)) : null;
-    const wanted = worth && worth.value >= worth.show;
+    const offer = c.offer(mon);
+    const wanted = !!offer?.wanted;
     const hidden = tryDo(() => mon.abilityIndex === 2);
     const name = mon ? `${tryDo(() => mon.getNameToRender(), mon.name) ?? mon.name}${mon.shiny ? " shiny" : ""}${hidden ? " (hidden ability)" : ""}`
       : c.token("purchasePokemon") ?? "a mon";
     const afford = c.spare(price) >= 0;
-    const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
-    return [
-      { outcome: `${money(price)}: ${name} joins at L5`,
-        verdict: wanted && afford ? "take" : wanted ? "ok" : "avoid",
-        why: wanted ? (afford ? why : `${why}, but it leaves only ${money(c.s.money - price)}`) : `L5 and ${why}`, needs: "the money" },
-      { ...LEAVE, verdict: wanted && afford ? "ok" : "take" },
-    ];
+    const why = worthWhy(offer);
+    return {
+      offers: offer ? [offer.card] : [],
+      rows: [
+        { outcome: `${money(price)}: ${name} joins at L5`,
+          verdict: wanted && afford ? "take" : wanted ? "ok" : "avoid",
+          why: wanted ? (afford ? why : `${why}, but it leaves only ${money(c.s.money - price)}`) : `L5 and ${why}`, needs: "the money" },
+        { ...LEAVE, verdict: wanted && afford ? "ok" : "take" },
+      ],
+    };
   },
 
   [TRASH]: c => {
@@ -333,7 +421,9 @@ const RULES = {
     const taken = k != null ? pool[k] : null;
     const roll = c.during(() => int(100));
     const tier = roll == null ? null : roll >= 65 ? "6" : roll >= 15 ? "7" : roll >= 5 ? "8" : "9–10";
-    const carry = taken && taken === c.top;
+    // The pool above mirrors the game's filter; which member the party would miss, or not, is judged against the
+    // team at the next big fight (#571).
+    const carry = taken && taken === c.strongest;
     const spare = taken && taken === c.profile.weakest?.mon;
     const prize = `5 Rogue Balls + a catchable legendary boss${tier ? ` (starter tier ${tier})` : ""} of its types, holding its items`;
     return [
@@ -444,7 +534,7 @@ const RULES = {
 
   [VITAMINS]: c => {
     const [cheap, dear] = [c.opt(0).cost ?? c.waveMoney(1.5), c.opt(1).cost ?? c.waveMoney(5)];
-    const carry = c.alive.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.51)
+    const carry = c.standing.filter(p => tryDo(() => p.getHpRatio(), p.hp / p.getMaxHp()) >= 0.51)
       .reduce((t, p) => (!t || p.level > t.level ? p : t), null);
     let nature = null;
     if (carry) {
@@ -469,7 +559,8 @@ const RULES = {
 
   [LOST_AT_SEA]: c => {
     const guided = c.opt(0).enabled || c.opt(1).enabled;
-    const low = c.alive.filter(p => p.hp - Math.floor(p.getMaxHp() * 0.25) <= p.getMaxHp() * 0.25).map(p => p.name);
+    // "Every allowed mon" takes the chip (game-code.md §13), which is the standing, challenge-allowed members.
+    const low = c.standing.filter(p => p.hp - Math.floor(p.getMaxHp() * 0.25) <= p.getMaxHp() * 0.25).map(p => p.name);
     return [
       { outcome: "sail through free, EXP", verdict: "take", needs: "a mon that can learn Surf" },
       { outcome: "fly out free, EXP", verdict: c.opt(0).enabled ? "ok" : "take", needs: "a mon that can learn Fly" },
@@ -481,7 +572,8 @@ const RULES = {
   [FALLOUT]: c => {
     const f = c.foe(0);
     const fight = c.fight(f, { double: true });
-    const allowed = c.alive;
+    // "Every allowed non-Fire mon" takes the 20% and one of them is burned (game-code.md §13).
+    const allowed = c.standing;
     const nonFire = allowed.filter(p => !tryDo(() => p.isOfType(PokemonType.FIRE, { includeTeraType: false }), typesOf(p).includes("Fire")));
     const burnable = nonFire.filter(p => !p.status?.effect);
     const idx = burnable.length ? c.during(() => int(burnable.length)) : null;
@@ -537,7 +629,7 @@ const RULES = {
   [PART_TIMER]: c => {
     const pay = mult => { const v = c.waveMoney(mult); return v + Math.floor(v * 0.2 * c.coins); };
     const clamp = x => Math.min(Math.max(2.5 * (1 + x), 1), 4);
-    const workers = c.alive.filter(p => tryDo(() => p.isAllowedInChallenge(), true));
+    const workers = c.standing;
     const best = score => workers.map(p => ({ p, mult: score(p) })).reduce((t, x) => (!t || x.mult > t.mult ? x : t), null);
     const deliver = best(p => { const base = Math.floor(196 * p.level * 0.01) + 5; return clamp((p.getStat(Stat.SPD) - base) / base); });
     const lift = best(p => {
@@ -577,42 +669,59 @@ const RULES = {
     const mon = c.me.misc?.pokemon;
     const f = c.foe(0);
     const fight = c.fight(f);
-    const worth = mon ? tryDo(() => catchWorth(c.account, mon)) : null;
-    const wanted = worth && worth.value >= worth.show;
+    const offer = c.offer(mon);
+    const wanted = !!offer?.wanted;
     const name = mon ? `${mon.name}${mon.shiny ? " shiny" : ""}` : "it";
-    const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
+    const why = worthWhy(offer);
     const charm = c.opt(2).enabled, berries = c.opt(1).enabled;
-    return [
-      { outcome: `fight ${name} (boosted); catchable → rewards`, battle: "wild",
-        verdict: wanted && (charm || berries) ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
-      { outcome: `give 4 random berries: ${name} joins with a 2nd egg move`, verdict: wanted && !charm ? "take" : wanted ? "ok" : "avoid",
-        why: wanted ? why : `berries for a mon you don't need (${why})`, needs: "4 berries" },
-      { outcome: `charm it: ${name} joins with better IVs and a 2nd egg move, EXP`, verdict: wanted ? "take" : "ok", why, needs: "a mon with Charm / Attract / Captivate …" },
-    ];
+    return {
+      offers: offer ? [offer.card] : [],
+      rows: [
+        { outcome: `fight ${name} (boosted); catchable → rewards`, battle: "wild",
+          verdict: wanted && (charm || berries) ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
+        { outcome: `give 4 random berries: ${name} joins with a 2nd egg move`, verdict: wanted && !charm ? "take" : wanted ? "ok" : "avoid",
+          why: wanted ? why : `berries for a mon you don't need (${why})`, needs: "4 berries" },
+        { outcome: `charm it: ${name} joins with better IVs and a 2nd egg move, EXP`, verdict: wanted ? "take" : "ok", why, needs: "a mon with Charm / Attract / Captivate …" },
+      ],
+    };
   },
 
   [GTS]: c => {
     const offers = c.me.misc?.tradeOptionsMap;
-    let best = null;
+    // A trade is a newcomer offer, so it is judged against the team at the next big fight (#571): a member fainted
+    // now but back on its feet by then is a candidate to give away, and dead weight is not — it is worth nothing to
+    // the team, so the game's own offers on it are no trade at all.
+    const judged = [];
     if (offers?.get) {
-      for (const p of c.alive) {
-        if (p === c.top) continue; // trading the carry away is never the upgrade it looks like
+      for (const p of c.atFight.members) {
         for (const e of offers.get(p.id) ?? []) {
-          const cand = { species: e.species, level: p.level, types: typesOfSpecies(e.species) };
-          const up = partyReasons(c.profile, cand, { replacing: p }).some(r => r.kind === "upgrade");
-          const gain = finalBstOf(cand).final - finalBstOf(p).final;
-          if (!best || (up && !best.up) || (up === best.up && gain > best.gain)) best = { p, e, gain, up };
+          const t = c.trade(p, e);
+          if (t) judged.push(t);
         }
       }
     }
-    const upgrade = !!best?.up;
-    return [
-      { outcome: best ? `trade: best offer ${best.p.name} → ${tryDo(() => best.e.species.getName(), best.e.name)} (final BST ${best.gain >= 0 ? "+" : ""}${best.gain})` : "trade a mon for one of 3 offers",
-        verdict: upgrade ? "take" : "ok", why: upgrade ? "same level, stronger line" : "no clear upgrade" },
-      { outcome: "wonder trade: a random mon at the same level (better shiny / hidden ability odds)", verdict: null, why: "a gamble" },
-      { outcome: "trade a held item for a random item one tier up", verdict: null },
-      LEAVE,
-    ];
+    // Ranked by **net value** — what the team gains by the swap, less what releasing the traded member destroys — and
+    // not by the biggest final BST, which asked nothing about what the team loses by the mon going out (#586, story
+    // 23). A stable sort, so two offers worth the same fall to the member the party lists first.
+    const ranked = judged.filter(t => t.verdict).sort((a, b) => b.net - a.net);
+    const best = ranked[0] ?? null;
+    const worth = best?.verdict === "swap";
+    const unread = judged.find(t => t.card.unavailable)?.card.unavailable ?? null;
+    return {
+      // Every offer the judgment reached, best first, so a viewer reading the summary gets the order to trade in.
+      offers: ranked.map(t => t.card),
+      rows: [
+        { outcome: best ? `trade: best offer ${best.member.name} → ${best.name} (net ${turnsOf(best.net)})`
+          : "trade a mon for one of 3 offers",
+        verdict: best ? (worth ? "take" : "ok") : null,
+        why: best ? (best.card.reasons.length ? best.card.reasons.join(", ")
+          : worth ? "the team gains more than the release costs" : "no offer clears the margin")
+          : unread ? `no team read here: ${unread}` : null },
+        { outcome: "wonder trade: a random mon at the same level (better shiny / hidden ability odds)", verdict: null, why: "a gamble" },
+        { outcome: "trade a held item for a random item one tier up", verdict: null },
+        LEAVE,
+      ],
+    };
   },
 
   [CHALLENGERS]: c => {
@@ -657,9 +766,11 @@ const RULES = {
     const worthIt = !mons || wanted.length > 0;
     const left = money(c.s.money - price);
     const worthLine = !mons ? null
-      : wanted.length ? `${wanted.length === 1 ? "one of the three is" : `${wanted.length} of the three are`} worth a ball: ${worthWhy(wanted[0].worth)}`
-        : `none of the three is worth a ball — ${worthWhy(mons[0].worth)}`;
+      : wanted.length ? `${wanted.length === 1 ? "one of the three is" : `${wanted.length} of the three are`} worth a ball: ${worthWhy(wanted[0].offer)}`
+        : `none of the three is worth a ball — ${worthWhy(mons[0].offer)}`;
     return {
+      // Each of the three is a newcomer offer of its own, judged as it was replayed (#585).
+      offers: (mons ?? []).map(m => m.offer?.card).filter(Boolean),
       rows: [
         { outcome: `${money(price)}: ${buys}`, exact: !!mons,
           verdict: afford && worthIt ? "take" : "ok",
@@ -718,19 +829,22 @@ const RULES = {
       ? { name: tryDo(() => live.name, "Oricorio"), types: typesOf(live), level: live.level, boss: true, bars: 0, estimated: false }
       : c.foe(0);
     const fight = c.fight(shown);
-    const worth = live ? tryDo(() => catchWorth(c.account, live)) : null;
-    const wanted = worth && worth.value >= worth.show;
-    const why = worth?.reasons?.length ? worth.reasons.slice(0, 2).join(", ") : "nothing new";
+    const offer = c.offer(live);
+    const wanted = !!offer?.wanted;
+    const why = worthWhy(offer);
     const name = `${shown?.name ?? "Oricorio"}${live?.shiny ? " shiny" : ""}`;
     const recruit = c.opt(2).enabled;
-    return [
-      { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable`,
-        battle: "boss", verdict: recruit || !wanted ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
-      { outcome: "learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)",
-        verdict: recruit || wanted ? "ok" : "take", why: "free, and it keeps the move for the run" },
-      { outcome: `show it a dance: ${name} joins, keeping the dance move you used`, verdict: recruit ? "take" : "ok",
-        why: wanted ? why : `a free mon (${why})`, needs: "a mon with a dancing move" },
-    ];
+    return {
+      offers: offer ? [offer.card] : [],
+      rows: [
+        { outcome: `fight ${name} (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable`,
+          battle: "boss", verdict: recruit || !wanted ? "ok" : fight.hard ? "avoid" : "take", why: fight.text },
+        { outcome: "learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)",
+          verdict: recruit || wanted ? "ok" : "take", why: "free, and it keeps the move for the run" },
+        { outcome: `show it a dance: ${name} joins, keeping the dance move you used`, verdict: recruit ? "take" : "ok",
+          why: wanted ? why : `a free mon (${why})`, needs: "a mon with a dancing move" },
+      ],
+    };
   },
 
   [SUPERFAN]: c => {
@@ -783,13 +897,15 @@ const OVERRIDES = {
     const cs = clampStage(misc.catchStage), fs = clampStage(misc.fleeStage);
     const now = safariPlay(rate)(cs, fs);
     const p = safariCatch(rate, cs), q = safariFlee(rate, fs);
-    const worth = tryDo(() => catchWorth(c.account, mon));
-    const wanted = worthKeeping(worth);
-    const why = worthWhy(worth);
+    const offer = c.offer(mon);
+    const wanted = !!offer?.wanted;
+    const why = worthWhy(offer);
     const best = ["bait", "mud"].reduce((b, k) => (now[k] > now[b] + 1e-9 ? k : b), "ball");
     const odds = k => `${pct(now[k])} of the time from here`;
     const next = left ? safariThree(c).mons?.[SAFARI_MONS - left] ?? null : null;
     return {
+      // The mon the turn is about, judged as the card that offered the three judged it (#585).
+      offers: offer ? [offer.card] : [],
       state: { mon: name, shiny: !!tryDo(() => mon.isShiny(), mon.shiny), left, catchStage: cs, fleeStage: fs,
         catchRate: rate, catch: p, flee: q, wanted, best, value: now[best],
         next: next ? { name: next.name, shiny: next.shiny, level: next.level, wanted: next.wanted } : null },
@@ -809,13 +925,14 @@ const OVERRIDES = {
           : "let it go — the last of the three, so this ends the safari",
         verdict: wanted ? "avoid" : "take",
         why: wanted ? `you would be giving up a ${pct(now[best])} catch`
-          : next?.wanted ? `nothing here, and ${safariName(next)} is worth a ball: ${worthWhy(next.worth)}` : why },
+          : next?.wanted ? `nothing here, and ${safariName(next)} is worth a ball: ${worthWhy(next.offer)}` : why },
       ],
     };
   },
 };
 
-const build = (s, h, account) => {
+const build = (run, h, account) => {
+  const s = run.scene;
   const me = s.currentBattle.mysteryEncounter;
   const party = s.getPlayerParty().filter(Boolean);
   const options = readOptions(s, h, me, party);
@@ -826,11 +943,15 @@ const build = (s, h, account) => {
   let notes = [];
   let judged = null;
   let minigame = null;
+  let offers = [];
   if (rule) {
     try {
-      const out = rule(context(s, me, options, account));
+      const out = rule(context(run, me, options, account));
       if (Array.isArray(out)) judged = out;
-      else if (out) { judged = out.rows; minigame = out.state ?? null; notes.push(...(out.notes ?? [])); }
+      else if (out) {
+        judged = out.rows; minigame = out.state ?? null; notes.push(...(out.notes ?? []));
+        offers = out.offers ?? [];
+      }
     } catch (e) { notes.push(`couldn't judge this encounter: ${e.message}`); }
   }
   for (const [i, o] of options.entries()) {
@@ -843,12 +964,13 @@ const build = (s, h, account) => {
   if (me.catchAllowed) notes.push("balls work in its battle");
   return {
     kind: "encounter", type, name: NAMES[type] ?? `Encounter #${type}`, tier: TIERS[me.encounterTier] ?? null,
-    known: !!judged, options, pick, notes, minigame,
+    known: !!judged, options, pick, notes, minigame, offers,
   };
 };
 
 // The memo key holds what the card reads beyond the run key (the wave, the modifier count, each member's level and
-// standing): a read in neither goes stale.
+// standing): a read in neither goes stale. The challenges are in it because the party at the next big fight turns on
+// them — Hardcore and Limited Support decide whether a fainted member has a way back (#571).
 export const encounterModel = (run, h, account) => {
   const s = run.scene;
   const me = s.currentBattle.mysteryEncounter;
@@ -857,14 +979,23 @@ export const encounterModel = (run, h, account) => {
     [me.misc?.safariPokemonRemaining, me.misc?.catchStage, me.misc?.fleeStage, tryDo(() => me.misc?.pokemon?.id)],
     // The chunk scan lands asynchronously, and nothing else in this key moves when it does.
     tryDo(() => safariReady(s), false),
+    // The species table lands partway through a run as well, and the weakest member cannot be priced before it does:
+    // a card judged without one must not be served back once it has arrived (#582).
+    tryDo(() => typeof gameTables().species.getAllSpecies === "function", false),
     h.optionsMeetsReqs, tryDo(() => h.optionsContainer.list.map(o => o.text), []),
+    (s.gameMode?.challenges ?? []).map(c => [c.id, c.value]),
     party.map(p => [p.id, p.hp, p.status?.effect ?? 0, p.nature, p.moveset.filter(Boolean).map(m => m.moveId)])]);
-  const value = run.memo("encounter", key, () => build(s, h, account));
+  const value = run.memo("encounter", key, () => build(run, h, account));
   if (value.kind) return value;
   const type = me.encounterType;
   return { kind: "encounter", type, name: NAMES[type] ?? `Encounter #${type}`, tier: TIERS[me.encounterTier] ?? null,
-    known: false, options: [], pick: -1, notes: [`unread: ${value.unavailable}`], minigame: null };
+    known: false, options: [], pick: -1, notes: [`unread: ${value.unavailable}`], minigame: null, offers: [] };
 };
+
+// One judged offer as the summary says it, `Nidorina: swap for Jolteon, an answer to Electric at last` — the verdict
+// and the reasons it was read off, so a viewer following in plain text gets the team call the pane shows (#567, story
+// 40). An offer the judgment couldn't reach carries no verdict and is left out below rather than said emptily.
+const offerSaid = o => `${o.name ?? "it"}: ${[o.text, ...o.reasons].join(", ")}`;
 
 // `Mysterious Chest: take Open it — pick of 3 Ultra items · avoid Leave`, for the watcher and the battle read.
 export const encounterSummary = m => {
@@ -872,5 +1003,7 @@ export const encounterSummary = m => {
   const avoid = m.options.filter(o => o.verdict === "avoid").map(o => o.label);
   const head = pick ? `take ${pick.label}${pick.outcome ? ` — ${pick.outcome}` : ""}` : m.known ? "your call" : "not judged";
   const who = m.minigame ? ` vs ${m.minigame.mon}${m.minigame.shiny ? " shiny" : ""}` : "";
-  return `${m.name}${who}: ${head}${avoid.length ? ` · avoid ${avoid.join(", ")}` : ""}`;
+  const said = (m.offers ?? []).filter(o => o.verdict).map(offerSaid);
+  return `${m.name}${who}: ${head}${avoid.length ? ` · avoid ${avoid.join(", ")}` : ""}`
+    + `${said.length ? ` · ${said.join(" · ")}` : ""}`;
 };
