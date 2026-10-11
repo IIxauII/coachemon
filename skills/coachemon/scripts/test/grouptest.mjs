@@ -338,13 +338,13 @@ const starters = (over = {}) => ({
 
 // ---- Fusion: the call line leaves the rows, because `act.summary` carries it.
 const fusionRow = (over = {}) => ({ base: { icon: null, name: "Garchomp" }, other: { icon: null, name: "Dragonite" },
-  value: 21, fuse: true, types: ["Dragon", "Ground"], why: ["+42 BST"], notes: [], ...over });
+  value: 2.1, fuse: true, types: ["Dragon", "Ground"], why: ["+42 BST"], notes: [], ...over });
 {
   const card = { kind: "fusion", wave: 42, picked: null, better: null, spliced: true,
-    rows: [fusionRow(), fusionRow({ other: { icon: null, name: "Lapras" }, value: 4, fuse: false, why: ["loses Ice"] })] };
+    rows: [fusionRow(), fusionRow({ other: { icon: null, name: "Lapras" }, value: 0.4, fuse: false, why: ["loses Ice"] })] };
   const { groups, text } = show("fusion · two candidates and a Spliced note", card, drawFusion);
   assert.deepEqual(groups.map(g => g.id), ["act", "options", "notes"]);
-  assert.equal(groups[0].summary, "Garchomp ← Dragonite (+21) · pick Garchomp first, then Dragonite");
+  assert.equal(groups[0].summary, "Garchomp ← Dragonite (+2.1 turns) · pick Garchomp first, then Dragonite");
   assert.ok(!groups.some(g => g.rows.some(r => r.includes("pick Garchomp first"))), "the call has left the rows");
   assert.ok(text.endsWith("\nNotes\nSpliced Endless: unfused mons run on half their base stats"), text);
 }

@@ -147,8 +147,8 @@ const answersTo = (p, foe) => typedAttacks(p).filter(mv => effectiveness(TYPES[m
 // Gale Wings only: Triage's draining attacks move first too (game-code.md §17) and aren't counted yet (#474).
 const PRIORITY_ABILITIES = new Set(["Gale Wings"]);
 const speedCheck = (party, foes, wave) => {
-  const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD - 1] ?? 0) > (a?.stats?.[Stat.SPD - 1] ?? -1) ? f : a), null);
-  const spe = fastest?.stats?.[Stat.SPD - 1]; // 48-preview's `stats` is Atk…Spe, no HP
+  const fastest = foes.reduce((a, f) => ((f.stats?.[Stat.SPD] ?? 0) > (a?.stats?.[Stat.SPD] ?? -1) ? f : a), null);
+  const spe = fastest?.stats?.[Stat.SPD];
   if (!spe) return [];
   const faster = party.filter(p => tryDo(() => p.getStat(Stat.SPD), 0) > spe);
   const priority = party.filter(p => typedAttacks(p).some(mv => (mv.priority ?? 0) > 0)

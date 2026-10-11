@@ -453,17 +453,18 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   const foeMoves = [["Rock Slide", "Rock", 75], ["Earthquake", "Ground", 100], ["Iron Defense", "Steel", -1, "X"]];
   const { scene, pv, duel } = mount({ wave: 12, foeMoves });
   const row = pv.previewNext(scene).foes[0];
-  console.log(`== row for a combatant ${JSON.stringify({ name: row.name, level: row.level, maxHp: row.maxHp,
+  console.log(`== row for a combatant ${JSON.stringify({ name: row.name, level: row.level,
     stats: row.stats, moves: row.moves, moveIds: row.moveIds })}`);
   assert.equal(row.moveIds.length, row.moves.length, "an id for every move the row names");
 
   // The same wave, played: the row describes the foe the game goes on to build, and rebuilds it as a combatant.
   const foe = playWave(scene, 13).enemyParty[0];
   assert.equal(foe.name, row.name);
-  const rebuilt = duel.combatantOf({ name: row.name, level: row.level, stats: [row.maxHp, ...row.stats],
+  const rebuilt = duel.combatantOf({ name: row.name, level: row.level, stats: row.stats,
     types: row.types.map(t => TY.indexOf(t)), ability: row.ability, passive: row.passive, moves: row.moveIds,
     boss: row.segments, player: false });
-  assert.deepEqual(rebuilt.stats, [foe.getMaxHp(), ...[1, 2, 3, 4, 5].map(i => foe.getStat(i))], "the live foe's own stat row");
+  assert.deepEqual(row.stats, [foe.getMaxHp(), ...[1, 2, 3, 4, 5].map(i => foe.getStat(i))], "one `Stat`-indexed row, HP first");
+  assert.deepEqual(rebuilt.stats, row.stats, "handed over whole, it is the live foe's own stat row");
   assert.deepEqual(rebuilt.moveset.map(pm => pm.getName()), row.moves, "and its moveset, looked up by id");
 
   // A Rock Slide into a Poison/Flying foe hits for more than its whole health, so the row's Sturdy has to endure on
