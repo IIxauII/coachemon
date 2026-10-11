@@ -276,9 +276,13 @@ const r1 = x => Math.round((x ?? 0) * 10) / 10;
  * `replace` forces the member that leaves and is handed straight to the judgment, which then prices this one swap
  * rather than searching for the member to make. A GTS offer is the card that names it: the mon going out is the mon
  * the player trades away, and no other (#586, story 23).
+ *
+ * `fight` is the wave to judge at, for a card that already knows which big fight it is asking about: the biome card
+ * reads the waves *after* the one the run stands on, so the fight it judges against is the one ahead of those and not
+ * the boss the run has just finished (#587).
  */
-export const teamVerdict = (run, foe, { replace = null } = {}) => {
-  const j = judgeNewcomer(run, foe, { replace });
+export const teamVerdict = (run, foe, { replace = null, fight = null } = {}) => {
+  const j = judgeNewcomer(run, foe, { replace, fight });
   const blank = { verdict: null, text: null, replaced: null, reasons: [], fight: j.fight ?? null,
     delta: 0, release: 0, net: 0, confidence: j.confidence ?? null };
   if (j.unavailable) return { ...blank, unavailable: j.unavailable };

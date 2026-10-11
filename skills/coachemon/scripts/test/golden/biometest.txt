@@ -1,24 +1,44 @@
 == swamp vs construction site
 ⌃ {Hide the drawer} × {Close}
-🗺 Next biome from Tall Grass Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
+🗺 Next biome from Tall Grass Swamp 77 pick — 2 mons hit SE · Construction Site 69
 Biomes
-★ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
+★ Swamp Poison 72% Water 38% Fighting 29% 77 {offense 87 · defense -5 · catches 0 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
 · trainers 8%: Parasol Lady · Black Belt
 ✓ 2 mons hit SE
-★ catch Toxicroak covers Fighting · hits Normal/Ice · new
 👑 W40 boss: Toxapex 100%
 · onward: Graveyard · Tall Grass
-· Construction Site Fighting 60% Steel 40% Electric 28% 77 {offense 100 · defense -23 · catches 100 · big fight 0}
+· Construction Site Fighting 60% Steel 40% Electric 28% 69 {offense 100 · defense -23 · catches 0 · big fight 0}
 · mostly Machoke 31% · Magneton 28% · Gurdurr 26%
 · trainers 10%: Black Belt
 ✗ Snorlax & Lapras weak
 ✓ Alakazam resists
 ✓ 2 mons hit SE
-★ catch Machoke hits Normal/Ice · new
 👑 W40 boss: Gurdurr 100%
 · onward: rare Laboratory (1/3) · Factory
-summary Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
+summary Swamp 77 pick — 2 mons hit SE · Construction Site 69
+== a stand-in judged for a party under the wave's cap
+⌃ {Hide the drawer} × {Close}
+🗺 Next biome from Tall Grass Swamp 51 · Construction Site 71 pick — 3 mons weak, Sableye resists, 3 mons hit SE
+Biomes
+· Swamp Poison 75% Fighting 37% Water 35% 51 {offense 69 · defense -16 · catches 0 · big fight -50}
+· mostly Croagunk 30% · Quagsire 16% · Arbok 14%
+· trainers 8%: Parasol Lady · Black Belt
+✗ 3 mons weak
+✓ Sableye resists
+✗ nothing hits SE
+👑 W70 boss: Toxapex 100%
+· onward: Graveyard · Tall Grass
+★ Construction Site Fighting 60% Steel 40% Electric 28% 71 {offense 100 · defense -45 · catches 30 · big fight 50}
+· mostly Machoke 31% · Magneton 28% · Gurdurr 26%
+· trainers 10%: Black Belt
+✗ 3 mons weak
+✓ Sableye resists
+✓ 3 mons hit SE
+★ catch Excadrill swap for Pidgeotto · +0.9 turns · a backup to Ground at last · Fighting now beats 4 of 6, down from 5 · new · estimate
+👑 W70 boss: Gurdurr 100%
+· onward: rare Laboratory (1/3) · Factory
+catch  {"name":"Excadrill","icon":["k","27"],"tags":["swap for Pidgeotto","+0.9 turns","a backup to Ground at last","Fighting now beats 4 of 6, down from 5","new","estimate"],"verdict":"swap","net":0.9,"confidence":"estimate"}
 == no tables
 ⌃ {Hide the drawer} × {Close}
 🗺 Next biome Swamp · Construction Site
@@ -27,89 +47,80 @@ summary Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits 
 reading the game's biome tables…
 == gym at wave 50
 ⌃ {Hide the drawer} × {Close}
-🗺 Next biome from Tall Grass Swamp 86 pick — edges Construction Site on defense, Garchomp resists, 2 mons hit SE · Construction Site 85
+🗺 Next biome from Tall Grass Swamp 78 pick — edges Construction Site on defense, Garchomp resists, 2 mons hit SE · Construction Site 77
 Biomes
-★ Swamp Poison 71% Water 31% Ground 27% 86 {offense 86 · defense -1 · catches 100 · big fight 100}
+★ Swamp Poison 71% Water 31% Ground 27% 78 {offense 86 · defense -1 · catches 0 · big fight 100}
 · mostly Arbok 22% · Gulpin 22% · Quagsire 21%
 · trainers 6%: Parasol Lady · Black Belt
 ✓ edges Construction Site on defense
 ✓ Garchomp resists
 ✓ 2 mons hit SE
 ✓ W50 gym Poison (Janine): 2 hit SE
-★ catch Toxicroak covers Fighting · hits Normal/Ice · new
 · onward: Graveyard · Tall Grass
-≈ Construction Site Fighting 49% Steel 41% Electric 29% 85 {offense 100 · defense -22 · catches 100 · big fight 75}
+≈ Construction Site Fighting 49% Steel 41% Electric 29% 77 {offense 100 · defense -22 · catches 0 · big fight 75}
 · mostly Machoke 31% · Magneton 29% · Gurdurr 15%
 · trainers 8%: Black Belt
 ✗ Snorlax & Lapras weak
 ✓ Alakazam resists
 ✓ 2 mons hit SE
 ✓ W50 gym Rock (Brock): 2 hit SE, Lapras weak
-★ catch Machoke hits Normal/Ice · new
 · onward: rare Laboratory (1/3) · Factory
 == trainer configs landing late
 before  null
 after   {"pct":6,"names":["Parasol Lady","Black Belt"]}
 == hardcore, Snorlax fainted
 ⌃ {Hide the drawer} × {Close}
-🗺 Next biome from Tall Grass Swamp 84 pick — edges Construction Site on the big fight, 2 mons hit SE, catch Toxicroak (hits Normal/Ice, new) · Construction Site 82
+🗺 Next biome from Tall Grass Swamp 79 pick — 2 mons hit SE · Construction Site 74
 Biomes
-★ Swamp Poison 72% Water 38% Fighting 29% 84 {offense 87 · defense 2 · catches 67 · big fight 100}
+★ Swamp Poison 72% Water 38% Fighting 29% 79 {offense 87 · defense 2 · catches 0 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
 · trainers 8%: Parasol Lady · Black Belt
-✓ edges Construction Site on the big fight
 ✓ 2 mons hit SE
-★ catch Toxicroak hits Normal/Ice · new
 👑 W40 boss: Toxapex 100%
 · onward: Graveyard · Tall Grass
-≈ Construction Site Fighting 60% Steel 40% Electric 28% 82 {offense 100 · defense -10 · catches 100 · big fight 17}
+≈ Construction Site Fighting 60% Steel 40% Electric 28% 74 {offense 100 · defense -10 · catches 0 · big fight 17}
 · mostly Machoke 31% · Magneton 28% · Gurdurr 26%
 · trainers 10%: Black Belt
 ✗ Lapras weak
 ✓ Alakazam resists
 ✓ 2 mons hit SE
-★ catch Machoke hits Normal/Ice · new
 👑 W40 boss: Gurdurr 100%
 · onward: rare Laboratory (1/3) · Factory
 Notes
 ⚠ judged without 1 fainted — no revive at the next heal
 == Limited Support 1, no heal but a shop on the way revives Snorlax
 ⌃ {Hide the drawer} × {Close}
-🗺 Next biome from Tall Grass Swamp 85 pick — 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new) · Construction Site 77
+🗺 Next biome from Tall Grass Swamp 77 pick — 2 mons hit SE · Construction Site 69
 Biomes
-★ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
+★ Swamp Poison 72% Water 38% Fighting 29% 77 {offense 87 · defense -5 · catches 0 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
 · trainers 8%: Parasol Lady · Black Belt
 ✓ 2 mons hit SE
-★ catch Toxicroak covers Fighting · hits Normal/Ice · new
 👑 W40 boss: Toxapex 100%
 · onward: Graveyard · Tall Grass
-· Construction Site Fighting 60% Steel 40% Electric 28% 77 {offense 100 · defense -23 · catches 100 · big fight 0}
+· Construction Site Fighting 60% Steel 40% Electric 28% 69 {offense 100 · defense -23 · catches 0 · big fight 0}
 · mostly Machoke 31% · Magneton 28% · Gurdurr 26%
 · trainers 10%: Black Belt
 ✗ Snorlax & Lapras weak
 ✓ Alakazam resists
 ✓ 2 mons hit SE
-★ catch Machoke hits Normal/Ice · new
 👑 W40 boss: Gurdurr 100%
 · onward: rare Laboratory (1/3) · Factory
 == swamp vs marsh
 ⌃ {Hide the drawer} × {Close}
-🗺 Next biome from Tall Grass Swamp 85 · Marsh 86 pick — edges Swamp on offense, 2 mons hit SE, catch Toxicroak (covers Fighting, hits Normal/Ice, new)
+🗺 Next biome from Tall Grass Swamp 77 · Marsh 78 pick — edges Swamp on offense, 2 mons hit SE
 Biomes
-≈ Swamp Poison 72% Water 38% Fighting 29% 85 {offense 87 · defense -5 · catches 100 · big fight 100}
+≈ Swamp Poison 72% Water 38% Fighting 29% 77 {offense 87 · defense -5 · catches 0 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
 · trainers 8%: Parasol Lady · Black Belt
 ✓ 2 mons hit SE
-★ catch Toxicroak covers Fighting · hits Normal/Ice · new
 👑 W40 boss: Toxapex 100%
 · onward: Graveyard · Tall Grass
-★ Marsh Poison 72% Water 35% Fighting 29% 86 {offense 88 · defense -6 · catches 100 · big fight 100}
+★ Marsh Poison 72% Water 35% Fighting 29% 78 {offense 88 · defense -6 · catches 0 · big fight 100}
 · mostly Quagsire 18% · Arbok 17% · Gulpin 17%
 · trainers 8%: Parasol Lady · Black Belt
 ✓ edges Swamp on offense
 ✓ 2 mons hit SE
-★ catch Toxicroak covers Fighting · hits Normal/Ice · new
 👑 W40 boss: Toxapex 100%
 · onward: Tall Grass
 == spawn pool time of day, waveCycleOffset 3
