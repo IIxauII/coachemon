@@ -386,6 +386,35 @@ const WATERS = (level = CAP) => [
   assert.equal(Math.abs(worst.s), CLAMP);
 }
 
+// ---- A member whose move can flinch is scored on its duels like any other
+{
+  // The game's `getMoveChance` reads the user's abilities through `canApplyAbility`, which only a live mon has.
+  class FlinchAttr {
+    effectChanceOverride = 30;
+    getMoveChance(user) { user.canApplyAbility(false); return this.effectChanceOverride; }
+  }
+  const party = WATERS();
+  party[1] = mon(OURS.feraligatr, CAP, [M.waterfall, ["Bite", "Dark", 60, "P", [new FlinchAttr()]], M.iceBeam],
+    { ability: "Torrent" });
+  // A seed of its own: the fixture's moves key by slot, so on the seed above Bite would be served Crunch's duels.
+  const j = judge(party, mon(OURS.swampert, CAP, [M.surf, M.waterfall], { ability: "Torrent" }), {},
+    { seed: "judge-flinch" });
+  const pairs = j.before.rows.flatMap(r => [r.answer, r.backup]);
+  assert.deepEqual(pairs.filter(p => !Number.isFinite(p.s)).map(p => `${p.name}: ${p.unavailable}`), [],
+    "every pair is a duel the judgment scored");
+  assert.ok(j.before.rows.some(r => r.answer.name === "Feraligatr"), "so the flincher still answers threats");
+
+  const { approxOutcomes } = globalThis.__hud["10-damage"];
+  const { duelEnv } = globalThis.__hud["09-combatant"];
+  const flinch = (mine, theirs) => approxOutcomes(duelEnv(null),
+    combatantOf({ mon: party[1], level: CAP, ability: mine }),
+    combatantOf({ mon: party[2], level: CAP, ability: theirs, player: false })).find(o => o.name === "Bite").flinch;
+  assert.deepEqual(
+    [flinch("Torrent", "Damp"), flinch("Serene Grace", "Damp"), flinch("Sheer Force", "Damp"),
+      flinch("Torrent", "Shield Dust"), flinch("Torrent", "Inner Focus")],
+    [0.3, 0.6, 0, 0, 0], "off the field the chance is the move's own, moved by the abilities alone");
+}
+
 // ---- An all-Water party keeps the one member that answers what Water cannot
 {
   const party = WATERS();
