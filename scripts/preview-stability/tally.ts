@@ -20,10 +20,6 @@ export type Graded = {
   confidence?: Partial<Record<Field, string | null>>;
 };
 
-const claimed = (r: Graded): Graded => {
-  const kept = (f: Field) => r.confidence?.[f] !== "estimate";
-  return { ...r, right: r.right.filter(kept), wrong: r.wrong.filter(kept) };
-};
 export type Stop = { seed: string; stopped: string | null; reached: number };
 
 export type Rate = { checked: number; missed: number };
@@ -71,6 +67,11 @@ const table = (reads: Graded[]) => {
     line(`${NEAR[0]}–${NEAR[1]}`, pool(rates, NEAR)),
     line(`${FAR[0]}–${FAR[1]}`, pool(rates, FAR)),
   ].join("\n");
+};
+
+const claimed = (r: Graded): Graded => {
+  const kept = (f: Field) => r.confidence?.[f] !== "estimate";
+  return { ...r, right: r.right.filter(kept), wrong: r.wrong.filter(kept) };
 };
 
 /** A cell is misses over reads graded, and "—" where no read graded that field. */

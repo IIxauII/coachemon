@@ -1,10 +1,6 @@
 /**
- * How often a preview read k waves ahead misses its wave (#590): upstream's vitest harness walks seeded Classic runs
- * headless in the pinned clone, reads `previewFor` 1–10 waves ahead at every wave, and grades each read when its wave
- * comes. A measurement, not a test: it prints the table and writes the records beside it.
- *
- *   npm run oracle:preview -- [--seeds 12] [--last 100] [--out .cache/preview-stability.json] [--verbose]
- *   npm run oracle:preview -- --from .cache/preview-stability.json   # the table again, from a walk's records
+ * How often a preview misses its wave, by how far ahead it was read (#590). A measurement, not a test: it prints the
+ * table and saves the records, which `--from` prints again.
  */
 import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -40,8 +36,13 @@ const missing = (what: string, how: string): never => {
   console.error(`${what}\n\n  ${how}\n`);
   process.exit(2);
 };
+if (!existsSync(clone)) {
+  // A worktree's `drift:check` leaves a bare clone, and provisioning it re-fetches the 815 MB `assets` submodule
+  // (#296).
+  missing(`No pinned clone at ${clone}.`, "npm run drift:check   # in a worktree: ln -s <main-checkout>/.cache .cache");
+}
 if (!existsSync(path.join(clone, "node_modules"))) {
-  missing(`No provisioned clone at ${clone}.`, "npm run drift:check   # in a worktree: ln -s <main-checkout>/.cache .cache");
+  missing(`The clone at ${clone} has no dependencies.`, `cd ${clone} && pnpm install --frozen-lockfile`);
 }
 for (const sub of ["assets", "locales"]) {
   if (readdirSync(path.join(clone, sub)).length === 0) {
@@ -79,6 +80,10 @@ const vitest = (): Promise<void> =>
         },
       },
     );
+    child.on("error", (err: Error) => {
+      console.error(`\noracle: could not run vitest — ${err.message}`);
+      resolve();
+    });
     child.on("close", () => resolve());
   });
 

@@ -17,7 +17,7 @@ import { beforeAll, beforeEach, describe, it, vi } from "vitest";
 const BUNDLE = process.env.COACH_BUNDLE as string;
 const OUT = process.env.COACH_OUT as string;
 const SEEDS = (process.env.COACH_SEEDS ?? "").split(",").filter(Boolean);
-const LAST_WAVE = Number(process.env.COACH_LAST_WAVE ?? 60);
+const LAST_WAVE = Number(process.env.COACH_LAST_WAVE);
 const REACH = 10;
 
 // biome-ignore lint/suspicious/noExplicitAny: the HUD is plain page-world JS with no types here.
@@ -34,8 +34,6 @@ function loadHud() {
   return g.__hud;
 }
 
-// Strong enough that nothing faints, and over the level cap so nothing levels: either stops the walk at a prompt it
-// doesn't answer.
 const PARTY = [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.ABRA] as const;
 
 /**
@@ -141,6 +139,7 @@ describe("Coachemon oracle - preview stability by distance", () => {
     const hud = loadHud();
     // The harness turns encounters off; the real rate is `null`, and any number also lifts the three-wave gap.
     vi.spyOn(activeOverrides, "MYSTERY_ENCOUNTER_RATE_OVERRIDE", "get").mockReturnValue(null);
+    // Over the level cap, so nothing levels and no move-learn prompt stops the walk.
     game.override.startingLevel(100).moveset(MoveId.SPLASH);
     game.settings.battleStyle(BattleStyle.SET);
     await game.classicMode.startBattle(...PARTY);
