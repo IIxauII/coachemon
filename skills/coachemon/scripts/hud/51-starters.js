@@ -1,6 +1,7 @@
 // Which starters this account should take within the point budget: whole teams from what it has unlocked, each pick
 // with its reasons. Every game call here is a pure read, so none runs in `sandbox` (game-code.md §23).
 import { TYPES, vs } from "./01-core.js";
+import { challengeOn } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
 import { finalBstOf } from "./08-party.js";
@@ -169,7 +170,7 @@ let cache = { key: null, value: null };
 
 export const starterModel = (s, h) => {
   const tables = tryDo(() => gameTables());
-  const challenges = (s.gameMode?.challenges ?? []).filter(c => c && c.value);
+  const challenges = (s.gameMode?.challenges ?? []).filter(c => c && challengeOn(s, c.id));
   const has = id => challenges.some(c => c.id === id);
   const limit = tryDo(() => h.getValueLimit(), 10);
   const chosen = (h.starterSpecies ?? []).filter(Boolean);
