@@ -24,7 +24,29 @@ The pokémon the player controls in the current run. The **active pokémon** is 
 
 ## Party profile
 
-The **party** judged as a whole rather than member by member: the types it hits super-effectively, the types it can't, the types several members are weak to, and its weakest member. Any would-be newcomer (a wild pokémon, a species in a biome, a trade offer) is judged against the profile, so every card gives the same reasons for the same pokémon.
+The **party** judged as a whole rather than member by member: the types it hits super-effectively, the types it can't, the types several members are weak to, and its weakest member — the one whose loss costs the least **team value**, with no newcomer in view. A would-be newcomer (a wild pokémon, a species in a biome, a trade offer, a fusion) is judged by the team value its swap makes rather than by the profile, and the member it replaces is the one its own swap picks, which need not be the weakest: the newcomer may cover what another member covered. The profile's tallies only phrase the reasons.
+
+## Threat set
+
+The foes a **party** is judged against when no fight is in front of it, in two halves of equal say. The standard
+threats are always one half: one foe per type plus a few stat shapes (a fast sweeper, a physical wall, a special wall, a
+bulky attacker), at the next big fight's level. The next big fight's roster is the other half when a **preview** has
+it; without one, the standard threats stand alone. The halves are kept apart because a newcomer outlasts the fight
+ahead: a party fitted to one gym alone would be told to drop answers the next fight needs. Not the field's foes, which
+a **turn read** sees.
+
+## Team value
+
+What a **party** is worth against the **threat set**, in **turn score**: for each threat, the turns its **answer**
+and a backup win by, credit for a member that can switch in on it or finish it from behind, less its **exposure**. A
+would-be newcomer is worth the change in team value its swap makes, net of what the release destroys. Distinct from
+the **party profile**, which tallies types and scores nothing.
+
+## Exposure
+
+How many of the **party**'s members one threat beats one-on-one, speed deciding who moves first. It grows the cost
+faster than the count, because one member lost to a threat is ordinary and four is a sweep — which is what makes a
+party that stacks one weakness worth less than its best answers suggest.
 
 ## Fusion
 
