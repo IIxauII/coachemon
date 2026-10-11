@@ -115,34 +115,12 @@ new species
 ★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
 by Milotic · new species
 summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
-== gts
+== gts, no team read
 ⌃ {Hide the drawer} × {Close}
 🎭 Global Trade System common Global Trade System: your call
 Options
-· Trade — trade: best offer Jolteon → Salamence (final BST +75)
-no clear upgrade
-· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
-a gamble
-· Item Trade — trade a held item for a random item one tier up
-· Leave — shop only, no reward
-summary Global Trade System: your call
-== gts, the fainted member is healed before the next big fight
-⌃ {Hide the drawer} × {Close}
-🎭 Global Trade System common Global Trade System: your call
-Options
-· Trade — trade: best offer Jolteon → Salamence (final BST +75)
-no clear upgrade
-· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
-a gamble
-· Item Trade — trade a held item for a random item one tier up
-· Leave — shop only, no reward
-summary Global Trade System: your call
-== gts, Hardcore leaves the fainted member dead weight
-⌃ {Hide the drawer} × {Close}
-🎭 Global Trade System common Global Trade System: your call
-Options
-· Trade — trade: best offer Lapras → Salamence (final BST +65)
-no clear upgrade
+· Trade — trade a mon for one of 3 offers
+no team read here: the game's species table hasn't been read yet
 · Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
 a gamble
 · Item Trade — trade a held item for a random item one tier up
@@ -195,7 +173,7 @@ summary Training Session: take Heavy — it fights you as a 4-bar boss of itself
 🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5
 Options
 ★ Buy — $2,020: Larvesta (hidden ability) joins at L5
-new species, hits Bug/Psychic/Ice (no one else does)
+new species
 · Leave — shop only, no reward
 summary The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5
 == trash to treasure
@@ -237,6 +215,7 @@ Options
 ⚔ boss · Jolteon is your weakest link
 · Refuse — shop only, no reward
 summary Dark Deal: take Deal — Jolteon is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+weakest first  Jolteon 0.0 · Garchomp 0.5 · Lapras 0.5
 == dark deal, the fainted weakest link is healed before the next big fight
 ⌃ {Hide the drawer} × {Close}
 🎭 Dark Deal rogue Dark Deal: your call
@@ -245,14 +224,43 @@ Options
 ⚔ boss · L38 Lapras for a legendary
 · Refuse — shop only, no reward
 summary Dark Deal: your call
+weakest first  Jolteon 0.0 · Lapras 0.8 · Garchomp 1.0
 == dark deal, Hardcore makes the fainted member dead weight
 ⌃ {Hide the drawer} × {Close}
-🎭 Dark Deal rogue Dark Deal: take Deal — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+🎭 Dark Deal rogue Dark Deal: your call
 Options
-★ Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
-⚔ boss · Lapras is your weakest link
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · L38 Lapras for a legendary
 · Refuse — shop only, no reward
-summary Dark Deal: take Deal — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+summary Dark Deal: your call
+weakest first  Jolteon fainted 0.0 · Lapras 1.4 · Garchomp 1.9
+== dark deal, the heal comes before the next big fight
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: your call
+Options
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · L38 Lapras for a legendary
+· Refuse — shop only, no reward
+summary Dark Deal: your call
+next big fight  gym 50 · weakest first  Jolteon 0.2 · Lapras 0.8 · Garchomp 1.8
+== dark deal, the next big fight comes before the heal
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: take Refuse — shop only, no reward · avoid Deal
+Options
+✗ Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · Lapras is your strongest
+★ Refuse — shop only, no reward
+summary Dark Deal: take Refuse — shop only, no reward · avoid Deal
+next big fight  gym 50 · weakest first  Garchomp fainted 0.0 · Jolteon 0.7 · Lapras 1.8
+== dark deal, no next big fight to be back for
+⌃ {Hide the drawer} × {Close}
+🎭 Dark Deal rogue Dark Deal: your call
+Options
+· Deal fixed {fixed by the run seed: this is what happens} — Lapras is taken for good → 5 Rogue Balls + a catchable legendary boss (starter tier 6) of its types, holding its items
+⚔ boss · L38 Lapras for a legendary
+· Refuse — shop only, no reward
+summary Dark Deal: your call
+next big fight  none · weakest first  Jolteon 0.2 · Lapras 0.9 · Garchomp 2.1
 == a trainer's test
 ⌃ {Hide the drawer} × {Close}
 🎭 A Trainer's Test rogue A Trainer's Test: take Accept — fight Cheryl: 6 mons, Elite Four strength → an Epic egg + Relic Gold + 2 Rogue rewards
@@ -361,7 +369,7 @@ Options
 · Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
 free, and it keeps the move for the run
 ★ Dance — show it a dance: Oricorio joins, keeping the dance move you used
-by Lopunny · new species, covers Fighting weakness
+by Lopunny · new species
 Notes
 · balls work in its battle
 summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used
@@ -384,4 +392,165 @@ Options
 pick a mon whose damage you can hold back, not your hardest hitter
 · Leave — shop only, no reward
 summary Fun and Games: your call
+== uncommon breed, judged
+⌃ {Hide the drawer} × {Close}
+🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP · Eevee: skip, Normal now beats 2 of 5
+Options
+· Battle — fight Eevee (boosted); catchable → rewards
+⚔ wild · L38 vs your L40, nothing hits it SE
+· Berries — give 4 random berries: Eevee joins with a 2nd egg move
+team: skip, Normal now beats 2 of 5, new species
+★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+by Milotic · team: skip, Normal now beats 2 of 5, new species
+summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP · Eevee: skip, Normal now beats 2 of 5
+offer Eevee: team skip (Normal now beats 2 of 5) · account 3 of 2 · estimate
+== salesman, judged
+⌃ {Hide the drawer} × {Close}
+🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5 · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+Options
+★ Buy — $2,020: Larvesta (hidden ability) joins at L5
+team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species
+· Leave — shop only, no reward
+summary The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5 · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+offer Larvesta: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+== salesman, judged, already caught
+⌃ {Hide the drawer} × {Close}
+🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Leave — shop only, no reward · avoid Buy · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+Options
+✗ Buy — $2,020: Larvesta (hidden ability) joins at L5
+L5 and team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+★ Leave — shop only, no reward
+summary The Pokémon Salesman: take Leave — shop only, no reward · avoid Buy · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+offer Larvesta: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 0 of 2 · estimate
+== dancing lessons, judged, the team wants it
+⌃ {Hide the drawer} × {Close}
+🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: take, a backup to Fighting at last, a backup to Flying at last
+Options
+· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
+⚔ boss · L34 boss vs your L37, nothing hits it SE
+· Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
+free, and it keeps the move for the run
+★ Dance — show it a dance: Oricorio joins, keeping the dance move you used
+by Lopunny · team: take, a backup to Fighting at last, a backup to Flying at last, new species
+Notes
+· balls work in its battle
+summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: take, a backup to Fighting at last, a backup to Flying at last
+offer Oricorio: team take (a backup to Fighting at last; a backup to Flying at last) · account 3 of 2 · estimate
+catch card: team: take, new species, lower its HP with Tackle (won't KO)
+catch card: take · a backup to Fighting at last · a backup to Flying at last
+offer Oricorio: team take (a backup to Fighting at last; a backup to Flying at last) · account 0 of 2 · estimate
+== dancing lessons, judged, a full party swaps
+⌃ {Hide the drawer} × {Close}
+🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: swap for Feebas, Ground now beats 2 of 6, down from 3, Rock now beats 2 of 6, down from 3
+Options
+· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
+⚔ boss · L34 boss vs your L40, 2 mons hit it SE
+· Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
+free, and it keeps the move for the run
+★ Dance — show it a dance: Oricorio joins, keeping the dance move you used
+by Lopunny · team: swap for Feebas, Ground now beats 2 of 6, down from 3, Rock now beats 2 of 6, down from 3, new species
+Notes
+· balls work in its battle
+summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: swap for Feebas, Ground now beats 2 of 6, down from 3, Rock now beats 2 of 6, down from 3
+offer Oricorio: team swap for Feebas (Ground now beats 2 of 6, down from 3; Rock now beats 2 of 6, down from 3) · account 3 of 2 · estimate
+== safari zone, the three judged
+⌃ {Hide the drawer} × {Close}
+🎭 Safari Zone great Safari Zone: take Pay — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes · Rattata: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Pidgey: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Caterpie: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+Options
+★ Pay fixed {fixed by the run seed: this is what happens} — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes
+3 of the three are worth a ball: team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species, and it leaves $3,990
+· Leave — shop only, no reward
+summary Safari Zone: take Pay — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes · Rattata: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Pidgey: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Caterpie: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+offer Rattata: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+offer Pidgey: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 5 of 2 · estimate
+offer Caterpie: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+== safari zone, a minigame turn judged
+⌃ {Hide the drawer} × {Close}
+🎭 Safari Zone great Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+Options
+★ Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48%
+throwing until it is settled lands it 55% of the time from here
+· Throw bait — catch +2 → 62%, and 4 times in 5 flee +1 → 73%; then it rolls to bolt
+baiting first lands it 23% of the time from here
+· Throw mud — flee −2 → 24%, and 4 times in 5 catch −1 → 27%; then it rolls to bolt
+mudding first lands it 48% of the time from here
+✗ Flee — let it go — Pidgey shiny L32 is next, 2 mons left after this one
+you would be giving up a 55% catch
+Notes
+· Nidorina at L32: catch rate 45, stages +0 catch / +0 flee, 2 mons after this one
+· worth a ball: team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species
+summary Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+offer Nidorina: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+== gts, every offer judged and ranked by net value
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: take Trade — trade: best offer Magikarp → Salamence (net +1.0 turns) · Salamence: swap for Magikarp, Ground now beats 3 of 6, down from 4, Rock now beats 3 of 6, down from 4 · Rattata: swap for Magikarp, Ice now beats 3 of 6, down from 4, Normal now beats 2 of 6, down from 3 · Mewtwo: skip · Salamence: skip · Rattata: skip, no backup left to Ground, no backup left to Rock
+Options
+★ Trade — trade: best offer Magikarp → Salamence (net +1.0 turns)
+Ground now beats 3 of 6, down from 4, Rock now beats 3 of 6, down from 4
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: take Trade — trade: best offer Magikarp → Salamence (net +1.0 turns) · Salamence: swap for Magikarp, Ground now beats 3 of 6, down from 4, Rock now beats 3 of 6, down from 4 · Rattata: swap for Magikarp, Ice now beats 3 of 6, down from 4, Normal now beats 2 of 6, down from 3 · Mewtwo: skip · Salamence: skip · Rattata: skip, no backup left to Ground, no backup left to Rock
+  Magikarp → Salamence: swap for Magikarp · net +1.0 (ΔV +1.0 − release +0.0) · estimate
+      Ground now beats 3 of 6, down from 4; Rock now beats 3 of 6, down from 4
+  Magikarp → Rattata: swap for Magikarp · net +0.7 (ΔV +0.7 − release +0.0) · estimate
+      Ice now beats 3 of 6, down from 4; Normal now beats 2 of 6, down from 3
+  Garchomp → Mewtwo: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
+  Lapras → Salamence: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
+  Garchomp → Rattata: skip · net −0.7 (ΔV −0.7 − release +0.0) · estimate
+      no backup left to Ground; no backup left to Rock
+== gts, one offer against the carry, which is the member that leaves
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: your call · Salamence: skip
+Options
+· Trade — trade: best offer Garchomp → Salamence (net +0.0 turns)
+no offer clears the margin
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: your call · Salamence: skip
+  Garchomp → Salamence: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
+== gts, the fainted member is healed before the next big fight
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: your call · Salamence: skip · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, Poison now beats 1 of 3, Ground now beats 1 of 3 · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+Options
+· Trade — trade: best offer Jolteon → Salamence (net +0.0 turns)
+no offer clears the margin
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: your call · Salamence: skip · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, Poison now beats 1 of 3, Ground now beats 1 of 3 · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+  Jolteon → Salamence: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
+  Lapras → Salamence: skip · net −0.1 (ΔV −0.1 − release +0.0) · estimate
+      a weaker backup to Poison; a weaker backup to Ghost
+  Jolteon → Rattata: skip · net −0.1 (ΔV −0.1 − release +0.0) · estimate
+      Poison now beats 1 of 3; Ground now beats 1 of 3
+  Garchomp → Mewtwo: skip · net −0.2 (ΔV −0.2 − release +0.0) · estimate
+      a weaker backup to Poison; a weaker backup to Ghost
+  Garchomp → Rattata: skip · net −1.1 (ΔV −1.1 − release +0.0) · estimate
+      no backup left to Poison; no backup left to Ghost
+  Lapras → Rattata: skip · net −1.2 (ΔV −1.2 − release +0.0) · estimate
+      no backup left to Poison; no backup left to Ghost
+== gts, Hardcore leaves the fainted member dead weight
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: your call · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+Options
+· Trade — trade: best offer Lapras → Salamence (net −0.1 turns)
+a weaker backup to Poison, a weaker backup to Ghost
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: your call · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+  Lapras → Salamence: skip · net −0.1 (ΔV −0.1 − release +0.0) · estimate
+      a weaker backup to Poison; a weaker backup to Ghost
+  Garchomp → Mewtwo: skip · net −0.2 (ΔV −0.2 − release +0.0) · estimate
+      a weaker backup to Poison; a weaker backup to Ghost
+  Garchomp → Rattata: skip · net −1.1 (ΔV −1.1 − release +0.0) · estimate
+      no backup left to Poison; no backup left to Ghost
+  Lapras → Rattata: skip · net −1.2 (ΔV −1.2 − release +0.0) · estimate
+      no backup left to Poison; no backup left to Ghost
 ok

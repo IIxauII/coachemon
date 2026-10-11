@@ -6,7 +6,11 @@ import { bundle } from "../hud-bundle.mjs";
 const TY = ["Normal","Fighting","Flying","Poison","Ground","Rock","Bug","Ghost","Steel","Fire","Water","Grass","Electric","Psychic","Ice","Dragon","Dark","Fairy"];
 // `abilities` and `moves` are indexed by id, as the game's own tables are.
 const ABILITIES = [];
-for (const [id, name] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [26, "Levitate"], [39, "Rough Skin"]]) ABILITIES[id] = { name };
+// Disguise is one of the abilities that doesn't work on a fusion, and carries the attr the game refuses it by.
+const NO_FUSION = [{ constructor: { name: "NoFusionAbilityAbAttr" } }];
+for (const [id, name, attrs = []] of [[5, "Sturdy"], [8, "Sand Veil"], [17, "Immunity"], [26, "Levitate"],
+  [39, "Rough Skin"], [61, "Shed Skin"], [110, "Inner Focus"], [136, "Multiscale"],
+  [209, "Disguise", NO_FUSION]]) ABILITIES[id] = { name, attrs };
 const MOVES = [];
 const move = (id, name, type, power, { pp = 10, cat = 0, acc = 100 } = {}) =>
   (MOVES[id] = { id, name, type: TY.indexOf(type), power, accuracy: acc, category: cat, pp, moveTarget: 3, priority: 0, flags: 0, attrs: [] });
@@ -23,19 +27,51 @@ const species = (id, name, types, baseStats, ability1) => ({
 });
 const GARCHOMP = species(445, "Garchomp", ["Dragon", "Ground"], [108, 130, 95, 80, 85, 102], 8);
 const SNORLAX = species(143, "Snorlax", ["Normal"], [160, 110, 65, 65, 110, 30], 17);
+const DRATINI = species(147, "Dratini", ["Dragon"], [41, 64, 45, 50, 50, 50], 61);
+// The species Dratini stands as once the projection says its line lands (#576): its own abilities, by the index an
+// evolution keeps, and a passive of its own.
+const DRAGONITE = species(149, "Dragonite", ["Dragon", "Flying"], [91, 134, 95, 100, 100, 80], 110);
+DRAGONITE.getAbility = i => (i === 1 ? 136 : 110);
+DRAGONITE.getPassiveAbility = () => 39;
 // Heat Rotom's base stats and its second type are the form's, not the species'.
 const ROTOM = species(479, "Rotom", ["Electric", "Ghost"], [50, 50, 77, 95, 77, 91], 26);
 ROTOM.forms = [{ ...ROTOM }, { ...ROTOM, baseStats: [50, 65, 107, 105, 107, 86], type2: TY.indexOf("Fire") }];
 
+// The game's held-item modifiers, in the class chain it has them (game-code.md §15): what an item is priced by is
+// the nearest of those classes the adapter knows, so an Eviolite answers as the evolution booster it is rather than
+// as the plain stat booster it also is. The stacks are `getStackCount`, which is how many of the item is held.
+class PokemonHeldItemModifier {
+  constructor(stacks = 1, fields = {}) { Object.assign(this, fields); this.stacks = stacks; }
+  getStackCount() { return this.stacks; }
+}
+class StatBoosterModifier extends PokemonHeldItemModifier {}
+class EvolutionStatBoosterModifier extends StatBoosterModifier {}
+class SpeciesStatBoosterModifier extends StatBoosterModifier {}
+class AttackTypeBoosterModifier extends PokemonHeldItemModifier {}
+class SurviveDamageModifier extends PokemonHeldItemModifier {}
+class TurnHealModifier extends PokemonHeldItemModifier {}
+// The five the probes hand out: an Eviolite at ×1.5 Def/SpD, a Thick Club at ×2 Attack for the Cubone line, a Soft
+// Sand at +20 % per stack on Ground moves, a Focus Band the matrix reads off the member itself, and Leftovers,
+// which heals between turns and so is nothing a race to the KO can be given.
+const EVIOLITE = () => new EvolutionStatBoosterModifier(1, { stats: [2, 4], multiplier: 1.5 });
+const THICK_CLUB = () => new SpeciesStatBoosterModifier(1, { stats: [1], multiplier: 2, species: [104, 105] });
+const SOFT_SAND = n => new AttackTypeBoosterModifier(n, { moveType: TY.indexOf("Ground") });
+const FOCUS_BAND = n => new SurviveDamageModifier(n);
+const LEFTOVERS = n => new TurnHealModifier(n);
+
 const pmOf = id => ({ moveId: id, getMove: () => MOVES[id], getName: () => MOVES[id].name, getMovePp: () => MOVES[id].pp, ppUsed: 0 });
 // A live member, shaped as the game's own: `base` is what its `calculateBaseStats()` answers, so a vitamin shows up
 // there and nowhere else, and `stats` is the array the game left on it at `level`.
+// `fusion` is the other half of a fusion the game has already made: `base` is then the fused base stats its
+// `calculateBaseStats()` answers, `types` its fused types and `ability` the other half's (game-code.md §24).
 const live = (name, sp, level, stats, { ivs, nature = 0, moves = [], ability = "x", passive = null, attrs = [], hp,
-  boss = 0, player = true, stages = [0, 0, 0, 0, 0, 0, 0], items = [], base = null, formIndex = 0, id = 1 } = {}) => ({
+  boss = 0, player = true, stages = [0, 0, 0, 0, 0, 0, 0], items = [], base = null, formIndex = 0, id = 1,
+  abilityAttrs = [], types = null, fusion = null, fusionFormIndex = 0 } = {}) => ({
   id, name, level, species: sp, formIndex, ivs, stats, hp: hp ?? stats[0], moveset: moves.map(pmOf),
+  fusionSpecies: fusion, fusionFormIndex,
   getMaxHp: () => stats[0], getStat: i => stats[i] ?? 0, getNature: () => nature,
-  getTypes: () => [sp.type1, sp.type2].filter(t => t != null),
-  getAbility: () => ({ name: ability }), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
+  getTypes: () => types ?? [sp.type1, sp.type2].filter(t => t != null),
+  getAbility: () => ({ name: ability, attrs: abilityAttrs }), hasPassive: () => !!passive, getPassiveAbility: () => (passive ? { name: passive } : null),
   hasAbilityWithAttr: a => attrs.includes(a), getHeldItems: () => items, getTag: () => null,
   calculateBaseStats: () => (base ?? sp.baseStats).slice(),
   summonData: { statStages: stages, abilitiesApplied: new Set(), tags: [] },
@@ -60,7 +96,7 @@ globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() 
 globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { combatantOf, duelEnv } = globalThis.__hud["09-combatant"];
+const { combatantOf, duelEnv, pricesItem } = globalThis.__hud["09-combatant"];
 const { approxOutcomes } = globalThis.__hud["10-damage"];
 const { sandboxBreachCount } = globalThis.__hud["01-core"];
 globalThis.__hud["04-game-tables"].setGameTables({ moves: MOVES, abilities: ABILITIES });
@@ -110,6 +146,46 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   for (const level of [35, 50, 100]) console.log(`garchomp L${level} neutral ${row(at(level))}`);
 }
 
+// ---- A member judged as the species it evolves into by the next big fight is scored as that species
+{
+  const IVS = [31, 31, 31, 31, 31, 31];
+  const L30 = [73, 52, 41, 44, 44, 44];
+  const mon = live("Dratini", DRATINI, 30, L30, { ivs: IVS, moves: [DRAGON_CLAW], ability: "Shed Skin",
+    passive: "Marvel Scale", attrs: ["PreDefendFullHpEndureAbAttr"] });
+  const evolved = combatantOf({ mon, level: 45, species: DRAGONITE });
+  // Dragonite's own base stats at level 45 with the Dratini's 31 IVs and its neutral nature.
+  assert.deepEqual(evolved.stats, [150, 139, 104, 108, 108, 90], "the species it will be, at the level it will be it");
+  assert.deepEqual(evolved.getTypes(), [15, 2], "Dragon/Flying, not the Dratini's Dragon");
+  assert.equal(evolved.getAbility().name, "Inner Focus", "the evolved species' ability, not the member's Shed Skin");
+  assert.equal(evolved.getPassiveAbility().name, "Rough Skin", "and its own passive: a passive is the species'");
+  assert.equal(evolved.hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), false,
+    "the member's own ability is gone, and its attrs with it");
+  assert.deepEqual(evolved.moveset.map(pm => pm.moveId), [DRAGON_CLAW], "the moves it actually knows come along");
+  assert.deepEqual([evolved.level, evolved.species, evolved.formIndex], [45, DRAGONITE, 0]);
+  console.log(`dratini → dragonite L45 ${row(evolved)} | ${TY[evolved.getTypes()[0]]}/${TY[evolved.getTypes()[1]]} | ${evolved.getAbility().name}`);
+
+  // An evolution keeps the member's ability index, so a hidden or second ability carries over as that index.
+  const second = live("Dratini", DRATINI, 30, L30, { ivs: IVS, ability: "Shed Skin" });
+  second.abilityIndex = 1;
+  assert.equal(combatantOf({ mon: second, level: 45, species: DRAGONITE }).getAbility().name, "Multiscale");
+  // A species that cannot be asked answers off its first ability, and leaves a passive it can't name unknown.
+  const plain = combatantOf({ mon, level: 45, species: species(148, "Dragonair", ["Dragon"], [61, 84, 65, 70, 70, 70], 61) });
+  assert.equal(plain.getAbility().name, "Shed Skin", "Dragonair's `ability1`");
+  assert.equal(plain.hasPassive(), false, "unknown is neutral, never the member's own");
+  assert.deepEqual(plain.stats, [123, 94, 77, 81, 81, 81], "and off its own base stats");
+
+  // The investment the member has been fed is left behind with its own base-stat row, as a fusion's is: that row
+  // answers for the species it is now, never for the one it will be.
+  const fed = live("Dratini", DRATINI, 30, [85, 52, 41, 44, 44, 44], { ivs: IVS, base: [61, 64, 45, 50, 50, 50] });
+  assert.deepEqual(combatantOf({ mon: fed }).stats, [85, 52, 41, 44, 44, 44], "20 base HP of Protein, while it is a Dratini");
+  assert.deepEqual(combatantOf({ mon: fed, level: 45, species: DRAGONITE }).stats, evolved.stats, "and nothing of it once it is a Dragonite");
+
+  // The member as itself, and the member as what it will be, are two duels.
+  assert.notEqual(evolved.key, combatantOf({ mon, level: 45 }).key);
+  assert.equal(combatantOf({ mon, level: 45, species: DRATINI }).key, combatantOf({ mon, level: 45 }).key,
+    "its own species given over is no evolution at all");
+}
+
 // ---- A form brings its own base stats, types and ability, and no form index is the first
 {
   const at = form => combatantOf({ species: ROTOM, level: 50, form });
@@ -120,6 +196,90 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.equal(at(1).getAbility().name, "Levitate", "the form's own ability, where none is given");
   assert.equal(at(9).stats[1], 62, "a form index the species hasn't got falls back to the species");
   console.log(`rotom ${row(at(undefined))} | heat ${row(at(1))}`);
+}
+
+// ---- A fusion of two halves is the mon the Splicer would make: the fused base stats, types and ability
+{
+  // Garchomp ← Snorlax: base stats `ceil((a + b) / 2)` stat by stat, so [134, 120, 80, 73, 98, 66], which at level 50
+  // with 31 IVs and a neutral nature is the row below. Type 1 is the base's Dragon and Snorlax's only type is the
+  // second, and the ability is Snorlax's Immunity (game-code.md §24).
+  const FUSED_BASE = [134, 120, 80, 73, 98, 66];
+  const FUSED = [209, 140, 100, 93, 118, 86];
+  const ivs = [31, 31, 31, 31, 31, 31];
+  const moves = [EARTHQUAKE, DRAGON_CLAW];
+  const chomp = live("Garchomp", GARCHOMP, 50, [183, 150, 115, 100, 105, 122], { ivs, ability: "Sand Veil", moves });
+  const lax = live("Snorlax", SNORLAX, 45, [212, 117, 77, 77, 117, 45], { ivs, ability: "Immunity", id: 2 });
+  // The same pair once the player has committed the Splicer: one party member, fused, at the base's level.
+  const spliced = live("Garchomp", GARCHOMP, 50, FUSED, { ivs, ability: "Immunity", moves, base: FUSED_BASE,
+    types: [15, 0], fusion: SNORLAX });
+
+  const target = combatantOf({ species: SNORLAX, level: 50, moves: [BODY_SLAM], player: false });
+  const hypo = combatantOf({ mon: chomp, fuse: { mon: lax } });
+  assert.deepEqual(hypo.stats, FUSED, "the fused base stats, at the base half's level");
+  assert.deepEqual(hypo.getTypes(), [15, 0], "Dragon/Normal");
+  assert.equal(hypo.getAbility().name, "Immunity", "the other half's ability");
+  assert.equal(hypo.fusionSpecies, SNORLAX);
+  assert.deepEqual(combatantOf({ mon: spliced }).stats, FUSED, "and the committed fusion computes to the same row");
+  assert.equal(JSON.stringify(approxOutcomes(env, hypo, target)), JSON.stringify(approxOutcomes(env, spliced, target)),
+    "the hypothetical fusion duels as the live fused mon does, move by move");
+  assert.equal(JSON.stringify(approxOutcomes(env, target, hypo)), JSON.stringify(approxOutcomes(env, target, spliced)),
+    "and takes the foe's the same way");
+  assert.equal(hypo.key, combatantOf({ mon: spliced }).key, "so the two are one duel, and share its memo entry");
+  assert.notEqual(hypo.key, combatantOf({ mon: chomp }).key, "the unfused base half is not");
+  console.log(`garchomp ← snorlax ${row(hypo)} | ${TY[hypo.getTypes()[0]]}/${TY[hypo.getTypes()[1]]} | ${hypo.getAbility().name}`);
+
+  // The other way round the halves weigh the same, and nothing else does.
+  const other = combatantOf({ species: SNORLAX, level: 50, ivs, fuse: { species: GARCHOMP } });
+  assert.deepEqual(other.stats, FUSED, "half of every base stat, whichever half is the base");
+  assert.deepEqual(other.getTypes(), [0, 4], "Normal/Ground");
+  assert.equal(other.getAbility().name, "Sand Veil");
+  console.log(`snorlax ← garchomp ${row(other)} | ${TY[other.getTypes()[0]]}/${TY[other.getTypes()[1]]} | ${other.getAbility().name}`);
+
+  // The base half keeps its level, its IVs, its nature, its moves and its passive (CONTEXT.md, `Fusion`).
+  const own = live("Garchomp", GARCHOMP, 50, [183, 165, 115, 90, 105, 122], { ivs, nature: 3, moves,
+    ability: "Sand Veil", passive: "Sand Force" });
+  const kept = combatantOf({ mon: own, fuse: { mon: live("Snorlax", SNORLAX, 45, [212, 117, 77, 77, 117, 45], { ability: "Immunity", passive: "Early Bird", id: 2 }) } });
+  assert.deepEqual(kept.stats, [209, 154, 100, 83, 118, 86], "Adamant on the fused base stats");
+  assert.deepEqual(kept.moveset.map(pm => pm.moveId), moves, "the base's moveset, not the other half's");
+  assert.equal(kept.getPassiveAbility().name, "Sand Force", "the base's passive stays, the other half's doesn't come");
+  assert.equal(combatantOf({ mon: own, level: 60, fuse: { mon: lax } }).level, 60, "a fusion is projected like any member");
+
+  // A form brings its own half (Heat Rotom's base stats, and the Fire it has over the base's typing).
+  const heat = combatantOf({ species: GARCHOMP, level: 50, fuse: { species: ROTOM, form: 1 } });
+  assert.deepEqual(heat.stats, [146, 110, 113, 105, 108, 106]);
+  assert.deepEqual(heat.getTypes(), [15, 9], "Dragon/Fire");
+  assert.equal(heat.getAbility().name, "Levitate", "the form's own ability");
+  assert.deepEqual(heat.fusionFormIndex, 1, "and the key tells it from the other Rotom");
+  assert.notEqual(heat.key, combatantOf({ species: GARCHOMP, level: 50, fuse: { species: ROTOM } }).key);
+  console.log(`garchomp ← heat rotom ${row(heat)} | ${TY[heat.getTypes()[0]]}/${TY[heat.getTypes()[1]]} | ${heat.getAbility().name}`);
+
+  // A half whose only type the base already has gives its typing away for nothing, either way round.
+  const dra = combatantOf({ species: GARCHOMP, level: 50, fuse: { species: DRATINI } });
+  assert.deepEqual(dra.getTypes(), [15, 4], "the base's own Ground stands as the second type");
+  assert.deepEqual(combatantOf({ species: DRATINI, level: 50, fuse: { species: GARCHOMP } }).getTypes(), [15, 4], "Dragon/Ground from the other side too");
+  assert.deepEqual(dra.stats, [142, 109, 82, 77, 80, 88], "off the fused base stats [75, 97, 70, 65, 68, 76]");
+  assert.equal(dra.getAbility().name, "Shed Skin");
+  console.log(`garchomp ← dratini ${row(dra)} | ${TY[dra.getTypes()[0]]}/${TY[dra.getTypes()[1]]} | ${dra.getAbility().name}`);
+
+  // An ability that doesn't work fused leaves the fusion with none at all — the base's is not handed back.
+  const hidden = combatantOf({ species: GARCHOMP, level: 50, fuse: { species: SNORLAX, ability: 209 } });
+  assert.equal(hidden.getAbility(), null, "Disguise carries NoFusionAbilityAbAttr");
+  const disguised = live("Dratini", DRATINI, 30, [73, 52, 41, 44, 44, 44], { ability: "Disguise", abilityAttrs: NO_FUSION, id: 3 });
+  assert.equal(combatantOf({ mon: chomp, fuse: { mon: disguised } }).getAbility(), null, "off a live half as well");
+  assert.equal(combatantOf({ species: GARCHOMP, level: 50, fuse: { species: SNORLAX }, ability: 5 }).getAbility().name, "Sturdy",
+    "an ability given outright still wins");
+
+  // A fusion's attrs answer by name: its ability is the other half's and its passive the base's, so neither member
+  // alone can be asked.
+  const sturdy = live("Snorlax", SNORLAX, 45, [212, 117, 77, 77, 117, 45], { ability: "Sturdy", attrs: ["PreDefendFullHpEndureAbAttr"], id: 2 });
+  assert.equal(combatantOf({ mon: chomp, fuse: { mon: sturdy } }).hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), true, "a fused Sturdy endures");
+  assert.equal(combatantOf({ mon: chomp, fuse: { mon: lax } }).hasAbilityWithAttr("PreDefendFullHpEndureAbAttr"), false,
+    "and the base half's own attrs are gone with its ability");
+
+  // Nothing to fuse, and nothing that may be fused.
+  assert.equal(combatantOf({ level: 50, fuse: { species: SNORLAX } }), null, "no base half");
+  assert.equal(combatantOf({ species: GARCHOMP, level: 50, fuse: {} }), null, "no other half");
+  assert.equal(combatantOf({ mon: spliced, fuse: { species: DRATINI } }), null, "the Splicer's filter refuses a fusion");
 }
 
 // ---- Unknown IVs and nature are neutral, and a known pair moves the stats the game's way
@@ -142,6 +302,37 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.deepEqual(c.moveset.map(pm => pm.getMovePp() - pm.ppUsed), [10, 15, 40], "full PP, every slot");
   assert.deepEqual(c.moveset.map(pm => pm.getName()), ["Earthquake", "Dragon Claw", "Growl"]);
   assert.deepEqual(combatantOf({ species: GARCHOMP, level: 50 }).moveset, [], "no moves and no live member: nothing to use");
+}
+
+// ---- A stat row given outright is the combatant's own, there being no species to compute one from
+{
+  // What a preview row hands over (#574): the stats the game itself left on the mon, `Stat`-indexed, and move ids.
+  const ROW = [238, 115, 116, 117, 118, 119];
+  const c = combatantOf({ name: "Garchomp", stats: ROW, level: 94, types: [15, 4], ability: 8,
+    moves: [EARTHQUAKE, DRAGON_CLAW], player: false });
+  assert.deepEqual(c.stats, ROW, "the row as given, never recomputed");
+  assert.equal(c.getMaxHp(), 238, "`Stat.HP`'s entry is the max HP");
+  assert.equal(c.hp, 238, "and it stands at full health");
+  assert.equal(c.species, null, "with no species behind it");
+  assert.deepEqual(c.getTypes(), [15, 4]);
+  assert.equal(c.getAbility().name, "Sand Veil");
+  assert.deepEqual(c.moveset.map(pm => pm.moveId), [EARTHQUAKE, DRAGON_CLAW]);
+
+  // It duels exactly as the live mon whose row it is.
+  const mon = live("Garchomp", GARCHOMP, 94, ROW, { ability: "Sand Veil", moves: [EARTHQUAKE, DRAGON_CLAW], player: false });
+  const target = combatantOf({ species: SNORLAX, level: 94, moves: [BODY_SLAM] });
+  assert.equal(JSON.stringify(approxOutcomes(env, c, target)), JSON.stringify(approxOutcomes(env, mon, target)), "ours, move by move");
+  assert.equal(JSON.stringify(approxOutcomes(env, target, c)), JSON.stringify(approxOutcomes(env, target, mon)), "and the foe's into it");
+  console.log(`given row L94 ${row(c)} | ${shown(duel(c, target))}`);
+
+  // The row wins over everything a stat is otherwise computed from, and anything short of six numbers is no row.
+  assert.deepEqual(combatantOf({ species: GARCHOMP, level: 50, ivs: [31, 31, 31, 31, 31, 31], stats: ROW }).stats, ROW);
+  assert.deepEqual(combatantOf({ stats: [1, 2, 3, 4, 5] }), null, "five numbers are no stat row");
+  assert.deepEqual(combatantOf({ stats: [1, 2, 3, 4, 5, null] }), null, "nor is a gap in one");
+  assert.equal(combatantOf({ stats: ROW, hp: 100 }).hp, 100, "health still stands where it is put");
+  assert.equal(combatantOf({ stats: [0, 0, 0, 0, 0, 0] }).getMaxHp(), 1, "and max HP has the same floor of 1");
+  assert.notEqual(c.key, combatantOf({ name: "Garchomp", stats: [238, 115, 116, 117, 118, 120], level: 94,
+    types: [15, 4], ability: 8, moves: [EARTHQUAKE, DRAGON_CLAW], player: false }).key, "a row apart is a duel apart");
 }
 
 // ---- Boss bars clamp a hit on the combatant they are given to, and the bar it stands on says which
@@ -203,6 +394,82 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.equal(JSON.stringify(approxOutcomes(env, combatantOf({ mon, stages }), foe)), JSON.stringify(approxOutcomes(env, mon, foe)), "and for the same once asked for them");
 }
 
+// ---- Held items: the ones that can be priced, folded into the row and the moveset the duel reads (#581)
+// The approx duel models no held item of its own bar the two the matrix reads off the member, so every item worth
+// something to it is one the adapter has to turn into a multiplier here — which is also how a release is priced,
+// by building the same member with its items and then without them (12-value's `UNKNOWN_ITEM` pays for the rest).
+{
+  const ivs = [31, 31, 31, 31, 31, 31];
+  // Dratini with the line the fixture's species helper leaves off it, an Eviolite holding only while there is one.
+  const EVOLVING = { ...DRATINI, getEvolutionLevels: () => [[149, 55]] };
+  const MAROWAK = species(105, "Marowak", ["Ground"], [60, 80, 110, 50, 80, 45], 5);
+
+  // A stat booster multiplies the row the duel reads a stat off, the game applying it in `getEffectiveStat`.
+  assert.deepEqual(combatantOf({ species: EVOLVING, level: 30, ivs }).stats, [73, 52, 41, 44, 44, 44]);
+  assert.deepEqual(combatantOf({ species: EVOLVING, level: 30, ivs, items: [EVIOLITE()] }).stats,
+    [73, 52, 61, 44, 66, 44], "Eviolite: Def and SpD ×1.5, floored, and nothing else touched");
+  assert.deepEqual(combatantOf({ species: DRATINI, level: 30, ivs, items: [EVIOLITE()] }).stats,
+    [73, 52, 41, 44, 44, 44], "and nothing at all for a species with no evolution left to it");
+  // One half of a fusion that can still evolve and one that cannot is the game's ×1.25 (game-code.md §15).
+  assert.deepEqual(combatantOf({ species: EVOLVING, level: 50, fuse: { species: GARCHOMP }, items: [EVIOLITE()] }).stats,
+    [142, 109, 102, 77, 100, 88], "×1.25 on the fused row [142, 109, 82, 77, 80, 88]");
+
+  // A species booster holds for the species it was made for, and for a fusion with that half in it.
+  assert.deepEqual(combatantOf({ species: MAROWAK, level: 50, ivs }).stats, [135, 100, 130, 70, 100, 65]);
+  assert.deepEqual(combatantOf({ species: MAROWAK, level: 50, ivs, items: [THICK_CLUB()] }).stats,
+    [135, 200, 130, 70, 100, 65], "a Thick Club doubles the Attack of the line it is for");
+  assert.deepEqual(combatantOf({ species: GARCHOMP, level: 50, ivs, items: [THICK_CLUB()] }).stats,
+    [183, 150, 115, 100, 105, 122], "and does nothing at all for a species it is not");
+  const spliced = combatantOf({ species: GARCHOMP, level: 50, ivs, fuse: { species: MAROWAK }, items: [THICK_CLUB()] });
+  assert.equal(spliced.stats[1], 2 * combatantOf({ species: GARCHOMP, level: 50, ivs, fuse: { species: MAROWAK } }).stats[1],
+    "the Marowak half of a fusion carries it too");
+
+  // A type booster multiplies the power of the slots it is a booster for, and leaves the game's table alone.
+  const atk = items => combatantOf({ species: GARCHOMP, level: 50, ivs, nature: 3, moves: [EARTHQUAKE, DRAGON_CLAW], items });
+  const powerOf = (c, id) => c.moveset.find(pm => pm.moveId === id).getMove().power;
+  assert.equal(powerOf(atk([]), EARTHQUAKE), 100);
+  assert.equal(powerOf(atk([SOFT_SAND(1)]), EARTHQUAKE), 120, "+20 % for the one stack of it");
+  assert.equal(powerOf(atk([SOFT_SAND(3)]), EARTHQUAKE), 160, "and 20 % more for each of three");
+  assert.equal(powerOf(atk([SOFT_SAND(3)]), DRAGON_CLAW), 80, "the Dragon move being no Ground move");
+  assert.equal(atk([SOFT_SAND(3)]).moveset.find(pm => pm.moveId === EARTHQUAKE).getName(), "Earthquake",
+    "a lifted slot is the slot it was, power apart");
+  assert.equal(MOVES[EARTHQUAKE].power, 100, "and the game's own move table stands where it stood");
+  const prey = combatantOf({ species: SNORLAX, level: 50, player: false });
+  assert.ok(duel(atk([SOFT_SAND(3)]), prey)[0].max > duel(atk([]), prey)[0].max, "which the duel hits harder for");
+
+  // An item the matrix reads itself is no multiplier of the adapter's: it is handed on whole, and the duel finds it.
+  const nuke = combatantOf({ species: GARCHOMP, level: 50, ivs, nature: 3, moves: [EARTHQUAKE] });
+  const band = n => combatantOf({ species: SNORLAX, level: 10, player: false, items: n ? [FOCUS_BAND(n)] : [] });
+  assert.deepEqual(band(3).stats, band(0).stats, "a Focus Band moves no stat");
+  assert.deepEqual(band(3).getHeldItems().map(m => m.constructor.name), ["SurviveDamageModifier"]);
+  const focusOf = t => approxOutcomes(env, nuke, t)[0].focus;
+  assert.equal(focusOf(band(0)), 0, "none of it on a member holding none");
+  assert.equal(Math.round(focusOf(band(3)) * 100), 30, "three stacks of it save three hits in ten (10-damage)");
+  assert.equal(duel(nuke, band(3))[0].max, duel(nuke, band(0))[0].max, "the hit itself being the hit either way");
+
+  // And an item nothing here prices is carried untouched, which is what 12-value charges the flat rate for.
+  const lefto = atk([LEFTOVERS(2)]);
+  assert.deepEqual(lefto.stats, atk([]).stats, "Leftovers is no stat of the duel's");
+  assert.equal(powerOf(lefto, EARTHQUAKE), 100, "and no power of it either");
+  assert.deepEqual(lefto.getHeldItems().map(m => m.getStackCount()), [2], "carried as the member holds it");
+  assert.equal(pricesItem(LEFTOVERS(2)), false, "nothing here can price it");
+  for (const m of [EVIOLITE(), THICK_CLUB(), SOFT_SAND(1), FOCUS_BAND(1), new StatBoosterModifier(1)]) {
+    assert.equal(pricesItem(m), true, `${m.constructor.name} is priced`);
+  }
+  assert.equal(pricesItem(null), false, "and nothing is not an item");
+
+  // A live member's own items come off the member; a list given over wins, which is the seam a release is priced
+  // through: the same mon built with what it holds and then with only what the party keeps.
+  const mon = live("Marowak", MAROWAK, 50, [135, 100, 130, 70, 100, 65], { ivs, items: [THICK_CLUB()], moves: [EARTHQUAKE] });
+  assert.deepEqual(combatantOf({ mon }).stats, [135, 200, 130, 70, 100, 65], "off the member's own `getHeldItems`");
+  assert.deepEqual(combatantOf({ mon, items: [] }).stats, [135, 100, 130, 70, 100, 65], "and without them, as it would be");
+  assert.ok(duel(combatantOf({ mon }), prey)[0].max > duel(combatantOf({ mon, items: [] }), prey)[0].max,
+    "which is the difference a release destroys");
+  console.log(`eviolite ${row(combatantOf({ species: EVOLVING, level: 30, ivs, items: [EVIOLITE()] }))}`
+    + ` | thick club ${row(combatantOf({ mon }))} | soft sand ×3 Earthquake ${powerOf(atk([SOFT_SAND(3)]), EARTHQUAKE)}`
+    + ` | focus band ×3 saves ${focusOf(band(3)).toFixed(1)}`);
+}
+
 // ---- The key tells apart everything the duel reads off a combatant, and nothing else
 {
   const spec = { species: GARCHOMP, level: 50, ivs: [31, 31, 31, 31, 31, 31], nature: 3, moves: [EARTHQUAKE, DRAGON_CLAW], ability: 5, boss: 2 };
@@ -216,7 +483,11 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
     ["nature", { nature: 0 }], ["moves", { moves: [EARTHQUAKE] }], ["pp", { moves: [DRAGON_CLAW, EARTHQUAKE] }],
     ["ability", { ability: 8 }], ["passive", { passive: 39 }], ["attrs", { attrs: ["ReverseDrainAbAttr"] }],
     ["hp", { hp: 100 }], ["bars", { boss: 3 }], ["bar", { bar: 0 }], ["stages", { stages: [2, 0, 0, 0, 0, 0, 0] }],
-    ["side", { player: false }], ["form", { form: 1 }]];
+    ["side", { player: false }], ["form", { form: 1 }],
+    // An item has to move the key even where nothing here prices it: a member with its items and the same member
+    // without them are the two duels a release is priced off, and one memo entry cannot answer for both (#581).
+    ["items", { items: [LEFTOVERS(1)] }], ["stacks", { items: [LEFTOVERS(2)] }],
+    ["item", { items: [SOFT_SAND(1)] }]];
   const seen = new Map([[key(), "base"]]);
   for (const [what, extra] of APART) {
     const k = key(extra);

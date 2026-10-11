@@ -215,9 +215,9 @@ Not to be confused with a **tier**, which throughout is the game's own word for 
 The **coach**'s check of how the **party** is built, as opposed to what to do with it now: the part of a **card** that
 judges the team the decisions made rather than the decision at hand. It is said between waves, where a reward, a TM or
 a relearned move can still fix it. Party checks read the **party profile** (a weakness nobody resists, the types
-nothing hits) plus each member's moveset and level (dead move slots, members left behind); roster checks read the next
-big fight's foes from a **preview** (who outspeeds them, a foe with a single **answer**, the weakest member against
-that roster). A finding either loses fights or only costs tempo, and the card leads with the first kind.
+nothing hits) plus each member's moveset and level (dead move slots, members left behind) and the **weakest member**,
+the first to replace; roster checks read the next big fight's foes from a **preview** (who outspeeds them, a foe with
+a single **answer**). A finding either loses fights or only costs tempo, and the card leads with the first kind.
 
 An **answer** to a foe is a member that can deal with it. A foe with one answer is a single point of failure: lose
 that member and the fight is gone. The word has one meaning and two readings, by what the reader can afford: the team
@@ -362,8 +362,52 @@ The battle as it would stand one move from now: our stat stages after a Swords D
 
 A pokémon as a duel is scored: its stats at a level, its types, its ability and passive, the moves it can use, the
 **boss bars** it stands behind and the health it has left. Most of what the coach weighs is not a pokémon on the field
-— a standard threat, a stand-in for a newcomer, a foe in a **preview**, a **party** member at the level it will reach
-by the next big fight — so each is built into a combatant first, and the duel never learns which kind it was handed.
-What is known of a live member is kept: its IVs, its nature, its moves, its ability, its passive and the stat
-investment it has been fed. What is unknown is neutral, never favourable. A combatant is built off the field and
-carries base stat stages, even where the member behind it is standing on raised ones.
+— a standard threat, a stand-in for a newcomer, a foe in a **preview**, a **party** member at the level, and in the
+form, it will reach by the next big fight, a **fusion** the player hasn't committed — so each is built into a
+combatant first, and the duel never learns which kind it was handed. What is known of a live member is kept: its IVs,
+its nature, its moves, its ability, its passive and the stat investment it has been fed. What is unknown is neutral,
+never favourable. The one thing a member can lose on the way is what belongs to the species rather than to it: a
+member judged in the form it evolves into (see **Level projection**) brings the evolved species' base stats, typing,
+passive and ability — the last at the member's own ability index, which an evolution keeps — and leaves its own
+base-stat row behind, so the investment it has been fed does not reach the form it will be. A
+combatant is built off the field and carries base stat stages, even where the member behind it is standing on raised
+ones. A foe in a preview is the one built from no species at all — a preview holds plain data, never a game object —
+so its stat row is handed over whole rather than computed, and the row is what the duel then scores it by. A fusion is
+the one combatant built out of two: the base half's level, IVs, nature, moves and passive, the other
+half's ability, and half of every base stat off each half's species — so the investment either half has been fed is
+left behind, the game folding a fusion's base stats out of the species' own.
+
+## Level projection
+
+The level a **party** member, or a would-be newcomer, stands at by the time the run reaches the next big fight: the
+waves between it and now come off the **run calendar**, and each of them is worth an EXP a model supplies rather than
+the game. What the projection does read off the run is how the EXP is split — a mon that fights a wave takes a
+participant's share, a mon on the bench only the share EXP. All hands it — along with a Lucky Egg, a Golden Egg and
+Pokérus, and the **level cap**, which no projection ever passes: a member already at the cap gains nothing, and the
+share it would have taken is lost rather than passed to the members below it. A mon whose place in the fighting is not
+stated is projected on the bench share alone, in keeping with a **combatant**'s unknowns being neutral, never
+favourable. A projection is always an *estimate*, and that is what it carries into the judgment that reads it.
+
+The projection also answers which *species* the mon stands as at that fight, since a level is what carries a line
+forward: an evolution counts only where it can be read to land by then, and otherwise the mon is scored as it is, a
+distant final form inflating nobody's worth. What lands is an evolution whose level is above where the mon stands now
+and at or below the projected one. What does not: a level the mon is already past, since a member standing past its own
+evolution level has not evolved for a reason the coach cannot see; one waiting on an item, which has to be drawn, and
+luck is not counted; one carrying a condition, refused on purpose, because a condition reads the mon as it stands now
+where the question is whether it holds at the fight; and any at all on a member whose evolutions the player has paused.
+
+## Level cap
+
+The highest level a pokémon in a run can be given EXP towards. It is a function of the wave alone, rounded up to its
+decade, and it is about the level of that decade's boss; Daily runs sit well above Classic's. A Rare Candy is the only
+way past it.
+
+## Stand-in
+
+A would-be newcomer with no pokémon behind it — a species the player could catch in a biome they might pick, a trade
+offer — judged as the **combatant** the game would hand them if they took it: the level a wild spawn joins at on this
+wave, which is most of the way to the **level cap** but not at it, the last four level-up moves its learnset hands out
+at that level, the species' default ability, no passive, and neutral IVs and nature. A stand-in is judged exactly as a
+live catch is, and its answer is marked an *estimate*, because none of the five is the mon the player would actually
+be handed. The **moveset prior** is deliberately not the moves: a competitive set is nothing like what a wild spawn
+turns up knowing, and a biome sold on one would promise a catch that does not exist.
