@@ -195,7 +195,7 @@ summary Training Session: take Heavy — it fights you as a 4-bar boss of itself
 🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5
 Options
 ★ Buy — $2,020: Larvesta (hidden ability) joins at L5
-new species, hits Bug/Psychic/Ice (no one else does)
+new species
 · Leave — shop only, no reward
 summary The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5
 == trash to treasure
@@ -364,7 +364,7 @@ Options
 · Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
 free, and it keeps the move for the run
 ★ Dance — show it a dance: Oricorio joins, keeping the dance move you used
-by Lopunny · new species, covers Fighting weakness
+by Lopunny · new species
 Notes
 · balls work in its battle
 summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used
@@ -387,4 +387,93 @@ Options
 pick a mon whose damage you can hold back, not your hardest hitter
 · Leave — shop only, no reward
 summary Fun and Games: your call
+== uncommon breed, judged
+⌃ {Hide the drawer} × {Close}
+🎭 Uncommon Breed common Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP · Eevee: skip, Normal now beats 2 of 5
+Options
+· Battle — fight Eevee (boosted); catchable → rewards
+⚔ wild · L38 vs your L40, nothing hits it SE
+· Berries — give 4 random berries: Eevee joins with a 2nd egg move
+team: skip, Normal now beats 2 of 5, new species
+★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
+by Milotic · team: skip, Normal now beats 2 of 5, new species
+summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP · Eevee: skip, Normal now beats 2 of 5
+offer Eevee: team skip (Normal now beats 2 of 5) · account 3 of 2 · estimate
+== salesman, judged
+⌃ {Hide the drawer} × {Close}
+🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5 · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+Options
+★ Buy — $2,020: Larvesta (hidden ability) joins at L5
+team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species
+· Leave — shop only, no reward
+summary The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5 · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+offer Larvesta: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+== salesman, judged, already caught
+⌃ {Hide the drawer} × {Close}
+🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Leave — shop only, no reward · avoid Buy · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+Options
+✗ Buy — $2,020: Larvesta (hidden ability) joins at L5
+L5 and team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+★ Leave — shop only, no reward
+summary The Pokémon Salesman: take Leave — shop only, no reward · avoid Buy · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+offer Larvesta: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 0 of 2 · estimate
+== dancing lessons, judged, the team wants it
+⌃ {Hide the drawer} × {Close}
+🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: take, a backup to Fighting at last, a backup to Flying at last
+Options
+· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
+⚔ boss · L34 boss vs your L37, nothing hits it SE
+· Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
+free, and it keeps the move for the run
+★ Dance — show it a dance: Oricorio joins, keeping the dance move you used
+by Lopunny · team: take, a backup to Fighting at last, a backup to Flying at last, new species
+Notes
+· balls work in its battle
+summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: take, a backup to Fighting at last, a backup to Flying at last
+offer Oricorio: team take (a backup to Fighting at last; a backup to Flying at last) · account 3 of 2 · estimate
+catch card: team: take
+catch card: take · a backup to Fighting at last · a backup to Flying at last
+offer Oricorio: team take (a backup to Fighting at last; a backup to Flying at last) · account 0 of 2 · estimate
+== dancing lessons, judged, a full party swaps
+⌃ {Hide the drawer} × {Close}
+🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: swap for Feebas, Ground now beats 2 of 6, down from 3, Rock now beats 2 of 6, down from 3
+Options
+· Battle — fight Oricorio (+1 Atk/Def/SpA/SpD on entry, opens with Revelation Dance) → a Baton + rewards; catchable
+⚔ boss · L34 boss vs your L40, 2 mons hit it SE
+· Learn — learn the dance: one mon of your choice is taught Revelation Dance (100 power, special, always the user's own first type)
+free, and it keeps the move for the run
+★ Dance — show it a dance: Oricorio joins, keeping the dance move you used
+by Lopunny · team: swap for Feebas, Ground now beats 2 of 6, down from 3, Rock now beats 2 of 6, down from 3, new species
+Notes
+· balls work in its battle
+summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: swap for Feebas, Ground now beats 2 of 6, down from 3, Rock now beats 2 of 6, down from 3
+offer Oricorio: team swap for Feebas (Ground now beats 2 of 6, down from 3; Rock now beats 2 of 6, down from 3) · account 3 of 2 · estimate
+== safari zone, the three judged
+⌃ {Hide the drawer} × {Close}
+🎭 Safari Zone great Safari Zone: take Pay — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes · Rattata: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Pidgey: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Caterpie: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+Options
+★ Pay fixed {fixed by the run seed: this is what happens} — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes
+3 of the three are worth a ball: team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species, and it leaves $3,990
+· Leave — shop only, no reward
+summary Safari Zone: take Pay — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes · Rattata: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Pidgey: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Caterpie: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+offer Rattata: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+offer Pidgey: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 5 of 2 · estimate
+offer Caterpie: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+== safari zone, a minigame turn judged
+⌃ {Hide the drawer} × {Close}
+🎭 Safari Zone great Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+Options
+★ Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48%
+throwing until it is settled lands it 55% of the time from here
+· Throw bait — catch +2 → 62%, and 4 times in 5 flee +1 → 73%; then it rolls to bolt
+baiting first lands it 23% of the time from here
+· Throw mud — flee −2 → 24%, and 4 times in 5 catch −1 → 27%; then it rolls to bolt
+mudding first lands it 48% of the time from here
+✗ Flee — let it go — Pidgey shiny L32 is next, 2 mons left after this one
+you would be giving up a 55% catch
+Notes
+· Nidorina at L32: catch rate 45, stages +0 catch / +0 flee, 2 mons after this one
+· worth a ball: team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species
+summary Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+offer Nidorina: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
 ok
