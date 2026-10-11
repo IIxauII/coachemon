@@ -115,34 +115,12 @@ new species
 ★ Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
 by Milotic · new species
 summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and a 2nd egg move, EXP
-== gts
+== gts, no team read
 ⌃ {Hide the drawer} × {Close}
 🎭 Global Trade System common Global Trade System: your call
 Options
-· Trade — trade: best offer Jolteon → Salamence (final BST +75)
-no clear upgrade
-· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
-a gamble
-· Item Trade — trade a held item for a random item one tier up
-· Leave — shop only, no reward
-summary Global Trade System: your call
-== gts, the fainted member is healed before the next big fight
-⌃ {Hide the drawer} × {Close}
-🎭 Global Trade System common Global Trade System: your call
-Options
-· Trade — trade: best offer Jolteon → Salamence (final BST +75)
-no clear upgrade
-· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
-a gamble
-· Item Trade — trade a held item for a random item one tier up
-· Leave — shop only, no reward
-summary Global Trade System: your call
-== gts, Hardcore leaves the fainted member dead weight
-⌃ {Hide the drawer} × {Close}
-🎭 Global Trade System common Global Trade System: your call
-Options
-· Trade — trade: best offer Lapras → Salamence (final BST +65)
-no clear upgrade
+· Trade — trade a mon for one of 3 offers
+no team read here: the game's species table hasn't been read yet
 · Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
 a gamble
 · Item Trade — trade a held item for a random item one tier up
@@ -476,4 +454,76 @@ Notes
 · worth a ball: team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species
 summary Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
 offer Nidorina: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+== gts, every offer judged and ranked by net value
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: take Trade — trade: best offer Magikarp → Salamence (net +1.0 turns) · Salamence: swap for Magikarp, Ground now beats 3 of 6, down from 4, Rock now beats 3 of 6, down from 4 · Rattata: swap for Magikarp, Ice now beats 3 of 6, down from 4, Normal now beats 2 of 6, down from 3 · Mewtwo: skip · Salamence: skip · Rattata: skip, no backup left to Ground, no backup left to Rock
+Options
+★ Trade — trade: best offer Magikarp → Salamence (net +1.0 turns)
+Ground now beats 3 of 6, down from 4, Rock now beats 3 of 6, down from 4
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: take Trade — trade: best offer Magikarp → Salamence (net +1.0 turns) · Salamence: swap for Magikarp, Ground now beats 3 of 6, down from 4, Rock now beats 3 of 6, down from 4 · Rattata: swap for Magikarp, Ice now beats 3 of 6, down from 4, Normal now beats 2 of 6, down from 3 · Mewtwo: skip · Salamence: skip · Rattata: skip, no backup left to Ground, no backup left to Rock
+  Magikarp → Salamence: swap for Magikarp · net +1.0 (ΔV +1.0 − release +0.0) · estimate
+      Ground now beats 3 of 6, down from 4; Rock now beats 3 of 6, down from 4
+  Magikarp → Rattata: swap for Magikarp · net +0.7 (ΔV +0.7 − release +0.0) · estimate
+      Ice now beats 3 of 6, down from 4; Normal now beats 2 of 6, down from 3
+  Garchomp → Mewtwo: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
+  Lapras → Salamence: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
+  Garchomp → Rattata: skip · net −0.7 (ΔV −0.7 − release +0.0) · estimate
+      no backup left to Ground; no backup left to Rock
+== gts, one offer against the carry, which is the member that leaves
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: your call · Salamence: skip
+Options
+· Trade — trade: best offer Garchomp → Salamence (net +0.0 turns)
+no offer clears the margin
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: your call · Salamence: skip
+  Garchomp → Salamence: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
+== gts, the fainted member is healed before the next big fight
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: your call · Salamence: skip · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, Poison now beats 1 of 3, Ground now beats 1 of 3 · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+Options
+· Trade — trade: best offer Jolteon → Salamence (net +0.0 turns)
+no offer clears the margin
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: your call · Salamence: skip · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, Poison now beats 1 of 3, Ground now beats 1 of 3 · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+  Jolteon → Salamence: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
+  Lapras → Salamence: skip · net −0.1 (ΔV −0.1 − release +0.0) · estimate
+      a weaker backup to Poison; a weaker backup to Ghost
+  Jolteon → Rattata: skip · net −0.1 (ΔV −0.1 − release +0.0) · estimate
+      Poison now beats 1 of 3; Ground now beats 1 of 3
+  Garchomp → Mewtwo: skip · net −0.2 (ΔV −0.2 − release +0.0) · estimate
+      a weaker backup to Poison; a weaker backup to Ghost
+  Garchomp → Rattata: skip · net −1.1 (ΔV −1.1 − release +0.0) · estimate
+      no backup left to Poison; no backup left to Ghost
+  Lapras → Rattata: skip · net −1.2 (ΔV −1.2 − release +0.0) · estimate
+      no backup left to Poison; no backup left to Ghost
+== gts, Hardcore leaves the fainted member dead weight
+⌃ {Hide the drawer} × {Close}
+🎭 Global Trade System common Global Trade System: your call · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+Options
+· Trade — trade: best offer Lapras → Salamence (net −0.1 turns)
+a weaker backup to Poison, a weaker backup to Ghost
+· Wonder Trade — wonder trade: a random mon at the same level (better shiny / hidden ability odds)
+a gamble
+· Item Trade — trade a held item for a random item one tier up
+· Leave — shop only, no reward
+summary Global Trade System: your call · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+  Lapras → Salamence: skip · net −0.1 (ΔV −0.1 − release +0.0) · estimate
+      a weaker backup to Poison; a weaker backup to Ghost
+  Garchomp → Mewtwo: skip · net −0.2 (ΔV −0.2 − release +0.0) · estimate
+      a weaker backup to Poison; a weaker backup to Ghost
+  Garchomp → Rattata: skip · net −1.1 (ΔV −1.1 − release +0.0) · estimate
+      no backup left to Poison; no backup left to Ghost
+  Lapras → Rattata: skip · net −1.2 (ΔV −1.2 − release +0.0) · estimate
+      no backup left to Poison; no backup left to Ghost
 ok

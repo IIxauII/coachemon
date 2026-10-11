@@ -272,9 +272,13 @@ const r1 = x => Math.round((x ?? 0) * 10) / 10;
  * Every newcomer card reads this one function, so a mon gets the same answer whichever card offers it (#585, story
  * 22): the catch card attaches it when the road lands, and the encounter card's offers — the Safari preview and its
  * turns, the Salesman's mon, the Uncommon Breed and the Dancing Lessons mon — call it inside their own run read.
+ *
+ * `replace` forces the member that leaves and is handed straight to the judgment, which then prices this one swap
+ * rather than searching for the member to make. A GTS offer is the card that names it: the mon going out is the mon
+ * the player trades away, and no other (#586, story 23).
  */
-export const teamVerdict = (run, foe) => {
-  const j = judgeNewcomer(run, foe);
+export const teamVerdict = (run, foe, { replace = null } = {}) => {
+  const j = judgeNewcomer(run, foe, { replace });
   const blank = { verdict: null, text: null, replaced: null, reasons: [], fight: j.fight ?? null,
     delta: 0, release: 0, net: 0, confidence: j.confidence ?? null };
   if (j.unavailable) return { ...blank, unavailable: j.unavailable };
