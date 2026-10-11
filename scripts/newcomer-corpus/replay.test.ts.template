@@ -2,6 +2,7 @@
 // upstream's. Each case becomes a wild battle — the party on our side, the newcomer as the foe — and every scorer is
 // asked about the live objects, as the HUD would see them on a catch.
 import { readFileSync, writeFileSync } from "node:fs";
+import { allAbilities, allMoves } from "#data/data-lists";
 import { timedEventManager } from "#app/global-event-manager";
 import { speciesDataRegistry } from "#app/global-species-data-registry";
 import { AbilityId } from "#enums/ability-id";
@@ -17,18 +18,26 @@ type Any = any;
 const g = globalThis as Any;
 const env = process.env;
 const CASES: Any[] = JSON.parse(readFileSync(env.COACH_CORPUS as string, "utf8"));
-const SCORERS: string[] = (env.COACH_SCORERS as string).split(",");
+// Each scorer with the bundle of the HUD it is asked about; scorers that pin the same revision share one.
+const SCORERS: { scorer: string; bundle: string }[] = JSON.parse(env.COACH_SCORERS as string);
 const results: Any[] = [];
 
-function loadHud() {
-  if (g.__hud) {
-    return g.__hud;
+const huds = new Map<string, Any>();
+function loadHud(bundle: string) {
+  if (huds.has(bundle)) {
+    return huds.get(bundle);
   }
   g.window = globalThis;
   // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
-  (0, eval)(readFileSync(env.COACH_BUNDLE as string, "utf8"));
-  g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager });
-  return g.__hud;
+  (0, eval)(readFileSync(bundle, "utf8"));
+  // Every load sets `__hud` afresh, and the modules hold their own copy of it, so the HUDs stay apart.
+  const hud = g.__hud;
+  // What a page's chunk scan finds and the replay has to hand over: the threat set is built off the moves and
+  // abilities too.
+  hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager, moves: allMoves,
+    abilities: allAbilities });
+  huds.set(bundle, hud);
+  return hud;
 }
 
 const enumOf = (e: Any, what: string, key: string): number => {
@@ -79,7 +88,10 @@ describe("Coachemon newcomer corpus replay", () => {
 
   beforeAll(async () => {
     phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
-    scorers = await Promise.all(SCORERS.map(async f => (await import(/* @vite-ignore */ f)).default));
+    scorers = await Promise.all(SCORERS.map(async s => ({
+      scorer: (await import(/* @vite-ignore */ s.scorer)).default,
+      bundle: s.bundle,
+    })));
   });
 
   beforeEach(() => {
@@ -112,11 +124,10 @@ describe("Coachemon newcomer corpus replay", () => {
     const newcomer = game.scene.getEnemyPokemon();
     shape(newcomer, n);
 
-    const hud = loadHud();
     const answers: Record<string, Any> = {};
-    for (const s of scorers) {
+    for (const { scorer: s, bundle } of scorers) {
       try {
-        answers[s.name] = s.score({ party, newcomer, hud, scene: game.scene, case: c });
+        answers[s.name] = s.score({ party, newcomer, hud: loadHud(bundle), scene: game.scene, case: c });
       } catch (err) {
         answers[s.name] = { error: err instanceof Error ? err.message : String(err) };
       }

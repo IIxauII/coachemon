@@ -10,16 +10,21 @@
  *
  * A scorer is a self-contained `.mjs` whose default export is `{ name, score({ party, newcomer, hud, scene, case }) }`;
  * see scorers/today.mjs for the answer shape. It is copied into the clone, so it cannot import its neighbours.
+ *
+ * A scorer may also export `hud`, the git revision of the HUD it was written against, and is then asked about that
+ * HUD rather than the working tree's: an answer the HUD has since retired can still be put beside the one that replaced
+ * it. Each revision is bundled once and loaded on its own.
  */
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 // @ts-expect-error: plain .mjs without type declarations
 import { bundle } from "../../skills/coachemon/scripts/hud-bundle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const HUD = path.resolve(HERE, "../../skills/coachemon/scripts/hud");
+const ROOT = path.resolve(HERE, "../..");
+const HUD = path.join(ROOT, "skills/coachemon/scripts/hud");
 const reviewed = JSON.parse(readFileSync(path.resolve(HERE, "../../src/escape-ladder/reviewed.json"), "utf8"));
 const clone = path.resolve(".cache/pokerogue", `v${reviewed.pinned.gameVersion}`);
 
@@ -50,21 +55,34 @@ for (const c of cases) {
 // Named apart from the encounter oracle's, so the two can run against the shared clone at once.
 const dir = path.join(clone, "test/tests");
 const scorerDir = path.join(dir, ".coach-corpus-scorers");
-const bundlePath = path.join(dir, ".coach-corpus.bundle.js");
 const corpusPath = path.join(dir, ".coach-corpus.cases.json");
 const outPath = path.join(dir, ".coach-corpus.out.json");
 const testPath = path.join(dir, "coach-corpus.test.ts");
 
-const files = readdirSync(HUD).filter(f => f.endsWith(".js") && f !== "99-start.js").sort()
-  .map(f => [f, readFileSync(path.join(HUD, f), "utf8")] as [string, string]);
+const hudModule = (f: string) => f.endsWith(".js") && f !== "99-start.js";
+const git = (...args: string[]) => execFileSync("git", args, { cwd: ROOT, encoding: "utf8", maxBuffer: 64 << 20 });
+// The HUD's modules as the bundler takes them: the working tree's, or those of the revision a scorer pins.
+const hudFiles = (rev: string | null): [string, string][] => {
+  if (!rev) return readdirSync(HUD).filter(hudModule).sort().map(f => [f, readFileSync(path.join(HUD, f), "utf8")]);
+  const at = path.relative(ROOT, HUD);
+  return git("ls-tree", "--name-only", `${rev}:${at}`).split("\n").filter(hudModule).sort()
+    .map(f => [f, git("show", `${rev}:${at}/${f}`)]);
+};
+
+const scorers = await Promise.all(scorerFiles.map(async file => {
+  const hud: string | null = (await import(pathToFileURL(file).href)).default?.hud ?? null;
+  return { file, hud, copy: path.join(scorerDir, path.basename(file)) };
+}));
+const revs = [...new Set(scorers.map(s => s.hud))];
+const bundlePathOf = (rev: string | null) => path.join(dir, `.coach-corpus.bundle.${revs.indexOf(rev)}.js`);
 
 const vitest = (): Promise<number> => new Promise(resolve => {
   const child = spawn("npx", ["--yes", "pnpm@10.33.2", "exec", "vitest", "run", "test/tests/coach-corpus.test.ts",
     "--silent", "--reporter=dot", ...vitestArgs], {
     cwd: clone,
     stdio: "inherit",
-    env: { ...process.env, COACH_BUNDLE: bundlePath, COACH_CORPUS: corpusPath, COACH_OUT: outPath,
-      COACH_SCORERS: scorerFiles.map(f => path.join(scorerDir, path.basename(f))).join(","),
+    env: { ...process.env, COACH_CORPUS: corpusPath, COACH_OUT: outPath,
+      COACH_SCORERS: JSON.stringify(scorers.map(s => ({ scorer: s.copy, bundle: bundlePathOf(s.hud) }))),
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0" },
   });
   child.on("close", code => resolve(code ?? 1));
@@ -77,14 +95,16 @@ let results: any[] = [];
 try {
   rmSync(outPath, { force: true });
   mkdirSync(scorerDir, { recursive: true });
-  for (const f of scorerFiles) copyFileSync(f, path.join(scorerDir, path.basename(f)));
-  writeFileSync(bundlePath, bundle("hud", { expose: true, files }));
+  for (const s of scorers) copyFileSync(s.file, s.copy);
+  for (const rev of revs) writeFileSync(bundlePathOf(rev), bundle("hud", { expose: true, files: hudFiles(rev) }));
   writeFileSync(corpusPath, JSON.stringify(cases));
   writeFileSync(testPath, readFileSync(path.join(HERE, "replay.test.ts.template"), "utf8"));
   await vitest();
   results = existsSync(outPath) ? JSON.parse(readFileSync(outPath, "utf8")) : [];
 } finally {
-  for (const p of [bundlePath, corpusPath, outPath, testPath, scorerDir]) rmSync(p, { force: true, recursive: true });
+  for (const p of [...revs.map(bundlePathOf), corpusPath, outPath, testPath, scorerDir]) {
+    rmSync(p, { force: true, recursive: true });
+  }
 }
 
 if (!results.length) {
