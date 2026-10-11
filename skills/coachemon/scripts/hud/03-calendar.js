@@ -15,6 +15,9 @@ const isFinalWave = (s, w) => {
   return tryDo(() => gm.isWaveFinal(w),
     !!gm && (gm.isDaily ? w === 50 : gm.isEndless ? w % 250 === 0 : !!gm.isClassic && w === 200));
 };
+// The run ends on its final wave in every mode but Endless, whose every 250th is a final boss the run carries on past
+// (`VictoryPhase`, src/phases/victory-phase.ts:57). A walk ahead stops here, never at a final wave alone.
+const runEndsAt = (s, w) => isFinalWave(s, w) && !s?.gameMode?.isEndless;
 
 // game-less-backed
 // Ask this, not `waveKind`, whether a wave is a boss wave: `waveKind` answers "gym" for 20, which is both.
@@ -37,7 +40,7 @@ export const bigFightsAhead = (s, from, n = SPAN) => {
   for (let w = from; w < from + n; w++) {
     const kind = waveKind(s, w);
     if (kind) out.push({ wave: w, kind });
-    if (kind === "final") break;
+    if (runEndsAt(s, w)) break;
   }
   return out;
 };
@@ -54,7 +57,8 @@ const HEAL_HORIZON = 60;
 export const nextHeal = (s, from) => {
   if (!healsAtAll(s)) return null;
   for (let w = from; w < from + HEAL_HORIZON; w++) {
-    if (isFinalWave(s, w)) return null;
+    // The heal comes on the way into `w`, so it is lost when the clear before it ended the run.
+    if (runEndsAt(s, w - 1)) return null;
     if (w % 10 === 1) return w;
   }
   return null;
@@ -71,7 +75,7 @@ const shopAfter = (s, w) => w % 10 !== 0 || challengeValue(s, Challenges.LIMITED
 const nextShop = (s, from) => {
   if (!shopsAtAll(s)) return null;
   for (let w = Math.max(1, from); w < from + SHOP_HORIZON; w++) {
-    if (isFinalWave(s, w)) return null;
+    if (runEndsAt(s, w)) return null;
     if (shopAfter(s, w)) return w;
   }
   return null;

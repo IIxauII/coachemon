@@ -37,6 +37,28 @@ DRAGONITE.getPassiveAbility = () => 39;
 const ROTOM = species(479, "Rotom", ["Electric", "Ghost"], [50, 50, 77, 95, 77, 91], 26);
 ROTOM.forms = [{ ...ROTOM }, { ...ROTOM, baseStats: [50, 65, 107, 105, 107, 86], type2: TY.indexOf("Fire") }];
 
+// The game's held-item modifiers, in the class chain it has them (game-code.md §15): what an item is priced by is
+// the nearest of those classes the adapter knows, so an Eviolite answers as the evolution booster it is rather than
+// as the plain stat booster it also is. The stacks are `getStackCount`, which is how many of the item is held.
+class PokemonHeldItemModifier {
+  constructor(stacks = 1, fields = {}) { Object.assign(this, fields); this.stacks = stacks; }
+  getStackCount() { return this.stacks; }
+}
+class StatBoosterModifier extends PokemonHeldItemModifier {}
+class EvolutionStatBoosterModifier extends StatBoosterModifier {}
+class SpeciesStatBoosterModifier extends StatBoosterModifier {}
+class AttackTypeBoosterModifier extends PokemonHeldItemModifier {}
+class SurviveDamageModifier extends PokemonHeldItemModifier {}
+class TurnHealModifier extends PokemonHeldItemModifier {}
+// The five the probes hand out: an Eviolite at ×1.5 Def/SpD, a Thick Club at ×2 Attack for the Cubone line, a Soft
+// Sand at +20 % per stack on Ground moves, a Focus Band the matrix reads off the member itself, and Leftovers,
+// which heals between turns and so is nothing a race to the KO can be given.
+const EVIOLITE = () => new EvolutionStatBoosterModifier(1, { stats: [2, 4], multiplier: 1.5 });
+const THICK_CLUB = () => new SpeciesStatBoosterModifier(1, { stats: [1], multiplier: 2, species: [104, 105] });
+const SOFT_SAND = n => new AttackTypeBoosterModifier(n, { moveType: TY.indexOf("Ground") });
+const FOCUS_BAND = n => new SurviveDamageModifier(n);
+const LEFTOVERS = n => new TurnHealModifier(n);
+
 const pmOf = id => ({ moveId: id, getMove: () => MOVES[id], getName: () => MOVES[id].name, getMovePp: () => MOVES[id].pp, ppUsed: 0 });
 // A live member, shaped as the game's own: `base` is what its `calculateBaseStats()` answers, so a vitamin shows up
 // there and nowhere else, and `stats` is the array the game left on it at `level`.
@@ -74,7 +96,7 @@ globalThis.document = { documentElement: { dataset: {} }, body: { appendChild() 
 globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { combatantOf, duelEnv } = globalThis.__hud["09-combatant"];
+const { combatantOf, duelEnv, pricesItem } = globalThis.__hud["09-combatant"];
 const { approxOutcomes } = globalThis.__hud["10-damage"];
 const { sandboxBreachCount } = globalThis.__hud["01-core"];
 globalThis.__hud["04-game-tables"].setGameTables({ moves: MOVES, abilities: ABILITIES });
@@ -372,6 +394,82 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
   assert.equal(JSON.stringify(approxOutcomes(env, combatantOf({ mon, stages }), foe)), JSON.stringify(approxOutcomes(env, mon, foe)), "and for the same once asked for them");
 }
 
+// ---- Held items: the ones that can be priced, folded into the row and the moveset the duel reads (#581)
+// The approx duel models no held item of its own bar the two the matrix reads off the member, so every item worth
+// something to it is one the adapter has to turn into a multiplier here — which is also how a release is priced,
+// by building the same member with its items and then without them (12-value's `UNKNOWN_ITEM` pays for the rest).
+{
+  const ivs = [31, 31, 31, 31, 31, 31];
+  // Dratini with the line the fixture's species helper leaves off it, an Eviolite holding only while there is one.
+  const EVOLVING = { ...DRATINI, getEvolutionLevels: () => [[149, 55]] };
+  const MAROWAK = species(105, "Marowak", ["Ground"], [60, 80, 110, 50, 80, 45], 5);
+
+  // A stat booster multiplies the row the duel reads a stat off, the game applying it in `getEffectiveStat`.
+  assert.deepEqual(combatantOf({ species: EVOLVING, level: 30, ivs }).stats, [73, 52, 41, 44, 44, 44]);
+  assert.deepEqual(combatantOf({ species: EVOLVING, level: 30, ivs, items: [EVIOLITE()] }).stats,
+    [73, 52, 61, 44, 66, 44], "Eviolite: Def and SpD ×1.5, floored, and nothing else touched");
+  assert.deepEqual(combatantOf({ species: DRATINI, level: 30, ivs, items: [EVIOLITE()] }).stats,
+    [73, 52, 41, 44, 44, 44], "and nothing at all for a species with no evolution left to it");
+  // One half of a fusion that can still evolve and one that cannot is the game's ×1.25 (game-code.md §15).
+  assert.deepEqual(combatantOf({ species: EVOLVING, level: 50, fuse: { species: GARCHOMP }, items: [EVIOLITE()] }).stats,
+    [142, 109, 102, 77, 100, 88], "×1.25 on the fused row [142, 109, 82, 77, 80, 88]");
+
+  // A species booster holds for the species it was made for, and for a fusion with that half in it.
+  assert.deepEqual(combatantOf({ species: MAROWAK, level: 50, ivs }).stats, [135, 100, 130, 70, 100, 65]);
+  assert.deepEqual(combatantOf({ species: MAROWAK, level: 50, ivs, items: [THICK_CLUB()] }).stats,
+    [135, 200, 130, 70, 100, 65], "a Thick Club doubles the Attack of the line it is for");
+  assert.deepEqual(combatantOf({ species: GARCHOMP, level: 50, ivs, items: [THICK_CLUB()] }).stats,
+    [183, 150, 115, 100, 105, 122], "and does nothing at all for a species it is not");
+  const spliced = combatantOf({ species: GARCHOMP, level: 50, ivs, fuse: { species: MAROWAK }, items: [THICK_CLUB()] });
+  assert.equal(spliced.stats[1], 2 * combatantOf({ species: GARCHOMP, level: 50, ivs, fuse: { species: MAROWAK } }).stats[1],
+    "the Marowak half of a fusion carries it too");
+
+  // A type booster multiplies the power of the slots it is a booster for, and leaves the game's table alone.
+  const atk = items => combatantOf({ species: GARCHOMP, level: 50, ivs, nature: 3, moves: [EARTHQUAKE, DRAGON_CLAW], items });
+  const powerOf = (c, id) => c.moveset.find(pm => pm.moveId === id).getMove().power;
+  assert.equal(powerOf(atk([]), EARTHQUAKE), 100);
+  assert.equal(powerOf(atk([SOFT_SAND(1)]), EARTHQUAKE), 120, "+20 % for the one stack of it");
+  assert.equal(powerOf(atk([SOFT_SAND(3)]), EARTHQUAKE), 160, "and 20 % more for each of three");
+  assert.equal(powerOf(atk([SOFT_SAND(3)]), DRAGON_CLAW), 80, "the Dragon move being no Ground move");
+  assert.equal(atk([SOFT_SAND(3)]).moveset.find(pm => pm.moveId === EARTHQUAKE).getName(), "Earthquake",
+    "a lifted slot is the slot it was, power apart");
+  assert.equal(MOVES[EARTHQUAKE].power, 100, "and the game's own move table stands where it stood");
+  const prey = combatantOf({ species: SNORLAX, level: 50, player: false });
+  assert.ok(duel(atk([SOFT_SAND(3)]), prey)[0].max > duel(atk([]), prey)[0].max, "which the duel hits harder for");
+
+  // An item the matrix reads itself is no multiplier of the adapter's: it is handed on whole, and the duel finds it.
+  const nuke = combatantOf({ species: GARCHOMP, level: 50, ivs, nature: 3, moves: [EARTHQUAKE] });
+  const band = n => combatantOf({ species: SNORLAX, level: 10, player: false, items: n ? [FOCUS_BAND(n)] : [] });
+  assert.deepEqual(band(3).stats, band(0).stats, "a Focus Band moves no stat");
+  assert.deepEqual(band(3).getHeldItems().map(m => m.constructor.name), ["SurviveDamageModifier"]);
+  const focusOf = t => approxOutcomes(env, nuke, t)[0].focus;
+  assert.equal(focusOf(band(0)), 0, "none of it on a member holding none");
+  assert.equal(Math.round(focusOf(band(3)) * 100), 30, "three stacks of it save three hits in ten (10-damage)");
+  assert.equal(duel(nuke, band(3))[0].max, duel(nuke, band(0))[0].max, "the hit itself being the hit either way");
+
+  // And an item nothing here prices is carried untouched, which is what 12-value charges the flat rate for.
+  const lefto = atk([LEFTOVERS(2)]);
+  assert.deepEqual(lefto.stats, atk([]).stats, "Leftovers is no stat of the duel's");
+  assert.equal(powerOf(lefto, EARTHQUAKE), 100, "and no power of it either");
+  assert.deepEqual(lefto.getHeldItems().map(m => m.getStackCount()), [2], "carried as the member holds it");
+  assert.equal(pricesItem(LEFTOVERS(2)), false, "nothing here can price it");
+  for (const m of [EVIOLITE(), THICK_CLUB(), SOFT_SAND(1), FOCUS_BAND(1), new StatBoosterModifier(1)]) {
+    assert.equal(pricesItem(m), true, `${m.constructor.name} is priced`);
+  }
+  assert.equal(pricesItem(null), false, "and nothing is not an item");
+
+  // A live member's own items come off the member; a list given over wins, which is the seam a release is priced
+  // through: the same mon built with what it holds and then with only what the party keeps.
+  const mon = live("Marowak", MAROWAK, 50, [135, 100, 130, 70, 100, 65], { ivs, items: [THICK_CLUB()], moves: [EARTHQUAKE] });
+  assert.deepEqual(combatantOf({ mon }).stats, [135, 200, 130, 70, 100, 65], "off the member's own `getHeldItems`");
+  assert.deepEqual(combatantOf({ mon, items: [] }).stats, [135, 100, 130, 70, 100, 65], "and without them, as it would be");
+  assert.ok(duel(combatantOf({ mon }), prey)[0].max > duel(combatantOf({ mon, items: [] }), prey)[0].max,
+    "which is the difference a release destroys");
+  console.log(`eviolite ${row(combatantOf({ species: EVOLVING, level: 30, ivs, items: [EVIOLITE()] }))}`
+    + ` | thick club ${row(combatantOf({ mon }))} | soft sand ×3 Earthquake ${powerOf(atk([SOFT_SAND(3)]), EARTHQUAKE)}`
+    + ` | focus band ×3 saves ${focusOf(band(3)).toFixed(1)}`);
+}
+
 // ---- The key tells apart everything the duel reads off a combatant, and nothing else
 {
   const spec = { species: GARCHOMP, level: 50, ivs: [31, 31, 31, 31, 31, 31], nature: 3, moves: [EARTHQUAKE, DRAGON_CLAW], ability: 5, boss: 2 };
@@ -385,7 +483,11 @@ const shown = x => x.map(o => `${o.name} ×${o.e} ${o.max}${o.pKo ? ` pKo ${o.pK
     ["nature", { nature: 0 }], ["moves", { moves: [EARTHQUAKE] }], ["pp", { moves: [DRAGON_CLAW, EARTHQUAKE] }],
     ["ability", { ability: 8 }], ["passive", { passive: 39 }], ["attrs", { attrs: ["ReverseDrainAbAttr"] }],
     ["hp", { hp: 100 }], ["bars", { boss: 3 }], ["bar", { bar: 0 }], ["stages", { stages: [2, 0, 0, 0, 0, 0, 0] }],
-    ["side", { player: false }], ["form", { form: 1 }]];
+    ["side", { player: false }], ["form", { form: 1 }],
+    // An item has to move the key even where nothing here prices it: a member with its items and the same member
+    // without them are the two duels a release is priced off, and one memo entry cannot answer for both (#581).
+    ["items", { items: [LEFTOVERS(1)] }], ["stacks", { items: [LEFTOVERS(2)] }],
+    ["item", { items: [SOFT_SAND(1)] }]];
   const seen = new Map([[key(), "base"]]);
   for (const [what, extra] of APART) {
     const k = key(extra);

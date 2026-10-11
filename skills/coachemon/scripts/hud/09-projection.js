@@ -81,6 +81,15 @@ const evolveTo = (x, level) => {
 };
 
 /**
+ * Everything `of` reads off one mon that the run key does not carry (26-run.js: a replay may read only what the run
+ * key or a memo's `k` holds). The run key has the species, the level and the modifier *count*, so a Lucky Egg handed
+ * from one member to another, or Pokérus turning up mid-run, moves nothing in it — a caller memoising a projection
+ * names this instead, and gets a fresh answer when it changes.
+ */
+const inputsOf = (s, x) => [x?.id ?? null, heldStacks(s, x, "LUCKY_EGG"), heldStacks(s, x, "GOLDEN_EGG"),
+  !!x?.pokerus, !!x?.pauseEvolutions];
+
+/**
  * The levels the party and a would-be newcomer reach by the big fight on wave `fight`, projected from the wave
  * `from` the run stands on. With no `fight` to reach, or none ahead, every level stands where it is.
  *
@@ -91,6 +100,9 @@ const evolveTo = (x, level) => {
  *
  * Each answer also carries the `species` and `form` the mon stands as at the fight, which is its own unless an
  * evolution lands on the way (`evolveTo`), and `evolved`, the species it passes through to get there.
+ *
+ * `inputs(x)` is what a memo key has to name to keep an answer for `x` honest; `expAll` is the one run-wide input of
+ * the same kind.
  */
 export const levelProjection = (s, { from = 0, fight = null } = {}) => {
   const start = Math.floor(from) || 0;
@@ -117,5 +129,5 @@ export const levelProjection = (s, { from = 0, fight = null } = {}) => {
       confidence: "estimate" };
   };
   return { from: start, fight: fight == null ? null : Math.floor(fight), waves, cap, expAll, of,
-    confidence: "estimate" };
+    inputs: x => inputsOf(s, x), confidence: "estimate" };
 };
