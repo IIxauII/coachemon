@@ -1,0 +1,875 @@
+{
+ "hb-all-water-drops-grass": {
+  "replaces": "Lapras",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "Electric now beats 3 of 6",
+   "a weaker answer to Grass",
+   "ΔV 0, release 0",
+   "judged at W50",
+   "estimate"
+  ]
+ },
+ "hb-all-water-grass-for-grass": {
+  "replaces": "Lapras",
+  "upgrade": true,
+  "value": 0.5,
+  "verdict": "take",
+  "reasons": [
+   "a better answer to Electric",
+   "a better answer to Grass",
+   "ΔV 0.5, release 0",
+   "judged at W50",
+   "estimate"
+  ]
+ },
+ "hb-only-ground-is-lowest": {
+  "replaces": "Pidgeot",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "the fast sweeper now beats 2 of 6",
+   "a weaker answer to the bulky attacker",
+   "ΔV 0, release 0",
+   "judged at W50",
+   "estimate"
+  ]
+ },
+ "hb-electric-weak-low-bst-fix": {
+  "replaces": "Pelipper",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "the fast sweeper now beats 4 of 6",
+   "Ground now beats 2 of 6",
+   "ΔV 0, release 0",
+   "judged at W50",
+   "estimate"
+  ]
+ },
+ "hb-fourth-fire-stacks": {
+  "replaces": "Rapidash",
+  "upgrade": false,
+  "value": -0.1,
+  "verdict": "pass",
+  "reasons": [
+   "the fast sweeper now beats 4 of 6",
+   "Normal now beats 1 of 6",
+   "ΔV -0.1, release 0",
+   "judged at W40",
+   "estimate"
+  ]
+ },
+ "hb-dragonair-estimated-final": {
+  "replaces": "Raticate",
+  "upgrade": false,
+  "value": -0.2,
+  "verdict": "pass",
+  "reasons": [
+   "Flying now beats 2 of 6",
+   "Ground now beats 2 of 6",
+   "ΔV -0.2, release 0",
+   "judged at W50",
+   "estimate"
+  ]
+ },
+ "hb-larvitar-far-behind": {
+  "replaces": "Raticate",
+  "upgrade": false,
+  "value": -0.3,
+  "verdict": "pass",
+  "reasons": [
+   "Flying now beats 2 of 6",
+   "Poison now beats 2 of 6",
+   "ΔV -0.3, release 0",
+   "judged at W50",
+   "estimate"
+  ]
+ },
+ "hb-weakest-holds-items": {
+  "replaces": "Delcatty",
+  "upgrade": true,
+  "value": 0.2,
+  "verdict": "take",
+  "reasons": [
+   "a better answer to Bug",
+   "Rock now beats 1 of 6, down from 2",
+   "ΔV 0.2, release 0",
+   "judged at W55",
+   "estimate"
+  ]
+ },
+ "hb-free-slot-fair": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -0.9,
+  "verdict": "pass",
+  "reasons": [
+   "Flying now beats 5 of 5",
+   "Ground now beats 5 of 5",
+   "ΔV -0.9, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "hb-free-slot-filler": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -0.2,
+  "verdict": "pass",
+  "reasons": [
+   "Fighting now beats 2 of 6",
+   "Electric now beats 2 of 6",
+   "ΔV -0.2, release 0",
+   "judged at W55",
+   "estimate"
+  ]
+ },
+ "w145-breloom-for-metagross": {
+  "replaces": "Crawdaunt",
+  "upgrade": true,
+  "value": 0.5,
+  "verdict": "take",
+  "reasons": [
+   "the bulky attacker now beats 5 of 6, down from 6",
+   "the fast sweeper now beats 4 of 6, down from 5",
+   "ΔV 0.5, release 0",
+   "judged at W145",
+   "estimate"
+  ]
+ },
+ "w145-breloom-for-mamoswine": {
+  "replaces": "Crawdaunt",
+  "upgrade": true,
+  "value": 1.4,
+  "verdict": "take",
+  "reasons": [
+   "an answer to Steel at last",
+   "the bulky attacker now beats 5 of 6, down from 6",
+   "ΔV 1.4, release 0",
+   "judged at W145",
+   "estimate"
+  ]
+ },
+ "lag-1001T1001-w10-hoothoot": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -0.9,
+  "verdict": "pass",
+  "reasons": [
+   "Fighting now beats 4 of 4",
+   "Flying now beats 4 of 4",
+   "ΔV -0.9, release 0",
+   "judged at W10",
+   "estimate"
+  ]
+ },
+ "lag-1001T1001-w21-seedot": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.3,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 4 of 4",
+   "Fighting now beats 4 of 4",
+   "ΔV -1.3, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-1001T1001-w23-cottonee": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.3,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 4 of 4",
+   "Fighting now beats 4 of 4",
+   "ΔV -1.3, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-1001T1001-w27-cottonee": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.2,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 4 of 4",
+   "Fighting now beats 4 of 4",
+   "ΔV -1.2, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1001-w28-miltank": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.1,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 4 of 4",
+   "Fighting now beats 4 of 4",
+   "ΔV -1.1, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1001-w29-petilil": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -0.8,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 4 of 4",
+   "Fighting now beats 4 of 4",
+   "ΔV -0.8, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w9-taillow": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -0.8,
+  "verdict": "pass",
+  "reasons": [
+   "Flying now beats 4 of 4",
+   "Poison now beats 4 of 4",
+   "ΔV -0.8, release 0",
+   "judged at W10",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w10-skwovet": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.4,
+  "verdict": "pass",
+  "reasons": [
+   "Fighting now beats 5 of 5",
+   "Flying now beats 5 of 5",
+   "ΔV -1.4, release 0",
+   "judged at W10",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w13-rockruff": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -2.1,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 6 of 6",
+   "Fighting now beats 6 of 6",
+   "ΔV -2.1, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w14-sentret": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w17-pidove": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 0.1,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0.1, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w21-foongus": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w23-combee": {
+  "replaces": "Skwovet",
+  "upgrade": true,
+  "value": 0.2,
+  "verdict": "take",
+  "reasons": [
+   "Psychic now beats 4 of 6, down from 5",
+   "nearer an answer to Grass",
+   "ΔV 0.2, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w24-lickitung": {
+  "replaces": "Growlithe",
+  "upgrade": false,
+  "value": 0.1,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0.1, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w26-petilil": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 0.1,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0.1, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w27-petilil": {
+  "replaces": "Skwovet",
+  "upgrade": true,
+  "value": 0.3,
+  "verdict": "take",
+  "reasons": [
+   "nearer an answer to Water",
+   "nearer an answer to the fast sweeper",
+   "ΔV 0.3, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w29-cherubi": {
+  "replaces": "Skwovet",
+  "upgrade": false,
+  "value": 0.1,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0.1, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w30-noibat": {
+  "replaces": "Skwovet",
+  "upgrade": true,
+  "value": 0.3,
+  "verdict": "take",
+  "reasons": [
+   "nearer an answer to the physical wall",
+   "Grass now beats 3 of 6, down from 4",
+   "ΔV 0.3, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w31-spinarak": {
+  "replaces": "Growlithe",
+  "upgrade": true,
+  "value": 0.2,
+  "verdict": "take",
+  "reasons": [
+   "Psychic now beats 3 of 6, down from 4",
+   "nearer a backup to Grass",
+   "ΔV 0.2, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w32-oddish": {
+  "replaces": "Growlithe",
+  "upgrade": false,
+  "value": 0.1,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0.1, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-1001T1041-w34-kricketune": {
+  "replaces": "Growlithe",
+  "upgrade": true,
+  "value": 0.3,
+  "verdict": "take",
+  "reasons": [
+   "a better answer to Psychic",
+   "nearer a backup to Grass",
+   "ΔV 0.3, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-1001T1128-w4-cottonee": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.3,
+  "verdict": "pass",
+  "reasons": [
+   "Fighting now beats 4 of 4",
+   "Flying now beats 4 of 4",
+   "ΔV -1.3, release 0",
+   "judged at W5",
+   "estimate"
+  ]
+ },
+ "lag-1001T1128-w9-wooloo": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.6,
+  "verdict": "pass",
+  "reasons": [
+   "Fighting now beats 5 of 5",
+   "Flying now beats 5 of 5",
+   "ΔV -1.6, release 0",
+   "judged at W10",
+   "estimate"
+  ]
+ },
+ "lag-1001T1128-w13-zubat": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -2.1,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 6 of 6",
+   "Fighting now beats 6 of 6",
+   "ΔV -2.1, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-1001T1128-w19-nickit": {
+  "replaces": "Slakoth",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-1001T1128-w20-buneary": {
+  "replaces": "Wooloo",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-1001T1128-w28-rattata": {
+  "replaces": "Wooloo",
+  "upgrade": true,
+  "value": 0.2,
+  "verdict": "take",
+  "reasons": [
+   "nearer an answer to Fighting",
+   "nearer an answer to Flying",
+   "ΔV 0.2, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1153-w12-skwovet": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.2,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 4 of 4",
+   "Fighting now beats 4 of 4",
+   "ΔV -1.2, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-1001T1153-w19-pawmi": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.6,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 5 of 5",
+   "Fighting now beats 5 of 5",
+   "ΔV -1.6, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w1-happiny": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.6,
+  "verdict": "pass",
+  "reasons": [
+   "Fighting now beats 5 of 5",
+   "Flying now beats 5 of 5",
+   "ΔV -1.6, release 0",
+   "judged at W5",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w21-dewpider": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.8,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 5 of 5",
+   "Fighting now beats 5 of 5",
+   "ΔV -1.8, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w27-marill": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -2.1,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 6 of 6",
+   "Fighting now beats 6 of 6",
+   "ΔV -2.1, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w29-magikarp": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -2.1,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 6 of 6",
+   "Fighting now beats 6 of 6",
+   "ΔV -2.1, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w34-tympole": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -2,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 6 of 6",
+   "Fighting now beats 6 of 6",
+   "ΔV -2, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w37-shellos": {
+  "replaces": "Tympole",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "further from a backup to Fire",
+   "Psychic now beats 1 of 6",
+   "ΔV 0, release 0",
+   "judged at W40",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w38-croconaw": {
+  "replaces": "Dratini",
+  "upgrade": true,
+  "value": 0.3,
+  "verdict": "take",
+  "reasons": [
+   "nearer an answer to Ghost",
+   "nearer an answer to the fast sweeper",
+   "ΔV 0.3, release 0",
+   "judged at W40",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w39-shellos": {
+  "replaces": "Dratini",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "Psychic now beats 1 of 6",
+   "ΔV 0, release 0",
+   "judged at W40",
+   "estimate"
+  ]
+ },
+ "lag-1001T1401-w40-swalot": {
+  "replaces": "Dratini",
+  "upgrade": true,
+  "value": 2.6,
+  "verdict": "take",
+  "reasons": [
+   "an answer to Fighting at last",
+   "an answer to Fairy at last",
+   "ΔV 2.6, release 0",
+   "judged at W40",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w2-sunkern": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.6,
+  "verdict": "pass",
+  "reasons": [
+   "Fighting now beats 5 of 5",
+   "Flying now beats 5 of 5",
+   "ΔV -1.6, release 0",
+   "judged at W5",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w20-farfetchd": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -0.5,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 6 of 6",
+   "Fighting now beats 6 of 6",
+   "ΔV -0.5, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w22-shroomish": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -2.1,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 6 of 6",
+   "Fighting now beats 6 of 6",
+   "ΔV -2.1, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w23-lickitung": {
+  "replaces": "Bulbasaur",
+  "upgrade": false,
+  "value": 0.1,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0.1, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w31-nidorina": {
+  "replaces": "Lickitung",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w32-vivillon": {
+  "replaces": "Finneon",
+  "upgrade": true,
+  "value": 0.4,
+  "verdict": "take",
+  "reasons": [
+   "Grass now beats 5 of 6, down from 6",
+   "a better backup to Psychic",
+   "ΔV 0.4, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w34-paras": {
+  "replaces": "Nidorina",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w40-pawniard": {
+  "replaces": "Lickitung",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W40",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w41-woobat": {
+  "replaces": "Lickitung",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W50",
+   "estimate"
+  ]
+ },
+ "lag-519-clock-1001T1604-w42-onix": {
+  "replaces": "Woobat",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W50",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w7-lotad": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -1.6,
+  "verdict": "pass",
+  "reasons": [
+   "Fighting now beats 5 of 5",
+   "Flying now beats 5 of 5",
+   "ΔV -1.6, release 0",
+   "judged at W8",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w15-happiny": {
+  "replaces": null,
+  "upgrade": false,
+  "value": -2.1,
+  "verdict": "pass",
+  "reasons": [
+   "Normal now beats 6 of 6",
+   "Fighting now beats 6 of 6",
+   "ΔV -2.1, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w16-lickitung": {
+  "replaces": "Slakoth",
+  "upgrade": false,
+  "value": 0.1,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0.1, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w17-buneary": {
+  "replaces": "Slakoth",
+  "upgrade": false,
+  "value": 0.1,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0.1, release 0",
+   "judged at W20",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w23-combee": {
+  "replaces": "Slakoth",
+  "upgrade": true,
+  "value": 0.3,
+  "verdict": "take",
+  "reasons": [
+   "nearer an answer to Grass",
+   "Psychic now beats 4 of 6, down from 5",
+   "ΔV 0.3, release 0",
+   "judged at W25",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w28-venipede": {
+  "replaces": "Lickitung",
+  "upgrade": true,
+  "value": 0.3,
+  "verdict": "take",
+  "reasons": [
+   "an answer to Fairy at last",
+   "nearer a backup to Grass",
+   "ΔV 0.3, release 0",
+   "judged at W30",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w31-kricketune": {
+  "replaces": "Slakoth",
+  "upgrade": true,
+  "value": 0.2,
+  "verdict": "take",
+  "reasons": [
+   "a better answer to Psychic",
+   "nearer a backup to Grass",
+   "ΔV 0.2, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w33-vivillon": {
+  "replaces": "Lickitung",
+  "upgrade": true,
+  "value": 0.5,
+  "verdict": "take",
+  "reasons": [
+   "an answer to Grass at last",
+   "nearer an answer to the physical wall",
+   "ΔV 0.5, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w34-ninjask": {
+  "replaces": "Lickitung",
+  "upgrade": true,
+  "value": 0.3,
+  "verdict": "take",
+  "reasons": [
+   "nearer an answer to Ice",
+   "nearer an answer to Dark",
+   "ΔV 0.3, release 0",
+   "judged at W35",
+   "estimate"
+  ]
+ },
+ "lag-519-watch-1001T1654-w36-paras": {
+  "replaces": "Lickitung",
+  "upgrade": false,
+  "value": 0,
+  "verdict": "pass",
+  "reasons": [
+   "ΔV 0, release 0",
+   "judged at W40",
+   "estimate"
+  ]
+ }
+}

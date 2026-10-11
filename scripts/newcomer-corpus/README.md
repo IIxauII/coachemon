@@ -10,8 +10,10 @@ answer — who the newcomer replaces, whether it is called an upgrade, and wheth
 |---|---|
 | `cases/lag-run.json` | 58 real situations: every wild foe the lag runs logged a catch card for, one per wave, with the party as the wave record listed it. `recorded` is what the live card said at the time. Regenerate with `extract-lag-run.ts`. |
 | `cases/hand-built.json` | 12 situations built to probe the known failure and the terms #557 found BST misses. Two use the real wave-145 party from `docs/w145-ivy-rayquaza.md`. Each has a `probe`: what it tests and which way a team-aware judgment should lean. That is the author's intent, not ground truth. |
-| `answers/today.json` | Today's answer for every case, from `scorers/today.mjs` against the current HUD: 22 take, 48 pass, 12 called upgrades, 26 with a free slot. |
-| `scorers/today.mjs` | Today's answer, asked as the catch card asks it: the party profile's weakest member, `partyReasons`' upgrade, and the team side of `catchWorth`. |
+| `answers/today.json` | Today's answer for every case, from `scorers/today.mjs` against the HUD of v1.21.0: 22 take, 48 pass, 12 called upgrades, 26 with a free slot. |
+| `answers/team-value.json` | The team-value judgment's answer for every case (#567, #583): 18 take, all of them swaps, 52 pass, and not one of the 26 free slots filled. |
+| `scorers/today.mjs` | Today's answer, asked as the catch card asked it before #567: the party profile's weakest member, `partyReasons`' upgrade, and the team side of `catchWorth`. Pinned to v1.21.0, the last HUD that has them. |
+| `scorers/team-value.mjs` | The team-value judgment, asked as the catch card asks it once the road lands: `teamVerdict` inside a run read. `value` is the net, in turns per threat. |
 | `replay.test.ts.template`, `run.ts` | The replay. Each case becomes a wild battle in upstream's vitest harness in the pinned clone, and every scorer is asked about the live game objects. |
 
 ## A case
@@ -65,6 +67,9 @@ export default {
 };
 ```
 
+A scorer that also exports `hud: "<git revision>"` is asked about that revision's HUD instead of the working tree's, so
+an answer the HUD has since retired stays replayable beside the one that replaced it. `today` pins `v1.21.0`.
+
 ## How far to trust it
 
 - **Real cases lean towards "catch".** The lag runs logged a catch card only when the verdict was not `skip`, and they
@@ -73,7 +78,10 @@ export default {
   generated movesets. On the 20 cards that named who is replaced, the replay agrees on 19 (the miss is a near-tie,
   probably a mid-wave level-up). Team reasons match word for word on 42 of 58; every difference is a "hits X (no one else
   does)" hole, which reads moves.
-- **`recorded` is the HUD of 2026-09-30 / 10-01; `answers/today.json` is the HUD this branch replays.**
+- **`recorded` is the HUD of 2026-09-30 / 10-01; `answers/today.json` is v1.21.0's.**
+- **Held items and the road are case data only**, so the team-value judgment never sees them: every release costs 0,
+  which leaves `hb-weakest-holds-items` untested, and the w145 cases are judged on the standard threats alone. The
+  roster half that would read a road is #592's in any case.
 - **Today's verdict is team-only.** `scorers/today.mjs` gives `catchWorth` an account that already owns everything, so
   account value (new species, shiny, IVs) is zero; the live card's `catch` often came from account value instead.
 - No journal dumps exist: the journal lives in a browser's `localStorage` and records Mystery Encounters only, without
