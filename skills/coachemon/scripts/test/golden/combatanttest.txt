@@ -12,5 +12,6 @@ garchomp ← dratini 142/109/82/77/80/88 | Dragon/Ground | Shed Skin
 garchomp L50 adamant 31s 183/165/115/90/105/122
 given row L94 238/115/116/117/118/119 | Earthquake ×1 99, Dragon Claw ×1 80
 snorlax 227/122/77/77/122/42 | 1 bar 144 | 2 bars 113 | 2 bars, last 144
-keys apart: 16
+eviolite 73/52/61/44/66/44 | thick club 135/200/130/70/100/65 | soft sand ×3 Earthquake 160 | focus band ×3 saves 0.3
+keys apart: 19
 combatant: ok
