@@ -101,9 +101,19 @@ export const partyAtFight = (s, party, { from = 0, fight = null } = {}) => {
   return { members, dead, revive };
 };
 
-// `luck` is `partyLuck` of the members alone, with no Daily roll and no event terms: a card that spends against luck
-// calls `partyLuck` itself.
-export const partyProfile = party => {
+/**
+ * The party judged as a whole (CONTEXT.md, `Party profile`): the types it hits, the types it can't, the types
+ * several members are weak to — and its **weakest member**, which is a team-value question and not a tally.
+ *
+ * So `weakest` is handed in rather than worked out here: it is 12-value's `weakestMember` answer, `mon` and all,
+ * which runs inside a run read and lives above this file. A reader holding only a profile has none, which is the
+ * point — the weakest member comes out of a run read or it doesn't come at all (#582). The tallies never score
+ * anything and are only the vocabulary a reason is phrased in.
+ *
+ * `luck` is `partyLuck` of the members alone, with no Daily roll and no event terms: a card that spends against luck
+ * calls `partyLuck` itself.
+ */
+export const partyProfile = (party, { weakest = null } = {}) => {
   const members = (party ?? []).filter(Boolean);
   const attacks = members.map(p => {
     const own = typesOf(p);
@@ -116,6 +126,9 @@ export const partyProfile = party => {
     return members.filter((_, i) => attacks[i].some(a => effectiveness(a.t, d) >= 2));
   };
   let lazy = null;
+  // `lightest` is the lowest *estimated* final BST, the lower level breaking a tie. It is not the weakest member and
+  // never was: it asks nothing about what the team loses. The one reader left on it is `partyReasons`' upgrade test,
+  // which the judgment retires along with it (#567).
   const rest = () => {
     if (lazy) return lazy;
     const fin = members.map(finalBstOf);
@@ -124,7 +137,7 @@ export const partyProfile = party => {
       if (at < 0 || fin[i].final < fin[at].final || (fin[i].final === fin[at].final && (p.level ?? 0) < (members[at].level ?? 0))) at = i;
     });
     lazy = {
-      weakest: at < 0 ? null : { mon: members[at], final: fin[at].final, estimated: fin[at].estimated, level: members[at].level ?? 0 },
+      lightest: at < 0 ? null : { mon: members[at], final: fin[at].final, estimated: fin[at].estimated, level: members[at].level ?? 0 },
       roots: new Set(members.map(rootOf)),
       luck: partyLuck(members),
     };
@@ -137,7 +150,8 @@ export const partyProfile = party => {
       return n >= 2 && n > members.filter(p => effectiveness(t, p) <= 0.5).length;
     }),
     holes: TYPES.filter(d => !ourTypes.some(t => vs(t, d) >= 2)),
-    get weakest() { return rest().weakest; },
+    weakest,
+    get lightest() { return rest().lightest; },
     get roots() { return rest().roots; },
     get luck() { return rest().luck; },
   };
@@ -145,7 +159,7 @@ export const partyProfile = party => {
 
 // `cand`: `{ species, fusion?, level, types, moveTypes?, abilities? }`. A live mon works only if the caller passes its
 // `types`: they are never read off it.
-export const partyReasons = (profile, cand, { replacing = profile?.weakest?.mon ?? null } = {}) => {
+export const partyReasons = (profile, cand, { replacing = profile?.lightest?.mon ?? null } = {}) => {
   const out = [];
   if (!profile?.members.length || !cand) return out;
   const types = cand.types ?? [];

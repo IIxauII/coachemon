@@ -89,9 +89,12 @@ const teamReasons = (account, foe, limited) => {
         text: `stronger than ${r.against.name} (${r.estimated || r.against.estimated ? "final " : ""}BST ${show(r)} vs ${show(r.against)})` });
     }
   }
-  const weakest = profile.weakest?.mon ?? null;
-  const replace = all.length >= 6 && out.length && weakest ? { icon: iconOf(weakest), name: weakest.name } : null;
-  if (replace) out.push({ kind: "team", text: `party full: replaces ${weakest.name}`, w: 0 });
+  // The lightest member by final BST, not the weakest member: the weakest is a team-value question, which only a
+  // run read can ask, and this card is built in a turn read. The catch card's team verdict moves onto the judgment
+  // with the road that lands after the turn read closes (#567), and this line goes with it.
+  const lightest = profile.lightest?.mon ?? null;
+  const replace = all.length >= 6 && out.length && lightest ? { icon: iconOf(lightest), name: lightest.name } : null;
+  if (replace) out.push({ kind: "team", text: `party full: replaces ${lightest.name}`, w: 0 });
   return { out, replace };
 };
 

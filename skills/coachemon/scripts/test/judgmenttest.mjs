@@ -211,7 +211,7 @@ eval(bundle("hud", { expose: true }));
 const { RANDBATS } = globalThis.__hud["05-randbats"];
 const { standardThreats } = globalThis.__hud["11-threats"];
 const { BACKUP, CATCH_LEVEL, CLAMP, EXPOSURE, MARGIN, MAX_REASONS, PARTY_SIZE, REVENGE, SWITCH_IN, UNKNOWN_ITEM,
-  judgeNewcomer, teamValue } = globalThis.__hud["12-value"];
+  judgeNewcomer, teamValue, weakestMember } = globalThis.__hud["12-value"];
 const { combatantOf } = globalThis.__hud["09-combatant"];
 const { levelCapAt } = globalThis.__hud["09-projection"];
 const { readRun } = globalThis.__hud["26-run"];
@@ -640,6 +640,73 @@ const FAINTED = () => [
   assert.equal(j.replaced.dead, "barred", "at full health, and still not on the party the fight is fought with");
   assert.equal(j.plain.kind, "dead weight");
   assert.equal(j.plain.why, "barred");
+}
+
+// ---- The weakest member: who the party loses least by, with no newcomer in view (#582)
+// The same answer the party profile's `weakest`, the audit's "first to replace" and the Dark Deal's weakest link
+// all read, so none of the three can name a different member. Dead weight is weakest at zero, and goes first
+// however cheap a live member is to lose.
+{
+  const weakest = (party, opts = {}, sceneOpts = {}) =>
+    readRun(sceneOf(party, sceneOpts), run => weakestMember(run, opts));
+  // Every slot, weakest first, with what the party loses by it in turns per threat.
+  const ladder = (label, w) => {
+    console.log(`  ${label.padEnd(30)} ${(w.name ?? "-").padEnd(11)} costs ${t1(w.cost)}  ${w.dead ?? ""}`);
+    console.log(`    ${w.ranked.map(x => `${x.name}${x.dead ? "†" : ""} ${t1(x.cost)}`).join("  ")}`);
+    assert.deepEqual(w.ranked.map(x => !!x.dead).sort((a, b) => Number(b) - Number(a)), w.ranked.map(x => !!x.dead),
+      `${label}: dead weight first`);
+    const live = w.ranked.filter(x => !x.dead);
+    assert.deepEqual([...live].sort((a, b) => a.cost - b.cost).map(x => x.name), live.map(x => x.name),
+      `${label}: then the cheapest live member to lose`);
+    assert.deepEqual({ name: w.name, dead: w.dead, cost: w.cost },
+      { name: w.ranked[0].name, dead: w.ranked[0].dead, cost: w.ranked[0].cost },
+      `${label}: and the weakest member is the first of them`);
+    for (const x of w.ranked) assert.equal(x.dead ? x.cost : 0, 0, `${label}: dead weight costs nothing to lose`);
+  };
+  console.log("== the weakest member of each fixture party");
+  const waters = weakest(WATERS());
+  ladder("all-Water, one Grass", waters);
+  assert.notEqual(waters.name, "Meganium", "the one member that answers what Water cannot is not the weakest");
+  assert.equal(waters.dead, null, "every one of the six can fight, so the weakest is a live member");
+  assert.equal(waters.ranked.length, PARTY_SIZE, "and every slot is on the ladder");
+
+  const hardcore = weakest(FAINTED(), {}, { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  ladder("Hardcore, Wailord down", hardcore);
+  assert.equal(hardcore.name, "Wailord", "a member with no way back is weakest whatever the five are worth");
+  assert.equal(hardcore.dead, "fainted");
+  assert.equal(hardcore.cost, 0, "the party loses nothing at all by a slot nobody is standing in");
+
+  const noSupport = weakest(FAINTED(), {}, { challenges: [{ id: LIMITED_SUPPORT, value: 3 }], seed: "judge-ls" });
+  ladder("no heal, no shop", noSupport);
+  assert.equal(noSupport.name, "Wailord", "the other calendar that strands it says the same");
+  assert.equal(noSupport.v, hardcore.v, "and the two agree on what the party is worth");
+
+  // Limited Support 2 leaves wave 51's heal, which is out of reach of the fight on 50 and in reach of the one on 60.
+  const healDue = weakest(FAINTED(), { fight: 60 }, { challenges: [{ id: LIMITED_SUPPORT, value: 2 }], seed: "judge-heal" });
+  ladder("a heal due before the fight", healDue);
+  assert.ok(healDue.ranked.every(x => !x.dead), "back on its feet, it duels for its slot like anyone");
+  // It is still the member the party loses least by — but as a member now, at what its duels are worth, and not at
+  // the flat zero a slot nobody is standing in holds.
+  assert.equal(healDue.ranked.find(x => x.name === "Wailord").cost, healDue.cost);
+  assert.notEqual(healDue.cost, 0, "priced on the duels it fights, not on the slot it holds");
+
+  const barred = FAINTED();
+  barred[3] = mon(OURS.wailord, CAP, [M.surf, M.bodySlam, M.iceBeam], { ability: "Water Veil", barred: true });
+  const bar = weakest(barred, {}, { challenges: [{ id: SINGLE_TYPE, value: 10 }], seed: "judge-barred-member" });
+  ladder("a barred member, at full health", bar);
+  assert.equal(bar.name, "Wailord");
+  assert.equal(bar.dead, "barred", "a challenge bars it, so the fight is fought without it");
+
+  // The weakest member and a swap's pick are two questions off one party set, and they need not agree: the member
+  // the newcomer should replace is the one *its own* swap picks, since the newcomer may cover what that member
+  // covered (CONTEXT.md, `Party profile`). So a card that names a replacement names the search's pick, and only a
+  // card asking who is expendable — the audit, the Dark Deal — names the weakest.
+  const j = judge(FAINTED(), mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam], { ability: "Overgrow" }), {},
+    { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
+  console.log(`  a Grass newcomer swaps ${j.replaced.name}, while the weakest member is ${hardcore.name}`);
+  assert.deepEqual(j.tried.map(x => x.slot.name).sort(), hardcore.ranked.map(x => x.name).sort(),
+    "both read the same six slots");
+  assert.equal(hardcore.v, j.before.v, "and the same party value behind them");
 }
 
 // ---- What a release destroys: the items the member it takes would have handed on (#581)
