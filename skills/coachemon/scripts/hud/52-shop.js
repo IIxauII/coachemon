@@ -2,7 +2,7 @@
 // select filter lets use it, then by its tier; 51-items.js judges the ones that go to one member (game-code.md §15).
 import { TIER_NAMES, TYPES, iconOf } from "./01-core.js";
 import { stage } from "./01-meter.js";
-import { waveKind } from "./03-calendar.js";
+import { challengeOn, waveKind } from "./03-calendar.js";
 import { learnAdvice, learnMoveById } from "./40-learn.js";
 import { aheadModel, doubleOdds, learnRoster } from "./49-ahead.js";
 import { teamAudit } from "./50-audit.js";
@@ -39,9 +39,8 @@ const tmRelearners = (t, users) => users.filter(p => {
     return Array.isArray(ids) && ids.some(x => (Array.isArray(x) ? x[1] : x) === t.moveId);
   } catch { return false; }
 });
-// Only Hardcore keeps a fainted member from being taught a TM, and a challenge is on at any value but 0, not only a
-// positive one (game-code.md §16).
-const isHardcore = s => (s.gameMode?.challenges ?? []).some(c => c.id === Challenges.HARDCORE && c.value !== 0);
+// Only Hardcore keeps a fainted member from being taught a TM (game-code.md §16).
+const isHardcore = s => challengeOn(s, Challenges.HARDCORE);
 
 // `take`: true with the best recipient; false when nobody gains (`closest` is the nearest miss); null when a member's
 // learn card can't score the move, which leaves the call to the player — `best` is that member, or null for a status
@@ -126,7 +125,7 @@ export const rewardsModel = (run, h) => {
   const owned = name => (s.modifiers ?? []).some(m => m?.constructor?.name === name);
 
   const balls = s.pokeballCounts ?? {};
-  const rctx = stage("shop.context", () => rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1) }));
+  const rctx = stage("shop.context", () => rewardContext(s, alive, { bossNext, gauntlet, double: doubleOdds(s, wave + 1), run }));
   const judge = (t, tmStage = "shop.tm") => {
     const tier = shopTier(t);
     let v = (tier ?? 0) * 10;

@@ -12,13 +12,9 @@ globalThis.setInterval = () => 0;
 globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
-const { partyProfile, partyReasons, damagingTypes, finalBstOf, partyLuck, typesOfSpecies } = globalThis.__hud["08-party"];
+const { partyAtFight, partyProfile, damagingTypes, finalBstOf, partyLuck } = globalThis.__hud["08-party"];
 
 const row = (label, cells) => console.log(`${label.padEnd(18)}${[].concat(cells).join("  ")}`);
-// A reason without the live mons hanging off it, so it prints and compares as data.
-const flat = r => (r.kind === "upgrade" ? `upgrade ${r.final}${r.estimated ? "~" : ""} over ${r.against.name} ${r.against.final}${r.against.estimated ? "~" : ""}`
-  : r.kind === "dupe" ? "dupe" : `${r.kind} ${r.types.join("/")}`);
-const flatten = rs => rs.map(flat);
 
 // ---- The coverage table: STAB, and variable power counting where fixed damage doesn't.
 {
@@ -52,16 +48,22 @@ const flatten = rs => rs.map(flat);
   assert.ok(!profile.holes.includes("Ghost"), "Snorlax's Crunch hits Ghost");
 }
 
-// ---- The weakest member: the lowest final BST, not the lowest BST now, and the lower level breaking a tie.
+// ---- The weakest member is handed in or it is absent: this file never opens a run read, so no profile it builds has
+// one. Which member it is, and what it costs to lose, is 12-value's `weakestMember` and judgmenttest's to pin (#582).
 {
-  const profile = partyProfile(party());
+  const team = party();
+  const bare = partyProfile(team);
+  const told = partyProfile(team, { weakest: { mon: team[0], name: "Garchomp", cost: 1.5, dead: null } });
   console.log("== weakest");
-  row(profile.weakest.mon.name, [`final ${profile.weakest.final}${profile.weakest.estimated ? "~" : ""}`, `L${profile.weakest.level}`]);
-  assert.equal(profile.weakest.mon.name, "Magikarp");
-  assert.equal(profile.weakest.final, 400, "one stage left: max(200×1.3, 200+110, 400)");
-  assert.equal(profile.weakest.estimated, true, "the game only says a line has an evolution, not what it grows into");
-  const twins = [mon(SPECIES.lapras, 40, [["Surf", "Water", 90, "S"]]), mon(SPECIES.lapras, 30, [["Surf", "Water", 90, "S"]])];
-  assert.equal(partyProfile(twins).weakest.level, 30, "a tie on final BST goes to the lower level");
+  row("told nothing", [String(bare.weakest)]);
+  row("told Garchomp", [told.weakest.name, `${told.weakest.cost} turns`]);
+  assert.equal(bare.weakest, null, "a reader holding only a profile gets no weakest member at all");
+  assert.equal(told.weakest.mon, team[0], "and the one handed in comes back untouched, cost and all");
+  // The tallies are the profile's own and the handing-in moves none of them.
+  for (const key of ["ourTypes", "weakTypes", "holes"]) assert.deepEqual(told[key], bare[key], key);
+  assert.deepEqual(told.members, bare.members);
+  assert.deepEqual(told.attacks, bare.attacks);
+  assert.equal(told.luck, bare.luck);
 }
 
 // ---- The two matchup queries: who hits a foe, and who is weak to a type.
@@ -77,53 +79,63 @@ const flatten = rs => rs.map(flat);
   assert.deepEqual(profile.hitters(levitator).map(p => p.name), [], "Levitate takes Earthquake away, and nothing else hits Steel");
 }
 
-// ---- `partyReasons`: reasons with no weights, against the weakest member by default.
+// ---- The party at the next big fight: every member at full health, and dead weight holding its slot at zero.
 {
-  const team = party();
-  const profile = partyProfile(team);
-  const lucario = { species: SPECIES.lucario, level: 45, types: typesOfSpecies(SPECIES.lucario) };
-  console.log("== reasons");
-  row("Lucario L45", flatten(partyReasons(profile, lucario)));
-  assert.deepEqual(flatten(partyReasons(profile, lucario)),
-    ["covers Grass", "hole Normal/Ice/Dark/Fairy", "upgrade 525 over Magikarp 400~"]);
+  const LIMITED_SUPPORT = 8, HARDCORE = 9; // `Challenges`, which only the bundle's prelude holds
+  const scene = (...challenges) => ({ gameMode: { isClassic: true, challenges } });
+  const limited = value => scene({ id: LIMITED_SUPPORT, value });
+  const karp = opts => mon(SPECIES.magikarp, 35, [["Tackle", "Normal", 40, "P"]], opts);
+  const at = (s, member, from, fight) => partyAtFight(s, [...party().slice(0, 3), member], { from, fight });
+  const show = (label, r) => row(label, [`up ${r.members.map(p => p.name).join("/")}`,
+    `zero ${r.dead.length ? r.dead.map(d => `${d.name}:${d.why}`).join(",") : "—"}`,
+    r.revive ? `back on W${r.revive.wave} (${r.revive.kind})` : "no way back"]);
+  console.log("== the party at the next big fight");
 
-  // `replacing`: judged against the member it would actually replace.
-  row("vs Snorlax", flatten(partyReasons(profile, lucario, { replacing: team[1] })));
-  assert.deepEqual(flatten(partyReasons(profile, lucario, { replacing: team[1] })), ["covers Grass", "hole Normal/Ice/Dark/Fairy"]);
+  const bar = at(scene(), karp({ barred: true }), 24, 25);
+  show("barred", bar);
+  assert.deepEqual(bar.members.map(p => p.name), ["Garchomp", "Snorlax", "Lapras"]);
+  assert.deepEqual(bar.dead.map(d => [d.name, d.why]), [["Magikarp", "barred"]]);
 
-  row("Lucario L20", flatten(partyReasons(profile, { ...lucario, level: 20 })));
-  assert.ok(!partyReasons(profile, { ...lucario, level: 20 }).some(r => r.kind === "upgrade"), "15 levels behind Magikarp is no upgrade");
-  assert.ok(partyReasons(profile, { ...lucario, level: 25 }).some(r => r.kind === "upgrade"), "10 behind still counts");
+  const hard = at(scene({ id: HARDCORE, value: 1 }), karp({ hp: 0 }), 24, 25);
+  show("fainted hardcore", hard);
+  assert.deepEqual(hard.dead.map(d => [d.name, d.why]), [["Magikarp", "fainted"]], "Hardcore keeps the heal from reviving");
+  const stranded = at(limited(3), karp({ hp: 0 }), 24, 25);
+  show("fainted stranded", stranded);
+  assert.deepEqual(stranded.dead.map(d => [d.name, d.why]), [["Magikarp", "fainted"]], "Limited Support 3 removes both");
 
-  // Sudowoodo's 410 final clears the 400 floor but is only +10 over Magikarp's line.
-  row("Sudowoodo", flatten(partyReasons(profile, { species: SPECIES.sudowoodo, level: 40, types: typesOfSpecies(SPECIES.sudowoodo) })));
-  assert.ok(!partyReasons(profile, { species: SPECIES.sudowoodo, level: 40, types: ["Rock"] }).some(r => r.kind === "upgrade"),
-    "410 is over the floor but not 100 over the line it would replace");
+  const healed = at(scene(), karp({ hp: 0 }), 20, 25);
+  show("fainted, heal W21", healed);
+  assert.deepEqual(healed.dead, [], "the W21 heal is before the fight");
+  assert.deepEqual(healed.revive, { kind: "heal", wave: 21 });
+  const shopped = at(limited(1), karp({ hp: 0 }), 24, 25);
+  show("fainted, shop W24", shopped);
+  assert.deepEqual(shopped.dead, [], "no heal under Limited Support 1, but W24's clear still opens the shop row");
+  assert.deepEqual(shopped.revive, { kind: "shop", wave: 24 });
 
-  // A dupe is the one reason that stands on its own: the cards read it and stop.
-  row("Gyarados", flatten(partyReasons(profile, { species: SPECIES.gyarados, level: 45, types: typesOfSpecies(SPECIES.gyarados) })));
-  assert.ok(partyReasons(profile, { species: SPECIES.gyarados, level: 45, types: ["Water", "Flying"] }).some(r => r.kind === "dupe"),
-    "Gyarados's root is the Magikarp on the team");
-  assert.deepEqual(flatten(partyReasons(partyProfile(team.slice(0, 2)), lucario)).filter(r => r.startsWith("hole")), [],
-    "no holes named for a party of two");
+  const late = at(limited(2), karp({ hp: 0 }), 24, 25);
+  show("heal too late", late);
+  assert.deepEqual(late.dead.map(d => [d.name, d.why]), [["Magikarp", "fainted"]], "W31's heal is past W25, and 2 removes the shop");
+  assert.deepEqual(at(limited(2), karp({ hp: 0 }), 24, 31).dead, [], "the same heal counts for a fight on W31");
+
+  // The modifiers below are read by nothing: luck is not a way back (#569).
+  const seeded = karp({ hp: 0 });
+  const rescued = { ...scene({ id: HARDCORE, value: 1 }),
+    modifiers: [{ constructor: { name: "PokemonInstantReviveModifier" }, pokemonId: seeded.id },
+      { constructor: { name: "ReviveModifier" } }] };
+  show("seed and a Revive", partyAtFight(rescued, [...party().slice(0, 3), seeded], { from: 24, fight: 25 }));
+  assert.deepEqual(partyAtFight(rescued, [...party().slice(0, 3), seeded], { from: 24, fight: 25 }).dead.map(d => d.name),
+    ["Magikarp"], "a held Reviver Seed and a Revive in the bag rescue nobody");
+
+  const open = partyAtFight(scene(), [karp({ hp: 0 }), mon(SPECIES.sudowoodo, 40, [], { barred: true })], {});
+  show("no fight named", open);
+  assert.deepEqual(open.dead.map(d => [d.name, d.why]), [["Sudowoodo", "barred"]], "a heal ahead and no fight to beat it to");
+  assert.deepEqual(partyAtFight(scene(), null, {}), { members: [], dead: [], revive: { kind: "heal", wave: 1 } },
+    "no party is no dead weight");
 }
 
-// ---- The biome card and the catch card give one species at one level the same reasons.
-{
-  const profile = partyProfile(party());
-  const level = 45;
-  // As 47-biome builds it.
-  const fromBiome = { species: SPECIES.lucario, level, types: typesOfSpecies(SPECIES.lucario) };
-  // As 45-catch builds it.
-  const wild = mon(SPECIES.lucario, level, [["Close Combat", "Fighting", 120, "P"], ["Flash Cannon", "Steel", 80, "S"]]);
-  const fromCatch = { species: wild.species, fusion: null, level: wild.level, types: ["Fighting", "Steel"],
-    abilities: ["Pressure"], moveTypes: damagingTypes(wild) };
-  console.log("== one species, both cards");
-  row("biome", flatten(partyReasons(profile, fromBiome)));
-  row("catch", flatten(partyReasons(profile, fromCatch)));
-  assert.deepEqual(flatten(partyReasons(profile, fromCatch)), flatten(partyReasons(profile, fromBiome)),
-    "same species, same level, same reasons");
-}
+// `partyReasons` had two blocks here — its reasons against the `lightest` member, and the same species getting the
+// same reasons from the biome card and the catch card. Both are gone with it (#593): the judgment hands back its own
+// reasons, and judgmenttest's two-entry-point case is what pins one species to one answer now.
 
 // ---- Party luck follows the game's own terms, and a fusion is judged by the pair.
 {
@@ -204,13 +216,14 @@ const flatten = rs => rs.map(flat);
   assert.equal(pair.final, Math.ceil((400 + 700) / 2), "Magikarp's line grows; the Attack form is already final");
 }
 
-// ---- Nothing to judge: an empty party has no reasons to give, and no card should crash asking.
+// ---- Nothing to judge: an empty party tallies nothing, and no card should crash asking.
 {
   const empty = partyProfile([]);
   assert.deepEqual(empty.weakTypes, []);
+  assert.deepEqual(empty.holes, TY, "a party that attacks with nothing hits no type super-effectively");
+  assert.deepEqual(empty.members, []);
   assert.equal(empty.weakest, null);
-  assert.deepEqual(partyReasons(empty, { species: SPECIES.lucario, level: 20, types: ["Fighting"] }), []);
-  assert.deepEqual(partyReasons(partyProfile(party()), null), []);
+  assert.equal(empty.luck, 0);
   assert.deepEqual(damagingTypes({}), [], "a mon with no moveset attacks with nothing");
   console.log("== empty party ok");
 }

@@ -4,7 +4,7 @@ import { TIER_NAMES, abilitiesOf } from "./01-core.js";
 import { stage } from "./01-meter.js";
 import { bigFightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
-import { partyLuck, partyProfile } from "./08-party.js";
+import { partyAtFight, partyLuck, partyProfile } from "./08-party.js";
 import { previewFor } from "./48-preview.js";
 
 const LOOKAHEAD = 5;
@@ -148,7 +148,7 @@ const build = (run, wave) => {
     wave, next, heal: heal == null ? null : { wave: heal, in: heal - wave },
     fightsBeforeHeal: heal == null ? schedule.length : schedule.filter(f => f.wave < heal).length,
     schedule: schedule.slice(0, 4).map(f => ({ ...f, in: f.wave - wave })),
-    readiness: named ? readiness(named, partyProfile(party.filter(p => p.hp > 0))) : null,
+    readiness: named ? readiness(named, partyProfile(partyAtFight(s, party, { from: wave, fight: next?.wave ?? null }).members)) : null,
     luck: { value: luck, grade: LUCK_GRADES[luck] ?? String(luck), upgradePct: Math.round(upgradeChance(luck) * 1000) / 10 },
     // The wave just cleared, not the one ahead: its rewards are the screen on show.
     thisWave: rewardRules(s, wave),

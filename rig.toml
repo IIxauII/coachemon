@@ -1,0 +1,29 @@
+# How the rig verifies this repo (podman-claude-loop). `rig config --goal "…"` shows what a run would use.
+
+# CI's root gate (`ci.yml`) minus `enums:gen -- --check`, which fetches the pinned game source.
+# Each runner is called directly: `npm test` is a manifest script, and the manifest is agent-writable.
+# `--test-concurrency` lives here alone: node refuses it in NODE_OPTIONS, so it cannot go in `[env] vars`.
+verify = "node_modules/.bin/tsc && node --test --test-concurrency=2 \"src/**/*.test.ts\" \"scripts/**/*.test.ts\" && node skills/coachemon/scripts/test/run.mjs"
+
+# Read-only inside a run. The HUD goldens are here too, so a run that changes HUD output cannot refresh them itself.
+test_paths = [
+  "tsconfig.json",
+  "src/**/*.test.ts",
+  "scripts/**/*.test.ts",
+  "src/game/fake-game.ts",
+  "src/hub/fake-ext.ts",
+  "src/page/fake-page.ts",
+  "src/stuck/fixtures/**",
+  "skills/coachemon/scripts/test/**",
+]
+
+memory = "2GiB"
+verify_timeout = "5m"
+
+# Must stay last: a TOML table swallows every key after it.
+[env]
+setup = ".rig/setup.sh"
+inputs = ["package.json", "package-lock.json"]
+prepare = "npm ci --offline --ignore-scripts"
+outputs = ["node_modules"]
+vars = { npm_config_cache = "/opt/rig/npm-cache", npm_config_offline = "true", npm_config_logs_dir = "/workspace/.cache/npm/_logs", npm_config_update_notifier = "false", npm_config_audit = "false", npm_config_fund = "false" }

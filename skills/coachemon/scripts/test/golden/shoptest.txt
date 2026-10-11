@@ -255,16 +255,16 @@ Team audit
 ⌃ ×
 🛒 $400 take TM Fire Fang
 ★ TM Fire Fang least bad · skip · nobody can learn it
-1 issue: nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
+1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Team audit
-· nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
+· nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 == tm fainted hardcore negative value
 ⌃ ×
 🛒 $400 take TM Fire Fang
 ★ TM Fire Fang least bad · skip · nobody can learn it
-1 issue: nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
+1 issue: nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 Team audit
-· nothing hits Poison/Ground/Rock/Ghost +6 super-effectively
+· nothing hits Flying/Poison/Ground/Rock +8 super-effectively
 == tm spread by doubles ahead
 ⌃ ×
 🛒 $400 take TM Hyper Voice → Charizard
