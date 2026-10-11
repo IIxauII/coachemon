@@ -20,4 +20,12 @@ fighting every wave       L38→49  +11  7 under the cap  estimate
 force-fed from w62        w64 cap 56 → 56  w66 cap 56 → 56  w68 cap 56 → 56  w70 cap 56 → 56  w72 cap 64 → 60
 w68→78, cap 64            Garchomp 50→63  Snorlax 48→61  Lapras 47→61  Magikarp 35→55  Garchomp 50→64=cap
 == nothing to reach: ok
+== an evolution by the next big fight
+Dratini, benched          L30→34  Dratini (as it is)
+…two EXP. All stacks      L30→37  Dragonair (evolved)
+…fighting every wave      L30→45  Dragonair→Dragonite (evolved)
+Golbat, friendship 255    L30→45  Golbat (as it is)
+Magneton, no stone        L30→45  Magneton (as it is)
+Magikarp, L35 past 20     L35→48  Magikarp (as it is)
+paused / a bare branch    Dratini (as it is)  Tyrogue (as it is)
 projection: ok
