@@ -412,7 +412,7 @@ const WATERS = (level = CAP) => [
   assert.deepEqual(
     [flinch("Torrent", "Damp"), flinch("Serene Grace", "Damp"), flinch("Sheer Force", "Damp"),
       flinch("Torrent", "Shield Dust"), flinch("Torrent", "Inner Focus")],
-    [0.3, 0.6, 0, 0, 0], "off the field the chance is the move's own, moved by the abilities alone (game-code.md §8)");
+    [0.3, 0.6, 0, 0, 0], "off the field the chance is the move's own, moved by the abilities alone");
 }
 
 // ---- An all-Water party keeps the one member that answers what Water cannot
