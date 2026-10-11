@@ -32,8 +32,7 @@ function loadHud(bundle: string) {
   (0, eval)(readFileSync(bundle, "utf8"));
   // Every load sets `__hud` afresh, and the modules hold their own copy of it, so the HUDs stay apart.
   const hud = g.__hud;
-  // What a page's chunk scan finds and the replay has to hand over: the threat set is built off the moves and
-  // abilities too.
+  // Without the moves and abilities the threat set is unavailable, and every team-value answer is an error.
   hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager, moves: allMoves,
     abilities: allAbilities });
   huds.set(bundle, hud);

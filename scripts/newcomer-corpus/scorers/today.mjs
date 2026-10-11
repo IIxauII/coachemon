@@ -20,8 +20,7 @@ const OWNED = (party) => ({
 
 export default {
   name: "today",
-  // The last release before #567 retired `partyReasons`' upgrade test and `catchWorth`'s team reasons.
-  hud: "v1.21.0",
+  hudRev: "v1.21.0",
   score({ party, newcomer, hud }) {
     const { partyProfile, partyReasons, damagingTypes } = hud["08-party"];
     const { typesOf, abilitiesOf } = hud["01-core"];

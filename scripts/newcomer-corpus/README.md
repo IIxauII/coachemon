@@ -11,9 +11,9 @@ answer — who the newcomer replaces, whether it is called an upgrade, and wheth
 | `cases/lag-run.json` | 58 real situations: every wild foe the lag runs logged a catch card for, one per wave, with the party as the wave record listed it. `recorded` is what the live card said at the time. Regenerate with `extract-lag-run.ts`. |
 | `cases/hand-built.json` | 12 situations built to probe the known failure and the terms #557 found BST misses. Two use the real wave-145 party from `docs/w145-ivy-rayquaza.md`. Each has a `probe`: what it tests and which way a team-aware judgment should lean. That is the author's intent, not ground truth. |
 | `answers/today.json` | Today's answer for every case, from `scorers/today.mjs` against the HUD of v1.21.0: 22 take, 48 pass, 12 called upgrades, 26 with a free slot. |
-| `answers/team-value.json` | The team-value judgment's answer for every case (#567, #583): 18 take, all of them swaps, 52 pass, and not one of the 26 free slots filled. |
+| `answers/team-value.json` | The team-value judgment's answer for every case (#567, #583): 18 take, all of them swaps, and 52 pass. Not one of the 26 free slots is filled, at −0.2 to −2.1: exposure counts the members a threat beats, so a fifth member that loses a duel costs more than its backup is worth. |
 | `scorers/today.mjs` | Today's answer, asked as the catch card asked it before #567: the party profile's weakest member, `partyReasons`' upgrade, and the team side of `catchWorth`. Pinned to v1.21.0, the last HUD that has them. |
-| `scorers/team-value.mjs` | The team-value judgment, asked as the catch card asks it once the road lands: `teamVerdict` inside a run read. `value` is the net, in turns per threat. |
+| `scorers/team-value.mjs` | The team-value judgment, asked as the catch card asks it once the road lands: `teamVerdict` inside a run read. |
 | `replay.test.ts.template`, `run.ts` | The replay. Each case becomes a wild battle in upstream's vitest harness in the pinned clone, and every scorer is asked about the live game objects. |
 
 ## A case
@@ -67,7 +67,7 @@ export default {
 };
 ```
 
-A scorer that also exports `hud: "<git revision>"` is asked about that revision's HUD instead of the working tree's, so
+A scorer that also exports `hudRev: "<git revision>"` is asked about that revision's HUD instead of the working tree's, so
 an answer the HUD has since retired stays replayable beside the one that replaced it. `today` pins `v1.21.0`.
 
 ## How far to trust it

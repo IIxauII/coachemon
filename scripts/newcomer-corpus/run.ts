@@ -11,9 +11,7 @@
  * A scorer is a self-contained `.mjs` whose default export is `{ name, score({ party, newcomer, hud, scene, case }) }`;
  * see scorers/today.mjs for the answer shape. It is copied into the clone, so it cannot import its neighbours.
  *
- * A scorer may also export `hud`, the git revision of the HUD it was written against, and is then asked about that
- * HUD rather than the working tree's: an answer the HUD has since retired can still be put beside the one that replaced
- * it. Each revision is bundled once and loaded on its own.
+ * A scorer that exports `hudRev`, a git revision, is asked about that revision's HUD instead of the working tree's.
  */
 import { execFileSync, spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -61,7 +59,6 @@ const testPath = path.join(dir, "coach-corpus.test.ts");
 
 const hudModule = (f: string) => f.endsWith(".js") && f !== "99-start.js";
 const git = (...args: string[]) => execFileSync("git", args, { cwd: ROOT, encoding: "utf8", maxBuffer: 64 << 20 });
-// The HUD's modules as the bundler takes them: the working tree's, or those of the revision a scorer pins.
 const hudFiles = (rev: string | null): [string, string][] => {
   if (!rev) return readdirSync(HUD).filter(hudModule).sort().map(f => [f, readFileSync(path.join(HUD, f), "utf8")]);
   const at = path.relative(ROOT, HUD);
@@ -70,10 +67,10 @@ const hudFiles = (rev: string | null): [string, string][] => {
 };
 
 const scorers = await Promise.all(scorerFiles.map(async file => {
-  const hud: string | null = (await import(pathToFileURL(file).href)).default?.hud ?? null;
-  return { file, hud, copy: path.join(scorerDir, path.basename(file)) };
+  const hudRev: string | null = (await import(pathToFileURL(file).href)).default?.hudRev ?? null;
+  return { file, hudRev, copy: path.join(scorerDir, path.basename(file)) };
 }));
-const revs = [...new Set(scorers.map(s => s.hud))];
+const revs = [...new Set(scorers.map(s => s.hudRev))];
 const bundlePathOf = (rev: string | null) => path.join(dir, `.coach-corpus.bundle.${revs.indexOf(rev)}.js`);
 
 const vitest = (): Promise<number> => new Promise(resolve => {
@@ -82,7 +79,7 @@ const vitest = (): Promise<number> => new Promise(resolve => {
     cwd: clone,
     stdio: "inherit",
     env: { ...process.env, COACH_CORPUS: corpusPath, COACH_OUT: outPath,
-      COACH_SCORERS: JSON.stringify(scorers.map(s => ({ scorer: s.copy, bundle: bundlePathOf(s.hud) }))),
+      COACH_SCORERS: JSON.stringify(scorers.map(s => ({ scorer: s.copy, bundle: bundlePathOf(s.hudRev) }))),
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0" },
   });
   child.on("close", code => resolve(code ?? 1));
