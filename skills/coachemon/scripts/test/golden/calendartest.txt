@@ -25,6 +25,16 @@ hardcore + ls 1           heal none  revives false
 hardcore 1                on true  revives false
 hardcore 0                on false  revives true
 hardcore -1               on true  revives false
+== reviveBefore, the last waves
+classic                   195→shop 195  199→shop 199  200→none
+daily                     48→shop 48  48, ls 2→none
+== reviveBefore, Endless's 250th wave
+endless                   249→heal 251  245 to 260, ls 2→heal 251
+== reviveBefore, from an X0
+limited support 0         40→heal 41
+limited support 1         40→shop 40
+limited support 2         40→heal 41
+limited support 3         40→none
 == trainer odds, trainerChance 8
 waves 41–50               41:0.000  42:0.125  43:0.109  44:0.096  47:0.096  48:0.000  49:0.000  50:1.000
 == trainer odds, daily
