@@ -57,9 +57,8 @@ const fusionOf = (a, b, j, spliced) => {
   const items = j.cost?.items ?? 0;
   const evolves = [a, b].filter(p => tryDo(() => p.species.getEvolutionLevels().length, 0) > 0).map(p => p.name);
   const notes = [
-    // ΔV again, beside what the release nets off it, which the row has no room for. The spec charges a release for
-    // the other half's items while the game moves them over, which is why the figure and the note below are both
-    // said: the one is what the judgment netted off, the other what the game does (#588).
+    // This net and "held items move over" below disagree on purpose: the net is charged for the other half's items,
+    // which the game moves over (game-code.md §24, #588).
     `ΔV ${signed(r1(j.delta))} turns${j.release ? `, net ${signed(r1(j.net))} after a ${Math.abs(r1(j.release)).toFixed(1)} release` : ""}`,
     `spends ${b.name} L${b.level}${b.hp > 0 ? "" : " (fainted)"}`,
     !ability && lent ? `${lent} doesn't work fused` : null,

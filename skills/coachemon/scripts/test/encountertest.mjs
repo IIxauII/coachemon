@@ -330,9 +330,7 @@ const chest = extra => ({ type: 1, labels: ["Open it", "Leave"], options: [optio
   assert.deepEqual(verdicts(seen), ["take", "off", "ok"]);
 }
 
-// ---- GTS: a card with no species table to build a threat set from claims no call at all, where it used to rank the
-// three offers by final BST. The judged blocks are at the foot of this file, with the species table the judgment
-// needs (#586).
+// ---- GTS: a card with no species table to build a threat set from claims no call at all (#586).
 {
   const party = team();
   const offers = new Map(party.map(p => [p.id, [{ species: species(1, "Rattata", ["Normal"], 253) }, { species: species(2, p === party[0] ? "Mewtwo" : "Salamence", ["Dragon", "Flying"], p === party[0] ? 680 : 600) }]]));
@@ -521,10 +519,7 @@ const threatTables = () => {
   assert.match(carry.options[0].outcome, /Garchomp is taken for good → .*starter tier 9–10/);
 }
 
-// ---- The Dark Deal's pool mirrors the game's filter over the whole party, while "your weakest link" is the weakest
-// member (#582): the two sets disagree about a fainted member, and each keeps its own answer. A heal before the next
-// big fight leaves it a member priced like any other; Hardcore leaves it dead weight, which is weakest at zero —
-// and either way the member the game draws is not the one the party loses least by, so the deal is no bargain.
+// ---- Dark Deal: the game's pool and "your weakest link" disagree on a fainted member, and each keeps its own (#582).
 {
   const fainted = extra => {
     const party = team();
@@ -553,11 +548,10 @@ const threatTables = () => {
     "dead weight is weakest, at zero, and said to be dead weight rather than priced");
 }
 
-// ---- Whether a fainted member is back for the next big fight is the calendar's to say, from the card's own entry
-// point: under Limited Support 2 there is a heal and no shop, so it turns on whether the heal comes before the fight.
-// Garchomp, the strongest, is down, and the deal draws Lapras from the two standing — which is "your strongest" only
-// when Garchomp is dead weight at that fight (#571).
+// ---- Dark Deal: Lapras is "your strongest" only when the calendar leaves fainted Garchomp dead weight (#571).
 {
+  // Limited Support 2 has a heal and no shop (game-code.md §12), so only where the heal falls decides whether Garchomp
+  // is back.
   const LS2 = [{ id: 8, value: 2 }];
   const CLASSIC = { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0,
     isFixedBattle: w => [5, 8, 25, 35, 55, 62, 64, 66, 95].includes(w), challenges: LS2 };
@@ -944,12 +938,10 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
   assert.deepEqual(verdicts(broke), ["avoid", "take"]);
 }
 
-// ---- One judgment, four cards that offer a mon (#585): the Safari fee's preview and its minigame turns, the
-// Salesman's mon, the Uncommon Breed and the Dancing Lessons one. Each mount here hands over the species table and a
-// next big fight, which is what the judgment needs — the threat set to duel and the party to duel with (#571) — so
-// every row says the verdict and the reasons it was read off. The blocks above hand over neither, and show what a row
-// says then: the account half alone, with no verdict claimed.
+// ---- One judgment behind the Safari, the Salesman, the Uncommon Breed and Dancing Lessons (#585).
 {
+  // Each mount hands over the species table and a next big fight, without which a row says the account half alone and
+  // claims no verdict, as the blocks above do (#571).
   const fight = { isFixedBattle: () => false };
   // The offers the model carries for the text summary, with the two axes as they are kept: the team's call and the
   // reasons it was read off, then what the mon is worth to the **account** alone against the account's own bar. The
@@ -1099,9 +1091,7 @@ const stacked = (name, stackCount, max) => make(name, { getStackCount: () => sta
     "`wanted` is either axis alone and never the sum of the two");
 }
 
-// ---- GTS: every offer judged with the traded member as the forced replacement, and the offers ranked by net value
-// (#586, story 23). The final-BST comparison the card ranked by is gone: it asked what the mon coming in was worth
-// and nothing about what the team loses by the mon going out, which is the half a trade is made of.
+// ---- GTS: every offer judged with the traded member as the forced replacement, ranked by net value (#586).
 {
   const fight = { isFixedBattle: () => false };
   // A trade offer is a species and nothing more — a stand-in, built the way the game builds a wild mon and marked

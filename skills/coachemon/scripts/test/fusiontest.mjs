@@ -60,10 +60,9 @@ const party = (spliced = false) => {
   return mons.map(a => mon(...a, spliced));
 };
 
-// ---- The threat side: the standard threats the fusion judgment is read against (#578, #589).
-// Real species with their real base-stat rows, every one of them a name the randbats snapshot lists, since the name
-// is the only key that join has — and none of them a party species above, so no member of ours is ever drawn as a
-// threat against itself. `[speciesId, name, types, baseStats]`, the id ordering the pool and so breaking the ties.
+// Every name is in the randbats snapshot, which is joined on name alone, and none is a party species above, so
+// no member is drawn as a threat against itself. `[speciesId, name, types, baseStats]`; the id orders the pool and so
+// breaks its ties (#578, #589).
 const DEX = [
   [18, "Pidgeot", ["Normal", "Flying"], [83, 80, 75, 70, 70, 101]],
   [36, "Clefable", ["Fairy"], [95, 70, 73, 95, 90, 60]],
@@ -243,10 +242,7 @@ let best;
   untouched("Snorlax ← Mimikyu");
 }
 
-// ---- A pair the card cannot put in words is dropped, and never takes the card with it: the memo keeps whatever
-// `build` hands back for the whole run key, so one pair must not decide the rest (#589). Azumarill's passive read
-// throws, which only the card's own description of a pair asks — the duels read a member through the combatant
-// adapter, which takes a throw as no passive — so every pair on an Azumarill base goes, and only those.
+// ---- A pair the card cannot put in words is dropped, and never takes the card with it (#589).
 {
   const named = o => o.options.map(f => `${f.a.name} ← ${f.b.name}`);
   // Each mount loads a bundle of its own, run memo and all, so the pairs are read through the bundle that drew the
@@ -254,6 +250,8 @@ let best;
   const pairs = sc => globalThis.__ft.readRun(sc, run => globalThis.__ft.fusionOptions(run));
   const all = pairs(mount({}).scene);
   const members = party();
+  // Only the card's own description of a pair reads its base's passive — the combatant adapter takes a throw as no
+  // passive — so this drops every pair on an Azumarill base, and only those.
   members.find(p => p.name === "Azumarill").hasPassive = () => { throw new Error("no passive to read"); };
   const { scene, model: m } = mount({ members });
   const some = pairs(scene);

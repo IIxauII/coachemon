@@ -15,8 +15,7 @@ const isFinalWave = (s, w) => {
   return tryDo(() => gm.isWaveFinal(w),
     !!gm && (gm.isDaily ? w === 50 : gm.isEndless ? w % 250 === 0 : !!gm.isClassic && w === 200));
 };
-// The run ends on its final wave in every mode but Endless, whose every 250th is a final boss the run carries on past
-// (`VictoryPhase`, src/phases/victory-phase.ts:57). A walk ahead stops here, never at a final wave alone.
+// A walk ahead stops here, never at a final wave alone (game-code.md §12).
 const runEndsAt = (s, w) => isFinalWave(s, w) && !s?.gameMode?.isEndless;
 
 // game-less-backed
