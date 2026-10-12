@@ -5,6 +5,8 @@
 == wave 24 predicted {"type":"wild","double":false,"levels":[13],"trainer":null,"foes":["Machop L13"]}
 == wave 25 predicted {"type":"trainer","double":false,"levels":[18,19,40],"trainer":"Rival1","foes":["Gengar L18","Geodude L19","Geodude L40"]}
 == re-levelled rival {"battle":[18,19,20],"preview":[18,19,40]}
+== evil wave 64 from 50/62/63 ["Geodude L37","Geodude L37","Machop L40"]
+== evil wave 66 from 56/64/65 ["Gengar L38","Gengar L38","Machop L38","Geodude L41","Geodude L41","Gengar L43"]
 == wild (wave 13)
 {
  "wave": 13,
