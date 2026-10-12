@@ -163,6 +163,16 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(ah3.aheadModel(s3).schedule.find(f => f.kind === "gym").wave, 30);
 }
 
+// ---- A grunt's name is marked unsure while its roster stays exact (game-code.md §12)
+{
+  const { scene, ah } = mount({ wave: 31, party: team() });
+  const m = ah.aheadModel(scene);
+  console.log(`== grunt ahead ${JSON.stringify({ wave: m.next.wave, who: m.next.trainer, exact: m.next.exact })}`);
+  assert.equal(m.next.wave, 35);
+  assert.equal(m.next.exact, true, "the party is keyed on the run seed");
+  assert.match(ah.aheadSummary(m), /Grunt~/, "but the name rides the unseeded double");
+}
+
 // ---- The Elite Four sits in a stretch with no heal, and Limited Support 1 has no heal at all
 {
   for (const wave of [17, 180, 181, 185]) {

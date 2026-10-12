@@ -445,14 +445,15 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
     + `  w21 ${m21.confidence.foes} ${JSON.stringify(m21.notes)}`);
 }
 
-// ---- A grunt's double is unseeded, so it is an estimate in an otherwise exact fixed battle (game-code.md §12).
+// ---- A grunt's double, and the name that follows it, are estimates in an exact fixed battle (game-code.md §12).
 {
   const { scene, pv } = mount({ wave: 34 });
   const m = pv.previewNext(scene);
   assert.equal(m.fixed, true);
   assert.equal(m.confidence.type, "exact");
-  assert.equal(m.confidence.trainer, "exact", "which grunt it is comes off the run seed");
   assert.equal(m.confidence.double, "estimate", "but whether it is a double doesn't");
+  assert.equal(m.confidence.trainer, "estimate", "and the trainer's name follows the double");
+  assert.equal(m.confidence.foes, "exact", "while the party, keyed on the run seed, doesn't");
   assert.equal(m.confidence.levels, "estimate", "and the levels are fed the double, so they are no surer");
   assert.ok(m.notes.some(n => n.includes("unseeded")), `and it says so: ${JSON.stringify(m.notes)}`);
   console.log(`== grunt wave 35 ${JSON.stringify({ confidence: m.confidence, notes: m.notes })}`);

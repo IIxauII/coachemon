@@ -1299,7 +1299,11 @@ Elite Four and champion `seedOffsetWave(182)`, so each group rolls in the same f
 picks one team (or one region) for the whole group; admins take `randSeedUniqueItem(choice, 1 | 2)`
 (`src/utils/random.ts:41`), so 66, 114 and 164 are different people. In `getRandomTrainerFunc` (`src/battle.ts:582`)
 the gender and a grunt's 1/3 double use `randInt`, which is `Math.random` (`src/utils/common.ts:88`): **unseeded, not
-replayable**. `new Trainer` (`src/field/trainer.ts:45`) draws a party template (`randSeedItem`) and a name.
+replayable**. Grunt fixed battles pass `randomGender` (`src/data/trainers/fixed-battle-configs.ts:68`), and a grunt is
+DOUBLE on its 1/3, else the gender roll's variant (`src/battle.ts:616`). `TrainerConfig.getTitle`
+(`src/data/trainers/trainer-config.ts:825`) names the variant — `nameDouble` ("Rocket Grunts") or `nameFemale` — and a
+grunt's `Trainer.getName` is that title alone (`src/field/trainer.ts:156`), so a grunt's name is no more replayable
+than its double. `new Trainer` (`src/field/trainer.ts:45`) draws a party template (`randSeedItem`) and a name.
 `Trainer.genPartyMember` (`src/field/trainer.ts:310`) — forks the run seed; adds the member via `addEnemyPokemon` —
 seeds each member at `w + (derivedType << 10) + (((sameSeed ? 0 : i) + 1) << 8)`, or `derivedType + ((i + 1) << 8)`
 for `hasStaticParty` (rivals, admins, evil leaders, gym leaders, Elite Four, champions; `trainer-config.ts:459`), whose

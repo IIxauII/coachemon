@@ -108,9 +108,10 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      double, and boss bars. It replays the game's own wave generation in a seed fork (`48-preview.js`,
      `references/game-code.md` §11): a read, with the live RNG stream, `currentBattle` and `waveSeed` restored.
      **Only a fixed battle — a rival, evil team, gym leader or Elite Four wave, whose trainer is a table lookup — is
-     exact end to end**, and even there an evil-team **grunt**'s double comes off an unseeded `Math.random`, so that
-     one field is a guess. Anywhere else the wave's trainer is drawn on the stream, so the party under it is no surer
-     than the trainer, however precisely each member is computed: fields are marked `~` (holds only while the game
+     exact end to end**, and even there an evil-team **grunt**'s double comes off an unseeded `Math.random`, so it is a
+     guess, and so is the grunt's name, which comes off the same unseeded rolls ("Magma Grunts" for the double, "Magma
+     Grunt" for the single). Anywhere else the wave's trainer is drawn on the stream, so the party under it is no surer than the
+     trainer, however precisely each member is computed: fields are marked `~` (holds only while the game
      draws what the replay draws), `?` (a guess — the spawn pool shifts when the arena rebuilds it, entering a biome
      and again at X5) or `!` (this run has already proved it wrong). Whether the wave is a trainer at all costs a
      draw only where the game really rolls for it: a gym wave, an X0, an X1, every Daily wave and every wave of an

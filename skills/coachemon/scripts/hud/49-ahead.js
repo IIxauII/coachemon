@@ -140,6 +140,8 @@ const build = (run, wave) => {
     next.double = named?.double ?? null;
     next.bars = (named?.foes ?? []).reduce((t, f) => t + Math.max(0, (f.segments ?? 0) - 1), 0);
     next.exact = named?.confidence?.foes === "exact";
+    // Not `exact`: a grunt's name is unsure under an exact roster (#623).
+    next.trainerExact = named?.confidence?.trainer === "exact";
     next.rewards = rewardRules(s, next.wave);
   }
   const final = schedule.find(f => f.kind === "final");
@@ -166,7 +168,7 @@ export const learnRoster = model => {
 
 export const aheadIn = n => (n === 1 ? "next wave" : `in ${n}`);
 
-export const aheadWho = a => (a.next.trainer ? `${a.next.trainer}${a.next.exact ? "" : "~"}` : a.next.label);
+export const aheadWho = a => (a.next.trainer ? `${a.next.trainer}${a.next.trainerExact ? "" : "~"}` : a.next.label);
 
 export const aheadSummary = a => {
   if (!a?.next) return null;
