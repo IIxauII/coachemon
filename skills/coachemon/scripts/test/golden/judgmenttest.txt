@@ -48,33 +48,33 @@
   on five shares it reaches the fight on 50 as Gyarados L32 [Water/Flying] 107 hp
   and with its evolutions paused, Magikarp L32 [Water] 59 hp
   at the next big fight          skip  -           dV -0.3  release 0.0  net -0.3  
-      - Water exposure         -0.6  Water now beats 4 of 6
-      - Normal exposure        -0.5  Normal now beats 2 of 6
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
   at the one after               skip  -           dV -0.1  release 0.0  net -0.1  
-      - Fighting exposure      -0.6  Fighting now beats 4 of 6
-      - Bug exposure           -0.5  Bug now beats 2 of 6
+      - Fighting exposure      -0.6  Fighting now beats 4 of 6, up from 3 of 5
+      - Bug exposure           -0.5  Bug now beats 2 of 6, up from 1 of 5
   five shares                    skip  -           dV -0.2  release 0.0  net -0.2  
-      - Water exposure         -0.6  Water now beats 4 of 6
-      - Normal exposure        -0.5  Normal now beats 2 of 6
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
   five shares, paused            skip  -           dV -0.3  release 0.0  net -0.3  
-      - Water exposure         -0.6  Water now beats 4 of 6
-      - Normal exposure        -0.5  Normal now beats 2 of 6
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
 == a level 10 newcomer into a party at the cap
   nothing                  L10  Magikarp  skip  dV -0.3
-      - Water exposure         -0.6  Water now beats 4 of 6
-      - Normal exposure        -0.5  Normal now beats 2 of 6
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
   Lucky Egg alone          L10  Magikarp  skip  dV -0.3
-      - Water exposure         -0.6  Water now beats 4 of 6
-      - Normal exposure        -0.5  Normal now beats 2 of 6
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
   one EXP share            L19  Magikarp  skip  dV -0.3
-      - Water exposure         -0.6  Water now beats 4 of 6
-      - Normal exposure        -0.5  Normal now beats 2 of 6
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
   EXP share and Lucky Egg  L21  Magikarp  skip  dV -0.3
-      - Water exposure         -0.6  Water now beats 4 of 6
-      - Normal exposure        -0.5  Normal now beats 2 of 6
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
   five EXP shares          L32  Magikarp  skip  dV -0.3
-      - Water exposure         -0.6  Water now beats 4 of 6
-      - Normal exposure        -0.5  Normal now beats 2 of 6
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
 == one run key, the Lucky Egg on the first member and then the last, and then Pokérus with it
   egg on Blastoise   Blastoise L20, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
   egg on Meganium    Blastoise L18, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L20
@@ -84,8 +84,8 @@
       + physical wall exposure +2.6  the physical wall now beats 4 of 5, down from 4 of 4
       + Grass answer           +2.1  nearer an answer to Grass
   Sunflora at level 20           skip  -           dV -0.4  release 0.0  net -0.4  
-      - Water exposure         -0.8  Water now beats 3 of 5
-      - Steel exposure         -0.7  Steel now beats 2 of 5
+      - Water exposure         -0.8  Water now beats 3 of 5, up from 2 of 4
+      - Steel exposure         -0.7  Steel now beats 2 of 5, up from 1 of 4
   of 22 threats, the one is beaten by 4 and the other by 22
 == a fainted member, under three calendars
   Hardcore                       swap  Blastoise   dV +0.6  release 0.0  net +0.6  
@@ -164,8 +164,8 @@
       + Fire exposure          +1.4  Fire now beats 4 of 6, down from 4 of 5
       + physical wall exposure +1.4  the physical wall now beats 4 of 6, down from 4 of 5
   a corpse carrying              skip  Wailord     dV +0.6  release 0.6  net  0.0  
-      - Grass exposure         -0.6  Grass now beats 3 of 6
-      - Poison exposure        -0.6  Poison now beats 4 of 6
+      - Grass exposure         -0.6  Grass now beats 3 of 6, up from 2 of 5
+      - Poison exposure        -0.6  Poison now beats 4 of 6, up from 3 of 5
   a corpse's investment          swap  Wailord     dV +0.6  release 0.0  net +0.6  dead weight
       ! Wailord is dead weight: fainted with no way back
       + Fire exposure          +1.4  Fire now beats 4 of 6, down from 4 of 5
@@ -232,26 +232,26 @@
   nothing held                   Lanturn ← Wailord 0.25   Lanturn ← Politoed 0.24   Lanturn ← Blastoise 0.22
   2 Leftovers on Wailord         Lanturn ← Politoed 0.24   Lanturn ← Blastoise 0.22   Wailord ← Blastoise 0.16
   Lanturn ← Wailord, 10 Leftovers skip  dV +0.2  release 1.0  net -0.8  
-      - Normal exposure        -0.4  Normal now beats 2 of 5
-      - Dragon exposure        -0.4  Dragon now beats 2 of 5
+      - Normal exposure        -0.4  Normal now beats 2 of 5, up from 2 of 6
+      - Dragon exposure        -0.4  Dragon now beats 2 of 5, up from 2 of 6
 == three members, each answering what the other two cannot: every pair of them
   Sceptile ← Charizard           skip  dV -0.9  release 0.0  net -0.9  
-      - Steel exposure         -4.0  Steel now beats 2 of 2
+      - Steel exposure         -4.0  Steel now beats 2 of 2, up from 2 of 3
       - special wall answer    -2.0  a weaker answer to the special wall
   Charizard ← Sceptile           skip  dV -0.9  release 0.0  net -0.9  
       - special wall answer    -2.0  a weaker answer to the special wall
-      - Dragon exposure        -1.8  Dragon now beats 1 of 2
+      - Dragon exposure        -1.8  Dragon now beats 1 of 2, up from 0 of 3
   Swampert ← Charizard           skip  dV -1.6  release 0.0  net -1.6  
-      - Grass exposure         -4.0  Grass now beats 2 of 2
-      - Electric exposure      -4.0  Electric now beats 2 of 2
+      - Grass exposure         -4.0  Grass now beats 2 of 2, up from 2 of 3
+      - Electric exposure      -4.0  Electric now beats 2 of 2, up from 2 of 3
   Swampert ← Sceptile            skip  dV -1.6  release 0.0  net -1.6  
-      - Fire exposure          -6.4  Fire now beats 2 of 2
-      - Electric exposure      -4.0  Electric now beats 2 of 2
+      - Fire exposure          -6.4  Fire now beats 2 of 2, up from 1 of 3
+      - Electric exposure      -4.0  Electric now beats 2 of 2, up from 2 of 3
   Charizard ← Swampert           skip  dV -1.8  release 0.0  net -1.8  
-      - Poison exposure        -6.4  Poison now beats 2 of 2
-      - Electric exposure      -4.0  Electric now beats 2 of 2
+      - Poison exposure        -6.4  Poison now beats 2 of 2, up from 1 of 3
+      - Electric exposure      -4.0  Electric now beats 2 of 2, up from 2 of 3
   Sceptile ← Swampert            skip  dV -1.8  release 0.0  net -1.8  
-      - Fire exposure          -6.4  Fire now beats 2 of 2
-      - Electric exposure      -4.0  Electric now beats 2 of 2
+      - Fire exposure          -6.4  Fire now beats 2 of 2, up from 1 of 3
+      - Electric exposure      -4.0  Electric now beats 2 of 2, up from 2 of 3
 == the full swap search over six members is inside the budget, cold and memoised
 judgment: ok

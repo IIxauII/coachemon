@@ -283,6 +283,10 @@ const luckyEgg = p => ({ pokemonId: p.id, type: { id: "LUCKY_EGG" }, getStackCou
 const judge = (party, newcomer, opts = {}, sceneOpts = {}) =>
   readRun(sceneOf(party, sceneOpts), run => judgeNewcomer(run, newcomer, opts));
 
+// A row's value before exposure is docked: the answer, the backup and the two credits.
+const scoreOf = r => (r.answer?.s ?? 0) + BACKUP * (r.backup?.s ?? 0) + (r.revenge ? REVENGE : 0)
+  + (r.switchIn ? SWITCH_IN : 0);
+
 // ΔV, the release and the net value, in tenths of a turn, which is the grain the margin is set in.
 const t1 = x => { const v = Math.round(x * 10) / 10 || 0; return `${v > 0 ? "+" : v < 0 ? "-" : " "}${Math.abs(v).toFixed(1)}`; };
 // Every judgment printed below is held to #579's four rules, whatever else the probe it belongs to asserts: at most
@@ -304,10 +308,10 @@ const checkReasons = (label, j) => {
     assert.equal(r.gain, gain, `${label}: "${r.text}" points the other way from ${j.verdict}`);
     assert.equal(r.delta > 0, gain, `${label}: "${r.text}" is worth ${t1(r.delta)} to a ${j.verdict}`);
     assert.ok(Math.abs(r.delta) >= MARGIN, `${label}: "${r.text}" moved less than the margin`);
-    const down = r.text.match(/beats (\d+) of (\d+), down from (\d+)(?: of (\d+))?$/);
-    if (down) {
-      const [n, of, was, wasOf = of] = down.slice(1).map(x => (x === undefined ? x : Number(x)));
-      assert.ok(n / of < was / wasOf, `${label}: "${r.text}" says a share fell that did not`);
+    const from = r.text.match(/beats (\d+) of (\d+), (down|up) from (\d+)(?: of (\d+))?$/);
+    if (from) {
+      const [n, of, way, was, wasOf = of] = from.slice(1).map(x => (/^\d+$/.test(x ?? "") ? Number(x) : x));
+      assert.equal(n / of < was / wasOf, way === "down", `${label}: "${r.text}" says a share moved the wrong way`);
       const b = j.before.rows.find(x => x.threat === r.threat);
       assert.equal(wasOf, b.of, `${label}: "${r.text}" counts the party before out of the members it had`);
     }
@@ -365,8 +369,7 @@ const WATERS = (level = CAP) => [
     console.log(`  ${r.threat.padEnd(14)} ${r.answer.name.padEnd(11)} s ${t1(r.answer.s)}`
       + ` backup ${r.backup.name.padEnd(11)} ${t1(r.backup.s)}  beaten ${r.beaten.length}`
       + `${r.revenge ? " revenge" : ""}${r.switchIn ? " switch-in" : ""}  row ${t1(r.value)}`);
-    assert.equal(r.value, r.answer.s + BACKUP * r.backup.s + (r.revenge ? REVENGE : 0) + (r.switchIn ? SWITCH_IN : 0)
-      - EXPOSURE(PARTY_SIZE * r.beaten.length / r.of),
+    assert.equal(r.value, scoreOf(r) - EXPOSURE(PARTY_SIZE * r.beaten.length / r.of),
       `${r.threat}: the row is the answer, the backup, the credits and the exposure`);
   }
   assert.equal(j.before.v, j.before.rows.reduce((t, r) => t + r.value, 0) / j.before.rows.length,
@@ -614,8 +617,7 @@ const WATERS = (level = CAP) => [
 
   // A fifth body is one more for every threat to beat, so an exposure on the count alone docked a newcomer for
   // losing where the party already lost to a man, and no free slot was ever filled (#619).
-  const exposureOf = r => r.answer.s + BACKUP * (r.backup?.s ?? 0) + (r.revenge ? REVENGE : 0)
-    + (r.switchIn ? SWITCH_IN : 0) - r.value;
+  const exposureOf = r => scoreOf(r) - r.value;
   const swept = bad.before.rows.filter(r => r.beaten.length === r.of);
   assert.ok(swept.length > 0, "some threat beats all four");
   for (const b of swept) {
@@ -659,9 +661,8 @@ const FAINTED = () => [
       "it answers no threat and is exposed to none: dead weight contributes nothing");
   }
   assert.equal(hardcore.before.v, noSupport.before.v, "and the two calendars that strand it agree on what the five are worth");
-  // Taking the empty slot grows the party from five to six, and exposure is the share of the party a threat beats,
-  // so a sixth that loses more duels than it answers is worth less to the team than the slot standing empty. The
-  // search prices that, which is why the swap it picks is not always the dead slot.
+  // A sixth that loses more duels than it answers can be worth less to the team than the slot standing empty
+  // (CONTEXT.md, `Exposure`), which is why the swap the search picks is not always the dead slot.
   console.log(`  every slot the search tried, against ${five} live members:`);
   console.log(`    ${hardcore.tried.map(x => `${x.slot.name}${x.slot.dead ? "†" : ""} ${t1(x.delta)}`).join("  ")}`);
   assert.ok(hardcore.tried.length === PARTY_SIZE, "the search tried every slot, the dead one included");

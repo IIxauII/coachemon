@@ -18,7 +18,7 @@ Normal Fairy a better answer to Fairy · a better backup to Poison · ΔV +0.3 t
 · Snorlax Snorlax ← Salamence Salamence +0.1 turns
 Normal Flying Fighting now beats 2 of 5, down from 3 of 6 · Poison now beats 2 of 5, down from 3 of 6 · ΔV +0.1 turns · spends Salamence L22 · Snorlax BST 540 → 572 · offers Dragon Rush/Bounce
 · Snorlax Snorlax ← Azumarill Azumarill −0.1 turns
-Normal Fairy no backup left to Ground · Grass now beats 4 of 5 · ΔV −0.1 turns · spends Azumarill L42 · Snorlax BST 540 → 481 · offers Aqua Tail/Play Rough
+Normal Fairy no backup left to Ground · Grass now beats 4 of 5, up from 4 of 6 · ΔV −0.1 turns · spends Azumarill L42 · Snorlax BST 540 → 481 · offers Aqua Tail/Play Rough
 summary Snorlax ← Mimikyu (+0.3 turns) · back out: Azumarill ← Salamence is better (+0.8 turns)
 == Hardcore, Salamence fainted
 ⌃ ×
@@ -36,7 +36,7 @@ summary Azumarill ← Mimikyu (+0.7 turns) · pick Azumarill first, then Mimikyu
 🧬 Splice Garchomp ← Magikarp (−1.6 turns) · no fusion worth a member — back out, the Splicer stays unspent
 Fusions
 · Garchomp Garchomp ← Magikarp Magikarp −1.6 turns
-Dragon Water Normal now beats 1 of 1 · Flying now beats 1 of 1 · ΔV −1.6 turns · spends Magikarp L20 · Garchomp BST 600 → 401 · offers Tackle · Magikarp still evolves · keeps passive Sand Force
+Dragon Water Normal now beats 1 of 1, up from 1 of 2 · Flying now beats 1 of 1, up from 1 of 2 · ΔV −1.6 turns · spends Magikarp L20 · Garchomp BST 600 → 401 · offers Tackle · Magikarp still evolves · keeps passive Sand Force
 · Magikarp Magikarp ← Garchomp Garchomp −9.7 turns
 Water Ground no answer left to Normal · no answer left to Fighting · ΔV −9.7 turns · spends Garchomp L50 · Magikarp BST 200 → 401 · offers Dragon Claw/Earthquake · Magikarp still evolves
 summary Garchomp ← Magikarp (−1.6 turns) · no fusion worth a member — back out, the Splicer stays unspent
@@ -55,7 +55,7 @@ Spliced Endless: unfused mons run on half their base stats
 summary Garchomp ← Azumarill (+5.3 turns) · pick Garchomp first, then Azumarill
 == Snorlax ← Mimikyu
 ΔV +0.1 turns · spends Mimikyu L30 · Disguise doesn't work fused · Snorlax BST 540 → 510 · offers Shadow Claw
-Water now beats 3 of 3 · Grass now beats 3 of 3
+Water now beats 3 of 3, up from 3 of 4 · Grass now beats 3 of 3, up from 3 of 4
 == Azumarill's passive unreadable
 30 pairs → 25 · unread null
 == party screen, not splicing

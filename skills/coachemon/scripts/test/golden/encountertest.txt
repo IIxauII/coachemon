@@ -406,22 +406,22 @@ summary Uncommon Breed: take Charm — charm it: Eevee joins with better IVs and
 offer Eevee: team take (Ground now beats 2 of 5, down from 2 of 4; Rock now beats 2 of 5, down from 2 of 4) · account 3 of 2 · estimate
 == salesman, judged
 ⌃ {Hide the drawer} × {Close}
-🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5 · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5 · Larvesta: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
 Options
 ★ Buy — $2,020: Larvesta (hidden ability) joins at L5
-team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species
+team: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3, new species
 · Leave — shop only, no reward
-summary The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5 · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
-offer Larvesta: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+summary The Pokémon Salesman: take Buy — $2,020: Larvesta (hidden ability) joins at L5 · Larvesta: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
+offer Larvesta: team skip (Ground now beats 2 of 4, up from 1 of 3; Rock now beats 2 of 4, up from 1 of 3) · account 3 of 2 · estimate
 == salesman, judged, already caught
 ⌃ {Hide the drawer} × {Close}
-🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Leave — shop only, no reward · avoid Buy · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+🎭 The Pokémon Salesman ultra The Pokémon Salesman: take Leave — shop only, no reward · avoid Buy · Larvesta: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
 Options
 ✗ Buy — $2,020: Larvesta (hidden ability) joins at L5
-L5 and team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+L5 and team: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
 ★ Leave — shop only, no reward
-summary The Pokémon Salesman: take Leave — shop only, no reward · avoid Buy · Larvesta: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
-offer Larvesta: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 0 of 2 · estimate
+summary The Pokémon Salesman: take Leave — shop only, no reward · avoid Buy · Larvesta: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
+offer Larvesta: team skip (Ground now beats 2 of 4, up from 1 of 3; Rock now beats 2 of 4, up from 1 of 3) · account 0 of 2 · estimate
 == dancing lessons, judged, the team wants it
 ⌃ {Hide the drawer} × {Close}
 🎭 Dancing Lessons great Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping the dance move you used · Oricorio: take, a backup to Fighting at last, a backup to Flying at last
@@ -455,18 +455,18 @@ summary Dancing Lessons: take Dance — show it a dance: Oricorio joins, keeping
 offer Oricorio: team swap for Feebas (Ground now beats 2 of 6, down from 3; Rock now beats 2 of 6, down from 3) · account 3 of 2 · estimate
 == safari zone, the three judged
 ⌃ {Hide the drawer} × {Close}
-🎭 Safari Zone great Safari Zone: take Pay — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes · Rattata: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Pidgey: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Caterpie: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+🎭 Safari Zone great Safari Zone: take Pay — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes · Rattata: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3 · Pidgey: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3 · Caterpie: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
 Options
 ★ Pay fixed {fixed by the run seed: this is what happens} — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes
-3 of the three are worth a ball: team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species, and it leaves $3,990
+3 of the three are worth a ball: team: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3, new species, and it leaves $3,990
 · Leave — shop only, no reward
-summary Safari Zone: take Pay — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes · Rattata: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Pidgey: skip, Ground now beats 2 of 4, Rock now beats 2 of 4 · Caterpie: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
-offer Rattata: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
-offer Pidgey: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 5 of 2 · estimate
-offer Caterpie: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+summary Safari Zone: take Pay — $1,010: Rattata L32, Pidgey shiny L32, Caterpie L32 in turn — ball, bait, mud or run each time, each turn judged as it comes · Rattata: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3 · Pidgey: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3 · Caterpie: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
+offer Rattata: team skip (Ground now beats 2 of 4, up from 1 of 3; Rock now beats 2 of 4, up from 1 of 3) · account 3 of 2 · estimate
+offer Pidgey: team skip (Ground now beats 2 of 4, up from 1 of 3; Rock now beats 2 of 4, up from 1 of 3) · account 5 of 2 · estimate
+offer Caterpie: team skip (Ground now beats 2 of 4, up from 1 of 3; Rock now beats 2 of 4, up from 1 of 3) · account 3 of 2 · estimate
 == safari zone, a minigame turn judged
 ⌃ {Hide the drawer} × {Close}
-🎭 Safari Zone great Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
+🎭 Safari Zone great Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
 Options
 ★ Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48%
 throwing until it is settled lands it 55% of the time from here
@@ -478,9 +478,9 @@ mudding first lands it 48% of the time from here
 you would be giving up a 55% catch
 Notes
 · Nidorina at L32: catch rate 45, stages +0 catch / +0 flee, 2 mons after this one
-· worth a ball: team: skip, Ground now beats 2 of 4, Rock now beats 2 of 4, new species
-summary Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, Rock now beats 2 of 4
-offer Nidorina: team skip (Ground now beats 2 of 4; Rock now beats 2 of 4) · account 3 of 2 · estimate
+· worth a ball: team: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3, new species
+summary Safari Zone vs Nidorina: take Throw a ball — 37% to catch it now, and a miss ends the turn — it bolts at 48% · avoid Flee · Nidorina: skip, Ground now beats 2 of 4, up from 1 of 3, Rock now beats 2 of 4, up from 1 of 3
+offer Nidorina: team skip (Ground now beats 2 of 4, up from 1 of 3; Rock now beats 2 of 4, up from 1 of 3) · account 3 of 2 · estimate
 == gts, every offer judged and ranked by net value
 ⌃ {Hide the drawer} × {Close}
 🎭 Global Trade System common Global Trade System: take Trade — trade: best offer Magikarp → Salamence (net +1.0 turns) · Salamence: swap for Magikarp, Ground now beats 3 of 6, down from 4, Rock now beats 3 of 6, down from 4 · Rattata: swap for Magikarp, Ice now beats 3 of 6, down from 4, Normal now beats 2 of 6, down from 3 · Mewtwo: skip · Salamence: skip · Rattata: skip, no backup left to Ground, no backup left to Rock
@@ -514,7 +514,7 @@ summary Global Trade System: your call · Salamence: skip
   Garchomp → Salamence: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
 == gts, the fainted member is healed before the next big fight
 ⌃ {Hide the drawer} × {Close}
-🎭 Global Trade System common Global Trade System: your call · Salamence: skip · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, Poison now beats 1 of 3, Ground now beats 1 of 3 · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+🎭 Global Trade System common Global Trade System: your call · Salamence: skip · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, Poison now beats 1 of 3, up from 0 of 2, Ground now beats 1 of 3, up from 0 of 2 · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
 Options
 · Trade — trade: best offer Jolteon → Salamence (net +0.0 turns)
 no offer clears the margin
@@ -522,14 +522,14 @@ no offer clears the margin
 a gamble
 · Item Trade — trade a held item for a random item one tier up
 · Leave — shop only, no reward
-summary Global Trade System: your call · Salamence: skip · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, Poison now beats 1 of 3, Ground now beats 1 of 3 · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
+summary Global Trade System: your call · Salamence: skip · Salamence: skip, a weaker backup to Poison, a weaker backup to Ghost · Mewtwo: skip, a weaker backup to Poison, a weaker backup to Ghost · Rattata: skip, Poison now beats 1 of 3, up from 0 of 2, Ground now beats 1 of 3, up from 0 of 2 · Rattata: skip, no backup left to Poison, no backup left to Ghost · Rattata: skip, no backup left to Poison, no backup left to Ghost
   Jolteon → Salamence: skip · net +0.0 (ΔV +0.0 − release +0.0) · estimate
   Lapras → Salamence: skip · net −0.1 (ΔV −0.1 − release +0.0) · estimate
       a weaker backup to Poison; a weaker backup to Ghost
   Garchomp → Mewtwo: skip · net −0.2 (ΔV −0.2 − release +0.0) · estimate
       a weaker backup to Poison; a weaker backup to Ghost
   Jolteon → Rattata: skip · net −0.3 (ΔV −0.3 − release +0.0) · estimate
-      Poison now beats 1 of 3; Ground now beats 1 of 3
+      Poison now beats 1 of 3, up from 0 of 2; Ground now beats 1 of 3, up from 0 of 2
   Garchomp → Rattata: skip · net −1.5 (ΔV −1.5 − release +0.0) · estimate
       no backup left to Poison; no backup left to Ghost
   Lapras → Rattata: skip · net −1.8 (ΔV −1.8 − release +0.0) · estimate
