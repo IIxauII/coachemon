@@ -87,20 +87,25 @@ const vitest = (): Promise<void> =>
     child.on("close", () => resolve());
   });
 
+// Exits only after the `finally`: `process.exit` inside the `try` would leave the bundle and test in the clone.
+let code = 0;
 try {
   rmSync(recordsPath, { force: true });
   writeFileSync(bundlePath, bundle("hud", { expose: true, files }));
   writeFileSync(testPath, readFileSync(TEMPLATE, "utf8"));
   await vitest();
-  if (!existsSync(recordsPath)) {
-    missing("The walk wrote no records.", "Its vitest output is above.");
+  if (existsSync(recordsPath)) {
+    const records: (Graded | Stop)[] = JSON.parse(readFileSync(recordsPath, "utf8"));
+    writeFileSync(opt.out, JSON.stringify(records));
+    console.log(report(records));
+    console.log(`\nrecords: ${opt.out}`);
+  } else {
+    console.error("The walk wrote no records.\n\n  Its errors are above; --verbose adds vitest's output.\n");
+    code = 2;
   }
-  const records: (Graded | Stop)[] = JSON.parse(readFileSync(recordsPath, "utf8"));
-  writeFileSync(opt.out, JSON.stringify(records));
-  console.log(report(records));
-  console.log(`\nrecords: ${opt.out}`);
 } finally {
   for (const artifact of [bundlePath, testPath, recordsPath]) {
     rmSync(artifact, { force: true });
   }
 }
+process.exit(code);
