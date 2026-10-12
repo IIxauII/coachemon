@@ -1,0 +1,188 @@
+// Runs inside the pinned clone, never this repo: `run.ts` copies it in and removes it again, so every `#…` import is
+// upstream's.
+import { readFileSync, writeFileSync } from "node:fs";
+import { timedEventManager } from "#app/global-event-manager";
+import { speciesDataRegistry } from "#app/global-species-data-registry";
+import { activeOverrides } from "#app/overrides";
+import { BattleStyle } from "#enums/battle-style";
+import { BattlerIndex } from "#enums/battler-index";
+import { Button } from "#enums/buttons";
+import { MoveId } from "#enums/move-id";
+import { SpeciesId } from "#enums/species-id";
+import { UiMode } from "#enums/ui-mode";
+import { GameManager } from "#test/framework/game-manager";
+import { runSelectMysteryEncounterOption } from "#test/utils/encounter-test-utils";
+import { beforeAll, beforeEach, describe, it, vi } from "vitest";
+
+const BUNDLE = process.env.COACH_BUNDLE as string;
+const OUT = process.env.COACH_OUT as string;
+const SEEDS = (process.env.COACH_SEEDS ?? "").split(",").filter(Boolean);
+const LAST_WAVE = Number(process.env.COACH_LAST_WAVE);
+const REACH = 10;
+
+// biome-ignore lint/suspicious/noExplicitAny: the HUD is plain page-world JS with no types here.
+const g = globalThis as any;
+
+function loadHud() {
+  if (g.__hud) {
+    return g.__hud;
+  }
+  g.window = globalThis;
+  // biome-ignore lint/security/noGlobalEval: the HUD ships as one injectable script; this is how a page loads it.
+  (0, eval)(readFileSync(BUNDLE, "utf8"));
+  g.__hud["04-game-tables"].setGameTables({ species: speciesDataRegistry, events: timedEventManager });
+  return g.__hud;
+}
+
+const PARTY = [SpeciesId.LAPRAS, SpeciesId.GENGAR, SpeciesId.ABRA] as const;
+
+/**
+ * The handler only ever looks at the head of its queue, so a prompt left for a screen that never showed (an
+ * encounter's message, a reward screen a wave didn't have) holds every prompt behind it.
+ */
+function forgetPrompts(game: GameManager) {
+  (game.promptHandler as unknown as { prompts: unknown[] }).prompts.length = 0;
+}
+
+/** Where the HUD would first show the wave: its first command, or the encounter's option screen. */
+async function arrive(game: GameManager) {
+  forgetPrompts(game);
+  game.doSelectModifier();
+  // The wave's battle exists once this has run; which phase then starts it differs by biome and by kind.
+  await game.phaseInterceptor.to("NewBattlePhase");
+  // An encounter can leave a second reward screen behind the new battle; unused, this expires at the next command.
+  game.doSelectModifier();
+  if (game.scene.currentBattle.isBattleMysteryEncounter()) {
+    await game.phaseInterceptor.to("MysteryEncounterPhase", false);
+  } else {
+    await game.phaseInterceptor.to("CommandPhase");
+  }
+}
+
+/**
+ * The last option the party can take, which leaves on most encounters, and the first member wherever it asks for
+ * one. True when the option starts a battle, which is then at its first command.
+ */
+async function chooseOption(game: GameManager): Promise<boolean> {
+  const options = game.scene.currentBattle.mysteryEncounter!.options;
+  let n = options.length;
+  while (n > 1 && !options[n - 1].meetsRequirements()) {
+    n--;
+  }
+  const option = options[n - 1];
+  const asksForMember = option.primaryPokemonRequirements.length + option.secondaryPokemonRequirements.length > 0;
+  await runSelectMysteryEncounterOption(game, n, asksForMember ? { pokemonNo: 1 } : undefined);
+  forgetPrompts(game);
+  // An option can open the party without a requirement saying so: the first member, then "Select".
+  game.onNextPrompt(
+    "MysteryEncounterPhase",
+    UiMode.PARTY,
+    () => {
+      const party = game.scene.ui.getHandler();
+      party.processInput(Button.ACTION);
+      party.processInput(Button.ACTION);
+    },
+    () => !game.isCurrentPhase("MysteryEncounterPhase"),
+  );
+  game.onNextPrompt(
+    "MysteryEncounterOptionSelectedPhase",
+    UiMode.MESSAGE,
+    () => game.scene.ui.getHandler().processInput(Button.ACTION),
+    () => game.isCurrentPhase("MysteryEncounterBattlePhase", "MysteryEncounterRewardsPhase"),
+  );
+  await game.phaseInterceptor.to("MysteryEncounterOptionSelectedPhase");
+  if (game.isCurrentPhase("MysteryEncounterBattlePhase")) {
+    await game.phaseInterceptor.to("CommandPhase");
+    return true;
+  }
+  await game.phaseInterceptor.to("MysteryEncounterRewardsPhase");
+  return false;
+}
+
+async function clear(game: GameManager) {
+  forgetPrompts(game);
+  if (game.isCurrentPhase("MysteryEncounterPhase") && !(await chooseOption(game))) {
+    return;
+  }
+  forgetPrompts(game);
+  const b = game.scene.currentBattle;
+  const field = game.scene.getEnemyField();
+  // The bench first, or a trainer sends its next member out.
+  for (const p of b.enemyParty) {
+    if (!field.includes(p)) {
+      p.hp = 0;
+    }
+  }
+  // A faint only plays out through a turn, and a turn needs our commands. The foes are down before it starts, so
+  // none of them acts.
+  game.move.select(MoveId.SPLASH, BattlerIndex.PLAYER);
+  if (b.double && game.scene.getPlayerField().length > 1) {
+    game.move.select(MoveId.SPLASH, BattlerIndex.PLAYER_2);
+  }
+  await game.doKillOpponents();
+}
+
+describe("Coachemon oracle - preview stability by distance", () => {
+  let phaserGame: Phaser.Game;
+  let game: GameManager;
+  const records: unknown[] = [];
+
+  beforeAll(() => {
+    phaserGame = new Phaser.Game({ type: Phaser.HEADLESS });
+  });
+
+  beforeEach(() => {
+    game = new GameManager(phaserGame);
+  });
+
+  it.each(SEEDS)("seed %s", async seed => {
+    const hud = loadHud();
+    // The harness turns encounters off; the real rate is `null`, and any number also lifts the three-wave gap.
+    vi.spyOn(activeOverrides, "MYSTERY_ENCOUNTER_RATE_OVERRIDE", "get").mockReturnValue(null);
+    // Over the level cap, so nothing levels and no move-learn prompt stops the walk.
+    game.override.startingLevel(100).moveset(MoveId.SPLASH);
+    game.settings.battleStyle(BattleStyle.SET);
+    await game.classicMode.startBattle(...PARTY);
+    // The harness starts every game on the seed "test" (`generateStarters`); this one is ours from wave 2 on, its gym
+    // and day-cycle offsets with it.
+    game.override.seed(seed);
+
+    const pending = new Map<number, { from: number; kind: string | null; rebuilt: boolean; model: unknown }[]>();
+    let stopped: string | null = null;
+    for (;;) {
+      const s = game.scene;
+      const w = s.currentBattle.waveIndex;
+      const actual = hud["48-preview"].previewActual(s);
+      for (const { from, kind, rebuilt, model } of pending.get(w) ?? []) {
+        const { right, wrong, mine } = hud["48-preview"].previewGrade(model, actual);
+        const { confidence } = model as { confidence: unknown };
+        const why = wrong.length ? { mine, actual } : {};
+        records.push({ seed, from, wave: w, kind, rebuilt, confidence, right, wrong, ...why });
+      }
+      pending.delete(w);
+      if (w >= LAST_WAVE) {
+        break;
+      }
+      const calendar = hud["03-calendar"];
+      hud["26-run"].readRun(s, (run: unknown) => {
+        for (let t = w + 1; t <= w + REACH && t <= LAST_WAVE; t++) {
+          const model = hud["48-preview"].previewFor(run, t);
+          if (model && !model.unavailable) {
+            const at = pending.get(t) ?? [];
+            at.push({ from: w, kind: calendar.waveKind(s, t), rebuilt: calendar.arenaRebuiltBetween(w, t), model });
+            pending.set(t, at);
+          }
+        }
+      });
+      try {
+        await clear(game);
+        await arrive(game);
+      } catch (e) {
+        stopped = `wave ${w}: ${e instanceof Error ? e.message : String(e)}`;
+        break;
+      }
+    }
+    records.push({ seed, stopped, reached: game.scene.currentBattle.waveIndex });
+    writeFileSync(OUT, JSON.stringify(records));
+  }, 3_600_000);
+});

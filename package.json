@@ -20,6 +20,7 @@
     "release:safari": "node scripts/release/safari-release.ts",
     "drift:check": "node scripts/drift.ts",
     "oracle:encounter": "node scripts/encounter-oracle/run.ts",
+    "oracle:preview": "node scripts/preview-stability/run.ts",
     "ladder:drift": "node scripts/drift.ts"
   },
   "devDependencies": {
