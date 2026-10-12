@@ -1264,8 +1264,8 @@ draws, in order. A fork is exact about its own roll, **not about its inputs**: a
 forked, but keyed on a trainer drawn on the stream, so the party is `replay`. Only a fixed battle — kind and trainer
 both a table lookup — is exact end to end; a gym wave's *kind* is exact, its trainer is not. `48-preview.js` replays
 the table inside `executeWithSeedOffset(fn, w, seed)` (the same sow as `resetSeed(w)`) with `currentBattle` swapped
-for a stand-in at `waveIndex` w−1 through row 5 and for the `Battle` it built through the party, and `waveSeed` pinned,
-labels fields `exact` / `replay` / `estimate`, and scores itself on arrival.
+for the `Battle` it built and `waveSeed` pinned, labels fields `exact` / `replay` / `estimate`, and scores itself on
+arrival.
 
 **Side effects of the calls it makes.** Pure: `isFixedBattle` / `getFixedBattle` (`src/game-mode.ts:357`, `:370`;
 both run challenge hooks), `isBoss` (`:313`). Draws only inside their own fork: `isWaveMysteryEncounter`,

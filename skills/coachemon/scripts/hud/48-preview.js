@@ -43,9 +43,8 @@ const withBattle = (s, battle, fn) => {
   s.currentBattle = battle;
   try { return fn(); } finally { s.currentBattle = live; }
 };
-// `newBattle` builds the wave's trainer, its double and its `Battle` while `currentBattle` is still the wave before, and
-// an evil team sizes its party off that (game-code.md §11): built under the live battle, a fight read from further out
-// fielded the wrong party (#622).
+// The battle `newBattle` runs under (game-code.md §11, §12): built under the live one instead, an evil team read from
+// further out fielded the wrong party (#622).
 const battleBefore = (s, w) => Object.create(s.currentBattle, { waveIndex: { value: w - 1 } });
 const drop = o => { try { o?.destroy?.(); } catch {} };
 
@@ -91,12 +90,13 @@ const replay = (s, w, playerParty) => {
   try {
     return fork(s, w, s.seed, () => {
       const fixedCfg = tryDo(() => (gm.isFixedBattle(w) ? gm.getFixedBattle(w) : null));
-      let type, trainer = null, forcedDouble, me = null, double, battle;
+      let me = null;
       // A grunt's double is `Math.random`, unseeded (game-code.md §12).
       const gruntDouble = !!fixedCfg && fixedCfg.double == null && isGruntWave(w);
       if (gruntDouble) notes.push("this grunt's double is an unseeded roll: it can't be read ahead");
 
-      withBattle(s, battleBefore(s, w), () => {
+      const { type, trainer, double, battle } = withBattle(s, battleBefore(s, w), () => {
+        let type, trainer = null, forcedDouble;
         if (fixedCfg) {
           type = fixedCfg.battleType ?? TRAINER;
           forcedDouble = fixedCfg.double;
@@ -117,9 +117,10 @@ const replay = (s, w, playerParty) => {
         }
         if (trainer) built.push(trainer);
 
-        double = !!s.checkIsDouble({ double: forcedDouble, battleType: type, waveIndex: w, trainer });
-        battle = fork(s, w << 3, waveSeed,
+        const double = !!s.checkIsDouble({ double: forcedDouble, battleType: type, waveIndex: w, trainer });
+        const battle = fork(s, w << 3, waveSeed,
           () => new (s.currentBattle.constructor)(gm, { waveIndex: w, battleType: type, trainer, double }));
+        return { type, trainer, double, battle };
       });
       const battleLevels = [...(battle.enemyLevels ?? [])];
 

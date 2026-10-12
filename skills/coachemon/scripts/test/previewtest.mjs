@@ -62,9 +62,8 @@ const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => { const m = {
   destroy() { destroyed++; },
 }; return m; };
 
-// `getEvilGruntPartyTemplate`'s shape: the party is sized off whichever battle is live when it is asked
-// (game-code.md §12).
-const EVIL = wave => (wave <= 62 ? [0, 0, 0] : wave <= 64 ? [0, 0, 3] : [0, 0, 0, 3, 3, 5]);
+// `getEvilGruntPartyTemplate` (game-code.md §12).
+const evilTemplate = wave => (wave <= 62 ? [0, 0, 0] : wave <= 64 ? [0, 0, 3] : [0, 0, 0, 3, 3, 5]);
 
 /** `relevel`: slot → the level a rival's `postProcess` writes over the member once it is built (game-code.md §11). */
 const makeTrainer = (scene, { name, type, size = 2, double = false, staticParty = false, relevel = {}, template = null }) => {
@@ -104,8 +103,8 @@ const FIXED = {
   8: { seedOffsetWaveIndex: 0, name: "Rival", type: 20 },
   25: { seedOffsetWaveIndex: 8, name: "Rival", type: 20, relevel: { 2: 40 } },
   35: { seedOffsetWaveIndex: 0, name: "Rocket Grunt", type: 30 },
-  64: { seedOffsetWaveIndex: 35, name: "Rocket Grunt", type: 30, template: EVIL },
-  66: { seedOffsetWaveIndex: 35, name: "Rocket Admin", type: 31, template: EVIL },
+  64: { seedOffsetWaveIndex: 35, name: "Rocket Grunt", type: 30, template: evilTemplate },
+  66: { seedOffsetWaveIndex: 35, name: "Rocket Admin", type: 31, template: evilTemplate },
 };
 
 // getPartyLuckValue (game-code.md §12).
