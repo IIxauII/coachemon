@@ -10,7 +10,7 @@ import { spawnTimeOfDay } from "./47-biome.js";
 const WILD = BattleType.WILD, TRAINER = BattleType.TRAINER, MYSTERY = BattleType.MYSTERY_ENCOUNTER;
 const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };
 const RANK = [CONFIDENCE.exact, CONFIDENCE.replay, CONFIDENCE.estimate];
-const weakest = (...cs) => RANK[Math.max(...cs.filter(Boolean).map(c => RANK.indexOf(c)))];
+export const weakestConfidence = (...cs) => RANK[Math.max(...cs.filter(Boolean).map(c => RANK.indexOf(c)))];
 const NEEDED = ["executeWithSeedOffset", "isWaveMysteryEncounter", "generateNewBattleTrainer", "checkIsDouble",
   "getEncounterBossSegments", "addEnemyPokemon", "getMysteryEncounter"];
 // The scene's wrapper first: the arena's method called with the scene's arguments is a different draw
@@ -176,9 +176,9 @@ const replay = (s, w, playerParty) => {
         confidence: (() => {
           const kind = kindIsRolled(s, w) ? CONFIDENCE.replay : CONFIDENCE.exact;
           const who = !trainer ? null
-            : leftBehind ? CONFIDENCE.estimate : weakest(kind, fixedCfg ? CONFIDENCE.exact : CONFIDENCE.replay);
+            : leftBehind ? CONFIDENCE.estimate : weakestConfidence(kind, fixedCfg ? CONFIDENCE.exact : CONFIDENCE.replay);
           const dbl = gruntDouble || leftBehind ? CONFIDENCE.estimate
-            : type === WILD ? weakest(kind, CONFIDENCE.replay) : weakest(kind, who);
+            : type === WILD ? weakestConfidence(kind, CONFIDENCE.replay) : weakestConfidence(kind, who);
           // A fork is exact about its own roll, not about its inputs: a trainer's members are keyed on the trainer,
           // and the levels' fork on the type, the trainer and the double (game-code.md §11).
           const foesOwn = type === WILD ? (podShift ? CONFIDENCE.estimate : CONFIDENCE.replay) : CONFIDENCE.exact;
@@ -187,9 +187,9 @@ const replay = (s, w, playerParty) => {
             // A grunt's name is as unseeded as its double (game-code.md §12), and missed under an `exact` claim. Its
             // party isn't, so `foes` keeps `who` (#623).
             trainer: gruntDouble ? CONFIDENCE.estimate : who,
-            foes: weakest(kind, who, foesOwn),
+            foes: weakestConfidence(kind, who, foesOwn),
             double: dbl,
-            levels: weakest(kind, who, dbl),
+            levels: weakestConfidence(kind, who, dbl),
           };
         })(),
         notes,
@@ -280,7 +280,8 @@ export const previewFor = (run, w) => {
 export const previewNext = run => previewFor(run, run.facts.wave + 1);
 
 const PREVIEW_MARK = { exact: "", replay: "~", estimate: "?" };
-export const previewMark = (m, field) => (m.missed?.includes(field) ? "!" : PREVIEW_MARK[m.confidence?.[field]] ?? "");
+export const confidenceMark = c => PREVIEW_MARK[c] ?? "";
+export const previewMark = (m, field) => (m.missed?.includes(field) ? "!" : confidenceMark(m.confidence?.[field]));
 // A fixed battle is named in a word, not `★`: on the panel that means the pick (#349).
 export const previewKind = m => (m.type === "me" ? "mystery" : m.fixed ? `fixed ${m.type}` : m.type);
 const previewFoes = (m, long) => {

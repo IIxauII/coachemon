@@ -151,7 +151,7 @@ const lines = el => wholeCard(el)
 
 
 // `t`: what loadGameTables would have found; null is not loaded yet.
-const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave = 30, from = 3, offset = 0, t = tables(), dex = {}, gameMode } = {}) => {
+const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave = 30, from = 3, offset = 0, t = tables(), dex = {}, gameMode, roster = null } = {}) => {
   let el;
   globalThis.window = globalThis; delete globalThis.__coachHud;
   const handler = { config: { options: labels.map(label => ({ label, handler: () => true })) } };
@@ -171,6 +171,8 @@ const mount = ({ labels = ["Swamp", "Construction Site"], party = team(), wave =
   const { setGameTables } = globalThis.__hud["04-game-tables"];
   const { spawnsFor, formsFor, spawnTimeOfDay } = globalThis.__hud["47-biome"];
   setGameTables(t);
+  // What 49-ahead would hand the threat set as the fight's roster, standing in for a preview this fake can't replay.
+  if (roster) globalThis.__hud["11-threats"].setRosterRead(roster);
   globalThis.__hud["98-watch"].rebuild();
   globalThis.__bm = { spawnsFor, formsFor, spawnTimeOfDay };
   return { el, scene, handler, model: () => globalThis.__coachHud.last() };
@@ -243,6 +245,20 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.equal(swamp.catch, null);
   assert.equal(swamp.opportunity, 0);
   assert.equal(m.pick, 1, "and the catch is in the pick");
+
+  // The next gym's biome is what this card chooses, so its catch is judged on the standard threats alone however much
+  // a preview of the fight reads (#592, story 34): with a roster on hand for every wave, the card never asks for it.
+  const asked = [];
+  const roster = (_, wave) => {
+    asked.push(wave);
+    return { wave, name: `Gym W${wave}`, confidence: "replay", foes: [{ name: "Garchomp", level: 30,
+      types: ["Dragon", "Ground"], ability: "Rough Skin", passive: null, stats: [100, 80, 70, 60, 65, 75], segments: 0,
+      moveIds: [1, 2, 3, 4] }] };
+  };
+  const blind = mount({ wave: 60, party: lowTeam(), roster }).model();
+  assert.deepEqual(asked, [], "no roster read for a fight the biome decides");
+  assert.deepEqual(blind.options.map(o => o.catch), m.options.map(o => o.catch), "and the same catch on every option");
+  assert.equal(blind.pick, m.pick);
 }
 
 // ---- Before the tables load, the card lists the options and judges none

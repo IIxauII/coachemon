@@ -5,7 +5,8 @@ import { stage } from "./01-meter.js";
 import { bigFightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { partyAtFight, partyLuck, partyProfile } from "./08-party.js";
-import { previewFor } from "./48-preview.js";
+import { setRosterRead } from "./11-threats.js";
+import { confidenceMark, previewFor, weakestConfidence } from "./48-preview.js";
 
 const ROSTER_HORIZON = 10;
 const FINAL_NOTICE = 10;
@@ -158,6 +159,17 @@ const build = (run, wave) => {
     eternatus: finalNear ? eternatusCard(s, next?.kind === "final" ? named : null, party) : null,
   };
 };
+
+// The threat set's roster half reads the next big fight through here, 11-threats being below this file. The fight
+// is named as the road names it, and marked with the weakest of the fields the roster rests on.
+setRosterRead((run, wave) => {
+  const next = aheadModel(run)?.next;
+  if (next?.wave !== wave || !next.foes?.length) return null;
+  const c = next.confidence ?? {};
+  const confidence = weakestConfidence(c.foes, c.levels, next.trainer ? c.trainer : null);
+  return { wave, name: `${next.trainer ?? next.label} W${wave}${confidenceMark(confidence)}`, confidence,
+    foes: next.foes };
+});
 
 // The next big fight's foes, which a learned move is judged against (#122).
 export const learnRoster = model => {

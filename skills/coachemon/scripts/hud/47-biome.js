@@ -271,7 +271,7 @@ const rootOfSpecies = sp => tryDo(() => sp.getRootSpeciesId(true), sp?.speciesId
  * about what the team loses.
  */
 const catchJudgment = (run, sp, fightWave) => {
-  const team = tryDo(() => teamVerdict(run, { species: sp }, { fight: fightWave }));
+  const team = tryDo(() => teamVerdict(run, { species: sp }, { fight: fightWave, roster: false }));
   if (!team || team.unavailable) return null;
   return team.verdict === "take" || team.verdict === "swap" ? team : null;
 };
