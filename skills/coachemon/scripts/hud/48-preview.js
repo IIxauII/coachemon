@@ -128,10 +128,9 @@ const replay = (s, w, playerParty) => {
           let p;
           if (type === TRAINER) {
             p = trainer.genPartyMember(e);
-            // A rival's `postProcess` re-levels a member after its stats are computed, and the game only recomputes
-            // them on the encounter (game-code.md §11): read at the battle's level, the rival's fight 2 previewed a
-            // 16 as a 14 (#621).
-            if (p.level !== level) tryDo(() => p.calculateStats());
+            // A rival's member can be re-levelled or re-formed once built, its stats still the old ones (game-code.md
+            // §11): read off the battle, the rival's fight 2 previewed a 16 as a 14 (#621).
+            tryDo(() => p.calculateStats());
           } else {
             let species = wildSpecies(s, w, level, playerParty);
             // The Golden Bug Net's draw (game-code.md §11): its roll only names a note, but skipping it desyncs the
