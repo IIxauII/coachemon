@@ -60,7 +60,7 @@ const party = (spliced = false) => {
   return mons.map(a => mon(...a, spliced));
 };
 
-// Every name one the randbats snapshot lists, the name being that join's only key, and none a party species above, so
+// Every name is in the randbats snapshot, which is joined on name alone, and none is a party species above, so
 // no member is drawn as a threat against itself. `[speciesId, name, types, baseStats]`; the id orders the pool and so
 // breaks its ties (#578, #589).
 const DEX = [

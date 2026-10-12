@@ -550,7 +550,8 @@ const threatTables = () => {
 
 // ---- Dark Deal: Lapras is "your strongest" only when the calendar leaves fainted Garchomp dead weight (#571).
 {
-  // Limited Support 2 has a heal and no shop, so only where the heal falls decides whether Garchomp is back.
+  // Limited Support 2 has a heal and no shop (game-code.md §12), so only where the heal falls decides whether Garchomp
+  // is back.
   const LS2 = [{ id: 8, value: 2 }];
   const CLASSIC = { isClassic: true, isWaveFinal: w => w === 200, isBoss: w => w % 10 === 0,
     isFixedBattle: w => [5, 8, 25, 35, 55, 62, 64, 66, 95].includes(w), challenges: LS2 };

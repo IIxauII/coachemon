@@ -58,7 +58,7 @@ const fusionOf = (a, b, j, spliced) => {
   const evolves = [a, b].filter(p => tryDo(() => p.species.getEvolutionLevels().length, 0) > 0).map(p => p.name);
   const notes = [
     // This net and "held items move over" below disagree on purpose: the net is charged for the other half's items,
-    // which the game moves over (#588).
+    // which the game moves over (game-code.md §24, #588).
     `ΔV ${signed(r1(j.delta))} turns${j.release ? `, net ${signed(r1(j.net))} after a ${Math.abs(r1(j.release)).toFixed(1)} release` : ""}`,
     `spends ${b.name} L${b.level}${b.hp > 0 ? "" : " (fainted)"}`,
     !ability && lent ? `${lent} doesn't work fused` : null,
