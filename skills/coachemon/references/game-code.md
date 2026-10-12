@@ -1320,7 +1320,8 @@ Every grunt and admin instead sets `partyTemplateFunc` to `getEvilGruntPartyTemp
 (`src/data/trainers/trainer-party-template.ts:254`), which reads `currentBattle?.waveIndex` each time it is asked:
 ≤35 `TWO_AVG`, ≤62 `THREE_AVG`, ≤64 `TWO_AVG_ONE_STRONG`, else `GYM_LEADER_5` (six members; also for a null battle).
 `getPartyTemplate` (`src/field/trainer.ts:255`) re-asks on every call, so the party's size and levels come from
-`getPartyLevels` under wave w−1 (§11), while each member's strength in `genPartyMember` (`:318`) comes from wave w.
+`getPartyLevels` under wave w−1 (§11), while each member's strength, from `genPartyMember`'s own `getPartyTemplate`
+call (`:318`), comes from wave w.
 `Trainer.genPartyMember` (`src/field/trainer.ts:310`) — forks the run seed; adds the member via `addEnemyPokemon` —
 seeds each member at `w + (derivedType << 10) + (((sameSeed ? 0 : i) + 1) << 8)`, or `derivedType + ((i + 1) << 8)`
 for `hasStaticParty` (rivals, admins, evil leaders, gym leaders, Elite Four, champions; `trainer-config.ts:459`), whose
