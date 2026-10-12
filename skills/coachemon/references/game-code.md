@@ -1301,13 +1301,7 @@ for whether a boss is next, the catch card for the run's last wave:
 Only classic and challenge modes carry the table. `isFixedBattle` and `getFixedBattle` (line 370) also ask the
 `FIXED_BATTLES` challenge hook, which writes only a throwaway config; Single Generation rewrites the evil team, Elite Four
 and champion there (`src/data/challenge.ts:497`). The rules overlap (190 is both the champion and a tenth wave); the
-table's order is the precedence the HUD uses. The calendar holds from any point in a run; the roster of the next big
-fight comes from `48-preview.js`'s replay, read wherever that fight is, which is never more than 10 waves out (#591).
-A gym leader's or a wild boss's roster read on the X0 before it is the old biome's: the gym leader comes from the
-arena's trainer pool and the wild boss from its spawn pool, and the replay can only ask the arena the run stands in. So
-its trainer, foes, double and levels are `estimate`. Measured over 30 seeded runs, every such read missed its trainer
-and its foes, while one read 6–9 waves out inside the fight's biome missed no more often than one read the wave before.
-A fixed battle doesn't depend on the biome and keeps its confidence at any distance (#590).
+table's order is the precedence the HUD uses. The calendar holds from any point in a run.
 
 **Who the fixed trainers are.** `handleFixedBattle` (`src/battle-scene.ts:1409`) runs `config.getTrainer()` in a fork
 at `(seedOffsetWaveIndex || w) << 8` on the run seed and `field.add`s the trainer. Rivals take their variant from the
@@ -1884,8 +1878,8 @@ battles, since whether a wave is one is itself a roll. At base odds that is ~12 
 (`src/field/pokemon.ts:3654-3656`), so a spread move loses nothing in a single battle; the bonus is only ever an upside.
 
 **Status moves against the roster ahead (#122).** A learned move is kept for the run, so both the learn card and the
-TM advice hand `learnAdvice` the same foes: the next big fight's, from `49-ahead.js` (`learnRoster`), which reads its
-roster wherever it is, never more than 10 waves out. With none, nothing below applies. Only an inflicted status and a disrupting tag are scaled,
+TM advice hand `learnAdvice` the same foes: the next big fight's, from `49-ahead.js` (`learnRoster`). With none, nothing
+below applies. Only an inflicted status and a disrupting tag are scaled,
 each decided from what the preview hands over per foe (types, ability, passive, moveset). Paths relative to `src/`:
 
 - **Can a status move reach the foe at all.** Status moves ignore the type chart unless they carry

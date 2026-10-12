@@ -163,7 +163,7 @@ const replay = (s, w, playerParty) => {
       const podShift = type === WILD && (todShift || biomeShift);
       if (podShift) notes.push(biomeShift ? "the next biome brings its own spawn pool" : "time of day turns over: the spawn pool shifts");
       // A gym leader or a wild boss read on the X0 before it is replayed off the arena the run is leaving, not its own
-      // (game-code.md §12, #590).
+      // (game-code.md §10, #590).
       const leftBehind = biomeShift && ["gym", "boss"].includes(waveKind(s, w));
       if (leftBehind && trainer) notes.push("the next biome brings its own gym leader");
       return {

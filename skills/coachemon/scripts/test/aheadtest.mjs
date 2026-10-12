@@ -329,7 +329,8 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
     "read on the X0 before it, the gym leader is the old biome's");
   assert.equal(far.next.exact, false);
   assert.equal(far.next.trainerExact, false);
-  assert.deepEqual(ah2.learnRoster(far) && [ah2.learnRoster(far).wave, ah2.learnRoster(far).exact], [110, false]);
+  const roster = ah2.learnRoster(far);
+  assert.deepEqual(roster && [roster.wave, roster.exact], [110, false]);
   console.log(`== ten out ${JSON.stringify({ wave: far.next.wave, who: far.next.trainer, verdict: far.readiness.verdict, confidence: far.next.confidence })}`);
   console.log(`== card\n${card(ah2, far)}`);
   console.log(`summary ${JSON.stringify(ah2.aheadSummary(far))}`);

@@ -519,15 +519,17 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   assert.deepEqual(boss.confidence, { type: "exact", trainer: null, foes: "estimate", double: "estimate", levels: "estimate" },
     "a wild boss drawn from the old biome's pool is no surer");
   console.log(`== across a biome  gym 20 from 10 ${JSON.stringify(gym.confidence)}  boss 40 from 30 ${JSON.stringify(boss.confidence)}`);
+}
 
-  // Read inside the biome it is fought in, the same gym keeps its replay; a fixed battle's party never hung on the biome.
+// ---- Read inside its own biome a gym keeps its replay, and a fixed battle's party never hangs on the biome (#590).
+{
   const { scene: si, pv: pvi } = mount({ wave: 11 });
   const inside = pvi.previewFor(si, 20);
   assert.deepEqual([inside.confidence.trainer, inside.confidence.foes, inside.confidence.levels], ["replay", "replay", "replay"]);
   const { scene: sf, pv: pvf } = mount({ wave: 20 });
   assert.deepEqual(pvf.previewFor(sf, 25).confidence,
     { type: "exact", trainer: "exact", foes: "exact", double: "exact", levels: "exact" }, "a rival across a biome change");
-  // The next wave is never a gym or a boss read across a biome change, so the road group's preview is what it was.
+  // An X1 read on the X0 is never a gym or a boss: only its spawn is the next biome's.
   const next = pvf.previewNext(sf);
   assert.deepEqual([next.wave, next.confidence.double, next.confidence.levels], [21, "replay", "replay"]);
 }

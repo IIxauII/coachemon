@@ -7,7 +7,7 @@ import { gameEvents } from "./04-game-tables.js";
 import { partyAtFight, partyLuck, partyProfile } from "./08-party.js";
 import { previewFor } from "./48-preview.js";
 
-const REACH = 10;
+const ROSTER_HORIZON = 10;
 const FINAL_NOTICE = 10;
 const KIND_LABEL = { final: "final boss", fixed: "fixed battle", gym: "gym leader", boss: "boss" };
 
@@ -131,7 +131,7 @@ const build = (run, wave) => {
   const party = run.facts.party;
   const luck = partyLuck(party, s, gameEvents());
 
-  const model = next && next.wave - wave <= REACH ? previewFor(run, next.wave) : null;
+  const model = next && next.wave - wave <= ROSTER_HORIZON ? previewFor(run, next.wave) : null;
   const named = model && !model.unavailable ? model : null;
   if (next) {
     next.in = next.wave - wave;
