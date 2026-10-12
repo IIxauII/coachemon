@@ -1,6 +1,6 @@
 // The threat set (CONTEXT.md, `Threat set`). The wave alone decides the standard half — the run itself is read for
 // nothing but its level cap — so that half is *exact*, where the roster half carries its preview's confidence.
-import { TYPES } from "./01-core.js";
+import { TYPES, weakestConfidence } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
@@ -165,12 +165,10 @@ const rosterThreatOf = (row, fight) => {
  * Memoised by the wave alone, as the preview it is read off is (48-preview's `previewFor`).
  */
 export const rosterThreats = (run, fight) => run.memo("roster", String(fight), () => {
-  const r = tryDo(() => rosterRead(run, fight));
-  const threats = (r?.foes ?? []).map(f => tryDo(() => rosterThreatOf(f, r))).filter(Boolean);
-  return threats.length ? { wave: r.wave, name: r.name, confidence: r.confidence, threats } : null;
+  const read = tryDo(() => rosterRead(run, fight));
+  const threats = (read?.foes ?? []).map(f => tryDo(() => rosterThreatOf(f, read))).filter(Boolean);
+  return threats.length ? { wave: read.wave, name: read.name, confidence: read.confidence, threats } : null;
 });
-
-const RANK = ["exact", "replay", "estimate"];
 
 /**
  * The whole threat set for the big fight on wave `fight`: the standard half, and the roster half beside it where a
@@ -182,9 +180,9 @@ const RANK = ["exact", "replay", "estimate"];
  */
 export const threatSet = (run, { fight = null, roster = true } = {}) => {
   const standard = standardThreats(run, { fight });
-  const r = roster && !standard.unavailable ? rosterThreats(run, standard.wave) : null;
-  if (!r) return { ...standard, roster: null };
-  return { ...standard, threats: [...standard.threats, ...r.threats],
-    roster: { wave: r.wave, name: r.name, confidence: r.confidence, size: r.threats.length },
-    confidence: RANK[Math.max(RANK.indexOf(standard.confidence), RANK.indexOf(r.confidence))] };
+  const half = roster && !standard.unavailable ? rosterThreats(run, standard.wave) : null;
+  if (!half) return { ...standard, roster: null };
+  return { ...standard, threats: [...standard.threats, ...half.threats],
+    roster: { wave: half.wave, name: half.name, confidence: half.confidence, size: half.threats.length },
+    confidence: weakestConfidence(standard.confidence, half.confidence) };
 };

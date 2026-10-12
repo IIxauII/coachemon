@@ -197,3 +197,8 @@ export const withPick = (pick, fn) => {
   rngPick = pick; rngRanges = [];
   try { return [fn(), rngRanges]; } finally { rngPick = prevPick; rngRanges = prevRanges; }
 };
+
+const CONFIDENCE_RANK = ["exact", "replay", "estimate"];
+// The least sure of `cs`, a null skipped, and `exact` where nothing is left.
+export const weakestConfidence = (...cs) =>
+  CONFIDENCE_RANK[Math.max(0, ...cs.filter(Boolean).map(c => CONFIDENCE_RANK.indexOf(c)))];

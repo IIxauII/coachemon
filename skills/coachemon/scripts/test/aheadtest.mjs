@@ -344,7 +344,11 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
     globalThis.__hud["04-game-tables"].setGameTables({ moves: Object.keys(MOVES).reduce((t, n) => { t[MOVE_IDS[n]] = gameMove(n); return t; }, []) });
     const { rosterThreats } = globalThis.__hud["11-threats"];
     const { aheadModel } = globalThis.__hud["49-ahead"];
-    return globalThis.__hud["26-run"].readRun(scene, run => ({ r: rosterThreats(run, fight), next: aheadModel(run).next }));
+    const rnd = RND.state();
+    const out = globalThis.__hud["26-run"].readRun(scene, run => ({ r: rosterThreats(run, fight), next: aheadModel(run).next }));
+    assert.equal(RND.state(), rnd, "the replay behind the roster leaves the run's stream where it stood");
+    assert.equal(globalThis.__hud["01-core"].sandboxBreachCount(), 0);
+    return out;
   };
   const shown = r => r && JSON.stringify({ wave: r.wave, name: r.name, confidence: r.confidence,
     threats: r.threats.map(t => `${t.label} ${t.combatant.stats.join("/")} ${t.combatant.moveset.map(pm => pm.getName()).join("+")}`) });

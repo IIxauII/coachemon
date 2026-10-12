@@ -2,7 +2,7 @@
 // big fight is worth against the threat set, in turn score, and what a newcomer's swap changes. It runs inside a run
 // read and nowhere else — `run.memo` carries the pair scores, so the cards of one run read share them — and it draws
 // nothing: every duel is the approx matrix over combatants the adapter built off the field.
-import { stat } from "./01-core.js";
+import { stat, weakestConfidence } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
 import { formOf, partyAtFight } from "./08-party.js";
 import { combatantOf, duelEnv, itemKeyOf, pricesItem } from "./09-combatant.js";
@@ -32,9 +32,6 @@ export const PARTY_SIZE = 6; // `PLAYER_PARTY_MAX_SIZE` (game-code.md §23)
 const exposureOf = (beaten, of) => (of ? EXPOSURE(PARTY_SIZE * beaten / of) : 0);
 
 const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };
-const RANK = [CONFIDENCE.exact, CONFIDENCE.replay, CONFIDENCE.estimate];
-// 48-preview's own pair, which this file is below.
-const weakestOf = (...cs) => RANK[Math.max(0, ...cs.filter(Boolean).map(c => RANK.indexOf(c)))];
 
 const bestHit = os => os.reduce((b, o) => (!b || o.dmg > b.dmg ? o : b), null);
 
@@ -99,7 +96,7 @@ const rowOf = (threat, pairs) => {
   const beaten = pairs.filter(x => x.s < 0);
   const revenge = pairs.some(x => x.revenge), switchIn = pairs.some(x => x.switchIn);
   return {
-    threat: threat.label, kind: threat.kind, half: halfOf(threat), fight: threat.fight ?? null,
+    threat: threat.label, kind: threat.kind, half: threat.half, fight: threat.fight ?? null,
     confidence: threat.confidence ?? CONFIDENCE.exact,
     answer: ranked[0] ?? null, backup: ranked[1] ?? null, beaten: beaten.map(x => x.name), of: pairs.length,
     revenge, switchIn,
@@ -108,12 +105,11 @@ const rowOf = (threat, pairs) => {
   };
 };
 
-const halfOf = threat => threat.half ?? "standard";
-const sizesOf = threats => threats.reduce((n, t) => n.set(halfOf(t), (n.get(halfOf(t)) ?? 0) + 1), new Map());
+const sizesOf = threats => threats.reduce((n, t) => n.set(t.half, (n.get(t.half) ?? 0) + 1), new Map());
 // Turns per threat as V counts them: each half of the threat set's own mean, the two summed (#567).
 const perHalf = (threats, valueAt) => {
   const sums = new Map();
-  threats.forEach((t, i) => sums.set(halfOf(t), (sums.get(halfOf(t)) ?? 0) + valueAt(t, i)));
+  threats.forEach((t, i) => sums.set(t.half, (sums.get(t.half) ?? 0) + valueAt(t, i)));
   const sizes = sizesOf(threats);
   let v = 0;
   for (const [half, sum] of sums) v += sum / sizes.get(half);
@@ -121,9 +117,8 @@ const perHalf = (threats, valueAt) => {
 };
 
 /**
- * What `members` — each `{ name, combatant }` — are worth against `set`, in turns per threat: the mean over the
- * standard threats plus the mean over the roster's, so that the four foes of a gym have the say the twenty-two
- * standard threats do. A row's `weight` is its share of V, one over the size of its half.
+ * What `members` — each `{ name, combatant }` — are worth against `set`, in turns per threat, its two halves given
+ * equal say (CONTEXT.md, `Threat set`). A row's `weight` is its share of V, one over the size of its half.
  */
 export const teamValue = (run, set, members) => {
   const env = duelEnv(run?.scene ?? null);
@@ -131,7 +126,7 @@ export const teamValue = (run, set, members) => {
   const sizes = sizesOf(threats);
   const rows = threats.map(t => ({
     ...rowOf(t, members.map(m => ({ name: m.name, ...pairOf(run, env, m.combatant, t.combatant) }))),
-    weight: 1 / sizes.get(halfOf(t)),
+    weight: 1 / sizes.get(t.half),
   }));
   return { v: perHalf(threats, (_, i) => rows[i].value), rows, confidence: set?.confidence ?? CONFIDENCE.exact };
 };
@@ -267,7 +262,7 @@ const newcomerOf = (run, fight, spec) => {
     holding: extra => built([...own, ...extra]),
     // A newcomer a challenge bars is dead weight the moment it joins (CONTEXT.md, `Dead weight`).
     barred: mon ? !tryDo(() => mon.isAllowedInChallenge(), true) : false,
-    confidence: standIn ? weakestOf(p.confidence, CONFIDENCE.estimate) : p.confidence,
+    confidence: standIn ? weakestConfidence(p.confidence, CONFIDENCE.estimate) : p.confidence,
   };
 };
 
@@ -336,7 +331,7 @@ export const weakestMember = (run, { fight = null } = {}) => {
   const party = slotsAt(run, at);
   const live = party.slots.filter(x => x.combatant);
   const out = { fight: at, wave: set.wave, roster: set.roster, mon: null, name: null, dead: null, cost: 0, v: 0,
-    ranked: [], confidence: weakestOf(set.confidence, party.confidence) };
+    ranked: [], confidence: weakestConfidence(set.confidence, party.confidence) };
   if (set.unavailable) return { ...out, unavailable: set.unavailable };
   // The slots come off a memo of their own, so what varies within one run key is the fight and the slots it built.
   const key = JSON.stringify([at, party.slots.map(x => [x.name, x.dead, x.combatant?.key ?? null])]);
@@ -452,7 +447,7 @@ const plainBarred = name => ({ kind: "barred", name,
  * search's pick whether or not the swap clears the margin, so a card can say who would have gone. `release` is what
  * that release destroys and `cost` its parts, `net` is ΔV less the release, `reasons` are the threats the call is read
  * off, and `plain` the one case that needs no threat at all. `roster` is the threat set's roster half, or null where
- * the standard half stood alone; `roster: false` judges on the standard half however much a preview reads.
+ * the standard half stood alone, and `roster` the option of that name (11-threats.js, `threatSet`).
  */
 export const judgeNewcomer = (run, newcomer, { replace = null, fight = null, roster = true } = {}) => {
   const s = run?.scene ?? null;
@@ -467,7 +462,7 @@ export const judgeNewcomer = (run, newcomer, { replace = null, fight = null, ros
   const out = {
     fight: at, wave: set.wave, roster: set.roster, verdict: "skip", replaced: null, delta: 0, release: 0,
     margin: MARGIN, net: 0, reasons: [], plain: null, before, after: null, newcomer: nc,
-    confidence: weakestOf(set.confidence, party.confidence, nc.confidence),
+    confidence: weakestConfidence(set.confidence, party.confidence, nc.confidence),
   };
   if (set.unavailable || !nc.combatant) {
     return { ...out, unavailable: set.unavailable ?? "the newcomer has no stats to duel with" };
@@ -548,7 +543,7 @@ export const judgeFusionPair = (run, base, other, { fight = null } = {}) => {
   const out = {
     fight: at, wave: set.wave, roster: set.roster, verdict: "skip", base: slotRef(a), other: slotRef(b),
     delta: 0, release: 0, margin: MARGIN, net: 0, reasons: [], plain: null, before, after: null, fused: null,
-    confidence: weakestOf(set.confidence, party.confidence),
+    confidence: weakestConfidence(set.confidence, party.confidence),
   };
   if (set.unavailable) return { ...out, unavailable: set.unavailable };
   if (!a || !b || a === b) return { ...out, unavailable: "a fusion is two members of the party" };

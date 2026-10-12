@@ -247,7 +247,7 @@ const near = (a, b, label, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${la
   assert.equal(m.pick, 1, "and the catch is in the pick");
 
   // The next gym's biome is what this card chooses, so its catch is judged on the standard threats alone however much
-  // a preview of the fight reads (#592, story 34): with a roster on hand for every wave, the card never asks for it.
+  // a preview of the fight reads (#567, story 34): with a roster on hand for every wave, the card never asks for it.
   const asked = [];
   const roster = (_, wave) => {
     asked.push(wave);

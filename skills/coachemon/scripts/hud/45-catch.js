@@ -279,8 +279,7 @@ const r1 = x => Math.round((x ?? 0) * 10) / 10;
  *
  * `fight` is the wave to judge at, for a card that already knows which big fight it is asking about: the biome card
  * reads the waves *after* the one the run stands on, so the fight it judges against is the one ahead of those and not
- * the boss the run has just finished (#587). `roster: false` leaves that fight's previewed roster out of the threat
- * set, the biome being what decides it.
+ * the boss the run has just finished (#587), and so passes `roster: false` too (11-threats.js, `threatSet`).
  */
 export const teamVerdict = (run, foe, { replace = null, fight = null, roster = true } = {}) => {
   const j = judgeNewcomer(run, foe, { replace, fight, roster });

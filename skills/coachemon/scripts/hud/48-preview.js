@@ -1,6 +1,6 @@
 // A wave ahead, replayed with the game's own calls in the game's own order inside a seed fork: a read, never a draw on
 // the live stream (game-code.md §11).
-import { TYPES, iconOf, typesOf } from "./01-core.js";
+import { TYPES, iconOf, typesOf, weakestConfidence } from "./01-core.js";
 import { arenaRebuiltBetween, hasTrainers, isGruntWave, kindIsRolled, waveKind } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { isCoverage, partyLuck } from "./08-party.js";
@@ -9,8 +9,6 @@ import { spawnTimeOfDay } from "./47-biome.js";
 
 const WILD = BattleType.WILD, TRAINER = BattleType.TRAINER, MYSTERY = BattleType.MYSTERY_ENCOUNTER;
 const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };
-const RANK = [CONFIDENCE.exact, CONFIDENCE.replay, CONFIDENCE.estimate];
-export const weakestConfidence = (...cs) => RANK[Math.max(...cs.filter(Boolean).map(c => RANK.indexOf(c)))];
 const NEEDED = ["executeWithSeedOffset", "isWaveMysteryEncounter", "generateNewBattleTrainer", "checkIsDouble",
   "getEncounterBossSegments", "addEnemyPokemon", "getMysteryEncounter"];
 // The scene's wrapper first: the arena's method called with the scene's arguments is a different draw

@@ -1,12 +1,12 @@
 // The next big fight, and whether the party is ready for it. Nothing here draws: the schedule is the run calendar's,
 // and the roster is `previewFor`'s replay.
-import { TIER_NAMES, abilitiesOf } from "./01-core.js";
+import { TIER_NAMES, abilitiesOf, weakestConfidence } from "./01-core.js";
 import { stage } from "./01-meter.js";
 import { bigFightsAhead, isBossWave, isGruntWave, nextHeal } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { partyAtFight, partyLuck, partyProfile } from "./08-party.js";
 import { setRosterRead } from "./11-threats.js";
-import { confidenceMark, previewFor, weakestConfidence } from "./48-preview.js";
+import { confidenceMark, previewFor } from "./48-preview.js";
 
 const ROSTER_HORIZON = 10;
 const FINAL_NOTICE = 10;
@@ -160,8 +160,7 @@ const build = (run, wave) => {
   };
 };
 
-// The threat set's roster half reads the next big fight through here, 11-threats being below this file. The fight
-// is named as the road names it, and marked with the weakest of the fields the roster rests on.
+// The read 11-threats' roster half is handed (11-threats.js, `setRosterRead`).
 setRosterRead((run, wave) => {
   const next = aheadModel(run)?.next;
   if (next?.wave !== wave || !next.foes?.length) return null;

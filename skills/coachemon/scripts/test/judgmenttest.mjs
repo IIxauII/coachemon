@@ -1296,9 +1296,9 @@ const GRASSES = () => [
     rowOf(462, 41, ["Thunderbolt", "Flash Cannon"], "Sturdy"),
     rowOf(181, 42, ["Thunderbolt", "Dragon Pulse"], "Static"),
   ];
-  const MARK = { exact: "", replay: "~", estimate: "?" }; // 48-preview's, which 49-ahead names the fight with
+  const { confidenceMark } = globalThis.__hud["48-preview"];
   const preview = (confidence, foes = GYM) => wave =>
-    (wave === 50 ? { wave, name: `Lt. Surge W50${MARK[confidence]}`, confidence, foes } : null);
+    (wave === 50 ? { wave, name: `Lt. Surge W50${confidenceMark(confidence)}`, confidence, foes } : null);
   // A Ground the Electric gym cannot touch, into the six it sweeps.
   const nc = () => mon(OURS.swampert, CAP, [M.earthquake, M.surf, M.iceBeam, M.bodySlam], { ability: "Torrent" });
   // A seed per roster: in the page the preview is a function of the run key (48-preview's memo), so two rosters on
