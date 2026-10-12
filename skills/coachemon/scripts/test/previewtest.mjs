@@ -45,7 +45,6 @@ const fakeMove = m => {
 
 // `getStat(Stat.HP)` is what `getMaxHp` answers (game-code.md §24), so the two agree here as they do on a live mon.
 const statsAt = level => [50 + level * 2, ...[1, 2, 3, 4, 5].map(i => 20 + level + i)];
-// The stats stay at the level it was built at until `calculateStats` reads the level again (game-code.md §11).
 const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => { const m = {
   id: sp.speciesId * 1000 + level, species: sp, name: sp.name, level, bossSegments: boss,
   bossSegmentIndex: boss ? boss - 1 : 0, shiny: false, stats: statsAt(level),
@@ -77,7 +76,7 @@ const makeTrainer = (scene, { name, type, size = 2, double = false, staticParty 
       scene.executeWithSeedOffset(() => {
         ret = mon(species(SIGNATURE[randSeedInt(SIGNATURE.length)]), level, { moves: ["Tackle", "Rock Slide"] });
         if (relevel[index] != null) ret.level = relevel[index];
-      },staticParty ? type + ((index + 1) << 8) : scene.currentBattle.waveIndex + (type << 10) + ((index + 1) << 8));
+      }, staticParty ? type + ((index + 1) << 8) : scene.currentBattle.waveIndex + (type << 10) + ((index + 1) << 8));
       return ret;
     },
     destroy() { destroyed++; },

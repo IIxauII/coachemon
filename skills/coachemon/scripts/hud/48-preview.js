@@ -128,8 +128,8 @@ const replay = (s, w, playerParty) => {
           let p;
           if (type === TRAINER) {
             p = trainer.genPartyMember(e);
-            // A rival's member can be re-levelled or re-formed once built, its stats still the old ones (game-code.md
-            // §11): read off the battle, the rival's fight 2 previewed a 16 as a 14 (#621).
+            // A trainer's member can be re-levelled or re-formed once built, its stats still the old ones (game-code.md
+            // §11).
             tryDo(() => p.calculateStats());
           } else {
             let species = wildSpecies(s, w, level, playerParty);
@@ -159,6 +159,8 @@ const replay = (s, w, playerParty) => {
         wave: w, type: type === MYSTERY ? "me" : type === TRAINER ? "trainer" : "wild", fixed: !!fixedCfg,
         trainer: trainer ? { name: trainerName(trainer), double: tryDo(() => trainer.isDouble(), false) } : null,
         me: me ? { name: meName(me), tier: me.encounterTier ?? null } : null,
+        // The battle's levels predate a rival member's re-levelling: read off them, the rival's fight 2 previewed a 16
+        // as a 14 (#621).
         double, levels: type === MYSTERY ? battleLevels : foes.map(f => f.level), foes, boss: foes.some(f => f.segments > 1),
         confidence: (() => {
           const kind = kindIsRolled(s, w) ? CONFIDENCE.replay : CONFIDENCE.exact;
