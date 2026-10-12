@@ -1,5 +1,5 @@
-== schedule from wave 1 [{"wave":5,"kind":"fixed","label":"fixed battle","in":4,"trainer":"Youngster","foes":[{"name":"Garchomp","icon":["k","1"],"level":3,"types":["Dragon","Ground"],"ability":"Sturdy","passive":null,"stats":[56,24,25,26,27,28],"segments":0,"shiny":false,"moves":["Earthquake","Dragon Claw"],"moveIds":[1,2],"attackTypes":["Ground","Dragon"],"statusMoves":[],"healMoves":[]},{"name":"Lucario","icon":["k","2"],"level":3,"types":["Fighting","Steel"],"ability":"Sturdy","passive":null,"stats":[56,24,25,26,27,28],"segments":0,"shiny":false,"moves":["Earthquake","Dragon Claw"],"moveIds":[1,2],"attackTypes":["Ground","Dragon"],"statusMoves":[],"healMoves":[]}],"double":false,"bars":0,"exact":true,"trainerExact":true,"rewards":null},{"wave":8,"kind":"fixed","label":"fixed battle","in":7},{"wave":10,"kind":"boss","label":"boss","in":9},{"wave":20,"kind":"gym","label":"gym leader","in":19}]
-== schedule from wave 186 [{"wave":188,"kind":"fixed","label":"fixed battle","in":2,"trainer":"Lance","foes":[{"name":"Garchomp","icon":["k","1"],"level":94,"types":["Dragon","Ground"],"ability":"Sturdy","passive":null,"stats":[238,115,116,117,118,119],"segments":0,"shiny":false,"moves":["Earthquake","Dragon Claw"],"moveIds":[1,2],"attackTypes":["Ground","Dragon"],"statusMoves":[],"healMoves":[]},{"name":"Lucario","icon":["k","2"],"level":94,"types":["Fighting","Steel"],"ability":"Sturdy","passive":null,"stats":[238,115,116,117,118,119],"segments":0,"shiny":false,"moves":["Earthquake","Dragon Claw"],"moveIds":[1,2],"attackTypes":["Ground","Dragon"],"statusMoves":[],"healMoves":[]}],"double":false,"bars":0,"exact":true,"trainerExact":true,"rewards":null},{"wave":190,"kind":"fixed","label":"fixed battle","in":4},{"wave":195,"kind":"fixed","label":"fixed battle","in":9},{"wave":200,"kind":"final","label":"final boss","in":14}]
+== schedule from wave 1 [{"wave":5,"kind":"fixed","label":"fixed battle","in":4,"trainer":"Youngster","foes":[{"name":"Garchomp","icon":["k","1"],"level":3,"types":["Dragon","Ground"],"ability":"Sturdy","passive":null,"stats":[56,24,25,26,27,28],"segments":0,"shiny":false,"moves":["Earthquake","Dragon Claw"],"moveIds":[1,2],"attackTypes":["Ground","Dragon"],"statusMoves":[],"healMoves":[]},{"name":"Lucario","icon":["k","2"],"level":3,"types":["Fighting","Steel"],"ability":"Sturdy","passive":null,"stats":[56,24,25,26,27,28],"segments":0,"shiny":false,"moves":["Earthquake","Dragon Claw"],"moveIds":[1,2],"attackTypes":["Ground","Dragon"],"statusMoves":[],"healMoves":[]}],"double":false,"bars":0,"exact":true,"trainerExact":true,"confidence":{"type":"exact","trainer":"exact","foes":"exact","double":"exact","levels":"exact"},"rewards":null},{"wave":8,"kind":"fixed","label":"fixed battle","in":7},{"wave":10,"kind":"boss","label":"boss","in":9},{"wave":20,"kind":"gym","label":"gym leader","in":19}]
+== schedule from wave 186 [{"wave":188,"kind":"fixed","label":"fixed battle","in":2,"trainer":"Lance","foes":[{"name":"Garchomp","icon":["k","1"],"level":94,"types":["Dragon","Ground"],"ability":"Sturdy","passive":null,"stats":[238,115,116,117,118,119],"segments":0,"shiny":false,"moves":["Earthquake","Dragon Claw"],"moveIds":[1,2],"attackTypes":["Ground","Dragon"],"statusMoves":[],"healMoves":[]},{"name":"Lucario","icon":["k","2"],"level":94,"types":["Fighting","Steel"],"ability":"Sturdy","passive":null,"stats":[238,115,116,117,118,119],"segments":0,"shiny":false,"moves":["Earthquake","Dragon Claw"],"moveIds":[1,2],"attackTypes":["Ground","Dragon"],"statusMoves":[],"healMoves":[]}],"double":false,"bars":0,"exact":true,"trainerExact":true,"confidence":{"type":"exact","trainer":"exact","foes":"exact","double":"exact","levels":"exact"},"rewards":null},{"wave":190,"kind":"fixed","label":"fixed battle","in":4},{"wave":195,"kind":"fixed","label":"fixed battle","in":9},{"wave":200,"kind":"final","label":"final boss","in":14}]
 == grunt ahead {"wave":35,"who":"Grunt","exact":true}
 == wave 17: next heal W21 · 1 big fights before it · next gym W20
 == wave 180: next heal W181 · 0 big fights before it · next fixed W182
@@ -50,6 +50,23 @@ Next big fight final boss in 2 W200 👑 4 bars
 ✗ phase 1's Cosmic Power raises its defences every use — stalling makes it worse
 ✓ it carries no held items in phase 1 and has no passive ability
 ✗ Milotic carries 5 held items — spread them before 200
-== far fight {"wave":110,"kind":"gym","foes":[],"readiness":null}
+== six out {"wave":20,"who":"Youngster","verdict":"ready","confidence":{"type":"exact","trainer":"replay","foes":"replay","double":"replay","levels":"replay"}}
+== card
+Next big fight Youngster~ in 6 W20
+· Garchomp L10 · Lucario L10
+✓ we're +8 levels on them
+✓ 2 mons hit super-effectively
+✓ full heal entering W21 — HP, status, PP, revives, Tera
+· luck 2 (C+) — 4.7% tier upgrade per reward
+summary "Youngster~ in 6 (W20) ready"
+== ten out {"wave":110,"who":"Youngster","verdict":"watch","confidence":{"type":"exact","trainer":"estimate","foes":"estimate","double":"estimate","levels":"estimate"}}
+== card
+Next big fight Youngster~ in 10 W110
+· Garchomp L55 · Lucario L55
+✗ they're +37 levels on us
+✓ 2 mons hit super-effectively
+✓ full heal entering W101 — HP, status, PP, revives, Tera
+· luck 2 (C+) — 4.7% tier upgrade per reward
+summary "Youngster~ in 10 (W110) watch — they're +37 levels on us"
 == doubles ahead  41–44 0.125  grunt 35 0.3333333333333333  admin 66 0  rival 25 0
 ok

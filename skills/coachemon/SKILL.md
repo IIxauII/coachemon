@@ -121,8 +121,8 @@ When the user wants the coach running for the whole session ("keep coaching", "w
      build has moved past the pin. Treat it as the coach's own read, not as something the user asked to be told —
      say it only where it changes a decision (what to buy, whether to heal, what to catch).
    - **Next big fight** (in the `road` group of the rewards and battle cards): the next wave that is a boss wave, a fixed battle
-     (rival, evil team, Elite Four, champion), a gym leader or the run's final wave, how many waves out it is, and —
-     once it is close — the exact roster from the same replay the next-wave rows use, with a **ready / watch / risky**
+     (rival, evil team, Elite Four, champion), a gym leader or the run's final wave, how many waves out it is (never
+     more than 10), and its roster from the same replay the next-wave rows use, with a **ready / watch / risky**
      verdict: what nothing on the team hits super-effectively, the level gap, a type half the party is weak to, extra
      health bars. `49-ahead.js` on `03-calendar.js`'s run calendar, `references/game-code.md` §12; the schedule
      itself is arithmetic on the wave index, so it needs no roll and holds at any distance. It also carries what the calendar decides about **preparing**:

@@ -300,21 +300,40 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   assert.equal(ah.aheadSummary(null), null);
 }
 
-// ---- The calendar names a fight at any distance, and the roster is read only once it is near
+// ---- The road reaches the next big fight wherever it is, and a roster read across a biome change is a guess (#591)
 {
   const { scene, ah } = mount({ wave: 1, party: team() });
   const m = ah.aheadModel(scene);
   assert.equal(m.next.wave, 5);
   assert.equal(m.next.trainer, "Youngster", "four waves out is near enough to read");
+
+  const { scene: s6, ah: ah6 } = mount({ wave: 14, party: team() });
+  const six = ah6.aheadModel(s6);
+  assert.deepEqual([six.next.wave, six.next.kind, six.next.in], [20, "gym", 6]);
+  assert.ok(six.readiness, "six waves out, readiness is judged against the gym's roster");
+  assert.deepEqual(six.readiness.unanswered, [], "Ice Beam answers the Garchomp, Earthquake the Lucario");
+  assert.equal(six.next.confidence.foes, "replay", "read in the biome it is fought in, the roster keeps its replay");
+  assert.equal(ah6.learnRoster(six)?.wave, 20, "and a learned move is judged against the same fight");
+  console.log(`== six out ${JSON.stringify({ wave: six.next.wave, who: six.next.trainer, verdict: six.readiness.verdict, confidence: six.next.confidence })}`);
+  console.log(`== card\n${card(ah6, six)}`);
+  console.log(`summary ${JSON.stringify(ah6.aheadSummary(six))}`);
+
   const { scene: s2, ah: ah2 } = mount({ wave: 100, party: team() });
   const far = ah2.aheadModel(s2);
-  assert.equal(far.next.wave, 110, "the calendar names it either way");
+  assert.equal(far.next.wave, 110);
   assert.equal(far.next.kind, "gym", "110 is a gym wave, which outranks its being a tenth wave");
-  assert.equal(far.next.trainer, null, "ten waves out, no roster is read");
-  assert.equal(far.readiness, null);
-  assert.deepEqual(far.next.foes, []);
-  assert.equal(ah2.learnRoster(far), null, "no roster to judge a learned move against either");
-  console.log(`== far fight ${JSON.stringify({ wave: far.next.wave, kind: far.next.kind, foes: far.next.foes, readiness: far.readiness })}`);
+  assert.equal(far.next.in, 10, "every tenth wave is a boss, so the next big fight is never further");
+  assert.ok(far.next.foes.length, "ten waves out, the roster is read");
+  assert.ok(far.readiness, "and readiness reaches it");
+  assert.deepEqual(far.next.confidence, { type: "exact", trainer: "estimate", foes: "estimate", double: "estimate", levels: "estimate" },
+    "read on the X0 before it, the gym leader is the old biome's");
+  assert.equal(far.next.exact, false);
+  assert.equal(far.next.trainerExact, false);
+  const roster = ah2.learnRoster(far);
+  assert.deepEqual(roster && [roster.wave, roster.exact], [110, false]);
+  console.log(`== ten out ${JSON.stringify({ wave: far.next.wave, who: far.next.trainer, verdict: far.readiness.verdict, confidence: far.next.confidence })}`);
+  console.log(`== card\n${card(ah2, far)}`);
+  console.log(`summary ${JSON.stringify(ah2.aheadSummary(far))}`);
 }
 
 // ---- Double-battle odds ahead follow the game's chance, its abilities and the grunts' unseeded roll (game-code.md §16)

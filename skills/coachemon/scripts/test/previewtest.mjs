@@ -503,6 +503,37 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   console.log(`== grunt wave 35 ${JSON.stringify({ confidence: m.confidence, notes: m.notes })}`);
 }
 
+// ---- A gym leader or a wild boss read on the X0 before it is the next biome's, and a guess (#590).
+{
+  const { scene, pv } = mount({ wave: 10 });
+  const before = RND.state();
+  const gym = pv.previewFor(scene, 20);
+  assert.equal(RND.state(), before, "a read ten waves out leaves the live stream where it was");
+  assert.equal(gym.type, "trainer");
+  assert.deepEqual(gym.confidence, { type: "exact", trainer: "estimate", foes: "estimate", double: "estimate", levels: "estimate" },
+    "the old biome's trainer pool named the leader, and every such read missed it");
+  assert.ok(gym.notes.some(n => n.includes("next biome")), `and it says why: ${JSON.stringify(gym.notes)}`);
+  const { scene: sb, pv: pvb } = mount({ wave: 30 });
+  const boss = pvb.previewFor(sb, 40);
+  assert.equal(boss.type, "wild");
+  assert.deepEqual(boss.confidence, { type: "exact", trainer: null, foes: "estimate", double: "estimate", levels: "estimate" },
+    "a wild boss drawn from the old biome's pool is no surer");
+  console.log(`== across a biome  gym 20 from 10 ${JSON.stringify(gym.confidence)}  boss 40 from 30 ${JSON.stringify(boss.confidence)}`);
+}
+
+// ---- Read inside its own biome a gym keeps its replay, and a fixed battle's party never hangs on the biome (#590).
+{
+  const { scene: si, pv: pvi } = mount({ wave: 11 });
+  const inside = pvi.previewFor(si, 20);
+  assert.deepEqual([inside.confidence.trainer, inside.confidence.foes, inside.confidence.levels], ["replay", "replay", "replay"]);
+  const { scene: sf, pv: pvf } = mount({ wave: 20 });
+  assert.deepEqual(pvf.previewFor(sf, 25).confidence,
+    { type: "exact", trainer: "exact", foes: "exact", double: "exact", levels: "exact" }, "a rival across a biome change");
+  // An X1 read on the X0 is never a gym or a boss: only its spawn is the next biome's.
+  const next = pvf.previewNext(sf);
+  assert.deepEqual([next.wave, next.confidence.double, next.confidence.levels], [21, "replay", "replay"]);
+}
+
 // ---- A foe's attack types follow 08-party's coverage rule: variable power counts, fixed damage and status don't.
 {
   // Requiring `power > 0` read a Steel foe whose STAB is Gyro Ball as having no Steel attack, and the look-ahead

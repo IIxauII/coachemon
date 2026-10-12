@@ -1,7 +1,7 @@
 // A wave ahead, replayed with the game's own calls in the game's own order inside a seed fork: a read, never a draw on
 // the live stream (game-code.md §11).
 import { TYPES, iconOf, typesOf } from "./01-core.js";
-import { arenaRebuiltBetween, hasTrainers, isGruntWave, kindIsRolled } from "./03-calendar.js";
+import { arenaRebuiltBetween, hasTrainers, isGruntWave, kindIsRolled, waveKind } from "./03-calendar.js";
 import { gameEvents } from "./04-game-tables.js";
 import { isCoverage, partyLuck } from "./08-party.js";
 import { blockedByHealBlock } from "./40-learn.js";
@@ -162,6 +162,10 @@ const replay = (s, w, playerParty) => {
       const biomeShift = arenaRebuiltBetween(here, w);
       const podShift = type === WILD && (todShift || biomeShift);
       if (podShift) notes.push(biomeShift ? "the next biome brings its own spawn pool" : "time of day turns over: the spawn pool shifts");
+      // A gym leader or a wild boss read on the X0 before it is replayed off the arena the run is leaving, not its own
+      // (game-code.md §10, #590).
+      const leftBehind = biomeShift && ["gym", "boss"].includes(waveKind(s, w));
+      if (leftBehind && trainer) notes.push("the next biome brings its own gym leader");
       return {
         wave: w, type: type === MYSTERY ? "me" : type === TRAINER ? "trainer" : "wild", fixed: !!fixedCfg,
         trainer: trainer ? { name: trainerName(trainer), double: tryDo(() => trainer.isDouble(), false) } : null,
@@ -171,8 +175,9 @@ const replay = (s, w, playerParty) => {
         double, levels: type === MYSTERY ? battleLevels : foes.map(f => f.level), foes, boss: foes.some(f => f.segments > 1),
         confidence: (() => {
           const kind = kindIsRolled(s, w) ? CONFIDENCE.replay : CONFIDENCE.exact;
-          const who = !trainer ? null : weakest(kind, fixedCfg ? CONFIDENCE.exact : CONFIDENCE.replay);
-          const dbl = gruntDouble ? CONFIDENCE.estimate
+          const who = !trainer ? null
+            : leftBehind ? CONFIDENCE.estimate : weakest(kind, fixedCfg ? CONFIDENCE.exact : CONFIDENCE.replay);
+          const dbl = gruntDouble || leftBehind ? CONFIDENCE.estimate
             : type === WILD ? weakest(kind, CONFIDENCE.replay) : weakest(kind, who);
           // A fork is exact about its own roll, not about its inputs: a trainer's members are keyed on the trainer,
           // and the levels' fork on the type, the trainer and the double (game-code.md §11).
