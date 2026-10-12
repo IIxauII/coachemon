@@ -1,6 +1,6 @@
-// The standard half of the threat set (CONTEXT.md, `Threat set`). The wave alone decides it — the run itself is read
-// for nothing but its level cap — so the half is *exact* where the roster half carries its preview's confidence.
-import { TYPES } from "./01-core.js";
+// The threat set (CONTEXT.md, `Threat set`). The wave alone decides the standard half — the run itself is read for
+// nothing but its level cap — so that half is *exact*, where the roster half carries its preview's confidence.
+import { TYPES, weakestConfidence } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
 import { gameTables } from "./04-game-tables.js";
 import { RANDBATS } from "./05-randbats.js";
@@ -96,7 +96,7 @@ const shapePool = (pool, band, taken) => {
 // numbers judging the party.
 const threatOf = (e, level, kind, label, type) => {
   const combatant = combatantOf({ species: e.species, level, moves: e.moves, player: false });
-  return combatant && { kind, label, type: type ?? null, species: e.species, bst: e.bst, combatant,
+  return combatant && { kind, half: "standard", label, type: type ?? null, species: e.species, bst: e.bst, combatant,
     name: combatant.name, key: combatant.key };
 };
 
@@ -142,4 +142,47 @@ export const standardThreats = (run, { fight = null } = {}) => {
   const ready = typeof tryDo(() => gameTables().species.getAllSpecies) === "function" && !!tryDo(() => gameTables().moves);
   if (!ready) return { wave, level: levelCapAt(s, wave), band: bandAt(wave), threats: [], confidence: "exact", unavailable: UNREADY };
   return run.memo("threats", String(wave), () => buildThreats(s, wave));
+};
+
+// 49-ahead registers the read, being above this file: `(run, wave)` → the big fight on `wave` as the road previewed
+// it, `{ wave, name, confidence, foes }` with `foes` its preview rows, or null where the road doesn't reach it.
+let rosterRead = () => null;
+// @only 49-ahead, tests: setRosterRead
+export const setRosterRead = fn => { rosterRead = fn; };
+
+const rosterThreatOf = (row, fight) => {
+  const combatant = combatantOf({ name: row.name, level: row.level, stats: row.stats,
+    types: (row.types ?? []).map(t => TYPES.indexOf(t)).filter(t => t >= 0), ability: row.ability ?? null,
+    passive: row.passive ?? null, moves: row.moveIds ?? [], boss: row.segments ?? 0, player: false });
+  return combatant && { kind: "roster", half: "roster", label: `${row.name} L${row.level}`, fight: fight.name,
+    confidence: fight.confidence, combatant, name: combatant.name, key: combatant.key };
+};
+
+/**
+ * The roster half for the big fight on wave `fight`: one threat per foe the preview fields, each carrying the fight's
+ * name and the preview's confidence. Null where no preview reaches the fight.
+ *
+ * Memoised by the wave alone, as the preview it is read off is (48-preview.js, `previewFor`).
+ */
+export const rosterThreats = (run, fight) => run.memo("roster", String(fight), () => {
+  const read = tryDo(() => rosterRead(run, fight));
+  const threats = (read?.foes ?? []).map(f => tryDo(() => rosterThreatOf(f, read))).filter(Boolean);
+  return threats.length ? { wave: read.wave, name: read.name, confidence: read.confidence, threats } : null;
+});
+
+/**
+ * The whole threat set for the big fight on wave `fight`: the standard half, and the roster half beside it where a
+ * preview reaches that fight. `roster: false` judges on the standard half however much a preview reads, for a card
+ * that is choosing what the next fight will be (#567, story 34). `confidence` is the weaker half's, and `roster` the
+ * roster half's summary or null.
+ *
+ * The standard threats come first, so a tie between two reasons, one off either half, falls to the standard one.
+ */
+export const threatSet = (run, { fight = null, roster = true } = {}) => {
+  const standard = standardThreats(run, { fight });
+  const half = roster && !standard.unavailable ? rosterThreats(run, standard.wave) : null;
+  if (!half) return { ...standard, roster: null };
+  return { ...standard, threats: [...standard.threats, ...half.threats],
+    roster: { wave: half.wave, name: half.name, confidence: half.confidence, size: half.threats.length },
+    confidence: weakestConfidence(standard.confidence, half.confidence) };
 };

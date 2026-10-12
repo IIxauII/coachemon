@@ -2,13 +2,13 @@
 // big fight is worth against the threat set, in turn score, and what a newcomer's swap changes. It runs inside a run
 // read and nowhere else — `run.memo` carries the pair scores, so the cards of one run read share them — and it draws
 // nothing: every duel is the approx matrix over combatants the adapter built off the field.
-import { stat } from "./01-core.js";
+import { stat, weakestConfidence } from "./01-core.js";
 import { bigFightsAhead } from "./03-calendar.js";
 import { formOf, partyAtFight } from "./08-party.js";
 import { combatantOf, duelEnv, itemKeyOf, pricesItem } from "./09-combatant.js";
 import { levelCapAt, levelProjection } from "./09-projection.js";
 import { approxOutcomes, barBreakFactors, koChanceAt, koCurve, koTurns, targetFacts, useOf } from "./10-damage.js";
-import { standardThreats } from "./11-threats.js";
+import { threatSet } from "./11-threats.js";
 
 const tryDo = (fn, fallback = null) => { try { return fn() ?? fallback; } catch { return fallback; } };
 
@@ -32,9 +32,6 @@ export const PARTY_SIZE = 6; // `PLAYER_PARTY_MAX_SIZE` (game-code.md §23)
 const exposureOf = (beaten, of) => (of ? EXPOSURE(PARTY_SIZE * beaten / of) : 0);
 
 const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };
-const RANK = [CONFIDENCE.exact, CONFIDENCE.replay, CONFIDENCE.estimate];
-// 48-preview's own pair, which this file is below.
-const weakestOf = (...cs) => RANK[Math.max(0, ...cs.filter(Boolean).map(c => RANK.indexOf(c)))];
 
 const bestHit = os => os.reduce((b, o) => (!b || o.dmg > b.dmg ? o : b), null);
 
@@ -99,7 +96,8 @@ const rowOf = (threat, pairs) => {
   const beaten = pairs.filter(x => x.s < 0);
   const revenge = pairs.some(x => x.revenge), switchIn = pairs.some(x => x.switchIn);
   return {
-    threat: threat.label, kind: threat.kind,
+    threat: threat.label, kind: threat.kind, half: threat.half, fight: threat.fight ?? null,
+    confidence: threat.confidence ?? CONFIDENCE.exact,
     answer: ranked[0] ?? null, backup: ranked[1] ?? null, beaten: beaten.map(x => x.name), of: pairs.length,
     revenge, switchIn,
     value: (ranked[0]?.s ?? 0) + BACKUP * (ranked[1]?.s ?? 0) + (revenge ? REVENGE : 0) + (switchIn ? SWITCH_IN : 0)
@@ -107,17 +105,30 @@ const rowOf = (threat, pairs) => {
   };
 };
 
+const sizesOf = threats => threats.reduce((n, t) => n.set(t.half, (n.get(t.half) ?? 0) + 1), new Map());
+// Turns per threat as V counts them: each half of the threat set's own mean, the two summed (#567).
+const perHalf = (threats, valueAt) => {
+  const sums = new Map();
+  threats.forEach((t, i) => sums.set(t.half, (sums.get(t.half) ?? 0) + valueAt(t, i)));
+  const sizes = sizesOf(threats);
+  let v = 0;
+  for (const [half, sum] of sums) v += sum / sizes.get(half);
+  return v;
+};
+
 /**
- * What `members` — each `{ name, combatant }` — are worth against `set`, in turns per threat. The mean, not the sum,
- * so that the standard half and the roster half of the threat set can be given equal say when #592 lands the second
- * of them.
+ * What `members` — each `{ name, combatant }` — are worth against `set`, in turns per threat, its two halves given
+ * equal say (CONTEXT.md, `Threat set`). A row's `weight` is its share of V, one over the size of its half.
  */
 export const teamValue = (run, set, members) => {
   const env = duelEnv(run?.scene ?? null);
-  const rows = (set?.threats ?? []).map(t =>
-    rowOf(t, members.map(m => ({ name: m.name, ...pairOf(run, env, m.combatant, t.combatant) }))));
-  return { v: rows.length ? rows.reduce((sum, r) => sum + r.value, 0) / rows.length : 0, rows,
-    confidence: set?.confidence ?? CONFIDENCE.exact };
+  const threats = set?.threats ?? [];
+  const sizes = sizesOf(threats);
+  const rows = threats.map(t => ({
+    ...rowOf(t, members.map(m => ({ name: m.name, ...pairOf(run, env, m.combatant, t.combatant) }))),
+    weight: 1 / sizes.get(t.half),
+  }));
+  return { v: perHalf(threats, (_, i) => rows[i].value), rows, confidence: set?.confidence ?? CONFIDENCE.exact };
 };
 
 const waveOf = run => Math.max(1, Math.floor(run?.facts?.wave ?? 0) || 1);
@@ -251,7 +262,7 @@ const newcomerOf = (run, fight, spec) => {
     holding: extra => built([...own, ...extra]),
     // A newcomer a challenge bars is dead weight the moment it joins (CONTEXT.md, `Dead weight`).
     barred: mon ? !tryDo(() => mon.isAllowedInChallenge(), true) : false,
-    confidence: standIn ? weakestOf(p.confidence, CONFIDENCE.estimate) : p.confidence,
+    confidence: standIn ? weakestConfidence(p.confidence, CONFIDENCE.estimate) : p.confidence,
   };
 };
 
@@ -265,7 +276,8 @@ const newcomerOf = (run, fight, spec) => {
  * the gone items are worth *to the party that stays*: an item nothing left can use costs about nothing to release,
  * whatever it was worth to the member that carried it. A Thick Club leaves with the only Marowak.
  *
- * The mean over the threats, so the cost is in the turns per threat `teamValue` is, and ΔV can be netted against it.
+ * Counted over the threats as `teamValue` counts V, so the cost is in its turns per threat and ΔV can be netted
+ * against it.
  *
  * An item the adapter cannot price is charged a flat `UNKNOWN_ITEM` rather than taken as free: the duel is a race to
  * a KO, so a Leftovers or a Shell Bell does nothing in it that a stat multiplier could stand in for.
@@ -283,12 +295,12 @@ const releaseOf = (run, env, set, slot, stay) => {
     return laden.get(m);
   };
   const sOn = (c, th) => (c ? pairOf(run, env, c, th.combatant).s : null);
-  const worth = threats.reduce((t, th) => {
+  const worth = perHalf(threats, th => {
     const best = stay.reduce((b, m) => (!b || sOn(m.combatant, th) > sOn(b.combatant, th) ? m : b), null);
     const was = sOn(best.combatant, th);
     const now = sOn(withGone(best), th);
-    return t + (now === null ? 0 : Math.max(0, now - was));
-  }, 0) / threats.length;
+    return now === null ? 0 : Math.max(0, now - was);
+  });
   return { ...out, cost: flat + worth, worth };
 };
 
@@ -315,11 +327,11 @@ export const weakestMember = (run, { fight = null } = {}) => {
   const s = run?.scene ?? null;
   const here = waveOf(run);
   const at = fight ?? nextBigFight(s, here);
-  const set = standardThreats(run, { fight: at ?? here });
+  const set = threatSet(run, { fight: at ?? here });
   const party = slotsAt(run, at);
   const live = party.slots.filter(x => x.combatant);
-  const out = { fight: at, wave: set.wave, mon: null, name: null, dead: null, cost: 0, v: 0, ranked: [],
-    confidence: weakestOf(set.confidence, party.confidence) };
+  const out = { fight: at, wave: set.wave, roster: set.roster, mon: null, name: null, dead: null, cost: 0, v: 0,
+    ranked: [], confidence: weakestConfidence(set.confidence, party.confidence) };
   if (set.unavailable) return { ...out, unavailable: set.unavailable };
   // The slots come off a memo of their own, so what varies within one run key is the fight and the slots it built.
   const key = JSON.stringify([at, party.slots.map(x => [x.name, x.dead, x.combatant?.key ?? null])]);
@@ -338,9 +350,10 @@ const rank = (run, set, party, live) => {
 
 export const MAX_REASONS = 2; // "up to two reasons" (#567)
 
-// A threat is named by what it stands for and nothing else: a type under its own name, a stat shape under `the` and
-// its label, which is what makes either read as a sentence. Not the species standing for it — a reason the player can
-// argue with is about Electric, not about the Jolteon the pick happened to land on.
+// A standard threat is named by what it stands for and nothing else: a type under its own name, a stat shape under
+// `the` and its label, which is what makes either read as a sentence. Not the species standing for it — a reason the
+// player can argue with is about Electric, not about the Jolteon the pick happened to land on. A roster threat *is*
+// the foe, and is named as one.
 const named = row => (row.kind === "archetype" ? `the ${row.threat}` : row.threat);
 
 const sOf = p => p?.s ?? 0;
@@ -385,14 +398,17 @@ const wordsOf = (part, gain, b, a) => {
 
 /**
  * Up to `MAX_REASONS` reasons for the call: each a threat whose answer, backup or exposure moved most between the
- * before and after rows, named by type or archetype, as a gain or a loss.
+ * before and after rows, as a gain or a loss.
  *
  * They are read off the very rows the verdict was, so a reason can never argue with the call it explains (#567, story
  * 20): `gain` is the direction of the call — take and swap are gains, skip is a loss — and a change the other way is
  * not a reason for it. A move smaller than `MARGIN` is not a reason either: the margin is what the judgment already
  * calls noise, and the goldens print to the tenth of a turn it is set in.
  *
- * One reason per threat, the biggest of its three parts, so two reasons are two threats rather than one twice.
+ * One reason per threat, the biggest of its three parts, so two reasons are two threats rather than one twice. They
+ * rank by what the move is worth to V, the row's `weight` times its turns, so a foe of a four-strong roster outranks
+ * a standard threat that moved as far. A roster reason ends on the fight it matters for and carries the preview's
+ * confidence (story 19).
  */
 const reasonsOf = (before, after, gain) => {
   if (!after) return [];
@@ -405,10 +421,13 @@ const reasonsOf = (before, after, gain) => {
     })
     .filter(x => x && (gain ? x.d >= MARGIN : x.d <= -MARGIN))
     // Stable, so a tie between two threats falls to the one the threat set lists first.
-    .sort((x, y) => Math.abs(y.d) - Math.abs(x.d))
+    .sort((x, y) => Math.abs(y.d) * y.a.weight - Math.abs(x.d) * x.a.weight)
     .slice(0, MAX_REASONS)
-    .map(x => ({ threat: x.a.threat, kind: x.a.kind, part: x.part, gain, delta: x.d,
-      text: wordsOf(x.part, gain, x.b, x.a) }));
+    .map(x => {
+      const words = wordsOf(x.part, gain, x.b, x.a);
+      return { threat: x.a.threat, kind: x.a.kind, part: x.part, gain, delta: x.d, fight: x.a.fight,
+        confidence: x.a.confidence, text: x.a.fight ? `${words} (${x.a.fight})` : words };
+    });
 };
 
 // The two plain cases, said plainly (#567, story 17): a member that holds its slot for nothing, and a newcomer that
@@ -427,23 +446,23 @@ const plainBarred = name => ({ kind: "barred", name,
  * The verdict is `take` for a free slot, `swap` with the member the search picked, or `skip`. `replaced` carries the
  * search's pick whether or not the swap clears the margin, so a card can say who would have gone. `release` is what
  * that release destroys and `cost` its parts, `net` is ΔV less the release, `reasons` are the threats the call is read
- * off, and `plain` the one case that needs no threat at all. The roster half of the threat set is #592's, so what
- * comes back here is judged on the standard threats alone.
+ * off, and `plain` the one case that needs no threat at all. `roster` is the threat set's roster half, or null where
+ * the standard half stood alone (11-threats.js, `threatSet`).
  */
-export const judgeNewcomer = (run, newcomer, { replace = null, fight = null } = {}) => {
+export const judgeNewcomer = (run, newcomer, { replace = null, fight = null, roster = true } = {}) => {
   const s = run?.scene ?? null;
   const here = waveOf(run);
   const at = fight ?? nextBigFight(s, here);
-  const set = standardThreats(run, { fight: at ?? here });
+  const set = threatSet(run, { fight: at ?? here, roster });
   const party = slotsAt(run, at);
   const live = party.slots.filter(x => x.combatant);
   const before = teamValue(run, set, live);
   const spec = specOf(newcomer);
   const nc = newcomerOf(run, at, spec);
   const out = {
-    fight: at, wave: set.wave, verdict: "skip", replaced: null, delta: 0, release: 0, margin: MARGIN, net: 0,
-    reasons: [], plain: null, before, after: null, newcomer: nc,
-    confidence: weakestOf(set.confidence, party.confidence, nc.confidence),
+    fight: at, wave: set.wave, roster: set.roster, verdict: "skip", replaced: null, delta: 0, release: 0,
+    margin: MARGIN, net: 0, reasons: [], plain: null, before, after: null, newcomer: nc,
+    confidence: weakestConfidence(set.confidence, party.confidence, nc.confidence),
   };
   if (set.unavailable || !nc.combatant) {
     return { ...out, unavailable: set.unavailable ?? "the newcomer has no stats to duel with" };
@@ -515,16 +534,16 @@ export const judgeFusionPair = (run, base, other, { fight = null } = {}) => {
   const s = run?.scene ?? null;
   const here = waveOf(run);
   const at = fight ?? nextBigFight(s, here);
-  const set = standardThreats(run, { fight: at ?? here });
+  const set = threatSet(run, { fight: at ?? here });
   const party = slotsAt(run, at);
   const live = party.slots.filter(x => x.combatant);
   const before = teamValue(run, set, live);
   const pick = x => (x == null ? null : party.slots.find(slot => slot.mon === x || slot.name === x) ?? null);
   const a = pick(base), b = pick(other);
   const out = {
-    fight: at, wave: set.wave, verdict: "skip", base: slotRef(a), other: slotRef(b),
+    fight: at, wave: set.wave, roster: set.roster, verdict: "skip", base: slotRef(a), other: slotRef(b),
     delta: 0, release: 0, margin: MARGIN, net: 0, reasons: [], plain: null, before, after: null, fused: null,
-    confidence: weakestOf(set.confidence, party.confidence),
+    confidence: weakestConfidence(set.confidence, party.confidence),
   };
   if (set.unavailable) return { ...out, unavailable: set.unavailable };
   if (!a || !b || a === b) return { ...out, unavailable: "a fusion is two members of the party" };

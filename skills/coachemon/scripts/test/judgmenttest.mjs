@@ -209,7 +209,8 @@ globalThis.setInterval = () => 0; globalThis.clearInterval = () => {};
 globalThis.localStorage = { getItem: () => "full", setItem() {} };
 eval(bundle("hud", { expose: true }));
 const { RANDBATS } = globalThis.__hud["05-randbats"];
-const { standardThreats } = globalThis.__hud["11-threats"];
+const { setRosterRead, standardThreats } = globalThis.__hud["11-threats"];
+setRosterRead((run, wave) => run.scene?.roster?.(wave) ?? null);
 const { BACKUP, CATCH_LEVEL, CLAMP, EXPOSURE, MARGIN, MAX_REASONS, PARTY_SIZE, REVENGE, SWITCH_IN, UNKNOWN_ITEM,
   judgeFusionPair, judgeNewcomer, teamValue, weakestMember } = globalThis.__hud["12-value"];
 const { combatantOf } = globalThis.__hud["09-combatant"];
@@ -272,8 +273,10 @@ const M = {
 };
 
 // ---- The run the judgment reads: wave 44, every tenth wave a boss, so the next big fight ahead is wave 50.
-const sceneOf = (party, { challenges = [], modifiers = [], wave = 44, seed = "judge-1" } = {}) => ({
-  seed, modifiers, enemyModifiers: [], currentBattle: { waveIndex: wave }, arena: { biomeId: 3 },
+// `roster` is the preview the fake run carries: what 49-ahead hands the threat set for the fight on a wave, or null.
+// 49-ahead's own read needs a replay this fake has none of, so it is stood in for; aheadtest reads the real one.
+const sceneOf = (party, { challenges = [], modifiers = [], wave = 44, seed = "judge-1", roster = null } = {}) => ({
+  seed, modifiers, enemyModifiers: [], currentBattle: { waveIndex: wave }, arena: { biomeId: 3 }, roster,
   gameMode: { isBoss: w => w % 10 === 0, isFixedBattle: () => false, hasTrainers: true, challenges },
   getPlayerParty: () => party, getEnemyParty: () => [], game: { config: { gameVersion: "1.12.0.11" } },
 });
@@ -300,15 +303,22 @@ const checkReasons = (label, j) => {
   for (const r of j.reasons) {
     const row = (j.after?.rows ?? []).find(x => x.threat === r.threat);
     assert.ok(row, `${label}: "${r.text}" names a threat of the rows the verdict was read off`);
-    assert.equal(r.kind, row.kind, `${label}: and names it by type or archetype`);
-    assert.ok(["type", "archetype"].includes(r.kind));
+    assert.equal(r.kind, row.kind, `${label}: and names it by type, archetype or the foe the roster fields`);
+    assert.ok(["type", "archetype", "roster"].includes(r.kind));
     assert.ok(r.text.includes(r.threat), `${label}: "${r.text}" says which threat it is about`);
+    assert.equal(r.confidence, row.confidence, `${label}: "${r.text}" is as sure as the half it came off`);
+    if (r.kind === "roster") {
+      assert.ok(r.text.endsWith(` (${r.fight})`), `${label}: "${r.text}" names the fight it matters for`);
+    } else {
+      assert.equal(r.fight, null, `${label}: "${r.text}" is about no one fight`);
+      assert.equal(r.confidence, "exact", `${label}: the standard threats are exactly what the wave decides`);
+    }
     assert.ok(["answer", "backup", "exposure"].includes(r.part),
       `${label}: a reason is an answer, a backup or an exposure`);
     assert.equal(r.gain, gain, `${label}: "${r.text}" points the other way from ${j.verdict}`);
     assert.equal(r.delta > 0, gain, `${label}: "${r.text}" is worth ${t1(r.delta)} to a ${j.verdict}`);
     assert.ok(Math.abs(r.delta) >= MARGIN, `${label}: "${r.text}" moved less than the margin`);
-    const from = r.text.match(/beats (\d+) of (\d+), (down|up) from (\d+)(?: of (\d+))?$/);
+    const from = r.text.match(/beats (\d+) of (\d+), (down|up) from (\d+)(?: of (\d+))?(?: \(.+\))?$/);
     if (from) {
       const [n, of, way, was, wasOf = of] = from.slice(1).map(x => (/^\d+$/.test(x ?? "") ? Number(x) : x));
       assert.equal(n / of < was / wasOf, way === "down", `${label}: "${r.text}" says a share moved the wrong way`);
@@ -1261,6 +1271,98 @@ const GRASSES = () => [
   assert.ok(none[0].net <= MARGIN, "the best of them short of the margin, which is a card that says back out");
   assert.ok(none.every(x => x.release === 0), "none of the three carrying anything to destroy");
   assert.ok(none.every(x => x.delta < 0), "every pair of them worth less to the team than the three as they stand");
+}
+
+// ---- The roster half: the next big fight's previewed foes have the same say as the standard threats (#592)
+{
+  const { threatSet } = globalThis.__hud["11-threats"];
+  const idOf = name => {
+    const id = MOVES.findIndex(mv => mv?.name === name);
+    assert.ok(id > 0, `${name} is a move the table knows`);
+    return id;
+  };
+  // A preview row as 48-preview reads one off the mon its replay built: the stats the game left on it, HP first, its
+  // typing by name and its moves by id (#574). Built off the species at that level, so the foe duels as it would.
+  const rowOf = (id, level, moves, ability) => {
+    const sp = SPECIES.getSpecies(id);
+    const c = combatantOf({ species: sp, level, moves: moves.map(idOf), player: false });
+    return { name: sp.name, level, types: c.getTypes().map(t => TY[t]), ability, passive: null, stats: [...c.stats],
+      segments: 0, moves, moveIds: moves.map(idOf) };
+  };
+  // An Electric gym on wave 50, which an all-Water party has no answer to bar its one Grass.
+  const GYM = [
+    rowOf(135, 40, ["Thunderbolt", "Shadow Ball"], "Volt Absorb"),
+    rowOf(466, 40, ["Wild Charge", "Ice Punch"], "Motor Drive"),
+    rowOf(462, 41, ["Thunderbolt", "Flash Cannon"], "Sturdy"),
+    rowOf(181, 42, ["Thunderbolt", "Dragon Pulse"], "Static"),
+  ];
+  const { confidenceMark } = globalThis.__hud["48-preview"];
+  const preview = (confidence, foes = GYM) => wave =>
+    (wave === 50 ? { wave, name: `Lt. Surge W50${confidenceMark(confidence)}`, confidence, foes } : null);
+  // A Ground the Electric gym cannot touch, into the six it sweeps.
+  const nc = () => mon(OURS.swampert, CAP, [M.earthquake, M.surf, M.iceBeam, M.bodySlam], { ability: "Torrent" });
+  // A seed per roster: in the page the preview is a function of the run key (48-preview.js, `previewFor`), so two
+  // rosters on one run key would be served the first one's threats.
+  const alone = judge(WATERS(), nc(), {}, { seed: "judge-roster-none" });
+  const both = judge(WATERS(), nc(), {}, { seed: "judge-roster-replay", roster: preview("replay") });
+  console.log("== a Ground into the all-Water six, on the standard threats alone and with Lt. Surge's gym beside them");
+  show("standard half alone", alone);
+  show("and the roster half", both);
+  const half = (j, k) => j.before.rows.filter(r => r.half === k);
+  const mean = rows => rows.reduce((t, r) => t + r.value, 0) / rows.length;
+  for (const r of half(both, "roster")) {
+    console.log(`  ${r.threat.padEnd(14)} ${r.answer.name.padEnd(11)} s ${t1(r.answer.s)}`
+      + ` backup ${r.backup.name.padEnd(11)} ${t1(r.backup.s)}  beaten ${r.beaten.length}  row ${t1(r.value)}`);
+  }
+
+  assert.equal(alone.roster, null, "no preview, no roster: the standard half stands alone");
+  assert.equal(half(alone, "roster").length, 0);
+  assert.deepEqual(both.roster, { wave: 50, name: "Lt. Surge W50~", confidence: "replay", size: GYM.length });
+  assert.deepEqual(half(both, "roster").map(r => r.threat), ["Jolteon L40", "Electivire L40", "Magnezone L41", "Ampharos L42"],
+    "one threat per foe the preview fields, named by the foe and its level");
+  assert.deepEqual(half(both, "standard").map(r => [r.threat, r.value]), alone.before.rows.map(r => [r.threat, r.value]),
+    "the standard half is the same half with a roster beside it or without");
+  assert.equal(both.before.v, mean(half(both, "standard")) + mean(half(both, "roster")));
+  assert.ok(half(both, "roster").every(r => r.weight === 1 / GYM.length) && half(both, "standard").every(r => r.weight === 1 / alone.before.rows.length),
+    "each row's weight is its share of its own half");
+  assert.ok(both.net > alone.net, "a newcomer the next fight cannot touch is worth more for the fight being read");
+
+  const ros = both.reasons.filter(r => r.kind === "roster");
+  assert.ok(ros.length > 0, `the roster half gives a reason: ${JSON.stringify(both.reasons.map(r => r.text))}`);
+  for (const r of ros) {
+    assert.equal(r.fight, "Lt. Surge W50~");
+    assert.equal(r.confidence, "replay", "as sure as the preview it was read off");
+  }
+  assert.ok(alone.reasons.every(r => r.kind !== "roster" && r.confidence === "exact"));
+
+  // The judgment is as sure as its weakest input: the threat set takes the roster's, and the projection behind the
+  // party is an estimate whatever the preview says.
+  for (const c of ["exact", "replay", "estimate"]) {
+    const sceneOpts = { seed: `judge-roster-${c}`, roster: preview(c) };
+    const set = readRun(sceneOf(WATERS(), sceneOpts), run => threatSet(run, { fight: 50 }));
+    assert.equal(set.confidence, c, `a ${c} roster leaves the threat set ${c}`);
+    assert.equal(judge(WATERS(), nc(), {}, sceneOpts).confidence, "estimate", `and the judgment an estimate on a ${c} one`);
+  }
+
+  // A fight the preview can't read leaves the standard half alone, and the card still answers (story 34).
+  const unread = judge(WATERS(), nc(), {}, { seed: "judge-roster-unread", roster: () => null });
+  assert.equal(unread.roster, null);
+  assert.equal(unread.verdict, alone.verdict, "the same call the standard half makes");
+  assert.equal(unread.unavailable, undefined, "and a call, not a refusal");
+  // A card that chooses the next fight — the biome card — turns the roster off with a preview on hand.
+  const blind = judge(WATERS(), nc(), { roster: false }, { seed: "judge-roster-replay", roster: preview("replay") });
+  assert.equal(blind.roster, null);
+  assert.equal(blind.before.v, alone.before.v, "the standard half alone, preview or no preview");
+  assert.equal(t1(blind.net), t1(alone.net));
+
+  const scene = () => sceneOf(WATERS(), { seed: "judge-roster-replay", roster: preview("replay") });
+  const weakest = readRun(scene(), run => weakestMember(run));
+  assert.equal(weakest.v, both.before.v, "the party the weakest member is read off is worth what the newcomer's is");
+  assert.equal(weakest.roster.name, "Lt. Surge W50~");
+  const fused = readRun(scene(), run => judgeFusionPair(run, "Lanturn", "Politoed"));
+  assert.equal(fused.before.v, both.before.v);
+  assert.equal(fused.roster.name, "Lt. Surge W50~");
+  console.log(`  the weakest member against both halves is ${weakest.name}, at ${t1(weakest.cost)}`);
 }
 
 // ---- The full swap search over six members, inside the cost budget

@@ -336,6 +336,48 @@ const card = (ah, m) => ah.drawAhead(m).map(txt).map(t => t.replace(/\s+/g, " ")
   console.log(`summary ${JSON.stringify(ah2.aheadSummary(far))}`);
 }
 
+// ---- The threat set's roster half is the road's next fight, named as the road names it, as sure as its preview (#592)
+{
+  const read = (wave, fight) => {
+    const { scene } = mount({ wave, party: team() });
+    // The move table a combatant looks its moveset up in, which a preview row hands over by id (#574).
+    globalThis.__hud["04-game-tables"].setGameTables({ moves: Object.keys(MOVES).reduce((t, n) => { t[MOVE_IDS[n]] = gameMove(n); return t; }, []) });
+    const { rosterThreats } = globalThis.__hud["11-threats"];
+    const { aheadModel } = globalThis.__hud["49-ahead"];
+    const rnd = RND.state();
+    const out = globalThis.__hud["26-run"].readRun(scene, run => ({ r: rosterThreats(run, fight), next: aheadModel(run).next }));
+    assert.equal(RND.state(), rnd, "the replay behind the roster leaves the run's stream where it stood");
+    assert.equal(globalThis.__hud["01-core"].sandboxBreachCount(), 0);
+    return out;
+  };
+  const shown = r => r && JSON.stringify({ wave: r.wave, name: r.name, confidence: r.confidence,
+    threats: r.threats.map(t => `${t.label} ${t.combatant.stats.join("/")} ${t.combatant.moveset.map(pm => pm.getName()).join("+")}`) });
+  for (const [wave, fight] of [[1, 5], [14, 20], [100, 110]]) {
+    const { r, next } = read(wave, fight);
+    console.log(`== roster from wave ${wave} ${shown(r)}`);
+    assert.equal(r.wave, next.wave, "the road's next fight");
+    assert.deepEqual(r.threats.map(t => t.label), next.foes.map(f => `${f.name} L${f.level}`), "one threat per foe it fields");
+    r.threats.forEach((t, i) => {
+      assert.deepEqual(t.combatant.stats, next.foes[i].stats, "rebuilt off the preview's own stat row");
+      assert.deepEqual(t.combatant.moveset.map(pm => pm.moveId), next.foes[i].moveIds, "with its moves by id");
+      assert.equal(t.kind, "roster");
+      assert.equal(t.fight, r.name);
+      assert.equal(t.confidence, r.confidence);
+    });
+  }
+  assert.deepEqual([read(1, 5).r.name, read(1, 5).r.confidence], ["Youngster W5", "exact"], "a fixed battle is exact");
+  assert.deepEqual([read(14, 20).r.name, read(14, 20).r.confidence], ["Youngster W20~", "replay"],
+    "a gym read in the biome it is fought in keeps its replay");
+  assert.deepEqual([read(100, 110).r.name, read(100, 110).r.confidence], ["Youngster W110?", "estimate"],
+    "read on the X0 before it, a gym leader is a guess (#591)");
+  assert.equal(read(14, 30).r, null, "a fight past the road's next is no roster");
+  assert.equal(read(1, 8).r, null, "nor is one the road reaches only after another");
+  const { scene } = mount({ wave: 24, party: team() });
+  delete scene.gameMode.isFixedBattle;
+  assert.equal(globalThis.__hud["26-run"].readRun(scene, run => globalThis.__hud["11-threats"].rosterThreats(run, 25)), null,
+    "and with no road to read, there is no roster to stand beside the standard threats");
+}
+
 // ---- Double-battle odds ahead follow the game's chance, its abilities and the grunts' unseeded roll (game-code.md §16)
 {
   const { scene, ah } = mount({ wave: 40, party: team() });
