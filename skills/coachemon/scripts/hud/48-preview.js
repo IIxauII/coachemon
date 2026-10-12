@@ -167,7 +167,9 @@ const replay = (s, w, playerParty) => {
           const foesOwn = type === WILD ? (podShift ? CONFIDENCE.estimate : CONFIDENCE.replay) : CONFIDENCE.exact;
           return {
             type: kind,
-            trainer: who,
+            // A grunt's name follows its unseeded double, "Magma Grunts" or "Magma Grunt", and missed under an `exact`
+            // claim (#590). Its party doesn't follow, so `foes` keeps `who` (#623).
+            trainer: gruntDouble ? CONFIDENCE.estimate : who,
             foes: weakest(kind, who, foesOwn),
             double: dbl,
             levels: weakest(kind, who, dbl),
