@@ -137,9 +137,8 @@ const team = (opts = {}) => [
 // A full party a catch *does* help, which the catch line being the team judgment on the species makes a different
 // fixture from the four above: six mons of 300–479 BST, none of them in either option's pool (so none is skipped as a
 // duplicate), all at level 37 — under the level cap of the wave the block below reads, which is what leaves a mon
-// caught there worth a slot. Six and not four because the judgment charges a fifth member the exposure of a fifth
-// slot (1.8 turns at `EXPOSURE(n) = 0.2n²`), so on a party with a free slot no stand-in clears the margin: the
-// verdict a wild catch can reach is `swap`, where the count of mons that can be beaten does not move (#587).
+// caught there worth a slot. Six and not four so the verdict a wild catch reaches is `swap`, where the party's size
+// does not move and the block pins a swap rather than a free slot filled (#587).
 const lowTeam = () => [
   pk(53, 37, [["Gust","Flying",40,"S"]]), pk(54, 37, [["Air Slash","Flying",75,"S"]]),
   pk(60, 37, [["Rock Throw","Rock",50,"P"]]), pk(61, 37, [["Rock Slide","Rock",75,"P"]]),

@@ -617,13 +617,13 @@ const WATERS = (level = CAP) => [
 
   // A fifth body is one more for every threat to beat, so an exposure on the count alone docked a newcomer for
   // losing where the party already lost to a man, and no free slot was ever filled (#619).
-  const exposureOf = r => scoreOf(r) - r.value;
+  const dockedOf = r => scoreOf(r) - r.value;
   const swept = bad.before.rows.filter(r => r.beaten.length === r.of);
   assert.ok(swept.length > 0, "some threat beats all four");
   for (const b of swept) {
     const a = bad.after.rows.find(r => r.threat === b.threat);
     assert.equal(a.beaten.length, a.of, `${b.threat} beats the newcomer too`);
-    assert.ok(Math.abs(exposureOf(a) - exposureOf(b)) < 1e-9,
+    assert.ok(Math.abs(dockedOf(a) - dockedOf(b)) < 1e-9,
       `${b.threat}: a sweep of four and a sweep of five are the same sweep`);
   }
 }
