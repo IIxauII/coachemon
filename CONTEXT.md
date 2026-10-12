@@ -52,9 +52,10 @@ the **party profile**, which tallies types and scores nothing.
 
 ## Exposure
 
-How many of the **party**'s members one threat beats one-on-one, speed deciding who moves first. It grows the cost
-faster than the count, because one member lost to a threat is ordinary and four is a sweep — which is what makes a
-party that stacks one weakness worth less than its best answers suggest.
+The share of the **party**'s members one threat beats one-on-one, speed deciding who moves first. It grows the cost
+faster than the share, because one member of six lost to a threat is ordinary and four is a sweep — which is what makes
+a party that stacks one weakness worth less than its best answers suggest. A share and not a count, so a member that
+joins a party a threat already sweeps is not one more for it to beat.
 
 ## Fusion
 

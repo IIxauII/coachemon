@@ -195,9 +195,9 @@ let best;
 
 // ---- A first pick made: only fusions onto it, and the card says to back out for a better one elsewhere.
 {
-  const m = show("Magikarp picked first", { picked: 3 });
-  assert.ok(m.rows.every(r => r.base.name === "Magikarp"));
-  assert.equal(m.picked.name, "Magikarp");
+  const m = show("Snorlax picked first", { picked: 2 });
+  assert.ok(m.rows.every(r => r.base.name === "Snorlax"));
+  assert.equal(m.picked.name, "Snorlax");
   assert.ok(m.better && m.better.base.name === best.base.name, "a better fusion elsewhere");
 }
 

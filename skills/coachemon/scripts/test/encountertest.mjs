@@ -540,7 +540,7 @@ const threatTables = () => {
     "two members still stand, so the game draws from them and never from fainted Jolteon");
   assert.deepEqual(verdicts(healed), ["ok", "ok"]);
   assert.equal(healed.options[0].why, "L38 Lapras for a legendary", "Jolteon is back by W40, so it is still the weakest");
-  assert.match(ladder(heal.scene), /^Jolteon 0\.0 ·/, "revived, it is a member the duels price — at nothing here");
+  assert.match(ladder(heal.scene), /^Jolteon -?\d+\.\d ·/, "revived, it is a member the duels price, not dead weight");
   const hard = show("dark deal, Hardcore makes the fainted member dead weight",
     fainted({ gameMode: { isFixedBattle: () => false, challenges: [{ id: 9, value: 1 }] } }));
   console.log(`weakest first  ${ladder(hard.scene)}`);

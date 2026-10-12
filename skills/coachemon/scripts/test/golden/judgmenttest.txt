@@ -47,77 +47,77 @@
   at the fight on 60 it stands as Gyarados L27 [Water/Flying] 92 hp
   on five shares it reaches the fight on 50 as Gyarados L32 [Water/Flying] 107 hp
   and with its evolutions paused, Magikarp L32 [Water] 59 hp
-  at the next big fight          skip  -           dV -1.0  release 0.0  net -1.0  
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-      - Grass exposure         -2.2  Grass now beats 6 of 6
-  at the one after               skip  -           dV -2.0  release 0.0  net -2.0  
-      - Normal exposure        -2.2  Normal now beats 6 of 6
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-  five shares                    skip  -           dV -0.9  release 0.0  net -0.9  
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-      - Grass exposure         -2.2  Grass now beats 6 of 6
-  five shares, paused            skip  -           dV -1.0  release 0.0  net -1.0  
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-      - Grass exposure         -2.2  Grass now beats 6 of 6
+  at the next big fight          skip  -           dV -0.3  release 0.0  net -0.3  
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
+  at the one after               skip  -           dV -0.1  release 0.0  net -0.1  
+      - Fighting exposure      -0.6  Fighting now beats 4 of 6, up from 3 of 5
+      - Bug exposure           -0.5  Bug now beats 2 of 6, up from 1 of 5
+  five shares                    skip  -           dV -0.2  release 0.0  net -0.2  
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
+  five shares, paused            skip  -           dV -0.3  release 0.0  net -0.3  
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
 == a level 10 newcomer into a party at the cap
-  nothing                  L10  Magikarp  skip  dV -1.0
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-      - Grass exposure         -2.2  Grass now beats 6 of 6
-  Lucky Egg alone          L10  Magikarp  skip  dV -1.0
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-      - Grass exposure         -2.2  Grass now beats 6 of 6
-  one EXP share            L19  Magikarp  skip  dV -1.0
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-      - Grass exposure         -2.2  Grass now beats 6 of 6
-  EXP share and Lucky Egg  L21  Magikarp  skip  dV -1.0
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-      - Grass exposure         -2.2  Grass now beats 6 of 6
-  five EXP shares          L32  Magikarp  skip  dV -1.0
-      - Poison exposure        -2.2  Poison now beats 6 of 6
-      - Grass exposure         -2.2  Grass now beats 6 of 6
+  nothing                  L10  Magikarp  skip  dV -0.3
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
+  Lucky Egg alone          L10  Magikarp  skip  dV -0.3
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
+  one EXP share            L19  Magikarp  skip  dV -0.3
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
+  EXP share and Lucky Egg  L21  Magikarp  skip  dV -0.3
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
+  five EXP shares          L32  Magikarp  skip  dV -0.3
+      - Water exposure         -0.6  Water now beats 4 of 6, up from 3 of 5
+      - Normal exposure        -0.5  Normal now beats 2 of 6, up from 1 of 5
 == one run key, the Lucky Egg on the first member and then the last, and then Pokérus with it
   egg on Blastoise   Blastoise L20, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
   egg on Meganium    Blastoise L18, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L20
   and Pokérus        Blastoise L23, Feraligatr L18, Politoed L18, Wailord L18, Lanturn L18, Meganium L18
 == four members and two free slots
-  Sceptile at the cap            take  -           dV +0.4  release 0.0  net +0.4  
+  Sceptile at the cap            take  -           dV +1.1  release 0.0  net +1.1  
+      + physical wall exposure +2.6  the physical wall now beats 4 of 5, down from 4 of 4
       + Grass answer           +2.1  nearer an answer to Grass
-      + physical wall answer   +1.6  an answer to the physical wall at last
-  Sunflora at level 20           skip  -           dV -0.8  release 0.0  net -0.8  
-      - Poison exposure        -1.8  Poison now beats 5 of 5
-      - Grass exposure         -1.8  Grass now beats 5 of 5
+  Sunflora at level 20           skip  -           dV -0.4  release 0.0  net -0.4  
+      - Water exposure         -0.8  Water now beats 3 of 5, up from 2 of 4
+      - Steel exposure         -0.7  Steel now beats 2 of 5, up from 1 of 4
   of 22 threats, the one is beaten by 4 and the other by 22
 == a fainted member, under three calendars
-  Hardcore                       swap  Blastoise   dV +0.5  release 0.0  net +0.5  
-      + Fire exposure          +1.4  Fire now beats 3 of 5, down from 4
-      + physical wall exposure +1.4  the physical wall now beats 3 of 5, down from 4
-  no heal, no shop               swap  Blastoise   dV +0.5  release 0.0  net +0.5  
-      + Fire exposure          +1.4  Fire now beats 3 of 5, down from 4
-      + physical wall exposure +1.4  the physical wall now beats 3 of 5, down from 4
+  Hardcore                       swap  Blastoise   dV +0.6  release 0.0  net +0.6  
+      + Fire exposure          +2.0  Fire now beats 3 of 5, down from 4
+      + physical wall exposure +2.0  the physical wall now beats 3 of 5, down from 4
+  no heal, no shop               swap  Blastoise   dV +0.6  release 0.0  net +0.6  
+      + Fire exposure          +2.0  Fire now beats 3 of 5, down from 4
+      + physical wall exposure +2.0  the physical wall now beats 3 of 5, down from 4
   a heal due before the fight    swap  Wailord     dV +0.3  release 0.0  net +0.3  
       + Dragon exposure        +2.2  Dragon now beats 5 of 6, down from 6
       + Water answer           +1.9  nearer an answer to Water
   every slot the search tried, against 5 live members:
-    Blastoise +0.5  Feraligatr +0.2  Charizard +0.1  Wailord† +0.2  Typhlosion +0.3  Meganium +0.5
-  Hardcore, the corpse named     swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+    Blastoise +0.6  Feraligatr +0.3  Charizard +0.1  Wailord† +0.6  Typhlosion +0.4  Meganium +0.5
+  Hardcore, the corpse named     swap  Wailord     dV +0.6  release 0.0  net +0.6  dead weight
       ! Wailord is dead weight: fainted with no way back
-      + Normal answer          +1.0  an answer to Normal at last
-      + physical wall answer   +0.8  a better answer to the physical wall
-  a barred member, named         swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+      + Fire exposure          +1.4  Fire now beats 4 of 6, down from 4 of 5
+      + physical wall exposure +1.4  the physical wall now beats 4 of 6, down from 4 of 5
+  a barred member, named         swap  Wailord     dV +0.6  release 0.0  net +0.6  dead weight
       ! Wailord is dead weight: a challenge bars it
-      + Normal answer          +1.0  an answer to Normal at last
-      + physical wall answer   +0.8  a better answer to the physical wall
+      + Fire exposure          +1.4  Fire now beats 4 of 6, down from 4 of 5
+      + physical wall exposure +1.4  the physical wall now beats 4 of 6, down from 4 of 5
 == the weakest member of each fixture party
-  all-Water, one Grass           Wailord     costs -0.8  
-    Wailord -0.8  Lanturn -0.8  Politoed -0.7  Blastoise -0.5  Meganium -0.3  Feraligatr -0.1
+  all-Water, one Grass           Wailord     costs -0.1  
+    Wailord -0.1  Lanturn -0.1  Politoed  0.0  Blastoise +0.2  Meganium +0.4  Feraligatr +0.8
   Hardcore, Wailord down         Wailord     costs  0.0  fainted
-    Wailord†  0.0  Blastoise -0.3  Meganium -0.2  Typhlosion -0.1  Feraligatr  0.0  Charizard +0.1
+    Wailord†  0.0  Blastoise  0.0  Meganium +0.1  Typhlosion +0.2  Feraligatr +0.5  Charizard +0.6
   no heal, no shop               Wailord     costs  0.0  fainted
-    Wailord†  0.0  Blastoise -0.3  Meganium -0.2  Typhlosion -0.1  Feraligatr  0.0  Charizard +0.1
-  a heal due before the fight    Wailord     costs -1.7  
-    Wailord -1.7  Blastoise -1.7  Feraligatr -1.6  Meganium -1.5  Typhlosion -1.0  Charizard -0.9
+    Wailord†  0.0  Blastoise  0.0  Meganium +0.1  Typhlosion +0.2  Feraligatr +0.5  Charizard +0.6
+  a heal due before the fight    Wailord     costs -0.1  
+    Wailord -0.1  Blastoise -0.1  Feraligatr  0.0  Meganium +0.1  Typhlosion +0.7  Charizard +0.8
   a barred member, at full health Wailord     costs  0.0  barred
-    Wailord†  0.0  Blastoise -0.3  Meganium -0.2  Typhlosion -0.1  Feraligatr  0.0  Charizard +0.1
+    Wailord†  0.0  Blastoise  0.0  Meganium +0.1  Typhlosion +0.2  Feraligatr +0.5  Charizard +0.6
   a Grass newcomer swaps Meganium, while the weakest member is Wailord
 == the slot the search would empty, and what emptying it would destroy
   holding nothing                swap  Wailord     dV +0.6  release 0.0  net +0.6  
@@ -158,18 +158,18 @@
   six Leftovers each             skip  Wailord     dV +0.6  release 0.6  net  0.0  
       - Dragon exposure        -1.0  Dragon now beats 3 of 6
       - Fighting exposure      -0.6  Fighting now beats 2 of 6
-== the fainted member named, holding nothing, one Leftovers, and three vitamins
-  a corpse                       swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+== the fainted member named, holding nothing, six Leftovers, and three vitamins
+  a corpse                       swap  Wailord     dV +0.6  release 0.0  net +0.6  dead weight
       ! Wailord is dead weight: fainted with no way back
-      + Normal answer          +1.0  an answer to Normal at last
-      + physical wall answer   +0.8  a better answer to the physical wall
-  a corpse carrying              skip  Wailord     dV +0.2  release 0.1  net +0.1  
-      - Electric exposure      -1.8  Electric now beats 5 of 6
-      - Poison exposure        -1.4  Poison now beats 4 of 6
-  a corpse's investment          swap  Wailord     dV +0.2  release 0.0  net +0.2  dead weight
+      + Fire exposure          +1.4  Fire now beats 4 of 6, down from 4 of 5
+      + physical wall exposure +1.4  the physical wall now beats 4 of 6, down from 4 of 5
+  a corpse carrying              skip  Wailord     dV +0.6  release 0.6  net  0.0  
+      - Grass exposure         -0.6  Grass now beats 3 of 6, up from 2 of 5
+      - Poison exposure        -0.6  Poison now beats 4 of 6, up from 3 of 5
+  a corpse's investment          swap  Wailord     dV +0.6  release 0.0  net +0.6  dead weight
       ! Wailord is dead weight: fainted with no way back
-      + Normal answer          +1.0  an answer to Normal at last
-      + physical wall answer   +0.8  a better answer to the physical wall
+      + Fire exposure          +1.4  Fire now beats 4 of 6, down from 4 of 5
+      + physical wall exposure +1.4  the physical wall now beats 4 of 6, down from 4 of 5
 == a newcomer Single Type bars
   Meganium, barred               skip  -           dV  0.0  release 0.0  net  0.0  barred
       ! a challenge bars Meganium: dead weight the moment it joins
@@ -222,35 +222,36 @@
   a stand-in offered at L12 is judged at L12 knowing Quick Attack, Agility, Aqua Tail
 == the all-Water six, the two halves of one fusion
   the mon the Splicer would make: Lanturn L38 [Water/Electric] 135 hp, ability Water Absorb
-  Lanturn ← Politoed             fuse  dV +0.9  release 0.0  net +0.9  
-      + Flying exposure        +3.2  Flying now beats 3 of 5, down from 5
-      + Poison exposure        +2.2  Poison now beats 5 of 5, down from 6
+  Lanturn ← Politoed             fuse  dV +0.2  release 0.0  net +0.2  
+      + Flying exposure        +2.4  Flying now beats 3 of 5, down from 5 of 6
+      + Water exposure         +1.5  Water now beats 1 of 5, down from 3 of 6
   a member with itself           skip  unjudged: a fusion is two members of the party
   a member not on the party      skip  unjudged: a fusion is two members of the party
   a base that is dead weight     skip  unjudged: the base is dead weight: fainted
 == every pair of the six ranked by net value, and then with one of them carrying
-  nothing held                   Lanturn ← Politoed 0.89   Lanturn ← Wailord 0.88   Lanturn ← Blastoise 0.86
-  2 Leftovers on Politoed        Lanturn ← Wailord 0.88   Lanturn ← Blastoise 0.86   Blastoise ← Wailord 0.78
-  Lanturn ← Politoed, 10 Leftovers skip  dV +0.9  release 1.0  net -0.1  
-      - Dragon backup          -0.2  a weaker backup to Dragon
+  nothing held                   Lanturn ← Wailord 0.25   Lanturn ← Politoed 0.24   Lanturn ← Blastoise 0.22
+  2 Leftovers on Wailord         Lanturn ← Politoed 0.24   Lanturn ← Blastoise 0.22   Wailord ← Blastoise 0.16
+  Lanturn ← Wailord, 10 Leftovers skip  dV +0.2  release 1.0  net -0.8  
+      - Normal exposure        -0.4  Normal now beats 2 of 5, up from 2 of 6
+      - Dragon exposure        -0.4  Dragon now beats 2 of 5, up from 2 of 6
 == three members, each answering what the other two cannot: every pair of them
-  Sceptile ← Charizard           skip  dV -0.8  release 0.0  net -0.8  
-      - Steel answer           -2.2  no answer left to Steel
+  Sceptile ← Charizard           skip  dV -0.9  release 0.0  net -0.9  
+      - Steel exposure         -4.0  Steel now beats 2 of 2, up from 2 of 3
       - special wall answer    -2.0  a weaker answer to the special wall
-  Charizard ← Sceptile           skip  dV -0.8  release 0.0  net -0.8  
+  Charizard ← Sceptile           skip  dV -0.9  release 0.0  net -0.9  
       - special wall answer    -2.0  a weaker answer to the special wall
-      - Dragon backup          -1.7  no backup left to Dragon
-  Swampert ← Sceptile            skip  dV -0.9  release 0.0  net -0.9  
-      - Fire answer            -2.5  no answer left to Fire
-      - Ground backup          -1.5  no backup left to Ground
-  Charizard ← Swampert           skip  dV -1.0  release 0.0  net -1.0  
-      - Fire answer            -2.0  no answer left to Fire
-      - Fairy answer           -2.0  a weaker answer to Fairy
-  Swampert ← Charizard           skip  dV -1.0  release 0.0  net -1.0  
-      - Grass answer           -3.5  no answer left to Grass
-      - Fire answer            -2.0  no answer left to Fire
-  Sceptile ← Swampert            skip  dV -1.1  release 0.0  net -1.1  
-      - Fire answer            -4.0  no answer left to Fire
-      - Ground backup          -1.5  no backup left to Ground
+      - Dragon exposure        -1.8  Dragon now beats 1 of 2, up from 0 of 3
+  Swampert ← Charizard           skip  dV -1.6  release 0.0  net -1.6  
+      - Grass exposure         -4.0  Grass now beats 2 of 2, up from 2 of 3
+      - Electric exposure      -4.0  Electric now beats 2 of 2, up from 2 of 3
+  Swampert ← Sceptile            skip  dV -1.6  release 0.0  net -1.6  
+      - Fire exposure          -6.4  Fire now beats 2 of 2, up from 1 of 3
+      - Electric exposure      -4.0  Electric now beats 2 of 2, up from 2 of 3
+  Charizard ← Swampert           skip  dV -1.8  release 0.0  net -1.8  
+      - Poison exposure        -6.4  Poison now beats 2 of 2, up from 1 of 3
+      - Electric exposure      -4.0  Electric now beats 2 of 2, up from 2 of 3
+  Sceptile ← Swampert            skip  dV -1.8  release 0.0  net -1.8  
+      - Fire exposure          -6.4  Fire now beats 2 of 2, up from 1 of 3
+      - Electric exposure      -4.0  Electric now beats 2 of 2, up from 2 of 3
 == the full swap search over six members is inside the budget, cold and memoised
 judgment: ok
