@@ -1247,6 +1247,15 @@ same-species slot `:413`, balanced types `:489`, the duplicate-species reroll th
 `EnemyPokemon` constructor reads `enemyParty.length` (`src/field/pokemon.ts:6379`) and `waveIndex` (`:427`, and for a
 trainer member's IV floor `:6429`), never `enemyLevels`.
 
+**A member's level is not always `enemyLevels[i]`.** `addEnemyPokemon` runs a trainer member's `postProcess` after the
+constructor and a boss's second IV set (`src/battle-scene.ts:953`), and the rival's write `level` outright
+(`src/data/trainers/rival-party-config.ts:651`, `:392`, `:463`, `:579`), some changing `formIndex` too (`:398`). The
+constructor has already computed the stats at the old level and form (`src/field/pokemon.ts:457`); they catch up at
+the first `updateModifiers(false)` — the tail of `generateEnemyModifiers` (`src/battle-scene.ts:2744`, called from
+`EncounterPhase.start`, `src/phases/encounter-phase.ts:278`), again in `doEncounter` (`:338`) — which runs
+`calculateStats()` over the enemy party (`src/battle-scene.ts:2823`). `calculateStats` draws nothing, and the modifiers
+it applies match by the Pokémon's own id (`PokemonHeldItemModifier.shouldApply`, `src/modifier/modifier.ts:691`).
+
 **So**: a fork is exact from any point in the run; the stream is only as good as a replay that draws what the game
 draws, in order. A fork is exact about its own roll, **not about its inputs**: a generic trainer's members are each
 forked, but keyed on a trainer drawn on the stream, so the party is `replay`. Only a fixed battle — kind and trainer

@@ -44,13 +44,14 @@ const fakeMove = m => {
 };
 
 // `getStat(Stat.HP)` is what `getMaxHp` answers (game-code.md §24), so the two agree here as they do on a live mon.
-const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => ({
+const statsAt = level => [50 + level * 2, ...[1, 2, 3, 4, 5].map(i => 20 + level + i)];
+const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => { const m = {
   id: sp.speciesId * 1000 + level, species: sp, name: sp.name, level, bossSegments: boss,
-  bossSegmentIndex: boss ? boss - 1 : 0, shiny: false,
+  bossSegmentIndex: boss ? boss - 1 : 0, shiny: false, stats: statsAt(level),
   getTypes: () => sp.types, getAbility: () => ({ name: "Sturdy" }), hasPassive: () => false,
   // Sturdy's own attr, the one ability the approx duel asks for by attr rather than by name (game-code.md §8).
   hasAbilityWithAttr: a => a === "PreDefendFullHpEndureAbAttr",
-  getMaxHp: () => 50 + level * 2, getStat: i => (i === 0 ? 50 + level * 2 : 20 + level + i),
+  getMaxHp: () => m.stats[0], getStat: i => m.stats[i], calculateStats: () => { m.stats = statsAt(m.level); },
   getIconAtlasKey: () => "k", getIconId: () => String(sp.speciesId),
   hp: 50 + level * 2, getHeldItems: () => [], getTag: () => null,
   isBoss: () => boss > 0, isPlayer: () => false, isOnField: () => false,
@@ -59,9 +60,10 @@ const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => ({
   turnData: { hitCount: 0, hitsLeft: -1, moveEffectiveness: null },
   moveset: moves.map(fakeMove),
   destroy() { destroyed++; },
-});
+}; return m; };
 
-const makeTrainer = (scene, { name, type, size = 2, double = false, staticParty = false }) => {
+/** `relevel`: slot → the level a rival's `postProcess` writes over the member once it is built (game-code.md §11). */
+const makeTrainer = (scene, { name, type, size = 2, double = false, staticParty = false, relevel = {} }) => {
   const templateIndex = randSeedInt(2);
   const nameRoll = randSeedInt(4);
   return {
@@ -73,6 +75,7 @@ const makeTrainer = (scene, { name, type, size = 2, double = false, staticParty 
       let ret;
       scene.executeWithSeedOffset(() => {
         ret = mon(species(SIGNATURE[randSeedInt(SIGNATURE.length)]), level, { moves: ["Tackle", "Rock Slide"] });
+        if (relevel[index] != null) ret.level = relevel[index];
       }, staticParty ? type + ((index + 1) << 8) : scene.currentBattle.waveIndex + (type << 10) + ((index + 1) << 8));
       return ret;
     },
@@ -93,7 +96,7 @@ class FakeBattle {
 // No classic fixed-battle config sets `double` (game-code.md §16).
 const FIXED = {
   8: { seedOffsetWaveIndex: 0, name: "Rival", type: 20 },
-  25: { seedOffsetWaveIndex: 8, name: "Rival", type: 20 },
+  25: { seedOffsetWaveIndex: 8, name: "Rival", type: 20, relevel: { 2: 40 } },
   35: { seedOffsetWaveIndex: 0, name: "Rocket Grunt", type: 30 },
 };
 
@@ -115,7 +118,7 @@ const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meR
       hasTrainers, isEndless: !hasTrainers, hasChallenge: () => false, isWaveFinal: () => false, isBoss: w => w % 10 === 0,
       isFixedBattle: w => !!FIXED[w],
       getFixedBattle: w => FIXED[w] && { battleType: 1, seedOffsetWaveIndex: FIXED[w].seedOffsetWaveIndex,
-        getTrainer: () => makeTrainer(scene, { name: FIXED[w].name, type: FIXED[w].type, size: 3 }) },
+        getTrainer: () => makeTrainer(scene, { name: FIXED[w].name, type: FIXED[w].type, size: 3, relevel: FIXED[w].relevel }) },
       isWaveTrainer(w) {
         if (w % 30 === (scene.offsetGym ? 0 : 20)) return true;
         if (w % 10 === 1 || w % 10 === 0) return false;
@@ -197,6 +200,8 @@ const playWave = (scene, w) => {
         ? trainer.genPartyMember(e)
         : scene.addEnemyPokemon(scene.randomSpecies(w, level, true), level, 0, !!scene.getEncounterBossSegments(w, level));
     });
+    // The encounter's `updateModifiers(false)` (game-code.md §11).
+    for (const p of battle.enemyParty) p.calculateStats();
   }
   return battle;
 };
@@ -233,13 +238,13 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
 
 // ---- The replay check: a preview from the wave before lands on the wave the game plays.
 {
-  for (const wave of [11, 12, 19, 20, 24]) {
+  for (const wave of [11, 12, 19, 20, 24, 25]) {
     const { scene, pv } = mount({ wave: wave - 1 });
     const predicted = pv.previewNext(scene);
     const actual = playWave(scene, wave);
     const actualShape = {
       type: actual.battleType === 3 ? "me" : actual.battleType === 1 ? "trainer" : "wild",
-      double: actual.double, levels: actual.enemyLevels ?? [],
+      double: actual.double, levels: actual.battleType === 3 ? actual.enemyLevels : actual.enemyParty.map(p => p.level),
       trainer: actual.trainer?.getName() ?? null, foes: actual.enemyParty.map(p => `${p.name} L${p.level}`),
     };
     const mine = { type: predicted.type, double: predicted.double, levels: predicted.levels,
@@ -247,6 +252,22 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
     console.log(`== wave ${wave} predicted ${JSON.stringify(mine)}`);
     assert.deepEqual(mine, actualShape, `wave ${wave}: the replay lands on the wave the game plays`);
   }
+}
+
+// ---- A trainer member re-levelled once it is built previews at the level and the stats the game fields (#621).
+{
+  const { scene, pv } = mount({ wave: 24 });
+  const m = pv.previewNext(scene);
+  const battle = playWave(scene, 25);
+  const fielded = battle.enemyParty.map(p => p.level);
+  assert.notDeepEqual(battle.enemyLevels, fielded, "the rival's slot 3 is re-levelled after it is built");
+  assert.deepEqual(m.levels, fielded, `the preview reads the levels the game fields: ${JSON.stringify(m.levels)}`);
+  assert.deepEqual(m.foes.map(f => f.stats),
+    battle.enemyParty.map(p => [p.getMaxHp(), ...[1, 2, 3, 4, 5].map(i => p.getStat(i))]),
+    "and the stats the game recomputes at that level");
+  const graded = pv.previewGrade(m, pv.previewActual(scene));
+  assert.deepEqual(graded.wrong, [], `graded right: ${JSON.stringify(graded)}`);
+  console.log(`== re-levelled rival ${JSON.stringify({ battle: battle.enemyLevels, preview: m.levels })}`);
 }
 
 // ---- Nothing the preview touches stays touched: the stream, the battle, the wave seed, the objects it built.

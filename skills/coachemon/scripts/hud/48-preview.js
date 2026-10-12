@@ -115,7 +115,7 @@ const replay = (s, w, playerParty) => {
       const double = !!s.checkIsDouble({ double: forcedDouble, battleType: type, waveIndex: w, trainer });
       const battle = fork(s, w << 3, waveSeed,
         () => new (s.currentBattle.constructor)(gm, { waveIndex: w, battleType: type, trainer, double }));
-      const levels = [...(battle.enemyLevels ?? [])];
+      const battleLevels = [...(battle.enemyLevels ?? [])];
 
       const foes = withBattle(s, battle, () => {
         if (type === MYSTERY) {
@@ -124,10 +124,13 @@ const replay = (s, w, playerParty) => {
         }
         // `isEncounterShinyLocked`, re-implemented (game-code.md §11).
         const shinyLock = s.arena?.biomeId === BiomeId.END && (!!gm.isEndless || tryDo(() => gm.hasChallenge(Challenges.FRESH_START), false));
-        return levels.map((level, e) => {
+        return battleLevels.map((level, e) => {
           let p;
           if (type === TRAINER) {
             p = trainer.genPartyMember(e);
+            // A trainer's member can be re-levelled or re-formed once built, its stats still the old ones (game-code.md
+            // §11).
+            tryDo(() => p.calculateStats());
           } else {
             let species = wildSpecies(s, w, level, playerParty);
             // The Golden Bug Net's draw (game-code.md §11): its roll only names a note, but skipping it desyncs the
@@ -156,7 +159,9 @@ const replay = (s, w, playerParty) => {
         wave: w, type: type === MYSTERY ? "me" : type === TRAINER ? "trainer" : "wild", fixed: !!fixedCfg,
         trainer: trainer ? { name: trainerName(trainer), double: tryDo(() => trainer.isDouble(), false) } : null,
         me: me ? { name: meName(me), tier: me.encounterTier ?? null } : null,
-        double, levels, foes, boss: foes.some(f => f.segments > 1),
+        // The battle's levels predate a rival member's re-levelling: read off them, the rival's fight 2 previewed a 16
+        // as a 14 (#621).
+        double, levels: type === MYSTERY ? battleLevels : foes.map(f => f.level), foes, boss: foes.some(f => f.segments > 1),
         confidence: (() => {
           const kind = kindIsRolled(s, w) ? CONFIDENCE.replay : CONFIDENCE.exact;
           const who = !trainer ? null : weakest(kind, fixedCfg ? CONFIDENCE.exact : CONFIDENCE.replay);
