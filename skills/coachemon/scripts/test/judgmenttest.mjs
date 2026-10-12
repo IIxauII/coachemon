@@ -1301,8 +1301,8 @@ const GRASSES = () => [
     (wave === 50 ? { wave, name: `Lt. Surge W50${confidenceMark(confidence)}`, confidence, foes } : null);
   // A Ground the Electric gym cannot touch, into the six it sweeps.
   const nc = () => mon(OURS.swampert, CAP, [M.earthquake, M.surf, M.iceBeam, M.bodySlam], { ability: "Torrent" });
-  // A seed per roster: in the page the preview is a function of the run key (48-preview's memo), so two rosters on
-  // one run key would be served the first one's threats.
+  // A seed per roster: in the page the preview is a function of the run key (48-preview.js, `previewFor`), so two
+  // rosters on one run key would be served the first one's threats.
   const alone = judge(WATERS(), nc(), {}, { seed: "judge-roster-none" });
   const both = judge(WATERS(), nc(), {}, { seed: "judge-roster-replay", roster: preview("replay") });
   console.log("== a Ground into the all-Water six, on the standard threats alone and with Lt. Surge's gym beside them");
@@ -1322,13 +1322,11 @@ const GRASSES = () => [
     "one threat per foe the preview fields, named by the foe and its level");
   assert.deepEqual(half(both, "standard").map(r => [r.threat, r.value]), alone.before.rows.map(r => [r.threat, r.value]),
     "the standard half is the same half with a roster beside it or without");
-  // Equal say: a mean per half, the two of them summed, so four foes weigh what twenty-two threats do.
   assert.equal(both.before.v, mean(half(both, "standard")) + mean(half(both, "roster")));
   assert.ok(half(both, "roster").every(r => r.weight === 1 / GYM.length) && half(both, "standard").every(r => r.weight === 1 / alone.before.rows.length),
     "each row's weight is its share of its own half");
   assert.ok(both.net > alone.net, "a newcomer the next fight cannot touch is worth more for the fight being read");
 
-  // A roster reason names the fight, and carries the preview's confidence.
   const ros = both.reasons.filter(r => r.kind === "roster");
   assert.ok(ros.length > 0, `the roster half gives a reason: ${JSON.stringify(both.reasons.map(r => r.text))}`);
   for (const r of ros) {
@@ -1357,7 +1355,6 @@ const GRASSES = () => [
   assert.equal(blind.before.v, alone.before.v, "the standard half alone, preview or no preview");
   assert.equal(t1(blind.net), t1(alone.net));
 
-  // The weakest member and a fusion pair are judged against the same two halves.
   const scene = () => sceneOf(WATERS(), { seed: "judge-roster-replay", roster: preview("replay") });
   const weakest = readRun(scene(), run => weakestMember(run));
   assert.equal(weakest.v, both.before.v, "the party the weakest member is read off is worth what the newcomer's is");

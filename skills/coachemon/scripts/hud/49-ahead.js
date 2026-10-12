@@ -160,7 +160,6 @@ const build = (run, wave) => {
   };
 };
 
-// The read 11-threats' roster half is handed (11-threats.js, `setRosterRead`).
 setRosterRead((run, wave) => {
   const next = aheadModel(run)?.next;
   if (next?.wave !== wave || !next.foes?.length) return null;

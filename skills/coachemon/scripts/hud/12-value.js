@@ -398,7 +398,7 @@ const wordsOf = (part, gain, b, a) => {
 
 /**
  * Up to `MAX_REASONS` reasons for the call: each a threat whose answer, backup or exposure moved most between the
- * before and after rows, named by type or archetype, as a gain or a loss.
+ * before and after rows, as a gain or a loss.
  *
  * They are read off the very rows the verdict was, so a reason can never argue with the call it explains (#567, story
  * 20): `gain` is the direction of the call — take and swap are gains, skip is a loss — and a change the other way is
@@ -447,7 +447,7 @@ const plainBarred = name => ({ kind: "barred", name,
  * search's pick whether or not the swap clears the margin, so a card can say who would have gone. `release` is what
  * that release destroys and `cost` its parts, `net` is ΔV less the release, `reasons` are the threats the call is read
  * off, and `plain` the one case that needs no threat at all. `roster` is the threat set's roster half, or null where
- * the standard half stood alone, and `roster` the option of that name (11-threats.js, `threatSet`).
+ * the standard half stood alone (11-threats.js, `threatSet`).
  */
 export const judgeNewcomer = (run, newcomer, { replace = null, fight = null, roster = true } = {}) => {
   const s = run?.scene ?? null;

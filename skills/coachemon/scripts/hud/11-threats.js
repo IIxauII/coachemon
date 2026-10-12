@@ -162,7 +162,7 @@ const rosterThreatOf = (row, fight) => {
  * The roster half for the big fight on wave `fight`: one threat per foe the preview fields, each carrying the fight's
  * name and the preview's confidence. Null where no preview reaches the fight.
  *
- * Memoised by the wave alone, as the preview it is read off is (48-preview's `previewFor`).
+ * Memoised by the wave alone, as the preview it is read off is (48-preview.js, `previewFor`).
  */
 export const rosterThreats = (run, fight) => run.memo("roster", String(fight), () => {
   const read = tryDo(() => rosterRead(run, fight));
