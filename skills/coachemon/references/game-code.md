@@ -1210,7 +1210,10 @@ Forks by offset, run seed unless marked: `isWaveTrainer` look-back `w`; ME roll 
 `turn * 1000 + groups` (wave seed, `src/utils/speed-order.ts:34`); `applyShuffledModifiers` `turn << 4` (wave seed,
 `src/battle-scene.ts:2905`); Daily luck at 0 (`src/modifier/modifier-type.ts:2906`).
 
-**What a wave's content hangs on.** `newBattle()` (`src/battle-scene.ts:1284`) sows the wave seed at its top, then:
+**What a wave's content hangs on.** `newBattle()` (`src/battle-scene.ts:1284`) sows the wave seed at its top, then
+runs the rows below while `currentBattle` is still wave w−1 (null on a run's first wave): it is reassigned only when
+`new Battle` returns (`:1328`). So a `getPartyLevels` reached from row 5 sees w−1's `waveIndex`, and an evil team's
+party template is read off it (§12).
 
 | # | Call | Draws | Stream or fork |
 |---|---|---|---|
@@ -1313,6 +1316,12 @@ DOUBLE on its 1/3, else the gender roll's variant (`src/battle.ts:616`). `Traine
 (`src/data/trainers/trainer-config.ts:825`) names the variant — `nameDouble` ("Rocket Grunts") or `nameFemale` — and a
 grunt's `Trainer.getName` is that title alone (`src/field/trainer.ts:156`), so a grunt's name is no more replayable
 than its double. `new Trainer` (`src/field/trainer.ts:45`) draws a party template (`randSeedItem`) and a name.
+Every grunt and admin instead sets `partyTemplateFunc` to `getEvilGruntPartyTemplate`
+(`src/data/trainers/trainer-party-template.ts:254`), which reads `currentBattle?.waveIndex` each time it is asked:
+≤35 `TWO_AVG`, ≤62 `THREE_AVG`, ≤64 `TWO_AVG_ONE_STRONG`, else `GYM_LEADER_5` (six members; also for a null battle).
+`getPartyTemplate` (`src/field/trainer.ts:255`) re-asks on every call, so the party's size and levels come from
+`getPartyLevels` under wave w−1 (§11), while each member's strength, from `genPartyMember`'s own `getPartyTemplate`
+call (`:318`), comes from wave w.
 `Trainer.genPartyMember` (`src/field/trainer.ts:310`) — forks the run seed; adds the member via `addEnemyPokemon` —
 seeds each member at `w + (derivedType << 10) + (((sameSeed ? 0 : i) + 1) << 8)`, or `derivedType + ((i + 1) << 8)`
 for `hasStaticParty` (rivals, admins, evil leaders, gym leaders, Elite Four, champions; `trainer-config.ts:459`), whose

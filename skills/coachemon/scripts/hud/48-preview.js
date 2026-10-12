@@ -43,6 +43,9 @@ const withBattle = (s, battle, fn) => {
   s.currentBattle = battle;
   try { return fn(); } finally { s.currentBattle = live; }
 };
+// The battle `newBattle` runs under (game-code.md §11, §12): built under the live one instead, an evil team read from
+// further out fielded the wrong party (#622).
+const battleBefore = (s, w) => Object.create(s.currentBattle, { waveIndex: { value: w - 1 } });
 const drop = o => { try { o?.destroy?.(); } catch {} };
 
 const foeOf = p => foeData(p, (p.moveset ?? []).filter(Boolean).map(m => tryDo(() => m.getMove())).filter(Boolean));
@@ -87,34 +90,38 @@ const replay = (s, w, playerParty) => {
   try {
     return fork(s, w, s.seed, () => {
       const fixedCfg = tryDo(() => (gm.isFixedBattle(w) ? gm.getFixedBattle(w) : null));
-      let type, trainer = null, forcedDouble, me = null;
+      let me = null;
       // A grunt's double is `Math.random`, unseeded (game-code.md §12).
       const gruntDouble = !!fixedCfg && fixedCfg.double == null && isGruntWave(w);
       if (gruntDouble) notes.push("this grunt's double is an unseeded roll: it can't be read ahead");
 
-      if (fixedCfg) {
-        type = fixedCfg.battleType ?? TRAINER;
-        forcedDouble = fixedCfg.double;
-        trainer = typeof fixedCfg.getTrainer === "function"
-          ? fork(s, (fixedCfg.seedOffsetWaveIndex || w) << 8, undefined, () => fixedCfg.getTrainer())
-          : null;
-        if (type === TRAINER && !trainer) notes.push("this fixed battle names no trainer");
-      } else {
-        // A mode without trainers never asks `isWaveTrainer` (game-code.md §11). Asking anyway built a trainer on a
-        // gym-calendar wave and elsewhere spent a draw the game doesn't, shifting the wild double roll and the species
-        // after it (#179).
-        type = hasTrainers(s) && gm.isWaveTrainer(w) ? TRAINER : WILD;
-        if (s.isWaveMysteryEncounter(type, w)) {
-          type = MYSTERY;
-        } else if (type === TRAINER) {
-          trainer = s.generateNewBattleTrainer(w);
+      const { type, trainer, double, battle } = withBattle(s, battleBefore(s, w), () => {
+        let type, trainer = null, forcedDouble;
+        if (fixedCfg) {
+          type = fixedCfg.battleType ?? TRAINER;
+          forcedDouble = fixedCfg.double;
+          trainer = typeof fixedCfg.getTrainer === "function"
+            ? fork(s, (fixedCfg.seedOffsetWaveIndex || w) << 8, undefined, () => fixedCfg.getTrainer())
+            : null;
+          if (type === TRAINER && !trainer) notes.push("this fixed battle names no trainer");
+        } else {
+          // A mode without trainers never asks `isWaveTrainer` (game-code.md §11). Asking anyway built a trainer on a
+          // gym-calendar wave and elsewhere spent a draw the game doesn't, shifting the wild double roll and the
+          // species after it (#179).
+          type = hasTrainers(s) && gm.isWaveTrainer(w) ? TRAINER : WILD;
+          if (s.isWaveMysteryEncounter(type, w)) {
+            type = MYSTERY;
+          } else if (type === TRAINER) {
+            trainer = s.generateNewBattleTrainer(w);
+          }
         }
-      }
-      if (trainer) built.push(trainer);
+        if (trainer) built.push(trainer);
 
-      const double = !!s.checkIsDouble({ double: forcedDouble, battleType: type, waveIndex: w, trainer });
-      const battle = fork(s, w << 3, waveSeed,
-        () => new (s.currentBattle.constructor)(gm, { waveIndex: w, battleType: type, trainer, double }));
+        const double = !!s.checkIsDouble({ double: forcedDouble, battleType: type, waveIndex: w, trainer });
+        const battle = fork(s, w << 3, waveSeed,
+          () => new (s.currentBattle.constructor)(gm, { waveIndex: w, battleType: type, trainer, double }));
+        return { type, trainer, double, battle };
+      });
       const battleLevels = [...(battle.enemyLevels ?? [])];
 
       const foes = withBattle(s, battle, () => {

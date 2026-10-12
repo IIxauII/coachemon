@@ -62,14 +62,19 @@ const mon = (sp, level, { boss = 0, moves = ["Tackle"] } = {}) => { const m = {
   destroy() { destroyed++; },
 }; return m; };
 
+// `getEvilGruntPartyTemplate` (game-code.md §12).
+const evilTemplate = wave => (wave <= 62 ? [0, 0, 0] : wave <= 64 ? [0, 0, 3] : [0, 0, 0, 3, 3, 5]);
+
 /** `relevel`: slot → the level a rival's `postProcess` writes over the member once it is built (game-code.md §11). */
-const makeTrainer = (scene, { name, type, size = 2, double = false, staticParty = false, relevel = {} }) => {
+const makeTrainer = (scene, { name, type, size = 2, double = false, staticParty = false, relevel = {}, template = null }) => {
   const templateIndex = randSeedInt(2);
   const nameRoll = randSeedInt(4);
   return {
     name: `${name}${nameRoll}`, config: { trainerType: type, hasStaticParty: staticParty },
     isDouble: () => double, getName: () => `${name}${nameRoll}`,
-    getPartyLevels: w => Array.from({ length: size }, (_, i) => 5 + Math.floor(w / 2) + i + templateIndex),
+    getPartyLevels: w => (template
+      ? template(scene.currentBattle?.waveIndex).map(bump => 5 + Math.floor(w / 2) + bump)
+      : Array.from({ length: size }, (_, i) => 5 + Math.floor(w / 2) + i + templateIndex)),
     genPartyMember(index) {
       const level = scene.currentBattle.enemyLevels[index];
       let ret;
@@ -98,6 +103,8 @@ const FIXED = {
   8: { seedOffsetWaveIndex: 0, name: "Rival", type: 20 },
   25: { seedOffsetWaveIndex: 8, name: "Rival", type: 20, relevel: { 2: 40 } },
   35: { seedOffsetWaveIndex: 0, name: "Rocket Grunt", type: 30 },
+  64: { seedOffsetWaveIndex: 35, name: "Rocket Grunt", type: 30, template: evilTemplate },
+  66: { seedOffsetWaveIndex: 35, name: "Rocket Admin", type: 31, template: evilTemplate },
 };
 
 // getPartyLuckValue (game-code.md §12).
@@ -118,7 +125,7 @@ const makeScene = ({ wave = 12, seed = "kAbC12", party = [], modifiers = [], meR
       hasTrainers, isEndless: !hasTrainers, hasChallenge: () => false, isWaveFinal: () => false, isBoss: w => w % 10 === 0,
       isFixedBattle: w => !!FIXED[w],
       getFixedBattle: w => FIXED[w] && { battleType: 1, seedOffsetWaveIndex: FIXED[w].seedOffsetWaveIndex,
-        getTrainer: () => makeTrainer(scene, { name: FIXED[w].name, type: FIXED[w].type, size: 3, relevel: FIXED[w].relevel }) },
+        getTrainer: () => makeTrainer(scene, { name: FIXED[w].name, type: FIXED[w].type, size: 3, relevel: FIXED[w].relevel, template: FIXED[w].template }) },
       isWaveTrainer(w) {
         if (w % 30 === (scene.offsetGym ? 0 : 20)) return true;
         if (w % 10 === 1 || w % 10 === 0) return false;
@@ -268,6 +275,22 @@ const shape = m => ({ wave: m.wave, type: m.type, fixed: m.fixed, double: m.doub
   const graded = pv.previewGrade(m, pv.previewActual(scene));
   assert.deepEqual(graded.wrong, [], `graded right: ${JSON.stringify(graded)}`);
   console.log(`== re-levelled rival ${JSON.stringify({ battle: battle.enemyLevels, preview: m.levels })}`);
+}
+
+// ---- An evil team's party is the one the game fields, whichever wave it's read from (#622).
+{
+  for (const [wave, froms] of [[64, [50, 62, 63]], [66, [56, 64, 65]]]) {
+    const { scene: played } = mount({ wave: wave - 1 });
+    const theirs = playWave(played, wave).enemyParty.map(p => `${p.name} L${p.level}`);
+    for (const from of froms) {
+      const { scene, pv } = mount({ wave: from });
+      const live = scene.currentBattle;
+      const mine = pv.previewFor(scene, wave).foes.map(f => `${f.name} L${f.level}`);
+      assert.deepEqual(mine, theirs, `wave ${wave} read from ${from}: the party the game fields`);
+      assert.equal(scene.currentBattle, live, "currentBattle is back");
+    }
+    console.log(`== evil wave ${wave} from ${froms.join("/")} ${JSON.stringify(theirs)}`);
+  }
 }
 
 // ---- Nothing the preview touches stays touched: the stream, the battle, the wave seed, the objects it built.
