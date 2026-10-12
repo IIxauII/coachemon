@@ -187,7 +187,7 @@ const MIN_PARTY = 4; // a party this small has nobody to spare, which is the gat
  * would miss most, and a member that answers a foe can still be the cheapest slot to give up.
  *
  * Dead weight is weakest at zero, and is said to be dead weight rather than priced. A live member the party is no
- * worse off without — a cost at or below zero, which quadratic exposure makes possible — is said that way rather than
+ * worse off without — a cost at or below zero, which exposure makes possible — is said that way rather than
  * priced too, and both are `high`: a slot that holds nothing loses fights. One that costs something to lose is only
  * tempo, and its cost is the one number shown — a whole team value can itself be negative, and a share of a negative
  * total tells the player nothing.

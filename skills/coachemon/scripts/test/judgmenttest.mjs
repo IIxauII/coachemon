@@ -304,6 +304,13 @@ const checkReasons = (label, j) => {
     assert.equal(r.gain, gain, `${label}: "${r.text}" points the other way from ${j.verdict}`);
     assert.equal(r.delta > 0, gain, `${label}: "${r.text}" is worth ${t1(r.delta)} to a ${j.verdict}`);
     assert.ok(Math.abs(r.delta) >= MARGIN, `${label}: "${r.text}" moved less than the margin`);
+    const down = r.text.match(/beats (\d+) of (\d+), down from (\d+)(?: of (\d+))?$/);
+    if (down) {
+      const [n, of, was, wasOf = of] = down.slice(1).map(x => (x === undefined ? x : Number(x)));
+      assert.ok(n / of < was / wasOf, `${label}: "${r.text}" says a share fell that did not`);
+      const b = j.before.rows.find(x => x.threat === r.threat);
+      assert.equal(wasOf, b.of, `${label}: "${r.text}" counts the party before out of the members it had`);
+    }
   }
   if (j.plain) {
     assert.ok(["dead weight", "barred"].includes(j.plain.kind), `${label}: ${j.plain.kind} is not a plain case`);
@@ -359,7 +366,8 @@ const WATERS = (level = CAP) => [
       + ` backup ${r.backup.name.padEnd(11)} ${t1(r.backup.s)}  beaten ${r.beaten.length}`
       + `${r.revenge ? " revenge" : ""}${r.switchIn ? " switch-in" : ""}  row ${t1(r.value)}`);
     assert.equal(r.value, r.answer.s + BACKUP * r.backup.s + (r.revenge ? REVENGE : 0) + (r.switchIn ? SWITCH_IN : 0)
-      - EXPOSURE(r.beaten.length), `${r.threat}: the row is the answer, the backup, the credits and the exposure`);
+      - EXPOSURE(PARTY_SIZE * r.beaten.length / r.of),
+      `${r.threat}: the row is the answer, the backup, the credits and the exposure`);
   }
   assert.equal(j.before.v, j.before.rows.reduce((t, r) => t + r.value, 0) / j.before.rows.length,
     "V is the mean over the threats, so the roster half can be given equal say (#592)");
@@ -603,6 +611,19 @@ const WATERS = (level = CAP) => [
   assert.equal(good.tried, undefined, "and no swap was searched");
   assert.equal(bad.verdict, "skip");
   assert.ok(bad.delta <= MARGIN, "a newcomer the threats beat is not worth even a free slot");
+
+  // A fifth body is one more for every threat to beat, so an exposure on the count alone docked a newcomer for
+  // losing where the party already lost to a man, and no free slot was ever filled (#619).
+  const exposureOf = r => r.answer.s + BACKUP * (r.backup?.s ?? 0) + (r.revenge ? REVENGE : 0)
+    + (r.switchIn ? SWITCH_IN : 0) - r.value;
+  const swept = bad.before.rows.filter(r => r.beaten.length === r.of);
+  assert.ok(swept.length > 0, "some threat beats all four");
+  for (const b of swept) {
+    const a = bad.after.rows.find(r => r.threat === b.threat);
+    assert.equal(a.beaten.length, a.of, `${b.threat} beats the newcomer too`);
+    assert.ok(Math.abs(exposureOf(a) - exposureOf(b)) < 1e-9,
+      `${b.threat}: a sweep of four and a sweep of five are the same sweep`);
+  }
 }
 
 // ---- Dead weight contributes nothing, and the slot it holds is the plain case a swap takes
@@ -638,9 +659,9 @@ const FAINTED = () => [
       "it answers no threat and is exposed to none: dead weight contributes nothing");
   }
   assert.equal(hardcore.before.v, noSupport.before.v, "and the two calendars that strand it agree on what the five are worth");
-  // Taking the empty slot grows the party from five to six, and exposure is quadratic in the members a threat beats
-  // (`EXPOSURE`), so a sixth that loses more duels than it answers is worth less to the team than the slot standing
-  // empty. The search prices that, which is why the swap it picks is not always the dead slot.
+  // Taking the empty slot grows the party from five to six, and exposure is the share of the party a threat beats,
+  // so a sixth that loses more duels than it answers is worth less to the team than the slot standing empty. The
+  // search prices that, which is why the swap it picks is not always the dead slot.
   console.log(`  every slot the search tried, against ${five} live members:`);
   console.log(`    ${hardcore.tried.map(x => `${x.slot.name}${x.slot.dead ? "†" : ""} ${t1(x.delta)}`).join("  ")}`);
   assert.ok(hardcore.tried.length === PARTY_SIZE, "the search tried every slot, the dead one included");
@@ -876,12 +897,12 @@ const FAINTED = () => [
   }
 
   // Replacing dead weight costs only its release cost (story 15): the corpse is worth nothing to give up, so what
-  // the swap pays for is what it is carrying — and here one stack of it is enough to turn the swap down.
+  // the swap pays for is what it is carrying — and here six stacks of it are enough to turn the swap down.
   const corpse = items => judge(FAINTED().map(p => (p.name === "Wailord" ? carrying(p, items) : p)),
     mon(OURS.sceptile, CAP, [M.energyBall, M.iceBeam, M.surf, M.bodySlam], { ability: "Overgrow" }),
     { replace: "Wailord" }, { challenges: [{ id: HARDCORE, value: 1 }], seed: "judge-hc" });
-  const [empty, pockets, spent] = [corpse([]), corpse([leftovers(1)]), corpse([vitamin(3)])];
-  console.log("== the fainted member named, holding nothing, one Leftovers, and three vitamins");
+  const [empty, pockets, spent] = [corpse([]), corpse([leftovers(6)]), corpse([vitamin(3)])];
+  console.log("== the fainted member named, holding nothing, six Leftovers, and three vitamins");
   show("a corpse", empty);
   show("a corpse carrying", pockets);
   show("a corpse's investment", spent);
@@ -889,8 +910,8 @@ const FAINTED = () => [
   assert.equal(empty.release, 0, "dead weight is free to release");
   assert.equal(empty.verdict, "swap", "so anything past the margin takes the slot");
   assert.equal(pockets.delta, empty.delta, "what it carries changes nothing about what the party is worth");
-  assert.equal(pockets.release, UNKNOWN_ITEM, "and is the whole of what the release costs");
-  assert.equal(pockets.net, empty.delta - UNKNOWN_ITEM, "which is all that stands between the two calls");
+  assert.equal(pockets.release, 6 * UNKNOWN_ITEM, "and is the whole of what the release costs");
+  assert.equal(pockets.net, empty.delta - 6 * UNKNOWN_ITEM, "which is all that stands between the two calls");
   assert.equal(pockets.verdict, "skip", "and more than the slot was worth: a corpse with pockets is not free");
   assert.equal(pockets.plain, null, "a card that is not swapping it has nothing plain to say about it");
   assert.equal(spent.release, 0, "while what was spent on it was never the release's to destroy");

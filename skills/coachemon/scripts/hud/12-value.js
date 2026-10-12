@@ -27,6 +27,10 @@ const NO_KO = 9; // `koTurns`' own ceiling, which is what a side with nothing th
 
 export const PARTY_SIZE = 6; // `PLAYER_PARTY_MAX_SIZE` (game-code.md §23)
 
+// `EXPOSURE` is read at the share of the party a threat beats, as that share of a full party. On the count alone a
+// free slot was one more body for every threat to beat, and no newcomer ever paid for filling it (#619).
+const exposure = (beaten, of) => (of ? EXPOSURE(PARTY_SIZE * beaten / of) : 0);
+
 const CONFIDENCE = { exact: "exact", replay: "replay", estimate: "estimate" };
 const RANK = [CONFIDENCE.exact, CONFIDENCE.replay, CONFIDENCE.estimate];
 // 48-preview's own pair, which this file is below.
@@ -82,13 +86,13 @@ const pairOf = (run, env, m, t) => run.memo("pair", `${m.key}|${t.key}`, () => p
 
 /**
  * One threat's row: the answer's margin, a discounted backup, the two credits once each however many members earn
- * them, less the exposure of every member the threat beats in the speed-aware race.
+ * them, less the exposure of the share of the party the threat beats in the speed-aware race.
  *
  * Dead weight is not among `pairs` at all, so it neither answers a threat nor is exposed to one (CONTEXT.md, `Dead
  * weight`) — and a party with nobody left scores a flat zero rather than a loss, there being nothing to sweep.
  *
- * `of` is how many members stood in the row, which is the party a reason's exposure is counted out of: dead weight is
- * not one of them, so "beats 4 of 5" is of the five that can fight.
+ * `of` is how many members stood in the row, which is the party exposure's share is taken of: dead weight is not one
+ * of them, so "beats 4 of 5" is of the five that can fight.
  */
 const rowOf = (threat, pairs) => {
   const ranked = [...pairs].sort((a, b) => b.s - a.s);
@@ -99,7 +103,7 @@ const rowOf = (threat, pairs) => {
     answer: ranked[0] ?? null, backup: ranked[1] ?? null, beaten: beaten.map(x => x.name), of: pairs.length,
     revenge, switchIn,
     value: (ranked[0]?.s ?? 0) + BACKUP * (ranked[1]?.s ?? 0) + (revenge ? REVENGE : 0) + (switchIn ? SWITCH_IN : 0)
-      - EXPOSURE(beaten.length),
+      - exposure(beaten.length, pairs.length),
   };
 };
 
@@ -296,8 +300,8 @@ const releaseOf = (run, env, set, slot, stay) => {
  *
  * A loss is priced the way the swap search prices a replacement, with the slot left empty rather than filled: V of
  * the party, less V of the party without that member. The figure is a *cost*, and a negative one is a party better
- * off for the loss — exposure is quadratic in the members a threat beats (`EXPOSURE`), so a member that loses more
- * duels than it answers can be worth less to the team than the slot standing empty.
+ * off for the loss — exposure is the share of the party a threat beats, so a member that loses more duels than it
+ * answers can be worth less to the team than the slot standing empty.
  *
  * Dead weight is weakest, at zero: it stands in no threat's row, so the party loses nothing at all by it, and it
  * goes ahead of every live member however cheap that member is to lose. What a release would destroy is not in the
@@ -352,7 +356,7 @@ const sOf = p => p?.s ?? 0;
 const partsOf = (b, a) => [
   { part: "answer", d: sOf(a.answer) - sOf(b.answer) },
   { part: "backup", d: BACKUP * (sOf(a.backup) - sOf(b.backup)) },
-  { part: "exposure", d: EXPOSURE(b.beaten.length) - EXPOSURE(a.beaten.length) },
+  { part: "exposure", d: exposure(b.beaten.length, b.of) - exposure(a.beaten.length, a.of) },
 ];
 
 /**
@@ -368,7 +372,8 @@ const wordsOf = (part, gain, b, a) => {
   const who = named(a);
   if (part === "exposure") {
     const n = `${who} now beats ${a.beaten.length} of ${a.of}`;
-    return gain ? `${n}, down from ${b.beaten.length}` : n;
+    // A party that grew can hold the count and still lower the share, so the old count needs its own party.
+    return gain ? `${n}, down from ${b.beaten.length}${b.of === a.of ? "" : ` of ${b.of}`}` : n;
   }
   const one = part === "answer" ? "an answer" : "a backup"; // the article the noun takes, where it needs one
   const had = sOf(b[part]) > 0, has = sOf(a[part]) > 0;
@@ -490,8 +495,8 @@ const slotRef = slot => (slot ? { mon: slot.mon, name: slot.name, dead: slot.dea
  *
  * A fusion spends a member, so the party it leaves is one shorter: the base's slot carries the fused mon, the other
  * half's stands empty and nothing fills it. It is the one judgment that shrinks the party, which is why `after`'s
- * rows are counted out of one member fewer than `before`'s — and a good part of why a fusion can be worth making at
- * all, exposure being quadratic in the members a threat beats (`EXPOSURE`).
+ * rows are counted out of one member fewer than `before`'s: a threat that beat the half the fusion spends beats a
+ * smaller share of the party after it, and one the half held off beats a larger one.
  *
  * The fused combatant is the adapter's (#573), which is the mon the Splicer would make: the base keeps its level,
  * IVs, nature, moves, passive and its own held items, and the other half lends half of every base stat, a type and
