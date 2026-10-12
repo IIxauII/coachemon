@@ -3,6 +3,8 @@
 == wave 19 predicted {"type":"trainer","double":true,"levels":[14,15],"trainer":"Youngster3","foes":["Gengar L14","Machop L15"]}
 == wave 20 predicted {"type":"trainer","double":true,"levels":[16,17],"trainer":"Youngster2","foes":["Geodude L16","Machop L17"]}
 == wave 24 predicted {"type":"wild","double":false,"levels":[13],"trainer":null,"foes":["Machop L13"]}
+== wave 25 predicted {"type":"trainer","double":false,"levels":[18,19,40],"trainer":"Rival1","foes":["Gengar L18","Geodude L19","Geodude L40"]}
+== re-levelled rival {"battle":[18,19,20],"preview":[18,19,40]}
 == wild (wave 13)
 {
  "wave": 13,
@@ -90,14 +92,14 @@
  "levels": [
   18,
   19,
-  20
+  40
  ],
  "trainer": "Rival1",
  "me": null,
  "foes": [
   "Gengar L18",
   "Geodude L19",
-  "Geodude L20"
+  "Geodude L40"
  ],
  "confidence": {
   "type": "exact",
