@@ -112,7 +112,7 @@ The **coach** as it runs in the player's tab: the whole part that reads the game
 
 ## Decision
 
-A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn (in a double, each slot's command is its own decision), the free switch offered when a foe faints, or the replacement for one of ours that fainted. Outside one, it is a reward, free or from the shop, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A shop purchase commits a decision, and the shop that stays open asks a new one. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. A decision is only ever made while the game is **settled**, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
+A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn (in a double, each slot's command is its own decision), the free switch offered before the first turn of a battle with no trainer, when it starts, on a load or on a game-over retry, or the replacement for one of ours that fainted. Outside one, it is a reward, free or from the shop, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A shop purchase commits a decision, and the shop that stays open asks a new one. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. A decision is only ever made while the game is **settled**, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
 
 ## Watch
 
@@ -206,7 +206,10 @@ A claim is never surer than what it derives from. Confidence is claimed, then **
 
 **exact** survives a live input only where nothing the player could do sits between the claim and the thing it describes: a read off a draw the run cannot move, and off a table the run cannot rebuild, is exact even when one of its inputs is read live.
 
-Every **preview** field carries one, and so does the enemy's move in a **turn read**.
+On a **card**, exact carries no mark, replay is `~`, estimate is `≈`, and a claim that has been wrong is `!`.
+
+Every **preview** field carries one, and so does the enemy's move in a **turn read**. An **oracle line** claims
+**replay** at most, never exact: the player's own inputs sit between it and every turn after the first.
 
 ## Journal
 
@@ -217,19 +220,49 @@ and never judges, so reading one is how a live check is done rather than the che
 It outlives the thing it describes — the **run**, the reload, the session — because what it is for is the case that
 takes many runs to gather. It is bounded, and the oldest entries fall off the end rather than growing without limit.
 
+Each **checkpoint** of an **oracle line** is a claim like any other, journalled as the fight goes.
+
 Distinct from a **preview**'s scoring, which grades one claim as the run goes and keeps only the tally.
 
 ## Oracle
 
-The game itself, played headless, used as the answer a coach claim is checked against. The pinned game is run on
-upstream's own test harness, a **card** reads that live scene exactly as it would read a tab, and what the card
-claims is compared with what the game then did.
+The game itself, played headless on upstream's own test harness in a clone pinned to one **game version**. It has
+two uses. It **checks** a coach claim: a **card** reads that scene exactly as it would read a tab, and what the card
+claims is compared with what the game then did. And it **solves** a trainer fight: from the run's own save, it plays
+inputs forward on the battle's seed until a sequence of them wins, and that sequence becomes an **oracle line**.
 
-An oracle answers only what is falsifiable — a destination, a payout, a roll — never a **verdict**, which is
-judgement and has no answer to be checked against. It is a dev tool and never ships.
+An oracle answers only what is falsifiable — a destination, a payout, a roll, whether a sequence of inputs wins — never a
+**verdict**, which is judgement and has no answer to be checked against. Where a solve can't reach **replay**
+confidence, the oracle says "no answer" rather than guess.
+
+Checking is a dev tool. Solving is opt-in. It is a standing setting in the coach plugin that the player turns on, and
+it runs on their own machine. It is never offered in a Daily run, whose seed every player shares. The extension never
+runs an oracle, and neither does the tab.
 
 Distinct from a **journal**, which waits for a real **run** to serve the case: an oracle asks for the case it
 wants, so it reaches what a run may never show.
+
+## Oracle line
+
+The **oracle**'s answer to a trainer fight: the inputs, turn by turn, that it has played to a win on the battle's own
+seed, with a **checkpoint** after each turn — what the battle will look like when the next **decision** comes, if the
+game has drawn what the oracle drew. Every checkpoint is a **replay** claim, checked when that decision arrives.
+
+While every checkpoint has matched, the oracle line's step is the call for the turn in place of the **turn line**,
+and it stands in for the **fight plan**. One miss and the game is **off the line**: the oracle line is void for the
+rest of the run, the turn line leads again and the fight plan returns, and the oracle may solve again from where the
+game now stands.
+
+Always said in full. A bare *line* is ambiguous next to a **turn line**, which is one decision's call, and the **fight
+plan**, which is the card's own read of the whole battle.
+
+## Game version
+
+The PokéRogue release the live tab serves, as the game itself reports it. An **oracle** runs exactly one game version,
+and it refuses a save from any other, because the game would load it under the wrong rules without a word. What holds
+an oracle to its version is the test harness having replayed a known fight on it, not the clone.
+
+Distinct from a **build id**, which is which build of the extension a tab runs.
 
 ## Preview
 
@@ -263,7 +296,8 @@ it can still reach. A slot that is stopped is not an answer to anything, and the
 
 The **coach**'s call for the decision in front of the player right now: which of our **party** acts, with what, at
 whom. It is the one thing the coach says that reads the battle at full fidelity, and it is the authority for the
-turn — the **fight plan** contributes a price to it and never overrides it.
+turn — the **fight plan** contributes a price to it and never overrides it. The one exception is an **oracle line**
+that still holds, which makes the call in its place.
 
 A turn line always says something. Where the obvious move is gone it names what is left — a status play, a switch,
 the member held back as an **answer** to a foe still to come — and only where the turn is genuinely lost does it say
@@ -297,6 +331,8 @@ player, which alone reads the battle at full fidelity. The plan is re-searched w
 first step, so what it shows always explains the turn rather than arguing with it; where it would rather have played
 the turn differently, it says so in one priced line and leaves the call where it was. What it contributes to the turn
 line is a price: what the rest of the fight loses by taking the turn this way.
+
+An **oracle line** that still holds stands in for the plan.
 
 ## Turn score
 
