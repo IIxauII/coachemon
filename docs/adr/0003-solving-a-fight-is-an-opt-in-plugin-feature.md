@@ -19,11 +19,11 @@ with the same rolls. The oracle runs those retries off screen. What changes is h
 what the player is allowed to know.
 
 **What the card can't do without it.** On Gordie W180 the turn read was engine-exact: 213 of 213 enemy moves, 27 of 27
-swaps and 89 of 89 one-hit KOs. Followed from T1, the card still loses. Its fight plan's call on whether a position
-was winnable matched how the card's own calls then played out at only 9 of 22 points. Only a rollout found that T7 was
-the deciding turn, that a position was winnable at all, the seed's luck (a crit and two misses), and which plays the
-card has no words for (#638). The eight HUD gaps shipping from #640 close named gaps. They do not tell
-the player which decision matters. On Ivy W145 the card alone won, but only on the third try.
+swaps and 89 of 89 one-hit KOs. Followed from T1, the card still loses. Its fight plan's read of whether a position
+was winnable matched how the card's own turn lines then played out at only 9 of 22 points. Only a rollout found that
+T7 was the deciding turn, that a position was winnable at all, the seed's luck (a crit and two misses), and which plays
+the card has no words for (#638). The eight HUD gaps shipping from #640 close named gaps. They do not tell the player
+which decision matters. On Ivy W145 the card alone won, but only on the third try.
 
 **Why opt-in.** An oracle line is something to follow, not to understand. Left on by default, every boss would turn
 into a walkthrough, and the overlay is meant to coach (`README.md`). By default the coach teaches. Solving is a standing

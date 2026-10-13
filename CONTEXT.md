@@ -112,7 +112,7 @@ The **coach** as it runs in the player's tab: the whole part that reads the game
 
 ## Decision
 
-A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn (in a double, each slot's command is its own decision), the free switch offered before the first turn of a wild or mystery-encounter battle, on a load or on a game-over retry, or the replacement for one of ours that fainted. Outside one, it is a reward, free or from the shop, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A shop purchase commits a decision, and the shop that stays open asks a new one. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. A decision is only ever made while the game is **settled**, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
+A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn (in a double, each slot's command is its own decision), the free switch offered before the first turn of a battle with no trainer, when it starts, on a load or on a game-over retry, or the replacement for one of ours that fainted. Outside one, it is a reward, free or from the shop, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A shop purchase commits a decision, and the shop that stays open asks a new one. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. A decision is only ever made while the game is **settled**, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
 
 ## Watch
 
@@ -231,7 +231,7 @@ two uses. It **checks** a coach claim: a **card** reads that scene exactly as it
 claims is compared with what the game then did. And it **solves** a trainer fight: from the run's own save, it plays
 inputs forward on the battle's seed until a sequence of them wins, and that sequence becomes an **oracle line**.
 
-An oracle answers only what is falsifiable — a destination, a payout, a roll, whether a line wins — never a
+An oracle answers only what is falsifiable — a destination, a payout, a roll, whether a sequence of inputs wins — never a
 **verdict**, which is judgement and has no answer to be checked against. Where a solve can't reach **replay**
 confidence, the oracle says "no answer" rather than guess.
 
@@ -250,8 +250,8 @@ game has drawn what the oracle drew. Every checkpoint is a **replay** claim, che
 
 While every checkpoint has matched, the oracle line's step is the call for the turn in place of the **turn line**,
 and it stands in for the **fight plan**. One miss and the game is **off the line**: the oracle line is void for the
-rest of the run, the turn line and the fight plan lead again, and the oracle may solve again from where the game now
-stands.
+rest of the run, the turn line leads again and the fight plan returns, and the oracle may solve again from where the
+game now stands.
 
 Always said in full. A bare *line* is ambiguous next to a **turn line**, which is one decision's call, and the **fight
 plan**, which is the card's own read of the whole battle.
