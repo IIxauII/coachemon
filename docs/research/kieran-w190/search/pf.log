@@ -1,0 +1,254 @@
+  W8@0.5 L 1 distinct    9 wins   0 losses   0 err 0    5.5s at    5.5s pool total 9 rss 2738MB
+    W8@1 L 1 distinct    9 wins   0 losses   0 err 0    5.5s at    5.5s pool total 9 rss 2738MB
+ W16@0.5 L 1 distinct    9 wins   0 losses   0 err 0    5.5s at    5.5s pool total 9 rss 2738MB
+  W8@0.5 L 2 distinct   78 wins   0 losses   0 err 0   15.9s at   21.5s pool total 114 rss 2738MB
+    W8@1 L 2 distinct   78 wins   0 losses   0 err 0   15.9s at   21.5s pool total 114 rss 2738MB
+ W16@0.5 L 2 distinct  103 wins   0 losses   0 err 0   15.9s at   21.5s pool total 114 rss 2738MB
+  W8@0.5 L 3 distinct   70 wins   0 losses   0 err 0   14.9s at   36.4s pool total 258 rss 2738MB
+    W8@1 L 3 distinct   70 wins   0 losses   0 err 0   14.9s at   36.4s pool total 258 rss 2738MB
+ W16@0.5 L 3 distinct  135 wins   0 losses   0 err 0   14.9s at   36.4s pool total 258 rss 2738MB
+  W8@0.5 L 4 distinct   68 wins   0 losses   0 err 0   13.1s at   49.5s pool total 402 rss 2738MB
+    W8@1 L 4 distinct   68 wins   0 losses   0 err 0   13.1s at   49.5s pool total 402 rss 2738MB
+ W16@0.5 L 4 distinct  140 wins   0 losses   0 err 0   13.1s at   49.5s pool total 402 rss 2738MB
+  W8@0.5 L 5 distinct   72 wins   0 losses   0 err 0   13.3s at   62.8s pool total 546 rss 2738MB
+    W8@1 L 5 distinct   72 wins   0 losses   0 err 0   13.3s at   62.8s pool total 546 rss 2738MB
+ W16@0.5 L 5 distinct  144 wins   0 losses   0 err 0   13.3s at   62.8s pool total 546 rss 2738MB
+ W16@0.5 L 6 distinct  174 wins   0 losses   0 err 0   17.8s at   80.6s pool total 728 rss 2738MB
+  W8@0.5 L 6 distinct   69 wins   0 losses   0 err 0   18.4s at   81.2s pool total 740 rss 2738MB
+    W8@1 L 6 distinct   69 wins   0 losses   0 err 0   18.4s at   81.2s pool total 740 rss 2738MB
+    W8@1 L 7 distinct   92 wins   0 losses   0 err 0   33.2s at  114.4s pool total 1061 rss 2738MB
+    W8@1 L 8 distinct  112 wins   0 losses   0 err 0   38.0s at  152.5s pool total 1443 rss 2738MB
+  W8@0.5 L 7 distinct  114 wins   0 losses   0 err 0   73.0s at  154.2s pool total 1460 rss 2738MB
+  W8@0.5 L 8 distinct  112 wins   0 losses   0 err 0    0.0s at  154.2s pool total 1460 rss 2738MB
+    W8@1 L 9 distinct   72 wins   0 losses   0 err 0   14.0s at  166.5s pool total 1561 rss 2738MB
+  W8@0.5 L 9 distinct   72 wins   0 losses   0 err 0   12.2s at  166.5s pool total 1561 rss 2738MB
+ W16@0.5 L 7 distinct  192 wins   0 losses   0 err 0   89.9s at  170.6s pool total 1625 rss 2738MB
+    W8@1 L10 distinct  136 wins   0 losses   0 err 0   26.3s at  192.8s pool total 1794 rss 3842MB
+  W8@0.5 L10 distinct   88 wins   0 losses   0 err 0   41.4s at  207.9s pool total 1870 rss 4409MB
+    W8@1 L11 distinct   89 wins   0 losses   0 err 0   22.3s at  215.1s pool total 1963 rss 4409MB
+  W8@0.5 L11 distinct   89 wins   0 losses   0 err 0    7.2s at  215.1s pool total 1963 rss 4409MB
+    W8@1 L12 distinct   76 wins   0 losses   0 err 0   19.4s at  234.6s pool total 2188 rss 4409MB
+  W8@0.5 L12 distinct   84 wins   0 losses   0 err 0   22.9s at  238.1s pool total 2231 rss 4409MB
+    W8@1 L13 distinct   64 wins   0 losses   0 err 0    7.6s at  242.1s pool total 2299 rss 4409MB
+    W8@1 L14 distinct   68 wins   0 losses   0 err 0   23.1s at  265.2s pool total 2494 rss 4409MB
+    W8@1 L15 distinct   16 wins   0 losses   0 err 0   10.2s at  275.5s pool total 2594 rss 4409MB
+  W8@0.5 L13 distinct   16 wins   0 losses   0 err 0   42.0s at  280.1s pool total 2614 rss 4409MB
+ W16@0.5 L 8 distinct  164 wins   0 losses   0 err 0  112.8s at  283.4s pool total 2631 rss 4409MB
+    W8@1 L16 distinct   16 wins   0 losses   0 err 0   32.2s at  307.7s pool total 2781 rss 4409MB
+  W8@0.5 L14 distinct   72 wins   0 losses   0 err 0   39.1s at  319.2s pool total 2839 rss 4409MB
+ W16@0.5 L 9 distinct  133 wins   0 losses   0 err 0  176.5s at  459.8s pool total 3285 rss 4409MB
+    W8@1 L17 distinct  112 wins   0 losses   0 err 0  152.8s at  460.5s pool total 3307 rss 4409MB
+  W8@0.5 L15 distinct    0 wins   0 losses   0 err 0  180.5s at  499.7s pool total 3454 rss 4409MB
+    W8@1 L18 distinct   72 wins   0 losses   0 err 0   55.4s at  515.9s pool total 3502 rss 4409MB
+    W8@1 L19 distinct   72 wins   0 losses   0 err 0   73.0s at  588.8s pool total 3681 rss 4409MB
+ W16@0.5 L10 distinct  178 wins   0 losses   0 err 0  151.1s at  610.9s pool total 3728 rss 4409MB
+    W8@1 L20 distinct   92 wins   0 losses   0 err 0  119.4s at  708.3s pool total 3956 rss 4409MB
+ W16@0.5 L11 distinct  165 wins   0 losses   0 err 1  415.1s at 1026.1s pool total 4204 rss 4409MB
+    W8@1 L21 distinct   54 wins   0 losses   0 err 5  446.6s at 1154.8s pool total 4354 rss 4409MB
+    W8@1 L22 distinct   12 wins   0 losses   0 err 0   57.8s at 1212.6s pool total 4494 rss 4409MB
+ W16@0.5 L12 distinct  108 wins   0 losses   0 err 0  247.0s at 1273.0s pool total 4582 rss 4409MB
+    W8@1 L23 distinct   60 wins   0 losses   0 err 0   74.5s at 1287.1s pool total 4606 rss 4409MB
+    W8@1 L24 distinct   56 wins   0 losses   0 err 0   92.2s at 1379.3s pool total 4758 rss 4409MB
+ W16@0.5 L13 distinct  124 wins   0 losses   0 err 0  171.7s at 1444.7s pool total 4825 rss 4409MB
+    W8@1 L25 distinct   88 wins   0 losses   0 err 0  158.0s at 1537.2s pool total 4926 rss 4409MB
+    W8@1 L26 distinct   80 wins   0 losses   0 err 0  386.6s at 1923.8s pool total 5272 rss 4409MB
+ W16@0.5 L14 distinct  122 wins   0 losses   0 err 0  492.0s at 1936.7s pool total 5292 rss 4409MB
+    W8@1 L27 distinct   50 wins   0 losses   0 err 4  401.2s at 2325.0s pool total 5411 rss 4409MB
+    W8@1 L28 distinct   69 wins   0 losses   0 err 0  220.3s at 2545.3s pool total 5513 rss 7040MB
+ W16@0.5 L15 distinct   87 wins   0 losses   0 err 3  627.1s at 2563.8s pool total 5533 rss 7040MB
+    W8@1 L29 distinct   62 wins   0 losses   0 err 0  176.6s at 2721.9s pool total 5652 rss 7076MB
+    W8@1 L30 distinct   24 wins   0 losses   0 err 0  271.6s at 2993.5s pool total 5837 rss 7383MB
+ W16@0.5 L16 distinct  201 wins   0 losses   0 err 0  444.6s at 3008.4s pool total 5881 rss 7383MB
+    W8@1 L31 distinct   58 wins   0 losses   0 err 0  196.8s at 3190.3s pool total 5982 rss 7383MB
+    W8@1 L32 distinct  168 wins  16 losses   0 err 0 1614.4s at 4804.7s pool total 6274 rss 7383MB
+ W16@0.5 L17 distinct  153 wins   0 losses   0 err 1 1801.0s at 4809.5s pool total 6302 rss 7383MB
+    W8@1 replayed from T1: ['WIN', 'WIN', 'WIN', 'WIN', 'WIN'] at 4819.1s
+{
+ "args": {
+  "out": "docs/research/.next-fight/kieran/search",
+  "workers": 6,
+  "beams": "8:0.5,8:1,16:0.5",
+  "depth": 40,
+  "prefix": "",
+  "stall": 6,
+  "budget": 9000,
+  "session": "docs/research/.next-fight/kieran/save.json",
+  "no_share": false
+ },
+ "workers": 6,
+ "boot_secs": 21.7,
+ "search_secs": 4819.1,
+ "stop_reason": "replayed win",
+ "children_total": 6302,
+ "children_per_sec": 1.31,
+ "tasks_created": 511,
+ "tasks_reused": 117,
+ "answer": {
+  "beam": "W8@1",
+  "depth": 32,
+  "children_so_far": 6274,
+  "detected_at": 4804.7,
+  "replayed_at": 4819.1,
+  "path": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "HYPER_VOICE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "m": "HURRICANE"
+   },
+   {
+    "m": "BOUNCE"
+   },
+   {
+    "w": true
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "G-Max Snorlax"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "ZAP_CANNON"
+   },
+   {
+    "m": "POWER_GEM"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "POWER_GEM"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "m": "HURRICANE"
+   },
+   {
+    "s": "G-Max Snorlax"
+   },
+   {
+    "m": "SLEEP_TALK"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "TRI_ATTACK",
+    "r": "G-Max Snorlax"
+   },
+   {
+    "m": "SLEEP_TALK"
+   },
+   {
+    "m": "REST"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "HYPER_VOICE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   }
+  ],
+  "steps": 32,
+  "end": {
+   "turn": 33,
+   "ours": [
+    "Reshiram* 512/622 [0,0,0,0,0,0,0]",
+    "Gyarados 601/611",
+    "G-Max Snorlax 1096/1096 st4",
+    "Probopass 0/461 st7",
+    "Golbat 532/532",
+    "Leavanny 536/536"
+   ],
+   "foes": [
+    "Hydrapple 0/671 st7",
+    "G-Max Grimmsnarl 0/718 st7",
+    "Politoed 0/581 st7",
+    "Incineroar 0/603 st7",
+    "Gliscor 0/520 st7",
+    "Terapagos 0/616 st7"
+   ]
+  },
+  "alive": 5,
+  "validated": "5/5"
+ },
+ "memory": {
+  "peak_total_mb": 7383.46875,
+  "peak_worker_mb": 1524.328125,
+  "samples": 8124
+ },
+ "coordinator_peak_mb": 84.1,
+ "replays": [
+  {
+   "beam": "W8@1",
+   "depth": 32,
+   "children_so_far": 6274,
+   "detected_at": 4804.7,
+   "results": [
+    {
+     "result": "WIN",
+     "turns": 32
+    },
+    {
+     "result": "WIN",
+     "turns": 32
+    },
+    {
+     "result": "WIN",
+     "turns": 32
+    },
+    {
+     "result": "WIN",
+     "turns": 32
+    },
+    {
+     "result": "WIN",
+     "turns": 32
+    }
+   ],
+   "replayed_at": 4819.1
+  }
+ ]
+}
+{'name': 'W8@0.5', 'width': 8, 'w': 0.5, 'status': 'emptied', 'depth': 15, 'dispatched_actions': 733, 'children_consumed': 1517, 'tasks_created': 81, 'tasks_reused': 32, 'losses': 0, 'stalled': 288, 'errors': 0, 'wins': 0}
+{'name': 'W8@1', 'width': 8, 'w': 1.0, 'status': 'replaying', 'depth': 32, 'dispatched_actions': 1740, 'children_consumed': 3283, 'tasks_created': 203, 'tasks_reused': 46, 'losses': 0, 'stalled': 317, 'errors': 9, 'wins': 16}
+{'name': 'W16@0.5', 'width': 16, 'w': 0.5, 'status': 'running', 'depth': 17, 'dispatched_actions': 1801, 'children_consumed': 2847, 'tasks_created': 227, 'tasks_reused': 39, 'losses': 0, 'stalled': 0, 'errors': 5, 'wins': 0}

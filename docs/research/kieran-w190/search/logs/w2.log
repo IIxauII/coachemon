@@ -1,0 +1,103 @@
+
+ RUN  v4.1.9 /Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11
+
+(node:82004) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1m[38;2;255;124;124m==================[39m[22m
+[2m> [22m[38;2;193;98;222mStarting test: [39m[38;2;0;136;134msolve-search > serve[39m
+
+<--- Last few GCs --->
+
+[82004:0xa9380c000]  3656649 ms: Scavenge (during sweeping) 1492.0 (1508.6) -> 1488.9 (1505.4) MB, pooled: 0.0 MB, 6.47 / 0.00 ms (average mu = 0.356, current mu = 0.412) allocation failure; 
+[82004:0xa9380c000]  3657212 ms: Incremental Mark-Compact (reduce) 1505.1 (1521.3) -> 1465.5 (1480.8) MB, pooled: 0.0 MB, 373.81 / 0.00 ms (+ 29.3 ms in 15 steps since start of marking, biggest step 13.2 ms, walltime since start of marking 562 ms) (averag
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 0x108c88024 node::(anonymous namespace)::DefaultAbortHandler(char const*, char const*) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+ 2: 0x108c882ac node::OOMErrorHandler(char const*, v8::OOMDetails const&) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+ 3: 0x107d8a9e8 v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+ 4: 0x107f3d6fc v8::internal::Heap::NotifyContextDisposed(bool) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+ 5: 0x107f3cde4 v8::internal::Heap::GlobalConsumedBytes() const [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+ 6: 0x107f3b17c v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags, v8::internal::PerformHeapLimitCheck, v8::internal::PerformIneffectiveMarkCompactCheck) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+ 7: 0x107f34eb4 v8::internal::HeapAllocator::CollectGarbageAndRetryAllocation(v8::base::FunctionRef<bool ()>, v8::internal::AllocationType) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+ 8: 0x107f34d20 v8::internal::HeapAllocator::RetryCustomAllocate(v8::base::FunctionRef<bool ()>, v8::internal::AllocationType) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+ 9: 0x107f34a28 v8::internal::HeapAllocator::RetryCustomAllocateOrFail(v8::base::FunctionRef<bool ()>, v8::internal::AllocationType) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+10: 0x107f242d4 v8::internal::Factory::AllocateRaw(int, v8::internal::AllocationType, v8::internal::AllocationAlignment, v8::internal::AllocationHint) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+11: 0x107f1c3d4 v8::internal::FactoryBase<v8::internal::Factory>::AllocateRawArray(int, v8::internal::AllocationType, v8::internal::AllocationHint, v8::internal::AllocationAlignment) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+12: 0x107f21a40 v8::internal::Handle<v8::internal::FixedArray> v8::internal::TaggedArrayBase<v8::internal::FixedArray, v8::internal::TaggedArrayShape, v8::internal::HeapObjectLayout>::Allocate<v8::internal::Isolate>(v8::internal::Isolate*, int, std::__1::optional<v8::internal::PerThreadAssertScopeEmpty<false, (v8::internal::PerThreadAssertType)1, (v8::internal::PerThreadAssertType)2>>*, v8::internal::AllocationType, v8::internal::AllocationHint) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+13: 0x107f1bfd0 v8::internal::FactoryBase<v8::internal::Factory>::NewFixedArray(unsigned int, v8::internal::AllocationType, v8::internal::AllocationHint) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+14: 0x1080839bc v8::internal::(anonymous namespace)::ElementsAccessorBase<v8::internal::(anonymous namespace)::FastPackedObjectElementsAccessor, v8::internal::(anonymous namespace)::ElementsKindTraits<(v8::internal::ElementsKind)2>>::ConvertElementsWithCapacity(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::JSObject>, v8::internal::DirectHandle<v8::internal::FixedArrayBase>, v8::internal::ElementsKind, unsigned int, unsigned int, unsigned int) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+15: 0x1080827f8 v8::internal::(anonymous namespace)::ElementsAccessorBase<v8::internal::(anonymous namespace)::FastPackedObjectElementsAccessor, v8::internal::(anonymous namespace)::ElementsKindTraits<(v8::internal::ElementsKind)2>>::GrowCapacity(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::JSObject>, unsigned int) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+16: 0x1081e1108 v8::internal::Runtime_GrowArrayElements(int, unsigned long*, v8::internal::Isolate*) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+17: 0x108640cac Builtins_CEntry_Return1_ArgvOnStack_NoBuiltinExit [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+18: 0x127ec5fe0 
+19: 0x1282e31f4 
+20: 0x128212128 
+21: 0x1282e3570 
+22: 0x127cd7d0c 
+23: 0x127e2e8c4 
+24: 0x127c65158 
+25: 0x127c655d8 
+26: 0x1283307c4 
+27: 0x127e180b4 
+28: 0x127c342a8 
+29: 0x10859a788 Builtins_JSEntryTrampoline [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+30: 0x10859a478 Builtins_JSEntry [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+31: 0x107eb3674 v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+32: 0x107eb3050 v8::internal::Execution::Call(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::base::Vector<v8::internal::DirectHandle<v8::internal::Object> const>) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+33: 0x107d9e1a0 v8::Function::Call(v8::Isolate*, v8::Local<v8::Context>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+34: 0x107afac2c node::Environment::RunTimers(uv_timer_s*) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+35: 0x1040a781c uv__run_timers [/opt/homebrew/Cellar/libuv/1.52.1/lib/libuv.1.0.0.dylib]
+36: 0x1040aac90 uv_run [/opt/homebrew/Cellar/libuv/1.52.1/lib/libuv.1.0.0.dylib]
+37: 0x107a845e4 node::SpinEventLoopInternal(node::Environment*) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+38: 0x107bbaba8 node::NodeMainInstance::Run(node::ExitCode*, node::Environment*) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+39: 0x107bba8fc node::NodeMainInstance::Run() [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+40: 0x107b273c0 node::Start(int, char**) [/opt/homebrew/Cellar/node/26.9.0/lib/libnode.147.dylib]
+41: 0x18a9fdd54 start [/usr/lib/dyld]
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 2 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+TypeError: Cannot read properties of undefined (reading 'getItem')
+ ❯ src/i18n.ts:207:36
+    205|     async () => {
+    206|       i18next.services.formatter?.add("money", i18nMoneyFormatter);
+    207|       await initFonts(localStorage.getItem("prLang") ?? undefined);
+       |                                    ^
+    208|     },
+    209|   );
+ ❯ finish node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1870:9
+ ❯ done node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1997:21
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:2011:9
+ ❯ Object.callback node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1907:9
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1533:13
+ ❯ Connector.loaded node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1515:16
+ ❯ node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1615:12
+ ❯ resolver node_modules/.pnpm/i18next@26.3.1_typescript@6.0.3/node_modules/i18next/dist/esm/i18next.js:1566:7
+
+This error originated in "test/tests/zz-ss-81750-c2d58b9f.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Worker forks emitted error.
+ ❯ EventEmitter.onTaskError node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/dist/chunks/cli-api.24X8XwN1.js:3459:21
+ ❯ EventEmitter.emit node:events:514:20
+ ❯ ChildProcess.emitUnexpectedExit node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/dist/chunks/cli-api.24X8XwN1.js:3025:22
+ ❯ ChildProcess.emit node:events:514:20
+ ❯ Process.ChildProcess._handle.onexit node:internal/child_process:294:12
+
+Caused by: Error: Worker exited unexpectedly
+ ❯ ChildProcess.emitUnexpectedExit node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/dist/chunks/cli-api.24X8XwN1.js:3023:33
+ ❯ ChildProcess.emit node:events:514:20
+ ❯ Process.ChildProcess._handle.onexit node:internal/child_process:294:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files   (1)
+      Tests   (1)
+     Errors  2 errors
+   Start at  21:21:30
+   Duration  3657.44s (transform 12.48s, setup 15.76s, import 75ms, tests 0ms, environment 1.00s)
+

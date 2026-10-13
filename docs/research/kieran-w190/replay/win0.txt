@@ -1,0 +1,97 @@
+## win0 -> WIN
+T 2 DRAGON_PULSE               Reshiram used Dragon Pulse! | Foe Incineroar used Thrash! | Reshiram restored a little HP using its Leftovers!
+     us: Reshiram* 471/622 [-1,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: Incineroar* 314/603 [0,0,0,0,0,0,0], Politoed 581/581, Gliscor 520/520, G-Max Grimmsnarl 718/718, Terapagos 596/596, Hydrapple 671/671
+T 3 FICKLE_BEAM                Reshiram used Fickle Beam! | Reshiram is going all out for this attack! | Foe Incineroar fainted! | Reshiram restored a little HP using its Leftovers! | Kieran sent out G-Max Grimmsnarl!
+     us: Reshiram* 547/622 [-1,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: G-Max Grimmsnarl* 718/718 [0,0,0,0,0,0,0], Politoed 581/581, Gliscor 520/520, Terapagos 596/596, Hydrapple 671/671
+T 4 HYPER_VOICE                Reshiram used Hyper Voice! | Foe G-Max Grimmsnarl used Foul Play! | Reshiram restored a little HP using its Leftovers!
+     us: Reshiram* 437/622 [-1,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: G-Max Grimmsnarl* 488/718 [0,0,0,0,0,0,0], Politoed 581/581, Gliscor 520/520, Terapagos 596/596, Hydrapple 671/671
+T 5 BLUE_FLARE                 Reshiram used Blue Flare! | Foe G-Max Grimmsnarl fainted! | Reshiram restored a little HP using its Leftovers! | Kieran sent out Politoed! | A downpour started!
+     us: Reshiram* 513/622 [-1,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: Politoed* 581/581 [0,0,0,0,0,0,0], Gliscor 520/520, Terapagos 596/596, Hydrapple 671/671
+T 6 DRAGON_PULSE               Reshiram used Dragon Pulse! | Foe Politoed used Earthquake! | It’s super effective! | The downpour continues. | Reshiram restored its health using its Enigma Berry! | Reshiram restored a little HP using its Leftovers!
+     us: Reshiram* 517/622 [-1,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: Politoed* 313/581 [0,0,0,0,0,0,0], Gliscor 520/520, Terapagos 596/596, Hydrapple 671/671
+T 7 FICKLE_BEAM                Reshiram used Fickle Beam! | Reshiram is going all out for this attack! | Foe Politoed fainted! | The downpour continues. | Reshiram restored a little HP using its Leftovers! | Kieran sent out Gliscor!
+     us: Reshiram* 593/622 [-1,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: Gliscor* 520/520 [0,0,0,0,0,0,0], Terapagos 596/596, Hydrapple 671/671
+T 8 DRAGON_PULSE               Foe Gliscor used Earthquake! | It’s super effective! | Reshiram used Dragon Pulse! | The downpour continues. | Foe Gliscor was badly poisoned by the Toxic Orb! | Reshiram restored a little HP using its Leftovers!
+     us: Reshiram* 254/622 [-1,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: Gliscor* 205/520 st2 [0,0,0,0,0,0,0], Terapagos 596/596, Hydrapple 671/671
+T 9 >Gyarados                  Foe Gliscor’s Attack fell! | Foe Gliscor used Earthquake! | It doesn’t affect Gyarados! | The downpour continues. | Foe Gliscor was cured of its poison! | Foe Gliscor was badly poisoned by the Toxic Orb!
+     us: Gyarados* 601/611 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Gliscor* 205/520 st2 [-1,0,0,0,0,0,0], Terapagos 596/596, Hydrapple 671/671
+T10 HURRICANE                  Kieran withdrew Gliscor! | Kieran sent out Hydrapple! | Gyarados used Hurricane! | It’s super effective! | The downpour continues. | The rain stopped.
+     us: Gyarados* 601/611 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 354/671 [0,0,0,0,0,0,0], Terapagos 596/596, Gliscor 205/520 st2
+T11 BOUNCE                     Foe Hydrapple Terastallized into the Fighting type! | Gyarados used Bounce! | Gyarados sprang up! | Foe Hydrapple used Giga Drain! | Gyarados avoided the attack!
+     us: Gyarados* 601/611 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 354/671 TERA [0,0,0,0,0,0,0], Terapagos 596/596, Gliscor 205/520 st2
+T12 (wait)                     Kieran withdrew Hydrapple! | Kieran sent out Terapagos! | Foe Terapagos changed form! | Gyarados used Bounce! | Foe Terapagos made its shell gleam! It’s distorting type matchups! | It’s not very effective…
+     us: Gyarados* 601/611 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 461/461, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 508/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 205/520 st2
+T13 >Probopass                 Foe Terapagos used Tera Starstorm (P)! | It’s mostly ineffective…
+     us: Probopass* 405/461 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Gyarados 601/611, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 508/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 205/520 st2
+T14 >G-Max Snorlax             Foe Terapagos used Astral Barrage! | It doesn’t affect G-Max Snorlax!
+     us: G-Max Snorlax* 1096/1096 st4 [0,0,0,0,0,0,0], Probopass 405/461, Gyarados 601/611, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 508/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 205/520 st2
+T15 >Probopass                 Foe Terapagos used Tera Starstorm (P)! | It’s mostly ineffective…
+     us: Probopass* 352/461 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Gyarados 601/611, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 508/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 205/520 st2
+T16 ZAP_CANNON                 Foe Terapagos used Astral Barrage! | Probopass used Zap Cannon! | Foe Terapagos was paralyzed, It may be unable to move! | Foe Terapagos was healed of paralysis!
+     us: Probopass* 216/461 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Gyarados 601/611, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 412/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 205/520 st2
+T17 POWER_GEM                  Kieran withdrew Terapagos! | Kieran sent out Gliscor! | Probopass used Power Gem! | Foe Gliscor’s Sp. Atk rose sharply! | Foe Gliscor’s Sp. Def rose! | Foe Gliscor’s Poison Heal restored its HP a little!
+     us: Probopass* 216/461 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Gyarados 601/611, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Gliscor* 126/520 st2 [0,0,2,1,0,0,0], Hydrapple 575/671 TERA, Terapagos 412/616
+T18 >Gyarados                  Foe Gliscor’s Attack fell! | Foe Gliscor used Earthquake! | It doesn’t affect Gyarados! | Foe Gliscor’s Sp. Def rose! | Foe Gliscor’s Poison Heal restored its HP a little!
+     us: Gyarados* 601/611 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 216/461, Reshiram 254/622, Golbat 532/532, Leavanny 536/536
+   them: Gliscor* 191/520 st2 [-1,0,2,2,0,0,0], Hydrapple 575/671 TERA, Terapagos 412/616
+T19 >Reshiram                  Kieran withdrew Gliscor! | Kieran sent out Terapagos! | Reshiram is radiating a blazing aura! | Reshiram restored a little HP using its Leftovers!
+     us: Reshiram* 330/622 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Probopass 216/461, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 412/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 191/520 st2
+T20 >Probopass                 Foe Terapagos used Tera Starstorm (P)! | It’s mostly ineffective…
+     us: Probopass* 164/461 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Reshiram 330/622, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 412/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 191/520 st2
+T21 POWER_GEM                  Kieran withdrew Terapagos! | Kieran sent out Gliscor! | Probopass used Power Gem! | Foe Gliscor’s Poison Heal restored its HP a little!
+     us: Probopass* 164/461 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Reshiram 330/622, Gyarados 601/611, Golbat 532/532, Leavanny 536/536
+   them: Gliscor* 131/520 st2 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Terapagos 412/616
+T22 >Gyarados                  Foe Gliscor’s Attack fell! | Foe Gliscor used Earthquake! | It doesn’t affect Gyarados! | Foe Gliscor’s Poison Heal restored its HP a little!
+     us: Gyarados* 601/611 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Reshiram 330/622, Probopass 164/461, Golbat 532/532, Leavanny 536/536
+   them: Gliscor* 196/520 st2 [-1,0,0,0,0,0,0], Hydrapple 575/671 TERA, Terapagos 412/616
+T23 HURRICANE                  Kieran withdrew Gliscor! | Kieran sent out Terapagos! | Gyarados used Hurricane!
+     us: Gyarados* 601/611 [0,0,0,0,0,0,0], G-Max Snorlax 1096/1096 st4, Reshiram 330/622, Probopass 164/461, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 311/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 196/520 st2
+T24 >G-Max Snorlax             Foe Terapagos used Astral Barrage! | It doesn’t affect G-Max Snorlax!
+     us: G-Max Snorlax* 1096/1096 st4 [0,0,0,0,0,0,0], Gyarados 601/611, Reshiram 330/622, Probopass 164/461, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 311/616 [0,0,0,0,0,0,0], Hydrapple 575/671 TERA, Gliscor 196/520 st2
+T25 SLEEP_TALK                 Kieran withdrew Terapagos! | Kieran sent out Hydrapple! | G-Max Snorlax is fast asleep. | G-Max Snorlax used Sleep Talk! | G-Max Snorlax used Body Slam! | A critical hit!
+     us: G-Max Snorlax* 1096/1096 st4 [0,0,0,0,0,0,0], Gyarados 601/611, Reshiram 330/622, Probopass 164/461, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 336/671 TERA [0,0,0,0,0,0,0], Terapagos 311/616, Gliscor 196/520 st2
+T26 >Probopass                 Foe Hydrapple used Fickle Beam! | It’s not very effective… | Hit 2 time(s)!
+     us: Probopass* 53/461 [0,0,0,0,0,0,0], Gyarados 601/611, Reshiram 330/622, G-Max Snorlax 1096/1096 st4, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 336/671 TERA [0,0,0,0,0,0,0], Terapagos 311/616, Gliscor 196/520 st2
+T27 TRI_ATTACK (in:G-Max Snorlax) Foe Hydrapple used Tera Blast! | It’s extremely effective! | Hit 1 time(s)! | Probopass fainted!
+     us: G-Max Snorlax* 1096/1096 st4 [0,0,0,0,0,0,0], Gyarados 601/611, Reshiram 330/622, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 336/671 TERA [0,0,0,0,0,0,0], Terapagos 311/616, Gliscor 196/520 st2
+T28 SLEEP_TALK                 Foe Hydrapple used Fickle Beam! | Hit 2 time(s)! | G-Max Snorlax is fast asleep. | G-Max Snorlax used Sleep Talk! | G-Max Snorlax used Body Slam! | Foe Hydrapple’s Sp. Def, Sp. Atk, and Defense rose!
+     us: G-Max Snorlax* 845/1096 st4 [0,0,0,0,0,0,0], Gyarados 601/611, Reshiram 330/622, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 120/671 TERA [0,1,1,1,0,0,0], Terapagos 311/616, Gliscor 196/520 st2
+T29 REST                       Foe Hydrapple used Tera Blast! | It’s super effective! | Hit 2 time(s)! | G-Max Snorlax woke up! | G-Max Snorlax used Rest! | G-Max Snorlax slept and restored its HP! | Foe Hydrapple’s Defense rose!
+     us: G-Max Snorlax* 1096/1096 st4 [0,0,0,0,0,0,0], Gyarados 601/611, Reshiram 330/622, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 120/671 TERA [0,2,1,1,0,0,0], Terapagos 311/616, Gliscor 196/520 st2
+T30 >Reshiram                  Reshiram is radiating a blazing aura! | Foe Hydrapple used Giga Drain! | Foe Hydrapple regained health! | It’s mostly ineffective… | Foe Hydrapple regained health! | Hit 2 time(s)! | Reshiram restored a little HP using its Leftovers!
+     us: Reshiram* 331/622 [0,0,0,0,0,0,0], Gyarados 601/611, G-Max Snorlax 1096/1096 st4, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 157/671 TERA [0,2,1,1,0,0,0], Terapagos 311/616, Gliscor 196/520 st2
+T31 HYPER_VOICE                Kieran withdrew Hydrapple! | Kieran sent out Gliscor! | Reshiram used Hyper Voice! | Foe Gliscor fainted! | Reshiram restored a little HP using its Leftovers! | Kieran sent out Terapagos!
+     us: Reshiram* 407/622 [0,0,0,0,0,0,0], Gyarados 601/611, G-Max Snorlax 1096/1096 st4, Golbat 532/532, Leavanny 536/536
+   them: Terapagos* 311/616 [0,0,0,0,0,0,0], Hydrapple 378/671 TERA
+T32 BLUE_FLARE                 Reshiram can act faster than normal, thanks to its Quick Claw! | Reshiram used Blue Flare! | A critical hit! | Foe Terapagos fainted! | Reshiram restored a little HP using its Leftovers! | Kieran sent out Hydrapple!
+     us: Reshiram* 483/622 [0,0,0,0,0,0,0], Gyarados 601/611, G-Max Snorlax 1096/1096 st4, Golbat 532/532, Leavanny 536/536
+   them: Hydrapple* 378/671 TERA [0,0,0,0,0,0,0]
+T33 BLUE_FLARE                 Reshiram used Blue Flare! | Foe Hydrapple fainted!
+     us: Reshiram* 483/622 [0,0,0,0,0,0,0], Gyarados 601/611, G-Max Snorlax 1096/1096 st4, Golbat 532/532, Leavanny 536/536
+   them: 
