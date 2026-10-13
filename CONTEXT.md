@@ -112,7 +112,7 @@ The **coach** as it runs in the player's tab: the whole part that reads the game
 
 ## Decision
 
-A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn (in a double, each slot's command is its own decision), the free switch offered when a foe faints, or the replacement for one of ours that fainted. Outside one, it is a reward, free or from the shop, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A shop purchase commits a decision, and the shop that stays open asks a new one. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. A decision is only ever made while the game is **settled**, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
+A choice the game is waiting on the player to make, of a kind the **coach** has a **card** for. In a battle, it is the command for a turn (in a double, each slot's command is its own decision), the free switch offered before the first turn of a wild or mystery-encounter battle, on a load or on a game-over retry, or the replacement for one of ours that fainted. Outside one, it is a reward, free or from the shop, a move to learn, a biome, a mystery encounter's option, a starter or a fusion. A shop purchase commits a decision, and the shop that stays open asks a new one. A decision lasts from the moment the game starts waiting on it until the press that commits it, across every **screen** passed through on the way: the command, fight and target screens are one decision. A decision is only ever made while the game is **settled**, but not every settled moment is a decision: a message waiting for a press, or a level-up's stat box, asks for input without asking for a choice.
 
 ## Watch
 
@@ -229,11 +229,11 @@ Distinct from a **preview**'s scoring, which grades one claim as the run goes an
 The game itself, played headless on upstream's own test harness in a clone pinned to one **game version**. It has
 two uses. It **checks** a coach claim: a **card** reads that scene exactly as it would read a tab, and what the card
 claims is compared with what the game then did. And it **solves** a trainer fight: from the run's own save, it plays
-lines of inputs forward on the battle's seed until one wins, and that line becomes an **oracle line**.
+inputs forward on the battle's seed until a sequence of them wins, and that sequence becomes an **oracle line**.
 
 An oracle answers only what is falsifiable — a destination, a payout, a roll, whether a line wins — never a
-**verdict**, which is judgement and has no answer to be checked against. Where it can't answer with replay
-confidence, it says "no answer" rather than guess.
+**verdict**, which is judgement and has no answer to be checked against. Where a solve can't reach **replay**
+confidence, the oracle says "no answer" rather than guess.
 
 Checking is a dev tool. Solving is opt-in. It is a standing setting in the coach plugin that the player turns on, and
 it runs on their own machine. It is never offered in a Daily run, whose seed every player shares. The extension never
@@ -248,9 +248,10 @@ The **oracle**'s answer to a trainer fight: the inputs, turn by turn, that it ha
 seed, with a **checkpoint** after each turn — what the battle will look like when the next **decision** comes, if the
 game has drawn what the oracle drew. Every checkpoint is a **replay** claim, checked when that decision arrives.
 
-While every checkpoint has matched, the line's step is the call for the turn. One miss and the game is **off the
-line**: the line is void for the rest of the run, the **turn line** leads again, and the oracle may solve again from
-where the game now stands.
+While every checkpoint has matched, the oracle line's step is the call for the turn in place of the **turn line**,
+and it stands in for the **fight plan**. One miss and the game is **off the line**: the oracle line is void for the
+rest of the run, the turn line and the fight plan lead again, and the oracle may solve again from where the game now
+stands.
 
 Always said in full. A bare *line* is ambiguous next to a **turn line**, which is one decision's call, and the **fight
 plan**, which is the card's own read of the whole battle.
@@ -295,9 +296,8 @@ it can still reach. A slot that is stopped is not an answer to anything, and the
 
 The **coach**'s call for the decision in front of the player right now: which of our **party** acts, with what, at
 whom. It is the one thing the coach says that reads the battle at full fidelity, and it is the authority for the
-turn — the **fight plan** contributes a price to it and never overrides it. The one exception is an **oracle line**:
-while every checkpoint has matched, the line's step is the call and the turn line isn't drawn, and once the game is
-off the line the turn line leads again.
+turn — the **fight plan** contributes a price to it and never overrides it. The one exception is an **oracle line**
+that still holds, which makes the call in its place.
 
 A turn line always says something. Where the obvious move is gone it names what is left — a status play, a switch,
 the member held back as an **answer** to a foe still to come — and only where the turn is genuinely lost does it say
@@ -332,9 +332,7 @@ first step, so what it shows always explains the turn rather than arguing with i
 the turn differently, it says so in one priced line and leaves the call where it was. What it contributes to the turn
 line is a price: what the rest of the fight loses by taking the turn this way.
 
-Where the **oracle** has solved the fight, the **oracle line** stands in for the plan while it holds; without one, the
-fight plan is the coach's whole read of the battle, and a call it knows is wrong is fixed in the card, never
-overridden by the plan.
+An **oracle line** that still holds stands in for the plan.
 
 ## Turn score
 

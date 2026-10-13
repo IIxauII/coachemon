@@ -1,10 +1,10 @@
 # Solving a fight on the seed is an opt-in plugin feature, never the extension's
 
 The **oracle** stops being dev-only. Once the player turns it on, the coach plugin may play a trainer fight forward on
-the run's own seed and hand back an **oracle line** that wins it. It runs only on the player's own machine, in a clone of
-the game pinned to the live **game version**, and never in the extension or the tab. The extension's **card** does not
-change what it is. It is still a seed-exact read of the **decision** in front of the player. While a line is running it
-also checks the line's checkpoints.
+the run's own seed and hand back an **oracle line** that wins it. It runs only on the player's own machine, in a clone
+of the game pinned to the live **game version**, and never in the extension or the tab. The extension's **card** does
+not change what it is. It is still a seed-exact read of the **decision** in front of the player. While an oracle line
+holds, the card also checks its checkpoints.
 
 ## Why
 
@@ -19,28 +19,29 @@ with the same rolls. The oracle runs those retries off screen. What changes is h
 what the player is allowed to know.
 
 **What the card can't do without it.** On Gordie W180 the turn read was engine-exact: 213 of 213 enemy moves, 27 of 27
-swaps and 89 of 89 one-hit KOs. Followed from T1, the card still loses. Its verdict matched its own line's outcome at
-only 9 of 22 points. Only a rollout found that T7 was the deciding turn, that a position was winnable at all, and
-which plays the card has no words for (#638). The eight HUD gaps shipping from #640 close named gaps. They do not tell
+swaps and 89 of 89 one-hit KOs. Followed from T1, the card still loses. Its fight plan's call on whether a position
+was winnable matched how the card's own calls then played out at only 9 of 22 points. Only a rollout found that T7 was
+the deciding turn, that a position was winnable at all, the seed's luck (a crit and two misses), and which plays the
+card has no words for (#638). The eight HUD gaps shipping from #640 close named gaps. They do not tell
 the player which decision matters. On Ivy W145 the card alone won, but only on the third try.
 
-**Why opt-in.** A solved line is something to follow, not to understand. Left on by default, every boss would turn
-into a walkthrough, and the overlay is meant to coach (`README.md`). By default the coach teaches. Solving is a
-standing setting in the plugin that the player turns on. While it is on, the coach offers a line for each trainer
-fight. A player who has turned it on has already decided to hand fights over, so being asked again every fight would
-only get in the way.
+**Why opt-in.** An oracle line is something to follow, not to understand. Left on by default, every boss would turn
+into a walkthrough, and the overlay is meant to coach (`README.md`). By default the coach teaches. Solving is a standing
+setting in the plugin that the player turns on. While it is on, the coach offers an oracle line for each trainer fight.
+A player who has turned it on has already decided to hand fights over, so being asked again every fight would only get
+in the way.
 
-**Not in a Daily.** A Daily's seed is shared by every player and ranked on a leaderboard, so a solved line there could
+**Not in a Daily.** A Daily's seed is shared by every player and ranked on a leaderboard, so an oracle line there could
 be passed to all of them. Reading the seed is still fine: the card runs in full in a Daily, previews included. Solving
 is not offered there.
 
 **Why in the plugin.** That is the only place it can run without breaking something (#635):
 
-- **The live tab.** Every fork there plays on screen. It also writes achievements and `gameStats`, and on a lost line
+- **The live tab.** Every fork there plays on screen. It also writes achievements and `gameStats`, and on a lost fork
   it clears the run on the server.
 - **A hosted runner.** It contradicts `PRIVACY.md`.
 - **A local clone.** The plugin sets one up per game version: about 10 s, about 0.6 GB, and one 4 KB asset in place of
-  815 MB. It boots in about 8 s, and a 19-turn line takes about 4 s.
+  815 MB. It boots in about 8 s, and a 19-turn rollout takes about 4 s.
 
 ## Considered options
 
@@ -62,32 +63,36 @@ is not offered there.
   player who never wants it shouldn't pay.
 - **Ask per fight instead of a standing setting.** Rejected: once a player has turned solving on, asking again on every
   fight is only friction.
+- **A card button that starts a solve.** Not the entry point: with the setting on, the coach offers an oracle line for
+  each trainer fight without being asked. A button would change when a solve runs, not where (#635).
 
 ## Consequences
 
 - **A new read command.** It returns the session export and the wave-start save, and it means a store release of the
-  extension. The data goes to the plugin over the local hub, as game state already does. `PRIVACY.md` should name it.
+  extension. A solve from T1 starts from the wave-start save, not a fresh session save, which would apply the battle's
+  entry effects twice (#636). The data goes to the plugin over the local hub, as game state already does. `PRIVACY.md`
+  should name it.
 - **A version lock.** A solve runs only where the session's `gameVersion` equals the clone's. It also needs that
   version's harness test to have replayed a known fight. The harness test pins the version, not the clone: 14 upstream
   commits touched `test/framework/` in 2026. Each game release costs a re-check before solves answer again. Until
   then, the coach says "no answer".
-- **A solve is a background job.** A search outgrows the 60 s MCP call limit. A line costs about 4 s, or about 40 s
-  with the card read every turn. Each line runs in its own process, because a second reload after a loss throws.
-- **Trust is earned before anything is shown.** A line is shown only after the replay protocol's steps 1–5 pass (#636).
-  Otherwise the coach says "no answer". It also refuses in these cases:
-  - a version mismatch;
+- **A solve is a background job.** A search outgrows the 60 s MCP call limit. A rollout costs about 4 s, or about
+  40 s with the card read every turn. Each rollout runs in its own process, because a second reload after a loss throws.
+- **Trust is earned before anything is shown.** An oracle line is shown only after the replay protocol's steps 1–5 pass
+  (#636). Otherwise the coach says "no answer". It also refuses in these cases:
+  - a version mismatch, or a version whose harness test hasn't replayed a known fight;
   - an item dropped on load;
   - a Mystery Encounter battle;
   - a double, until doubles are supported;
   - Safeguard up mid-fight;
   - a Daily run.
-- **A line claims replay at most, never exact.** The player's own inputs sit between the claim and every later turn.
-  One checkpoint miss voids the rest of the line for the run.
+- **An oracle line claims replay at most, never exact.** The player's own inputs sit between the claim and every later
+  turn. One checkpoint miss voids the rest of the oracle line for the run.
 - **Estimate gets a mark.** On the card, `≈` marks an **estimate**, as #639 drew it. The biome card's `≈` for "close"
   stays as it is: the two mean nearly the same thing, so one mark serves both.
-- **The line leads the card while it holds.** The **turn line** stops being the card's only authority: while every
-  checkpoint has matched, the oracle line's step is the call (#639). Once the game leaves the line, the turn line leads
-  again, and the coach re-solves from there.
+- **The oracle line leads the card while it holds.** The **turn line** stops being the card's only authority: while
+  every checkpoint has matched, the oracle line's step is the call (#639). Once the game is off the line, the turn line
+  leads again, and the oracle may solve again from there.
 - **A mid-fight solve needs about ten live fields the save lacks:** the turn, each foe's team index, the boss bars and
   the global RNG state (#636). That is a second read, and it can follow the first. A coach that joins at T1 doesn't
   need it.
