@@ -206,6 +206,8 @@ A claim is never surer than what it derives from. Confidence is claimed, then **
 
 **exact** survives a live input only where nothing the player could do sits between the claim and the thing it describes: a read off a draw the run cannot move, and off a table the run cannot rebuild, is exact even when one of its inputs is read live.
 
+On a **card**, exact carries no mark, replay is `~`, estimate is `≈`, and a claim that has been wrong is `!`.
+
 Every **preview** field carries one, and so does the enemy's move in a **turn read**. An **oracle line** claims
 **replay** at most, never exact: the player's own inputs sit between it and every turn after the first.
 
@@ -233,8 +235,9 @@ An oracle answers only what is falsifiable — a destination, a payout, a roll, 
 **verdict**, which is judgement and has no answer to be checked against. Where it can't answer with replay
 confidence, it says "no answer" rather than guess.
 
-Checking is a dev tool. Solving is opt-in: it runs only when the player asks, for one fight at a time, on their own
-machine, through the coach plugin. The extension never runs an oracle, and neither does the tab.
+Checking is a dev tool. Solving is opt-in. It is a standing setting in the coach plugin that the player turns on, and
+it runs on their own machine. It is never offered in a Daily run, whose seed every player shares. The extension never
+runs an oracle, and neither does the tab.
 
 Distinct from a **journal**, which waits for a real **run** to serve the case: an oracle asks for the case it
 wants, so it reaches what a run may never show.
