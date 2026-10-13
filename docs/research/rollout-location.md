@@ -1,6 +1,7 @@
 # Where can a seed-exact rollout run for a player?
 
-Ticket: [#635](https://github.com/IIxauII/coachemon/issues/635), on the map
+Ticket: [Where can a seed-exact rollout run for a player: the live tab or a local pinned clone?](https://github.com/IIxauII/coachemon/issues/635),
+on the map
 [Map: seed-exact fight knowledge for the player](https://github.com/IIxauII/coachemon/issues/633). Background:
 [Battle oracle: replay and solve a trainer fight in the pinned clone](https://github.com/IIxauII/coachemon/issues/632).
 
@@ -216,11 +217,12 @@ tarballs plus the compressed size of 343 packages, which I did not measure. **[u
 
   | Node | Exit code | Result |
   |---|---|---|
-  | 23.6.0 | 0 | same as below |
-  | 24.9.0 | 0 | same as below |
+  | 23.6.0 | 0 | WIN, identical turns |
+  | 24.9.0 | 0 | WIN, identical turns |
   | 26.9.0 | **1** | WIN, identical turns |
 
-  The exit code of 1 on Node 26 comes from the "clone's own i18n rejection" that #296 and
+  The exit code of 1 on Node 26 comes from the "clone's own i18n rejection" that
+  [Encounter oracle: make its exit code mean what it says](https://github.com/IIxauII/coachemon/issues/296) and
   `scripts/encounter-oracle/run.ts:88-92` work around: `Cannot read properties of undefined (reading 'getItem')` at
   `src/i18n.ts:207`. **It is a Node ≥25 artefact, not the clone's.** Node 26 defines its own `localStorage` property
   on `globalThis`, and without `--localstorage-file` it is `undefined` with an ExperimentalWarning. That property
@@ -270,7 +272,7 @@ pay the boot once. **[inference]**
 
   What does pin a rollout is **our harness test**. It is written against upstream's test framework and its traps (the
   battle oracle issue §Harness traps). Fourteen upstream commits in 2026 touched `test/framework/`, the last in the
-  last release (`game-manager.ts`, #7579, 2026-08-23). **[verified]** Every live version bump therefore needs the
+  last release (`game-manager.ts`, upstream PR pagefaultgames/pokerogue#7579, 2026-08-23). **[verified]** Every live version bump therefore needs the
   battle test re-run against a known fight, such as the Gordie line, before players get rollouts on that version.
   **[inference]**
 - **Release cadence.** Upstream tagged 35 releases between 1 January and 23 August 2026, 12 of them (1.12.0.0–.11)
@@ -284,7 +286,9 @@ pay the boot once. **[inference]**
   `.coach-oracle.bundle.js`, `.coach-oracle.report.json` and `test/reporters/.coach-default-reporter.ts`
   (`scripts/encounter-oracle/run.ts:53-58`). **[verified]**
 - A rollout that uses a **unique** test filename and passes it as vitest's filter does not collide with it. Four
-  rollouts ran at once with no interference (§4.4). While this ticket ran, the #636 and #638 agents had their own
+  rollouts ran at once with no interference (§4.4). While this ticket ran, the agents working on
+  [replay fidelity](https://github.com/IIxauII/coachemon/issues/636) and
+  [HUD vs engine on Gordie](https://github.com/IIxauII/coachemon/issues/638) had their own
   `zz-*` files in the shared clone. **[verified]**
 - Keep the player install separate from the dev clone. The encounter oracle refuses on an empty `assets`
   (`run.ts:42-46`), but a player install with only `battle-anims/` would pass that check while maybe lacking what
@@ -353,7 +357,8 @@ Provisioning should be its own step, and a search should be a background job tha
   - The session export has **no battle turn**. A rollout from a mid-fight export must set `currentBattle.turn` (and
     leave `battleSeedState` null), or it rolls turn 1's seed.
   - The full `assets` are not needed for fidelity. Only `tackle.json` gave the same result, HP for HP.
-- **The encounter oracle and #296.** The "clone's own i18n rejection" is a **Node ≥25** artefact. Under Node 23.6 and
+- **The encounter oracle**
+  ([Encounter oracle: make its exit code mean what it says](https://github.com/IIxauII/coachemon/issues/296)). The "clone's own i18n rejection" is a **Node ≥25** artefact. Under Node 23.6 and
   24.9, vitest exits 0. The oracle's tally of known errors (`CLONE_I18N_REJECTION`) depends on the Node version.
 - **[ADR draft](https://github.com/IIxauII/coachemon/issues/641).**
   - "Build id" in `CONTEXT.md` is the extension's build, so the ADR needs another term for "the game version a rollout
