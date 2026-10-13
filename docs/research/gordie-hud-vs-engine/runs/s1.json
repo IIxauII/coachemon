@@ -1,0 +1,165 @@
+[
+ {
+  "name": "win",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "faint": [
+     "Golbat"
+    ],
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "TOXIC"
+   },
+   {
+    "faint": [
+     "Gyarados"
+    ],
+    "m": "VENOSHOCK"
+   },
+   {
+    "faint": [
+     "Reshiram"
+    ],
+    "m": "HYDRO_PUMP",
+    "tera": true
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   }
+  ],
+  "follow": 0
+ },
+ {
+  "name": "a1",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "EARTH_POWER"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "faint": [
+     "Leavanny"
+    ],
+    "m": "EARTH_POWER"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Snorlax"
+   },
+   {
+    "m": "BODY_SLAM"
+   },
+   {
+    "faint": [
+     "Reshiram"
+    ],
+    "m": "BODY_SLAM"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "faint": [
+     "Gyarados"
+    ],
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "faint": [
+     "Golbat"
+    ],
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "VENOSHOCK"
+   },
+   {
+    "faint": [
+     "Leavanny"
+    ],
+    "m": "TOXIC"
+   },
+   {
+    "m": "LEAF_STORM"
+   }
+  ],
+  "follow": 0
+ }
+]

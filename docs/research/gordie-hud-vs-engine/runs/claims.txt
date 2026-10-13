@@ -1,0 +1,68 @@
+claims (each decision point once):
+  move       213/213
+  switch     27/27
+  stay       292/292
+  send-in    29/33
+  1-hit KO   89/89
+  our KO claimed by free entry only: moot (missed, or the foe fell or left first): 2
+  our KO claimed by free entry only: right: 9
+  our KO claimed by free entry only: survived the hit: 23
+  our KO claimed by 💀 tag: moot (missed, or the foe fell or left first): 48
+  our KO claimed by 💀 tag: right: 67
+  our KO unclaimed: 3
+  our KO unclaimed (crit): 1
+  verdict where the card takes over vs. how its own line ended: 9/22
+    hud@T1                   card says winnable     → LOSS
+    win>H@T2                 card says winnable     → LOSS
+    win>H@T4                 card says winnable     → LOSS
+    win>H@T5                 card says winnable     → LOSS
+    win>H@T7                 card says likely lost  → LOSS
+    win>H@T10                card says winnable     → WIN
+    win>H@T11                card says winnable     → WIN
+    win>H@T13                card says winnable     → WIN
+    win>H@T14                card says winnable     → WIN
+    win>H@T16                card says winnable     → WIN
+    win>H@T14+cardsendin     card says winnable     → WIN
+    a1>H@T3                  card says winnable     → LOSS
+    a1>H@T5                  card says likely lost  → WIN
+    a1>H@T7                  card says likely lost  → WIN
+    a1>H@T9                  card says winnable     → LOSS
+    a1>H@T13                 card says likely lost  → WIN
+    a1>H@T17                 card says likely lost  → WIN
+    win>H@T6                 card says winnable     → LOSS
+    win>H@T8                 card says likely lost  → WIN
+    win>H@T9                 card says likely lost  → WIN
+    win>H@T12                card says winnable     → WIN
+    win>H@T15                card says winnable     → WIN
+misses:
+   win T10: card next in Tyranitar, engine Barbaracle (our input was not the card's)
+   a1 T19: card says Gyarados falls (free entry), took Stone Edge and survived
+   hud@T1 T7: card says Gyarados falls (free entry), took Stone Edge and survived
+   hud@T1 T14: card says Probopass falls (free entry), took Razor Shell and survived
+   win>H@T2 T7: card says Gyarados falls (free entry), took Stone Edge and survived
+   win>H@T2 T14: card says Probopass falls (free entry), took Razor Shell and survived
+   win>H@T4 T9: card says Probopass falls (free entry), took Razor Shell and survived
+   win>H@T5 T13: card says Reshiram falls (free entry), took Stone Edge and survived
+   win>H@T5 T20: Snorlax fell with no 💀 tag or free entry on the card
+   win>H@T7 T13: card says Reshiram falls (free entry), took Stone Edge and survived
+   win>H@T7 T20: Snorlax fell with no 💀 tag or free entry on the card
+   win>H@T10 T13: card says Reshiram falls (free entry), took Earthquake and survived
+   win>H@T13 T14: card says Reshiram falls (free entry), took Earthquake and survived
+   win>H@T14 T15: card says Reshiram falls (free entry), took Stone Edge and survived
+   win>H@T14+cardsendin T14: card says Reshiram falls (free entry), took Earthquake and survived
+   a1>H@T3 T9: card says Probopass falls (free entry), took Razor Shell and survived
+   a1>H@T5 T10: card says Reshiram falls (free entry), took Stone Edge and survived
+   a1>H@T7 T12: card says Reshiram falls (free entry), took Stone Edge and survived
+   a1>H@T7 T15: card says Probopass falls (free entry), took Razor Shell and survived
+   a1>H@T9 T12: card says Reshiram falls (free entry), took Stone Edge and survived
+   a1>H@T9 T21: card says Snorlax falls (free entry), took Earthquake and survived
+   a1>H@T9 T22: card says Snorlax falls (free entry), took Accelerock and survived
+   win>H@T6 T13: card says Reshiram falls (free entry), took Stone Edge and survived
+   win>H@T6 T20: Snorlax fell with no 💀 tag or free entry on the card
+   win>H@T8 T13: card says Reshiram falls (free entry), took Earthquake and survived
+   win>H@T9 T13: card says Reshiram falls (free entry), took Earthquake and survived
+   win>H@T12 T14: card says Reshiram falls (free entry), took Earthquake and survived
+   win>H@T15 T16: Reshiram fell with no 💀 tag or free entry on the card — a crit
+   swapT2:DP T10: card next in Tyranitar, engine Barbaracle (our input was not the card's)
+   swapT2:DP T12: card next in Tyranitar, engine Coalossal
+   swapT5:PP T10: card next in Tyranitar, engine Barbaracle (our input was not the card's)

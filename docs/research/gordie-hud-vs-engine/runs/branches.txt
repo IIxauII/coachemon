@@ -1,0 +1,112 @@
+## hud@T1 -> LOSS
+    from T1: T1 DragonPulse · T2 DragonPulse (Gigalith✝) · T3 >Leavanny · T4 >Reshiram (sw:Carracosta) · T5 >Gyarados · T6 HydroPump · T7 HydroPump · T8 HydroPump (Gyarados✝, in:Leavanny) · T9 LeafStorm (Coalossal✝) · T10 LeafStorm (Leavanny✝, in:Reshiram) · T11 FickleBeam (Carracosta✝) · T12 DragonPulse (Reshiram✝, in:Probopass) · T13 EarthPower · T14 EarthPower · T15 EarthPower (Probopass✝, in:Snorlax) · T16 BellyDrum (sw:Barbaracle) · T17 BodySlam (Snorlax✝, in:Golbat) · T18 Toxic (Golbat✝)
+    end us: Golbat* 493/493 | them: Tyranitar* 569/569, Barbaracle 99/460, Stonjourner 574/574
+    verdict by turn (T1…): WWLLLLLWWLLLLLLLLL
+## win>H@T2 -> LOSS
+    from T2: T2 DragonPulse (Gigalith✝) · T3 >Leavanny · T4 >Reshiram (sw:Carracosta) · T5 >Gyarados · T6 HydroPump · T7 HydroPump · T8 HydroPump (Gyarados✝, in:Leavanny) · T9 LeafStorm (Coalossal✝) · T10 LeafStorm (Leavanny✝, in:Reshiram) · T11 FickleBeam (Carracosta✝) · T12 DragonPulse (Reshiram✝, in:Probopass) · T13 EarthPower · T14 EarthPower · T15 EarthPower (Probopass✝, in:Snorlax) · T16 BellyDrum (sw:Barbaracle) · T17 BodySlam (Snorlax✝, in:Golbat) · T18 Toxic (Golbat✝)
+    end us: Golbat* 493/493 | them: Tyranitar* 569/569, Barbaracle 99/460, Stonjourner 574/574
+    verdict by turn (T1…): WWLLLLLWWLLLLLLLLL
+## win>H@T4 -> LOSS
+    from T4: T4 >Reshiram (sw:Carracosta) · T5 DragonPulse · T6 DragonPulse · T7 DragonPulse (sw:Coalossal, Carracosta✝) · T8 >Leavanny (Leavanny✝, in:Probopass) · T9 EarthPower · T10 >Reshiram · T11 FickleBeam (Barbaracle✝) · T12 DragonPulse (Reshiram✝, in:Snorlax) · T13 BellyDrum · T14 BodySlam (Snorlax✝, in:Gyarados) · T15 HydroPump · T16 HydroPump (Gyarados✝, in:Golbat) · T17 Toxic (Golbat✝, in:Probopass) · T18 EarthPower (Probopass✝)
+    end us: Probopass* 165/427 | them: Tyranitar* 33/569 st2, Stonjourner 574/574, Coalossal 160/711 TERA
+    verdict by turn (T1…): WWWWWWWWLLWWWLLLLL
+## win>H@T5 -> LOSS
+    from T5: T5 PollenPuff · T6 LeafStorm · T7 >Probopass (sw:Coalossal) · T8 EarthPower · T9 >Leavanny · T10 LeafStorm (Carracosta✝) · T11 LeafStorm (Leavanny✝, in:Gyarados) · T12 >Reshiram (sw:Stonjourner) · T13 FickleBeam · T14 FickleBeam · T15 >Probopass · T16 EarthPower (Barbaracle✝) · T17 EarthPower (Probopass✝, in:Reshiram) · T18 FickleBeam (Reshiram✝, in:Snorlax) · T19 BellyDrum · T20 BodySlam (Tyranitar✝, Snorlax✝, in:Gyarados) · T21 HydroPump (Stonjourner✝) · T22 HydroPump (Gyarados✝, in:Golbat) · T23 Toxic (Golbat✝)
+    end us: Golbat* 493/493 | them: Coalossal* 217/711 TERA
+    verdict by turn (T1…): WWWWWWWWWWLLLLWLLLLWLLL
+## win>H@T7 -> LOSS
+    from T7: T7 >Probopass (sw:Coalossal) · T8 EarthPower · T9 >Leavanny · T10 LeafStorm (Carracosta✝) · T11 LeafStorm (Leavanny✝, in:Gyarados) · T12 >Reshiram (sw:Stonjourner) · T13 FickleBeam · T14 FickleBeam · T15 >Probopass · T16 EarthPower (Barbaracle✝) · T17 EarthPower (Probopass✝, in:Reshiram) · T18 FickleBeam (Reshiram✝, in:Snorlax) · T19 BellyDrum · T20 BodySlam (Tyranitar✝, Snorlax✝, in:Gyarados) · T21 HydroPump (Stonjourner✝) · T22 HydroPump (Gyarados✝, in:Golbat) · T23 Toxic (Golbat✝)
+    end us: Golbat* 493/493 | them: Coalossal* 238/711 TERA
+    verdict by turn (T1…): WWWWWWLWWWLLLLWLLLLWLLL
+## win>H@T10 -> WIN
+    from T10: T10 >Leavanny · T11 LeafStorm (Stonjourner✝) · T12 PollenPuff (Leavanny✝, in:Reshiram) · T13 FickleBeam · T14 DragonPulse (Tyranitar✝) · T15 DragonPulse (Barbaracle✝) · T16 DragonPulse (Carracosta✝) · T17 DragonPulse (Coalossal✝)
+    end us: Reshiram* 438/577, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWLLWWWW
+## win>H@T11 -> WIN
+    from T11: T11 FickleBeam · T12 DragonPulse (Barbaracle✝) · T13 DragonPulse (Reshiram✝, in:Leavanny) · T14 LeafStorm (Tyranitar✝) · T15 LeafStorm (Leavanny✝, in:Snorlax) · T16 BodySlam (Coalossal✝) · T17 >Probopass · T18 EarthPower (Carracosta✝)
+    end us: Probopass* 310/427, Snorlax 430/824 st6, Gyarados 570/570, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWW
+## win>H@T13 -> WIN
+    from T13: T13 PollenPuff (Leavanny✝, in:Reshiram) · T14 FickleBeam · T15 >Gyarados · T16 HydroPump · T17 HydroPump (Gyarados✝, in:Reshiram) · T18 FickleBeam (Tyranitar✝) · T19 FickleBeam (Carracosta✝) · T20 FickleBeam · T21 FickleBeam (Coalossal✝)
+    end us: Reshiram* 487/577, Probopass 359/427, Snorlax 824/824, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWWWWW
+## win>H@T14 -> WIN
+    from T14: T14 >Reshiram · T15 DragonPulse · T16 DragonPulse (Tyranitar✝) · T17 DragonPulse (Carracosta✝) · T18 FickleBeam (Coalossal✝)
+    end us: Reshiram* 294/577, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWW
+## win>H@T16 -> WIN
+    from T16: T16 HydroPump · T17 HydroPump (Tyranitar✝) · T18 >Probopass · T19 EarthPower (Carracosta✝) · T20 EarthPower (Probopass✝, in:Reshiram) · T21 DragonPulse · T22 FickleBeam (Coalossal✝)
+    end us: Reshiram* 298/577, Gyarados 273/570, Snorlax 824/824 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWWWWWW
+## win>H@T14+cardsendin -> WIN
+    from T14: T14 FickleBeam · T15 >Gyarados · T16 HydroPump · T17 HydroPump (Gyarados✝, in:Reshiram) · T18 FickleBeam (Tyranitar✝) · T19 FickleBeam (Carracosta✝) · T20 FickleBeam · T21 FickleBeam (Coalossal✝)
+    end us: Reshiram* 487/577, Probopass 359/427, Snorlax 824/824, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWWWWW
+## a1>H@T3 -> LOSS
+    from T3: T3 >Leavanny · T4 >Reshiram (sw:Carracosta) · T5 DragonPulse · T6 DragonPulse · T7 DragonPulse (sw:Coalossal, Carracosta✝) · T8 >Leavanny (Leavanny✝, in:Probopass) · T9 EarthPower · T10 >Reshiram · T11 FickleBeam (Barbaracle✝) · T12 DragonPulse (Reshiram✝, in:Snorlax) · T13 BellyDrum · T14 BodySlam (Snorlax✝, in:Gyarados) · T15 HydroPump · T16 HydroPump (Gyarados✝, in:Golbat) · T17 Toxic (Golbat✝, in:Probopass) · T18 EarthPower (Probopass✝)
+    end us: Probopass* 165/427 | them: Tyranitar* 33/569 st2, Stonjourner 574/574, Coalossal 160/711 TERA
+    verdict by turn (T1…): WWWWWWWWLLWWWLLLLL
+## a1>H@T5 -> WIN
+    from T5: T5 >Reshiram (sw:Carracosta) · T6 >Gyarados · T7 HydroPump (Gyarados✝, in:Leavanny) · T8 LeafStorm · T9 LeafStorm (Coalossal✝, Leavanny✝, in:Reshiram) · T10 DragonPulse · T11 FickleBeam (Tyranitar✝) · T12 FickleBeam (Carracosta✝) · T13 DragonPulse · T14 >Probopass · T15 EarthPower (Barbaracle✝) · T16 EarthPower (Probopass✝, in:Reshiram) · T17 DragonPulse (Stonjourner✝)
+    end us: Reshiram* 219/577, Snorlax 824/824, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWLWWWLLWWWWWWW
+## a1>H@T7 -> WIN
+    from T7: T7 >Gyarados · T8 HydroPump (Gyarados✝, in:Reshiram) · T9 DragonPulse (Coalossal✝) · T10 >Leavanny · T11 LeafStorm (Carracosta✝, Leavanny✝, in:Reshiram) · T12 DragonPulse · T13 DragonPulse (Tyranitar✝) · T14 >Probopass · T15 EarthPower · T16 EarthPower (Probopass✝, in:Snorlax) · T17 BellyDrum · T18 >Reshiram · T19 FickleBeam (Barbaracle✝) · T20 FickleBeam (Stonjourner✝)
+    end us: Reshiram* 247/577, Snorlax 126/824, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWLWLWWWWLWWWWWWWW
+## a1>H@T9 -> LOSS
+    from T9: T9 >Reshiram (sw:Coalossal) · T10 DragonPulse · T11 FickleBeam (Carracosta✝) · T12 FickleBeam · T13 FickleBeam (Barbaracle✝) · T14 FickleBeam (Reshiram✝, in:Leavanny) · T15 LeafStorm (Leavanny✝, in:Gyarados) · T16 HydroPump (Gyarados✝, in:Probopass) · T17 EarthPower (Probopass✝, in:Snorlax) · T18 BellyDrum (sw:Tyranitar) · T19 Rest · T20 BodySlam · T21 BodySlam · T22 BodySlam · T23 BodySlam (Snorlax✝, in:Golbat) · T24 Toxic · T25 Venoshock · T26 Venoshock (Golbat✝)
+    end us: Golbat* 80/493 | them: Stonjourner* 8/574 st2, Tyranitar 208/569, Coalossal 419/711 TERA
+    verdict by turn (T1…): WWWWLWLWWWWLLWLLLLLLLLLLLL
+## a1>H@T13 -> WIN
+    from T13: T13 >Reshiram · T14 DragonPulse (Coalossal✝) · T15 DragonPulse (Barbaracle✝) · T16 DragonPulse (Reshiram✝, in:Leavanny) · T17 LeafStorm (Leavanny✝, in:Gyarados) · T18 Twister (sw:Tyranitar) · T19 HydroPump (Stonjourner✝) · T20 HydroPump (Tyranitar✝)
+    end us: Gyarados* 278/570, Snorlax 824/824, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWLWLWWLWLLWWWWLWW
+## a1>H@T17 -> WIN
+    from T17: T17 BlueFlare (sw:Coalossal) · T18 FickleBeam (Barbaracle✝) · T19 FickleBeam (Tyranitar✝) · T20 FickleBeam (Stonjourner✝) · T21 FickleBeam (Coalossal✝)
+    end us: Reshiram* 412/577, Leavanny 319/497, Gyarados 396/570, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWLWLWWLWLLWWWLWWWW
+## win>H@T6 -> LOSS
+    from T6: T6 LeafStorm · T7 >Probopass (sw:Coalossal) · T8 EarthPower · T9 >Leavanny · T10 LeafStorm (Carracosta✝) · T11 LeafStorm (Leavanny✝, in:Gyarados) · T12 >Reshiram (sw:Stonjourner) · T13 FickleBeam · T14 FickleBeam · T15 >Probopass · T16 EarthPower (Barbaracle✝) · T17 EarthPower (Probopass✝, in:Reshiram) · T18 FickleBeam (Reshiram✝, in:Snorlax) · T19 BellyDrum · T20 BodySlam (Tyranitar✝, Snorlax✝, in:Gyarados) · T21 HydroPump (Stonjourner✝) · T22 HydroPump (Gyarados✝, in:Golbat) · T23 Toxic (Golbat✝)
+    end us: Golbat* 493/493 | them: Coalossal* 238/711 TERA
+    verdict by turn (T1…): WWWWWWLWWWLLLLWLLLLWLLL
+## win>H@T8 -> WIN
+    from T8: T8 LeafStorm · T9 >Reshiram (sw:Carracosta) · T10 >Leavanny · T11 LeafStorm (Stonjourner✝) · T12 PollenPuff (Leavanny✝, in:Reshiram) · T13 FickleBeam · T14 DragonPulse (Tyranitar✝) · T15 DragonPulse (Barbaracle✝) · T16 DragonPulse (Carracosta✝) · T17 DragonPulse (Coalossal✝)
+    end us: Reshiram* 438/577, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWLLWWWW
+## win>H@T9 -> WIN
+    from T9: T9 >Reshiram (sw:Carracosta) · T10 >Leavanny · T11 LeafStorm (Stonjourner✝) · T12 PollenPuff (Leavanny✝, in:Reshiram) · T13 FickleBeam · T14 DragonPulse (Tyranitar✝) · T15 DragonPulse (Barbaracle✝) · T16 DragonPulse (Carracosta✝) · T17 DragonPulse (Coalossal✝)
+    end us: Reshiram* 438/577, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWLLWWWW
+## win>H@T12 -> WIN
+    from T12: T12 LeafStorm (Barbaracle✝) · T13 PollenPuff (Leavanny✝, in:Reshiram) · T14 FickleBeam · T15 >Gyarados · T16 HydroPump · T17 HydroPump (Gyarados✝, in:Reshiram) · T18 FickleBeam (Tyranitar✝) · T19 FickleBeam (Carracosta✝) · T20 FickleBeam · T21 FickleBeam (Coalossal✝)
+    end us: Reshiram* 487/577, Probopass 359/427, Snorlax 824/824, Golbat 493/493 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWWWWW
+## win>H@T15 -> WIN
+    from T15: T15 Venoshock (Golbat✝, in:Reshiram) · T16 DragonPulse (Reshiram✝, in:Snorlax) · T17 BodySlam (Tyranitar✝) · T18 >Gyarados · T19 HydroPump (Coalossal✝) · T20 >Probopass · T21 EarthPower (Carracosta✝)
+    end us: Probopass* 218/427, Gyarados 428/570, Snorlax 401/824 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWWWWW
+## swapT2:DP -> T18: Reshiram has no HYDRO_PUMP
+    from T1: T1 DragonPulse · T2 DragonPulse (Gigalith✝) · T3 >Leavanny · T4 PollenPuff (sw:Carracosta) · T5 BugBite · T6 LeafStorm · T7 BugBite (sw:Coalossal) · T8 LeafStorm · T9 >Reshiram (sw:Carracosta) · T10 DragonPulse (Stonjourner✝) · T11 >Leavanny · T12 LeafStorm (Barbaracle✝) · T13 BugBite (Leavanny✝, in:Golbat) · T14 Toxic (sw:Coalossal) · T15 Venoshock (Golbat✝, in:Gyarados) · T16 T:HydroPump · T17 HydroPump (Gyarados✝, Tyranitar✝, in:Reshiram) · T18 HydroPump
+    end us: Reshiram* 357/577, Snorlax 824/824, Probopass 427/427 | them: Carracosta* 121/467, Coalossal 196/711 TERA
+    verdict by turn (T1…): WWLLWLLLLWWWLLWWWW
+## swapT5:PP -> WIN
+    from T1: T1 DragonPulse · T2 >Probopass (Gigalith✝) · T3 >Leavanny · T4 PollenPuff (sw:Carracosta) · T5 PollenPuff · T6 LeafStorm · T7 BugBite (sw:Coalossal) · T8 LeafStorm · T9 >Reshiram (sw:Carracosta) · T10 DragonPulse (Stonjourner✝) · T11 >Leavanny · T12 LeafStorm (Barbaracle✝) · T13 BugBite (Leavanny✝, in:Golbat) · T14 Toxic · T15 Venoshock (Golbat✝, in:Gyarados) · T16 T:HydroPump · T17 HydroPump (Tyranitar✝) · T18 HydroPump (Carracosta✝) · T19 HydroPump (Coalossal✝)
+    end us: Gyarados* 423/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577 | them: -
+    verdict by turn (T1…): WWWWWWWWLWWWWWWWWWW
+## swapT13:PP -> WIN
+    from T1: T1 DragonPulse · T2 >Probopass (Gigalith✝) · T3 >Leavanny · T4 PollenPuff (sw:Carracosta) · T5 BugBite · T6 LeafStorm · T7 BugBite (sw:Coalossal) · T8 LeafStorm · T9 >Reshiram (sw:Carracosta) · T10 DragonPulse (Stonjourner✝) · T11 >Leavanny · T12 LeafStorm (Barbaracle✝) · T13 PollenPuff (Leavanny✝, in:Golbat) · T14 Toxic · T15 Venoshock (Golbat✝, in:Gyarados) · T16 T:HydroPump · T17 HydroPump (Tyranitar✝) · T18 HydroPump (Carracosta✝) · T19 HydroPump (Coalossal✝)
+    end us: Gyarados* 423/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWWW
+## swapT16:HP-noTera -> T19: Reshiram has no HYDRO_PUMP
+    from T1: T1 DragonPulse · T2 >Probopass (Gigalith✝) · T3 >Leavanny · T4 PollenPuff (sw:Carracosta) · T5 BugBite · T6 LeafStorm · T7 BugBite (sw:Coalossal) · T8 LeafStorm · T9 >Reshiram (sw:Carracosta) · T10 DragonPulse (Stonjourner✝) · T11 >Leavanny · T12 LeafStorm (Barbaracle✝) · T13 BugBite (Leavanny✝, in:Golbat) · T14 Toxic · T15 Venoshock (Golbat✝, in:Gyarados) · T16 HydroPump · T17 HydroPump (Tyranitar✝) · T18 HydroPump (Gyarados✝, in:Reshiram) · T19 HydroPump
+    end us: Reshiram* 577/577, Probopass 359/427, Snorlax 824/824 | them: Carracosta* 16/467, Coalossal 238/711 TERA
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWWW
+## swapT2:DP+card -> WIN
+    from T1: T1 DragonPulse · T2 DragonPulse (Gigalith✝) · T3 >Leavanny · T4 PollenPuff (sw:Carracosta) · T5 BugBite · T6 LeafStorm · T7 BugBite (sw:Coalossal) · T8 LeafStorm · T9 >Reshiram (sw:Carracosta) · T10 DragonPulse (Stonjourner✝) · T11 >Leavanny · T12 LeafStorm (Barbaracle✝) · T13 BugBite (Leavanny✝, in:Golbat) · T14 Toxic (sw:Coalossal) · T15 Venoshock (Golbat✝, in:Gyarados) · T16 T:HydroPump · T17 HydroPump (Gyarados✝, Tyranitar✝, in:Reshiram) · T18 FickleBeam (Carracosta✝) · T19 FickleBeam (Coalossal✝)
+    end us: Reshiram* 393/577, Snorlax 824/824, Probopass 427/427 | them: -
+    verdict by turn (T1…): WWLLWLLLLWWWLLWWWWW
+## swapT16:noTera+card -> WIN
+    from T1: T1 DragonPulse · T2 >Probopass (Gigalith✝) · T3 >Leavanny · T4 PollenPuff (sw:Carracosta) · T5 BugBite · T6 LeafStorm · T7 BugBite (sw:Coalossal) · T8 LeafStorm · T9 >Reshiram (sw:Carracosta) · T10 DragonPulse (Stonjourner✝) · T11 >Leavanny · T12 LeafStorm (Barbaracle✝) · T13 BugBite (Leavanny✝, in:Golbat) · T14 Toxic · T15 Venoshock (Golbat✝, in:Gyarados) · T16 HydroPump · T17 HydroPump (Tyranitar✝) · T18 HydroPump (Gyarados✝, in:Reshiram) · T19 FickleBeam (Carracosta✝) · T20 FickleBeam · T21 FickleBeam (Coalossal✝)
+    end us: Reshiram* 327/577, Probopass 359/427, Snorlax 824/824 | them: -
+    verdict by turn (T1…): WWWWWWLLLWWWWWWWWWWWW

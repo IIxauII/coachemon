@@ -1,0 +1,491 @@
+[
+ {
+  "name": "win>H@T6",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "faint": [
+     "hud"
+    ],
+    "hud": true
+   }
+  ],
+  "follow": 40
+ },
+ {
+  "name": "win>H@T8",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "faint": [
+     "hud"
+    ],
+    "hud": true
+   }
+  ],
+  "follow": 40
+ },
+ {
+  "name": "win>H@T9",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "faint": [
+     "hud"
+    ],
+    "hud": true
+   }
+  ],
+  "follow": 40
+ },
+ {
+  "name": "win>H@T12",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "faint": [
+     "hud"
+    ],
+    "hud": true
+   }
+  ],
+  "follow": 40
+ },
+ {
+  "name": "win>H@T15",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "faint": [
+     "Golbat"
+    ],
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "TOXIC"
+   },
+   {
+    "faint": [
+     "hud"
+    ],
+    "hud": true
+   }
+  ],
+  "follow": 40
+ },
+ {
+  "name": "swapT2:DP",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "faint": [
+     "Golbat"
+    ],
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "TOXIC"
+   },
+   {
+    "faint": [
+     "Gyarados"
+    ],
+    "m": "VENOSHOCK"
+   },
+   {
+    "faint": [
+     "Reshiram"
+    ],
+    "m": "HYDRO_PUMP",
+    "tera": true
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   }
+  ],
+  "follow": 0
+ },
+ {
+  "name": "swapT5:PP",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "faint": [
+     "Golbat"
+    ],
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "TOXIC"
+   },
+   {
+    "faint": [
+     "Gyarados"
+    ],
+    "m": "VENOSHOCK"
+   },
+   {
+    "faint": [
+     "Reshiram"
+    ],
+    "m": "HYDRO_PUMP",
+    "tera": true
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   }
+  ],
+  "follow": 0
+ },
+ {
+  "name": "swapT13:PP",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "faint": [
+     "Golbat"
+    ],
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "TOXIC"
+   },
+   {
+    "faint": [
+     "Gyarados"
+    ],
+    "m": "VENOSHOCK"
+   },
+   {
+    "faint": [
+     "Reshiram"
+    ],
+    "m": "HYDRO_PUMP",
+    "tera": true
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   }
+  ],
+  "follow": 0
+ },
+ {
+  "name": "swapT16:HP-noTera",
+  "steps": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "faint": [
+     "Golbat"
+    ],
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "TOXIC"
+   },
+   {
+    "faint": [
+     "Gyarados"
+    ],
+    "m": "VENOSHOCK"
+   },
+   {
+    "faint": [
+     "Reshiram"
+    ],
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   }
+  ],
+  "follow": 0
+ }
+]

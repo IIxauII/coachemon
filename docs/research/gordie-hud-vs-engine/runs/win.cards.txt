@@ -1,0 +1,230 @@
+## win -> WIN 
+     card[CommandPhase] verdict=trainer | act: Reshiram Dragon Pulse → Gigalith · 3 hits | nextIn Carracosta←Probopass
+       row Gigalith 100% · likely Rock Slide [exact] first=0% · pick Reshiram Dragon Pulse 48% ko=3
+       row Carracosta 100% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 29% ko=0
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Leavanny Leaf Storm 95% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=91] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Coalossal 100% · likely Stone Edge [estimate p=85] first=0% · pick Gyarados Hydro Pump 49% ko=2
+       plan: winnable · sacrifice Golbat → Reshiram in free
+         steps: Reshiram Dragon Pulse→Gigalith [KO · 62% left] › Probopass(sw) Earth Power→Carracosta [switch in, takes a hit · falls · foe at 13%] › Reshiram Dragon Pulse→Carracosta [KO · 69% left] › Leavanny(sw) Leaf Storm→Barbaracle [switch in, takes a hit · KO · 36% left] › Leavanny Leaf Storm→Coalossal [falls · foe at 79%] › Gyarados Hydro Pump→Coalossal [KO (75%) · 57% left] › Golbat(sw) Venoshock→Tyranitar [switch in, takes a hit · sacrifice → Reshiram in free] › Reshiram Dragon Pulse→Tyranitar [falls · foe at 55%] › Snorlax Body Slam→Tyranitar [falls · foe at 17%] › Gyarados Hydro Pump→Tyranitar [KO · 51% left] › Gyarados Hydro Pump→Stonjourner [KO · 21% left]
+         prefers: {'text': 'let Probopass fall → Leavanny in free', 'gain': 39, 'flips': False}
+T 1 DRAGON_PULSE   Reshiram used Dragon Pulse! | Foe Gigalith used Rock Slide! | It’s super effective! | Reshiram restored its health using its Enigma Berry! | Reshiram restored its health using its Sitrus Berry!
+       us: Reshiram* 577/577, Leavanny 497/497, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Probopass 427/427
+     them: Gigalith* 282/525, Carracosta 467/467, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 711/711
+     card[CommandPhase] verdict=trainer | act: Reshiram Dragon Pulse → Gigalith · 2 hits
+       row Gigalith 54% · likely Explosion [exact] first=0% · pick Reshiram Dragon Pulse 46% ko=2
+       row Carracosta 100% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 29% ko=0
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Leavanny Leaf Storm 95% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=91] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Coalossal 100% · likely Stone Edge [estimate p=85] first=0% · pick Gyarados Hydro Pump 49% ko=2
+       plan: winnable · sacrifice Golbat → Reshiram in free
+         steps: Reshiram Dragon Pulse→Gigalith [KO · 56% left] › Reshiram Dragon Pulse→Carracosta [KO · 50% left] › Leavanny(sw) Leaf Storm→Barbaracle [switch in, takes a hit · KO · 36% left] › Leavanny Leaf Storm→Coalossal [falls · foe at 79%] › Probopass Earth Power→Coalossal [falls · foe at 35%] › Gyarados Hydro Pump→Coalossal [KO · 87% left] › Golbat(sw) Venoshock→Tyranitar [switch in, takes a hit · sacrifice → Reshiram in free] › Reshiram Dragon Pulse→Tyranitar [falls · foe at 55%] › Snorlax Body Slam→Tyranitar [falls · foe at 17%] › Gyarados Hydro Pump→Tyranitar [KO · 81% left] › Gyarados Hydro Pump→Stonjourner [KO · 59% left]
+T 2 >Probopass     Foe Gigalith used Explosion! | It’s mostly ineffective… | Foe Gigalith fainted!
+       us: Probopass* 359/427, Leavanny 497/497, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Carracosta* 467/467, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 711/711
+     card[CommandPhase] verdict=trainer | act: Leavanny Leaf Storm → Carracosta · 1 hit | switch: Probopass→Leavanny (takes 12% Brine) | nextIn Coalossal←Gyarados
+       row Carracosta 100% · likely Rock Slide [estimate p=92] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Gyarados Hydro Pump 80% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=91] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Coalossal 100% · likely Stone Edge [estimate p=85] first=0% · pick Gyarados Hydro Pump 49% ko=2
+       plan: winnable · sacrifice Probopass → Reshiram in free
+         steps: Leavanny(sw) Leaf Storm→Carracosta [switch in, takes a hit · KO · 73% left] › Gyarados(sw) Hydro Pump→Coalossal [switch in, takes a hit · falls (65%) · foe at 57%] › Snorlax Body Slam→Coalossal [falls · foe at 20%] › Leavanny Leaf Storm→Coalossal [KO · 67% left] › Leavanny Leaf Storm→Stonjourner [KO · 35% left] › Probopass(sw) Earth Power→Tyranitar [switch in, takes a hit · sacrifice → Reshiram in free] › Reshiram Dragon Pulse→Tyranitar [falls · foe at 45%] › Leavanny Leaf Storm→Tyranitar [KO · 29% left] › Leavanny Leaf Storm→Barbaracle [KO · 23% left]
+T 3 >Leavanny      Foe Carracosta used Brine! | It’s not very effective…
+       us: Leavanny* 413/497, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Carracosta* 467/467, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 711/711
+     card[CommandPhase] verdict=trainer | act: Reshiram Fickle Beam → Coalossal · 2 hits | switch: Leavanny→Reshiram
+       predicts switch Carracosta → Coalossal (sure)
+       row Carracosta 100% · →Coalossal · pick Reshiram Fickle Beam 59% ko=2 risky
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Fickle Beam 69% ko=2
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Gyarados Hydro Pump 80% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=100] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Coalossal 100% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Fickle Beam 59% ko=2 risky
+       plan: winnable · sacrifice Snorlax → Reshiram in free
+         steps: Reshiram(sw) Fickle Beam→Coalossal [switch in, takes a hit · KO · 46% left] › Leavanny(sw) Leaf Storm→Carracosta [switch in, takes a hit · KO · 20% left] › Gyarados(sw) Hydro Pump→Stonjourner [switch in, takes a hit · KO · 46% left] › Gyarados Hydro Pump→Barbaracle [falls · foe at 79%] › Leavanny Leaf Storm→Barbaracle [KO · 14% left] › Leavanny Leaf Storm→Tyranitar [falls · foe at 73%] › Snorlax Body Slam→Tyranitar [sacrifice → Reshiram in free] › Reshiram Fickle Beam→Tyranitar [KO · 52% left]
+T 4 POLLEN_PUFF    Gordie withdrew Carracosta! | Gordie sent out Coalossal! | Leavanny used Pollen Puff! | It’s not very effective…
+       us: Leavanny* 382/497, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Coalossal* 657/711, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Carracosta 467/467
+     card[CommandPhase] verdict=trainer | act: Leavanny Pollen Puff → Coalossal, then Leaf Storm
+       row Coalossal 92% tera:Rock · likely Burn Up [exact] first=0% · pick Leavanny Pollen Puff 15% ko=0
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Gyarados Hydro Pump 80% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=100] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Carracosta 100% · likely Rock Slide [estimate p=83] first=0% · pick Reshiram Dragon Pulse 54% ko=2
+       plan: winnable · Leavanny › Reshiram › Gyarados
+         steps: Leavanny Leaf Storm→Coalossal [KO · 35% left] › Leavanny Leaf Storm→Carracosta [KO · 29% left] › Reshiram(sw) Dragon Pulse→Stonjourner [switch in, takes a hit · KO · 88% left] › Reshiram Dragon Pulse→Barbaracle [KO (55%) · 50% left] › Gyarados(sw) Hydro Pump→Tyranitar [switch in, takes a hit · falls · foe at 73%] › Reshiram Dragon Pulse→Tyranitar [falls · foe at 46%] › Leavanny Leaf Storm→Tyranitar [KO · 22% left]
+T 5 BUG_BITE       Foe Coalossal Terastallized into the Rock type! | Leavanny used Bug Bite! | A critical hit! | Leavanny stole and ate Coalossal’s Lum Berry! | Foe Coalossal used Burn Up! | But it failed!
+       us: Leavanny* 351/497, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Coalossal* 515/711 TERA, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Carracosta 467/467
+     card[CommandPhase] verdict=trainer | act: Leavanny Leaf Storm → Coalossal · 3 hits | freeEntry Leavanny→Reshiram
+       row Coalossal 72% · likely Stone Edge [exact] first=0% · pick Leavanny Leaf Storm 42% ko=3 risky
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Gyarados Hydro Pump 80% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=100] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Carracosta 100% · likely Rock Slide [estimate p=83] first=0% · pick Reshiram Dragon Pulse 54% ko=2
+       danger after: Leavanny ← Coalossal Stone Edge
+       plan: winnable · sacrifice Golbat → Reshiram in free
+         steps: Leavanny Leaf Storm→Coalossal [falls · foe at 31%] › Reshiram Dragon Pulse→Coalossal [KO · 92% left] › Probopass(sw) Earth Power→Carracosta [switch in, takes a hit · falls · foe at 38%] › Reshiram Dragon Pulse→Carracosta [KO · 98% left] › Reshiram Dragon Pulse→Barbaracle [KO (55%) · 58% left] › Golbat(sw) Venoshock→Tyranitar [switch in, takes a hit · sacrifice → Reshiram in free] › Reshiram Dragon Pulse→Tyranitar [falls · foe at 55%] › Snorlax Body Slam→Tyranitar [falls · foe at 17%] › Gyarados Hydro Pump→Tyranitar [KO · 94% left] › Gyarados Hydro Pump→Stonjourner [KO · 60% left]
+T 6 LEAF_STORM     Leavanny used Leaf Storm! | It’s super effective! | Leavanny’s Sp. Atk harshly fell! | Foe Coalossal used Stone Edge! | Leavanny avoided the attack!
+       us: Leavanny* 320/497 [0,0,-2,0,0,0,0], Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Coalossal* 238/711 TERA, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Carracosta 467/467
+     card[CommandPhase] verdict=trainer | act: Probopass Earth Power → Carracosta | switch: Leavanny→Probopass
+       predicts switch Coalossal → Carracosta (sure)
+       row Coalossal 33% · →Carracosta · pick Probopass Earth Power 29% ko=0 risky
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Gyarados Hydro Pump 80% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=83] first=0% · pick Reshiram Dragon Pulse 45% ko=3
+       row Carracosta 100% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 29% ko=0 risky
+       plan: likely lost · 💀 Tyranitar KOs 2/6 · nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Leavanny, Reshiram · sacrifice Golbat → Snorlax in free, Snorlax → Reshiram in free
+         win-condition Tyranitar KOs 2/6; reserve Leavanny(37% acts), Reshiram(37% acts); only Reshiram for Barbaracle/Carracosta
+         steps: Probopass(sw) Earth Power→Carracosta [switch in, takes a hit · falls · foe at 38%] › Golbat Venoshock→Carracosta [sacrifice → Snorlax in free] › Snorlax Body Slam→Carracosta [KO · 57% left] › Gyarados(sw) Hydro Pump→Tyranitar [switch in, takes a hit · falls · foe at 73%] › Leavanny Bug Bite→Tyranitar [falls · foe at 54%] › Snorlax Body Slam→Tyranitar [sacrifice → Reshiram in free] › Reshiram Dragon Pulse→Tyranitar [KO · 83% left] › Reshiram Dragon Pulse→Barbaracle [KO (55%) · 45% left] › Reshiram Dragon Pulse→Stonjourner [KO · 42% left] › Reshiram Dragon Pulse→Coalossal [falls (61%) · foe at 4%]
+T 7 BUG_BITE       Gordie withdrew Coalossal! | Gordie sent out Carracosta! | Leavanny used Bug Bite! | Leavanny stole and ate Carracosta’s Enigma Berry! | Leavanny restored its health using its Enigma Berry!
+       us: Leavanny* 413/497 [0,0,-2,0,0,0,0], Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Carracosta* 380/467, Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Leavanny Leaf Storm → Carracosta · 2 hits | nextIn Stonjourner←Golbat
+       row Carracosta 81% · likely Iron Defense [exact] first=0% · pick Leavanny Leaf Storm 54% ko=2
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Gyarados Hydro Pump 80% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=83] first=0% · pick Reshiram Dragon Pulse 45% ko=3
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+       plan: likely lost · 💀 Tyranitar KOs 2/6 · nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Leavanny, Reshiram · sacrifice Golbat → Probopass in free, Snorlax → Gyarados in free
+         win-condition Tyranitar KOs 2/6; reserve Leavanny(37% acts), Reshiram(37% acts); only Reshiram for Barbaracle
+         steps: Leavanny Leaf Storm→Carracosta [KO · 71% left] › Golbat(sw) Venoshock→Stonjourner [switch in, takes a hit · sacrifice → Probopass in free] › Probopass Earth Power→Stonjourner [KO (55%) · 16% left] › Probopass Earth Power→Tyranitar [falls · foe at 100%] › Leavanny Bug Bite→Tyranitar [falls · foe at 62%] › Snorlax Body Slam→Tyranitar [sacrifice → Gyarados in free] › Gyarados Hydro Pump→Tyranitar [falls (77%) · foe at 21%] › Reshiram Dragon Pulse→Tyranitar [KO · 100% left] › Reshiram Dragon Pulse→Barbaracle [KO (55%) · 59% left] › Reshiram Dragon Pulse→Coalossal [falls (61%) · foe at 4%]
+         prefers: {'text': 'Leavanny Leaf Storm → Carracosta', 'gain': 106, 'flips': True}
+T 8 LEAF_STORM     Leavanny used Leaf Storm! | It’s extremely effective! | Leavanny’s Sp. Atk harshly fell! | Foe Carracosta used Iron Defense! | Foe Carracosta’s Defense rose sharply!
+       us: Leavanny* 382/497 [0,0,-4,0,0,0,0], Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Carracosta* 121/467 [0,2,0,0,0,0,0], Tyranitar 569/569, Stonjourner 574/574, Barbaracle 460/460, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Reshiram Dragon Pulse → Stonjourner · 1 hit | switch: Leavanny→Reshiram | nextIn Barbaracle←Golbat
+       predicts switch Carracosta → Stonjourner (sure)
+       row Carracosta 26% · →Stonjourner · pick Reshiram Dragon Pulse 100% ko=1
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Stonjourner 100% · likely Earthquake [estimate p=62] first=27% · pick Reshiram Dragon Pulse 100% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=83] first=0% · pick Reshiram Dragon Pulse 45% ko=3
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+       plan: likely lost · 💀 Tyranitar KOs 2/6 · nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Leavanny, Reshiram · sacrifice Golbat → Snorlax in free
+         win-condition Tyranitar KOs 2/6; reserve Leavanny(37% acts), Reshiram(37% acts); only Reshiram for Barbaracle
+         steps: Reshiram(sw) Dragon Pulse→Stonjourner [switch in, takes a hit · KO · 88% left] › Golbat(sw) Venoshock→Barbaracle [switch in, takes a hit · sacrifice → Snorlax in free] › Snorlax Body Slam→Barbaracle [falls · foe at 52%] › Gyarados Hydro Pump→Barbaracle [falls (64%) · foe at 21%] › Probopass Earth Power→Barbaracle [KO · 46% left] › Probopass Earth Power→Carracosta [KO · 26% left] › Probopass Earth Power→Tyranitar [falls · foe at 100%] › Leavanny Bug Bite→Tyranitar [falls · foe at 62%] › Reshiram Dragon Pulse→Tyranitar [falls (80%) · foe at 38%]
+         prefers: {'text': 'Reshiram in', 'gain': 278, 'flips': True}
+T 9 >Reshiram      Reshiram is radiating a blazing aura! | Gordie withdrew Carracosta! | Gordie sent out Stonjourner!
+       us: Reshiram* 577/577, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Leavanny 382/497
+     them: Stonjourner* 574/574, Tyranitar 569/569, Carracosta 121/467, Barbaracle 460/460, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Leavanny Leaf Storm → Stonjourner · 1 hit | switch: Reshiram→Leavanny (takes 8% Earthquake) | nextIn Tyranitar←Probopass
+       row Stonjourner 100% · likely Accelerock [estimate p=72] first=72% · pick Leavanny Leaf Storm 95% ko=1
+       row Tyranitar 100% · likely Stone Edge [estimate p=100] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Carracosta 26% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 26% ko=1
+       row Barbaracle 100% · likely Stone Edge [estimate p=100] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=100] first=0% · pick Leavanny Leaf Storm 32% ko=1
+       plan: winnable · 💀 Tyranitar KOs 6/6 · nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Leavanny, Reshiram · sacrifice Golbat → Leavanny in free
+         win-condition Tyranitar KOs 6/6; reserve Leavanny(49% acts), Reshiram(37% acts); only Leavanny for Coalossal
+         steps: Leavanny(sw) Leaf Storm→Stonjourner [switch in, takes a hit · KO · 31% left] › Probopass(sw) Earth Power→Tyranitar [switch in, takes a hit · falls · foe at 100%] › Gyarados Hydro Pump→Tyranitar [falls · foe at 69%] › Snorlax Body Slam→Tyranitar [falls · foe at 57%] › Reshiram Dragon Pulse→Tyranitar [falls · foe at 20%] › Golbat Venoshock→Tyranitar [sacrifice → Leavanny in free] › Leavanny Leaf Storm→Tyranitar [KO · 25% left] › Leavanny Leaf Storm→Barbaracle [KO · 19% left] › Leavanny Leaf Storm→Coalossal [KO · 12% left] › Leavanny Leaf Storm→Carracosta [KO · 6% left]
+         prefers: {'text': 'Reshiram Dragon Pulse → Stonjourner', 'gain': 54, 'flips': False}
+T10 DRAGON_PULSE   Reshiram used Dragon Pulse! | Foe Stonjourner fainted!
+       us: Reshiram* 577/577, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Leavanny 382/497
+     them: Barbaracle* 460/460, Tyranitar 569/569, Carracosta 121/467, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Reshiram Fickle Beam → Barbaracle · 2 hits
+       row Barbaracle 100% · likely Razor Shell [exact] first=0% · pick Reshiram Fickle Beam 82% ko=2
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Fickle Beam 69% ko=2
+       row Carracosta 26% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 26% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Fickle Beam 33% ko=1
+       plan: winnable
+         steps: Reshiram Fickle Beam→Barbaracle [KO · 91% left] › Reshiram Fickle Beam→Tyranitar [KO · 60% left] › Leavanny(sw) Leaf Storm→Carracosta [switch in, takes a hit · KO · 14% left] › Leavanny Leaf Storm→Coalossal [KO · 8% left]
+         prefers: {'text': 'Reshiram Fickle Beam → Barbaracle', 'gain': 24, 'flips': False}
+T11 >Leavanny      Foe Barbaracle used Razor Shell! | It’s not very effective…
+       us: Leavanny* 280/497, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Barbaracle* 460/460, Tyranitar 569/569, Carracosta 121/467, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Leavanny Leaf Storm → Barbaracle · 1 hit | nextIn Tyranitar←Probopass
+       row Barbaracle 100% · likely Stone Edge [exact] first=0% · pick Leavanny Leaf Storm 95% ko=1
+       row Tyranitar 100% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Carracosta 26% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 26% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+       danger after: Leavanny ← Barbaracle Stone Edge
+       plan: winnable · Leavanny › Probopass › Reshiram
+         steps: Leavanny Leaf Storm→Barbaracle [KO · 50% left] › Probopass(sw) Earth Power→Tyranitar [switch in, takes a hit · falls · foe at 100%] › Reshiram Dragon Pulse→Tyranitar [falls · foe at 45%] › Leavanny Leaf Storm→Tyranitar [KO · 44% left] › Leavanny Leaf Storm→Coalossal [KO · 37% left] › Leavanny Leaf Storm→Carracosta [KO · 31% left]
+T12 LEAF_STORM     Leavanny used Leaf Storm! | It’s extremely effective! | Leavanny’s Sp. Atk harshly fell! | Foe Barbaracle fainted!
+       us: Leavanny* 249/497 [0,0,-2,0,0,0,0], Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Golbat 493/493, Reshiram 577/577
+     them: Tyranitar* 569/569, Carracosta 121/467, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Leavanny Pollen Puff → Tyranitar, then Bug Bite | freeEntry Leavanny→Reshiram
+       row Tyranitar 100% · likely Stone Edge [exact] first=0% · pick Leavanny Pollen Puff 21% ko=0
+       row Carracosta 26% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 26% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+       danger after: Leavanny ← Tyranitar Stone Edge (save for Tyranitar)
+       plan: winnable · 💀 Tyranitar KOs 2/6 · nobody KOs Tyranitar 1-on-1 — maximise damage before it comes in, chip it with Leavanny, Reshiram · sacrifice Golbat → Gyarados in free
+         win-condition Tyranitar KOs 2/6; reserve Leavanny(37% acts), Reshiram(37% acts)
+         steps: Leavanny Bug Bite→Tyranitar [falls · foe at 94%] › Reshiram Dragon Pulse→Tyranitar [falls · foe at 36%] › Golbat Venoshock→Tyranitar [sacrifice → Gyarados in free] › Gyarados Hydro Pump→Tyranitar [KO · 94% left] › Gyarados Hydro Pump→Carracosta [KO · 57% left] › Gyarados Hydro Pump→Coalossal [falls (77%) · foe at 11%] › Snorlax Body Slam→Coalossal [KO · 78% left]
+         prefers: {'text': 'let Leavanny fall → Reshiram in free', 'gain': 25, 'flips': False}
+T13 BUG_BITE       Leavanny used Bug Bite! | It’s super effective! | Leavanny stole and ate Tyranitar’s Leppa Berry! | Leavanny restored PP to its move Leaf Storm using its Leppa Berry! | Foe Tyranitar used Stone Edge! | It’s super effective! | Leavanny fainted! | Foe Tyranitar restored its health using its Enigma Berry!
+       us: Golbat* 493/493, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Reshiram 577/577 (in:Golbat)
+     them: Tyranitar* 512/569, Carracosta 121/467, Coalossal 238/711 TERA
+     faint prompt — card send-in: Reshiram
+       card[SwitchPhase] verdict=trainer | act: Reshiram Dragon Pulse → Tyranitar · 3 hits | switch: None→Reshiram
+         row Tyranitar 90% · likely Crunch [estimate p=100] first=0% · pick Reshiram Dragon Pulse 37% ko=3
+         row Carracosta 26% · likely Rock Slide [estimate p=100] first=100% · pick Probopass Earth Power 26% ko=1
+         row Coalossal 33% · likely Iron Defense [estimate p=58] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+         plan: winnable · Reshiram
+           steps: Reshiram Dragon Pulse→Tyranitar [KO · 28% left] › Reshiram Fickle Beam→Carracosta [KO · 53% left] › Reshiram Dragon Pulse→Coalossal [KO · 60% left]
+     card[CommandPhase] verdict=trainer | act: Reshiram Dragon Pulse → Tyranitar · 3 hits | switch: Golbat→Reshiram (takes 72% Stone Edge)
+       row Tyranitar 90% · likely Stone Edge [estimate p=65] first=0% · pick Reshiram Dragon Pulse 37% ko=3 risky
+       row Carracosta 26% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 26% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+       danger after: Reshiram ← Tyranitar Stone Edge
+       danger after: Golbat ← Tyranitar Stone Edge
+       plan: winnable · sacrifice Golbat → Gyarados in free
+         steps: Reshiram(sw) Dragon Pulse→Tyranitar [switch in, takes a hit · falls · foe at 51%] › Snorlax Body Slam→Tyranitar [falls · foe at 38%] › Golbat Venoshock→Tyranitar [sacrifice → Gyarados in free] › Gyarados Hydro Pump→Tyranitar [KO · 94% left] › Probopass(sw) Earth Power→Carracosta [switch in, takes a hit · KO · 42% left] › Probopass Earth Power→Coalossal [falls · foe at 33%] › Gyarados Hydro Pump→Coalossal [KO (67%) · 37% left]
+         prefers: {'text': 'let Probopass fall → Reshiram in free', 'gain': 81, 'flips': False}
+T14 TOXIC          Golbat used Toxic! | Foe Tyranitar was badly poisoned! | Foe Tyranitar used Stone Edge! | Golbat avoided the attack! | Foe Tyranitar is hurt by poison!
+       us: Golbat* 463/493, Probopass 359/427, Snorlax 824/824, Gyarados 570/570, Reshiram 577/577
+     them: Tyranitar* 477/569 st2, Carracosta 121/467, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Golbat Venoshock → Tyranitar · 3 hits | freeEntry Golbat→Reshiram
+       row Tyranitar 84% · likely Stone Edge [exact] first=0% · pick Golbat Venoshock 12% ko=3 risky
+       row Carracosta 26% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 26% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+       danger after: Golbat ← Tyranitar Stone Edge
+       plan: winnable · sacrifice Golbat → Reshiram in free
+         steps: Golbat Venoshock→Tyranitar [sacrifice → Reshiram in free] › Reshiram Dragon Pulse→Tyranitar [KO · 29% left] › Reshiram Fickle Beam→Carracosta [KO · 35% left] › Reshiram Dragon Pulse→Coalossal [falls (61%) · foe at 4%] › Snorlax Body Slam→Coalossal [KO · 78% left]
+T15 VENOSHOCK      Golbat used Venoshock! | It’s not very effective… | Foe Tyranitar used Stone Edge! | It’s super effective! | Golbat fainted! | Foe Tyranitar is hurt by poison!
+       us: Gyarados* 570/570, Probopass 359/427, Snorlax 824/824, Reshiram 577/577 (in:Gyarados)
+     them: Tyranitar* 339/569 st2 [-1,0,0,0,0,0,0], Carracosta 121/467, Coalossal 238/711 TERA
+     faint prompt — card send-in: Reshiram
+       card[SwitchPhase] verdict=trainer | act: Reshiram Dragon Pulse → Tyranitar · 2 hits | switch: None→Reshiram
+         row Tyranitar 60% · likely Crunch [estimate p=100] first=0% · pick Reshiram Dragon Pulse 37% ko=2
+         row Carracosta 26% · likely Rock Slide [estimate p=100] first=100% · pick Probopass Earth Power 26% ko=1
+         row Coalossal 33% · likely Iron Defense [estimate p=58] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+         plan: winnable · Reshiram
+           steps: Reshiram Dragon Pulse→Tyranitar [KO · 76% left] › Reshiram Fickle Beam→Carracosta [KO · 100% left] › Reshiram Dragon Pulse→Coalossal [KO · 88% left]
+     card[CommandPhase] verdict=trainer | act: Gyarados Hydro Pump → Tyranitar · 2 hits | nextIn Carracosta←Reshiram
+       row Tyranitar 60% · likely Stone Edge [exact] first=0% · pick Gyarados Hydro Pump 28% ko=2
+       row Carracosta 26% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 26% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+       plan: winnable · Gyarados › Reshiram
+         steps: Gyarados Hydro Pump→Tyranitar [KO (70%) · 48% left] › Reshiram(sw) Fickle Beam→Carracosta [switch in, takes a hit · KO · 88% left] › Gyarados(sw) Hydro Pump→Coalossal [switch in, takes a hit · falls · foe at 30%] › Reshiram Dragon Pulse→Coalossal [KO · 81% left]
+T16 T:HYDRO_PUMP   Gyarados Terastallized into the Water type! | Gyarados used Hydro Pump! | It’s super effective! | Foe Tyranitar used Stone Edge! | Foe Tyranitar restored its health using its Sitrus Berry! | Foe Tyranitar is getting pumped! | Foe Tyranitar’s Defense rose! | Foe Tyranitar is hurt by poison!
+       us: Gyarados* 351/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577
+     them: Tyranitar* 109/569 st2 [-1,1,0,0,0,0,0], Carracosta 121/467, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Gyarados Hydro Pump → Tyranitar · 1 hit
+       row Tyranitar 19% · likely Stone Edge [exact] first=0% · pick Gyarados Hydro Pump 15% ko=1
+       row Carracosta 26% · likely Brine [estimate p=88] first=100% · pick Probopass Earth Power 26% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Dragon Pulse 30% ko=2
+       danger after: Gyarados ← Tyranitar Stone Edge
+       plan: winnable · Gyarados
+         steps: Gyarados Hydro Pump→Tyranitar [KO · 44% left] › Gyarados Hydro Pump→Carracosta [KO · 56% left] › Gyarados Hydro Pump→Coalossal [KO · 44% left]
+T17 HYDRO_PUMP     Gyarados used Hydro Pump! | It’s super effective! | Foe Tyranitar fainted!
+       us: Gyarados* 316/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577
+     them: Carracosta* 121/467, Coalossal 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Gyarados Hydro Pump → Carracosta · 1 hit
+       row Carracosta 26% · likely Iron Defense [exact] first=0% · pick Gyarados Hydro Pump 21% ko=1
+       row Coalossal 33% · likely Stone Edge [estimate p=87] first=0% · pick Reshiram Fickle Beam 33% ko=1
+       plan: winnable · Gyarados
+         steps: Gyarados Hydro Pump→Carracosta [KO · 53% left] › Gyarados Hydro Pump→Coalossal [KO · 44% left]
+T18 HYDRO_PUMP     Gyarados used Hydro Pump! | Foe Carracosta fainted! | Gyarados restored its health using its Sitrus Berry!
+       us: Gyarados* 423/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577
+     them: Coalossal* 238/711 TERA
+     card[CommandPhase] verdict=trainer | act: Gyarados Hydro Pump → Coalossal · 1 hit
+       row Coalossal 33% · likely Stone Edge [exact] first=0% · pick Gyarados Hydro Pump 27% ko=1
+       plan: winnable · Gyarados
+         steps: Gyarados Hydro Pump→Coalossal [KO · 61% left]
+T19 HYDRO_PUMP     Gyarados used Hydro Pump! | A critical hit! | It’s super effective! | Foe Coalossal fainted!
+       us: Gyarados* 423/570 TERA, Probopass 359/427, Snorlax 824/824, Reshiram 577/577
+     them: 
+

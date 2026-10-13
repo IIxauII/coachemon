@@ -1,0 +1,50 @@
+## win -> WIN 
+T  | input        | card ⚔ line                          | foe exact move        | switch pred        | nextIn        | verdict
+1  | DRAGON_PULSE | = Dragon Pulse                       | Rock Slide ✓          | stays ✓            | Carracosta (no KO)| win
+2  | >Probopass   | ≠ Dragon Pulse                       | Explosion ✓           | stays ✓            | (none) → Carracosta| win
+3  | >Leavanny    | = >Leavanny Leaf Storm               | Brine (entry) ✓       | stays ✓            | Coalossal (no KO)| win
+4  | POLLEN_PUFF  | ≠ >Reshiram Fickle Beam              | —                     | Carracosta→Coalossal ✓|               | win
+5  | BUG_BITE     | ≠ Pollen Puff                        | Burn Up ✓             | stays ✓            |               | win
+6  | LEAF_STORM   | = Leaf Storm                         | Stone Edge ✓          | stays ✓            |               | win
+7  | BUG_BITE     | ≠ >Probopass Earth Power             | —                     | Coalossal→Carracosta ✓|               | loss
+8  | LEAF_STORM   | = Leaf Storm                         | Iron Defense ✓        | stays ✓            | Stonjourner (no KO)| loss
+9  | >Reshiram    | = >Reshiram Dragon Pulse             | —                     | Carracosta→Stonjourner ✓| Barbaracle (no KO)| loss
+10 | DRAGON_PULSE | ≠ >Leavanny Leaf Storm               | Earthquake (did not act)| stays ✓            | Tyranitar ✗ Barbaracle| win
+11 | >Leavanny    | ≠ Fickle Beam                        | Razor Shell ✓         | stays ✓            |               | win
+12 | LEAF_STORM   | = Leaf Storm                         | Stone Edge (did not act)| stays ✓            | Tyranitar ✓   | win
+13 | BUG_BITE     | ≠ Pollen Puff                        | Stone Edge ✓          | stays ✓            |               | win  [faint prompt: card sends Reshiram, line sent Golbat]
+14 | TOXIC        | ≠ >Reshiram Dragon Pulse             | Stone Edge (entry) ✓  | stays ✓            |               | win
+15 | VENOSHOCK    | = Venoshock                          | Stone Edge ✓          | stays ✓            |               | win  [faint prompt: card sends Reshiram, line sent Gyarados]
+16 | T:HYDRO_PUMP | = Hydro Pump                         | Stone Edge ✓          | stays ✓            | Carracosta (no KO)| win
+17 | HYDRO_PUMP   | = Hydro Pump                         | Stone Edge (did not act)| stays ✓            | (none) → Carracosta| win
+18 | HYDRO_PUMP   | = Hydro Pump                         | Iron Defense (did not act)| stays ✓            | (none) → Coalossal| win
+19 | HYDRO_PUMP   | = Hydro Pump                         | Stone Edge (did not act)| stays ✓            |               | win
+tally: {'exact': '11/11', 'switch': '3/3', 'noswitch': '16/16', 'nextIn': '1/2', 'act': '11/19'}
+
+## a1 -> LOSS 
+T  | input        | card ⚔ line                          | foe exact move        | switch pred        | nextIn        | verdict
+1  | DRAGON_PULSE | = Dragon Pulse                       | Rock Slide ✓          | stays ✓            | Carracosta (no KO)| win
+2  | >Probopass   | ≠ Dragon Pulse                       | Explosion ✓           | stays ✓            | (none) → Carracosta| win
+3  | EARTH_POWER  | ≠ >Leavanny Leaf Storm               | Brine (entry) ✓       | stays ✓            | Coalossal (no KO)| win
+4  | >Leavanny    | = >Leavanny Leaf Storm               | Brine (entry) ✓       | stays ✓            | Coalossal (no KO)| win
+5  | LEAF_STORM   | ≠ >Reshiram Dragon Pulse             | —                     | Carracosta→Coalossal ✓|               | loss
+6  | LEAF_STORM   | = Leaf Storm                         | Burn Up ✓             | stays ✓            | Carracosta (no KO)| win
+7  | >Probopass   | ≠ >Gyarados Hydro Pump               | Stone Edge (entry) ✓  | stays ✓            |               | loss
+8  | >Gyarados    | ≠ Earth Power                        | Body Press ✓          | stays ✓            |               | win
+9  | HYDRO_PUMP   | ≠ >Reshiram Dragon Pulse             | —                     | Coalossal→Carracosta ✓| Barbaracle (no KO)| win
+10 | >Probopass   | ≠ >Leavanny Leaf Storm               | Rock Slide (entry) ✓  | stays ✓            |               | loss
+11 | EARTH_POWER  | ≠ >Leavanny Leaf Storm               | Brine (entry) ✓       | stays ✓            | Coalossal (no KO)| win  [faint prompt: card sends Leavanny, line sent Leavanny]
+12 | LEAF_STORM   | = Leaf Storm                         | Rock Slide (did not act)| stays ✓            | Coalossal ✓   | loss
+13 | >Snorlax     | ≠ >Reshiram Dragon Pulse             | Stone Edge (entry) ✓  | stays ✓            |               | loss
+14 | BODY_SLAM    | ≠ >Reshiram Dragon Pulse             | Body Press (entry) ✓  | stays ✓            | Barbaracle (no KO)| win
+15 | BODY_SLAM    | ≠ >Reshiram Dragon Pulse             | Body Press (entry) ✓  | stays ✓            | Barbaracle (no KO)| win  [faint prompt: card sends Reshiram, line sent Reshiram]
+16 | DRAGON_PULSE | = Dragon Pulse                       | Stone Edge ✓          | stays ✓            | Barbaracle (no KO)| win
+17 | DRAGON_PULSE | ≠ Blue Flare                         | —                     | Coalossal→Barbaracle ✓|               | loss
+18 | DRAGON_PULSE | ≠ Fickle Beam                        | Stone Edge ✓          | stays ✓            |               | loss  [faint prompt: card sends Leavanny, line sent Gyarados]
+19 | HYDRO_PUMP   | = Hydro Pump                         | Stone Edge ✓          | stays ✓            |               | loss
+20 | HYDRO_PUMP   | = Hydro Pump                         | Stone Edge ✓          | stays ✓            |               | loss  [faint prompt: card sends Leavanny, line sent Golbat]
+21 | VENOSHOCK    | = Venoshock                          | Stone Edge ✓          | stays ✓            | (none) → Tyranitar| loss
+22 | TOXIC        | ≠ >Leavanny Pollen Puff              | Crunch (entry) ✓      | stays ✓            |               | loss  [faint prompt: card sends Leavanny, line sent Leavanny]
+23 | LEAF_STORM   | ≠ Pollen Puff                        | Stone Edge ✓          | stays ✓            |               | loss
+tally: {'exact': '19/19', 'switch': '3/3', 'noswitch': '20/20', 'nextIn': '1/1', 'act': '8/23'}
+
