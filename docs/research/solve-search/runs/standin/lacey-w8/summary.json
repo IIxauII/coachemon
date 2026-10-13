@@ -1,0 +1,3945 @@
+{
+ "summary": {
+  "args": {
+   "out": "runs/standin/lacey-w8",
+   "workers": 4,
+   "width": 8,
+   "depth": 40,
+   "prefix": "",
+   "all_wins": false,
+   "ours_weight": 0.5,
+   "session": "runs/standin/session-w186-lacey.json",
+   "budget_children": 3000,
+   "stall": 6,
+   "setup": "",
+   "timeout": 1500.0
+  },
+  "workers": 4,
+  "heap_cap_mb": "1536",
+  "ready": [
+   {
+    "bootMs": 885.9122500000003,
+    "pid": 73550,
+    "ppid": 73526,
+    "heapLimitMb": 1632,
+    "nodeOptions": " --max-old-space-size=1536",
+    "execArgv": [
+     "--experimental-import-meta-resolve",
+     "--require",
+     "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+     "--conditions",
+     "node",
+     "--conditions",
+     "development"
+    ]
+   },
+   {
+    "bootMs": 874.9049999999997,
+    "pid": 73551,
+    "ppid": 73525,
+    "heapLimitMb": 1632,
+    "nodeOptions": " --max-old-space-size=1536",
+    "execArgv": [
+     "--experimental-import-meta-resolve",
+     "--require",
+     "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+     "--conditions",
+     "node",
+     "--conditions",
+     "development"
+    ]
+   },
+   {
+    "bootMs": 870.9451670000008,
+    "pid": 73552,
+    "ppid": 73523,
+    "heapLimitMb": 1632,
+    "nodeOptions": " --max-old-space-size=1536",
+    "execArgv": [
+     "--experimental-import-meta-resolve",
+     "--require",
+     "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+     "--conditions",
+     "node",
+     "--conditions",
+     "development"
+    ]
+   },
+   {
+    "bootMs": 829.9304160000011,
+    "pid": 73553,
+    "ppid": 73524,
+    "heapLimitMb": 1632,
+    "nodeOptions": " --max-old-space-size=1536",
+    "execArgv": [
+     "--experimental-import-meta-resolve",
+     "--require",
+     "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+     "--conditions",
+     "node",
+     "--conditions",
+     "development"
+    ]
+   }
+  ],
+  "aborted": null,
+  "boot_secs": 9.8,
+  "search_secs": 206.5,
+  "children_total": 1341,
+  "losses_total": 0,
+  "errors_total": 0,
+  "stalled_total": 0,
+  "first_win": {
+   "depth": 13,
+   "children_so_far": 1341,
+   "secs": 206.5,
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 580/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  "wins": 12,
+  "memory": {
+   "peak_total_mb": 2685.375,
+   "peak_worker_mb": 782.96875,
+   "peak_process_mb": 729.0,
+   "samples": 464
+  },
+  "layers": [
+   {
+    "depth": 1,
+    "nodes": 1,
+    "children": 13,
+    "distinct": 13,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 6.31,
+    "children_so_far": 13,
+    "best": {
+     "turn": 2,
+     "ours": [
+      "Reshiram* 583/583 [0,0,0,0,0,0,0]",
+      "Leavanny 502/502",
+      "Snorlax 833/833",
+      "Gyarados 576/576",
+      "Golbat 499/499",
+      "Probopass 432/432"
+     ],
+     "foes": [
+      "Primarina* 541/541 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Granbull 627/627",
+      "Alcremie 470/470",
+      "Excadrill 735/735",
+      "Sylveon 564/564"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.0,
+     4.0,
+     3.316,
+     3.316,
+     2.917,
+     2.917,
+     2.917,
+     2.917
+    ]
+   },
+   {
+    "depth": 2,
+    "nodes": 12,
+    "children": 88,
+    "distinct": 70,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 11.41,
+    "children_so_far": 101,
+    "best": {
+     "turn": 3,
+     "ours": [
+      "Reshiram* 583/583 [0,0,0,0,0,0,0]",
+      "Leavanny 502/502",
+      "Snorlax 833/833",
+      "Gyarados 576/576",
+      "Golbat 499/499",
+      "Probopass 432/432"
+     ],
+     "foes": [
+      "Primarina* 385/541 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Granbull 627/627",
+      "Alcremie 470/470",
+      "Excadrill 735/735",
+      "Sylveon 564/564"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.288,
+     4.288,
+     4.181,
+     4.181,
+     3.879,
+     3.879,
+     3.879,
+     3.879
+    ]
+   },
+   {
+    "depth": 3,
+    "nodes": 12,
+    "children": 88,
+    "distinct": 70,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 11.15,
+    "children_so_far": 189,
+    "best": {
+     "turn": 4,
+     "ours": [
+      "Reshiram* 471/583 [0,0,0,0,0,0,0]",
+      "Leavanny 502/502",
+      "Snorlax 833/833",
+      "Gyarados 576/576",
+      "Golbat 499/499",
+      "Probopass 432/432"
+     ],
+     "foes": [
+      "Primarina* 333/541 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Granbull 627/627",
+      "Alcremie 470/470",
+      "Excadrill 735/735",
+      "Sylveon 564/564"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.288,
+     4.288,
+     4.27,
+     4.27,
+     4.245,
+     4.245,
+     4.214,
+     4.214
+    ]
+   },
+   {
+    "depth": 4,
+    "nodes": 12,
+    "children": 88,
+    "distinct": 72,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 11.17,
+    "children_so_far": 277,
+    "best": {
+     "turn": 5,
+     "ours": [
+      "Reshiram* 496/583 [0,0,-1,0,0,0,0]",
+      "Leavanny 502/502",
+      "Snorlax 833/833",
+      "Gyarados 576/576",
+      "Golbat 499/499",
+      "Probopass 432/432"
+     ],
+     "foes": [
+      "Primarina* 342/541 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Granbull 627/627",
+      "Alcremie 470/470",
+      "Excadrill 735/735",
+      "Sylveon 564/564"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.293,
+     4.293,
+     4.288,
+     4.288,
+     4.269,
+     4.269,
+     4.263,
+     4.263
+    ]
+   },
+   {
+    "depth": 5,
+    "nodes": 12,
+    "children": 88,
+    "distinct": 72,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 10.65,
+    "children_so_far": 365,
+    "best": {
+     "turn": 6,
+     "ours": [
+      "Reshiram* 247/583 [0,0,0,0,0,0,0]",
+      "Leavanny 502/502",
+      "Snorlax 833/833",
+      "Gyarados 576/576",
+      "Golbat 499/499",
+      "Probopass 432/432"
+     ],
+     "foes": [
+      "Primarina* 125/541 [0,0,0,0,1,0,0]",
+      "Whimsicott 0/454 st7",
+      "Granbull 627/627",
+      "Alcremie 470/470",
+      "Excadrill 735/735",
+      "Sylveon 564/564"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.481,
+     4.481,
+     4.462,
+     4.462,
+     4.46,
+     4.46,
+     4.442,
+     4.442
+    ]
+   },
+   {
+    "depth": 6,
+    "nodes": 12,
+    "children": 152,
+    "distinct": 136,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 26.04,
+    "children_so_far": 517,
+    "best": {
+     "turn": 7,
+     "ours": [
+      "Reshiram* 337/593 [-1,0,0,0,0,0,0]",
+      "Leavanny 514/514",
+      "Snorlax 847/847",
+      "Gyarados 586/586",
+      "Golbat 510/510",
+      "Probopass 442/442"
+     ],
+     "foes": [
+      "Granbull* 627/627 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Primarina 0/541 st7",
+      "Alcremie 470/470",
+      "Excadrill 735/735",
+      "Sylveon 564/564"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.784,
+     4.784,
+     4.784,
+     4.784,
+     4.782,
+     4.782,
+     4.782,
+     4.782
+    ]
+   },
+   {
+    "depth": 7,
+    "nodes": 12,
+    "children": 152,
+    "distinct": 128,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 31.65,
+    "children_so_far": 669,
+    "best": {
+     "turn": 8,
+     "ours": [
+      "Reshiram* 421/603 [-2,0,0,0,0,0,0]",
+      "Leavanny 519/519",
+      "Snorlax 861/861",
+      "Gyarados 592/592",
+      "Golbat 515/515",
+      "Probopass 446/446"
+     ],
+     "foes": [
+      "Sylveon* 564/564 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Primarina 0/541 st7",
+      "Alcremie 470/470",
+      "Excadrill 735/735",
+      "Granbull 0/627 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     5.849,
+     5.849,
+     5.849,
+     5.849,
+     5.847,
+     5.847,
+     5.847,
+     5.847
+    ]
+   },
+   {
+    "depth": 8,
+    "nodes": 12,
+    "children": 88,
+    "distinct": 72,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 10.71,
+    "children_so_far": 757,
+    "best": {
+     "turn": 9,
+     "ours": [
+      "Reshiram* 348/603 [-2,0,0,0,0,0,0]",
+      "Leavanny 519/519",
+      "Snorlax 861/861",
+      "Gyarados 592/592",
+      "Golbat 515/515",
+      "Probopass 446/446"
+     ],
+     "foes": [
+      "Sylveon* 332/564 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Primarina 0/541 st7",
+      "Alcremie 470/470",
+      "Excadrill 735/735",
+      "Granbull 0/627 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     6.2,
+     6.2,
+     6.2,
+     6.2,
+     6.198,
+     6.198,
+     6.198,
+     6.198
+    ]
+   },
+   {
+    "depth": 9,
+    "nodes": 12,
+    "children": 88,
+    "distinct": 72,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 11.63,
+    "children_so_far": 845,
+    "best": {
+     "turn": 10,
+     "ours": [
+      "Reshiram* 430/609 [-2,0,0,0,0,0,0]",
+      "Leavanny 525/525",
+      "Snorlax 871/871",
+      "Gyarados 602/602",
+      "Golbat 524/524",
+      "Probopass 454/454"
+     ],
+     "foes": [
+      "Alcremie* 470/470 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Primarina 0/541 st7",
+      "Sylveon 0/564 st7",
+      "Excadrill 735/735",
+      "Granbull 0/627 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     6.853,
+     6.853,
+     6.853,
+     6.853,
+     6.851,
+     6.851,
+     6.851,
+     6.851
+    ]
+   },
+   {
+    "depth": 10,
+    "nodes": 12,
+    "children": 104,
+    "distinct": 104,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 14.96,
+    "children_so_far": 949,
+    "best": {
+     "turn": 11,
+     "ours": [
+      "Reshiram* 506/609 [-2,0,0,0,0,0,0]",
+      "Leavanny 525/525",
+      "Snorlax 871/871",
+      "Gyarados 602/602",
+      "Golbat 524/524",
+      "Probopass 454/454"
+     ],
+     "foes": [
+      "Alcremie* 189/470 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Primarina 0/541 st7",
+      "Sylveon 0/564 st7",
+      "Excadrill 735/735",
+      "Granbull 0/627 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     7.513,
+     7.513,
+     7.513,
+     7.513,
+     7.512,
+     7.512,
+     7.512,
+     7.512
+    ]
+   },
+   {
+    "depth": 11,
+    "nodes": 12,
+    "children": 88,
+    "distinct": 72,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 12.03,
+    "children_so_far": 1037,
+    "best": {
+     "turn": 12,
+     "ours": [
+      "Reshiram* 589/616 [-2,0,0,0,0,0,0]",
+      "Leavanny 530/530",
+      "Snorlax 880/880",
+      "Gyarados 608/608",
+      "Golbat 529/529",
+      "Probopass 458/458"
+     ],
+     "foes": [
+      "Excadrill* 735/735 [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Primarina 0/541 st7",
+      "Sylveon 0/564 st7",
+      "Alcremie 0/470 st7",
+      "Granbull 0/627 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     7.978,
+     7.978,
+     7.978,
+     7.978,
+     7.976,
+     7.976,
+     7.976,
+     7.976
+    ]
+   },
+   {
+    "depth": 12,
+    "nodes": 12,
+    "children": 152,
+    "distinct": 137,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 23.79,
+    "children_so_far": 1189,
+    "best": {
+     "turn": 13,
+     "ours": [
+      "Reshiram* 574/616 TERA [-2,0,0,0,0,0,0]",
+      "Leavanny 530/530",
+      "Snorlax 880/880",
+      "Gyarados 608/608",
+      "Golbat 529/529",
+      "Probopass 458/458"
+     ],
+     "foes": [
+      "Excadrill* 368/735 TERA [0,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Primarina 0/541 st7",
+      "Sylveon 0/564 st7",
+      "Alcremie 0/470 st7",
+      "Granbull 0/627 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     8.465,
+     8.465,
+     8.464,
+     8.464,
+     8.367,
+     8.367,
+     8.365,
+     8.365
+    ]
+   },
+   {
+    "depth": 13,
+    "nodes": 12,
+    "children": 152,
+    "distinct": 125,
+    "wins": 12,
+    "losses": 0,
+    "errors": 0,
+    "secs": 25.04,
+    "children_so_far": 1341,
+    "best": {
+     "turn": 14,
+     "ours": [
+      "Reshiram* 367/616 TERA [-2,0,0,0,0,0,0]",
+      "Leavanny 530/530",
+      "Snorlax 880/880",
+      "Gyarados 608/608",
+      "Golbat 529/529",
+      "Probopass 458/458"
+     ],
+     "foes": [
+      "Excadrill* 267/735 TERA [1,0,0,0,0,0,0]",
+      "Whimsicott 0/454 st7",
+      "Primarina 0/541 st7",
+      "Sylveon 0/564 st7",
+      "Alcremie 0/470 st7",
+      "Granbull 0/627 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      },
+      {
+       "s": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      },
+      {
+       "s": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      },
+      {
+       "s": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      },
+      {
+       "s": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     8.435,
+     8.435,
+     8.433,
+     8.433,
+     8.371,
+     8.371,
+     8.37,
+     8.37
+    ]
+   }
+  ],
+  "children_per_sec": 6.49,
+  "validated": [
+   {
+    "name": "win0",
+    "result": "WIN",
+    "turns": 13
+   },
+   {
+    "name": "win1",
+    "result": "WIN",
+    "turns": 13
+   },
+   {
+    "name": "win2",
+    "result": "WIN",
+    "turns": 13
+   },
+   {
+    "name": "win3",
+    "result": "WIN",
+    "turns": 13
+   },
+   {
+    "name": "win4",
+    "result": "WIN",
+    "turns": 13
+   }
+  ],
+  "validate_secs": 24.6
+ },
+ "wins": [
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 580/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 580/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 578/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 578/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 459/622 [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 459/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 459/622 [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 459/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 457/622 [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 457/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 457/622 [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "BLUE_FLARE",
+     "tera": true
+    }
+   ],
+   "end": {
+    "turn": 14,
+    "ours": [
+     "Reshiram* 457/622 TERA [-2,0,0,0,0,0,0]",
+     "Leavanny 536/536",
+     "Snorlax 889/889",
+     "Gyarados 611/611",
+     "Golbat 532/532",
+     "Probopass 461/461"
+    ],
+    "foes": [
+     "Excadrill 0/735 st7",
+     "Whimsicott 0/454 st7",
+     "Primarina 0/541 st7",
+     "Sylveon 0/564 st7",
+     "Alcremie 0/470 st7",
+     "Granbull 0/627 st7"
+    ]
+   }
+  }
+ ]
+}

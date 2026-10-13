@@ -1,0 +1,208 @@
+workers ready: [(76742, 1632), (76749, 1632), (76750, 1632), (76751, 1632)]
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0    6.3s total 13 rss 2675MB
+L 2 nodes  12 children   88 distinct   70 wins   0 losses   0 err 0   11.3s total 101 rss 2675MB
+L 3 nodes  12 children   88 distinct   70 wins   0 losses   0 err 0   10.9s total 189 rss 2675MB
+L 4 nodes  12 children   88 distinct   72 wins   0 losses   0 err 0   10.6s total 277 rss 2675MB
+L 5 nodes  12 children   88 distinct   70 wins   0 losses   0 err 0   10.4s total 365 rss 2675MB
+L 6 nodes  12 children  152 distinct  136 wins   0 losses   0 err 0   25.6s total 517 rss 2675MB
+L 7 nodes  12 children  152 distinct  128 wins   0 losses   0 err 0   31.2s total 669 rss 2675MB
+L 8 nodes  12 children   88 distinct   72 wins   0 losses   0 err 0   10.4s total 757 rss 2675MB
+L 9 nodes  12 children   88 distinct   72 wins   0 losses   0 err 0   11.3s total 845 rss 2678MB
+L10 nodes  12 children  104 distinct  104 wins   0 losses   0 err 0   14.8s total 949 rss 2678MB
+L11 nodes  12 children   88 distinct   72 wins   0 losses   0 err 0   11.6s total 1037 rss 2678MB
+L12 nodes  12 children  152 distinct  137 wins   0 losses   0 err 0   23.5s total 1189 rss 2678MB
+L13 nodes  12 children  152 distinct  125 wins  12 losses   0 err 0   24.4s total 1341 rss 2737MB
+replayed from T1: [{'name': 'win0', 'result': 'WIN', 'turns': 13}, {'name': 'win1', 'result': 'WIN', 'turns': 13}, {'name': 'win2', 'result': 'WIN', 'turns': 13}, {'name': 'win3', 'result': 'WIN', 'turns': 13}, {'name': 'win4', 'result': 'WIN', 'turns': 13}]
+{
+ "args": {
+  "out": "runs/standin/lacey-w8w1",
+  "workers": 4,
+  "width": 8,
+  "depth": 40,
+  "prefix": "",
+  "all_wins": false,
+  "ours_weight": 1.0,
+  "session": "runs/standin/session-w186-lacey.json",
+  "budget_children": 3000,
+  "stall": 6,
+  "setup": "",
+  "timeout": 1500.0
+ },
+ "workers": 4,
+ "heap_cap_mb": "1536",
+ "ready": [
+  {
+   "bootMs": 935.6240409999991,
+   "pid": 76742,
+   "ppid": 76718,
+   "heapLimitMb": 1632,
+   "nodeOptions": " --max-old-space-size=1536",
+   "execArgv": [
+    "--experimental-import-meta-resolve",
+    "--require",
+    "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+    "--conditions",
+    "node",
+    "--conditions",
+    "development"
+   ]
+  },
+  {
+   "bootMs": 899.0048749999987,
+   "pid": 76749,
+   "ppid": 76719,
+   "heapLimitMb": 1632,
+   "nodeOptions": " --max-old-space-size=1536",
+   "execArgv": [
+    "--experimental-import-meta-resolve",
+    "--require",
+    "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+    "--conditions",
+    "node",
+    "--conditions",
+    "development"
+   ]
+  },
+  {
+   "bootMs": 882.3515000000007,
+   "pid": 76750,
+   "ppid": 76716,
+   "heapLimitMb": 1632,
+   "nodeOptions": " --max-old-space-size=1536",
+   "execArgv": [
+    "--experimental-import-meta-resolve",
+    "--require",
+    "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+    "--conditions",
+    "node",
+    "--conditions",
+    "development"
+   ]
+  },
+  {
+   "bootMs": 923.0237500000003,
+   "pid": 76751,
+   "ppid": 76715,
+   "heapLimitMb": 1632,
+   "nodeOptions": " --max-old-space-size=1536",
+   "execArgv": [
+    "--experimental-import-meta-resolve",
+    "--require",
+    "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+    "--conditions",
+    "node",
+    "--conditions",
+    "development"
+   ]
+  }
+ ],
+ "aborted": null,
+ "boot_secs": 11.9,
+ "search_secs": 202.6,
+ "children_total": 1341,
+ "losses_total": 0,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": {
+  "depth": 13,
+  "children_so_far": 1341,
+  "secs": 202.6,
+  "path": [
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "HYPER_VOICE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "HYPER_VOICE"
+   },
+   {
+    "m": "HYPER_VOICE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE",
+    "tera": true
+   },
+   {
+    "m": "BLUE_FLARE"
+   }
+  ],
+  "end": {
+   "turn": 14,
+   "ours": [
+    "Reshiram* 580/622 TERA [-2,0,0,0,0,0,0]",
+    "Leavanny 536/536",
+    "Snorlax 889/889",
+    "Gyarados 611/611",
+    "Golbat 532/532",
+    "Probopass 461/461"
+   ],
+   "foes": [
+    "Excadrill 0/735 st7",
+    "Whimsicott 0/454 st7",
+    "Primarina 0/541 st7",
+    "Sylveon 0/564 st7",
+    "Alcremie 0/470 st7",
+    "Granbull 0/627 st7"
+   ]
+  }
+ },
+ "wins": 12,
+ "memory": {
+  "peak_total_mb": 2736.734375,
+  "peak_worker_mb": 822.828125,
+  "peak_process_mb": 724.5,
+  "samples": 464
+ },
+ "children_per_sec": 6.62,
+ "validated": [
+  {
+   "name": "win0",
+   "result": "WIN",
+   "turns": 13
+  },
+  {
+   "name": "win1",
+   "result": "WIN",
+   "turns": 13
+  },
+  {
+   "name": "win2",
+   "result": "WIN",
+   "turns": 13
+  },
+  {
+   "name": "win3",
+   "result": "WIN",
+   "turns": 13
+  },
+  {
+   "name": "win4",
+   "result": "WIN",
+   "turns": 13
+  }
+ ],
+ "validate_secs": 25.1
+}

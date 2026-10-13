@@ -1,0 +1,2 @@
+start 16:21:29 { 2.52 2.55 2.30 } free 56% swap total = 4096.00M used = 3160.75M free = 935.25M (encrypted)
+end 16:27:35 { 3.01 2.92 2.56 } free 57% swap total = 5120.00M used = 3968.44M free = 1151.56M (encrypted)

@@ -51,6 +51,11 @@ processes that fork from snapshots. The agent does not steer it.**
 - **A worker leaks about 1.1 MB of live heap per expansion, and it never levels off.** **[verified]** A heap cap
   alone only turns that into an OOM; it costs no speed and changes no answer before then. See "Heap cap and memory
   over time" in §3.
+- **On two game-generated stand-in fights the beams won cheaply.** These are Elite Four Lacey (W186) and Crispin (W182),
+  with the same team and run seed. **[verified]** See "Second fight (stand-in)".
+  - Every recommended beam won, with all 6 alive, in 1,109–2,214 expansions, and every win replayed.
+  - Both fights suit this team, so they do not test the fragility Gordie showed. They are weaker evidence than a real
+    second export.
 - **Recommended defaults.** **[inference]** The basis for each number is in the sections below.
   - `min(cores − 2, 6)` workers, each with a 768 MB heap cap, recycled after 250 expansions of its own.
   - A small portfolio of beams, not one beam.
@@ -589,6 +594,9 @@ What the table shows:
      progress line. **[inference]**
    - Ordering the beams by preference instead of sharing fairly may bring the cost near the best single beam, at the
      price of reaching a winning second beam later. **[unverified]**
+   - The stand-in fights support the 3,000 per beam: every first win there came at 1,109–2,214. They say nothing new
+     about which weights the portfolio needs, since both weights made the same choices there. **[verified]** for the
+     counts, **[inference]** for the reading.
 5. **Re-solve when off the line.** Run the same search from the augmented export of the decision where the game left the
    line, on a pool kept warm for the fight. **[inference]**
 6. **The harness test that pins a game version** should run the fork check and the chain check, not only a known line.
@@ -596,7 +604,8 @@ What the table shows:
 
 ## Second fight
 
-No second trainer-fight export exists. **[verified]**
+No second trainer-fight export exists. **[verified]** The stand-in below has the game generate other trainer fights
+for the Gordie team instead.
 
 - **Ivy W145** (`research/gordie-w180`: `docs/research/gordie-w180/w145-ivy-rayquaza.md`) is a log of reads with no
   session export.
@@ -606,6 +615,138 @@ No second trainer-fight export exists. **[verified]**
   single (Drapion, `battleType` 0). ADR 0003 offers solving for trainer fights only.
 
 The mid-fight roots above are other positions in the same fight, not another fight.
+
+### Second fight (stand-in)
+
+**This is not a second export.** It is the same team and the same run seed as Gordie W180. Only the foes are new,
+and the game generated them, not us. That makes it weaker evidence than a real second fight: the team, its items and
+its Tera are the ones every earlier search used, and the two fights below turned out to suit that team. Raw runs,
+scripts and sessions are in `runs/standin/` (`runs/standin/tally.md`).
+
+**How the fights were built** (`runs/standin/construct.test.ts`, `construct.sh`, `construct-out.json`):
+
+- **Which waves can be trainer fights.** **[verified]** in source.
+  - In classic mode, waves 182, 184, 186 and 188 are fixed Elite Four battles, 190 is the champion and 195 the rival
+    (`src/enums/fixed-boss-waves.ts`, `src/data/trainers/fixed-battle-configs.ts`).
+  - Each picks its trainer from a pool with `getRandomTrainerFunc`. `BattleScene.handleFixedBattle` calls it under
+    `executeWithSeedOffset(… << 8)`, so the pick depends only on the run seed and the wave.
+  - `getRandomTrainerFunc` gives a double battle only to evil-team grunts. Every Elite Four battle is a single.
+  - Mystery Encounters happen only on waves 10–180, so none of these waves can be one.
+  - Waves 181, 183 and 185 are wild. 181 ends in 1, and `isWaveTrainer` never makes those trainer waves. 183 and
+    185 sit within 2 waves of a fixed battle, which also rules out a trainer.
+- **The route.** The game's own flow, from the W180 save to the wave. **[verified]**
+  - Load the W180 save in the harness. Set Gordie's benched foes to 0 HP and faint the lead with the test framework's
+    `doKillOpponents`.
+  - Then `toNextWave`, which skips the shop. The game then runs its victory, the biome pick, the wave-181 party heal
+    and wave 181, a wild Xatu that is killed the same way. Waves 183 (Grumpig) and 185 (Unown) went the same way.
+  - At each Elite Four wave the script keeps the session that `EncounterPhase` hands to `saveAll` before the summon:
+    the **wave-start save** that Continue loads, as replay-fidelity's Fix A asks. The test framework's
+    `ReloadHelper` stubs `saveAll`, so the script stubs it too and keeps a copy.
+  - A first attempt read `gameData.getSession()` instead. It got the stale W180 save back, because `ReloadHelper`
+    mocks that call with the session it last loaded. That is the stale-save trap the Gordie handoff hit in a real
+    browser.
+- **Inputs we chose, and what they change.**
+  - **The biome.** After wave 180 the Map offered Ancient Ruins or Construction Site, and the script took Ruins.
+    Ruins has no weather or terrain. The choice cannot change the Elite Four trainer or party, which come from the
+    seed and the wave alone. **[verified]** for the trainer pick, in source; **[inference]** for the party.
+  - **No experience between waves** (`game.override.xpMultiplier(0)`). It touches only experience points. So our team
+    reaches the stand-in wave at the W180 save's levels (174–175), moves and items. The two temporary battle items
+    ran out by the game's own rules (41 modifiers at W180, 40 at 182, 39 at 186). A real run would arrive a few levels
+    higher, since the level cap had risen to 188, so this makes the stand-in harder, not easier. **[inference]**
+  - **HP and PP.** Nothing was restored by hand. The game's wave-181 party heal left every member at full HP and PP
+    with no status, and the kill turns spent no PP. All of this is in the saves. **[verified]**
+- **Checks.** Every one passed for all three waves (182, 184, 186). **[verified]**
+  - `battleType` is TRAINER, `mysteryEncounterType` is −1, and the battle is not double. `waveIndex` and
+    `gameVersion` (`1.12.0.11`) are right.
+  - Each save was reloaded in the same process. The game derived the same `battleSeed`, the same trainer and the same
+    six foes, with the same species, levels, HP, moves, abilities, held items, boss bars and Tera types.
+  - A second construction run produced identical trainers, parties and battle seeds.
+
+**The fights built** **[verified]** (`construct-out.json`):
+
+| Wave | Trainer | Foes (lead first) | Battle seed |
+|---|---|---|---|
+| 182 | Elite Four Crispin (fire) | Rotom (Levitate), Exeggutor, Camerupt (Trick Room), Magmortar (Flame Body), Blaziken (boss, 2 bars, passive Defiant), Incineroar | `0x4Rw1CVIMqNgeF9` |
+| 184 | Elite Four Amarys (steel) | Skarmory (Sturdy), Reuniclus (Focus Band, Magic Guard), Dugtrio (Substitute), Empoleon (King's Shield), Metagross (boss, 2 bars), Klinklang | `6e4K5SvaLGQ5NW0m` |
+| 186 | Elite Four Lacey (fairy) | Whimsicott (Prankster, Sleep Powder), Primarina, Granbull (Intimidate), Alcremie (Chilly Reception), Excadrill (boss, 2 bars, Sandstorm, passive Sturdy), Sylveon (Baton Pass) | `eOlqgbmoAVD9yufr` |
+
+Lacey and Crispin were searched. Lacey was picked because she brings the most mechanics W180 did not have: sleep,
+Prankster, an Intimidate switch-in, Baton Pass and a fairy type that hits our dragon. Crispin was picked as a second,
+with Trick Room, Flame Body and a Defiant boss. Amarys was built but not searched.
+
+**The searches.** These are the recommended beams, run one after another as solo runs on 4 workers. All used
+`--stall 6`, a 3,000-expansion budget, a depth cap of 40 and `SS_HEAP_MB=1536` (a heap limit of 1,632 MB on every
+worker). **[verified]**
+
+| Fight | Beam | Result | Expansions to first win | Line | Alive | Search (boot) | Replay | Pool peak | Worker tree peak | Largest heap after a job | Replayed from T1 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Lacey W186 | W8, w 0.5 | win | 1,341 | 13 turns | 6 of 6 | 207 s (10 s) | 25 s | 2.7 GB | 0.78 GB | 965 MB | 5/5 |
+| Lacey W186 | W8, w 1 | win, the same line | 1,341 | 13 turns | 6 of 6 | 203 s (12 s) | 25 s | 2.7 GB | 0.82 GB | 859 MB | 5/5 |
+| Lacey W186 | W16, w 0.5 | win | 2,214 | 12 turns | 6 of 6 | 339 s (12 s) | 16 s | 3.3 GB | 1.12 GB | 1,174 MB | 3/3 |
+| Crispin W182 | W8, w 0.5 | win | 1,109 | 10 turns | 6 of 6 | 202 s (10 s) | 19 s | 2.9 GB | 0.76 GB | 885 MB | 5/5 |
+| Crispin W182 | W8, w 1 | win, the same beam at every layer | 1,109 | 10 turns | 6 of 6 | 201 s (8 s) | 19 s | 3.1 GB | 0.79 GB | 831 MB | 5/5 |
+| Crispin W182 | W16, w 0.5 | win, the same line as W8 | 2,090 | 10 turns | 6 of 6 | 350 s (9 s) | 20 s | 3.7 GB | 1.11 GB | 1,274 MB | 5/5 |
+
+- **No beam lost, stalled, hit an error or lost a worker.** **[verified]** Every win replayed from the wave-start
+  save. Each worker played about 280–550 expansions (the total over 4), under the brief's 900. The largest heap a job
+  reported was 1,274 MB of the 1,632 MB limit.
+- **Every line is Reshiram alone.** **[verified]** It never switches. Against Lacey it fires Blue Flare and Hyper
+  Voice, with Tera at T12 (W8) or T10 (W16). Against Crispin it uses Blue Flare, Fickle Beam, Dragon Pulse and
+  Hyper Voice, with Tera at T6. It ends at 580/622 against Lacey and 601/622 against Crispin, and no other member comes
+  in.
+- **Weight 0.5 or 1 made no difference here.** **[verified]** Against Crispin the two W8 beams were the same at every
+  layer. Against Lacey they differed at 3 of 13 layers but found the same first win at the same count.
+  Reshiram did take damage: the best Lacey node fell to 247/583 at depth 5. But no line needed another member, so
+  the our-HP term had nothing to trade against. **[inference]**
+- **The portfolio's equivalent.** **[inference]** from the solo runs, since each beam makes the choices of its solo
+  run.
+  - Under fair sharing all three beams advance at the same expansion count. The two W8 beams reach their first win
+    together, at 1,341 of their own (Lacey) and 1,109 (Crispin). W8 at w = 0.5 is listed first, so it wins first.
+  - Without dedupe that is about 3 × 1,341 = 4,000 expansions for Lacey and 3 × 1,109 = 3,300 for Crispin, against
+    4,861 from Gordie's T1.
+  - Dedupe would cut this more than it did on Gordie. The two W8 beams share every node against Crispin, and most
+    nodes against Lacey, so the weight-1 beam would cost close to nothing extra: about 2 × the W8 count, or
+    2,200–2,700.
+  - The 3,000 budget per beam covers every first win here.
+
+**Against Gordie W180** **[verified]** for the numbers, **[inference]** for the reading:
+
+- **Cost: the same range, a little lower.** W8 at w = 0.5 needed 1,109–1,341 expansions, against Gordie's 1,657.
+  W16 needed 2,090–2,214, against 2,026. Wall-clock per W8 beam was about 200 s on 4 workers, against 259 s for
+  Gordie's W8 on 4 workers in §4. The load was lower here (a one-minute load average of 1.9–3.8).
+- **The same beams win, but here they are not tested.** All three won with every member alive. On Gordie, W8 at w = 1
+  took 31 turns and 2,915 expansions, and only 1 of 8 beam nodes carried the win in the early layers. Here every
+  member of the portfolio found a short Reshiram sweep, because a fire Elite Four and a fairy Elite Four are both weak
+  to a fire-type dragon at level 174. These fights do not show the fragility §2 found on Gordie.
+- **Which weight is better: no evidence either way.** That is still open (see "Not yet measured").
+
+**What W180 did not exercise, and what happened:**
+
+- **Our team levels up mid-fight.** **[verified]** that max HP rose. **[inference]** that it is a level-up.
+  - Every member's max HP grew as foes fell: Reshiram went 577 → 583 → 590 → … → 622, and the benched members grew
+    too (Leavanny 497 → 536). Experience Share and a level cap now at 188 put the levels up on each KO. At W180 the
+    cap held the team.
+  - The snapshot carries this, since level and experience are in the save. Every line through it replayed.
+  - `sig()` has no level or experience in it. Two nodes alike but for experience could merge. **[unverified]** whether
+    that ever changes a choice.
+- **An Intimidate reached our lead.** **[verified]** Reshiram ended Lacey's fight at −2 Attack. That was harmless,
+  since it attacks specially.
+- **A foe Terastallized.** **[verified]** On the best Lacey nodes from depth 12, Excadrill is Tera'd. No error came of it.
+  The winning lines' end states do not show whether Excadrill had Tera'd there. **[unverified]**
+- **Trainer boss bars.** **[verified]** Blaziken and Excadrill (2 bars each) were knocked out inside lines that
+  replayed. So the `bossSegmentIndex` patch held across restores.
+- **Not shown to have fired:** sleep, Trick Room, Baton Pass, Chilly Reception, Substitute, King's Shield, Defiant
+  and Flame Body. None of the lines was replayed with its messages. The foes may have used some of these moves; the
+  replays matched either way. **[unverified]**
+- **No T1 entry effect landed on our side.** Neither foe lead (Whimsicott, Rotom) has one. So the wave-start-save fix
+  for entry effects was not tested by these fights. **[verified]**
+- **No new forced moves** appeared in any line. **[unverified]** whether a foe's Outrage or a recharge occurred off
+  the lines.
+
+**Machine.** **[verified]** (`runs/standin/*.load`) Each run was one search at a time, behind `heap.sh`'s gate. Free
+memory stayed at 50–67%. Swap rose from 3.1 GB to 4.8 GB over the session, and the system grew its swap file from 4 to
+5 GB. After the last Crispin beam, swap stood above the 4 GB limit with none of these processes running, so no more
+runs were started.
 
 ## Files
 
@@ -629,6 +770,9 @@ The mid-fight roots above are other positions in the same fight, not another fig
 | `harness/mkforced.py`, `harness/show_forced.py` | The forced-move cases (setup, script) and their summary |
 | `runs/forced/` | Forced-move cases with and without the foe's `summonData` patch, a search with a forced-move setup (`search-setup.json`), and the width-8 regression |
 | `session-w180.json` | The Gordie W180 T1 export, the same file as the kit's |
+| `runs/standin/construct.test.ts`, `construct.sh` | Builds the stand-in fights: the game's own flow from the W180 save to the Elite Four waves, keeping each wave-start save and checking its reload |
+| `runs/standin/session-w182-crispin.json`, `session-w184-amarys.json`, `session-w186-lacey.json` | The stand-in wave-start saves; `construct-out.json` and `construct-log.txt` are the run that made them |
+| `runs/standin/<fight>-<beam>/`, `*.txt`, `*.load`, `tally.md`, `standin_tally.py` | The six stand-in searches and their table |
 
 `solve.test.ts` in more detail:
 
@@ -668,7 +812,15 @@ docs/research/solve-search/harness/probe.sh /tmp/forced && python3 -I docs/resea
 - **A worker that is not a vitest run**, and what it saves against the vitest parent's 350–420 MB at boot.
 - **Whether a recycled worker keeps its early speed.** The uncapped worker fell from 2.19 to 1.37 steps/s over 2,083
   expansions, but layer content and load confound that.
-- **A second trainer fight.** None exists yet.
+- **A real second trainer fight.** None exists yet. The stand-in (Lacey W186, Crispin W182) uses the Gordie team and
+  run seed, and both fights suit that team. Either a real export, or a stand-in the team is weak against, would
+  test the beams harder. W188 (the dragon-type Elite Four pool) or W190 (the champion) can be built with
+  `construct.sh … 188,190` in about 30 s.
+- **Amarys W184**, built and checked, but not searched.
+- **The stand-in lines with their messages.** Whether sleep, Trick Room, Baton Pass, Chilly Reception, Substitute,
+  Defiant or Flame Body fired in any searched line is not known.
+- **Experience in `sig()`.** Mid-fight level-ups (the W186 team levels up on each KO) are in the snapshot but not in
+  the state signature.
 - **A real augmented export from the live tab as a root.** The mid-fight roots here were made in the harness.
 - **A searched line that uses Struggle.** The forced-move cases play Struggle chained and straight, but the one search
   with a PP-less mon never sent it in.
