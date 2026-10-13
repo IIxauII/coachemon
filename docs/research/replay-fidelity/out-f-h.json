@@ -1,0 +1,65 @@
+{
+ "F": {
+  "wave182": {
+   "double": false,
+   "ours": [
+    "Reshiram [0,0,0,0,0,0,0]"
+   ],
+   "foes": [
+    "Gigalith 525/525 [0,0,0,0,0,0,0]"
+   ],
+   "log": [
+    "A wild Tandemaus appeared!",
+    "Go! Bulbasaur!",
+    "Session loaded successfully.",
+    "A wild Gigalith appeared!",
+    "Go! Reshiram!"
+   ]
+  },
+  "wave181": {
+   "double": false,
+   "ours": [
+    "Reshiram [0,0,0,0,0,0,0]"
+   ],
+   "foes": [
+    "Gigalith 525/525 [-1,0,0,0,0,0,0]"
+   ],
+   "log": [
+    "A wild Gigalith appeared!",
+    "Go! Reshiram!",
+    "Session loaded successfully.",
+    "A wild Gigalith appeared!",
+    "Go! Reshiram!",
+    "Wild Gigalith’s Attack fell!"
+   ]
+  }
+ },
+ "G": {
+  "double": true,
+  "ours": [
+   "Reshiram [0,0,0,0,0,0,0]",
+   "Leavanny [0,0,0,0,0,0,0]"
+  ],
+  "foes": [
+   "Gigalith 525/525 [0,0,0,0,0,0,0]",
+   "Carracosta 467/467 [0,0,0,0,0,0,0]"
+  ]
+ },
+ "H": {
+  "error": "Error: Timed out in waitUntil!",
+  "phase": "MysteryEncounterPhase",
+  "uiMode": "MYSTERY_ENCOUNTER",
+  "me": 3,
+  "enemyParty": [
+   "Gigalith"
+  ],
+  "log": [
+   "A wild Tandemaus appeared!",
+   "Go! Bulbasaur!",
+   "Session loaded successfully.",
+   "???",
+   "What’s this?",
+   "Something shiny is sparkling\non the ground near that Pokémon!"
+  ]
+ }
+}
