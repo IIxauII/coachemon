@@ -1,0 +1,49 @@
+14:22  up 4 days,  5:32, 9 users, load averages: 6.19 9.20 7.32
+  W8@0.5 L 1 distinct   13 wins   0 losses   0 err 0    7.1s at    7.1s pool total 13 rss 4080MB
+    W8@1 L 1 distinct   13 wins   0 losses   0 err 0    7.1s at    7.1s pool total 13 rss 4080MB
+ W16@0.5 L 1 distinct   13 wins   0 losses   0 err 0    7.1s at    7.1s pool total 13 rss 4080MB
+  W8@0.5 L 2 distinct   98 wins   0 losses   0 err 0   18.0s at   25.1s pool total 204 rss 4080MB
+    W8@1 L 2 distinct   98 wins   0 losses   0 err 0   18.0s at   25.1s pool total 204 rss 4080MB
+ W16@0.5 L 2 distinct  203 wins   0 losses   0 err 0   20.5s at   27.6s pool total 273 rss 4080MB
+  W8@0.5 L 3 distinct   88 wins   0 losses   0 err 0    9.2s at   34.3s pool total 384 rss 4080MB
+    W8@1 L 3 distinct   88 wins   0 losses   0 err 0    9.2s at   34.3s pool total 384 rss 4080MB
+ W16@0.5 L 3 distinct  156 wins   0 losses   0 err 0    7.6s at   35.2s pool total 394 rss 4080MB
+  W8@0.5 L 4 distinct   80 wins   0 losses   0 err 0   14.3s at   48.7s pool total 601 rss 4080MB
+    W8@1 L 4 distinct   80 wins   0 losses   0 err 0   14.3s at   48.7s pool total 601 rss 4080MB
+ W16@0.5 L 4 distinct  240 wins   0 losses   0 err 0   30.2s at   65.3s pool total 847 rss 4080MB
+    W8@1 L 5 distinct   78 wins   0 losses   0 err 0   22.9s at   71.6s pool total 917 rss 4080MB
+    W8@1 L 6 distinct  110 wins   0 losses   0 err 0   14.5s at   86.1s pool total 1168 rss 4080MB
+  W8@0.5 L 5 distinct   85 wins   0 losses   0 err 0   37.6s at   86.3s pool total 1172 rss 4080MB
+    W8@1 L 7 distinct   72 wins   0 losses   0 err 0   14.5s at  100.6s pool total 1320 rss 4080MB
+  W8@0.5 L 6 distinct   71 wins   0 losses   0 err 0   32.2s at  118.4s pool total 1535 rss 4080MB
+    W8@1 L 8 distinct  194 wins   0 losses   0 err 0   22.3s at  122.9s pool total 1620 rss 4080MB
+  W8@0.5 L 7 distinct   72 wins   0 losses   0 err 0   26.2s at  144.6s pool total 1907 rss 4080MB
+    W8@1 L 9 distinct  176 wins   0 losses   0 err 0   23.3s at  146.2s pool total 1924 rss 4080MB
+ W16@0.5 L 5 distinct  367 wins   0 losses   0 err 0   95.1s at  160.4s pool total 2086 rss 4080MB
+    W8@1 L10 distinct  118 wins   0 losses   0 err 0   20.2s at  166.4s pool total 2153 rss 4080MB
+    W8@1 L11 distinct   94 wins   0 losses   0 err 0   20.3s at  186.6s pool total 2364 rss 4080MB
+  W8@0.5 L 8 distinct  102 wins   0 losses   0 err 0   46.5s at  191.1s pool total 2413 rss 4080MB
+    W8@1 L12 distinct   82 wins   0 losses   0 err 0   12.9s at  199.5s pool total 2507 rss 4080MB
+    W8@1 L13 distinct   94 wins   0 losses   0 err 0   41.9s at  241.4s pool total 2745 rss 4080MB
+ W16@0.5 L 6 distinct  130 wins   0 losses   0 err 0   96.2s at  256.6s pool total 2830 rss 4080MB
+  W8@0.5 L 9 distinct  146 wins   0 losses   0 err 0   71.6s at  262.8s pool total 2891 rss 4080MB
+    W8@1 L14 distinct   72 wins   0 losses   0 err 0   58.4s at  299.9s pool total 2969 rss 4080MB
+  W8@0.5 L10 distinct   81 wins   0 losses   0 err 0   64.2s at  327.0s pool total 3163 rss 4080MB
+    W8@1 L15 distinct   50 wins   0 losses   0 err 0   90.8s at  390.7s pool total 3327 rss 4080MB
+    W8@1 L16 distinct   22 wins   0 losses   0 err 0   66.2s at  456.9s pool total 3514 rss 4080MB
+  W8@0.5 L11 distinct  210 wins   0 losses   0 err 2  263.6s at  590.6s pool total 3720 rss 4786MB
+ W16@0.5 L 7 distinct  377 wins   0 losses   0 err 0  377.0s at  633.6s pool total 3821 rss 4786MB
+    W8@1 L17 distinct  136 wins   0 losses   0 err 0  251.5s at  708.4s pool total 3992 rss 4786MB
+  W8@0.5 L12 distinct  163 wins   0 losses   0 err 0  183.4s at  774.0s pool total 4179 rss 4786MB
+    W8@1 L18 distinct   34 wins   0 losses   0 err 0   95.9s at  804.3s pool total 4195 rss 4786MB
+    W8@1 L19 distinct   54 wins   0 losses   0 err 0   90.7s at  895.0s pool total 4427 rss 4786MB
+  W8@0.5 L13 distinct  150 wins   0 losses   0 err 0  195.4s at  969.4s pool total 4516 rss 4786MB
+14:39  up 4 days,  5:48, 9 users, load averages: 14.12 16.49 13.78
+/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/run.sh: line 12:  3398 Killed: 9               ./node_modules/.bin/vitest run "test/tests/zz-$TAG.test.ts" > "$1" 2>&1
+/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/run.sh: line 12:  3417 Killed: 9               ./node_modules/.bin/vitest run "test/tests/zz-$TAG.test.ts" > "$1" 2>&1
+/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/run.sh: line 12:  3389 Killed: 9               ./node_modules/.bin/vitest run "test/tests/zz-$TAG.test.ts" > "$1" 2>&1
+/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/run.sh: line 12:  3411 Killed: 9               ./node_modules/.bin/vitest run "test/tests/zz-$TAG.test.ts" > "$1" 2>&1
+/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/run.sh: line 12:  3396 Killed: 9               ./node_modules/.bin/vitest run "test/tests/zz-$TAG.test.ts" > "$1" 2>&1
+/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/run.sh: line 12:  3401 Killed: 9               ./node_modules/.bin/vitest run "test/tests/zz-$TAG.test.ts" > "$1" 2>&1
+/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/run.sh: line 12:  3391 Killed: 9               ./node_modules/.bin/vitest run "test/tests/zz-$TAG.test.ts" > "$1" 2>&1
+/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/run.sh: line 12:  3409 Killed: 9               ./node_modules/.bin/vitest run "test/tests/zz-$TAG.test.ts" > "$1" 2>&1

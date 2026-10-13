@@ -1,0 +1,181 @@
+14:42  up 4 days,  5:51, 9 users, load averages: 4.75 11.07 12.01
+  W8@0.5 L 1 distinct   13 wins   0 losses   0 err 0    7.0s at    6.9s pool total 13 rss 3205MB
+    W8@1 L 1 distinct   13 wins   0 losses   0 err 0    7.0s at    6.9s pool total 13 rss 3205MB
+ W16@0.5 L 1 distinct   13 wins   0 losses   0 err 0    7.0s at    6.9s pool total 13 rss 3205MB
+  W8@0.5 L 2 distinct   98 wins   0 losses   0 err 0   34.9s at   41.8s pool total 238 rss 3205MB
+    W8@1 L 2 distinct   98 wins   0 losses   0 err 0   34.9s at   41.8s pool total 238 rss 3205MB
+ W16@0.5 L 2 distinct  203 wins   0 losses   0 err 0   34.9s at   41.9s pool total 238 rss 3205MB
+  W8@0.5 L 3 distinct   88 wins   0 losses   0 err 0   18.5s at   60.4s pool total 394 rss 3205MB
+    W8@1 L 3 distinct   88 wins   0 losses   0 err 0   18.5s at   60.4s pool total 394 rss 3205MB
+ W16@0.5 L 3 distinct  156 wins   0 losses   0 err 0   18.5s at   60.4s pool total 394 rss 3205MB
+  W8@0.5 L 4 distinct   80 wins   0 losses   0 err 0   28.8s at   89.2s pool total 630 rss 3205MB
+    W8@1 L 4 distinct   80 wins   0 losses   0 err 0   28.8s at   89.2s pool total 630 rss 3205MB
+ W16@0.5 L 4 distinct  240 wins   0 losses   0 err 0   60.7s at  121.0s pool total 864 rss 3225MB
+    W8@1 L 5 distinct   78 wins   0 losses   0 err 0   35.9s at  125.1s pool total 914 rss 3264MB
+    W8@1 L 6 distinct  110 wins   0 losses   0 err 0   25.0s at  150.1s pool total 1113 rss 3318MB
+  W8@0.5 L 5 distinct   85 wins   0 losses   0 err 0   71.2s at  160.4s pool total 1190 rss 3318MB
+    W8@1 L 7 distinct   72 wins   0 losses   0 err 0   17.3s at  167.4s pool total 1244 rss 3318MB
+  W8@0.5 L 6 distinct   71 wins   0 losses   0 err 0   48.4s at  208.7s pool total 1473 rss 3318MB
+    W8@1 L 8 distinct  194 wins   0 losses   0 err 0   44.3s at  211.8s pool total 1502 rss 3318MB
+    W8@1 L 9 distinct  176 wins   0 losses   0 err 0   35.4s at  247.2s pool total 1762 rss 3318MB
+    W8@1 L10 distinct  118 wins   0 losses   0 err 0   24.3s at  271.5s pool total 1939 rss 3318MB
+    W8@1 L11 distinct   94 wins   0 losses   0 err 0   34.3s at  305.8s pool total 2143 rss 3649MB
+  W8@0.5 L 7 distinct   72 wins   0 losses   0 err 0  102.5s at  311.2s pool total 2185 rss 3649MB
+ W16@0.5 L 5 distinct  367 wins   0 losses   0 err 0  211.6s at  332.6s pool total 2340 rss 3649MB
+    W8@1 L12 distinct   82 wins   0 losses   0 err 0   42.2s at  348.0s pool total 2433 rss 3941MB
+  W8@0.5 L 8 distinct  102 wins   0 losses   0 err 0   43.0s at  354.2s pool total 2475 rss 3941MB
+    W8@1 L13 distinct   94 wins   0 losses   0 err 0   54.8s at  402.8s pool total 2741 rss 4293MB
+ W16@0.5 L 6 distinct  130 wins   0 losses   0 err 0   85.1s at  417.7s pool total 2844 rss 4423MB
+  W8@0.5 L 9 distinct  146 wins   0 losses   0 err 0   66.1s at  420.3s pool total 2868 rss 4423MB
+    W8@1 L14 distinct   72 wins   0 losses   0 err 0   56.0s at  458.8s pool total 3027 rss 4690MB
+  W8@0.5 L10 distinct   81 wins   0 losses   0 err 0   77.2s at  497.5s pool total 3191 rss 4766MB
+    W8@1 L15 distinct   50 wins   0 losses   0 err 0   71.8s at  530.6s pool total 3393 rss 4873MB
+    W8@1 L16 distinct   22 wins   0 losses   0 err 0   37.3s at  568.0s pool total 3558 rss 4873MB
+  W8@0.5 L11 distinct  232 wins   0 losses   0 err 0  127.7s at  625.2s pool total 3784 rss 4873MB
+ W16@0.5 L 7 distinct  377 wins   0 losses   0 err 0  210.8s at  628.5s pool total 3809 rss 4873MB
+    W8@1 L17 distinct  136 wins   0 losses   0 err 0  139.8s at  707.7s pool total 4009 rss 5016MB
+    W8@1 L18 distinct   34 wins   0 losses   0 err 0   55.7s at  763.4s pool total 4191 rss 5016MB
+  W8@0.5 L12 distinct  180 wins   0 losses   0 err 0  164.4s at  789.6s pool total 4256 rss 5028MB
+    W8@1 L19 distinct   54 wins   0 losses   0 err 0   83.3s at  846.7s pool total 4436 rss 5051MB
+  W8@0.5 L13 distinct  132 wins   0 losses   0 err 0  100.1s at  889.7s pool total 4575 rss 5128MB
+ W16@0.5 L 8 distinct  227 wins   0 losses   0 err 0  264.6s at  893.1s pool total 4619 rss 5128MB
+    W8@1 L20 distinct   22 wins   0 losses   0 err 0   78.7s at  925.4s pool total 4711 rss 5128MB
+  W8@0.5 L14 distinct   58 wins  21 losses   0 err 0  124.8s at 1014.5s pool total 4861 rss 5128MB
+  W8@0.5 replayed from T1: ['WIN', 'WIN', 'WIN', 'WIN', 'WIN'] at 1066.7s
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief2/t1-p4",
+  "workers": 4,
+  "beams": "8:0.5,8:1,16:0.5",
+  "depth": 40,
+  "prefix": "",
+  "stall": 6,
+  "budget": 8000,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/../session-w180.json",
+  "no_share": false
+ },
+ "workers": 4,
+ "boot_secs": 8.7,
+ "search_secs": 1066.7,
+ "stop_reason": "replayed win",
+ "children_total": 4896,
+ "children_per_sec": 4.59,
+ "tasks_created": 338,
+ "tasks_reused": 54,
+ "answer": {
+  "beam": "W8@0.5",
+  "depth": 14,
+  "children_so_far": 4861,
+  "detected_at": 1014.5,
+  "replayed_at": 1066.7,
+  "path": [
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "POWER_GEM",
+    "tera": true
+   },
+   {
+    "m": "POWER_GEM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "HYPER_VOICE"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "DRAGON_PULSE",
+    "r": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "LEAF_STORM"
+   }
+  ],
+  "steps": 14,
+  "end": {
+   "turn": 15,
+   "ours": [
+    "Leavanny* 466/497 [0,0,-4,0,0,0,0]",
+    "Reshiram 0/577 st7",
+    "Snorlax 824/824",
+    "Gyarados 570/570",
+    "Golbat 493/493",
+    "Probopass 180/427 TERA"
+   ],
+   "foes": [
+    "Tyranitar 0/569 st7",
+    "Gigalith 0/525 st7",
+    "Coalossal 0/711 st7",
+    "Stonjourner 0/574 st7",
+    "Carracosta 0/467 st7",
+    "Barbaracle 0/460 st7"
+   ]
+  },
+  "alive": 5,
+  "validated": "5/5"
+ },
+ "memory": {
+  "peak_total_mb": 5127.90625,
+  "peak_worker_mb": 2106.578125,
+  "samples": 2066
+ },
+ "coordinator_peak_mb": 70.4,
+ "replays": [
+  {
+   "beam": "W8@0.5",
+   "depth": 14,
+   "children_so_far": 4861,
+   "detected_at": 1014.5,
+   "results": [
+    {
+     "result": "WIN",
+     "turns": 14
+    },
+    {
+     "result": "WIN",
+     "turns": 14
+    },
+    {
+     "result": "WIN",
+     "turns": 14
+    },
+    {
+     "result": "WIN",
+     "turns": 14
+    },
+    {
+     "result": "WIN",
+     "turns": 14
+    }
+   ],
+   "replayed_at": 1066.7
+  }
+ ]
+}
+{'name': 'W8@0.5', 'width': 8, 'w': 0.5, 'status': 'replaying', 'depth': 14, 'dispatched_actions': 930, 'children_consumed': 1657, 'tasks_created': 99, 'tasks_reused': 6, 'losses': 0, 'stalled': 0, 'errors': 0, 'wins': 21}
+{'name': 'W8@1', 'width': 8, 'w': 1.0, 'status': 'running', 'depth': 20, 'dispatched_actions': 942, 'children_consumed': 1959, 'tasks_created': 130, 'tasks_reused': 31, 'losses': 0, 'stalled': 56, 'errors': 0, 'wins': 0}
+{'name': 'W16@0.5', 'width': 16, 'w': 0.5, 'status': 'running', 'depth': 8, 'dispatched_actions': 949, 'children_consumed': 1838, 'tasks_created': 109, 'tasks_reused': 17, 'losses': 0, 'stalled': 0, 'errors': 0, 'wins': 0}
+15:00  up 4 days,  6:09, 9 users, load averages: 7.92 7.02 7.66

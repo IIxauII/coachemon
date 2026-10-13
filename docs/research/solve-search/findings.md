@@ -41,11 +41,17 @@ processes that fork from snapshots. The agent does not steer it.**
   - From T5 it costs what a solve from T1 costs. From attempt 1's T17 and T19 it took 297–479 expansions (72–89 s).
   - Being off the line is not being lost. From the card's T7 departure the beam found a win with all 6 alive. From
     attempt 1's T9, which the card loses from, it also found a win.
-  - From attempt 1's T21 every line lost within 245 expansions (62 s). That is a fast, honest "no answer".
+  - From attempt 1's T21 the width-8 beam lost every line within 245 expansions (62 s). That "no answer" was **wrong**:
+    the portfolio's width-8 beam at weight 1 found a 10-turn win from the same position, which replayed from T1.
+- **A portfolio of three beams is robust where one beam is not, but it costs about three beams.** **[verified]** on
+  two roots, on 4 workers; see "Portfolio" in §4.
+  - From T1 its first replayed win came at 4,861 expansions, 2.9× the single width-8 beam's 1,657. Its 3,000-expansion
+    budget gave up on a fight that is winnable.
+  - From attempt 1's T21 it found the win above in 550 expansions (109 s on 4 workers).
 - **Recommended defaults.** **[inference]** The basis for each number is in the sections below.
   - `min(cores − 2, 6)` workers, each with a capped heap.
   - A small portfolio of beams, not one beam.
-  - A budget of about 3,000 expansions.
+  - A budget of about 3,000 expansions **per beam still running**, not 3,000 in all.
   - Every line replayed from the save before it is shown.
 
 ## 1. Harness facts that change the economics
@@ -291,21 +297,25 @@ What the table shows:
 
 - **Where wins came.** From T1, the first wins came at 388–2,915 expansions, across every configuration that won.
   Mid-fight, they came at 297–1,681. **[verified]**
-- **The one position that ran dry** was attempt 1's T21: Golbat alone against Stonjourner, Tyranitar and Coalossal.
-  Every line lost by depth 7, after 245 expansions and 62 s. **[verified]** Width 8 with weight 0 also ran dry, at
-  1,634 expansions, from a position other configurations won.
-  - So a beam running dry is not proof that the position is lost. **[verified]**
+- **The one position that ran dry** was attempt 1's T21: Golbat (Tera'd) and Leavanny against Tyranitar, Stonjourner
+  and Coalossal. An earlier version of this note said "Golbat alone"; the run's first layer shows Leavanny alive at
+  319/497 (`runs/sweep/mid-a1T21/summary.json`). Every width-8 line lost by depth 7, after 245 expansions and 62 s.
+  **[verified]** Width 8 with weight 0 also ran dry, at 1,634 expansions, from a position other configurations won.
+  - So a beam running dry is not proof that the position is lost. **[verified]** Attempt 1's T21 is winnable: see
+    "Portfolio" below.
   - It is still the moment for this beam to stop. **[inference]**
 - **Narrow beams can loop without ever losing.** Width 2 spent 40 turns switching. The stall rule ends such a beam but
   does not rescue it: see "Stall rule" below. **[verified]**
-- **The suggested budget** **[inference]**:
+- **The suggested budget** **[inference]**, revised after the portfolio runs below:
   - Run a portfolio over one shared pool: width 8 at w = 0.5, width 8 at w = 1, and width 16 at w = 0.5.
   - Stop at the first win that replays from the save.
-  - Otherwise stop when every beam has emptied or stalled, or at 3,000 expansions in all, or 40 turns past the root.
-  - Then say "no answer".
-  - The 3,000 covers every first win seen here.
-  - On this machine at 8 workers that is about 4–5 minutes. On a 2-worker laptop it is about 12 minutes, which needs a
-    progress line or a smaller budget.
+  - Otherwise stop when every beam has emptied or stalled, or at 3,000 expansions per beam still running, or 40 turns
+    past the root. Then say "no answer".
+  - 3,000 in all, the first suggestion, is too small: shared three ways, it stopped the T1 solve before any beam won.
+  - 3,000 per beam covers every first win seen here, in the beam that found it. In all, that is up to 9,000.
+  - Measured on 4 workers, the T1 portfolio took 18 minutes to its first replayed win; at the same rate 9,000 is about
+    33 minutes. On a 2-worker laptop it is longer still. That needs a progress line, and it argues for ordering the
+    beams rather than sharing fairly: see "Portfolio".
 
 ### Stall rule
 
@@ -342,6 +352,66 @@ as `stalled_total`. Each width was rerun from T1 on 8 workers with w = 0.5, agai
 - **Not tested: a win that needs 6 turns without damage**, such as setting up or stalling out a foe. The rule would drop
   it. No line found on Gordie W180 needed one. **[unverified]**
 
+### Portfolio
+
+`harness/portfolio.py` runs the three beams of the budget above (W8 at w = 0.5, W8 at w = 1, W16 at w = 0.5, each with
+`--stall 6`) as one job on one pool (`runs/portfolio/`, `runs/portfolio/tally.md`). **[verified]** in source:
+
+- **Interleaving: one shared queue, fair by expansions.** The coordinator holds each beam's jobs and writes at most one
+  per worker into the pool. The next job comes from the beam with the fewest actions dispatched so far. The beams
+  advance independently, so a beam waiting on the tail of its layer leaves the workers to the others.
+- **Dedupe across beams by `sig()`.** A node expansion is keyed by its signature. A beam whose node another beam has
+  expanded, or is expanding, waits on that expansion and adopts that node's path, because `sig()` leaves out the RNG.
+- **A layer with a win** pauses its beam and replays each of its first five wins from T1 as separate jobs, ahead of
+  everything else. The first replayed win ends the job.
+
+**Conditions.** The 4-worker runs were made at the user's request, after the first 8-worker run overloaded the machine.
+Load was high throughout: a load average of about 13 on 10 cores, with an unrelated VM using about 1 core. During the
+8-worker T1 run with a raised budget, swap reached 13 of 14 GB and system time 52%; that run was stopped and its
+partial log kept (`p8-t1-budget8000-aborted`). The one-minute load averages taken at the start and end of each run
+read 2.5–14 (5-minute: 4–16.5). Every wall-clock number below is
+pessimistic and only roughly comparable between runs. **[verified]** Expansion counts do not depend on load or on the
+worker count: each beam made the same choices on 4 and 8 workers.
+
+| Root | Run | Workers | Result | Found by | Expansions to the answer (pool total) | Search to replayed win | Pool peak | Replayed from T1 |
+|---|---|---|---|---|---|---|---|---|
+| T1 | single W8, w 0.5, stall 6 | 4 | win, 14 turns, 5 of 6 alive | – | 1,657 | 259 s + 21 s replay | 4.3 GB | 5/5 |
+| T1 | portfolio, budget 3,000 | 8 | **no answer**: budget | – | – (3,186) | 320 s | 4.2 GB | – |
+| T1 | portfolio, budget 8,000 | 4 | win, 14 turns, 5 of 6 alive: the single beam's line | W8 at 0.5 | 4,861 (4,896) | 1,067 s | 5.1 GB | 5/5 |
+| A1:20 | single W8, w 0.5 | 8 | every line lost (`runs/sweep/mid-a1T21`) | – | – (245) | 62 s | 4.5 GB | – |
+| A1:20 | single W8, w 1, stall 6 | 4 | win, 10 more turns, 1 of 6 alive | – | 317 | 80 s + 21 s replay | 3.1 GB | 3/3 |
+| A1:20 | portfolio | 8 | win, 10 more turns, 1 of 6 alive | W8 at 1 | 606 (664) | 87 s | 3.3 GB | 3/3 |
+| A1:20 | portfolio | 4 | the same win | W8 at 1 | 550 (572) | 109 s | 3.4 GB | 3/3 |
+
+What it shows:
+
+- **It is robust where one beam is not.** **[verified]** From attempt 1's T21, which the single width-8 beam called
+  lost, the weight-1 beam found a win: Golbat's Tera Toxic, Toxic and Mean Look, then Leavanny finishes with Bug Bite,
+  Leaf Storm and Pollen Puff, ending on Leavanny at 38/497. It replayed from T1 3 times of 3. Off the line, late, with
+  two mons left, "no answer" from one beam was a false negative.
+- **Each beam is exactly its single-beam run.** **[verified]** Layer for layer, the beam paths matched
+  `runs/stall/w8p8-stall6` (14 of 14 layers), `runs/sweep/w16p8` (8 of 8) and `runs/sweep/mid-a1T21` (7 of 7).
+  W8 at w = 1 matched `runs/sweep/w8p8-ours1` for 19 layers and split at layer 20, where the stall rule (absent from
+  that baseline) dropped 56 nodes. Sharing and interleaving change the cost, never the answer.
+- **Its time to the first win is about the number of beams times the winning beam's cost, not the best single beam.**
+  **[verified]** From T1 it took 4,861 expansions against the single W8's 1,657: 2.9×. The three beams had
+  dispatched 930, 942 and 949 actions. It is less than the sum of the three single runs to their first wins
+  (1,657 + 2,915 + 2,026 = 6,598) only because the job stops when one wins. Wall-clock was 3.8× (1,067 s against
+  280 s), the rest being the replay queueing behind expansions and the load. **[inference]** for the split.
+- **It is cheap when beams die fast.** **[verified]** From A1:20 the two weight-0.5 beams emptied or fell behind, and
+  the winner took the pool: 550 expansions in all against the single weight-1 beam's 317, 1.7×.
+- **Dedupe saves little after the first layers.** **[verified]** From T1, 54 of 392 node expansions were shared, and
+  the pool played 4,896 children for 5,454 the beams consumed: 10% saved. From A1:20 it saved 37% (572 for 901),
+  because there the beams overlap for most of the short search.
+- **The 3,000 budget in all is too small.** **[verified]** It stopped the T1 portfolio with W8 at 0.5 on layer 10 of
+  the 14 it needed.
+- **Memory.** **[verified]** The 4-worker pool peaked at 5.1 GB. One worker reached 1.8 GB during the search, and
+  2.1 GB during shutdown; the 8-worker pools stayed under 1 GB a worker. The coordinator itself peaked at 70 MB.
+  A 4-worker pool lets each worker grow, so §6's recycling at 0.75 GB would fire on a long portfolio. **[inference]**
+- **What would cut the cost** **[unverified]**: run the beams in an order of preference rather than fairly, the best
+  beam first and the others on idle workers. From T1 that would approach the single W8's 1,657; from A1:20 it would
+  first spend the W8 at 0.5's 245 before the weight-1 beam got the pool.
+
 ## 5. Mid-fight re-solve
 
 Each root below is the T1 save plus a replayed prefix. By the fork check, that is equivalent to an augmented export.
@@ -354,13 +424,14 @@ Every run used width 8, w = 0.5 and 8 workers. **[verified]**
 | attempt 1 T1–T8 (T9) | the card loses from here | win, 19 turns, 4 of 6 alive | 1,540 | 178 s | 1/1 |
 | attempt 1 T1–T16 (T17) | late | win, 21 turns, 4 of 6 alive | 479 | 89 s | 5/5 |
 | attempt 1 T1–T18 (T19) | later | win, 25 turns, 2 of 6 alive | 297 | 72 s | 2/2 |
-| attempt 1 T1–T20 (T21) | Golbat alone | every line lost by depth 7 | 245 | 62 s | – |
+| attempt 1 T1–T20 (T21) | Golbat and Leavanny | every line lost by depth 7; winnable, see §4 "Portfolio" | 245 | 62 s | – |
 
 What the table shows:
 
 - **The horizon cuts the cost only once it is short.** A beam costs about width × branching per remaining turn, so a
   re-solve from T5 costs what a solve from T1 costs. From T17 on, it cost about a quarter. **[verified]**
-- **Off the line is not lost.** Both positions the card loses from were winnable. **[verified]**
+- **Off the line is not lost.** Both positions the card loses from were winnable. **[verified]** So was attempt 1's
+  T21, where this beam emptied: the weight-1 beam won from it (§4, "Portfolio"). **[verified]**
 - **Pool boot is a large share of a late re-solve** (18–26 s against 60–90 s of search). That argues for keeping the
   pool warm for as long as a fight has an **oracle line**. **[inference]**
 
@@ -374,8 +445,15 @@ What the table shows:
 3. **Workers.** Run `min(cores − 2, 6)` long-lived workers, at least 1, each with a capped heap. Recycle a worker that
    passes about 0.75 GB. **[inference]**
 4. **Search and budget.** Run the three-beam portfolio of §4 with the stall rule as a stop condition: it ends a
-   looping beam at no cost to one that wins, but it does not rescue one. Stop at the first replayed win, or at
-   3,000 expansions, or after 40 turns, and then say "no answer". **[inference]**
+   looping beam at no cost to one that wins, but it does not rescue one. **[inference]**
+   - Stop at the first replayed win. Say "no answer" only when every beam has emptied or stalled, has gone 40 turns
+     past the root, or has spent 3,000 expansions of its own. One beam emptying is not an answer: from attempt 1's
+     T21 it was wrong. **[verified]** for that position.
+   - Expect the first win to cost about three times the best single beam (2.9× from T1, 1.7× from attempt 1's T21),
+     since the beams share the pool fairly. **[verified]** on 4 workers. On a laptop that is many minutes, so show a
+     progress line. **[inference]**
+   - Ordering the beams by preference instead of sharing fairly may bring the cost near the best single beam, at the
+     price of reaching a winning second beam later. **[unverified]**
 5. **Re-solve when off the line.** Run the same search from the augmented export of the decision where the game left the
    line, on a pool kept warm for the fight. **[inference]**
 6. **The harness test that pins a game version** should run the fork check and the chain check, not only a known line.
@@ -404,6 +482,8 @@ The mid-fight roots above are other positions in the same fight, not another fig
 | `harness/search.py` | The beam coordinator: worker pool, RSS sampling (`mem.jsonl`) and replay of wins from T1 |
 | `harness/sweep.sh`, `harness/batch1.sh` | The batch run here: a single search per call, run in sequence |
 | `harness/tally.py`, `harness/ancestry.py` | The tables above |
+| `harness/portfolio.py`, `harness/ptally.py` | The three-beam portfolio on one pool, and its table |
+| `runs/portfolio/` | The portfolio runs on 8 and 4 workers, the 4-worker single-beam baselines, and `tally.md` |
 | `harness/brwin.py`, `harness/brcount2.py` | The planning-transcript measurement in §2a |
 | `runs/tally.md`, `runs/ancestry.txt` | Every run in one table, and which beam nodes lay on a win |
 | `runs/sweep/<run>/summary.json`, `mem.jsonl`, `runs/sweep/<run>.txt` | Raw results of each run |
@@ -425,6 +505,7 @@ To rerun a single search, or the forced-move cases:
 
 ```sh
 python3 -I docs/research/solve-search/harness/search.py /tmp/run --workers 8 --width 8 [--prefix A1:20] [--stall 6] [--setup FILE]
+python3 -I docs/research/solve-search/harness/portfolio.py /tmp/pf --workers 4 [--prefix A1:20] [--budget 3000] [--beams 8:0.5,8:1,16:0.5]
 mkdir -p /tmp/forced && python3 -I docs/research/solve-search/harness/mkforced.py /tmp/forced/job.json
 docs/research/solve-search/harness/probe.sh /tmp/forced && python3 -I docs/research/solve-search/harness/show_forced.py /tmp/forced/out.json
 ```
@@ -433,9 +514,15 @@ docs/research/solve-search/harness/probe.sh /tmp/forced && python3 -I docs/resea
 
 - **The stall rule in a fight whose win needs 6 or more turns without damage to the foes.** It would drop that line.
 - **A stall rule that does more than drop a node**, such as widening the beam when every node stalls.
-- **The three-beam portfolio** of §4 as one job: what it costs before the first replayed win.
+- **The portfolio with the beams in an order of preference**, the best first and the others on idle workers, against
+  the fair share measured here.
+- **The portfolio's budget per beam** (3,000 of its own) as a stop rule: suggested from the first wins seen, not run.
+- **A portfolio of other members**, such as weight 1 at width 16, or weight 0.75. Weight 1 won from attempt 1's T21,
+  where weight 0.5 lost at widths 8 and 16; which weights a portfolio needs is open.
+- **The portfolio on an unloaded machine.** Its wall-clock here was taken at load averages of 2.5–14.
 - **A heap cap** (`--max-old-space-size`) per worker: the RSS it holds a worker to, and what it costs in speed.
-- **Worker memory over a long run**, and the recycling count it needs.
+- **Worker memory over a long run**, and the recycling count it needs. On 4 workers one worker reached 1.8 GB in an
+  18-minute portfolio search.
 - **Throughput on an actual 4-core, 8 GB machine.** §3's laptop numbers are scaled, not measured.
 - **A second trainer fight.** None exists yet.
 - **A real augmented export from the live tab as a root.** The mid-fight roots here were made in the harness.

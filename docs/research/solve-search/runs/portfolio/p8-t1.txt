@@ -1,0 +1,63 @@
+14:16  up 4 days,  5:25, 9 users, load averages: 5.61 5.10 4.83
+  W8@0.5 L 1 distinct   13 wins   0 losses   0 err 0    7.3s at    7.3s pool total 13 rss 4214MB
+    W8@1 L 1 distinct   13 wins   0 losses   0 err 0    7.3s at    7.3s pool total 13 rss 4214MB
+ W16@0.5 L 1 distinct   13 wins   0 losses   0 err 0    7.3s at    7.3s pool total 13 rss 4214MB
+  W8@0.5 L 2 distinct   98 wins   0 losses   0 err 0   18.9s at   26.2s pool total 204 rss 4214MB
+    W8@1 L 2 distinct   98 wins   0 losses   0 err 0   18.9s at   26.2s pool total 204 rss 4214MB
+ W16@0.5 L 2 distinct  203 wins   0 losses   0 err 0   21.7s at   29.0s pool total 274 rss 4214MB
+  W8@0.5 L 3 distinct   88 wins   0 losses   0 err 0    8.7s at   34.9s pool total 364 rss 4214MB
+    W8@1 L 3 distinct   88 wins   0 losses   0 err 0    8.7s at   34.9s pool total 364 rss 4214MB
+ W16@0.5 L 3 distinct  156 wins   0 losses   0 err 0    7.5s at   36.5s pool total 394 rss 4214MB
+  W8@0.5 L 4 distinct   80 wins   0 losses   0 err 0   14.1s at   49.0s pool total 601 rss 4214MB
+    W8@1 L 4 distinct   80 wins   0 losses   0 err 0   14.1s at   49.0s pool total 601 rss 4214MB
+ W16@0.5 L 4 distinct  240 wins   0 losses   0 err 0   32.3s at   68.8s pool total 851 rss 4214MB
+    W8@1 L 5 distinct   78 wins   0 losses   0 err 0   26.1s at   75.1s pool total 917 rss 4214MB
+  W8@0.5 L 5 distinct   85 wins   0 losses   0 err 0   40.9s at   89.9s pool total 1167 rss 4214MB
+    W8@1 L 6 distinct  110 wins   0 losses   0 err 0   14.8s at   89.9s pool total 1172 rss 4214MB
+    W8@1 L 7 distinct   72 wins   0 losses   0 err 0   18.5s at  108.4s pool total 1375 rss 4214MB
+  W8@0.5 L 6 distinct   71 wins   0 losses   0 err 0   21.3s at  111.1s pool total 1406 rss 4214MB
+    W8@1 L 8 distinct  194 wins   0 losses   0 err 0   29.9s at  138.3s pool total 1638 rss 4214MB
+  W8@0.5 L 7 distinct   72 wins   0 losses   0 err 0   59.2s at  170.3s pool total 1915 rss 4214MB
+    W8@1 L 9 distinct  176 wins   0 losses   0 err 0   36.6s at  174.8s pool total 1949 rss 4214MB
+ W16@0.5 L 5 distinct  367 wins   0 losses   0 err 0  124.8s at  193.6s pool total 2101 rss 4214MB
+    W8@1 L10 distinct  118 wins   0 losses   0 err 0   26.2s at  201.0s pool total 2156 rss 4214MB
+    W8@1 L11 distinct   94 wins   0 losses   0 err 0   19.2s at  220.3s pool total 2364 rss 4214MB
+  W8@0.5 L 8 distinct  102 wins   0 losses   0 err 0   54.9s at  225.2s pool total 2405 rss 4214MB
+    W8@1 L12 distinct   82 wins   0 losses   0 err 0   16.5s at  236.8s pool total 2503 rss 4214MB
+    W8@1 L13 distinct   94 wins   0 losses   0 err 0   23.7s at  260.5s pool total 2741 rss 4234MB
+ W16@0.5 L 6 distinct  130 wins   0 losses   0 err 0   76.5s at  270.1s pool total 2811 rss 4234MB
+  W8@0.5 L 9 distinct  146 wins   0 losses   0 err 0   51.0s at  276.2s pool total 2899 rss 4234MB
+    W8@1 L14 distinct   72 wins   0 losses   0 err 0   35.5s at  296.0s pool total 2969 rss 4234MB
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief2/t1",
+  "workers": 8,
+  "beams": "8:0.5,8:1,16:0.5",
+  "depth": 40,
+  "prefix": "",
+  "stall": 6,
+  "budget": 3000,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a69d43d68ee09494d/docs/research/solve-search/harness/../session-w180.json",
+  "no_share": false
+ },
+ "workers": 8,
+ "boot_secs": 32.3,
+ "search_secs": 319.6,
+ "stop_reason": "budget",
+ "children_total": 3186,
+ "children_per_sec": 9.97,
+ "tasks_created": 226,
+ "tasks_reused": 54,
+ "answer": null,
+ "memory": {
+  "peak_total_mb": 4234.125,
+  "peak_worker_mb": 960.3125,
+  "samples": 625
+ },
+ "coordinator_peak_mb": 69.2,
+ "replays": []
+}
+{'name': 'W8@0.5', 'width': 8, 'w': 0.5, 'status': 'running', 'depth': 9, 'dispatched_actions': 636, 'children_consumed': 945, 'tasks_created': 67, 'tasks_reused': 6, 'losses': 0, 'stalled': 0, 'errors': 0, 'wins': 0}
+{'name': 'W8@1', 'width': 8, 'w': 1.0, 'status': 'running', 'depth': 14, 'dispatched_actions': 634, 'children_consumed': 1537, 'tasks_created': 82, 'tasks_reused': 31, 'losses': 0, 'stalled': 0, 'errors': 0, 'wins': 0}
+{'name': 'W16@0.5', 'width': 16, 'w': 0.5, 'status': 'running', 'depth': 6, 'dispatched_actions': 638, 'children_consumed': 1165, 'tasks_created': 77, 'tasks_reused': 17, 'losses': 0, 'stalled': 0, 'errors': 0, 'wins': 0}
+14:22  up 4 days,  5:31, 9 users, load averages: 8.35 9.83 7.48
