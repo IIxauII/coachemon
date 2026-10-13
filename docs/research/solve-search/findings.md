@@ -237,8 +237,8 @@ What the table shows:
   1,634 expansions, from a position other configurations won.
   - So a beam running dry is not proof that the position is lost. **[verified]**
   - It is still the moment for this beam to stop. **[inference]**
-- **Narrow beams can loop without ever losing.** Width 2 spent 40 turns switching. A stall rule is implemented but not
-  measured (`--stall 6`: drop a node whose foes have lost no HP in 6 turns). **[unverified]**
+- **Narrow beams can loop without ever losing.** Width 2 spent 40 turns switching. The stall rule ends such a beam but
+  does not rescue it: see "Stall rule" below. **[verified]**
 - **The suggested budget** **[inference]**:
   - Run a portfolio over one shared pool: width 8 at w = 0.5, width 8 at w = 1, and width 16 at w = 0.5.
   - Stop at the first win that replays from the save.
@@ -247,6 +247,41 @@ What the table shows:
   - The 3,000 covers every first win seen here.
   - On this machine at 8 workers that is about 4–5 minutes. On a 2-worker laptop it is about 12 minutes, which needs a
     progress line or a smaller budget.
+
+### Stall rule
+
+`--stall 6` drops a child whose foes have lost no more HP than they had lost 6 turns earlier. The searcher counts these
+as `stalled_total`. Each width was rerun from T1 on 8 workers with w = 0.5, against its `runs/sweep/` baseline
+(`runs/stall/tally.md`, `runs/stall/*.txt`):
+
+| W | Run | Result | Line | Alive | Layers | Expansions to first win (total) | Stalled | Search | Boot | Replayed from T1 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 2 | baseline | no win in 40 turns | – | – | 40 | – (798) | – | 76.4 s | 15.3 s | – |
+| 2 | `--stall 6` | beam emptied at depth 37, every line lost or stalled | – | – | 37 | – (753) | 21 | 76.9 s | 28.7 s | – |
+| 4 | baseline | win | 25 turns | 2 of 6 | 25 | 1,188 | – | 110.3 s | 13.6 s | 4/4 |
+| 4 | `--stall 6` | win, the same 4 lines | 25 turns | 2 of 6 | 25 | 1,188 | 0 | 113.5 s | 25.8 s | 4/4 |
+| 8 | baseline | win | 14 turns | 5 of 6 | 14 | 1,657 | – | 154.6 s | 15.3 s | 5/5 |
+| 8 | `--stall 6` | win, the same 5 lines | 14 turns | 5 of 6 | 14 | 1,657 | 0 | 158.4 s | 23.3 s | 5/5 |
+
+- **It does not rescue width 2.** **[verified]**
+  - The beam was the same as the baseline's, node for node, through depth 30.
+  - The foes last lost HP at depth 25, so the rule first fired at depth 31. It cut the beam to one node, which made one
+    more chip (Poison Fang on Stonjourner) and then stalled again. Every child at depth 37 was dropped as stalled.
+  - Reshiram, Leavanny and Gyarados had fainted by depth 19, and Probopass by depth 30. At depth 30 the best node held
+    Snorlax and Golbat against Stonjourner, Tyranitar and Barbaracle. At depth 36 it held Snorlax alone, cycling Rest.
+- **Why it cannot rescue** **[inference]**: the rule only prunes once a loop has lasted 6 turns. Width 2 lost the fight
+  earlier, while it was still dealing damage. A tighter window would fire sooner, but from the same weak position.
+- **It turns an endless loop into an honest "no answer".** **[verified]** Without it, width 2 ran until the 40-turn cap,
+  and with no cap it would loop until the expansion budget. With it, the beam emptied after 753 expansions, 45 fewer.
+  The saving in time was nil: the looping layers cost about 0.4–0.7 s each.
+- **It costs nothing when it does not fire.** **[verified]** At widths 4 and 8 it dropped no node. The beam at every
+  layer, the winning lines, the expansions to the first win and the replays from T1 all matched the baselines exactly.
+  - The 2–3% longer searches and the 8–15 s longer boots are machine load: the load average was 5–10.5 during these
+    runs, against 3–7 for the baselines. **[inference]**
+  - The lower pool peaks (2.7–4.0 GB against 4.5–5.5 GB) are memory elasticity under a different machine load, not
+    the rule. **[inference]**
+- **Not tested: a win that needs 6 turns without damage**, such as setting up or stalling out a foe. The rule would drop
+  it. No line found on Gordie W180 needed one. **[unverified]**
 
 ## 5. Mid-fight re-solve
 
@@ -279,7 +314,8 @@ What the table shows:
    **[inference from §1]**
 3. **Workers.** Run `min(cores − 2, 6)` long-lived workers, at least 1, each with a capped heap. Recycle a worker that
    passes about 0.75 GB. **[inference]**
-4. **Search and budget.** Run the three-beam portfolio of §4 with the stall rule. Stop at the first replayed win, or at
+4. **Search and budget.** Run the three-beam portfolio of §4 with the stall rule as a stop condition: it ends a
+   looping beam at no cost to one that wins, but it does not rescue one. Stop at the first replayed win, or at
    3,000 expansions, or after 40 turns, and then say "no answer". **[inference]**
 5. **Re-solve when off the line.** Run the same search from the augmented export of the decision where the game left the
    line, on a pool kept warm for the fight. **[inference]**
@@ -312,6 +348,7 @@ The mid-fight roots above are other positions in the same fight, not another fig
 | `harness/brwin.py`, `harness/brcount2.py` | The planning-transcript measurement in §2a |
 | `runs/tally.md`, `runs/ancestry.txt` | Every run in one table, and which beam nodes lay on a win |
 | `runs/sweep/<run>/summary.json`, `mem.jsonl`, `runs/sweep/<run>.txt` | Raw results of each run |
+| `runs/stall/` | The stall-rule reruns at widths 2, 4 and 8, in the same layout, and their `tally.md` |
 | `runs/probes/` | The many-lines, fork, chain and Bounce probes, before and after the fixes |
 | `session-w180.json` | The Gordie W180 T1 export, the same file as the kit's |
 
@@ -330,7 +367,8 @@ python3 -I docs/research/solve-search/harness/search.py /tmp/run --workers 8 --w
 
 ## Not yet measured
 
-- **The stall rule** (`--stall 6`) at widths 2 and 4, and whether it rescues width 2.
+- **The stall rule in a fight whose win needs 6 or more turns without damage to the foes.** It would drop that line.
+- **A stall rule that does more than drop a node**, such as widening the beam when every node stalls.
 - **The three-beam portfolio** of §4 as one job: what it costs before the first replayed win.
 - **A heap cap** (`--max-old-space-size`) per worker: the RSS it holds a worker to, and what it costs in speed.
 - **Worker memory over a long run**, and the recycling count it needs.

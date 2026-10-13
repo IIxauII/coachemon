@@ -1,0 +1,183 @@
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0    7.1s total 13 rss 3988MB
+L 2 nodes  16 children   60 distinct   50 wins   0 losses   0 err 0    7.1s total 73 rss 3988MB
+L 3 nodes  16 children   44 distinct   44 wins   0 losses   0 err 0    3.0s total 117 rss 3988MB
+L 4 nodes  14 children   40 distinct   40 wins   0 losses   0 err 0    2.5s total 157 rss 3988MB
+L 5 nodes  14 children  120 distinct   45 wins   0 losses   0 err 0    8.8s total 277 rss 3988MB
+L 6 nodes  12 children   36 distinct   35 wins   0 losses   0 err 0    3.2s total 313 rss 3988MB
+L 7 nodes  12 children   36 distinct   36 wins   0 losses   0 err 0    3.1s total 349 rss 3988MB
+L 8 nodes  12 children   52 distinct   51 wins   0 losses   0 err 0    6.0s total 401 rss 3988MB
+L 9 nodes  12 children   52 distinct   51 wins   0 losses   0 err 0    6.0s total 453 rss 3988MB
+L10 nodes  12 children  100 distinct   40 wins   0 losses   0 err 0    9.8s total 553 rss 3988MB
+L11 nodes  16 children   32 distinct   32 wins   0 losses   0 err 0    1.9s total 585 rss 3988MB
+L12 nodes  16 children   41 distinct   41 wins   0 losses   0 err 0    3.3s total 626 rss 3988MB
+L13 nodes  16 children   92 distinct   92 wins   0 losses   0 err 0    8.0s total 718 rss 3988MB
+L14 nodes  16 children   57 distinct   45 wins   0 losses   0 err 0    4.8s total 775 rss 3988MB
+L15 nodes  13 children   26 distinct   26 wins   0 losses   0 err 0    2.2s total 801 rss 3988MB
+L16 nodes  16 children   54 distinct   52 wins   0 losses   0 err 0    5.0s total 855 rss 3988MB
+L17 nodes  16 children   62 distinct   60 wins   0 losses   0 err 0    5.5s total 917 rss 3988MB
+L18 nodes  13 children   43 distinct   43 wins   0 losses   0 err 0    3.8s total 960 rss 3988MB
+L19 nodes  16 children   64 distinct   64 wins   0 losses   0 err 0    7.3s total 1024 rss 3988MB
+L20 nodes  13 children   35 distinct   35 wins   0 losses   0 err 0    3.0s total 1059 rss 3988MB
+L21 nodes  13 children   31 distinct   29 wins   0 losses   0 err 0    2.8s total 1090 rss 3988MB
+L22 nodes  12 children   30 distinct   24 wins   0 losses   0 err 0    2.1s total 1120 rss 3988MB
+L23 nodes  10 children   24 distinct   24 wins   0 losses   0 err 0    2.4s total 1144 rss 3988MB
+L24 nodes  10 children   23 distinct   23 wins   0 losses   0 err 0    2.3s total 1167 rss 3988MB
+L25 nodes  10 children   21 distinct   17 wins   4 losses   0 err 0    2.4s total 1188 rss 3988MB
+replayed from T1: [{'name': 'win0', 'result': 'WIN', 'turns': 25}, {'name': 'win1', 'result': 'WIN', 'turns': 25}, {'name': 'win2', 'result': 'WIN', 'turns': 25}, {'name': 'win3', 'result': 'WIN', 'turns': 25}]
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief1/w4p8-stall6",
+  "workers": 8,
+  "width": 4,
+  "depth": 40,
+  "prefix": "",
+  "all_wins": false,
+  "ours_weight": 0.5,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a9b54e5ae42e96d48/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 6
+ },
+ "workers": 8,
+ "boot_secs": 25.8,
+ "search_secs": 113.5,
+ "children_total": 1188,
+ "losses_total": 0,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": {
+  "depth": 25,
+  "children_so_far": 1188,
+  "secs": 113.5,
+  "path": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "POWER_GEM",
+    "tera": true
+   },
+   {
+    "m": "POWER_GEM"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "HYPER_VOICE",
+    "r": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "m": "BOUNCE"
+   },
+   {
+    "w": true
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "s": "Probopass",
+    "r": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE",
+    "r": "Gyarados"
+   },
+   {
+    "m": "HURRICANE"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "TWISTER"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP",
+    "r": "Snorlax"
+   },
+   {
+    "m": "BODY_SLAM"
+   }
+  ],
+  "end": {
+   "turn": 26,
+   "ours": [
+    "Snorlax* 424/824 [0,0,0,0,0,0,0]",
+    "Reshiram 0/577 st7",
+    "Gyarados 0/570 st7",
+    "Probopass 0/427 st7",
+    "Golbat 493/493",
+    "Leavanny 0/497 st7"
+   ],
+   "foes": [
+    "Tyranitar 0/569 st7",
+    "Gigalith 0/525 st7",
+    "Coalossal 0/711 st7",
+    "Barbaracle 0/460 st7",
+    "Carracosta 0/467 st7",
+    "Stonjourner 0/574 st7"
+   ]
+  }
+ },
+ "wins": 4,
+ "memory": {
+  "peak_total_mb": 3987.859375,
+  "peak_worker_mb": 521.8125,
+  "samples": 308
+ },
+ "children_per_sec": 10.47,
+ "validated": [
+  {
+   "name": "win0",
+   "result": "WIN",
+   "turns": 25
+  },
+  {
+   "name": "win1",
+   "result": "WIN",
+   "turns": 25
+  },
+  {
+   "name": "win2",
+   "result": "WIN",
+   "turns": 25
+  },
+  {
+   "name": "win3",
+   "result": "WIN",
+   "turns": 25
+  }
+ ],
+ "validate_secs": 24.6
+}

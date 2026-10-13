@@ -16,6 +16,8 @@ for n in names:
     layers = s["layers"]
     if fw:
         res = f"win, {len(fw['path'])}-step line, {sum(1 for x in fw['end']['ours'] if ' 0/' not in x)} of 6 alive"
+    elif (not layers or layers[-1]["distinct"] == 0) and s.get("stalled_total"):
+        res = f"beam emptied by depth {len(layers)}: every line lost or stalled ({s['stalled_total']} stalled)"
     elif not layers or layers[-1]["distinct"] == 0:
         res = "every line lost (beam emptied)"
     elif a.get("budget_children") and s["children_total"] >= a["budget_children"]:

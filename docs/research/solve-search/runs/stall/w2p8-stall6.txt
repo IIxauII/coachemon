@@ -1,0 +1,68 @@
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0    7.0s total 13 rss 2724MB
+L 2 nodes  12 children   30 distinct   26 wins   0 losses   0 err 0    5.5s total 43 rss 2724MB
+L 3 nodes  12 children   22 distinct   22 wins   0 losses   0 err 0    1.5s total 65 rss 2724MB
+L 4 nodes  12 children   22 distinct   22 wins   0 losses   0 err 0    1.6s total 87 rss 2724MB
+L 5 nodes  10 children   50 distinct   20 wins   0 losses   0 err 0    4.3s total 137 rss 2724MB
+L 6 nodes  10 children   18 distinct   18 wins   0 losses   0 err 0    1.9s total 155 rss 2724MB
+L 7 nodes  10 children   18 distinct   18 wins   0 losses   0 err 0    1.7s total 173 rss 2724MB
+L 8 nodes  10 children   26 distinct   26 wins   0 losses   0 err 0    4.2s total 199 rss 2724MB
+L 9 nodes  10 children   26 distinct   26 wins   0 losses   0 err 0    4.3s total 225 rss 2724MB
+L10 nodes  10 children   50 distinct   20 wins   0 losses   0 err 0    5.2s total 275 rss 2724MB
+L11 nodes  16 children   16 distinct   16 wins   0 losses   0 err 0    1.1s total 291 rss 2724MB
+L12 nodes  16 children   19 distinct   19 wins   0 losses   0 err 0    2.6s total 310 rss 2724MB
+L13 nodes  16 children   46 distinct   46 wins   0 losses   0 err 0    4.7s total 356 rss 2724MB
+L14 nodes  16 children   43 distinct   31 wins   0 losses   0 err 0    3.7s total 399 rss 2724MB
+L15 nodes   8 children    8 distinct    8 wins   0 losses   0 err 0    0.6s total 407 rss 2724MB
+L16 nodes  15 children   28 distinct   28 wins   0 losses   0 err 0    2.6s total 435 rss 2724MB
+L17 nodes  16 children   37 distinct   37 wins   0 losses   0 err 0    3.4s total 472 rss 2724MB
+L18 nodes  14 children   24 distinct   24 wins   0 losses   0 err 0    1.9s total 496 rss 2724MB
+L19 nodes  14 children   38 distinct   38 wins   0 losses   0 err 0    3.0s total 534 rss 2724MB
+L20 nodes  12 children   15 distinct   15 wins   0 losses   0 err 0    1.1s total 549 rss 2724MB
+L21 nodes  12 children   12 distinct   12 wins   0 losses   0 err 0    0.8s total 561 rss 2724MB
+L22 nodes  12 children   20 distinct    8 wins   0 losses   0 err 0    1.7s total 581 rss 2724MB
+L23 nodes  12 children   16 distinct   10 wins   0 losses   0 err 0    1.6s total 597 rss 2724MB
+L24 nodes  12 children   16 distinct   10 wins   0 losses   0 err 0    1.2s total 613 rss 2724MB
+L25 nodes  12 children   16 distinct   10 wins   0 losses   0 err 0    1.0s total 629 rss 2724MB
+L26 nodes  12 children   20 distinct   14 wins   0 losses   0 err 0    1.6s total 649 rss 2724MB
+L27 nodes  12 children   20 distinct    8 wins   0 losses   0 err 0    1.3s total 669 rss 2724MB
+L28 nodes  10 children   10 distinct    7 wins   0 losses   0 err 0    0.7s total 679 rss 2724MB
+L29 nodes  10 children   10 distinct    5 wins   0 losses   0 err 0    0.8s total 689 rss 2724MB
+L30 nodes  10 children   10 distinct    7 wins   0 losses   0 err 0    0.7s total 699 rss 2724MB
+L31 nodes  10 children   10 distinct    1 wins   0 losses   0 err 0    0.7s total 709 rss 2724MB
+L32 nodes   4 children    4 distinct    2 wins   0 losses   1 err 0    0.5s total 713 rss 2724MB
+L33 nodes   8 children    8 distinct    5 wins   0 losses   0 err 0    0.5s total 721 rss 2724MB
+L34 nodes   8 children    8 distinct    4 wins   0 losses   0 err 0    0.4s total 729 rss 2724MB
+L35 nodes   8 children    8 distinct    3 wins   0 losses   0 err 0    0.4s total 737 rss 2724MB
+L36 nodes   8 children    8 distinct    6 wins   0 losses   0 err 0    0.4s total 745 rss 2724MB
+L37 nodes   8 children    8 distinct    0 wins   0 losses   0 err 0    0.4s total 753 rss 2724MB
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief1/w2p8-stall6",
+  "workers": 8,
+  "width": 2,
+  "depth": 40,
+  "prefix": "",
+  "all_wins": false,
+  "ours_weight": 0.5,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a9b54e5ae42e96d48/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 6
+ },
+ "workers": 8,
+ "boot_secs": 28.7,
+ "search_secs": 76.9,
+ "children_total": 753,
+ "losses_total": 1,
+ "errors_total": 0,
+ "stalled_total": 21,
+ "first_win": null,
+ "wins": 0,
+ "memory": {
+  "peak_total_mb": 2723.796875,
+  "peak_worker_mb": 443.59375,
+  "samples": 194
+ },
+ "children_per_sec": 9.79,
+ "validated": [],
+ "validate_secs": 0.0
+}
