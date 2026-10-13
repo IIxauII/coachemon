@@ -1,0 +1,552 @@
+{
+ "summary": {
+  "args": {
+   "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief3/p1-long-h768",
+   "workers": 1,
+   "width": 8,
+   "depth": 40,
+   "prefix": "",
+   "all_wins": true,
+   "ours_weight": 0.5,
+   "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a41dbf5d95ba77a52/docs/research/solve-search/harness/../session-w180.json",
+   "budget_children": 2000,
+   "stall": 0,
+   "setup": "",
+   "timeout": 1800.0
+  },
+  "workers": 1,
+  "heap_cap_mb": "768",
+  "ready": [
+   {
+    "bootMs": 691.9247919999998,
+    "pid": 59027,
+    "ppid": 59019,
+    "heapLimitMb": 864,
+    "nodeOptions": " --max-old-space-size=768",
+    "execArgv": [
+     "--experimental-import-meta-resolve",
+     "--require",
+     "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+     "--conditions",
+     "node",
+     "--conditions",
+     "development"
+    ]
+   }
+  ],
+  "aborted": "worker [0] exited during the search",
+  "boot_secs": 5.7,
+  "search_secs": 221.3,
+  "children_total": 301,
+  "losses_total": 0,
+  "errors_total": 0,
+  "stalled_total": 0,
+  "first_win": null,
+  "wins": 0,
+  "memory": {
+   "peak_total_mb": 1211.0625,
+   "peak_worker_mb": 1211.0625,
+   "peak_process_mb": 900.34375,
+   "samples": 439
+  },
+  "layers": [
+   {
+    "depth": 1,
+    "nodes": 1,
+    "children": 13,
+    "distinct": 13,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 7.02,
+    "children_so_far": 13,
+    "best": {
+     "turn": 2,
+     "ours": [
+      "Reshiram* 577/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 427/427"
+     ],
+     "foes": [
+      "Gigalith* 282/525 [0,0,0,0,0,0,0]",
+      "Carracosta 467/467",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.463,
+     3.463,
+     3.436,
+     3.436,
+     3.352,
+     3.352,
+     3.162,
+     3.162
+    ]
+   },
+   {
+    "depth": 2,
+    "nodes": 8,
+    "children": 120,
+    "distinct": 98,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 75.88,
+    "children_so_far": 133,
+    "best": {
+     "turn": 3,
+     "ours": [
+      "Probopass* 359/427 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 577/577"
+     ],
+     "foes": [
+      "Carracosta* 467/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.92,
+     3.92,
+     3.92,
+     3.92,
+     3.92,
+     3.92,
+     3.92,
+     3.92
+    ]
+   },
+   {
+    "depth": 3,
+    "nodes": 8,
+    "children": 88,
+    "distinct": 88,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 31.06,
+    "children_so_far": 221,
+    "best": {
+     "turn": 4,
+     "ours": [
+      "Probopass* 270/427 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 577/577"
+     ],
+     "foes": [
+      "Carracosta* 342/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.084,
+     4.084,
+     4.084,
+     4.084,
+     4.017,
+     4.017,
+     4.017,
+     4.017
+    ]
+   },
+   {
+    "depth": 4,
+    "nodes": 8,
+    "children": 80,
+    "distinct": 80,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 30.02,
+    "children_so_far": 301,
+    "best": {
+     "turn": 5,
+     "ours": [
+      "Probopass* 180/427 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 577/577"
+     ],
+     "foes": [
+      "Carracosta* 207/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.268,
+     4.268,
+     4.268,
+     4.268,
+     4.201,
+     4.201,
+     4.128,
+     4.128
+    ]
+   }
+  ],
+  "children_per_sec": 1.36,
+  "validated": [],
+  "validate_secs": 0.0
+ },
+ "wins": []
+}

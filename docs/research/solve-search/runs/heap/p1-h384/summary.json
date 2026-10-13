@@ -1,0 +1,145 @@
+{
+ "summary": {
+  "args": {
+   "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief3/p1-h384",
+   "workers": 1,
+   "width": 8,
+   "depth": 40,
+   "prefix": "",
+   "all_wins": false,
+   "ours_weight": 0.5,
+   "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a41dbf5d95ba77a52/docs/research/solve-search/harness/../session-w180.json",
+   "budget_children": 500,
+   "stall": 0,
+   "setup": "",
+   "timeout": 900.0
+  },
+  "workers": 1,
+  "heap_cap_mb": "384",
+  "ready": [
+   {
+    "bootMs": 691.0417090000001,
+    "pid": 58098,
+    "ppid": 58091,
+    "heapLimitMb": 480,
+    "nodeOptions": " --max-old-space-size=384",
+    "execArgv": [
+     "--experimental-import-meta-resolve",
+     "--require",
+     "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+     "--conditions",
+     "node",
+     "--conditions",
+     "development"
+    ]
+   }
+  ],
+  "aborted": "worker [0] exited during the search",
+  "boot_secs": 5.9,
+  "search_secs": 80.6,
+  "children_total": 13,
+  "losses_total": 0,
+  "errors_total": 0,
+  "stalled_total": 0,
+  "first_win": null,
+  "wins": 0,
+  "memory": {
+   "peak_total_mb": 945.921875,
+   "peak_worker_mb": 945.921875,
+   "peak_process_mb": 526.796875,
+   "samples": 168
+  },
+  "layers": [
+   {
+    "depth": 1,
+    "nodes": 1,
+    "children": 13,
+    "distinct": 13,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 7.01,
+    "children_so_far": 13,
+    "best": {
+     "turn": 2,
+     "ours": [
+      "Reshiram* 577/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 427/427"
+     ],
+     "foes": [
+      "Gigalith* 282/525 [0,0,0,0,0,0,0]",
+      "Carracosta 467/467",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.463,
+     3.463,
+     3.436,
+     3.436,
+     3.352,
+     3.352,
+     3.162,
+     3.162
+    ]
+   }
+  ],
+  "children_per_sec": 0.16,
+  "validated": [],
+  "validate_secs": 0.0
+ },
+ "wins": []
+}

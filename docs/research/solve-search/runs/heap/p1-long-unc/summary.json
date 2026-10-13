@@ -1,0 +1,8892 @@
+{
+ "summary": {
+  "args": {
+   "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief3/p1-long-unc",
+   "workers": 1,
+   "width": 8,
+   "depth": 40,
+   "prefix": "",
+   "all_wins": true,
+   "ours_weight": 0.5,
+   "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a41dbf5d95ba77a52/docs/research/solve-search/harness/../session-w180.json",
+   "budget_children": 2000,
+   "stall": 0,
+   "setup": "",
+   "timeout": 1800.0
+  },
+  "workers": 1,
+  "heap_cap_mb": null,
+  "ready": [
+   {
+    "bootMs": 698.8332500000006,
+    "pid": 40274,
+    "ppid": 40250,
+    "heapLimitMb": 4192,
+    "nodeOptions": null,
+    "execArgv": [
+     "--experimental-import-meta-resolve",
+     "--require",
+     "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+     "--conditions",
+     "node",
+     "--conditions",
+     "development"
+    ]
+   }
+  ],
+  "aborted": null,
+  "boot_secs": 6.5,
+  "search_secs": 1518.4,
+  "children_total": 2083,
+  "losses_total": 0,
+  "errors_total": 0,
+  "stalled_total": 0,
+  "first_win": {
+   "depth": 14,
+   "children_so_far": 1657,
+   "secs": 1115.0,
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE",
+     "r": "Leavanny"
+    },
+    {
+     "m": "LEAF_STORM"
+    },
+    {
+     "m": "LEAF_STORM"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Leavanny* 466/497 [0,0,-4,0,0,0,0]",
+     "Reshiram 0/577 st7",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Tyranitar 0/569 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Stonjourner 0/574 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  "wins": 57,
+  "memory": {
+   "peak_total_mb": 3369.265625,
+   "peak_worker_mb": 3369.265625,
+   "peak_process_mb": 3316.4375,
+   "samples": 3018
+  },
+  "layers": [
+   {
+    "depth": 1,
+    "nodes": 1,
+    "children": 13,
+    "distinct": 13,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 7.01,
+    "children_so_far": 13,
+    "best": {
+     "turn": 2,
+     "ours": [
+      "Reshiram* 577/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 427/427"
+     ],
+     "foes": [
+      "Gigalith* 282/525 [0,0,0,0,0,0,0]",
+      "Carracosta 467/467",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.463,
+     3.463,
+     3.436,
+     3.436,
+     3.352,
+     3.352,
+     3.162,
+     3.162
+    ]
+   },
+   {
+    "depth": 2,
+    "nodes": 8,
+    "children": 120,
+    "distinct": 98,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 75.82,
+    "children_so_far": 133,
+    "best": {
+     "turn": 3,
+     "ours": [
+      "Probopass* 359/427 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 577/577"
+     ],
+     "foes": [
+      "Carracosta* 467/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.92,
+     3.92,
+     3.92,
+     3.92,
+     3.92,
+     3.92,
+     3.92,
+     3.92
+    ]
+   },
+   {
+    "depth": 3,
+    "nodes": 8,
+    "children": 88,
+    "distinct": 88,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 30.92,
+    "children_so_far": 221,
+    "best": {
+     "turn": 4,
+     "ours": [
+      "Probopass* 270/427 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 577/577"
+     ],
+     "foes": [
+      "Carracosta* 342/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.084,
+     4.084,
+     4.084,
+     4.084,
+     4.017,
+     4.017,
+     4.017,
+     4.017
+    ]
+   },
+   {
+    "depth": 4,
+    "nodes": 8,
+    "children": 80,
+    "distinct": 80,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 29.86,
+    "children_so_far": 301,
+    "best": {
+     "turn": 5,
+     "ours": [
+      "Probopass* 180/427 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 577/577"
+     ],
+     "foes": [
+      "Carracosta* 207/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.268,
+     4.268,
+     4.268,
+     4.268,
+     4.201,
+     4.201,
+     4.128,
+     4.128
+    ]
+   },
+   {
+    "depth": 5,
+    "nodes": 8,
+    "children": 220,
+    "distinct": 85,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 94.29,
+    "children_so_far": 521,
+    "best": {
+     "turn": 6,
+     "ours": [
+      "Reshiram* 533/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Carracosta* 207/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.229,
+     4.229,
+     4.229,
+     4.229,
+     4.185,
+     4.185,
+     4.185,
+     4.185
+    ]
+   },
+   {
+    "depth": 6,
+    "nodes": 8,
+    "children": 72,
+    "distinct": 71,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 40.51,
+    "children_so_far": 593,
+    "best": {
+     "turn": 7,
+     "ours": [
+      "Reshiram* 569/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Barbaracle* 460/460 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.704,
+     4.704,
+     4.704,
+     4.704,
+     4.704,
+     4.704,
+     4.704,
+     4.456
+    ]
+   },
+   {
+    "depth": 7,
+    "nodes": 8,
+    "children": 72,
+    "distinct": 72,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 42.82,
+    "children_so_far": 665,
+    "best": {
+     "turn": 8,
+     "ours": [
+      "Reshiram* 544/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Barbaracle* 257/460 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     5.123,
+     5.123,
+     5.097,
+     5.097,
+     4.999,
+     4.999,
+     4.999,
+     4.999
+    ]
+   },
+   {
+    "depth": 8,
+    "nodes": 8,
+    "children": 104,
+    "distinct": 102,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 71.83,
+    "children_so_far": 769,
+    "best": {
+     "turn": 9,
+     "ours": [
+      "Reshiram* 364/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Barbaracle* 169/460 [0,1,0,0,1,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     5.159,
+     5.159,
+     5.133,
+     5.133,
+     5.107,
+     5.107,
+     5.069,
+     5.069
+    ]
+   },
+   {
+    "depth": 9,
+    "nodes": 8,
+    "children": 176,
+    "distinct": 146,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 128.99,
+    "children_so_far": 945,
+    "best": {
+     "turn": 10,
+     "ours": [
+      "Reshiram* 404/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Barbaracle* 96/460 [0,1,0,0,1,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "r": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "r": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     5.352,
+     5.352,
+     5.326,
+     5.326,
+     5.211,
+     5.211,
+     5.211,
+     5.211
+    ]
+   },
+   {
+    "depth": 10,
+    "nodes": 8,
+    "children": 86,
+    "distinct": 81,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 60.19,
+    "children_so_far": 1031,
+    "best": {
+     "turn": 11,
+     "ours": [
+      "Reshiram* 268/577 [3,0,1,1,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Coalossal* 711/711 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 0/460 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     5.443,
+     5.443,
+     5.443,
+     5.443,
+     5.443,
+     5.443,
+     5.443,
+     5.443
+    ]
+   },
+   {
+    "depth": 11,
+    "nodes": 8,
+    "children": 232,
+    "distinct": 232,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 185.75,
+    "children_so_far": 1263,
+    "best": {
+     "turn": 12,
+     "ours": [
+      "Reshiram* 448/577 [3,0,1,1,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Tyranitar* 569/569 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 0/711 st7",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 0/460 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ]
+    ],
+    "beam_scores": [
+     6.599,
+     6.599,
+     6.599,
+     6.474,
+     6.474,
+     6.474,
+     6.474,
+     6.474
+    ]
+   },
+   {
+    "depth": 12,
+    "nodes": 8,
+    "children": 180,
+    "distinct": 180,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 158.24,
+    "children_so_far": 1443,
+    "best": {
+     "turn": 13,
+     "ours": [
+      "Reshiram* 340/577 [3,0,1,1,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Tyranitar* 369/569 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 0/711 st7",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 0/460 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     6.857,
+     6.857,
+     6.857,
+     6.857,
+     6.857,
+     6.749,
+     6.749,
+     6.749
+    ]
+   },
+   {
+    "depth": 13,
+    "nodes": 8,
+    "children": 135,
+    "distinct": 132,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 122.85,
+    "children_so_far": 1578,
+    "best": {
+     "turn": 14,
+     "ours": [
+      "Gyarados* 535/570 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Reshiram 0/577 st7",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Tyranitar* 263/569 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 0/711 st7",
+      "Stonjourner 0/574 st7",
+      "Carracosta 0/467 st7",
+      "Barbaracle 0/460 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     7.718,
+     7.717,
+     7.537,
+     7.537,
+     7.537,
+     7.537,
+     7.537,
+     7.537
+    ]
+   },
+   {
+    "depth": 14,
+    "nodes": 8,
+    "children": 79,
+    "distinct": 58,
+    "wins": 21,
+    "losses": 0,
+    "errors": 0,
+    "secs": 65.96,
+    "children_so_far": 1657,
+    "best": {
+     "turn": 15,
+     "ours": [
+      "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Stonjourner* 187/574 [0,0,1,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 0/711 st7",
+      "Tyranitar 0/569 st7",
+      "Carracosta 0/467 st7",
+      "Barbaracle 0/460 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "s": "Probopass"
+      }
+     ]
+    ],
+    "beam_scores": [
+     8.089,
+     8.089,
+     8.089,
+     8.089,
+     8.089,
+     8.089,
+     7.718,
+     7.717
+    ]
+   },
+   {
+    "depth": 15,
+    "nodes": 8,
+    "children": 130,
+    "distinct": 82,
+    "wins": 24,
+    "losses": 0,
+    "errors": 0,
+    "secs": 109.37,
+    "children_so_far": 1787,
+    "best": {
+     "turn": 16,
+     "ours": [
+      "Golbat* 463/493 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Reshiram 235/577",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Stonjourner* 187/574 [0,0,1,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 0/711 st7",
+      "Tyranitar 0/569 st7",
+      "Carracosta 0/467 st7",
+      "Barbaracle 0/460 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     8.058,
+     8.058,
+     8.058,
+     8.058,
+     8.058,
+     8.058,
+     8.058,
+     8.058
+    ]
+   },
+   {
+    "depth": 16,
+    "nodes": 8,
+    "children": 104,
+    "distinct": 102,
+    "wins": 2,
+    "losses": 0,
+    "errors": 0,
+    "secs": 106.72,
+    "children_so_far": 1891,
+    "best": {
+     "turn": 17,
+     "ours": [
+      "Gyarados* 335/570 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Reshiram 235/577",
+      "Golbat 493/493",
+      "Probopass 180/427 TERA"
+     ],
+     "foes": [
+      "Stonjourner* 47/574 [-1,0,1,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 0/711 st7",
+      "Tyranitar 0/569 st7",
+      "Carracosta 0/467 st7",
+      "Barbaracle 0/460 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "s": "Probopass"
+      }
+     ]
+    ],
+    "beam_scores": [
+     8.126,
+     8.126,
+     8.003,
+     8.003,
+     7.947,
+     7.947,
+     7.947,
+     7.947
+    ]
+   },
+   {
+    "depth": 17,
+    "nodes": 8,
+    "children": 192,
+    "distinct": 122,
+    "wins": 10,
+    "losses": 0,
+    "errors": 0,
+    "secs": 187.24,
+    "children_so_far": 2083,
+    "best": {
+     "turn": 18,
+     "ours": [
+      "Probopass* 86/427 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Reshiram 235/577",
+      "Golbat 493/493",
+      "Gyarados 335/570"
+     ],
+     "foes": [
+      "Stonjourner* 47/574 [-1,0,1,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 0/711 st7",
+      "Tyranitar 0/569 st7",
+      "Carracosta 0/467 st7",
+      "Barbaracle 0/460 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "s": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "s": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "s": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "s": "Reshiram",
+       "r": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "s": "Reshiram",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "s": "Reshiram",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "s": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "s": "Reshiram"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "BLUE_FLARE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "s": "Reshiram",
+       "r": "Golbat"
+      }
+     ]
+    ],
+    "beam_scores": [
+     8.016,
+     8.016,
+     7.986,
+     7.986,
+     7.923,
+     7.923,
+     7.923,
+     7.923
+    ]
+   }
+  ],
+  "children_per_sec": 1.37,
+  "validated": [
+   {
+    "name": "win0",
+    "result": "WIN",
+    "turns": 14
+   },
+   {
+    "name": "win1",
+    "result": "WIN",
+    "turns": 14
+   },
+   {
+    "name": "win2",
+    "result": "WIN",
+    "turns": 14
+   },
+   {
+    "name": "win3",
+    "result": "WIN",
+    "turns": 14
+   },
+   {
+    "name": "win4",
+    "result": "WIN",
+    "turns": 14
+   }
+  ],
+  "validate_secs": 37.5
+ },
+ "wins": [
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE",
+     "r": "Leavanny"
+    },
+    {
+     "m": "LEAF_STORM"
+    },
+    {
+     "m": "LEAF_STORM"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Leavanny* 466/497 [0,0,-4,0,0,0,0]",
+     "Reshiram 0/577 st7",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Tyranitar 0/569 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Stonjourner 0/574 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE",
+     "r": "Leavanny"
+    },
+    {
+     "m": "LEAF_STORM"
+    },
+    {
+     "m": "BUG_BITE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Leavanny* 497/497 [0,0,-2,0,0,0,0]",
+     "Reshiram 0/577 st7",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Tyranitar 0/569 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Stonjourner 0/574 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE",
+     "r": "Leavanny"
+    },
+    {
+     "m": "LEAF_STORM"
+    },
+    {
+     "m": "POLLEN_PUFF"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Leavanny* 466/497 [0,0,-2,0,0,0,0]",
+     "Reshiram 0/577 st7",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Tyranitar 0/569 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Stonjourner 0/574 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 15,
+    "ours": [
+     "Reshiram* 199/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    }
+   ],
+   "end": {
+    "turn": 16,
+    "ours": [
+     "Reshiram* 235/577 [3,0,1,1,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Gyarados 570/570",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "HYDRO_PUMP"
+    }
+   ],
+   "end": {
+    "turn": 17,
+    "ours": [
+     "Gyarados* 228/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "HYDRO_PUMP"
+    }
+   ],
+   "end": {
+    "turn": 17,
+    "ours": [
+     "Gyarados* 228/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "HURRICANE"
+    },
+    {
+     "m": "HURRICANE"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "HURRICANE"
+    },
+    {
+     "m": "TWISTER"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "HURRICANE"
+    },
+    {
+     "m": "HYDRO_PUMP"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "HURRICANE"
+    },
+    {
+     "m": "HURRICANE"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "HURRICANE"
+    },
+    {
+     "m": "TWISTER"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "HURRICANE"
+    },
+    {
+     "m": "HYDRO_PUMP"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "TWISTER"
+    },
+    {
+     "m": "HURRICANE"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "TWISTER"
+    },
+    {
+     "m": "HYDRO_PUMP"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "TWISTER"
+    },
+    {
+     "m": "HURRICANE"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  },
+  {
+   "path": [
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "s": "Probopass"
+    },
+    {
+     "m": "POWER_GEM",
+     "tera": true
+    },
+    {
+     "m": "POWER_GEM"
+    },
+    {
+     "s": "Reshiram"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "m": "FICKLE_BEAM"
+    },
+    {
+     "m": "BLUE_FLARE"
+    },
+    {
+     "m": "DRAGON_PULSE"
+    },
+    {
+     "m": "HYPER_VOICE"
+    },
+    {
+     "s": "Gyarados"
+    },
+    {
+     "m": "TWISTER"
+    },
+    {
+     "m": "HYDRO_PUMP"
+    }
+   ],
+   "end": {
+    "turn": 18,
+    "ours": [
+     "Gyarados* 31/570 [0,0,0,0,0,0,0]",
+     "Leavanny 497/497",
+     "Snorlax 824/824",
+     "Reshiram 235/577",
+     "Golbat 493/493",
+     "Probopass 180/427 TERA"
+    ],
+    "foes": [
+     "Stonjourner 0/574 st7",
+     "Gigalith 0/525 st7",
+     "Coalossal 0/711 st7",
+     "Tyranitar 0/569 st7",
+     "Carracosta 0/467 st7",
+     "Barbaracle 0/460 st7"
+    ]
+   }
+  }
+ ]
+}

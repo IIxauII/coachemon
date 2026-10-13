@@ -48,8 +48,11 @@ processes that fork from snapshots. The agent does not steer it.**
   - From T1 its first replayed win came at 4,861 expansions, 2.9× the single width-8 beam's 1,657. Its 3,000-expansion
     budget gave up on a fight that is winnable.
   - From attempt 1's T21 it found the win above in 550 expansions (109 s on 4 workers).
+- **A worker leaks about 1.1 MB of live heap per expansion, and it never levels off.** **[verified]** A heap cap
+  alone only turns that into an OOM; it costs no speed and changes no answer before then. See "Heap cap and memory
+  over time" in §3.
 - **Recommended defaults.** **[inference]** The basis for each number is in the sections below.
-  - `min(cores − 2, 6)` workers, each with a capped heap.
+  - `min(cores − 2, 6)` workers, each with a 768 MB heap cap, recycled after 250 expansions of its own.
   - A small portfolio of beams, not one beam.
   - A budget of about 3,000 expansions **per beam still running**, not 3,000 in all.
   - Every line replayed from the save before it is shown.
@@ -280,18 +283,137 @@ What the table shows:
   - A lone worker's process tree (vitest main plus its fork child) sat near 1.0 GB from its first expansions, and peaked
     at 1.5 GB.
   - With 8–10 workers, each peaked at 0.5–0.7 GB.
-  - V8 sizes its heap to the memory it sees, so a heap cap such as `--max-old-space-size` should hold a worker near its
-    working set. **[inference]** The cap was not tried, and the floor it reaches is **[unverified]**.
+  - "Elastic" was a misreading. A worker's heap grows with the number of expansions *it* has played, and fewer workers
+    each play more of the same workload. See "Heap cap and memory over time" below. **[verified]**
 - **One worker's RSS crept** from about 0.27 GB to 0.41 GB over about 190 expansions in a mid-fight run
-  (`runs/sweep/mid-a1T9/mem.jsonl`). It may be a slow leak per reload. **[inference]**
+  (`runs/sweep/mid-a1T9/mem.jsonl`). It is a leak: about 1.1 MB of live heap per expansion. See below. **[verified]**
 
-**For an 8 GB, 4-core laptop** **[inference]**:
+**For an 8 GB, 4-core laptop** (the first estimate, superseded by "Laptop-class pool (approximated)" below)
+**[inference]**:
 
 - **Workers and memory.** 2 workers, with heaps capped near 0.6 GB each, leave two cores and about 6 GB for the browser
   running the game and the OS.
 - **Speed.** If its cores match a performance core here, 2 workers give about 4 expansions/s.
 - **Duration.** A width-8 solve from T1 (about 1,650 expansions) takes about 7 minutes. A late re-solve (250–500
   expansions) takes 1–2 minutes.
+
+### Heap cap and memory over time
+
+`SS_HEAP_MB=N` makes `run.sh` add `--max-old-space-size=N` to `NODE_OPTIONS`. `heap.sh` is `sweep.sh` with that cap and
+a memory gate before each run. Each worker writes the heap limit it actually runs under (`v8.getHeapStatistics()`) to
+its ready file, and its RSS and heap use after every job go to `heap.jsonl`. With `SS_GC_EVERY=N` it also forces a full
+GC every Nth job and reports the heap left after it: the live set. `search.py` now stops when a worker dies, instead of
+waiting forever for an answer that will not come, and kills each worker's whole process tree at the end.
+Raw runs, tables and per-layer timelines are in `runs/heap/` (`harness/heaptally.py`).
+
+**Load during these runs** **[verified]** (`runs/heap/*.load`): 15:13–15:55, one search at a time. The one-minute load
+average was 1.7–3.6, free memory 54–68%, and swap held at 3.40–3.53 GB of 5.12 GB the whole time. This was a quieter
+machine than the earlier sections had. No PokéRogue tab was open: the coachemon Chrome profile was running, but its
+DevTools target list was empty and it had no renderer process.
+
+**The cap reaches the forked worker.** **[verified]** The fork's environment carried `--max-old-space-size`, and its
+`heap_size_limit` was 480, 608 and 864 MB under caps of 384, 512 and 768. The young generation accounts for the extra
+96 MB. Uncapped, the limit was 4,192 MB. The vitest parent gets the same cap.
+
+**The 521-step workload** (`--width 8 --budget-children 500` from T1). The 1-worker uncapped row is the first 5 layers
+of the long run below. **[verified]**
+
+| Workers | Cap | Outcome | Search | Steps/s | Pool peak | Worker tree peak | Fork RSS peak | Same as `runs/sweep/` |
+|---|---|---|---|---|---|---|---|---|
+| 1 | none | 521 steps | 238 s | 2.19 | 2.2 GB | 2.2 GB | 1.7 GB | yes, p1 |
+| 1 | 768 MB | **OOM** between steps 301 and 521 (a forced GC every 5 jobs) | – | – | – | 1.1 GB | 0.8 GB | yes, up to the OOM |
+| 1 | 512 MB | **OOM** between steps 221 and 301 | – | – | – | 1.05 GB | 0.64 GB | yes, up to the OOM |
+| 1 | 384 MB | **OOM** between steps 13 and 133 | – | – | – | 0.83 GB | 0.41 GB | – |
+| 4 | none | 521 steps | 76 s | 6.86 | 3.2 GB | 0.95 GB | 0.52 GB | yes, p4 |
+| 4 | 512 MB | 521 steps | 76 s | 6.86 | 3.5 GB | 0.91 GB | 0.50 GB | yes, p4 |
+| 4 | 384 MB | **OOM** of one worker between steps 301 and 521 | – | – | – | 0.74 GB | 0.43 GB | yes, up to the OOM |
+
+"Same" means the same children, distinct states, beam paths and beam scores at every layer. Every OOM is V8's
+"Ineffective mark-compacts near heap limit" (`runs/heap/*/oom.txt`). The uncapped rows match the sweep's times (249 s
+and 78 s then).
+
+- **The cap does not slow the search before the limit.** **[verified]** The per-layer times of the uncapped and 768 MB
+  single workers are equal to 0.2 s (L1–L4: 7.0/75.8/30.9/29.9 s against 7.0/75.9/31.1/30.0 s). At 4 workers, 512 MB
+  took 76.0 s against 75.9 s.
+- **It does not change the answer.** **[verified]** Every run matched the sweep's beam node for node, as far as it got.
+- **It does not lower the pool peak.** **[verified]** A worker is three processes: `run.sh`, the vitest parent and the
+  fork that runs the test. The vitest parent holds 350–420 MB through boot and the first layers, and falls to 60–130 MB
+  later (`mem.jsonl`: the tree minus its largest process). The pool peak lands in that window, so capping the fork
+  leaves it where it was: 3.5 GB capped against 3.2 GB uncapped, at 4 workers. Why the parent's RSS falls (pages
+  freed, or compressed by macOS) is **[unverified]**.
+- **A cap alone only turns a slow leak into a crash.** It holds a worker down until the live heap reaches it, then the
+  worker dies. **[verified]**
+
+**Memory over a long run: a leak, not a plateau.** One worker, width 8 from T1, `--all-wins --budget-children 2000`
+(`runs/heap/tally.md`, timelines). **[verified]**
+
+| Layer ending at step | Uncapped: fork RSS (max) | Uncapped: heap after a job | 768 MB: heap after a job | 768 MB: live heap after a full GC (step) |
+|---|---|---|---|---|
+| 13 | 0.41 GB | 263 MB | 246 MB | – |
+| 133 | 0.63 GB | 287–447 MB | 285–434 MB | 303 MB (~73) |
+| 221 | 0.75 GB | 454–549 MB | 442–544 MB | 389 MB (~144), 445 MB (~199) |
+| 301 | 0.87 GB | 532–692 MB | 530–635 MB | 496 MB (~251), 553 MB (301) |
+| 521 | 1.74 GB | 689–1,559 MB | 638–749 MB, then OOM | 697 MB (~440), then OOM |
+| 1,031 | 2.59 GB | up to 2.72 GB | – | – |
+| 1,657 (first win) | 3.04 GB | up to 3.28 GB | – | – |
+| 2,083 | 3.08 GB | up to 3.35 GB | – | – |
+
+A job reports the step count at the start of its layer. The step at each forced GC is estimated from the job's place
+in its layer, as if the layer's expansions were spread evenly over its jobs.
+
+- **The live set grows about 1.1 MB per expansion and does not level off.** **[verified]** After a forced full GC the
+  heap held 303 MB at about step 73 and 697 MB at about step 440, a straight line of 1.0–1.1 MB per step from about
+  220 MB. The worker died soon after, 170 MB short of its 864 MB limit. Uncapped, the heap used after a job kept
+  rising to 3.35 GB at step 2,083, and the worker's process tree peaked at 3.4 GB.
+- **A worker dies when its live heap comes within about 150 MB of its limit**, the room a job needs for its own
+  allocations. **[inference]** from the three OOM windows below.
+- **An uncapped worker would also die, at about 3,500 expansions of its own**, when 220 MB plus 1.1 MB a step comes
+  within 150 MB of the 4,192 MB default limit. **[inference]** It fits the 4-worker T1 portfolio: about 1,200
+  expansions a worker, a live heap near 1.5 GB, and one worker at 1.8–2.1 GB RSS.
+- **The uncapped worker slowed as it grew.** **[inference]** It ran at 2.19 steps/s over the first 521 and 1.37 over all
+  2,083. Its per-layer rate fell from 6.3–7× slower than the 8-worker sweep's (where each worker stays small) to
+  8–9.3× slower by layers 12–13. Some of that is the layers and the load, not the heap.
+- **The long uncapped run is the sweep's width-8 search, unchanged.** **[verified]** Its beam matched `runs/sweep/w8p8`
+  at all 14 layers. It found the same 14-turn win at 1,657 expansions, which replayed from T1 5 times of 5.
+- **Where it leaks is not known.** Each expansion is a restore (`reloadSession()` plus the patch) and one played turn.
+  Either could hold on to it. **[unverified]** A heap-snapshot diff would say.
+
+**So recycling is needed, and the cap is its backstop.** **[inference]** A worker lasts about
+(heap limit − 370 MB) / 1.1 MB expansions: about 100 at a 384 MB cap, 215 at 512 MB and 450 at 768 MB. The observed
+windows were 13–133, 221–301 and 301–521. Recycling after 250 expansions at a 768 MB cap keeps the live heap near
+0.5 GB, with about 200 expansions of margin. A recycle costs a boot of 6–9 s, against about 125 s of work for 250 expansions at 2 steps/s:
+5–7%.
+
+### Laptop-class pool (approximated)
+
+This Mac is **not** a laptop-class machine. It is an M4 with 4 performance and 6 efficiency cores and 16 GB, against
+the 4 cores and 8 GB in question. The runs below only show what 2 and 3 workers do here, with the 768 MB cap. Each worker
+played 170–260 expansions, under the 450 a worker lasts at that cap. No game tab was open in the browser (see "Load
+during these runs" above), so the browser's own load is not in these numbers. **[verified]**
+
+| Workers | Cap | Search | Steps/s | Per worker | Pool boot | Pool peak | Worker tree peak | Fork RSS peak | Same as `runs/sweep/` |
+|---|---|---|---|---|---|---|---|---|---|
+| 2 | 768 MB | 125 s | 4.17 | 2.09 | 6.3 s | 2.3 GB | 1.16 GB | 0.72 GB | yes |
+| 3 | 768 MB | 96 s | 5.45 | 1.82 | 8.0 s | 2.4 GB | 0.84 GB | 0.59 GB | yes |
+| 4 | 512 MB | 76 s | 6.86 | 1.72 | – | 3.5 GB | 0.91 GB | 0.50 GB | yes |
+
+The uncapped sweep ran 2 workers at 4.1 steps/s, so the cap cost nothing here either. **[verified]**
+
+**The laptop estimate, updated** **[inference]**: 2 workers at a 768 MB cap, each recycled after 250 expansions, at
+the 4.2 steps/s measured here. This assumes the laptop's cores match an M4 performance core, which is **[unverified]**
+and probably optimistic.
+
+- **Memory.** About 1.2 GB a worker at its peak: the fork under its limit plus the vitest parent at boot. That is about
+  2.3–2.8 GB for the pool, which leaves about 5 GB of 8 for the OS and the browser running the game.
+- **A single width-8 solve from T1** (1,657 expansions): about 6.6 minutes, plus boot and 3 recycles a worker. That is
+  about 7 minutes, as §3 estimated.
+- **The portfolio from T1.** Its first replayed win came at 4,861 expansions: about 20 minutes, plus about 10 recycles
+  a worker (about 1.5 minutes).
+- **The portfolio's full budget** (3,000 expansions per beam still running, about 9,000 in all) takes about
+  36 minutes before it can say "no answer", and 38–40 minutes with recycles.
+- **A late re-solve** like attempt 1's T21 (550 expansions in the portfolio) takes about 2–3 minutes.
+- **Without recycling** the 9,000 budget cannot finish on 2 workers. Each worker would play about 4,500 expansions,
+  past the roughly 3,500 at which even an uncapped worker exhausts its default heap.
 
 ## 4. Give-up budget
 
@@ -407,7 +529,7 @@ What it shows:
   the 14 it needed.
 - **Memory.** **[verified]** The 4-worker pool peaked at 5.1 GB. One worker reached 1.8 GB during the search, and
   2.1 GB during shutdown; the 8-worker pools stayed under 1 GB a worker. The coordinator itself peaked at 70 MB.
-  A 4-worker pool lets each worker grow, so §6's recycling at 0.75 GB would fire on a long portfolio. **[inference]**
+  On 4 workers each played about 1,200 expansions, and the leak measured in §3 accounts for that growth. **[inference]**
 - **What would cut the cost** **[unverified]**: run the beams in an order of preference rather than fairly, the best
   beam first and the others on idle workers. From T1 that would approach the single W8's 1,657; from A1:20 it would
   first spend the W8 at 0.5's 245 before the weight-1 beam got the pool.
@@ -442,8 +564,21 @@ What the table shows:
 2. **The gate.** Before anything is shown, replay each line found from the wave-start save, or from the augmented export
    for a mid-fight solve. Only then does it become an **oracle line** with **replay** checkpoints.
    **[inference from §1]**
-3. **Workers.** Run `min(cores − 2, 6)` long-lived workers, at least 1, each with a capped heap. Recycle a worker that
-   passes about 0.75 GB. **[inference]**
+3. **Workers.** Run `min(cores − 2, 6)` long-lived workers, at least 1. **[inference]** for the count.
+   - Cap each worker's heap at 768 MB (`--max-old-space-size=768`, a heap limit of 864 MB). It costs no speed and
+     changes no answer. **[verified]**
+   - Recycle each worker after 250 expansions of its own. Its live heap grows about 1.1 MB per expansion, and at
+     768 MB it dies after about 450. A recycle costs 5–7% in boots. **[inference]** from §3's measurements.
+   - Recycle by count, not by RSS. Heap use after a job swings by 100–200 MB with the garbage not yet collected, so an
+     RSS threshold fires late or at random. If a threshold is wanted as well, use about 0.7 GB of the fork's RSS: its
+     RSS around step 301 was 0.79–0.89 GB. **[inference]**
+   - The coordinator must treat a dead worker as a lost job, and re-queue it on a fresh worker. `search.py` now stops
+     instead of hanging; `portfolio.py` still waits forever. Neither re-queues. **[verified]** in source.
+   - Do not count on the cap for the pool peak. Each vitest parent holds 350–420 MB through boot. A product worker
+     that is not a vitest run would not pay that. **[inference]**
+   - On a 4-core, 8 GB laptop: 2 workers, about 2.3–2.8 GB for the pool, about 7 minutes for a single width-8 beam from
+     T1, about 20 minutes for the portfolio's first win from T1, and up to about 40 minutes for its full budget. These
+     are scaled from this Mac, not measured on a laptop. **[inference]**
 4. **Search and budget.** Run the three-beam portfolio of §4 with the stall rule as a stop condition: it ends a
    looping beam at no cost to one that wins, but it does not rescue one. **[inference]**
    - Stop at the first replayed win. Say "no answer" only when every beam has emptied or stalled, has gone 40 turns
@@ -479,7 +614,9 @@ The mid-fight roots above are other positions in the same fight, not another fig
 | `harness/solve.test.ts` | The worker: probe mode (`SS_MODE=probe`) and long-lived job mode (`SS_MODE=worker`) |
 | `harness/run.sh` | Copies the test into the shared clone under a unique name, and always removes it |
 | `harness/probe.sh`, `mkprobe.py`, `show_probe.py`, `show_lines.py`, `known_lines.py`, `replay.py` | Probes and views |
-| `harness/search.py` | The beam coordinator: worker pool, RSS sampling (`mem.jsonl`) and replay of wins from T1 |
+| `harness/search.py` | The beam coordinator: worker pool, RSS sampling (`mem.jsonl`), each job's RSS and heap (`heap.jsonl`), and replay of wins from T1 |
+| `harness/heap.sh`, `harness/heaptally.py` | One search with an optional heap cap behind a memory gate, and the heap tables and timelines |
+| `runs/heap/` | The heap-cap runs at 1–4 workers, the two long single-worker runs, `tally.md` and the machine load of each run |
 | `harness/sweep.sh`, `harness/batch1.sh` | The batch run here: a single search per call, run in sequence |
 | `harness/tally.py`, `harness/ancestry.py` | The tables above |
 | `harness/portfolio.py`, `harness/ptally.py` | The three-beam portfolio on one pool, and its table |
@@ -505,6 +642,7 @@ To rerun a single search, or the forced-move cases:
 
 ```sh
 python3 -I docs/research/solve-search/harness/search.py /tmp/run --workers 8 --width 8 [--prefix A1:20] [--stall 6] [--setup FILE]
+SS_GC_EVERY=5 docs/research/solve-search/harness/heap.sh /tmp/heap p1-h768 768 --workers 1 --width 8 --budget-children 500
 python3 -I docs/research/solve-search/harness/portfolio.py /tmp/pf --workers 4 [--prefix A1:20] [--budget 3000] [--beams 8:0.5,8:1,16:0.5]
 mkdir -p /tmp/forced && python3 -I docs/research/solve-search/harness/mkforced.py /tmp/forced/job.json
 docs/research/solve-search/harness/probe.sh /tmp/forced && python3 -I docs/research/solve-search/harness/show_forced.py /tmp/forced/out.json
@@ -520,10 +658,16 @@ docs/research/solve-search/harness/probe.sh /tmp/forced && python3 -I docs/resea
 - **A portfolio of other members**, such as weight 1 at width 16, or weight 0.75. Weight 1 won from attempt 1's T21,
   where weight 0.5 lost at widths 8 and 16; which weights a portfolio needs is open.
 - **The portfolio on an unloaded machine.** Its wall-clock here was taken at load averages of 2.5–14.
-- **A heap cap** (`--max-old-space-size`) per worker: the RSS it holds a worker to, and what it costs in speed.
-- **Worker memory over a long run**, and the recycling count it needs. On 4 workers one worker reached 1.8 GB in an
-  18-minute portfolio search.
-- **Throughput on an actual 4-core, 8 GB machine.** §3's laptop numbers are scaled, not measured.
+- **Where the worker leaks.** About 1.1 MB per expansion, in the restore or the played turn. A heap-snapshot diff
+  across a few hundred expansions would say, and a fix would make recycling unnecessary.
+- **Recycling itself**: a coordinator that retires a worker after 250 expansions and re-queues a dead worker's job,
+  and its real overhead against the 5–7% estimated.
+- **Throughput on an actual 4-core, 8 GB machine.** §3's laptop numbers are scaled from 2 and 3 workers on this Mac,
+  not measured.
+- **The pool with the game tab open.** No PokéRogue tab was open during the heap runs.
+- **A worker that is not a vitest run**, and what it saves against the vitest parent's 350–420 MB at boot.
+- **Whether a recycled worker keeps its early speed.** The uncapped worker fell from 2.19 to 1.37 steps/s over 2,083
+  expansions, but layer content and load confound that.
 - **A second trainer fight.** None exists yet.
 - **A real augmented export from the live tab as a root.** The mid-fight roots here were made in the harness.
 - **A searched line that uses Struggle.** The forced-move cases play Struggle chained and straight, but the one search

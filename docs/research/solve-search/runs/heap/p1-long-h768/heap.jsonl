@@ -1,0 +1,31 @@
+{"t": 12.7, "children": 0, "worker": "59027", "rss_mb": 418, "heap_mb": 246}
+{"t": 23.3, "children": 13, "worker": "59027", "rss_mb": 442, "heap_mb": 285}
+{"t": 31.5, "children": 13, "worker": "59027", "rss_mb": 469, "heap_mb": 294}
+{"t": 42.1, "children": 13, "worker": "59027", "rss_mb": 516, "heap_mb": 336}
+{"t": 50.3, "children": 13, "worker": "59027", "rss_mb": 530, "heap_mb": 332, "live_mb": 303}
+{"t": 61.4, "children": 13, "worker": "59027", "rss_mb": 545, "heap_mb": 357}
+{"t": 69.8, "children": 13, "worker": "59027", "rss_mb": 565, "heap_mb": 356}
+{"t": 80.4, "children": 13, "worker": "59027", "rss_mb": 598, "heap_mb": 405}
+{"t": 88.6, "children": 13, "worker": "59027", "rss_mb": 604, "heap_mb": 434}
+{"t": 93.1, "children": 133, "worker": "59027", "rss_mb": 631, "heap_mb": 469, "live_mb": 389}
+{"t": 96.4, "children": 133, "worker": "59027", "rss_mb": 612, "heap_mb": 442}
+{"t": 100.8, "children": 133, "worker": "59027", "rss_mb": 628, "heap_mb": 458}
+{"t": 104.1, "children": 133, "worker": "59027", "rss_mb": 653, "heap_mb": 472}
+{"t": 108.6, "children": 133, "worker": "59027", "rss_mb": 676, "heap_mb": 505}
+{"t": 111.9, "children": 133, "worker": "59027", "rss_mb": 681, "heap_mb": 498, "live_mb": 445}
+{"t": 116.4, "children": 133, "worker": "59027", "rss_mb": 675, "heap_mb": 492}
+{"t": 119.6, "children": 133, "worker": "59027", "rss_mb": 709, "heap_mb": 544}
+{"t": 123.1, "children": 221, "worker": "59027", "rss_mb": 687, "heap_mb": 530}
+{"t": 126.5, "children": 221, "worker": "59027", "rss_mb": 709, "heap_mb": 541}
+{"t": 129.9, "children": 221, "worker": "59027", "rss_mb": 748, "heap_mb": 558, "live_mb": 496}
+{"t": 133.3, "children": 221, "worker": "59027", "rss_mb": 728, "heap_mb": 556}
+{"t": 138.0, "children": 221, "worker": "59027", "rss_mb": 730, "heap_mb": 547}
+{"t": 141.4, "children": 221, "worker": "59027", "rss_mb": 759, "heap_mb": 595}
+{"t": 146.2, "children": 221, "worker": "59027", "rss_mb": 761, "heap_mb": 570}
+{"t": 149.7, "children": 221, "worker": "59027", "rss_mb": 793, "heap_mb": 635, "live_mb": 553}
+{"t": 160.2, "children": 301, "worker": "59027", "rss_mb": 810, "heap_mb": 651}
+{"t": 170.9, "children": 301, "worker": "59027", "rss_mb": 812, "heap_mb": 638}
+{"t": 181.7, "children": 301, "worker": "59027", "rss_mb": 853, "heap_mb": 697}
+{"t": 192.7, "children": 301, "worker": "59027", "rss_mb": 838, "heap_mb": 695}
+{"t": 206.4, "children": 301, "worker": "59027", "rss_mb": 879, "heap_mb": 733, "live_mb": 697}
+{"t": 224.5, "children": 301, "worker": "59027", "rss_mb": 894, "heap_mb": 749}

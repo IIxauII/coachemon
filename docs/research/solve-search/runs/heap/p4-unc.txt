@@ -1,0 +1,108 @@
+workers ready: [(38329, 4192), (38333, 4192), (38334, 4192), (38335, 4192)]
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0    7.0s total 13 rss 3070MB
+L 2 nodes  12 children  120 distinct   98 wins   0 losses   0 err 0   23.2s total 133 rss 3164MB
+L 3 nodes  12 children   88 distinct   88 wins   0 losses   0 err 0    9.0s total 221 rss 3164MB
+L 4 nodes  10 children   80 distinct   80 wins   0 losses   0 err 0    9.4s total 301 rss 3164MB
+L 5 nodes   9 children  220 distinct   85 wins   0 losses   0 err 0   27.3s total 521 rss 3164MB
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/brief3/p4-unc",
+  "workers": 4,
+  "width": 8,
+  "depth": 40,
+  "prefix": "",
+  "all_wins": false,
+  "ours_weight": 0.5,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-a41dbf5d95ba77a52/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 500,
+  "stall": 0,
+  "setup": "",
+  "timeout": 900.0
+ },
+ "workers": 4,
+ "heap_cap_mb": null,
+ "ready": [
+  {
+   "bootMs": 777.082625,
+   "pid": 38329,
+   "ppid": 38299,
+   "heapLimitMb": 4192,
+   "nodeOptions": null,
+   "execArgv": [
+    "--experimental-import-meta-resolve",
+    "--require",
+    "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+    "--conditions",
+    "node",
+    "--conditions",
+    "development"
+   ]
+  },
+  {
+   "bootMs": 794.3314999999993,
+   "pid": 38333,
+   "ppid": 38298,
+   "heapLimitMb": 4192,
+   "nodeOptions": null,
+   "execArgv": [
+    "--experimental-import-meta-resolve",
+    "--require",
+    "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+    "--conditions",
+    "node",
+    "--conditions",
+    "development"
+   ]
+  },
+  {
+   "bootMs": 785.4239589999997,
+   "pid": 38334,
+   "ppid": 38296,
+   "heapLimitMb": 4192,
+   "nodeOptions": null,
+   "execArgv": [
+    "--experimental-import-meta-resolve",
+    "--require",
+    "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+    "--conditions",
+    "node",
+    "--conditions",
+    "development"
+   ]
+  },
+  {
+   "bootMs": 782.186291,
+   "pid": 38335,
+   "ppid": 38300,
+   "heapLimitMb": 4192,
+   "nodeOptions": null,
+   "execArgv": [
+    "--experimental-import-meta-resolve",
+    "--require",
+    "/Users/xau/Documents/projects/coachemon/.cache/pokerogue/v1.12.0.11/node_modules/.pnpm/vitest@4.1.9_@types+node@24.13.2_@vitest+coverage-v8@4.1.9_jsdom@29.1.1_msw@2.14.6_@typ_1a004c0247bdecbe4f4185cc1fdd79cb/node_modules/vitest/suppress-warnings.cjs",
+    "--conditions",
+    "node",
+    "--conditions",
+    "development"
+   ]
+  }
+ ],
+ "aborted": null,
+ "boot_secs": 8.9,
+ "search_secs": 75.9,
+ "children_total": 521,
+ "losses_total": 0,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": null,
+ "wins": 0,
+ "memory": {
+  "peak_total_mb": 3163.859375,
+  "peak_worker_mb": 947.625,
+  "peak_process_mb": 603.984375,
+  "samples": 165
+ },
+ "children_per_sec": 6.86,
+ "validated": [],
+ "validate_secs": 0.0
+}

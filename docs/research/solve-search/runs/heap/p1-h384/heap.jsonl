@@ -1,0 +1,8 @@
+{"t": 12.9, "children": 0, "worker": "58098", "rss_mb": 411, "heap_mb": 248}
+{"t": 23.5, "children": 13, "worker": "58098", "rss_mb": 435, "heap_mb": 284}
+{"t": 31.7, "children": 13, "worker": "58098", "rss_mb": 462, "heap_mb": 293}
+{"t": 42.3, "children": 13, "worker": "58098", "rss_mb": 498, "heap_mb": 314}
+{"t": 50.4, "children": 13, "worker": "58098", "rss_mb": 507, "heap_mb": 318}
+{"t": 61.5, "children": 13, "worker": "58098", "rss_mb": 477, "heap_mb": 351}
+{"t": 69.9, "children": 13, "worker": "58098", "rss_mb": 472, "heap_mb": 347}
+{"t": 80.7, "children": 13, "worker": "58098", "rss_mb": 495, "heap_mb": 373}

@@ -8,6 +8,8 @@
 // the T1 save), play one action, and report the child. A child that makes one of ours faint is expanded once per legal
 // replacement, so a faint prompt is never a separate node.
 import { existsSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { getHeapStatistics, setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
 import { BattleScene } from "#app/battle-scene";
 import { PokemonSummonData } from "#data/pokemon-data";
 import { BattlerTagType } from "#enums/battler-tag-type";
@@ -29,6 +31,15 @@ const MODE = process.env.SS_MODE ?? "worker";
 const DIR = process.env.SS_DIR as string;
 const OUT = process.env.SS_OUT as string;
 const QUIET = process.env.SS_QUIET !== "0";
+// SS_GC_EVERY=N forces a full GC after every Nth job and reports the heap left (the live set): growth there is a leak,
+// not garbage waiting for a collection the uncapped heap has no reason to run yet.
+const GC_EVERY = Number(process.env.SS_GC_EVERY ?? 0);
+let forceGc: (() => void) | null = null;
+if (GC_EVERY > 0) {
+  setFlagsFromString("--expose-gc");
+  forceGc = runInNewContext("gc");
+}
+let jobsDone = 0;
 const nm = (p: any) => p.getNameToRender?.() ?? p.name;
 const sleep = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const now = () => performance.now();
@@ -575,7 +586,19 @@ describe("solve-search", () => {
     }
     // worker
     const me = `${process.pid}`;
-    writeFileSync(`${DIR}/ready.${me}`, JSON.stringify({ bootMs }));
+    // The heap limit this process actually runs under: proof that run.sh's SS_HEAP_MB reached the forked worker.
+    const h = getHeapStatistics();
+    writeFileSync(
+      `${DIR}/ready.${me}`,
+      JSON.stringify({
+        bootMs,
+        pid: process.pid,
+        ppid: process.ppid,
+        heapLimitMb: Math.round(h.heap_size_limit / 2 ** 20),
+        nodeOptions: process.env.NODE_OPTIONS ?? null,
+        execArgv: process.execArgv,
+      }),
+    );
     let idleSince = now();
     for (;;) {
       if (existsSync(`${DIR}/stop`) || !existsSync(`${DIR}/jobs`) || now() - idleSince > 300_000) break;
@@ -604,6 +627,11 @@ describe("solve-search", () => {
         } catch {}
       }
       res.worker = me;
+      res.heapUsed = getHeapStatistics().used_heap_size;
+      if (forceGc && ++jobsDone % GC_EVERY === 0) {
+        forceGc();
+        res.liveHeap = getHeapStatistics().used_heap_size;
+      }
       writeFileSync(`${DIR}/results/.${claimed}.tmp`, JSON.stringify(res));
       renameSync(`${DIR}/results/.${claimed}.tmp`, `${DIR}/results/${claimed}`);
     }
