@@ -123,6 +123,7 @@ details.prov ul{margin:6px 0 0;padding-left:20px;display:grid;gap:2px}
     <div class="eyebrow">Prototype · #640 · throwaway</div>
     <h1>Which of the battle oracle's HUD candidates ship, and what does each say on the card?</h1>
     <p>Each confirmed gap from #637, drawn on the Gordie W180 or Ivy W145 turn where it would have changed the call. Flip between <b>Today</b> and three ways to ship it, then pick one per gap on the right. Variants: <b>A</b> fixes the call and says nothing, <b>B</b> fixes the call and says why in a few words, <b>C</b> keeps today's call and adds a <b>✦</b> line offering the play.</p>
+    <p><b>Decided:</b> all eight ship as <b>A</b>. Each fix changes the call, the plan and the numbers, and the card adds no words to explain it. The accuracy display adds only a <code>· 75%</code> tail. Filed as #646–#653. B and C are kept for comparison.</p>
     <details class="prov">
       <summary>Where the content comes from</summary>
       <ul>
@@ -444,8 +445,9 @@ const GAPS = [
 ];
 
 const state = { gap: 0, scene: 0, v: 0 };
-let picks = {};
-try { picks = JSON.parse(localStorage.getItem("proto-640-picks") || "{}") || {}; } catch (e) { picks = {}; }
+// Defaulted to what #640 decided: every gap ships as A.
+let picks = Object.fromEntries(GAPS.map(g => [g.id, "A"]));
+try { Object.assign(picks, JSON.parse(localStorage.getItem("proto-640-picks") || "{}") || {}); } catch (e) {}
 const savePicks = () => { try { localStorage.setItem("proto-640-picks", JSON.stringify(picks)); } catch (e) {} };
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
