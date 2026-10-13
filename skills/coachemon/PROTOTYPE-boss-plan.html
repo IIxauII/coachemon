@@ -1,0 +1,786 @@
+<title>Coachemon Boss Plan</title>
+<!--
+  PROTOTYPE, throwaway: issue #639 "What does a boss-fight plan from the coach skill look like?"
+  Three variants of where the plan lives (reply · file · card group) × two fidelities (Ivy W145 without the
+  oracle · Gordie W180 with an oracle line), switchable from the bar at the bottom or by #where-fight-step-off.
+  Double-click to open. Never merged.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Pixelify+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: the stage (left) draws one variant of the plan; the notes column (right) says what that variant settles.
+   A fixed switcher at the bottom drives both. The game, its HUD and the terminal are fixed worlds in both themes. */
+:root{
+  --bg:#f3f2f6; --panel:#ffffff; --fg:#1d1922; --muted:#625a6d; --line:#dbd5e2;
+  --accent:#9a5c0c; --accent-soft:#f5e6cd;
+  --exact:#1f6f53; --exact-bg:#ddf0e7;
+  --replay:#955600; --replay-bg:#f6e8cf;
+  --estimate:#4d5c70; --estimate-bg:#e3e8ef;
+  --wrong:#b02e26; --wrong-bg:#f8dfdc;
+  --noclaim:#6f667c; --noclaim-bg:#ebe8ef;
+  --bar-bg:#1d1922; --bar-fg:#f3f2f6; --bar-line:#4a4252; --bar-hi:#f8b050;
+  /* fixed worlds */
+  --hud-fill:#362d3e; --hud-body:#f8f8f8; --hud-rule:#f8b050; --hud-shadow:#181818; --hud-dim:#b4a8c0;
+  --hud-ok:#8fe0b4; --hud-bad:#ff8f84;
+  --game-a:#24495a; --game-b:#0d1c24; --game-fg:#cfe3ea;
+  --term-bg:#121116; --term-fg:#e4e1ea; --term-dim:#8a8496; --term-acc:#f8b050; --term-ok:#86d7ae; --term-bad:#ff8f84; --term-b:#ffffff;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --pixel:"Pixelify Sans", "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141218; --panel:#1c1a21; --fg:#ece8f2; --muted:#a59db0; --line:#302a38;
+    --accent:#f0a948; --accent-soft:#3a2c17;
+    --exact:#74d3a4; --exact-bg:#163128; --replay:#f0a948; --replay-bg:#3a2c17;
+    --estimate:#aab8cb; --estimate-bg:#242b35; --wrong:#ff8f84; --wrong-bg:#3d1d1b;
+    --noclaim:#a59db0; --noclaim-bg:#26222c;
+    --bar-bg:#ece8f2; --bar-fg:#141218; --bar-line:#bdb5c8; --bar-hi:#9a5c0c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141218; --panel:#1c1a21; --fg:#ece8f2; --muted:#a59db0; --line:#302a38;
+  --accent:#f0a948; --accent-soft:#3a2c17;
+  --exact:#74d3a4; --exact-bg:#163128; --replay:#f0a948; --replay-bg:#3a2c17;
+  --estimate:#aab8cb; --estimate-bg:#242b35; --wrong:#ff8f84; --wrong-bg:#3d1d1b;
+  --noclaim:#a59db0; --noclaim-bg:#26222c;
+  --bar-bg:#ece8f2; --bar-fg:#141218; --bar-line:#bdb5c8; --bar-hi:#9a5c0c;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--sans);padding-inline:16px;padding-block:28px 150px}
+.wrap{max-width:1260px;margin:0 auto;display:grid;gap:22px}
+code{font:0.9em var(--mono);background:var(--noclaim-bg);padding:0 4px;border-radius:3px}
+b{font-weight:600}
+
+header{display:grid;gap:8px}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font:600 clamp(22px,3vw,30px)/1.2 var(--sans);margin:0;text-wrap:balance}
+header p{margin:0;max-width:78ch;color:var(--muted)}
+details.prov{max-width:78ch;color:var(--muted);font-size:14px}
+details.prov summary{cursor:pointer;color:var(--fg);font-weight:500}
+details.prov ul{margin:6px 0 0;padding-left:20px;display:grid;gap:2px}
+
+.where-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline}
+.where-head h2{margin:0;font:600 19px/1.3 var(--sans)}
+.where-head .fid{font:13px var(--mono);color:var(--muted)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:22px;align-items:start}
+@media (max-width:960px){.layout{grid-template-columns:minmax(0,1fr)}}
+.stage{min-width:0;display:grid;gap:12px}
+.notes{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:16px;font-size:14px}
+.notes h3{margin:0 0 4px;font:600 12px/1.2 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.notes dl{margin:0;display:grid;gap:8px}
+.notes dt{font-weight:600}
+.notes dd{margin:0;color:var(--fg)}
+.conf-table{width:100%;border-collapse:collapse;font-size:13px}
+.conf-table td{padding:4px 0;border-top:1px solid var(--line);vertical-align:top}
+.conf-table td:last-child{text-align:right;white-space:nowrap;padding-left:8px}
+.legend{display:grid;gap:4px;font-size:13px}
+
+.chip{display:inline-flex;align-items:center;gap:4px;font:600 11px/1 var(--mono);letter-spacing:.02em;padding:3px 6px;border-radius:4px;white-space:nowrap;vertical-align:1px}
+.chip i{font-style:normal;font-size:12px}
+.c-exact{color:var(--exact);background:var(--exact-bg)}
+.c-replay{color:var(--replay);background:var(--replay-bg)}
+.c-estimate{color:var(--estimate);background:var(--estimate-bg)}
+.c-wrong{color:var(--wrong);background:var(--wrong-bg)}
+.c-none{color:var(--noclaim);background:var(--noclaim-bg)}
+
+/* A · reply */
+.term{background:var(--term-bg);color:var(--term-fg);border-radius:10px;padding:14px 16px;overflow-x:auto}
+.term pre{margin:0;font:13px/1.55 var(--mono);white-space:pre}
+.term .dim{color:var(--term-dim)} .term .acc{color:var(--term-acc)} .term .ok{color:var(--term-ok)}
+.term .bad{color:var(--term-bad)} .term .b{color:var(--term-b);font-weight:600} .term .you{color:var(--term-acc);font-weight:600}
+.term .new{color:var(--term-dim);font-style:italic}
+
+/* B · file */
+.doc{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.doc .filebar{font:12px/1.4 var(--mono);padding:9px 16px;border-bottom:1px solid var(--line);color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
+.doc .body{padding:18px 22px 22px;display:grid;gap:14px}
+.doc h2{margin:0;font:600 20px/1.3 var(--sans);text-wrap:balance}
+.doc h3{margin:6px 0 0;font:600 15px/1.3 var(--sans);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.doc p,.doc ul,.doc ol{margin:0;max-width:80ch}
+.doc ul,.doc ol{padding-left:20px;display:grid;gap:4px}
+.banner{border-radius:8px;padding:10px 14px;font-size:14px;display:grid;gap:4px}
+.banner.on{background:var(--exact-bg);color:var(--fg)}
+.banner.off{background:var(--wrong-bg);color:var(--fg)}
+.banner.wait{background:var(--noclaim-bg)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+.doc table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.doc th,.doc td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.doc th{font:600 11px/1.3 var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--noclaim-bg)}
+.doc tr:last-child td{border-bottom:0}
+.doc tr.cur td{background:var(--accent-soft)}
+.doc tr.void td{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--wrong)}
+.doc tr.miss td{background:var(--wrong-bg)}
+.doc td.ck{font:600 13px var(--mono);text-align:center;white-space:nowrap}
+.doc .ok{color:var(--exact)} .doc .bad{color:var(--wrong)}
+.tag{font:600 11px var(--mono);padding:1px 5px;border-radius:3px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.tag.luck{background:var(--noclaim-bg);color:var(--muted)}
+.phase{border-left:3px solid var(--line);padding:4px 0 4px 12px;display:grid;gap:2px}
+.phase.cur{border-left-color:var(--accent)}
+.phase.done{border-left-color:var(--exact)}
+.phase.miss{border-left-color:var(--wrong)}
+.phase .ph{font-weight:600}
+.phase .ckline{font-size:13px;color:var(--muted)}
+
+/* C · card group */
+.game{position:relative;width:100%;aspect-ratio:16/9;background:linear-gradient(160deg,var(--game-a),var(--game-b));border-radius:6px;overflow:hidden;container-type:inline-size}
+.game .canvas-note{position:absolute;right:12px;bottom:10px;font:12px/1.4 var(--mono);color:var(--game-fg);text-align:right;opacity:.85}
+.game .field{position:absolute;right:12px;top:10px;font:600 14px/1.3 var(--pixel);color:var(--game-fg);text-align:right}
+.hud{position:absolute;left:8px;top:8px;width:min(54%,470px);background:var(--hud-fill);color:var(--hud-body);border:2px solid var(--hud-rule);box-shadow:3px 3px 0 var(--hud-shadow);font:14px/1.4 var(--pixel)}
+.hud .strip{padding:5px 8px 6px;display:grid;gap:1px;border-bottom:1px solid var(--hud-rule)}
+.hud .cap{display:flex;justify-content:space-between;gap:8px;color:var(--hud-rule)}
+.hud .verdict::before{content:"● ";color:var(--hud-rule)}
+.hud .verdict{color:var(--hud-body)}
+.hud .tabs{display:flex;gap:12px;padding:3px 8px;border-bottom:1px solid var(--hud-rule);flex-wrap:wrap}
+.hud .tab{background:none;border:0;padding:0;font:inherit;color:var(--hud-dim);cursor:pointer}
+.hud .tab[aria-selected="true"]{color:var(--hud-rule)}
+.hud .tab:focus-visible{outline:1px solid var(--hud-rule)}
+.hud .pane{padding:5px 8px 7px;max-height:calc(40cqw - 64px);overflow:auto;display:grid;gap:1px}
+.hud .r{white-space:normal}
+.hud .d{color:var(--hud-dim)}
+.hud .g{color:var(--hud-rule)}
+.hud .ok{color:var(--hud-ok)} .hud .bad{color:var(--hud-bad)}
+.hud .cur{background:rgba(248,176,80,.16)}
+.hud .void{color:var(--hud-dim);text-decoration:line-through}
+.hud .h{color:var(--hud-rule);margin-top:3px}
+.feed{background:var(--term-bg);color:var(--term-fg);border-radius:8px;padding:8px 12px;overflow-x:auto}
+.feed pre{margin:0;font:12px/1.5 var(--mono);white-space:pre}
+.feed .dim{color:var(--term-dim)} .feed .bad{color:var(--term-bad)} .feed .ok{color:var(--term-ok)} .feed .acc{color:var(--term-acc)}
+@media (max-width:640px){
+  .game{aspect-ratio:auto;padding:8px 8px 64px}
+  .hud{position:relative;left:auto;top:auto;width:100%}
+  .hud .pane{max-height:60vh}
+  .game .field{position:static;text-align:left;margin-top:8px}
+}
+
+.stepnote{font-size:14px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.stepnote b{color:var(--fg)}
+
+/* the switcher (prototype chrome, not part of any design) */
+.bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:10;
+  background:var(--bar-bg);color:var(--bar-fg);border-radius:14px;padding:6px 8px;display:flex;flex-wrap:wrap;justify-content:center;
+  gap:6px 10px;align-items:center;box-shadow:0 8px 28px rgba(0,0,0,.28);font:500 13px/1 var(--mono);width:max-content;max-width:calc(100vw - 24px)}
+.bar .grp{display:flex;align-items:center;gap:4px}
+.bar button,.bar select{font:inherit;color:inherit;background:transparent;border:1px solid var(--bar-line);border-radius:8px;padding:6px 9px;cursor:pointer}
+.bar select{appearance:auto;color:var(--bar-fg);background:var(--bar-bg)}
+.bar button[aria-pressed="true"]{border-color:var(--bar-hi);color:var(--bar-hi)}
+.bar button:focus-visible,.bar select:focus-visible{outline:2px solid var(--bar-hi);outline-offset:1px}
+.bar .lbl{min-width:9ch;text-align:center;white-space:nowrap}
+.bar .k{opacity:.6;font-size:11px}
+@media (prefers-reduced-motion: no-preference){ .stage > *{animation:fade .18s ease-out} @keyframes fade{from{opacity:.55}to{opacity:1}} }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Prototype · #639 · throwaway</div>
+    <h1>What does a boss-fight plan from the coach look like?</h1>
+    <p>One plan, drawn three ways and at two fidelities. Use the bar at the bottom to change where the plan lives, which fight it's for, how far into the fight you are, and whether the game has left the plan. The notes on the right say what each variant settles and what it costs.</p>
+    <details class="prov">
+      <summary>Where the content comes from</summary>
+      <ul>
+        <li><b>Gordie W180:</b> the line, its After column and its luck are from <code>PLAN.md</code> on <code>research/gordie-w180</code>. The card's call and its read of Gordie at each turn are from the engine runs in #638 (<code>research/gordie-hud-vs-engine</code>). The validation checks are #636's protocol, steps 1–5.</li>
+        <li><b>Gordie off the line:</b> the T7 numbers are worked from the line (Probopass unchanged, Carracosta untouched), not run. For the T6 roll, the card tagged Stone Edge <code>💀 after</code>; the faint is that tag, not an engine run.</li>
+        <li><b>Ivy W145:</b> teams, the card's logged calls (Dragon Hammer at T4, Moonblast into the Enigma, the sacrifice chain, Hyper Voice · 1 hit) and both breaks from the plan are from the W145 log. The plan itself is new. No engine line exists for this fight, so the on-plan HP at each check is illustrative, borrowed from attempt 3 where the log has it.</li>
+        <li><b>Dropped from <code>PLAN.md</code>:</b> its <i>Tools</i> section. It was for the agent driving the fight, not for a player.</li>
+      </ul>
+    </details>
+  </header>
+
+  <div class="where-head"><h2 id="whereTitle"></h2><span class="fid" id="fidTitle"></span></div>
+
+  <div class="layout">
+    <section class="stage" id="stage" aria-live="polite"></section>
+    <aside class="notes" id="notes"></aside>
+  </div>
+</div>
+
+<nav class="bar" aria-label="Prototype switcher">
+  <div class="grp">
+    <button id="wPrev" aria-label="Previous variant">←</button>
+    <span class="lbl" id="wLbl"></span>
+    <button id="wNext" aria-label="Next variant">→</button>
+  </div>
+  <div class="grp" role="group" aria-label="Fight">
+    <button id="fIvy">Ivy W145</button>
+    <button id="fGordie">Gordie W180</button>
+  </div>
+  <div class="grp">
+    <button id="sPrev" aria-label="Previous step">◀</button>
+    <span class="lbl" id="sLbl"></span>
+    <button id="sNext" aria-label="Next step">▶</button>
+  </div>
+  <div class="grp">
+    <label for="off" class="k">plan</label>
+    <select id="off"></select>
+  </div>
+  <span class="k">← → variant · [ ] step</span>
+</nav>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`(.+?)`/g, "<code>$1</code>");
+const plain = s => String(s).replace(/\*\*/g, "").replace(/`/g, "");
+
+const CONF = {
+  exact: { name: "exact", mark: "" },
+  replay: { name: "replay", mark: "~" },
+  estimate: { name: "estimate", mark: "≈" },
+  wrong: { name: "wrong once", mark: "!" },
+  none: { name: "no claim", mark: "" },
+};
+const chip = k => `<span class="chip c-${k}">${CONF[k].mark ? `<i>${CONF[k].mark}</i>` : ""}${CONF[k].name}</span>`;
+
+// ───────────────────────────── Gordie W180, with an oracle line ─────────────────────────────
+const LINE = [
+  { t: 1, field: ["Reshiram", "Gigalith"], input: "Reshiram **Dragon Pulse**", happens: "Gigalith Rock Slide; Reshiram eats Enigma + Sitrus", after: "Reshiram 577/577 · Gigalith 282/525", card: "same · Dragon Pulse → Gigalith · 3 hits", foe: "Gigalith Rock Slide", foeConf: "exact" },
+  { t: 2, field: ["Reshiram", "Gigalith"], input: "⇄ **Probopass**", happens: "Gigalith Explosion, faints; Carracosta in", after: "Probopass 359/427", card: "Dragon Pulse again · 2 hits", foe: "Gigalith Explosion", foeConf: "exact", differs: true, why: "Probopass takes the Explosion instead of Reshiram." },
+  { t: 3, field: ["Probopass", "Carracosta"], input: "⇄ **Leavanny**", happens: "Carracosta Brine", after: "Leavanny 413/497", card: "same · ⇄ Leavanny, takes 12% Brine", foe: "Carracosta Brine (entry hit)", foeConf: "exact" },
+  { t: 4, field: ["Leavanny", "Carracosta"], input: "Leavanny **Pollen Puff**", happens: "Gordie swaps Carracosta → Coalossal; Pollen Puff hits it", after: "Leavanny 382 · Coalossal 657/711", card: "⇄ Reshiram, Fickle Beam → Coalossal", foe: "swap Carracosta → Coalossal (sure)", foeConf: "exact", differs: true, why: "Stay in on the swap the card itself predicts, and hit what comes in." },
+  { t: 5, field: ["Leavanny", "Coalossal"], input: "Leavanny **Bug Bite**", happens: "Coalossal Teras Rock; crit, steals its Lum; Burn Up fails", after: "Leavanny 351 · Coalossal 515 (Tera Rock)", card: "Pollen Puff, then Leaf Storm", foe: "Tera Rock, Burn Up (fails)", foeConf: "exact", differs: true, luck: "crit", why: "Bug Bite takes the Lum." },
+  { t: 6, field: ["Leavanny", "Coalossal"], input: "Leavanny **Leaf Storm**", happens: "Coalossal Stone Edge misses", after: "Leavanny 320 (−2 SpA) · Coalossal 238", card: "same", foe: "Stone Edge · 💀 after on Leavanny", foeConf: "exact", luck: "miss" },
+  { t: 7, field: ["Leavanny", "Coalossal"], input: "Leavanny **Bug Bite**", happens: "Gordie swaps → Carracosta; Bug Bite steals its Enigma, Leavanny heals", after: "Leavanny 413 · Carracosta 380/467", card: "⇄ Probopass, Earth Power → Carracosta", foe: "swap Coalossal → Carracosta (sure)", foeConf: "exact", differs: true, decides: true, luck: "Enigma steal", why: "This turn decides the fight. Staying in steals the Enigma. The card's switch loses from here." },
+  { t: 8, field: ["Leavanny", "Carracosta"], input: "Leavanny **Leaf Storm**", happens: "Carracosta Iron Defense", after: "Leavanny 382 (−4 SpA) · Carracosta 121", card: "same · 2 hits", foe: "Carracosta Iron Defense", foeConf: "exact" },
+  { t: 9, field: ["Leavanny", "Carracosta"], input: "⇄ **Reshiram**", happens: "Gordie swaps Carracosta → Stonjourner", after: "Reshiram 577 · Stonjourner 574", card: "same", foe: "swap Carracosta → Stonjourner (sure)", foeConf: "exact" },
+  { t: 10, field: ["Reshiram", "Stonjourner"], input: "Reshiram **Dragon Pulse**", happens: "Stonjourner faints in one hit; Barbaracle in", after: "Reshiram 577", card: "⇄ Leavanny, Leaf Storm (its own plan prefers Dragon Pulse)", foe: "Stonjourner Earthquake", foeConf: "exact", differs: true, why: "Dragon Pulse one-shots Stonjourner before it moves." },
+  { t: 11, field: ["Reshiram", "Barbaracle"], input: "⇄ **Leavanny**", happens: "Barbaracle Razor Shell into Leavanny", after: "Leavanny 280", card: "Reshiram Fickle Beam · 2 hits", foe: "Barbaracle Razor Shell", foeConf: "exact", differs: true, why: "Leavanny's Leaf Storm one-shots Barbaracle next turn." },
+  { t: 12, field: ["Leavanny", "Barbaracle"], input: "Leavanny **Leaf Storm**", happens: "Barbaracle faints; Tyranitar in", after: "Leavanny 249 (−2 SpA)", card: "same · 1 hit", foe: "Barbaracle Stone Edge", foeConf: "exact" },
+  { t: 13, field: ["Leavanny", "Tyranitar"], input: "Leavanny **Bug Bite** · send **Golbat**", happens: "steals Leppa; Tyranitar Stone Edge, Leavanny faints", after: "Golbat 493 · Tyranitar 512/569", card: "Pollen Puff, then Bug Bite · at the faint prompt, Reshiram", foe: "Tyranitar Stone Edge · 💀 after", foeConf: "exact", differs: true, why: "At the faint prompt, Golbat, for Toxic." },
+  { t: 14, field: ["Golbat", "Tyranitar"], input: "Golbat **Toxic**", happens: "Stone Edge misses", after: "Golbat 463 · Tyranitar 477, badly poisoned", card: "⇄ Reshiram, Dragon Pulse", foe: "Tyranitar Stone Edge", foeConf: "exact", differs: true, luck: "miss", why: "Toxic on the win condition. The card has no word for it." },
+  { t: 15, field: ["Golbat", "Tyranitar"], input: "Golbat **Venoshock** · send **Gyarados**", happens: "Stone Edge, Golbat faints; Gyarados in (Intimidate)", after: "Gyarados 570 · Tyranitar 339 (−1 Atk)", card: "same · at the faint prompt, Reshiram", foe: "Tyranitar Stone Edge · free entry", foeConf: "exact", differs: true, why: "At the faint prompt, Gyarados, not Reshiram." },
+  { t: 16, field: ["Gyarados", "Tyranitar"], input: "Gyarados **Tera Water** + **Hydro Pump**", happens: "Tyranitar Stone Edge, eats Sitrus", after: "Gyarados 351 · Tyranitar 109", card: "Hydro Pump, no Tera · 2 hits", foe: "Tyranitar Stone Edge", foeConf: "exact", differs: true, why: "Tera Water halves Stone Edge. The card never offers our Tera." },
+  { t: 17, field: ["Gyarados", "Tyranitar"], input: "Gyarados **Hydro Pump**", happens: "Tyranitar faints; Carracosta in", after: "Gyarados 316", card: "same · 1 hit", foe: "Tyranitar Stone Edge", foeConf: "exact" },
+  { t: 18, field: ["Gyarados", "Carracosta"], input: "Gyarados **Hydro Pump**", happens: "Carracosta faints; Coalossal in; Gyarados eats Sitrus", after: "Gyarados 423", card: "same · 1 hit", foe: "Carracosta Iron Defense", foeConf: "exact" },
+  { t: 19, field: ["Gyarados", "Coalossal"], input: "Gyarados **Hydro Pump**", happens: "crit; Coalossal faints. **Win.**", after: "Gyarados 423 · Probopass 359 · Snorlax 824 · Reshiram 577", card: "same · 1 hit", foe: "Coalossal Stone Edge", foeConf: "exact" },
+];
+
+const GORDIE = {
+  id: "gordie", wave: "w180", name: "Gordie W180", fidelity: "with an oracle line",
+  who: "Gym Leader Gordie · wave 180 · singles",
+  ask: "gordie's next. what's the plan?",
+  file: "~/.coachemon/plans/U0QKEz8w-w180-gordie.md",
+  call: { text: "This line wins in 19 turns with four of six left.", conf: "replay", sub: "Gyarados, Probopass, Snorlax and Reshiram are standing at the end." },
+  trust: [
+    ["Game version matches the clone", "v1.12.0.11 both"],
+    ["The load is clean", "real RNG, IV and nature overrides off, enemy items cleared"],
+    ["The wave-start save matches this wave", "W180 · seed U0QKEz8wJ8ea7832"],
+    ["The loaded scene diffs clean against live", "HP, status, stages, Tera, team index"],
+    ["A known fight reproduces", "attempt 1's 23 inputs, HP for HP, to the loss"],
+  ],
+  restsOn: "Turn 1 of W180 from the wave-start save, and every input exactly as written. A different move, target or switch on any turn changes that turn's rolls and every turn after it.",
+  luck: "It rides on the T5 crit, the Stone Edge misses on T6 and T14, and the T7 Enigma steal. That luck belongs to this exact sequence.",
+  disagree: [
+    { text: "**T7 decides the fight.** The card says switch to Probopass and Earth Power the incoming Carracosta. Stay in and Bug Bite: it steals the Enigma and heals Leavanny. Following the card from T7 loses.", conf: "replay" },
+    { text: "The card also picks something else on T2, T4, T5, T10, T11, T13, T14 and T16. T2, T5, T13 and T16 each still win on their own, but any departure voids the rest of this line.", conf: "replay" },
+    { text: "The card has no word for berry theft, our own Tera, or Toxic on Tyranitar.", conf: "exact" },
+  ],
+  inputs: [
+    "**T13 and T15, faint prompts:** send Golbat, then Gyarados. The card offers Reshiram both times.",
+    "**T16, Tera:** on the command menu press ← from Fight to the Tera button, then Hydro Pump. The game says \"Gyarados Terastallized into the Water type!\"",
+  ],
+  offline: [
+    "**Stop.** Don't improvise into the next turn of the line: its luck belongs to the inputs before it.",
+    "**You pressed something else:** reload the tab and press Continue. Check W180, turn 1, full party, sand, Gigalith out. Replay from T1; the line still holds from the wave-start save.",
+    "**The game did something else on the same input:** the line's picture of this session is wrong, and reloading won't fix it. Play on with the card. The coach can export again and search if you ask.",
+    "One miss voids the rest of the line for this run.",
+  ],
+  principles: [
+    { text: "Gordie swaps on matchup, not on our move: a benched mon must score twice the active one against ours. Scores halve against a legendary, so he rarely leaves Reshiram.", conf: "exact" },
+    { text: "Coalossal's first move into Leavanny is Burn Up, and it fails: it Teras Rock first and is no longer Fire. That's a free turn.", conf: "exact" },
+    { text: "Bug Bite eats the target's berry and heals us with it. When a foe holds several, which one it takes is random.", conf: "estimate" },
+    { text: "Tera Water Gyarados is the Tyranitar answer: Stone Edge goes from 114% to 57%, about 38% after Intimidate, and nothing scores high enough to swap in against it.", conf: "estimate" },
+    { text: "Gordie's move this turn is the card's exact read. Past this turn it's odds: his second pick runs about 50% when the scores are close.", conf: "estimate" },
+    { text: "Lum holders shrug off Toxic until Bug Bite takes the Lum. Mean Look ends when Golbat leaves the field.", conf: "exact" },
+  ],
+};
+GORDIE.steps = [
+  { label: "T1 · searching", turn: 1, field: LINE[0].field, search: true },
+  ...LINE.map((r, i) => ({ label: `T${r.t}`, turn: r.t, field: r.field, row: r, check: i ? { turn: r.t - 1, what: `T${r.t - 1} After`, expect: LINE[i - 1].after } : null })),
+  { label: "Won", turn: 19, field: ["Gyarados", "—"], done: true, check: { turn: 19, what: "T19 After", expect: LINE[18].after } },
+];
+GORDIE.offs = {
+  none: { name: "on the line" },
+  input: {
+    name: "player follows the card at T7", at: 8, kind: "input", turn: 7, label: "T8",
+    field: ["Probopass", "Carracosta"],
+    played: "⇄ Probopass (the card's call)", line: "Leavanny Bug Bite",
+    expect: "Leavanny 413 · Carracosta 380/467, Enigma stolen",
+    got: "Probopass 359/427 · Carracosta 467/467, Enigma held",
+    src: "worked from the line, not run",
+    headline: "Off the line at T7: you switched to Probopass.",
+    next: ["Reload and press Continue. Check W180, turn 1, full party, sand, Gigalith out.", "Replay from T1. The line still holds from the wave-start save.", "Or play on with the card. Its plan from here is an estimate, and following it from T7 lost in the engine."],
+    cardNow: "Probopass Earth Power → Carracosta · 2 hits",
+  },
+  game: {
+    name: "a roll differs at T6", at: 7, kind: "game", turn: 6, label: "T6 · faint prompt",
+    field: ["—", "Coalossal"],
+    played: "Leavanny Leaf Storm (as the line says)", line: "Leavanny Leaf Storm",
+    expect: "Leavanny 320 (−2 SpA) · Coalossal 238",
+    got: "Leavanny fainted · Coalossal 238",
+    src: "illustrative: the card tagged this Stone Edge 💀 after; in the line it missed",
+    headline: "Off the line at T6: Stone Edge hit on the line's own input.",
+    next: ["The line's picture of this session is wrong, so its replay claim is marked wrong for the run.", "Reloading won't help: the same inputs meet the same live rolls.", "Play on with the card. Ask the coach to export again and search, if it's live."],
+    cardNow: "faint prompt: send Reshiram",
+  },
+};
+
+// ───────────────────────────── Ivy W145, without the oracle ─────────────────────────────
+const IVY = {
+  id: "ivy", wave: "w145", name: "Ivy W145", fidelity: "without the oracle",
+  who: "Rival Ivy · wave 145 · singles · Rayquaza and Torterra are bosses",
+  ask: "ivy's up, she has rayquaza. plan?",
+  file: "~/.coachemon/plans/w145-ivy.md",
+  call: { text: "Winnable if Dragonite meets Rayquaza at full HP.", conf: "estimate", sub: "The card's own verdict says winnable. On Gordie that verdict matched the outcome at 9 of 22 points, so read it as a lean, not a promise." },
+  rests: [
+    { text: "Both teams, held items, abilities and stats, from the battle read at turn 1.", conf: "exact" },
+    { text: "Each foe's move and Ivy's swaps, from the card's turn read, but only on the turn it reads them.", conf: "exact" },
+    { text: "Every one-on-one further ahead, worked from the damage formula until the two mons meet.", conf: "estimate" },
+  ],
+  wincon: [
+    { text: "**Rayquaza** is the fight: a boss with 3 bars of 143 HP, Atk 428, Spe 319, holding Sitrus, Enigma and Lum.", conf: "exact" },
+    { text: "Its Outrage one-shots everyone but a full-HP Mega Dragonite, whose Multiscale halves it.", conf: "estimate" },
+    { text: "Only Raichu (Spe 387) moves before it. After a Dragon Dance, nobody does.", conf: "exact" },
+  ],
+  answers: [
+    { text: "**Dragonite at full HP** takes one Outrage, and Extreme Speed (priority, neutral) breaks a bar.", conf: "estimate" },
+    { text: "**Raichu** moves first, and Thunderbolt (neutral) breaks a bar without feeding the Enigma.", conf: "estimate" },
+    { text: "**Keep** Dragonite's Multiscale until Rayquaza arrives: Kingdra's Ice Beam is 4× on it. Keep Raichu or Dragonite alive for Pidgeot.", conf: "none" },
+  ],
+  phases: [
+    { name: "Torterra lead (T1)", do: "Raichu is out. If the card reads Torterra's move as Earthquake, switch to Dragonite: Ground can't touch it. If it reads Stone Axe, switch to Breloom, which resists all four.", check: "Dragonite on the field at 420/420." },
+    { name: "Kingdra (T2–3)", do: "The card will read Ivy's swap to Kingdra. Switch Dragonite → Raichu that same turn, then Moonblast Kingdra (Fairy 2×; Raichu is faster unless Kingdra Agilities).", check: "Kingdra down, and Dragonite 420/420 on the bench." },
+    { name: "Rayquaza (3 bars + Sitrus)", do: "Four hits: Raichu Thunderbolt and Dragonite Extreme Speed, neutral only while it holds the Enigma. Quaquaval is the spare: it survives one Outrage, barely.", check: "After each hit: bars left, Enigma still held, Dragonite and Raichu both standing." },
+    { name: "Torterra again (2 bars)", do: "Dragonite Hyper Voice. Aerilate makes it Flying, STAB and 2×, and it carries through both bars in one hit.", check: "Torterra down in one hit. The card will say `1 hit` once they meet." },
+    { name: "Pidgeot, Alakazam, Tauros", do: "Raichu Thunderbolts Pidgeot in one hit and moves first. The card's turn line for the rest.", check: "Raichu or Dragonite standing when Pidgeot comes in." },
+  ],
+  disagree: [
+    { text: "**Moonblast or Dragon Hammer into Rayquaza while it holds the Enigma Berry.** A super-effective hit heals it 25%, about 107 HP. The card will still call Moonblast. Use Thunderbolt or Extreme Speed.", conf: "exact" },
+    { text: "**Dragon Hammer from a Dragonite that Rayquaza outspeeds and KOs.** The card prices it as `2 hits`, but it never fires. Extreme Speed hits first.", conf: "exact" },
+    { text: "**A sacrifice chain of mons that never act.** The card offers Breloom → Tentacruel → Crawdaunt for free switches. All three are slower and fall to one Outrage, so each one only brings in the next sacrifice.", conf: "estimate" },
+  ],
+  inputs: [
+    "**Faint replacements while Rayquaza is up:** Dragonite or Raichu. Never Breloom, Crawdaunt or Tentacruel.",
+    "**Wait for the first command.** At the intro the card can't ask the engine, and its fallback said \"likely lost · nobody KOs Torterra 1-on-1\".",
+  ],
+  offline: [
+    "**Multiscale broke before Rayquaza** (attempts 1 and 2): Dragonite stops being the wall. Its jobs become Torterra and the priority finish. Switch it out when Rayquaza arrives and let Raichu break the bars. Attempt 3 did this and won.",
+    "**Rayquaza ate a super-effective hit and healed:** count one more hit, and don't repeat it.",
+    "**Anything else:** the card's turn line leads. The rules above still hold.",
+  ],
+  principles: [
+    { text: "A boss bar stops a hit at its edge unless the hit is big enough to break more than one. Rayquaza's are 143 HP, so ~200-damage hits take one bar each.", conf: "exact" },
+    { text: "Sitrus heals at half HP. Enigma heals 25% on a super-effective hit. Lum cures the first status, so the first Spore is wasted.", conf: "exact" },
+    { text: "Extreme Speed has +2 priority: it hits before Outrage whatever the Speed.", conf: "exact" },
+    { text: "Strip its berries, break bars with neutral hits, finish with priority. That's how attempt 3 won.", conf: "none" },
+  ],
+};
+IVY.steps = [
+  { label: "T1", phase: 0, field: ["Raichu", "Torterra"], do: "⇄ **Dragonite**", why: "The card reads Torterra's move as Earthquake, so phase 1's Dragonite branch applies.", card: "not logged", foe: "Torterra Earthquake", foeConf: "exact", check: null },
+  { label: "T2", phase: 1, field: ["Dragonite", "Torterra"], do: "⇄ **Raichu**", why: "The card reads Ivy's swap to Kingdra. Raichu takes the entry, and Dragonite keeps Multiscale.", card: "not logged", foe: "swap Torterra → Kingdra (sure)", foeConf: "exact", check: { what: "Dragonite on the field", expect: "420/420", got: "420/420" } },
+  { label: "T4 · Rayquaza", phase: 2, field: ["Raichu", "Rayquaza"], do: "Raichu **Thunderbolt** → Rayquaza", why: "Raichu moves first. Thunderbolt is neutral, so the Enigma stays unfed. Bar 1.", card: "not logged", foe: "Rayquaza Outrage · 💀 after on Raichu", foeConf: "exact", check: { what: "Kingdra down, Dragonite benched", expect: "Dragonite 420/420, Multiscale intact", got: "420/420", illus: true } },
+  { label: "Bar 2", phase: 2, field: ["Raichu", "Rayquaza"], do: "Raichu **Thunderbolt**, not Moonblast", why: "Rayquaza still holds the Enigma. Moonblast is super-effective and would heal it 25%.", card: "Raichu Moonblast → Rayquaza", foe: "Rayquaza Outrage", foeConf: "exact", check: { what: "Rayquaza after bar 1", expect: "2 bars left · Enigma held", got: "305/429 · 2 bars · Lum and Sitrus spent · Enigma held", illus: true } },
+  { label: "Finish", phase: 2, field: ["Dragonite", "Rayquaza"], do: "Dragonite **Extreme Speed**", why: "Priority hits before Outrage. Neutral, so no Enigma.", card: "not logged", foe: "Rayquaza Outrage", foeConf: "exact", check: { what: "Rayquaza after bar 2", expect: "last bar, ≤143 HP · Enigma unfed", got: "143 on its last bar · Raichu 91/356 on its berries", illus: true } },
+  { label: "Torterra", phase: 3, field: ["Dragonite", "Torterra"], do: "Dragonite **Hyper Voice**", why: "Both bars in one hit.", card: "Hyper Voice → Torterra · 1 hit", foe: "Torterra Wood Hammer", foeConf: "exact", check: { what: "Rayquaza", expect: "down", got: "down", illus: true } },
+  { label: "Pidgeot", phase: 4, field: ["Raichu", "Pidgeot"], do: "Raichu **Thunderbolt** → Pidgeot", why: "One hit, and Raichu moves first.", card: "not logged", foe: "Pidgeot Hurricane", foeConf: "exact", check: { what: "Torterra", expect: "down in one hit", got: "one hit", illus: true } },
+  { label: "Won", phase: 4, done: true, field: ["Raichu", "—"], check: { what: "Raichu or Dragonite for Pidgeot", expect: "standing", got: "Raichu 55/356", illus: true } },
+];
+IVY.offs = {
+  none: { name: "on the plan" },
+  ms: {
+    name: "Dragonite stays in on Kingdra", at: 2, kind: "input", phaseMiss: 1, label: "T4 · Rayquaza",
+    field: ["Dragonite", "Rayquaza"],
+    played: "Dragonite stayed in on T2, as in attempts 1 and 2",
+    expect: "Dragonite 420/420 when Rayquaza arrives",
+    got: "Dragonite 169/420 against a fresh Rayquaza: Ice Beam broke Multiscale",
+    src: "the W145 log, attempts 1–2, T4",
+    headline: "Off the plan at T4: Multiscale is gone.",
+    next: ["Dragonite stops being the Rayquaza wall. Its jobs become Torterra (Hyper Voice) and the priority finish.", "Switch it out now. Raichu breaks the bars with Thunderbolt.", "Attempt 3 did exactly this and won."],
+    cardNow: "Dragonite Dragon Hammer → Rayquaza · 2 hits · 💀 ko Dragonite ← Outrage",
+    planNow: "⇄ out of **Dragonite** (keep it for Torterra and the finish)",
+  },
+  enigma: {
+    name: "Moonblast into the Enigma", at: 4, kind: "input", phaseMiss: 2, label: "Finish",
+    field: ["Raichu", "Rayquaza"],
+    played: "Raichu Moonblast (the card's call)",
+    expect: "last bar, ≤143 HP · Enigma unfed",
+    got: "250 on its last bar: the Enigma healed 25%",
+    src: "the W145 log, attempt 2, T11–13",
+    headline: "Off the plan at bar 2: Moonblast fed the Enigma.",
+    next: ["Rayquaza needs one more hit than planned. Don't repeat it: the Enigma is spent now, but every hit counts.", "Extreme Speed from Dragonite, then Quaquaval as the spare.", "Raichu likely falls to this Outrage. Pidgeot now needs Dragonite."],
+    cardNow: "Raichu Moonblast → Rayquaza",
+    planNow: "Dragonite **Extreme Speed** · one hit more than planned",
+  },
+};
+
+const FIGHTS = { ivy: IVY, gordie: GORDIE };
+const WHERE = [
+  { id: "reply", key: "A", name: "Reply", title: "A · The plan is a reply in the chat" },
+  { id: "file", key: "B", name: "File", title: "B · The plan is a file the coach writes" },
+  { id: "card", key: "C", name: "Card group", title: "C · The plan lives on the HUD card" },
+];
+
+// ───────────────────────────── state ─────────────────────────────
+const state = { where: "card", fight: "gordie", step: 8, off: "none", tab: "plan" };
+function readHash() {
+  const m = location.hash.slice(1).split("-");
+  if (WHERE.some(w => w.id === m[0])) state.where = m[0];
+  if (FIGHTS[m[1]]) state.fight = m[1];
+  if (m[2] != null && /^\d+$/.test(m[2])) state.step = +m[2];
+  if (m[3] && FIGHTS[state.fight].offs[m[3]]) state.off = m[3]; else if (m[1]) state.off = "none";
+  clamp();
+}
+function writeHash() { try { history.replaceState(null, "", `#${state.where}-${state.fight}-${state.step}-${state.off}`); } catch (e) {} }
+function maxStep() { const f = FIGHTS[state.fight], o = f.offs[state.off]; return o && o.at != null ? o.at : f.steps.length - 1; }
+function clamp() { const f = FIGHTS[state.fight]; if (!f.offs[state.off]) state.off = "none"; state.step = Math.max(0, Math.min(state.step, maxStep())); }
+
+// What the checker knows at this step.
+function view() {
+  const f = FIGHTS[state.fight], o = f.offs[state.off];
+  const off = o && o.at != null && state.step >= o.at ? o : null;
+  return { f, k: state.step, s: f.steps[state.step], off };
+}
+
+// ───────────────────────────── A · reply ─────────────────────────────
+function replyPlan(f) {
+  if (f.id === "gordie") {
+    const rows = LINE.map(r => ` ${String(r.t).padStart(2)}  ${plain(r.input).padEnd(36)} ${plain(r.after)}`).join("\n");
+    return `<span class="b">Line found: wins in 19 turns with 4 of 6 left.</span> <span class="acc">~ replay</span>
+Checked: same game version, clean load, the wave-start save matches
+this wave, and attempt 1's 23 inputs replay HP for HP.
+
+Play every input exactly. Before the next one, check the After.
+<span class="dim">  T  input                                after</span>
+${esc(rows)}
+
+<span class="b">The card disagrees</span> on T2 T4 T5 T7 T10 T11 T13 T14 T16. Only <span class="b">T7</span>
+decides the fight: stay in and Bug Bite. I'll flag each as you reach it.
+T16 is Tera: ← from Fight to the Tera button, then Hydro Pump.
+
+<span class="b">Off the line?</span> Stop. Reload, Continue, replay from T1. Or tell me
+and we go back to the card.`;
+  }
+  return `<span class="b">No engine line for this one.</span> <span class="acc">≈ estimate</span>
+Winnable if Dragonite meets Rayquaza at full HP. The card says
+winnable too; treat both as a lean.
+
+<span class="b">Rayquaza is the fight:</span> 3 bars of 143, outspeeds all but Raichu,
+Outrage one-shots all but a full-HP Dragonite. Holds Sitrus,
+Enigma, Lum.
+
+ 1 T1        ⇄ Dragonite if the card reads Earthquake
+             (Stone Axe → Breloom).
+ 2 T2–3      Ivy swaps to Kingdra: ⇄ Raichu the same turn,
+             Moonblast it. <span class="ok">✓</span> Dragonite 420/420 when Rayquaza comes.
+ 3 Rayquaza  Four hits: Raichu Thunderbolt, Dragonite Extreme
+             Speed. Neutral only while it holds the Enigma.
+             Quaquaval is the spare hit.
+ 4 Torterra  Dragonite Hyper Voice, both bars in one hit.
+ 5 Pidgeot   Raichu Thunderbolt. Keep Raichu or Dragonite for it.
+
+<span class="b">Ignore the card</span> when it says Moonblast into the Enigma, Dragon
+Hammer from a Dragonite about to die, or a sacrifice chain of
+slow mons.`;
+}
+function renderReply() {
+  const { f, k, s, off } = view();
+  const out = [];
+  out.push(`<span class="dim">coachemon:coachemon · reading ${f.id === "gordie" ? "Chrome" : "Orion"}</span>`);
+  out.push(`<span class="you">› ${esc(f.ask)}</span>`);
+  if (f.id === "gordie") {
+    out.push(`<span class="b">●</span> Exporting the wave-start save and searching the local clone.
+  About a minute; stay on the command menu. Meanwhile the card's
+  call stands: Dragon Pulse → Gigalith.`);
+    if (k === 0) out.push(`<span class="dim">  … searching (background job, 19-turn lines at ~4 s each)</span>`);
+  }
+  if (!(f.id === "gordie" && k === 0)) out.push(`<span class="b">●</span> ` + replyPlan(f).split("\n").join("\n  "));
+  // per-turn feed
+  const first = f.id === "gordie" ? 2 : 1;
+  for (let i = first; i <= k; i++) {
+    const st = f.steps[i];
+    if (off && i === off.at) {
+      out.push(`<span class="bad">OFF LINE ${f.wave} ${esc(off.label)} · expected ${esc(off.expect)}</span>
+<span class="bad">                     got ${esc(off.got)}</span>  <span class="new">(new watcher event)</span>`);
+      out.push(`<span class="b">●</span> <span class="b">${esc(off.headline)}</span>\n  ` + off.next.map(esc).join("\n  "));
+      break;
+    }
+    if (f.id === "gordie") {
+      const r = st.row;
+      out.push(`<span class="dim">TURN ${f.wave} t${st.check.turn} · line </span><span class="ok">✓</span><span class="dim"> ${esc(st.check.expect)}</span>${i === first ? '  <span class="new">(new watcher event)</span>' : ""}`);
+      if (st.done) { out.push(`<span class="b">●</span> Won. The line held all 19 turns.`); continue; }
+      if (r.differs) out.push(`<span class="b">●</span> ${r.decides ? '<span class="acc">T' + r.t + ' is the one.</span> ' : "T" + r.t + ": "}${esc(plain(r.input))}. The card says ${esc(r.card)}.\n  ${esc(r.why)}`);
+    } else {
+      out.push(`<span class="dim">TURN ${f.wave} ${esc(st.label)} · ${esc(st.check.what)} </span><span class="ok">✓</span><span class="dim"> ${esc(st.check.got)}</span>${i === first ? '  <span class="new">(new watcher event)</span>' : ""}`);
+      if (st.done) { out.push(`<span class="b">●</span> Won, with ${esc(st.check.got)}.`); continue; }
+      out.push(`<span class="b">●</span> ${esc(st.label)}: ${esc(plain(st.do))}. ${esc(st.why)}${st.card !== "not logged" ? `\n  The card says ${esc(st.card)}.` : ""}`);
+    }
+  }
+  return `<div class="term"><pre>${out.join("\n\n")}</pre></div>
+  <div class="stepnote"><b>Checking:</b> only while the coach watches. Today's watcher has no per-turn event, so the <code>TURN</code> and <code>OFF LINE</code> lines are new.</div>`;
+}
+
+// ───────────────────────────── B · file ─────────────────────────────
+function list(items) { return `<ul>${items.map(i => `<li>${typeof i === "string" ? md(i) : md(i.text) + " " + chip(i.conf)}</li>`).join("")}</ul>`; }
+function renderFile() {
+  const { f, k, s, off } = view();
+  const parts = [];
+  let banner;
+  if (f.id === "gordie" && k === 0) banner = `<div class="banner wait"><b>Searching…</b> The coach writes this file when the search returns a validated line, or "no answer".</div>`;
+  else if (off) banner = `<div class="banner off"><b>${esc(off.headline)}</b><span>Expected ${esc(off.expect)}. Got ${esc(off.got)} <i>(${esc(off.src)})</i>.</span><span>${off.next.map(esc).join(" ")}</span></div>`;
+  else if (s.done) banner = `<div class="banner on"><b>Done: won.</b> Every checkpoint matched.</div>`;
+  else banner = `<div class="banner on"><b>On the ${f.id === "gordie" ? "line" : "plan"}.</b> ${s.check ? `Checked through ${esc(f.id === "gordie" ? "T" + s.check.turn : s.check.what)}.` : "Nothing to check yet."} Next: <b>${esc(s.label)}</b>.</div>`;
+  parts.push(banner);
+  parts.push(`<h2>Plan: ${esc(f.who)}</h2>`);
+  parts.push(`<h3>The call ${chip(f.call.conf)}</h3><p><b>${esc(f.call.text)}</b> ${esc(f.call.sub)}</p>`);
+  if (f.id === "gordie") {
+    parts.push(`<h3>Why it's more than a guess ${chip("exact")}</h3><ol>${f.trust.map(([a, b]) => `<li>${esc(a)}: <span style="color:var(--muted)">${esc(b)}</span></li>`).join("")}</ol><p>${esc(f.restsOn)} ${esc(f.luck)}</p>`);
+    const trs = LINE.map(r => {
+      const played = r.t < s.turn || s.done;
+      const missHere = off && r.t === off.turn;
+      const voidRow = off && r.t > off.turn;
+      const cur = !off && !s.done && !s.search && r.t === s.turn;
+      const cls = missHere ? "miss" : voidRow ? "void" : cur ? "cur" : "";
+      const ck = missHere ? `<span class="bad">✗</span>` : voidRow ? "" : played ? `<span class="ok">✓</span>` : "";
+      const tags = [r.decides ? `<span class="tag">decides it</span>` : "", r.differs && !r.decides ? `<span class="tag">card differs</span>` : "", r.luck ? `<span class="tag luck">${esc(r.luck)}</span>` : ""].join(" ");
+      const after = missHere ? `${md(r.after)}<br><span class="bad">got: ${esc(off.got)}</span>` : md(r.after);
+      return `<tr class="${cls}"><td>${r.t}</td><td>${md(r.input)} ${tags}</td><td>${md(r.happens)}</td><td>${after}</td><td class="ck">${ck}</td></tr>`;
+    }).join("");
+    parts.push(`<h3>The line ${chip("replay")}</h3><p>Check the After column before each next input. The coach ticks it as the fight goes.</p>
+      <div class="tablewrap"><table><thead><tr><th>T</th><th>Your input</th><th>What happens</th><th>After (check this)</th><th>✓</th></tr></thead><tbody>${trs}</tbody></table></div>`);
+    parts.push(`<h3>Where the card disagrees</h3>${list(f.disagree)}`);
+  } else {
+    parts.push(`<h3>What it rests on</h3>${list(f.rests)}`);
+    parts.push(`<h3>The win condition and its answers</h3>${list(f.wincon.concat(f.answers))}`);
+    const curPhase = s.phase;
+    const ph = f.phases.map((p, i) => {
+      const miss = off && i === off.phaseMiss;
+      const cls = miss ? "miss" : off && i > off.phaseMiss ? "" : i < curPhase || s.done ? "done" : i === curPhase ? "cur" : "";
+      const mark = miss ? `<span class="bad">✗</span> ` : cls === "done" ? `<span class="ok">✓</span> ` : "";
+      return `<div class="phase ${cls}"><div class="ph">${mark}${i + 1}. ${esc(p.name)}</div><div>${md(p.do)}</div><div class="ckline">Check: ${md(p.check)}${miss ? ` <span class="bad">Got: ${esc(off.got)}.</span>` : ""}</div></div>`;
+    }).join("");
+    parts.push(`<h3>The phases ${chip("estimate")}</h3><p>No turn-exact line exists, so each phase ends in a check the coach can read off the battle.</p>${ph}`);
+    parts.push(`<h3>Where the card is blind</h3><p>The card will say these. Follow the plan instead.</p>${list(f.disagree)}`);
+  }
+  parts.push(`<h3>Inputs to get right ${chip("none")}</h3>${list(f.inputs)}`);
+  parts.push(`<h3>Off the ${f.id === "gordie" ? "line" : "plan"} ${chip("none")}</h3>${list(f.offline)}`);
+  parts.push(`<h3>If you leave it: principles</h3>${list(f.principles)}`);
+  const status = f.id === "gordie" && k === 0 ? "not written yet" : off ? `off at ${off.label}` : s.done ? "won" : `checked through ${s.check ? (f.id === "gordie" ? "T" + s.check.turn : s.check.what) : "—"}`;
+  return `<div class="doc"><div class="filebar"><span>${esc(f.file)}</span><span>written by the coach · ${esc(status)}</span></div><div class="body">${parts.join("")}</div></div>
+  <div class="stepnote"><b>Checking:</b> the coach re-reads this file and the battle each turn and ticks the ✓ column. The player keeps it open beside the game.</div>`;
+}
+
+// ───────────────────────────── C · card group ─────────────────────────────
+const TABS = [["act", "Now"], ["foes", "Foes"], ["plan", "Plan"], ["road", "Road"], ["notes", "Notes"]];
+function hudConf(k) { return k === "replay" ? `<span class="g">~</span>` : k === "estimate" ? `<span class="g">≈</span>` : k === "wrong" ? `<span class="bad">!</span>` : ""; }
+function cardRows() {
+  const { f, k, s, off } = view();
+  const R = (cls, html) => `<div class="r ${cls || ""}">${html}</div>`;
+  const rows = { act: [], foes: [], plan: [], road: [], notes: [] };
+  rows.foes.push(R("d", "(today's foe rows, unchanged)"));
+  rows.road.push(R("d", "(today's road group, unchanged)"));
+  rows.notes.push(R("h", "If you leave the line"));
+  f.principles.forEach(p => rows.notes.push(R("", `${hudConf(p.conf)} ${md(p.text)}`)));
+
+  if (f.id === "gordie") {
+    if (s.search) {
+      rows.act.push(R("", "⚔ Reshiram Dragon Pulse → Gigalith · 3 hits"));
+      rows.act.push(R("d", "↯ Gigalith Rock Slide → Reshiram"));
+      rows.plan.push(R("h", "Plan · searching…"));
+      rows.plan.push(R("d", "the coach is playing lines in the local clone"));
+      rows.plan.push(R("d", "the card's own fight plan shows until a line lands"));
+      return { rows, strip: ["⚔ Reshiram Dragon Pulse → Gigalith · 3 hits", `<span class="d">~ plan: searching…</span>`] };
+    }
+    // act group
+    let strip;
+    if (off) {
+      rows.act.push(R("bad", `! off the line at T${off.turn}`));
+      rows.act.push(R("", `expected ${esc(off.expect)}`));
+      rows.act.push(R("", `got ${esc(off.got)}`));
+      rows.act.push(R("", `⚔ card: ${esc(off.cardNow)}`));
+      off.next.forEach(n => rows.act.push(R("d", "· " + esc(n))));
+      strip = [`<span class="bad">!</span> off the line at T${off.turn} · ${off.kind === "input" ? "↻ reload to replay it" : "card leads"}`, `⚔ ${esc(off.cardNow)}`];
+    } else if (s.done) {
+      rows.act.push(R("ok", "✓ line played · won"));
+      strip = [`<span class="ok">✓</span> line played · won`, "Gyarados 423 · Probopass · Snorlax · Reshiram"];
+    } else {
+      const r = s.row;
+      rows.act.push(R("", `⚔ line ${hudConf("replay")} ${md(r.input)} <span class="d">T${r.t}/19</span>`));
+      if (r.differs) rows.act.push(R(r.decides ? "g" : "d", `card: ${esc(r.card)}${r.decides ? " · this turn decides the fight" : ""}`));
+      rows.act.push(R("d", `↯ ${esc(r.foe)}`));
+      rows.act.push(R("d", `after: ${esc(r.after)}`));
+      if (s.check) rows.act.push(R("ok", `✓ T${s.check.turn} after matched`));
+      strip = [`⚔ ${hudConf("replay")} T${r.t}/19 · ${md(r.input)}`, r.differs ? `<span class="${r.decides ? "g" : "d"}">card: ${esc(r.card)}</span>` : `<span class="d">card agrees</span>`];
+    }
+    // plan group
+    rows.plan.push(R("h", `Plan ${hudConf("replay")} line wins · 19 turns · 4 of 6 left`));
+    rows.plan.push(R("d", "✓ checks 1–5 passed · v1.12.0.11 · seed U0QK…"));
+    LINE.forEach(r => {
+      const done = r.t < s.turn || s.done;
+      if (off && r.t === off.turn) rows.plan.push(R("bad", `✗ ${r.t} ${md(r.input)} · got ${esc(off.got)}`));
+      else if (off && r.t > off.turn) rows.plan.push(R("void", `${r.t} ${md(r.input)}`));
+      else if (done) rows.plan.push(R("", `<span class="ok">✓</span> ${r.t} ${md(r.input)} <span class="d">${esc(r.after)}</span>`));
+      else if (r.t === s.turn) rows.plan.push(R("cur", `▸ ${r.t} ${md(r.input)} <span class="d">→ ${esc(r.after)}</span>${r.decides ? ' <span class="g">decides it</span>' : ""}`));
+      else rows.plan.push(R("d", `· ${r.t} ${md(r.input)}${r.decides ? " · decides it" : ""}`));
+    });
+    rows.plan.push(R("d", "off the line → reload, Continue, replay from T1"));
+    return { rows, strip };
+  }
+  // Ivy
+  let strip;
+  if (off) {
+    rows.act.push(R("bad", `! off the plan · ${esc(off.headline.replace(/^Off the plan at [^:]+: /, ""))}`));
+    rows.act.push(R("", `⚔ plan ${hudConf("estimate")} ${md(off.planNow)}`));
+    rows.act.push(R("d", `card: ${esc(off.cardNow)}`));
+    off.next.forEach(n => rows.act.push(R("d", "· " + esc(n))));
+    strip = [`<span class="bad">!</span> off the plan · ${esc(off.headline.replace(/^Off the plan at [^:]+: /, ""))}`, `⚔ ${hudConf("estimate")} ${md(off.planNow)}`];
+  } else if (s.done) {
+    rows.act.push(R("ok", `✓ plan held · won · ${esc(s.check.got)}`));
+    strip = [`<span class="ok">✓</span> plan held · won`, esc(s.check.got)];
+  } else {
+    rows.act.push(R("", `⚔ plan ${hudConf("estimate")} ${md(s.do)}`));
+    rows.act.push(R("d", esc(s.why)));
+    if (s.card !== "not logged") rows.act.push(R("g", `card: ${esc(s.card)} · plan overrides`));
+    rows.act.push(R("d", `↯ ${esc(s.foe)}`));
+    if (s.check) rows.act.push(R("ok", `✓ ${esc(s.check.what)}: ${esc(s.check.got)}`));
+    strip = [`⚔ ${hudConf("estimate")} ${md(s.do)}`, s.card !== "not logged" ? `<span class="g">card: ${esc(s.card)}</span>` : `<span class="d">phase ${s.phase + 1}: ${esc(f.phases[s.phase].name)}</span>`];
+  }
+  rows.plan.push(R("h", `Plan ${hudConf("estimate")} winnable if Dragonite meets Rayquaza at full`));
+  rows.plan.push(R("", "💀 Rayquaza · win condition · 3 bars × 143 · Sitrus Enigma Lum"));
+  rows.plan.push(R("", "🔒 only answers: Dragonite at full · Raichu"));
+  f.phases.forEach((p, i) => {
+    const miss = off && i === off.phaseMiss;
+    if (miss) rows.plan.push(R("bad", `✗ ${i + 1}. ${esc(p.name)} · ${esc(off.got)}`));
+    else if (off && i > off.phaseMiss) rows.plan.push(R("d", `· ${i + 1}. ${esc(p.name)}`));
+    else if (i < s.phase || s.done) rows.plan.push(R("", `<span class="ok">✓</span> ${i + 1}. ${esc(p.name)}`));
+    else if (i === s.phase) rows.plan.push(R("cur", `▸ ${i + 1}. ${esc(p.name)} <span class="d">· check: ${md(p.check)}</span>`));
+    else rows.plan.push(R("d", `· ${i + 1}. ${esc(p.name)}`));
+  });
+  rows.plan.push(R("h", "card is blind here"));
+  rows.plan.push(R("", "✗ Moonblast / Dragon Hammer into the Enigma"));
+  rows.plan.push(R("", "✗ Dragon Hammer from a Dragonite about to die"));
+  rows.plan.push(R("", "✗ sacrifice chain Breloom → Tentacruel → Crawdaunt"));
+  return { rows, strip };
+}
+function renderCard() {
+  const { f, k, s, off } = view();
+  const { rows, strip } = cardRows();
+  const field = off ? off.field : s.field;
+  const tabs = TABS.map(([id, label]) => `<button class="tab" role="tab" data-tab="${id}" aria-selected="${state.tab === id}">${label}</button>`).join("");
+  const feed = [];
+  if (f.id === "gordie" && k === 0) feed.push(`<span class="dim">NEW BATTLE w180 trainer · trainer | Gigalith L169 … | plan: searching</span>`);
+  else feed.push(`<span class="dim">NEW BATTLE ${f.wave} trainer · trainer | plan: ${f.id === "gordie" ? "~ line wins · 19 turns" : "≈ winnable if Dragonite meets Rayquaza at full"}</span>`);
+  if (off) feed.push(`<span class="bad">OFF LINE ${f.wave} ${esc(off.label)} | expected ${esc(off.expect)} | got ${esc(off.got)}</span>`);
+  else if (s.done) feed.push(`<span class="ok">LINE HELD ${f.wave} · won</span>`);
+  return `<div class="game">
+      <div class="hud" role="region" aria-label="Coachemon panel">
+        <div class="strip"><div class="cap"><span>⚔ ${esc(f.name)} · ${esc(off ? off.label : s.label)}</span><span class="verdict">trainer</span></div>
+          ${strip.map(x => `<div class="r">${x}</div>`).join("")}</div>
+        <div class="tabs" role="tablist">${tabs}</div>
+        <div class="pane" role="tabpanel">${rows[state.tab].join("")}</div>
+      </div>
+      <div class="field">${esc(field[0])} <span style="opacity:.6">vs</span> ${esc(field[1])}</div>
+      <div class="canvas-note">game canvas · ${esc(f.who)}</div>
+    </div>
+    <div class="feed"><pre>${feed.join("\n")}</pre></div>
+    <div class="stepnote"><b>Checking:</b> the HUD itself, at every decision, with no Claude in the loop. The watcher's <code>OFF LINE</code> line is new.</div>`;
+}
+
+// ───────────────────────────── notes column ─────────────────────────────
+const NOTES = {
+  reply: {
+    lives: "In the chat, once, when the boss wave reaches its first command.",
+    checks: "The coach, only while it is watching. The watcher has no per-turn event today (W145 log, finding 7), so this needs one, or the player asks each turn.",
+    off: "The coach's next message, if it is watching. If not, nobody notices.",
+    survives: "This session only. A /clear or a new session loses it, and the skill keeps nothing across turns today.",
+    costs: "Skill text and a per-turn watcher event. No HUD change. A 19-turn line is a long chat message.",
+  },
+  file: {
+    lives: "A Markdown file the coach writes, one per fight. The player opens it beside the game.",
+    checks: "The coach, each turn: it re-reads the file and the battle, then ticks the ✓ column.",
+    off: "A banner at the top of the file, the rest of the line struck through, and a line in the chat.",
+    survives: "Across sessions. Gordie's PLAN.md carried a handover between two sessions this way.",
+    costs: "A file location and format. No HUD change. The player needs a third window, and the coach still has to be live to tick it.",
+  },
+  card: {
+    lives: "The HUD's plan group, with this turn's step in the strip. The coach hands the plan to the page.",
+    checks: "The HUD itself, at every decision, with no Claude in the loop. Each checkpoint is scored as a claim and journalled.",
+    off: "The strip turns to ! off the line, the Now pane says what to do, and the watcher emits OFF LINE once so a live coach can add to it.",
+    survives: "A reload, if the page keeps it by seed and wave as it keeps the journal.",
+    costs: "A new way for the coach to hand the page a plan. The plan group gets a second author. A 19-turn line has to fit a pane capped at 40% of the game's width, and the principles need the Notes tab.",
+  },
+};
+const CONFS = {
+  gordie: [
+    ["The call", "replay"], ["Why it's more than a guess", "exact"], ["Each After checkpoint", "replay"],
+    ["This turn's enemy move", "exact"], ["Where the card disagrees", "replay"], ["Inputs and what to do off the line", "none"],
+    ["Principles: mechanics", "exact"], ["Principles: odds and damage", "estimate"],
+  ],
+  ivy: [
+    ["The call", "estimate"], ["Teams, items, stats", "exact"], ["This turn's enemy move and swaps", "exact"],
+    ["Phases and their checks", "estimate"], ["Where the card is blind", "exact"], ["Inputs and what to do off the plan", "none"],
+    ["Principles: mechanics", "exact"],
+  ],
+};
+function renderNotes() {
+  const { f } = view();
+  const n = NOTES[state.where];
+  const conf = CONFS[f.id].map(([a, b]) => `<tr><td>${esc(a)}</td><td>${chip(b)}</td></tr>`).join("");
+  return `<div><h3>What this variant settles</h3><dl>
+      <dt>Where it lives</dt><dd>${esc(n.lives)}</dd>
+      <dt>Who checks it</dt><dd>${esc(n.checks)}</dd>
+      <dt>Off the line, the player sees</dt><dd>${esc(n.off)}</dd>
+      <dt>What survives</dt><dd>${esc(n.survives)}</dd>
+      <dt>What it costs</dt><dd>${esc(n.costs)}</dd></dl></div>
+    <div><h3>Confidence, ${esc(f.fidelity)}</h3><table class="conf-table">${conf}</table></div>
+    <div><h3>The marks</h3><div class="legend">
+      <div>${chip("exact")} settled; can't drift. No mark on the card.</div>
+      <div>${chip("replay")} right only while the game draws what the coach drew. <code>~</code> on the card, as today.</div>
+      <div>${chip("estimate")} read off state that may move. <code>≈</code> on the card is new.</div>
+      <div>${chip("wrong")} a claim that has missed once this run. <code>!</code>, as today.</div>
+      <div>${chip("none")} an instruction or judgement, not a claim.</div></div></div>
+    <div><h3>Sections</h3><div style="color:var(--muted)">The call · Why trust it · ${f.id === "gordie" ? "The line" : "Win condition and answers · The phases"} · Where the card ${f.id === "gordie" ? "disagrees" : "is blind"} · Inputs · Off the line · Principles. <i>Tools</i> from <code>PLAN.md</code> is cut. The file shows every section; the reply and the card show a subset.</div></div>`;
+}
+
+// ───────────────────────────── wiring ─────────────────────────────
+function render() {
+  clamp();
+  const { f, s, off } = view();
+  const w = WHERE.find(x => x.id === state.where);
+  $("#whereTitle").textContent = w.title;
+  $("#fidTitle").textContent = `${f.name}, ${f.fidelity}`;
+  $("#stage").innerHTML = state.where === "reply" ? renderReply() : state.where === "file" ? renderFile() : renderCard();
+  $("#notes").innerHTML = renderNotes();
+  $("#wLbl").textContent = `${w.key} · ${w.name}`;
+  $("#sLbl").textContent = off ? off.label : s.label;
+  $("#fIvy").setAttribute("aria-pressed", state.fight === "ivy");
+  $("#fGordie").setAttribute("aria-pressed", state.fight === "gordie");
+  const sel = $("#off");
+  sel.innerHTML = Object.entries(f.offs).map(([id, o]) => `<option value="${id}"${id === state.off ? " selected" : ""}>${esc(o.name)}</option>`).join("");
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { state.tab = b.dataset.tab; try { localStorage.setItem("proto639tab", state.tab); } catch (e) {} render(); }));
+  writeHash();
+}
+const cycle = d => { const i = WHERE.findIndex(w => w.id === state.where); state.where = WHERE[(i + d + WHERE.length) % WHERE.length].id; render(); };
+const stepBy = d => { state.step += d; render(); };
+$("#wPrev").onclick = () => cycle(-1);
+$("#wNext").onclick = () => cycle(1);
+$("#sPrev").onclick = () => stepBy(-1);
+$("#sNext").onclick = () => stepBy(1);
+$("#fIvy").onclick = () => { if (state.fight !== "ivy") { state.fight = "ivy"; state.off = "none"; state.step = 2; } render(); };
+$("#fGordie").onclick = () => { if (state.fight !== "gordie") { state.fight = "gordie"; state.off = "none"; state.step = 7; } render(); };
+$("#off").onchange = e => { state.off = e.target.value; const o = FIGHTS[state.fight].offs[state.off]; if (o.at != null) state.step = o.at; render(); };
+document.addEventListener("keydown", e => {
+  const t = e.target;
+  if (t.closest && t.closest("input,textarea,select,[contenteditable]")) return;
+  if (e.key === "ArrowLeft") { cycle(-1); e.preventDefault(); }
+  else if (e.key === "ArrowRight") { cycle(1); e.preventDefault(); }
+  else if (e.key === "[") stepBy(-1);
+  else if (e.key === "]") stepBy(1);
+});
+try { const t = localStorage.getItem("proto639tab"); if (t && TABS.some(([id]) => id === t)) state.tab = t; } catch (e) {}
+readHash();
+render();
+</script>
