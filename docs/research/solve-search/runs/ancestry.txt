@@ -1,0 +1,160 @@
+## w1p8
+1 winning lines
+depth  1: 1 of 1 beam nodes lie on a winning line
+depth  2: 1 of 1 beam nodes lie on a winning line
+depth  3: 1 of 1 beam nodes lie on a winning line
+depth  4: 1 of 1 beam nodes lie on a winning line
+depth  5: 1 of 1 beam nodes lie on a winning line
+depth  6: 1 of 1 beam nodes lie on a winning line
+depth  7: 1 of 1 beam nodes lie on a winning line
+depth  8: 1 of 1 beam nodes lie on a winning line
+depth  9: 1 of 1 beam nodes lie on a winning line
+depth 10: 1 of 1 beam nodes lie on a winning line
+depth 11: 1 of 1 beam nodes lie on a winning line
+depth 12: 1 of 1 beam nodes lie on a winning line
+depth 13: 1 of 1 beam nodes lie on a winning line
+depth 14: 1 of 1 beam nodes lie on a winning line
+depth 15: 1 of 1 beam nodes lie on a winning line
+depth 16: 1 of 1 beam nodes lie on a winning line
+depth 17: 1 of 1 beam nodes lie on a winning line
+depth 18: 1 of 1 beam nodes lie on a winning line
+depth 19: 1 of 1 beam nodes lie on a winning line
+depth 20: 1 of 1 beam nodes lie on a winning line
+depth 21: 1 of 1 beam nodes lie on a winning line
+depth 22: 1 of 1 beam nodes lie on a winning line
+depth 23: 1 of 1 beam nodes lie on a winning line
+depth 24: 1 of 1 beam nodes lie on a winning line
+depth 25: 1 of 1 beam nodes lie on a winning line
+depth 26: 1 of 1 beam nodes lie on a winning line
+depth 27: 1 of 1 beam nodes lie on a winning line
+depth 28: 1 of 1 beam nodes lie on a winning line
+depth 29: 1 of 1 beam nodes lie on a winning line
+depth 30: 1 of 1 beam nodes lie on a winning line
+depth 31: 1 of 1 beam nodes lie on a winning line
+depth 32: 1 of 1 beam nodes lie on a winning line
+depth 33: 0 of 1 beam nodes lie on a winning line
+winning lines, step by step: T1 DRAGON_PULSE · T2 >Probopass · T3 T:POWER_GEM · T4 POWER_GEM · T5 >Reshiram · T6 FICKLE_BEAM · T7 DRAGON_PULSE · T8 BLUE_FLARE · T9 DRAGON_PULSE · T10 HYPER_VOICE(in:Leavanny) · T11 LEAF_STORM · T12 LEAF_STORM · T13 >Probopass · T14 TRI_ATTACK(in:Snorlax) · T15 BODY_SLAM · T16 REST · T17 >Golbat · T18 VENOSHOCK · T19 >Snorlax · T20 >Golbat · T21 TOXIC · T22 POISON_FANG · T23 VENOSHOCK · T24 VENOSHOCK(in:Gyarados) · T25 HYDRO_PUMP · T26 HURRICANE · T27 HURRICANE · T28 HURRICANE · T29 BOUNCE · T30 wait · T31 TWISTER · T32 TWISTER · T33 HYDRO_PUMP
+## w4p8
+4 winning lines
+depth  1: 1 of 4 beam nodes lie on a winning line
+depth  2: 1 of 4 beam nodes lie on a winning line
+depth  3: 1 of 4 beam nodes lie on a winning line
+depth  4: 1 of 4 beam nodes lie on a winning line
+depth  5: 1 of 4 beam nodes lie on a winning line
+depth  6: 1 of 4 beam nodes lie on a winning line
+depth  7: 1 of 4 beam nodes lie on a winning line
+depth  8: 1 of 4 beam nodes lie on a winning line
+depth  9: 1 of 4 beam nodes lie on a winning line
+depth 10: 1 of 4 beam nodes lie on a winning line
+depth 11: 1 of 4 beam nodes lie on a winning line
+depth 12: 1 of 4 beam nodes lie on a winning line
+depth 13: 1 of 4 beam nodes lie on a winning line
+depth 14: 1 of 4 beam nodes lie on a winning line
+depth 15: 1 of 4 beam nodes lie on a winning line
+depth 16: 1 of 4 beam nodes lie on a winning line
+depth 17: 1 of 4 beam nodes lie on a winning line
+depth 18: 1 of 4 beam nodes lie on a winning line
+depth 19: 1 of 4 beam nodes lie on a winning line
+depth 20: 1 of 4 beam nodes lie on a winning line
+depth 21: 1 of 4 beam nodes lie on a winning line
+depth 22: 1 of 4 beam nodes lie on a winning line
+depth 23: 1 of 4 beam nodes lie on a winning line
+depth 24: 2 of 4 beam nodes lie on a winning line
+depth 25: 0 of 4 beam nodes lie on a winning line
+winning lines, step by step: T1 DRAGON_PULSE · T2 >Probopass · T3 T:POWER_GEM · T4 POWER_GEM · T5 >Reshiram · T6 FICKLE_BEAM · T7 DRAGON_PULSE · T8 BLUE_FLARE · T9 DRAGON_PULSE · T10 HYPER_VOICE(in:Leavanny) · T11 POLLEN_PUFF · T12 LEAF_STORM · T13 >Gyarados · T14 BOUNCE · T15 wait · T16 HYDRO_PUMP · T17 >Probopass(in:Leavanny) · T18 LEAF_STORM · T19 BUG_BITE(in:Gyarados) · T20 HURRICANE · T21 HYDRO_PUMP · T22 TWISTER · T23 HYDRO_PUMP · T24 {HYDRO_PUMP(in:Golbat) / HYDRO_PUMP(in:Snorlax)} · T25 {BODY_SLAM / POISON_FANG / TOXIC / VENOSHOCK}
+## w8p8
+21 winning lines
+depth  1: 1 of 8 beam nodes lie on a winning line
+depth  2: 1 of 8 beam nodes lie on a winning line
+depth  3: 1 of 8 beam nodes lie on a winning line
+depth  4: 1 of 8 beam nodes lie on a winning line
+depth  5: 1 of 8 beam nodes lie on a winning line
+depth  6: 2 of 8 beam nodes lie on a winning line
+depth  7: 2 of 8 beam nodes lie on a winning line
+depth  8: 2 of 8 beam nodes lie on a winning line
+depth  9: 2 of 8 beam nodes lie on a winning line
+depth 10: 4 of 8 beam nodes lie on a winning line
+depth 11: 4 of 8 beam nodes lie on a winning line
+depth 12: 5 of 8 beam nodes lie on a winning line
+depth 13: 7 of 8 beam nodes lie on a winning line
+depth 14: 0 of 8 beam nodes lie on a winning line
+winning lines, step by step: T1 BLUE_FLARE · T2 >Probopass · T3 T:POWER_GEM · T4 POWER_GEM · T5 >Reshiram · T6 {DRAGON_PULSE / FICKLE_BEAM} · T7 DRAGON_PULSE · T8 BLUE_FLARE · T9 DRAGON_PULSE · T10 {DRAGON_PULSE / FICKLE_BEAM / HYPER_VOICE} · T11 FICKLE_BEAM · T12 {BLUE_FLARE / DRAGON_PULSE(in:Leavanny)} · T13 {DRAGON_PULSE / FICKLE_BEAM / LEAF_STORM} · T14 {BLUE_FLARE / BUG_BITE / DRAGON_PULSE / FICKLE_BEAM / LEAF_STORM / POLLEN_PUFF}
+## w16p8
+20 winning lines
+depth  1: 1 of 13 beam nodes lie on a winning line
+depth  2: 2 of 16 beam nodes lie on a winning line
+depth  3: 2 of 16 beam nodes lie on a winning line
+depth  4: 2 of 16 beam nodes lie on a winning line
+depth  5: 2 of 16 beam nodes lie on a winning line
+depth  6: 4 of 16 beam nodes lie on a winning line
+depth  7: 4 of 16 beam nodes lie on a winning line
+depth  8: 12 of 16 beam nodes lie on a winning line
+depth  9: 0 of 16 beam nodes lie on a winning line
+winning lines, step by step: T1 BLUE_FLARE · T2 {FICKLE_BEAM / HYPER_VOICE} · T3 T:DRAGON_PULSE · T4 FICKLE_BEAM · T5 DRAGON_PULSE · T6 {BLUE_FLARE / DRAGON_PULSE / FICKLE_BEAM} · T7 DRAGON_PULSE(in:Leavanny) · T8 {BUG_BITE / LEAF_STORM / POLLEN_PUFF} · T9 {LEAF_STORM / POLLEN_PUFF}
+## mid-T5-online
+24 winning lines
+depth  1: 1 of 8 beam nodes lie on a winning line
+depth  2: 1 of 8 beam nodes lie on a winning line
+depth  3: 1 of 8 beam nodes lie on a winning line
+depth  4: 1 of 8 beam nodes lie on a winning line
+depth  5: 1 of 8 beam nodes lie on a winning line
+depth  6: 1 of 8 beam nodes lie on a winning line
+depth  7: 1 of 8 beam nodes lie on a winning line
+depth  8: 1 of 8 beam nodes lie on a winning line
+depth  9: 1 of 8 beam nodes lie on a winning line
+depth 10: 1 of 8 beam nodes lie on a winning line
+depth 11: 1 of 8 beam nodes lie on a winning line
+depth 12: 3 of 8 beam nodes lie on a winning line
+depth 13: 8 of 8 beam nodes lie on a winning line
+depth 14: 0 of 8 beam nodes lie on a winning line
+winning lines, step by step: T1 DRAGON_PULSE · T2 >Probopass · T3 >Leavanny · T4 POLLEN_PUFF · T5 POLLEN_PUFF · T6 LEAF_STORM · T7 BUG_BITE · T8 LEAF_STORM · T9 LEAF_STORM · T10 LEAF_STORM · T11 T:BUG_BITE · T12 BUG_BITE(in:Reshiram) · T13 DRAGON_PULSE · T14 DRAGON_PULSE · T15 FICKLE_BEAM · T16 {BLUE_FLARE / FICKLE_BEAM / HYPER_VOICE} · T17 {BLUE_FLARE / DRAGON_PULSE / FICKLE_BEAM} · T18 {BLUE_FLARE / DRAGON_PULSE / FICKLE_BEAM}
+## mid-T8-cardT7
+24 winning lines
+depth  1: 1 of 8 beam nodes lie on a winning line
+depth  2: 1 of 8 beam nodes lie on a winning line
+depth  3: 1 of 8 beam nodes lie on a winning line
+depth  4: 1 of 8 beam nodes lie on a winning line
+depth  5: 1 of 8 beam nodes lie on a winning line
+depth  6: 1 of 8 beam nodes lie on a winning line
+depth  7: 1 of 8 beam nodes lie on a winning line
+depth  8: 1 of 8 beam nodes lie on a winning line
+depth  9: 1 of 8 beam nodes lie on a winning line
+depth 10: 1 of 8 beam nodes lie on a winning line
+depth 11: 1 of 8 beam nodes lie on a winning line
+depth 12: 1 of 8 beam nodes lie on a winning line
+depth 13: 3 of 8 beam nodes lie on a winning line
+depth 14: 8 of 8 beam nodes lie on a winning line
+depth 15: 0 of 8 beam nodes lie on a winning line
+winning lines, step by step: T1 DRAGON_PULSE · T2 >Probopass · T3 >Leavanny · T4 POLLEN_PUFF · T5 BUG_BITE · T6 LEAF_STORM · T7 >Probopass · T8 T:ZAP_CANNON · T9 ZAP_CANNON · T10 EARTH_POWER · T11 POWER_GEM · T12 >Gyarados · T13 HURRICANE · T14 TWISTER · T15 >Reshiram · T16 DRAGON_PULSE · T17 DRAGON_PULSE · T18 FICKLE_BEAM · T19 BLUE_FLARE · T20 {BLUE_FLARE / DRAGON_PULSE / FICKLE_BEAM} · T21 {BLUE_FLARE / DRAGON_PULSE / FICKLE_BEAM / HYPER_VOICE} · T22 {BLUE_FLARE / DRAGON_PULSE / FICKLE_BEAM}
+## mid-a1T9
+1 winning lines
+depth  1: 1 of 8 beam nodes lie on a winning line
+depth  2: 1 of 8 beam nodes lie on a winning line
+depth  3: 1 of 8 beam nodes lie on a winning line
+depth  4: 1 of 8 beam nodes lie on a winning line
+depth  5: 1 of 8 beam nodes lie on a winning line
+depth  6: 1 of 8 beam nodes lie on a winning line
+depth  7: 1 of 8 beam nodes lie on a winning line
+depth  8: 1 of 8 beam nodes lie on a winning line
+depth  9: 1 of 8 beam nodes lie on a winning line
+depth 10: 1 of 8 beam nodes lie on a winning line
+depth 11: 0 of 8 beam nodes lie on a winning line
+winning lines, step by step: T1 DRAGON_PULSE · T2 >Probopass · T3 EARTH_POWER · T4 >Leavanny · T5 LEAF_STORM · T6 LEAF_STORM · T7 >Probopass · T8 >Gyarados · T9 >Reshiram · T10 DRAGON_PULSE · T11 FICKLE_BEAM · T12 DRAGON_PULSE · T13 T:FICKLE_BEAM · T14 FICKLE_BEAM · T15 DRAGON_PULSE(in:Leavanny) · T16 LEAF_STORM · T17 BUG_BITE(in:Gyarados) · T18 HYDRO_PUMP · T19 HYDRO_PUMP
+## mid-a1T17
+48 winning lines
+depth  1: 1 of 8 beam nodes lie on a winning line
+depth  2: 2 of 8 beam nodes lie on a winning line
+depth  3: 2 of 8 beam nodes lie on a winning line
+depth  4: 8 of 8 beam nodes lie on a winning line
+depth  5: 0 of 8 beam nodes lie on a winning line
+winning lines, step by step: T1 DRAGON_PULSE · T2 >Probopass · T3 EARTH_POWER · T4 >Leavanny · T5 LEAF_STORM · T6 LEAF_STORM · T7 >Probopass · T8 >Gyarados · T9 HYDRO_PUMP · T10 >Probopass · T11 EARTH_POWER(in:Leavanny) · T12 LEAF_STORM · T13 >Snorlax · T14 BODY_SLAM · T15 BODY_SLAM(in:Reshiram) · T16 DRAGON_PULSE · T17 BLUE_FLARE · T18 {DRAGON_PULSE / FICKLE_BEAM} · T19 FICKLE_BEAM · T20 {BLUE_FLARE / DRAGON_PULSE / FICKLE_BEAM / T:BLUE_FLARE / T:DRAGON_PULSE / T:FICKLE_BEAM} · T21 {BLUE_FLARE / DRAGON_PULSE / FICKLE_BEAM / HYPER_VOICE / T:BLUE_FLARE / T:DRAGON_PULSE / T:FICKLE_BEAM / T:HYPER_VOICE}
+## mid-a1T19
+2 winning lines
+depth  1: 1 of 8 beam nodes lie on a winning line
+depth  2: 1 of 8 beam nodes lie on a winning line
+depth  3: 1 of 8 beam nodes lie on a winning line
+depth  4: 1 of 8 beam nodes lie on a winning line
+depth  5: 1 of 8 beam nodes lie on a winning line
+depth  6: 1 of 8 beam nodes lie on a winning line
+depth  7: 0 of 8 beam nodes lie on a winning line
+winning lines, step by step: T1 DRAGON_PULSE · T2 >Probopass · T3 EARTH_POWER · T4 >Leavanny · T5 LEAF_STORM · T6 LEAF_STORM · T7 >Probopass · T8 >Gyarados · T9 HYDRO_PUMP · T10 >Probopass · T11 EARTH_POWER(in:Leavanny) · T12 LEAF_STORM · T13 >Snorlax · T14 BODY_SLAM · T15 BODY_SLAM(in:Reshiram) · T16 DRAGON_PULSE · T17 DRAGON_PULSE · T18 DRAGON_PULSE(in:Gyarados) · T19 T:HYDRO_PUMP · T20 HYDRO_PUMP · T21 HYDRO_PUMP(in:Leavanny) · T22 LEAF_STORM · T23 BUG_BITE · T24 LEAF_STORM · T25 {LEAF_STORM / POLLEN_PUFF}

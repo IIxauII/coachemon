@@ -1,0 +1,6795 @@
+{
+ "summary": {
+  "args": {
+   "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/sw/w8p8-ours0",
+   "workers": 8,
+   "width": 8,
+   "depth": 40,
+   "prefix": "",
+   "all_wins": false,
+   "ours_weight": 0.0,
+   "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-acc9f3a420e27c558/docs/research/solve-search/harness/../session-w180.json",
+   "budget_children": 0,
+   "stall": 0
+  },
+  "workers": 8,
+  "boot_secs": 16.2,
+  "search_secs": 146.4,
+  "children_total": 1634,
+  "losses_total": 62,
+  "errors_total": 0,
+  "stalled_total": 0,
+  "first_win": null,
+  "wins": 0,
+  "memory": {
+   "peak_total_mb": 5418.078125,
+   "peak_worker_mb": 702.640625,
+   "samples": 310
+  },
+  "layers": [
+   {
+    "depth": 1,
+    "nodes": 1,
+    "children": 13,
+    "distinct": 13,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 7.02,
+    "children_so_far": 13,
+    "best": {
+     "turn": 2,
+     "ours": [
+      "Reshiram* 577/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 427/427"
+     ],
+     "foes": [
+      "Gigalith* 282/525 [0,0,0,0,0,0,0]",
+      "Carracosta 467/467",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     0.463,
+     0.463,
+     0.436,
+     0.436,
+     0.352,
+     0.352,
+     0.162,
+     0.162
+    ]
+   },
+   {
+    "depth": 2,
+    "nodes": 20,
+    "children": 120,
+    "distinct": 98,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 11.93,
+    "children_so_far": 133,
+    "best": {
+     "turn": 3,
+     "ours": [
+      "Reshiram* 285/577 [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 427/427"
+     ],
+     "foes": [
+      "Carracosta* 467/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "BLUE_FLARE",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "FICKLE_BEAM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true
+      }
+     ]
+    ],
+    "beam_scores": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   {
+    "depth": 3,
+    "nodes": 20,
+    "children": 216,
+    "distinct": 216,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 22.43,
+    "children_so_far": 349,
+    "best": {
+     "turn": 4,
+     "ours": [
+      "Leavanny* 497/497 [0,0,0,0,0,0,0]",
+      "Reshiram 0/577 st7",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Probopass 427/427"
+     ],
+     "foes": [
+      "Carracosta* 242/467 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true,
+       "r": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true,
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true,
+       "r": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     1.482,
+     1.482,
+     1.482,
+     1.482,
+     1.482,
+     1.482,
+     1.482,
+     1.482
+    ]
+   },
+   {
+    "depth": 4,
+    "nodes": 16,
+    "children": 84,
+    "distinct": 75,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 5.8,
+    "children_so_far": 433,
+    "best": {
+     "turn": 5,
+     "ours": [
+      "Gyarados* 426/570 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Reshiram 0/577 st7",
+      "Golbat 493/493",
+      "Probopass 427/427"
+     ],
+     "foes": [
+      "Carracosta* 100/467 [2,1,1,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Barbaracle 460/460",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true,
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true,
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ]
+    ],
+    "beam_scores": [
+     1.786,
+     1.771,
+     1.709,
+     1.709,
+     1.698,
+     1.698,
+     1.698,
+     1.698
+    ]
+   },
+   {
+    "depth": 5,
+    "nodes": 19,
+    "children": 76,
+    "distinct": 72,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 4.58,
+    "children_so_far": 509,
+    "best": {
+     "turn": 6,
+     "ours": [
+      "Gyarados* 391/570 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Reshiram 0/577 st7",
+      "Golbat 493/493",
+      "Probopass 427/427"
+     ],
+     "foes": [
+      "Barbaracle* 339/460 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 100/467",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP",
+       "tera": true
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "m": "HYDRO_PUMP",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "tera": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "tera": true,
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ]
+    ],
+    "beam_scores": [
+     2.049,
+     2.0,
+     2.0,
+     1.972,
+     1.955,
+     1.926,
+     1.926,
+     1.926
+    ]
+   },
+   {
+    "depth": 6,
+    "nodes": 17,
+    "children": 122,
+    "distinct": 96,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 9.64,
+    "children_so_far": 631,
+    "best": {
+     "turn": 7,
+     "ours": [
+      "Probopass* 14/427 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 497/497",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Barbaracle* 309/460 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "ZAP_CANNON"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "EARTH_POWER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "EARTH_POWER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP",
+       "tera": true
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "POWER_GEM"
+      },
+      {
+       "m": "POWER_GEM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "m": "HYDRO_PUMP",
+       "tera": true
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     2.328,
+     2.328,
+     2.296,
+     2.296,
+     2.238,
+     2.222,
+     2.222,
+     2.161
+    ]
+   },
+   {
+    "depth": 7,
+    "nodes": 16,
+    "children": 142,
+    "distinct": 70,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 9.85,
+    "children_so_far": 773,
+    "best": {
+     "turn": 8,
+     "ours": [
+      "Leavanny* 497/497 [0,0,0,0,0,0,0]",
+      "Probopass 0/427 st7",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Barbaracle* 309/460 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Coalossal 711/711"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Golbat"
+      }
+     ]
+    ],
+    "beam_scores": [
+     2.328,
+     2.328,
+     2.328,
+     2.328,
+     2.328,
+     2.328,
+     2.328,
+     2.328
+    ]
+   },
+   {
+    "depth": 8,
+    "nodes": 16,
+    "children": 95,
+    "distinct": 95,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 9.31,
+    "children_so_far": 868,
+    "best": {
+     "turn": 9,
+     "ours": [
+      "Leavanny* 466/497 [0,0,-2,0,0,0,0]",
+      "Probopass 0/427 st7",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Coalossal* 576/711 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 309/460"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Leavanny"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      }
+     ]
+    ],
+    "beam_scores": [
+     2.518,
+     2.518,
+     2.437,
+     2.437,
+     2.43,
+     2.43,
+     2.43,
+     2.43
+    ]
+   },
+   {
+    "depth": 9,
+    "nodes": 16,
+    "children": 73,
+    "distinct": 64,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 7.54,
+    "children_so_far": 941,
+    "best": {
+     "turn": 10,
+     "ours": [
+      "Leavanny* 331/497 [0,0,-4,0,0,0,0]",
+      "Probopass 14/427 TERA",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Coalossal* 416/711 TERA [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 309/460"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "BUG_BITE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "BUG_BITE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Golbat"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "POLLEN_PUFF"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "POLLEN_PUFF"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "HELPING_HAND"
+      }
+     ]
+    ],
+    "beam_scores": [
+     2.743,
+     2.736,
+     2.652,
+     2.648,
+     2.627,
+     2.597,
+     2.594,
+     2.518
+    ]
+   },
+   {
+    "depth": 10,
+    "nodes": 16,
+    "children": 153,
+    "distinct": 150,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 13.44,
+    "children_so_far": 1094,
+    "best": {
+     "turn": 11,
+     "ours": [
+      "Probopass* 14/427 TERA [0,0,0,0,0,0,0]",
+      "Leavanny 0/497 st7",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Coalossal* 312/711 TERA [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 309/460"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "BUG_BITE",
+       "r": "Probopass"
+      }
+     ]
+    ],
+    "beam_scores": [
+     2.889,
+     2.889,
+     2.889,
+     2.889,
+     2.882,
+     2.882,
+     2.882,
+     2.871
+    ]
+   },
+   {
+    "depth": 11,
+    "nodes": 16,
+    "children": 75,
+    "distinct": 57,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 7.29,
+    "children_so_far": 1169,
+    "best": {
+     "turn": 12,
+     "ours": [
+      "Snorlax* 638/824 [0,0,0,0,0,0,0]",
+      "Probopass 14/427 TERA",
+      "Leavanny 0/497 st7",
+      "Gyarados 570/570",
+      "Golbat 493/493",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Coalossal* 194/711 TERA [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Tyranitar 569/569",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 309/460"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.055,
+     3.048,
+     3.004,
+     2.997,
+     2.967,
+     2.96,
+     2.954,
+     2.951
+    ]
+   },
+   {
+    "depth": 12,
+    "nodes": 16,
+    "children": 73,
+    "distinct": 73,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 5.52,
+    "children_so_far": 1242,
+    "best": {
+     "turn": 13,
+     "ours": [
+      "Probopass* 14/427 TERA [0,0,0,0,0,0,0]",
+      "Golbat 0/493 st7",
+      "Snorlax 824/824",
+      "Gyarados 570/570",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Tyranitar* 370/569 st2 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 309/460"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.239,
+     3.239,
+     3.239,
+     3.232,
+     3.232,
+     3.186,
+     3.186,
+     3.186
+    ]
+   },
+   {
+    "depth": 13,
+    "nodes": 16,
+    "children": 58,
+    "distinct": 46,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 4.8,
+    "children_so_far": 1300,
+    "best": {
+     "turn": 14,
+     "ours": [
+      "Snorlax* 509/824 [0,0,0,0,0,0,0]",
+      "Probopass 14/427 TERA",
+      "Golbat 0/493 st7",
+      "Gyarados 570/570",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Tyranitar* 195/569 st2 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 309/460"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      },
+      {
+       "s": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      },
+      {
+       "s": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.547,
+     3.541,
+     3.468,
+     3.461,
+     3.425,
+     3.425,
+     3.425,
+     3.425
+    ]
+   },
+   {
+    "depth": 14,
+    "nodes": 16,
+    "children": 50,
+    "distinct": 50,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 4.29,
+    "children_so_far": 1350,
+    "best": {
+     "turn": 15,
+     "ours": [
+      "Snorlax* 157/824 [0,0,0,0,0,0,0]",
+      "Probopass 14/427 TERA",
+      "Golbat 0/493 st7",
+      "Gyarados 570/570",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Tyranitar* 108/569 st2 [0,1,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Barbaracle 309/460"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      },
+      {
+       "s": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BELLY_DRUM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "SLEEP_TALK"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "REST"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Snorlax"
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.7,
+     3.589,
+     3.578,
+     3.578,
+     3.547,
+     3.547,
+     3.547,
+     3.547
+    ]
+   },
+   {
+    "depth": 15,
+    "nodes": 16,
+    "children": 70,
+    "distinct": 43,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 4.91,
+    "children_so_far": 1420,
+    "best": {
+     "turn": 16,
+     "ours": [
+      "Probopass* 14/427 TERA [0,0,0,0,0,0,0]",
+      "Snorlax 0/824 st7",
+      "Golbat 0/493 st7",
+      "Gyarados 570/570",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Barbaracle* 309/460 [0,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Tyranitar 0/569 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Gyarados",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Gyarados",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "POISON_FANG"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Probopass"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BELLY_DRUM"
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.889,
+     3.889,
+     3.889,
+     3.889,
+     3.889,
+     3.889,
+     3.889,
+     3.889
+    ]
+   },
+   {
+    "depth": 16,
+    "nodes": 16,
+    "children": 40,
+    "distinct": 25,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 3.08,
+    "children_so_far": 1460,
+    "best": {
+     "turn": 17,
+     "ours": [
+      "Gyarados* 487/570 [0,-1,0,0,0,0,0]",
+      "Probopass 14/427 TERA",
+      "Golbat 0/493 st7",
+      "Snorlax 0/824 st7",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Barbaracle* 266/460 [-1,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Tyranitar 0/569 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Probopass"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Probopass"
+      },
+      {
+       "s": "Gyarados",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "BOUNCE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     3.983,
+     3.983,
+     3.937,
+     3.937,
+     3.907,
+     3.889,
+     3.889,
+     3.889
+    ]
+   },
+   {
+    "depth": 17,
+    "nodes": 15,
+    "children": 34,
+    "distinct": 26,
+    "wins": 0,
+    "losses": 5,
+    "errors": 0,
+    "secs": 3.02,
+    "children_so_far": 1494,
+    "best": {
+     "turn": 18,
+     "ours": [
+      "Gyarados* 374/570 [0,0,0,0,0,0,0]",
+      "Probopass 14/427 TERA",
+      "Golbat 0/493 st7",
+      "Snorlax 0/824 st7",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Barbaracle* 233/460 [-1,0,0,0,0,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Tyranitar 0/569 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "BOUNCE"
+      },
+      {
+       "w": true
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Probopass"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.055,
+     4.037,
+     4.037,
+     4.033,
+     4.033,
+     3.989,
+     3.987,
+     3.987
+    ]
+   },
+   {
+    "depth": 18,
+    "nodes": 16,
+    "children": 39,
+    "distinct": 39,
+    "wins": 0,
+    "losses": 0,
+    "errors": 0,
+    "secs": 3.44,
+    "children_so_far": 1533,
+    "best": {
+     "turn": 19,
+     "ours": [
+      "Gyarados* 330/570 [0,-1,0,0,0,0,0]",
+      "Probopass 14/427 TERA",
+      "Golbat 0/493 st7",
+      "Snorlax 0/824 st7",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Barbaracle* 222/460 [-1,1,0,0,1,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Tyranitar 0/569 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Probopass"
+      },
+      {
+       "m": "TRI_ATTACK",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "TWISTER",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "TWISTER",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "BOUNCE"
+      },
+      {
+       "w": true
+      },
+      {
+       "m": "HURRICANE"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.079,
+     4.079,
+     4.074,
+     4.074,
+     4.066,
+     4.061,
+     4.061,
+     4.055
+    ]
+   },
+   {
+    "depth": 19,
+    "nodes": 16,
+    "children": 37,
+    "distinct": 14,
+    "wins": 0,
+    "losses": 11,
+    "errors": 0,
+    "secs": 3.27,
+    "children_so_far": 1570,
+    "best": {
+     "turn": 20,
+     "ours": [
+      "Probopass* 14/427 TERA [0,0,0,0,0,0,0]",
+      "Gyarados 0/570 st7",
+      "Golbat 0/493 st7",
+      "Snorlax 0/824 st7",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Barbaracle* 222/460 [-1,1,0,0,1,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Tyranitar 0/569 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "m": "HURRICANE",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "m": "HURRICANE",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Snorlax",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "m": "HURRICANE",
+       "r": "Probopass"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "m": "HURRICANE",
+       "r": "Snorlax"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Snorlax",
+       "r": "Gyarados"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.079,
+     4.079,
+     4.079,
+     4.079,
+     4.074,
+     4.074,
+     4.074,
+     4.074
+    ]
+   },
+   {
+    "depth": 20,
+    "nodes": 16,
+    "children": 32,
+    "distinct": 18,
+    "wins": 0,
+    "losses": 14,
+    "errors": 0,
+    "secs": 2.49,
+    "children_so_far": 1602,
+    "best": {
+     "turn": 21,
+     "ours": [
+      "Gyarados* 234/570 [0,0,0,0,0,0,0]",
+      "Probopass 0/427 st7",
+      "Golbat 0/493 st7",
+      "Snorlax 0/824 st7",
+      "Leavanny 0/497 st7",
+      "Reshiram 0/577 st7"
+     ],
+     "foes": [
+      "Barbaracle* 133/460 [-2,1,0,0,1,0,0]",
+      "Gigalith 0/525 st7",
+      "Coalossal 312/711 TERA",
+      "Stonjourner 574/574",
+      "Carracosta 0/467 st7",
+      "Tyranitar 0/569 st7"
+     ]
+    },
+    "beam_paths": [
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Snorlax",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Snorlax",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Snorlax",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ],
+     [
+      {
+       "m": "DRAGON_PULSE"
+      },
+      {
+       "m": "HYPER_VOICE"
+      },
+      {
+       "m": "DRAGON_PULSE",
+       "r": "Probopass"
+      },
+      {
+       "m": "POWER_GEM",
+       "tera": true
+      },
+      {
+       "m": "EARTH_POWER"
+      },
+      {
+       "m": "ZAP_CANNON"
+      },
+      {
+       "s": "Leavanny"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM"
+      },
+      {
+       "m": "LEAF_STORM",
+       "r": "Golbat"
+      },
+      {
+       "m": "TOXIC"
+      },
+      {
+       "m": "VENOSHOCK",
+       "r": "Snorlax"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "m": "BODY_SLAM"
+      },
+      {
+       "s": "Probopass",
+       "r": "Gyarados"
+      },
+      {
+       "m": "HURRICANE"
+      },
+      {
+       "m": "TWISTER"
+      },
+      {
+       "m": "HYDRO_PUMP"
+      },
+      {
+       "s": "Snorlax",
+       "r": "Gyarados"
+      },
+      {
+       "m": "TWISTER"
+      }
+     ]
+    ],
+    "beam_scores": [
+     4.272,
+     4.272,
+     4.268,
+     4.268,
+     4.126,
+     4.126,
+     4.122,
+     4.122
+    ]
+   },
+   {
+    "depth": 21,
+    "nodes": 16,
+    "children": 32,
+    "distinct": 0,
+    "wins": 0,
+    "losses": 32,
+    "errors": 0,
+    "secs": 2.74,
+    "children_so_far": 1634,
+    "best": null,
+    "beam_paths": [],
+    "beam_scores": []
+   }
+  ],
+  "children_per_sec": 11.16,
+  "validated": [],
+  "validate_secs": 0.0
+ },
+ "wins": []
+}

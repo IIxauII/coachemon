@@ -1,0 +1,52 @@
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0    7.0s total 13 rss 5418MB
+L 2 nodes  20 children  120 distinct   98 wins   0 losses   0 err 0   11.9s total 133 rss 5418MB
+L 3 nodes  20 children  216 distinct  216 wins   0 losses   0 err 0   22.4s total 349 rss 5418MB
+L 4 nodes  16 children   84 distinct   75 wins   0 losses   0 err 0    5.8s total 433 rss 5418MB
+L 5 nodes  19 children   76 distinct   72 wins   0 losses   0 err 0    4.6s total 509 rss 5418MB
+L 6 nodes  17 children  122 distinct   96 wins   0 losses   0 err 0    9.6s total 631 rss 5418MB
+L 7 nodes  16 children  142 distinct   70 wins   0 losses   0 err 0    9.8s total 773 rss 5418MB
+L 8 nodes  16 children   95 distinct   95 wins   0 losses   0 err 0    9.3s total 868 rss 5418MB
+L 9 nodes  16 children   73 distinct   64 wins   0 losses   0 err 0    7.5s total 941 rss 5418MB
+L10 nodes  16 children  153 distinct  150 wins   0 losses   0 err 0   13.4s total 1094 rss 5418MB
+L11 nodes  16 children   75 distinct   57 wins   0 losses   0 err 0    7.3s total 1169 rss 5418MB
+L12 nodes  16 children   73 distinct   73 wins   0 losses   0 err 0    5.5s total 1242 rss 5418MB
+L13 nodes  16 children   58 distinct   46 wins   0 losses   0 err 0    4.8s total 1300 rss 5418MB
+L14 nodes  16 children   50 distinct   50 wins   0 losses   0 err 0    4.3s total 1350 rss 5418MB
+L15 nodes  16 children   70 distinct   43 wins   0 losses   0 err 0    4.9s total 1420 rss 5418MB
+L16 nodes  16 children   40 distinct   25 wins   0 losses   0 err 0    3.1s total 1460 rss 5418MB
+L17 nodes  15 children   34 distinct   26 wins   0 losses   5 err 0    3.0s total 1494 rss 5418MB
+L18 nodes  16 children   39 distinct   39 wins   0 losses   0 err 0    3.4s total 1533 rss 5418MB
+L19 nodes  16 children   37 distinct   14 wins   0 losses  11 err 0    3.3s total 1570 rss 5418MB
+L20 nodes  16 children   32 distinct   18 wins   0 losses  14 err 0    2.5s total 1602 rss 5418MB
+L21 nodes  16 children   32 distinct    0 wins   0 losses  32 err 0    2.7s total 1634 rss 5418MB
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/sw/w8p8-ours0",
+  "workers": 8,
+  "width": 8,
+  "depth": 40,
+  "prefix": "",
+  "all_wins": false,
+  "ours_weight": 0.0,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-acc9f3a420e27c558/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 0
+ },
+ "workers": 8,
+ "boot_secs": 16.2,
+ "search_secs": 146.4,
+ "children_total": 1634,
+ "losses_total": 62,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": null,
+ "wins": 0,
+ "memory": {
+  "peak_total_mb": 5418.078125,
+  "peak_worker_mb": 702.640625,
+  "samples": 310
+ },
+ "children_per_sec": 11.16,
+ "validated": [],
+ "validate_secs": 0.0
+}

@@ -1,0 +1,25 @@
+boot ms 700 stats {'boots': 1, 'reloads': 65, 'rebootsAfterLoss': 0, 'reloadThrows': 0, 'lastReloadError': '', 'stalePrompts': 0}
+chaincheck CW: 19 steps, 0 differ from the straight replay
+chaincheck CA: 23 steps, 0 differ from the straight replay
+forkcheck F: reference ends T20 won=True lost=False
+  restore at step  1 (T 2)   279 ms  match=True 
+  restore at step  2 (T 3)   173 ms  match=True 
+  restore at step  3 (T 4)   227 ms  match=True 
+  restore at step  4 (T 5)   216 ms  match=True 
+  restore at step  5 (T 6)   229 ms  match=True 
+  restore at step  6 (T 7)   226 ms  match=True 
+  restore at step  7 (T 8)   224 ms  match=True 
+  restore at step  8 (T 9)   230 ms  match=True 
+  restore at step  9 (T10)   268 ms  match=True 
+  restore at step 10 (T11)   267 ms  match=True 
+  restore at step 11 (T12)   235 ms  match=True 
+  restore at step 12 (T13)   231 ms  match=True 
+  restore at step 13 (T14)   177 ms  match=True 
+  restore at step 14 (T15)   174 ms  match=True 
+  restore at step 15 (T16)   334 ms  match=True 
+  restore at step 16 (T17)   331 ms  match=True 
+  restore at step 17 (T18)   328 ms  match=True 
+  restore at step 18 (T19)   331 ms  match=True 
+bounce             ERROR illegal step HYDRO_PUMP at T18; legal: TRI_ATTACK T:TRI_ATTACK ZAP_CANNON T:ZAP_CANNON EARTH_POWER T:EARTH_POWER POWER_G load    268 ms  play   4041 ms  turns 18  end T18 ours ['Probopass* 359/427 [0,0,0,0,0,0,0]', 'Snorlax 824/824', 'Reshiram 577/577']
+win                WIN    load    269 ms  play   4483 ms  turns 19  end T20 ours ['Gyarados* 423/570 TERA [0,0,0,0,0,0,0]', 'Probopass 359/427', 'Snorlax 824/824', 'Reshiram 577/577']
+  stats {'boots': 1, 'reloads': 65, 'rebootsAfterLoss': 0, 'reloadThrows': 0, 'lastReloadError': '', 'stalePrompts': 0}

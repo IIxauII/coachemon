@@ -1,0 +1,24 @@
+boot ms 685 stats {'boots': 1, 'reloads': 22, 'rebootsAfterLoss': 0, 'reloadThrows': 0, 'lastReloadError': ''}
+win1               WIN    load    320 ms  play   4356 ms  turns 19  end T20 ours ['Gyarados* 423/570 TERA [0,0,0,0,0,0,0]', 'Probopass 359/427', 'Snorlax 824/824', 'Reshiram 577/577']
+a1                 LOSS   load    270 ms  play   5612 ms  turns 23  end T23 ours []
+win2-after-loss    WIN    load    269 ms  play   4430 ms  turns 19  end T20 ours ['Gyarados* 423/570 TERA [0,0,0,0,0,0,0]', 'Probopass 359/427', 'Snorlax 824/824', 'Reshiram 577/577']
+  stats {'boots': 1, 'reloads': 22, 'rebootsAfterLoss': 0, 'reloadThrows': 0, 'lastReloadError': ''}
+forkcheck F: reference ends T20 won=True lost=False
+  restore at step  1 (T 2)   269 ms  match=True 
+  restore at step  2 (T 3)   181 ms  match=True 
+  restore at step  3 (T 4)   224 ms  match=True 
+  restore at step  4 (T 5)   228 ms  match=True 
+  restore at step  5 (T 6)   216 ms  match=True 
+  restore at step  6 (T 7)   213 ms  match=True 
+  restore at step  7 (T 8)   215 ms  match=True 
+  restore at step  8 (T 9)   214 ms  match=True 
+  restore at step  9 (T10)   281 ms  match=True 
+  restore at step 10 (T11)   268 ms  match=True 
+  restore at step 11 (T12)   214 ms  match=True 
+  restore at step 12 (T13)   363 ms  match=True 
+  restore at step 13 (T14)   163 ms  match=True 
+  restore at step 14 (T15)   163 ms  match=True 
+  restore at step 15 (T16)   318 ms  match=True 
+  restore at step 16 (T17)   327 ms  match=True 
+  restore at step 17 (T18)   326 ms  match=True 
+  restore at step 18 (T19)   329 ms  match=True 

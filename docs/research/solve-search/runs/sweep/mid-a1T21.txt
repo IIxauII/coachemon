@@ -1,0 +1,38 @@
+L 1 nodes   1 children    9 distinct    9 wins   0 losses   0 err 0   47.8s total 9 rss 4484MB
+L 2 nodes  20 children   56 distinct   49 wins   0 losses   0 err 0    3.5s total 65 rss 4484MB
+L 3 nodes  16 children   40 distinct   40 wins   0 losses   0 err 0    2.6s total 105 rss 4484MB
+L 4 nodes  16 children   38 distinct   24 wins   0 losses   8 err 0    2.4s total 143 rss 4484MB
+L 5 nodes  16 children   36 distinct   20 wins   0 losses  16 err 0    2.4s total 179 rss 4484MB
+L 6 nodes  16 children   34 distinct   22 wins   0 losses   6 err 0    2.0s total 213 rss 4484MB
+L 7 nodes  16 children   32 distinct    0 wins   0 losses  32 err 0    1.3s total 245 rss 4484MB
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/sw/mid-a1T21",
+  "workers": 8,
+  "width": 8,
+  "depth": 40,
+  "prefix": "A1:20",
+  "all_wins": false,
+  "ours_weight": 0.5,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-acc9f3a420e27c558/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 0
+ },
+ "workers": 8,
+ "boot_secs": 18.3,
+ "search_secs": 61.9,
+ "children_total": 245,
+ "losses_total": 62,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": null,
+ "wins": 0,
+ "memory": {
+  "peak_total_mb": 4484.015625,
+  "peak_worker_mb": 576.328125,
+  "samples": 153
+ },
+ "children_per_sec": 3.96,
+ "validated": [],
+ "validate_secs": 0.0
+}

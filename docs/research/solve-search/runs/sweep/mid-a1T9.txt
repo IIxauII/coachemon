@@ -1,0 +1,134 @@
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0   30.1s total 13 rss 4371MB
+L 2 nodes  21 children  136 distinct   98 wins   0 losses   0 err 0   16.8s total 149 rss 4371MB
+L 3 nodes  18 children   80 distinct   70 wins   0 losses   0 err 0    6.4s total 229 rss 4371MB
+L 4 nodes  20 children  136 distinct  120 wins   0 losses   0 err 0   11.7s total 365 rss 4371MB
+L 5 nodes  20 children  120 distinct   96 wins   0 losses   0 err 0   11.5s total 485 rss 4371MB
+L 6 nodes  20 children  264 distinct  261 wins   0 losses   0 err 0   26.2s total 749 rss 4371MB
+L 7 nodes  16 children  192 distinct  190 wins   0 losses   0 err 0   20.0s total 941 rss 4371MB
+L 8 nodes  16 children  161 distinct   74 wins   0 losses   0 err 0   11.7s total 1102 rss 4371MB
+L 9 nodes  16 children  208 distinct  184 wins   0 losses   0 err 0   23.8s total 1310 rss 4371MB
+L10 nodes  16 children   99 distinct   79 wins   0 losses   0 err 0    8.2s total 1409 rss 4371MB
+L11 nodes  16 children  131 distinct  130 wins   1 losses   0 err 0   11.6s total 1540 rss 4371MB
+replayed from T1: [{'name': 'win0', 'result': 'WIN', 'turns': 19}]
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/sw/mid-a1T9",
+  "workers": 8,
+  "width": 8,
+  "depth": 40,
+  "prefix": "A1:8",
+  "all_wins": false,
+  "ours_weight": 0.5,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-acc9f3a420e27c558/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 0
+ },
+ "workers": 8,
+ "boot_secs": 17.8,
+ "search_secs": 177.9,
+ "children_total": 1540,
+ "losses_total": 0,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": {
+  "depth": 11,
+  "children_so_far": 1540,
+  "secs": 177.9,
+  "path": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "EARTH_POWER"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "FICKLE_BEAM",
+    "tera": true
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "DRAGON_PULSE",
+    "r": "Leavanny"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE",
+    "r": "Gyarados"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   }
+  ],
+  "end": {
+   "turn": 20,
+   "ours": [
+    "Gyarados* 396/570 [0,0,0,0,0,0,0]",
+    "Reshiram 0/577 st7",
+    "Snorlax 824/824",
+    "Probopass 190/427",
+    "Golbat 493/493",
+    "Leavanny 0/497 st7"
+   ],
+   "foes": [
+    "Coalossal 0/711 st7",
+    "Gigalith 0/525 st7",
+    "Tyranitar 0/569 st7",
+    "Barbaracle 0/460 st7",
+    "Carracosta 0/467 st7",
+    "Stonjourner 0/574 st7"
+   ]
+  }
+ },
+ "wins": 1,
+ "memory": {
+  "peak_total_mb": 4370.890625,
+  "peak_worker_mb": 605.875,
+  "samples": 379
+ },
+ "children_per_sec": 8.65,
+ "validated": [
+  {
+   "name": "win0",
+   "result": "WIN",
+   "turns": 19
+  }
+ ],
+ "validate_secs": 5.2
+}

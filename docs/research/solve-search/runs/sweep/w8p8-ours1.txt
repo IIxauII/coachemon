@@ -1,0 +1,210 @@
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0    7.2s total 13 rss 5042MB
+L 2 nodes  20 children  120 distinct   98 wins   0 losses   0 err 0   11.7s total 133 rss 5042MB
+L 3 nodes  20 children   88 distinct   88 wins   0 losses   0 err 0    4.3s total 221 rss 5042MB
+L 4 nodes  18 children   80 distinct   80 wins   0 losses   0 err 0    4.9s total 301 rss 5042MB
+L 5 nodes  16 children  168 distinct   78 wins   0 losses   0 err 0   10.4s total 469 rss 5042MB
+L 6 nodes  16 children  112 distinct  110 wins   0 losses   0 err 0    9.6s total 581 rss 5042MB
+L 7 nodes  16 children   72 distinct   72 wins   0 losses   0 err 0    6.2s total 653 rss 5042MB
+L 8 nodes  16 children  196 distinct  194 wins   0 losses   0 err 0   18.6s total 849 rss 5042MB
+L 9 nodes  16 children  176 distinct  176 wins   0 losses   0 err 0   16.4s total 1025 rss 5042MB
+L10 nodes  16 children  118 distinct  118 wins   0 losses   0 err 0   10.7s total 1143 rss 5042MB
+L11 nodes  16 children  118 distinct   94 wins   0 losses   0 err 0   10.6s total 1261 rss 5042MB
+L12 nodes  16 children   82 distinct   82 wins   0 losses   0 err 0    7.9s total 1343 rss 5042MB
+L13 nodes  16 children  118 distinct   94 wins   0 losses   0 err 0    8.2s total 1461 rss 5042MB
+L14 nodes  16 children   76 distinct   72 wins   0 losses   0 err 0    6.0s total 1537 rss 5042MB
+L15 nodes  14 children   50 distinct   50 wins   0 losses   0 err 0    5.0s total 1587 rss 5042MB
+L16 nodes  14 children   46 distinct   22 wins   0 losses   0 err 0    4.2s total 1633 rss 5042MB
+L17 nodes  16 children  136 distinct  136 wins   0 losses   0 err 0   15.4s total 1769 rss 5042MB
+L18 nodes  14 children   58 distinct   34 wins   0 losses   0 err 0    6.3s total 1827 rss 5042MB
+L19 nodes  16 children   58 distinct   58 wins   0 losses   0 err 0    5.8s total 1885 rss 5042MB
+L20 nodes  14 children   74 distinct   50 wins   0 losses   0 err 0    7.7s total 1959 rss 5042MB
+L21 nodes  14 children   56 distinct   56 wins   0 losses   0 err 0    6.2s total 2015 rss 5042MB
+L22 nodes  14 children  104 distinct   56 wins   0 losses   0 err 0    9.0s total 2119 rss 5042MB
+L23 nodes  16 children   70 distinct   66 wins   0 losses   0 err 0    7.3s total 2189 rss 5042MB
+L24 nodes  16 children   88 distinct   52 wins   0 losses   0 err 0   10.0s total 2277 rss 5042MB
+L25 nodes  16 children  112 distinct  108 wins   0 losses   0 err 0   14.9s total 2389 rss 5042MB
+L26 nodes  16 children   76 distinct   76 wins   0 losses   0 err 0   17.9s total 2465 rss 5042MB
+L27 nodes  16 children   88 distinct   87 wins   0 losses   0 err 0   24.5s total 2553 rss 5042MB
+L28 nodes  16 children   76 distinct   76 wins   0 losses   0 err 0   16.0s total 2629 rss 5042MB
+L29 nodes  16 children   88 distinct   88 wins   0 losses   0 err 0   10.9s total 2717 rss 5042MB
+L30 nodes  16 children  142 distinct  142 wins   0 losses   0 err 0   22.1s total 2859 rss 5042MB
+L31 nodes  16 children   56 distinct   44 wins   8 losses   0 err 0    9.5s total 2915 rss 5042MB
+replayed from T1: [{'name': 'win0', 'result': 'WIN', 'turns': 31}, {'name': 'win1', 'result': 'WIN', 'turns': 31}, {'name': 'win2', 'result': 'WIN', 'turns': 31}, {'name': 'win3', 'result': 'WIN', 'turns': 31}, {'name': 'win4', 'result': 'WIN', 'turns': 31}]
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/sw/w8p8-ours1",
+  "workers": 8,
+  "width": 8,
+  "depth": 40,
+  "prefix": "",
+  "all_wins": false,
+  "ours_weight": 1.0,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-acc9f3a420e27c558/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 0
+ },
+ "workers": 8,
+ "boot_secs": 17.3,
+ "search_secs": 325.3,
+ "children_total": 2915,
+ "losses_total": 0,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": {
+  "depth": 31,
+  "children_so_far": 2915,
+  "secs": 325.3,
+  "path": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "POWER_GEM",
+    "tera": true
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "DRAGON_PULSE",
+    "r": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "m": "HURRICANE"
+   },
+   {
+    "m": "TWISTER"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "m": "BOUNCE"
+   },
+   {
+    "w": true
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "s": "Snorlax"
+   },
+   {
+    "m": "BODY_SLAM"
+   },
+   {
+    "m": "REST"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Golbat"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "TRI_ATTACK"
+   },
+   {
+    "m": "ZAP_CANNON"
+   },
+   {
+    "m": "POWER_GEM"
+   },
+   {
+    "m": "POWER_GEM",
+    "r": "Gyarados"
+   },
+   {
+    "m": "HYDRO_PUMP"
+   }
+  ],
+  "end": {
+   "turn": 32,
+   "ours": [
+    "Gyarados* 347/570 [0,0,0,0,0,0,0]",
+    "Reshiram 0/577 st7",
+    "Probopass 0/427 st7",
+    "Leavanny 435/497",
+    "Golbat 463/493",
+    "Snorlax 651/824 st4"
+   ],
+   "foes": [
+    "Tyranitar 0/569 st7",
+    "Gigalith 0/525 st7",
+    "Stonjourner 0/574 st7",
+    "Coalossal 0/711 st7",
+    "Carracosta 0/467 st7",
+    "Barbaracle 0/460 st7"
+   ]
+  }
+ },
+ "wins": 8,
+ "memory": {
+  "peak_total_mb": 5041.65625,
+  "peak_worker_mb": 751.546875,
+  "samples": 689
+ },
+ "children_per_sec": 8.96,
+ "validated": [
+  {
+   "name": "win0",
+   "result": "WIN",
+   "turns": 31
+  },
+  {
+   "name": "win1",
+   "result": "WIN",
+   "turns": 31
+  },
+  {
+   "name": "win2",
+   "result": "WIN",
+   "turns": 31
+  },
+  {
+   "name": "win3",
+   "result": "WIN",
+   "turns": 31
+  },
+  {
+   "name": "win4",
+   "result": "WIN",
+   "turns": 31
+  }
+ ],
+ "validate_secs": 35.1
+}

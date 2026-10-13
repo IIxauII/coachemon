@@ -1,0 +1,50 @@
+boot ms 776 stats {'boots': 25, 'reloads': 48, 'rebootsAfterLoss': 24, 'reloadThrows': 24, 'lastReloadError': "TypeError: Cannot read properties of undefined (reading 'getStartingBiome')"}
+win1               WIN    load    321 ms  play   4338 ms  turns 19  end T20 ours ['Gyarados* 423/570 TERA [0,0,0,0,0,0,0]', 'Probopass 359/427', 'Snorlax 824/824', 'Reshiram 577/577']
+win2               WIN    load    271 ms  play   4309 ms  turns 19  end T20 ours ['Gyarados* 423/570 TERA [0,0,0,0,0,0,0]', 'Probopass 359/427', 'Snorlax 824/824', 'Reshiram 577/577']
+a1                 LOSS   load    266 ms  play  25243 ms  turns 23  end T-1 ours []
+win3-after-loss    WIN    load    497 ms  play   4339 ms  turns 19  end T20 ours ['Gyarados* 423/570 TERA [0,0,0,0,0,0,0]', 'Probopass 359/427', 'Snorlax 824/824', 'Reshiram 577/577']
+a1-again           LOSS   load    273 ms  play  25287 ms  turns 23  end T-1 ours []
+win4               WIN    load    498 ms  play   4327 ms  turns 19  end T20 ours ['Gyarados* 423/570 TERA [0,0,0,0,0,0,0]', 'Probopass 359/427', 'Snorlax 824/824', 'Reshiram 577/577']
+  stats {'boots': 25, 'reloads': 48, 'rebootsAfterLoss': 24, 'reloadThrows': 24, 'lastReloadError': "TypeError: Cannot read properties of undefined (reading 'getStartingBiome')"}
+forkcheck F: reference ends T20 won=True lost=False
+  restore at step  1 (T 3)   269 ms  match=True 
+  restore at step  2 (T 4)   166 ms  match=True 
+  restore at step  3 (T 5)   219 ms  match=True 
+  restore at step  4 (T 6)   216 ms  match=True 
+  restore at step  5 (T 7)   218 ms  match=True 
+  restore at step  6 (T 8)   216 ms  match=True 
+  restore at step  7 (T 9)   217 ms  match=True 
+  restore at step  8 (T10)   225 ms  match=True 
+  restore at step  9 (T11)   266 ms  match=True 
+  restore at step 10 (T12)   266 ms  match=True 
+  restore at step 11 (T13)   217 ms  match=True 
+  restore at step 12 (T14)   212 ms  match=True 
+  restore at step 13 (T15)   170 ms  match=True 
+  restore at step 14 (T16)   175 ms  match=False {"at": 14, "got": {"turn": 16, "ours": ["Gyarados* 570/570 [0,0,0,0,0,0,0]", "Probopass 359/427", "Snorlax 824/824", "Golbat 0/493 st7", "Leavanny 0/497 st7", "Reshiram 577/577"], "foes": ["Tyranitar* 375/569 st2 [-1,0,0,0,0,0,0]", "Gigalith 0/525 st7", "Barbaracle 0/460 st7", "Carracosta 121/467", "Stonjourner 0/574 st7", "Coalossal 238/711 TERA"], "won": false, "lost": false}, "want": {"turn": 1
+  restore at step 15 (T17)   325 ms  match=False {"at": 15, "got": {"turn": 17, "ours": ["Gyarados* 351/570 TERA [0,0,0,0,0,0,0]", "Probopass 359/427", "Snorlax 824/824", "Golbat 0/493 st7", "Leavanny 0/497 st7", "Reshiram 577/577"], "foes": ["Tyranitar* 180/569 st2 [-1,1,0,0,0,0,0]", "Gigalith 0/525 st7", "Barbaracle 0/460 st7", "Carracosta 121/467", "Stonjourner 0/574 st7", "Coalossal 238/711 TERA"], "won": false, "lost": false}, "want": {"tur
+  restore at step 16 (T18)   327 ms  match=True 
+  restore at step 17 (T19)   330 ms  match=True 
+  restore at step 18 (T20)   330 ms  match=True 
+forkcheck FA: reference ends T-1 won=False lost=True
+  restore at step  1 (T 3)   527 ms  match=True 
+  restore at step  2 (T 4)   437 ms  match=True 
+  restore at step  3 (T 5)   407 ms  match=True 
+  restore at step  4 (T 6)   453 ms  match=True 
+  restore at step  5 (T 7)   478 ms  match=True 
+  restore at step  6 (T 8)   475 ms  match=True 
+  restore at step  7 (T 9)   404 ms  match=True 
+  restore at step  8 (T10)   558 ms  match=True 
+  restore at step  9 (T11)   598 ms  match=True 
+  restore at step 10 (T12)   442 ms  match=True 
+  restore at step 11 (T13)   483 ms  match=True 
+  restore at step 12 (T14)   477 ms  match=True 
+  restore at step 13 (T15)   443 ms  match=True 
+  restore at step 14 (T16)   447 ms  match=True 
+  restore at step 15 (T17)   544 ms  match=True 
+  restore at step 16 (T18)   534 ms  match=True 
+  restore at step 17 (T19)   513 ms  match=True 
+  restore at step 18 (T20)   593 ms  match=True 
+  restore at step 19 (T21)   591 ms  match=True 
+  restore at step 20 (T22)   423 ms  match=True 
+  restore at step 21 (T23)   437 ms  match=True 
+  restore at step 22 (T24)   452 ms  match=True 

@@ -1,0 +1,153 @@
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0   18.4s total 13 rss 3657MB
+L 2 nodes  22 children  208 distinct  208 wins   0 losses   0 err 0   17.6s total 221 rss 3657MB
+L 3 nodes  18 children  120 distinct  112 wins   0 losses   0 err 0   14.8s total 341 rss 3657MB
+L 4 nodes  18 children  128 distinct  128 wins   0 losses   0 err 0   13.5s total 469 rss 3657MB
+L 5 nodes  17 children  184 distinct  184 wins   0 losses   0 err 0   17.8s total 653 rss 3657MB
+L 6 nodes  17 children  144 distinct  139 wins   0 losses   0 err 0   16.3s total 797 rss 3657MB
+L 7 nodes  20 children  188 distinct  163 wins   0 losses   0 err 0   17.1s total 985 rss 3657MB
+L 8 nodes  17 children  128 distinct  128 wins   0 losses   0 err 0   13.6s total 1113 rss 3657MB
+L 9 nodes  16 children   88 distinct   64 wins   0 losses   0 err 0    9.0s total 1201 rss 3657MB
+L10 nodes  16 children   64 distinct   63 wins   0 losses   0 err 0    6.2s total 1265 rss 3657MB
+L11 nodes  16 children   76 distinct   74 wins   0 losses   0 err 0   11.3s total 1341 rss 3657MB
+L12 nodes  16 children   64 distinct   59 wins   0 losses   0 err 0    6.1s total 1405 rss 3657MB
+L13 nodes  16 children  112 distinct  104 wins   0 losses   0 err 0   10.3s total 1517 rss 3657MB
+L14 nodes  16 children  112 distinct   88 wins  24 losses   0 err 0   15.9s total 1629 rss 3657MB
+replayed from T1: [{'name': 'win0', 'result': 'WIN', 'turns': 18}, {'name': 'win1', 'result': 'WIN', 'turns': 18}, {'name': 'win2', 'result': 'WIN', 'turns': 18}, {'name': 'win3', 'result': 'WIN', 'turns': 18}, {'name': 'win4', 'result': 'WIN', 'turns': 18}]
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/sw/mid-T5-online",
+  "workers": 8,
+  "width": 8,
+  "depth": 40,
+  "prefix": "WIN:4",
+  "all_wins": false,
+  "ours_weight": 0.5,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-acc9f3a420e27c558/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 0
+ },
+ "workers": 8,
+ "boot_secs": 23.9,
+ "search_secs": 188.0,
+ "children_total": 1629,
+ "losses_total": 0,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": {
+  "depth": 14,
+  "children_so_far": 1629,
+  "secs": 188.0,
+  "path": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "m": "BUG_BITE",
+    "tera": true
+   },
+   {
+    "m": "BUG_BITE",
+    "r": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "HYPER_VOICE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   }
+  ],
+  "end": {
+   "turn": 19,
+   "ours": [
+    "Reshiram* 340/577 [3,0,1,1,0,0,0]",
+    "Probopass 359/427",
+    "Snorlax 824/824",
+    "Gyarados 570/570",
+    "Golbat 493/493",
+    "Leavanny 0/497 st7"
+   ],
+   "foes": [
+    "Coalossal 0/711 st7",
+    "Gigalith 0/525 st7",
+    "Stonjourner 0/574 st7",
+    "Barbaracle 0/460 st7",
+    "Carracosta 0/467 st7",
+    "Tyranitar 0/569 st7"
+   ]
+  }
+ },
+ "wins": 24,
+ "memory": {
+  "peak_total_mb": 3657.25,
+  "peak_worker_mb": 590.15625,
+  "samples": 439
+ },
+ "children_per_sec": 8.66,
+ "validated": [
+  {
+   "name": "win0",
+   "result": "WIN",
+   "turns": 18
+  },
+  {
+   "name": "win1",
+   "result": "WIN",
+   "turns": 18
+  },
+  {
+   "name": "win2",
+   "result": "WIN",
+   "turns": 18
+  },
+  {
+   "name": "win3",
+   "result": "WIN",
+   "turns": 18
+  },
+  {
+   "name": "win4",
+   "result": "WIN",
+   "turns": 18
+  }
+ ],
+ "validate_secs": 25.6
+}

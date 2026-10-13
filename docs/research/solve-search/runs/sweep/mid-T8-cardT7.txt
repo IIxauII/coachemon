@@ -1,0 +1,165 @@
+L 1 nodes   1 children   13 distinct   13 wins   0 losses   0 err 0   24.9s total 13 rss 3702MB
+L 2 nodes  20 children  104 distinct  103 wins   0 losses   0 err 0    8.4s total 117 rss 3702MB
+L 3 nodes  18 children   80 distinct   76 wins   0 losses   0 err 0    5.0s total 197 rss 3702MB
+L 4 nodes  17 children  140 distinct   76 wins   0 losses   0 err 0    8.9s total 337 rss 3702MB
+L 5 nodes  18 children  240 distinct  145 wins   0 losses   0 err 0   19.1s total 577 rss 3702MB
+L 6 nodes  16 children  156 distinct  156 wins   0 losses   0 err 0   14.5s total 733 rss 3702MB
+L 7 nodes  16 children   72 distinct   72 wins   0 losses   0 err 0    6.0s total 805 rss 3702MB
+L 8 nodes  16 children   92 distinct   92 wins   0 losses   0 err 0    8.6s total 897 rss 3702MB
+L 9 nodes  16 children  180 distinct  135 wins   0 losses   0 err 0   17.8s total 1077 rss 3702MB
+L10 nodes  16 children   72 distinct   72 wins   0 losses   0 err 0    6.8s total 1149 rss 3702MB
+L11 nodes  16 children   72 distinct   64 wins   0 losses   0 err 0    8.2s total 1221 rss 3702MB
+L12 nodes  16 children  180 distinct  160 wins   0 losses   0 err 0   19.9s total 1401 rss 3702MB
+L13 nodes  16 children   72 distinct   62 wins   0 losses   0 err 0    6.5s total 1473 rss 3702MB
+L14 nodes  16 children  104 distinct   93 wins   0 losses   0 err 0   11.2s total 1577 rss 3702MB
+L15 nodes  16 children  104 distinct   80 wins  24 losses   0 err 0    9.7s total 1681 rss 3702MB
+replayed from T1: [{'name': 'win0', 'result': 'WIN', 'turns': 22}, {'name': 'win1', 'result': 'WIN', 'turns': 22}, {'name': 'win2', 'result': 'WIN', 'turns': 22}, {'name': 'win3', 'result': 'WIN', 'turns': 22}, {'name': 'win4', 'result': 'WIN', 'turns': 22}]
+{
+ "args": {
+  "out": "/Users/xau/.claude/jobs/bf9a05d3/tmp/sw/mid-T8-cardT7",
+  "workers": 8,
+  "width": 8,
+  "depth": 40,
+  "prefix": "CARD_T7:7",
+  "all_wins": false,
+  "ours_weight": 0.5,
+  "session": "/Users/xau/Documents/projects/coachemon/.claude/worktrees/agent-acc9f3a420e27c558/docs/research/solve-search/harness/../session-w180.json",
+  "budget_children": 0,
+  "stall": 0
+ },
+ "workers": 8,
+ "boot_secs": 24.1,
+ "search_secs": 175.3,
+ "children_total": 1681,
+ "losses_total": 0,
+ "errors_total": 0,
+ "stalled_total": 0,
+ "first_win": {
+  "depth": 15,
+  "children_so_far": 1681,
+  "secs": 175.3,
+  "path": [
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "s": "Leavanny"
+   },
+   {
+    "m": "POLLEN_PUFF"
+   },
+   {
+    "m": "BUG_BITE"
+   },
+   {
+    "m": "LEAF_STORM"
+   },
+   {
+    "s": "Probopass"
+   },
+   {
+    "m": "ZAP_CANNON",
+    "tera": true
+   },
+   {
+    "m": "ZAP_CANNON"
+   },
+   {
+    "m": "EARTH_POWER"
+   },
+   {
+    "m": "POWER_GEM"
+   },
+   {
+    "s": "Gyarados"
+   },
+   {
+    "m": "HURRICANE"
+   },
+   {
+    "m": "TWISTER"
+   },
+   {
+    "s": "Reshiram"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "DRAGON_PULSE"
+   },
+   {
+    "m": "FICKLE_BEAM"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   },
+   {
+    "m": "HYPER_VOICE"
+   },
+   {
+    "m": "BLUE_FLARE"
+   }
+  ],
+  "end": {
+   "turn": 23,
+   "ours": [
+    "Reshiram* 413/577 [3,0,1,1,0,0,0]",
+    "Leavanny 320/497",
+    "Snorlax 824/824",
+    "Probopass 261/427 TERA",
+    "Golbat 493/493",
+    "Gyarados 465/570"
+   ],
+   "foes": [
+    "Coalossal 0/711 st7",
+    "Gigalith 0/525 st7",
+    "Stonjourner 0/574 st7",
+    "Tyranitar 0/569 st7",
+    "Barbaracle 0/460 st7",
+    "Carracosta 0/467 st7"
+   ]
+  }
+ },
+ "wins": 24,
+ "memory": {
+  "peak_total_mb": 3701.578125,
+  "peak_worker_mb": 630.765625,
+  "samples": 419
+ },
+ "children_per_sec": 9.59,
+ "validated": [
+  {
+   "name": "win0",
+   "result": "WIN",
+   "turns": 22
+  },
+  {
+   "name": "win1",
+   "result": "WIN",
+   "turns": 22
+  },
+  {
+   "name": "win2",
+   "result": "WIN",
+   "turns": 22
+  },
+  {
+   "name": "win3",
+   "result": "WIN",
+   "turns": 22
+  },
+  {
+   "name": "win4",
+   "result": "WIN",
+   "turns": 22
+  }
+ ],
+ "validate_secs": 25.9
+}
